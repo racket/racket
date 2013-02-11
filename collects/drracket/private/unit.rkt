@@ -267,13 +267,16 @@ module browser threading seems wrong.
          ;; find-searchable-tokens : number number -> (or/c #f (list symbol number number))
          (define (find-searchable-tokens start end)
            (define tokens (get-tokens start end))
-           (define raw-tokens (map (λ (x) (list-ref x 0)) tokens))
-           (cond
-             [(equal? raw-tokens '(symbol))
-              (car tokens)]
-             [(equal? raw-tokens '(constant symbol))
-              (cadr tokens)]
-             [else #f]))
+           (for/or ([tok tokens])
+             (define type (list-ref tok 0))
+             (cond [(or (eq? type 'symbol)
+                        (eq? type 'hash-colon-keyword)
+                        ;; The token may have been categorized as a keyword due to
+                        ;; its presence in the tabification preferences:
+                        (eq? type 'keyword))
+                    tok]
+                   [else
+                    #f])))
          
          (define searchable-token 
            (or (and before before+ 
