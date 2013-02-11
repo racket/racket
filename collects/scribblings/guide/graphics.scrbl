@@ -37,12 +37,12 @@ interfaces (GUIs):
        See @other-doc['(lib "scribblings/slideshow/slideshow.scrbl")]
        for more information.}
 
- @item{The @racket[2htdp/image] library is similar to
+ @item{The @racketmodname[2htdp/image] library is similar to
        @racketmodname[slideshow/pict]. It is more streamlined for
        pedagogical use, but also slightly more specific to screen and
        bitmap drawing.
 
-       See @racket[2htdp/image] for more information.}
+       See @racketmodname[2htdp/image] for more information.}
 
  @item{The @racketmodname[sgl] library provides OpenGL for 3-D
        graphics. The context for rendering OpenGL can be a window or
