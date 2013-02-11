@@ -3,9 +3,9 @@
 ;;;   based on http://www.grame.fr/Research/GCalcul/Graphic_Calculus.html
 ;;;   implemented by Eli Barzilay.
 
-#lang mzscheme
+#lang racket
 
-(require mzlib/class mred mzlib/etc "../show-scribbling.rkt" mzlib/unit)
+(require racket/gui "../show-scribbling.rkt" racket/unit mzlib/etc (only-in mzscheme fluid-let))
 (provide game@)
 
 (define customs '())
@@ -335,13 +335,13 @@
 ;;;============================================================================
 ;;; GCalc drawing
 
-(define transparent?-cache (make-hash-table 'weak))
+(define transparent?-cache (make-weak-hash))
 
 (define (expr-contains-transparent? expr)
   (if (simple-expr? expr)
     (or (null-expr? expr) (eq? expr 'transparent)
         (and (var-expr? expr) (eq? (var-val expr) 'transparent)))
-    (let ([v (hash-table-get transparent?-cache expr 'unknown)])
+    (let ([v (hash-ref transparent?-cache expr 'unknown)])
       (if (eq? v 'unknown)
           (let ([v (cond [(abstraction-expr? expr)
                           (expr-contains-transparent? (expr-2nd expr))]
@@ -349,7 +349,7 @@
                           #t]
                          [else (or (expr-contains-transparent? (expr-1st expr))
                                    (expr-contains-transparent? (expr-2nd expr)))])])
-            (hash-table-put! transparent?-cache expr v)
+            (hash-set! transparent?-cache expr v)
             v)
           v))))
 

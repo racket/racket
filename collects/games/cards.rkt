@@ -1,4 +1,4 @@
-#lang mzscheme
+#lang racket
 
 (require "cards/cards.rkt")
-(provide (all-from "cards/cards.rkt"))
+(provide (all-from-out "cards/cards.rkt"))

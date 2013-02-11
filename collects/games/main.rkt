@@ -1,6 +1,6 @@
 #lang racket/gui
 
-(require setup/getinfo mrlib/bitmap-label "show-help.rkt")
+(require setup/getinfo "show-help.rkt")
 
 (define-struct game (file name set icon))
 

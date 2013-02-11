@@ -29,7 +29,7 @@
 ;;
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#lang mzscheme
+#lang racket
 
 (require games/cards mred mzlib/class mzlib/list mzlib/unit)
 

@@ -1,8 +1,8 @@
-(module gui mzscheme
+(module gui racket
   (require games/gl-board-game/gl-board
-           mzlib/class
-           mred
-           mzlib/file
+           racket/class
+           (except-in racket/gui define-signature provide-signature-elements)
+           racket/file
            sgl/gl-vectors
            sgl
            mzlib/unitsig

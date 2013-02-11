@@ -1,8 +1,7 @@
-(module honu-bitmaps mzscheme
-  (require mzlib/math
-           mzlib/etc
-           mred
-           mzlib/class)
+(module honu-bitmaps racket
+  (require racket/math
+           racket/gui
+           racket/class)
 
   (provide honu-bitmap honu-down-bitmap
            honu-rotation honu-down-rotation)
@@ -16,7 +15,7 @@
               (+ y (* h 1/2) (* h 1/2 se)))))
   
   (define weighted-arc 
-    (opt-lambda (path x y w h start end ccw? [dx1 0.0] [dy1 0.2] [dx2 dx1] [dy2 (- dy1)])
+    (lambda (path x y w h start end ccw? [dx1 0.0] [dy1 0.2] [dx2 dx1] [dy2 (- dy1)])
       (let ([sweep (let loop ([s (if ccw? (- end start) (- start end))])
                      (if (< s 0)
                          (loop (+ s (* 2 pi)))
@@ -273,7 +272,7 @@
     (let ([right-hole-path (make-object dc-path%)])
       
       (define arc/end 
-        (opt-lambda (x y w h start end [cc? #t] [dx1 0] [dy1 0.2] [dx2 0] [dy2 -0.2])
+        (lambda (x y w h start end [cc? #t] [dx1 0] [dy1 0.2] [dx2 0] [dy2 -0.2])
           (weighted-arc right-hole-path x y w h start end cc? dx1 dy1 dx2 dy2)
           (find-arc-spot x y w h end)))
       

@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (provide make-immutable-hash/list-init
          hash-set hash-ref hash-map)
 

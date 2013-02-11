@@ -1,4 +1,4 @@
-(module sig mzscheme
+(module sig racket
   (require mzlib/unitsig)
 
   (provide config^ 

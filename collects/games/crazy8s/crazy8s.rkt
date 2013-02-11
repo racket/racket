@@ -1,12 +1,12 @@
 
-#lang mzscheme
+#lang racket
 
-(require games/cards mred mzlib/class mzlib/unit mzlib/etc mzlib/list mzlib/file
-         mzlib/async-channel)
+(require games/cards mred racket/class racket/unit racket/file
+         racket/async-channel)
 
 ;; Player record
 (define-struct player (r hand-r  ; region
-                         hand))    ; cards
+                         hand) #:mutable)    ; cards
 
 ;; Messages
 (define YOUR-NAME "You")

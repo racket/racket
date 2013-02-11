@@ -1,9 +1,7 @@
 ;; Plays automatic games, often useful when learning is enabled in "explore.rkt"
 
-(module robot mzscheme
+(module robot racket
   (require mzlib/unitsig
-           mzlib/etc
-           mzlib/list
            "sig.rkt"
            "model.rkt"
            "explore.rkt"

@@ -1,7 +1,8 @@
-(module graph mzscheme
-  (require mzlib/class
-           "private/utils.rkt")
-  (require-for-syntax "private/utils.rkt")
+(module graph racket
+  (require racket/class
+           "private/utils.rkt"
+           (for-syntax "private/utils.rkt"))
+  
 
   (provide node% edge% 
            grid-graph)

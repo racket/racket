@@ -1,4 +1,4 @@
-(module cards mzscheme
+(module cards racket
   (require "base.rkt"
            "utils.rkt"
            "region.rkt")

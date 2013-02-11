@@ -1,7 +1,7 @@
 ;; Supplies canned moves and board-rating functions for the state
 ;; explorer.
 
-(module heuristics mzscheme
+(module heuristics racket
   (require mzlib/unitsig
            mzlib/etc
            mzlib/list
@@ -19,7 +19,7 @@
 	;; a perfect red player.
 	(for-each (lambda (play)
 		    (let ([key+xform (canonicalize (list->bytes (vector->list (car play))) #f)])
-		      (hash-table-put! init-memory
+		      (hash-set! init-memory
 				       (car key+xform)
 				       (let-values ([(from-i from-j)
 						     (if (list-ref play 2)

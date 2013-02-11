@@ -1,9 +1,8 @@
 ;; This is the main search engine for auto-play.
 ;; See `make-search' for the main entry point.
 
-(module explore mzscheme
+(module explore racket
   (require mzlib/unitsig
-           mzlib/etc
            mzlib/list
            "sig.rkt"
            "test.rkt")
@@ -42,7 +41,7 @@
       ;;  with `make-plan', described below.
       (define (make-search make-rate-board make-canned-moves)
 	;; Long-term memory (i.e., spans searches)
-	(define init-memory (make-hash-table 'equal))
+	(define init-memory (make-hash))
 	(define canonicalize (make-canonicalize))
 	(define rate-board (make-rate-board canonicalize))
 	(define canned-moves (make-canned-moves canonicalize init-memory))
@@ -60,15 +59,15 @@
 		 [once-sema (make-semaphore)]
 		 [result-sema (make-semaphore)]
 		 ;; Short-term memory (i.e., discarded after this search)
-		 [memory (make-hash-table 'equal)])
+		 [memory (make-hash)])
 	    ;; Record game-history boards as loop ties
 	    (let loop ([history history][me (other me)])
 	      (unless (null? history)
 		(let ([key+xform (canonicalize (car history) me)])
-		  (hash-table-put! memory (car key+xform) LOOP-TIE))
+		  (hash-set! memory (car key+xform) LOOP-TIE))
 		(loop (cdr history) (other me))))
 	    ;; Copy canned and learned info into short-term memory:
-	    (hash-table-for-each init-memory (lambda (k v) (hash-table-put! memory k v)))
+	    (hash-for-each init-memory (lambda (k v) (hash-set! memory k v)))
 	    ;; Search in a background thread:
 	    (let ([t (thread
 		      (lambda ()
@@ -119,7 +118,7 @@
       ;;  the board), the destination position, a xform inidcating how to
       ;;  transform the positions into canonical positions, and a number
       ;;  that estimates how many more steps until the end of game.
-      (define-struct plan (size from-i from-j to-i to-j xform turns))
+      (define-struct plan (size from-i from-j to-i to-j xform turns) #:mutable)
 
       ;; apply-play : board play -> board
       ;; A play is (list piece from-i from-j to-i to-j turns)
@@ -254,32 +253,32 @@
 	  (let ([choices
 		 (cond
 		  ;; Check for known win/loss at arbitrary depth:
-		  [(hash-table-get (config-memory config) board-key (lambda () #f)) 
+		  [(hash-ref (config-memory config) board-key (lambda () #f)) 
                    => (lambda (x) x)]
 		  ;; Check for known result at specific remaining depth:
-		  [(hash-table-get (config-memory config) key (lambda () #f)) 
+		  [(hash-ref (config-memory config) key (lambda () #f)) 
                    => (lambda (x) x)]
 		  ;; Check for immediate loss (only rating matters; plan is never used)
 		  [(winner? board (other me))
-		   (hash-table-put! (config-memory config) board-key '((-inf.0)))
+		   (hash-set! (config-memory config) board-key '((-inf.0)))
 		   '((-inf.0))]
 		  ;; Check for immediate loss (only rating matters)
 		  [(winner? board me)
-		   (hash-table-put! (config-memory config) board-key '((+inf.0)))
+		   (hash-set! (config-memory config) board-key '((+inf.0)))
 		   '((+inf.0))]
 		  ;; Check for depth
 		  [(depth . >= . (config-max-depth config))
 		   (set! depth-count (add1 depth-count))
 		   (let ([l (list 
                              (list ((config-rate-board config) board me last-to-i last-to-j)))])
-		     (hash-table-put! (config-memory config) key l)
+		     (hash-set! (config-memory config) key l)
 		     l)]
 		  ;; Otherwise, we explore this state...
 		  [else 
 		   (set! depth-count (add1 depth-count))
 		   (set! explore-count (add1 explore-count))
 		   ;; In case we get back here while we're looking, claim an unknown tie:
-		   (hash-table-put! (config-memory config) board-key LOOP-TIE)
+		   (hash-set! (config-memory config) board-key LOOP-TIE)
 		   (let* ([choices
 			   (map (lambda (g)
 				  ;; Make sure each canned move is in our coordinate system:
@@ -300,14 +299,14 @@
 				       '((-inf.0))
 				       ;; We have at least one move
 				       choices)])
-		     (hash-table-remove! (config-memory config) board-key)
+		     (hash-remove! (config-memory config) board-key)
 		     (let ([key (if (and ((caar choices) . < . +inf.0)
 					 ((caar choices) . > . -inf.0))
 				    ;; Result is only valid to current depth limit:
 				    key
 				    ;; Win or loss: result is valid to any depth:
 				    board-key)])
-		       (hash-table-put! (config-memory config) key choices)
+		       (hash-set! (config-memory config) key choices)
 		       choices))])])
 	    (values choices xform))))
 
@@ -552,7 +551,7 @@
         (when (or (found-win? plays)
                   (found-lose? plays))
           (let ([board-key+xform ((config-canonicalize config) board me)])
-            (hash-table-get init-memory 
+            (hash-ref init-memory 
                             (car board-key+xform)
                             (lambda ()
                               ;; This is new...
@@ -580,7 +579,7 @@
 		(let ([v (read)])
 		  (unless (eof-object? v)
 		    (let ([board-key+xform (canonicalize (cadr v) #f)])
-		      (hash-table-put! init-memory
+		      (hash-set! init-memory
 				       (car board-key+xform)
 				       (list
 					(cons (if (eq? 'win (car v)) +inf.0 -inf.0)

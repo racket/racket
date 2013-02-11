@@ -10,15 +10,13 @@ careful charlie
 (random ron)
 |#
 
-(module best-players mzscheme
+(module best-players racket
   (require "board.rkt"
            "moves.rkt"
            "interfaces.rkt"
            "test.rkt"
-           mzlib/list
-           mzlib/etc
-           mzlib/class
-           mzlib/pretty)
+           racket/class
+           racket/pretty)
   
   (provide random-player%
            agressive-player%
@@ -28,7 +26,7 @@ careful charlie
            reckless-player%
            
            search
-           (struct state (moves dice board)))
+           (struct-out state))
 
   (define candidates-record '())
   (provide average-move-count)
@@ -41,7 +39,7 @@ careful charlie
   ;; moves : (listof move) -- what got us here
   ;; dice : (listof dice) -- what we have left to use
   ;; board : board -- the state of the board after taking the moves
-  (define-struct state (moves dice board) (make-inspector))
+  (define-struct state (moves dice board) #:inspector (make-inspector))
   
   (define base-player%
     (class* object% (player<%>)
@@ -140,24 +138,24 @@ careful charlie
   
   ;; search : board color (listof number) -> (listof state)
   (define (search orig-board color dice)
-    (define candidate-ht (make-hash-table 'equal))
+    (define candidate-ht (make-hash))
     (define (move-candidate candidate)
-      (hash-table-put! candidate-ht (state-board candidate) candidate))
-    (define (get-candidates) (hash-table-map candidate-ht (lambda (x y) y)))
+      (hash-set! candidate-ht (state-board candidate) candidate))
+    (define (get-candidates) (hash-map candidate-ht (lambda (x y) y)))
     
     ;; main : -> void
     (define (main)
       ;; ht : board -o> true
-      (let ([ht (make-hash-table 'equal)])
+      (let ([ht (make-hash)])
         (let loop ([state (make-state '() dice orig-board)])
           (let* ([board (state-board state)]
                  [dice (state-dice state)]
                  [key (cons dice board)])
             (cond
-              [(hash-table-get ht key (lambda () #f))
+              [(hash-ref ht key (lambda () #f))
                (void)]
               [else 
-               (hash-table-put! ht key #t)
+               (hash-set! ht key #t)
                (let* ([possible-moves (find-moves board dice)]
                       [valid-next-states (find-valid-states state orig-board board possible-moves)])
                  (cond

@@ -1,5 +1,5 @@
 
-(module utils mzscheme
+(module utils racket
   (provide shuffle-list)
 
   (define shuffle-list 

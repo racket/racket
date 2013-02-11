@@ -1,5 +1,5 @@
 
-(module test mzscheme
+(module test racket
   (provide test report-test-results)
   
   (define failed? #f)

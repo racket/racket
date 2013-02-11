@@ -1,7 +1,5 @@
-(module test-explore mzscheme
+(module test-explore racket
   (require mzlib/unitsig
-           mzlib/etc
-           mzlib/list
            "sig.rkt"
            "model.rkt"
            "explore.rkt"

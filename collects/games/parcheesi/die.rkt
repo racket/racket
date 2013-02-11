@@ -1,6 +1,6 @@
-(module die mzscheme
-  (require mred
-           mzlib/class)
+(module die racket
+  (require racket/gui
+           racket/class)
   
   (provide die%)
 

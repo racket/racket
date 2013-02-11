@@ -1,9 +1,8 @@
-(module admin mzscheme
+(module admin racket
   (require "board.rkt"
            "moves.rkt"
            "interfaces.rkt"
-           mzlib/class
-           mzlib/list)
+           racket/class)
   
   (provide game%
            game-observer<%>)

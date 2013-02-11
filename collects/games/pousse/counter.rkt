@@ -4,7 +4,7 @@
 ;;  This code benefits greatly from mzc compilation.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(module counter mzscheme
+(module counter racket
   (require "board.rkt"
            "utils.rkt"
            mzlib/unitsig)

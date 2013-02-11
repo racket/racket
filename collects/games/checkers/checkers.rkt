@@ -1,10 +1,10 @@
-#lang mzscheme
+#lang racket
 
 (require games/gl-board-game/gl-board
-         mzlib/class
-         mzlib/math
-         mred
-         mzlib/unit
+         racket/class
+         racket/math
+         racket/gui
+         racket/unit
          sgl/gl-vectors
          sgl
          sgl/gl
@@ -62,7 +62,7 @@
 (define dark-checker-img (bitmap->image honu-bitmap))
 
 (define-struct space-info (x y light?))
-(define-struct piece-info (x y color king?) (make-inspector))
+(define-struct piece-info (x y color king?) #:inspector (make-inspector))
 (define-struct moves (list forced-jump?))
 
 (define-signature model^
