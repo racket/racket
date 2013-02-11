@@ -1,3 +1,3 @@
-(module problem mzscheme
-  (provide (struct problem (name rows cols solution)))
-  (define-struct problem (name rows cols solution)))
+(module problem racket
+  (provide (struct-out problem))
+  (define-struct problem (name rows cols solution) #:mutable))

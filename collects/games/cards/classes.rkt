@@ -1,7 +1,6 @@
 (module classes racket/base
   (require racket/class
-           (prefix-in mred: mred)
-           racket/list
+           (prefix-in mred: racket/gui)
            (prefix-in util: "utils.rkt")
            "constants.rkt"
            "make-cards.rkt"

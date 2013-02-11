@@ -1,4 +1,4 @@
-(module model mzscheme
+(module model racket
   (require "sig.rkt"
            mzlib/unitsig)
 
@@ -26,8 +26,8 @@
       ;; piece to a stack with this piece on top.
       (define-struct piece (size color gobble-table))  
 
-      (define red-pieces (map (lambda (sz) (make-piece sz 'red (make-hash-table))) SIZES))
-      (define yellow-pieces (map (lambda (sz) (make-piece sz 'yellow (make-hash-table))) SIZES))
+      (define red-pieces (map (lambda (sz) (make-piece sz 'red (make-hasheq))) SIZES))
+      (define yellow-pieces (map (lambda (sz) (make-piece sz 'yellow (make-hasheq))) SIZES))
 
       ;; Fill in stacks for pieces. By building each possible
       ;;  stack once, we avoid allocating redudant stacks, and
@@ -48,7 +48,7 @@
 		     (map (lambda (p)
 			    (map (lambda (stack)
 				   (let ([new-stack (cons p stack)])
-				     (hash-table-put! (piece-gobble-table p) stack new-stack)
+				     (hash-set! (piece-gobble-table p) stack new-stack)
 				     new-stack))
 				 prev-stacks))
 			  (list (car red-pieces)
@@ -134,7 +134,7 @@
 
       ;; gobble : piece (listof piece) -> (listof piece)
       (define (gobble p l)
-	(hash-table-get (piece-gobble-table p) l))
+	(hash-ref (piece-gobble-table p) l))
 
       ;; - - - - - - - - - - - - - - - - - -
       
@@ -377,54 +377,54 @@
       (define flatten-board
 	(if (= BOARD-SIZE 3)
 	    (lambda (board stack-ids)
-	      (bytes (hash-table-get stack-ids (board-ref board 0 0))
-                     (hash-table-get stack-ids (board-ref board 1 0))
-                     (hash-table-get stack-ids (board-ref board 2 0))
-                     (hash-table-get stack-ids (board-ref board 0 1))
-                     (hash-table-get stack-ids (board-ref board 1 1))
-                     (hash-table-get stack-ids (board-ref board 2 1))
-                     (hash-table-get stack-ids (board-ref board 0 2))
-                     (hash-table-get stack-ids (board-ref board 1 2))
-                     (hash-table-get stack-ids (board-ref board 2 2))))
+	      (bytes (hash-ref stack-ids (board-ref board 0 0))
+                     (hash-ref stack-ids (board-ref board 1 0))
+                     (hash-ref stack-ids (board-ref board 2 0))
+                     (hash-ref stack-ids (board-ref board 0 1))
+                     (hash-ref stack-ids (board-ref board 1 1))
+                     (hash-ref stack-ids (board-ref board 2 1))
+                     (hash-ref stack-ids (board-ref board 0 2))
+                     (hash-ref stack-ids (board-ref board 1 2))
+                     (hash-ref stack-ids (board-ref board 2 2))))
 	    (lambda (board stack-ids)
-	      (bytes (hash-table-get stack-ids (board-ref board 0 0))
-                     (hash-table-get stack-ids (board-ref board 1 0))
-                     (hash-table-get stack-ids (board-ref board 2 0))
-                     (hash-table-get stack-ids (board-ref board 3 0))
-                     (hash-table-get stack-ids (board-ref board 0 1))
-                     (hash-table-get stack-ids (board-ref board 1 1))
-                     (hash-table-get stack-ids (board-ref board 2 1))
-                     (hash-table-get stack-ids (board-ref board 3 1))
-                     (hash-table-get stack-ids (board-ref board 0 2))
-                     (hash-table-get stack-ids (board-ref board 1 2))
-                     (hash-table-get stack-ids (board-ref board 2 2))
-                     (hash-table-get stack-ids (board-ref board 3 2))
-                     (hash-table-get stack-ids (board-ref board 0 3))
-                     (hash-table-get stack-ids (board-ref board 1 3))
-                     (hash-table-get stack-ids (board-ref board 2 3))
-                     (hash-table-get stack-ids (board-ref board 3 3))))))
+	      (bytes (hash-ref stack-ids (board-ref board 0 0))
+                     (hash-ref stack-ids (board-ref board 1 0))
+                     (hash-ref stack-ids (board-ref board 2 0))
+                     (hash-ref stack-ids (board-ref board 3 0))
+                     (hash-ref stack-ids (board-ref board 0 1))
+                     (hash-ref stack-ids (board-ref board 1 1))
+                     (hash-ref stack-ids (board-ref board 2 1))
+                     (hash-ref stack-ids (board-ref board 3 1))
+                     (hash-ref stack-ids (board-ref board 0 2))
+                     (hash-ref stack-ids (board-ref board 1 2))
+                     (hash-ref stack-ids (board-ref board 2 2))
+                     (hash-ref stack-ids (board-ref board 3 2))
+                     (hash-ref stack-ids (board-ref board 0 3))
+                     (hash-ref stack-ids (board-ref board 1 3))
+                     (hash-ref stack-ids (board-ref board 2 3))
+                     (hash-ref stack-ids (board-ref board 3 3))))))
 
 
       ;; Generate a numerical ID for each stack. This numerical
       ;;  ID must stay constant for all of time, because we
       ;;  record boards in compact form using these numbers.
       ;;  (For example, see "plays-3x3.rkt".)
-      (define red-stack-ids (make-hash-table))
-      (define yellow-stack-ids (make-hash-table))
+      (define red-stack-ids (make-hasheq))
+      (define yellow-stack-ids (make-hasheq))
       (for-each (lambda (s)
-		  (hash-table-put! red-stack-ids s (hash-table-count red-stack-ids)))
+		  (hash-set! red-stack-ids s (hash-count red-stack-ids)))
 		all-stacks)
       (for-each (lambda (s)
 		  (let ([inverse 
                          (let loop ([s s])
                            (if (null? s)
                                null
-                               (hash-table-get (piece-gobble-table
+                               (hash-ref (piece-gobble-table
                                                 (if (eq? (piece-color (car s)) 'red)
                                                     (list-ref yellow-pieces (piece-size (car s)))
                                                     (list-ref red-pieces (piece-size (car s)))))
                                                (loop (cdr s)))))])
-		    (hash-table-put! yellow-stack-ids s (hash-table-get red-stack-ids inverse))))
+		    (hash-set! yellow-stack-ids s (hash-ref red-stack-ids inverse))))
 		all-stacks)
 
       ;; Applies an appropriate flattener
@@ -439,21 +439,21 @@
       ;;  xform for getting from the given board's locations to
       ;;  locations in the canonical board.
       (define (make-canonicalize)
-	(let ([memory (make-hash-table 'equal)])
+	(let ([memory (make-hash)])
 	  ;; Convert the board into a byte string, normalizing player:
 	  (lambda (board who)
 	    (let ([v (if who
 			 (compact-board board who)
 			 board)])
 	      ;; Find canonical mapping.
-	      (hash-table-get 
+	      (hash-ref 
                memory v
                (lambda ()
                  (let* ([pr (cons v (car xforms))])
-                   (hash-table-put! memory v pr)
+                   (hash-set! memory v pr)
                    ;; Add each equivalent to table:
                    (for-each (lambda (xform xform-proc)
-                               (hash-table-put! memory (xform-proc v) (cons v xform)))
+                               (hash-set! memory (xform-proc v) (cons v xform)))
                              (cdr xforms) (cdr xform-procs))
                    pr)))))))
       

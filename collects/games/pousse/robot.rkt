@@ -1,4 +1,4 @@
-(module robot mzscheme
+(module robot racket
   (require "counter.rkt"
            "board.rkt"
            "utils.rkt"

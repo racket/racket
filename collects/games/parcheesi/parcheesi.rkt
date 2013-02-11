@@ -1,6 +1,6 @@
-(module parcheesi mzscheme
-  (require mzlib/unit
-           mzlib/class
+(module parcheesi racket
+  (require racket/unit
+           racket/class
            "admin-gui.rkt")
 
   (provide game@)

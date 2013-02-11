@@ -3,12 +3,9 @@
 
 ;;;;;;;;;;;;;;;;; Configuration ;;;;;;;;;;;;;;;;;;
 
-#lang mzscheme
+#lang racket
 
-(require mzlib/etc ; defines build-vector
-         mzlib/class
-         mzlib/unit
-         mred
+(require racket/gui
          mrlib/include-bitmap)
 
 (provide game@)
@@ -207,7 +204,7 @@
       [on-close ; stop the timer, in case it's running
        (lambda ()
          (send board-canvas stop-timer)
-         (inner () on-close))])
+         (inner '() on-close))])
      (super-instantiate ()))
    ("Minesweeper") 
    [style '(no-resize-border metal)]))
@@ -264,7 +261,7 @@
         (set! start-time (current-seconds))
         (set! timer
               (make-object
-               (class timer% ()
+               (class timer% '()
                  (override*
                   [notify
                    (lambda ()

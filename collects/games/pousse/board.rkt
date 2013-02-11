@@ -1,4 +1,4 @@
-(module board mzscheme
+(module board racket
   (require "board-size.rkt") ; for n
   
   (provide x o none     ; cell values
@@ -29,7 +29,7 @@
   (define o #\o)
   (define none #\space)
   
-  (define-struct board (str n rotation))
+  (define-struct board (str n rotation) #:mutable)
   
   (define (new-board n)
     (make-board (make-string (add1 (* n n)) #\space) n 0))

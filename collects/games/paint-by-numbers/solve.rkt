@@ -1,9 +1,4 @@
-(module solve mzscheme
-  
-  (require mzlib/list
-           mzlib/etc
-           mzlib/contract)
-  
+(module solve racket  
   (provide/contract [solve (-> (listof (listof integer?))  ; row-info
                                (listof (listof integer?))  ; col-info
                                (-> number? number? symbol? ; set-entry
@@ -146,7 +141,7 @@
                        ((X) 'off)
                        ((O) 'on)
                        ((*) 'mixed)
-                       ((()) ())
+                       ((()) '())
                        (else (error 'condensed->long-form "bad input: ~a" symbol-tree)))]))
             
             ;(equal? (condensed->long-form '(((? !) u) (* () X O)))
@@ -613,7 +608,7 @@
                                [(new-board)
                                 (reassemble-rows (map rectify board-rows))]
                                [( _ )
-                                (if row-changed
+                                (when row-changed
                                     (animate-changes new-board draw-rows-thunk 
                                                      (board-height new-board)
                                                      (board-width new-board)))]
@@ -624,7 +619,7 @@
                                [(final-board)
                                 (reassemble-cols (map rectify board-cols))]
                                [( _ )
-                                (if col-changed
+                                (when col-changed
                                     (animate-changes final-board draw-cols-thunk
                                                      (board-width final-board)
                                                      (board-height final-board)))])

@@ -1,6 +1,6 @@
-#lang mzscheme
-(require mred
-         mzlib/class)
+#lang racket
+(require racket/gui
+         racket/class)
 (define argv (current-command-line-arguments))
 
 (when (equal? (vector) argv)

@@ -1,12 +1,10 @@
-(module doors mzscheme
+(module doors racket
   (require games/gl-board-game/gl-board
            sgl/gl-vectors
            sgl
            sgl/bitmap
-           mred
-           mzlib/list
-           mzlib/etc
-           mzlib/class)
+           racket/gui
+           racket/class)
   
   (provide door-game%
            player-data
@@ -18,10 +16,10 @@
   (define light-blue (gl-float-vector 0.5 0.5 1.0 0.5))
   (define light-red (gl-float-vector 1.0 0.5 0.5 0.5))
     
-  (define-struct room (data players things))
-  (define-struct wall (drawer))
-  (define-struct player (data drawer i j))
-  (define-struct thing (data drawer i j heads-up?))
+  (define-struct room (data players things) #:mutable)
+  (define-struct wall (drawer) #:mutable)
+  (define-struct player (data drawer i j) #:mutable)
+  (define-struct thing (data drawer i j heads-up?) #:mutable)
 
   (define (bitmap->drawer bm game)
     (let*-values ([(bm mask)
@@ -127,13 +125,13 @@
                     (gl-end-list)
                     list-id)))))
       
-      (define cache (make-hash-table 'equal))
+      (define cache (make-hash))
       (define/private (make-wall-dl/cached dir door?)
         (let ([key (list dir door?)])
-          (hash-table-get cache key
+          (hash-ref cache key
                           (lambda ()
                             (let ([dl (make-wall-dl dir door?)])
-                              (hash-table-put! cache key dl)
+                              (hash-set! cache key dl)
                               dl)))))
     
       (define/private (make-wall-draw dx dy dir door)

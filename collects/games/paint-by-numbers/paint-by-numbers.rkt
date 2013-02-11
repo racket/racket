@@ -6,11 +6,7 @@
            "problem.rkt"
            "../show-scribbling.rkt"
            framework
-           mzlib/class
-           mzlib/unit
-           mzlib/pretty
-           mzlib/list
-           mred)
+           racket/gui)
   
   (provide game@)
 

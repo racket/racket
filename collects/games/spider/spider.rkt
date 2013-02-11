@@ -1,14 +1,12 @@
-#lang mzscheme
+#lang racket
 
-(require games/cards mred mzlib/class mzlib/list mzlib/file mzlib/unit
+(require games/cards racket/gui racket/class racket/unit
          "../show-scribbling.rkt")
 
 (define (list-first-n l n)
   (if (zero? n)
     null
     (cons (car l) (list-first-n (cdr l) (sub1 n)))))
-(define (vector-copy v)
-  (list->vector (vector->list v)))
 
 (provide game@)
 (define game@ (unit (import) (export)

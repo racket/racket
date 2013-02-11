@@ -1,4 +1,4 @@
-#lang mzscheme
+#lang racket
 
 #|
 
@@ -18,14 +18,9 @@ The col and row type specs are in sig.rkt and the solution type is:
 
 (define argv (current-command-line-arguments))
 
-(require mzlib/etc
-         mzlib/list
-         mzlib/file
-         mzlib/pretty
-         mzlib/class
-         mred
+(require racket/gui
          "raw-hattori.rkt"
-         (prefix solve: "../solve.rkt"))
+         (prefix-in solve: "../solve.rkt"))
 
 (if (equal? (vector) argv)
     (printf "pass any command line argument to skip the solver\n\n")

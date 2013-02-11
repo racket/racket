@@ -1,7 +1,6 @@
-(module board mzscheme
-  (require mred
-           mzlib/class
-           mzlib/etc
+(module board racket
+  (require racket/gui
+           racket/class
            "boards.rkt")
 
   (provide

@@ -1,5 +1,4 @@
-(module interfaces mzscheme
-  (require mzlib/class)
+(module interfaces racket
   (provide player<%>
            game<%>)
 
@@ -18,5 +17,4 @@
   (define game<%>
     (interface ()
       register ;; player<%> -> void
-      start ;; -> void
-      )))
+      start #| -> void |#)))

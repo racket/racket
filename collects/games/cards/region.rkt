@@ -1,5 +1,5 @@
 
-(module region mzscheme
+(module region racket
   (provide region
 	   struct:region make-region
 	   region? region-x region-y region-w region-h 

@@ -1,5 +1,5 @@
-#lang mzscheme
-(require games/cards mred mzlib/class mzlib/unit mzlib/list)
+#lang racket
+(require games/cards racket/gui racket/class racket/unit)
 
 (provide game@)
 (define game@ (unit (import) (export)
@@ -7,7 +7,7 @@
 ;; Player record
 (define-struct player (r hand-r discard-r count-r ; regions
                        hand discarded ; cards
-                       tried)) ; memory for simulating players
+                       tried) #:mutable) ; memory for simulating players
 
 ;; Player names
 (define PLAYER-1-NAME "Opponent 1")

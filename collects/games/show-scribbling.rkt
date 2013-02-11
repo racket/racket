@@ -1,10 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
 (require setup/xref
          scribble/xref
-         scribble/basic
          scribble/tag
-         scheme/promise
          net/url
          net/sendurl)
 

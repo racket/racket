@@ -2,7 +2,7 @@
 (module card-class racket/base
   (require racket/class
            racket/shared
-	   (prefix-in mred: mred)
+	   (prefix-in mred: racket/gui)
 	   "snipclass.rkt"
 	   "region.rkt")
 

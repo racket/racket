@@ -1,7 +1,7 @@
-(module make-cards mzscheme
-  (require mzlib/class
-           (prefix mred: mred)
-           (prefix card-class: "card-class.rkt"))
+(module make-cards racket
+  (require racket/class
+           (prefix-in mred: racket/gui)
+           (prefix-in card-class: "card-class.rkt"))
 
   (provide back deck-of-cards make-card)
 
@@ -61,7 +61,7 @@
 			    front back
 			    (lambda () (make-dim front))
 			    (lambda () dim-back)
-                            (make-hash-table 'equal))
+                            (make-hash))
 			  (vloop (sub1 value))))))))))
   
   (define (make-card front-bm back-bm suit-id value)
@@ -77,4 +77,4 @@
 		     (if back-bm 
 			 (make-dim back)
 			 dim-back))
-                   (make-hash-table 'equal)))))
+                   (make-hash)))))

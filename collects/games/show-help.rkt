@@ -1,12 +1,10 @@
-(module show-help mzscheme
-  (require mzlib/class
-           mred
-	   mzlib/etc)
+(module show-help racket
+  (require racket/gui)
   
   (provide show-help)
   
   (define show-help 
-    (opt-lambda (collections frame-title [verbatim? #f])
+    (lambda (collections frame-title [verbatim? #f])
       (let* ([f #f]
 	     [f%
 	      (class frame%

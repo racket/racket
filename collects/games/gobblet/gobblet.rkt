@@ -1,8 +1,8 @@
-#lang mzscheme
+#lang racket
 (require mzlib/unitsig
-         (only mzlib/unit unit import export)
-         mzlib/file
-         mred
+         (only-in racket/unit unit import export)
+         racket/file
+         (except-in racket/gui define-signature provide-signature-elements)
          "sig.rkt"
          "model.rkt"
          "gui.rkt"
