@@ -3,7 +3,7 @@
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
          "signatures.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
          "check-below.rkt"
-         (types utils abbrev)
+         (types utils abbrev union)
          (private type-annotation parse-type)
          (env lexical-env type-alias-env global-env type-env-structs)
          (rep type-rep filter-rep object-rep)
@@ -165,10 +165,7 @@
                                                       (s:member x safe-bindings bound-identifier=?))
                                                    l)
                                            types-from-user
-                                           (map (λ (x) (make-Union (if (type<? x -Undefined)
-                                                                       (list x -Undefined)
-                                                                       (list -Undefined x))))
-                                                types-from-user)))))
+                                           (map (λ (x) (Un x -Undefined)) types-from-user)))))
                          names))
                    ;; types the user gave. check against that to error if we could get undefined
                    (map (λ (l) (ret (map get-type l))) names)
