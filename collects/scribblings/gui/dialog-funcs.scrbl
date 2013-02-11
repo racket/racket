@@ -9,7 +9,7 @@ These functions get input from the user and/or display
 
 
 
-@defproc[(get-file [message (or/c string? #f) #f]
+@defproc[(get-file [message (or/c label-string? #f) #f]
                    [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                    [directory (or/c path-string? #f) #f]
                    [filename (or/c path-string? #f) #f]
@@ -73,7 +73,7 @@ See also @racket[path-dialog%] for a richer interface.
 
 }
 
-@defproc[(get-file-list [message (or/c string? #f) #f]
+@defproc[(get-file-list [message (or/c label-string? #f) #f]
                         [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                         [directory (or/c path-string? #f) #f]
                         [filename (or/c path-string? #f) #f]
@@ -88,7 +88,7 @@ Like
 
 }
 
-@defproc[(put-file [message (or/c string? #f) #f]
+@defproc[(put-file [message (or/c label-string? #f) #f]
                    [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                    [directory (or/c path-string? #f) #f]
                    [filename (or/c path-string? #f) #f]
@@ -160,7 +160,7 @@ creating an instance of the class for this dialog.
 See also @racket[path-dialog%] for a richer interface.
 }
 
-@defproc[(get-directory [message (or/c string? #f) #f]
+@defproc[(get-directory [message (or/c label-string? #f) #f]
                         [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                         [directory (or/c path? #f) #f]
                         [style (listof (or/c 'enter-packages 'common)) null]
@@ -253,7 +253,7 @@ before the dialog is created.
 }
 
 @defproc[(message-box/custom [title label-string?]
-                             [message string]
+                             [message string?]
                              [button1-label (or/c label-string? (is-a?/c bitmap%) #f)]
                              [button2-label (or/c label-string? (is-a?/c bitmap%) #f)]
                              [button3-label (or/c label-string? (is-a?/c bitmap%) #f)]
@@ -363,7 +363,7 @@ Like @racket[message-box], except that
 ]}
 
 @defproc[(message+check-box/custom [title label-string?]
-                                   [message string]
+                                   [message string?]
                                    [check-label label-string?]
                                    [button1-label (or/c label-string? (is-a?/c bitmap%) #f)]
                                    [button2-label (or/c label-string? (is-a?/c bitmap%) #f)]
@@ -387,8 +387,8 @@ Like @racket[message-box/custom], except that
 ]
 }
 
-@defproc[(get-text-from-user [title string?]
-                             [message (or/c string? #f)]
+@defproc[(get-text-from-user [title label-string?]
+                             [message (or/c label-string? #f)]
                              [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                              [init-val string? ""]
                              [style (listof 'password) null]
@@ -417,9 +417,9 @@ The @racket[dialog-mixin] argument is applied to the class that implements the d
 before the dialog is created. 
 }
 
-@defproc[(get-choices-from-user [title string?]
-                                [message (or/c string? #f)]
-                                [choices (listof string?)]
+@defproc[(get-choices-from-user [title label-string?]
+                                [message (or/c label-string? #f)]
+                                [choices (listof label-string?)]
                                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                                 [init-choices (listof exact-nonnegative-integer?) null]
                                 [style (listof (or/c 'single 'multiple 'extended)) '(single)])
@@ -444,7 +444,7 @@ The result is @racket[#f] if the user cancels the dialog, the
 
 }
 
-@defproc[(get-color-from-user [message (or/c string? #f) #f]
+@defproc[(get-color-from-user [message (or/c label-string? #f) #f]
                               [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                               [init-color (or/c (is-a?/c color%) #f) #f]
                               [style null? null])
@@ -465,7 +465,7 @@ The result is @racket[#f] if the user cancels the dialog, the selected
 
 }
 
-@defproc[(get-font-from-user [message (or/c string? #f) #f]
+@defproc[(get-font-from-user [message (or/c label-string? #f) #f]
                              [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                              [init-font (or/c (is-a?/c font%) #f) #f]
                              [style null? null])
@@ -486,7 +486,7 @@ The result is @racket[#f] if the user cancels the dialog, the selected
 
 }
 
-@defproc[(get-ps-setup-from-user [message (or/c string? #f) #f]
+@defproc[(get-ps-setup-from-user [message (or/c label-string? #f) #f]
                                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                                  [init-setup (or/c (is-a?/c ps-setup%) #f) #f]
                                  [style null? null])
@@ -509,7 +509,7 @@ The result is @racket[#f] if the user cancels the dialog, , a
 
 }
 
-@defproc[(get-page-setup-from-user [message (or/c string? #f) #f]
+@defproc[(get-page-setup-from-user [message (or/c label-string? #f) #f]
                                    [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                                    [init-setup (or/c (is-a?/c ps-setup%) #f) #f]
                                    [style null? null])
