@@ -218,6 +218,15 @@
         (tc-e (min (ann -2 Negative-Fixnum) (ann 3 Fixnum)) -NegFixnum)
         (tc-e (min (ann 3 Fixnum) (ann -2 Negative-Fixnum)) -NegFixnum)
         (tc-e (exact->inexact (ann 3 Number)) (t:Un -InexactReal -InexactComplex))
+        (tc-err (let: ([z : 10000000000000 10000000000000]) z)) ; unsafe
+        (tc-err (let: ([z : -4611686018427387904 -4611686018427387904]) z)) ; unsafe
+        (tc-e (let: ([z : -4611686018427387905 -4611686018427387905]) z) (-val -4611686018427387905))
+        (tc-err (let: ([z : -1073741825 -1073741825]) z)) ; unsafe
+        (tc-e (let: ([z : -1073741824 -1073741824]) z) (-val -1073741824))
+        (tc-e (let: ([z : 268435455 268435455]) z) (-val 268435455))
+        (tc-err (let: ([z : 268435456 268435456]) z)) ; unsafe
+        (tc-err (let: ([z : 4611686018427387903 4611686018427387903]) z)) ; unsafe
+        (tc-e (let: ([z : 4611686018427387904 4611686018427387904]) z) (-val 4611686018427387904))
 
         [tc-e/t (lambda: () 3) (t:-> -PosByte : -true-lfilter)]
         [tc-e/t (lambda: ([x : Number]) 3) (t:-> N -PosByte : -true-lfilter)]

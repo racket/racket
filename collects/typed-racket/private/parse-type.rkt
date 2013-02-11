@@ -378,7 +378,23 @@
            [(Error:) Err]
            [_ Err]))]
       [t:atom
-       (-val (syntax-e #'t))]
+       ;; Integers in a "grey area", that is, integers whose runtime type is
+       ;; platform-dependent, cannot be safely assigned singleton types.
+       ;; Short story: (subtype (-val 10000000000000) -Fixnum) has no safe
+       ;;   answer. It's not a fixnum on 32 bits, and saying it's not a fixnum
+       ;;   causes issues with type-dead code detection.
+       ;; Long story: See email trail for PR13501 and #racket IRC logs from
+       ;;   Feb 11 2013.
+       (let ([val (syntax-e #'t)])
+         (when (and (exact-integer? val)
+                    ;; [min-64bit-fixnum, min-portable-fixnum)
+                    (or (and (>= val (- (expt 2 62)))
+                             (<  val (- (expt 2 30))))
+                        ;; (max-portable-index, max-64bit-fixnum]
+                        (and (>  val (sub1 (expt 2 28)))
+                             (<= val (sub1 (expt 2 62))))))
+           (tc-error "non-portable fixnum singleton types are not valid types: ~a" val))
+         (-val val))]
       [_ (tc-error "not a valid type: ~a" (syntax->datum stx))])))
 
 (define (parse-list-type stx)
