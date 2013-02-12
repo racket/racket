@@ -1,6 +1,6 @@
 ; -*- Scheme -*-
 
-(module array mzscheme
+(module array racket
 
 (provide array-make array-ref array-set!
          array-mult array-mult-vector
@@ -89,7 +89,7 @@
           (do ((i 1 (+ i 1))) ((= i n))
             (set! j2 0)
             (do ((j 0 (+ j 1))) ((= j n))
-              (if (not (=  j j1))
+              (when (not (=  j j1))
                 (begin
                   (array-set! m (- i 1) j2 (array-ref a i j))
                   (set! j2 (+ j2 1))
@@ -120,11 +120,11 @@
       (jj 0)
     )
     (do ((i 0 (+ i 1))) ((= i n))
-      (if (not (= i in))
+      (when (not (= i in))
         (begin
           (set! jj 0)
           (do ((j 0 (+ j 1))) ((= j n))
-            (if (not (= j jn))
+            (when (not (= j jn))
               (begin
                 (array-set! m ii jj (array-ref a i j))
                 (set! jj (+ jj 1))

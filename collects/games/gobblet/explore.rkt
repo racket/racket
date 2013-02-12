@@ -3,7 +3,6 @@
 
 (module explore racket
   (require mzlib/unitsig
-           mzlib/list
            "sig.rkt"
            "test.rkt")
 

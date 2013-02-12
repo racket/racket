@@ -2,7 +2,6 @@
   (require games/gl-board-game/gl-board
            racket/class
            (except-in racket/gui define-signature provide-signature-elements)
-           racket/file
            sgl/gl-vectors
            sgl
            mzlib/unitsig

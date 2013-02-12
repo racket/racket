@@ -1,4 +1,4 @@
-(module shapes mzscheme
+(module shapes racket
 
 (require sgl/gl
          sgl/gl-vectors
@@ -413,7 +413,7 @@
     (glBegin GL_QUAD_STRIP)
     (do ((i 0 (+ i 1))) ((= i (+ csides 1)))
       (set! cur (if (< i csides) i (- i csides)))
-      (if (> i 0)
+      (when (> i 0)
         (glNormal3f (/ (+ (vector-ref x cur)
                           (vector-ref x prev)) 2.0)
                     0.0
@@ -463,7 +463,7 @@
       (glBegin GL_QUAD_STRIP)
       (do ((j 0 (+ j 1))) ((= j (+ usides 1)))
         (set! t (if (< j usides) j (- j usides)))
-        (if (not (= j 0))
+        (when (not (= j 0))
           (let*
             ( (c #f) (s #f) )
             (set! a (/ (* (+ i 0.5) 3.1415927) vsides))
@@ -525,10 +525,10 @@
       (set! s (/ d h))
       (do ((i 0 (+ i 1))) ((= i (+ dsides 1)))
         (set! j (if (< i dsides) i (- i dsides)))
-        (if (= t 0)
+        (when (= t 0)
           (set! j (- dsides 1 j))
         )
-        (if (> i 0)
+        (when (> i 0)
           (glNormal3f (* (/ (+ (vector-ref x j)
                                (vector-ref x o)) 2.0) s)
                       (* size c)
@@ -673,7 +673,7 @@
       
     (do ((i 0 (+ i 1))) ((= i spikes))
       (set! j (+ i 1))
-      (if (>= j spikes)
+      (when (>= j spikes)
         (set! j (- j spikes))
       )
       
@@ -713,7 +713,7 @@
       
     (do ((i 0 (+ i 1))) ((= i spikes))
       (set! j (+ i 1))
-      (if (>= j spikes)
+      (when (>= j spikes)
         (set! j (- j spikes))
       )
       

@@ -1,20 +1,19 @@
 ; FIXME:
 ; - object rotation axis could be random per type
 
-(module jewel mzscheme
+(module jewel racket
 
-  (require mzlib/unit
-	   mzlib/string
-           mzlib/class
-           mzlib/file
-           mred
+  (require racket/unit
+           racket/class
+           racket/file
+           racket/gui
            sgl/gl
            sgl/gl-vectors
-	   (only sgl/sgl get-gl-version-number)
-	   "shapes.scm"
-	   "array.scm"
-	   "text.scm"
-	   "../show-scribbling.ss"
+	   (only-in sgl/sgl get-gl-version-number)
+	   "shapes.rkt"
+	   "array.rkt"
+	   "text.rkt"
+	   "../show-scribbling.rkt"
   )
 
   (provide game@)
@@ -189,7 +188,7 @@
 	    ( (or (eq? c #\h) (eq? c #\H))
 	      (show-jewel-help) )
             ( (or (eq? c #\p) (eq? c #\P))
-              (if (equal? gamestate 'PLAYING)
+              (when (equal? gamestate 'PLAYING)
                 (begin
                   (set! freeze (not freeze))
                   (if freeze
@@ -285,7 +284,7 @@
       (define/override (on-paint)
         (with-gl-context
           (lambda ()
-            (if (and initialised expose)
+            (when (and initialised expose)
               (expose)
             )
             (swap-gl-buffers)
@@ -296,7 +295,7 @@
       (define/override (on-size width height)
         (with-gl-context
           (lambda ()
-            (if (not initialised)
+            (when (not initialised)
               (begin
                 (realize)
                 (set! initialised #t)
@@ -339,49 +338,49 @@
         (move (vector-ref move-db (+ iy 2)))
         (type (random 7))
       )
-      (hash-table-put! elem 'type     type )
-      (hash-table-put! elem 'angle    (random 360) )
-      (hash-table-put! elem 'ax       0.0 )
-      (hash-table-put! elem 'ay       1.0 )
-      (hash-table-put! elem 'az       0.0 )
-      (hash-table-put! elem 'fall     0.0 )
-      (hash-table-put! elem 'speed    0.0 )
-      (hash-table-put! elem 'vanish   1.0 )
-      (hash-table-put! elem 'dx       0.0 )
-      (hash-table-put! elem 'dy       0.0 )
-      (hash-table-put! elem 'swapping 0 )
+      (hash-set! elem 'type     type )
+      (hash-set! elem 'angle    (random 360) )
+      (hash-set! elem 'ax       0.0 )
+      (hash-set! elem 'ay       1.0 )
+      (hash-set! elem 'az       0.0 )
+      (hash-set! elem 'fall     0.0 )
+      (hash-set! elem 'speed    0.0 )
+      (hash-set! elem 'vanish   1.0 )
+      (hash-set! elem 'dx       0.0 )
+      (hash-set! elem 'dy       0.0 )
+      (hash-set! elem 'swapping 0 )
 
       (cond
         ; one color per type
         ; one shape for all type
         ( (= jewel-difficulty 1)
-          (hash-table-put! elem 'color type)
-          (hash-table-put! elem 'shape diff-shape)
+          (hash-set! elem 'color type)
+          (hash-set! elem 'shape diff-shape)
         )
         ; one color for all type
         ; one shape per type
         ( (= jewel-difficulty 2)
-          (hash-table-put! elem 'color diff-color)
-          (hash-table-put! elem 'shape type)
+          (hash-set! elem 'color diff-color)
+          (hash-set! elem 'shape type)
         )
         ; one color per type
         ; random shape
         ( (= jewel-difficulty 3)
-          (hash-table-put! elem 'color type)
-          (hash-table-put! elem 'shape (random 7))
+          (hash-set! elem 'color type)
+          (hash-set! elem 'shape (random 7))
         )
         ; random color
         ; one shape per type
         ( (= jewel-difficulty 4)
-          (hash-table-put! elem 'color (random 7))
-          (hash-table-put! elem 'shape type)
+          (hash-set! elem 'color (random 7))
+          (hash-set! elem 'shape type)
         )
         ; default
         ; one color per type
         ; one shape per type
         ( else
-          (hash-table-put! elem 'color type)
-          (hash-table-put! elem 'shape type)
+          (hash-set! elem 'color type)
+          (hash-set! elem 'shape type)
         )
       )
       
@@ -406,7 +405,7 @@
         (vector-set! element-db iy row)
         (do ((ix 0 (+ ix 1))) ((= ix ex))
           (let* 
-            ( (elem (make-hash-table 'equal)) )
+            ( (elem (make-hash)) )
             (vector-set! row ix elem)
             (element-init iy ix)
           )
@@ -417,7 +416,7 @@
   
 
   (define (element-get iy ix prop)
-    (hash-table-get (vector-ref (vector-ref element-db iy) ix)
+    (hash-ref (vector-ref (vector-ref element-db iy) ix)
                     prop (lambda () #f))
   )
 
@@ -425,7 +424,7 @@
   (define (element-set! iy ix prop value)
     (let*
       ( (elem (vector-ref (vector-ref element-db iy) ix)) )
-      (hash-table-put! elem prop value)
+      (hash-set! elem prop value)
     )
   )
 
@@ -455,9 +454,9 @@
       ( (elem1 (vector-ref (vector-ref element-db iy) ix))
         (elem2 (vector-ref (vector-ref element-db jy) jx))
       )
-      (hash-table-for-each 
+      (hash-for-each 
         elem1
-        (lambda (key val) (hash-table-put! elem2 key val))
+        (lambda (key val) (hash-set! elem2 key val))
       )
       ; move array
       (array-set! move-db (+ jy 2) (+ jx 2)
@@ -470,38 +469,38 @@
   ; score number handling functions
   ; -----------------------------------------------------------------
 
-  (define score-numbers (make-hash-table 'equal))
+  (define score-numbers (make-hash))
   (define score-key     0)
   (define score-fade    0.01)
 
   (define (score-add x y z fade value)
     (let*
-      ( (elem (make-hash-table 'equal)) )
-      (hash-table-put! elem 'x x)
-      (hash-table-put! elem 'y y)
-      (hash-table-put! elem 'z z)
-      (hash-table-put! elem 'fade fade)
-      (hash-table-put! elem 'value value)
+      ( (elem (make-hash)) )
+      (hash-set! elem 'x x)
+      (hash-set! elem 'y y)
+      (hash-set! elem 'z z)
+      (hash-set! elem 'fade fade)
+      (hash-set! elem 'value value)
     
-      (hash-table-put! score-numbers score-key elem)
+      (hash-set! score-numbers score-key elem)
       (set! score-key (+ score-key 1))
     )
   )
   
   (define (score-set! elem prop val)
-    (hash-table-put! elem prop val)
+    (hash-set! elem prop val)
   )
 
   (define (score-del! score-key)
-    (hash-table-remove! score-numbers score-key)
+    (hash-remove! score-numbers score-key)
   )
 
   (define (score-get elem prop)
-    (hash-table-get elem prop)
+    (hash-ref elem prop)
   )
 
   (define (score-for-each proc table)
-    (hash-table-for-each
+    (hash-for-each
       table
       (lambda (key val) (proc key val))
     )
@@ -528,9 +527,9 @@
                ) )
           (set! idx (- idx 1))
         )
-        (if (>= idx 0)
+        (when (>= idx 0)
           (begin
-            (if (or empty
+            (when (or empty
                     (and (not empty) (> (- last idx) 0)) )
               (set! slist (cons (substring str idx last) slist))
             )
@@ -581,7 +580,7 @@
 
       (do ((i 0 (+ i 1))) ((or exit? (= i (vector-length high-scores))))
         (set! score (vector-ref high-scores i))
-        (if (> jewel-score (string->number (list-ref score 1)))
+        (when (> jewel-score (string->number (list-ref score 1)))
           (begin
             (do ((j (- (vector-length high-scores) 1) (- j 1)))
                 ((= j i))
@@ -709,7 +708,7 @@
       (do ((i 0 (+ i 1))) ((= i (vector-length levels)))
         (glTranslatef 0.0 -1.8 0.0)
         (glPushMatrix)
-        (if (= (remainder i 2) 0)
+        (when (= (remainder i 2) 0)
           (string-draw (number->string (/ i 2)) )
         )
         (glTranslatef highxname 0.0 0.0)
@@ -757,7 +756,7 @@
     (set! jewel-score   0)
     (set! jewel-level   0)
     (set! jewel-nmoves  0)
-    (set! score-numbers (make-hash-table 'equal))
+    (set! score-numbers (make-hash))
 
     (set! gamestate 'GAME-OVER)
     ;read high scores
@@ -895,10 +894,10 @@
       (do ((iy (- ey 1) (- iy 1))) ((< iy 0))
         (do ((ix 0 (+ ix 1))) ((= ix ex))
           
-          (if (= (element-get iy ix 'vanish) 0.0)
+          (when (= (element-get iy ix 'vanish) 0.0)
             (let ( (finished -1) )
               (do ((k (- iy 1) (- k 1))) ((or (< k 0) (> finished -1)))
-                (if (not (= (element-get k ix 'vanish) 0.0))
+                (when (not (= (element-get k ix 'vanish) 0.0))
                   (set! finished k)
                 )
               )
@@ -935,7 +934,7 @@
       (set! jewel-score (+ jewel-score value))
       (set! jewel-stage (+ jewel-stage len))
       (set! jewel-life  (+ jewel-life  (* value credit)))
-      (if (>= jewel-stage nextlevel)
+      (when (>= jewel-stage nextlevel)
         (begin
           (set! jewel-stage (- jewel-stage nextlevel))
           (set! jewel-level (+ jewel-level 1))
@@ -949,7 +948,7 @@
   (define (declife)
     (unless (eq? gamestate 'GAME-OVER)
       (set! jewel-life (- jewel-life jewel-decay))
-      (if (< jewel-life 0.0)
+      (when (< jewel-life 0.0)
           (let* ( (score #f) (exit? #f) )
             ; set life points to zero
             (set! jewel-life 0.0)
@@ -981,7 +980,7 @@
               (if (>= identical 3)
                 (begin
                   (set! hadsome #t)
-                  (if (not checking)
+                  (when (not checking)
                     (let*
                       ( (x (- ix 1 (/ identical 2.0)))
                         (y (+ iy 0.5))
@@ -1017,7 +1016,7 @@
               (if (>= identical 3)
                 (begin
                   (set! hadsome #t)
-                  (if (not checking)
+                  (when (not checking)
                     (let*
                       ( (x ix)
                         (y (- iy 0.5 (/ identical 2.0)))
@@ -1077,7 +1076,7 @@
       ; check for all combination
       (do ((iy 0 (+ iy 1))) ((= iy ey))
         (do ((ix 0 (+ ix 1))) ((= ix ex))
-          (if (not (= (element-get iy ix 'type)
+          (when (not (= (element-get iy ix 'type)
                       (array-ref move-db (+ iy 2) (+ ix 2))))
             (begin
               (display "wrong iy: ")(display iy)
@@ -1087,7 +1086,7 @@
           ; all 16, possible combinations
           (do ((k 0 (+ k 1))) ((= k 16))
             (set! type (array-ref move-db (+ iy 2) (+ ix 2)))
-            (if (and (= type (array-ref move-db 
+            (when (and (= type (array-ref move-db 
                                         (+ iy 2 (array-ref chkpos k 1))
                                         (+ ix 2 (array-ref chkpos k 0))))
                      (= type (array-ref move-db 
@@ -1144,7 +1143,7 @@
     
     (case action-mode
       ( (ACTION-LOOKING)
-        (if (equal? gamestate 'PLAYING)
+        (when (equal? gamestate 'PLAYING)
           (if (findwins #f)
             (set! action-mode 'ACTION-REMOVING)
             ; check if any move is possible at all ???
@@ -1167,17 +1166,17 @@
         )
       )
       ( (ACTION-WAITING)
-        (if (equal? gamestate 'PLAYING)
+        (when (equal? gamestate 'PLAYING)
           (begin
             (declife)
-            (if tryswap?
+            (when tryswap?
               (set! action-mode 'ACTION-SWAPPING)
             )
           )
         )
       )
       ( (ACTION-SWAPPING ACTION-UNSWAPPING)
-        (if (equal? action-mode 'ACTION-UNSWAPPING)
+        (when (equal? action-mode 'ACTION-UNSWAPPING)
           (declife)
         )
         (set! tryswap? #f)
@@ -1188,7 +1187,7 @@
           (do ((iy 0 (+ iy 1))) ((= iy ey))
             (do ((ix 0 (+ ix 1))) ((= ix ex))
               (set! swap (element-get iy ix 'swapping))
-              (if (not (= swap 0))
+              (when (not (= swap 0))
                 (begin
                   (set! hadsome 1)
                   (set! swap (+ swap 1))
@@ -1210,7 +1209,7 @@
             )
           )
         
-          (if (= hadsome 2)
+          (when (= hadsome 2)
             (cond
               ( (findwins #f) 
 		(set! locked? #f)
@@ -1248,7 +1247,7 @@
           (do ((iy 0 (+ iy 1))) ((= iy ey))
             (do ((ix 0 (+ ix 1))) ((= ix ex))
               (set! vanish (element-get iy ix 'vanish))
-              (if (< vanish 1.0)
+              (when (< vanish 1.0)
                 (begin
                   (set! vanish (- vanish vanishrate))
                   (if (< vanish 0.0)
@@ -1262,7 +1261,7 @@
               )
             )
           )
-          (if (> hadsome 0)
+          (when (> hadsome 0)
             (begin
               (replace)
               (set! action-mode 'ACTION-DROPPING)
@@ -1281,7 +1280,7 @@
           (do ((iy 0 (+ iy 1))) ((= iy ey))
             (do ((ix 0 (+ ix 1))) ((= ix ex))
               (set! fall (element-get iy ix 'fall))
-              (if (> fall 0.0)
+              (when (> fall 0.0)
                 (begin
                   (set! hadsome (+ hadsome 1))
                   (set! fall (- fall (element-get iy ix 'speed)))
@@ -1298,7 +1297,7 @@
               )
             )
           )
-          (if (= hadsome 0)
+          (when (= hadsome 0)
             (set! action-mode 'ACTION-LOOKING)
           )
         ); end of let
@@ -1411,7 +1410,7 @@
     (glLightfv GL_LIGHT1 GL_POSITION (vector->gl-float-vector light1pos))
     (glLightfv GL_LIGHT2 GL_POSITION (vector->gl-float-vector light2pos))
     
-    (if (equal? gamestate 'PLAYING)
+    (when (equal? gamestate 'PLAYING)
       (show-life)
     )
     
@@ -1443,7 +1442,7 @@
           (set! nx (+ x shiftx))
           (set! ny y)
           (set! nz (* (- 1.0 (element-get iy ix 'vanish)) 50.0))
-          (if (not (= (element-get iy ix 'swapping) 0))
+          (when (not (= (element-get iy ix 'swapping) 0))
             (begin
               (set! ang (/ (* (element-get iy ix 'swapping) 3.1415927)
                            2.0
@@ -1452,7 +1451,7 @@
               (set! nx (+ nx (* s (element-get iy ix 'dx))))
               (set! ny (+ ny (* s (element-get iy ix 'dy))))
               (set! s (* t (sin (* ang 2.0))))
-              (if (= (remainder counter 2) 1)
+              (when (= (remainder counter 2) 1)
                 (set! s (- s))
               )
               (set! counter (+ counter 1))
@@ -1466,7 +1465,7 @@
           (set! yt ny)
           (set! zt nz)
 
-          (if (and (equal? gamestate 'PLAYING)
+          (when (and (equal? gamestate 'PLAYING)
                    (= cposx ix) (= cposy iy))
             (begin
               (glEnable GL_LIGHT2)
@@ -1484,7 +1483,7 @@
           
           (glPopMatrix)
 
-          (if (and (equal? gamestate 'PLAYING)
+          (when (and (equal? gamestate 'PLAYING)
                    (= cposx ix) (= cposy iy))
             (glDisable GL_LIGHT2)
           )
@@ -1589,11 +1588,11 @@
     (glMaterialfv GL_FRONT GL_AMBIENT_AND_DIFFUSE
                   (vector->gl-float-vector (vector-ref color-map 6)))
     ; if not playing cover with dim square
-    (if (equal? gamestate 'GAME-OVER)  
+    (when (equal? gamestate 'GAME-OVER)  
       (high-score-render)
     )
   
-    (if (equal? gamestate 'DIFFICULTY)
+    (when (equal? gamestate 'DIFFICULTY)
       (difficulty-render)
     )
   )
@@ -1729,7 +1728,7 @@
       ;    we are playing,
       ;    no action is happening
       ;    and mouse is moved, so try to swap
-      (if (and isdown? 
+      (when (and isdown? 
                (equal? gamestate   'PLAYING)
                (equal? action-mode 'ACTION-WAITING)
                (> (+ (* dx dx) (* dy dy)) (* dist dist))

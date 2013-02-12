@@ -1,10 +1,7 @@
-(module gui mzscheme
+(module gui racket
   (require "board.rkt"
-           "moves.rkt"
-           mred
-           mzlib/class
-           mzlib/list
-           mzlib/etc)
+           racket/gui
+           racket/class)
 
   (provide show-board
            board-canvas%
@@ -16,10 +13,10 @@
            get-piece-size
            pawn-drawn-color
            
-           (struct home-row-c (count color))
-           (struct main-c (count))
-           (struct start-c (color))
-           (struct home-c (color)))
+           (struct-out home-row-c )
+           (struct-out main-c )
+           (struct-out start-c)
+           (struct-out home-c))
   
   ;; a coordinate is either
   ;;   - (make-home-row-c number color)
@@ -27,10 +24,10 @@
   ;;   - (make-start-c color)
   ;;   - (make-home-c color)
   ;; inspectors are to allow comparison with equal?
-  (define-struct home-row-c (count color) (make-inspector))
-  (define-struct main-c (count) (make-inspector))
-  (define-struct start-c (color) (make-inspector))
-  (define-struct home-c (color) (make-inspector))
+  (define-struct home-row-c (count color) #:inspector (make-inspector))
+  (define-struct main-c (count) #:inspector (make-inspector))
+  (define-struct start-c (color) #:inspector (make-inspector))
+  (define-struct home-c (color) #:inspector (make-inspector))
   
   (define (get-cell-size horizontal? w h)
     (if horizontal?
@@ -63,7 +60,7 @@
     (send dc set-brush (send the-brush-list find-or-create-brush (cdr (assq color colors)) 'solid)))
   
   (define draw-board
-    (opt-lambda (board dc w h dx dy draw-pieces?)
+    (lambda (board dc w h dx dy draw-pieces?)
       (let ([smoothing (send dc get-smoothing)])
         (send dc set-smoothing 'aligned)
         (set-color dc 'track-background)

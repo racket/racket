@@ -1,4 +1,4 @@
-#lang mzscheme
+#lang racket
 
 #| 
 
@@ -9,8 +9,6 @@ directory file) and rewriting it into the format described
 in ...
 
 |#
-
-(require mzlib/match)
 
 ;; shrink-file : string -> string
 (define (shrink-file filename)

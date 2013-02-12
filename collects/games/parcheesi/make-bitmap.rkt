@@ -1,10 +1,7 @@
-(module make-bitmap mzscheme
+(module make-bitmap racket
   (require "board.rkt"
-           "moves.rkt"
-           mred
-           mzlib/class
-           mzlib/list
-           mzlib/etc)
+           racket/gui
+           racket/class)
 
   (provide show-board
            board-canvas%
@@ -15,10 +12,10 @@
            get-cell-size
            get-piece-size
            
-           (struct home-row-c (count color))
-           (struct main-c (count))
-           (struct start-c (color))
-           (struct home-c (color)))
+           (struct-out home-row-c)
+           (struct-out main-c)
+           (struct-out start-c)
+           (struct-out home-c))
   
   ;; a coordinate is either
   ;;   - (make-home-row-c number color)
@@ -26,10 +23,10 @@
   ;;   - (make-start-c color)
   ;;   - (make-home-c color)
   ;; inspectors are to allow comparison with equal?
-  (define-struct home-row-c (count color) (make-inspector))
-  (define-struct main-c (count) (make-inspector))
-  (define-struct start-c (color) (make-inspector))
-  (define-struct home-c (color) (make-inspector))
+  (define-struct home-row-c (count color) #:inspector (make-inspector))
+  (define-struct main-c (count) #:inspector (make-inspector))
+  (define-struct start-c (color) #:inspector (make-inspector))
+  (define-struct home-c (color) #:inspector (make-inspector))
   
   (define (get-cell-size horizontal? w h)
     (if horizontal?
@@ -52,7 +49,7 @@
     (send dc set-brush (send the-brush-list find-or-create-brush (cdr (assq color colors)) 'solid)))
   
   (define draw-board
-    (opt-lambda (board dc w h dx dy draw-pieces?)
+    (lambda (board dc w h dx dy draw-pieces?)
       (set-color dc 'track-background)
       (send dc draw-rectangle (+ dx 0) (+ dy (* h 1/3)) w (* h 1/3))
       (send dc draw-rectangle (+ dx (* w 1/3)) (+ dy 0) (* w 1/3) h)

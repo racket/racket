@@ -1,6 +1,6 @@
 #lang racket
 (require mzlib/unitsig
-         (only-in mzlib/unit unit import export)
+         (only-in racket/unit unit import export)
          racket/file
          (except-in racket/gui define-signature provide-signature-elements)
          "sig.rkt"

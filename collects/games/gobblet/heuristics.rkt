@@ -3,8 +3,6 @@
 
 (module heuristics racket
   (require mzlib/unitsig
-           mzlib/etc
-           mzlib/list
            "sig.rkt"
            "plays-3x3.rkt")
 

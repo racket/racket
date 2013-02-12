@@ -1,6 +1,6 @@
 (module make-cards racket
   (require racket/class
-           (prefix-in mred: mred)
+           (prefix-in mred: racket/gui)
            (prefix-in card-class: "card-class.rkt"))
 
   (provide back deck-of-cards make-card)
@@ -77,4 +77,4 @@
 		     (if back-bm 
 			 (make-dim back)
 			 dim-back))
-                   (make-hash 'equal)))))
+                   (make-hash)))))

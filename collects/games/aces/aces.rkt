@@ -7,8 +7,8 @@ possible to remap single click (instead of double click)?
 
 #lang racket
 
-(require games/cards mred mzlib/class mzlib/list mzlib/unit string-constants
-         "../show-scribbling.ss")
+(require games/cards racket/gui racket/class racket/unit string-constants
+         "../show-scribbling.rkt")
 
 (provide game@)
 (define game@ (unit (import) (export)

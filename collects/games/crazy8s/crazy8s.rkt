@@ -1,7 +1,7 @@
 
 #lang racket
 
-(require games/cards mred racket/class racket/unit racket/file
+(require games/cards racket/gui racket/class racket/unit racket/file
          racket/async-channel)
 
 ;; Player record

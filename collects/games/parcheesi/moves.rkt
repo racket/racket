@@ -1,16 +1,14 @@
-(module moves mzscheme
-  (require "board.rkt"
-           mzlib/contract
-           mzlib/list)
+(module moves racket
+  (require "board.rkt")
 
   ;; a move is either:
   ;;  - (make-enter-piece pawn)
   ;;  - (make-move-piece-main pawn start distance)
   ;;  - (make-move-piece-home pawn start distance)
-  (define-struct move () (make-inspector))
-  (define-struct (enter-piece move) (pawn) (make-inspector))
-  (define-struct (move-piece-main move) (pawn start distance) (make-inspector))
-  (define-struct (move-piece-home move) (pawn start distance) (make-inspector))
+  (define-struct move () #:inspector (make-inspector))
+  (define-struct (enter-piece move) (pawn) #:inspector (make-inspector))
+  (define-struct (move-piece-main move) (pawn start distance) #:inspector (make-inspector))
+  (define-struct (move-piece-home move) (pawn start distance) #:inspector (make-inspector))
 
   (provide/contract
    (struct enter-piece ((pawn pawn?)))

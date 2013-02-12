@@ -36,10 +36,9 @@ paint by numbers.
 
 |#
 
-  (require mred
+  (require racket/gui
            framework
-           mzlib/etc
-           mzlib/class)
+           racket/class)
 
   (provide paint-by-numbers-canvas%
            design-paint-by-numbers-canvas%)

@@ -15,9 +15,7 @@ corresponds to the unplayed move! that's confusing.
            "rules.rkt"
            "best-players.rkt"
            framework
-           mzlib/class
-           mzlib/list
-           mred)
+           racket/gui)
   
   (provide gui-game%)
   

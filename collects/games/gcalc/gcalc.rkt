@@ -5,7 +5,7 @@
 
 #lang racket
 
-(require racket/gui "../show-scribbling.rkt" racket/unit mzlib/etc (only-in mzscheme fluid-let))
+(require racket/gui "../show-scribbling.rkt" racket/unit (only-in mzscheme fluid-let))
 (provide game@)
 
 (define customs '())
@@ -555,8 +555,8 @@
                        gcalc-frame '(ok)))))
     (save-as)))
 (define (open-examples)
-  (open (path->string (build-path (this-expression-source-directory)
-                                  "gcalc-examples"))))
+  (open (path->string (build-path (collection-file-path "gcalc-examples" "games" "gcalc" )))))
+
 (define (open . file)
   (maybe-save)
   (let ([f (if (not (null? file))

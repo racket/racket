@@ -1,7 +1,7 @@
-(module text mzscheme
+(module text racket
 
-  (require mred
-           mzlib/class
+  (require racket
+           racket/class
            sgl/gl
            sgl/gl-vectors
   )
@@ -59,7 +59,7 @@
   
   
   ; font database is a hash table
-  (define font-db    (make-hash-table 'equal))
+  (define font-db    (make-hash))
   (define font-gen   #f)
   (define font-scale #f)
   
@@ -122,7 +122,7 @@
         (set! width (interpret-hershey (cadr elem) scale))
         (glEndList)
         
-        (hash-table-put! font-db (car elem) (cons i width))
+        (hash-set! font-db (car elem) (cons i width))
       )
     )
   )
@@ -132,13 +132,13 @@
     (let*
       ( (n (string-length str))
         (c #f) (e #f)
-        (star (hash-table-get font-db #\*))
+        (star (hash-ref font-db #\*))
       )
       (glPushMatrix)
       (glNormal3f 0.0 0.0 1.0)
       (do ((i 0 (+ i 1))) ((= i n))
         (set! c (string-ref str i))
-        (set! e (hash-table-get font-db c (lambda () star) ))
+        (set! e (hash-ref font-db c (lambda () star) ))
         (glCallList (+ font-gen (car e)))
         (glTranslatef (* font-scale (cdr e)) 0.0 0.0)
       )

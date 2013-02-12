@@ -1,5 +1,5 @@
-(module test mzscheme
-  (require mzlib/pretty)
+(module test racket
+  (require racket/pretty)
   (provide test test-list test-err test-results)
   
   (define show-tests? #t)

@@ -1,11 +1,9 @@
-(module all-problems mzscheme
-  (require mzlib/etc
-           mzlib/list
-           mzlib/unitsig
+(module all-problems racket
+  (require mzlib/unitsig
            mzlib/include
            "problem.rkt")
 
-  (require-for-syntax mzlib/etc)
+  
 
   (define-signature paint-by-numbers:all-problems^ (problemss set-names))
   (define-signature paint-by-numbers:problem-set^ (problems set-name))

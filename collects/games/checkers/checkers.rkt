@@ -1,15 +1,12 @@
 #lang racket
 
 (require games/gl-board-game/gl-board
-         racket/class
-         racket/math
          racket/gui
          racket/unit
          sgl/gl-vectors
          sgl
          sgl/gl
          srfi/25/array
-         mrlib/include-bitmap
          "honu-bitmaps.rkt")
 (provide game@)
 
@@ -43,9 +40,10 @@
   (make-image (send bmp get-width) (send bmp get-height)
               (argb->rgba (bitmap->argb bmp))))
 
-(define light-square-img (bitmap->image (include-bitmap "light.jpg")))
+#;(define light-square-img (bitmap->image (include-bitmap "light.jpg")))
+(define light-square-img (bitmap->image (make-object bitmap% (build-path (collection-file-path "light.jpg" "games" "checkers")))))
 (define light-square-color (gl-float-vector .7216 .6471 .5176 1))
-(define dark-square-img (bitmap->image (include-bitmap "dark.jpg")))
+(define dark-square-img (bitmap->image (make-object bitmap% (build-path (collection-file-path "dark.jpg" "games" "checkers")))))
 (define dark-square-color (gl-float-vector .4745 .3569 .2627 1))
 
 (define (color-name->vector name darken?)

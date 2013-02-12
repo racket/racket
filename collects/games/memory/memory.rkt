@@ -1,5 +1,5 @@
-#lang mzscheme
-(require games/cards mred mzlib/class mzlib/unit mzlib/list)
+#lang racket
+(require games/cards racket/gui racket/class racket/unit)
 
 (provide game@)
 
