@@ -133,6 +133,10 @@
     (set-weight-off (->m font-weight/c void?))
     (set-weight-on  (->m font-weight/c void?))))
 
+(define (arity-1-procedure? x)
+  (and (procedure? x)
+       (procedure-arity-includes? x 1)))
+
 (define style-list%/c
   (class/c
     (basic-style (->m (is-a?/c style<%>)))
@@ -143,7 +147,7 @@
     (forget-notification (->m any/c void?))
     (index-to-style (->m exact-nonnegative-integer? (or/c (is-a?/c style<%>) false/c)))
     (new-named-style (->m string? (is-a?/c style<%>) (is-a?/c style<%>)))
-    (notify-on-change (->m (-> (or/c (is-a?/c style<%>) false/c) any) any/c))
+    (notify-on-change (->m arity-1-procedure? any/c))
     (number (->m exact-nonnegative-integer?))
     (replace-named-style (->m string? (is-a?/c style<%>) (is-a?/c style<%>)))
     (style-to-index (->m (is-a?/c style<%>) (or/c exact-nonnegative-integer? false/c)))))
