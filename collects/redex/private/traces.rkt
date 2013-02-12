@@ -521,7 +521,7 @@
                      [else
                       (send status-message set-label 
                             (string-append (term-count (count-snips))
-                                           "(possibly more to find)"))
+                                           " (possibly more to find)"))
                       (send reduce-button enable #t)]))))])
          (with-handlers ((exn:fail? (λ (x) (update-gui #t) (raise x))))
            (do-some-reductions)
