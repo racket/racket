@@ -436,7 +436,7 @@
          `(,@attrs
            [year        ,year]
            [month       ,month]
-           [institution "PLT Scheme Inc."]
+           [institution "PLT Design Inc."]
            [type        "Reference Manual"]
            [number      ,number]
            [#:version   ,ver]

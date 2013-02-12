@@ -2,7 +2,7 @@
 
 (provide md5)
 
-;;; Copyright (c) 2005-2013, PLT Scheme Inc.
+;;; Copyright (c) 2005-2013, PLT Design Inc.
 ;;; Copyright (c) 2002, Jens Axel Soegaard
 ;;;
 ;;; Distributed under the same terms as Racket, by permission.

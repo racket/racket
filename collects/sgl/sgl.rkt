@@ -1,6 +1,6 @@
 ;; sgl -- An OpenGL extension of Racket
 ;;
-;; Copyright (C) 2007-2013 PLT Scheme Inc.
+;; Copyright (C) 2007-2013 PLT Design Inc.
 ;; Copyright (C) 2003-2007 Scott Owens <sowens@cs.utah.edu>
 ;;
 ;; This  library is  free  software; you  can  redistribute it  and/or

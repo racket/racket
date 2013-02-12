@@ -1,6 +1,6 @@
 #lang scheme/base
 ;; Main compilation procedures
-;; (c) 1997-2013 PLT Scheme Inc.
+;; (c) 1997-2013 PLT Design Inc.
 
 ;; The various procedures provided by this library are implemented
 ;;  by dynamically linking to code supplied by the MzLib, dynext, and

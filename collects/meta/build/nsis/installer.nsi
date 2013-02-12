@@ -226,7 +226,7 @@ Section ""
       ; used to also have "VersionMajor" & "VersionMinor" but looks like it's not needed
       WriteRegStr       HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${RKTRegName}" "HelpLink" "http://racket-lang.org/"
       WriteRegStr       HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${RKTRegName}" "URLInfoAbout" "http://racket-lang.org/"
-      WriteRegStr       HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${RKTRegName}" "Publisher" "PLT Scheme Inc."
+      WriteRegStr       HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${RKTRegName}" "Publisher" "PLT Design Inc."
       WriteRegDWORD     HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${RKTRegName}" "NoModify" "1"
       WriteRegDWORD     HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${RKTRegName}" "NoRepair" "1"
   !endif

@@ -3,7 +3,7 @@
  * Purpose:     GRacket main file, including a hodge-podge of global stuff
  * Author:      Matthew Flatt
  * Created:     1995
- * Copyright:   (c) 2004-2013 PLT Scheme Inc.
+ * Copyright:   (c) 2004-2013 PLT Design Inc.
  * Copyright:   (c) 1995-2000, Matthew Flatt
  */
 

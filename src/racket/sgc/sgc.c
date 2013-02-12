@@ -1,7 +1,7 @@
 /*
   SenoraGC, a relatively portable conservative GC for a slightly
     cooperative environment
-  Copyright (c) 2004-2013 PLT Scheme Inc.
+  Copyright (c) 2004-2013 PLT Design Inc.
   Copyright (c) 1996-98 Matthew Flatt
   All rights reserved.
 
