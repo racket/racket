@@ -2,7 +2,10 @@
 
 (require scribble/html)
 
-(define-syntax-rule (define* id E) (begin (define id E) (provide id)))
+(define-syntax define*
+  (syntax-rules ()
+    [(_ (id . xs) E ...) (begin (define (id . xs) E ...) (provide id))]
+    [(_ id E)            (begin (define id E) (provide id))]))
 
 (define ((make-link url . text) . alternate)
   (a href: url (if (null? alternate) text alternate)))
@@ -47,15 +50,15 @@
 
 (define* -bootstrap @make-link["http://www.bootstrapworld.org/"]{Bootstrap})
 
-(provide -rcon)
-(define (-rcon #:year [year #f] 
-               [body (if year 
-                         (format "~a" year)
-                         "RacketCon")])
-  (make-link (string-append
-              "http://con.racket-lang.org/"
-              (case year
-                [(2011) "2011/"]
-                [(#f 2012) ""]
-                [else (error 'rcon "unknown year: ~e" year)]))
-             body))
+(define* (-rcon [year #f] . text)
+  (define years '(2012 2011))
+  (a href: (list "http://con.racket-lang.org/"
+                 (and year (not (eq? year (car years))) (list year "/")))
+     (cond [(pair? text) text]
+           [(not year) "RacketCon"]
+           [else year])))
+
+(define* (-wiki [page #f] . text)
+  (a href: (list "https://github.com/plt/racket/wiki"
+                 (and page (list "/" (regexp-replace #rx" " page "-"))))
+     (if (null? text) (or page "Racket wiki") text)))
