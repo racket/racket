@@ -14,7 +14,7 @@ exec racket "$0" "$@"
 (define installer
   (match (current-command-line-arguments)
     [(vector installer) installer]
-    [(vector _ ...) (err "usage: test-installer <instalelr-file-name>")]))
+    [(vector _ ...) (err "usage: test-installer <installer-file-name>")]))
 
 (define (exe name [just-path? #f])
   (define path (or (find-executable-path name)
