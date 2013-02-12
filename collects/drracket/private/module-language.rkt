@@ -1902,7 +1902,9 @@
                  (dirty-timer-pending? ts))
             (line-of-interest)
             (send tab set-oc-status (dirty #f))
-            (send oc-timer stop)])
+            (send oc-timer stop)]
+           [else
+            (send tab set-oc-status (dirty #f))])
          (oc-maybe-start-something)])))
 
   (define/oc-log (oc-timer-expired)
