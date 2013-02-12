@@ -5,9 +5,9 @@ possible to remap single click (instead of double click)?
 
 |#
 
-#lang racket
+#lang racket/base
 
-(require games/cards racket/gui racket/class racket/unit string-constants
+(require games/cards racket/gui racket/unit string-constants
          "../show-scribbling.rkt")
 
 (provide game@)
@@ -71,36 +71,32 @@ possible to remap single click (instead of double click)?
 
   ;; erase all old snips
   (send table remove-cards draw-pile)
-  (for-each (lambda (stack)
-              (send table remove-cards (stack-cards stack)))
-            stacks)
+  (for ([stack (in-list stacks)])
+    (send table remove-cards (stack-cards stack)))
 
   ;; restore old state
   (set! draw-pile (state-draw-pile state))
-  (for-each (lambda (stack cards) (set-stack-cards! stack cards))
-            stacks
-            (state-stacks state))
+  (for ([stack (in-list stacks)]
+        [cards (in-list (state-stacks state))])
+    (set-stack-cards! stack cards))
 
   ;; restore GUI
-  (for-each (lambda (draw-pile-card)
-              (send table add-card draw-pile-card 0 0))
-            draw-pile)
+  (for ([draw-pile-card (in-list draw-pile)])
+    (send table add-card draw-pile-card 0 0))
   (send table move-cards-to-region draw-pile draw-pile-region)
-  (for-each (lambda (draw-pile-card)
-              (send table card-face-down draw-pile-card)
-              (send table card-to-front draw-pile-card))
-            (reverse draw-pile))
+  (for ([draw-pile-card (in-list (reverse draw-pile))])
+    (send table card-face-down draw-pile-card)
+    (send table card-to-front draw-pile-card))
 
-  (for-each (lambda (stack)
-              (let ([num-cards (length (stack-cards stack))])
-                (send table add-cards (stack-cards stack) 0 0)
-                (send table move-cards (stack-cards stack)
-                      (stack-x stack)
-                      (stack-y stack)
-                      (lambda (i)
-                        (values 0 (* (- num-cards i 1) card-space)))))
-              (send table cards-face-up (stack-cards stack)))
-            stacks)
+  (for ([stack (in-list stacks)])
+    (define num-cards (length (stack-cards stack)))
+    (send table add-cards (stack-cards stack) 0 0)
+    (send table move-cards (stack-cards stack)
+          (stack-x stack)
+          (stack-y stack)
+          (lambda (i)
+            (values 0 (* (- num-cards i 1) card-space))))
+    (send table cards-face-up (stack-cards stack)))
   (send table end-card-sequence))
 
 ;; undo-stack : (listof state)
@@ -138,8 +134,8 @@ possible to remap single click (instead of double click)?
 
 (define (reset-game)
   (send table remove-cards draw-pile)
-  (for-each (lambda (stack) (send table remove-cards (stack-cards stack)))
-            stacks)
+  (for ([stack (in-list stacks)])
+    (send table remove-cards (stack-cards stack)))
 
   (set! undo-stack null)
   (set! redo-stack null)
@@ -148,61 +144,57 @@ possible to remap single click (instead of double click)?
          [set-stack
           (lambda (which)
             (set-stack-cards! (which stacks) (list (which deck))))])
-    (for-each (lambda (card)
-                (send card user-can-move #f)
-                (send card user-can-flip #f))
-              deck)
+    (for ([card (in-list deck)])
+      (send card user-can-move #f)
+      (send card user-can-flip #f))
     (set! draw-pile (cddddr deck))
     (set-stack car)
     (set-stack cadr)
     (set-stack caddr)
     (set-stack cadddr))
 
-  (for-each (lambda (stack)
-              (send table add-cards
-                    (stack-cards stack)
-                    (stack-x stack)
-                    (stack-y stack)
-                    (position-cards stack))
-              (for-each (lambda (card) (send card flip))
-                        (stack-cards stack)))
-            stacks)
+  (for ([stack (in-list stacks)])
+    (send table add-cards
+          (stack-cards stack)
+          (stack-x stack)
+          (stack-y stack)
+          (position-cards stack))
+    (for ([card (in-list (stack-cards stack))]) (send card flip)))
 
   (send table add-cards-to-region draw-pile draw-pile-region))
 
 (define (move-from-deck)
   (save-undo)
   (unless (null? draw-pile)
-    (let ([move-one
-           (lambda (select)
-             (let ([stack (select stacks)]
-                   [card (select draw-pile)])
-               (set-stack-cards! stack (cons card (stack-cards stack)))
-               (send table card-to-front card)
-               (send table flip-card card)))])
+    (define (move-one select)
+      (let ([stack (select stacks)]
+            [card (select draw-pile)])
+        (set-stack-cards! stack (cons card (stack-cards stack)))
+        (send table card-to-front card)
+        (send table flip-card card)))
 
-      (send table begin-card-sequence)
-      (move-one car)
-      (move-one cadr)
-      (move-one caddr)
-      (move-one cadddr)
-      (send table end-card-sequence)
+    (send table begin-card-sequence)
+    (move-one car)
+    (move-one cadr)
+    (move-one caddr)
+    (move-one cadddr)
+    (send table end-card-sequence)
 
-      (let ([cards-to-move (list (car draw-pile)
-                                 (cadr draw-pile)
-                                 (caddr draw-pile)
-                                 (cadddr draw-pile))])
-        (send table move-cards cards-to-move
-              0 0
-              (lambda (i)
-                (let ([stack (list-ref stacks i)])
-                  (let-values ([(dx dy) ((position-cards stack) 0)])
-                    (values (+ dx (stack-x stack))
-                            (+ dy (stack-y stack))))))))
+    (let ([cards-to-move (list (car draw-pile)
+                               (cadr draw-pile)
+                               (caddr draw-pile)
+                               (cadddr draw-pile))])
+      (send table move-cards cards-to-move
+            0 0
+            (lambda (i)
+              (define stack (list-ref stacks i))
+              (define-values [dx dy] ((position-cards stack) 0))
+              (values (+ dx (stack-x stack))
+                      (+ dy (stack-y stack))))))
 
-      (set! draw-pile (cddddr draw-pile))
+    (set! draw-pile (cddddr draw-pile))
 
-      (send table move-cards-to-region draw-pile draw-pile-region))))
+    (send table move-cards-to-region draw-pile draw-pile-region)))
 
 (define (move-to-empty-spot card stack)
   (save-undo)
@@ -220,19 +212,17 @@ possible to remap single click (instead of double click)?
   (remove-card-from-stacks card))
 
 (define (remove-card-from-stacks card)
-  (let ([old-cards (map stack-cards stacks)])
-    (for-each (lambda (stack)
-                (set-stack-cards! stack (remq card (stack-cards stack))))
-              stacks)
-    (for-each (lambda (stack old-cards)
-                (unless (equal? (stack-cards stack) old-cards)
-                  (send table move-cards
-                        (stack-cards stack)
-                        (stack-x stack)
-                        (stack-y stack)
-                        (position-cards stack))))
-              stacks
-              old-cards)))
+  (define old-cards (map stack-cards stacks))
+  (for ([stack (in-list stacks)])
+    (set-stack-cards! stack (remq card (stack-cards stack))))
+  (for ([stack     (in-list stacks)]
+        [old-cards (in-list old-cards)])
+    (unless (equal? (stack-cards stack) old-cards)
+      (send table move-cards
+            (stack-cards stack)
+            (stack-x stack)
+            (stack-y stack)
+            (position-cards stack)))))
 
 (send table set-single-click-action
       (lambda (card)
@@ -275,21 +265,19 @@ possible to remap single click (instead of double click)?
                          #f
                          (send (car stack-cards) get-suit))))
                    stacks)])
-
-         (if (member #f suits/false)
-           #f
-           (and (memq 'clubs suits/false)
-                (memq 'diamonds suits/false)
-                (memq 'hearts suits/false)
-                (memq 'spades suits/false))))))
+         (and (not (member #f suits/false))
+              (memq 'clubs    suits/false)
+              (memq 'diamonds suits/false)
+              (memq 'hearts   suits/false)
+              (memq 'spades   suits/false)))))
 
 (define (won?)
   (and (game-over?)
        (andmap (lambda (x)
-                 (let ([cards (stack-cards x)])
-                   (and (not (null? cards))
-                        (null? (cdr cards))
-                        (= 1 (send (car cards) get-value)))))
+                 (define cards (stack-cards x))
+                 (and (not (null? cards))
+                      (null? (cdr cards))
+                      (= 1 (send (car cards) get-value))))
                stacks)))
 
 (define (check-game-over)

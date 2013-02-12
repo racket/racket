@@ -14,7 +14,7 @@ four stacks of cards.
 
 You may also move any card from the bottom of one of the stacks to an
 empty stack by clicking it.  If there are still cards in the deck on
-the right, you may click the deck to deal four new cards, one onto the
+the left, you may click the deck to deal four new cards, one onto the
 bottom of each stack.
 
 Good Luck!
