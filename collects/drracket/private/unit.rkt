@@ -3403,8 +3403,6 @@ module browser threading seems wrong.
         (set-show-menu-sort-key logger-menu-item 205)
         
         
-        
-          
         (set! show-line-numbers-menu-item
               (new menu:can-restore-menu-item%
                    [label (if (show-line-numbers?)
@@ -3416,6 +3414,32 @@ module browser threading seems wrong.
                                (preferences:set 'drracket:show-line-numbers? (not value))
                                (show-line-numbers! (not value)))]))
         (set-show-menu-sort-key show-line-numbers-menu-item 302)
+        
+        (let ()
+          (define (font-adjust adj label key shortcut)
+            (define (adj-font _1 _2)
+              (preferences:set
+               'framework:standard-style-list:font-size
+               (adj (preferences:get
+                     'framework:standard-style-list:font-size))))
+            (define (on-demand item)
+              (define lab 
+                (format 
+                 label 
+                 (adj 
+                  (preferences:get
+                   'framework:standard-style-list:font-size))))
+              (send item set-label lab))
+            (define item
+             (new menu:can-restore-menu-item%
+                  (shortcut shortcut)
+                  (label "")
+                  (parent (get-show-menu))
+                  (callback adj-font)
+                  (demand-callback on-demand)))
+            (set-show-menu-sort-key item key))
+          (font-adjust add1 (string-constant increase-font-size) -2 #\=)
+          (font-adjust sub1 (string-constant decrease-font-size) -3 #\-))
         
         (let ([split
                (new menu:can-restore-menu-item%

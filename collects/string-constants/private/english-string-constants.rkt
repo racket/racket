@@ -577,6 +577,10 @@ please adhere to these guidelines:
  (example-text "Example Text:")
  (only-warn-once "Only warn once when definitions and interactions are not synchronized")
  
+ ; font size menu items in the 'view' menu; the ~a is filled with a number (font size)
+ (increase-font-size "Increase Font Size (To ~a)")
+ (decrease-font-size "Decrease Font Size (To ~a)")
+  
  ; warning message when lockfile is around
  (waiting-for-pref-lock "Waiting for the preferences lockfile...")
  (pref-lock-not-gone

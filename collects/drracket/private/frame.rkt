@@ -3,6 +3,8 @@
            racket/match
            racket/class
            racket/string
+           racket/file
+           racket/math
            "drsig.rkt"
            mred
            framework
@@ -10,7 +12,6 @@
            net/head
            setup/plt-installer
            help/bug-report
-           racket/file
            setup/unpack)
   
   (import [prefix drracket:unit: drracket:unit^]
@@ -630,6 +631,13 @@
         [(and (number? x) (string? y)) #t]
         [(and (string? x) (number? y)) #f]))
     (define sorted-items (sort items cmp))
+    
+    (define (different-slots? item-key next-item-key)
+      (or (not (= (quotient item-key 100)
+                  (quotient next-item-key 100)))
+          (not (= (sgn item-key)
+                  (sgn next-item-key)))))
+    
     (for ([item (in-list sorted-items)]
           [next-item (in-list (append (cdr sorted-items) (list #f)))])
       (define item-key (get-key item))
@@ -637,7 +645,7 @@
       (define add-sep?
         (cond
           [(and (number? item-key) (number? next-item-key))
-           (not (= (quotient item-key 100) (quotient next-item-key 100)))]
+           (different-slots? item-key next-item-key)]
           [(or (and (string? item-key) (string? next-item-key))
                (not next-item-key))
            #f]
