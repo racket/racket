@@ -15,6 +15,11 @@
     @irc-quick
     @parlist[@strong{RacketCon}
              @text{@-rcon{RacketCon} is our annual conference: @-rcon[#:year 2012] and @-rcon[#:year 2011].}]
+    @parlist[@strong{Wiki}
+             @text{@a[href: "https://github.com/plt/racket/wiki"]{Wiki Main Page}, including:}
+             @text{@a[href: "https://github.com/plt/racket/wiki/Intro-Projects"]{Introductory projects} — find projects to help contribute to Racket.}
+             @text{@a[href: "https://github.com/plt/racket/wiki/Videos"]{Videos} — Watch tutorials, interviews, and more.}
+             ]
     @parlist[@strong{PLT Design Inc.}
       @text{@blog — announcements, helpful hints, and thoughtful rants.}
       @text{@a[href: "http://twitter.com/#!/racketlang"]{Twitter}
