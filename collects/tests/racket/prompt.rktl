@@ -392,5 +392,34 @@
    other-tag))
 
 ;;----------------------------------------
+;; check clean-up when aborting to initial prompt:
+
+(let ([v '?])
+  (sync
+   (thread (lambda ()
+             (with-continuation-mark
+                 'x 1
+               (abort-current-continuation
+                (default-continuation-prompt-tag)
+                (lambda ()
+                  (set! v (continuation-mark-set-first #f 'x))))))))
+  (test #f 'marks-reset v))
+
+(let ([v 0])
+  (sync
+   (thread (lambda ()
+             (dynamic-wind
+                 void
+                 (lambda ()
+                   (abort-current-continuation
+                    (default-continuation-prompt-tag)
+                    (lambda ()
+                      (abort-current-continuation
+                       (default-continuation-prompt-tag)
+                       void))))
+                 (lambda () (set! v (add1 v)))))))
+  (test 1 values v))
+
+;;----------------------------------------
 
 (report-errs)

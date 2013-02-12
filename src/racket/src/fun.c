@@ -1158,10 +1158,12 @@ void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread, Schem
 #ifdef MZ_PRECISE_GC
   void *external_stack;
 #endif
+  int num_vals = p->ku.k.i1;
+  void *val = p->ku.k.p1;
 
   if (scheme_active_but_sleeping)
     scheme_wake_up();
-
+  
   if (eb) {
     prompt = allocate_prompt(&available_prompt);
     initialize_prompt(p, prompt, PROMPT_STACK(prompt));
@@ -1178,59 +1180,75 @@ void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread, Schem
     external_stack = NULL;
 #endif
 
-  scheme_save_env_stack_w_thread(envss, p);
-  save_dynamic_state(p, &save_dyn_state);
-
-  if (dyn_state) {
-    restore_dynamic_state(dyn_state, p);
-    dyn_state = NULL;
-  }
-
   scheme_create_overflow(); /* needed even if scheme_overflow_jmp is already set */
 
-  if (prompt) {
-    scheme_push_continuation_frame(&cframe);
-    scheme_set_cont_mark(barrier_prompt_key, (Scheme_Object *)prompt);
-  }
-
   save = p->error_buf;
-  p->error_buf = &newbuf;
-
+    
   while (1) {
 
+    scheme_save_env_stack_w_thread(envss, p);
+    save_dynamic_state(p, &save_dyn_state);
+    
+    if (dyn_state) {
+      restore_dynamic_state(dyn_state, p);
+      dyn_state = NULL;
+    }
+    
+    if (prompt) {
+      scheme_push_continuation_frame(&cframe);
+      scheme_set_cont_mark(barrier_prompt_key, (Scheme_Object *)prompt);
+    }
+    
+    p->error_buf = &newbuf;
+
     if (scheme_setjmp(newbuf)) {
+      int again;
+
       p = scheme_current_thread;
+
       if (SAME_OBJ(p->cjs.jumping_to_continuation, (Scheme_Object *)original_default_prompt)) {
         /* an abort to the thread start; act like the default prompt handler,
            but remember to jump again */
-        p->ku.k.i1 = p->cjs.num_vals;
-        p->ku.k.p1 = p->cjs.val;
+        num_vals = p->cjs.num_vals;
+        val = p->cjs.val;
         reset_cjs(&p->cjs);
         k = apply_again_k;
         need_final_abort = 1;
+        again = 1;
       } else {
-        if (!new_thread) {
-          scheme_restore_env_stack_w_thread(envss, p);
+        num_vals = 0;
+        val = NULL;
+        again = 0;
+      }
+
+      if (!new_thread || again) {
+        scheme_restore_env_stack_w_thread(envss, p);
 #ifdef MZ_PRECISE_GC
-          if (scheme_set_external_stack_val)
-            scheme_set_external_stack_val(external_stack);
+        if (scheme_set_external_stack_val)
+          scheme_set_external_stack_val(external_stack);
 #endif
-          if (prompt) {
-            scheme_pop_continuation_frame(&cframe);
+        if (prompt) {
+          scheme_pop_continuation_frame(&cframe);
+          if (!again) {
             if (old_pcc == scheme_prompt_capture_count) {
               /* It wasn't used */
               available_prompt = prompt;
             }
           }
-          restore_dynamic_state(&save_dyn_state, p);
         }
-        scheme_longjmp(*save, 1);
+        restore_dynamic_state(&save_dyn_state, p);
       }
+
+      if (!again)
+        scheme_longjmp(*save, 1);
     } else {
       if (new_thread) {
         /* check for initial break before we do anything */
         scheme_check_break_now();
       }
+
+      p->ku.k.i1 = num_vals;
+      p->ku.k.p1 = val;
       
       v = k();
 
