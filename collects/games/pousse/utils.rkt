@@ -1,4 +1,4 @@
-(module utils mzscheme
+(module utils racket
   ; See boardsig.rkt for the core utilities.
   (require "board-size.rkt"
            "board.rkt")

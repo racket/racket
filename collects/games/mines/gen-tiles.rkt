@@ -1,8 +1,7 @@
 
-(module gen-tiles mzscheme
-  (require mzlib/class
-           mred
-           mzlib/math)
+(module gen-tiles racket
+  (require racket/gui
+           racket/math)
 
   (define SIZE 24)
 

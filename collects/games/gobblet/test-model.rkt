@@ -1,16 +1,14 @@
 ;; Some tests for the model
 
-(module test-model mzscheme
+(module test-model racket
   (require mzlib/unitsig
-           mzlib/etc
-           mzlib/list
            "sig.rkt"
            "model.rkt"
            "test.rkt")
 
   ;; Test basic procs:
   (define (test-folding n)
-    (begin-with-definitions
+    
      (define BOARD-SIZE n)
      (define-values/invoke-unit/sig model^
        model-unit #f config^)
@@ -32,13 +30,12 @@
                  (lambda (a b)
                    (if (= (car a) (car b))
                      (< (cdr a) (cdr b))
-                     (< (car a) (car b))))))))
+                     (< (car a) (car b)))))))
   (test-folding 3)
   (test-folding 4)
 
   ;; Test available-off-board for 3x3:
   (let ()
-    (begin-with-definitions
      (define BOARD-SIZE 3)
      (define-values/invoke-unit/sig model^
        model-unit #f config^)
@@ -53,11 +50,11 @@
 	 (test '((2 2) (1) (0 0)) (available-off-board b3 'yellow))
 	 (let ([b4 (move b3 (list-ref red-pieces 2) #f #f 0 1 values void)])
 	   (test '((1 1) (0 0)) (available-off-board b4 'red))
-	   (test '((2 2) (1) (0 0)) (available-off-board b4 'yellow)))))))
+	   (test '((2 2) (1) (0 0)) (available-off-board b4 'yellow))))))
 
   ;; Test available-off-board for 4x4:
   (let ()
-    (begin-with-definitions
+    
      (define BOARD-SIZE 4)
      (define-values/invoke-unit/sig model^
        model-unit #f config^)
@@ -78,16 +75,16 @@
 	   (let ([b5 (move b4 (list-ref red-pieces 3) #f #f 0 3 values void)])
 	     (test '((3 2 1 0) (2 1 0) (1 0)) (available-off-board b5 'red))
 	     (let ([b6 (move b5 (list-ref red-pieces 2) #f #f 3 3 values void)])
-	       (test '((3 2 1 0) (1 0) (1 0)) (available-off-board b6 'red)))))))))
+	       (test '((3 2 1 0) (1 0) (1 0)) (available-off-board b6 'red))))))))
 
-  (define x-table (make-hash-table 'equal))
+  (define x-table (make-hash))
   (define (testx id board)
-    (test id (hash-table-get x-table board
+    (test id (hash-ref x-table board
 			     (lambda ()
-			       (when (hash-table-get x-table id (lambda () #f))
+			       (when (hash-ref x-table id (lambda () #f))
 				 (error 'testx "id already mapped\n"))
-			       (hash-table-put! x-table id #t)
-			       (hash-table-put! x-table board id)
+			       (hash-set! x-table id #t)
+			       (hash-set! x-table board id)
 			       id))))
 
   ;; Given a canonicalize function, a board, the current player,
@@ -153,7 +150,7 @@
       (car key+xform)))
   
   ;; Test canonicalization, 3x3
-  (begin-with-definitions
+(let ()  
    (define BOARD-SIZE 3)
    (define-values/invoke-unit/sig model^
      model-unit #f config^)
@@ -185,10 +182,10 @@
 	       (testx 27 (c b5 'red))
 	       (testx 35 (c b5 'yellow)))))))))
 
-  (set! x-table (make-hash-table 'equal))
+  (set! x-table (make-hash))
 
   ;; Test canonicalization, 4x4
-  (begin-with-definitions
+  
    (define BOARD-SIZE 4)
    (define-values/invoke-unit/sig model^
      model-unit #f config^)
@@ -213,7 +210,7 @@
 	   (testx 13 (c b2 'yellow))
 	   (let ([b3 (move b2 (list-ref yellow-pieces 1) #f #f 1 0 values void)])
 	     (testx 17 (c b3 'red))
-	     (testx 25 (c b3 'yellow))))))))
+	     (testx 25 (c b3 'yellow)))))))
 
   (define (basic-tests size xform 4x4-finish-pos)
     ;; When xform is the identity, then we build toward
@@ -223,7 +220,7 @@
     ;;  - - - -
     ;; The xform changes the cooridnate system so that we
     ;; test rows and columns in addition to this diagonal.
-    (begin-with-definitions
+    
      (define BOARD-SIZE size)
 
      (define-values (i00 j00) (xform 0 0))
@@ -359,7 +356,7 @@
 		4x4-finish-pos)
        ;; 4 x 4 game: now red can cover small yellow, because it's
        ;; part of 3 in a row
-       (begin-with-definitions
+       
 	(test #t (3-in-a-row? b7.2 i20 j20 'yellow))
 	(test #f (3-in-a-row? b7.2 i20 j20 'red))
 
@@ -375,7 +372,7 @@
 
 	(define b8.2x (move b7.2 med-yellow #f #f (car 4x4-finish-pos) (cdr 4x4-finish-pos) values void))
 	(test #f (winner? b8.2x 'red))
-	(test #t (winner? b8.2x 'yellow))))))
+	(test #t (winner? b8.2x 'yellow))))
 	
   (define (rotate i j)
     (case i

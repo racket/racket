@@ -1,12 +1,10 @@
-(module play-game mzscheme
+(module play-game racket
   (require "gui.rkt"
            "admin.rkt"
            "board.rkt"
-           "moves.rkt"
+           #;"moves.rkt"
            "die.rkt"
-           mzlib/math
-           mzlib/class
-           mred)
+           racket/gui)
   
   (provide play-game)
   

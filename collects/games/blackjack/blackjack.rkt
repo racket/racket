@@ -29,9 +29,9 @@
 ;;
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#lang mzscheme
+#lang racket
 
-(require games/cards mred mzlib/class mzlib/list mzlib/unit)
+(require games/cards racket/gui racket/class racket/unit)
 
 (provide game@)
 (define game@ (unit (import) (export)

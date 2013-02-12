@@ -1,7 +1,7 @@
 
-(module snipclass mzscheme
-  (require mred
-	   mzlib/class)
+(module snipclass racket
+  (require racket/gui
+	   racket/class)
   (provide sc)
 
   (define sc (make-object snip-class%))

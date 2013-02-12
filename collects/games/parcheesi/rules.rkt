@@ -1,14 +1,12 @@
-(module rules mzscheme
+(module rules racket
   (provide show-rules)
   
   (require "board.rkt"
            "moves.rkt"
            "gui.rkt"
-
-           mzlib/class
            xml
            browser/htmltext
-           mred)
+           racket/gui)
 
   (define board-size 250)
   
@@ -223,7 +221,7 @@
               "Parcheesi typically requires a player to enter the board, if possible. That is not required "
               "here however." )))))
       
-  (define table (make-hash-table 'equal))
+  (define table (make-hash))
   
   (define (replace-!!s t)
     (let loop ([starts (reverse (send t find-string-all "!!"))]
@@ -234,7 +232,7 @@
                      [end (car ends)]
                      [name (send t get-text (+ start 2) end)])
                 (send t delete start (+ end 2) #f)
-                (send t insert (new board-snip% (board (hash-table-get table name))) start start #f)
+                (send t insert (new board-snip% (board (hash-ref table name))) start start #f)
                 (loop (cdr starts) (cdr ends)))])))
 
   (define scroll-step-pixels 12)
@@ -267,5 +265,5 @@
   
   (define (moves-make-image/link moves name)
     (let-values ([(board bonuses) (make-moves (new-board) moves)])
-      (hash-table-put! table name board)
+      (hash-set! table name board)
       (format " !!~a:: " name))))

@@ -5,7 +5,7 @@ corresponds to the unplayed move! that's confusing.
 
 |#
 
-(module admin-gui mzscheme
+(module admin-gui racket
   (require "gui.rkt"
            "die.rkt"
            "interfaces.rkt"
@@ -15,16 +15,14 @@ corresponds to the unplayed move! that's confusing.
            "rules.rkt"
            "best-players.rkt"
            framework
-           mzlib/class
-           mzlib/list
-           mred)
+           racket/gui)
   
   (provide gui-game%)
   
   ;; move-candidate = (make-move-candidate coordinate move (listof number))
-  (define-struct move-candidate (move dice) (make-inspector))
+  (define-struct move-candidate (move dice) #:inspector (make-inspector))
   
-  (define-struct past (board color roll) (make-inspector))
+  (define-struct past (board color roll) #:inspector (make-inspector))
   (print-struct #t)
   
   (define gui-game%
@@ -688,20 +686,20 @@ corresponds to the unplayed move! that's confusing.
   
   ;; eliminate-duplicates : (listof X) -> (listof X)
   (define (eliminate-duplicates lst)
-    (let ([ht (make-hash-table 'equal)])
-      (for-each (lambda (x) (hash-table-put! ht x #t)) lst)
-      (hash-table-map ht (lambda (x y) x))))
+    (let ([ht (make-hash)])
+      (for-each (lambda (x) (hash-set! ht x #t)) lst)
+      (hash-map ht (lambda (x y) x))))
   
   ;; collapse-same-coordinates : (listof (cons coordinate (listof move-candidate)))
   ;;                          -> (listof (cons coordinate (listof move-candidate)))
   (define (collapse-same-coordinates l)
-    (let ([ht (make-hash-table 'equal)])
+    (let ([ht (make-hash)])
       (for-each (lambda (pr)
-                  (hash-table-put! ht (car pr)
+                  (hash-set! ht (car pr)
                                    (append (cdr pr)
-                                           (hash-table-get ht (car pr) (lambda () '())))))
+                                           (hash-ref ht (car pr) (lambda () '())))))
                 l)
-      (hash-table-map ht cons)))
+      (hash-map ht cons)))
   
   ;; like find-roll-coordinates, but only for the main track of the board
   (define (find-home-roll-coordinates board roll color)

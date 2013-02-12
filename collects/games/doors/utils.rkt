@@ -1,12 +1,9 @@
-(module utils mzscheme
+(module utils racket
   (require sgl/gl-vectors
            sgl
-           mzlib/math
-           mred
-           mzlib/list
-           mzlib/etc
-           mzlib/class
-           mzlib/kw
+           racket/math
+           racket/gui
+           racket/class
            "doors.rkt")
   
   (provide door-bm
@@ -106,7 +103,7 @@
               (gl-end-list)
               list-id))))
   
-  (define/kw (make-i-player-icon game
+  (define (make-i-player-icon game
                                  #:optional
                                  [data #f]
                                  #:key
@@ -183,14 +180,14 @@
         (gl-light-model-v 'light-model-ambient (gl-float-vector 1.0 1.0 1.0 0.0))
         (gl-disable 'light0)))
 
-  (define/kw (make-key-thing-icon game
+  (define (make-key-thing-icon game
                                   #:optional
                                   [data #f]
                                   #:key
                                   [color yellow])
     (let ([dl (make-key-dl game color)])
       (send game make-thing-icon
-            (lambda/kw (#:optional [just-shadow? #f]) 
+            (lambda (#:optional [just-shadow? #f]) 
               (with-light just-shadow? (lambda ()
                                          (gl-scale 0.5 0.5 0.5)
                                          (gl-call-list dl))))

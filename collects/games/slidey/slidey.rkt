@@ -1,8 +1,5 @@
-#lang mzscheme
-(require mzlib/etc
-         mzlib/class
-         mzlib/unit
-         mred)
+#lang racket
+(require racket/gui)
 
 (provide game@)
 

@@ -18,7 +18,7 @@ move.
 The following example player program always mimics the other player,
 choosing T1 if it has to go first:
 
- ;; In the file my-robot.scm
+ ;; In the file my-robot.rkt
  (module my-robot mzscheme
    (provide robot)
 

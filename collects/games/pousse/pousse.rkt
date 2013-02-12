@@ -3,9 +3,7 @@
            "board.rkt"
            "board-size.rkt"
            "../show-scribbling.rkt"
-           racket/class
-           racket/unit
-           mred
+           racket/gui
            (prefix-in robot: "robot.rkt"))
   
   (provide game@)

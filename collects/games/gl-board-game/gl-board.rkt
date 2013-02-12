@@ -1,16 +1,16 @@
-(module gl-board mzscheme
+(module gl-board racket
   (require sgl
            sgl/gl
            sgl/gl-vectors
-           mzlib/class
-           mzlib/list
-           mred)
+           racket/class
+           racket/list
+           racket/gui)
   
   (provide gl-board%)
 
-  (define-struct space (draw info))
-  (define-struct piece (x y z draw info enabled?))
-  (define-struct heads-up (w h draw info))
+  (define-struct space (draw info) #:mutable)
+  (define-struct piece (x y z draw info enabled?) #:mutable)
+  (define-struct heads-up (w h draw info) #:mutable)
   
   (define (get-info x)
     (cond

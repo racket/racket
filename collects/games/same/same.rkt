@@ -1,9 +1,7 @@
 #lang racket/base
 (require racket/class
          racket/unit
-         racket/list
          racket/gui/base
-         racket/math
          "../show-scribbling.rkt"
          "same-lib.rkt")
 

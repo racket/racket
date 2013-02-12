@@ -1,19 +1,16 @@
 
-(module board mzscheme
-  (require mzlib/contract
-           mzlib/list
-           mzlib/etc)
+(module board racket
   
   ;; color = (symbols 'blue 'green 'red 'yellow)
   ;; color : color
   ;; id : (union 0 1 2 3)
-  (define-struct pawn (color id index) (make-inspector))
+  (define-struct pawn (color id index) #:inspector (make-inspector))
   
   ;; v : (vectorof loc) length is always 16
-  (define-struct board (v) (make-inspector))
+  (define-struct board (v) #:inspector (make-inspector))
   
   ;; loc = (union 'start 'home number[main-loc] home-row-loc)
-  (define-struct home-row-loc (num color) (make-inspector))
+  (define-struct home-row-loc (num color) #:inspector (make-inspector))
   
   (define color (symbols 'red 'green 'blue 'yellow))
   
@@ -23,12 +20,12 @@
    (pawn-id (pawn? . -> . (integer-in 0 4)))
    (pawn-color (pawn? . -> . color)))
   
-  (provide (rename build-pawn make-pawn)
+  (provide (rename-out [build-pawn make-pawn])
            pawn?
            new-board
            for-each-pawn/loc
            
-           (rename make-old-style-board make-board)
+           (rename-out [make-old-style-board make-board])
            
            board-start
            
@@ -204,15 +201,15 @@
   
   ;; find-blockades : board -> (listof loc)
   (define (find-blockades board)
-    (let ([ht (make-hash-table 'equal)]
+    (let ([ht (make-hash)]
           [blockades '()])
       (for-each-pawn/loc
        board
        (lambda (pawn loc)
-         (when (hash-table-get ht
+         (when (hash-ref ht
                                loc
                                (lambda ()
-                                 (hash-table-put! ht loc #t)
+                                 (hash-set! ht loc #t)
                                  #f))
            (set! blockades (cons loc blockades)))))
       blockades))
@@ -262,11 +259,11 @@
   ;; p1 : pawn
   ;; p2 : pawn
   ;; (pawn<=? p1 p2) is true
-  (define-struct blockade (loc p1 p2) (make-inspector))
+  (define-struct blockade (loc p1 p2) #:inspector (make-inspector))
 
   ;; find-blockades/color : board color -> (listof blockade)
   (define (find-blockades/color board color)
-    (let ([ht (make-hash-table 'equal)]
+    (let ([ht (make-hash)]
           [v (board-v board)]
           [offset (find-pawn-index color 0)])
       (let loop ([i 0]
@@ -278,8 +275,8 @@
              (cond
                [(eq? loc 'start) (loop (+ i 1) blockades)]
                [(eq? loc 'home) (loop (+ i 1) blockades)]
-               [(hash-table-get ht loc (lambda ()
-                                         (hash-table-put! ht loc i)
+               [(hash-ref ht loc (lambda ()
+                                         (hash-set! ht loc i)
                                          #f))
                 =>
                 (lambda (old-i)

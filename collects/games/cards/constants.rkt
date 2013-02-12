@@ -1,7 +1,7 @@
 
-(module constants mzscheme
-  (require mzlib/class
-	   mred)
+(module constants racket
+  (require racket/class
+	   racket/gui)
 
   (provide ANIMATION-STEPS
 	   ANIMATION-TIME

@@ -38,7 +38,7 @@
                (o-loop (cdr objs))]))]))))
   
   ;; a hack.
-  ;; this adds a help button to the world.ss window
+  ;; this adds a help button to the world.rkt window
   (thread
    (λ ()
      (let loop ([n 0])
@@ -66,6 +66,6 @@
   
   (parameterize ([current-custodian sub-custodian])
     (parameterize ([current-namespace (make-base-namespace)])
-      (namespace-attach-module orig-namespace 'mred/mred)
+      (namespace-attach-module orig-namespace 'racket/gui)
       (namespace-attach-module orig-namespace 'racket/class)
       ((dynamic-require chat-noir 'main)))))

@@ -3,10 +3,8 @@
 ;; speed up future games (i.e., converts learned strategy to a compact
 ;; form).
 
-(module check mzscheme
+(module check racket
   (require mzlib/unitsig
-           mzlib/etc
-           mzlib/list
            "sig.rkt"
            "model.rkt"
            "explore.rkt"
@@ -35,7 +33,7 @@
 
 		    (let ([search (mk-search)]
 			  [cnt 0]
-			  [move-map (make-hash-table 'equal)]
+			  [move-map (make-hash)]
 			  [canonicalize (make-canonicalize)])
 		      (let loop ([board empty-board]
 				 [depth 0]
@@ -54,7 +52,7 @@
 			 [else
 			  (let ([key+xform (canonicalize board 'red)])
 			    (list-ref
-			     (hash-table-get 
+			     (hash-ref
 			      move-map (car key+xform)
 			      (lambda ()
 				(let ([play (search 300.0 1 2 'red board history)])
@@ -105,10 +103,10 @@
 						     (apply-xform (cdr key+xform)
 								  (list-ref play 3) (list-ref play 4))
 						     (add1 max-depth))])
-					(hash-table-put! move-map (car key+xform) l)
+					(hash-set! move-map (car key+xform) l)
 					l))))))
 			     3))]))
-		      (hash-table-for-each move-map
+		      (hash-for-each move-map
 					   (lambda (k v)
 					     (when (> (list-ref v 3) 1)
 					       (printf "~s\n" (cons k v)))))))

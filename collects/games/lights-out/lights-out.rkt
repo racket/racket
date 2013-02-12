@@ -1,9 +1,9 @@
-#lang mzscheme
+#lang racket
 (require "board.rkt"
          "../show-scribbling.rkt"
-         mred
-         mzlib/class
-         mzlib/unit)
+         racket/gui
+         racket/class
+         racket/unit)
 
 (provide game@ lights-out^)
 
