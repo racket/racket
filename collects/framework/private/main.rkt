@@ -101,7 +101,7 @@
     (define base-fors
       '(for for/list for/hash for/hasheq for/hasheqv for/and for/or 
          for/lists for/first for/last for/fold for/vector for/flvector
-         for/sum for/product))
+         for/sum for/product for/set))
     (define untyped-fors
       (append base-fors
               (map (λ (x) (string->symbol (regexp-replace #rx"^for" (symbol->string x) "for*")))
