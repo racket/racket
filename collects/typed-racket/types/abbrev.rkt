@@ -4,7 +4,7 @@
 
 (require (rename-in (rep type-rep object-rep filter-rep rep-utils) [make-Base make-Base*])
          (utils tc-utils)
-         "base-abbrev.rkt"
+         "base-abbrev.rkt" "match-expanders.rkt"
          (types union numeric-tower)
          (env mvar-env)
          racket/list
@@ -25,7 +25,7 @@
 
 
 (provide (except-out (all-defined-out) make-Base)
-         (all-from-out "base-abbrev.rkt")
+         (all-from-out "base-abbrev.rkt" "match-expanders.rkt")
          (rename-out [make-Listof -lst]
                      [make-MListof -mlst]))
 
@@ -438,7 +438,7 @@
 
 (define/cond-contract (-not-filter t i [p null])
      (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
-     (if (or (type-equal? (make-Union null) t) (and (identifier? i) (is-var-mutated? i)))
+     (if (or (type-equal? -Bottom t) (and (identifier? i) (is-var-mutated? i)))
          -top
          (make-NotTypeFilter t p i)))
 

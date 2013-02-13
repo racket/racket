@@ -2,7 +2,8 @@
 
 (require "../utils/utils.rkt")
 
-(require (types numeric-predicates)
+(require (rename-in (types numeric-predicates base-abbrev)
+                    [simple-Un *Un])
          (rename-in (rep type-rep) [make-Base make-Base*])
          racket/match
          racket/function
@@ -25,19 +26,6 @@
 ;; all the types defined here are numeric
 (define (make-Base name contract predicate marshaled)
   (make-Base* name contract predicate marshaled #t))
-
-;; Simple union constructor.
-;; Flattens nested unions and sorts types, but does not check for
-;; overlapping subtypes.
-(define-syntax *Un
-  (syntax-rules ()
-    [(_ . args) (make-Union (remove-dups (sort (apply append (map flat (list . args))) type<?)))]))
-
-(define (flat t)
-  (match t
-    [(Union: es) es]
-    [_ (list t)]))
-
 
 
 ;; Numeric hierarchy
