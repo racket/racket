@@ -502,7 +502,9 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	      wchar_t mbuf[256];
               int len;
 	      if ((type != 'e') && !es) {
-		if ((len = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+		if ((len = FormatMessageW((FORMAT_MESSAGE_FROM_SYSTEM
+                                           | FORMAT_MESSAGE_IGNORE_INSERTS), 
+                                          NULL,
                                           en, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                                           mbuf, 255, NULL))) {
 		  int i;
