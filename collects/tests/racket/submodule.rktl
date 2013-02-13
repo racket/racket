@@ -798,6 +798,7 @@
 (test 10 values x-from-submodule-out)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check `syntax-local-submodules' in compile and expand modes
 
 (let ([e '(module x racket/base
             (require (for-syntax racket/base))
@@ -816,6 +817,21 @@
   (parameterize ([current-namespace (make-base-namespace)])
     (eval (expand e))
     (test '(m) dynamic-require ''x 'x)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check context on `#%module-begin' for a subform
+
+(module check-submodule-module-begin '#%kernel
+  (module mb racket/base
+    (require (for-syntax racket/base))
+    (provide (except-out (all-from-out racket/base) #%module-begin)
+             (rename-out [module-begin #%module-begin]))
+    (define-syntax (module-begin stx)
+      #`(#%module-begin #,(datum->syntax stx ;; should have initial imports
+                                         '(provide (all-defined-out))))))
+  (module n (submod ".." mb)
+    (void)
+    (void)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

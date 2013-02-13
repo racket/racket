@@ -7154,7 +7154,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     check_mb = 1;
   }
 
-  fm = scheme_datum_to_syntax(fm, form, form, 0, 2);
+  fm = scheme_datum_to_syntax(fm, form, mb_ctx, 0, 2);
 
   if (check_mb) {
     SCHEME_EXPAND_OBSERVE_TAG(rec[drec].observer, fm);
