@@ -91,6 +91,7 @@ Keep documentation and tests up to date.
 @include-section["lazy-require.scrbl"]
 @include-section["list.scrbl"]
 @include-section["logging.scrbl"]
+@include-section["macro-testing.scrbl"]
 @include-section["markparam.scrbl"]
 @include-section["match.scrbl"]
 @include-section["open-place.scrbl"]
