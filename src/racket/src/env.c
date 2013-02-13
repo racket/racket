@@ -2162,7 +2162,7 @@ local_make_intdef_context(int argc, Scheme_Object *argv[])
   
   if (argc && SCHEME_TRUEP(argv[0])) {
     if (!SAME_TYPE(scheme_intdef_context_type, SCHEME_TYPE(argv[0])))
-      scheme_wrong_contract("syntax-local-bind-syntaxes", "(or/c internal-definition-context? #f)", 0, argc, argv);
+      scheme_wrong_contract("syntax-local-make-definition-context", "(or/c internal-definition-context? #f)", 0, argc, argv);
     senv = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(argv[0]))[0];
     if (!scheme_is_sub_env(senv, env)) {
       scheme_contract_error("syntax-local-make-definition-context",
