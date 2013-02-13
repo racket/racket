@@ -1,10 +1,10 @@
-(module base mzscheme
-  (require "prims.rkt"
-           "runtime.rkt")
+#lang racket
+(require "prims.rkt"
+         "runtime.rkt")
 
-  (define base-importing-stx #'here)
+(define base-importing-stx #'here)
 
-  (provide (all-from mzscheme)
-           (all-from "prims.rkt")
-           (all-from "runtime.rkt")
-           base-importing-stx))
+(provide (all-from-out racket)
+         (all-from-out "prims.rkt")
+         (all-from-out "runtime.rkt")
+         base-importing-stx)
