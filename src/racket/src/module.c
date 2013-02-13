@@ -6219,8 +6219,10 @@ static void execute_submodules(Scheme_Module *m, int pre, Scheme_Env *genv,
     }
     
     while (!SCHEME_NULLP(p)) {
-      do_module_execute_recur(SCHEME_CAR(p), genv, set_cache, set_in_pre, prefix, 
-                              (Scheme_Object *)m);
+      if (!SCHEME_SYMBOLP(SCHEME_CAR(p))) {
+        do_module_execute_recur(SCHEME_CAR(p), genv, set_cache, set_in_pre, prefix, 
+                                (Scheme_Object *)m);
+      }
       p = SCHEME_CDR(p);
     }
   }
@@ -6508,10 +6510,12 @@ static Scheme_Object *do_module_clone(Scheme_Object *data, int jit)
     if (l1 && !SCHEME_NULLP(l1)) {
       l2 = scheme_null;
       while (!SCHEME_NULLP(l1)) {
-        sm = do_module_clone(SCHEME_CAR(l1), jit);
-        if (!SAME_OBJ(sm, SCHEME_CAR(l1)))
-          submod_changed = 1;
-        l2 = scheme_make_pair(sm, l2);
+        if (!SCHEME_SYMBOLP(SCHEME_CAR(l1))) {
+          sm = do_module_clone(SCHEME_CAR(l1), jit);
+          if (!SAME_OBJ(sm, SCHEME_CAR(l1)))
+            submod_changed = 1;
+          l2 = scheme_make_pair(sm, l2);
+        }
         l1 = SCHEME_CDR(l1);
       }
       if (submod_changed) {
@@ -9256,8 +9260,20 @@ static Scheme_Object *expand_submodules(Scheme_Compile_Expand_Info *rec, int dre
       env->genv->module->pre_submodules = l;
     }
   } else if (!SCHEME_NULLP(mods)) {
-    /* setting pre_submodules to '() indicates that there were submodules during expansion */
-    env->genv->module->pre_submodules = scheme_null;
+    if (post) {
+      /* setting pre_submodules to '() indicates that there were submodules during expansion */
+      env->genv->module->pre_submodules = scheme_null;
+    } else {
+      l = env->genv->module->pre_submodules;
+      if (!l) l = scheme_null;
+      /* extract just the name: */
+      mod = SCHEME_CAR(mods);
+      mod = SCHEME_STX_CDR(mod);
+      mod = SCHEME_STX_CAR(mod);
+      mod = SCHEME_STX_VAL(mod);
+      l = scheme_make_pair(mod, l);
+      env->genv->module->pre_submodules = l;
+    }
   }
 
   return mods;
@@ -10950,13 +10966,15 @@ static int check_is_submodule(Scheme_Object *modname, Scheme_Object *_genv)
     l = genv->module->pre_submodules;
     if (l) {
       while (!SCHEME_NULLP(l)) {
-        n = scheme_resolved_module_path_value(((Scheme_Module *)SCHEME_CAR(l))->modname);
-        while (SCHEME_PAIRP(SCHEME_CDR(n))) {
-          n = SCHEME_CDR(n);
+        if (!SCHEME_SYMBOLP(SCHEME_CAR(l))) {
+          n = scheme_resolved_module_path_value(((Scheme_Module *)SCHEME_CAR(l))->modname);
+          while (SCHEME_PAIRP(SCHEME_CDR(n))) {
+            n = SCHEME_CDR(n);
+          }
+          n = SCHEME_CAR(n);
+          if (SAME_OBJ(n, modname))
+            return 1;
         }
-        n = SCHEME_CAR(n);
-        if (SAME_OBJ(n, modname))
-          return 1;
         l = SCHEME_CDR(l);
       }
     }

@@ -2525,11 +2525,15 @@ static Scheme_Object *local_submodules(int argc, Scheme_Object *argv[])
     l = env->genv->module->pre_submodules;
     if (l) {
       while (!SCHEME_NULLP(l)) {
-        n = scheme_resolved_module_path_value(((Scheme_Module *)SCHEME_CAR(l))->modname);
-        while (SCHEME_PAIRP(SCHEME_CDR(n))) {
-          n = SCHEME_CDR(n);
+        n = SCHEME_CAR(l);
+        if (!SCHEME_SYMBOLP(n)) {
+          n = scheme_resolved_module_path_value(((Scheme_Module *)n)->modname);
+          while (SCHEME_PAIRP(SCHEME_CDR(n))) {
+            n = SCHEME_CDR(n);
+          }
+          n = SCHEME_CAR(n);
         }
-        r = scheme_make_pair(SCHEME_CAR(n), r);
+        r = scheme_make_pair(n, r);
         l = SCHEME_CDR(l);
       }
     }

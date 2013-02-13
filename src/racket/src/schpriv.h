@@ -3294,7 +3294,8 @@ typedef struct Scheme_Module
   Scheme_Object *rn_stx; /* NULL, #t, a stx for a rename, a vector of stxes, or a pair to delay shifts */
 
   Scheme_Object *submodule_path; /* path to this module relative to enclosing top-level module */
-  Scheme_Object *pre_submodules, *post_submodules; /* list of modules (when compiled or loaded as a group) */
+  Scheme_Object *pre_submodules; /* list of modules (when compiled or loaded as a group) or symbols (during expand) */
+  Scheme_Object *post_submodules; /* list of modules (when compiled or loaded as a group) */
   Scheme_Object *supermodule; /* supermodule for which this is in {pre,post}_submodules */
   Scheme_Object *submodule_ancestry; /* se by compile/expand, temporary */
 } Scheme_Module;

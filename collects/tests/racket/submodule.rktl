@@ -799,4 +799,24 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ([e '(module x racket/base
+            (require (for-syntax racket/base))
+            
+            (module m racket/base)
+            
+            (define-syntax (m stx)
+              #`(quote #,(syntax-local-submodules)))
+            
+            (define x (m))
+            x
+            (provide x))])
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval e)
+    (test '(m) dynamic-require ''x 'x))
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval (expand e))
+    (test '(m) dynamic-require ''x 'x)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
