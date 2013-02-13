@@ -2522,7 +2522,9 @@ static Scheme_Object *local_submodules(int argc, Scheme_Object *argv[])
     not_currently_transforming("syntax-local-submodules");
 
   if (env->genv->module) {
-    l = env->genv->module->pre_submodules;
+    l = env->genv->module->pre_submodule_names;
+    if (!l)
+      l = env->genv->module->pre_submodules;
     if (l) {
       while (!SCHEME_NULLP(l)) {
         n = SCHEME_CAR(l);

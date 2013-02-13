@@ -2654,6 +2654,7 @@ static int module_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(m->submodule_path, gc);
   gcMARK2(m->pre_submodules, gc);
   gcMARK2(m->post_submodules, gc);
+  gcMARK2(m->pre_submodule_names, gc);
   gcMARK2(m->supermodule, gc);
   gcMARK2(m->submodule_ancestry, gc);
 
@@ -2701,6 +2702,7 @@ static int module_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(m->submodule_path, gc);
   gcFIXUP2(m->pre_submodules, gc);
   gcFIXUP2(m->post_submodules, gc);
+  gcFIXUP2(m->pre_submodule_names, gc);
   gcFIXUP2(m->supermodule, gc);
   gcFIXUP2(m->submodule_ancestry, gc);
 
