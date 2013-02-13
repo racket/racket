@@ -133,7 +133,7 @@
     (with-handlers ([exn:fail? (λ (x)
                                   (log-exn x "getting info")
                                   #f)])
-      (get-info/full pkg-dir #:namespace metadata-ns)))
+      (get-info/full pkg-dir #:namespace metadata-ns)))  
   (define v
     (if get-info
         (get-info key get-default)
@@ -330,6 +330,7 @@
      (build-path (pkg-installed-dir) pkg-name)]))
 
 (define (remove-package pkg-name)
+  (printf "Removing ~a\n" pkg-name)
   (match-define (pkg-info orig-pkg checksum _)
                 (package-info pkg-name))
   (define pkg-dir (package-directory pkg-name))
@@ -381,11 +382,20 @@
        (list->set
         (append-map (package-dependencies metadata-ns)
                     (set->list
-                     remaining-pkg-db-set)))))
+                     remaining-pkg-db-set)))))    
     (unless (set-empty? deps-to-be-removed)
       (pkg-error (~a "cannot remove packages that are dependencies of other packages\n"
                      "  dependencies:~a")
-                 (format-list (set->list deps-to-be-removed)))))
+                 (format-list 
+                  (map
+                   (λ (p)
+                     (define ds
+                       (filter (λ (dp)
+                                 (member p ((package-dependencies metadata-ns) dp)))
+                               (set->list
+                                remaining-pkg-db-set)))
+                     (~a p " (required by: " ds ")"))
+                   (set->list deps-to-be-removed))))))
   (for-each remove-package pkgs))
 
 (define (install-packages
@@ -1014,7 +1024,7 @@
           ;; preseved from install time:
           (pkg-desc orig-pkg-source #f pkg-name auto?))]))
 
-(define ((package-dependencies metadata-ns) pkg-name)
+(define ((package-dependencies metadata-ns) pkg-name)  
   (get-metadata metadata-ns (package-directory pkg-name) 
                 'deps (lambda () empty)
                 #:checker check-dependencies))
@@ -1040,13 +1050,14 @@
      (printf "No updates available\n")
      #f]
     [else
+     (printf "Updating: ~a\n" to-update)
      (install-cmd
       #:updating? #t
       #:pre-succeed (λ () (for-each (compose remove-package pkg-desc-name) to-update))
       #:dep-behavior dep-behavior
       to-update)]))
 
-(define (show-cmd indent)
+(define (show-cmd indent #:directory? [dir? #f])
   (let ()
     (define db (read-pkg-db))
     (define pkgs (sort (hash-keys db) string-ci<=?))
@@ -1054,17 +1065,23 @@
         (printf " [none]\n")
         (table-display
          (list*
-          (list (format "~aPackage[*=auto]" indent) "Checksum" "Source")
+          (list* (format "~aPackage[*=auto]" indent) "Checksum" "Source"
+                 (if dir?
+                   (list "Directory")
+                   empty))
           (for/list ([pkg (in-list pkgs)])
             (match-define (pkg-info orig-pkg checksum auto?) (hash-ref db pkg))
-            (list (format "~a~a~a"
-                          indent
-                          pkg
-                          (if auto?
-                              "*"
-                              ""))
-                  (format "~a" checksum)
-                  (format "~a" orig-pkg))))))))
+            (list* (format "~a~a~a"
+                           indent
+                           pkg
+                           (if auto?
+                             "*"
+                             ""))
+                   (format "~a" checksum)
+                   (format "~a" orig-pkg)
+                   (if dir?
+                     (list (~a (package-directory pkg)))
+                     empty))))))))
 
 (define (config-cmd config:set key+vals)
   (cond
@@ -1212,7 +1229,9 @@
                  #:force? boolean?)
         void)]
   [show-cmd
-   (-> string? void)]
+   (->* (string?)
+        (#:directory? boolean?)
+        void)]
   [install-cmd
    (->* ((listof pkg-desc?))
         (#:dep-behavior dep-behavior/c

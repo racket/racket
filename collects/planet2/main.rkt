@@ -155,6 +155,8 @@
       (setup no-setup installation #f))))]
  [show
   "Show information about installed packages"
+  #:once-each
+  [#:bool dir ("-d") "Show the directory where the package is installed"]
   #:once-any
   [(#:sym scope [installation user shared] #f) scope ()
    ("Show only for package <scope>, one of"
@@ -182,13 +184,14 @@
         (printf "~a\n" (case mode
                          [(i) "Installation-wide:"]
                          [(s) "User-specific, all-version:"]
-                         [(u) "User-specific, version-specific:"])))
+                         [(u) (format "User-specific, version-specific (~a):"
+                                      (or version (r:version)))])))
       (parameterize ([current-install-system-wide? (eq? mode 'i)]
                      [current-install-version-specific? (eq? mode 'u)]
                      [current-pkg-error (pkg-error 'show)]
                      [current-show-version (or version (r:version))])
         (with-package-lock/read-only
-         (show-cmd (if only-mode "" " "))))))]
+         (show-cmd (if only-mode "" " ") #:directory? dir)))))]
  [config
   "View and modify the package configuration"
   #:once-each

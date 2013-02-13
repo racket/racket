@@ -16,7 +16,7 @@
 (pkg-tests
  (shelly-begin
   (initialize-indexes)
-
+  
   (shelly-case
    "remove and show"
    (shelly-case "remove of not installed package fails"
@@ -29,7 +29,7 @@
                    $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\nplanet2-test1 +[a-f0-9]+ +\\(file .+tests/planet2/test-pkgs/planet2-test1.zip\\)\n"
                    $ "raco pkg install test-pkgs/planet2-test2.zip"
                    $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\nplanet2-test1 +[a-f0-9]+ +\\(file .+tests/planet2/test-pkgs/planet2-test1.zip\\)\nplanet2-test2 +[a-f0-9]+ +\\(file .+tests/planet2/test-pkgs/planet2-test2.zip\\)\n"
-                   $ "raco pkg remove planet2-test1" =exit> 1
+                   $ "raco pkg remove planet2-test1" =exit> 1 =stderr> #rx"planet2-test1 \\(required by: \\(planet2-test2\\)\\)"
                    $ "raco pkg remove planet2-test2"
                    $ "raco pkg show -u" =stdout>  #rx"Package\\[\\*=auto\\] +Checksum +Source\nplanet2-test1 +[a-f0-9]+ +\\(file .+tests/planet2/test-pkgs/planet2-test1.zip\\)\n")
    (shelly-install "remove of dep can be forced"

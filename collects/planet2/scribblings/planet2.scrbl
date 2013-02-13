@@ -343,6 +343,8 @@ listed, this command fails atomically. It accepts the following @nonterm{option}
 
  @itemlist[
 
+ @item{@Flag{d} --- Adds a column in the output for the directory the package is installed to.} 
+
  @item{@DFlag{scope} @nonterm{scope} --- Shows only packages in @nonterm{scope}, which is one of
   @itemlist[
    @item{@exec{installation} --- Show only installation-wide packages.}
