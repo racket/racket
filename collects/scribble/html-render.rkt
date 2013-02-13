@@ -1399,9 +1399,7 @@
                     ;; doesn't, Firefox, pays attention to wbr. Some
                     ;; browsers ignore wbr, but at least they don't do
                     ;; strange things with it.
-                    (if (equal? #\- (string-ref i (caar m)))
-                      '(wbr)
-                      `(span ([class "mywbr"]) " "))
+                    #x200b
                     (render-other (substring i (cdar m)) part ri))
              (ascii-ize i)))]
         [(symbol? i)
