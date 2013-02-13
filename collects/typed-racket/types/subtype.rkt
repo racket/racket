@@ -2,7 +2,8 @@
 (require (except-in "../utils/utils.rkt" infer)
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         (types utils resolve base-abbrev numeric-tower substitute current-seen)
+         (types utils resolve base-abbrev match-expanders
+                numeric-tower substitute current-seen)
          (env type-name-env)
          racket/match unstable/match
          racket/function

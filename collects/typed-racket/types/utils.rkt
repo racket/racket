@@ -3,21 +3,16 @@
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         "substitute.rkt" "tc-result.rkt"
+         "substitute.rkt" "tc-result.rkt" "tc-error.rkt"
          (rep free-variance) 
          (env index-env tvar-env)
          racket/match
          racket/set
          racket/list
-         (contract-req)
-         "tc-error.rkt")
+         (contract-req))
 
 
-;; Don't provide things that may be exported with a contract
-(provide (except-out (all-from-out "tc-result.rkt" "tc-error.rkt")
-                     tc-error/expr
-                     lookup-fail
-                     lookup-type-fail))
+(provide (all-from-out "tc-result.rkt" "tc-error.rkt"))
 
 
 ;; unfold : Type -> Type
@@ -87,13 +82,9 @@
  [instantiate-poly ((or/c Poly? PolyDots?) (listof Type/c) . -> . Type/c)]
  [instantiate-poly-dotted
   (PolyDots? (listof Type/c) Type/c symbol? . -> . Type/c)] 
- [tc-error/expr ((string?) (#:return any/c #:stx syntax?) #:rest (listof any/c)
-                 . ->* . any/c)]
  [fv (Rep? . -> . (listof symbol?))]
  [fi (Rep? . -> . (listof symbol?))]
  [fv/list ((listof Type/c) . -> . (set/c symbol?))]
- [lookup-fail (identifier? . -> . Type/c)]
- [lookup-type-fail (identifier? . -> . Type/c)] 
  [current-poly-struct (parameter/c (or/c #f poly?))]
  )
 

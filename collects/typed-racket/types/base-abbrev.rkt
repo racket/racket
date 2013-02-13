@@ -4,15 +4,14 @@
 (require "../utils/utils.rkt")
 
 (require (rep type-rep)
-         racket/match
-         (types resolve)
-         (for-template racket/base)
-         (for-syntax racket/base syntax/parse racket/list))
+         racket/match racket/list
+         (for-template racket/base))
 
 (provide (all-defined-out))
 
 ;Top and error types
 (define Univ (make-Univ))
+(define -Bottom (make-Union null))
 (define Err (make-Error))
 
 ;A Type that corresponds to the any contract for the
@@ -23,29 +22,31 @@
 (define -Char (make-Base 'Char #'char? char? #'-Char #f))
 
 
-;;List expanders
-(define-match-expander Listof:
-  (lambda (stx)
-    (syntax-parse stx
-      [(_ elem-pat (~optional var-pat #:defaults ([var-pat #'var])))
-       (syntax/loc stx (Mu: var-pat (Union: (list (Value: '()) (Pair: elem-pat (F: var-pat))))))])))
+;; Simple union type, does not check for overlaps
 
-(define-match-expander List:
-  (lambda (stx)
-    (syntax-parse stx
-      [(_ elem-pats)
-       #'(app untuple (? values elem-pats))])))
 
-(define (untuple t)
-  (match (resolve t)
-    [(Value: '()) null]
-    [(Pair: a b) (cond [(untuple b) => (lambda (l) (cons a l))]
-                       [else #f])]
-    [_ #f]))
+;; Union constructor
+;; Normalizes representation by sorting types.
+;; Type * -> Type
+;; The input types can be union types, but should not have a complicated
+;; overlap relationship.
+(define simple-Un
+  (let ()
+    ;; List[Type] -> Type
+    ;; Argument types should not overlap or be union types
+    (define (make-union* types)
+      (match types
+        [(list t) t]
+        [_ (make-Union types)]))
 
-(define-match-expander MListof:
-  (lambda (stx)
-    (syntax-parse stx
-      [(_ elem-pat)
-       #'(Mu: var (Union: (list (Value: '()) (MPair: elem-pat (F: var)))))])))
+    ;; Type -> List[Type]
+    (define (flat t)
+      (match t
+        [(Union: es) es]
+        [_ (list t)]))
 
+    (case-lambda
+      [() -Bottom]
+      [(t) t]
+      [args
+       (make-union* (remove-dups (sort (append-map flat args) type<?)))])))
