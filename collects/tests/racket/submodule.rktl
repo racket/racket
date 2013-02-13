@@ -798,7 +798,8 @@
 (test 10 values x-from-submodule-out)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; check `syntax-local-submodules' in compile and expand modes
+;; check `syntax-local-submodules' (and `syntax-local-module-exports'
+;; for submodules) in compile and expand modes
 
 (let ([e '(module x racket/base
             (require (for-syntax racket/base))
@@ -806,6 +807,7 @@
             (module m racket/base)
             
             (define-syntax (m stx)
+              (syntax-local-module-exports ''m) ; should succeed
               #`(quote #,(syntax-local-submodules)))
             
             (define x (m))

@@ -10966,8 +10966,12 @@ static int check_is_submodule(Scheme_Object *modname, Scheme_Object *_genv)
     l = genv->module->pre_submodules;
     if (l) {
       while (!SCHEME_NULLP(l)) {
-        if (!SCHEME_SYMBOLP(SCHEME_CAR(l))) {
-          n = scheme_resolved_module_path_value(((Scheme_Module *)SCHEME_CAR(l))->modname);
+        n = SCHEME_CAR(l);
+        if (SCHEME_SYMBOLP(n)) {
+          if (SAME_OBJ(n, modname))
+            return 1;
+        } else {
+          n = scheme_resolved_module_path_value(((Scheme_Module *)n)->modname);
           while (SCHEME_PAIRP(SCHEME_CDR(n))) {
             n = SCHEME_CDR(n);
           }
