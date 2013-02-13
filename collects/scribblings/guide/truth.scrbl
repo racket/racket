@@ -64,11 +64,11 @@ a pair, but @italic{is not} a list:
 @interaction[(cons 0 (cons 1 2))]
 
 In general, the rule for printing a pair is as follows: use the dot
-notation always, but if the dot is immediately followed by an open
-parenthesis, then remove the dot, the open parenthesis, and the
-matching close parenthesis. Thus, @racketresultfont{'(0 . (1 . 2))}
+notation unless the dot is immediately followed by an open
+parenthesis. In that case, remove the dot, the open parenthesis, and the
+matching close parenthesis. Thus, @racketresultfont[#:decode? #f]{'(0 . (1 . 2))}
 becomes @racketresult['(0 1 . 2)], and
-@racketresultfont{'(1 . (2 . (3 . ())))} becomes @racketresult['(1 2 3)].
+@racketresultfont[#:decode? #f]{'(1 . (2 . (3 . ())))} becomes @racketresult['(1 2 3)].
 
 @;------------------------------------------------------------------------
 @section[#:tag "quoting-lists"]{Quoting Pairs and Symbols with @racket[quote]}

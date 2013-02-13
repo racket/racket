@@ -446,8 +446,11 @@ Racket. This procedure is useful for typesetting things like
 @defproc[(racketvalfont [pre-content pre-content?] ...) element?]{Like
 @racket[racketfont], but colored as a value.}
 
-@defproc[(racketresultfont [pre-content pre-content?] ...) element?]{Like
-@racket[racketfont], but colored as a REPL result.}
+@defproc[(racketresultfont [#:decode? decode? boolean? #t] [pre-content pre-content?] ...) element?]{
+  Like @racket[racketfont], but colored as a REPL result when @racket[decode?] is
+  @racket[#t]. When @racket[decode?] is @racket[#f], it also avoids @racket[decode]ing
+  its argument.
+}
 
 @defproc[(racketidfont [pre-content pre-content?] ...) element?]{Like
 @racket[racketfont], but colored as an identifier.}

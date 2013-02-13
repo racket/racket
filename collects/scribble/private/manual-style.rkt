@@ -29,11 +29,13 @@
 (define-syntax-rule (provide-styling id ...)
   (provide/contract [id styling-f/c] ...))
 (provide-styling racketmodfont racketoutput
-                 racketerror racketfont racketvalfont racketresultfont racketidfont racketvarfont
+                 racketerror racketfont racketvalfont racketidfont racketvarfont
                  racketcommentfont racketparenfont racketkeywordfont racketmetafont
                  onscreen defterm filepath exec envvar Flag DFlag PFlag DPFlag math
                  procedure
                  indexed-file indexed-envvar idefterm pidefterm)
+(provide
+ (contract-out [racketresultfont (->* () (#:decode? boolean?) #:rest (listof pre-content?) element?)]))
 (define-syntax-rule (provide-scheme-styling [rid sid] ...)
   (provide/contract [rename rid sid styling-f/c] ...))
 (provide-scheme-styling [racketmodfont schememodfont]
@@ -91,8 +93,8 @@
   (apply tt str))
 (define (racketvalfont . str)
   (make-element value-color (decode-content str)))
-(define (racketresultfont . str)
-  (make-element result-color (decode-content str)))
+(define (racketresultfont #:decode? [decode? #t] . str)
+  (make-element result-color (if decode? (decode-content str) str)))
 (define (racketidfont . str)
   (make-element symbol-color (decode-content str)))
 (define (racketvarfont . str)
