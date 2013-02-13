@@ -4,6 +4,7 @@
          (only-in syntax/parse/private/residual
                   attribute-binding)
          syntax/parse/private/residual-ct  ;; for attr functions
+         unstable/macro-testing
          (for-syntax racket/base))
 
 (provide tok
@@ -121,12 +122,3 @@ Auxiliaries
                  (parameterize ((error-print-source-location #f))
                    (convert-syntax-error expr))))
     (void)))
-
-(define-syntax (convert-syntax-error stx)
-  (syntax-case stx ()
-    [(_ expr)
-     (with-handlers ([exn:fail:syntax?
-                      (lambda (e)
-                        #`(error '#,(exn-message e)))])
-       (parameterize ((error-print-source-location #f))
-         (local-expand #'expr 'expression null)))]))
