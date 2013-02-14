@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
                      racket/syntax
+                     syntax/strip-context
                      syntax/keyword))
 (provide phase1-eval
          convert-syntax-error
@@ -8,16 +9,15 @@
 
 (begin-for-syntax
  (define (exn->raise-syntax e)
-   (cond #|
-         ;; Preserving exn:fail:syntax causes the "unsealed local-definition context found
-         ;; in fully expanded form" error in some tests.
-         [(exn:fail:syntax? e)
+   (cond [(exn:fail:syntax? e)
           #`(raise (make-exn:fail:syntax
                     #,(exn-message e)
                     (current-continuation-marks)
-                    #,(with-syntax ([(expr ...) (exn:fail:syntax-exprs e)])
+                    ;; Lexical context must be stripped to avoid "unsealed local-definition context
+                    ;; found in fully expanded form" error in cases like the following:
+                    ;;   (convert-syntax-error (let () (define x) x))
+                    #,(with-syntax ([(expr ...) (map strip-context (exn:fail:syntax-exprs e))])
                         #'(list (quote-syntax expr) ...))))]
-         |#
          [(exn? e)
           (with-syntax ([make-exn
                          (cond [(exn:fail? e) #'make-exn:fail]
