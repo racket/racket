@@ -154,6 +154,16 @@
    [(-pair -String (-lst -String)) (-seq -String)]
    [FAIL (-pair -String (-lst -Symbol)) (-seq -String)]
    [FAIL (-pair -String (-vec -String)) (-seq -String)]
+
+   [(-val 5) (-seq -Nat)]
+   [(-val 5) (-seq -Byte)]
+   [-Index (-seq -Index)]
+   [-NonNegFixnum (-seq -NonNegFixnum)]
+   [-Index (-seq -Nat)]
+   [FAIL (-val -5) (-seq -Nat)]
+   [FAIL -Fixnum (-seq -Fixnum)]
+   [FAIL -NonNegFixnum (-seq -Index)]
+   [FAIL (-val 5.0) (-seq -Nat)]
    ))
 
 (define-go
