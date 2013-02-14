@@ -61,6 +61,12 @@ counting is automatically enabled for the port. Line counting cannot
 be disabled for a port after it is enabled.}
 
 
+@defproc[(port-counts-lines? [port port?]) boolean?]{
+
+Returns @racket[#t] if line and column counting has been enabled for
+@racket[port], @racket[#f] otherwise.}
+
+
 @defproc[(port-next-location [port port?]) 
          (values (or/c exact-positive-integer? #f)
                  (or/c exact-nonnegative-integer? #f)

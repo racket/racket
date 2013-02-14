@@ -512,7 +512,9 @@
 (let ([mk
        (lambda (adjust-locs)
 	 (let ([p (open-input-string "Hello\n\n world")])
+	   (test #f port-counts-lines? p)
 	   (port-count-lines! p)
+	   (test #t port-counts-lines? p)
 	   (let ([p2 (make-input-port 'with-loc
 				      (lambda (s) (read-bytes-avail! s p))
 				      (lambda (s skip progress-evt)
