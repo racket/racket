@@ -831,4 +831,26 @@
 
 ;; ----------------------------------------
 
+(parameterize ([current-namespace (make-base-namespace)])
+  (define m '(module m racket/base
+               (require racket/splicing
+                        (for-syntax racket/base))
+               
+               (define-syntax-rule (def id)
+                 (splicing-let ([x +])
+                               (define-syntax id (let ([v #'(x)])
+                                                   (lambda (stx)
+                                                     v)))))
+               
+               (provide def)))
+
+  (eval (if #t
+            (expand m)
+            m))
+  (namespace-require ''m)
+  (eval '(def t))
+  (eval '(t)))
+
+;; ----------------------------------------
+
 (report-errs)
