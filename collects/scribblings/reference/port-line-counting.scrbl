@@ -47,7 +47,8 @@ invoked only when tracking is specifically enabled with
 
 @defproc[(port-count-lines! [port port?]) void?]{
 
-Turns on line and column counting for a port. Counting can be turned
+Turns on @tech{line location} and @tech{column location} counting
+for a port. Counting can be turned
 on at any time, though generally it is turned on before any data is
 read from or written to a port. At the point that line counting is
 turned on, @racket[port-next-location] typically starts reporting as
@@ -63,7 +64,8 @@ be disabled for a port after it is enabled.}
 
 @defproc[(port-counts-lines? [port port?]) boolean?]{
 
-Returns @racket[#t] if line and column counting has been enabled for
+Returns @racket[#t] if @tech{line location} and @tech{column location}
+counting has been enabled for
 @racket[port], @racket[#f] otherwise.}
 
 
