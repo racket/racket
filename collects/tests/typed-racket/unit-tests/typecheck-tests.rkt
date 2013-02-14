@@ -212,7 +212,7 @@
         (tc-e (flexpt -2.0 -0.5) -Flonum) ; NaN
         (tc-e (angle -1) -Real)
         (tc-e (angle 2.3) -Zero)
-        (tc-e (magnitude 3/4) -NonNegRat)
+        (tc-e (magnitude 3/4) -PosRat)
         (tc-e (magnitude 3+2i) -NonNegReal)
         (tc-e (min (ann 3 Fixnum) (ann 3 Fixnum)) -Fixnum)
         (tc-e (min (ann -2 Negative-Fixnum) (ann 3 Fixnum)) -NegFixnum)

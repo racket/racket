@@ -654,6 +654,26 @@
           (-> -Zero neg pos)
           (-> -Zero non-pos non-neg)))
 
+  (define abs-cases ; used both for abs and magnitude
+    (list
+     (map unop (list -Zero -One -PosByte -Byte -PosIndex -Index -PosFixnum -NonNegFixnum))
+     ;; abs may not be closed on fixnums. (abs min-fixnum) is not a fixnum
+     ((Un -PosInt -NegInt) . -> . -PosInt)
+     (-Int . -> . -Nat)
+     ((Un -PosRat -NegRat) . -> . -PosRat)
+     (-Rat . -> . -NonNegRat)
+     (-FlonumZero . -> . -FlonumZero)
+     ((Un -PosFlonum -NegFlonum) . -> . -PosFlonum)
+     (-Flonum . -> . -NonNegFlonum)
+     (-SingleFlonumZero . -> . -SingleFlonumZero)
+     ((Un -PosSingleFlonum -NegSingleFlonum) . -> . -PosSingleFlonum)
+     (-SingleFlonum . -> . -NonNegSingleFlonum)
+     (-InexactRealZero . -> . -InexactRealZero)
+     ((Un -PosInexactReal -NegInexactReal) . -> . -PosInexactReal)
+     (-InexactReal . -> . -NonNegInexactReal)
+     ((Un -PosReal -NegReal) . -> . -PosReal)
+     (-Real . -> . -NonNegReal)))
+
 
   ;Check to ensure we fail fast if the flonum bindings change
   (define-namespace-anchor anchor)
@@ -1152,8 +1172,11 @@
     (varop-1+ -InexactReal)
     (commutative-case -InexactReal (Un -InexactReal -Rat) -InexactReal)
     (map varop-1+ (list -Real -ExactNumber))
+    (varop-1+ -FloatComplex)
     (commutative-case -FloatComplex N -FloatComplex)
+    (varop-1+ -SingleFlonumComplex)
     (commutative-case -SingleFlonumComplex (Un -SingleFlonumComplex -ExactNumber) -SingleFlonumComplex)
+    (varop-1+ -InexactComplex)
     (commutative-case -InexactComplex (Un -InexactComplex -ExactNumber) -InexactComplex)
     (varop-1+ N))]
 [/ (from-cases ; very similar to multiplication, without closure properties for integers
@@ -1207,8 +1230,12 @@
     (-> -NegReal -NegReal -NegReal -NonPosReal)
     (varop-1+ -Real)
     ;; complexes
+    (varop-1+ -FloatComplex)
     (commutative-case -FloatComplex (Un -InexactComplex -InexactReal -PosRat -NegRat) -FloatComplex)
+    (->* (list -FloatComplex) N -FloatComplex) ; if any argument after the first is exact 0, not a problem
+    (varop-1+ -SingleFlonumComplex)
     (commutative-case -SingleFlonumComplex (Un -SingleFlonumComplex -SingleFlonum -PosRat -NegRat) -SingleFlonumComplex)
+    (varop-1+ -InexactComplex)
     (commutative-case -InexactComplex (Un -InexactComplex -InexactReal -PosRat -NegRat) -InexactComplex)
     (varop-1+ N))]
 
@@ -1467,24 +1494,7 @@
              (list (-> -Int -Int -Int -Int)))]
 [integer-length (-> -Int -NonNegFixnum)]
 
-[abs (from-cases
-      (map unop (list -Zero -One -PosByte -Byte -PosIndex -Index -PosFixnum -NonNegFixnum))
-      ;; abs may not be closed on fixnums. (abs min-fixnum) is not a fixnum
-      ((Un -PosInt -NegInt) . -> . -PosInt)
-      (-Int . -> . -Nat)
-      ((Un -PosRat -NegRat) . -> . -PosRat)
-      (-Rat . -> . -NonNegRat)
-      (-FlonumZero . -> . -FlonumZero)
-      ((Un -PosFlonum -NegFlonum) . -> . -PosFlonum)
-      (-Flonum . -> . -NonNegFlonum)
-      (-SingleFlonumZero . -> . -SingleFlonumZero)
-      ((Un -PosSingleFlonum -NegSingleFlonum) . -> . -PosSingleFlonum)
-      (-SingleFlonum . -> . -NonNegSingleFlonum)
-      (-InexactRealZero . -> . -InexactRealZero)
-      ((Un -PosInexactReal -NegInexactReal) . -> . -PosInexactReal)
-      (-InexactReal . -> . -NonNegInexactReal)
-      ((Un -PosReal -NegReal) . -> . -PosReal)
-      (-Real . -> . -NonNegReal))]
+[abs (from-cases abs-cases)]
 
 ;; exactness
 [exact->inexact
@@ -1572,19 +1582,23 @@
                    (-SingleFlonum -SingleFlonum . -> . -SingleFlonumComplex)
                    (-InexactReal -InexactReal . -> . -InexactComplex)
                    (-Real -Real . -> . N))]
-[real-part (cl->* (-ExactNumber . -> . -Rat)
+[real-part (from-cases
+            (map unop all-real-types)
+            (-ExactNumber . -> . -Rat)
+            (-FloatComplex . -> . -Flonum)
+            (-SingleFlonumComplex . -> . -SingleFlonum)
+            (-InexactComplex . -> . -InexactReal)
+            (N . -> . -Real))]
+[imag-part (cl->* (-Real . -> . -Zero)
+                  (-ExactNumber . -> . -Rat)
                   (-FloatComplex . -> . -Flonum)
-                  (-SingleFlonumComplex . -> . -SingleFlonum)
                   (-InexactComplex . -> . -InexactReal)
                   (N . -> . -Real))]
-[imag-part (cl->* (-ExactNumber . -> . -Rat)
-                  (-FloatComplex . -> . -Flonum)
-                  (-InexactComplex . -> . -InexactReal)
-                  (N . -> . -Real))]
-[magnitude (cl->* (-Rat . -> . -NonNegRat)
-                  (-FloatComplex . -> . -NonNegFlonum)
-                  (-InexactComplex . -> . -NonNegInexactReal)
-                  (N . -> . -NonNegReal))]
+[magnitude (from-cases abs-cases
+                       (-FloatComplex . -> . -NonNegFlonum)
+                       (-SingleFlonumComplex . -> . -NonNegSingleFlonum)
+                       (-InexactComplex . -> . -NonNegInexactReal)
+                       (N . -> . -NonNegReal))]
 [angle     (cl->* (-PosReal . -> . -Zero)
                   (-FloatComplex . -> . -Flonum)
                   (-InexactComplex . -> . -InexactReal)
@@ -1644,6 +1658,7 @@
              (-NonNegInexactReal (Un -NegReal -PosReal) . -> . -NonNegInexactReal)
              (-NonNegReal -Real . -> . -NonNegReal)
              (-Flonum (Un -NegInt -PosInt) . -> . -Flonum)
+             (-Flonum -Flonum . -> . (Un -Flonum -FloatComplex))
              (-Flonum -Real . -> . N)
              (-SingleFlonum (Un -NegInt -PosInt) . -> . -SingleFlonum)
              (-SingleFlonum -SingleFlonum . -> . (Un -SingleFlonum -SingleFlonumComplex))
