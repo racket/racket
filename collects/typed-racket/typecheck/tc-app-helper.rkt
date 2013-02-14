@@ -87,7 +87,7 @@
 
 ;; Generates error messages when operand types don't match operator domains.
 (define/cond-contract (domain-mismatches f-stx args-stx ty doms rests drests rngs arg-tys tail-ty tail-bound
-                                         #:expected [expected #f] #:return [return (make-Union null)]
+                                         #:expected [expected #f] #:return [return -Bottom]
                                          #:msg-thunk [msg-thunk (lambda (dom) dom)])
    ((syntax? syntax? Type/c (c:listof (c:listof Type/c)) (c:listof (c:or/c #f Type/c))
      (c:listof (c:or/c #f (c:cons/c Type/c (c:or/c c:natural-number/c symbol?))))

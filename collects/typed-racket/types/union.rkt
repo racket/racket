@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt"
          (rep type-rep)
          (prefix-in c: (contract-req))
-         (types subtype)
+         (types subtype base-abbrev)
          racket/match
          racket/list)
 
@@ -34,15 +34,13 @@
     [(Union: es) es]
     [_ (list t)]))
 
-(define empty-union (make-Union null))
-
 ;; Union constructor
 ;; Normalizes representation by sorting types.
 ;; Type * -> Type
 ;; The input types can overlap and be union types
 (define Un
   (case-lambda 
-    [() empty-union]
+    [() -Bottom]
     [(t) t]
     [args 
      (define ts (foldr merge '()
