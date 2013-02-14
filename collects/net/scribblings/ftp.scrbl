@@ -91,7 +91,7 @@ Downloads @racket[file] from the server's current directory and puts
 it in @racket[local-dir] using the same name. If the file already
 exists in the local directory, it is replaced, but only after the
 transfer succeeds (i.e., the file is first downloaded to a temporary
-file, then moved into place on success).
+file in @racket[local-dir], then moved into place on success).
 
 If @racket[progress-proc] is not @racket[#f], then it is called with a
 function @racket[_get-count] that returns two values: the number of bytes
