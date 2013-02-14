@@ -522,7 +522,7 @@
   (define ((t-n-e clause) type name expr)
     (let ([keys (custom-type->keys type err)])
       (define (getkey key) (cond [(assq key keys) => cdr] [else #f]))
-      (define (arg x . no-expr?)
+      (define (arg x . no-expr?) ;; can mutate `name'
         (define use-expr?
           (and (list? x) (= 2 (length x)) (identifier? (car x))))
         ;; when the current expr is not used with a (x => ...) form,
@@ -533,7 +533,9 @@
             (err "got an expression for a custom type that do not use it"
                  clause)
             (set! expr (void))))
-        (when use-expr? (set! x (with-renamer (car x) name (cadr x))))
+        (when use-expr?
+          (unless name (set! name (car (generate-temporaries #'(ret)))))
+          (set! x (with-renamer (car x) name (cadr x))))
         (cond [(getkey '1st) =>
                (lambda (v)
                  (if 1st-arg
@@ -551,8 +553,10 @@
         (set! type (getkey 'type))
         (cond [(and (not expr) (getkey 'expr)) => (lambda (x) (set! expr x))])
         (cond [(getkey 'bind) => (lambda (x) (bind! #`[#,x #,name]))])
-        (cond [(getkey 'pre ) => (lambda (x) (pre!  #`[#,name #,(arg x #t)]))])
-        (cond [(getkey 'post) => (lambda (x) (post! #`[#,name #,(arg x)]))])
+        (cond [(getkey 'pre ) => (lambda (x) (pre!  (let ([a (arg x #t)])
+                                                      #`[#,name #,a])))])
+        (cond [(getkey 'post) => (lambda (x) (post! (let ([a (arg x)])
+                                                      #`[#,name #,a])))])
         (cond [(getkey 'keywords)
                => (lambda (ks)
                     (for ([k+v (in-list ks)])
@@ -615,18 +619,17 @@
     ;; when processing the output type, only the post code matters
     (set! pre! (lambda (x) #f))
     (set! output
-          (let ([temp (car (generate-temporaries #'(ret)))]
-                [t-n-e (t-n-e output-type)])
+          (let ([t-n-e (t-n-e output-type)])
             (syntax-case* output-type (: =) id=?
               [(name : type) (t-n-e #'type #'name output-expr)]
               [(type = expr) (if output-expr
                                (err "extraneous output expression" #'expr)
-                               (t-n-e #'type temp #'expr))]
+                               (t-n-e #'type #f #'expr))]
               [(name : type = expr)
                              (if output-expr
                                (err "extraneous output expression" #'expr)
                                (t-n-e #'type #'name #'expr))]
-              [type          (t-n-e #'type temp output-expr)])))
+              [type          (t-n-e #'type #f output-expr)])))
     (let ([make-cprocedure
            (lambda (wrapper)
              #`(_cprocedure* (list #,@(filter-map car inputs))
@@ -647,7 +650,7 @@
                                 inputs))]
                [output-expr
                 (let ([o (caddr output)])
-                  (or (and (not (void? o)) o) (cadr output)))]
+                  (and (not (void? o)) o))]
                [args
                 (filter-map (lambda (i)
                               (and (caddr i)
@@ -661,10 +664,17 @@
                        (lambda #,input-names
                          (let* (#,@args
                                 #,@bind
-                                #,@pre
-                                [#,(cadr output) (ffi #,@ffi-args)]
-                                #,@post)
-                           #,output-expr)))]
+                                #,@pre)
+                           #,(if (or output-expr
+                                     (cadr output))
+                                 (let ([res (or (cadr output)
+                                                (car (generate-temporaries #'(ret))))])
+                                   #`(let* ([#,res (ffi #,@ffi-args)]
+                                            #,@post)
+                                       #,(or output-expr res)))
+                                 #`(begin0
+                                    (ffi #,@ffi-args)
+                                    #,@post)))))]
                ;; if there is a string 'ffi-name property, use it as a name
                [body (let ([n (cond [(syntax-property stx 'ffi-name)
                                      => syntax->datum]

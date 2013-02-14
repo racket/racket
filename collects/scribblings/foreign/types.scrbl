@@ -356,9 +356,15 @@ generates @racket[#f] for a cpointer generated via the
 )]{
 
 A type that can be used with any Racket object; it corresponds to the
-@cpp{Scheme_Object*} type of Racket's C API (see
-@|InsideRacket|).  It is useful only for libraries that are aware of
-Racket's C API.}
+@cpp{Scheme_Object*} type of Racket's C API (see @|InsideRacket|). The
+@racket[_racket] or @racket[_scheme] type is useful only for libraries
+that are aware of Racket's C API.
+
+As a result type with a function type, @racket[_racket] or
+@racket[_scheme] permits multiple values, but multiple values are not
+allowed in combination with a true value for
+@racket[#:in-original-place?] or @racket[#:async-apply] in
+@racket[_cprocedure] or @racket[_fun].}
 
 
 @defthing[_fpointer ctype?]{

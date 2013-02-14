@@ -477,6 +477,10 @@
 
 (delete-test-files)
 
+(let ()
+  (define _values (get-ffi-obj 'scheme_values #f (_fun _int (_list i _racket) -> _racket)))
+  (test-values '(1 "b" three) (lambda () (_values 3 (list 1 "b" 'three)))))
+
 (report-errs)
 
 #| --- ignore everything below ---
