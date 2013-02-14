@@ -8,7 +8,7 @@
 @(begin
    (define-syntax-rule (define-mb name)
      (begin
-       (require (for-label scheme/base))
+       (require (for-label racket/base))
        (define name @racket[#%module-begin])))
    (define-mb scheme-#%module-begin))
 
@@ -25,7 +25,7 @@ The @racketmodname[syntax/module-reader] library provides support for
 defining @hash-lang[] readers. It is normally used as a module
 language, though it may also be @racket[require]d to get
 @racket[make-meta-reader]. It provides all of the bindings of
-@racket[scheme/base] other than @|scheme-#%module-begin|.
+@racket[racket/base] other than @|scheme-#%module-begin|.
 
 @defform*/subs[
   [(#%module-begin module-path)
@@ -83,7 +83,7 @@ in the same way as for @racket[@#,hash-lang[] @#,racketmodname[s-exp]].
 
 Keyword-based @racket[reader-option]s allow further customization, as
 listed below. Additional @racket[form]s are as in the body of
-@racket[scheme/base] module; they can import bindings and define
+@racket[racket/base] module; they can import bindings and define
 identifiers used by the @racket[reader-option]s.
 
 @itemlist[
@@ -127,13 +127,13 @@ identifiers used by the @racket[reader-option]s.
        that indicates whether it is used in @racket[read]
        (@racket[#f]) or @racket[read-syntax] (@racket[#t]) mode.
 
-       For example, a language like @racket[scheme/base] but with
+       For example, a language like @racket[racket/base] but with
        case-insensitive reading of symbols and identifiers can be
        implemented as
 
         @racketblock[
           (module reader syntax/module-reader
-            scheme/base
+            racket/base
             #:wrapper1 (lambda (t)
                          (parameterize ([read-case-sensitive #f])
                            (t))))
@@ -277,7 +277,7 @@ were empty:
 
     @racketblock[
       (module ignored syntax/module-reader
-        scheme/base
+        racket/base
         #:wrapper1 (lambda (t) (t) '()))]
 
 Note that the wrapper still performs the read, otherwise the module
