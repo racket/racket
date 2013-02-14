@@ -383,7 +383,10 @@
   }
 
   @defmethod[(string-normalize [s string?]) string?]{
-    Normalizes @racket[s]. Defaults to @racket[string-normalize-nfkc].
+    Normalizes @racket[s]. Defaults to:
+    @racketblock[(regexp-replace* #rx"\u200b"
+                                  (string-normalize-nfkc s)
+                                  "")]
   }
 
 }
