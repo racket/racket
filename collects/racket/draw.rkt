@@ -6,6 +6,7 @@
          "draw/private/point.rkt"
          "draw/private/font.rkt"
          "draw/private/font-dir.rkt"
+         "draw/private/font-syms.rkt"
          "draw/private/pen.rkt"
          "draw/private/brush.rkt"
          "draw/private/gradient.rkt"
@@ -36,7 +37,18 @@
          make-bitmap
          make-platform-bitmap
          read-bitmap
-         make-monochrome-bitmap)
+         make-monochrome-bitmap
+
+         ;; predicates/contracts
+         brush-style/c
+         pen-cap-style/c
+         pen-join-style/c
+         pen-style/c
+         font-family/c
+         font-weight/c
+         font-style/c
+         font-smoothing/c
+         font-hinting/c)
 
 (provide/contract [color%            color%/c]
                   [point%            point%/c]
@@ -59,3 +71,4 @@
                   [make-color        make-color/c]
                   [make-pen          make-pen/c]
                   [make-brush        make-brush/c])
+

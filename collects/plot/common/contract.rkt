@@ -12,6 +12,7 @@
           plot-colors/c pen-widths/c plot-pen-styles/c plot-brush-styles/c alphas/c
           labels/c)
          (rename-out [natural-number/c nat/c])
+         font-family/c
          truth/c)
 
 ;; ===================================================================================================
@@ -35,9 +36,6 @@
                                       (one-of/c 'transparent      'solid
                                                 'bdiagonal-hatch  'fdiagonal-hatch 'crossdiag-hatch
                                                 'horizontal-hatch 'vertical-hatch  'cross-hatch)))
-
-(defcontract font-family/c (one-of/c 'default 'decorative 'roman  'script 'swiss
-                                     'modern  'symbol     'system))
 
 (defthing known-point-symbols (listof symbol?) #:document-value
   (list 'dot               'point            'pixel

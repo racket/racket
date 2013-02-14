@@ -8,6 +8,7 @@
          "point.rkt"
          "font.rkt"
          "font-dir.rkt"
+         "font-syms.rkt"
          "pen.rkt"
          "brush.rkt"
          "gradient.rkt"
@@ -73,16 +74,6 @@
         'dot 'long-dash 'short-dash 'dot-dash
         'xor-dot 'xor-long-dash 'xor-short-dash
         'xor-dot-dash))
-
-(define font-family/c
-  (or/c 'default 'decorative 'roman 'script
-        'swiss 'modern 'symbol 'system))
-
-(define font-weight/c    (or/c 'normal 'bold 'light))
-(define font-style/c     (or/c 'normal 'italic 'slant))
-(define font-smoothing/c (or/c 'default 'partly-smoothed
-                               'smoothed 'unsmoothed))
-(define font-hinting/c   (or/c 'aligned 'unaligned))
 
 (define transformation-vector/c
   (vector/c (vector/c real? real? real? real? real? real?)

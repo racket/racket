@@ -1,6 +1,7 @@
 #lang scribble/manual
 
-@(require "common.rkt")
+@(require "common.rkt"
+          (for-label (rename-in racket/draw [font-family/c ff/c])))
 
 @declare-exporting[plot/utils]
 
@@ -48,8 +49,18 @@ The contract for @(racket #:style) arguments (when they refer to fills), and par
 For the meaning of integer brush styles, see @(racket ->brush-style).
 }
 
-@doc-apply[font-family/c]{
-Identifies legal font family values. See @(racket plot-font-family).
+@;; This is to let me link to a different font-family/c
+@;; Builds an element inside the submodule that links to the
+@;; right identifier and exports it.
+@(module id-holder racket/base
+   (require scribble/manual (for-label racket/draw))
+   (provide ff/c-element)
+   (define ff/c-element (racket font-family/c)))
+@(require 'id-holder)
+
+@defthing[font-family/c flat-contract?]{
+Identifies legal font family values. The same as @ff/c-element
+from @racketmodname[racket/draw].
 }
 
 @doc-apply[point-sym/c]{
