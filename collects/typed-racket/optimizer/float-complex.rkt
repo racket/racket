@@ -99,6 +99,18 @@
                                   (list
                                    #`((real-binding) #,(skip-0s #'(c1.real-binding c2.real-binding cs.real-binding ...)))
                                    #`((imag-binding) #,(skip-0s #'(c1.imag-binding c2.imag-binding cs.imag-binding ...)))))))))
+  (pattern (#%plain-app (~and op (~literal -)) c1:unboxed-float-complex-opt-expr) ; unary -
+           #:when (subtypeof? this-syntax -FloatComplex)
+           #:with real-binding (unboxed-gensym "unboxed-real-")
+           #:with imag-binding (unboxed-gensym "unboxed-imag-")
+           #:with (bindings ...)
+           (begin (log-optimization "unboxed unary float complex"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
+                  (add-disappeared-use #'op)
+                  #`(c1.bindings ...
+                     [(real-binding) (unsafe-fl- 0.0 #,(get-part-or-0.0 #'c1.real-binding))]
+                     [(imag-binding) (unsafe-fl- 0.0 #,(get-part-or-0.0 #'c1.imag-binding))])))
 
   (pattern (#%plain-app (~and op (~literal *))
                         c1:unboxed-float-complex-opt-expr
@@ -225,6 +237,34 @@
                                                  (unsafe-fl+ (unsafe-fl* #,(car e1) #,(car e1))
                                                              (unsafe-fl* #,(car e2) #,(car e2))))
                                               res)]))))))))
+  (pattern (#%plain-app (~and op (~literal /)) c1:unboxed-float-complex-opt-expr) ; unary /
+           #:when (subtypeof? this-syntax -FloatComplex)
+           #:with real-binding (unboxed-gensym "unboxed-real-")
+           #:with imag-binding (unboxed-gensym "unboxed-imag-")
+           #:with (bindings ...)
+           (begin (log-optimization "unboxed unary float complex"
+                                    complex-unboxing-opt-msg
+                                    this-syntax)
+                  (add-disappeared-use #'op)
+                  ;; (/ 1.0+0.0i c1)
+                  ;; = (+ (/ (+ (* 1.0 c1.real) (* 0.0 c1.imag)) (+ c1.real^2 c1.imag^2))
+                  ;;      (/ (- (* 0.0 c1.real) (* 1.0 c1.imag)) (+ c1.real^2 c1.imag^2))*i)
+                  ;; = (+ (/ c1.real         (+ c1.real^2 c1.imag^2))
+                  ;;      (/ (- 0.0 c1.imag) (+ c1.real^2 c1.imag^2))*i)
+                  (with-syntax ([denominator-binding (unboxed-gensym)])
+                    #`(c1.bindings ...
+                       [(denominator-binding)
+                        #,(cond [(not (syntax->datum #'c1.imag-binding)) ; only real part
+                                 #'(unsafe-fl* c1.real-binding c1.real-binding)]
+                                [(not (syntax->datum #'c1.real-binding)) ; only imag part
+                                 #'(unsafe-fl* c1.imag-binding c1.imag-binding)]
+                                [else ; both parts
+                                 #'(unsafe-fl+ (unsafe-fl* c1.real-binding c1.real-binding)
+                                               (unsafe-fl* c1.imag-binding c1.imag-binding))])]
+                       [(real-binding) (unsafe-fl/ #,(get-part-or-0.0 #'c1.real-binding)
+                                                   denominator-binding)]
+                       [(imag-binding) (unsafe-fl/ (unsafe-fl- 0.0 #,(get-part-or-0.0 #'c1.imag-binding))
+                                                   denominator-binding)]))))
 
   (pattern (#%plain-app (~and op (~literal conjugate)) c:unboxed-float-complex-opt-expr)
            #:when (subtypeof? this-syntax -FloatComplex)
