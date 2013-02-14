@@ -16,6 +16,7 @@
          racket/contract
          unstable/sequence unstable/list unstable/hash
          racket/list)
+(require racket/trace)
 
 (import dmap^ constraints^ promote-demote^)
 (export infer^)
@@ -612,6 +613,7 @@
           [(_ _)
            ;; nothing worked, and we fail
            (fail! S T)]))))
+(trace cgen)
 
 ;; C : cset? - set of constraints found by the inference engine
 ;; Y : (listof symbol?) - index variables that must have entries
