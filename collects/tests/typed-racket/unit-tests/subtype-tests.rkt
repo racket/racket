@@ -170,6 +170,16 @@
    [(-HT t1 t2) (-HT t2 t1)]
    [(make-Prompt-Tagof t1 t2) (make-Prompt-Tagof t2 t1)]
    [(make-Continuation-Mark-Keyof t1) (make-Continuation-Mark-Keyof t2)]
+
+   [(-val 5) (-seq -Nat)]
+   [(-val 5) (-seq -Byte)]
+   [-Index (-seq -Index)]
+   [-NonNegFixnum (-seq -NonNegFixnum)]
+   [-Index (-seq -Nat)]
+   [FAIL (-val -5) (-seq -Nat)]
+   [FAIL -Fixnum (-seq -Fixnum)]
+   [FAIL -NonNegFixnum (-seq -Index)]
+   [FAIL (-val 5.0) (-seq -Nat)]
    ))
 
 (define-go

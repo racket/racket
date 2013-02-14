@@ -470,6 +470,26 @@
            (cg -Nat t*)]
           [((Base: 'Input-Port _ _ _ _) (Sequence: (list t*)))
            (cg -Nat t*)]
+          [((Value: (? exact-nonnegative-integer? n)) (Sequence: (list t*)))
+           (define possibilities
+             (list
+               (list byte? -Byte)
+               (list portable-index? -Index)
+               (list portable-fixnum? -NonNegFixnum)
+               (list values -Nat)))
+           (define type
+             (for/or ((pred-type possibilities))
+               (match pred-type
+                 ((list pred? type)
+                  (and (pred? n) type)))))
+           (cg type t*)]
+          [((Base: _ _ _ _ #t) (Sequence: (list t*)))
+           (define type
+             (for/or ((t (list -Byte -Index -NonNegFixnum -Nat)))
+               (and (subtype S t) t)))
+           (if type
+               (cg type t*)
+               (fail! S T))]
           [((Vector: t) (Sequence: (list t*)))
            (cg t t*)]
           [((Hashtable: k v) (Sequence: (list k* v*)))
