@@ -69,4 +69,11 @@
      $ "raco pkg remove --auto"
      $ "raco pkg show -u" =stdout> " [none]\n"
      $ "racket -e '(require planet2-test1)'" =exit> 1
-     $ "racket -e '(require planet2-test2)'" =exit> 1)))))
+     $ "racket -e '(require planet2-test2)'" =exit> 1))
+   (with-fake-root
+    (shelly-case
+     "different scope error"
+     $ "raco pkg install --shared test-pkgs/planet2-test1.zip" =exit> 0
+     $ "raco pkg remove planet2-test1" =exit> 1
+     =stderr> #rx"package installed in a different scope: shared"
+     $ "raco pkg remove --shared planet2-test1")))))

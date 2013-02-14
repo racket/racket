@@ -279,11 +279,61 @@
     [(not fail?)
      #f]
     [else
-     (pkg-error (~a "package not currently installed\n"
+     (pkg-not-installed pkg-name db)]))
+
+;; return the current scope as a string
+;; -> (or/c "user" "shared" "installation")
+(define (current-scope->string)
+  (cond [(current-install-system-wide?)
+         "installation"]
+        [(current-install-version-specific?)
+         "user"]
+        [else
+         "shared"]))
+
+;; prints an error for packages that are not installed
+;; pkg-name db -> void
+(define (pkg-not-installed pkg-name db)
+  (define installation-db
+    (parameterize ([current-install-system-wide? #t])
+      (read-pkg-db)))
+  (define user-db
+    (parameterize ([current-install-system-wide? #f]
+                   [current-install-version-specific? #t])
+      (read-pkg-db)))
+  (define version-db
+    (parameterize ([current-install-system-wide? #f]
+                   [current-install-version-specific? #f])
+      (read-pkg-db)))
+
+  ;; see if the package is installed in any scope
+  (define-values (in-install? in-user? in-shared?)
+   (values
+    (and (hash-ref installation-db pkg-name #f)
+         "--installation")
+    (and (hash-ref user-db pkg-name #f)
+         "--user")
+    (and (hash-ref version-db pkg-name #f)
+         "--shared")))
+
+  (define not-installed-msg
+   (cond [(or in-user? in-install? in-shared?)
+          =>
+          (λ (scope-str)
+             (~a "could not remove package\n"
+                 " package installed in a different scope: "
+                 (substring scope-str 2) "\n"
+                 " consider using the " scope-str " flag\n"))]
+         [else (~a "could not remove package\n"
+                   " package not currently installed\n")]))
+
+  (pkg-error (~a not-installed-msg
+                    "  current scope: ~a\n"
                     "  package: ~a\n"
                     "  currently installed:~a")
+                (current-scope->string)
                 pkg-name
-                (format-list (hash-keys db)))]))
+                (format-list (hash-keys db))))
 
 (define (update-pkg-db! pkg-name info)
   (write-file-hash!
