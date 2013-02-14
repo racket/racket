@@ -3262,7 +3262,9 @@ static Scheme_Object *wrap_evt(const char *who, int wrap, int argc, Scheme_Objec
 
   if (!scheme_is_evt(argv[0]) || handle_evt_p(0, argv))
     scheme_wrong_contract(who, "(and/c evt? (not/c handle-evt?))", 0, argc, argv);
-  scheme_check_proc_arity(who, 1, 1, argc, argv);
+
+  if (!SCHEME_PROCP(argv[1]))
+    scheme_wrong_contract(who, "procedure?", 1, argc, argv);
 
   ww = MALLOC_ONE_TAGGED(Wrapped_Evt);
   ww->so.type = (wrap ? scheme_wrap_evt_type : scheme_handle_evt_type);

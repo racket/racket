@@ -248,12 +248,11 @@
 
 (err/rt-test (wrap-evt 1 void))
 (err/rt-test (wrap-evt (make-semaphore) 10))
-(err/rt-test (wrap-evt (make-semaphore) (lambda () 10)))
 
 (test 17 sync (wrap-evt (make-semaphore 1) (lambda (sema) 17)))
 (test 17 sync (choice-evt
-				  (make-semaphore)
-				  (wrap-evt (make-semaphore 1) (lambda (sema) 17))))
+               (make-semaphore)
+               (wrap-evt (make-semaphore 1) (lambda (sema) 17))))
 (test #t sync (wrap-evt (make-semaphore 1) semaphore?))
 (test 18 'sync
       (let ([n 17]
@@ -275,12 +274,27 @@
       (wrap-evt (choice-evt (make-semaphore 1) (make-semaphore 1))
 			     (lambda (x) 78)))
 
+(test-values '() (lambda () (sync (wrap-evt always-evt (lambda (x) (values))))))
+(test-values '(1 2) (lambda () (sync (wrap-evt always-evt (lambda (x) (values 1 2))))))
+(test-values '(1 2 3) (lambda () (sync (wrap-evt (wrap-evt always-evt
+                                                           (lambda (_) (values 1 2)))
+                                                 (lambda (a b) (values a b 3))))))
+
+(err/rt-test (sync (wrap-evt always-evt (lambda () #f))))
+(err/rt-test (sync (wrap-evt always-evt (lambda (a b) #f))))
+
 ;; ----------------------------------------
 ;; handle evt
 
 (test 10 sync (handle-evt always-evt (lambda (x) 10)))
 (test 11 sync (handle-evt (wrap-evt always-evt (lambda (x) 10)) add1))
 (test-values '(1 2) (lambda () (sync (handle-evt always-evt (lambda (x) (values 1 2))))))
+(test-values '(1 2 3) (lambda () (sync (handle-evt (wrap-evt always-evt
+                                                             (lambda (_) (values 1 2)))
+                                                   (lambda (a b) (values a b 3))))))
+(err/rt-test (sync (handle-evt always-evt (lambda () #f))))
+(err/rt-test (sync (handle-evt always-evt (lambda (a b) #f))))
+
 ;; check tail call via loop:
 (test 'ok sync (let loop ([n 1000000])
                  (if (zero? n)
@@ -516,6 +530,12 @@
            (test #f sync/timeout SYNC-SLEEP-DELAY always-stuck)))])
   (test-wt make-wt)
   (test-wt make-wt2))
+
+;; Test with multiple values
+(let ([wt-v  (make-wt #f (lambda (_) (wrap-evt always-evt (lambda (_) (values 1 2)))))]
+      [wt-fail (make-wt #f (lambda (_) (wrap-evt always-evt (lambda () #f))))])
+  (test-values '(1 2) (lambda () (sync wt-v)))
+  (err/rt-test (sync wt-fail)))
 
 ;; Check whether something that takes at least SYNC-SLEEP-DELAY
 ;;  seconds in fact takes roughly that much CPU time. We
