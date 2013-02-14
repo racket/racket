@@ -92,12 +92,7 @@ See also @racket[make-brush].
 
 
 @defconstructor[([color (or/c string? (is-a?/c color%)) "black"]
-                 [style (or/c 'transparent 'solid 'opaque 
-                              'xor 'hilite 'panel 
-                              'bdiagonal-hatch 'crossdiag-hatch 
-                              'fdiagonal-hatch 'cross-hatch
-                              'horizontal-hatch 'vertical-hatch)
-                         'solid]
+                 [style brush-style/c 'solid]
                  [stipple (or/c #f (is-a?/c bitmap%))
                           #f]
                  [gradient (or/c #f 
@@ -144,11 +139,7 @@ Gets the @tech{brush stipple} bitmap, or @racket[#f] if the brush has no stipple
 
 
 @defmethod[(get-style)
-           (or/c 'transparent 'solid 'opaque 
-                 'xor 'hilite 'panel 
-                 'bdiagonal-hatch 'crossdiag-hatch
-                 'fdiagonal-hatch 'cross-hatch 
-                 'horizontal-hatch 'vertical-hatch)]{
+           brush-style/c]{
 
 Returns the @tech{brush style}. See @racket[brush%] for information about
 brush styles.}
@@ -208,11 +199,7 @@ If @racket[bitmap] is modified while is associated with a brush, the
 
 }
 
-@defmethod[(set-style [style (or/c 'transparent 'solid 'opaque
-                                   'xor 'hilite 'panel 
-                                   'bdiagonal-hatch 'crossdiag-hatch
-                                   'fdiagonal-hatch 'cross-hatch
-                                   'horizontal-hatch 'vertical-hatch)])
+@defmethod[(set-style [style brush-style/c])
            void?]{
 
 Sets the @tech{brush style}. See

@@ -98,28 +98,22 @@ See also
 
 @defconstructor*/make[(()
                        ([size (integer-in 1 1024)]
-                        [family (or/c 'default 'decorative 'roman 'script 
-                                      'swiss 'modern 'symbol 'system)]
-                        [style (or/c 'normal 'italic 'slant) 'normal]
-                        [weight (or/c 'normal 'bold 'light) 'normal]
+                        [family font-family/c]
+                        [style font-style/c 'normal]
+                        [weight font-weight/c 'normal]
                         [underline? any/c #f]
-                        [smoothing (or/c 'default 'partly-smoothed 
-                                             'smoothed 'unsmoothed) 
-                                   'default]
+                        [smoothing font-smoothing/c 'default]
                         [size-in-pixels? any/c #f]
-                        [hinting (or/c 'aligned 'unaligned) 'aligned])
+                        [hinting font-hinting/c 'aligned])
                        ([size (integer-in 1 1024)]
                         [face string?]
-                        [family (or/c 'default 'decorative 'roman 'script 
-                                      'swiss 'modern 'symbol 'system)]
-                        [style (or/c 'normal 'italic 'slant) 'normal]
-                        [weight (or/c 'normal 'bold 'light) 'normal]
+                        [family font-family/c]
+                        [style font-style/c 'normal]
+                        [weight font-weight/c 'normal]
                         [underline? any/c #f]
-                        [smoothing (or/c 'default 'partly-smoothed 
-                                         'smoothed 'unsmoothed) 
-                                   'default]
+                        [smoothing font-smoothing/c 'default]
                         [size-in-pixels? any/c #f]
-                        [hinting (or/c 'aligned 'unaligned) 'aligned]))]{
+                        [hinting font-hinting/c 'aligned]))]{
 
 When no arguments are provided, creates an instance of the default
  font. If no face name is provided, the font is created without a face
@@ -141,9 +135,7 @@ Gets the font's face name, or @racket[#f] if none is specified.
 
 }
 
-@defmethod[(get-family)
-           (or/c 'default 'decorative 'roman 'script 
-                 'swiss 'modern 'symbol 'system)]{
+@defmethod[(get-family) font-family/c]{
 
 Gets the font's family. See @racket[font%] for information about
 families.
@@ -159,8 +151,7 @@ face and family specifications, only.
 
 }
 
-@defmethod[(get-hinting)
-           (or/c 'aligned 'unaligned)]{
+@defmethod[(get-hinting) font-hinting/c]{
 
 Gets the font's hinting. See @racket[font%] for information about
 hinting.
@@ -191,16 +182,14 @@ For a size in points and a screen or bitmap drawing context, the
 
 }
 
-@defmethod[(get-smoothing)
-           (or/c 'default 'partly-smoothed 'smoothed 'unsmoothed)]{
+@defmethod[(get-smoothing) font-smoothing/c]{
 
 Gets the font's anti-alias smoothing mode. See @racket[font%] for
  information about smoothing.
 
 }
 
-@defmethod[(get-style)
-           (or/c 'normal 'italic 'slant)]{
+@defmethod[(get-style) font-style/c]{
 
 Gets the font's slant style. See @racket[font%] for information about
  styles.
@@ -215,8 +204,7 @@ otherwise.
 
 }
 
-@defmethod[(get-weight)
-           (or/c 'normal 'bold 'light)]{
+@defmethod[(get-weight) font-weight/c]{
 
 Gets the font's weight. See @racket[font%] for information about
  weights.
