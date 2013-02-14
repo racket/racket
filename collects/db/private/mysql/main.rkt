@@ -4,7 +4,7 @@
          openssl
          "../generic/interfaces.rkt"
          "../generic/common.rkt"
-         "../generic/socket.rkt"
+         unstable/socket
          "connection.rkt")
 (provide mysql-connect
          mysql-guess-socket-path

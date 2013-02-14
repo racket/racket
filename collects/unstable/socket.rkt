@@ -1,9 +1,8 @@
 #lang racket/base
 (require ffi/unsafe
          ffi/file)
-(provide unix-socket-connect)
-
-;; The solaris code is untested (and thus disabled).
+(provide unix-socket-connect
+         unix-socket-available?)
 
 ;; unix-socket-connect : pathlike -> input-port output-port
 ;; Connects to the unix domain socket associated with the given path.
@@ -36,11 +35,12 @@
         [machine (system-type 'machine)])
     (cond [(eq? os 'macosx) 'macosx]
           [(regexp-match #rx"Linux.*86" machine) 'linux86]
-          [(regexp-match #rx"SunOS" machine) #f #;'solaris]
+          [(regexp-match #rx"SunOS" machine) #f #|'solaris |#]
           [else #f])))
 
+(define unix-socket-available? (and platform #t))
+
 (define _socklen_t _uint)
-(define _size_t _int)
 
 (define AF_UNIX 1)
 (define SOCK_STREAM
