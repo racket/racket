@@ -101,8 +101,8 @@
     (struct-copy 
      blame 
      blame-info
-     [positive (append extra-positive pos)]
-     [negative (append extra-negative neg)])))
+     [positive (append (list extra-positive) pos)]
+     [negative (append (list extra-negative) neg)])))
 
 (define (show-blame accessor)
   (λ (blm)
@@ -280,7 +280,7 @@
 (define (convert-blame-party x)
   (let ((preface 
          (cond [(< 1 (length x))
-                " -- Multiple blame parties due to option contract transfers --\n"]
+                " -- multiple blame parties due to option contract transfers --\n"]
                [else ""])))
     (string-append 
      preface
