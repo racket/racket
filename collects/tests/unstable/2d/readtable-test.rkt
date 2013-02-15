@@ -669,7 +669,7 @@
                                      '(2 2)
                                      0
                                      #t)
-                '((9 . 11))))
+                '((10 . 12))))
 
 (let ()
   (define sp (open-input-string 

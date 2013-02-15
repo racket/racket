@@ -57,8 +57,7 @@ example uses:
 ;;                       number
 ;;                       [boolean?]
 ;;                    -> (if scratch-string 
-;;                           (values (listof (cons/c number? number?)) 
-;;                                   (listof (cons/c number? number?)))
+;;                           (listof (cons/c number? number?)) 
 ;;                           void?)
 ;; scratch-string gets filled in from the 'lines' argument. 
 ;; If compute-regions? is #t, then this function constructs the regions of the
