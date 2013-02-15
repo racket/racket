@@ -4359,7 +4359,7 @@ int main () {
    #ifdef __GNUC__
     return 0;
    #else
-    return 1;
+    if; // should fail
    #endif
    }
 _ACEOF

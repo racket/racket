@@ -801,7 +801,7 @@ AC_COMPILE_IFELSE(
    #ifdef __GNUC__
     return 0;
    #else
-    return 1;
+    if; // should fail
    #endif
    }, using_gnu_cpp=yes, using_gnu_cpp=no)
 if test "$using_gnu_cpp" = "yes" ; then
