@@ -23,8 +23,7 @@
 
 
 (provide (except-out (all-defined-out) make-Base)
-         (all-from-out "base-abbrev.rkt" "match-expanders.rkt")
-         (rename-out [make-MListof -mlst]))
+         (all-from-out "base-abbrev.rkt" "match-expanders.rkt"))
 
 ;; all the types defined here are not numeric
 (define (make-Base name contract predicate marshaled)
@@ -51,8 +50,6 @@
 
 
 
-
-(define (make-MListof elem) (-mu mlist-rec (Un (-val null) (-mpair elem mlist-rec))))
 
 (define (-lst* #:tail [tail (-val null)] . args)
   (for/fold ([tl tail]) ([a (reverse args)]) (-pair a tl)))
