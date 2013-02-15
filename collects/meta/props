@@ -1484,6 +1484,7 @@ path/s is either such a string or a list of them.
 "collects/tests/typed-racket/xfail" drdr:command-line #f
 "collects/tests/units" responsible (sstrickl)
 "collects/tests/unstable" responsible (jay samth cce ryanc)
+"collects/tests/unstable/2d" responsible (robby)
 "collects/tests/unstable/automata" responsible (jay)
 "collects/tests/unstable/list.rkt" responsible (jay)
 "collects/tests/unstable/logging.rkt" responsible (stamourv)
@@ -1516,6 +1517,7 @@ path/s is either such a string or a list of them.
 "collects/typed-racket/optimizer" responsible (stamourv)
 "collects/typed-scheme" responsible (samth stamourv)
 "collects/unstable" responsible (jay samth cce ryanc)
+"collects/unstable/2d" responsible (robby)
 "collects/unstable/automata" responsible (jay)
 "collects/unstable/debug.rkt" responsible (samth)
 "collects/unstable/hash.rkt" responsible (samth)
