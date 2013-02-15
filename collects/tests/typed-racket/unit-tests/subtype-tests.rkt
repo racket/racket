@@ -156,6 +156,10 @@
    [(-pair -String (-lst -String)) (-seq -String)]
    [FAIL (-pair -String (-lst -Symbol)) (-seq -String)]
    [FAIL (-pair -String (-vec -String)) (-seq -String)]
+   [(-mpair -String (-mlst -String)) (-seq -String)]
+   [FAIL (-mpair -String (-mlst -Symbol)) (-seq -String)]
+   [FAIL (-mpair -String (-vec -String)) (-seq -String)]
+   [(-mpair -String (-mlst (-val "hello"))) (-seq -String)]
 
    [(-Param -Byte -Byte) (-Param (-val 0) -Int)]
    [FAIL (-Param -Byte -Byte) (-Param -Int -Int)]

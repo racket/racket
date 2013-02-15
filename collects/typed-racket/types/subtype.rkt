@@ -284,7 +284,15 @@
                (subtype* A0 t t*)]
               [((Pair: t1 t2) (Sequence: (list t*)))
                (let ([A1 (subtype* A0 t1 t*)])
-                 (and A1 (subtype* A1 t2 (-lst t*))))]
+                 (subtype* A1 t2 (-lst t*)))]
+              [((MListof: t) (Sequence: (list t*)))
+               (subtype* A0 t t*)]
+              ;; To check that mutable pair is a sequence we check that the cdr
+              ;; is both an mutable list and a sequence
+              [((MPair: t1 t2) (Sequence: (list t*)))
+               (let* ([A1 (subtype* A0 t1 t*)]
+                      [A2 (subtype* A1 t2 (simple-Un (-val null) (make-MPairTop)))])
+                 (subtype* A2 t2 t))]
               [((List: ts) (Sequence: (list t*)))
                (subtypes* A0 ts (map (λ _ t*) ts))]
               [((HeterogeneousVector: ts) (Sequence: (list t*)))
@@ -339,8 +347,7 @@
                   [else (fail! s t)]))]
               ;; recur structurally on pairs
               [((Pair: a d) (Pair: a* d*))
-               (let ([A1 (subtype* A0 a a*)])
-                 (and A1 (subtype* A1 d d*)))]
+               (subtypes* A0 (list a d) (list a* d*))]
               ;; recur structurally on dotted lists, assuming same bounds
               [((ListDots: s-dty dbound) (ListDots: t-dty dbound))
                (subtype* A0 s-dty t-dty)]

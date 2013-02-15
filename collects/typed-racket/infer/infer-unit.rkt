@@ -451,6 +451,12 @@
            (cg t t*)]
           [((Pair: t1 t2) (Sequence: (list t*)))
            (cset-meet (cg t1 t*) (cg t2 (-lst t*)))]
+          [((MListof: t) (Sequence: (list t*)))
+           (cg t t*)]
+          ;; To check that mutable pair is a sequence we check that the cdr is
+          ;; both an mutable list and a sequence
+          [((MPair: t1 t2) (Sequence: (list t*)))
+           (cset-meet* (list (cg t1 t*) (cg t2 T) (cg t2 (Un (-val null) (make-MPairTop)))))]
           [((List: ts) (Sequence: (list t*)))
            (cset-meet* (for/list ([t (in-list ts)])
                          (cg t t*)))]
