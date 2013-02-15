@@ -4288,13 +4288,20 @@ designates the character that triggers autocompletion
          ;; when the line stays the same, don't invalidate anything
          (set! old-position (get-start-position))]
         [else
-         (when old-position
-           (invalidate-at-position old-position))
+         (define old-position-before old-position)
          (set! old-position (and (= (get-start-position)
                                     (get-end-position))
                                  (get-start-position)))
-         (when old-position
-           (invalidate-at-position old-position))])
+         (define single-edit-sequence?
+           (and old-position-before 
+                old-position
+                (<= (abs (- (position-paragraph old-position-before)
+                            (position-paragraph old-position)))
+                    1)))
+         (when single-edit-sequence? (begin-edit-sequence #f #f))
+         (when old-position-before (invalidate-at-position old-position-before))
+         (when old-position (invalidate-at-position old-position))
+         (when single-edit-sequence? (end-edit-sequence))])
       (inner (void) after-set-position))
     
     (define/private (invalidate-at-position pos)
