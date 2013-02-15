@@ -628,6 +628,9 @@
     (stv g set-range 10)
     (st 10 g get-range)
     (st 1 g get-value)
+
+    (stv g set-range 100011)
+    (stv g set-value 100010)
     
     (containee-window-tests g #t #f parent frame 2))
 

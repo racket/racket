@@ -509,7 +509,7 @@
      [get-value (entry-point (lambda () (send wx get-value)))]
      [set-value (entry-point
                  (lambda (v)
-                   (check-range-integer '(method gauge% set-value) v)
+                   (check-gauge-range-integer '(method gauge% set-value) v)
                    (when (> v (send wx get-range))
                      (raise-arguments-error (who->name '(method gauge% set-value))
                                             "out of range;\n given value is not between 0 and maximum value"
