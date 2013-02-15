@@ -15,6 +15,8 @@
 
 (define orig-namespace (current-namespace))
 
+(define-logger enter!)
+
 (define (check-flags flags)
   ;; check that all flags are known, that at most one of the noise flags is
   ;; present, and add #:verbose-reload if none are (could be done at the macro
@@ -34,7 +36,8 @@
   (let ([flags (check-flags flags)])
     (if mod
       (let* ([none "none"]
-             [exn (with-handlers ([void values])
+             [exn (with-handlers ([void (lambda (exn)
+                                          (log-enter!-error "~a" (exn-message exn)))])
                     (enter-require mod flags)
                     none)]
              [ns (module->namespace mod)])
@@ -67,28 +70,35 @@
     (if (and name
              (not (and (pair? name)
                        (not (car name)))))
-      ;; Module load:
-      (let* ([code (get-module-code
-                    path "compiled"
-                    (lambda (e)
-                      (parameterize ([compile-enforce-module-constants #f])
-                        (compile e)))
-                    (lambda (ext loader?) (load-extension ext) #f)
-                    #:notify notify)]
-             [dir  (or (current-load-relative-directory) (current-directory))]
-             [path (path->complete-path path dir)]
-             [path (normal-case-path (simplify-path path))])
-        ;; Record module timestamp and dependencies:
-        (define-values (ts actual-path) (get-timestamp path))
-        (let ([a-mod (mod name
-                          ts
-                          (if code
-                            (append-map cdr (module-compiled-imports code))
-                            null))])
-          (hash-set! loaded path a-mod))
-        ;; Evaluate the module:
-        (parameterize ([current-module-declare-source actual-path])
-          (eval code)))
+        ;; Module load:
+        (with-handlers ([(lambda (exn)
+                           (and (pair? name)
+                                (exn:get-module-code? exn)))
+                         (lambda (exn) 
+                           ;; Load-handler protocol: quiet failure when a
+                           ;; submodule is not found
+                           (void))])
+          (let* ([code (get-module-code
+                        path "compiled"
+                        (lambda (e)
+                          (parameterize ([compile-enforce-module-constants #f])
+                            (compile e)))
+                        (lambda (ext loader?) (load-extension ext) #f)
+                        #:notify notify)]
+                 [dir  (or (current-load-relative-directory) (current-directory))]
+                 [path (path->complete-path path dir)]
+                 [path (normal-case-path (simplify-path path))])
+            ;; Record module timestamp and dependencies:
+            (define-values (ts actual-path) (get-timestamp path))
+            (let ([a-mod (mod name
+                              ts
+                              (if code
+                                  (append-map cdr (module-compiled-imports code))
+                                  null))])
+              (hash-set! loaded path a-mod))
+            ;; Evaluate the module:
+            (parameterize ([current-module-declare-source actual-path])
+              (eval code))))
       ;; Not a module, or a submodule that we shouldn't load from source:
       (begin (notify path) (orig path name)))))
 
