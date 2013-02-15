@@ -219,6 +219,9 @@
           [_ (int-err "wtf is this? ~a" s)])))
   (not (or (in-hierarchy? s1 s2) (in-hierarchy? s2 s1))))
 
+(define (type-equiv? A0 s t)
+  (subtype* (subtype* A0 s t) t s))
+
 ;; the algorithm for recursive types transcribed directly from TAPL, pg 305
 ;; List[(cons Number Number)] type type -> List[(cons Number Number)]
 ;; potentially raises exn:subtype, when the algorithm fails
@@ -408,19 +411,36 @@
                (subtype* A0 s t)]
               [((CustodianBox: s) (CustodianBox: t))
                (subtype* A0 s t)]
-              [((Box: _) (BoxTop:)) A0]
-              [((ThreadCell: _) (ThreadCellTop:)) A0]
               [((Set: t) (Set: t*)) (subtype* A0 t t*)]
+              ;; Invariant types
+              [((Box: s) (Box: t)) (type-equiv? A0 s t)]
+              [((Box: _) (BoxTop:)) A0]
+              [((ThreadCell: s) (ThreadCell: t)) (type-equiv? A0 s t)]
+              [((ThreadCell: _) (ThreadCellTop:)) A0]
+              [((Channel: s) (Channel: t)) (type-equiv? A0 s t)]
               [((Channel: _) (ChannelTop:)) A0]
+              [((Vector: s) (Vector: t)) (type-equiv? A0 s t)]
               [((Vector: _) (VectorTop:)) A0]
               [((HeterogeneousVector: _) (VectorTop:)) A0]
               [((HeterogeneousVector: (list e ...)) (Vector: e*))
-               (if (andmap (lambda (e0) (type-equal? e0 e*)) e) A0 (fail! s t))]
+               (for/fold ((A A0)) ((e e))
+                 (type-equiv? A e e*))]
+              [((HeterogeneousVector: (list s* ...)) (HeterogeneousVector: (list t* ...)))
+               (if (= (length s*) (length t*))
+                   (for/fold ((A A0)) ((s s*) (t t*))
+                     (type-equiv? A s t))
+                   (fail! s* t*))]
+              [((MPair: s1 s2) (MPair: t1 t2))
+               (type-equiv? (type-equiv? A0 s1 t1) s2 t2)]
               [((MPair: _ _) (MPairTop:)) A0]
+              [((Hashtable: s1 s2) (Hashtable: t1 t2))
+               (type-equiv? (type-equiv? A0 s1 t1) s2 t2)]
               [((Hashtable: _ _) (HashtableTop:)) A0]
-              ;; TODO: subtyping for two `Prompt-Tagof`s with recursive types
-              ;;       may be rejected unnecessarily
+              [((Prompt-Tagof: s1 s2) (Prompt-Tagof: t1 t2))
+               (type-equiv? (type-equiv? A0 s1 t1) s2 t2)]
               [((Prompt-Tagof: _ _) (Prompt-TagTop:)) A0]
+              [((Continuation-Mark-Keyof: s) (Continuation-Mark-Keyof: t))
+               (type-equiv? A0 s t)]
               [((Continuation-Mark-Keyof: _) (Continuation-Mark-KeyTop:)) A0]
               ;; subtyping on structs follows the declared hierarchy
               [((Struct: nm (? Type/c? parent) _ _ _ _) other)
@@ -455,7 +475,7 @@
               ;; otherwise, not a subtype
               [(_ _) (fail! s t) #;(dprintf "failed")])))]))))
 
-  (define (type-compare? a b)
+(define (type-compare? a b)
   (and (subtype a b) (subtype b a)))
 
 

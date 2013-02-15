@@ -159,6 +159,16 @@
    [FAIL (-Param -Byte -Byte) (-Param -Int -Int)]
    [(-Param -String -Symbol) (cl->* (-> -Symbol) (-> -String -Void))]
 
+   [(-vec t1) (-vec t2)]
+   [(make-HeterogeneousVector (list t1)) (-vec t2)]
+   [(make-HeterogeneousVector (list t1 t2)) (make-HeterogeneousVector (list t2 t1))]
+   [(-box t1) (-box t2)]
+   [(-thread-cell t1) (-thread-cell t2)]
+   [(-channel t1) (-channel t2)]
+   [(-mpair t1 t2) (-mpair t2 t1)]
+   [(-HT t1 t2) (-HT t2 t1)]
+   [(make-Prompt-Tagof t1 t2) (make-Prompt-Tagof t2 t1)]
+   [(make-Continuation-Mark-Keyof t1) (make-Continuation-Mark-Keyof t2)]
    ))
 
 (define-go
