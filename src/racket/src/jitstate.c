@@ -377,9 +377,15 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
 	}
         if (jitter->retained_double) {
           /* even stronger: `double'-aligned: */
+#ifdef MZ_LONG_DOUBLE
+          if (known_size & (JIT_LONG_DOUBLE_SIZE - 1)) {
+            known_size += (JIT_LONG_DOUBLE_SIZE - (known_size & (JIT_LONG_DOUBLE_SIZE - 1)));
+          }
+#else
           if (known_size & (JIT_DOUBLE_SIZE - 1)) {
             known_size += (JIT_DOUBLE_SIZE - (known_size & (JIT_DOUBLE_SIZE - 1)));
           }
+#endif
         }
 	num_retained = jitter->retained;
         if (num_retained == 1) num_retained = 0;

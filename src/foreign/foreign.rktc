@@ -739,8 +739,9 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 
 @(defctype* 'double "double"       "FLOAT"  "FLOAT"        "double")
 @;
-@; Not useful?  not implemented in any case.
-@; (defctype* 'longdouble "long double" ...???...)
+@; Not useful?  not implemented in any case. 
+#define ffi_type_slongdouble ffi_type_longdouble
+@(defctype* '(longdouble "longdouble") "long double"       "LONG_DBL"  "LONG_DBL"        "long_double")
 
 /* A double that will coerce numbers to doubles: */
 @(defctype* '(double* "double") "double"
@@ -2071,6 +2072,12 @@ static Scheme_Object *do_memop(const char *who, int mode,
   if (!SCHEME_FLVECTORP(argv[0]))
     scheme_wrong_contract(MYNAME, "flvector?", 0, argc, argv);
   return scheme_make_offset_cptr(argv[0], (intptr_t)SCHEME_FLVEC_ELS((Scheme_Object *)0x0), NULL);
+}
+
+@cdefine[extflvector->cpointer 1]{
+  if (!SCHEME_EXTFLVECTORP(argv[0]))
+    scheme_wrong_contract(MYNAME, "extflvector?", 0, argc, argv);
+  return scheme_make_offset_cptr(argv[0], (intptr_t)SCHEME_EXTFLVEC_ELS((Scheme_Object *)0x0), NULL);
 }
 
 @cdefine[memset  3 5]{return do_memop(MYNAME, 0, argc, argv);}

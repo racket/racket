@@ -209,6 +209,9 @@ static Scheme_Object *TO_FLOAT(const Scheme_Object *n);
 Scheme_Object *scheme_TO_DOUBLE(const Scheme_Object *n);
 
 #ifdef MZ_LONG_DOUBLE
+static Scheme_Object *extfl_ref (int argc, Scheme_Object *argv[]);
+static Scheme_Object *extfl_set (int argc, Scheme_Object *argv[]);
+
 static Scheme_Object *exact_to_extfl(int argc, Scheme_Object *argv[]);
 #endif
 
@@ -1487,6 +1490,28 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_THIRD);
   scheme_add_global_constant("unsafe-extflvector-set!", p, env);
+
+  p = scheme_make_immed_prim(extfl_ref, "unsafe-f80vector-ref",
+                             2, 2);
+  if (scheme_can_inline_fp_op())
+    flags = SCHEME_PRIM_IS_BINARY_INLINED;
+  else
+    flags = SCHEME_PRIM_SOMETIMES_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
+                                                            | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_EXTFLONUM);
+  scheme_add_global_constant("unsafe-f80vector-ref", p, env);
+  
+  p = scheme_make_immed_prim(extfl_set, "unsafe-f80vector-set!",
+                             3, 3);
+  if (scheme_can_inline_fp_op())
+    flags = SCHEME_PRIM_IS_NARY_INLINED;
+  else
+    flags = SCHEME_PRIM_SOMETIMES_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
+                                                            | SCHEME_PRIM_WANTS_EXTFLONUM_THIRD);
+  scheme_add_global_constant("unsafe-f80vector-set!", p, env);
 }
 
 Scheme_Object *
@@ -4618,6 +4643,23 @@ Scheme_Object *scheme_extflvector_length(Scheme_Object *vec)
 #endif
 }
 
+static Scheme_Object *extfl_ref (int argc, Scheme_Object *argv[])
+{
+  long double v;
+  Scheme_Object *p;
+  p = ((Scheme_Structure *)argv[0])->slots[0];
+  v = ((long double *)SCHEME_CPTR_VAL(p))[SCHEME_INT_VAL(argv[1])];
+  return scheme_make_long_double(v);
+}
+
+static Scheme_Object *extfl_set (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *p;
+  p = ((Scheme_Structure *)argv[0])->slots[0];
+  ((long double *)SCHEME_CPTR_VAL(p))[SCHEME_INT_VAL(argv[1])] = SCHEME_LONG_DBL_VAL(argv[2]);
+  return scheme_void;
+}
+
 static Scheme_Object *extflvector_length (int argc, Scheme_Object *argv[])
 {
   return scheme_extflvector_length(argv[0]);
@@ -4995,8 +5037,8 @@ static Scheme_Object *extfl_to_fx (int argc, Scheme_Object *argv[])
   Scheme_Object *o;
 
   if (!SCHEME_LONG_DBLP(argv[0])
-      && !scheme_is_integer(argv[0]))
-    scheme_wrong_contract("extfl->fx", "(and/c extflonum? integer?)", 0, argc, argv);
+      /* && !scheme_is_integer(argv[0]) */)
+    scheme_wrong_contract("extfl->fx", "(and/c extflonum?)", 0, argc, argv);
 
   d = SCHEME_LONG_DBL_VAL(argv[0]);
   v = (intptr_t)d;

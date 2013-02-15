@@ -162,6 +162,12 @@ union jit_fpu_double_imm {
    MOVQir(((intptr_t)is), JIT_R0),              \
    jit_fpu_ldr_d_fppush(rd, JIT_R0),            \
    MOVQrr(JIT_REXTMP, JIT_R0))
+
+#define jit_fpu_ldi_ld_fppush(rd, is)           \
+  (MOVQrr(JIT_R0, JIT_REXTMP),                  \
+   MOVQir(((intptr_t)is), JIT_R0),              \
+   jit_fpu_ldr_ld_fppush(rd, JIT_R0),           \
+   MOVQrr(JIT_REXTMP, JIT_R0))
 #else
 #define jit_fpu_ldi_f(rd, is)                           \
   ((rd) == 0 ? (FSTPr (0), FLDSm((is), 0, 0, 0))        \
@@ -261,6 +267,13 @@ union jit_fpu_double_imm {
    MOVQir(((intptr_t)is), JIT_R0),              \
    jit_fpu_str_d_fppop(JIT_R0, rd),             \
    MOVQrr(JIT_REXTMP, JIT_R0))
+
+#define jit_fpu_sti_ld_fppop(is, rd)            \
+  (MOVQrr(JIT_R0, JIT_REXTMP),                  \
+   MOVQir(((intptr_t)is), JIT_R0),              \
+   jit_fpu_str_ld_fppop(JIT_R0, rd),            \
+   MOVQrr(JIT_REXTMP, JIT_R0))
+
 #else
 #define jit_fpu_sti_f(id, rs)      jit_fpu_fxch ((rs), FPX(), FSTSm((id), 0,    0, 0))
 #define jit_fpu_str_f(rd, rs)      jit_fpu_fxch ((rs), FPX(), FSTSm(0,    (rd), 0, 0))

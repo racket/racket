@@ -1372,9 +1372,10 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       } else if (IS_NAMED_PRIM(rator, "fxvector-length")) {
         for_fx = 1;
       } else if (MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "extflvector-length"))) {
+        for_fl = 1;
         extfl = 1;
-        unsafe = 1;
       } else if (MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-length"))) {
+        for_fl = 1;
         extfl = 1;
         unsafe = 1;
       } else {
@@ -2590,6 +2591,9 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
   } else if (IS_NAMED_PRIM(rator, "unsafe-extfl=")) {
     scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_EQUAL, 0, for_branch, branch_short, 0, 1, NULL, dest);
     return 1;
+  } else if (IS_NAMED_PRIM(rator, "extfl=")) {
+    scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_EQUAL, 0, for_branch, branch_short, 0, -1, NULL, dest);
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "unsafe-extfl<=")) {
     scheme_generate_extflonum_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_LEQ, 0, for_branch, branch_short, 0, 1, NULL, dest);
     return 1;
@@ -3013,14 +3017,17 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-f64vector-ref")
                || IS_NAMED_PRIM(rator, "unsafe-flvector-ref")
-               || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-ref"))) {
+               || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-ref")
+                                     || IS_NAMED_PRIM(rator, "unsafe-f80vector-ref"))) {
       int fpr0;
       int is_f64;
       int extfl;
       mz_jit_unbox_state ubs;
 
-      is_f64 = IS_NAMED_PRIM(rator, "unsafe-f64vector-ref");
-      extfl = MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-ref"));
+      is_f64 = IS_NAMED_PRIM(rator, "unsafe-f64vector-ref")
+        || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-f80vector-ref"));
+      extfl = MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-ref")
+                                 || IS_NAMED_PRIM(rator, "unsafe-f80vector-ref"));
 
       scheme_mz_unbox_save(jitter, &ubs); /* no unboxing of vector and index arguments */
       scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
@@ -3042,7 +3049,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       }
 
       if (jitter->unbox)
-        fpr0 = JIT_FPR_0(jitter->unbox_depth);
+        fpr0 = JIT_FPUSEL_FPR_0(jitter->unbox_extflonum, jitter->unbox_depth);
       else
         fpr0 = MZ_FPUSEL(extfl, JIT_FPU_FPR0, JIT_FPR0);
 
@@ -3950,13 +3957,16 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-f64vector-set!")
                || IS_NAMED_PRIM(rator, "unsafe-flvector-set!")
-               || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-set!"))) {
+               || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-set!")
+                                     || IS_NAMED_PRIM(rator, "unsafe-f80vector-set!"))) {
       int is_f64;
       int can_direct, got_two;
       int extfl;
 
-      is_f64 = IS_NAMED_PRIM(rator, "unsafe-f64vector-set!");
-      extfl = MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-set!"));
+      is_f64 = IS_NAMED_PRIM(rator, "unsafe-f64vector-set!")
+        || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-f80vector-set!"));
+      extfl = MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-set!"))
+        || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-f80vector-set!"));
       
       if (scheme_is_constant_and_avoids_r1(app->args[1])
           && scheme_is_constant_and_avoids_r1(app->args[2])) {
