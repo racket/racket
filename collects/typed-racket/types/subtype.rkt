@@ -294,6 +294,26 @@
                (subtype* A0 -Byte t*)]
               [((Base: 'Input-Port _ _ _ _) (Sequence: (list t*)))
                (subtype* A0 -Nat t*)]
+              [((Value: (? exact-nonnegative-integer? n)) (Sequence: (list t*)))
+               (define possibilities
+                 (list
+                   (list byte? -Byte)
+                   (list portable-index? -Index)
+                   (list portable-fixnum? -NonNegFixnum)
+                   (list values -Nat)))
+               (define type
+                 (for/or ((pred-type possibilities))
+                   (match pred-type
+                     ((list pred? type)
+                      (and (pred? n) type)))))
+               (subtype* A0 type t*)]
+              [((Base: _ _ _ _ #t) (Sequence: (list t*)))
+               (define type
+                 (for/or ((t (list -Byte -Index -NonNegFixnum -Nat)))
+                   (and (subtype s t) t)))
+               (if type
+                   (subtype* A0 type t*)
+                   (fail! s t))]
               [((Hashtable: k v) (Sequence: (list k* v*)))
                (subtypes* A0 (list k v) (list k* v*))]
               ;; special-case for case-lambda/union with only one argument              
