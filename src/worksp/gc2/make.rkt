@@ -82,7 +82,7 @@
     "validate"
     "vector"))
 
-(define common-cpp-defs " /D _CRT_SECURE_NO_DEPRECATE /D _USE_DECLSPECS_FOR_SAL=0 /D _USE_ATTRIBUTES_FOR_SAL=0 ")
+(define common-cpp-defs " /D _CRT_SECURE_NO_DEPRECATE /D _USE_DECLSPECS_FOR_SAL=0 /D _USE_ATTRIBUTES_FOR_SAL=0 /nologo ")
 
 (define (check-timestamp t2 dep)
   (when (t2 . > . (current-seconds))
