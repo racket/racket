@@ -4267,53 +4267,38 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
  msg="for inline keyword"
 { echo "$as_me:$LINENO: checking $msg" >&5
 echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
-if test "$cross_compiling" = yes; then
-  inline=no
-else
-  cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
+cat >conftest.$ac_ext <<_ACEOF
 static inline int foo() { return 0; }
    int main() {
       return foo();
    }
 _ACEOF
-rm -f conftest$ac_exeext
-if { (ac_try="$ac_link"
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
+  (eval "$ac_compile") 2>conftest.er1
   ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
   inline=yes
 else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
+  echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
-inline=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+	inline=no
 fi
 
-
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 if test "$inline" = "no" ; then
   MZOPTIONS="$MZOPTIONS -DNO_INLINE_KEYWORD"
 fi
@@ -4323,54 +4308,39 @@ echo "${ECHO_T}$inline" >&6; }
  msg="for noinline attribute"
 { echo "$as_me:$LINENO: checking $msg" >&5
 echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
-if test "$cross_compiling" = yes; then
-  noinline=no
-else
-  cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
+cat >conftest.$ac_ext <<_ACEOF
 static int foo() __attribute__ ((noinline));
    static int foo() { return 0; }
    int main() {
       return foo();
    }
 _ACEOF
-rm -f conftest$ac_exeext
-if { (ac_try="$ac_link"
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
+  (eval "$ac_compile") 2>conftest.er1
   ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
   noinline=yes
 else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
+  echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
-noinline=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+	noinline=no
 fi
 
-
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 if test "$noinline" = "yes" ; then
 
 cat >>confdefs.h <<\_ACEOF
@@ -4378,21 +4348,13 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 fi
-{ echo "$as_me:$LINENO: result: $inline" >&5
-echo "${ECHO_T}$inline" >&6; }
+{ echo "$as_me:$LINENO: result: $noinline" >&5
+echo "${ECHO_T}$noinline" >&6; }
 
  msg="for GNU preprocessor"
 { echo "$as_me:$LINENO: checking $msg" >&5
 echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
-if test "$cross_compiling" = yes; then
-  using_gnu_cpp=no
-else
-  cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
+cat >conftest.$ac_ext <<_ACEOF
 int main () {
    #ifdef __GNUC__
     return 0;
@@ -4401,39 +4363,32 @@ int main () {
    #endif
    }
 _ACEOF
-rm -f conftest$ac_exeext
-if { (ac_try="$ac_link"
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
+  (eval "$ac_compile") 2>conftest.er1
   ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
   using_gnu_cpp=yes
 else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
+  echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
-using_gnu_cpp=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+	using_gnu_cpp=no
 fi
 
-
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 if test "$using_gnu_cpp" = "yes" ; then
   XFORMFLAGS="$XFORMFLAGS --keep-lines"
   case "$build_os" in
@@ -5221,15 +5176,7 @@ fi
  msg="for mbsrtowcs"
 { echo "$as_me:$LINENO: checking $msg" >&5
 echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
-if test "$cross_compiling" = yes; then
-  mbsrtowcs=no
-else
-  cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
+cat >conftest.$ac_ext <<_ACEOF
   #include <wchar.h>
   #include <strings.h>
    int main() {
@@ -5240,39 +5187,34 @@ cat >>conftest.$ac_ext <<_ACEOF
      return 0;
    }
 _ACEOF
-rm -f conftest$ac_exeext
+rm -f conftest.$ac_objext conftest$ac_exeext
 if { (ac_try="$ac_link"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
+  (eval "$ac_link") 2>conftest.er1
   ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
   mbsrtowcs=yes
 else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
+  echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
-mbsrtowcs=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+	mbsrtowcs=no
 fi
 
-
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
 if test "$mbsrtowcs" = "no" ; then
   MZOPTIONS="$MZOPTIONS -DNO_MBTOWC_FUNCTIONS"
 fi
@@ -5283,15 +5225,7 @@ if test "${try_poll_syscall}" = "yes" ; then
    msg="for poll"
   { echo "$as_me:$LINENO: checking $msg" >&5
 echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
-  if test "$cross_compiling" = yes; then
-  use_poll=no
-else
   cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
   #include <poll.h>
      int main() {
       struct pollfd pfd;
@@ -5302,39 +5236,34 @@ cat >>conftest.$ac_ext <<_ACEOF
       return 0;
      }
 _ACEOF
-rm -f conftest$ac_exeext
+rm -f conftest.$ac_objext conftest$ac_exeext
 if { (ac_try="$ac_link"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
+  (eval "$ac_link") 2>conftest.er1
   ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
   use_poll=yes
 else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
+  echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
-use_poll=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+	use_poll=no
 fi
 
-
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
   { echo "$as_me:$LINENO: result: $use_poll" >&5
 echo "${ECHO_T}$use_poll" >&6; }
   if test "${use_poll}" = "yes" ; then
@@ -5350,15 +5279,7 @@ if test "${try_epoll_syscall}" = "yes" ; then
    msg="for epoll"
   { echo "$as_me:$LINENO: checking $msg" >&5
 echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
-  if test "$cross_compiling" = yes; then
-  use_epoll=no
-else
   cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
   #include <sys/epoll.h>
     int main() {
       int fd;
@@ -5369,39 +5290,34 @@ cat >>conftest.$ac_ext <<_ACEOF
       return 0;
     }
 _ACEOF
-rm -f conftest$ac_exeext
+rm -f conftest.$ac_objext conftest$ac_exeext
 if { (ac_try="$ac_link"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
+  (eval "$ac_link") 2>conftest.er1
   ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
   use_epoll=yes
 else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
+  echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
-use_epoll=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+	use_epoll=no
 fi
 
-
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
   { echo "$as_me:$LINENO: result: $use_epoll" >&5
 echo "${ECHO_T}$use_epoll" >&6; }
   if test "${use_epoll}" = "yes" ; then
@@ -5417,15 +5333,7 @@ if test "${try_kqueue_syscall}" = "yes" ; then
    msg="for kqueue"
   { echo "$as_me:$LINENO: checking $msg" >&5
 echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
-  if test "$cross_compiling" = yes; then
-  use_kqueue=no
-else
   cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
   #include <sys/types.h>
     #include <sys/event.h>
     #include <sys/time.h>
@@ -5439,39 +5347,34 @@ cat >>conftest.$ac_ext <<_ACEOF
         return 0;
      }
 _ACEOF
-rm -f conftest$ac_exeext
+rm -f conftest.$ac_objext conftest$ac_exeext
 if { (ac_try="$ac_link"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
+  (eval "$ac_link") 2>conftest.er1
   ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
   use_kqueue=yes
 else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
+  echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
-use_kqueue=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+	use_kqueue=no
 fi
 
-
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
   { echo "$as_me:$LINENO: result: $use_kqueue" >&5
 echo "${ECHO_T}$use_kqueue" >&6; }
   if test "${use_kqueue}" = "yes" ; then
@@ -5590,15 +5493,7 @@ if test "${check_for_mprotect}" = "yes" ; then
    msg="for mmap and mprotect"
   { echo "$as_me:$LINENO: checking $msg" >&5
 echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
-  if test "$cross_compiling" = yes; then
-  use_mprotect=no
-else
   cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
   #include <sys/mman.h>
     #include <fcntl.h>
      int main() {
@@ -5608,39 +5503,34 @@ cat >>conftest.$ac_ext <<_ACEOF
       return 0;
      }
 _ACEOF
-rm -f conftest$ac_exeext
+rm -f conftest.$ac_objext conftest$ac_exeext
 if { (ac_try="$ac_link"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
+  (eval "$ac_link") 2>conftest.er1
   ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
   use_mprotect=yes
 else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
+  echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
-use_mprotect=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+	use_mprotect=no
 fi
 
-
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
   { echo "$as_me:$LINENO: result: $use_mprotect" >&5
 echo "${ECHO_T}$use_mprotect" >&6; }
   if test "${use_mprotect}" = "yes" ; then
@@ -8722,15 +8612,7 @@ if test "${enable_mzrt}" = "yes" ; then
    msg="for compare-and-swap"
   { echo "$as_me:$LINENO: checking $msg" >&5
 echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
-  if test "$cross_compiling" = yes; then
-  cas_available=no
-else
   cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
 int check1(long *addr, long old, long new_val) {
      return __sync_bool_compare_and_swap(addr, old, new_val);
    }
@@ -8742,39 +8624,34 @@ int check1(long *addr, long old, long new_val) {
       return !check1(&l, 2, 4) || !check2(&s, 3, 6);
    }
 _ACEOF
-rm -f conftest$ac_exeext
+rm -f conftest.$ac_objext conftest$ac_exeext
 if { (ac_try="$ac_link"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
+  (eval "$ac_link") 2>conftest.er1
   ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
   cas_available=yes
 else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
+  echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
-cas_available=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+	cas_available=no
 fi
 
-
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
   { echo "$as_me:$LINENO: result: $cas_available" >&5
 echo "${ECHO_T}$cas_available" >&6; }
   if test "${cas_available}" = "yes" ; then
@@ -8809,54 +8686,41 @@ _ACEOF
  msg="whether pthread_rwlock is available"
   { echo "$as_me:$LINENO: checking $msg" >&5
 echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
-  if test "$cross_compiling" = yes; then
-  rwlockavail=no
-else
   cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
   #include <pthread.h>
    pthread_rwlock_t l;
    int main() {
      return pthread_rwlock_init(&l, NULL);
    }
 _ACEOF
-rm -f conftest$ac_exeext
+rm -f conftest.$ac_objext conftest$ac_exeext
 if { (ac_try="$ac_link"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
+  (eval "$ac_link") 2>conftest.er1
   ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
   rwlockavail=yes
 else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
+  echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
-rwlockavail=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+	rwlockavail=no
 fi
 
-
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
   { echo "$as_me:$LINENO: result: $rwlockavail" >&5
 echo "${ECHO_T}$rwlockavail" >&6; }
   if test "$rwlockavail" = "yes" ; then
@@ -8883,52 +8747,39 @@ if test "$check_gcc_dash_e" = "yes" ; then
  msg="whether linker accepts -Wl,-E"
   { echo "$as_me:$LINENO: checking $msg" >&5
 echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
-  if test "$cross_compiling" = yes; then
-  linker_dash_e=no
-else
   cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
 int main() {
       return 0;
    }
 _ACEOF
-rm -f conftest$ac_exeext
+rm -f conftest.$ac_objext conftest$ac_exeext
 if { (ac_try="$ac_link"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
+  (eval "$ac_link") 2>conftest.er1
   ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
   linker_dash_e=yes
 else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
+  echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
-linker_dash_e=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+	linker_dash_e=no
 fi
 
-
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
   if test "$linker_dash_e" = "no" ; then
     LDFLAGS="${orig_ldflags}"
   fi
