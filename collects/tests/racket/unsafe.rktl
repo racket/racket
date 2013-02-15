@@ -380,7 +380,15 @@
       (test-tri (list (void) 27.4t0) 'unsafe-extflvector-set! v 2 27.4t0
                 #:pre (lambda () (extflvector-set! v 2 0.0t0))
                 #:post (lambda (x) (list x (extflvector-ref v 2)))
-                #:literal-ok? #f)))
+                #:literal-ok? #f))
+
+    (test-bin 9.5t0 'unsafe-f80vector-ref (f80vector 1.0t0 9.5t0 18.7t0) 1)
+    (let ([v (f80vector 1.0t0 9.5t0 18.7t0)])
+      (test-tri (list (void) 27.4t0) 'unsafe-f80vector-set! v 2 27.4t0
+                #:pre (lambda () (f80vector-set! v 2 0.0t0)) 
+                #:post (lambda (x) (list x (f80vector-ref v 2)))
+                #:literal-ok? #f))
+    )
 
   (test-bin 95 'unsafe-fxvector-ref (fxvector 10 95 187) 1)
   (test-un 5 'unsafe-fxvector-length (fxvector 11 20 31 45 57))
@@ -437,6 +445,13 @@
                    (unsafe-f64vector-ref y 1))
             1.2 (f64vector 1.0 4.2 6.7) 2.0)
 
+  (when (extflonum-available?)
+    (test-tri 5.3999999999999999997t0 '(lambda (x y z) (unsafe-extfl+ x (unsafe-f80vector-ref y z))) 1.2t0 (f80vector 1.0t0 4.2t0 6.7t0) 1)
+    (test-tri 3.2t0 '(lambda (x y z) 
+                       (unsafe-f80vector-set! y 1 (unsafe-extfl+ x z))
+                       (unsafe-f80vector-ref y 1))
+              1.2t0 (f80vector 1.0t0 4.2t0 6.7t0) 2.0t0))
+
   (void))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -472,7 +487,7 @@
                            (- n 1))))))])
   (test 500000.0 f 1.0))
 
-(when (extflonum-available?)
+(when (extflonum-available?) 
   (let ([f (lambda (x)
              (let ([x (unsafe-extfl+ x 1.0t0)])
                (let loop ([v 0.0t0][n 10000])
@@ -490,7 +505,6 @@
                            (- n 1)
                            (unsafe-extfl- 0.0t0 q))))))])
     (test 20002.0t0 f 1.0t0))
-
   (let ([f (lambda (x)
              (let loop ([a 0.0t0][v 0.0t0][n 1000000])
                (if (zero? n)
@@ -502,7 +516,7 @@
                        (loop a
                              (unsafe-extfl+ v x)
                              (- n 1))))))])
-    (test 1000000.0t0 f 2.0t0)))
+    (test 500000.0t0 f 1.0t0)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -150,13 +150,11 @@ int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int flags
     }
   } else if (keep_fpr1) {
     (void)jit_calli(sjc.retry_alloc_code_keep_fpr1);
-  } 
 #ifdef MZ_LONG_DOUBLE
-  else if (keep_extfpr1) {
+  } else if (keep_extfpr1) {
     (void)jit_calli(sjc.retry_alloc_code_keep_extfpr1);
-  }
 #endif
-  else {
+  } else {
     (void)jit_calli(sjc.retry_alloc_code);
   }
   __START_TINY_JUMPS__(1);

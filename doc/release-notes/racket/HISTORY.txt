@@ -1,3 +1,6 @@
+Version 5.3.3.3
+ffi/vector: added f8vectors
+
 Version 5.3.3.2
 Added port-counts-lines?
 

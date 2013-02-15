@@ -3,8 +3,10 @@
 
 (Section 'foreign)
 
-(require mzlib/foreign)
-(unsafe!)
+(require ffi/unsafe
+         ffi/unsafe/cvector
+         ffi/vector
+         racket/extflonum)
 
 (test #f malloc 0)
 (test #f malloc 0 _int)
@@ -480,6 +482,17 @@
 (let ()
   (define _values (get-ffi-obj 'scheme_values #f (_fun _int (_list i _racket) -> _racket)))
   (test-values '(1 "b" three) (lambda () (_values 3 (list 1 "b" 'three)))))
+
+(when (extflonum-available?)
+  (define m (malloc _longdouble))
+  (ptr-set! m _longdouble 13.57t0)
+  (test 13.57t0 ptr-ref m _longdouble)
+
+  (define v (extflvector 1.1t0 2.2t0 3.3t0))
+  (test 3.3t0 extflvector-ref v 2)
+  (test (void) extflvector-set! v 2 4.4t0)
+  (test 4.4t0 extflvector-ref v 2)
+  (test 2.2t0 ptr-ref (ptr-add (extflvector->cpointer v) (ctype-sizeof _longdouble)) _longdouble))
 
 (report-errs)
 

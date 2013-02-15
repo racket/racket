@@ -4,6 +4,7 @@
 (Section 'optimization)
 
 (require racket/flonum
+         racket/extflonum
          racket/fixnum
          racket/unsafe/ops
          compiler/zo-parse
@@ -15,6 +16,7 @@
 (parameterize ([current-namespace (make-base-namespace)]
 	       [eval-jit-enabled #t])
   (namespace-require 'racket/flonum)
+  (namespace-require 'racket/extflonum)
   (namespace-require 'racket/fixnum)
   (eval '(define-values (prop:thing thing? thing-ref) 
            (make-struct-type-property 'thing)))
@@ -25,7 +27,7 @@
          [check-error-message (lambda (name proc [fixnum? #f])
 				(unless (memq name '(eq? eqv? equal? 
                                                          not null? pair? list?
-							 real? number? boolean? 
+							 real? number? boolean?
 							 procedure? symbol?
 							 string? bytes?
 							 vector? box?
@@ -71,7 +73,7 @@
 	 [bin0 (lambda (v op arg1 arg2)
 		 ;; (printf "Trying ~a ~a ~a\n" op arg1 arg2);
 		 (let ([name `(,op ,arg1 ,arg2)])
-		   (test v name ((eval `(lambda (x) (,op x ',arg2))) arg1))
+                   (test v name ((eval `(lambda (x) (,op x ',arg2))) arg1))
 		   (test v name ((eval `(lambda (x) (,op ',arg1 x))) arg2))
 		   (test v name ((eval `(lambda (x y) (,op x y))) arg1 arg2))
 		   (test v name ((eval `(lambda (x y) 
@@ -172,6 +174,7 @@
                         (check-error-message op (eval `(lambda (x) (,op (,get-arg1) ,arg2 x)))))
 		      (tri0 v op get-arg1 arg2 arg3 check-effect))])
 
+       
     (un #f 'null? 0)
     (un-exact #t 'null? '())
     (un #f 'pair? 0)
@@ -662,6 +665,99 @@
     (tri0 '(1 2 . 3) 'list* (lambda () 1) 2 3 void)
     (un0 '#&1 'box 1)
 
+    (when (extflonum-available?)
+      (define (extflonum-close? fl1 fl2)
+        (extfl<= (extflabs (fl- fl1 fl2))
+                 (real->extfl 1e-8)))
+      
+      (bin-exact #t 'extfl< 100.0t0 200.0t0 #t)
+      (bin-exact #f 'extfl< 200.0t0 100.0t0)
+      (bin-exact #f 'extfl< 200.0t0 200.0t0)
+      
+      (bin-exact #t 'extfl<= 100.0t0 200.0t0 #t)
+      (bin-exact #f 'extfl<= 200.0t0 100.0t0)
+      (bin-exact #t 'extfl<= 200.0t0 200.0t0)
+      
+      (bin-exact #f 'extfl> 100.0t0 200.0t0 #t)
+      (bin-exact #t 'extfl> 200.0t0 100.0t0)
+      (bin-exact #f 'extfl> 200.0t0 200.0t0)
+      
+      (bin-exact #f 'extfl>= 100.0t0 200.0t0 #t)
+      (bin-exact #t 'extfl>= 200.0t0 100.0t0)
+      (bin-exact #t 'extfl>= 200.0t0 200.0t0)
+
+      (bin-exact #f 'extfl= 100.0t0 200.0t0 #t)
+      (bin-exact #t 'extfl= 200.0t0 200.0t0)
+
+      (un-exact 3.0t0 'extflabs -3.0t0 #t)
+      (un-exact 3.0t0 'extflsqrt 9.0t0 #t)
+      (un-exact +nan.t 'extflsqrt -9.0t0)
+      
+      (let ([test-trig
+             (lambda (trig extfltrig)
+               ;;(un (real->extfl (trig 1.0)) extfltrig 1.0t0 #t)
+               (un +nan.t extfltrig +nan.t))])
+        (test-trig sin 'extflsin)
+        (test-trig cos 'extflcos)
+        (test-trig tan 'extfltan)
+        (test-trig asin 'extflasin)
+        (test-trig acos 'extflacos)
+        (test-trig atan 'extflatan)
+        (test-trig log 'extfllog)
+        (test-trig exp 'extflexp))
+
+      (when (extflonum-available?)
+        (for-each
+         (lambda (v)
+           (define (once v)
+             (define (->fl v) (extfl->inexact v))
+             (define (->extfl v) (real->extfl v))
+             (un-exact (->extfl (round (->fl v))) 'extflround v #t)
+             (un-exact (->extfl (ceiling (->fl v))) 'extflceiling v #t)
+             (un-exact (->extfl (floor (->fl v))) 'extflfloor v #t)
+             (un-exact (->extfl (truncate (->fl v))) 'extfltruncate v #t))
+          (once v)
+          (once (extfl- 0.0t0 v)))
+         '(3.0t0 3.1t0 3.5t0 3.8t0 4.0t0 4.1t0 4.5t0 4.8t0 0.0t0)))
+
+      (bin-exact 9.0t0 'extflexpt 3.0t0 2.0t0 #t)
+      (bin-exact (extflexpt 3.1t0 2.5t0) 'extflexpt 3.1t0 2.5t0 #t)
+      (bin-exact -1.0t0 'extflexpt -1.0t0 3.0t0 #t)
+      (bin-exact -0.125t0 'extflexpt -2.0t0 -3.0t0 #t)
+      (bin-exact +nan.t 'extflexpt -1.0t0 3.1t0 #t)
+      (bin-exact 0.0t0 'extflexpt 0.0t0 10.0t0 #t)
+      (bin-exact +inf.t 'extflexpt 0.0t0 -1.0t0 #t)
+      (bin-exact +1.0t0 'extflexpt 0.0t0 0.0t0 #t)
+      (bin-exact +nan.t 'extflexpt +nan.t 2.7t0 #t)
+      (bin-exact +nan.t 'extflexpt 2.7t0 +nan.t #t)
+      (bin-exact +nan.t 'extflexpt +nan.t +nan.t #t)
+
+      (un-exact 10.0t0 '->extfl 10)
+      (un-exact 10.0t0 'fx->extfl 10)
+
+      (un-exact 11 'extfl->exact-integer 11.0t0 #t)
+      (un-exact -1 'extfl->exact-integer -1.0t0)
+      (un-exact (inexact->exact 5e200) 'extfl->exact-integer (real->extfl 5e200))
+      (un-exact 11 'extfl->fx 11.0t0 #t)
+      (un-exact -11 'extfl->fx -11.0t0)
+
+      (bin-exact -0.75t0 'extfl- 1.5t0 2.25t0 #t)
+
+      (bin-exact 3.0t0 'extflmin 3.0t0 4.5t0 #t)
+      (bin-exact 2.5t0 'extflmin 3.0t0 2.5t0)
+      (bin0 3.5t0 '(lambda (x y) (extfl+ 1.0t0 (extflmin x y))) 3.0t0 2.5t0)
+      (bin0 4.0t0 '(lambda (x y) (extfl+ 1.0t0 (extflmin x y))) 3.0t0 4.5t0)
+
+      (bin-exact 4.5t0 'extflmax 3.0t0 4.5t0 #t)
+      (bin-exact 3.0t0 'extflmax 3.0t0 2.5t0)
+      (bin0 5.5t0 '(lambda (x y) (extfl+ 1.0t0 (extflmax x y))) 3.0t0 4.5t0)
+      (bin0 4.0t0 '(lambda (x y) (extfl+ 1.0t0 (extflmax x y))) 3.0t0 2.5t0)
+
+      (bin-exact 1.1t0 'extflvector-ref (extflvector 1.1t0 2.2t0 3.3t0) 0 #t)
+      (bin-exact 3.3t0 'extflvector-ref (extflvector 1.1t0 2.2t0 3.3t0) 2)
+      (un-exact 3 'extflvector-length (extflvector 1.1t0 2.2t0 3.3t0) #t)
+      )
+    
     (let ([test-setter
 	   (lambda (make-X def-val set-val set-name set ref 3rd-all-ok?)
 	     (let ([v (make-X 3 def-val)])
@@ -1535,6 +1631,15 @@
               (+ (unsafe-flvector-length x) (unsafe-flvector-length x)))
            #f)
 
+(when (extflonum-available?)
+  (test-comp '(lambda (x)
+              (let ([y (unsafe-extflvector-length x)])
+                (let ([f (lambda () y)])
+                  (+ (f) (f)))))
+           '(lambda (x)
+              (+ (unsafe-extflvector-length x) (unsafe-extflvector-length x)))
+           #f))
+
 ;; don't delay an unsafe car, because it might be space-unsafe
 (test-comp '(lambda (f x)
               (let ([y (unsafe-car x)])
@@ -1584,6 +1689,38 @@
                     (unsafe-fl+ 10 (unsafe-fl* q q))
                     f)))
            #f)
+
+(when (extflonum-available?)
+  ;; don't duplicate formerly once-used variable due to inlining
+  (test-comp '(lambda (y)
+                (let ([q (unsafe-extfl* y y)]) ; => q is known flonum
+                  (let ([x (unsafe-extfl* q q)]) ; can delay (but don't duplicate)
+                    (define (f z) (unsafe-extfl+ z x))
+                    (if y
+                        (f 10)
+                        f))))
+             '(lambda (y)
+                (let ([q (unsafe-extfl* y y)])
+                  (let ([x (unsafe-extfl* q q)])
+                    (define (f z) (unsafe-extfl+ z x))
+                    (if y
+                        (unsafe-extfl+ 10 x)
+                        f)))))
+  ;; double-check that previous test doesn't succeed due to copying
+  (test-comp '(lambda (y)
+                (let ([q (unsafe-extfl* y y)])
+                  (let ([x (unsafe-extfl* q q)])
+                    (define (f z) (unsafe-extfl+ z x))
+                    (if y
+                        (unsafe-extfl+ 10 x)
+                        f))))
+             '(lambda (y)
+                (let ([q (unsafe-extfl* y y)])
+                  (define (f z) (unsafe-extfl+ z (unsafe-extfl* q q)))
+                  (if y
+                      (unsafe-extfl+ 10 (unsafe-extfl* q q))
+                      f)))
+             #f))
 
 ;; check move through an intermediate variable:
 (test-comp '(lambda (n)
@@ -1768,7 +1905,18 @@
          (unsafe-fxvector-set! x x x)
          (unsafe-f64vector-set! x x x)
          (unsafe-s16vector-set! x x x)
-         (unsafe-u16vector-set! x x x))))
+         (unsafe-u16vector-set! x x x)))
+
+  (when (extflonum-available?)
+    (map check-omit-ok
+         '((unsafe-extflvector-ref x x)
+           (unsafe-f80vector-ref x x)))
+
+    (map (lambda (x) (check-omit-ok x #f))
+         '((unsafe-extflvector-set! x x x)
+           (unsafe-f80vector-set! x x x)
+           ))
+    ))
 
 (test-comp '(lambda (x)
               (hash-ref '#hash((x . y)) x (lambda () 10)))
@@ -1952,6 +2100,8 @@
               (begin0
                (list (c? (c-q (c 1 2 3))))
                5)))
+
+
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check splitting of definitions
@@ -2191,6 +2341,22 @@
                   (f y (sub1 y)))))
         (f 1.0 100)))
 
+(when (extflonum-available?)
+  (test '(done)
+      'unboxing-inference-test
+      (let ()
+        (define (f x y)
+          (if (zero? y)
+              ;; prevents inlining:
+              '(done)
+              (if (zero? y)
+                  ;; incorrectly triggered unboxing, 
+                  ;; once upon a time:
+                  (extfl+ x 1.0t0) 
+                  ;; not a float argument => no unboxing of x:
+                  (f y (sub1 y)))))
+        (f 1.0t0 100))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test against letrec-splitting bug:
 
@@ -2256,6 +2422,19 @@
              (lambda (exn)
                (regexp-match #rx"1e[+]?100" (exn-message exn))))
 (test (inexact->exact 1e100) (lambda (x) (inexact->exact (fl/ (fl- x 0.0) 1.0))) 1e100)
+
+(when (extflonum-available?)
+  (test 1 (lambda (x) (extfl->fx (extfl/ (extfl- x 0.0t0) 1.0t0))) 1.0t0)
+  (test 1 (lambda (x) (extfl->exact (extfl/ (extfl- x 0.0t0) 1.0t0))) 1.0t0)
+  (err/rt-test (let ([f (lambda (x) (extfl->fx (extfl/ (extfl- x 0.0t0) 1.0t0)))])
+                 (set! f f)
+                 (f 1t100))
+               ;; make sure that exception reports actual bad argument, and
+               ;; not some bad argument due to the fact that the original
+               ;; was unboxed:
+               (lambda (exn)
+                 (regexp-match #rx"1t[+]?100" (exn-message exn))))
+  (test (extfl->exact 1t100) (lambda (x) (extfl->exact (extfl/ (extfl- x 0.0t0) 1.0t0))) 1t100))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that compiler handles shifting `#%variable-reference'
@@ -2395,6 +2574,51 @@
   (test-values '(-100001.0 100001.0) non-tail)
   (test -2200000.0 non-tail2)
   (test-values '(-100001.0 100001.0) tail))
+
+
+(when (extflonum-available?)
+  (let ()
+    (define N 100000)
+    
+    (define (non-tail)
+      (define-values (a b)
+        (let loop ([n N] [x -1.0t0] [y 1.0t0])
+          (cond
+           [(zero? n) (values x y)]
+           [else (loop (sub1 n)
+                       (extfl+ x -1.0t0)
+                       (extfl+ y 1.0t0))])))
+      (values a b))
+    
+    (define (non-tail2ext)
+      (for/fold ([v 0.0t0]) ([i (in-range N)])
+        (define-values (a b)
+          (let loop ([n 10] [x -1.0t0] [y 1.0t0])
+            (cond
+             [(zero? n) (values x y)]
+             [else (loop (sub1 n)
+                         (extfl+ x -1.0t0)
+                         (extfl+ y 1.0t0))])))
+        (extfl+ v (extfl- a b))))
+    
+    (define (tail)
+      (let loop ([n N] [x -1.0t0] [y 1.0t0])
+        (cond
+         [(zero? n) (values x y)]
+         [else (loop (sub1 n)
+                     (extfl+ x -1.0t0)
+                     (extfl+ y 1.0t0))])))
+
+    (define x-tail #f)
+    (define x-non-tail #f)
+    (define x-non-tail2ext #f)
+    (set! x-tail tail)
+    (set! x-non-tail non-tail)
+    (set! x-non-tail2ext non-tail2ext)
+
+    (test-values '(-100001.0t0 100001.0t0) non-tail)
+    (test -2200000.0t0 non-tail2ext)
+    (test-values '(-100001.0t0 100001.0t0) tail)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check for corect fixpoint calculation when lifting
@@ -2614,6 +2838,24 @@
     ;; too-aggressive compilation produces a validator failure here
     (read (open-input-bytes (get-output-bytes o)))))
 
+(when (extflonum-available?)
+  (let ([m '(module m racket/base
+              (require racket/extflonum)
+              (define (f x)
+                (letrec ([z (if x (other 1) 'none)]
+                         [collect (lambda (x)
+                                    (lambda (n)
+                                      (list '(1 2 3)
+                                            (extfl+ n x))))]
+                         [a (collect 0.0t0)]
+                         [other 6])
+                  (values a z))))])
+    (define o (open-output-bytes))
+    (write (compile m) o)
+    (parameterize ([read-accept-compiled #t])
+      ;; too-aggressive compilation produces a validator failure here
+      (read (open-input-bytes (get-output-bytes o))))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; check error checking of JITted `continuation-mark-set-first'
 
@@ -2635,6 +2877,19 @@
              [(y) (fl+ x y)]))))
   
   (test 4.0 (f 1.0) 2.0))
+
+(when (extflonum-available?)
+  (let ()
+    (define f #f)
+    (set! f
+          (lambda (x)
+            (let ([x (extfl+ x x)])
+              (case-lambda
+                [() (extfl+ x x)]
+                [(y) (extfl+ x y)]))))
+    
+    (test 4.0t0 (f 1.0t0) 2.0t0)
+    ))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

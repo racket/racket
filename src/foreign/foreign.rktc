@@ -738,9 +738,28 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 @(defctype* 'float  "float"        "FLOAT"  "FLOAT"        "double")
 
 @(defctype* 'double "double"       "FLOAT"  "FLOAT"        "double")
-@;
-@; Not useful?  not implemented in any case.
-@; (defctype* 'longdouble "long double" ...???...)
+
+#define ffi_type_slongdouble ffi_type_longdouble
+@@@IFDEF{MZ_LONG_DOUBLE}{typedef long double mz_long_double;}{typedef double mz_long_double;}
+@@@IFDEF{MZ_LONG_DOUBLE}{
+  @DEFINE{SCHEME_MAYBE_LONG_DBL_VAL(x) SCHEME_LONG_DBL_VAL(x)}
+}{
+  @DEFINE{SCHEME_MAYBE_LONG_DBL_VAL(x) unsupported_long_double_val()}
+  static mz_long_double unsupported_long_double_val() { 
+    scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED, "_longdouble: " NOT_SUPPORTED_STR);    
+    return 0.0;
+  }
+}
+@@@IFDEF{MZ_LONG_DOUBLE}{
+  @DEFINE{scheme_make_maybe_long_double(x) scheme_make_long_double(x)}
+ }{
+  @DEFINE{scheme_make_maybe_long_double(x) unsupported_make_long_double()}
+  static Scheme_Object *unsupported_make_long_double() {
+    scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED, "_longdouble: " NOT_SUPPORTED_STR);    
+    return NULL;
+  }
+}
+@(defctype* '(longdouble "longdouble") "mz_long_double"       "LONG_DBL"  "MAYBE_LONG_DBL"        "maybe_long_double")
 
 /* A double that will coerce numbers to doubles: */
 @(defctype* '(double* "double") "double"
@@ -1704,7 +1723,7 @@ static void* SCHEME2C(const char *who,
     break;
   case 5: /* double */
     if (intsize==0) RETSIZE(double);
-    else if (intsize==1) RETSIZE(long double);
+    else if (intsize==1) RETSIZE(mz_long_double);
     else scheme_signal_error(MYNAME": bad qualifiers for 'double");
     break;
   default:
@@ -2071,6 +2090,18 @@ static Scheme_Object *do_memop(const char *who, int mode,
   if (!SCHEME_FLVECTORP(argv[0]))
     scheme_wrong_contract(MYNAME, "flvector?", 0, argc, argv);
   return scheme_make_offset_cptr(argv[0], (intptr_t)SCHEME_FLVEC_ELS((Scheme_Object *)0x0), NULL);
+}
+
+@cdefine[extflvector->cpointer 1]{
+@@@IFDEF{MZ_LONG_DOUBLE}{
+  if (!SCHEME_EXTFLVECTORP(argv[0]))
+    scheme_wrong_contract(MYNAME, "extflvector?", 0, argc, argv);
+  return scheme_make_offset_cptr(argv[0], (intptr_t)SCHEME_EXTFLVEC_ELS((Scheme_Object *)0x0), NULL);
+ }{
+  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
+                   MYNAME ": " NOT_SUPPORTED_STR);
+  return NULL;
+ }
 }
 
 @cdefine[memset  3 5]{return do_memop(MYNAME, 0, argc, argv);}

@@ -180,6 +180,13 @@ coerce C values to double-precision Racket numbers.
 The type @racket[_double*]
 coerces any Racket real number to a C @cpp{double}.}
 
+@defthing[_longdouble ctype?]{
+
+Represents the @cpp{long double} type on platforms where it is
+supported, in which case Racket @tech[#:doc
+reference.scrbl]{extflonums} convert to and from @cpp{long double}
+values.}
+
 @; ------------------------------------------------------------
 
 @section{Other Atomic Types}

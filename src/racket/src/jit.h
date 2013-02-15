@@ -523,8 +523,10 @@ void *scheme_jit_get_threadlocal_table();
 # define mz_tl_ldi_i(reg, addr) (mz_tl_addr(reg, addr), mz_tl_ldr_i(reg, addr))
 # define mz_tl_sti_d_fppop(addr, reg, tmp_reg) (mz_tl_addr(tmp_reg, addr), mz_tl_str_d_fppop(tmp_reg, reg, addr))
 # define mz_tl_ldi_d_fppush(reg, addr, tmp_reg) (mz_tl_addr(tmp_reg, addr), mz_tl_ldr_d_fppush(reg, tmp_reg, addr))
-# define mz_fpu_tl_sti_ld_fppop(addr, reg, tmp_reg) (mz_tl_addr(tmp_reg, addr), mz_fpu_tl_str_ld_fppop(tmp_reg, reg, addr))
-# define mz_fpu_tl_ldi_ld_fppush(reg, addr, tmp_reg) (mz_tl_addr(tmp_reg, addr), mz_fpu_tl_ldr_ld_fppush(reg, tmp_reg, addr))
+# ifdef MZ_LONG_DOUBLE
+#  define mz_fpu_tl_sti_ld_fppop(addr, reg, tmp_reg) (mz_tl_addr(tmp_reg, addr), mz_fpu_tl_str_ld_fppop(tmp_reg, reg, addr))
+#  define mz_fpu_tl_ldi_ld_fppush(reg, addr, tmp_reg) (mz_tl_addr(tmp_reg, addr), mz_fpu_tl_ldr_ld_fppush(reg, tmp_reg, addr))
+# endif
 #else
 # define mz_tl_sti_p(addr, reg, tmp_reg) jit_sti_p(addr, reg)
 # define mz_tl_sti_l(addr, reg, tmp_reg) jit_sti_l(addr, reg)
@@ -1441,10 +1443,9 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int tail_ok, int w
 int scheme_generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inlined_ok, int unbox_anyway);
 
 #ifdef USE_FLONUM_UNBOXING
-int scheme_generate_flonum_local_unboxing(mz_jit_state *jitter, int push, int extfl);
+int scheme_generate_flonum_local_unboxing(mz_jit_state *jitter, int push, int no_store, int extfl);
 int scheme_generate_flonum_local_boxing(mz_jit_state *jitter, int pos, int offset, int target, int extfl);
 #endif
-int scheme_generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inlined_ok, int unbox_anyway);
 int scheme_generate_non_tail_mark_pos_prefix(mz_jit_state *jitter);
 void scheme_generate_non_tail_mark_pos_suffix(mz_jit_state *jitter);
 
@@ -1479,6 +1480,9 @@ int scheme_is_non_gc(Scheme_Object *obj, int depth);
 int scheme_jit_check_closure_flonum_bit(Scheme_Closure_Data *data, int pos, int delta);
 # define CLOSURE_ARGUMENT_IS_FLONUM(data, pos) scheme_jit_check_closure_flonum_bit(data, pos, 0)
 # define CLOSURE_CONTENT_IS_FLONUM(data, pos) scheme_jit_check_closure_flonum_bit(data, pos, data->num_params)
+ int scheme_jit_check_closure_extflonum_bit(Scheme_Closure_Data *data, int pos, int delta);
+# define CLOSURE_ARGUMENT_IS_EXTFLONUM(data, pos) scheme_jit_check_closure_extflonum_bit(data, pos, 0)
+# define CLOSURE_CONTENT_IS_EXTFLONUM(data, pos) scheme_jit_check_closure_extflonum_bit(data, pos, data->num_params)
 #endif
 
 Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc, int local_only);
@@ -1566,6 +1570,7 @@ Scheme_Object *scheme_jit_continuation_apply_install(Apply_LWC_Args *args);
 #define INLINE_STRUCT_PROC_PROP_GET_W_DEFAULT 5
 #define INLINE_STRUCT_PROC_PROP_PRED 6
 #define INLINE_STRUCT_PROC_CONSTR 7
+
 
 
 

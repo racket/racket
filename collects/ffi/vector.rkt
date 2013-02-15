@@ -2,6 +2,8 @@
 
 (require "unsafe.rkt"
          racket/unsafe/ops
+         racket/extflonum
+         (for-syntax racket/extflonum)
          (for-syntax racket/base))
 
 (define-syntax define*
@@ -37,6 +39,7 @@
                      [_TAG*        (id "_" "*")]
                      [TAGname      name]
                      [f64?         (if (eq? (syntax-e #'TAG) 'f64) #'#t #'#f)]
+                     [f80?         (if (eq? (syntax-e #'TAG) 'f80) #'#t #'#f)]
                      [s16?         (if (eq? (syntax-e #'TAG) 's16) #'#t #'#f)]
                      [u16?         (if (eq? (syntax-e #'TAG) 'u16) #'#t #'#f)])
          #'(begin
@@ -62,6 +65,7 @@
                        ;; use JIT-inlined operation if available:
                        (cond
                         [f64? (unsafe-f64vector-ref v i)]
+                        [f80? (unsafe-f80vector-ref v i)]
                         [s16? (unsafe-s16vector-ref v i)]
                         [u16? (unsafe-u16vector-ref v i)]
                         [else (ptr-ref (TAG-ptr v) type i)])
@@ -75,6 +79,8 @@
                        (cond
                         [(and f64? (inexact-real? x))
                          (unsafe-f64vector-set! v i x)]
+                        [(and f80? (extflonum? x))
+                         (unsafe-f80vector-set! v i x)]
                         [(and s16? (fixnum? x) (unsafe-fx<= -32768 x) (unsafe-fx<= x 32767))
                          (unsafe-s16vector-set! v i x)]
                         [(and u16? (fixnum? x) (unsafe-fx<= 0 x) (unsafe-fx<= x 65535))
@@ -135,6 +141,7 @@
 (srfi-4-define/provide u64 _uint64)
 (srfi-4-define/provide f32 _float)
 (srfi-4-define/provide f64 _double*)
+(srfi-4-define/provide f80 _longdouble)
 
 ;; simply rename bytes* to implement the u8vector type
 (provide (rename-out [bytes?       u8vector?      ]
