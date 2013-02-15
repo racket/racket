@@ -674,7 +674,7 @@
                                        #,(or output-expr res)))
                                  #`(begin0
                                     (ffi #,@ffi-args)
-                                    #,@post)))))]
+                                    (let* (#,@post) (void)))))))]
                ;; if there is a string 'ffi-name property, use it as a name
                [body (let ([n (cond [(syntax-property stx 'ffi-name)
                                      => syntax->datum]
