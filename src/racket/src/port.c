@@ -8917,7 +8917,7 @@ static Scheme_Object *current_subproc_cust_mode (int argc, Scheme_Object *argv[]
 {
   return scheme_param_config("current-subprocess-custodian-mode", scheme_make_integer(MZCONFIG_SUBPROC_CUSTODIAN_MODE),
 			     argc, argv,
-			     -1, subproc_cust_mode_p, "'interrupt, 'kill, or #f", 0);
+			     -1, subproc_cust_mode_p, "'interrupt, 'kill, or #f", 1);
 }
 
 static Scheme_Object *subproc_group_on (int argc, Scheme_Object *argv[])
