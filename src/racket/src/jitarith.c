@@ -562,7 +562,7 @@ int scheme_generate_alloc_long_double(mz_jit_state *jitter, int inline_retry, in
 {
 #ifdef INLINE_FP_OPS
 # ifdef CAN_INLINE_ALLOC
-  scheme_inline_alloc(jitter, sizeof(Scheme_Long_Double), scheme_long_double_type, 0, 0, 0, inline_retry, 1); /* TODO Probably here third from end must be 0 */
+  scheme_inline_alloc(jitter, sizeof(Scheme_Long_Double), scheme_long_double_type, 0, 0, 0, inline_retry, 1);
   CHECK_LIMIT();
   jit_addi_p(dest, JIT_V1, OBJHEAD_SIZE);
   (void)jit_fpu_stxi_ld_fppop(&((Scheme_Long_Double *)0x0)->long_double_val, dest, JIT_FPU_FPR0);
