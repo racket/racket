@@ -526,7 +526,8 @@ directory.
 
 @defproc[(register-external-file [file (and path? complete-path?)]) void?]{
 
-Logs a message (see @racket[log-message]) at level @racket['info]. The
+Logs a message (see @racket[log-message]) at level @racket['info] to 
+a logger named @racket['cm-accomplice]. The
 message data is a @racketidfont{file-dependency} prefab structure type
 with two fields; the first field's value is @racket[file] and the second
 field's value is @racket[#f] (to indicate a non-module dependency).
