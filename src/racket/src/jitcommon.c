@@ -1698,7 +1698,9 @@ static int common4(mz_jit_state *jitter, void *_data)
         jit_movi_i(JIT_R1, 3);
         if (i == 2) {
           /* need to box flonum */
-          scheme_generate_alloc_double(jitter, 1, JIT_R0);
+          MZ_FPUSEL_STMT(iii,
+                         scheme_generate_alloc_long_double(jitter, 1, JIT_R0),
+                         scheme_generate_alloc_double(jitter, 1, JIT_R0));
           jit_stxi_p(WORDS_TO_BYTES(2), JIT_RUNSTACK, JIT_R0);
         }
       }
@@ -2248,19 +2250,32 @@ static int common5(mz_jit_state *jitter, void *_data)
     mz_epilog(JIT_R2);
   }
 
+#ifdef MZ_LONG_DOUBLE
+  /* *** box_extflonum_from_stack_code *** */
+  /* R0 has offset from frame pointer to long double on stack */
+  {
+    sjc.box_extflonum_from_stack_code = jit_get_ip().ptr;
+
+    mz_prolog(JIT_R2);
+
+    JIT_UPDATE_THREAD_RSPTR();
+
+    jit_movr_p(JIT_R1, JIT_FP);
+    jit_fpu_ldxr_ld_fppush(JIT_FPU_FPR0, JIT_R1, JIT_R0);
+    scheme_generate_alloc_long_double(jitter, 1, JIT_R0);
+    CHECK_LIMIT();
+    
+    mz_epilog(JIT_R2);
+  }
+
   /* *** box_extflonum_from_reg_code *** */
   /* JIT_FPU_FPR2 (reg-based) or JIT_FPU_FPR0 (stack-based) has value */
-#ifdef MZ_LONG_DOUBLE
   {
     sjc.box_extflonum_from_reg_code = jit_get_ip().ptr;
 
     mz_prolog(JIT_R2);
 
     JIT_UPDATE_THREAD_RSPTR();
-
-#ifdef DISABLED_DIRECT_FPR_ACCESS
-    jit_fpu_movr_ld(JIT_FPU_FPR0, JIT_FPU_FPR2);
-#endif
 
     scheme_generate_alloc_long_double(jitter, 1, JIT_R0);
     CHECK_LIMIT();

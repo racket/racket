@@ -119,6 +119,7 @@ static int is_inline_unboxable_op(Scheme_Object *obj, int flag, int unsafely, in
     if (IS_NAMED_PRIM(obj, "unsafe-extflmin")) return 1;
     if (IS_NAMED_PRIM(obj, "unsafe-extflmax")) return 1;
     if (IS_NAMED_PRIM(obj, "unsafe-fx->extfl")) return 1;
+    if (IS_NAMED_PRIM(obj, "unsafe-f80vector-ref")) return 1;
     if (IS_NAMED_PRIM(obj, "unsafe-extflvector-ref")) return 1;
 
     if (unsafely) {
@@ -263,9 +264,10 @@ int scheme_can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely
           return 1;
         }
       }
-#ifdef MZ_LONG_DOUBLE_UNBOXED
+#ifdef MZ_LONG_DOUBLE
       if ((SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)
-          && (IS_NAMED_PRIM(app->rator, "unsafe-extflvector-ref"))) {
+          && (IS_NAMED_PRIM(app->rator, "unsafe-f80vector-ref")
+              || IS_NAMED_PRIM(app->rator, "unsafe-extflvector-ref"))) {
         if (is_unboxing_immediate(app->rand1, 1, extfl)
             && is_unboxing_immediate(app->rand2, 1, extfl)) {
           return 1;
@@ -303,7 +305,7 @@ int scheme_can_unbox_directly(Scheme_Object *obj, int extfl)
                 || IS_NAMED_PRIM(app->rator, "fx->fl"))
               return 1;
           }
-#ifdef MZ_LONG_DOUBLE_UNBOXED
+#ifdef MZ_LONG_DOUBLE
           if (extfl) {
             if (IS_NAMED_PRIM(app->rator, "->extfl")
                 || IS_NAMED_PRIM(app->rator, "fx->extfl"))
@@ -324,7 +326,7 @@ int scheme_can_unbox_directly(Scheme_Object *obj, int extfl)
           if (!extfl) {
             if (IS_NAMED_PRIM(app->rator, "flvector-ref")) return 1;
           }
-#ifdef MZ_LONG_DOUBLE_UNBOXED
+#ifdef MZ_LONG_DOUBLE
           if (extfl) {
             if (IS_NAMED_PRIM(app->rator, "extflvector-ref")) return 1;
           }
@@ -560,7 +562,7 @@ int scheme_generate_alloc_long_double(mz_jit_state *jitter, int inline_retry, in
 {
 #ifdef INLINE_FP_OPS
 # ifdef CAN_INLINE_ALLOC
-  scheme_inline_alloc(jitter, sizeof(Scheme_Long_Double), scheme_long_double_type, 0, 0, 1, inline_retry, 1);
+  scheme_inline_alloc(jitter, sizeof(Scheme_Long_Double), scheme_long_double_type, 0, 0, 0, inline_retry, 1);
   CHECK_LIMIT();
   jit_addi_p(dest, JIT_V1, OBJHEAD_SIZE);
   (void)jit_fpu_stxi_ld_fppop(&((Scheme_Long_Double *)0x0)->long_double_val, dest, JIT_FPU_FPR0);
@@ -660,11 +662,12 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
       /* inexact->exact needs no extra number */
     } else {
 #ifdef MZ_LONG_DOUBLE
-      long double ld = second_const;
-#endif
+      long double d = second_const;
+#else
       double d = second_const;
+#endif
       MZ_FPUSEL_STMT(extfl,
-                     mz_fpu_movi_ld_fppush(fpr1, ld, JIT_R2),
+                     mz_fpu_movi_ld_fppush(fpr1, d, JIT_R2),
                      mz_movi_d_fppush(fpr1, d, JIT_R2));
       reversed = !reversed;
       cmp = -cmp;
@@ -783,10 +786,10 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
           __START_TINY_JUMPS__(1);
           refs2 = jit_bner_l(jit_forward(), JIT_R1, JIT_R2);
           __END_TINY_JUMPS__(1);
-#ifndef DIRECT_FPR_ACCESS
-          if (unboxed)
-            jit_FPSEL_roundr_xd_l_fppop(extfl, JIT_R1, fpr2); /* slow path won't be needed */
-#endif
+/* #ifndef DIRECT_FPR_ACCESS */
+          if (unboxed && extfl)
+            jit_FPSEL_roundr_xd_l_fppop(extfl, JIT_R1, fpr1+1); /* slow path won't be needed */
+/* #endif */
         }
         jit_fixnum_l(dest, JIT_R1);
         no_alloc = 1;
@@ -913,13 +916,13 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
         scheme_generate_alloc_X_double(jitter, 0, dest, extfl);
         CHECK_LIMIT();
 #if defined(MZ_USE_JIT_I386)
-        if (need_post_pop)
+        if (need_post_pop && extfl)
           FSTPr(0);
 #endif
       } else if (unboxed_result) {
         jitter->unbox_depth++;
 #if defined(MZ_USE_JIT_I386)
-        if (need_post_pop) {
+        if (need_post_pop && extfl) {
           FXCHr(1);
           FSTPr(0);
         }
@@ -1105,11 +1108,11 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
     if (!rand) {
       inlined_flonum1 = inlined_flonum2 = 1;
     } else {
-      if (scheme_can_unbox_inline(rand, 5, MZ_FPUSEL(extfl, JIT_FPU_FPR_NUM, JIT_FPR_NUM)-2, unsafe_fl > 0, extfl))
+      if (scheme_can_unbox_inline(rand, 5, JIT_FPUSEL_FPR_NUM(extfl)-2, unsafe_fl > 0, extfl))
         inlined_flonum1 = 1;
       else
         inlined_flonum1 = 0;
-      if (!rand2 || scheme_can_unbox_inline(rand2, 5, MZ_FPUSEL(extfl, JIT_FPU_FPR_NUM, JIT_FPR_NUM)-3, unsafe_fl > 0, extfl))
+      if (!rand2 || scheme_can_unbox_inline(rand2, 5, JIT_FPUSEL_FPR_NUM(extfl)-3, unsafe_fl > 0, extfl))
         inlined_flonum2 = 1;
       else
         inlined_flonum2 = 0;
@@ -1231,12 +1234,16 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
       flonum_depth = 2;
     }
     if (args_unboxed) {
-      --jitter->unbox;
       MZ_FPUSEL_STMT_ONLY(extfl, --jitter->unbox_extflonum);
+      --jitter->unbox;
     }
     jitter->unbox_depth -= flonum_depth;
     if (!jitter->unbox && jitter->unbox_depth && rand)
       scheme_signal_error("internal error: broken unbox depth");
+#ifdef MZ_LONG_DOUBLE
+    if (extfl && !jitter->unbox_extflonum && jitter->unbox_depth && rand)
+      scheme_signal_error("internal error: broken extflonum unbox depth");
+#endif
     if (for_branch
         || (arith == ARITH_INEX_EX)) /* has slow path */
       mz_rs_sync(); /* needed if arguments were unboxed */
