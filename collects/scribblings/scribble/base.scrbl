@@ -373,9 +373,10 @@ See also @racket[verbatim].}
  @racket[pre-content] serves as the alternate text for contexts where
  the image cannot be displayed.
 
- The path is relative to the current directory, which is set by
- @exec{setup-plt} and @exec{scribble} to the directory of the main
- document file. The @racket[path] argument also can be a result of
+ If @racket[path] is a relative path, it is relative to the current
+ directory, which is set by @exec{raco setup} and @exec{scribble} to
+ the directory of the main document file. Instead of a path or string,
+ the @racket[path] argument can be a result of
  @racket[path->main-collects-relative].
  
  The strings in @racket[suffixes] are filtered to those supported by
