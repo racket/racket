@@ -24,7 +24,6 @@
             [(equal? tok 'eof) '()]
             [else (loop new-mode)]))))
 
-
 (check-equal?
  @run-lexer{#2d
             ╔══╦═══╗
@@ -144,4 +143,34 @@
    ("╔══╦═══╗\n║+ ║ \"a" no-color #f 5 21 5)
    ("\"║\n╠══╬═══╣\n║34║\"b\"║\n╚══╩═══╝" error #f 21 50 21)
    (,eof eof #f #f #f 0)))
+
+(check-equal?
+ (run-lexer "   #2d\n"
+            "   ╔═╦═╗\n"
+            "   ║1║2║\n"
+            "   ╠═╬═╣\n"
+            "   ║3║4║\n"
+            "   ╚═╩═╝\n")
+  `(("   " white-space #f 1 4 0)
+    ("#2d" hash-colon-keyword #f 4 7 0)
+    ("\n" white-space #f 7 8 7)
+    ("   " white-space #f 8 11 8)
+    ("╔═╦═╗" parenthesis #f 11 16 11)
+    ("    " white-space #f 16 20 16)
+    ("║" parenthesis #f 20 21 20)
+    ("1" constant #f 21 22 21)
+    ("║" parenthesis #f 22 23 22)
+    ("2" constant #f 23 24 23)
+    ("║" parenthesis #f 24 25 24)
+    ("    " white-space #f 25 29 25)
+    ("╠═╬═╣" parenthesis #f 29 34 29)
+    ("    " white-space #f 34 38 34)
+    ("║" parenthesis #f 38 39 38)
+    ("3" constant #f 39 40 39)
+    ("║" parenthesis #f 40 41 40)
+    ("4" constant #f 41 42 41)
+    ("║" parenthesis #f 42 43 42)
+    ("    " white-space #f 43 47 43) ("╚═╩═╝" parenthesis #f 47 52 47)
+    ("\n" white-space #f 52 53 0)
+    (,eof eof #f #f #f 0)))
 

@@ -115,14 +115,12 @@ todo:
              0
              a-2d-lexer-state)]
     [else
-     (define port->peek-port-delta
-       (let-values ([(_1 _2 c-pos) (port-next-location port)])
-         c-pos))
      (define base-position
        ;; one might think that this should depend on the length of eol-string
        ;; but ports that have port-count-lines! enabled count the \r\n combination
-       ;; as a single position in the port, not 2.
-       (+ pos port->peek-port-delta -1))
+       ;; as a single position in the port, not two.
+       (let-values ([(_1 _2 c-pos) (port-next-location port)])
+         c-pos))
      (define peek-port (peeking-input-port port))
      ;; pull the newline out of the peek-port
      (for ([x (in-range (string-length eol-string))]) (read-char peek-port))
@@ -154,7 +152,7 @@ todo:
        (cond
          [(exn:fail:read? failed)
           (define error-pos (- (srcloc-position (car (exn:fail:read-srclocs failed)))
-                               port->peek-port-delta)) ;; account for the newline
+                               base-position)) ;; account for the newline
           (define peek-port2 (peeking-input-port port))
           (port-count-lines! peek-port2)
           
@@ -261,8 +259,8 @@ todo:
           ;; outermost rectangle (at a minimum, newlines); this fills those 
           ;; in with whitespace tokens
           (define cracks-filled-in-tokens
-            (let loop ([fst (car sorted-tokens)]
-                       [tokens (cdr sorted-tokens)])
+            (let loop ([fst newline-token]
+                       [tokens sorted-tokens])
               (cond
                 [(null? tokens) (list fst)]
                 [else
@@ -283,7 +281,7 @@ todo:
                             new-start
                             new-end)
                            (loop snd (cdr tokens)))])])))
-          (cons newline-token cracks-filled-in-tokens)]))
+          cracks-filled-in-tokens]))
      
      (values first-tok-string 'hash-colon-keyword #f
              pos (+ pos (string-length first-tok-string)) 
