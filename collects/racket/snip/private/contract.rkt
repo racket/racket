@@ -1,5 +1,7 @@
 #lang racket/base
 
+;; Contract definitions for racket/snip
+
 (require racket/class
          racket/contract/base
          racket/draw
@@ -63,6 +65,7 @@
     (get-size-in-pixels-on  (->m boolean?))
     (get-size-mult (->m real?))
     (get-smoothing-off (->m (or/c 'base font-smoothing/c)))
+    (get-smoothing-on (->m (or/c 'base font-smoothing/c)))
     (get-style-off (->m (or/c 'base font-style/c)))
     (get-style-on  (->m (or/c 'base font-style/c)))
     (get-transparent-text-backing-off (->m boolean?))
@@ -576,3 +579,4 @@
       (get-selected-text-color snip-admin%-get-selected-text-color/c)
       (call-with-busy-cursor snip-admin%-call-with-busy-cursor/c)
       (get-tabs snip-admin%-get-tabs/c))))
+
