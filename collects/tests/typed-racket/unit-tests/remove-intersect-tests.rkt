@@ -33,6 +33,7 @@
    [(Un -Number -String -Symbol -Boolean) -Number -Number]
 
    [(-lst -Number) (-pair Univ Univ) (-pair -Number (-lst -Number))]
+   [(-lst -Number) (-poly (a) (-lst a)) (-lst -Number)]
    ;; FIXME
    #;
    [-Listof -Sexp (-lst (Un B N -String Sym))]
