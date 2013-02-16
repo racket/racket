@@ -33,6 +33,9 @@ log message was reported.
                               'debug 'gui-event
                               'debug 'framework/colorer
                               'debug 'timeline))
+(define gc-only-lr
+  (make-log-receiver (current-logger)
+                     'debug 'GC))
 
 (define top-n-events 30)
 (define drop-gc? #f)
@@ -49,7 +52,7 @@ log message was reported.
  (thread
   (λ ()
     (let loop () 
-      (sync start-log-chan)
+      (define lr (sync start-log-chan))
       (let loop ([events '()])
         (sync
          (handle-evt
@@ -99,10 +102,24 @@ log message was reported.
                  [callback
                   (λ (_1 _2)
                     (start-bt-callback))]))
+(define sb3 (new button% [label "Start Following GC Log"] [parent f]
+                 [callback
+                  (λ (_1 _2)
+                    (start-gc-callback))]))
 (define db (new button% [label "Stop && Dump"] [parent f] [enabled #f]
                 [callback
                  (λ (_1 _2)
                    (stop-and-dump))]))
+
+(let ([m 0])
+  (send f reflow-container)
+  (for ([x (in-list (send f get-children))])
+    (when (is-a? x button%)
+      (set! m (max m (send x get-width)))))
+  (for ([x (in-list (send f get-children))])
+    (when (is-a? x button%)
+      (send x min-width m))))
+
 (define (stop-and-dump)
   (define sp (open-output-string))
   (parameterize ([current-output-port sp])
@@ -111,19 +128,22 @@ log message was reported.
        (define resp (make-channel))
        (channel-put log-done-chan resp)
        (show-results (channel-get resp))
-       (send db enable #f)
-       (send sb enable #t)
-       (send sb2 enable #t)
        (set! following-log? #f)]
       [following-bt?
        (define resp (make-channel))
        (channel-put bt-done-chan resp)
        (define stacks (channel-get resp))
        (show-bt-results stacks)
-       (send db enable #f)
-       (send sb enable #t)
-       (send sb2 enable #t)
-       (set! following-bt? #f)]))
+       (set! following-bt? #f)]
+      [following-gc-log?
+       (define resp (make-channel))
+       (channel-put log-done-chan resp)
+       (show-gc (channel-get resp))
+       (set! following-gc-log? #f)])
+    (send db enable #f)
+    (send sb enable #t)
+    (send sb2 enable #t)
+    (send sb3 enable #t))
   (show-string (get-output-string sp)))
 
 (define (show-string str)
@@ -141,22 +161,38 @@ log message was reported.
 
 (define following-log? #f)
 (define following-bt? #f)
+(define following-gc-log? #f)
 
 (define (sb-callback)
   (set! following-log? #t)
   (send sb enable #f)
   (send sb2 enable #f)
+  (send sb3 enable #f)
   (send db enable #t)
-  (channel-put start-log-chan #t))
+  (channel-put start-log-chan lr))
 
 (define (start-bt-callback)
   (set! following-bt? #t)
   (send sb enable #f)
   (send sb2 enable #f)
+  (send sb3 enable #f)
   (send db enable #t)
   (channel-put start-bt-chan #t))
 
+(define (start-gc-callback)
+  (set! following-gc-log? #t)
+  (send sb enable #f)
+  (send sb2 enable #f)
+  (send sb3 enable #f)
+  (send db enable #t)
+  (channel-put start-log-chan gc-only-lr))
+  
+
 (send f show #t)
+
+(define (show-gc lst)
+  (for ([x (in-list lst)])
+    (printf "~a\n" (vector-ref x 1))))
 
 (define (show-bt-results stacks)
   (define top-frame (make-hash))
