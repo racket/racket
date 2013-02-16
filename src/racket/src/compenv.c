@@ -2367,6 +2367,10 @@ Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *ori
 
   SCHEME_EXPAND_OBSERVE_LIFT_REQUIRE(scheme_get_expand_observe(), req_form, orig_form, form);
 
+  /* In a top-level context, may need to force compile-time evaluation: */
+  if (!env->genv->module)
+    scheme_prepare_compile_env(env->genv);
+
   return form;
 }
 
