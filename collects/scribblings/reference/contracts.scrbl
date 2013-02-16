@@ -418,6 +418,7 @@ produced.  Otherwise, an impersonator contract is produced.
                                        maybe-dep-state
                                        contract-expr]]
                [field-name field-id
+                           (#:selector selector-id)
                            (field-id #:parent struct-id)]
                [maybe-lazy (code:line) #:lazy]
                [maybe-flat-or-impersonator (code:line) #:flat #:impersonator]
@@ -432,12 +433,18 @@ expression is evaluated each time a selector is applied, building a new contract
 for the fields based on the values of the @racket[dep-field-name] fields (the
 @racket[dep-field-name] syntax is the same as the @racket[field-name] syntax).
 If the field is a dependent field, then it is assumed that the contract is
-a chaperone, but not always a flat contract (and theus the entire @racket[struct/dc]
+a chaperone, but not always a flat contract (and thus the entire @racket[struct/dc]
 contract is not a flat contract).
 If this is not the case, and the contract is
 always flat then the field must be annotated with
 the @racket[#:flat], or the field must be annotated with
 @racket[#:chaperone] (in which case, it must be a mutable field).
+
+A @racket[field-name] is either an identifier naming a field in the first
+case, an identifier naming a selector in the second case indicated
+by the @racket[#:selector] keyword, or
+a field id for a struct that is a parent of @racket[struct-id], indicated
+by the @racket[#:parent] keyword.
 
 If the @racket[#:lazy] keyword appears, then the contract
 on the field is check lazily (only when a selector is applied);

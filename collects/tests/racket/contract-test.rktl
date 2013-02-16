@@ -14402,6 +14402,45 @@ so that propagation occurs.
       (eval '(require 'provide/contract42-m2))
       (eval 'provide/contract42-x))
    10)
+  
+  (test/spec-passed/result
+   'provide/contract43
+   '(begin
+      (eval '(module provide/contract43-m1 racket/base
+               (require racket/contract)
+               (struct spider (legs))
+               (provide (contract-out (struct spider ([legs number?]))))))
+      
+      (eval '(module provide/contract43-m2 racket/base
+               (require racket/contract 'provide/contract43-m1)
+               (provide provide/contract43-x)
+               (define provide/contract43-x
+                 (spider-legs
+                  (contract (struct/c spider integer?)
+                            (spider 121)
+                            'pos
+                            'neg)))))
+
+      (eval '(require 'provide/contract43-m2))
+      (eval 'provide/contract43-x))
+   121)
+  
+  (test/spec-passed
+   'provide/contract44
+   '(begin
+      (eval '(module provide/contract44-m1 racket/base
+               (require racket/contract)
+                (struct heap (v) #:transparent)
+               (provide (rename-out (heap new-heap)))))
+      
+      (eval '(module provide/contract44-m2 racket/base
+               (require racket/contract 'provide/contract44-m1)
+               (contract (struct/c new-heap any/c)
+                         (new-heap 121)
+                         'pos
+                         'neg)))
+
+      (eval '(require 'provide/contract44-m2))))
 
   (contract-error-test
    'contract-error-test8

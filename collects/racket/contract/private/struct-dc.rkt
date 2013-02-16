@@ -533,6 +533,9 @@
            [sel-id
             (identifier? #'sel-id) 
             #t]
+           [(#:selector sel-id)
+            (identifier? #'sel-id)
+           #t]
            [(sel-id #:parent struct-id)
             (and (identifier? #'sel-id)
                  (identifier? #'struct-id))
@@ -547,8 +550,6 @@
              [(sel-name (dep-name ...) stuff1 . stuff) ;; need stuff1 here so that things like [a (>=/c x)] do not fall into this case
               (sel-name? #'sel-name)
               (let ()
-                (unless (sel-name? #'sel-name)
-                  (raise-syntax-error 'struct/dc not-field-name-str stx #'sel-name))
                 (for ([name (in-list (syntax->list #'(dep-name ...)))])
                   (unless (sel-name? name)
                     (raise-syntax-error 'struct/dc not-field-name-str stx name)))
@@ -668,6 +669,9 @@
     [x 
      (identifier? #'x)
      (combine struct-id id)]
+    [(#:selector sel-id)
+     (identifier? #'sel-id)
+     #'sel-id]
     [(sel-id #:parent parent-id)
      (combine #'parent-id #'sel-id)]))
 
@@ -1069,7 +1073,7 @@
                                        (string->symbol (regexp-replace strip-reg (symbol->string (syntax-e sel)) ""))))
                       (cond
                         [(free-identifier=? #'struct-name struct-id)
-                         field-name]
+                         #`(#:selector #,sel)]
                         [else
                          #`(#,field-name #:parent #,struct-id)])]
                      [else #f])])]
@@ -1085,8 +1089,8 @@
        (do-struct/dc
         #t
         (with-syntax ([(fields ...) (for/list ([selector-id (in-list selector-ids)]
-                                                     [i (in-naturals)])
-                                            (selector-id->field selector-id i))])
+                                               [i (in-naturals)])
+                                      (selector-id->field selector-id i))])
           #`(-struct/dc struct-name [fields args] ...))))]
     [(_ struct-name anything ...)
      (raise-syntax-error 'struct/c "expected a struct identifier" stx (syntax struct-name))]))
