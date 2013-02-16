@@ -228,6 +228,7 @@
  (scheme-mode-color-string "Zeichenkette")
  (scheme-mode-color-constant "Literal")
  (scheme-mode-color-parenthesis "Klammer")
+ (scheme-mode-color-hash-colon-keyword "#:Keyword")
  (scheme-mode-color-error "Fehler")
  (scheme-mode-color-other "Sonstiges")
  (syntax-coloring-choose-color "Wählen Sie eine Farbe für ~a")
@@ -464,6 +465,10 @@
  (example-text "Beispieltext:")
  (only-warn-once "Nur einmal warnen, wenn Definitionen und Interaktionen nicht synchron sind")
  
+ ; font size menu items in the 'view' menu; the ~a is filled with a number (font size)
+ (increase-font-size "Schrift vergrößern (auf ~a)")
+ (decrease-font-size "Schrift verkleinern (auf ~a)")
+
  ; warning message when lockfile is around
  (waiting-for-pref-lock "Auf Lock-Datei für Einstellungen warten...")
  (pref-lock-not-gone
