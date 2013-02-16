@@ -1,5 +1,7 @@
 Version 5.3.3.3
 ffi/vector: added f8vectors
+scribble: 'toc-hidden style on a part no longer hides ToC
+ entries for sub-parts when rendering as HTML
 
 Version 5.3.3.2
 Added port-counts-lines?

@@ -72,7 +72,8 @@
 
     (define/public (format-number number sep)
       (if (or (null? number)
-              (andmap not number)
+              (andmap (lambda (x) (or (not x) (equal? x "")))
+                      number)
               (and (not (car number))
                    (not (ormap number? number))))
           null
@@ -81,7 +82,10 @@
                            string-append
                            (map (lambda (n) (if (number? n) (format "~a." n) ""))
                                 (reverse (cdr number))))
-                          (if (car number) (format "~a." (car number)) ""))])
+                          (if (and (car number) 
+                                   (not (equal? "" (car number))))
+                              (format "~a." (car number)) 
+                              ""))])
                   (substring s 0 (sub1 (string-length s))))
                 sep)))
 
@@ -520,7 +524,9 @@
                     (define next-sub-pos
                       (collect-part s d p-ci
                                     (cons (if hidden-number?
-                                              #f 
+                                              (if sub-grouper?
+                                                  ""
+                                                  #f)
                                               (if sub-grouper?
                                                   (number->roman pos)
                                                   pos))
@@ -972,9 +978,8 @@
                                    (not (= base-len (sub1 (length number))))))
                        (positive? depth))
                   (apply append (map (lambda (p)
-                                       (if (part-style? p 'toc-hidden)
-                                           null
-                                           (generate-toc p ri base-len #f quiet (sub1 depth) prefixes)))
+                                       (generate-toc p ri base-len (part-style? p 'toc-hidden) 
+                                                     quiet (sub1 depth) prefixes))
                                      (part-parts part)))
                   null)])
         (if skip?

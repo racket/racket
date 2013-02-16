@@ -1016,9 +1016,10 @@ Computed for each part by the @techlink{collect pass}.
 
 The length of the @racket[number] list indicates the section's nesting
 depth.  Numbers in @racket[number] correspond to the section's number,
-it's parent's number, etc. A string is used for a @racket['grouping]
-section, and @racket[#f] is used in place of all numbers for an
-unnumbered section.}
+it's parent's number, etc. A non-empty string is used for a
+@racket['grouping] section. For an unnumbered section, @racket[#f] is
+used in place of all numbers and @racket[""] in place of all non-empty
+strings.}
 
 
 @defstruct[target-url ([addr path-string?])]{

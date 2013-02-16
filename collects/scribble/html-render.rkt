@@ -517,10 +517,22 @@
     (define/public (nearly-top? d ri top)
       #f)
 
+    (define hidden-memo (make-weak-hasheq))
+    (define/public (all-toc-hidden? p)
+      (hash-ref hidden-memo
+                p
+                (lambda ()
+                  (define h? (and (part-style? p 'toc-hidden)
+                                  (andmap (lambda (s) (all-toc-hidden? s))
+                                          (part-parts p))))
+                  (hash-set! hidden-memo p h?)
+                  h?)))
+
     (define/private (render-onthispage-contents d ri top box-class sections-in-toc?)
-      (if (ormap (lambda (p) (or (part-whole-page? p ri)
-                                 (part-style? p 'toc-hidden)))
-                 (part-parts d))
+      (if (andmap (lambda (p) (or (part-whole-page? p ri)
+                                  (and (part-style? p 'toc-hidden)
+                                       (all-toc-hidden? p))))
+                  (part-parts d))
         null
         (let ([nearly-top? (lambda (d) 
                              ;; If ToC would be collapsed, then 
@@ -560,18 +572,22 @@
              (table-blockss table)))
           (define ps
             ((if (nearly-top? d) values cdr)
-             (let flatten ([d d][prefixes null][top? #t])
+             (let flatten ([d d] [prefixes null] [top? #t])
                (let ([prefixes (if (and (not top?) (part-tag-prefix d))
                                    (cons (part-tag-prefix d) prefixes)
                                    prefixes)])
                  (append*
                   ;; don't include the section if it's in the TOC
-                  (if (nearly-top? d) null (list (cons d prefixes)))
+                  (if (or (nearly-top? d) 
+                          (part-style? d 'toc-hidden))
+                      null 
+                      (list (cons d prefixes)))
                   ;; get internal targets:
                   (map (lambda (v) (cons v prefixes)) (append-map block-targets (part-blocks d)))
                   (map (lambda (p) (if (or (part-whole-page? p ri) 
-                                           (part-style? p 'toc-hidden))
-                                       null 
+                                           (and (part-style? p 'toc-hidden)
+                                                (all-toc-hidden? p)))
+                                       null
                                        (flatten p prefixes #f)))
                        (part-parts d)))))))
           (define any-parts? (ormap (compose part? car) ps))
@@ -1464,7 +1480,8 @@
              part-whole-page?
              format-number
              install-extra-files
-             report-output?)
+             report-output?
+             all-toc-hidden?)
 
     (define/override (get-suffix) #"")
 

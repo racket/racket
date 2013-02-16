@@ -166,6 +166,7 @@
            [else
             (define no-number? (and (pair? number) 
                                     (or (not (car number))
+                                        (equal? "" (car number))
                                         ((length number) . > . 3))))
             (define no-toc? (part-style? d 'toc-hidden))
             (define (show-number)
