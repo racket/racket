@@ -8,18 +8,24 @@
 
 (define (main)
 
-  (test-exn
-    "using a closed port with place*"
-    (lambda (x) (void))
-    (let ()
-    (define op (open-output-bytes))
-    (call-with-output-file "foo.foo" #:exists 'replace (lambda (op)
-      (close-output-port op)
-      (let-values ([(p pin pout perr) (place* #:out op ch (printf "Hello3\n"))])
-        (place-wait p))))))
+  (define-syntax-rule (with-stderr e)
+    (parameterize ([current-error-port (current-output-port)])
+      e))
 
+  (test-exn
+   "output port is closed"
+   (lambda (x) (void))
+   (lambda ()
+     (define op (open-output-bytes))
+     (call-with-output-file "foo.foo" #:exists 'replace 
+                            (lambda (op)
+                              (close-output-port op)
+                              (let-values ([(p pin pout perr) (place* #:out op ch (printf "Hello3\n"))])
+                                (place-wait p))))))
+  
   (place-wait (place ch (printf "Hello1\n")))
-  (place-wait (place ch (eprintf "Hello2\n")))
+  (with-stderr
+   (place-wait (place ch (eprintf "Hello2\n"))))
   (place-wait (place ch (printf "~a\n" (read))))  ; #<eof>
 
   (let-values ([(p pin pout perr) (place* ch (printf "Hello3\n"))])
@@ -31,9 +37,10 @@
   (let-values ([(p pin pout perr) (place* #:out (current-output-port) ch (printf "Hello5\n"))])
     (place-wait p))
   
-  (let-values ([(p pin pout perr) (place* #:err (current-error-port) ch (eprintf "Hello6\n")
-                                          (flush-output (current-error-port)))])
-    (place-wait p))
+  (with-stderr
+   (let-values ([(p pin pout perr) (place* #:err (current-error-port) ch (eprintf "Hello6\n")
+                                           (flush-output (current-error-port)))])
+     (place-wait p)))
   (let-values ([(p pin pout perr) (place* #:out (current-output-port) ch (printf "Hello7 ~a\n" (read)))])
     (write "Again" pin)
     (flush-output pin)

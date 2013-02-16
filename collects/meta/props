@@ -1387,6 +1387,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/place-channel-ffi.rkt" responsible (tewk)
 "collects/tests/racket/place-channel-socket.rkt" responsible (tewk)
 "collects/tests/racket/place-channel.rkt" responsible (tewk) drdr:timeout 300
+"collects/tests/racket/place-parallel.rkt" drdr:command-line #f
 "collects/tests/racket/place.rktl" responsible (tewk)
 "collects/tests/racket/places.rkt" responsible (tewk)
 "collects/tests/racket/port.rktl" drdr:command-line #f
