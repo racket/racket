@@ -21,6 +21,9 @@
          #;(map flow* (map car stuff))
          #;(map flow* (map cadr stuff))))))
 
+@(define WorldState @tech[#:tag-prefixes '("world")]{WorldState})
+@(define S-expression @tech[#:tag-prefixes '("universe")]{S-expression})
+
 @; -----------------------------------------------------------------------------
 
 @teachpack["universe"]{Worlds and the Universe}
@@ -158,7 +161,7 @@ The following picture provides an intuitive overview of the workings of a
 
 @image["nuworld.png"]
 
- The @racket[big-bang] form installs @racket[World_0] as the initial @tech{WorldState}.w
+ The @racket[big-bang] form installs @racket[World_0] as the initial @tech{WorldState}.
  The handlers @racket[tock], @racket[react], and @racket[click] transform
  one world into another one; each time an event is handled, @racket[done] is
  used to check whether the world is final, in which case the program is
@@ -171,7 +174,7 @@ The design of a world program demands that you come up with a data
  definition of all possible states. We use @tech{WorldState} to refer to
  this collection of data, using a capital W to distinguish it from the
  program.  In principle, there are no constraints on this data
- definition though it mustn't be an instance of the @tech{Package}
+ definition though it mustn't be an instance of the @tech[#:tag-prefixes '("universe")]{Package}
  structure (see below). You can even keep it implicit, even if this
  violates the Design Recipe.
 
@@ -249,7 +252,7 @@ now.
 All remaining clauses are optional. To introduce them, we need one more
 data definition: 
 
-@deftech{HandlerResult} : is a synonym for @racket[WorldState] until @secref[#:tag-prefixes '("universe")]{world2}
+@deftech{HandlerResult} : is a synonym for @tech{WorldState} until @secref[#:tag-prefixes '("universe")]{world2}
 
 @itemize[
 
@@ -824,7 +827,7 @@ Simulating any dynamic behavior via a @tech{world} program demands two
  different activities. First, we must tease out those portions of our
  domain that change over time or in reaction to actions, and we must
  develop a data representation for this information.  This is what we call
- @tech{WorldState}. Keep in
+ @|WorldState|. Keep in
  mind that a good data definition makes it easy for readers to map data to
  information in the real world and vice versa. For all others aspects of
  the world, we use global constants, including graphical or visual
@@ -835,7 +838,7 @@ Second, we must translate the actions in our domain---the arrows in the
  teachpack can deal with. Once we have decided to use the passing of time
  for one aspect, key presses for another, and mouse movements for a third,
  we must develop functions that map the current state of the
- world---represented as data from @tech{WorldState}---into the next state of the
+ world---represented as data from @|WorldState|---into the next state of the
  world. Put differently, we have just created a wish list with three
  handler functions that have the following general contract and purpose
  statements:
@@ -917,14 +920,14 @@ Note the @racket[list] clause includes @racket[empty] of course.
 
 Each world-producing callback in a world program---those for handling clock
  tick events, keyboard events, and mouse events---may produce a
- @tech{Package} in addition to just a @tech{WorldState}:
+ @tech{Package} in addition to just a @|WorldState|:
 
 @deftech{HandlerResult} is one of the following:
 @itemize[
-@item{@tech[#:tag-prefixes '("world")]{WorldState}}
+@item{@|WorldState|}
 @item{@tech{Package}}
 ]
- where @deftech{Package} represents a pair consisting of a @tech{WorldState}
+ where @deftech{Package} represents a pair consisting of a @|WorldState|
  and a message from a @tech{world} program to the @tech{server}.  Because
  programs send messages via @tech{Package}, the teachpack does not
  provide the selectors for the structure, only the constructor and a
@@ -934,14 +937,14 @@ Each world-producing callback in a world program---those for handling clock
  determine whether @racket[x] is a @tech{Package}.}
 
 @defproc[(make-package [w any/c][m sexp?]) package?]{
- create a @tech{Package} from a @tech{WorldState} and an @tech{S-expression}.}
+ create a @tech{Package} from a @|WorldState| and an @tech{S-expression}.}
 
 Recall that event handlers return a @tech[#:tag-prefixes'("universe")]{HandlerResult},
  and we have just refined this data definition. Hence, each handler may return either a
- @tech{WorldState} or a @tech{Package}.  If an event handler produces a @tech{Package},
+ @|WorldState| or a @tech{Package}.  If an event handler produces a @tech{Package},
  the content of the world field becomes the next world and the message field specifies
  what the world sends to the universe. This distinction also explains why the data
- definition for @tech{WorldState} may not include a @tech{Package}.
+ definition for @|WorldState| may not include a @tech{Package}.
 
 @subsection{Connecting with the Universe}
 
@@ -996,14 +999,14 @@ The @racket[on-receive] clause of a @racket[big-bang] specifies the event handle
 
 @defform[(on-receive receive-expr)
          #:contracts
-         ([receive-expr (-> (unsyntax @tech{WorldState}) sexp? (unsyntax @tech[#:tag-prefixes '("universe")]{HandlerResult}))])]{
+         ([receive-expr (-> (unsyntax @|WorldState|) sexp? (unsyntax @tech[#:tag-prefixes '("universe")]{HandlerResult}))])]{
  tells DrRacket to call @racket[receive-expr] for every message receipt, on the current
- @tech{WorldState} and the received message. The result of the call becomes the current
- @tech{WorldState}.
+ @|WorldState| and the received message. The result of the call becomes the current
+ @|WorldState|.
 
  Because @racket[receive-expr] is (or evaluates to) a world-transforming
  function, it too can produce a @tech{Package} instead of just a
- @tech{WorldState}. If the result is a @tech{Package}, its message content is
+ @|WorldState|. If the result is a @tech{Package}, its message content is
  sent to the @tech{server}.}
 
 The diagram below summarizes the extensions of this section in graphical form.
@@ -1015,9 +1018,9 @@ A registered world program may send a message to the universe server
  message is transmitted to the server, which may forward it to some
  other world program as given or in some massaged form. The arrival of a
  message is just another event that a world program must deal with. Like
- all other event handlers @emph{receive} accepts a @tech{WorldState} and some
+ all other event handlers @emph{receive} accepts a @|WorldState| and some
  auxiliary arguments (a message in this case) and produces a
- @tech{WorldState} or a @tech{Package}.
+ @|WorldState| or a @tech{Package}.
 
 When messages are sent from any of the worlds to the universe or vice versa,
  there is no need for the sender and receiver to synchronize. Indeed, a sender
@@ -1125,7 +1128,7 @@ teachpack provides only a predicate and a constructor for these structures:
  determines whether @racket[x] is a @emph{mail}.}
 
 @defproc[(make-mail [to iworld?] [content sexp?]) mail?]{
- creates a @emph{mail} from a @emph{iworld} and an @tech{S-expression}.}
+ creates a @emph{mail} from a @emph{iworld} and an @|S-expression|.}
 }
 ]
 
@@ -1420,9 +1423,9 @@ From the perspective of the @tech{universe}, the design of a protocol is
  about the design of data representations for tracking universe information
  in the server and the participating worlds and the design of a data
  representation for messages. As for the latter, we know that they must be
- @tech{S-expression}s, but usually @tech{world} programs don't send all
- kinds of @tech{S-expression}s. The data definitions for messages must
- therefore select a subset of suitable @tech{S-expression}s. As for the
+ @|S-expression|s, but usually @tech{world} programs don't send all
+ kinds of @|S-expression|s. The data definitions for messages must
+ therefore select a subset of suitable @|S-expression|s. As for the
  state of the server and the worlds, they must reflect how they currently
  relate to the universe. Later, when we design their ``local'' behavior, we
  may add more components to their state space.
@@ -1745,7 +1748,7 @@ The final step is to design the ball @tech{world}. Recall that each world
 ))
  The definition says that initially a @tech{world} is passive.
 
-The communication protocol and the refined data definition of @tech{WorldState}
+The communication protocol and the refined data definition of @|WorldState|
  imply a number of contract and purpose statements:
 
 @(begin
@@ -1769,7 +1772,7 @@ The communication protocol and the refined data definition of @tech{WorldState}
 Let's design one function at a time, starting with @emph{receive}.  Since
  the protocol doesn't spell out what @emph{receive} is to compute, let's
  create a good set of functional examples, exploiting the structure of the
- data organization of @tech{WorldState}:
+ data organization of @|WorldState|:
 
 @(begin
 #reader scribble/comment-reader
