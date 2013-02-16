@@ -1546,6 +1546,18 @@
         [tc-e ((inst list Any) 1 2 3)
               (-lst Univ)]
 
+        [tc-e (let ()
+                (define f
+                  (lambda: ((x : Boolean) (y : String))
+                    (if x y "false")))
+                (apply f (list #f "2")))
+              -String]
+        [tc-err (let ()
+                  (: f (All (i ...) Any -> (values Any ... i)))
+                  (define (f x) (values 1 2)))]
+        [tc-err (let ()
+                  (: g (All (i ...) Any -> (values Any ... i)))
+                  (define (g x) 2))]
         )
   (test-suite
    "check-type tests"
