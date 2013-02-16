@@ -189,7 +189,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ResourceCompile Include="Gracket.rc" />
+    <ResourceCompile Include="gracket.rc" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\gracket\grmain.c" />

@@ -1,5 +1,5 @@
 /****************************************************************/
-/* This command-line parser is used by both Racket and Gracket. */
+/* This command-line parser is used by both Racket and GRacket. */
 /****************************************************************/
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"

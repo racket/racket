@@ -23,5 +23,5 @@
       (parameterize ([current-launcher-variant v])
         (make-mred-launcher null
                             (mred-program-launcher-path "GRacket")
-                            '([exe-name . "Gracket"] [relative? . #t]
+                            '([exe-name . "GRacket"] [relative? . #t]
                               [framework-root . #f] [dll-dir . #f]))))))

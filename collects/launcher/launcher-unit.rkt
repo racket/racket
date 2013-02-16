@@ -463,7 +463,7 @@
   (if (or (eq? kind 'mzscheme) (script-variant? variant))
       ;; Racket or script launcher is the same as for Unix
       (make-unix-launcher kind variant flags dest aux)
-      ;; Gracket "launcher" is a stand-alone executable
+      ;; GRacket "launcher" is a stand-alone executable
       (make-embedding-executable dest (eq? kind 'mred) #f
                                  null null null
                                  flags

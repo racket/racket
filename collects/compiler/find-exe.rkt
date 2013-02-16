@@ -25,11 +25,11 @@
                       ;; Need GRacket:
                       (let ([sfx (variant-suffix variant #t)])
                         (build-path (format "GRacket~a.app" sfx)
-                                    "Contents" "MacOS" 
+                                    "Contents" "MacOS"
                                     (format "GRacket~a" sfx)))])]
                   [(windows)
                    (format "~a~a.exe" (if mred?
-                                          "Gracket"
+                                          "GRacket"
                                           "Racket")
                            (variant-suffix variant #t))]
                   [(unix)
