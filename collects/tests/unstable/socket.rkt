@@ -23,7 +23,7 @@
  [(and unix-socket-available? netcat)
   (test-case "unix socket"
     ;; Uses netcat to create a simple unix domain socket server
-    (define tmp (make-temporary-file))
+    (define tmp ((values make-temporary-file)))
     (delete-file tmp)
     (call-in-custodian
      (lambda ()
