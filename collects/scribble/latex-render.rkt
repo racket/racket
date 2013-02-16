@@ -835,7 +835,7 @@
                           ;; Which parts are necessary may depend on the latex version,
                           ;; though, so we keep this table around to avoid regressions.
                           (case c
-                            [(#\╔ #\═ #\╗ #\║ #\╚ #\╝) (box-character c)]
+                            [(#\╔ #\═ #\╗ #\║ #\╚ #\╝ #\╦ #\╠ #\╣ #\╬ #\╩) (box-character c)]
                             [(#\u2011) "\\mbox{-}"] ; non-breaking hyphen
                             [(#\uB0) "$^{\\circ}$"] ; degree
                             [(#\uB2) "$^2$"]
@@ -1054,47 +1054,85 @@
     (define/private (box-character c)
       (define (combine . args) 
         (apply string-append
+               "\\setlength{\\unitlength}{0.05em}"
                (filter (λ (x) (not (regexp-match #rx"^[ \n]*$" x))) args)))
       (define (adjust % v) 
         (define num (* % (/ v 10) 10))
         (define i-part (floor num))
         (define d-part (floor (* 10 (- num i-part))))
         (format "~a.~a" i-part d-part))
-      (define (x v) (adjust 4/10 v))
-      (define (y v) (adjust 6/10 v))
+      (define (x v) (adjust 1 v))
+      (define (y v) (adjust 6/4 v))
       (case c
-        [(#\╔)
-         @combine{\begin{picture}(@x[10],@y[10])(0,0)
-                        \put(@x[2],@y[6]){\line(1,0){@x[8]}}
-                        \put(@x[4],@y[4]){\line(1,0){@x[7]}}
-                        \put(@x[2],@y[0]){\line(0,1){@y[6]}}
-                        \put(@x[4],@y[0]){\line(0,1){@y[4]}}
+        [(#\╔) @combine{\begin{picture}(@x[10],@y[10])(0,0)
+                        \put(@x[4],@y[6]){\line(1,0){@x[6]}}
+                        \put(@x[6],@y[4]){\line(1,0){@x[6]}}
+                        \put(@x[4],@y[0]){\line(0,1){@y[6]}}
+                        \put(@x[6],@y[0]){\line(0,1){@y[4]}}
                         \end{picture}}]
         [(#\═) @combine{\begin{picture}(@x[10],@y[10])(0,0)
                               \put(@x[0],@y[6]){\line(1,0){@x[10]}}
                               \put(@x[0],@y[4]){\line(1,0){@x[10]}}
                               \end{picture}}]
+        [(#\╦) @combine{\begin{picture}(@x[10],@y[10])(0,0)
+                        \put(@x[0],@y[6]){\line(1,0){@x[10]}}
+                        \put(@x[0],@y[4]){\line(1,0){@x[4]}}
+                        \put(@x[4],@y[0]){\line(0,1){@y[4]}}
+                        \put(@x[6],@y[0]){\line(0,1){@y[4]}}
+                        \put(@x[6],@y[4]){\line(1,0){@x[4]}}
+                        \end{picture}}]
+        [(#\╩) @combine{\begin{picture}(@x[10],@y[10])(0,0)
+                        \put(@x[0],@y[4]){\line(1,0){@x[10]}}
+                        \put(@x[0],@y[6]){\line(1,0){@x[4]}}
+                        \put(@x[4],@y[6]){\line(0,1){@y[4]}}
+                        \put(@x[6],@y[6]){\line(0,1){@y[4]}}
+                        \put(@x[6],@y[6]){\line(1,0){@x[4]}}
+                        \end{picture}}]
+        [(#\╣) @combine{\begin{picture}(@x[10],@y[10])(0,0)
+                        \put(@x[6],@y[0]){\line(0,1){@y[10]}}
+                        \put(@x[4],@y[0]){\line(0,1){@y[4]}}
+                        \put(@x[0],@y[4]){\line(1,0){@x[4]}}
+                        \put(@x[0],@y[6]){\line(1,0){@x[4]}}
+                        \put(@x[4],@y[6]){\line(0,1){@y[4]}}
+                        \end{picture}}]
+        [(#\╠) @combine{\begin{picture}(@x[10],@y[10])(0,0)
+                        \put(@x[4],@y[0]){\line(0,1){@y[10]}}
+                        \put(@x[6],@y[0]){\line(0,1){@y[4]}}
+                        \put(@x[6],@y[4]){\line(1,0){@x[4]}}
+                        \put(@x[6],@y[6]){\line(1,0){@x[4]}}
+                        \put(@x[6],@y[6]){\line(0,1){@y[4]}}
+                        \end{picture}}]
+        [(#\╬) @combine{\begin{picture}(@x[10],@y[10])(0,0)
+                        \put(@x[4],@y[0]){\line(0,1){@y[4]}}
+                        \put(@x[0],@y[4]){\line(1,0){@x[4]}}
+                        \put(@x[0],@y[6]){\line(1,0){@x[4]}}
+                        \put(@x[4],@y[6]){\line(0,1){@y[4]}}
+                        \put(@x[6],@y[0]){\line(0,1){@y[4]}}
+                        \put(@x[6],@y[4]){\line(1,0){@x[4]}}
+                        \put(@x[6],@y[6]){\line(1,0){@x[4]}}
+                        \put(@x[6],@y[6]){\line(0,1){@y[4]}}
+                        \end{picture}}]
         [(#\╗) @combine{\begin{picture}(@x[10],@y[10])(0,0)
-                              \put(@x[0],@y[6]){\line(1,0){@x[8]}}
-                              \put(@x[0],@y[4]){\line(1,0){@x[6]}}
-                              \put(@x[8],@y[0]){\line(0,1){@y[6]}}
-                              \put(@x[6],@y[0]){\line(0,1){@y[4]}}
+                              \put(@x[0],@y[6]){\line(1,0){@x[6]}}
+                              \put(@x[0],@y[4]){\line(1,0){@x[4]}}
+                              \put(@x[6],@y[0]){\line(0,1){@y[6]}}
+                              \put(@x[4],@y[0]){\line(0,1){@y[4]}}
                               \end{picture}}]
         [(#\║) @combine{\begin{picture}(@x[10],@y[10])(0,0)
                               \put(@x[4],@y[10]){\line(0,-1){@y[10]}}
-                              \put(@x[2],@y[10]){\line(0,-1){@y[10]}}
+                              \put(@x[6],@y[10]){\line(0,-1){@y[10]}}
                               \end{picture}}]
         [(#\╚) @combine{\begin{picture}(@x[10],@y[10])(0,0)
-                              \put(@x[2],@y[4]){\line(1,0){@x[8]}}
-                              \put(@x[4],@y[6]){\line(1,0){@x[6]}}
-                              \put(@x[4],@y[10]){\line(0,-1){@y[4]}}
-                              \put(@x[2],@y[10]){\line(0,-1){@y[6]}}
+                              \put(@x[4],@y[4]){\line(1,0){@x[6]}}
+                              \put(@x[6],@y[6]){\line(1,0){@x[4]}}
+                              \put(@x[4],@y[10]){\line(0,-1){@y[6]}}
+                              \put(@x[6],@y[10]){\line(0,-1){@y[4]}}
                               \end{picture}}]
         [(#\╝) @combine{\begin{picture}(@x[10],@y[10])(0,0)
-                              \put(@x[0],@y[4]){\line(1,0){@x[8]}}
-                              \put(@x[0],@y[6]){\line(1,0){@x[6]}}
-                              \put(@x[6],@y[10]){\line(0,-1){@y[4]}}
-                              \put(@x[8],@y[10]){\line(0,-1){@y[6]}}
+                              \put(@x[0],@y[4]){\line(1,0){@x[6]}}
+                              \put(@x[0],@y[6]){\line(1,0){@x[4]}}
+                              \put(@x[4],@y[10]){\line(0,-1){@y[4]}}
+                              \put(@x[6],@y[10]){\line(0,-1){@y[6]}}
                               \end{picture}}]))
 
 
