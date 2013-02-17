@@ -440,6 +440,10 @@
                (subtype* A0 t t*)]
               [((Future: t) (Future: t*))
                (subtype* A0 t t*)]
+              [((Param: s-in s-out) (Param: t-in t-out))
+               (subtype* (subtype* A0 t-in s-in) s-out t-out)]
+              [((Param: in out) t)
+               (subtype* A0 (cl->* (-> out) (-> in -Void)) t)]
               [((Instance: t) (Instance: t*))
                (subtype* A0 t t*)]
               [((Class: '() '() (list (and s  (list names  meths )) ...))
