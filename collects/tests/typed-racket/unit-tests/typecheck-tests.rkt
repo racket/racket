@@ -877,7 +877,9 @@
               (t:Un (-val #f) -Number)]
 
         [tc-e #{(make-hash) :: (HashTable Number Number)}
-              (make-Hashtable -Number -Number)]
+              (-HT -Number -Number)]
+        [tc-e #{(make-immutable-hash) :: (HashTable String Symbol)}
+              (-HT -String -Symbol)]
         #;[tc-err (let: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                         (fact 20))]
 
