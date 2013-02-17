@@ -328,7 +328,7 @@
                        (and proc (type-rec-id proc))
                        poly?
                        pred-id)]
-  [#:key 'struct])
+  [#:key '(struct procedure)])
 
 ;; A structure type descriptor
 ;; s : struct
