@@ -703,8 +703,13 @@
 
 ;; numeric predicates
 ;; There are 25 values that answer true to zero?. They are either reals, or inexact complexes.
-[zero? (asym-pred N B (-FS (-filter (Un -RealZero -InexactComplex) 0)
-                           (-not-filter -RealZero 0)))]
+[zero?
+  (cl->*
+    (-> -ExactNumber B : (-FS (-filter (-val 0) 0) (-not-filter (-val 0) 0)))
+    (-> -Real B : (-FS (-filter -RealZero 0) (-not-filter -RealZero 0)))
+    (-> N B : (-FS (-filter (Un -RealZero -InexactComplex -InexactImaginary) 0)
+                   (-not-filter -RealZero 0))))]
+
 [number? (make-pred-ty N)]
 [integer? (asym-pred Univ B (-FS (-filter (Un -Int -Flonum -SingleFlonum) 0) ; inexact-integers exist...
                                  (-not-filter -Int 0)))]

@@ -418,7 +418,7 @@
                      [((a b c . -> . c) c (-lst a) (-lst b)) c]
                      [((a b c d . -> . d) d (-lst a) (-lst b) (-lst d)) d]))]
 [filter (-poly (a b) (cl->*
-                      ((asym-pred a -Boolean (-FS (-filter b 0) -top))
+                      ((asym-pred a Univ (-FS (-filter b 0) -top))
                        (-lst a)
                        . -> .
                        (-lst b))
@@ -895,9 +895,9 @@
 [make-weak-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
 [make-weak-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
 [make-weak-hasheqv (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
-[make-immutable-hash (-poly (a b) (-> (-lst (-pair a b)) (-HT a b)))]
-[make-immutable-hasheq (-poly (a b) (-> (-lst (-pair a b)) (-HT a b)))]
-[make-immutable-hasheqv (-poly (a b) (-> (-lst (-pair a b)) (-HT a b)))]
+[make-immutable-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
+[make-immutable-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
+[make-immutable-hasheqv (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
 
 [hash-set (-poly (a b) ((-HT a b) a b . -> . (-HT a b)))]
 [hash-set! (-poly (a b) ((-HT a b) a b . -> . -Void))]
@@ -970,7 +970,12 @@
 [sequence-for-each (-poly (a) ((a . -> . Univ) (-seq a) . -> . -Void))]
 [sequence-fold (-poly (a b) ((b a . -> . b) b (-seq a) . -> . b))]
 [sequence-count (-poly (a) ((a . -> . Univ) (-seq a) . -> . -Nat))]
-[sequence-filter (-poly (a) ((a . -> . Univ) (-seq a) . -> . (-seq a)))]
+[sequence-filter (-poly (a b) (cl->*
+                                ((asym-pred a Univ (-FS (-filter b 0) -top))
+                                 (-seq a)
+                                 . -> .
+                                 (-seq b))
+                                ((a . -> . Univ) (-lst a) . -> . (-seq a))))]
 [sequence-add-between (-poly (a) ((-seq a) a . -> . (-seq a)))]
 
 ;Section 3.16 (Sets)
@@ -1129,7 +1134,7 @@
 
 
 ;Section 9.7 (Exiting)
-[exit (-> (Un))]
+[exit (->opt [Univ] (Un))]
 [exit-handler (-Param (-> Univ ManyUniv) (-> Univ ManyUniv))]
 [executable-yield-handler (-Param (-> -Byte ManyUniv) (-> -Byte ManyUniv))]
 
@@ -1556,7 +1561,7 @@
                           . ->... .
                           -Index))]
 [vector-filter (-poly (a b) (cl->*
-                             ((make-pred-ty (list a) Univ b)
+                              ((asym-pred a Univ (-FS (-filter b 0) -top))
                               (-vec a)
                               . -> .
                               (-vec b))

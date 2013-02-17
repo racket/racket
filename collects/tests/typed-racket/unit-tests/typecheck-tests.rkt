@@ -815,6 +815,19 @@
         [tc-e (filter even? (filter exact-integer? (list 1 2 3 'foo)))
               (-lst -Integer)]
 
+        [tc-e (filter (ann (λ: ((x : (U Symbol String)))
+                               (if (symbol? x) 'x #f)) ((U Symbol String) -> (U Symbol #f) : Symbol))
+                      (list "three" 'four 'five "six"))
+              (-lst -Symbol)]
+
+
+        [tc-e (vector-filter path-string? (ann (vector "a" 4 5 "b") (Vectorof Any)))
+              (-vec (t:Un -Path -String))]
+
+        [tc-e (sequence-filter module-path? (ann (vector "a" 4 5 "b") (Vectorof Any)))
+              (-seq (t:Un -Module-Path))]
+
+
         #|
         [tc-err (plambda: (a ...) [as : a ... a]
                           (apply fold-left (lambda: ([c : Integer] [a : Char] . [xs : a ... a]) c)
@@ -877,7 +890,9 @@
               (t:Un (-val #f) -Number)]
 
         [tc-e #{(make-hash) :: (HashTable Number Number)}
-              (make-Hashtable -Number -Number)]
+              (-HT -Number -Number)]
+        [tc-e #{(make-immutable-hash) :: (HashTable String Symbol)}
+              (-HT -String -Symbol)]
         #;[tc-err (let: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                         (fact 20))]
 
@@ -1533,7 +1548,7 @@
         [tc-e (sequence-count zero? (inst empty-sequence Integer))
               -Nat]
         [tc-e (sequence-filter zero? (inst empty-sequence Integer))
-              (-seq -Int)]
+              (-seq (-val 0))]
         [tc-e (sequence-add-between (inst empty-sequence Integer) 'foo)
               (-seq (t:Un -Int (-val 'foo)))]
         [tc-e (let ()
