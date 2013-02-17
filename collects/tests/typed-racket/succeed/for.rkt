@@ -213,6 +213,13 @@
            (for: ([x 10] #:unless (> x 3)) (display x))))
        "0123")
 
+(check equal?
+       (for/list: : (Listof Natural)
+                  ((i : Natural (and (in-naturals)))
+                   (j : Natural (and (in-range 5))))
+             (+ i j))
+       (list 0 2 4 6 8))
+
 ;; break and final clauses
 ;; TODO typechecker can't handle these
 ;; (check string=?

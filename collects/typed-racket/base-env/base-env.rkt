@@ -1129,7 +1129,7 @@
 
 
 ;Section 9.7 (Exiting)
-[exit (-> (Un))]
+[exit (->opt [Univ] (Un))]
 [exit-handler (-Param (-> Univ ManyUniv) (-> Univ ManyUniv))]
 [executable-yield-handler (-Param (-> -Byte ManyUniv) (-> -Byte ManyUniv))]
 
