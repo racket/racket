@@ -154,6 +154,11 @@
    [(-pair -String (-lst -String)) (-seq -String)]
    [FAIL (-pair -String (-lst -Symbol)) (-seq -String)]
    [FAIL (-pair -String (-vec -String)) (-seq -String)]
+
+   [(-Param -Byte -Byte) (-Param (-val 0) -Int)]
+   [FAIL (-Param -Byte -Byte) (-Param -Int -Int)]
+   [(-Param -String -Symbol) (cl->* (-> -Symbol) (-> -String -Void))]
+
    ))
 
 (define-go
