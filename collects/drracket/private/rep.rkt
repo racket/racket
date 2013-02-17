@@ -246,19 +246,22 @@ TODO
   ;; queue is full):
   (define output-limit-size 2000)
   
-  (define setup-scheme-interaction-mode-keymap
-    (λ (keymap)
-      (send keymap add-function "put-previous-sexp"
-            (λ (text event) 
-              (send text copy-prev-previous-expr)))
-      (send keymap add-function "put-next-sexp"
-            (λ (text event) 
-              (send text copy-next-previous-expr)))
-      
-      (keymap:send-map-function-meta keymap "p" "put-previous-sexp")
-      (keymap:send-map-function-meta keymap "n" "put-next-sexp")
-      (send keymap map-function "c:up" "put-previous-sexp")
-      (send keymap map-function "c:down" "put-next-sexp")))
+  (define (setup-scheme-interaction-mode-keymap keymap)
+    (send keymap add-function "put-previous-sexp"
+          (λ (text event) 
+            (send text copy-prev-previous-expr)))
+    (send keymap add-function "put-next-sexp"
+          (λ (text event) 
+            (send text copy-next-previous-expr)))
+    (send keymap add-function "show-interactions-history"
+          (λ (text event) 
+            (send text show-interactions-history)))
+    
+    (keymap:send-map-function-meta keymap "p" "put-previous-sexp")
+    (keymap:send-map-function-meta keymap "n" "put-next-sexp")
+    (send keymap map-function "c:up" "put-previous-sexp")
+    (send keymap map-function "c:down" "put-next-sexp")
+    (keymap:send-map-function-meta keymap "h" "show-interactions-history"))
   
   (define scheme-interaction-mode-keymap (make-object keymap:aug-keymap%))
   (setup-scheme-interaction-mode-keymap scheme-interaction-mode-keymap)
@@ -335,23 +338,13 @@ TODO
      null
      list-of-lists-of-snip/strings?))
   (define (marshall-previous-exprs lls)
-    (map (λ (ls)
-           (list
-            (apply
-             string-append
-             (reverse
-              (map (λ (s)
-                     (cond
-                       [(is-a? s string-snip%)
-                        (send s get-text 0 (send s get-count))]
-                       [(string? s) s]
-                       [else "'non-string-snip"]))
-                   ls)))))
-         lls))
-  (let ([unmarshall (λ (x) x)])
-    (preferences:set-un/marshall
-     'drracket:console-previous-exprs
-     marshall-previous-exprs unmarshall))
+    (for/list ([ls (in-list lls)])
+      (simplify-history-element ls #t)))
+  (let ([unmarshall-previous-exprs (λ (x) x)])
+    (preferences:set-un/marshall 'drracket:console-previous-exprs
+                                 marshall-previous-exprs 
+                                 unmarshall-previous-exprs))
+  
   
   (define color? ((get-display-depth) . > . 8))
   
@@ -1820,13 +1813,39 @@ TODO
                       (sub1 previous-expr-pos)))
             (copy-previous-expr))))
       
+      (define/public (show-interactions-history)
+        (define f (new frame:standard-menus% 
+                       [label (string-constant drscheme)]
+                       [width 600]
+                       [height 600]))
+        (define t (new racket:text%))
+        (define ec (new editor-canvas% [parent (send f get-area-container)] [editor t]))
+        (for ([prev-expr (in-list (get-previous-exprs))])
+          (define lp (send t last-position))
+          (for ([snip/string (in-list prev-expr)])
+            (send t insert
+                  (if (string? snip/string)
+                      snip/string
+                      (send snip/string copy))
+                  lp lp))
+          (let ([lp (send t last-position)])
+            (unless (equal? (send t get-character lp) #\newline)
+              (send t insert #\newline lp lp))))
+        (send f show #t))
+      
       ;; private fields
       (define global-previous-exprs (preferences:get 'drracket:console-previous-exprs))
       (define local-previous-exprs null)
       (define/private (get-previous-exprs)
         (append global-previous-exprs local-previous-exprs))
       (define/private (add-to-previous-exprs snips)
-        (set! local-previous-exprs (append local-previous-exprs (list snips))))
+        (let ([prev (get-previous-exprs)])
+          (when (or (null? prev)
+                    (not (same-stuff? (last prev) snips)))
+            (set! local-previous-exprs (append local-previous-exprs (list snips))))))
+      (define/private (same-stuff? s1 s2)
+        (equal? (simplify-history-element s1 #f) 
+                (simplify-history-element s2 #f)))
       
       ; list-of-lists-of-snip/strings? -> list-of-lists-of-snip/strings?
       (define/private (trim-previous-exprs lst)
@@ -2109,3 +2128,69 @@ TODO
               (text:foreground-color-mixin
                (text:normalize-paste-mixin
                 text:clever-file-format%))))))))))))))
+
+(define (simplify-history-element s all-to-strings?)
+  (cond
+    [(null? s) '("")]
+    [else
+     (let loop ([acc '()]
+                [s s])
+       (cond
+         [(null? s) acc]
+         [else
+          (define e (car s))
+          (cond
+            [(or all-to-strings? (string? e) (is-a? e string-snip%))
+             (define str (cond
+                           [(is-a? e string-snip%)
+                            (send e get-text 0 (send e get-count))]
+                           [(string? e) e]
+                           [else "'non-string-snip"]))
+             (cond
+               [(null? acc) (loop (list str) (cdr s))]
+               [(string? (car acc))
+                (loop (cons (string-append str (car acc)) (cdr acc))
+                      (cdr s))]
+               [else (loop (cons str acc) (cdr s))])]
+            [else
+             (loop (cons e acc) (cdr s))])]))]))
+
+(module+ test
+  (require rackunit)
+  (define (old-conversion-code ls)
+    (list
+     (apply
+      string-append
+      (reverse
+       (map (λ (s)
+              (cond
+                [(is-a? s string-snip%)
+                 (send s get-text 0 (send s get-count))]
+                [(string? s) s]
+                [else "'non-string-snip"]))
+            ls)))))
+  
+  (check-equal? (simplify-history-element '("xyzpdq") #f)
+                '("xyzpdq"))
+  (check-equal? (simplify-history-element '("a" "b" "c") #f)
+                '("cba"))
+  (let ([i (make-object image-snip%)])
+    (check-equal? (simplify-history-element (list "a" "b" "c" i "d" "e" "f") #f)
+                  (list "fed" i "cba")))
+  
+  (check-equal? (simplify-history-element '() #t)
+                (old-conversion-code '()))
+  (check-equal? (simplify-history-element '("pdq") #t)
+                (old-conversion-code '("pdq")))
+  (check-equal? (simplify-history-element '("a" "b" "c") #t)
+                (old-conversion-code '("a" "b" "c")))
+  (let ([in (list (make-object string-snip% "a")
+                  (make-object string-snip% "b")
+                  (make-object string-snip% "c"))])
+    (check-equal? (simplify-history-element in #t)
+                  (old-conversion-code in)))
+  (let ([in (list (make-object string-snip% "a")
+                  (make-object image-snip%)
+                  (make-object string-snip% "c"))])
+    (check-equal? (simplify-history-element in #t)
+                  (old-conversion-code in))))
