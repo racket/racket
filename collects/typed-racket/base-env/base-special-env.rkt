@@ -84,7 +84,8 @@
           (->opt -Real -Real [-Real] (-seq -Real)))]
   ;; in-naturals
   [(make-template-identifier 'in-naturals 'racket/private/for)
-   (cl->* (-> -PosInt (-seq -PosInt))
+   (cl->* (-> (-seq -Nat))
+          (-> -PosInt (-seq -PosInt))
           (-> -Int (-seq -Nat)))]
   ;; in-list
   [(make-template-identifier 'in-list 'racket/private/for)
