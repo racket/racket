@@ -9,5 +9,5 @@ New code should use racket-lexer.rkt.
 (provide 
  (rename-out [racket-lexer scheme-lexer]
              [racket-lexer/status scheme-lexer/status]
-             [racket-lexer/status scheme-nobar-lexer/status]))
+             [racket-nobar-lexer/status scheme-nobar-lexer/status]))
  
