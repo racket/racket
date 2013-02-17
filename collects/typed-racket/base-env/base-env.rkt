@@ -895,9 +895,9 @@
 [make-weak-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
 [make-weak-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
 [make-weak-hasheqv (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
-[make-immutable-hash (-poly (a b) (-> (-lst (-pair a b)) (-HT a b)))]
-[make-immutable-hasheq (-poly (a b) (-> (-lst (-pair a b)) (-HT a b)))]
-[make-immutable-hasheqv (-poly (a b) (-> (-lst (-pair a b)) (-HT a b)))]
+[make-immutable-hash (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
+[make-immutable-hasheq (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
+[make-immutable-hasheqv (-poly (a b) (->opt [(-lst (-pair a b))] (-HT a b)))]
 
 [hash-set (-poly (a b) ((-HT a b) a b . -> . (-HT a b)))]
 [hash-set! (-poly (a b) ((-HT a b) a b . -> . -Void))]
