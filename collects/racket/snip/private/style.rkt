@@ -1131,7 +1131,10 @@
       (k which)))
 
   (def/public (notify-on-change [procedure? f])
-    (hash-set! notifications f #t)
+    (hash-set! notifications f 
+               ;; In case `f' has a contract, retain `f' as long
+               ;; as the pre-contract value is reachable:
+               (impersonator-ephemeron f))
     (make-notify-key f))
 
   (def/public (forget-notification [notify-key? id])

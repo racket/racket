@@ -126,19 +126,27 @@ The @racket[like-style] style must be in this style list, otherwise
 @defmethod[(notify-on-change [f ((or/c (is-a?/c style<%>) #f) . -> . any)])
            any/c]{
 
-Attaches a callback to the style list, retaining the callback only weakly (in
- the sense of @racket[make-weak-box]). The callback is invoked
- whenever a style is modified.
+Attaches a callback @racket[f] to the style list. The callback
+ @racket[f] is invoked whenever a style is modified.
 
 Often, a change in one style will trigger a change in several other
  derived styles; to allow clients to handle all the changes in a
- batch, @racket[#f] is passed in as the changing style after a set of
+ batch, @racket[#f] is passed to @racket[f] as the changing style after a set of
  styles has been processed.
 
 The return value from @method[style-list% notify-on-change] is an
  opaque key to be used with @method[style-list% forget-notification].
 
-}
+The callback @racket[f] replaces any callback for which it is
+ @racket[equal?], which helps avoid redundant notifications in case of
+ redundant registrations. The callback @racket[f] is retained only
+ weakly (in the sense of @racket[make-weak-box]), but it is retained
+ as long as any value that @racket[f] impersonates is reachable; for
+ example, if @racket[f] represents a function with a contract applied,
+ then @racket[f] is retained for notification as long as the original
+ (pre-contract) function is reachable. The callback @racket[f] is also
+ retained as long as the opaque key produced by @method[style-list%
+ notify-on-change] is reachable.}
 
 
 @defmethod[(number)

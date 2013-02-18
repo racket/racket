@@ -608,6 +608,46 @@
   (send t set-clickback 1 3 void)
   (send t delete 0 5)
   (send t undo))
+
+;; ----------------------------------------
+;; notification callbacks, weak links, and chaperones:
+
+(let ()
+  (define id 0)
+  (define count 0)
+  (define count2 0)
+
+  (define sl (new style-list%))
+
+  (define N 100)
+
+  (define cbs
+    (for/list ([i (in-range N)])
+      (define cb (lambda (x) (set! id i) (set! count (add1 count))))
+      ;; procedure retained:
+      (void (send sl notify-on-change (chaperone-procedure cb (lambda (v) v))))
+      ;; procedure not retained:
+      (void (send sl notify-on-change (lambda (x) (set! id i) (set! count2 (add1 count2)))))
+      cb))
+
+  (define (try name)
+    (send sl new-named-style name (send sl find-named-style "Basic")))
+
+  (try "X")
+  (set! count 0)
+  (set! count2 0)
+
+  (collect-garbage)
+  (try "Y") ;; expect 2 callbacks per notifier
+
+  (define v #f)
+  (set! v cbs) ;; forces retention of `cbs'
+  (unless (= (length v) N) (error "test is broken"))
+
+  (unless (= count (* 2 N))
+    (error 'notifications "too weak? ~e" count))
+  (unless (<= 0 count2 (/ N 2))
+    (error 'notifications "not weak enough? ~e" count2)))
   
 ;; ----------------------------------------
 
