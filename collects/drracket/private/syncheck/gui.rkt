@@ -1417,13 +1417,13 @@ If the namespace does not, they are colored the unbound color.
                       #:when (var-arrow? va))
                   (hash-set! tacked-hash-table va #f))))
 
-            ;; syncheck:jump-to-binding-occurrence : text -> void
+            ;; syncheck:jump-to-binding-occurrence : text [boolean?] -> void
             ;; jumps to the next occurrence, based on the insertion point
-            (define/public (syncheck:jump-to-next-bound-occurrence text)
+            (define/public (syncheck:jump-to-next-bound-occurrence text [backwards? #f])
               (jump-to-binding/bound-helper 
                text 
                (λ (pos text vec-ents)
-                 (jump-to-next-callback pos text vec-ents))))
+                 (jump-to-next-callback pos text vec-ents backwards?))))
             
             ;; syncheck:jump-to-binding-occurrence : text -> void
             (define/public (syncheck:jump-to-binding-occurrence text)
@@ -1441,31 +1441,33 @@ If the namespace does not, they are colored the unbound color.
                         (unless (null? vec-ents)
                           (do-jump pos text vec-ents))))))))
             
-            ;; jump-to-next-callback : (listof arrow) -> void
+            ;; jump-to-next-callback : num text (listof arrow) boolean? -> void
             ;; callback for the jump popup menu item
-            (define/private (jump-to-next-callback pos txt input-arrows)
+            (define/private (jump-to-next-callback pos txt input-arrows backwards?)
               (unless (null? input-arrows)
-                (let* ([arrow-key (car input-arrows)]
-                       [orig-arrows (hash-ref bindings-table
+                (define arrow-key (car input-arrows))
+                (define orig-arrows (hash-ref bindings-table
                                               (list (var-arrow-start-text arrow-key)
                                                     (var-arrow-start-pos-left arrow-key)
                                                     (var-arrow-start-pos-right arrow-key))
-                                              (λ () '()))])
-                  (cond
-                    [(null? orig-arrows) (void)]
-                    [(null? (cdr orig-arrows)) (jump-to (car orig-arrows))]
-                    [else
-                     (let loop ([arrows orig-arrows])
-                       (cond
-                         [(null? arrows) (jump-to (car orig-arrows))]
-                         [else (let ([arrow (car arrows)])
-                                 (cond
-                                   [(and (object=? txt (list-ref arrow 0))
-                                         (<= (list-ref arrow 1) pos (list-ref arrow 2)))
-                                    (jump-to (if (null? (cdr arrows))
-                                                 (car orig-arrows)
-                                                 (cadr arrows)))]
-                                   [else (loop (cdr arrows))]))]))]))))
+                                              (λ () '())))
+                (when backwards? (set! orig-arrows (reverse orig-arrows)))
+                (cond
+                  [(null? orig-arrows) (void)]
+                  [(null? (cdr orig-arrows)) (jump-to (car orig-arrows))]
+                  [else
+                   (let loop ([arrows orig-arrows])
+                     (cond
+                       [(null? arrows) (jump-to (car orig-arrows))]
+                       [else 
+                        (define arrow (car arrows))
+                        (cond
+                          [(and (object=? txt (list-ref arrow 0))
+                                (<= (list-ref arrow 1) pos (list-ref arrow 2)))
+                           (jump-to (if (null? (cdr arrows))
+                                        (car orig-arrows)
+                                        (cadr arrows)))]
+                          [else (loop (cdr arrows))])]))])))
             
             ;; jump-to : (list text number number) -> void
             (define/private (jump-to to-arrow)
@@ -2133,6 +2135,9 @@ If the namespace does not, they are colored the unbound color.
               "jump to next bound occurrence"
               (jump-callback (λ (defs obj) (send defs syncheck:jump-to-next-bound-occurrence obj))))
         (send keymap add-function
+              "jump to previous bound occurrence"
+              (jump-callback (λ (defs obj) (send defs syncheck:jump-to-next-bound-occurrence obj #t))))
+        (send keymap add-function
               "jump to definition (in other file)"
               (jump-callback (λ (defs obj) (send defs syncheck:jump-to-definition obj)))))
       
@@ -2140,6 +2145,7 @@ If the namespace does not, they are colored the unbound color.
       (send keymap map-function "c:c;c:c" "check syntax")
       (send keymap map-function "c:x;b" "jump to binding occurrence")
       (send keymap map-function "c:x;n" "jump to next bound occurrence")
+      (send keymap map-function "c:x;p" "jump to previous bound occurrence")
       (send keymap map-function "c:x;d" "jump to definition (in other file)")
       
       (send keymap add-function "show/hide blue boxes in upper-right corner"
