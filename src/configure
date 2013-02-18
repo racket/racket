@@ -1342,14 +1342,14 @@ Optional Features:
   --enable-places         support places (3m only; usually enabled by default)
   --enable-futures        support futures (usually enabled by default)
   --enable-float          support single-precision floats (enabled by default)
-  --enable-floatinstead   use single-precision by default
+  --enable-floatinstead   use single-precision by default (NOT RECOMMENDED)
   --enable-extflonum      support extflonums (enabled by default, if available)
   --enable-racket=<path>  use <path> as Racket executable to build Racket
   --enable-origtree       install with original directory structure
   --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
   --enable-docs           build docs on install (enabled by default)
   --enable-usersetup      setup user-specific files on install
-  --enable-shared         create shared libraries
+  --enable-shared         create shared libraries (ok, but not recommended)
   --enable-dynlib         same as --enable-shared
   --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled
   --enable-libffi         use installed libffi (enabled by default for Unix)
@@ -1359,16 +1359,16 @@ Optional Features:
   --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks
   --enable-macprefix      allow --prefix with a Mac OS X install
   --enable-mac64          allow 64-bit Mac OS X build (enabled by default)
-  --enable-cgcdefault     use CGC (Boehm or Senora) as default build
+  --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)
   --enable-sgc            use Senora GC instead of the Boehm GC
   --enable-sgcdebug       use Senora GC for debugging
-  --enable-backtrace      3m: support GC backtrace dumps
-  --enable-pthread        link with pthreads
+  --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)
+  --enable-pthread        link with pthreads (usually auto-enabled if needed)
   --enable-stackup        assume "up" if stack direction cannot be determined
   --enable-bigendian      assume "big" if endianness cannot be determined
   --enable-gprof          compile for profiling with gprof (gcc only)
   --enable-gcov           compile to gather gcov statistics (gcc3 only)
-  --enable-noopt          drop -O C flags
+  --enable-noopt          drop -O C flags (useful for low-level debugging)
 
 Some influential environment variables:
   CC          C compiler command
@@ -2328,10 +2328,13 @@ show_explicitly_enabled()
 {
   if test "$1" = "yes" ; then
     echo "=== $2 enabled"
+    if test "$3" != "" ; then
+      echo "  $3"
+    fi
   fi
 }
 
-show_explicitly_enabled "${enable_cgcdefault}" "CGC as default"
+show_explicitly_enabled "${enable_cgcdefault}" "CGC as default" "Note that this mode is NOT RECOMMENDED for normal Racket use"
 
 show_explicitly_disabled "${enable_docs}" "Documentation build"
 show_explicitly_enabled "${enable_usersetup}" "User-specific setup on install"
@@ -2359,10 +2362,10 @@ show_explicitly_disabled "${enable_futures}" Futures
 
 show_explicitly_enabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
-show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces"
+show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces" "Note that this mode is not intended for normal Racket use"
 
 show_explicitly_disabled "${enable_float}" "Single-precision floats"
-show_explicitly_enabled "${enable_floatinstead}" "Single-precision default floats"
+show_explicitly_enabled "${enable_floatinstead}" "Single-precision default floats" "Note that this mode is NOT RECOMMENDED"
 show_explicitly_disabled "${enable_extflonum}" "Extflonums"
 
 show_explicitly_enabled "${enable_pthread}" "pthreads"
@@ -2372,7 +2375,7 @@ show_explicitly_enabled "${enable_smalloskit}" "OSKit small mode"
 show_explicitly_enabled "${enable_gprof}" "gprof"
 show_explicitly_enabled "${enable_gcov}" "gcov"
 
-show_explicitly_enabled "${enable_noopt}" "No-optimization"
+show_explicitly_enabled "${enable_noopt}" "No-optimization" "Note that this mode is intended only for debugging purposes"
 
 show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS X"
 

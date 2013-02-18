@@ -32,7 +32,7 @@ AC_ARG_ENABLE(foreign, [  --enable-foreign        support foreign calls (enabled
 AC_ARG_ENABLE(places,  [  --enable-places         support places (3m only; usually enabled by default)])
 AC_ARG_ENABLE(futures, [  --enable-futures        support futures (usually enabled by default)])
 AC_ARG_ENABLE(float,   [  --enable-float          support single-precision floats (enabled by default)], , enable_float=yes)
-AC_ARG_ENABLE(floatinstead, [  --enable-floatinstead   use single-precision by default])
+AC_ARG_ENABLE(floatinstead, [  --enable-floatinstead   use single-precision by default (NOT RECOMMENDED)])
 AC_ARG_ENABLE(extflonum,    [  --enable-extflonum      support extflonums (enabled by default, if available)], , enable_extflonum=yes)
 
 AC_ARG_ENABLE(racket,  [  --enable-racket=<path>  use <path> as Racket executable to build Racket])
@@ -42,7 +42,7 @@ AC_ARG_ENABLE(pkgscope,[  --enable-pkgscope=<s>   set `raco pkg' default: instal
 
 AC_ARG_ENABLE(docs,    [  --enable-docs           build docs on install (enabled by default)], , enable_docs=yes)
 AC_ARG_ENABLE(usersetup, [  --enable-usersetup      setup user-specific files on install])
-AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries])
+AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries (ok, but not recommended)])
 AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
 AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled], LIBTOOLPROG="$enableval", enable_lt=default)
 
@@ -55,12 +55,12 @@ AC_ARG_ENABLE(libfw,   [  --enable-userfw         install Mac OS X frameworks to
 AC_ARG_ENABLE(macprefix, [  --enable-macprefix      allow --prefix with a Mac OS X install])
 AC_ARG_ENABLE(mac64,   [  --enable-mac64          allow 64-bit Mac OS X build (enabled by default)], , enable_mac64=yes)
 
-AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC (Boehm or Senora) as default build])
+AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)])
 AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of the Boehm GC])
 AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging])
-AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dumps])
+AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)])
 
-AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads])
+AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(stackup, [  --enable-stackup        assume "up" if stack direction cannot be determined])
 AC_ARG_ENABLE(bigendian, [  --enable-bigendian      assume "big" if endianness cannot be determined])
 
@@ -70,7 +70,7 @@ AC_ARG_ENABLE(bigendian, [  --enable-bigendian      assume "big" if endianness c
 AC_ARG_ENABLE(gprof,   [  --enable-gprof          compile for profiling with gprof (gcc only)])
 AC_ARG_ENABLE(gcov,    [  --enable-gcov           compile to gather gcov statistics (gcc3 only)])
 
-AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags])
+AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags (useful for low-level debugging)])
 
 ###### Some flags imply other flags #######
 
@@ -240,10 +240,13 @@ show_explicitly_enabled()
 {
   if test "$1" = "yes" ; then
     echo "=== $2 enabled"
+    if test "$3" != "" ; then
+      echo "  $3"
+    fi
   fi
 }
 
-show_explicitly_enabled "${enable_cgcdefault}" "CGC as default"
+show_explicitly_enabled "${enable_cgcdefault}" "CGC as default" "Note that this mode is NOT RECOMMENDED for normal Racket use"
 
 show_explicitly_disabled "${enable_docs}" "Documentation build"
 show_explicitly_enabled "${enable_usersetup}" "User-specific setup on install"
@@ -271,10 +274,10 @@ show_explicitly_disabled "${enable_futures}" Futures
 
 show_explicitly_enabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
-show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces"
+show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces" "Note that this mode is not intended for normal Racket use"
 
 show_explicitly_disabled "${enable_float}" "Single-precision floats"
-show_explicitly_enabled "${enable_floatinstead}" "Single-precision default floats"
+show_explicitly_enabled "${enable_floatinstead}" "Single-precision default floats" "Note that this mode is NOT RECOMMENDED"
 show_explicitly_disabled "${enable_extflonum}" "Extflonums"
 
 show_explicitly_enabled "${enable_pthread}" "pthreads"
@@ -284,7 +287,7 @@ show_explicitly_enabled "${enable_smalloskit}" "OSKit small mode"
 show_explicitly_enabled "${enable_gprof}" "gprof"
 show_explicitly_enabled "${enable_gcov}" "gcov"
 
-show_explicitly_enabled "${enable_noopt}" "No-optimization"
+show_explicitly_enabled "${enable_noopt}" "No-optimization" "Note that this mode is intended only for debugging purposes"
 
 show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS X"
 
