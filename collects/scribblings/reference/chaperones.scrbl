@@ -110,6 +110,16 @@ Otherwise, all chaperones of @racket[v2] must be intact in
 from @racket[v1] through one of the chaperone constructors (e.g.,
 @racket[chaperone-procedure]).}
 
+@defproc[(impersonator-ephemeron [v any/c]) ephemeron?]{
+
+Produces an @tech{ephemeron} that can be used to connect the
+reachability of @racket[v] (in the sense of garbage collection; see
+@secref["gc-model"]) with the reachability of any value for which
+@racket[v] is an @tech{impersonator}. That is, the value @racket[v]
+will be considered reachable as long as the result ephemeron is
+reachable in addition to any value that @racket[v] impersonates
+(including itself).}
+
 @; ------------------------------------------------------------
 @section{Impersonator Constructors}
 
