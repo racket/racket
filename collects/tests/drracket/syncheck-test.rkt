@@ -8,6 +8,7 @@
            racket/class
            racket/list
            racket/file
+           racket/set
            mred
            framework
            mrlib/text-string-style-desc
@@ -1334,7 +1335,7 @@
           (hash-for-each raw-actual
             (lambda (k v)
               (hash-set! actual-ht (cdr k)
-                         (sort (map cdr v)
+                         (sort (map cdr (set->list v))
                                (lambda (x y) (< (car x) (car y))))))))
         (define expected-ht (make-hash))
         (define stupid-internal-define-syntax2

@@ -394,7 +394,7 @@ If the namespace does not, they are colored the unbound color.
             ;; cleanup-texts : (or/c #f (listof text))
             (define cleanup-texts #f)
             
-            ;; bindings-table : hash-table[(list text number number) -o> (listof (list text number number))]
+            ;; bindings-table : hash-table[(list text number number) -o> (setof (list text number number))]
             ;; this is a private field
             (define bindings-table (make-hash))
             
@@ -410,15 +410,15 @@ If the namespace does not, they are colored the unbound color.
                       (= start-right end-right))
                  #f]
                 [else
-                 (let* ([key (list start-text start-left start-right)]
-                        [priors (hash-ref bindings-table key (λ () '()))]
-                        [new (list end-text end-left end-right)])
-                   (cond
-                     [(member new priors)
-                      #f]
-                     [else
-                      (hash-set! bindings-table key (cons new priors))
-                      #t]))]))
+                 (define key (list start-text start-left start-right))
+                 (define priors (hash-ref bindings-table key (λ () (set))))
+                 (define new (list end-text end-left end-right))
+                 (cond
+                   [(set-member? priors new)
+                    #f]
+                   [else
+                    (hash-set! bindings-table key (set-add priors new))
+                    #t])]))
             
             ;; for use in the automatic test suite (both)
             (define/public (syncheck:get-bindings-table [tooltips? #f])
@@ -452,29 +452,29 @@ If the namespace does not, they are colored the unbound color.
                 [else
                  bindings-table]))
             
-            (define/public (syncheck:sort-bindings-table)
-              
-              ;; compare-bindings : (list text number number) (list text number number) -> boolean
-              (define (compare-bindings l1 l2)
-                (let ([start-text (list-ref l1 0)]
-                      [start-left (list-ref l1 1)]
-                      [end-text (list-ref l2 0)]
-                      [end-left (list-ref l2 1)])
-                  (let-values ([(sx sy) (find-dc-location start-text start-left)]
-                               [(ex ey) (find-dc-location end-text end-left)])
-                    (cond
-                      [(= sy ey) (< sx ex)]
-                      [else (< sy ey)]))))
+            ;; compare-bindings : (list text number number) (list text number number) -> boolean
+            ;; compares two bindings in the sets inside the bindings table, returning
+            ;; #t if l1 appears earlier in the file than l2 does.
+            (define/private (syncheck:compare-bindings l1 l2)
               
               ;; find-dc-location : text number -> (values number number)
               (define (find-dc-location text pos)
                 (send text position-location pos xlb xrb)
                 (send text editor-location-to-dc-location (unbox xlb) (unbox xrb)))
               
-              (hash-for-each
-               bindings-table
-               (λ (k v)
-                 (hash-set! bindings-table k (sort v compare-bindings)))))
+              (let ([start-text (list-ref l1 0)]
+                    [start-left (list-ref l1 1)]
+                    [end-text (list-ref l2 0)]
+                    [end-left (list-ref l2 1)])
+                (cond
+                  [(object=? start-text end-text)
+                   (< start-left end-left)]
+                  [else
+                   (let-values ([(sx sy) (find-dc-location start-text start-left)]
+                                [(ex ey) (find-dc-location end-text end-left)])
+                     (cond
+                       [(= sy ey) (< sx ex)]
+                       [else (< sy ey)]))])))
             
             (define tacked-hash-table (make-hasheq))
             
@@ -1446,12 +1446,15 @@ If the namespace does not, they are colored the unbound color.
             (define/private (jump-to-next-callback pos txt input-arrows backwards?)
               (unless (null? input-arrows)
                 (define arrow-key (car input-arrows))
-                (define orig-arrows (hash-ref bindings-table
-                                              (list (var-arrow-start-text arrow-key)
-                                                    (var-arrow-start-pos-left arrow-key)
-                                                    (var-arrow-start-pos-right arrow-key))
-                                              (λ () '())))
-                (when backwards? (set! orig-arrows (reverse orig-arrows)))
+                (define orig-arrows 
+                  (sort (set->list (hash-ref bindings-table
+                                             (list (var-arrow-start-text arrow-key)
+                                                   (var-arrow-start-pos-left arrow-key)
+                                                   (var-arrow-start-pos-right arrow-key))
+                                             (λ () '())))
+                        (λ (x y) (if backwards?
+                                     (not (syncheck:compare-bindings x y))
+                                     (syncheck:compare-bindings x y)))))
                 (cond
                   [(null? orig-arrows) (void)]
                   [(null? (cdr orig-arrows)) (jump-to (car orig-arrows))]
@@ -1710,7 +1713,6 @@ If the namespace does not, they are colored the unbound color.
                  (send defs-text syncheck:update-blue-boxes)
                  (send defs-text syncheck:update-drawn-arrows)
                  (send (send defs-text get-tab) remove-bkg-running-color 'syncheck)
-                 (send defs-text syncheck:sort-bindings-table)
                  (set-syncheck-running-mode #f)]
                 [(and (i . > . 0)  ;; check i just in case things are really strange
                       (20 . <= . (- (current-inexact-milliseconds) start-time)))
@@ -2004,8 +2006,7 @@ If the namespace does not, they are colored the unbound color.
                            definitions-text
                            (λ ()
                              (parameterize ([current-annotations definitions-text])
-                               (expansion-completed))
-                             (send definitions-text syncheck:sort-bindings-table)))
+                               (expansion-completed))))
                           (cleanup)
                           (custodian-shutdown-all user-custodian))))]
                     [else

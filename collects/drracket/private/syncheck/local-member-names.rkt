@@ -20,7 +20,6 @@
   syncheck:add-mouse-over-status
   syncheck:add-jump-to-definition
   
-  syncheck:sort-bindings-table
   syncheck:jump-to-next-bound-occurrence
   syncheck:jump-to-binding-occurrence
   syncheck:jump-to-definition

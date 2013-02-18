@@ -22,7 +22,6 @@
     syncheck:init-arrows
     syncheck:clear-arrows
     syncheck:arrows-visible?
-    syncheck:sort-bindings-table
     syncheck:get-bindings-table
     syncheck:jump-to-next-bound-occurrence
     syncheck:jump-to-binding-occurrence
