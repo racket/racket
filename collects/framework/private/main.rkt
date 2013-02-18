@@ -120,7 +120,7 @@
                                    "match-let" "match-let*" "match-letrec"
                                    "letrec"
                                    "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values"
-                                   "parameterize"
+                                   "parameterize" "parameterize*"
                                    "with-syntax"))
                          (λ (x) (and (list? x) (andmap string? x))))
 
@@ -327,7 +327,7 @@
                unit/sig unit/lang
                with-handlers
                interface
-               parameterize
+               parameterize parameterize*
                call-with-input-file call-with-input-file* with-input-from-file
                with-input-from-port call-with-output-file
                with-output-to-file with-output-to-port 
