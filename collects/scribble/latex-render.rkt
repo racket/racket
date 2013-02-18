@@ -89,7 +89,6 @@
                                     (append (extract-part-style-files
                                              d
                                              ri
-                                             'tex
                                              (lambda (p) #f)
                                              tex-addition?
                                              tex-addition-path)

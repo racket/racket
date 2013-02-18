@@ -118,9 +118,9 @@
 
     ;; ----------------------------------------
 
-    (define/public (extract-part-style-files d ri tag stop-at-part? pred extract)
+    (define/public (extract-part-style-files d ri stop-at-part? pred extract)
       (let ([ht (make-hash)])
-        (let loop ([p d][up? #t][only-up? #f])
+        (let loop ([p d] [up? #t] [only-up? #f])
           (let ([s (part-style p)])
             (when up?
               (let ([p (collected-info-parent (part-collected-info p ri))])
@@ -137,14 +137,19 @@
                            (unless (stop-at-part? p)
                              (loop p #f #f)))
                          (part-parts p)))))
-        (for/list ([k (in-hash-keys ht)]) (if (or (bytes? k) (url? k))
-                                              k 
-                                              (main-collects-relative->path k)))))
+        (map cdr
+             (sort
+              (for/list ([(k v) (in-hash ht)])
+                (cons v (if (or (bytes? k) (url? k))
+                            k 
+                            (main-collects-relative->path k))))
+              <
+              #:key car))))
 
     (define/private (extract-style-style-files s ht pred extract)
       (for ([v (in-list (style-properties s))])
         (when (pred v)
-          (hash-set! ht (extract v) #t))))
+          (hash-update! ht (extract v) values (hash-count ht)))))
 
     (define/private (extract-flow-style-files blocks d ri ht pred extract)
       (for ([b (in-list blocks)])

@@ -704,7 +704,6 @@
                           (append (extract-part-style-files
                                    d
                                    ri
-                                   'css
                                    (lambda (p) (part-whole-page? p ri))
                                    css-addition?
                                    css-addition-path)
@@ -720,7 +719,6 @@
                           (extract-part-style-files
                            d
                            ri
-                           'css
                            (lambda (p) (part-whole-page? p ri))
                            js-addition?
                            js-addition-path))
