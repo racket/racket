@@ -1708,6 +1708,7 @@ If the namespace does not, they are colored the unbound color.
                  (send defs-text syncheck:update-blue-boxes)
                  (send defs-text syncheck:update-drawn-arrows)
                  (send (send defs-text get-tab) remove-bkg-running-color 'syncheck)
+                 (send defs-text syncheck:sort-bindings-table)
                  (set-syncheck-running-mode #f)]
                 [(and (i . > . 0)  ;; check i just in case things are really strange
                       (20 . <= . (- (current-inexact-milliseconds) start-time)))
