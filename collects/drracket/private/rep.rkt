@@ -21,6 +21,7 @@ TODO
          racket/unit
          racket/list
          racket/port
+         racket/set
          
          string-constants
          setup/xref
@@ -1818,10 +1819,13 @@ TODO
                        [label (string-constant drscheme)]
                        [width 600]
                        [height 600]))
-        (define t (new racket:text%))
+        (define t (new (draw-lines-mixin (text:hide-caret/selection-mixin racket:text%))))
         (define ec (new editor-canvas% [parent (send f get-area-container)] [editor t]))
-        (for ([prev-expr (in-list (get-previous-exprs))])
+        (for ([prev-expr (in-list (get-previous-exprs))]
+              [i (in-naturals)])
           (define lp (send t last-position))
+          (unless (zero? i)
+            (send t draw-along-line (- (send t position-paragraph lp) 1)))
           (for ([snip/string (in-list prev-expr)])
             (send t insert
                   (if (string? snip/string)
@@ -1830,7 +1834,13 @@ TODO
                   lp lp))
           (let ([lp (send t last-position)])
             (unless (equal? (send t get-character lp) #\newline)
+              (send t insert #\newline lp lp))
+            (unless (equal? (send t get-character (- lp 1)) #\newline)
               (send t insert #\newline lp lp))))
+        (send t delete (- (send t last-position) 2) (send t last-position))
+        (send t set-position (send t paragraph-start-position (send t last-paragraph)))
+        (send t hide-caret #t)
+        (send t lock #t)
         (send f show #t))
       
       ;; private fields
@@ -2128,6 +2138,33 @@ TODO
               (text:foreground-color-mixin
                (text:normalize-paste-mixin
                 text:clever-file-format%))))))))))))))
+
+(define (draw-lines-mixin text%)
+  (class text%
+    (define line-paras (set))
+    (define/public (draw-along-line para)
+      (set! line-paras (set-add line-paras para)))
+    (inherit paragraph-start-position 
+             paragraph-end-position
+             position-locations)
+    (define ty (box 0.0))
+    (define by (box 0.0))
+    (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
+      (unless before?
+        (define pen (send dc get-pen))
+        (for ([para (in-set line-paras)])
+          (define sp (paragraph-start-position para))
+          (define ep (paragraph-end-position para))
+          (position-locations sp #f ty #f by)
+          (define y (/ (+ (unbox ty) (unbox by)) 2))
+          (send dc set-pen "Lavender" (/ (- (unbox by) (unbox ty)) 3.0) 'solid)
+          (send dc draw-line 
+                (+ dx left)
+                (+ dy y)
+                (+ dx right)
+                (+ dy y))))
+      (super on-paint before? dc left top right bottom dx dy draw-caret))
+    (super-new)))
 
 (define (simplify-history-element s all-to-strings?)
   (cond

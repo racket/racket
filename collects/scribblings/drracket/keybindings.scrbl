@@ -209,6 +209,7 @@ as the @tech{definitions window} plus a few more:
 @keybinding["M-p"]{bring the previously entered expression down to the prompt}
 @keybinding["M-n"]{bring the expression after the current expression in the
   expression history down to the prompt}
+@keybinding["M-h"]{Show the current expression history in a separate window}
 ]
 
 @section{LaTeX and TeX inspired keybindings}
