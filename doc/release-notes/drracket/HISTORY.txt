@@ -1,4 +1,11 @@
 ------------------------------
+       Version 5.3.3
+------------------------------
+
+  . added esc;h key binding (to the interactions window) that shows
+    the history of expressions evaluated
+
+------------------------------
        Version 5.3.2
 ------------------------------
 
