@@ -151,6 +151,15 @@ correspond to @racket[_int16]. The @racket[_int] aliases correspond to
 the @racket[_intptr] aliases correspond to either
 @racket[_int32] or @racket[_int64], depending on the platform.}
 
+@defthing*[([_size ctype?]
+            [_ssize ctype?]
+            [_ptrdiff ctype?]
+            [_intmax ctype?]
+            [_uintmax ctype?])]{
+
+More aliases for basic integer types. The @racket[_size] and
+@racket[_uintmax] types are aliases for @racket[_uintptr], and
+the rest are aliases for @racket[_intptr].}
 
 @defthing*[([_fixnum ctype?]
             [_ufixnum ctype?])]{

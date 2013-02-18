@@ -93,6 +93,12 @@
 (provide _intptr _uintptr _sintptr)
 (define-values (_intptr _uintptr _sintptr) (sizeof->3ints '(void *)))
 
+(define* _size _uintptr)
+(define* _ssize _intptr)
+(define* _ptrdiff _intptr)
+(define* _intmax _intptr)
+(define* _uintmax _uintptr)
+
 ;; ----------------------------------------------------------------------------
 ;; Getting and setting library objects
 

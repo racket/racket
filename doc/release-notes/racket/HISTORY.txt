@@ -1,4 +1,5 @@
 Version 5.3.3.3
+ffi/unsafe: added _size, _ssize, _ptrdiff, _intmax, _uintmax
 ffi/vector: added f8vectors
 scribble: 'toc-hidden style on a part no longer hides ToC
  entries for sub-parts when rendering as HTML
