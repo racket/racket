@@ -988,6 +988,14 @@
 		     (bytes-convert c
 				    (bytes-append (integer->integer-bytes #xDC00 2 #f) 
 						  (integer->integer-bytes #x1000 2 #f))))))))
+
+;; Check a corner of UTF-16 conversion:
+(let ([c (bytes-open-converter "platform-UTF-8" "platform-UTF-16")])
+  (let-values ([(s n status) (bytes-convert c (string->bytes/utf-8 "\U171D3"))])
+    (let ([c2 (bytes-open-converter "platform-UTF-16" "platform-UTF-8")])
+      (let-values ([(s2 n2 status2) (bytes-convert c2 s)])
+        (bytes->string/utf-8 s2)))))
+
 (when (eq? (system-type) 'windows)
   (let ([c (bytes-open-converter "platform-UTF-8-permissive" "platform-UTF-16")])
     ;; Check that we use all 6 bytes of #"\355\240\200\355\260\200" or none

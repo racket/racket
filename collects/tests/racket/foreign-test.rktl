@@ -494,6 +494,9 @@
   (test 4.4t0 extflvector-ref v 2)
   (test 2.2t0 ptr-ref (ptr-add (extflvector->cpointer v) (ctype-sizeof _longdouble)) _longdouble))
 
+;; Check a corner of UTF-16 conversion:
+(test "\U171D3" cast (cast "\U171D3" _string/utf-16 _pointer) _pointer _string/utf-16)
+
 (report-errs)
 
 #| --- ignore everything below ---
