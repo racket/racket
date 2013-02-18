@@ -1410,10 +1410,12 @@
            (if m
              (list* (substring i 0 (cdar m))
                     ;; Most browsers wrap after a hyphen. The one that
-                    ;; doesn't, Firefox, pays attention to wbr.  But
-                    ;; almost all browsers pay attention to zero width
-                    ;; space, so we'll insert one here.
-                    #x200b
+                    ;; doesn't, Firefox, pays attention to wbr.  Some
+                    ;; browsers ignore wbr, but at least they don't do
+                    ;; strange things with it.
+                    (if (equal? #\- (string-ref i (caar m)))
+                        '(wbr)
+                        '(span ([class "mywbr"]) " " nbsp))
                     (render-other (substring i (cdar m)) part ri))
              (ascii-ize i)))]
         [(symbol? i)
