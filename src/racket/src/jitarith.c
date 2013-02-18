@@ -1020,7 +1020,7 @@ static int check_float_type_result(mz_jit_state *jitter, int reg, void *fail_cod
   mz_patch_branch(ref);
   __END_TINY_JUMPS__(1);
 
-  jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+  jit_ldxi_s(JIT_R2, reg, &((Scheme_Object *)0x0)->type);
   __START_SHORT_JUMPS__(1);
   (void)jit_bnei_i(reffail, JIT_R2, type);
   __END_SHORT_JUMPS__(1);

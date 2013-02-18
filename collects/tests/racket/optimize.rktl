@@ -24,7 +24,9 @@
   (let* ([struct:rock (eval 'struct:rock)]
          [a-rock (eval '(rock 0))]
          [chap-rock (eval '(chaperone-struct (rock 0) rock-x (lambda (r v) (add1 v))))]
-         [check-error-message (lambda (name proc [fixnum? #f])
+         [check-error-message (lambda (name proc [fixnum? #f]
+                                            #:first-arg [first-arg #f]
+                                            #:second-arg [second-arg #f])
 				(unless (memq name '(eq? eqv? equal? 
                                                          not null? pair? list?
 							 real? number? boolean?
@@ -38,7 +40,11 @@
                                                          thing?
                                                          continuation-mark-set-first))
 				  (let ([s (with-handlers ([exn? exn-message])
-					     (proc (if fixnum? 10 'bad)))]
+                                             (let ([bad (if fixnum? 10 'bad)])
+                                               (cond
+                                                [first-arg (proc first-arg bad)]
+                                                [second-arg (proc bad second-arg)]
+                                                [else (proc bad)])))]
 					[name (symbol->string name)])
 				    (test name
 					  (lambda (v)
@@ -95,6 +101,8 @@
 	 [bin-exact (lambda (v op arg1 arg2 [check-fixnum-as-bad? #f])
 		      (check-error-message op (eval `(lambda (x) (,op x ',arg2))))
 		      (check-error-message op (eval `(lambda (x) (,op ',arg1 x))))
+		      (check-error-message op (eval `(lambda (x y) (,op x y))) #:first-arg arg1)
+		      (check-error-message op (eval `(lambda (x y) (,op x y))) #:second-arg arg2)
                       (when check-fixnum-as-bad?
                         (check-error-message op (eval `(lambda (x) (,op x ',arg2))) #t)
                         (check-error-message op (eval `(lambda (x) (,op x 10))) #t)
@@ -669,7 +677,16 @@
       (define (extflonum-close? fl1 fl2)
         (extfl<= (extflabs (fl- fl1 fl2))
                  (real->extfl 1e-8)))
-      
+
+      (bin-exact 3.4t0 'extfl+ 1.1t0 2.3t0 #t)
+      (bin-exact -0.75t0 'extfl- 1.5t0 2.25t0 #t)
+      (bin-exact 2.53t0 'extfl* 1.1t0 2.3t0 #t)
+      (bin-exact (extfl/ 1.1t0 2.3t0) 'extfl/ 1.1t0 2.3t0 #t)
+      (bin-exact 3.0t0 'extflmin 3.0t0 4.5t0 #t)
+      (bin-exact 2.5t0 'extflmin 3.0t0 2.5t0)
+      (bin-exact 4.5t0 'extflmax 3.0t0 4.5t0 #t)
+      (bin-exact 3.0t0 'extflmax 3.0t0 2.5t0)
+
       (bin-exact #t 'extfl< 100.0t0 200.0t0 #t)
       (bin-exact #f 'extfl< 200.0t0 100.0t0)
       (bin-exact #f 'extfl< 200.0t0 200.0t0)
