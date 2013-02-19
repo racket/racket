@@ -25,6 +25,7 @@
          [a-rock (eval '(rock 0))]
          [chap-rock (eval '(chaperone-struct (rock 0) rock-x (lambda (r v) (add1 v))))]
          [check-error-message (lambda (name proc [fixnum? #f]
+                                            #:bad-value [bad-value (if fixnum? 10 'bad)]
                                             #:first-arg [first-arg #f]
                                             #:second-arg [second-arg #f])
 				(unless (memq name '(eq? eqv? equal? 
@@ -40,7 +41,7 @@
                                                          thing?
                                                          continuation-mark-set-first))
 				  (let ([s (with-handlers ([exn? exn-message])
-                                             (let ([bad (if fixnum? 10 'bad)])
+                                             (let ([bad bad-value])
                                                (cond
                                                 [first-arg (proc first-arg bad)]
                                                 [second-arg (proc bad second-arg)]
@@ -68,7 +69,7 @@
                      (when check-fixnum-as-bad?
                        (check-error-message op (eval `(lambda (x) (,op x))) #t))
 		     (un0 v op arg))]
-	       
+         
 	 [un (lambda (v op arg [check-fixnum-as-bad? #f])
 	       (un-exact v op arg check-fixnum-as-bad?)
 	       (when (number? arg)
@@ -617,10 +618,12 @@
     (un 1 'real-part 1+2i)
     (un 105 'real-part 105)
     (un-exact 10.0 'flreal-part 10.0+7.0i #t)
+    (check-error-message 'flreal-part (eval `(lambda (x) (flreal-part x))) #:bad-value 1+2i)
     (un 2 'imag-part 1+2i)
     (un-exact 0 'imag-part 106)
     (un-exact 0 'imag-part 106.0)
     (un-exact 7.0 'flimag-part 10.0+7.0i #t)
+    (check-error-message 'flimag-part (eval `(lambda (x) (flimag-part x))) #:bad-value 1+2i)
 
     (bin 1+2i 'make-rectangular 1 2)
     (bin-exact 1.0+2.0i 'make-rectangular 1 2.0)

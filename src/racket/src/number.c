@@ -1003,12 +1003,12 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
   scheme_add_global_constant("make-flrectangular", p, env);
 
-  p = scheme_make_folding_prim(scheme_checked_real_part, "flreal-part", 1, 1, 1);
+  p = scheme_make_folding_prim(scheme_checked_flreal_part, "flreal-part", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_add_global_constant("flreal-part", p, env);
 
-  p = scheme_make_folding_prim(scheme_checked_imag_part, "flimag-part", 1, 1, 1);
+  p = scheme_make_folding_prim(scheme_checked_flimag_part, "flimag-part", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_add_global_constant("flimag-part", p, env);

@@ -1612,6 +1612,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
         /* real part must always be inexact */
         (void)jit_ldxi_p(JIT_R1, JIT_R0, &((Scheme_Complex *)0x0)->r);
         CHECK_LIMIT();
+        (void)jit_bmsi_l(reffail, JIT_R1, 0x1);
         (void)mz_bnei_t(reffail, JIT_R1, scheme_double_type, JIT_R2);
         if (name[2] == 'i') {
           (void)jit_ldxi_p(dest, JIT_R0, &((Scheme_Complex *)0x0)->i);
