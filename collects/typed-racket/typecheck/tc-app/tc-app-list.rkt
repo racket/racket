@@ -7,7 +7,7 @@
          syntax/parse racket/match
          syntax/parse/experimental/reflect
          (only-in '#%kernel [reverse k:reverse])
-         (typecheck signatures tc-funapp check-below)
+         (typecheck signatures tc-funapp)
          (types abbrev utils union substitute)
          (rep type-rep)
          (env tvar-env)
@@ -99,6 +99,6 @@
       [_
        (match (single-value #'arg)
          [(tc-result1: (List: ts))
-          (cond-check-below (ret (-Tuple (reverse ts))) expected)]
+          (ret (-Tuple (reverse ts)))]
          [arg-ty
           (tc/funapp #'reverse #'(arg) (single-value #'reverse) (list arg-ty) expected)])])))

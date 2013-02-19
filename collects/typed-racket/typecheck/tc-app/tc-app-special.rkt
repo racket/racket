@@ -6,7 +6,7 @@
          syntax/parse racket/match
          syntax/parse/experimental/reflect
          unstable/list
-         (typecheck signatures tc-funapp check-below)
+         (typecheck signatures tc-funapp)
          (types abbrev utils)
          (private type-annotation)
          (rep type-rep filter-rep)
@@ -32,13 +32,13 @@
       (if (null? args) (ret Univ)
           (let* ([p (car args)]
                  [pt (single-value p)]
-                 [v (cadr args)]
-                 [vt (single-value v)])
+                 [v (cadr args)])
             (match pt
               [(tc-result1: (Param: a b))
-               (check-below vt a)
+               (tc-expr/check v (ret a))
                (loop (cddr args))]
               [(tc-result1: t)
+               (single-value v)
                (tc-error/expr #:return (or expected (ret Univ)) "expected Parameter, but got ~a" t)
                (loop (cddr args))])))))
   ;; use the additional but normally ignored first argument to make-sequence

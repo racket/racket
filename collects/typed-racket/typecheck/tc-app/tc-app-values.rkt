@@ -5,7 +5,7 @@
          "utils.rkt"
          syntax/parse racket/match
          syntax/parse/experimental/reflect
-         (typecheck signatures tc-funapp check-below)
+         (typecheck signatures tc-funapp)
          (types abbrev utils)
          (rep type-rep)
 

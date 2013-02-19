@@ -1,6 +1,6 @@
 #lang racket/unit
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
-         "signatures.rkt" "check-below.rkt"
+         "signatures.rkt"
          (rep type-rep filter-rep object-rep)
          (types abbrev subtype union utils filter-ops)
          (env lexical-env type-env-structs)
@@ -76,34 +76,33 @@
                [else
                 (add-neither tst)])
          (match* (results-t results-u)
-           [((tc-any-results:) _) (cond-check-below tc-any-results expected)]
-           [(_ (tc-any-results:)) (cond-check-below tc-any-results expected)]
+           [((tc-any-results:) _) tc-any-results]
+           [(_ (tc-any-results:)) tc-any-results]
            [((tc-results: ts fs2 os2)
              (tc-results: us fs3 os3))
             ;; if we have the same number of values in both cases
             (cond [(= (length ts) (length us))
-                   (let ([r (combine-results
-                             (for/list ([f2 fs2] [f3 fs3] [t2 ts] [t3 us] [o2 os2] [o3 os3])
-                               (let ([filter
-                                      (match* (f2 f3)
-                                        [((NoFilter:) _)
-                                         (-FS -top -top)]
-                                        [(_ (NoFilter:))
-                                         (-FS -top -top)]
-                                        [((FilterSet: f2+ f2-) (FilterSet: f3+ f3-))
-                                         ;(printf "f2- ~a f+ ~a\n" f2- fs+)
-                                         (-FS (-or (apply -and fs+ f2+ new-thn-props) (apply -and fs- f3+ new-els-props))
-                                              (-or (apply -and fs+ f2- new-thn-props) (apply -and fs- f3- new-els-props)))])]
-                                     [type (Un t2 t3)]
-                                     [object (if (object-equal? o2 o3) o2 (make-Empty))])
-                                 ;(printf "result filter is: ~a\n" filter)
-                                 (ret type filter object))))])
-                     (cond-check-below r expected))]
+                   (combine-results
+                    (for/list ([f2 fs2] [f3 fs3] [t2 ts] [t3 us] [o2 os2] [o3 os3])
+                      (let ([filter
+                             (match* (f2 f3)
+                               [((NoFilter:) _)
+                                (-FS -top -top)]
+                               [(_ (NoFilter:))
+                                (-FS -top -top)]
+                               [((FilterSet: f2+ f2-) (FilterSet: f3+ f3-))
+                                ;(printf "f2- ~a f+ ~a\n" f2- fs+)
+                                (-FS (-or (apply -and fs+ f2+ new-thn-props) (apply -and fs- f3+ new-els-props))
+                                     (-or (apply -and fs+ f2- new-thn-props) (apply -and fs- f3- new-els-props)))])]
+                            [type (Un t2 t3)]
+                            [object (if (object-equal? o2 o3) o2 (make-Empty))])
+                        ;(printf "result filter is: ~a\n" filter)
+                        (ret type filter object))))]
                   ;; special case if one of the branches is unreachable
                   [(and (= 1 (length us)) (type-equal? (car us) (Un)))
-                   (cond-check-below (ret ts fs2 os2) expected)]
+                   (ret ts fs2 os2)]
                   [(and (= 1 (length ts)) (type-equal? (car ts) (Un)))
-                   (cond-check-below (ret us fs3 os3) expected)]
+                   (ret us fs3 os3)]
                   ;; otherwise, error
                [else
                 (tc-error/expr #:return (or expected (ret Err))

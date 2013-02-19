@@ -53,10 +53,10 @@
   (define i-bound (length es-t))
   (cond
     [(valid-index? i-val i-bound)
-     (cond-check-below (ret (list-ref es-t i-val)) expected)]
+     (ret (list-ref es-t i-val))]
     [(not i-val)
      (check-below i-t -Integer)
-     (cond-check-below (ret (apply Un es-t)) expected)]
+     (ret (apply Un es-t))]
     [else
      (index-error i-val i-bound i-e vec-t expected name)]))
 
@@ -66,7 +66,7 @@
   (cond 
     [(valid-index? i-val i-bound)
      (tc-expr/check val-e (ret (list-ref es-t i-val)))
-     (cond-check-below (ret -Void) expected)]
+     (ret -Void)]
     [(not i-val)
      (single-value val-e)
      (tc-error/expr

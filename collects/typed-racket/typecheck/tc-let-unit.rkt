@@ -2,7 +2,6 @@
 
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
          "signatures.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
-         "check-below.rkt"
          (types utils abbrev union)
          (private type-annotation parse-type)
          (env lexical-env type-alias-env global-env type-env-structs)
@@ -92,11 +91,10 @@
       expected-types ; types w/o undefined
       (append p1 p2)
       ;; typecheck the body
-      (if expected
-          (check-below
-           (run (tc-exprs/check (syntax->list body) (erase-filter expected)))
-           expected)
-          (run (tc-exprs (syntax->list body))))))))
+      (run 
+        (if expected
+          (tc-exprs/check (syntax->list body) (erase-filter expected))
+          (tc-exprs (syntax->list body))))))))
 
 (define (tc-expr/maybe-expected/t e name)
   (define expecteds

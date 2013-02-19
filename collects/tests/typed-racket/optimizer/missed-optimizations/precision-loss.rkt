@@ -10,15 +10,15 @@ TR opt: precision-loss.rkt 40:0 (+ (- 3/4) 2.0) -- binary float
 TR info: precision-loss.rkt 42:39 (+ 1/4 3/4) -- exact real arith
 TR missed opt: precision-loss.rkt 42:0 (+ (vector-ref (quote #(2/3 1/2 3/4)) (assert (+ 1/4 3/4) exact-integer?)) 2.0) -- all args float-arg-expr, result not Float -- caused by: 42:3 (vector-ref (quote #(2/3 1/2 3/4)) (assert (+ 1/4 3/4) exact-integer?))
 TR info: precision-loss.rkt 42:39 (+ 1/4 3/4) -- exact real arith
-TR missed opt: precision-loss.rkt 48:8 (* 3/4 2/3) -- all args float-arg-expr, result not Float -- caused by: 48:11 3/4, 48:15 2/3
-TR info: precision-loss.rkt 48:8 (* 3/4 2/3) -- exact real arith
-TR opt: precision-loss.rkt 49:3 (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) -- pair
-TR missed opt: precision-loss.rkt 49:26 (* 3/4 2/3) -- all args float-arg-expr, result not Float -- caused by: 49:29 3/4, 49:33 2/3
-TR info: precision-loss.rkt 49:26 (* 3/4 2/3) -- exact real arith
-TR missed opt: precision-loss.rkt 49:14 (* 2.0 (ann (* 3/4 2/3) Real)) -- all args float-arg-expr, result not Float -- caused by: 49:26 (* 3/4 2/3)
-TR info: precision-loss.rkt 49:14 (* 2.0 (ann (* 3/4 2/3) Real)) -- exact real arith
-TR missed opt: precision-loss.rkt 48:0 (* (ann (* 3/4 2/3) Real) (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) 2.0) -- all args float-arg-expr, result not Float -- caused by: 48:8 (* 3/4 2/3), 49:3 (car (list (* 2.0 (ann (* 3/4 2/3) Real))))
-TR info: precision-loss.rkt 48:0 (* (ann (* 3/4 2/3) Real) (car (list (* 2.0 (ann (* 3/4 2/3) Real)))) 2.0) -- exact real arith
+TR missed opt: precision-loss.rkt 48:3 (* (r 3/4) 2/3) -- all args float-arg-expr, result not Float -- caused by: 48:6 (r 3/4), 48:14 2/3
+TR info: precision-loss.rkt 48:3 (* (r 3/4) 2/3) -- exact real arith
+TR opt: precision-loss.rkt 49:3 (car (list (* 2.0 (* (r 3/4) 2/3)))) -- pair
+TR missed opt: precision-loss.rkt 49:21 (* (r 3/4) 2/3) -- all args float-arg-expr, result not Float -- caused by: 49:24 (r 3/4), 49:32 2/3
+TR info: precision-loss.rkt 49:21 (* (r 3/4) 2/3) -- exact real arith
+TR missed opt: precision-loss.rkt 49:14 (* 2.0 (* (r 3/4) 2/3)) -- all args float-arg-expr, result not Float -- caused by: 49:21 (* (r 3/4) 2/3)
+TR info: precision-loss.rkt 49:14 (* 2.0 (* (r 3/4) 2/3)) -- exact real arith
+TR missed opt: precision-loss.rkt 48:0 (* (* (r 3/4) 2/3) (car (list (* 2.0 (* (r 3/4) 2/3)))) 2.0) -- all args float-arg-expr, result not Float -- caused by: 48:3 (* (r 3/4) 2/3), 49:3 (car (list (* 2.0 (* (r 3/4) 2/3))))
+TR info: precision-loss.rkt 48:0 (* (* (r 3/4) 2/3) (car (list (* 2.0 (* (r 3/4) 2/3)))) 2.0) -- exact real arith
 2.5
 2.75
 1.25
@@ -27,9 +27,9 @@ TR info: precision-loss.rkt 48:0 (* (ann (* 3/4 2/3) Real) (car (list (* 2.0 (an
 )
 
 
-
 #lang typed/racket
-
+(: r (Real -> Real))
+(define (r x) x)
 ;; warn when the extra precision gained by doing exact computations would
 ;; be lost when the results are mixed with floats, resulting in extra
 ;; computation cost for (usually) no gain
@@ -45,6 +45,6 @@ TR info: precision-loss.rkt 48:0 (* (ann (* 3/4 2/3) Real) (car (list (* 2.0 (an
 ;; in this case, the return type is Real, so we can't optimize
 ;; however, given that the return _value_ will be a float, the precision
 ;; is thrown away nonetheless, so a warning is warranted
-(* (ann (* 3/4 2/3) Real)
-   (car (list (* 2.0 (ann (* 3/4 2/3) Real))))
+(* (* (r 3/4) 2/3)
+   (car (list (* 2.0 (* (r 3/4) 2/3))))
    2.0)
