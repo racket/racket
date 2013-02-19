@@ -53,10 +53,10 @@
   (define i-bound (length es-t))
   (cond
     [(valid-index? i-val i-bound)
-     (cond-check-below (ret (list-ref es-t i-val)) expected)]
+     (ret (list-ref es-t i-val))]
     [(not i-val)
      (check-below i-t -Integer)
-     (cond-check-below (ret (apply Un es-t)) expected)]
+     (ret (apply Un es-t))]
     [else
      (index-error i-val i-bound i-e vec-t expected name)]))
 
@@ -66,7 +66,7 @@
   (cond 
     [(valid-index? i-val i-bound)
      (tc-expr/check val-e (ret (list-ref es-t i-val)))
-     (cond-check-below (ret -Void) expected)]
+     (ret -Void)]
     [(not i-val)
      (single-value val-e)
      (tc-error/expr
@@ -108,7 +108,11 @@
       [v-ty (tc/app-regular #'form expected)]))
   (pattern (~and form ((~or vector-immutable vector) args:expr ...))
     (match expected
-      [(tc-result1: (app resolve (Vector: t))) (tc/app-regular #'form expected)]
+      [(tc-result1: (app resolve (Vector: t)))
+       (define es (syntax->list #'(args ...)))
+       (for ([e (in-list es)])
+         (tc-expr/check e (ret t)))
+       (ret (make-HeterogeneousVector (map (λ (_) t) es)))]
       [(tc-result1: (app resolve (HeterogeneousVector: ts)))
        (unless (= (length ts) (length (syntax->list #'(args ...))))
          (tc-error/expr "expected vector with ~a elements, but got ~a"
@@ -131,8 +135,6 @@
          [_ (continue)])]
       ;; since vectors are mutable, if there is no expected type, we want to generalize the element type
       [(or #f (tc-any-results:) (tc-result1: _))
-       (cond-check-below
-         (ret (make-HeterogeneousVector (map (lambda (x) (generalize (tc-expr/t x)))
-                                             (syntax->list #'(args ...)))))
-         expected)]
+       (ret (make-HeterogeneousVector (map (lambda (x) (generalize (tc-expr/t x)))
+                                           (syntax->list #'(args ...)))))]
       [_ (int-err "bad expected: ~a" expected)])))

@@ -3,7 +3,7 @@
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
          "signatures.rkt"
          "tc-metafunctions.rkt"
-         "tc-subst.rkt" "check-below.rkt"
+         "tc-subst.rkt"
          racket/dict
          racket/list syntax/parse "parse-cl.rkt"
          racket/syntax unstable/struct syntax/stx
@@ -270,9 +270,7 @@
       [_ (go #f (syntax->list formals) (syntax->list bodies) null null null)])))
 
 (define (tc/mono-lambda/type formals bodies expected)
-  (define t (make-Function (map lam-result->type (tc/mono-lambda formals bodies expected))))
-  (cond-check-below (ret t true-filter) expected)
-  t)
+  (make-Function (map lam-result->type (tc/mono-lambda formals bodies expected))))
 
 (define (plambda-prop stx)
   (define d (syntax-property stx 'typechecker:plambda))
@@ -330,7 +328,7 @@
          (extend-tvars tvars
            (maybe-loop form formals bodies (ret expected*))))
        t)]
-    [(or (tc-any-results:) #f)
+    [(or (tc-result1: _) (tc-any-results:) #f)
      (match (map syntax-e (syntax->list (plambda-prop form)))
        [(list tvars ... dotted-var '...)
         (let* ([ty (extend-indexes dotted-var
@@ -345,8 +343,6 @@
                      (tc/mono-lambda/type formals bodies #f))])
           ;(printf "plambda: ~a ~a ~a \n" literal-tvars new-tvars ty)
           (make-Poly fresh-tvars ty #:original-names tvars))])]
-    [(tc-result1: t)
-     (check-below (tc/plambda form formals bodies #f) t)]
     [_ (int-err "not a good expected value: ~a" expected)]))
 
 ;; typecheck a sequence of case-lambda clauses, which is possibly polymorphic

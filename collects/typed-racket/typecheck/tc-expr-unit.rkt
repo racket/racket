@@ -30,103 +30,97 @@
     (pattern (~and i (~or :number :str :bytes))
              #:fail-unless expected #f
              #:fail-unless (subtype (-val (syntax-e #'i)) expected) #f))
-  (define r
-    (syntax-parse v-stx
-      [i:exp expected]
-      [i:boolean (-val (syntax-e #'i))]
-      [i:identifier (-val (syntax-e #'i))]
-
-      ;; Numbers
-      [0 -Zero]
-      [1 -One]
-      [(~var i (3d (conjoin byte? positive?))) -PosByte]
-      [(~var i (3d byte?)) -Byte]
-      [(~var i (3d (conjoin portable-index? positive?))) -PosIndex]
-      [(~var i (3d (conjoin portable-fixnum? positive?))) -PosFixnum]
-      [(~var i (3d (conjoin portable-fixnum? negative?))) -NegFixnum]
-      [(~var i (3d exact-positive-integer?)) -PosInt]
-      [(~var i (3d (conjoin exact-integer? negative?))) -NegInt]
-      [(~var i (3d (conjoin number? exact? rational? positive?))) -PosRat]
-      [(~var i (3d (conjoin number? exact? rational? negative?))) -NegRat]
-      [(~var i (3d (lambda (x) (eqv? x 0.0)))) -FlonumPosZero]
-      [(~var i (3d (lambda (x) (eqv? x -0.0)))) -FlonumNegZero]
-      [(~var i (3d (lambda (x) (eqv? x +nan.0)))) -FlonumNan]
-      [(~var i (3d (lambda (x) (eqv? x +inf.0)))) (-val +inf.0)]
-      [(~var i (3d (lambda (x) (eqv? x -inf.0)))) (-val -inf.0)]
-      [(~var i (3d (conjoin flonum? positive?))) -PosFlonum]
-      [(~var i (3d (conjoin flonum? negative?))) -NegFlonum]
-      [(~var i (3d flonum?)) -Flonum] ; for nan
-      [(~var i (3d (lambda (x) (eqv? x 0.0f0)))) -SingleFlonumPosZero]
-      [(~var i (3d (lambda (x) (eqv? x -0.0f0)))) -SingleFlonumNegZero]
-      [(~var i (3d (lambda (x) (eqv? x +nan.f)))) -SingleFlonumNan]
-      [(~var i (3d (lambda (x) (eqv? x +inf.f)))) (-val +inf.f)]
-      [(~var i (3d (lambda (x) (eqv? x -inf.f)))) (-val -inf.f)]
-      [(~var i (3d (conjoin single-flonum? positive?))) -PosSingleFlonum]
-      [(~var i (3d (conjoin single-flonum? negative?))) -NegSingleFlonum]
-      [(~var i (3d single-flonum?)) -SingleFlonum] ; for nan
-      [(~var i (3d inexact-real?)) -InexactReal] ; catch-all, just in case
-      [(~var i (3d real?)) -Real] ; catch-all, just in case
-      ;; a complex number can't have a float imaginary part and an exact real part
-      [(~var i (3d (conjoin number? exact?)))
-       -ExactNumber]
-      [(~var i (3d (conjoin number? (lambda (x) (and (flonum? (imag-part x))
-                                                     (flonum? (real-part x)))))))
-       -FloatComplex]
-      [(~var i (3d (conjoin number? (lambda (x) (and (single-flonum? (imag-part x))
-                                                     (single-flonum? (real-part x)))))))
-       -SingleFlonumComplex]
-      ;; can't have real and imaginary parts that are both inexact, but not the same precision
-      [(~var i (3d number?)) -Number] ; otherwise, Number
-      
-      [i:str -String]
-      [i:char -Char]
-      [i:keyword (-val (syntax-e #'i))]
-      [i:bytes -Bytes]
-      [i:byte-pregexp -Byte-PRegexp]
-      [i:byte-regexp -Byte-Regexp]
-      [i:pregexp -PRegexp]
-      [i:regexp  -Regexp]
-      [(~and i ()) (-val '())]
-      [(i . r)
-       (match (and expected (restrict expected (-pair Univ Univ) 'orig))
-         [(Pair: a-ty d-ty)
-          (-pair
-           (tc-literal #'i a-ty)
-           (tc-literal #'r d-ty))]
-         [(Union: '())
-          (tc-error/expr "expected ~a, but got" expected #:return expected)]
-         ;; errors are handled elsewhere
-         [t 
-          (-pair (tc-literal #'i) (tc-literal #'r))])]
-      [(~var i (3d vector?))
-       (match (and expected (restrict expected (-vec Univ) 'orig))
-         [(Vector: t)
-          (make-Vector (apply Un
-                              t ;; so that this isn't (Un) when we get no elems
-                              (for/list ([l (in-vector (syntax-e #'i))])
-                                (tc-literal l t))))]
-         [(HeterogeneousVector: ts)
-          (make-HeterogeneousVector
-           (for/list ([l (in-vector (syntax-e #'i))]
-                      [t (in-list ts)])
-             (tc-literal l t)))]
-         ;; errors are handled elsewhere
-         [_ (make-HeterogeneousVector (for/list ([l (syntax-e #'i)])
-                                        (generalize (tc-literal l #f))))])]
-      [(~var i (3d hash?))
-       (match expected
-         [(Hashtable: k v)
-          (let* ([h (syntax-e #'i)]
-                 [ks (hash-map h (lambda (x y) (tc-literal x k)))]
-                 [vs (hash-map h (lambda (x y) (tc-literal y v)))])
-            (make-Hashtable (generalize (check-below (apply Un ks) k)) (generalize (check-below (apply Un vs) v))))]
-         [_ (let* ([h (syntax-e #'i)]
-                   [ks (hash-map h (lambda (x y) (tc-literal x)))]
-                   [vs (hash-map h (lambda (x y) (tc-literal y)))])
-              (make-Hashtable (generalize (apply Un ks)) (generalize (apply Un vs))))])]
-      [_ Univ]))
-  
-  (cond-check-below r expected))
+  (syntax-parse v-stx
+    [i:exp expected]
+    [i:boolean (-val (syntax-e #'i))]
+    [i:identifier (-val (syntax-e #'i))]
+    ;; Numbers
+    [0 -Zero]
+    [1 -One]
+    [(~var i (3d (conjoin byte? positive?))) -PosByte]
+    [(~var i (3d byte?)) -Byte]
+    [(~var i (3d (conjoin portable-index? positive?))) -PosIndex]
+    [(~var i (3d (conjoin portable-fixnum? positive?))) -PosFixnum]
+    [(~var i (3d (conjoin portable-fixnum? negative?))) -NegFixnum]
+    [(~var i (3d exact-positive-integer?)) -PosInt]
+    [(~var i (3d (conjoin exact-integer? negative?))) -NegInt]
+    [(~var i (3d (conjoin number? exact? rational? positive?))) -PosRat]
+    [(~var i (3d (conjoin number? exact? rational? negative?))) -NegRat]
+    [(~var i (3d (lambda (x) (eqv? x 0.0)))) -FlonumPosZero]
+    [(~var i (3d (lambda (x) (eqv? x -0.0)))) -FlonumNegZero]
+    [(~var i (3d (lambda (x) (eqv? x +nan.0)))) -FlonumNan]
+    [(~var i (3d(lambda (x) (eqv? x +inf.0)))) (-val +inf.0)]
+    [(~var i (3d (lambda (x) (eqv? x -inf.0)))) (-val -inf.0)]
+    [(~var i (3d (conjoin flonum? positive?))) -PosFlonum]
+    [(~var i (3d (conjoin flonum? negative?))) -NegFlonum]
+    [(~var i (3d flonum?)) -Flonum] ; for nan
+    [(~var i (3d (lambda (x) (eqv? x 0.0f0)))) -SingleFlonumPosZero]
+    [(~var i (3d (lambda (x) (eqv? x -0.0f0)))) -SingleFlonumNegZero]
+    [(~var i (3d (lambda (x) (eqv? x +nan.f)))) -SingleFlonumNan]
+    [(~var i (3d(lambda (x) (eqv? x +inf.f)))) (-val +inf.f)]
+    [(~var i (3d (lambda (x) (eqv? x -inf.f)))) (-val -inf.f)]
+    [(~var i (3d (conjoin single-flonum? positive?))) -PosSingleFlonum]
+    [(~var i (3d (conjoin single-flonum? negative?))) -NegSingleFlonum]
+    [(~var i (3d single-flonum?)) -SingleFlonum] ; for nan
+    [(~var i (3d inexact-real?)) -InexactReal] ; catch-all, just in case
+    [(~var i (3d real?)) -Real] ; catch-all, just in case
+    ;; a complex number can't have a float imaginary part and an exact real part
+    [(~var i (3d (conjoin number? exact?)))
+     -ExactNumber]
+    [(~var i (3d (conjoin number? (lambda (x) (and (flonum? (imag-part x))
+                                                   (flonum? (real-part x)))))))
+     -FloatComplex]
+    [(~var i (3d (conjoin number? (lambda (x) (and (single-flonum? (imag-part x))
+                                                   (single-flonum? (real-part x)))))))
+     -SingleFlonumComplex]
+    ;; can't have real and imaginary parts that are both inexact, but not the same precision
+    [(~var i (3d number?)) -Number] ; otherwise, Number
+    
+    [i:str -String]
+    [i:char -Char]
+    [i:keyword (-val (syntax-e #'i))]
+    [i:bytes -Bytes]
+    [i:byte-pregexp -Byte-PRegexp]
+    [i:byte-regexp -Byte-Regexp]
+    [i:pregexp -PRegexp]
+    [i:regexp  -Regexp]
+    [(~and i ()) (-val '())]
+    [(i . r)
+     (match (and expected (restrict expected (-pair Univ Univ) 'orig))
+       [(Pair: a-ty d-ty)
+        (-pair
+         (tc-literal #'i a-ty)
+         (tc-literal #'r d-ty))]
+       [t 
+        (-pair (tc-literal #'i) (tc-literal #'r))])]
+    [(~var i (3d vector?))
+     (match (and expected (restrict expected (-vec Univ) 'orig))
+       [(Vector: t)
+        (make-Vector (apply Un
+                            t ;; so that this isn't (Un) when we get no elems
+                            (for/list ([l (in-vector (syntax-e #'i))])
+                              (tc-literal l t))))]
+       [(HeterogeneousVector: ts)
+        (make-HeterogeneousVector
+         (for/list ([l (in-vector (syntax-e #'i))]
+                    [t (in-list ts)])
+           check-below (tc-literal l t) t))]
+       [_ (make-HeterogeneousVector (for/list ([l (syntax-e #'i)])
+                                      (generalize (tc-literal l #f))))])]
+    [(~var i (3d hash?))
+     (match expected
+       [(Hashtable: k v)
+        (let* ([h (syntax-e #'i)]
+               [ks (hash-map h (lambda (x y) (tc-literal x k)))]
+               [vs (hash-map h (lambda (x y) (tc-literal y v)))])
+          (check-below (apply Un ks) k)
+          (check-below (apply Un vs) v)
+          expected)]
+       [_ (let* ([h (syntax-e #'i)]
+                 [ks (hash-map h (lambda (x y) (tc-literal x)))]
+                 [vs (hash-map h (lambda (x y) (tc-literal y)))])
+            (make-Hashtable (generalize (apply Un ks)) (generalize (apply Un vs))))])]
+    [_ Univ]))
 
 
 ;; do-inst : syntax type -> type
@@ -225,9 +219,9 @@
              =>
              (lambda (ann)
                (let* ([r (tc-expr/check/internal form* ann)]
-                      [r* (check-below r expected)])
+                      [r* (check-below (check-below r ann) expected)])
                  ;; add this to the *original* form, since the newer forms aren't really in the program
-                 (add-typeof-expr form ann)
+                 (add-typeof-expr form r)
                  ;; around again in case there is an instantiation
                  ;; remove the ascription so we don't loop infinitely
                  (loop (remove-ascription form*) r* #t)))]
@@ -256,7 +250,7 @@
             [else 
              (define t (tc-expr/check/internal form* expected))
              (add-typeof-expr form t)
-             t]))))
+             (check-below t expected)]))))
 
 (define (explicit-fail stx msg var)
   (cond [(and (identifier? var) (lookup-type/lexical var #:fail (λ _ #f)))
@@ -284,126 +278,119 @@
     ;; the argument must be syntax
     (unless (syntax? form)
       (int-err "bad form input to tc-expr: ~a" form))
-    (let ([old-ret ret]
-          ;; a local version of ret that does the checking
-          [ret
-           (lambda args
-             (define te (apply ret args))
-             (check-below te expected))])
-      (syntax-parse form
-        #:literal-sets (kernel-literals)
-        #:literals (find-method/who)
-        [stx
-         #:when (syntax-property form 'typechecker:with-handlers)
-         (check-subforms/with-handlers/check form expected)]
-        [stx
-         #:when (syntax-property form 'typechecker:ignore-some)
-         (check-subforms/ignore form)
-         ;; We trust ignore to be only on syntax objects objects that are well typed
-         expected]
-        ;; explicit failure
-        [(quote-syntax ((~literal typecheck-fail-internal) stx msg:str var))
-         (explicit-fail #'stx #'msg #'var)]
-        ;; data
-        [(quote #f) (ret (-val #f) false-filter)]
-        [(quote #t) (ret (-val #t) true-filter)]
-        [(quote val)  (match expected
-                        [(tc-result1: t)
-                         (ret (tc-literal #'val t) true-filter)]
-                        [_ ;; this isn't going to work, defer error handling
-                         (check-below (ret (tc-literal #'val #f)) expected)])]
-        ;; syntax
-        [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) true-filter)]
-        ;; mutation!
-        [(set! id val)
-         (match-let* ([(tc-result1: id-t) (single-value #'id)]
-                      [(tc-result1: val-t) (single-value #'val)])
-           (unless (subtype val-t id-t)
-             (tc-error/expr "Mutation only allowed with compatible types:\n~a is not a subtype of ~a" val-t id-t))
-           (ret -Void))]
-        ;; top-level variable reference - occurs at top level
-        [(#%top . id) (check-below (tc-id #'id) expected)]
-
-        [(#%variable-reference . _)
-         (ret -Variable-Reference)]
-        ;; identifiers
-        [x:identifier
-         (check-below (tc-id #'x) expected)]
-        ;; w-c-m
-        [(with-continuation-mark e1 e2 e3)
-         (define key-t (single-value #'e1))
-         (match key-t
-           [(tc-result1: (Continuation-Mark-Keyof: rhs))
-            (tc-expr/check/type #'e2 rhs)
-            (tc-expr/check #'e3 expected)]
-           [(? (λ (result)
-                 (and (identifier? #'e1)
-                      (free-identifier=? #'pz:pk #'e1))))
-            (tc-expr/check/type #'e2 Univ)
-            (tc-expr/check #'e3 expected)]
-           [(tc-result1: key-t)
-            ;(check-below key-t -Symbol)
-            ;; FIXME -- would need to protect `e2` with any-wrap/c contract
-            ;; instead, just fail
-            
-            ;(tc-expr/check/type #'e2 Univ)
-            ;(tc-expr/check #'e3 expected)
-            (tc-error/expr "with-continuation-mark requires a continuation-mark-key, but got ~a" key-t
-                           #:return expected)])]
-        ;; application
-        [(#%plain-app . _) (tc/app/check form expected)]
-        ;; #%expression
-        [(#%expression e) (tc-expr/check #'e expected)]
-        ;; syntax
-        ;; for now, we ignore the rhs of macros
-        [(letrec-syntaxes+values stxs vals . body)
-         (tc-expr/check (syntax/loc form (letrec-values vals . body)) expected)]
-        ;; begin
-        [(begin e . es) (tc-exprs/check (syntax->list #'(e . es)) expected)]
-        [(begin0 e . es)
-         (begin (tc-exprs/check (syntax->list #'es) (old-ret Univ))
-                (tc-expr/check #'e expected))]
-        ;; if
-        [(if tst thn els) (tc/if-twoarm #'tst #'thn #'els expected)]
-        ;; lambda
-        [(#%plain-lambda formals . body)
-         (tc/lambda/check form #'(formals) #'(body) expected)]
-        [(case-lambda [formals . body] ...)
-         (tc/lambda/check form #'(formals ...) #'(body ...) expected)]
-        ;; send
-        [(let-values (((_) meth))
-           (let-values (((_) rcvr))
-             (let-values (((_) (~and find-app (#%plain-app find-method/who _ _ _))))
-               (#%plain-app _ _ args ...))))
-         (tc/send #'find-app #'rcvr #'meth #'(args ...) expected)]
-        ;; kw/opt function def
-        [(let-values ([(_) fun])
-           . body)
-         #:when (or (syntax-property form 'kw-lambda)
-                    (syntax-property form 'opt-lambda))
-         (match expected
-           [(tc-result1: (and f (or (Function: _)
-                                    (Poly: _ (Function: _)))))
-            (tc-expr/check/type #'fun (kw-convert f #:split #t))]
-           [(or (tc-results: _) (tc-any-results:))
-            (tc-error/expr "Keyword functions must have function type, given ~a" expected)])
-         expected]
-        ;; let
-        [(let-values ([(name ...) expr] ...) . body)
-         (tc/let-values #'((name ...) ...) #'(expr ...) #'body form expected)]
-        [(letrec-values ([(name) expr]) name*)
-         #:when (and (identifier? #'name*) (free-identifier=? #'name #'name*)
-                     (value-restriction? #'expr #'name))
-         (match expected
-           [(tc-result1: t)
-            (with-lexical-env/extend (list #'name) (list t) (tc-expr/check #'expr expected))]
-           [(tc-results: ts)
-            (tc-error/expr #:return (ret (Un)) "Expected ~a values, but got only 1" (length ts))])]
-        [(letrec-values ([(name ...) expr] ...) . body)
-         (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body form expected)]
-        ;; other
-        [_ (tc-error/expr #:return (ret expected) "cannot typecheck unknown form : ~a\n" (syntax->datum form))]
-        ))))
+    (syntax-parse form
+      #:literal-sets (kernel-literals)
+      #:literals (find-method/who)
+      [stx
+       #:when (syntax-property form 'typechecker:with-handlers)
+       (check-subforms/with-handlers/check form expected)]
+      [stx
+       #:when (syntax-property form 'typechecker:ignore-some)
+       (check-subforms/ignore form)
+       ;; We trust ignore to be only on syntax objects objects that are well typed
+       expected]
+      ;; explicit failure
+      [(quote-syntax ((~literal typecheck-fail-internal) stx msg:str var))
+       (explicit-fail #'stx #'msg #'var)]
+      ;; data
+      [(quote #f) (ret (-val #f) false-filter)]
+      [(quote #t) (ret (-val #t) true-filter)]
+      [(quote val)
+       (match expected
+         [(tc-result1: t)
+          (ret (tc-literal #'val t) true-filter)]
+         [_
+          (ret (tc-literal #'val #f))])]
+      ;; syntax
+      [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) true-filter)]
+      ;; mutation!
+      [(set! id val)
+       (match-let* ([(tc-result1: id-t) (single-value #'id)]
+                    [(tc-result1: val-t) (single-value #'val)])
+         (unless (subtype val-t id-t)
+           (tc-error/expr "Mutation only allowed with compatible types:\n~a is not a subtype of ~a" val-t id-t))
+         (ret -Void))]
+      ;; top-level variable reference - occurs at top level
+      [(#%top . id) (tc-id #'id)]
+      [(#%variable-reference . _)
+       (ret -Variable-Reference)]
+      ;; identifiers
+      [x:identifier (tc-id #'x)]
+      ;; w-c-m
+      [(with-continuation-mark e1 e2 e3)
+       (define key-t (single-value #'e1))
+       (match key-t
+         [(tc-result1: (Continuation-Mark-Keyof: rhs))
+          (tc-expr/check/type #'e2 rhs)
+          (tc-expr/check #'e3 expected)]
+         [(? (λ (result)
+               (and (identifier? #'e1)
+                    (free-identifier=? #'pz:pk #'e1))))
+          (tc-expr/check/type #'e2 Univ)
+          (tc-expr/check #'e3 expected)]
+         [(tc-result1: key-t)
+          ;(check-below key-t -Symbol)
+          ;; FIXME -- would need to protect `e2` with any-wrap/c contract
+          ;; instead, just fail
+          
+          ;(tc-expr/check/type #'e2 Univ)
+          ;(tc-expr/check #'e3 expected)
+          (tc-error/expr "with-continuation-mark requires a continuation-mark-key, but got ~a" key-t
+                         #:return expected)])]
+      ;; application
+      [(#%plain-app . _) (tc/app/check form expected)]
+      ;; #%expression
+      [(#%expression e) (tc-expr/check #'e expected)]
+      ;; syntax
+      ;; for now, we ignore the rhs of macros
+      [(letrec-syntaxes+values stxs vals . body)
+       (tc-expr/check (syntax/loc form (letrec-values vals . body)) expected)]
+      ;; begin
+      [(begin e . es) (tc-exprs/check (syntax->list #'(e . es)) expected)]
+      [(begin0 e . es)
+       (tc-exprs/check (syntax->list #'es) tc-any-results)
+       (tc-expr/check #'e expected)]
+      ;; if
+      [(if tst thn els) (tc/if-twoarm #'tst #'thn #'els expected)]
+      ;; lambda
+      [(#%plain-lambda formals . body)
+       (tc/lambda/check form #'(formals) #'(body) expected)]
+      [(case-lambda [formals . body] ...)
+       (tc/lambda/check form #'(formals ...) #'(body ...) expected)]
+      ;; send
+      [(let-values (((_) meth))
+         (let-values (((_) rcvr))
+           (let-values (((_) (~and find-app (#%plain-app find-method/who _ _ _))))
+             (#%plain-app _ _ args ...))))
+       (tc/send #'find-app #'rcvr #'meth #'(args ...) expected)]
+      ;; kw/opt function def
+      [(let-values ([(_) fun])
+         . body)
+       #:when (or (syntax-property form 'kw-lambda)
+                  (syntax-property form 'opt-lambda))
+       (match expected
+         [(tc-result1: (and f (or (Function: _)
+                                  (Poly: _ (Function: _)))))
+          (tc-expr/check/type #'fun (kw-convert f #:split #t))]
+         [(or (tc-results: _) (tc-any-results:))
+          (tc-error/expr "Keyword functions must have function type, given ~a" expected)])
+       expected]
+      ;; let
+      [(let-values ([(name ...) expr] ...) . body)
+       (tc/let-values #'((name ...) ...) #'(expr ...) #'body form expected)]
+      [(letrec-values ([(name) expr]) name*)
+       #:when (and (identifier? #'name*) (free-identifier=? #'name #'name*)
+                   (value-restriction? #'expr #'name))
+       (match expected
+         [(tc-result1: t)
+          (with-lexical-env/extend (list #'name) (list t) (tc-expr/check #'expr expected))]
+         [(tc-results: ts)
+          (tc-error/expr #:return (ret (Un)) "Expected ~a values, but got only 1" (length ts))])]
+      [(letrec-values ([(name ...) expr] ...) . body)
+       (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body form expected)]
+      ;; other
+      [_ (tc-error/expr #:return (ret expected) "cannot typecheck unknown form : ~a\n" (syntax->datum form))]
+      )))
 
 ;; type check form in the current type environment
 ;; if there is a type error in form, or if it has the wrong annotation, error
@@ -513,18 +500,19 @@
     (unless (syntax? form)
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
-    (let ([ty (cond [(type-ascription form) => (lambda (ann)
-                                                 (tc-expr/check form ann))]
-                    [else (internal-tc-expr form)])])
-      (match ty
-        [(tc-any-results:)
-         (add-typeof-expr form ty)
-         ty]
-        [(tc-results: ts fs os)
-         (let* ([ts* (do-inst form ts)]
-                [r (ret ts* fs os)])
-           (add-typeof-expr form r)
-           r)]))))
+    (cond
+      [(type-ascription form) => (lambda (ann) (tc-expr/check form ann))]
+      [else 
+       (let ([ty (internal-tc-expr form)])
+         (match ty
+           [(tc-any-results:)
+            (add-typeof-expr form ty)
+            ty]
+           [(tc-results: ts fs os)
+            (let* ([ts* (do-inst form ts)]
+                   [r (ret ts* fs os)])
+              (add-typeof-expr form r)
+              r)]))])))
 
 (define/cond-contract (tc/send form rcvr method args [expected #f])
   (-->* (syntax? syntax? syntax? syntax?) ((-or/c tc-results/c #f)) tc-results/c)
@@ -534,8 +522,7 @@
        [(tc-result1: (Value: (? symbol? s)))
         (let* ([ftype (cond [(assq s methods) => cadr]
                             [else (tc-error/expr "send: method ~a not understood by class ~a" s c)])]
-               [ret-ty (tc/funapp rcvr args (ret ftype) (map tc-expr (syntax->list args)) expected)]
-               [retval (cond-check-below ret-ty expected)])
+               [retval (tc/funapp rcvr args (ret ftype) (map tc-expr (syntax->list args)) expected)])
           (add-typeof-expr form retval)
           retval)]
        [(tc-result1: t) (int-err "non-symbol methods not supported by Typed Racket: ~a" t)])]

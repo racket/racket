@@ -37,7 +37,7 @@ TR opt: fixnum.rkt 43:17 (+ 301 302) -- fixnum bounded expr
 ;; this should not, (+ Fixnum Byte), but it may look like it should
 (+ (ann z Fixnum) 234)
 (* (ann x Index) (ann y Index))
-(fx* (ann x Index) (ann y Index)) ; not reported, by design
+(fx* (values (ann x Index)) (values (ann y Index))) ; not reported, by design
 (abs (ann -3 Fixnum))
 (+ (+ 300 301) (+ 301 302))
 (fx+ (+ 300 301) (+ 301 302)) ; not reported, by design
