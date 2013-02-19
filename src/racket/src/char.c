@@ -54,8 +54,6 @@ static Scheme_Object *char_punctuation (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_upper_case (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_lower_case (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_title_case (int argc, Scheme_Object *argv[]);
-static Scheme_Object *char_to_integer (int argc, Scheme_Object *argv[]);
-static Scheme_Object *integer_to_char (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_upcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_downcase (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_titlecase (int argc, Scheme_Object *argv[]);
@@ -126,8 +124,14 @@ void scheme_init_char (Scheme_Env *env)
   GLOBAL_FOLDING_PRIM("char-title-case?",      char_title_case,       1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("char-lower-case?",      char_lower_case,       1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("char-title-case?",      char_title_case,       1, 1, 1, env);
-  GLOBAL_FOLDING_PRIM("char->integer",         char_to_integer,       1, 1, 1, env);
-  GLOBAL_FOLDING_PRIM("integer->char",         integer_to_char,       1, 1, 1, env);
+
+  p = scheme_make_folding_prim(scheme_checked_char_to_integer, "char->integer", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
+  scheme_add_global_constant("char->integer", p, env);
+  p = scheme_make_folding_prim(scheme_checked_integer_to_char, "integer->char", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
+  scheme_add_global_constant("integer->char", p, env);
+
   GLOBAL_FOLDING_PRIM("char-upcase",           char_upcase,           1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("char-downcase",         char_downcase,         1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("char-titlecase",        char_titlecase,        1, 1, 1, env);
@@ -224,8 +228,8 @@ GEN_CHAR_TEST(char_upper_case, "char-upper-case?", scheme_isupper)
 GEN_CHAR_TEST(char_lower_case, "char-lower-case?", scheme_islower)
 GEN_CHAR_TEST(char_title_case, "char-title-case?", scheme_istitle)
 
-static Scheme_Object *
-char_to_integer (int argc, Scheme_Object *argv[])
+Scheme_Object *
+scheme_checked_char_to_integer (int argc, Scheme_Object *argv[])
 {
   mzchar c;
 
@@ -237,8 +241,8 @@ char_to_integer (int argc, Scheme_Object *argv[])
   return scheme_make_integer_value(c);
 }
 
-static Scheme_Object *
-integer_to_char (int argc, Scheme_Object *argv[])
+Scheme_Object *
+scheme_checked_integer_to_char (int argc, Scheme_Object *argv[])
 {
   if (SCHEME_INTP(argv[0])) {
     intptr_t v;

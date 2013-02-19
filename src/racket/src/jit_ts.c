@@ -102,6 +102,8 @@ define_ts_iSs_s(scheme_struct_getter, FSRC_MARKS)
 define_ts_iSs_s(scheme_struct_setter, FSRC_MARKS)
 define_ts_iS_s(scheme_box_cas, FSRC_MARKS)
 define_ts__v(chaperone_set_mark, FSRC_MARKS)
+define_ts_iS_s(scheme_checked_char_to_integer, FSRC_MARKS)
+define_ts_iS_s(scheme_checked_integer_to_char, FSRC_MARKS)
 #endif
 
 #ifdef JITCALL_TS_PROCS
@@ -232,4 +234,6 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_checked_list_tail scheme_checked_list_tail
 # define ts_scheme_struct_getter scheme_struct_getter
 # define ts_scheme_struct_setter scheme_struct_setter
+# define ts_scheme_checked_char_to_integer scheme_checked_char_to_integer
+# define ts_scheme_checked_integer_to_char scheme_checked_integer_to_char
 #endif

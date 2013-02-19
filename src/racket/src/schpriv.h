@@ -3892,6 +3892,8 @@ Scheme_Object *scheme_checked_flreal_part (int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_flimag_part (int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_make_flrectangular (int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_procedure_arity_includes(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_checked_char_to_integer (int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_checked_integer_to_char (int argc, Scheme_Object *argv[]);
 
 Scheme_Object *scheme_chaperone_vector_copy(Scheme_Object *obj);
 Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj);

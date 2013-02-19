@@ -1828,6 +1828,65 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 #endif
 
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "char->integer")) { 
+      GC_CAN_IGNORE jit_insn *ref, *reffail;
+
+      mz_runstack_skipped(jitter, 1);
+      scheme_generate_non_tail(app->rand, jitter, 0, 1, 0);
+      CHECK_LIMIT();
+      mz_runstack_unskipped(jitter, 1);
+
+      mz_rs_sync();
+
+      __START_TINY_JUMPS__(1);
+
+      ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+      reffail = _jit.x.pc;
+      __END_TINY_JUMPS__(1);
+      (void)jit_calli(sjc.bad_char_to_integer_code);
+      __START_TINY_JUMPS__(1);
+      mz_patch_branch(ref);
+      (void)mz_bnei_t(reffail, JIT_R0, scheme_char_type, JIT_R1);
+      __END_TINY_JUMPS__(1);
+
+      (void)jit_ldxi_i(JIT_R0, JIT_R0, &SCHEME_CHAR_VAL(0x0));
+      CHECK_LIMIT();
+
+      jit_fixnum_l(JIT_R0, JIT_R0);
+      
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "integer->char")) { 
+      GC_CAN_IGNORE jit_insn *ref, *refslow, *refdone;
+
+      mz_runstack_skipped(jitter, 1);
+      scheme_generate_non_tail(app->rand, jitter, 0, 1, 0);
+      CHECK_LIMIT();
+      mz_runstack_unskipped(jitter, 1);
+
+      mz_rs_sync();
+
+      __START_TINY_JUMPS__(1);
+
+      ref = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
+      refslow = _jit.x.pc;
+      __END_TINY_JUMPS__(1);
+      (void)jit_calli(sjc.slow_integer_to_char_code);
+      refdone = jit_jmpi(jit_forward());
+      __START_TINY_JUMPS__(1);
+      mz_patch_branch(ref);
+      (void)jit_blti_l(refslow, JIT_R0, scheme_make_integer(0));
+      (void)jit_bgti_l(refslow, JIT_R0, scheme_make_integer(255));
+
+      jit_rshi_l(JIT_R0, JIT_R0, 1);
+      jit_lshi_l(JIT_R2, JIT_R0, JIT_LOG_WORD_SIZE);
+      (void)jit_movi_p(JIT_R0, scheme_char_constants);
+      jit_ldxr_p(JIT_R0, JIT_R0, JIT_R2);
+      CHECK_LIMIT();
+
+      mz_patch_ucbranch(refdone);
+      __END_TINY_JUMPS__(1);
+      
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "future?")) { 
       generate_inlined_type_test(jitter, app, scheme_future_type, scheme_future_type, 1, for_branch, branch_short, need_sync, dest);
       return 1;

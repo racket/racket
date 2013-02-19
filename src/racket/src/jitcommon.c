@@ -3011,6 +3011,63 @@ static int common10(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
+static int common11(mz_jit_state *jitter, void *_data)
+{
+  /* bad_char_to_integer_code */
+  /* R0 has argument */
+  {
+    GC_CAN_IGNORE jit_insn *refr;
+    
+    sjc.bad_char_to_integer_code = jit_get_ip().ptr;
+
+    mz_prolog(JIT_R2);
+
+    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_str_p(JIT_RUNSTACK, JIT_R0);
+    CHECK_LIMIT();
+    jit_movi_i(JIT_R0, 1);
+    mz_prepare(2);
+    jit_pusharg_p(JIT_RUNSTACK);
+    jit_pusharg_i(JIT_R0);
+    mz_finish_prim_lwe(ts_scheme_checked_char_to_integer, refr);
+    /* doesn't return */
+    CHECK_LIMIT();
+
+    scheme_jit_register_sub_func(jitter, sjc.bad_char_to_integer_code, scheme_false);
+    CHECK_LIMIT();
+  }
+
+  /* slow_integer_to_char_code */
+  /* R0 has argument */
+  {
+    GC_CAN_IGNORE jit_insn *refr;
+    
+    sjc.slow_integer_to_char_code = jit_get_ip().ptr;
+
+    mz_prolog(JIT_R2);
+
+    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_str_p(JIT_RUNSTACK, JIT_R0);
+    CHECK_LIMIT();
+    jit_movi_i(JIT_R0, 1);
+    mz_prepare(2);
+    jit_pusharg_p(JIT_RUNSTACK);
+    jit_pusharg_i(JIT_R0);
+    mz_finish_prim_lwe(ts_scheme_checked_integer_to_char, refr);
+    jit_retval(JIT_R0);
+    jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+
+    mz_epilog(JIT_R2);
+
+    scheme_jit_register_sub_func(jitter, sjc.slow_integer_to_char_code, scheme_false);
+    CHECK_LIMIT();
+  }
+
+  return 1;
+}
+
 int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
 {
   if (!common0(jitter, _data)) return 0;
@@ -3028,6 +3085,7 @@ int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
   if (!common8_5(jitter, _data)) return 0;
   if (!common9(jitter, _data)) return 0;
   if (!common10(jitter, _data)) return 0;
+  if (!common11(jitter, _data)) return 0;
   return 1;
 }
 

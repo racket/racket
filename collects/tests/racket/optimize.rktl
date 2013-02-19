@@ -635,6 +635,17 @@
     (bin-exact #f 'char=? #\a #\b)
     (bin-exact #f 'char=? #\u1034 #\a)
 
+    (un-exact #\space 'integer->char 32)
+    (un-exact #\nul 'integer->char 0)
+    (un-exact #\uFF 'integer->char 255)
+    (un-exact #\u100 'integer->char 256)
+    (un-exact #\U10000 'integer->char #x10000)
+
+    (un-exact 32 'char->integer #\space)
+    (un-exact 0 'char->integer #\nul)
+    (un-exact 255 'char->integer #\uFF)
+    (un-exact #x10000 'char->integer #\U10000)
+
     (bin-exact 'a 'vector-ref #(a b c) 0 #t)
     (bin-exact 'b 'vector-ref #(a b c) 1)
     (bin-exact 'c 'vector-ref #(a b c) 2)
