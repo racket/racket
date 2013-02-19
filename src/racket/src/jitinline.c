@@ -1871,8 +1871,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       refslow = _jit.x.pc;
       __END_TINY_JUMPS__(1);
       (void)jit_calli(sjc.slow_integer_to_char_code);
-      refdone = jit_jmpi(jit_forward());
       __START_TINY_JUMPS__(1);
+      refdone = jit_jmpi(jit_forward());
       mz_patch_branch(ref);
       (void)jit_blti_l(refslow, JIT_R0, scheme_make_integer(0));
       (void)jit_bgti_l(refslow, JIT_R0, scheme_make_integer(255));
