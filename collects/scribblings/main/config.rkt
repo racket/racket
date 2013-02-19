@@ -5,6 +5,7 @@
 ;; Configuration of various parts of the main pages
 
 (define bug-url "http://bugs.racket-lang.org/")
+(define prior-docs-url "http://download.racket-lang.org/docs/")
 
 ;; Link definitions: (id-sym title root-sym/#f-for-url subpath/url),
 ;; or a `---' for a spacer; the root-sym can be `plt' for standard
@@ -20,7 +21,8 @@
     (acks    "Acknowledgements" plt  "acks/index.html")
     (release "Release Notes"    plt  "release/index.html")
     ---
-    (bugreport "Report a Bug"   #f ,(format "~a?v=~a" bug-url (version)))))
+    (bugreport "Report a Bug"   #f ,(format "~a?v=~a" bug-url (version)))
+    (prior-docs "View Prior Versions" #f ,prior-docs-url)))
 
 ;; Section definitions for manuals that appear on the start page.
 (define manual-sections
