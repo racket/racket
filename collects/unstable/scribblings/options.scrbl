@@ -87,7 +87,8 @@ Returns @racket[x] with contract ckecking enabled if an @racket[option/c] guards
 @defform[(transfer-option id ...)]{
                                    
 A @racket[_provide-spec] for use in @racket[provide] (currently only for
-the same @tech{phase level} as the @racket[provide] form; for example,
+the same @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{phase level}
+as the @racket[provide] form; for example,
 @racket[transfer-option] cannot be nested within @racket[for-syntax]). Each @racket[id]
 is provided from the module if @racket[id] is bound to a value guarded with an 
 @racket[option/c] contract. In addition, @racket[transfer-option] modifies the blame 
