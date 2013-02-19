@@ -22,6 +22,7 @@
    "Richard Cobbe, "
    "Greg Cooper, "
    "Ryan Culpepper, "
+   "Eric Dobson, "
    "Carl Eastlund, "
    "Moy Easwaran, "
    "Will Farr, "
