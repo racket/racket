@@ -280,7 +280,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    into the document. It must be a positive, exact integer, and the
    default is @racket[1].}
 
- @item{@racket[racket-launcher-names] : @racket[(listof string?)]
+ @item{@indexed-racket[racket-launcher-names] : @racket[(listof string?)]
    --- @elemtag["racket-launcher-names"] A list of executable names
    to be generated in the installation's executable directory to run
    Racket-based programs implemented by the collection. A parallel
@@ -315,40 +315,40 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    name for @racket[build-aux-from-path] (to find related information
    like icon files etc).}
 
- @item{@racket[racket-launcher-libraries] : @racket[(listof
+ @item{@indexed-racket[racket-launcher-libraries] : @racket[(listof
    path-string?)] --- A list of library names in parallel to
    @elemref["racket-launcher-names"]{@racket[racket-launcher-names]}.}
 
- @item{@racket[racket-launcher-flags] : @racket[(listof string?)]
+ @item{@indexed-racket[racket-launcher-flags] : @racket[(listof string?)]
    --- A list of command-line flag lists, in parallel to
    @elemref["racket-launcher-names"]{@racket[racket-launcher-names]}.}
 
- @item{@racket[mzscheme-launcher-names],
+ @item{@indexed-racket[mzscheme-launcher-names],
    @racket[mzscheme-launcher-libraries], and
    @racket[mzscheme-launcher-flags] --- Backward-compatible variant of
    @racket[racket-launcher-names], etc.}
 
- @item{@racket[gracket-launcher-names] : @racket[(listof string?)]  ---
+ @item{@indexed-racket[gracket-launcher-names] : @racket[(listof string?)]  ---
    @elemtag["gracket-launcher-names"] Like
    @elemref["racket-launcher-names"]{@racket[racket-launcher-names]},
    but for GRacket-based executables. The launcher-name list is treated
    in parallel to @racket[gracket-launcher-libraries] and
    @racket[gracket-launcher-flags].}
 
- @item{@racket[gracket-launcher-libraries] : @racket[(listof path-string?)]
+ @item{@indexed-racket[gracket-launcher-libraries] : @racket[(listof path-string?)]
    --- A list of library names in parallel to
    @elemref["gracket-launcher-names"]{@racket[gracket-launcher-names]}.}
 
- @item{@racket[gracket-launcher-flags] : @racket[(listof string?)] --- A
+ @item{@indexed-racket[gracket-launcher-flags] : @racket[(listof string?)] --- A
    list of command-line flag lists, in parallel to
    @elemref["gracket-launcher-names"]{@racket[gracket-launcher-names]}.}
 
- @item{@racket[mred-launcher-names],
+ @item{@indexed-racket[mred-launcher-names],
    @racket[mred-launcher-libraries], and
    @racket[mred-launcher-flags] --- Backward-compatible variant of
    @racket[gracket-launcher-names], etc.}
 
- @item{@racket[install-collection] : @racket[path-string?]  --- A
+ @item{@indexed-racket[install-collection] : @racket[path-string?]  --- A
    library module relative to the collection that provides
    @racket[installer]. The @racket[installer] procedure accepts either
    one or two arguments. The first argument is a directory path to the
@@ -358,14 +358,14 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    installation work, and it should avoid unnecessary work in the case
    that it is called multiple times for the same installation.}
 
- @item{@racket[pre-install-collection] : @racket[path-string?] ---
+ @item{@indexed-racket[pre-install-collection] : @racket[path-string?] ---
    Like @racket[install-collection], except that the corresponding
    installer is called @emph{before} the normal @filepath{.zo} build,
    instead of after. The provided procedure should be named
    @racket[pre-installer] in this case, so it can be provided by the
    same file that provides an @racket[installer].}
 
- @item{@racket[post-install-collection] : @racket[path-string?]  ---
+ @item{@indexed-racket[post-install-collection] : @racket[path-string?]  ---
    Like @racket[install-collection]. It is called right after the
    @racket[install-collection] procedure is executed. The only
    difference between these is that the @DFlag{no-install} flag can be
@@ -376,7 +376,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    case, so it can be provided by the same file that provides the
    previous two.}
 
- @item{@racket[clean] : @racket[(listof path-string?)] ---
+ @item{@indexed-racket[clean] : @racket[(listof path-string?)] ---
    @elemtag["clean"] A list of pathnames to be deleted when the
    @DFlag{clean} or @Flag{c} flag is passed to @exec{raco setup}. The
    pathnames must be relative to the collection. If any path names a
