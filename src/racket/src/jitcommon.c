@@ -3058,6 +3058,7 @@ static int common11(mz_jit_state *jitter, void *_data)
     mz_finish_prim_lwe(ts_scheme_checked_integer_to_char, refr);
     jit_retval(JIT_R0);
     jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    JIT_UPDATE_THREAD_RSPTR();
 
     mz_epilog(JIT_R2);
 
