@@ -529,11 +529,6 @@
                   h?)))
 
     (define/private (render-onthispage-contents d ri top box-class sections-in-toc?)
-      (if (andmap (lambda (p) (or (part-whole-page? p ri)
-                                  (and (part-style? p 'toc-hidden)
-                                       (all-toc-hidden? p))))
-                  (part-parts d))
-        null
         (let ([nearly-top? (lambda (d) 
                              ;; If ToC would be collapsed, then 
                              ;; no section is nearly the top
@@ -640,7 +635,7 @@
                                                         "???")
                                                     (element-content p))
                                                 d ri)))))))))
-                         ps))))))))
+                         ps)))))))
 
     (define/public (extract-part-body-id d ri)
       (or (ormap (lambda (v)
