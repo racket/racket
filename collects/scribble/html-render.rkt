@@ -667,7 +667,7 @@
                [title (cond [(part-title-content d)
                              => (lambda (c)
                                   `(title ,@(format-number number '(nbsp))
-                                          ,(content->string c this d ri)))]
+                                          ,(content->string (strip-aux c) this d ri)))]
                             [else `(title)])])
           (unless (bytes? style-file)
             (unless (lookup-path style-file alt-paths) 

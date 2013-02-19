@@ -619,14 +619,24 @@
 (define (aux-element? e)
   (and (element? e)
        (let ([s (element-style e)])
-         (and (style? e)
+         (and (style? s)
               (memq 'aux (style-properties s))))))
 
 (define (strip-aux content)
   (cond
     [(null? content) null]
     [(aux-element? content) null]
-    [(list? content) (map strip-aux content)]
+    [(element? content)
+     (define c (element-content content))
+     (define p (strip-aux c))
+     (if (equal? c p)
+         content
+         (struct-copy element content [content p]))]
+    [(list? content) 
+     (define p (map strip-aux content))
+     (if (equal? p content)
+         content
+         p)]
     [else content]))
 
 ;; ----------------------------------------
