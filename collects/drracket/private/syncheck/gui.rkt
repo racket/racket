@@ -29,6 +29,7 @@ If the namespace does not, they are colored the unbound color.
          racket/runtime-path
          racket/place
          data/interval-map
+         data/union-find
          drracket/tool
          syntax/toplevel
          mrlib/switchable-button
@@ -38,7 +39,6 @@ If the namespace does not, they are colored the unbound color.
          framework
          net/url
          browser/external
-         data/union-find
          (for-syntax racket/base)
          (only-in ffi/unsafe register-finalizer)
          "../../syncheck-drracket-button.rkt"
@@ -1178,7 +1178,7 @@ If the namespace does not, they are colored the unbound color.
                     (make-object menu-item%
                       jump-to-next-bound-occurrence
                       menu
-                      (λ (item evt) (jump-to-next-callback pos text arrows)))
+                      (λ (item evt) (jump-to-next-callback pos text)))
                     (make-object menu-item%
                       jump-to-binding
                       menu
@@ -1239,17 +1239,8 @@ If the namespace does not, they are colored the unbound color.
             
             (define current-matching-identifiers (set))
             (define/private (update-matching-identifiers refreshing?)
-              (define arrow-records (fetch-arrow-records cursor-text cursor-pos))
-              (define id-set (if arrow-records
-                                 (let ([an-identifier-location-set
-                                        (for/or ([x (in-list arrow-records)])
-                                          (and (identifier-location-set? x)
-                                               x))])
-                                   (if an-identifier-location-set
-                                       (uf-find (identifier-location-set-set
-                                                 an-identifier-location-set))
-                                       (set)))
-                                 (set)))
+              (printf "mouse over pos ~s\n" cursor-pos)
+              (define id-set (position->matching-identifier-set cursor-text cursor-pos))
               (define clr "GreenYellow")
               (define style 'ellipse) 
               (unless (equal? current-matching-identifiers id-set)
@@ -1271,6 +1262,21 @@ If the namespace does not, they are colored the unbound color.
                 (uh/highlight #t)
                 (for ([x (in-list in-edit-sequence)])
                   (send x end-edit-sequence))))
+            
+            ;; return the set of locations of identifiers that have the
+            ;; same binding information as the identifier at cursor-pos (if any)
+            (define/private (position->matching-identifier-set cursor-text cursor-pos)
+              (define arrow-records (fetch-arrow-records cursor-text cursor-pos))
+              (if arrow-records
+                  (let ([an-identifier-location-set
+                         (for/or ([x (in-list arrow-records)])
+                           (and (identifier-location-set? x)
+                                x))])
+                    (if an-identifier-location-set
+                        (uf-find (identifier-location-set-set
+                                  an-identifier-location-set))
+                        (set)))
+                  (set)))
             
             ;; Sometimes when this is called, the calls to 'tooltip-info->ltrb'
             ;; fail and we get no information back. When that happens, we return 
@@ -1423,7 +1429,7 @@ If the namespace does not, they are colored the unbound color.
               (jump-to-binding/bound-helper 
                text 
                (λ (pos text vec-ents)
-                 (jump-to-next-callback pos text vec-ents backwards?))))
+                 (jump-to-next-callback pos text backwards?))))
             
             ;; syncheck:jump-to-binding-occurrence : text -> void
             (define/public (syncheck:jump-to-binding-occurrence text)
@@ -1443,34 +1449,28 @@ If the namespace does not, they are colored the unbound color.
             
             ;; jump-to-next-callback : num text (listof arrow) boolean? -> void
             ;; callback for the jump popup menu item
-            (define/private (jump-to-next-callback pos txt input-arrows backwards?)
-              (unless (null? input-arrows)
-                (define arrow-key (car input-arrows))
-                (define orig-arrows 
-                  (sort (set->list (hash-ref bindings-table
-                                             (list (var-arrow-start-text arrow-key)
-                                                   (var-arrow-start-pos-left arrow-key)
-                                                   (var-arrow-start-pos-right arrow-key))
-                                             (λ () '())))
-                        (λ (x y) (if backwards?
-                                     (not (syncheck:compare-bindings x y))
-                                     (syncheck:compare-bindings x y)))))
-                (cond
-                  [(null? orig-arrows) (void)]
-                  [(null? (cdr orig-arrows)) (jump-to (car orig-arrows))]
-                  [else
-                   (let loop ([arrows orig-arrows])
-                     (cond
-                       [(null? arrows) (jump-to (car orig-arrows))]
-                       [else 
-                        (define arrow (car arrows))
-                        (cond
-                          [(and (object=? txt (list-ref arrow 0))
-                                (<= (list-ref arrow 1) pos (list-ref arrow 2)))
-                           (jump-to (if (null? (cdr arrows))
-                                        (car orig-arrows)
-                                        (cadr arrows)))]
-                          [else (loop (cdr arrows))])]))])))
+            (define/private (jump-to-next-callback pos txt backwards?)
+              (define orig-arrows 
+                (sort (set->list (position->matching-identifier-set txt pos))
+                      (λ (x y) (if backwards?
+                                   (not (syncheck:compare-bindings x y))
+                                   (syncheck:compare-bindings x y)))))
+              (cond
+                [(null? orig-arrows) (void)]
+                [(null? (cdr orig-arrows)) (jump-to (car orig-arrows))]
+                [else
+                 (let loop ([arrows orig-arrows])
+                   (cond
+                     [(null? arrows) (jump-to (car orig-arrows))]
+                     [else 
+                      (define arrow (car arrows))
+                      (cond
+                        [(and (object=? txt (list-ref arrow 0))
+                              (<= (list-ref arrow 1) pos (list-ref arrow 2)))
+                         (jump-to (if (null? (cdr arrows))
+                                      (car orig-arrows)
+                                      (cadr arrows)))]
+                        [else (loop (cdr arrows))])]))]))
             
             ;; jump-to : (list text number number) -> void
             (define/private (jump-to to-arrow)
