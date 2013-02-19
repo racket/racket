@@ -8,7 +8,7 @@
 
 @defproc[(write-gif [bitmap (or/c (is-a?/c bitmap%)
                                   (-> (is-a?/c bitmap%)))]
-                    [filename path-string])
+                    [filename path-string?])
          void?]{
 
 Writes the given @racket[bitmap] to @racket[filename] as a GIF image,
@@ -24,10 +24,10 @@ transparent pixels in the generated GIF image.}
 						      (-> (is-a?/c bitmap%))))
 					pair?)]
                              [delay-csec (integer-in 0 #xFFFFFFFF)]
-                             [filename path-string]
+                             [filename path-string?]
                              [#:loop loop? any/c (and delay-csec #t)]
                              [#:one-at-a-time? one-at-a-time? any/c #f]
-                             [#:last-frame-delay last-frame-delay (or/c (integer-in 0 #xFFFFFFFF) false/c) #f])
+                             [#:last-frame-delay last-frame-delay (or/c (integer-in 0 #xFFFFFFFF) #f) #f])
          void?]{
 
 Writes the bitmaps in @racket[bitmaps] to @racket[filename] as an
