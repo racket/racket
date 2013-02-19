@@ -1239,7 +1239,6 @@ If the namespace does not, they are colored the unbound color.
             
             (define current-matching-identifiers (set))
             (define/private (update-matching-identifiers refreshing?)
-              (printf "mouse over pos ~s\n" cursor-pos)
               (define id-set (position->matching-identifier-set cursor-text cursor-pos))
               (define clr "GreenYellow")
               (define style 'ellipse) 
