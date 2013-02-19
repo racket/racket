@@ -31,6 +31,9 @@
   (->* (pre-content? pre-content? pre-content?)
        ((or/c false/c pre-content?))
        content?)]
+ [subtitle
+  (->* () () #:rest (listof pre-content?)
+       block?)]
  [terms
   (->* () () #:rest (listof pre-content?)
        content?)]
@@ -145,3 +148,8 @@
 
 (define (keywords . str)
   (make-element (make-style "SKeywords" sigplan-extras) (decode-content str)))
+
+(define (subtitle . str)
+  (make-paragraph
+    (make-style 'pretitle null)
+    (make-element (make-style "subtitle" null) (decode-content str))))
