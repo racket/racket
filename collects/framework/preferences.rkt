@@ -191,7 +191,7 @@ the state transitions / contracts are:
 (define preferences:add-callback 
   (lambda (p callback [weak? #f])
     (let ([new-cb (make-pref-callback (if weak?
-                                          (make-weak-box callback)
+                                          (make-weak-box (impersonator-ephemeron callback))
                                           callback))])
       (hash-set! callbacks
                  p 
@@ -365,13 +365,7 @@ the state transitions / contracts are:
  
  (proc-doc/names
   preferences:add-callback
-  (->* (symbol? 
-        
-        ;; important that this arg only has a flat contract
-        ;; so that no wrapper is created, so that
-        ;; the weak box stuff works ...
-        (let ([procedure-with-arity2? (λ (x) (and (procedure? x) (procedure-arity-includes? x 2)))])
-          procedure-with-arity2?))
+  (->* (symbol? (-> symbol? any/c any)) 
        (boolean?)
        (-> void?))
   ((p f)
