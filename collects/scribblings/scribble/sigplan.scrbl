@@ -76,6 +76,9 @@ The @racket[10pt], @racket[preprint], @racket[nocopyright],
 options can be used together and may appear in any order.  
 }
 
+@defproc[(subtitle [pre-content pre-content?] ...) block?]{
+
+Generates a subtitle for a paper.}
 
 @defproc[(abstract [pre-content pre-content?] ...) block?]{
 
