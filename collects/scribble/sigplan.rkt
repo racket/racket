@@ -12,6 +12,9 @@
  [abstract 
   (->* () () #:rest (listof pre-content?)
        block?)]
+ [subtitle
+  (->* () () #:rest (listof pre-content?)
+       content?)]
  [authorinfo
   (-> pre-content? pre-content? pre-content?
       block?)]
@@ -83,15 +86,22 @@
 ;; Authors and conference info:
 
 (define (authorinfo name affiliation e-mail)
+  ;; The \SAuthor macro in "style.tex" looks specifically
+  ;; for an \SAuthorinfo as its argument, and handles it
+  ;; specially in that case:
   (author
    (make-multiarg-element
-    (make-style "SAuthorinfo"sigplan-extras)
+    (make-style "SAuthorinfo" sigplan-extras)
     (list
      (make-element #f (decode-content (list name)))
      (make-element (make-style "SAuthorPlace" sigplan-extras)
                    (decode-content (list affiliation)))
      (make-element (make-style "SAuthorEmail" sigplan-extras)
                    (decode-content (list e-mail)))))))
+
+(define (subtitle . str)
+  (make-element (make-style "SSubtitle" (append '(aux) sigplan-extras))
+                (decode-content str)))
 
 (define (conferenceinfo what where)
   (make-paragraph

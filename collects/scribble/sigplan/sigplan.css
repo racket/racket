@@ -6,3 +6,8 @@
 .SCategory, .SCategoryPlus, .STerms, .SKeywords {
   display: none;
 }
+
+.SSubtitle {
+  display: block;
+  font-size: smaller;
+}

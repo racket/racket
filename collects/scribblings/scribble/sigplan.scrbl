@@ -87,6 +87,10 @@ Similar to @racket[include-section], but incorporates the document in the
 specified module as an abstract. The document must have no title or
 sub-parts.}
 
+@defproc[(subtitle [pre-content pre-content?] ...) element?]{
+
+Use as the last argument to @racket[title] to specify a subtitle.}
+
 @defproc[(authorinfo [name pre-content?]
                      [affiliation pre-content?]
                      [email pre-content?])
