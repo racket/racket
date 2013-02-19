@@ -555,7 +555,37 @@ first sequence of @racket[interface-expr]s and produces a class that
 implements the second sequence of @racket[interface-expr]s. Other
 requirements, such as the presence of @racket[inherit]ed methods in
 the superclass, are then checked for the @racket[class] expansion of
-the @racket[mixin] form.
+the @racket[mixin] form.  For example:
+
+@interaction[
+#:eval class-eval
+
+(define choosy-interface (interface () choose?))
+(define hungry-interface (interface () eat))
+(define choosy-eater-mixin
+  (mixin (choosy-interface) (hungry-interface)
+    (inherit choose?)
+    (super-new)
+    (define/public (eat x)
+      (cond
+        [(choose? x)
+         (printf "chomp chomp chomp on ~a.\n" x)]
+        [else
+         (printf "I'm not crazy about ~a.\n" x)]))))
+
+(define herring-lover% 
+  (class* object% (choosy-interface)
+    (super-new)
+    (define/public (choose? x)
+      (regexp-match #px"^herring" x))))
+
+(define herring-eater% (choosy-eater-mixin herring-lover%))
+(define eater (new herring-eater%))
+(send eater eat "elderberry")
+(send eater eat "herring")
+(send eater eat "herring ice cream")
+]
+
 
 Mixins not only override methods and introduce public methods, they
 can also augment methods, introduce augment-only methods, add an
