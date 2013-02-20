@@ -74,7 +74,7 @@
      (make-integer-set
       (if (= low hi)
           (cdr contents)
-          (cons (cons (+ 1 low) hi) contents))))])
+          (cons (cons (+ 1 low) hi) (cdr contents)))))])
 
 ;; well-formed-set? : X -> bool
 (define (well-formed-set? x)
