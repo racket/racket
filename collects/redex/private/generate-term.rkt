@@ -377,9 +377,11 @@
                     => (λ (f)
                          #`(let* ([f #,f]
                                   [L (metafunc-proc-lang f)]
-                                  [compile-pat (compile L '#,form-name)])
+                                  [compile-pat (compile L '#,form-name)]
+                                  [cases (metafunc-proc-cases f)])
+                             (check-cases 'src cases)
                              (map (λ (c) (compile-pat ((metafunc-case-lhs+ c) L))) 
-                                  (metafunc-proc-cases f))))]
+                                  cases)))]
                    [else
                     #`(let* ([r #,(apply-contract #'reduction-relation?  #'src "#:source argument" form-name)]
                              [L (reduction-relation-lang r)]
@@ -402,6 +404,10 @@
          [(size . kw-args)
           (quasisyntax/loc stx
             (#,generator-syntax size . kw-args))]))]))
+
+(define (check-cases name cases)
+  (when (null? cases)
+    (raise-gen-fail 'generate-term (format "from ~a metafunction (it has no clauses)" name) 1)))
 
 (define-syntax (generate-mf-pat stx)
   (syntax-case stx ()

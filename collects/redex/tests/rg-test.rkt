@@ -1227,7 +1227,15 @@
   (test (raised-exn-msg
          exn:fail:redex:generation-failure?
          (check-metafunction n (λ (_) #t) #:retries 42))
-        #rx"check-metafunction: unable .* in 42"))
+        #rx"check-metafunction: unable .* in 42")
+
+  (let ()
+    (define-metafunction empty bogo : any -> any)
+
+    (test (raised-exn-msg
+           exn:fail:redex:generation-failure?
+           (generate-term #:source bogo 5))
+          #rx"unable.*bogo")))
 
 (let ()
   (define-language lang (x variable))
