@@ -22,6 +22,7 @@
     (release "Release Notes"    plt  "release/index.html")
     ---
     (bugreport "Report a Bug"   #f ,(format "~a?v=~a" bug-url (version)))
+    ---
     (prior-docs "View Prior Versions" #f ,prior-docs-url)))
 
 ;; Section definitions for manuals that appear on the start page.
