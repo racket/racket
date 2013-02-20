@@ -63,8 +63,10 @@
      (let* ([ts1 (generalize (tc-expr/t #'actual))]
             [ann-ts (for/list ([a (in-syntax #'(acc ...))]
                                [ac (in-syntax #'(actuals ...))])
-                      (or (find-annotation #'inner-body a)
-                          (generalize (tc-expr/t ac))))]
+                      (let ([type (find-annotation #'inner-body a)])
+                        (if type
+                            (tc-expr/check/t ac (ret type))
+                            (generalize (tc-expr/t ac)))))]
             [ts (cons ts1 ann-ts)])
        ;; check that the actual arguments are ok here
        (for/list ([a (syntax->list #'(actuals ...))]
@@ -80,9 +82,10 @@
      #:when (free-identifier=? #'val #'e3)
      (let ([ts (for/list ([ac (syntax->list #'(actuals ...))]
                           [f (syntax->list #'(acc ...))])
-                 (or
-                  (type-annotation f #:infer #t)
-                  (generalize (tc-expr/t ac))))]
+                 (let ([type (type-annotation f #:infer #t)])
+                   (if type
+                       (tc-expr/check/t ac (ret type))
+                       (generalize (tc-expr/t ac)))))]
            [acc-ty (or
                     (type-annotation #'val #:infer #t)
                     (match expected
