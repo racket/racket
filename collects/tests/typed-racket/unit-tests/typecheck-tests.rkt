@@ -1601,7 +1601,7 @@
         [tc-e (vector-split-at (vector 2 3 4 5 6) 3)
               (list (-vec -Integer) (-vec -Integer))]
 
-
+        [tc-e/t (ann ((letrec ((x (lambda args 3))) x) 1 2) Byte) -Byte]
         )
   (test-suite
    "check-type tests"
