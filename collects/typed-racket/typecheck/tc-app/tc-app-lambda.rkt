@@ -20,11 +20,11 @@
 (define-tc/app-syntax-class (tc/app-lambda expected)
   #:literals (#%plain-app #%plain-lambda letrec-values)
   ;; let loop
-  (pattern ((letrec-values ([(lp) (~and lam (#%plain-lambda args . body))]) lp*) . actuals)
+  (pattern ((letrec-values ([(lp) (~and lam (#%plain-lambda (args ...) . body))]) lp*) . actuals)
     #:fail-unless expected #f
-    #:fail-unless (not (andmap type-annotation (syntax->list #'(lp . args)))) #f
+    #:fail-unless (not (andmap type-annotation (syntax->list #'(lp args ...)))) #f
     #:fail-unless (free-identifier=? #'lp #'lp*) #f
-    (let-loop-check #'lam #'lp #'actuals #'args #'body expected))
+    (let-loop-check #'lam #'lp #'actuals #'(args ...) #'body expected))
   ;; inference for ((lambda
   (pattern ((#%plain-lambda (x ...) . body) args ...)
    #:fail-unless (= (length (syntax->list #'(x ...)))
