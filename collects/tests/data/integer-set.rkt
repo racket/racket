@@ -1,7 +1,8 @@
 #lang racket/base
 (require data/integer-set
          racket/stream
-         rackunit)
+         rackunit
+         racket/sequence)
 
 (test-equal? "integer-set"
              (integer-set-contents (make-integer-set '((-1 . 2) (4 . 10))))
@@ -63,3 +64,4 @@
 ;; 2013-02-20: checks commit bd1141c670bfc7981761fbfb53f548c2abb1f12d
 ;; (previous version results in contract error)
 (check-true (well-formed-set? (integer-set-contents (stream-rest (make-range 1 10)))))
+(check-true (well-formed-set? (integer-set-contents (sequence-tail (make-range 1 10) 1))))
