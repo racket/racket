@@ -20,11 +20,11 @@
 (define-tc/app-syntax-class (tc/app-lambda expected)
   #:literals (#%plain-app #%plain-lambda letrec-values)
   ;; let loop
-  (pattern (~and form ((letrec-values ([(lp) (~and lam (#%plain-lambda args . body))]) lp*) . actuals))
+  (pattern ((letrec-values ([(lp) (~and lam (#%plain-lambda args . body))]) lp*) . actuals)
     #:fail-unless expected #f
     #:fail-unless (not (andmap type-annotation (syntax->list #'(lp . args)))) #f
     #:fail-unless (free-identifier=? #'lp #'lp*) #f
-    (let-loop-check #'(#%plain-app . form) #'lam #'lp #'actuals #'args #'body expected))
+    (let-loop-check #'lam #'lp #'actuals #'args #'body expected))
   ;; inference for ((lambda
   (pattern ((#%plain-lambda (x ...) . body) args ...)
    #:fail-unless (= (length (syntax->list #'(x ...)))
@@ -50,7 +50,7 @@
                       expected)))))
 
 
-(define (let-loop-check form lam lp actuals args body expected)
+(define (let-loop-check lam lp actuals args body expected)
   (syntax-parse #`(#,args #,body #,actuals)
     #:literals (#%plain-app if null? pair? null)
     [((val acc ...)
@@ -71,7 +71,7 @@
                   [t ann-ts])
          (tc-expr/check a (ret t)))
        ;; then check that the function typechecks with the inferred types
-       (add-typeof-expr lam (tc/rec-lambda/check form args body lp ts expected))
+       (add-typeof-expr lam (tc/rec-lambda/check args body lp ts expected))
        expected)]
     ;; special case `for/list'
     [((val acc ...)
@@ -89,7 +89,7 @@
                       [(tc-result1: (and t (Listof: _))) t]
                       [_ #f])
                     (generalize (-val '())))])
-       (add-typeof-expr lam (tc/rec-lambda/check form args body lp (cons acc-ty ts) expected))
+       (add-typeof-expr lam (tc/rec-lambda/check args body lp (cons acc-ty ts) expected))
        expected)]
     ;; special case when argument needs inference
     [(_ body* _)
@@ -100,6 +100,6 @@
                    (if infer-t
                        (tc-expr/check/t ac (ret infer-t))
                        (generalize (tc-expr/t ac)))))])
-       (add-typeof-expr lam (tc/rec-lambda/check form args body lp ts expected))
+       (add-typeof-expr lam (tc/rec-lambda/check args body lp ts expected))
        expected)]))
 
