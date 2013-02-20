@@ -2925,16 +2925,16 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       } else if (IS_NAMED_PRIM(rator, "flvector-ref")
                  || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "extflvector-ref"))) {
 	which = 3;
-        base_offset = ((int)&SCHEME_FLVEC_ELS(0x0));
         if (ubs.unbox) {
           if (jitter->unbox_depth) 
             scheme_signal_error("internal error: bad depth for flvector-ref");
         }
         can_chaperone = 0;
-        if (MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "extflvector-ref"))) {
+        if (MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "extflvector-ref")))
           extfl = 1;
-          base_offset = ((int)&SCHEME_EXTFLVEC_ELS(0x0));
-        }
+        MZ_FPUSEL_STMT(extfl,
+                       base_offset = ((int)&SCHEME_EXTFLVEC_ELS(0x0)),
+                       base_offset = ((int)&SCHEME_FLVEC_ELS(0x0)));
       } else if (IS_NAMED_PRIM(rator, "unsafe-struct*-ref")) {
 	which = 0;
         unsafe = 1;
