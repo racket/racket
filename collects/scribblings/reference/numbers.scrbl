@@ -511,11 +511,12 @@ Returns the principal @as-index{square root} of @racket[z].  The
 
 @defproc[(integer-sqrt [n integer?]) complex?]{
 
-Returns @racket[(floor (sqrt n))] for positive @racket[n]. For
+Returns @racket[(floor (sqrt n))] for positive @racket[n].  The
+ result is exact if @racket[n] is exact.  For
  negative @racket[n], the result is @racket[(* (integer-sqrt (- n))
  0+i)].
 
-@mz-examples[(integer-sqrt 4.0) (integer-sqrt 5)]}
+@mz-examples[(integer-sqrt 4.0) (integer-sqrt 5) (integer-sqrt -4.0) (integer-sqrt -4)]}
 
 
 @defproc[(integer-sqrt/remainder [n integer?])
