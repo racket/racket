@@ -94,6 +94,7 @@
    [(Un (-val 'foo) (-val 6)) (Un (-val 'foo) (-val 6))]
    [(-poly (a) (make-Listof (-v a))) (make-Listof (-mu x (Un (make-Listof x) -Number)))]
    [FAIL (make-Listof (-mu x (Un (make-Listof x) -Number))) (-poly (a) (make-Listof a))]
+   [(-val -34.2f0) -NegSingleFlonum]
    ;; case-lambda
    [(cl-> [(-Number) -Number] [(-Boolean) -Boolean]) (-Number . -> . -Number)]
    ;; special case for unused variables

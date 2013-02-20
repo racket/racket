@@ -201,7 +201,7 @@
 (define -NegSingleFlonumNoNan
   (make-Base 'Negative-Single-Flonum-No-Nan
              #'(and/c single-flonum? negative?)
-             (lambda (x) (and (single-flonum? x) (positive? x)))
+             (lambda (x) (and (single-flonum? x) (negative? x)))
              #'-NegSingleFlonumNoNan))
 (define -NegSingleFlonum    (*Un -NegSingleFlonumNoNan -SingleFlonumNan))
 (define -NegInexactReal     (*Un -NegSingleFlonum -NegFlonum))

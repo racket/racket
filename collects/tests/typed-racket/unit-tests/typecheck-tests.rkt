@@ -177,6 +177,8 @@
         (tc-e (- -23524623547234734568) -PosInt)
         (tc-e (- 241.3) -NegFlonum)
         (tc-e (- -24.3) -PosFlonum)
+        (tc-e/t 34.2f0 -PosSingleFlonum)
+        (tc-e/t -34.2f0 -NegSingleFlonum)
 
         (tc-e (- (ann 1000 Index) 1) -Fixnum)
         (tc-e (- (ann 1000 Positive-Index) 1) -Index)
