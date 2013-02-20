@@ -191,7 +191,7 @@ the state transitions / contracts are:
 (define preferences:add-callback 
   (lambda (p callback [weak? #f])
     (let ([new-cb (make-pref-callback (if weak?
-                                          (make-weak-box (impersonator-ephemeron callback))
+                                          (impersonator-ephemeron callback)
                                           callback))])
       (hash-set! callbacks
                  p 
@@ -215,27 +215,28 @@ the state transitions / contracts are:
 
 ;; check-callbacks : sym val -> void
 (define (check-callbacks p value)
-  (let ([new-callbacks
-         (let loop ([callbacks (hash-ref callbacks p '())])
-           (cond
-             [(null? callbacks) null]
-             [else 
-              (let* ([callback (car callbacks)]
-                     [cb (pref-callback-cb callback)])
-                (cond
-                  [(weak-box? cb)
-                   (let ([v (weak-box-value cb)])
-                     (if v
-                         (begin 
-                           (v p value)
-                           (cons callback (loop (cdr callbacks))))
-                         (loop (cdr callbacks))))]
-                  [else
-                   (cb p value)
-                   (cons callback (loop (cdr callbacks)))]))]))])
-    (if (null? new-callbacks)
-        (hash-remove! callbacks p)
-        (hash-set! callbacks p new-callbacks))))
+  (define new-callbacks
+    (let loop ([callbacks (hash-ref callbacks p '())])
+      (cond
+        [(null? callbacks) null]
+        [else 
+         (define callback (car callbacks))
+         (define cb (pref-callback-cb callback))
+         (cond
+           [(ephemeron? cb)
+            (define v (ephemeron-value cb))
+            (cond
+              [v
+               (v p value)
+               (cons callback (loop (cdr callbacks)))]
+              [else
+               (loop (cdr callbacks))])]
+           [else
+            (cb p value)
+            (cons callback (loop (cdr callbacks)))])])))
+  (if (null? new-callbacks)
+      (hash-remove! callbacks p)
+      (hash-set! callbacks p new-callbacks)))
 
 (define (preferences:set-un/marshall p marshall unmarshall)
   (cond
