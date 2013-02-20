@@ -60,3 +60,6 @@
 (check-false (stream-empty? s1))
 (check-equal? (stream->list (stream-map add1 s2)) '(2 4))
 
+;; 2013-02-20: checks commit bd1141c670bfc7981761fbfb53f548c2abb1f12d
+;; (previous version results in contract error)
+(check-true (well-formed-set? (integer-set-contents (stream-rest (make-range 1 10)))))
