@@ -1179,13 +1179,14 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
   if (SCHEME_CLOSURE_DATA_FLAGS(jitter->self_data) & CLOS_HAS_TYPED_ARGS) {
     arg_tmp_offset = offset - direct_flostack_offset;
     for (i = num_rands; i--; ) {
-      if (CLOSURE_ARGUMENT_IS_FLONUM(jitter->self_data, i + args_already_in_place)
-          || CLOSURE_ARGUMENT_IS_EXTFLONUM(jitter->self_data, i + args_already_in_place)) {
-        int extfl;
-        extfl = CLOSURE_ARGUMENT_IS_EXTFLONUM(jitter->self_data, i + args_already_in_place);
+      int extfl;
+      extfl = CLOSURE_ARGUMENT_IS_EXTFLONUM(jitter->self_data, i + args_already_in_place);
+      if (extfl || CLOSURE_ARGUMENT_IS_FLONUM(jitter->self_data, i + args_already_in_place)) {
         rand = (alt_rands 
                 ? alt_rands[i+1+args_already_in_place] 
                 : app->args[i+1+args_already_in_place]);
+        /* Boxing definitely isn't needed if the value was from a local that doesn't hold
+           an unboxed value, otherwise we generate code to check dynamically. */
         if (!SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)
             || (!extfl && (SCHEME_GET_LOCAL_TYPE(rand) == SCHEME_LOCAL_TYPE_FLONUM))
             || (extfl && (SCHEME_GET_LOCAL_TYPE(rand) == SCHEME_LOCAL_TYPE_EXTFLONUM))) {
@@ -1196,9 +1197,9 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
           if (i != num_rands - 1)
             mz_pushr_p(JIT_R0);
           if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
-            /* assert: SCHEME_GET_LOCAL_TYPE(rand) == SCHEME_LOCAL_TYPE_FLONUM */
-            /* or SCHEME_GET_LOCAL_TYPE(rand) == SCHEME_LOCAL_TYPE_EXTFLONUM */
-            /* have to check for an existing box */
+            /* assert: SCHEME_GET_LOCAL_TYPE(rand) == SCHEME_LOCAL_TYPE_FLONUM
+               or SCHEME_GET_LOCAL_TYPE(rand) == SCHEME_LOCAL_TYPE_EXTFLONUM */
+            /* So, we have to check for an existing box */
             if (i != num_rands - 1)
               mz_rs_ldxi(JIT_R0, i+1);
             mz_rs_sync();
@@ -1601,11 +1602,11 @@ static int generate_call_path_with_unboxes(mz_jit_state *jitter, int direct_flos
       int extfl;
       extfl = CLOSURE_ARGUMENT_IS_EXTFLONUM(direct_data, i);
 
-      k += MZ_FPUSEL(extfl, 2*sizeof(double), sizeof(double));
-      offset = jitter->flostack_offset - direct_flostack_offset + k;
+      offset = jitter->flostack_offset - k;
       offset = JIT_FRAME_FLOSTACK_OFFSET - offset;
       jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(i));
       scheme_generate_flonum_local_boxing(jitter, i, offset, JIT_R0, extfl);
+      k += MZ_FPUSEL(extfl, 2*sizeof(double), sizeof(double));
     }
   }
 
