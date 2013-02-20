@@ -838,6 +838,14 @@
      (-> -NegRat -Fixnum B : (-FS -top (-filter -NegFixnum 1)))
      (-> -NonPosInt -Fixnum B : (-FS -top (-and (-filter -NonPosFixnum 0) (-filter -NonPosFixnum 1))))
      (-> -NonPosRat -Fixnum B : (-FS -top (-filter -NonPosFixnum 1)))
+     (-> -Rat (-val +inf.0) B : (-FS -top (-filter (Un) 0))) ; guaranteed
+     (-> (-val +inf.0) -Rat B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> -Rat (-val -inf.0) B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> (-val -inf.0) -Rat B : (-FS -top (-filter (Un) 0))) ; guaranteed
+     (-> -Rat (-val +inf.f) B : (-FS -top (-filter (Un) 0))) ; guaranteed
+     (-> (-val +inf.f) -Rat B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> -Rat (-val -inf.f) B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> (-val -inf.f) -Rat B : (-FS -top (-filter (Un) 0))) ; guaranteed
      ;; If applying filters resulted in the interesection of the filter and the
      ;; original type, we'd only need the cases for Fixnums and those for Reals.
      ;; Cases for Integers and co would fall out naturally from the Real cases,
@@ -895,6 +903,14 @@
      (-> -Fixnum -NegRat B : (-FS -top (-filter -NegFixnum 0)))
      (-> -Fixnum -NonPosInt B : (-FS -top (-and (-filter -NonPosFixnum 0) (-filter -NonPosFixnum 1))))
      (-> -Fixnum -NonPosRat B : (-FS -top (-filter -NonPosFixnum 0)))
+     (-> (-val +inf.0) -Rat B : (-FS -top (-filter (Un) 0))) ; guaranteed
+     (-> -Rat (-val +inf.0) B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> (-val -inf.0) -Rat B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> -Rat (-val -inf.0) B : (-FS -top (-filter (Un) 0))) ; guaranteed
+     (-> (-val +inf.f) -Rat B : (-FS -top (-filter (Un) 0))) ; guaranteed
+     (-> -Rat (-val +inf.f) B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> (-val -inf.f) -Rat B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> -Rat (-val -inf.f) B : (-FS -top (-filter (Un) 0))) ; guaranteed
      (>-type-pattern -Int -PosInt -Nat -NegInt -NonPosInt -Zero)
      (>-type-pattern -Rat -PosRat -NonNegRat -NegRat -NonPosRat -Zero)
      (>-type-pattern -Flonum -PosFlonum -NonNegFlonum -NegFlonum -NonPosFlonum)
@@ -948,6 +964,14 @@
      (-> -Fixnum -NegReal B : (-FS (-filter -NegFixnum 0) -top))
      (-> -Fixnum -NonPosInt B : (-FS (-and (-filter -NonPosFixnum 0) (-filter -NonPosFixnum 1)) -top))
      (-> -Fixnum -NonPosReal B : (-FS (-filter -NonPosFixnum 0) -top))
+     (-> -Rat (-val +inf.0) B : (-FS -top (-filter (Un) 0))) ; guaranteed
+     (-> (-val +inf.0) -Rat B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> -Rat (-val -inf.0) B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> (-val -inf.0) -Rat B : (-FS -top (-filter (Un) 0))) ; guaranteed
+     (-> -Rat (-val +inf.f) B : (-FS -top (-filter (Un) 0))) ; guaranteed
+     (-> (-val +inf.f) -Rat B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> -Rat (-val -inf.f) B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> (-val -inf.f) -Rat B : (-FS -top (-filter (Un) 0))) ; guaranteed
      (<=-type-pattern -Int -PosInt -Nat -NegInt -NonPosInt -Zero)
      (<=-type-pattern -Rat -PosRat -NonNegRat -NegRat -NonPosRat -Zero)
      (<=-type-pattern -Flonum -PosFlonum -NonNegFlonum -NegFlonum -NonPosFlonum)
@@ -1001,6 +1025,14 @@
      (-> -NegReal -Fixnum B : (-FS (-filter -NegFixnum 1) -top))
      (-> -NonPosInt -Fixnum B : (-FS (-and (-filter -NonPosFixnum 0) (-filter -NonPosFixnum 1)) -top))
      (-> -NonPosReal -Fixnum B : (-FS (-filter -NonPosFixnum 1) -top))
+     (-> (-val +inf.0) -Rat B : (-FS -top (-filter (Un) 0))) ; guaranteed
+     (-> -Rat (-val +inf.0) B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> (-val -inf.0) -Rat B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> -Rat (-val -inf.0) B : (-FS -top (-filter (Un) 0))) ; guaranteed
+     (-> (-val +inf.f) -Rat B : (-FS -top (-filter (Un) 0))) ; guaranteed
+     (-> -Rat (-val +inf.f) B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> (-val -inf.f) -Rat B : (-FS (-filter (Un) 0) -top)) ; can't happen
+     (-> -Rat (-val -inf.f) B : (-FS -top (-filter (Un) 0))) ; guaranteed
      (>=-type-pattern -Int -PosInt -Nat -NegInt -NonPosInt -Zero)
      (>=-type-pattern -Rat -PosRat -NonNegRat -NegRat -NonPosRat -Zero)
      (>=-type-pattern -Flonum -PosFlonum -NonNegFlonum -NegFlonum -NonPosFlonum)
