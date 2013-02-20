@@ -486,14 +486,16 @@
                                 #t
                                 connections))))
       
+      
+      ;; build a set of all of the known phases
+      (define phases (set))
+      (for ([phase (in-list (hash-keys phase-to-binders))])
+        (set! phases (set-add phases phase)))
+      (for ([phase (in-list (hash-keys phase-to-requires))])
+        (set! phases (set-add phases phase)))
+      
       (for ([vars (in-list (get-idss templrefs))])
         (for ([var (in-list vars)])
-          ;; build a set of all of the known phases
-          (define phases (set))
-          (for ([phase (in-list (hash-keys phase-to-binders))])
-            (set! phases (set-add phases phase)))
-          (for ([phase (in-list (hash-keys phase-to-requires))])
-            (set! phases (set-add phases phase)))
           
           ;; connect every identifier inside a quote-syntax to each binder at any phase
           (for ([phase (in-set phases)])
@@ -1046,7 +1048,7 @@
       ;; corresponds to the locations of that identifier in the file.
       ;;
       ;; In the more common case, there will be multiple, distinct uses of an identifier that
-      ;; is spelled the same way in the file, eg (+ (let ([x 1]) x) (let ([x 2]) x)). In
+      ;; are spelled the same way in the file, eg (+ (let ([x 1]) x) (let ([x 2]) x)). In
       ;; this case, the 'x' entry in the table will point to a list of length two,
       ;; with each of the corresponding list of identifiers in the pair still being a 
       ;; singleton list.
@@ -1059,9 +1061,8 @@
       ;; with this, the code below recognizes that two distinct identifiers come from the
       ;; same source location and then puts those two identifiers into the first list into
       ;; the same 'pair' in the table, unioning the corresponding sets of source locations
-      ;; 
-      
       (define table (make-hash))
+    
       (struct pair (ids locs) #:transparent)
       
       (let ([defs-text (current-annotations)])
