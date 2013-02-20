@@ -1,4 +1,4 @@
-(module slldef mzscheme
+#lang racket
   ;; A compile-time table shared by eopl and sllgen:
-  (define sllgen-def (make-hash-table))
-  (provide sllgen-def))
+  (define sllgen-def (make-hasheq))
+  (provide sllgen-def)

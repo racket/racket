@@ -1,10 +1,9 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/struct
-          scheme/list
+          racket/list
           (for-label eopl/eopl
-                     scheme/contract
-                     (only-in scheme printf pretty-print delay force)))
+                     racket/contract))
 
 @(define-syntax-rule (def-rkt id)
    (begin
@@ -14,24 +13,22 @@
 
 @(define-syntax-rule (reprovide id ...)
    (*threecolumns (list (racket id) ... 'nbsp 'nbsp)))
-@(define (*threecolumns l)
-   (let* ([len (length l)]
-          [third (quotient len 3)]
-          [a (take l third)]
-          [b (take (list-tail l third) third)]
-          [c (list-tail l (* 2 third))]
-          [spacer (hspace 2)]
-          [to-flow (compose make-flow list make-paragraph list)])
-     (make-table #f
-                 (map (lambda (a b c)
-                        (list (to-flow spacer)
-                              (to-flow a)
-                              (to-flow spacer)
-                              (to-flow b)
-                              (to-flow spacer)
-                              (to-flow c)))
-                      a b c))))
 
+@(define (*threecolumns l)
+   (define len (length l))
+   (define third (quotient len 3))
+   (define spacer (hspace 2))
+   (define to-flow (compose make-flow list make-paragraph list))
+   (make-table #f
+               (for/list ([a (in-list (take l third))]
+                          [b (in-list (take (list-tail l third) third))]
+                          [c (in-list (list-tail l (* 2 third)))])
+                 (list (to-flow spacer)
+                       (to-flow a)
+                       (to-flow spacer)
+                       (to-flow b)
+                       (to-flow spacer)
+                       (to-flow c)))))
 
 @title{@italic{Essentials of Programming Languages} Language}
 
@@ -55,10 +52,10 @@ The following bindings are re-@racket[provide]d from
            quote quasiquote if 
            lambda letrec define-syntax delay let let* let-syntax letrec-syntax
            and or cond case do
-	   begin set!
+           begin set!
 
            #%module-begin
-	   #%app #%datum #%top #%top-interaction 
+           #%app #%datum #%top #%top-interaction 
            #%require #%provide #%expression
 
            syntax-rules ...
@@ -74,7 +71,7 @@ The following bindings are re-@racket[provide]d from
            exact->inexact inexact->exact number->string string->number 
            rationalize output-port? current-input-port current-output-port current-error-port 
            open-input-file open-output-file close-input-port close-output-port
-           with-output-to-file transcript-on transcript-off flush-output
+           with-output-to-file flush-output
            string-length string-ci<=? string-ci>=? string-append 
            string-fill!
            string->list list->string
