@@ -426,12 +426,19 @@ functions and continuation mark functions.
   second occurrence of @racket[...] is literal, and @racket[bound]
   must be an identifier denoting a type variable. In the fourth form,
   there must be only one @racket[dom] and @racket[pred] is the type
-  checked by the predicate.
+  checked by the predicate. @racket[dom] can include both mandatory and
+  optional keyword arguments.
 
   @ex[(λ: ([x : Number]) x)
       (λ: ([x : Number] . [y : String *]) (length y))
       ormap
-      string?]}
+      string?
+      (:print-type file->string)
+      (: is-zero? : Number #:equality (Number Number -> Any) [#:zero Number] -> Any)
+      (define (is-zero? n #:equality equality #:zero [zero 0])
+        (equality n zero))
+      (is-zero? 2 #:equality =)
+      (is-zero? 2 #:equality eq? #:zero 2.0)]}
 
 @defidform[Procedure]{is the supertype of all function types.}
 
