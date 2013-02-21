@@ -1649,7 +1649,7 @@ v4 todo:
   (λ (ctc)
     (define dom-ctcs (map contract-projection (get-case->-dom-ctcs ctc)))
     (define rng-ctcs (let ([rngs (get-case->-rng-ctcs ctc)])
-                       (and rngs (map contract-projection (get-case->-rng-ctcs ctc)))))
+                       (and rngs (map contract-projection rngs))))
     (define rst-ctcs (base-case->-rst-ctcs ctc))
     (define specs (base-case->-specs ctc))
     (λ (blame)
