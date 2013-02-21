@@ -10,7 +10,8 @@
          (for-template racket/base))
 
 (provide (all-defined-out)
-         (rename-out [make-Listof -lst]))
+         (rename-out [make-Listof -lst]
+                     [make-MListof -mlst]))
 
 ;Top and error types
 (define Univ (make-Univ))
@@ -26,7 +27,9 @@
 
 ;; Char type and List type (needed because of how sequences are checked in subtype)
 (define -Char (make-Base 'Char #'char? char? #'-Char #f))
-(define (make-Listof elem) (-mu list-rec (simple-Un (make-Value null) (make-Pair elem list-rec))))
+(define -val make-Value)
+(define (make-Listof elem) (-mu list-rec (simple-Un (-val null) (make-Pair elem list-rec))))
+(define (make-MListof elem) (-mu list-rec (simple-Un (-val null) (make-MPair elem list-rec))))
 ;; Void is needed for Params
 (define -Void (make-Base 'Void #'void? void? #'-Void #f))
 
