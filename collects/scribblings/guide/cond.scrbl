@@ -99,13 +99,13 @@ as follows:
 
 @refalso["if"]{@racket[cond]}
 
-@specform[(cond [test-expr expr ...+]
+@specform[(cond [test-expr body ...+]
                 ...)]
 
 Each @racket[_test-expr] is evaluated in order. If it produces
-@racket[#f], the corresponding @racket[_expr]s are ignored, and
+@racket[#f], the corresponding @racket[_body]s are ignored, and
 evaluation proceeds to the next @racket[_test-expr]. As soon as a
-@racket[_test-expr] produces a true value, its @racket[_expr]s
+@racket[_test-expr] produces a true value, its @racket[_body]s
 are evaluated to produce the result for the @racket[cond] form, and no
 further @racket[_test-expr]s are evaluated.
 
@@ -142,8 +142,8 @@ The full syntax of @racket[cond] includes two more kinds of clauses:
 
 @specform/subs[#:literals (else =>)
                (cond cond-clause ...)
-               ([cond-clause [test-expr then-expr ...+]
-                             [else then-expr ...+]
+               ([cond-clause [test-expr then-body ...+]
+                             [else then-body ...+]
                              [test-expr => proc-expr]
                              [test-expr]])]
 

@@ -74,6 +74,7 @@ Addded define-logger
 Changed -W, -L, PLTSTDERR, and PLTSYSLOG to support log
  filters of the form "<level> <name>=<level> ..."
 Changed log-error, etc., to support format mode
+Changed case to dispatch in logarithmic time
 Added racket/format, which is re-exported by racket
 Added #:break and #:final clauses to for forms
 Added exn:break:hang-up and exn:break:terminate, added

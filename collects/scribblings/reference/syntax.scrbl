@@ -2153,6 +2153,9 @@ For the selected @racket[case-clause], the results of the last
 A @racket[case-clause] that starts with @racket[else] must be the last
 @racket[case-clause].
 
+The @racket[case] form can dispatch to a matching @racket[case-clause]
+in @math{O(log N)} time for @math{N} @racket[datum]s.
+
 @mz-examples[
 (case (+ 7 5)
  [(1 2 3) 'small]

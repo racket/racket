@@ -8,16 +8,16 @@ The @racket[case] form dispatches to a clause by matching the result
 of an expression to the values for the clause:
 
 @specform[(case expr
-            [(datum ...+) expr ...+]
+            [(datum ...+) body ...+]
             ...)]
 
-Each @racket[_datum] will be compared to the result of the first
-@racket[_expr] using @racket[eqv?]. Since @racket[eqv?] doesn't work on
-many kinds of values, notably strings and lists, each @racket[_datum]
-is typically a number, symbol, or boolean.
+Each @racket[_datum] will be compared to the result of @racket[_expr]
+using @racket[equal?], and then the corresponding @racket[body]s are
+evaluated. The @racket[case] form can dispatch to the correct clause
+in @math{O(log N)} time for @math{N} @racket[datum]s.
 
 Multiple @racket[_datum]s can be supplied for each clause, and the
-corresponding @racket[_expr] is evaluated if any of the
+corresponding @racket[_body]s are evaluated if any of the
 @racket[_datum]s match.
 
 @examples[
@@ -41,5 +41,6 @@ like @racket[cond]:
   [else 'many])
 ]
 
-For more general pattern matching, use @racket[match], which is
-introduced in @secref["match"].
+For more general pattern matching (but without the dispatch-time
+guarantee), use @racket[match], which is introduced in
+@secref["match"].
