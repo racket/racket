@@ -98,20 +98,20 @@ computation produces an unknown number of results.
 The @racket[when] form combines an @racket[if]-style conditional with
 sequencing for the ``then'' clause and no ``else'' clause:
 
-@specform[(when test-expr then-expr ...)]
+@specform[(when test-expr then-body ...+)]
 
 If @racket[_test-expr] produces a true value, then all of the
-@racket[_then-expr]s are evaluated. The result of the last
-@racket[_then-expr] is the result of the @racket[when] form.
-Otherwise, no @racket[_then-expr]s are evaluated and the
+@racket[_then-body]s are evaluated. The result of the last
+@racket[_then-body] is the result of the @racket[when] form.
+Otherwise, no @racket[_then-body]s are evaluated and the
 result is @|void-const|.
 
 The @racket[unless] form is similar:
 
-@specform[(unless test-expr then-expr ...)]
+@specform[(unless test-expr then-body ...+)]
 
 The difference is that the @racket[_test-expr] result is inverted: the
-@racket[_then-expr]s are evaluated only if the @racket[_test-expr]
+@racket[_then-body]s are evaluated only if the @racket[_test-expr]
 result is @racket[#f].
 
 @defexamples[
