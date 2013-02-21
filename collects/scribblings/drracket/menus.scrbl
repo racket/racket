@@ -10,7 +10,7 @@
 
 @title{Menus}
 
-@section{@onscreen{File}}
+@section[#:tag "menu:file"]{@onscreen{File}}
 
 @itemize[
   

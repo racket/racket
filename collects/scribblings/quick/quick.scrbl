@@ -44,6 +44,9 @@ start DrRacket.
 @; ----------------------------------------------------------------------
 @section{Set...}
 
+@margin-note{See @secref[#:doc '(lib "scribblings/drracket/drracket.scrbl") 
+                               "interface-essentials"] for a brief overview of
+                               the DrRacket IDE.}
 To draw pictures, we must first load some picture functions, which are
 part of a library for creating slide presentations.  Copy the
 following into the @defterm{definitions area}, which is the top text
@@ -406,7 +409,10 @@ Modules are named and distributed in various ways:
        @filepath{random.plt} library by @filepath{schematics} and then
        imports the @filepath{random.rkt} module.}
 
- @item{Some modules live relative to other modules, without
+ @item{@margin-note{To save your definitions, use @onscreen{Save Definitions} in DrRacket's
+                    @secref[#:doc '(lib "scribblings/drracket/drracket.scrbl") "menu:file"]
+                    menu.}
+       Some modules live relative to other modules, without
        necessarily belonging to any particular collection or package.
        For example, in DrRacket, if you save your definitions so far in a
        file @filepath{quick.rkt} and add the line
