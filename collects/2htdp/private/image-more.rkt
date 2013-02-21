@@ -68,6 +68,14 @@
                         filename 
                         [width (if (image? image) (image-width image) 0)] 
                         [height (if (image? image) (image-height image) 0)])
+  (check-dependencies 'save-image
+                      (not (zero? width))
+                      "the width must not be zero, got ~e"
+                      width)
+  (check-dependencies 'save-image
+                      (not (zero? height))
+                      "the width must not be zero, got ~e"
+                      height)
   (let* ([bm (make-bitmap (inexact->exact (ceiling width)) 
                           (inexact->exact (ceiling height)))]
          [bdc (make-object bitmap-dc% bm)])
@@ -1326,48 +1334,55 @@
    (read-bitmap filename)))
 
 (define/chk (image->color-list image)
-  (let* ([w (image-width image)]
-         [h (image-height image)]
-         [bm (make-bitmap w h)]
-         [bdc (make-object bitmap-dc% bm)]
-         [c (make-object color%)]
-         [bytes (make-bytes (* w h 4))])
-    (send bdc erase)
-    (render-image image bdc 0 0)
-    (send bdc get-argb-pixels 0 0 w h bytes)
-    (for/list ([i (in-range 0 (* w h 4) 4)])
-      (color (bytes-ref bytes (+ i 1))
-             (bytes-ref bytes (+ i 2))
-             (bytes-ref bytes (+ i 3))
-             (bytes-ref bytes i)))))
+  (define w (image-width image))
+  (define h (image-height image))
+  (cond
+    [(or (= w 0) (= h 0)) '()]
+    [else
+     (define bm (make-bitmap w h))
+     (define bdc (make-object bitmap-dc% bm))
+     (define c (make-object color%))
+     (define bytes (make-bytes (* w h 4)))
+     (send bdc erase)
+     (render-image image bdc 0 0)
+     (send bdc get-argb-pixels 0 0 w h bytes)
+     (for/list ([i (in-range 0 (* w h 4) 4)])
+       (color (bytes-ref bytes (+ i 1))
+              (bytes-ref bytes (+ i 2))
+              (bytes-ref bytes (+ i 3))
+              (bytes-ref bytes i)))]))
 
 (define/chk (color-list->bitmap color-list width height)
   (check-dependencies 'color-list->bitmap
                       (= (* width height) (length color-list))
                       "the length of the color list to match the product of the width and the height, but the list has ~a elements and the width and height are ~a and ~a respectively"
                       (length color-list) width height)
-  (let* ([bmp (make-bitmap width height)]
-         [bytes (make-bytes (* width height 4) 0)]
-         [o (make-object color%)])
-    (for ([c (in-list color-list)]
-          [i (in-naturals)])
-      (define j (* i 4))
-      (cond
-        [(color? c)
-         (bytes-set! bytes j (color-alpha c))
-         (bytes-set! bytes (+ j 1) (color-red c))
-         (bytes-set! bytes (+ j 2) (color-green c))
-         (bytes-set! bytes (+ j 3) (color-blue c))]
-        [else
-         (let* ([str (if (string? c) c (symbol->string c))]
-                [clr (or (send the-color-database find-color str)
-                         (send the-color-database find-color "black"))])
-           (bytes-set! bytes j 255)  ;; this should probably (send clr alpha) when that's possible
-           (bytes-set! bytes (+ j 1) (send clr red))
-           (bytes-set! bytes (+ j 2) (send clr green))
-           (bytes-set! bytes (+ j 3) (send clr blue)))]))
-    (send bmp set-argb-pixels 0 0 width height bytes)
-    (bitmap->image bmp)))
+  (cond
+    [(or (zero? width) (zero? height))
+     (rectangle width height "solid" "black")]
+    [else
+     (define bmp (make-bitmap width height))
+     (define bytes (make-bytes (* width height 4) 0))
+     (define o (make-object color%))
+     (for ([c (in-list color-list)]
+           [i (in-naturals)])
+       (define j (* i 4))
+       (cond
+         [(color? c)
+          (bytes-set! bytes j (color-alpha c))
+          (bytes-set! bytes (+ j 1) (color-red c))
+          (bytes-set! bytes (+ j 2) (color-green c))
+          (bytes-set! bytes (+ j 3) (color-blue c))]
+         [else
+          (define str (if (string? c) c (symbol->string c)))
+          (define clr (or (send the-color-database find-color str)
+                          (send the-color-database find-color "black")))
+          (bytes-set! bytes j 255)  ;; this should probably (send clr alpha) when that's possible
+          (bytes-set! bytes (+ j 1) (send clr red))
+          (bytes-set! bytes (+ j 2) (send clr green))
+          (bytes-set! bytes (+ j 3) (send clr blue))]))
+     (send bmp set-argb-pixels 0 0 width height bytes)
+     (bitmap->image bmp)]))
       
 (define build-color/make-color
   (let ([orig-make-color make-color])
@@ -1420,11 +1435,14 @@
     [(x y width height image) (freeze/internal x y width height image)]))
 
 (define (freeze/internal x y w h image)
-  (define bm (make-bitmap w h))
-  (define bdc (make-object bitmap-dc% bm))
-  (render-image image bdc (- x) (- y))
-  (send bdc set-bitmap #f)
-  (to-img bm))
+  (cond
+    [(or (zero? w) (zero? h)) image]
+    [else
+     (define bm (make-bitmap w h))
+     (define bdc (make-object bitmap-dc% bm))
+     (render-image image bdc (- x) (- y))
+     (send bdc set-bitmap #f)
+     (to-img bm)]))
 
 (provide overlay
          overlay/align
