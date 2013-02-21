@@ -40,7 +40,7 @@ the document body. Using @racketmodname[scribble/base] after
 Besides making the file a module, each of the @hash-lang[]
 declarations selects the Scribble reader (instead of the usual Racket
 reader), and it starts the body of the file in ``text'' mode. The
-reader layer mostly leaves text alone, but @litchar["@"] forms escape
+reader layer mostly leaves text alone, but @tech{@"@"-forms} escape
 to S-expression mode.
 
 A module written as
@@ -165,7 +165,7 @@ Working roughly from the bottom up, the Scribble layers are:
 @itemize[
 
  @item{@racketmodname[scribble/reader]: A reader that extends the
-       syntax of Racket with @"@"-forms for conveniently embedding a
+       syntax of Racket with @tech{@"@"-forms} for conveniently embedding a
        mixin of text and escapes. See @secref["reader"].}
 
  @item{@racketmodname[scribble/core]: A set of document datatypes

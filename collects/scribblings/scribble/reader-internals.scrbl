@@ -22,7 +22,7 @@ You can use the reader via Racket's @racketfont{#reader} form:
 or use the @racket[at-exp] meta-language as described in
 @secref["at-exp-lang"].
 
-Note that the Scribble reader reads @"@"-forms as S-expressions.  This
+Note that the Scribble reader reads @tech{@"@"-forms} as S-expressions.  This
 means that it is up to you to give meanings for these expressions in
 the usual way: use Racket functions, define your functions, or require
 functions.  For example, typing the above into @exec{racket} is likely
@@ -44,7 +44,7 @@ into a document using @racketmodname[scribble/decode].  See
 
 Another way to use the reader is to use the @racket[use-at-readtable]
 function to switch the current readtable to a readtable that parses
-@"@"-forms.  You can do this in a single command line:
+@tech{@"@"-forms}.  You can do this in a single command line:
 
 @commandline{racket -ile scribble/reader "(use-at-readtable)"}
 
@@ -145,7 +145,7 @@ is an example of this.
 @section[#:tag "at-exp-lang"]{Adding @"@"-expressions to a Language}
 
 @defmodulelang[at-exp]{The @racketmodname[at-exp] language installs
-@"@"-reader support in the readtable, and then chains to the reader of
+@seclink["reader"]{@"@"-reader} support in the readtable, and then chains to the reader of
 another language that is specified immediately after
 @racketmodname[at-exp].}
 
@@ -216,7 +216,7 @@ resulting reader in several ways:
 @item{@racket[readtable] --- a readtable to base the @"@"-readtable
   on.}
 
-@item{@racket[command-char] --- the character used for @"@"-forms.}
+@item{@racket[command-char] --- the character used for @tech{@"@"-forms}.}
 
 @item{@racket[datum-readtable] --- determines the readtable used for
   reading the datum part.  A @racket[#t] values uses the
@@ -229,7 +229,7 @@ resulting reader in several ways:
 @item{@racket[syntax-post-proc] --- function that is applied on
   each resulting syntax value after it has been parsed (but before it
   is wrapped quoting punctuations).  You can use this to further
-  control uses of @"@"-forms, for example, making the command be the
+  control uses of @tech{@"@"-forms}, for example, making the command be the
   head of a list:
 
   @racketblock[

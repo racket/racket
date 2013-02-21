@@ -259,14 +259,14 @@ The separator can be set to any value.
 @section{Defining Functions and More}
 
 (Note: most of the tips in this section are applicable to any code
-that uses the Scribble @"@"-form syntax.)
+that uses the Scribble @tech{@"@"-form} syntax.)
 
 Because the Scribble reader is uniform, you can use it in place of any
 expression where it is more convenient.  (By convention, we use a
 plain S-expression syntax when we want a Racket expression escape, and
-an @"@"-form for expressions that render as text, which, in the
+an @tech{@"@"-form} for expressions that render as text, which, in the
 @racket[scribble/text] language, is any value-producing expression.)
-For example, you can use an @"@"-form for a function that you define.
+For example, you can use an @tech{@"@"-form} for a function that you define.
 
 @example|-{#lang scribble/text
            @(define @bold[text] @list{*@|text|*})
@@ -280,7 +280,7 @@ will need to accept a variable number of arguments.  In fact, this
 leads to a common problem: what if we want to write a function that
 consumes a number of ``text arguments'' rathen than a single
 ``rest-like'' body?  The common solution for this is to provide the
-separate text arguments in the S-expression part of an @"@"-form.
+separate text arguments in the S-expression part of an @tech{@"@"-form}.
 
 @example|-{#lang scribble/text
            @(define (choose 1st 2nd)
@@ -292,7 +292,7 @@ separate text arguments in the S-expression part of an @"@"-form.
            Either you're with us, or against us.
            }-|
 
-You can even use @"@"-forms with a Racket quote or quasiquote as the
+You can even use @tech{@"@"-forms} with a Racket quote or quasiquote as the
 ``head'' part to make it shorter, or use a macro to get grouping of
 sub-parts without dealing with quotes.
 
@@ -319,7 +319,7 @@ sub-parts without dealing with quotes.
 
 Yet another solution is to look at the text values and split the input
 arguments based on a specific token.  Using @racket[match] can make it
-convenient --- you can even specify the patterns with @"@"-forms.
+convenient --- you can even specify the patterns with @tech{@"@"-forms}.
 
 @example|-{#lang scribble/text
            @(require racket/match)
@@ -1000,7 +1000,7 @@ it, it is easy to include a lot of textual content.
            }-|
 
 Of course, the extreme side of this will be to put all of your content
-in a plain Racket module, using @"@"-forms for convenience.  However,
+in a plain Racket module, using @tech{@"@"-forms} for convenience.  However,
 there is no need to use the text language in this case; instead, you can
 @racket[(require scribble/text)], which will get all of the bindings
 that are available in the @racket[scribble/text] language.  Using

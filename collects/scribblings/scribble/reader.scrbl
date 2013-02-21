@@ -40,7 +40,7 @@ in this chapter.
 @;--------------------------------------------------------------------
 @section{The Scribble Syntax at a Glance}
 
-To review @secref["how-to:reader"], the concrete syntax of @"@"-forms
+To review @secref["how-to:reader"], the concrete syntax of @deftech{@"@"-forms}
 is roughly
 
 @racketblock[
@@ -103,7 +103,7 @@ prints the output
 
 @nested[#:style 'inset]{@racketoutput{He wrote "blah blah blah".}}
 
-Here are more examples of @"@"-forms:
+Here are more examples of @tech{@"@"-forms}:
 
 @scribble-examples|==={
   @foo{blah "blah" (`blah'?)}
@@ -121,9 +121,9 @@ Here are more examples of @"@"-forms:
 As seen in the last example, multiple lines and the newlines that
 separate them are parsed to multiple Racket strings.  More generally,
 a @nonterm{text-body} is made of text, newlines, and nested
-@"@"-forms, where the syntax for @"@"-forms is the same whether it's
+@tech{@"@"-forms}, where the syntax for @tech{@"@"-forms} is the same whether it's
 in a @nonterm{text-body} context as in a Racket context.  A
-@nonterm{text-body} that isn't an @"@"-form is converted to a string
+@nonterm{text-body} that isn't an @tech{@"@"-form} is converted to a string
 expression for its @nonterm{parsed-body}; newlines and following
 indentations are converted to @racket["\n"] and all-space string
 expressions.
@@ -137,8 +137,8 @@ expressions.
        *p = '\n';}
 }===|
 
-The command part of an @"@"-form is optional as well. In that case,
-the @"@" form is read as a list, which usually counts as a function
+The command part of an @tech{@"@"-form} is optional as well. In that case,
+the @tech{@"@"-form} is read as a list, which usually counts as a function
 application, but it also useful when quoted with the usual Racket
 @racket[quote]:
 
@@ -191,7 +191,7 @@ In some cases, a text contains many literal @"@"s, which can be
 cumbersome to quote individually.  For such case, braces have an
 alternative syntax: A block of text can begin with a
 ``@litchar["|{"]'' and terminated accordingly with a
-``@litchar["}|"]''.  Furthermore, any nested @"@" forms must begin
+``@litchar["}|"]''.  Furthermore, any nested @tech{@"@"-forms} must begin
 with a ``@litchar["|@"]''.
 
 @scribble-examples|==={
@@ -236,7 +236,7 @@ code).  (More on using braces in body texts below.)
 Finally, remember that the Scribble is just an alternate for
 S-expressions. Identifiers still get their meaning, as in any
 Racket code, through the lexical context in which they appear.
-Specifically, when the above @"@"-form appears in a Racket expression
+Specifically, when the above @tech{@"@"-form} appears in a Racket expression
 context, the lexical environment must provide bindings for
 @racket[foo] as a procedure or a macro; it can be defined, required,
 or bound locally (with @racket[let], for example).
@@ -264,7 +264,7 @@ or bound locally (with @racket[let], for example).
 @section{The Command Part}
 
 Besides being a Racket identifier, the @nonterm{cmd} part of an
-@"@"-form can have Racket punctuation prefixes, which will end up
+@tech{@"@"-form} can have Racket punctuation prefixes, which will end up
 wrapping the @italic{whole} expression.
 
 @scribble-examples|==={
@@ -321,7 +321,7 @@ following spaces (or tabs) are part of the comment (similar to
 }===|
 
 Tip: if you use an editor in some Scheme mode without support for
-@"@"-forms, balanced comments can be confusing, since the open brace
+@tech{@"@"-forms}, balanced comments can be confusing, since the open brace
 looks commented out, and the closing one isn't.  In such cases it is
 useful to ``comment'' out the closing brace too:
 
@@ -334,7 +334,7 @@ useful to ``comment'' out the closing brace too:
 so the editor does not treat the file as having unbalanced
 parentheses.
 
-If only the @nonterm{cmd} part of an @"@"-form is specified, then the
+If only the @nonterm{cmd} part of an @tech{@"@"-form} is specified, then the
 result is the command part only, without an extra set of parenthesis.
 This makes it suitable for Racket escapes in body texts.  (More on this
 below, in the description of the body part.)
@@ -394,7 +394,7 @@ keyword-value arguments that precede the body of text arguments.
 
 The syntax of the body part is intended to be as convenient as
 possible for free text.  It can contain almost any text---the only
-characters with special meaning is @litchar["@"] for sub-@"@"-forms,
+characters with special meaning is @litchar["@"] for sub-@tech{@"@"-forms},
 and @litchar["}"] for the end of the text.  In addition, a
 @litchar["{"] is allowed as part of the text, and it makes the
 matching @litchar["}"] be part of the text too---so balanced braces
@@ -468,7 +468,7 @@ the opening marker to have the text terminated by a @litchar["}|"].
   @foo|{Nesting |{is}| ok}|
 }===|
 
-This applies to sub-@"@"-forms too---the @litchar["@"] must be
+This applies to sub-@tech{@"@"-forms} too---the @litchar["@"] must be
 prefixed with a @litchar{|}:
 
 @scribble-examples|==={
@@ -480,14 +480,14 @@ prefixed with a @litchar{|}:
 
 Note that the subform uses its own delimiters, @litchar{{...}} or
 @litchar{|{...}|}.  This means that you can copy and paste Scribble
-text with @"@"-forms freely, just prefix the @litchar["@"] if the
+text with @tech{@"@"-forms} freely, just prefix the @litchar["@"] if the
 immediate surrounding text has a prefix.
 
 For even better control, you can add characters in the opening
 delimiter, between the @litchar{|} and the @litchar["{"].
 Characters that are put there (non alphanumeric ASCII characters only,
 excluding @litchar["{"] and @litchar["@"]) should also be used for
-sub-@"@"-forms, and the end-of-body marker should have these characters
+sub-@tech{@"@"-forms}, and the end-of-body marker should have these characters
 in reverse order with paren-like characters (@litchar{(},
 @litchar{[}, @litchar{<}) mirrored.
 
@@ -551,7 +551,7 @@ you want to control the sub expressions in the form.
 }===|
 
 Note that @litchar["@|{...}|"] can be parsed as either an escape expression or
-as the Racket command part of a @"@"-form.  The latter is used in this case
+as the Racket command part of an @tech{@"@"-form}.  The latter is used in this case
 (since there is little point in Racket code that uses braces.
 
 @scribble-examples|==={
@@ -563,7 +563,7 @@ as the Racket command part of a @"@"-form.  The latter is used in this case
 
 As noted above, there are two kinds of Scribble comments: @litchar|{@;{...}}| is
 a (nestable) comment for a whole body of text (following the same
-rules for @"@"-forms), and @litchar|{@;...}| is a line-comment.
+rules for @tech{@"@"-forms}), and @litchar|{@;...}| is a line-comment.
 
 @scribble-examples|==={
   @foo{First line@;{there is still a
