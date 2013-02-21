@@ -70,7 +70,9 @@ Each @tech{package} has associated @deftech{package metadata}:
  @item{a @deftech{package name} --- a string made of the characters @|package-name-chars|.}
  @item{a @deftech{checksum} --- a string that identifies different releases of a package. A
                                 package can be updated when its @tech{checksum} changes,
-                                whether or not its @tech{version} changes.}
+                                whether or not its @tech{version} changes. The checksum
+                                can be computed as the SHA1 (see @racketmodname[openssl/sha1])
+                                of the package's source.}
  @item{a @deftech{version} --- a string of the form @nonterm{maj}@litchar{.}@nonterm{min},
                      @nonterm{maj}@litchar{.}@nonterm{min}@litchar{.}@nonterm{sub}, or
                      @nonterm{maj}@litchar{.}@nonterm{min}@litchar{.}@nonterm{sub}@litchar{.}@nonterm{rel},
@@ -198,7 +200,7 @@ packages and @url{https://planet-compat.racket-lang.org} for
 automatically generated packages for old @|PLaneT|
 packages. Anyone may host their own @tech{package name resolver}. The
 source for the PLT-hosted resolvers is in the
-@racket[(build-path (find-collects-dir) "meta" "planet2-index")]
+@racket[(collection-file-path "planet2-index" "meta")]
 directory.
 
 After a package is installed, the original source of its installation
