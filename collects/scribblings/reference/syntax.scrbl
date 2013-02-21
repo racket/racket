@@ -810,7 +810,14 @@ corresponds to the default @tech{module name resolver}.
 
 Like @racket[require], but for use in a @tech{internal-definition context} to
 import just into the local context. Only bindings from @tech{phase
-level} 0 are imported.}
+level} 0 are imported.
+
+@examples[
+  (let ()
+    (local-require racket/control)
+    fcontrol)
+  fcontrol
+]}
 
 
 @guideintro["module-provide"]{@racket[provide]}
