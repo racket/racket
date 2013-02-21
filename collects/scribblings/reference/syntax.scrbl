@@ -2467,12 +2467,12 @@ form.
  (list x y))
 ]}
 
-@defform[(begin0 expr body ...+)]{
+@defform[(begin0 expr ...+)]{
 
-Evaluates the @racket[expr], then evaluates the @racket[body]s,
-ignoring the @racket[body] results. The results of the @racket[expr]
-are the results of the @racket[begin0] form, but the @racket[expr] is
-in tail position only if no @racket[body]s are present.
+Evaluates the first @racket[expr], then evaluates the other @racket[exprs]s
+in order, ignoring their results. The results of the first @racket[expr]
+are the results of the @racket[begin0] form; the first @racket[expr] is
+in tail position only if no other @racket[expr]s are present.
 
 @mz-examples[
 (begin0
