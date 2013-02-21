@@ -414,11 +414,15 @@ functions and continuation mark functions.
 
 @section{Other Type Constructors}
 
-@defform*[#:id -> #:literals (* ...)
+@defform*/subs[#:id -> #:literals (* ...)
 	       [(dom ... -> rng)
 	        (dom ... rest * -> rng)
 		(dom ... rest #,(racket ...) bound -> rng)
-                (dom -> rng : pred)]]{is the type of functions from the (possibly-empty)
+                (dom -> rng : pred)]
+               ([dom type
+                     (code:line keyword type)
+                     [keyword type]])]{
+  is the type of functions from the (possibly-empty)
   sequence @racket[dom ...] to the @racket[rng] type.  The second form
   specifies a uniform rest argument of type @racket[rest], and the
   third form specifies a non-uniform rest argument of type
