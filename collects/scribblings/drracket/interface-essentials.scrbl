@@ -310,7 +310,7 @@ editor takes you directly to the next occurrence of the
 search string, without selecting the @onscreen{Find Again}
 menu item. In the preference dialog, in the
 @onscreen{Editing} section and then in the
-@onscreen{General} section is a checkbox labelled
+@onscreen{General} section is a checkbox labeled
 @onscreen{Search using anchors}. When it is checked,
 DrRacket shows a little red dot and a red line indicating
 where the @deftech{search anchor} is. When the search anchor
@@ -325,13 +325,13 @@ DrRacket's allows you to edit multiple files in a single window via
 tabs. The @menuitem["File" "New Tab"] menu item creates a new tab to
 show a new file. Each tab has its own interactions window.
 
-In the @onscreen{General} sub-pane of the @onscreen{Editing} pane in
-the preferences window, a checkbox labelled @onscreen{Open files in
+In the @onscreen{General} pane of the
+the preferences window, a checkbox labeled @onscreen{Open files in
 separate tabs} causes DrRacket to open files in new tabs in the
 frontmost window, rather than opening a new window for the file.
 
 The key bindings Control-Pageup and Control-Pagedown move between
-tabs. On Mac OS X, Command-Shift-Left and Command-Shift-Right also
+tabs. On Mac OS X, Command-Left-Square-Bracket and Command-Right-Square-Bracket also
 move between tabs.
 
 @; ----------------------------------------------------------------------
