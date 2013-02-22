@@ -410,3 +410,55 @@ within the bounding box, we see only three black pixels and one white one.
 
 The black pixels are (most of) the upper and left edge of the outline shape,
 and the one white pixel is the pixel in the middle of the shape.
+
+@section[#:tag "nitty-gritty-alpha"]{The Nitty Gritty of Alpha Blending}
+
+Alpha blending can cause imprecision in color comparisons resulting in
+shapes that appear @racket[equal?] even though they were created with
+different colors. This section explains how that happens.
+
+To start, consider the color @racket[(make-color 1 1 1 50)].
+This color is nearly the darkest shade of black, but with lots of transparency,
+to it renders a light gray color on a white background, e.g.:
+@image-interaction[(rectangle 100 100 "solid" (make-color 1 1 1 50))]
+If the background had been green, the same rectangle would look like a darker shade of green:
+@image-interaction[(overlay
+                    (rectangle 100 100 "solid" (make-color 1 1 1 50))
+                    (rectangle 200 200 "solid" "green"))]
+
+Surprisingly, this shape is equal to one that (apparently) has a different
+color in it:
+@image-interaction[(equal? 
+                    (rectangle 100 100 'solid (make-color 1 1 1 50))
+                    (rectangle 100 100 'solid (make-color 2 2 2 50)))]
+To understand why, we must look more carefully at how alpha blending
+and image equality work. Image equality is straightforward: two images
+are equality if they are both drawn the same. That is, image equality
+is defined by simply drawing the two shapes on a white background and
+then comparing all of the pixels for the two drawings
+(it is implemented more efficiently in some cases, however).
+
+So, for those shapes to be equal, they must be drawn with the same colors.
+To see what colors were actually drawn, we can use @racket[image->color-list].
+Since these images use the same color in every pixel, we can examine just the first one:
+@image-interaction[(first
+                    (image->color-list
+                     (rectangle 100 100 'solid (make-color 1 1 1 50))))
+                   (first
+                    (image->color-list
+                     (rectangle 100 100 'solid (make-color 2 2 2 50))))]
+As expected from the @racket[equal?] test, the two colors are the same, but
+why should they be the same? This is where a subtle aspect of alpha blending 
+and drawing comes up. In general, alpha blending works by taking the color
+of any shapes below the one being drawn and then combining that color with
+the new color. The precise amount of the combination is controlled by the alpha value. 
+So, if a shape has an alpha value of @racket[α], then the drawing library
+multiplies the new shapes color by @racket[(/ α 255)] and the existing shape's
+color by @racket[(- 1 (/ α 255))] and then adds the results to get the final color.
+(It does this for each of the red, green, and blue components separately.)
+
+Going back to the two example rectangles,
+the drawing library multiplies @code{50/255} by @racket[1] for the first
+shape and multiplies @code{50/255} by @racket[2] for the second shape (since they
+are both drawn on a white background). Then rounds them to integers, which
+results in @racket[0] for both colors, making the images the same.

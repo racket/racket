@@ -1293,6 +1293,9 @@ See also the @racketmodname[2htdp/planetcute] library.
   Returns a list of colors that correspond to the colors in the
   image, reading from left to right, top to bottom.
   
+  The list of colors is obtained by drawing the image on a white
+  background and then reading off the colors of the pixels that were drawn.
+  
   @image-examples[(image->color-list (rectangle 2 2 "solid" "black"))
                   (image->color-list
                    (above (beside (rectangle 1 1 "solid" (make-color 1 1 1))
