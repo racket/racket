@@ -224,8 +224,10 @@ Package A is a @deftech{package update} of Package B if (1) B is
 installed, (2) A and B have the same name, and (3) A's @tech{checksum} is
 different than B's. Note that a package @tech{version} is not taken
 into account when determining a @tech{package update}, although a change
-in a package's @tech{version} (in either direction) should normally
-imply a change in the @tech{checksum}.
+in a package's @tech{version} (in either direction)
+implies a change in the @tech{checksum} because the checksum is
+computed from the package source and the meta-data that specifies
+the version is part of the source.
 
 A @deftech{package scope} determines the effect of package installations,
 updates, @|etc|, with respect to different users, Racket versions, and
@@ -306,8 +308,10 @@ sub-sub-commands:
 @item{@command/toc{update} @nonterm{option} ... @nonterm{pkg} ... 
 --- Checks the specified packages for
 @tech{package updates}. If an update is found, but it cannot be
-installed (e.g. it is conflicted with another installed package), then
-this command fails atomically. The @exec{update} sub-command accepts 
+installed (e.g. it conflicts with another installed package), then
+this command fails without installing any of the @nonterm{pkg}s 
+(or their dependencies).
+The @exec{update} sub-command accepts 
 the following @nonterm{option}s:
 
  @itemlist[
@@ -323,8 +327,9 @@ the following @nonterm{option}s:
 }
 
 @item{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
---- Attempts to remove the given packages. If a package is the dependency of another package that is not 
-listed, this command fails atomically. It accepts the following @nonterm{option}s:
+--- Attempts to remove the given packages. If a package is the dependency
+of another package that is not listed, this command fails without 
+removing any of the @nonterm{pkg}s. It accepts the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{force} --- Ignore dependencies when removing packages.}
@@ -561,12 +566,14 @@ for updating when its @tech{checksum} changes, independent of whether
 the package's version changes or in which direction the version
 changes.}
 
-@item{Packages should not include large sets of utilities libraries
-that are likely to cause conflicts. For example, packages should not
-contain many extensions to the @filepath{racket} collection, like
+@item{Packages should not combine large sets of utilities libraries
+with other functionality. For example, 
+a package that contain many extensions to the @filepath{racket} collection, like
 @filepath{racket/more-lists.rkt} and
-@filepath{racket/more-bools.rkt}. Instead, such as extensions should
-be separated into their own packages.}
+@filepath{racket/more-bools.rkt} 
+should not also contain complete applications, as other packages
+interested in the @filepath{racket/more-bools.rkt} library
+will not wish to depend on in such application.}
 
 @item{Packages should generally provide one collection with a name
 similar to the name of the package. For example, @pkgname{libgtk1}
