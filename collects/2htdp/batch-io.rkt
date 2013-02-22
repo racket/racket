@@ -53,18 +53,20 @@
  ;; -- f must be formated as a a file with comma-separated values (Any)
  ;; read the specified file as a list of lists---one per line---of values (Any)
  
- read-csv-file/rows ;; String ([Listof Any] -> X) -> [Listof X]
- ;; -- f must be formated as a a file with comma-separated values (Any)
- ;; read the specified file as a file of comma-separated values, apply the second
- ;; argument to each row, i.e., list of CSV on one line 
- 
  write-file ;; String String -> String 
  ;; (write-file filename str) writes str to filename; 
  ;; produces the file name as a confirmation that the write succeeded 
  
  ;; *input-devives*: symbols that redirect input from an input-port 
  ;; *output-devives*: symbols that redirect output from a output-port 
- )      
+ )
+
+(provide-higher-order-primitive
+   read-csv-file/rows (_ row-processor) ;; String ([Listof Any] -> X) -> [Listof X]
+   ;; -- f must be formated as a a file with comma-separated values (Any)
+   ;; read the specified file as a file of comma-separated values, apply the second
+   ;; argument to each row, i.e., list of CSV on one line 
+   )
 
 ;; -----------------------------------------------------------------------------
 
