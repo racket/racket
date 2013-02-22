@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/eval
+          scriblib/render-cond
           (for-syntax scheme/base)
           (for-label scheme/base
                      racket/stream))
@@ -16,11 +17,18 @@
                    . title)
           (defmodule srfi/n)
           "Original specification: "
-          @link[(if subdir?
-                  (format "../srfi-std/srfi-~a/srfi-~a.html" num num)
-                  (format "../srfi-std/srfi-~a.html" num))
-                "SRFI "
-                (number->string num)]))]
+          @(let ([url-string (if subdir?
+                                 (format "srfi-std/srfi-~a/srfi-~a.html" num num)
+                                 (format "srfi-std/srfi-~a.html" num))])
+             (cond-element
+              [(or latex text)
+               @link[(string-append "http://docs.racket-lang.org/" url-string)
+                     "SRFI "
+                     (number->string num)]]
+              [else
+               @link[(string-append "../" url-string)
+                     "SRFI "
+                     (number->string num)]]))))]
    [(_ num . title) #'(srfi num #:subdir #f . title)]))
 
 @;{ The `lst' argument is a list of
