@@ -13,6 +13,7 @@
  ;;; general purpose (DrRacket is hereby a word in every language, by decree of Robby :)
  (plt "PLT")
  (drscheme "DrRacket")
+ (drracket "DrRacket")
  (ok "OK")
  ;; We can't use "Abbrechen" here because that's much closer in
  ;; meaning to "abort", and it appears in dialogs saying "Quit?" "OK"

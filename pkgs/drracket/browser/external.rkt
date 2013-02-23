@@ -1,6 +1,6 @@
 #lang racket/base
   (require string-constants
-           mred
+           racket/gui
            racket/class
            racket/file
            racket/list
