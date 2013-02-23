@@ -1,13 +1,13 @@
-#lang scheme/unit
+#lang racket/unit
 
 (require "sig.rkt"
          mred/mred-sig
-         scheme/file
-         mzlib/port
+         racket/file
+         racket/port
          net/url-sig
          (only-in html read-html-as-xml read-html-comments use-html-spec)
          (except-in xml read-comments)
-         mzlib/class
+         racket/class
          "bullet.rkt"
          "option-snip.rkt"
          "entity-names.rkt")
@@ -138,26 +138,26 @@
     (inherit set-flags get-flags)
     (set-flags (cons 'handles-events (get-flags)))))
 
-      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Hardwired Scheme colorization; should come from a .css file
+;; Hardwired Racket colorization; should come from a .css file
 ;;
 
-(define (make-scheme-color-delta col)
+(define (make-racket-color-delta col)
   (let ([d (make-object style-delta%)])
     (send d set-delta-foreground col)
     d))
 
-(define scheme-code-delta (make-scheme-color-delta "brown"))
-(define scheme-code-delta/keyword
-  (let ([d (make-scheme-color-delta (make-object color% #x99 0 0))])
+(define racket-code-delta (make-racket-color-delta "brown"))
+(define racket-code-delta/keyword
+  (let ([d (make-racket-color-delta (make-object color% #x99 0 0))])
     (send d set-weight-on 'bold)
     d))
-(define scheme-code-delta/variable (make-scheme-color-delta "navy"))
-(define scheme-code-delta/global (make-scheme-color-delta "purple"))
-(define scheme-code-delta/selfeval (make-scheme-color-delta "forest green"))
-(define scheme-code-delta/comment (make-scheme-color-delta "cornflower blue"))
-(define navigation-delta (let ([d (make-scheme-color-delta "red")])
+(define racket-code-delta/variable (make-racket-color-delta "navy"))
+(define racket-code-delta/global (make-racket-color-delta "purple"))
+(define racket-code-delta/selfeval (make-racket-color-delta "forest green"))
+(define racket-code-delta/comment (make-racket-color-delta "cornflower blue"))
+(define navigation-delta (let ([d (make-racket-color-delta "red")])
                            (send d set-style-on 'italic)
                            d))
 
@@ -166,13 +166,13 @@
 (define (lookup-class-delta class)
   (let ([class-path (cons class (current-style-class))])
     (cond
-     [(sub-path? class-path '("scheme")) scheme-code-delta]
-     [(sub-path? class-path '("keyword" "scheme")) scheme-code-delta/keyword]
-     [(sub-path? class-path '("variable" "scheme")) scheme-code-delta/variable]
-     [(sub-path? class-path '("global" "scheme")) scheme-code-delta/global]
-     [(or (sub-path? class-path '("selfeval" "scheme"))
-          (sub-path? class-path '("schemeresponse"))) scheme-code-delta/selfeval]
-     [(sub-path? class-path '("comment" "scheme")) scheme-code-delta/comment]
+     [(sub-path? class-path '("racket")) racket-code-delta]
+     [(sub-path? class-path '("keyword" "racket")) racket-code-delta/keyword]
+     [(sub-path? class-path '("variable" "racket")) racket-code-delta/variable]
+     [(sub-path? class-path '("global" "racket")) racket-code-delta/global]
+     [(or (sub-path? class-path '("selfeval" "racket"))
+          (sub-path? class-path '("racketresponse"))) racket-code-delta/selfeval]
+     [(sub-path? class-path '("comment" "racket")) racket-code-delta/comment]
      [(sub-path? class-path '("navigation")) navigation-delta]
      [else #f])))
 
@@ -209,7 +209,7 @@
 
 (define (get-bitmap-from-url url)
   (if (html-img-ok)
-      (let ([tmp-filename (make-temporary-file "mredimg~a")])
+      (let ([tmp-filename (make-temporary-file "rktguiimg~a")])
         (load-status #t "image" url)
         (call-with-output-file* tmp-filename
                                 (lambda (op)
@@ -331,7 +331,7 @@
 
 ;; parse-coords : string -> (listof number)
 ;; separates out a bunch of comma separated numbers in a string
-;; into a list of scheme numbers
+;; into a list of racket numbers
 (define (parse-coords str)
   (let loop ([str str])
     (cond
@@ -369,13 +369,13 @@
   (let ([a (assq name (cadr e))])
     (and a (cadr a))))
 
-(define get-mzscheme-arg
-  (let ([get-mz (make-get-field "mzscheme")])
+(define get-racket-arg
+  (let ([get-rkt (make-get-field "racket")])
     (lambda (str)
-      (let ([v (get-mz str)])
-        (and v (filter-mzscheme v))))))
+      (let ([v (get-rkt str)])
+        (and v (filter-racket v))))))
 
-(define filter-mzscheme 
+(define filter-racket 
   (lambda (v)
     (regexp-replace* "[|]" v "\"")))
 
@@ -475,12 +475,12 @@
    [(symbol? c) (values c #t)]
    [(number? c) (values c #t)]
    [(comment? c)
-    (let ([code (get-mzscheme-arg (comment-text c))])
+    (let ([code (get-racket-arg (comment-text c))])
       (if code
           (let ([s (with-handlers ([exn:fail?
                                     (lambda (exn)
                                       (format
-                                       "<font color=\"red\">Error during &lt;!-- MZSCHEME=... --&gt;: <i>~a</i></font>"
+                                       "<font color=\"red\">Error during &lt;!-- RACKET=... --&gt;: <i>~a</i></font>"
                                        (if (exn? exn)
                                            (exn-message exn)
                                            (format "~s" exn))))])
@@ -646,9 +646,9 @@
                                                     (unescape str)))]
                                           [else #f])]
                                         [label (get-field s 'name)]
-                                        [scheme (let ([v (get-field s 'mzscheme)])
-                                                  (and v (filter-mzscheme v)))])
-                                   (values url-string label scheme))))]
+                                        [racket (let ([v (get-field s 'racket)])
+                                                  (and v (filter-racket v)))])
+                                   (values url-string label racket))))]
                             
                             [parse-font
                              (let ([face-regexp (regexp "([^,]*), *(.*)")])
@@ -908,7 +908,7 @@
                                              (delete pos (current-pos)))
                                            (values void forced-lines)]
                                           [(a)
-                                           (let-values ([(url-string label scheme) (parse-href e)])
+                                           (let-values ([(url-string label racket) (parse-href e)])
                                              (let* ([style (get-field e 'style)]
                                                     [pos (current-pos)])
                                                (let-values ([(r rfl) (rest)])
@@ -929,8 +929,8 @@
                                                     [label
                                                      (send a-text add-tag label pos)
                                                      (values r rfl)]
-                                                    [scheme
-                                                     (send a-text add-scheme-callback pos end-pos scheme)
+                                                    [racket
+                                                     (send a-text add-racket-callback pos end-pos racket)
                                                      (values
                                                       (lambda ()
                                                         (when (or (not style)

@@ -36,7 +36,7 @@ launching an external browser (such as Firefox).
 @declare-exporting[browser/browser browser]
 
 The browser supports basic HTML commands, plus special Racket hyperlinks
-of the form @litchar{<A MZSCHEME=sexpr>...</A>}.  When the user clicks
+of the form @litchar{<A RACKET=sexpr>...</A>}.  When the user clicks
 on such a link, the string @racket[sexpr] is parsed as a Racket program
 and evaluated.  Since @racket[sexpr] is likely to contain Racket
 strings, and since escape characters are difficult for people to read, a
@@ -44,7 +44,7 @@ strings, and since escape characters are difficult for people to read, a
 character before it is parsed.  Thus,
 
 @verbatim[#:indent 2]{
-  <A MZSCHEME="|This goes nowhere.|">Nowhere</A>
+  <A RACKET="|This goes nowhere.|">Nowhere</A>
 }
 
 creates a ``Nowhere'' hyperlink, which executes the Racket program
@@ -59,15 +59,15 @@ clicks on ``Nowhere,'' the result is a new page that says ``This goes
 nowhere.''
 
 The browser also treats comment forms containing
-@litchar{MZSCHEME=sexpr} specially.   Whereas the
-@litchar{<A MZSCHEME=sexpr>...</A>} form executes the expression when
-the user clicks, the @litchar{MZSCHEME} expression in a comment is
+@litchar{RACKET=sexpr} specially.   Whereas the
+@litchar{<A RACKET=sexpr>...</A>} form executes the expression when
+the user clicks, the @litchar{RACKET} expression in a comment is
 executed immediately during HTML rendering.  If the result is a string,
 the comment is replaced in the input HTML stream with the content of the
 string.  Thus,
 
 @verbatim[#:indent 2]{
-  <!-- MZSCHEME="(format |<B>Here</B>: ~a| (current-directory))" -->
+  <!-- RACKET="(format |<B>Here</B>: ~a| (current-directory))" -->
 }
 
 inserts the path of the current working directory into the containing
@@ -77,10 +77,10 @@ return values are ignored.
 
 If the html file is being accessed as a @litchar{file:} url, the
 @racket[current-load-relative-directory] parameter is set to the
-directory during the evaluation of the mzscheme code (in both
+directory during the evaluation of the Racket code (in both
 examples).  The Racket code is executed through @racket[eval].
 
-The @litchar{MZSCHEME} forms are disabled unless the web page is a
+The @litchar{RACKET} forms are disabled unless the web page is a
 @litchar{file:} url that points into the @racket[doc] collection.
 
 @defproc[(open-url [url (or/c url? string? input-port?)]) (is-a?/c hyper-frame%)]{
@@ -94,7 +94,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 }
 
 @defboolparam[html-eval-ok ok?]{
-  A parameter that determines whether @litchar{MZSCHEME=} tags are
+  A parameter that determines whether @litchar{RACKET=} tags are
   evaluated.
 }
 
@@ -145,7 +145,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 
 @definterface[hyper-text<%> ()]{
   @defmethod[(url-allows-evalling? [url (or/c port? url?)]) boolean?]{
-    Determines if @litchar{MZSCHEME} annotations are actually evaluated,
+    Determines if @litchar{RACKET} annotations are actually evaluated,
     for a given url.
   }
 }
@@ -244,8 +244,8 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
   }
 
   @defmethod[(eval-racket-string [str string?]) any]{
-    Called to handle the @litchar{<A MZSCHEME="expr">...</A>} tag and
-    @litchar{<! MZSCHEME="expr">} comments (see above).  Evaluates the
+    Called to handle the @litchar{<A RACKET="expr">...</A>} tag and
+    @litchar{<! RACKET="expr">} comments (see above).  Evaluates the
     string; if the result is a string, it is opened as an HTML page.
   }
 
@@ -559,11 +559,11 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 @defproc[(render-html-to-text [in input-port?]
                               [dest (is-a? html-text<%>)]
                               [load-img? any/c]
-                              [eval-mz? any/c])
+                              [eval-rkt? any/c])
          void?]{
   Reads HTML from @racket[in] and renders it to @racket[dest].  If
   @racket[load-img?] is @racket[#f], then images are rendered as Xed-out
-  boxes.  If @racket[eval-mz?] is @racket[#f], then @litchar{MZSCHEME}
+  boxes.  If @racket[eval-rkt?] is @racket[#f], then @litchar{RACKET}
   hyperlink expressions and comments are not evaluated.
 
   Uses the style named @racket["Html Standard"] in the editor's

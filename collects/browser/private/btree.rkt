@@ -1,4 +1,4 @@
-#lang scheme/unit
+#lang racket/unit
 
 (require "sig.rkt")
 
@@ -12,9 +12,9 @@
 (export (rename relative-btree^
                 (create-btree make-btree)))
 
-(define-struct btree (root) #:mutable)
+(struct btree (root) #:mutable)
 
-(define-struct node (pos data parent left right color) #:mutable)
+(struct node (pos data parent left right color) #:mutable)
 
 (define (adjust-offsets n new-child)
   (when new-child
@@ -66,7 +66,7 @@
 
 
 (define (insert before? n btree pos data)
-  (let ([new (make-node pos data #f #f #f 'black)])
+  (let ([new (node pos data #f #f #f 'black)])
     (if (not (btree-root btree))
         (set-btree-root! btree new)
         
@@ -166,7 +166,7 @@
               (loop (node-right n) so-far so-far-pos npos)]))))))
 
 (define (create-btree)
-  (make-btree #f))
+  (btree #f))
 
 (define (btree-get btree pos)
   (let-values ([(n npos) (find-following-node btree pos)])

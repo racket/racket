@@ -1,3 +1,3 @@
-(module bullet-snip mzscheme
-  (require "private/bullet.rkt")
-  (provide (rename bullet-snip-class snip-class)))
+#lang racket
+(require "private/bullet.rkt")
+(provide (rename-out (bullet-snip-class snip-class)))
