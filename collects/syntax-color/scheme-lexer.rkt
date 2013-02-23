@@ -10,4 +10,3 @@ New code should use racket-lexer.rkt.
  (rename-out [racket-lexer scheme-lexer]
              [racket-lexer/status scheme-lexer/status]
              [racket-nobar-lexer/status scheme-nobar-lexer/status]))
- 
