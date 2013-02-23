@@ -1341,10 +1341,10 @@
           (set! variables-text (new text% [auto-wrap #f]))
           (let ([stack-frames-panel (make-object vertical-panel% stack-view-panel)])
             (new message% [parent stack-frames-panel] [label "Stack"])
-            (new editor-canvas% [parent stack-frames-panel] [editor stack-frames] [style '(no-hscroll)]))
+            (new editor-canvas% [parent stack-frames-panel] [editor stack-frames] [style '(auto-hscroll)]))
           (let ([variables-panel (make-object vertical-panel% stack-view-panel)])
             (new message% [parent variables-panel] [label "Variables"])
-            (new editor-canvas% [parent variables-panel] [editor variables-text] [style '(no-hscroll)]))
+            (new editor-canvas% [parent variables-panel] [editor variables-text] [style '(auto-hscroll)]))
           ;; parent of panel with debug buttons
           (set! debug-parent-panel
                 (make-object vertical-panel% debug-grandparent-panel))
