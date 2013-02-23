@@ -385,7 +385,8 @@
            [(tc-result1: (and f (or (Function: _)
                                     (Poly: _ (Function: _)))))
             (tc-expr/check/type #'fun (kw-convert f #:split #t))]
-           [(tc-result1: _) (tc-error/expr "Keyword functions must have function type, given ~a" expected)])
+           [(or (tc-results: _) (tc-any-results:))
+            (tc-error/expr "Keyword functions must have function type, given ~a" expected)])
          expected]
         ;; let
         [(let-values ([(name ...) expr] ...) . body)
