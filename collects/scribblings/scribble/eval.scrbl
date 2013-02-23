@@ -155,10 +155,16 @@ Like @racket[examples], but each definition using @racket[define] or
 prompt, and with line of space after it.}
 
 
-@defproc[(make-base-eval [#:pretty-print? pretty-print? any/c #t])
+@defproc[(make-base-eval [#:pretty-print? pretty-print? any/c #t]
+                         [#:lang lang
+                          (or/c module-path?
+                                (list/c 'special symbol?)
+                                (cons/c 'begin list?))
+                          '(begin)]
+                         [input-program any/c] ...)
          (any/c . -> . any)]{
 
-Creates an evaluator using @racket[(make-evaluator 'racket/base)],
+Creates an evaluator using @racket[(make-evaluator 'racket/base #:lang lang input-program ...)],
 setting sandbox parameters to disable limits, setting the outputs to
 @racket['string], and not adding extra security guards.
 
@@ -167,7 +173,12 @@ If @racket[pretty-print?] is true, the sandbox's printer is set to
 
 
 @defproc[(make-base-eval-factory [mod-paths (listof module-path?)]
-                                 [#:pretty-print? pretty-print? any/c #t])
+                                 [#:pretty-print? pretty-print? any/c #t]
+                                 [#:lang lang
+                                  (or/c module-path?
+                                        (list/c 'special symbol?)
+                                        (cons/c 'begin list?))
+                                  '(begin)])
          (-> (any/c . -> . any))]{
 
 Produces a function that is like @racket[make-base-eval], except that
@@ -178,7 +189,12 @@ time) and then attached to each evaluator that is created.}
 
 
 @defproc[(make-eval-factory [mod-paths (listof module-path?)]
-                            [#:pretty-print? pretty-print? any/c #t])
+                            [#:pretty-print? pretty-print? any/c #t]
+                            [#:lang lang
+                             (or/c module-path?
+                                   (list/c 'special symbol?)
+                                   (cons/c 'begin list?))
+                             '(begin)])
          (-> (any/c . -> . any))]{
 
 Like @racket[make-base-eval-factory], but each module in @racket[mod-paths] is

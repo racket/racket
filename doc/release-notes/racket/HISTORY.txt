@@ -4,6 +4,8 @@ racket/udp: added multicast support: udp-multicast-join-group!,
  udp-multicast-set-interface!, udp-multicast-set-loopback!,
  udp-multicast-loopback?, udp-multicast-set-ttl!,
  udp-multicast-ttl
+scribble/eval: extended make-base-eval to be more like
+ make-evaluator
 
 Version 5.3.3.8
 slideshow/pict: added color% objects to text-style/c
