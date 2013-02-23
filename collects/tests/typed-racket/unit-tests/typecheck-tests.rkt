@@ -1630,7 +1630,6 @@
               (-polydots (a) (->... (list) (a a) (make-ListDots a 'a)))
               #:expected (ret (-polydots (a) (->... (list) (a a) (make-ListDots a 'a))))]
 
-
         [tc-e
            ((inst filter Any Symbol) symbol? null)
            (-lst -Symbol)]
@@ -1638,6 +1637,7 @@
                        (apply (inst values A B ... B) a b)) 
                      (All (A B ...) (A B ... -> (values A B ... B))))
               (-polydots (a b) ((list a) (b b) . ->... . (make-ValuesDots (list (-result a)) b 'b)))]
+        [tc-e (void (λ: ([x : Any] [y : Any]) #t #f)) -Void]
         )
   (test-suite
    "check-type tests"
