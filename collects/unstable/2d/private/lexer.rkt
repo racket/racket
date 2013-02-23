@@ -37,17 +37,23 @@ todo:
          (apply values (car (2d-lexer-state-pending-tokens a-2d-lexer-state))))
        
        ;; read the characters in (expecting the same string as in 'val')
-       (for ([c1 (in-string val)]
-             [i (in-naturals)])
+       (for ([i (in-range (- end start))])
          (define c2 (read-char port))
-         (unless (or 
-                  ;; don't check these, as they are not always
-                  ;; right (the ones outside the table, specifically
-                  ;; are always just spaces)
-                  (eq? tok 'white-space)
-                  (equal? c1 c2))
-           (error '2d/lexer.rkt "expected a ~s, got ~s while feeding token ~s" c1 c2 
-                  (car (2d-lexer-state-pending-tokens a-2d-lexer-state)))))
+         
+         ;; here we want to check to make sure we're in sync, but:
+         
+         ;; 1) some lexers don't return strings (or return strings
+         ;;    of the wrong sizes); these will be non-strings here
+         (when (string? val)
+           ;; 2) whitespace is not always right
+           ;;    (the ones outside the table, 
+           ;;    specifically, are always just spaces)
+           (unless (eq? tok 'white-space)
+             (define c1 (string-ref val i))
+             (unless (equal? c1 c2)
+               (error '2d/lexer.rkt "expected a ~s, got ~s while feeding token ~s" 
+                      c1 c2 
+                      (car (2d-lexer-state-pending-tokens a-2d-lexer-state)))))))
        
        (values val tok paren 
                pos
@@ -210,14 +216,18 @@ todo:
             (define port (open-input-string scratch-string))
             (let loop ([mode (2d-lexer-state-chained-state a-2d-lexer-state)])
               (define-values (_1 _2 current-pos) (port-next-location port))
-              (define-values (str tok paren start end backup new-mode)
+              (define-values (tok-str tok paren start end backup new-mode)
                 (uniform-chained-lexer port (+ pos offset) mode))
               (unless (equal? 'eof tok)
                 (for ([sub-region (in-list (cropped-regions start end regions))])
+                  (define start (- (car sub-region) current-pos))
+                  (define end (- (cdr sub-region) current-pos))
                   (set! collected-tokens 
-                        (cons (list (substring str
-                                               (- (car sub-region) current-pos)
-                                               (- (cdr sub-region) current-pos))
+                        (cons (list (if (and (string? tok-str)
+                                             (< start (string-length tok-str))
+                                             (<= end (string-length tok-str)))
+                                        (substring tok-str start end)
+                                        (list 'strange-token tok-str))
                                     tok
                                     paren 
                                     (+ base-position (car sub-region)) 
