@@ -414,7 +414,7 @@ function.
 @interaction[(1 2 3 4)]
 
 When you accidentally omit a function name or when you use
-parentheses around an expression, you'll most often get an ``expected
+extra parentheses around an expression, you'll most often get an ``expected
 a procedure'' error like this one.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
