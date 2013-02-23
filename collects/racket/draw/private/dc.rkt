@@ -44,11 +44,6 @@
           black)
       (color->immutable-color c)))
 
-;; The Windows version of Pango crashes on characters
-;; #\U1D173 through #\U1D17A (which are unusual characters
-;; replated to music notation), so work around it:
-(define broken-music-pango? (eq? (system-type) 'windows))
-
 ;; dc-backend : interface
 ;;
 ;; This is the interface that the backend specific code must implement
@@ -1284,19 +1279,11 @@
              [blank? (string=? s "")]
              [s (if (and (not draw-mode) blank?) " " s)]
              [s (if (for/or ([c (in-string s)])
-                      (or (eqv? c #\uFFFE)
-			  (eqv? c #\uFFFF)
-			  (and broken-music-pango?
-			       (let ([n (char->integer c)])
-				 (<= #x1D173 n #x1D17A)))))
+                      (or (eqv? c #\uFFFE) (eqv? c #\uFFFF)))
                     ;; Since \uFFFE and \uFFFF are not supposed to be in any
                     ;; interchange, we must replace them away before passing a
                     ;; string to Pango:
-                    (regexp-replace* (if broken-music-pango?
-					 #rx"[\uFFFE\uFFFF\U1D173-\U1D17A]"
-					 #rx"[\uFFFE\uFFFF]")
-				     s
-				     "\uFFFD")
+                    (regexp-replace* #rx"[\uFFFE\uFFFF]" s "\uFFFD")
                     s)]
              [rotate? (and draw-mode (not (zero? angle)))]
              [smoothing-index (get-smoothing-index font)]
