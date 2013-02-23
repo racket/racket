@@ -342,13 +342,13 @@
       (namespace-attach-module ns 'racket/pretty)
       (current-print (dynamic-require 'racket/pretty 'pretty-print-handler)))))
 
-(define (make-base-eval #:pretty-print? [pretty-print? #t])
+(define (make-base-eval #:lang [lang '(begin)] #:pretty-print? [pretty-print? #t] . ips)
   (call-with-trusted-sandbox-configuration
    (lambda ()
      (parameterize ([sandbox-output 'string]
                     [sandbox-error-output 'string]
                     [sandbox-propagate-breaks #f])
-       (let ([e (make-evaluator '(begin))])
+       (let ([e (apply make-evaluator lang ips)])
          (let ([ns (namespace-anchor->namespace anchor)])
            (call-in-sandbox-context
             e
@@ -357,7 +357,8 @@
          e)))))
 
 (define (make-base-eval-factory mod-paths
-                                #:pretty-print? [pretty-print? #t])
+                                #:lang [lang '(begin)]
+                                #:pretty-print? [pretty-print? #t] . ips)
   (let ([ns (delay (let ([ns 
                           ;; This namespace-creation choice needs to be consistent
                           ;; with the sandbox (i.e., with `make-base-eval')
@@ -370,7 +371,7 @@
                        (when pretty-print? (dynamic-require 'racket/pretty #f)))
                      ns))])
     (lambda ()
-      (let ([ev (make-base-eval #:pretty-print? #f)]
+      (let ([ev (apply make-base-eval #:lang lang #:pretty-print? #f ips)]
             [ns (force ns)])
         (when pretty-print? (install-pretty-printer! ev ns))
         (call-in-sandbox-context
@@ -381,8 +382,9 @@
         ev))))
 
 (define (make-eval-factory mod-paths
-                           #:pretty-print? [pretty-print? #t])
-  (let ([base-factory (make-base-eval-factory mod-paths #:pretty-print? pretty-print?)])
+                           #:lang [lang '(begin)]
+                           #:pretty-print? [pretty-print? #t] . ips)
+  (let ([base-factory (apply make-base-eval-factory mod-paths #:lang lang #:pretty-print? pretty-print? ips)])
     (lambda ()
       (let ([ev (base-factory)])
         (call-in-sandbox-context
