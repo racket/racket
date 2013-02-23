@@ -227,7 +227,7 @@ the entire list, yielding the malformed expression
 "Moe")))].
 
 Instead, we must splice the list in, like so: @racket[`(ul ,@((li "Larry") (li "Curly") (li
-"Moe")))]. The unquote-splicing form, @racket[,@expression],
+"Moe")))]. The @racket[unquote-splicing] form, @racket[,@expression],
 allows us conveniently to splice a list of @|xexpr| fragments into a
 larger template list. To generalize the example, here are two helper
 functions that convert any list of @|xexpr|s into one @|xexpr|
