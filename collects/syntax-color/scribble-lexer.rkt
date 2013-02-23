@@ -1,9 +1,13 @@
 #lang scheme/base
 (require "scheme-lexer.rkt"
+         racket/contract
+         "lexer-contract.rkt"
          racket/port)
 
-(provide scribble-inside-lexer
-         scribble-lexer)
+(provide 
+ (contract-out
+  [scribble-inside-lexer lexer/c]
+  [scribble-lexer lexer/c]))
 
 (define-struct text (scheme-rx end-rx sub-rx string-rx open-paren close-paren) #:transparent)
 (define-struct scheme (status backup) #:transparent)

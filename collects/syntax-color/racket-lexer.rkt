@@ -1,11 +1,15 @@
 #lang racket/base
 
   (require parser-tools/lex
+           racket/contract
+           "lexer-contract.rkt"
            (prefix-in : parser-tools/lex-sre))
   
-  (provide racket-lexer
-           racket-lexer/status
-           racket-nobar-lexer/status)
+  (provide 
+   (contract-out
+    [racket-lexer lexer/c]
+    [racket-lexer/status lexer/c]
+    [racket-nobar-lexer/status lexer/c]))
    
   (define-lex-abbrevs
          

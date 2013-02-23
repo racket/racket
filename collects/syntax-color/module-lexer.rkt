@@ -1,8 +1,11 @@
 #lang racket/base
 (require racket/port
          "racket-lexer.rkt"
-         racket/contract)
-(provide module-lexer)
+         "lexer-contract.rkt"
+         racket/contract
+         unstable/options)
+(provide 
+ (contract-out [module-lexer lexer/c]))
 
 #|
 
@@ -23,31 +26,6 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
 
 |#
 
-(define lexer/c
-  (or/c (->i ([in input-port?])
-             (values [txt any/c]
-                     [type symbol?]
-                     [paren (or/c symbol? #f)]
-                     [start (or/c exact-positive-integer? #f)]
-                     [end (start) 
-                          (if start
-                              (and/c exact-positive-integer?
-                                     (>=/c start))
-                              #f)]))
-        (->i ([in input-port?]
-              [offset exact-nonnegative-integer?]
-              [mode any/c])
-            (values [txt any/c]
-                    [type symbol?]
-                    [paren (or/c symbol? #f)]
-                    [start (or/c exact-positive-integer? #f)]
-                    [end (start) 
-                         (if start
-                             (and/c exact-positive-integer?
-                                    (>=/c start))
-                             #f)]
-                    [backup exact-nonnegative-integer?]
-                    [new-mode any/c]))))
 
 (define (module-lexer in offset mode)
   (cond
@@ -91,16 +69,12 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
            (for ([i (in-range (file-position in) (file-position p))])
              (read-byte-or-special in))
            
-           (define no-ctc-lexer (or (get-info 'color-lexer #f)
-                                    racket-lexer))
-           ;; add the lexer contract
-           (define the-lexer (contract lexer/c
-                                       no-ctc-lexer
-                                       lang-name
-                                       'syntax-color/module-lexer
-                                       (or (object-name no-ctc-lexer)
-                                           (format "~a's lexer" lang-name))
-                                       #'here))
+           (define the-lexer (or (get-info 'color-lexer #f) racket-lexer))
+           (when (has-option? the-lexer)
+             (set! the-lexer 
+                   (if (trusted-lexer? the-lexer)
+                       (waive-option the-lexer)
+                       (exercise-option the-lexer))))
            
            ;; Produce language as first token:
            (values
@@ -144,3 +118,12 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
 (define (set-port-next-location-from src dest)
   (define-values (line col pos) (port-next-location src))
   (set-port-next-location! dest line col pos))
+
+
+(define (trusted-lexer? the-lexer)
+  (member (object-name the-lexer)
+          '(racket-lexer 
+            racket-lexer/status 
+            racket-nobar-lexer/status
+            scribble-inside-lexer
+            scribble-lexer)))
