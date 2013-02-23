@@ -337,16 +337,6 @@ added get-regions
             (set-lexer-state-up-to-date?! ls #t)
             (re-tokenize-move-to-next-ls start-time #t)]
            [else
-            (unless (exact-positive-integer? new-token-start)
-              (error 'color:text<%> "expected an exact nonnegative integer for the token start, got ~e" new-token-start))
-            (unless (exact-positive-integer? new-token-end)
-              (error 'color:text<%> "expected an exact nonnegative integer for the token end, got ~e" new-token-end))
-            (unless (exact-nonnegative-integer? backup-delta)
-              (error 'color:text<%> "expected an exact nonnegative integer for the backup delta, got ~e" backup-delta))
-            (unless (new-token-start . < . new-token-end)
-              (error 'color:text<%>
-                     "expected the distance between the start and end position for each token to be positive, but start was ~e and end was ~e"
-                     new-token-start new-token-end))
             (unless (<= pos-before new-token-start pos-after)
               (error 'color:text<%>
                      "expected the token start to be between ~s and ~s, got ~s" pos-before pos-after new-token-start))
