@@ -1,7 +1,8 @@
 #lang racket
 
 
-(provide option/c transfer-option exercise-option waive-option invariant/c)
+(provide option/c transfer-option exercise-option waive-option invariant/c
+         has-option?)
 
 
 (require syntax/location 
@@ -265,8 +266,12 @@
                (provide (contract-out [rename new-id id (transfer/c id)] ...)))))])
      #`(combine-out))))
 
+(define (has-option? val)
+  (and (has-contract? val) 
+       (option? (value-contract val))))
+
 (define (exercise-option val)
-  (cond [(and (has-contract? val) (option? (value-contract val)))
+  (cond [(has-option? val)
          (let ((info (proxy-info val)))
            (((info-proj info)
              (info-blame info))
@@ -274,7 +279,8 @@
         [else (error 'exercise-option-error "~a has no option to exercise" val)]))
 
 (define (waive-option val)
-  (cond [(and (has-contract? val) (option? (value-contract val))) (info-val (proxy-info val))]
+  (cond [(has-option? val)
+         (info-val (proxy-info val))]
         [else (error 'waive-option-error "~a has no option to waive" val)]))
 
                            

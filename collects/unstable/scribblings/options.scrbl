@@ -66,7 +66,7 @@ is a predicate. In any other case, the result is a contract error.
 
 }
 
-@defproc[(exercise-option [x any/c]) any/c]{
+@defproc[(exercise-option [x has-option?]) any/c]{
 
 Returns @racket[x] with contract ckecking enabled if an @racket[option/c] guards
 @racket[x]. In any other case the result is an error.                                          
@@ -118,7 +118,7 @@ to the positive and negative blame parties respectively. If @racket[id] is not b
 }
 
 
-@defproc[(waive-option [x any/c]) any/c]{ 
+@defproc[(waive-option [x has-option?]) any/c]{ 
 
 If an @racket[option/c] guards @racket[x], then @racket[waive-option] returns 
 @racket[x] without the @racket[option/c] guard. 
@@ -184,7 +184,10 @@ are chaperone contracts, then the result will be a chaperone contract.
 (vector-ref vec 2)]
 
 }
-                   
+
+@defproc[(has-option? [v any/c]) boolean?]{
+  Returns @racket[#t] if @racket[v] has an option contract.
+}
                    
 @(close-eval the-eval)
 
