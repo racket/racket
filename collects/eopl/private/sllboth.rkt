@@ -1,5 +1,4 @@
-
-(module sllboth mzscheme
+#lang racket
 
   ;; This is stuff that lives at both table-consruction time and
   ;; table-use time. That's ok because the data is all built on
@@ -68,4 +67,4 @@
 	  (and (pair? v)
 	       (eq? (car v) 'not)
 	       (pair? (cdr v))
-	       (char? (cadr v)))))))
+	       (char? (cadr v))))))

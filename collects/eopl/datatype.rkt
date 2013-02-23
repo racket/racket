@@ -1,10 +1,9 @@
 ;; NOTE: datatypes are currently transparent, for the sake of EoPL's
 ;; use of `equal?'
 
-#lang mzscheme
+#lang racket
 
-(require mzlib/pconvert-prop)
-(require-for-syntax "private/utils.rkt")
+(require (for-syntax "private/utils.rkt"))
 
 (define-syntax define-datatype
   (lambda (stx)
@@ -40,7 +39,7 @@
          ;; Count the fields for each variant:
          (with-syntax ([(variant-field-count ...)
                         (map (lambda (n)
-                               (datum->syntax-object (quote-syntax here) n #f))
+                               (datum->syntax (quote-syntax here) n #f))
                              (map length
                                   (map
                                    syntax->list
@@ -48,14 +47,14 @@
                                     (syntax ((field-name ...) ...))))))]
                        [(variant? ...)
                         (map (lambda (vn)
-                               (datum->syntax-object
+                               (datum->syntax
                                 vn
                                 (string->uninterned-symbol
                                  (format "~a?" (syntax-e vn)))))
                              variant-names)]
                        [(variant-accessor ...)
                         (map (lambda (vn)
-                               (datum->syntax-object
+                               (datum->syntax
                                 vn
                                 (string->uninterned-symbol
                                  (format "~a-accessor" (syntax-e vn)))))
@@ -68,7 +67,7 @@
                         (generate-temporaries variant-names)]
                        [(make-variant-name ...)
                         (map (lambda (vn)
-                               (datum->syntax-object
+                               (datum->syntax
                                 vn
                                 (string->symbol
                                  (format "make-~a" (syntax-e vn)))))
@@ -101,7 +100,7 @@
                                                  variant-accessor variant-mutator)
                                  (make-struct-type 'variant-name struct:x variant-field-count 0
                                                    #f
-                                                   `((,prop:print-convert-constructor-name . variant-name))
+                                                   null
                                                    (make-inspector))]
                                 ...)
                      ;; User-available functions:
@@ -191,7 +190,7 @@
                             (values null null null #f)]
                            [else
                             (let ([clause (car clauses)])
-                              (syntax-case* clause (else)
+                              (syntax-case* clause ()
                                             (lambda (a b)
                                               (and (eq? (syntax-e b) 'else)
                                                    (not (identifier-binding b))))
@@ -200,7 +199,7 @@
                                         [vt
                                          (ormap (lambda (dtv)
                                                   (let ([vt-name (vt-name-stx dtv)])
-                                                    (and (module-identifier=? variant vt-name)
+                                                    (and (free-identifier=? variant vt-name)
                                                          dtv)))
                                                 (dt-variants dt))]
                                         [orig-variant (and vt (vt-name-stx vt))])
@@ -208,7 +207,7 @@
                                      (raise-syntax-error
                                       #f
                                       (format "not a variant of `~a'"
-                                              (syntax-object->datum (syntax datatype)))
+                                              (syntax->datum (syntax datatype)))
                                       stx
                                       variant))
 
@@ -228,8 +227,8 @@
                                           #f
                                           (format
                                            "variant case `~a' for `~a' has wrong field count (expected ~a, found ~a)"
-                                           (syntax-object->datum variant)
-                                           (syntax-object->datum (syntax datatype))
+                                           (syntax->datum variant)
+                                           (syntax->datum (syntax datatype))
                                            (vt-field-count dtv)
                                            (length field-ids))
                                           stx
@@ -281,7 +280,7 @@
                     [missing (let loop ([l (dt-variants dt)])
                                (cond
                                  [(null? l) ""]
-                                 [(ormap (lambda (i) (module-identifier=? (vt-name-stx (car l)) i)) here)
+                                 [(ormap (lambda (i) (free-identifier=? (vt-name-stx (car l)) i)) here)
                                   (loop (cdr l))]
                                  [else
                                   (format " ~a~a"
