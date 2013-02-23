@@ -100,7 +100,7 @@
          ["libgobject-2.0-0.dll" 316586]
          ["libgmodule-2.0-0.dll" 31692]
          ["libpangocairo-1.0-0.dll" 94625]
-         ["libpangowin32-1.0-0.dll" 102210]
+         ["libpangowin32-1.0-0.dll" 143647]
          ["libpangoft2-1.0-0.dll" 679322]]
        (if (getenv "PLT_WIN_GTK")
            '(["libatk-1.0-0.dll" 153763]
@@ -126,7 +126,7 @@
         ["libgmodule-2.0-0.dll" 119538]
         ["libgthread-2.0-0.dll" 126615]
         ["libpangocairo-1.0-0.dll" 185168]
-        ["libpangowin32-1.0-0.dll" 192656]
+        ["libpangowin32-1.0-0.dll" 151879]
         ["libpangoft2-1.0-0.dll" 1188615]]]
      ;; Database libraries
      '[db

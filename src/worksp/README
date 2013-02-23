@@ -128,12 +128,16 @@ _stat64i32' in place of `struct stat', `#undef _stat', and use
 `_stat()' in place of `stat()'.
 
 The pre-built binaries are unpatched with the exception of
-"libpangowin32", where we have disabled the SYMBOL_CHARSET test that
-makes Pango ignore symbol fonts. The test is in the
-pango_win32_insert_font() function, and the patch was made in the
-pre-built binary by modifying the machine code: change a comparison
-to 2, which is SYMBOL_CHARSET, to a comparsion to 3, which doesn't
-correspond to any CHARSET.
+"libpangowin32", where the following patches are used with version
+pango-1.28.3:
+
+ pango/pangowin32-fontmap.c:1198:
+    Comment out SYMBOL_CHARSET test
+ modules/basic/basic-win32.c:331:
+     /* Ignore the high surrogate */
+     if (!(wtext[i] >= 0xD800 && wtext[i] < 0xDBFF))
+ modules/basic/basic-win32.c:479:
+    if (ScriptItemize (wtext, wlen, G_N_ELEMENTS (items) - 1, &control, NULL,
 
 Building Racket3m and GRacket3m
 -------------------------------
