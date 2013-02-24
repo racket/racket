@@ -1,9 +1,10 @@
-#lang scribble/manual
+#lang unstable/2d scribble/manual
 
 @(require scribble/eval
           scribble/core
           scribble/html-properties
           racket/sandbox
+          unstable/2d/tabular
           (for-label racket/base racket/vector racket/list
                      math plot
                      (only-in typed/racket/base
@@ -199,34 +200,62 @@ these identities for @racket[b > 0.0]:
 
 Unlike with @racket[flexpt], there is no standard for @racket[fllogb]'s behavior at limit values.
 Fortunately, deriving the following rules (applied in order) is not prohibitively difficult.
-@centered{
-@tabular[#:style
-         (style 'plain
-                (list (table-columns (list (style 'plain (list 'left))
-                                           (style 'plain (list 'center))
-                                           (style 'plain (list 'right))))
-                      (attributes '((width . "90%")))))
-         (list (list @bold{Case} @bold{Condition} @bold{Value})
-               (list @racket[(fllogb b 1.0)] "" @racket[0.0])
-               (list @racket[(fllogb 1.0 x)] "" @racket[+nan.0])
-               (list @racket[(fllogb b x)]
-                     @nested{@racket[b < 0.0] or @racket[x < 0.0]}
-                     @racket[+nan.0])
-               (list @italic{Double limits} 'cont 'cont)
-               (list @racket[(fllogb 0.0 0.0)] "" @racket[+inf.0])
-               (list @racket[(fllogb 0.0 +inf.0)] "" @racket[-inf.0])
-               (list @racket[(fllogb +inf.0 0.0)] "" @racket[-inf.0])
-               (list @racket[(fllogb +inf.0 +inf.0)] "" @racket[+inf.0])
-               (list @italic{Limits with respect to @racket[b]} 'cont 'cont)
-               (list @racket[(fllogb 0.0 x)] @nested{@racket[x < 1.0]} @racket[0.0])
-               (list @racket[(fllogb 0.0 x)] @nested{@racket[x > 1.0]} @racket[-0.0])
-               (list @racket[(fllogb +inf.0 x)] @nested{@racket[x > 1.0]} @racket[0.0])
-               (list @racket[(fllogb +inf.0 x)] @nested{@racket[x < 1.0]} @racket[-0.0])
-               (list @italic{Limits with respect to @racket[x]} 'cont 'cont)
-               (list @racket[(fllogb b 0.0)] @nested{@racket[b < 1.0]} @racket[+inf.0])
-               (list @racket[(fllogb b 0.0)] @nested{@racket[b > 1.0]} @racket[-inf.0])
-               (list @racket[(fllogb b +inf.0)] @nested{@racket[b > 1.0]} @racket[+inf.0])
-               (list @racket[(fllogb b +inf.0)] @nested{@racket[b < 1.0]} @racket[-inf.0]))]}
+@centered[
+  #2dtabular
+  ╔═════════════════════════════════╦══════════════════╦═════════════════╗
+  ║ @bold{Case}                     ║@bold{Condition}  ║ @bold{Value}    ║
+  ╠═════════════════════════════════╬══════════════════╬═════════════════╣
+  ║ @racket[(fllogb b 1.0)]         ║                  ║ @racket[0.0]    ║
+  ╠═════════════════════════════════╬══════════════════╬═════════════════╣
+  ║ @racket[(fllogb 1.0 x)]         ║                  ║ @racket[+nan.0] ║
+  ╠═════════════════════════════════╬══════════════════╬═════════════════╣
+  ║ @racket[(fllogb b x)]           ║ @racket[b < 0.0] ║ @racket[+nan.0] ║
+  ║                                 ║       "or"       ║                 ║
+  ║                                 ║ @racket[x < 0.0] ║                 ║
+  ╠═════════════════════════════════╩══════════════════╩═════════════════╣
+  ║                                                                      ║
+  ║                        @italic{Double limits}                        ║
+  ║                                                                      ║
+  ╠═════════════════════════════════╦══════════════════╦═════════════════╣
+  ║ @racket[(fllogb 0.0 0.0)]       ║                  ║ @racket[+inf.0] ║
+  ╠═════════════════════════════════╬══════════════════╬═════════════════╣
+  ║ @racket[(fllogb 0.0 +inf.0)]    ║                  ║ @racket[-inf.0] ║
+  ╠═════════════════════════════════╬══════════════════╬═════════════════╣
+  ║ @racket[(fllogb +inf.0 0.0)]    ║                  ║ @racket[-inf.0] ║
+  ╠═════════════════════════════════╬══════════════════╬═════════════════╣
+  ║ @racket[(fllogb +inf.0 +inf.0)] ║                  ║ @racket[+inf.0] ║
+  ╠═════════════════════════════════╩══════════════════╩═════════════════╣
+  ║                                                                      ║
+  ║              @italic{Limits with respect to @racket[b]}              ║
+  ║                                                                      ║
+  ╠═════════════════════════════════╦══════════════════╦═════════════════╣
+  ║ @racket[(fllogb 0.0 x)]         ║ @racket[x < 1.0] ║ @racket[0.0]    ║
+  ╠═════════════════════════════════╬══════════════════╬═════════════════╣
+  ║ @racket[(fllogb 0.0 x)]         ║ @racket[x > 1.0] ║ @racket[-0.0]   ║
+  ╠═════════════════════════════════╬══════════════════╬═════════════════╣
+  ║ @racket[(fllogb +inf.0 x)]      ║ @racket[x > 1.0] ║ @racket[0.0]    ║
+  ╠═════════════════════════════════╬══════════════════╬═════════════════╣
+  ║ @racket[(fllogb +inf.0 x)]      ║ @racket[x < 1.0] ║ @racket[-0.0]   ║
+  ╠═════════════════════════════════╩══════════════════╩═════════════════╣
+  ║                                                                      ║
+  ║              @italic{Limits with respect to @racket[x]}              ║
+  ║                                                                      ║
+  ╠═════════════════════════════════╦══════════════════╦═════════════════╣
+  ║ @racket[(fllogb b 0.0)]         ║ @racket[b < 1.0] ║ @racket[+inf.0] ║
+  ╠═════════════════════════════════╬══════════════════╬═════════════════╣
+  ║ @racket[(fllogb b 0.0)]         ║ @racket[b > 1.0] ║ @racket[-inf.0] ║
+  ╠═════════════════════════════════╬══════════════════╬═════════════════╣
+  ║ @racket[(fllogb b +inf.0)]      ║ @racket[b > 1.0] ║ @racket[+inf.0] ║
+  ╠═════════════════════════════════╬══════════════════╬═════════════════╣
+  ║ @racket[(fllogb b +inf.0)]      ║ @racket[b < 1.0] ║ @racket[-inf.0] ║
+  ╠═════════════════════════════════╩══════════════════╩═════════════════╣
+  ║ #:style                                                              ║
+  ║ (style 'plain                                                        ║
+  ║        (list (table-columns (list (style 'plain (list 'left))        ║
+  ║                                   (style 'plain (list 'center))      ║
+  ║                                   (style 'plain (list 'right))))     ║
+  ║              (attributes '((width . "90%")))))                       ║
+  ╚══════════════════════════════════════════════════════════════════════╝]
 Most of these rules are derived by taking limits of the mathematical base-@racket[b] log function.
 Except for @racket[(fllogb 1.0 x)], when doing so gives rise to ambiguities, they are resolved using
 @racket[flexpt]'s behavior, which follows the IEEE 754 and C99 standards for @tt{pow}.
