@@ -5,7 +5,7 @@
 
 (define lexer/c
   (option/c
-   (or/c (->i ([in input-port?])
+   (or/c (->i ([in (and/c input-port? port-counts-lines?)])
               (values [txt any/c]
                       [type symbol?]
                       [paren (or/c symbol? #f)]
@@ -15,7 +15,7 @@
                                (and/c exact-positive-integer?
                                       (>=/c start))
                                #f)]))
-         (->i ([in input-port?]
+         (->i ([in (and/c input-port? port-counts-lines?)]
                [offset exact-nonnegative-integer?]
                [mode any/c])
               (values [txt any/c]
