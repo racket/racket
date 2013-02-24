@@ -128,12 +128,22 @@ needed to really make this work:
                 (push!)
                 (record val enclosing-stx)
                 (begin0
-                  (let lst-loop ([val (vector->list val)])
-                    (cond
-                      [(pair? val) 
-                       (cons (loop (car val) #f)
-                             (lst-loop (cdr val)))]
-                      [(null? val) '()]))
+                  (apply
+                   vector
+                   (let lst-loop ([val (vector->list val)])
+                     (cond
+                       [(pair? val) 
+                        (cons (loop (car val) #f)
+                              (lst-loop (cdr val)))]
+                       [(null? val) '()])))
+                  (pop!))]
+               [(hash? val)
+                (push!)
+                (record val enclosing-stx)
+                (begin0
+                  (for/hash ([(k v) (in-hash val)])
+                    (values (loop k #f)
+                            (loop v #f)))
                   (pop!))]
                [else
                 (push!)
@@ -241,11 +251,17 @@ needed to really make this work:
           (small-newline info-port info-text)))
       
       (define/private (replace-syntaxes obj)
-        (cond
-          [(pair? obj) (cons (replace-syntaxes (car obj))
-                             (replace-syntaxes (cdr obj)))]
-          [(syntax? obj) (make-object syntax-snip% obj)]
-          [else obj]))
+        (let loop ([obj obj])
+          (cond
+            [(pair? obj) (cons (loop (car obj)) (loop (cdr obj)))]
+            [(syntax? obj) (make-object syntax-snip% obj)]
+            [(hash? obj)
+             (for/hash ([(k v) (in-hash obj)])
+               (values (loop k) (loop v)))]
+            [(vector? obj)
+             (for/vector ([v (in-vector obj)])
+               (loop v))]
+            [else obj])))
       
       (define/private (insert/bold str)
         (let ([pos (send info-text last-position)])
@@ -575,10 +591,10 @@ needed to really make this work:
        `(pair ,(cons (marshall-object (car obj))
                      (marshall-object (cdr obj))))]
       [(or (symbol? obj)
-	   (char? obj)
-	   (number? obj)
+           (char? obj)
+           (number? obj)
            (string? obj)
-	   (boolean? obj)
+           (boolean? obj)
            (null? obj))
        `(other ,obj)]
       [else (string->symbol (format "unknown-object: ~s" obj))]))
