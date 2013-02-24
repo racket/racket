@@ -132,7 +132,7 @@
 
 
 
-(define (check-option c val fail) 
+(define (check-option c val blame) 
   (let ([orig-ctc (option-orig-ctc c)]
         [structid (option-structid c)]
         [invariant (option-invariant c)]
@@ -141,14 +141,17 @@
     (when (and (eq? invariant 'dont-care)
                (or  (not (eq? immutable 'dont-care))
                     (not (eq? flat #f))))
-          (fail val '(expected "an invariant keyword argument (based on presence of other keyword arguments)")))
+          (raise-blame-error 
+           blame
+           val
+           '(expected "an invariant keyword argument (based on presence of other keyword arguments)")))
     (unless (or (and (procedure? val) (eq? structid 'none))
                 (and (vector? val) (eq? structid 'none))
                 (and (hash? val) (eq? structid 'none))
                 (and (not (eq? structid 'none)) (same-type val structid)))
       (if (eq? structid 'none)
-          (fail val '(expected "a procedure or a vector or a hash" given: "~e") val)  
-          (fail val '(expected "a struct of type ~a" given: "~e") (fourth structid) val)))))
+          (raise-blame-error blame val '(expected "a procedure or a vector or a hash" given: "~e") val)  
+          (raise-blame-error blame val '(expected "a struct of type ~a" given: "~e") (fourth structid) val)))))
 
 
 
@@ -169,10 +172,8 @@
    #:projection
    (λ (ctc)
      (λ (blame)
-       (define raise-blame (λ (val . args) 
-                             (apply raise-blame-error blame val args)))
        (λ (val)
-         (check-option ctc val raise-blame)
+         (check-option ctc val blame)
          (let*  ([tester (option-tester ctc)]
                  [invariant (option-invariant ctc)]
                  [flat (option-flat ctc)]
@@ -183,7 +184,10 @@
                  [exec-ctc (build-orig-proj ctc invariant flat immutable structid here)])
            (unless (symbol? tester)
              (run-tester tester val orig-ctc blame here))
-           (build-proxy ctc val (contract-projection exec-ctc) blame)))))))
+           (build-proxy ctc val (contract-projection exec-ctc)
+                        (blame-add-context
+                         blame
+                         "the option of"))))))))
 
 (define (build-option ctc
                       #:tester [tester 'dont-care]
