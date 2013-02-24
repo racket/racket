@@ -17,18 +17,12 @@
                    . title)
           (defmodule srfi/n)
           "Original specification: "
-          @(let ([url-string (if subdir?
-                                 (format "srfi-std/srfi-~a/srfi-~a.html" num num)
-                                 (format "srfi-std/srfi-~a.html" num))])
-             (cond-element
-              [(or latex text)
-               @link[(string-append "http://docs.racket-lang.org/" url-string)
-                     "SRFI "
-                     (number->string num)]]
-              [else
-               @link[(string-append "../" url-string)
-                     "SRFI "
-                     (number->string num)]]))))]
+          (let* ([label (format "SRFI ~a" num)]
+                 [sub (if subdir? (format "srfi-~a/" num) "")]
+                 [url (λ (b) (format "~a/srfi-std/~asrfi-~a.html" b sub num))])
+            (cond-element
+              [(or latex text) @link[(url "http://docs.racket-lang.org") label]]
+              [else @link[(url "..") label]]))))]
    [(_ num . title) #'(srfi num #:subdir #f . title)]))
 
 @;{ The `lst' argument is a list of
