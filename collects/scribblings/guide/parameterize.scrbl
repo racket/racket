@@ -7,7 +7,11 @@
 
 @refalso["parameters"]{@racket[parameterize]}
 
-The @racket[parameterize] form associates a new value with a
+The @racket[parameterize] form lets you change a variable's value for
+the duration of some code, and have the original value automatically
+restored afterwards.
+
+More precisely, it associates a new value with a
 @deftech{parameter} during the evaluation of @racket[_body]
 expressions:
 
