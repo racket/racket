@@ -170,6 +170,23 @@ selected.
                        mixed Unicode and ASCII, it will all be converted to 
                        the Unicode characters.
                        }
+
+@keybinding["C-x r w"]{Widen the nearby ASCII art rectangles.
+                       
+                       For example, if the insertion point is just to the left of
+                       the middle line of this rectangle:
+                       @tabular[(list (list @litchar{╔═╦══╗})
+                                      (list @litchar{║ ║  ║})
+                                      (list @litchar{╠═╬══╣})
+                                      (list @litchar{║ ║  ║})
+                                      (list @litchar{╚═╩══╝}))]
+                       then the keystroke will turn it into this one:
+                       @tabular[(list (list @litchar{╔══╦══╗})
+                                      (list @litchar{║  ║  ║})
+                                      (list @litchar{╠══╬══╣})
+                                      (list @litchar{║  ║  ║})
+                                      (list @litchar{╚══╩══╝}))]
+                       }
 ]
 
 @section{File Operations}
