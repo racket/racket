@@ -133,40 +133,44 @@
 
 ;; ----------------------------------------
 
-(define ((%cat who fmt [default-sep " "] [default-limit-marker "..."])
-         #:width [width #f]
-         #:max-width [limit (or width +inf.0)]
-         #:limit-marker [limit-marker default-limit-marker]
-         #:min-width [pad-to (or width 0)]
-         #:align [align 'left]
-         #:pad-string [padding " "]
-         #:right-pad-string [right-padding padding]
-         #:left-pad-string [left-padding padding]
-         #:separator [sep default-sep]
-         . s)
-  (do-checks who limit limit-marker pad-to)
-  (%pad (%limit (if (and (pair? s) (null? (cdr s)))
-                    (fmt (car s))
-                    (apply string-append 
-                           (let ([s (map fmt s)])
-                             (if (equal? sep "")
-                                 s
-                                 (add-between s sep)))))
-                #:limit limit
-                #:limit-marker limit-marker)
-        #:pad-to pad-to
-        #:align align
-        #:left-padding left-padding
-        #:right-padding right-padding))
+(define-syntax %cat
+  (syntax-rules ()
+    [(%cat who fmt) (%cat who fmt " ")]
+    [(%cat who fmt default-sep) (%cat who fmt default-sep "...")]
+    [(%cat who fmt default-sep default-limit-marker)
+     (let ([who (λ (#:width            [width         #f]
+                    #:max-width        [limit         (or width +inf.0)]
+                    #:limit-marker     [limit-marker  default-limit-marker]
+                    #:min-width        [pad-to        (or width 0)]
+                    #:align            [align         'left]
+                    #:pad-string       [padding       " "]
+                    #:right-pad-string [right-padding padding]
+                    #:left-pad-string  [left-padding  padding]
+                    #:separator        [sep           default-sep]
+                    . s)
+                  (do-checks 'who limit limit-marker pad-to)
+                  (%pad (%limit #:limit limit #:limit-marker limit-marker
+                                (if (and (pair? s) (null? (cdr s)))
+                                  (fmt (car s))
+                                  (apply string-append
+                                         (let ([s (map fmt s)])
+                                           (if (equal? sep "")
+                                               s
+                                               (add-between s sep))))))
+                        #:pad-to pad-to
+                        #:align align
+                        #:left-padding left-padding
+                        #:right-padding right-padding))])
+       who)]))
 
-(define ~a (%cat '~a (lambda (v) (if (string? v) v (format "~a" v))) "" ""))
-(define ~s (%cat '~s (lambda (v) (format "~s" v))))
-(define ~v (%cat '~v (lambda (v) (format "~v" v))))
-(define ~e (%cat '~e (lambda (v) (format "~e" v))))
+(define ~a (%cat  ~a  (λ (v) (if (string? v) v (format "~a" v))) "" ""))
+(define ~s (%cat  ~s  (λ (v) (format "~s" v))))
+(define ~v (%cat  ~v  (λ (v) (format "~v" v))))
+(define ~e (%cat  ~e  (λ (v) (format "~e" v))))
 
-(define ~.a (%cat '~.a (lambda (v) (format "~.a" v)) "" ""))
-(define ~.s (%cat '~.s (lambda (v) (format "~.s" v))))
-(define ~.v (%cat '~.v (lambda (v) (format "~.v" v))))
+(define ~.a (%cat ~.a (λ (v) (format "~.a" v)) "" ""))
+(define ~.s (%cat ~.s (λ (v) (format "~.s" v))))
+(define ~.v (%cat ~.v (λ (v) (format "~.v" v))))
 
 ;; ----
 
