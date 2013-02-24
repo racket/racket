@@ -1,6 +1,6 @@
 #lang meta/web
 
-(require "resources.rkt" "data.rkt" "installer-pages.rkt"
+(require "resources.rkt" "data.rkt" "installer-pages.rkt" "symlinks.rkt"
          (prefix-in pre: "../stubs/pre.rkt"))
 
 (provide render-download-page)
@@ -27,6 +27,7 @@
       @|br hr|
       @div[align: "center"]{
         @(let ([links (list ((release-page release) "Release Notes")
+                            @a[href: @list{@|docs|/@|version|/html}]{Docs}
                             @license{License}
                             all-version-pages
                             @pre:installers{Nightly Installers})])
@@ -88,7 +89,8 @@
         @thead{
           @tr{@td{@nbsp @strong{Version & Release Notes}}
               @(map (λ (p) @th[align: 'center]{@(package->name p)})
-                    all-packages)}}
+                    all-packages)
+              @td{@strong{Documentation}}}}
         @(let ([sep (tr style: "height: 4px; margin: 0; padding: 0;"
                         (td) (map (λ (_) (td)) all-packages))])
            (define (cell rel pkg)
@@ -96,17 +98,22 @@
                @nbsp @(make-page rel pkg){[download]} @nbsp})
            @tbody{
              @sep
-             @(map (λ (r)
-                     @list{
-                       @tr[class: 'version-row]{
-                         @td{@|nbsp nbsp| @strong{Version @release-version[r]},
-                             @(release-page r){@release-date-string[r]} @nbsp}
-                         @(map (λ (p) (cell r p)) all-packages)}
-                       @sep})
-                   all-releases)})
+             @(for/list ([r (in-list all-releases)])
+                (define ver (release-version r))
+                  @list{
+                    @tr[class: 'version-row]{
+                      @td{@|nbsp nbsp| @strong{Version @ver},
+                          @(release-page r){@release-date-string[r]} @nbsp}
+                      @(map (λ (p) (cell r p)) all-packages)
+                      @td{@nbsp @a[href: @list{@|docs|/@|ver|/html}]{[HTML]} @;
+                          @nbsp @a[href: @list{@|docs|/@|ver|/pdf}]{[PDF]} @;
+                          @nbsp}}
+                    @sep})})
         @tfoot{
-          @tr[class: 'version-row]{@td[align: 'center colspan: 3]{
-            @pre:installers}}}}}))
+          @tr[class: 'version-row]{
+            @td[align: 'center colspan: 3]{@pre:installers}
+            @td{@nbsp @pre:docs[#:sub 'html]{[HTML]} @;
+                @nbsp @pre:docs[#:sub 'pdf]{[PDF]} @nbsp}}}}}))
 
 (define license
   @page[#:title "Software License" #:part-of 'download]{

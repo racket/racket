@@ -1,14 +1,6 @@
 #lang meta/web
 
-(require "resources.rkt" "data.rkt" "../www/download.rkt")
-
-(define (in-ftp . paths)
-  (string-join (cons "/var/ftp/pub/racket" paths) "/"))
-
-(define docs       (symlink (in-ftp "docs")))
-(define installers (symlink (in-ftp "installers")))
-(define libs       (symlink (in-ftp "libs/tags") "libs"))
-(define stubs      (symlink "/www/stubs"))
+(require "resources.rkt" "symlinks.rkt" "../www/download.rkt")
 
 (provide index)
 (define index

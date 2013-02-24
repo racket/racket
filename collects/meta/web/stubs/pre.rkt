@@ -55,7 +55,7 @@
     @~
       It is also easy to setup a script that will automate the process of
       retrieving the @tt{tgz} file, unpacking and installing it.  This is
-      explained in more details in @pre-scripts{scripts}.  In addition to being
+      explained in more details in @script{scripts}.  In addition to being
       convenient for updating your tree, it can be used by an automatic job
       scheduler (for example, a cron job on Unix) to make tree that is always
       updated.}
@@ -111,7 +111,12 @@
        @a[href: "../"]{nightly build page} has everything you
        could want.}})
 
-(define pre-docs
+(provide (rename-out [docs* docs]))
+(define (docs* #:sub [sub #f] . text)
+  (if sub
+    (apply a href: (list (url-of docs) sub "/") (if (null? text) sub text))
+    (apply docs text)))
+(define docs
   @page[#:file "docs/" #:title "Prebuilt documentation"]{
     @p{This directory contains documentation files in all forms, compiled from
        the current sources.}
@@ -120,7 +125,7 @@
     @hr
     @version-hole})
 
-(define pre-binaries
+(define binaries
   @page[#:file "binaries/" #:title "Prebuilt binaries"]{
     @p{This directory contains a subdirectory for each supported platform.}
     @hr
@@ -128,7 +133,7 @@
     @hr
     @version-hole})
 
-(define pre-scripts
+(define script
   @page[#:file "script.html" #:title "Using the nightly Racket builds"]{
     @(define (url . s) @list{http://pre.racket-lang.org/@s})
     @(define (pre* . text) (apply pre style: "margin-left: 2em;" text))
