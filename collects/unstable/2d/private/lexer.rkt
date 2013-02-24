@@ -2,24 +2,22 @@
 (require "read-util.rkt"
          "../dir-chars.rkt"
          racket/set
-         racket/port)
+         racket/port
+         racket/contract
+         syntax-color/lexer-contract)
 
 #|
 
 todo:
- - backup delta
- - errors
- - do I need absolute positions? (start & end)? yes, for filling gaps.
- - break up the table into two pieces
- ... build test suite
-
+ - break up the table into pieces
+   to better cope with edits
 
 |#
 
-(provide lexer
+(provide (contract-out [2d-lexer (-> lexer/c lexer/c)])
          cropped-regions)
 
-(define (lexer chained-lexer)
+(define (2d-lexer chained-lexer)
   (define uniform-chained-lexer
     (cond
       [(procedure-arity-includes? chained-lexer 3)
@@ -36,10 +34,11 @@ todo:
        (define-values (val tok paren start end)
          (apply values (car (2d-lexer-state-pending-tokens a-2d-lexer-state))))
        
-       ;; read the characters in (expecting the same string as in 'val')
-       (for ([i (in-range (- end start))])
-         (define c2 (read-char port))
-         
+       ;; this helper function checks to make sure that what's
+       ;; in the port is actually what was predicted by the
+       ;; 'val' -- it isn't necessary for correct operation, but
+       ;; helps find bugs earlier
+       (define (check-char i c2)
          ;; here we want to check to make sure we're in sync, but:
          
          ;; 1) some lexers don't return strings (or return strings
@@ -54,6 +53,30 @@ todo:
                (error '2d/lexer.rkt "expected a ~s, got ~s while feeding token ~s" 
                       c1 c2 
                       (car (2d-lexer-state-pending-tokens a-2d-lexer-state)))))))
+       
+       ;; actually read the characters in
+       (define last-i (- end start))
+       (let loop ([i 0]
+                  
+                  ;; str-offset helps deal with the way line-counting ports handle 
+                  ;; \r\n combinations. That is, (- end start) will be a number that
+                  ;; doesn't match the length of the string in the case that there 
+                  ;; are \r\n pairs in the port. We'll increment str-offset for each 
+                  ;; of those and then use str-offset when indexing into the string
+                  [str-offset 0])
+         (unless (= i last-i)
+           (define c2 (read-char port))
+           (check-char (+ str-offset i) c2)
+           (cond
+             [(and (equal? c2 #\return)
+                   (equal? (peek-char port) #\newline))
+              (read-char port)
+              (check-char (+ str-offset i 1) #\newline)
+              (loop (+ i 1)
+                    (+ str-offset 1))]
+             [else 
+              (loop (+ i 1)
+                    str-offset)])))
        
        (values val tok paren 
                pos
@@ -214,6 +237,7 @@ todo:
                                    initial-space-count
                                    #t))
             (define port (open-input-string scratch-string))
+            (port-count-lines! port)
             (let loop ([mode (2d-lexer-state-chained-state a-2d-lexer-state)])
               (define-values (_1 _2 current-pos) (port-next-location port))
               (define-values (tok-str tok paren start end backup new-mode)
@@ -268,6 +292,7 @@ todo:
           ;; there will be gaps that correspond to the places outside of the
           ;; outermost rectangle (at a minimum, newlines); this fills those 
           ;; in with whitespace tokens
+          ;; NOTE: this code does not deal properly with \r\n newline combinations
           (define cracks-filled-in-tokens
             (let loop ([fst newline-token]
                        [tokens sorted-tokens])

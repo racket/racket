@@ -1,3 +1,3 @@
 #lang racket/base
 (require "private/lexer.rkt")
-(provide lexer)
+(provide 2d-lexer)
