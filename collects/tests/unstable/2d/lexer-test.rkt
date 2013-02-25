@@ -31,6 +31,35 @@
             [else (loop new-mode)]))))
 
 (check-equal?
+ (run-lexer "1234\n#2d\n")
+ `(("1234" constant #f 1 5 0)
+   ("\n" white-space #f 5 6 0) 
+   ("#2d\n" error #f 6 10 0) 
+   (,eof eof #f #f #f 0)))
+
+(check-equal?
+ (run-lexer "#2dsomething")
+ `(("#2dsomething" error #f 1 13 0)
+   (,eof eof #f #f #f 0)))
+
+(check-equal?
+ (run-lexer "#2dsomething\n")
+ `(("#2dsomething\n" error #f 1 14 0)
+   (,eof eof #f #f #f 0)))
+
+(check-equal?
+ (run-lexer "#2dsomething\n╔═══╗\n║   ║")
+ `(("#2dsomething\n╔═══╗\n║   ║" error #f 1 25 0)
+   (,eof eof #f #f #f 0)))
+
+(check-equal?
+ (run-lexer "#2dsomething\n  \n")
+ `(("#2dsomething" hash-colon-keyword #f 1 13 0)
+   ("\n" white-space #f 13 14 13) 
+   ("  \n" error #f 14 17 14)
+   (,eof eof #f #f #f 0)))
+
+(check-equal?
  @run-lexer{#2d
             ╔══╦═══╗
             ║+ ║"a"║
@@ -278,4 +307,3 @@
             "╠═════╬═══════╣\n"
             "║@h{z}║ @i{w} ║\n"
             "╚═════╩═══════╝\n"))
-

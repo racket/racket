@@ -682,3 +682,15 @@
   (parameterize ([current-readtable (make-2d-readtable)])
     (check-true (vector? (read sp)))
     (check-equal? (read sp) 1)))
+
+
+(let ()
+  (define sp (open-input-string "#2dwhatever\n"))
+  (port-count-lines! sp)
+  (define exn
+    (with-handlers ((exn:fail:read:eof? values))
+      (parameterize ([current-readtable (make-2d-readtable)])
+        (read sp))))
+  (check-regexp-match #rx"expected eof" (exn-message exn))
+  (check-equal? (exn:fail:read-srclocs exn)
+                (list (srcloc #f 1 0 1 12))))

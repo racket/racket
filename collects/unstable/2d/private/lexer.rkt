@@ -156,17 +156,15 @@ todo:
      
      (define the-state (make-state line pos (string-length first-tok-string)))
      (setup-state the-state)
-     
+
      ;; would like to be able to stop this loop
      ;; and process only part of the table,
      ;; but that works only when there are no broken
      ;; edges of the table that span the place I want to stop.
      (define failed
-       (with-handlers ((exn:fail:read? 
-                        (λ (exn) exn)))
+       (with-handlers ((exn:fail:read? values))
          (let loop ([map #f])
            (define new-map
-             ;; this might raise a read exception: what then?
              (parse-2dcond-one-step peek-port (object-name peek-port) #f #f pos the-state map))
            (when new-map
              (loop new-map)))))
@@ -177,153 +175,181 @@ todo:
              ;; no matter how long eol-string is, it counts for 1 position only.
              (+ pos (string-length first-tok-string) 1)))
      
-     (define final-tokens
-       (cond
-         [(exn:fail:read? failed)
-          (define error-pos (- (srcloc-position (car (exn:fail:read-srclocs failed)))
-                               base-position)) ;; account for the newline
-          (define peek-port2 (peeking-input-port port))
-          (port-count-lines! peek-port2)
-          
-          ;; pull the newline out of peek-port2
-          (for ([x (in-range (string-length eol-string))]) (read-char peek-port2))
-          
-          (define (pull-chars n)
-            (apply
-             string
-             (let loop ([n n])
-               (cond
-                 [(zero? n) '()]
-                 [else (cons (read-char peek-port2) (loop (- n 1)))]))))
-          (define before-token (list (pull-chars error-pos)
-                                     'no-color
-                                     #f
-                                     (+ base-position 1)
-                                     (+ base-position 1 error-pos)))
-          (define end-of-table-approx
-            (let ([peek-port3 (peeking-input-port peek-port2)])
-              (port-count-lines! peek-port3)
-              (let loop ()
-                (define l (read-line peek-port3))
-                (define-values (line col pos) (port-next-location peek-port3))
-                (cond
-                  [(and (string? l)
-                        (regexp-match double-barred-chars-regexp l))
-                   (loop)]
-                  [else pos]))))
-          (define after-token
-            (list (pull-chars (- end-of-table-approx 1))
-                  'error
-                  #f
-                  (+ base-position 1 error-pos)
-                  (+ base-position 1 error-pos end-of-table-approx -1)))
-          (list newline-token before-token after-token)]
-         [else
-          
-          (define lhses (close-cell-graph cell-connections (length table-column-breaks) (length rows)))
-          (define scratch-string (make-string (for/sum ([ss (in-list rows)])
-                                                (for/sum ([s (in-list ss)])
-                                                  (string-length s)))
-                                              #\space))
-          (define collected-tokens '())
-          (define rows-as-vector (apply vector (reverse rows)))
-          (for ([set-of-indicies (in-list (sort (set->list lhses) compare/xy 
-                                                #:key smallest-representative))])
-            (define regions
-              (fill-scratch-string set-of-indicies 
-                                   rows-as-vector
-                                   scratch-string 
-                                   table-column-breaks 
-                                   initial-space-count
-                                   #t))
-            (define port (open-input-string scratch-string))
-            (port-count-lines! port)
-            (let loop ([mode (2d-lexer-state-chained-state a-2d-lexer-state)])
-              (define-values (_1 _2 current-pos) (port-next-location port))
-              (define-values (tok-str tok paren start end backup new-mode)
-                (uniform-chained-lexer port (+ pos offset) mode))
-              (unless (equal? 'eof tok)
-                (for ([sub-region (in-list (cropped-regions start end regions))])
-                  (define start (- (car sub-region) current-pos))
-                  (define end (- (cdr sub-region) current-pos))
-                  (set! collected-tokens 
-                        (cons (list (if (and (string? tok-str)
-                                             (< start (string-length tok-str))
-                                             (<= end (string-length tok-str)))
-                                        (substring tok-str start end)
-                                        (list 'strange-token tok-str))
-                                    tok
-                                    paren 
-                                    (+ base-position (car sub-region)) 
-                                    (+ base-position (cdr sub-region)))
-                              collected-tokens)))
-                (loop new-mode))))
-          
-          (define (collect-double-barred-token pending-start i offset str)
-            (when pending-start
-              (set! collected-tokens (cons (list (substring str pending-start i)
-                                                 'parenthesis
-                                                 #f
-                                                 (+ base-position offset pending-start)
-                                                 (+ base-position offset i))
-                                           collected-tokens))))
-          
-          (for/fold ([offset 1]) ([strs (in-list (reverse (cons (list current-line) rows)))])
-            (for/fold ([offset offset]) ([str (in-list strs)])
-              (let loop ([i 0]
-                         [pending-start #f])
-                (cond
-                  [(< i (string-length str))
-                   (define c (string-ref str i))
+     (cond
+       [(exn:fail:read:eof? failed)
+        ;; in this case, the source location for the error
+        ;; should be the beginning of the #2d token, 
+        ;; so we just turn the whole thing red in a single token
+        (define tok-string 
+          (string-append
+           first-tok-string
+           (apply string
+                  (let loop ()
+                    (define c (read-char port))
+                    (cond
+                      [(eof-object? c) '()]
+                      [else (cons c (loop))])))))
+        (values tok-string 'error #f
+                pos (+ pos (string-length tok-string))
+                0
+                #f)]
+       [else
+        (define final-tokens
+          (cond
+            [(exn:fail:read? failed)
+             (define error-pos (- (srcloc-position (car (exn:fail:read-srclocs failed)))
+                                  base-position)) ;; account for the newline
+             (when (< error-pos 0)
+               (error 'unstable/2d/lexer.rkt "got error-pos < 0: ~s ~s\n" 
+                      (srcloc-position (car (exn:fail:read-srclocs failed)))
+                      base-position))
+             (define peek-port2 (peeking-input-port port))
+             (port-count-lines! peek-port2)
+             (define (pull-chars n)
+               (apply
+                string
+                (let loop ([n n])
+                  (cond
+                    [(zero? n) '()]
+                    [else (cons (read-char peek-port2) (loop (- n 1)))]))))
+             (cond
+               
+               [else
+                
+                ;; pull the newline out of peek-port2
+                (for ([x (in-range (string-length eol-string))]) (read-char peek-port2))
+                
+                (define before-token (list (pull-chars error-pos)
+                                           'no-color
+                                           #f
+                                           (+ base-position 1)
+                                           (+ base-position 1 error-pos)))
+                (define end-of-table-approx
+                  (let ([peek-port3 (peeking-input-port peek-port2)])
+                    (port-count-lines! peek-port3)
+                    (let loop ()
+                      (define l (read-line peek-port3))
+                      (define-values (line col pos) (port-next-location peek-port3))
+                      (cond
+                        [(and (string? l)
+                              (regexp-match double-barred-chars-regexp l))
+                         (loop)]
+                        [else pos]))))
+                (define after-token
+                  (list (pull-chars (- end-of-table-approx 1))
+                        'error
+                        #f
+                        (+ base-position 1 error-pos)
+                        (+ base-position 1 error-pos end-of-table-approx -1)))
+                (if (zero? error-pos)
+                    (list newline-token after-token)
+                    (list newline-token before-token after-token))])]
+            [else
+             
+             (define lhses (close-cell-graph cell-connections (length table-column-breaks) (length rows)))
+             (define scratch-string (make-string (for/sum ([ss (in-list rows)])
+                                                   (for/sum ([s (in-list ss)])
+                                                     (string-length s)))
+                                                 #\space))
+             (define collected-tokens '())
+             (define rows-as-vector (apply vector (reverse rows)))
+             (for ([set-of-indicies (in-list (sort (set->list lhses) compare/xy 
+                                                   #:key smallest-representative))])
+               (define regions
+                 (fill-scratch-string set-of-indicies 
+                                      rows-as-vector
+                                      scratch-string 
+                                      table-column-breaks 
+                                      initial-space-count
+                                      #t))
+               (define port (open-input-string scratch-string))
+               (port-count-lines! port)
+               (let loop ([mode (2d-lexer-state-chained-state a-2d-lexer-state)])
+                 (define-values (_1 _2 current-pos) (port-next-location port))
+                 (define-values (tok-str tok paren start end backup new-mode)
+                   (uniform-chained-lexer port (+ pos offset) mode))
+                 (unless (equal? 'eof tok)
+                   (for ([sub-region (in-list (cropped-regions start end regions))])
+                     (define start (- (car sub-region) current-pos))
+                     (define end (- (cdr sub-region) current-pos))
+                     (set! collected-tokens 
+                           (cons (list (if (and (string? tok-str)
+                                                (< start (string-length tok-str))
+                                                (<= end (string-length tok-str)))
+                                           (substring tok-str start end)
+                                           (list 'strange-token tok-str))
+                                       tok
+                                       paren 
+                                       (+ base-position (car sub-region)) 
+                                       (+ base-position (cdr sub-region)))
+                                 collected-tokens)))
+                   (loop new-mode))))
+             
+             (define (collect-double-barred-token pending-start i offset str)
+               (when pending-start
+                 (set! collected-tokens (cons (list (substring str pending-start i)
+                                                    'parenthesis
+                                                    #f
+                                                    (+ base-position offset pending-start)
+                                                    (+ base-position offset i))
+                                              collected-tokens))))
+             
+             (for/fold ([offset 1]) ([strs (in-list (reverse (cons (list current-line) rows)))])
+               (for/fold ([offset offset]) ([str (in-list strs)])
+                 (let loop ([i 0]
+                            [pending-start #f])
                    (cond
-                     [(member c double-barred-chars)
-                      (loop (+ i 1)
-                            (if pending-start pending-start i))]
+                     [(< i (string-length str))
+                      (define c (string-ref str i))
+                      (cond
+                        [(member c double-barred-chars)
+                         (loop (+ i 1)
+                               (if pending-start pending-start i))]
+                        [else
+                         (collect-double-barred-token pending-start i offset str)
+                         (loop (+ i 1) #f)])]
                      [else
-                      (collect-double-barred-token pending-start i offset str)
-                      (loop (+ i 1) #f)])]
-                  [else
-                   (collect-double-barred-token pending-start i offset str)]))
-              (+ (string-length str) offset)))
-          
-          (define sorted-tokens (sort collected-tokens <
-                                      #:key (λ (x) (list-ref x 3))))
-          
-          ;; there will be gaps that correspond to the places outside of the
-          ;; outermost rectangle (at a minimum, newlines); this fills those 
-          ;; in with whitespace tokens
-          ;; NOTE: this code does not deal properly with \r\n newline combinations
-          (define cracks-filled-in-tokens
-            (let loop ([fst newline-token]
-                       [tokens sorted-tokens])
-              (cond
-                [(null? tokens) (list fst)]
-                [else
-                 (define snd (car tokens))
+                      (collect-double-barred-token pending-start i offset str)]))
+                 (+ (string-length str) offset)))
+             
+             (define sorted-tokens (sort collected-tokens <
+                                         #:key (λ (x) (list-ref x 3))))
+             
+             ;; there will be gaps that correspond to the places outside of the
+             ;; outermost rectangle (at a minimum, newlines); this fills those 
+             ;; in with whitespace tokens
+             ;; NOTE: this code does not deal properly with \r\n newline combinations
+             (define cracks-filled-in-tokens
+               (let loop ([fst newline-token]
+                          [tokens sorted-tokens])
                  (cond
-                   [(= (list-ref fst 4)
-                       (list-ref snd 3))
-                    (cons fst (loop snd (cdr tokens)))]
+                   [(null? tokens) (list fst)]
                    [else
-                    (define new-start (list-ref fst 4))
-                    (define new-end (list-ref snd 3))
-                    (list* fst
-                           (list 
-                            ; these are not the real characters ...
-                            (make-string (- new-end new-start) #\space)
-                            'white-space
-                            #f 
-                            new-start
-                            new-end)
-                           (loop snd (cdr tokens)))])])))
-          cracks-filled-in-tokens]))
+                    (define snd (car tokens))
+                    (cond
+                      [(= (list-ref fst 4)
+                          (list-ref snd 3))
+                       (cons fst (loop snd (cdr tokens)))]
+                      [else
+                       (define new-start (list-ref fst 4))
+                       (define new-end (list-ref snd 3))
+                       (list* fst
+                              (list 
+                               ; these are not the real characters ...
+                               (make-string (- new-end new-start) #\space)
+                               'white-space
+                               #f 
+                               new-start
+                               new-end)
+                              (loop snd (cdr tokens)))])])))
+             cracks-filled-in-tokens]))
      
-     (values first-tok-string 'hash-colon-keyword #f
-             pos (+ pos (string-length first-tok-string)) 
-             0
-             (2d-lexer-state final-tokens
-                             #t
-                             (2d-lexer-state-chained-state a-2d-lexer-state)))]))
+        (values first-tok-string 'hash-colon-keyword #f
+                pos (+ pos (string-length first-tok-string)) 
+                0
+                (2d-lexer-state final-tokens
+                                #t
+                                (2d-lexer-state-chained-state a-2d-lexer-state)))])]))
 
 (define (cropped-regions start end regions)
   (define result-regions '())

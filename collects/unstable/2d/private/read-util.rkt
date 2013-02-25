@@ -314,9 +314,9 @@ example uses:
         (cond
           [(eof-object? c) 
            (raise-read-eof-error
-            "expected eof; "
+            "unexpected eof; "
             source _line _col _pos 
-            (and _pos (- _pos (+ current-line-start-position chars-read))))]
+            (and _pos (- (+ current-line-start-position chars-read) _pos)))]
           [(equal? c #\return)
            (cond
              [(equal? #\newline (peek-char port))

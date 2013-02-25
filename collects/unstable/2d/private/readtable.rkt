@@ -31,7 +31,14 @@ example uses:
    (case-lambda
      [(char port)
       (define-values (line col pos) (port-next-location port))
-      (dispatch-proc char port #f line col pos read/recursive previous-readtable)]
+      
+      ;; the "-2"s here are because the initial line and column
+      ;; are supposed be at the beginning of the thing read, not
+      ;; after the "#2" has been consumed.
+      (dispatch-proc char port #f line 
+                     (and col (- col 2))
+                     (and pos (- pos 2))
+                     read/recursive previous-readtable)]
      [(char port source _line _col _pos)
       (dispatch-proc char port source _line _col _pos 
                      (λ (a b c) (read-syntax/recursive source a b c))
