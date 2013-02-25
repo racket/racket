@@ -110,11 +110,19 @@
 Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
 |#
 
+(define (os-openbsd)
+    (member (path->string (system-library-subpath #f))
+            '("i386-openbsd" "x86_64-openbsd")))
+
 (define odbc-lib
   (case (system-type)
     ((windows) (ffi-lib "odbc32.dll"))
     ((macosx)  (ffi-lib "libiodbc" '("2" #f)))
-    ((unix)    (ffi-lib "libodbc" '("1" #f)))))
+    ;; All unixes use unixodbc except OpenBSD
+    ((unix)
+     (if (not (os-openbsd))
+       (ffi-lib "libodbc" '("1" #f))
+       (ffi-lib "libiodbc" '("3.16" #f))))))
 
 (define WCHAR-SIZE
   (case (system-type)
@@ -126,8 +134,10 @@ Docs at http://msdn.microsoft.com/en-us/library/ms712628%28v=VS.85%29.aspx
      4)
     ((unix)
      ;; unixodbc defines WCHAR as 16-bit for compat w/ Windows
-     ;; (even though Linux wchar_t is 32-bit)
-     2)))
+     ;; (even though Linux wchar_t is 32-bit). OpenBSD uses iodbc.
+     (if (not (os-openbsd))
+       2
+       4))))
 
 (define-ffi-definer define-odbc odbc-lib)
 
