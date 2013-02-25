@@ -137,7 +137,7 @@ two data types.</font><p></p>
 <p align="justify"><font face="monospace"><pre>&#945; stream
   :: (promise stream-null)
   |  (promise (&#945; stream-pair))</pre><pre>&#945; stream-pair
-  :: (promise &#945;) × (promise (&#945; stream))</pre></font></p>
+  :: (promise &#945;) Ã— (promise (&#945; stream))</pre></font></p>
 
 <p align="justify"><font face="serif">The object 
 stored in the </font><font face="monospace">stream-car</font><font face="serif"> of a </font><font face="monospace">stream-pair</font><font face="serif"> is a promise that is forced the first 
@@ -364,7 +364,7 @@ See also </font><font face="monospace">list-&gt;stream</font><font face="serif">
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font><font face="monospace"><b>(stream-&gt;list 
 [</b></font><font face="serif"><b><i>n</i></b></font><font face="monospace"><b>] </b></font><font face="serif"><b><i>stream</i></b></font><font face="monospace"><b>)</b></font><br>
-<font face="monospace">nat × {&#945;} &#8594; [&#945;]</font><br>
+<font face="monospace">nat Ã— {&#945;} &#8594; [&#945;]</font><br>
 <font face="monospace">Stream-&gt;list</font><font face="serif"> takes a natural number <i>n</i> and 
 a <i>stream</i> and returns a newly-allocated list containing in its 
 elements the first <i>n</i> items in the <i>stream</i>. If the <i>stream</i> 
@@ -473,7 +473,7 @@ repeating the <i>object</i>s in succession forever.</font></font></font></p>
 #t #f #t #f #t #f ...</font></font></font></p>
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font><font face="monospace"><b>(stream-drop </b></font><font face="serif"><b><i>n</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>stream</i></b></font><font face="monospace"><b>)</b></font><font face="serif"><b> procedure </b></font><br>
-<font face="monospace">nat × {&#945;} &#8594; {&#945;}</font><br>
+<font face="monospace">nat Ã— {&#945;} &#8594; {&#945;}</font><br>
 <font face="monospace">Stream-drop</font><font face="serif"> returns the suffix of the input <i>
 stream</i> that starts at the next element after the first <i>n</i> 
 elements.  The output stream shares structure with the input <i>
@@ -487,7 +487,7 @@ also </font><font face="monospace">stream-take</font><font face="serif">.</font>
           (stream-drop n strm)))</pre></font></font></font></p>
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font><font face="monospace"><b>(stream-drop-while </b></font><font face="serif"><b><i>pred?</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>stream</i></b></font><font face="monospace"><b>)</b></font><br>
-<font face="monospace">(&#945; &#8594; boolean) × {&#945;} &#8594; {&#945;}</font><br>
+<font face="monospace">(&#945; &#8594; boolean) Ã— {&#945;} &#8594; {&#945;}</font><br>
 <font face="monospace">Stream-drop-while</font><font face="serif"> returns the suffix of the input <i>
 stream</i> that starts at the first element <i>x</i> for which </font><font face="monospace">(pred? </font><font face="serif"><i>x</i></font><font face="monospace">)</font><font face="serif"> 
 is </font><font face="monospace">#f</font><font face="serif">.  
@@ -509,7 +509,7 @@ only the first of any sub-sequences of repeated elements.</font></font></font></
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font>
 <font face="monospace"><b>(stream-filter </b></font><font face="serif"><b><i>pred?</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>stream</i></b></font><font face="monospace"><b>)</b></font><br>
-<font face="monospace">(&#945; &#8594; boolean) × {&#945;} &#8594; {&#945;}</font><br>
+<font face="monospace">(&#945; &#8594; boolean) Ã— {&#945;} &#8594; {&#945;}</font><br>
 <font face="monospace">Stream-filter</font><font face="serif"> returns a newly-allocated stream that 
 contains only those elements <i>x</i> of the input <i>stream</i> for 
 which </font><font face="monospace">(</font><font face="serif"><i>pred?</i></font><font face="monospace"> </font><font face="serif"><i>x</i></font><font face="monospace">)</font><font face="serif"> 
@@ -520,7 +520,7 @@ is non-</font><font face="monospace">#f</font><font face="serif">.</font></font>
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font>
 <font face="monospace"><b>(stream-fold </b></font><font face="serif"><b><i>proc</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>base</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>stream</i></b></font><font face="monospace"><b>)</b></font><br>
-<font face="monospace">(&#945; × &#946; &#8594; &#945;) × &#945; × {&#946;} &#8594; &#945;</font><br>
+<font face="monospace">(&#945; Ã— &#946; &#8594; &#945;) Ã— &#945; Ã— {&#946;} &#8594; &#945;</font><br>
 <font face="monospace">Stream-fold</font><font face="serif"> applies a binary <i>proc</i>edure 
 to <i>base</i> and the first element of <i>stream</i> to compute a new <i>
 base</i>, then applies the <i>proc</i>edure to the new <i>base</i> and 
@@ -572,7 +572,7 @@ it is useful to have </font><font face="monospace">stream-fold</font><font face=
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font>
 <font face="monospace"><b>(stream-for-each </b></font><font face="serif"><b><i>proc</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>stream</i></b></font><font face="monospace"><b> ...)</b></font><br>
-<font face="monospace">(&#945; × &#946; × ...) × {&#945;} × {&#946;} ...</font><br>
+<font face="monospace">(&#945; Ã— &#946; Ã— ...) Ã— {&#945;} Ã— {&#946;} ...</font><br>
 <font face="monospace">Stream-for-each</font><font face="serif"> applies a <i>proc</i>edure element-wise 
 to corresponding elements of the input <i>stream</i>s for its side-effects; 
 it returns nothing.  </font><font face="monospace">Stream-for-each</font><font face="serif"> stops as soon as any of its input <i>
@@ -587,7 +587,7 @@ procedure displays the contents of a file:</font></font></font></p>
 <font face="serif"><b>procedure: </b></font>
 <b>(stream-from </b></font><font face="serif"><b><i>first</i></b></font><font face="monospace"><b> 
 [</b></font><font face="serif"><b><i>step</i></b></font><font face="monospace"><b>])</b></font><br>
-<font face="monospace">number × number &#8594; {number}</font><br>
+<font face="monospace">number Ã— number &#8594; {number}</font><br>
 <font face="monospace">Stream-from</font><font face="serif"> creates a newly-allocated stream that 
 contains <i>first</i> as its first element and increments each succeeding 
 element by <i>step</i>.  If <i>step</i> is not given it defaults 
@@ -605,7 +605,7 @@ for a similar procedure that creates finite streams.</font><font face="monospace
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font>
 <font face="monospace"><b>(stream-iterate proc base)</b></font><br>
-<font face="monospace">(&#945; &#8594; &#945;) × &#945; &#8594; {&#945;}</font><br>
+<font face="monospace">(&#945; &#8594; &#945;) Ã— &#945; &#8594; {&#945;}</font><br>
 <font face="monospace">Stream-iterate</font><font face="serif"> creates a newly-allocated stream containing <i>
 base</i> in its first element and applies <i>proc</i> to each element 
 in turn to determine the succeeding element.  See also </font><font face="monospace">stream-unfold</font><font face="serif"> 
@@ -681,7 +681,7 @@ with a </font><font face="monospace">stream-car</font><font face="serif"> <i>x</
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font>
 <font face="monospace"><b>(stream-map </b></font><font face="serif"><b><i>proc stream</i> </b></font><font face="monospace"><b>...)</b></font><br>
-<font face="monospace">(&#945; × &#946; ... &#8594; &#969;) × {&#945;} × {&#946;} ... &#8594; {&#969;}</font><br>
+<font face="monospace">(&#945; Ã— &#946; ... &#8594; &#969;) Ã— {&#945;} Ã— {&#946;} ... &#8594; {&#969;}</font><br>
 <font face="monospace">Stream-map</font><font face="serif"> applies a <i>proc</i>edure element-wise 
 to corresponding elements of the input <i>stream</i>s, returning a newly-allocated 
 stream containing elements that are the results of those <i>proc</i>edure 
@@ -841,7 +841,7 @@ containing only the element </font><font face="monospace">1</font><font face="se
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font>
 <font face="monospace"><b>(stream-range </b></font><font face="serif"><b><i>first</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>past</i></b></font><font face="monospace"><b> 
 [</b></font><font face="serif"><b><i>step</i></b></font><font face="monospace"><b>])</b></font><br>
-<font face="monospace">number × number × number &#8594; {number}</font><br>
+<font face="monospace">number Ã— number Ã— number &#8594; {number}</font><br>
 <font face="monospace">Stream-range</font><font face="serif"> creates a newly-allocated stream that 
 contains <i>first</i> as its first element and increments each succeeding 
 element by <i>step</i>.  The stream is finite and ends before <i>
@@ -868,7 +868,7 @@ length of the output stream may differ from </font><font face="monospace">(ceili
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font>
 <font face="monospace"><b>(stream-ref </b></font><font face="serif"><b><i>stream</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>n</i></b></font><font face="monospace"><b>)</b></font><br>
-<font face="monospace">{&#945;} × nat &#8594; &#945;</font><br>
+<font face="monospace">{&#945;} Ã— nat &#8594; &#945;</font><br>
 <font face="monospace">Stream-ref</font><font face="serif"> returns the <i>n</i>th element of <i>
 stream</i>, counting from zero.  An error is signaled if <i>n</i> 
 is greater than or equal to the length of <i>stream</i>.</font><font face="monospace"> </font></font></font></p>
@@ -897,7 +897,7 @@ error: division by zero</pre></font></font></font></p>
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font>
 <font face="monospace"><b>(stream-scan </b></font><font face="serif"><b><i>proc</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>base</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>stream</i></b></font><font face="monospace"><b>)</b></font><br>
-<font face="monospace">(&#945; × &#946; &#8594; &#945;) × &#945; × {&#946;} &#8594; {&#945;}</font><br>
+<font face="monospace">(&#945; Ã— &#946; &#8594; &#945;) Ã— &#945; Ã— {&#946;} &#8594; {&#945;}</font><br>
 <font face="monospace">Stream-scan</font><font face="serif"> accumulates the partial folds of an 
 input <i>stream</i> into a newly-allocated output stream.  The 
 output stream is the <i>base</i> followed by </font><font face="monospace">(stream-fold 
@@ -912,7 +912,7 @@ for each of the first <i>i</i> elements of <i>stream</i>.</font></font></font></
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font>
 <font face="monospace"><b>(stream-take </b></font><font face="serif"><b><i>n</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>stream</i></b></font><font face="monospace"><b>)</b></font><br>
-<font face="monospace">nat × {&#945;} &#8594; {&#945;}</font><br>
+<font face="monospace">nat Ã— {&#945;} &#8594; {&#945;}</font><br>
 <font face="monospace">Stream-take</font><font face="serif"> takes a non-negative integer <i>n</i> 
 and a <i>stream</i> and returns a newly-allocated stream containing 
 the first <i>n</i> elements of the input <i>stream</i>.  If the 
@@ -934,7 +934,7 @@ the results:</font></font></font></p>
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font>
 <font face="monospace"><b>(stream-take-while </b></font><font face="serif"><b><i>pred?</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>stream</i></b></font><font face="monospace"><b>)</b></font><br>
-<font face="monospace">(&#945; &#8594; boolean) × {&#945;} &#8594; {&#945;}</font><br>
+<font face="monospace">(&#945; &#8594; boolean) Ã— {&#945;} &#8594; {&#945;}</font><br>
 <font face="monospace">Stream-take-while</font><font face="serif"> takes a predicate and a <i>stream</i> 
 and returns a newly-allocated stream containing those elements <i>x</i> 
 that form the maximal prefix of the input <i>stream</i> for which </font><font face="monospace">(pred? </font><font face="serif"><i>x</i></font><font face="monospace">)</font><font face="serif"> 
@@ -949,7 +949,7 @@ See also </font><font face="monospace">stream-drop-while</font><font face="serif
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font>
 <font face="monospace"><b>(stream-unfold </b></font><font face="serif"><b><i>map</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>pred?</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>gen</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>base</i>)</b></font><br>
-<font face="monospace">(&#945; &#8594; &#946;) × (&#945; &#8594; boolean) × (&#945; &#8594; &#945;) × &#945; &#8594; {&#946;}</font><br>
+<font face="monospace">(&#945; &#8594; &#946;) Ã— (&#945; &#8594; boolean) Ã— (&#945; &#8594; &#945;) Ã— &#945; &#8594; {&#946;}</font><br>
 <font face="monospace">Stream-unfold</font><font face="serif"> is the fundamental recursive stream 
 constructor.  It constructs a stream by repeatedly applying <i>
 gen</i> to successive values of <i>base</i>, in the manner of </font><font face="monospace">stream-iterate</font><font face="serif">, 
@@ -975,7 +975,7 @@ and </font><font face="monospace">stream-null</font><font face="serif"> ends the
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font>
 <font face="monospace"><b>(stream-unfolds </b></font><font face="serif"><b><i>proc</i></b></font><font face="monospace"><b> </b></font><font face="serif"><b><i>seed</i></b></font><font face="monospace"><b>)</b></font><br>
-<font face="monospace">(&#945; &#8594; (values &#945; × &#946; ...)) × &#945; &#8594; (values {&#946;} ...)</font><br>
+<font face="monospace">(&#945; &#8594; (values &#945; Ã— &#946; ...)) Ã— &#945; &#8594; (values {&#946;} ...)</font><br>
 <font face="monospace">Stream-unfolds</font><font face="serif"> returns <i>n</i> newly-allocated streams 
 containing those elements produced by successive calls to the generator <i>
 proc</i>, which takes the current <i>seed</i> as its argument and returns <i>
@@ -1038,7 +1038,7 @@ pred?</i> once for each element of <i>strm</i>.</font></font></font></p>
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif"><b>procedure: </b></font>
 <font face="monospace"><b>(stream-zip </b></font><font face="serif"><b><i>stream</i></b></font><font face="monospace"><b> ...)</b></font><br>
-<font face="monospace">{&#945;} × {&#946;} × ... &#8594; {[&#945; &#946; ...]}</font><br>
+<font face="monospace">{&#945;} Ã— {&#946;} Ã— ... &#8594; {[&#945; &#946; ...]}</font><br>
 <font face="monospace">Stream-zip</font><font face="serif"> takes one or more input <i>stream</i>s 
 and returns a newly-allocated stream in which each element is a list 
 (not a stream) of the corresponding elements of the input <i>stream</i>s.  
@@ -1210,7 +1210,7 @@ the offset trick is this definition of the fibonacci numbers:</font></font></fon
 sequence that uses the same offset trick is the Hamming numbers, named 
 for the mathematician and computer scientist Richard Hamming, defined 
 as all numbers that have no prime factors greater than 5; in other words, 
-Hamming numbers are all numbers expressible as 2<sup><i>i</i></sup>·3<sup><i>j</i></sup>·5<sup><i>k</i></sup>, 
+Hamming numbers are all numbers expressible as 2<sup><i>i</i></sup>Â·3<sup><i>j</i></sup>Â·5<sup><i>k</i></sup>, 
 where <i>i</i>, <i>j</i> and <i>k</i> are non-negative integers.  The 
 Hamming sequence starts with </font><font face="monospace">1 
 2 3 4 5 6 8 9 10 12</font><font face="serif"> and 
@@ -2007,7 +2007,7 @@ the suspension through the two constructors of the stream data type:</font></fon
   |  (promise (&#945; stream-pair))</pre></font></font></font></p>
 
 <p><font face="serif"><font face="serif"><font face="monospace"><pre>&#945; stream-pair
-  :: &#945; × (&#945; stream)</pre></font></font></font></p>
+  :: &#945; Ã— (&#945; stream)</pre></font></font></font></p>
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif">That type captures 
 the systematic suspension of recursive promises that is the essence 
@@ -2021,7 +2021,7 @@ the car and the cdr of the stream-pair:</font></font></font></p>
   |  (promise (&#945; stream-pair))</pre></font></font></font></p>
 
 <p><font face="serif"><font face="serif"><font face="monospace"><pre>&#945; stream-pair
-  :: (promise &#945;) × (promise (&#945; stream))</pre></font></font></font></p>
+  :: (promise &#945;) Ã— (promise (&#945; stream))</pre></font></font></font></p>
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif">The two outer 
 promises, in the </font><font face="monospace">stream</font><font face="serif"> type, provide streams without memoization.  
@@ -2034,7 +2034,7 @@ can be derived from those primitives.</font></font></font></p>
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif">It would seem 
 that the same set of primitives could apply to streams, but in fact 
-one additional primitive is required.  André van Tonder describes 
+one additional primitive is required.  AndrÃ© van Tonder describes 
 the reason in his discussion of the promise data type.  The promises 
 of R6RS are inadequate to support iterative algorithms because each 
 time a promise is called iteratively it binds the old promise in the 
@@ -2076,8 +2076,8 @@ hardest tasks when writing any program library is to decide what to
 include and, more importantly, what to exclude.  One important 
 guideline is minimalism, since once an operator enters a library it 
 must remain forever: <i>Il semble que la perfection soit atteinte non 
-quand il n&#8217;y a plus rien à ajouter, mais quand il n&#8217;y a plus rien 
-à retrancher</i>.</font></font></font></p>
+quand il n&#8217;y a plus rien Ã  ajouter, mais quand il n&#8217;y a plus rien 
+Ã  retrancher</i>.</font></font></font></p>
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif">Since streams 
 are substantially slower than lists (the stream primitives require numerous 
@@ -2625,7 +2625,7 @@ Elements of Functional Programming</i>.  Addison-Wesley, April
 1989.  A textbook on functional programming.</font></font></font></p>
 
 <p align="justify"><font face="serif"><font face="serif"><font face="serif">Antoine de 
-Saint-Exupéry. Chapter III &#8220;L&#8217;Avion&#8221; of <i>Terre des Hommes</i>.  
+Saint-ExupÃ©ry. Chapter III &#8220;L&#8217;Avion&#8221; of <i>Terre des Hommes</i>.  
 1939.  &#8220;Perfection is achieved, not when there is nothing more 
 to add, but when there is nothing left to take away.&#8221;</font></font></font></p>
 
@@ -2640,7 +2640,7 @@ Revised</i><sup><i>6</i></sup><i> Report on the Algorithmic Language
 Scheme</i>.  September 26, 2007. </font><font face="monospace"><a href="http://www.r6rs.org/" target="_blank">www.r6rs.org</a></font><font face="serif">.  The standard definition of 
 the Scheme programming language.</font></font></font></p>
 
-<p align="justify"><font face="serif"><font face="serif"><font face="serif">André van 
+<p align="justify"><font face="serif"><font face="serif"><font face="serif">AndrÃ© van 
 Tonder.  <i>Scheme Request for Implementation 45: 
 Primitives for Expressing Iterative Lazy Algorithms</i>.  </font><font face="monospace"><a href="http://srfi.schemers.org/srfi-45" target="_blank">srfi.schemers.org/srfi-45</a></font><font face="serif">.  
 April, 2004.  Describes the problems inherent in the </font><font face="monospace">promise</font><font face="serif"> 

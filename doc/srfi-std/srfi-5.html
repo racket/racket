@@ -143,18 +143,18 @@ unique.
 <p>
 <pre>
             let = "(" "let" let-bindings body ")"
-    expressions = nothing | expression expressions
-   let-bindings = let-name bindings
-                | "(" let-name "." bindings ")"
-       let-name = identifier
-       bindings = "(" ")"
+Â Â Â  expressions = nothing | expression expressions
+Â Â  let-bindings = let-name bindings
+  Â Â Â Â Â Â Â Â Â Â Â Â Â Â |Â "(" let-name "." bindings ")"
+Â Â Â Â Â Â  let-name = identifier
+Â Â Â Â Â Â  bindings = "(" ")"
                 | rest-binding
                 | "(" normal-bindings ["." rest-binding] ")"
 normal-bindings = nothing
                 | normal-binding normal-bindings
- normal-binding = "(" binding-name expression ")"
-   binding-name = identifier
-   rest-binding = "(" binding-name expressions ")"
+Â normal-binding = "(" binding-name expression ")"
+Â Â  binding-name = identifier
+Â Â  rest-binding = "(" binding-name expressions ")"
 </pre>
 
 <p>
