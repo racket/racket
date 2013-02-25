@@ -1772,9 +1772,11 @@
 
 
 ;; probably the most useful cases
-[curry (-poly (a b c)
-              (cl->* ((a b . -> . c) a . -> . (b . -> . c))
-                     ((a b . -> . c) . -> . (a . -> . (b . -> . c)))))]
+;; doesn't cover cases where we pass multiple of the function's arguments to curry,
+;; also doesn't express that the returned function is itself curried
+[curry (-polydots (a c b)
+                  (cl->* ((->... (list a) (b b) c) a . -> . (->... '() (b b) c))
+                         ((->... (list a) (b b) c) . -> . (a . -> . (->... '() (b b) c)))))]
 ;; mutable pairs
 [mcons (-poly (a b) (-> a b (-mpair a b)))]
 [mcar (-poly (a b)
