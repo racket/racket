@@ -7,8 +7,7 @@
 (define (render-download-page [release current-release] [package 'racket])
   (define version (release-version release))
   @center-div{
-    @h2{Download @(package->name package) v@version
-        (@(release-date-string release))}
+    @h2{@(package->name package) v@version (@(release-date-string release))}
     @div[id: "download_panel" align: "center" style: "display: none;"]{
       @input[type: 'submit value: "Download" onclick: "do_jump();"
              style: '("font-size: 200%; font-weight: bolder;"
@@ -24,15 +23,20 @@
                       #:when (and (equal? release (installer-release i))
                                   (equal? package (installer-package i))))
              (installer->page i 'render-option))}}
-      @|br hr|
-      @div[align: "center"]{
-        @(let ([links (list ((release-page release) "Release Notes")
-                            @a[href: @list{@|docs|/@|version|/html}]{Docs}
-                            @license{License}
-                            all-version-pages
-                            @pre:installers{Nightly Installers})])
-           (small (add-between links @list{ @nbsp @bull @nbsp })))}
-      @hr
+      @|br br|
+      @(let* ([sep   @list{@nbsp @bull @nbsp}]
+              [links (λ links @(tr (td (div style: "margin: 1ex 4ex;"
+                                            (add-between links sep)))))]
+              [docs  @list{@|docs|/@|version|/html}])
+        @table[style: "text-align: center; font-size: small;"
+               frame: 'hsides rules: 'rows]{
+          @links[@list{Release: @nbsp @(release-page release){Announcement}}
+                 @a[href: @list{@|docs|/release/}]{Notes}
+                 @a[href: @docs]{Documentation}]
+          @links[@license{License}
+                 all-version-pages
+                 @pre:installers{Nightly Installers}]})
+      @br
       @div[id: "linux_explain"
            style: '("font-size: 75%; display: none; width: 28em;"
                     " margin-top: 1ex; text-align: center;")]{
