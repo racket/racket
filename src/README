@@ -117,7 +117,9 @@ Detailed instructions:
     To run `racket/draw' and `racket/gui' programs, you will need
     Cairo, Pango, and GTk install.  These libraries are not
     distributed with Racket, and they are not needed for compilation,
-    except for building documentation that uses `racket/draw'.
+    except for building documentation that uses `racket/draw'. More
+    info about required libs in http://docs.racket-lang.org/draw/libs.html
+    and http://docs.racket-lang.org/gui/libs.html.
 
     The content of the "foreign" subdirectory may require GNU `make'
     if no installed "libffi" is detected.  If the build fails with
