@@ -209,8 +209,9 @@
   (match (tc-expr/check e t)
     [(tc-result1: t) t]))
 
-(define (tc-expr/check/type form expected)
-  #;(syntax? Type/c . -> . tc-results/c)
+;; typecheck an expression by passing tr-expr/check a tc-results
+(define/cond-contract (tc-expr/check/type form expected)
+  (--> syntax? Type/c tc-results/c)
   (tc-expr/check form (ret expected)))
 
 (define (tc-expr/check form expected)
