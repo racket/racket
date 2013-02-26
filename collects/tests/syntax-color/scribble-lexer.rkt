@@ -4,13 +4,15 @@
 (define in (open-input-string "@|x #|10|#| @me[1 2 #| comment |# ]{10}"))
 
 (define (color str)
-  (let ([in (open-input-string str)])
-    (let loop ([mode #f])
-      (let-values ([(lexeme type paren start end backup mode) (scribble-inside-lexer in 0 mode)])
-        (if (eq? type 'eof)
-            null
-            (cons (list start end type backup)
-                  (loop mode)))))))
+  (with-handlers ((exn:fail? exn-message))
+    (let ([in (open-input-string str)])
+      (port-count-lines! in)
+      (let loop ([mode #f])
+        (let-values ([(lexeme type paren start end backup mode) (scribble-inside-lexer in 0 mode)])
+          (if (eq? type 'eof)
+              null
+              (cons (list start end type backup)
+                    (loop mode))))))))
 
 (define (test* str len-val line)
   (let ([v (color str)]
@@ -24,9 +26,12 @@
                          (loop (+ (+ pos (caar l))) (cdr l)))))])
     (unless (equal? v val)
       (eprintf "FAILED, line ~s\n" line)
-      (eprintf " result\n")
-      (pretty-print v (current-error-port))
-      (eprintf " is not expected\n")
+      (cond [(string? v)
+             (eprintf "~a\nexpected\n" v)]
+            [else
+             (eprintf " result\n")
+             (pretty-print v (current-error-port))
+             (eprintf " is not expected\n")])
       (pretty-print val (current-error-port))
       (eprintf "\n"))))
 
@@ -240,4 +245,3 @@
                    (1 parenthesis 3)
                    (1 parenthesis 4)
                    (3 string)))
-
