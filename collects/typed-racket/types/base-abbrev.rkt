@@ -5,7 +5,7 @@
 
 (require (rep type-rep filter-rep object-rep rep-utils)
          (env mvar-env)
-         racket/match racket/list (prefix-in c: racket/contract/base)
+         racket/match racket/list (prefix-in c: (contract-req))
          (for-syntax racket/base syntax/parse racket/list)
          (for-template racket/base))
 
