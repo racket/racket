@@ -161,6 +161,8 @@ static int check_is_submodule(Scheme_Object *modname, Scheme_Object *_genv);
 
 static Scheme_Object *scheme_sys_wraps_phase_worker(intptr_t p);
 
+static int phaseless_rhs(Scheme_Object *val, int var_count, int phase);
+
 #define cons scheme_make_pair
 
 /* global read-only kernel stuff */
@@ -231,6 +233,13 @@ READ_ONLY static Scheme_Object *with_continuation_mark_stx;
 READ_ONLY static Scheme_Object *letrec_syntaxes_stx;
 READ_ONLY static Scheme_Object *var_ref_stx;
 READ_ONLY static Scheme_Object *expression_stx;
+READ_ONLY static Scheme_Object *quote_stx;
+READ_ONLY static Scheme_Object *datum_stx;
+
+READ_ONLY static Scheme_Object *make_struct_type_stx;
+READ_ONLY static Scheme_Object *make_struct_type_property_stx;
+READ_ONLY static Scheme_Object *list_stx;
+READ_ONLY static Scheme_Object *cons_stx;
 
 READ_ONLY static Scheme_Object *empty_self_modidx;
 READ_ONLY static Scheme_Object *empty_self_modname;
@@ -290,7 +299,8 @@ static void parse_requires(Scheme_Object *form, int at_phase,
                            int eval_exp, int eval_run,
                            int *all_simple,
                            Scheme_Hash_Table *modix_cache,
-                           Scheme_Hash_Table *submodule_names);
+                           Scheme_Hash_Table *submodule_names,
+                           int *maybe_phaseless);
 static void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
                            int at_phase,
                            Scheme_Hash_Table *all_provided,
@@ -503,6 +513,7 @@ void scheme_finish_kernel(Scheme_Env *env)
   kernel = MALLOC_ONE_TAGGED(Scheme_Module);
   kernel->so.type = scheme_module_type;
   kernel->predefined = 1;
+  kernel->phaseless = scheme_true;
   env->module = kernel;
 
   {
@@ -624,6 +635,8 @@ void scheme_finish_kernel(Scheme_Env *env)
   REGISTER_SO(letrec_syntaxes_stx);
   REGISTER_SO(var_ref_stx);
   REGISTER_SO(expression_stx);
+  REGISTER_SO(quote_stx);
+  REGISTER_SO(datum_stx);
 
   w = scheme_sys_wraps0;
   scheme_module_stx = scheme_datum_to_syntax(scheme_intern_symbol("module"), scheme_false, w, 0, 0);
@@ -648,6 +661,18 @@ void scheme_finish_kernel(Scheme_Env *env)
   letrec_syntaxes_stx = scheme_datum_to_syntax(scheme_intern_symbol("letrec-syntaxes+values"), scheme_false, w, 0, 0);
   var_ref_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%variable-reference"), scheme_false, w, 0, 0);
   expression_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%expression"), scheme_false, w, 0, 0);
+  quote_stx = scheme_datum_to_syntax(scheme_intern_symbol("quote"), scheme_false, w, 0, 0);
+  datum_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%datum"), scheme_false, w, 0, 0);
+
+  REGISTER_SO(make_struct_type_stx);
+  REGISTER_SO(make_struct_type_property_stx);
+  REGISTER_SO(cons_stx);
+  REGISTER_SO(list_stx);
+
+  make_struct_type_stx = scheme_datum_to_syntax(scheme_intern_symbol("make-struct-type"), scheme_false, w, 0, 0);
+  make_struct_type_property_stx = scheme_datum_to_syntax(scheme_intern_symbol("make-struct-type-property"), scheme_false, w, 0, 0);
+  cons_stx = scheme_datum_to_syntax(scheme_intern_symbol("cons"), scheme_false, w, 0, 0);
+  list_stx = scheme_datum_to_syntax(scheme_intern_symbol("list"), scheme_false, w, 0, 0);
 
   REGISTER_SO(prefix_symbol);
   REGISTER_SO(only_symbol);
@@ -1317,7 +1342,8 @@ static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Obj
                  NULL, 
                  1, copy, 0, 
                  (etonly ? 1 : -1), !etonly,
-                 NULL, NULL, NULL);
+                 NULL, NULL, NULL,
+                 NULL);
 
   scheme_append_rename_set_to_env(rns, env);
 
@@ -3896,6 +3922,7 @@ static Scheme_Object *_module_resolve_k(void)
   Scheme_Env *env = (Scheme_Env *)p->ku.k.p2;
 
   p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
 
   return _module_resolve(base, NULL, env, p->ku.k.i1);
 }
@@ -5560,6 +5587,19 @@ static void *eval_module_body_k(void)
 
 static void eval_module_body(Scheme_Env *menv, Scheme_Env *env)
 {
+  if (menv->module->phaseless) {
+    /* Phaseless modules are implemented by last-minute sharing of the
+       `toplevels' table. In principle, much more repeated work up to
+       this point could be skipped, but this is the simplest point to
+       implement the sharing. */
+    if (SAME_OBJ(scheme_true, menv->module->phaseless)) {
+      menv->module->phaseless = (Scheme_Object *)menv->toplevel;
+    } else {
+      menv->toplevel = (Scheme_Bucket_Table *)menv->module->phaseless;
+      return;
+    }
+  }
+
 #ifdef MZ_USE_JIT
   (void)scheme_module_run_start(menv, env, scheme_make_pair(menv->module->modsrc, scheme_true));
 #else
@@ -5741,6 +5781,7 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   m->so.type = scheme_module_type;
   m->predefined = scheme_starting_up;
+  m->phaseless = (scheme_starting_up ? scheme_true : NULL);
   
   env = scheme_new_module_env(for_env, m, 0);
 
@@ -6939,6 +6980,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   m->so.type = scheme_module_type;
   m->predefined = scheme_starting_up;
+  m->phaseless = (scheme_starting_up ? scheme_true : NULL);
 
   /* must set before calling new_module_env: */
   rmp = SCHEME_STX_VAL(nm);
@@ -7074,6 +7116,9 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   m->et_requires = scheme_null;
   m->tt_requires = scheme_null;
   m->dt_requires = scheme_null;
+
+  if (iim && iim->phaseless)
+    m->phaseless = scheme_true;
 
   if (iidx) {
     Scheme_Object *ins;
@@ -7722,7 +7767,8 @@ Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
                  1, 0,
                  all_simple, 
                  NULL,
-                 submodule_names);
+                 submodule_names,
+                 NULL);
 
   return e;
 }
@@ -8245,7 +8291,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   Scheme_Object *lift_data;
   Scheme_Object *lift_ctx;
   Scheme_Object *lifted_reqs = scheme_null, *req_data, *unbounds = scheme_null;
-  int maybe_has_lifts = 0, expand_ends = (phase == 0);
+  int maybe_has_lifts = 0, expand_ends = (phase == 0), maybe_phaseless;
   Scheme_Object *observer, *vec, *end_statements;
   Scheme_Object *begin_for_syntax_stx;
   const char *who = "module";
@@ -8300,6 +8346,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   
   if (*bxs->_num_phases < phase + 1)
     *bxs->_num_phases = phase + 1;
+
+  maybe_phaseless = (env->genv->module->phaseless ? 1 : 0);
+  env->genv->module->phaseless = NULL;
 
   /* Expand each expression in form up to `begin', `define-values', `define-syntax', 
      `require', `provide', `#%app', etc. */
@@ -8498,6 +8547,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	if (scheme_stx_module_eq_x(scheme_define_values_stx, fst, phase)) {
 	  /************ define-values *************/
 	  Scheme_Object *vars, *val;
+          int var_count = 0;
 
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
           SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_VALUES(observer);
@@ -8546,7 +8596,11 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	      scheme_extend_module_rename(rn, self_modidx, name, name, self_modidx, name, phase, NULL, NULL, 0);
 
 	    vars = SCHEME_STX_CDR(vars);
+            var_count++;
 	  }
+
+          if (maybe_phaseless && !phaseless_rhs(val, var_count, phase))
+            maybe_phaseless = 0;
           
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
 	  kind = DEFN_MODFORM_KIND;
@@ -8757,7 +8811,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
 
           kind = DONE_MODFORM_KIND;
-	} else if (scheme_stx_module_eq_x(require_stx, fst, phase)) {	
+
+          maybe_phaseless = 0;
+	} else if (scheme_stx_module_eq_x(require_stx, fst, phase)) {
 	  /************ require *************/
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
           SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE(observer);
@@ -8770,7 +8826,8 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
                          0, 0, 1, 
                          1, phase ? 1 : 0,
                          bxs->all_simple_renames, bxs->modidx_cache,
-                         bxs->submodule_names);
+                         bxs->submodule_names,
+                         &maybe_phaseless);
 
 	  if (!erec)
 	    e = NULL;
@@ -8843,12 +8900,18 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
             kind = MODULE_MODFORM_KIND;
           }
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer,e);
-	} else
+	} else {
 	  kind = EXPR_MODFORM_KIND;
-      } else
+          maybe_phaseless = 0;
+        }
+      } else {
+        maybe_phaseless = 0;
 	kind = EXPR_MODFORM_KIND;
-    } else
+      }
+    } else {
+      maybe_phaseless = 0;
       kind = EXPR_MODFORM_KIND;
+    }
 
     if (e) {
       p = scheme_make_pair(scheme_make_pair(e, scheme_make_integer(kind)), scheme_null);
@@ -9113,6 +9176,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   adt = scheme_hash_tree_set(bxs->all_defs, scheme_make_integer(phase), all_rt_defs);
   bxs->all_defs = adt;
 
+  if (cenv->prefix->non_phaseless)
+    maybe_phaseless = 0;
+
   if (!phase)
     env->genv->module->comp_prefix = cenv->prefix;
   else
@@ -9130,6 +9196,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
       expanded_l = scheme_append(lifted_reqs, expanded_l);
     }
   }
+
+  if (maybe_phaseless)
+    env->genv->module->phaseless = scheme_true;
 
   if (rec[drec].comp) {
     body_lists = scheme_make_pair(first, scheme_make_pair(exp_body, body_lists));
@@ -11082,6 +11151,158 @@ Scheme_Object *scheme_module_exported_list(Scheme_Object *modpath, Scheme_Env *g
   }
 }
 
+static int expression_starts(Scheme_Object *expr, Scheme_Object *id, int phase)
+{
+  if (SCHEME_STX_PAIRP(expr)) {
+    expr = SCHEME_STX_CAR(expr);
+    if (SCHEME_STX_SYMBOLP(expr)) {
+      if (scheme_stx_module_eq_x(id, expr, phase))
+        return 1;
+    }
+  }
+  
+  return 0;
+}
+
+static int expression_starts_app(Scheme_Object *expr, Scheme_Object *id, int phase)
+{
+  if (expression_starts(expr, app_stx, phase)) {
+    expr = SCHEME_STX_CDR(expr);
+    if (SCHEME_STX_PAIRP(expr)) {
+      expr = SCHEME_STX_CDR(expr);
+      return expression_starts(expr, id, phase);
+    }
+  } else if (expression_starts(expr, id, phase)) {
+    /* would explicit `#%app' be the core one? */
+    id = scheme_datum_to_syntax(SCHEME_STX_VAL(app_stx), expr, expr, 0, 0);
+    id = scheme_stx_taint_rearm(id, expr);
+    if (scheme_stx_module_eq_x(app_stx, id, phase))
+      return 1;
+  }
+
+  return 0;
+}
+
+static int phaseless_literal(Scheme_Object *val)
+{
+  val = SCHEME_STX_VAL(val);
+
+  if (SCHEME_BOOLP(val)
+      || SCHEME_SYMBOLP(val)
+      || SCHEME_KEYWORDP(val)
+      || SCHEME_NULLP(val)
+      || SCHEME_NUMBERP(val)
+      || (SCHEME_CHAR_STRINGP(val) && SCHEME_IMMUTABLEP(val))
+      || (SCHEME_BYTE_STRINGP(val) && SCHEME_IMMUTABLEP(val)))
+    return 1;
+
+  return 0;
+}
+
+static int phaseless_constant_expression(Scheme_Object *val, int phase);
+
+static int phaseless_constant_expressions(Scheme_Object *expr,  int phase) 
+{
+  Scheme_Object *a;
+
+  while (SCHEME_STX_PAIRP(expr)) {
+    a = SCHEME_STX_CAR(expr);
+    if (!phaseless_constant_expression(a, phase))
+      return 0;
+    expr = SCHEME_STX_CDR(expr);
+  }
+
+  return SCHEME_STX_NULLP(expr);
+}
+
+static Scheme_Object *phaseless_constant_expression_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *val = (Scheme_Object *)p->ku.k.p1;
+
+  p->ku.k.p1 = NULL;
+
+  if (phaseless_constant_expression(val, p->ku.k.i1))
+    return scheme_true;
+  else
+    return scheme_false;
+}
+
+static int phaseless_constant_expression(Scheme_Object *val, int phase)
+{  
+# include "mzstkchk.h"
+  {
+    Scheme_Thread *p = scheme_current_thread;
+    p->ku.k.p1 = (void *)val;
+    p->ku.k.i1 = phase;
+    val = scheme_handle_stack_overflow(phaseless_constant_expression_k);
+    return SCHEME_TRUEP(val);
+  }
+
+  /* identifier? */
+  if (SCHEME_SYMBOLP(SCHEME_STX_VAL(val)))
+    return 1;
+
+  if (expression_starts(val, lambda_stx, phase))
+    return 1;
+
+  if (expression_starts(val, case_lambda_stx, phase))
+    return 1;
+
+  if (expression_starts(val, quote_stx, phase)) {
+    val = SCHEME_STX_CDR(val);
+    if (SCHEME_STX_PAIRP(val)) {
+      val = SCHEME_STX_CAR(val);
+      if (phaseless_literal(val))
+        return 1;
+    }
+    return 0;
+  } else if (expression_starts(val, datum_stx, phase)) {
+    val = SCHEME_STX_CDR(val);
+    if (phaseless_literal(val))
+      return 1;
+    return 0;
+  } else if (phaseless_literal(val)) {
+    /* would explicit `#%datum' be the core one? */
+    Scheme_Object *a;
+    a = SCHEME_STX_VAL(datum_stx);
+    val = scheme_stx_taint_rearm(scheme_datum_to_syntax(a, val, val, 0, 0), 
+                                 val);
+    if (scheme_stx_module_eq_x(datum_stx, val, phase))
+      return 1;
+    return 0;
+  }
+  
+  if (expression_starts_app(val, cons_stx, phase)
+      || expression_starts_app(val, list_stx, phase)) {
+    val = SCHEME_STX_CDR(val);
+    return phaseless_constant_expressions(val, phase);
+  }
+
+
+  return 0;
+}
+  
+static int phaseless_rhs(Scheme_Object *val, int var_count, int phase)
+{
+  if (var_count == 1) {
+    if (phaseless_constant_expression(val, phase))
+      return 1;
+  } else if (var_count == 5) {
+    if (expression_starts_app(val, make_struct_type_stx, phase)
+        && phaseless_constant_expressions(val, phase)) {
+      return 1;
+    }
+  } else if (var_count == 3) {
+    if (expression_starts_app(val, make_struct_type_property_stx, phase)
+        && phaseless_constant_expressions(val, phase)) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
 /**********************************************************************/
 /*                         top-level require                          */
 /**********************************************************************/
@@ -11511,7 +11732,8 @@ void parse_requires(Scheme_Object *form, int at_phase,
                     int eval_exp, int eval_run,
                     int *all_simple,
                     Scheme_Hash_Table *modidx_cache,
-                    Scheme_Hash_Table *submodule_names)
+                    Scheme_Hash_Table *submodule_names,
+                    int *maybe_phaseless)
 /* form can be a module-path index or a quoted require spec */
 {
   Scheme_Object *ll = form, *mode = scheme_make_integer(0), *just_mode = NULL, *x_mode, *x_just_mode;
@@ -11856,6 +12078,9 @@ void parse_requires(Scheme_Object *form, int at_phase,
                    start ? eval_exp : 0, start ? eval_run : 0, 
                    main_env->phase, scheme_null, 0);
 
+      if (maybe_phaseless && !m->phaseless)
+        *maybe_phaseless = 0;
+
       x_just_mode = just_mode;
       x_mode = mode;
       if (at_phase) {
@@ -12000,7 +12225,8 @@ do_require_execute(Scheme_Env *env, Scheme_Object *form)
                  NULL,
                  !env->module, 0, 0, 
                  -1, 1,
-                 NULL, NULL, NULL);
+                 NULL, NULL, NULL,
+                 NULL);
 
   scheme_append_rename_set_to_env(rn_set, env);
 
@@ -12055,7 +12281,8 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
                  NULL, 
                  0, 0, 0, 
                  1, 0,
-                 NULL, NULL, NULL);
+                 NULL, NULL, NULL,
+                 NULL);
 
   if (rec && rec[drec].comp) {
     /* Dummy lets us access a top-level environment: */

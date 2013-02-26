@@ -599,6 +599,36 @@ top-level variables in higher @tech{phases}, while module
 top-levels are in corresponding higher @tech{phase}s.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@subsection[#:tag "phaseless-modules"]{Phaseless Modules}
+
+Module declarations that fit a highly constrained form create
+@deftech{phaseless} modules. A @tech{phaseless} module's
+instantiations across all phases and @tech{module registries} share
+the variables produced by the first instantiation of the module.
+
+The intent of a @tech{phaseless} module is to support values that are
+recognizable after @tech{phase} crossings. For example, when a macro
+transformer running in phase 1 raises a syntax error as represented by
+a @racket[exn:fail:syntax] instance, the instance is recognizable by a
+phase-0 exception handler wrapping a call to @racket[eval] or
+@racket[expand] that triggered the syntax error, because the
+@racket[exn:fail:syntax] structure type is defined by a
+@tech{phaseless} module.
+
+A @tech{phaseless} module imports only other @tech{phaseless} modules,
+and it contains only definitions that bind variables to functions,
+structure types and related functions, or structure-type properties
+and related functions. A @tech{phaseless} module never includes syntax
+literals (via @racket[quote-syntax]) or variable references (via
+@racket[#%variable-reference]). See @secref["phaseless-grammar"] for
+the syntactic specification of a @tech{phaseless} module
+declaration.
+
+A documented module should be assumed non-@tech{phaseless} unless it
+is specified as @tech{phaseless} (such as
+@racketmodname[racket/kernel]).
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "module-redeclare"]{Module Re-declarations}
 
 @section-index["modules" "re-define"]

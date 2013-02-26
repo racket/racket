@@ -201,7 +201,8 @@ the binding (according to @racket[free-identifier=?]) matters.}
 [module-level-form general-top-level-form
                    (#%provide raw-provide-spec ...)
                    (begin-for-syntax module-level-form ...)
-                   (module id module-path
+                   submodule-form]
+[submodule-form    (module id module-path
                      (#%plain-module-begin
                       module-level-form ...))
                    (module* id module-path 
@@ -986,6 +987,50 @@ When an inferred name is not available, but a source location is
 available, a name is constructed using the source location
 information. Inferred and property-assigned names are also available
 to syntax transformers, via @racket[syntax-local-name].
+
+@;----------------------------------------
+@section[#:tag "phaseless-grammar"]{Phaseless Module Declarations}
+
+A module is @tech{phaseless} only if it fits the following grammar,
+which uses non-terminals from @secref["fully-expanded"], and only if
+it includes no uses of @racket[quote-syntax] or @racket[#%variable-reference]:
+
+@racketgrammar*[
+#:literals (module module* #%plain-module-begin begin #%provide
+            define-values #%require
+            #%plain-lambda case-lambda begin
+            set! quote-syntax quote with-continuation-mark
+            #%plain-app
+            cons list make-struct-type make-struct-type-property)
+[phaseless-module (module id module-path
+                   (#%plain-module-begin
+                    phaseless-form ...))]
+[phaseless-form (begin phaseless-form ...)                
+                (#%provide raw-provide-spec ...)
+                submodule-form
+                (define-values (id ...) phaseless-expr)
+                (#%require raw-require-spec ...)]
+[phaseless-expr id
+                (@#,racket[quote] phaseless-datum)
+                (#%plain-lambda formals expr ...+)
+                (case-lambda (formals expr ...+) ...)
+                (#%plain-app cons expr ...+)
+                (#%plain-app list expr ...+)
+                (#%plain-app make-struct-type expr ...+)
+                (#%plain-app make-struct-type-property 
+                             expr ...+)]
+[phaseless-datum number
+                 boolean
+                 identifier
+                 string
+                 bytes]
+]
+
+This grammar applies after @tech{expansion}, but because a @tech{phaseless}
+module imports only from other phaseless modules, the only relevant
+expansion steps are the implicit introduction of
+@racket[#%plain-module-begin], implicit introduction of @racket[#%plain-app],
+and implicit introduction and/or expansion of @racket[#%datum].
 
 @;----------------------------------------
 

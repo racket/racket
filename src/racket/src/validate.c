@@ -135,11 +135,23 @@ static void add_struct_mapping(Scheme_Hash_Table **_st_ht, int pos, int field_co
                   scheme_make_integer(field_count));
 }
 
+static int phaseless_expr(Scheme_Object *expr)
+{
+  /* A precise check is a little tricky, since compiler optimizations
+     might change the original program beyond easily recognition of
+     the syntactic pattern that defines "phaseless". For now, let
+     anything through; the result can be weird if state somehow leakes
+     through a "phaseless" module, but I don't think it can be unsafe
+     from the run-time system's perspective. */
+  return 1;
+}
+
 void scheme_validate_code(Mz_CPort *port, Scheme_Object *code,
                           int depth, 
                           int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
                           Scheme_Object **toplevels,
                           int code_vec)
+/* code_vec == 2 => check that phasesless is ok */
 {
   char *stack;
   int delta;
@@ -147,6 +159,7 @@ void scheme_validate_code(Mz_CPort *port, Scheme_Object *code,
   Validate_TLS tls;
   mzshort *tl_state;
   Scheme_Hash_Table *st_ht = NULL;
+  Scheme_Object *form;
 
   depth += ((num_toplevels || num_stxes || num_lifts) ? 1 : 0);
 
@@ -201,8 +214,16 @@ void scheme_validate_code(Mz_CPort *port, Scheme_Object *code,
     int i, cnt, tl_timestamp = 1;
     cnt = SCHEME_VEC_SIZE(code);
     for (i = 0; i < cnt; i++) {
+      form = SCHEME_VEC_ELS(code)[i];
+      if (code_vec == 2) {
+        if (SAME_TYPE(SCHEME_TYPE(form), scheme_define_values_type)) {
+          if (!phaseless_expr(SCHEME_VEC_ELS(form)[0]))
+            scheme_ill_formed_code(port);
+        } else
+          scheme_ill_formed_code(port);
+      }
       reset_clearing(vc);
-      if (!validate_expr(port, SCHEME_VEC_ELS(code)[i], 
+      if (!validate_expr(port, form, 
                          stack, tls,
                          depth, delta, delta, 
                          num_toplevels, num_stxes, num_lifts, tl_use_map,
@@ -1118,6 +1139,9 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port,
   if (!SCHEME_MODNAMEP(m->modname))
     scheme_ill_formed_code(port);
 
+  if (m->phaseless && m->prefix->num_stxes)
+    scheme_ill_formed_code(port);
+
   validate_toplevel(m->dummy, port, stack, tls, depth, delta, 
                     num_toplevels, num_stxes, num_lifts, tl_use_map,
                     tl_state, tl_timestamp,
@@ -1126,12 +1150,14 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port,
   scheme_validate_code(port, m->bodies[0], m->max_let_depth,
                        m->prefix->num_toplevels, m->prefix->num_stxes, m->prefix->num_lifts,
                        NULL, m->prefix->toplevels,
-                       1);
-  
+                       (m->phaseless ? 2 : 1));
+
   /* validate exp-time code */
   for (j = m->num_phases; j-- > 1; ) {
     cnt = SCHEME_VEC_SIZE(m->bodies[j]);
     for (i = 0; i < cnt; i++) {
+      if (m->phaseless) scheme_ill_formed_code(port);
+
       e = SCHEME_VEC_ELS(m->bodies[j])[i];
       
       let_depth = SCHEME_INT_VAL(SCHEME_VEC_ELS(e)[2]);

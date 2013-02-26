@@ -5212,6 +5212,14 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
     return (Scheme_Object *)m;
   }
 
+  if (m->phaseless) {
+    scheme_log(info->logger,
+               SCHEME_LOG_DEBUG,
+               0,
+               "compilation of phaseless module: %D",
+               m->modname);
+  }
+
   old_context = info->context;
   info->context = (Scheme_Object *)m;
 

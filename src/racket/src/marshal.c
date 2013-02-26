@@ -1346,6 +1346,8 @@ static Scheme_Object *write_module(Scheme_Object *obj)
       l = cons(scheme_null, l);
   }
 
+  l = cons((m->phaseless ? scheme_true : scheme_false), l);
+
   l = cons(m->me->src_modidx, l);
   l = cons(scheme_resolved_module_path_value(m->modsrc), l);
   l = cons(scheme_resolved_module_path_value(m->modname), l);
@@ -1423,6 +1425,10 @@ static Scheme_Object *read_module(Scheme_Object *obj)
     return_NULL();
   ((Scheme_Modidx *)me->src_modidx)->resolved = m->modname;
   m->self_modidx = me->src_modidx;
+
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  m->phaseless = (SCHEME_TRUEP(SCHEME_CAR(obj)) ? scheme_true : NULL);
+  obj = SCHEME_CDR(obj);
 
   for (i = 0; i < 2; i++) {
     if (!SCHEME_PAIRP(obj)) return_NULL();

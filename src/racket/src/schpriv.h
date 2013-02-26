@@ -2368,7 +2368,7 @@ intptr_t scheme_get_print_width(void);
 typedef struct Comp_Prefix
 {
   MZTAG_IF_REQUIRED
-  int num_toplevels, num_stxes;
+  int num_toplevels, num_stxes, non_phaseless;
   Scheme_Hash_Table *toplevels; /* buckets for toplevel/module variables */
   Scheme_Hash_Table *inline_variants; /* position -> inline_variant */
   Scheme_Object *unbound; /* identifiers (and lists of phase-1 shifted unbounds) that were unbound at compile */
@@ -3250,6 +3250,8 @@ typedef struct Scheme_Module
 {
   Scheme_Object so; /* scheme_module_type */
   short predefined;
+
+  Scheme_Object *phaseless; /* NULL, #t, or shared `toplevel' hash table */
 
   Scheme_Object *code_key;
 

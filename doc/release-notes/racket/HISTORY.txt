@@ -1,3 +1,7 @@
+Version 5.3.3.6
+Added "phaseless" module inference and instantiation
+compiler/zo-structs: added flags field to mod
+
 Version 5.3.3.4
 Added impersonator-ephemeron
 

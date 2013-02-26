@@ -251,7 +251,7 @@
 (define (read-module v)
   (match v
     [`(,submod-path 
-       ,name ,srcname ,self-modidx 
+       ,name ,srcname ,self-modidx ,phaseless?
        ,pre-submods ,post-submods
        ,lang-info ,functional? ,et-functional?
        ,rename ,max-let-depth ,dummy
@@ -337,6 +337,7 @@
                     dummy
                     lang-info
                     rename
+                    (if phaseless? '(phaseless) '())
                     (map read-module pre-submods)
                     (map read-module post-submods))]))]))
 (define (read-module-wrap v)

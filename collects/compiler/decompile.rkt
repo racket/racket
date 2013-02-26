@@ -185,11 +185,12 @@
 (define (decompile-module mod-form orig-stack stx-ht mod-name)
   (match mod-form
     [(struct mod (name srcname self-modidx prefix provides requires body syntax-bodies unexported 
-                       max-let-depth dummy lang-info internal-context pre-submodules post-submodules))
+                       max-let-depth dummy lang-info internal-context flags pre-submodules post-submodules))
      (let-values ([(globs defns) (decompile-prefix prefix stx-ht)]
                   [(stack) (append '(#%modvars) orig-stack)]
                   [(closed) (make-hasheq)])
        `(,mod-name ,(if (symbol? name) name (last name)) ....
+           ,@(if (null? flags) '() (list `(quote ,@flags)))
            ,@(let ([l (apply
                        append
                        (for/list ([req (in-list requires)]

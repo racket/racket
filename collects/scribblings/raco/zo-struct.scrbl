@@ -205,6 +205,7 @@ binding, constructor, etc.}
              [dummy toplevel?]
              [lang-info (or/c #f (vector/c module-path? symbol? any/c))]
              [internal-context (or/c #f #t stx? (vectorof stx?))]
+             [flags (listof (or/c 'phaseless))]
              [pre-submodules (listof mod?)]
              [post-submodules (listof mod?)])]{
   Represents a @racket[module] declaration.
@@ -244,7 +245,17 @@ binding, constructor, etc.}
   @racket[module->namespace].  A @racket[#f] value means that the
   context is unavailable or empty.  A @racket[#t] value means that the
   context is computed by re-importing all required modules.  A
-  syntax-object value embeds an arbitrary lexical context.}
+  syntax-object value embeds an arbitrary lexical context.
+
+  The @racket[flags] field records certain properties of the module.
+  The @racket['phaseless] flag indicates that the module body is
+  evaluated once and the results shared across all phases; such a
+  module contains only definitions of functions, structure types, and
+  structure type properties.
+
+  The @racket[pre-submodules] field records @racket[module]-declared
+  submodules, while the @racket[post-submodules] field records
+  @racket[module*]-declared submodules.}
 
 @defstruct+[provided
             ([name symbol?]

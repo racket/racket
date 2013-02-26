@@ -137,7 +137,7 @@
   (match mod-form
     [(struct mod (name srcname self-modidx prefix provides requires body syntax-bodies
                        unexported max-let-depth dummy lang-info internal-context
-                       pre-submodules post-submodules))
+                       flags pre-submodules post-submodules))
      (define new-prefix prefix)
      ; Cache all the mpi paths
      (for-each (match-lambda
@@ -154,7 +154,7 @@
                          (begin (log-debug (format "[~S] lang-info : ~S" name lang-info)) ; XXX Seems to always be #f now
                                 (list (make-mod name srcname self-modidx new-prefix provides requires body empty
                                                 unexported max-let-depth dummy lang-info internal-context
-                                                empty empty)))
+                                                empty empty empty)))
                          (begin (log-debug (format "[~S] Dropping module @ ~S" name phase))
                                 empty))))]              
     [else (error 'nodep-module "huh?: ~e" mod-form)]))
