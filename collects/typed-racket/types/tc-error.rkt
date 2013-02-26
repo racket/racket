@@ -4,15 +4,15 @@
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          "base-abbrev.rkt"
-         (contract-req)
+         (rename-in (contract-req) [-> c:->] [->* c:->*])
          racket/match)
 
 (provide/cond-contract
  [tc-error/expr ((string?) (#:return any/c #:stx syntax?) #:rest (listof any/c)
-                 . ->* . any/c)]
+                 . c:->* . any/c)]
 
- [lookup-fail (identifier? . -> . Type/c)]
- [lookup-type-fail (identifier? . -> . Type/c)])
+ [lookup-fail (identifier? . c:-> . Type/c)]
+ [lookup-type-fail (identifier? . c:-> . Type/c)])
 
 (define (tc-error/expr msg
                        #:return [return -Bottom]

@@ -11,7 +11,7 @@
 
 (provide Listof: List: MListof:)
 (provide/cond-contract
-  [untuple (Type/c -> (or/c #f (listof Type/c)))])
+  [untuple (Type/c . -> . (or/c #f (listof Type/c)))])
 
 
 (define-match-expander Listof:

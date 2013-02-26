@@ -27,12 +27,16 @@
 (define (seen-before s t)
   (cons (Type-seq s) (Type-seq t)))
 (define/cond-contract (remember s t A)
- ((or/c AnyValues? Values/c) (or/c AnyValues? Values/c)
-  (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)) . -> .
-  (listof (cons/c exact-nonnegative-integer? exact-nonnegative-integer?)))
+  ((or/c AnyValues? Values/c ValuesDots?) (or/c AnyValues? Values/c ValuesDots?)
+   (listof (cons/c exact-nonnegative-integer?
+                   exact-nonnegative-integer?))
+   . -> .
+   (listof (cons/c exact-nonnegative-integer?
+                   exact-nonnegative-integer?)))
  (cons (seen-before s t) A))
 (define/cond-contract (seen? s t)
- ((or/c AnyValues? Values/c) (or/c AnyValues? Values/c) . -> . any/c)
+  ((or/c AnyValues? Values/c ValuesDots?) (or/c AnyValues? Values/c ValuesDots?)
+   . -> . any/c)
  (member (seen-before s t) (current-seen)))
 
 

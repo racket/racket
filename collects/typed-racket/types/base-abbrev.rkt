@@ -3,9 +3,9 @@
 
 (require "../utils/utils.rkt")
 
-(require (rep type-rep filter-rep object-rep)
+(require (rep type-rep filter-rep object-rep rep-utils)
          (env mvar-env)
-         racket/match racket/list
+         racket/match racket/list (prefix-in c: racket/contract/base)
          (for-syntax racket/base syntax/parse racket/list)
          (for-template racket/base))
 
@@ -93,13 +93,13 @@
              [(+ -) (make-FilterSet + -)]))
 
 (define/cond-contract (-filter t i [p null])
-     (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
+     (c:->* (Type/c name-ref/c) ((c:listof PathElem?)) Filter/c)
      (if (or (type-equal? Univ t) (and (identifier? i) (is-var-mutated? i)))
          -top
          (make-TypeFilter t p i)))
 
 (define/cond-contract (-not-filter t i [p null])
-     (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
+     (c:->* (Type/c name-ref/c) ((c:listof PathElem?)) Filter/c)
      (if (or (type-equal? -Bottom t) (and (identifier? i) (is-var-mutated? i)))
          -top
          (make-NotTypeFilter t p i)))
@@ -118,10 +118,10 @@
 (define/cond-contract (make-arr* dom rng
                                  #:rest [rest #f] #:drest [drest #f] #:kws [kws null]
                                  #:filters [filters -no-filter] #:object [obj -no-obj])
-  (c:->* ((listof Type/c) (or/c SomeValues/c Type/c))
-         (#:rest (or/c #f Type/c)
-          #:drest (or/c #f (cons/c Type/c symbol?))
-          #:kws (listof Keyword?)
+  (c:->* ((c:listof Type/c) (c:or/c SomeValues/c Type/c))
+         (#:rest (c:or/c #f Type/c)
+          #:drest (c:or/c #f (c:cons/c Type/c symbol?))
+          #:kws (c:listof Keyword?)
           #:filters FilterSet?
           #:object Object?)
          arr?)
