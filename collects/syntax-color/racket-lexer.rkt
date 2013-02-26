@@ -7,9 +7,9 @@
   
   (provide 
    (contract-out
-    [racket-lexer lexer/c]
-    [racket-lexer/status lexer/c]
-    [racket-nobar-lexer/status lexer/c]))
+    [racket-lexer lexer/c])
+   racket-lexer/status
+   racket-nobar-lexer/status)
    
   (define-lex-abbrevs
          
