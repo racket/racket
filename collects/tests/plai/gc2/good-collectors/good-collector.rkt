@@ -338,3 +338,13 @@ A collector for use in testing the random mutator generator.
         v)
       (vector 'free 'free 'free 'free 'pair 4 4))
 
+(test (with-heap (make-vector 50)
+                 (with-roots (list 1 2 3)
+                             (get-root-set)))
+      (list 1 2 3))
+
+(test (with-heap (make-vector 50)
+                 (with-roots (list 1 2 3)
+                             (with-roots (list 4 5 6)
+                                         (sort (get-root-set) <))))
+      (list 1 2 3 4 5 6))

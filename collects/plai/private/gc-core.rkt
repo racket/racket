@@ -135,14 +135,7 @@
   (syntax-case stx ()
     [(_ root-id ...)
      (andmap identifier? (syntax->list #'(root-id ...)))
-     #`(begin
-         (append
-          (list (make-root 'root-id (λ () root-id) 
-                           (λ (loc) 
-                             (set! root-id loc)))
-                ...)
-          (get-global-roots)
-          (stack-roots)))]
+     #`(get-root-set/proc (list root-id ...) '(root-id ...))]
     [(_ e ...)
      (let ([err (ormap (λ (x) (and (not (identifier? x)) x)) (syntax->list #'(e ...)))])
        (raise-syntax-error false
@@ -152,6 +145,35 @@
     [_ (raise-syntax-error false
                            "missing open parenthesis"
                            stx)]))
+
+(define (get-root-set/proc root-locs root-ids)
+  (append
+   (for/list ([root-loc (in-list root-locs)]
+              [root-id (in-list root-ids)])
+     (if (location? root-loc)
+         (make-root root-id
+                    (λ () root-loc) 
+                    (λ (loc) (set! root-loc loc)))
+         (error 'get-root-set "expected a location, given ~e" root-loc)))
+   (get-global-roots)
+   (stack-roots)
+   (user-specified-roots)))
+
+(provide with-roots)
+(define-syntax-rule 
+  (with-roots e1 e2 e3 ...)
+  (with-roots/proc e1 (λ () e2 e3 ...)))
+
+(define (with-roots/proc roots thunk)
+  (define c (listof location?))
+  (unless (c roots)
+    (raise-argument-error 'with-roots
+                          (format "~s" (contract-name c))
+                          roots))
+  (parameterize ([user-specified-roots (append roots (user-specified-roots))])
+    (thunk)))
+
+(define user-specified-roots (make-parameter '()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Environments of closures

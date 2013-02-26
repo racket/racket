@@ -310,9 +310,10 @@ Determines if @racket[v] is a root.
   empty list is returned.
 }
 
-@defform[(with-heap heap expr ...)
-         #:contracts ([heap (vectorof heap-value?)])]{
- Evaluates @racket[(begin expr ...)] in the context of @racket[heap]. Useful in
+@defform[(with-heap heap-expr body-expr ...)
+         #:contracts ([heap-expr (vectorof heap-value?)])]{
+ Evaluates each of the @racket[body-expr]s in a context where
+ the value of @racket[heap-expr] is used as the heap. Useful in
  tests:
  @racketblock[
   (test (with-heap (make-vector 20) 
@@ -320,6 +321,32 @@ Determines if @racket[v] is a root.
           (gc:deref (gc:alloc-flat 2)))
         2)
   ]}
+                                                     
+@defform[(with-roots roots-expr expr1 expr2 ...)
+         #:contracts ([roots-expr (listof location?)])]{
+  Evaluates each of @racket[expr1] and the @racket[expr2]s in
+  in a context with the result of @racket[roots-expr]
+  as additional roots.
+  
+  This function is intended to be used in test suites
+  for collectors. Since your test suites are not running
+  in the @racketmod[plai/mutator] language, @racket[get-root-set]
+  returns a list consisting only of the roots it created,
+  not all of the other roots it normally would return.
+  Use this function to note specific locations as roots
+  and set up better tests for your GC.
+  
+  @racketblock[
+    (test (with-heap (make-vector 4)
+                     (define f1 (gc:alloc-flat 1))
+                     (define c1 (gc:cons f1 f1))
+                     (with-roots (list c1)
+                                 (gc:deref
+                                  (gc:first
+                                   (gc:cons f1 f1)))))
+          1)]
+  
+}
 
 @subsection{Garbage Collector Exports}
 
