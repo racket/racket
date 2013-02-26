@@ -125,7 +125,7 @@
   (define pages-promise
     (lazy (car (or (unbox navbar-info)
                    (error 'navbar "no navbar info set")))))
-  (define top-promise  (lazy (cadr (unbox navbar-info))))
+  (define top-promise  (lazy (cadr  (unbox navbar-info))))
   (define help-promise (lazy (caddr (unbox navbar-info))))
   (define pages-parts-of-promise
     (lazy (map pages->part-of (force pages-promise))))

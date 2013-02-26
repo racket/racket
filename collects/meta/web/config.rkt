@@ -15,6 +15,7 @@
     ("stubs/blog"    "http://blog.racket-lang.org/"     abs)
     ("stubs/mailman" "http://lists.racket-lang.org/"    abs)
     ("stubs/dirlist" "http://download.racket-lang.org/" abs)
+    ("stubs/docs"    "http://docs.racket-lang.org/"     abs)
     ("stubs/wiki"    "http://wiki.racket-lang.org/"     abs)))
 
 (provide distributions)
