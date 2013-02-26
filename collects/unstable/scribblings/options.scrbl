@@ -69,7 +69,7 @@ is a predicate. In any other case, the result is a contract error.
 @defproc[(exercise-option [x has-option?]) any/c]{
 
 Returns @racket[x] with contract ckecking enabled if an @racket[option/c] guards
-@racket[x]. In any other case the result is an error.                                          
+@racket[x]. In any other case it returns @racket[x].                                          
                                             
 @defexamples[
 #:eval the-eval
@@ -79,9 +79,10 @@ Returns @racket[x] with contract ckecking enabled if an @racket[option/c] guards
   (define foo (λ (x) x)))
 (require 'server2 unstable/options)
 (define e-foo (exercise-option foo))
-(foo 1)
+(foo 42)
 (e-foo 'wrong)
-(exercise-option e-foo)]  
+((exercise-option e-foo) 'wrong)
+]  
 } 
                                       
 @defform[(transfer-option id ...)]{
@@ -94,7 +95,8 @@ is provided from the module if @racket[id] is bound to a value guarded with an
 @racket[option/c] contract. In addition, @racket[transfer-option] modifies the blame 
 information for the @racket[option/c] contract by adding the providing module and its client 
 to the positive and negative blame parties respectively. If @racket[id] is not bound to a value guarded with an 
-@racket[option/c] contract, then the result is a contract error.
+@racket[option/c] contract, then @racket[(provide [transfer id ...])] is equivalent to @racket[(provide id ...)] i.e. 
+each @racket[id] is provided from the module as usual.
 }                   
 
  @defexamples[
@@ -114,15 +116,16 @@ to the positive and negative blame parties respectively. If @racket[id] is not b
   (require unstable/options)
   (provide [transfer-option boo])
   (define (boo x) x))
-(require 'server4)]  
-}
+(require 'server4)
+(boo 42)] 
+
 
 
 @defproc[(waive-option [x has-option?]) any/c]{ 
 
 If an @racket[option/c] guards @racket[x], then @racket[waive-option] returns 
 @racket[x] without the @racket[option/c] guard. 
-In any other case the result is an error.
+In any other case it returns @racket[x].
 
 @defexamples[
 #:eval the-eval
@@ -132,11 +135,12 @@ In any other case the result is an error.
   (define bar (λ (x) x)))
 (require 'server5 unstable/options)
 (define e-bar (waive-option bar))
-(e-bar 1)
-(exercise-option e-bar)
-(waive-option e-bar)]  
+(e-bar 'wrong)
+((waive-option e-bar) 42)]  
 }    
 
+@defproc[(has-option? [v any/c]) boolean?]{
+  Returns @racket[#t] if @racket[v] has an option contract.
 }
 
 
@@ -185,9 +189,7 @@ are chaperone contracts, then the result will be a chaperone contract.
 
 }
 
-@defproc[(has-option? [v any/c]) boolean?]{
-  Returns @racket[#t] if @racket[v] has an option contract.
-}
+
                    
 @(close-eval the-eval)
 

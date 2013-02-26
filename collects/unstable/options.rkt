@@ -55,22 +55,31 @@
       #t
       (andmap boolean? (third s-info))))
 
-
 (struct info (val proj blame))
-
 
 (define-values (impersonator-prop:proxy proxy? proxy-info) 
   (make-impersonator-property 'proxy))
+
+(struct proc-proxy (proc ctc proc-info)
+  #:property prop:procedure  (struct-field-index proc)
+  #:property prop:contracted (struct-field-index ctc))
+
+(define (build-proc-proxy ctc proc-info)
+  (let ((val (info-val proc-info)))
+    (proc-proxy
+     (if (object-name val)
+         (procedure-rename
+          val
+          (object-name val))
+       val)
+   ctc
+   proc-info)))
 
 
 (define (build-proxy ctc val proj blame)
   (let ([proxy-info (info val proj blame)])
     (cond [(procedure? val)
-           (chaperone-procedure
-            val
-            values
-            impersonator-prop:contracted ctc
-            impersonator-prop:proxy proxy-info)]
+           (build-proc-proxy ctc proxy-info)]
           [(vector? val)
            (chaperone-vector
             val
@@ -202,6 +211,12 @@
 
 (define-syntax (option/c stx)
   (syntax-case stx ()
+    [x
+     (identifier? #'x)
+     (syntax-property
+      (syntax/loc stx option/c)
+      'racket/contract:contract
+      (vector (gensym 'ctc) (list stx) null))]
     [(optionc arg ...) 
      (let ([args (syntax->list #'(arg ...))]
            [this-one (gensym 'option-ctc)])
@@ -240,10 +255,23 @@
                      (info-val info)
                      (info-proj info)
                      (blame-update (info-blame info) pos-blame neg-blame)))]
-                 [else (raise-blame-error option-blame val "")])))))))
+                 [(proc-proxy? val)
+                  (let ((info (proc-proxy-proc-info val)))
+                    (build-proxy
+                     (value-contract val)
+                     (info-val info)
+                     (info-proj info)
+                     (blame-update (info-blame info) pos-blame neg-blame)))]
+                 [else val])))))))
 
 (define-syntax (transfer/c stx)
   (syntax-case stx ()
+    [x
+     (identifier? #'x)
+     (syntax-property
+      (syntax/loc stx transfer/c)
+      'racket/contract:contract
+      (vector (gensym 'ctc) (list stx) null))]
     [(transferc id) 
      (let ([this-one (gensym 'transfer-ctc)])
        (syntax-property
@@ -275,17 +303,19 @@
        (option? (value-contract val))))
 
 (define (exercise-option val)
-  (cond [(has-option? val)
-         (let ((info (proxy-info val)))
+  (cond [(and (has-contract? val) (option? (value-contract val)))
+         (let ((info (cond [(proxy? val)  (proxy-info val)]
+                           [else (proc-proxy-proc-info val)])))
            (((info-proj info)
              (info-blame info))
             (info-val info)))]
-        [else (error 'exercise-option-error "~a has no option to exercise" val)]))
+        [else val]))
 
 (define (waive-option val)
-  (cond [(has-option? val)
-         (info-val (proxy-info val))]
-        [else (error 'waive-option-error "~a has no option to waive" val)]))
+  (cond [(and (has-contract? val) (option? (value-contract val)))
+         (cond [(proxy? val) (info-val (proxy-info val))]
+               [else (info-val (proc-proxy-proc-info val))])]
+        [else val]))
 
                            
 
@@ -504,6 +534,12 @@
 
 (define-syntax (invariant/c stx)
   (syntax-case stx ()
+    [x
+     (identifier? #'x)
+     (syntax-property
+      (syntax/loc stx invariant/c)
+      'racket/contract:contract
+      (vector (gensym 'ctc) (list stx) null))]
     [(invc arg ...)
      (let ([args (syntax->list #'(arg ...))]
            [this-one (gensym 'invariant-ctc)])

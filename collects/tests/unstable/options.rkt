@@ -157,7 +157,75 @@
                                        (require 'server))
                                       "server"
                                       "an invariant keyword argument (based on presence of other keyword arguments)")  
-                                      
+                                     
+                                     (test-pass
+                                      "passes with option/c on function with keyword arguments"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [f (option/c 
+                                                       (-> number? #:more number? number?))]))
+                                         (define (f x #:more y) y))
+                                       (require unstable/options)
+                                       (require 'server)
+                                       (f 2 #:more 3)
+                                       ((exercise-option f) 2 #:more 3))) 
+                                     
+                                     (test-pass
+                                      "passes with option/c on function with optional keyword arguments"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [f (option/c (->* (number?) (#:more number?) number?))]))
+                                         (define (f x #:more [y 3]) y))
+                                       (require unstable/options)
+                                       (require 'server)
+                                       (f 2)
+                                       (f 2 #:more 4)
+                                       ((exercise-option f) 2 #:more 4)
+                                       ((exercise-option f) 2))) 
+                                     
+                                     (test-pass
+                                      "passes with option/c on function with case-lambda"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [f (option/c (case-> 
+                                                                 (-> number? number? number?)
+                                                                 (-> number? number?)))]))
+                                         (define f (case-lambda 
+                                                     [(lo hi) (max lo hi)]
+                                                     [(single) single])))
+                                       (require unstable/options)
+                                       (require 'server)
+                                       (f 2)
+                                       (f 2 4)
+                                       ((exercise-option f) 2 4)
+                                       ((exercise-option f) 2))) 
+                                     
+                                      (test-contract-fail
+                                      "fails with option/c on function with case-lambda"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [f (option/c (case-> 
+                                                                 (-> number? number? number?)
+                                                                 (-> number? number?)))]))
+                                         (define f (case-lambda 
+                                                     [(lo hi) (max lo hi)]
+                                                     [(single) single])))
+                                       (require unstable/options)
+                                       (require 'server)
+                                       (f 2)
+                                       (f 2 4)
+                                       ((exercise-option f) 2 "boo")
+                                       ((exercise-option f) 2))
+                                      "top-level") 
+                                     
                                      (test-pass
                                       "passes with option/c with invariant and flat and immutable"
                                       (script
@@ -285,19 +353,17 @@
                                        (require unstable/options 'middle1)
                                        (boo 1)))
                                      
-                                     (test-contract-fail
-                                      "fails upon transfer"
+                                     (test-pass
+                                      "passes after void transfer"
                                       (script
                                        (module server racket
                                          (require unstable/options)
                                          (provide [transfer-option boo])
                                          (define (boo x) x))
-                                       (require 'server))
-                                      "server"
-                                      "does not have an option in")
+                                       (require 'server)))
                                      
-                                     (test-contract-fail
-                                      "fails upon client's transfer"
+                                     (test-pass
+                                      "passes after void client's transfer"
                                       (script
                                        (module server racket
                                          (require unstable/options)
@@ -306,9 +372,22 @@
                                        (module client racket
                                          (require unstable/options 'server)
                                          (provide (transfer-option boo)))
-                                       (require 'client))
-                                      "client"
-                                      "does not have an option in"))
+                                       (require 'client)
+                                         (boo 42)))
+                                     
+                                      (test-pass
+                                      "passes after void client's transfer after exercise"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c (-> number? number?))]))
+                                         (define (boo x) x))
+                                       (module client racket
+                                         (require unstable/options 'server)
+                                         (define e-boo (exercise-option boo))
+                                         (provide (transfer-option e-boo)))
+                                       (require 'client)
+                                         (e-boo 42))))
                          
                          (test-suite "exercise-option"
                                      
@@ -360,18 +439,15 @@
                                        (require 'client))
                                       (list "client" "middle"))   
                                      
-                                     (test-fail
-                                      "failed exercise"
+                                     (test-pass
+                                      "passes after void exercise"
                                       (script
-                                       (module server racket
-                                         (require unstable/options)
-                                         (define (boo x) x)
-                                         (exercise-option boo))
-                                       (require 'server))
-                                      "has no option to exercise")
+                                       (require unstable/options)
+                                       (define (boo x) x)
+                                       (exercise-option boo)))
                                      
-                                     (test-fail
-                                      "failed exercise after succesful exercise"
+                                     (test-contract-fail
+                                      "passes after exercise after succesful exercise"
                                       (script
                                        (module server racket
                                          (require unstable/options)
@@ -381,10 +457,10 @@
                                          (require unstable/options 'server)
                                          ((exercise-option (exercise-option boo)) "error"))
                                        (require 'client))
-                                      "has no option to exercise")
+                                      "client")
                                      
-                                     (test-contract-fail
-                                      "failed transfer after succesful exercise"
+                                     (test-pass
+                                      "passes after transfer after succesful exercise"
                                       (script
                                        (module server racket
                                          (require unstable/options)
@@ -394,9 +470,7 @@
                                          (require unstable/options 'server)
                                          (define e-boo (exercise-option boo))
                                          (provide (transfer-option e-boo)))
-                                       (require 'client))
-                                      "client"
-                                      "does not have an option in"))
+                                       (require 'client))))
                          
                          
                          (test-suite "waive-option"
@@ -418,31 +492,25 @@
                                        ((exercise-option boo) 1)))
                                      
                                      
-                                     (test-fail
-                                      "failed waive"
+                                     (test-pass
+                                      "passes after waive"
                                       (script
-                                       (module server racket
-                                         (require unstable/options)
-                                         (define (boo x) x)
-                                         (waive-option boo))
-                                       (require 'server))
-                                      "has no option to waive")
+                                       (require unstable/options)
+                                       (define (boo x) x)
+                                       (waive-option boo)))
                                      
-                                     (test-fail
-                                      "failed waive after succesful waive"
+                                     (test-pass
+                                      "passes after waive after succesful waive"
                                       (script
                                        (module server racket
                                          (require unstable/options)
                                          (provide (contract-out [boo (option/c (-> number? number?))]))
                                          (define (boo x) x))
-                                       (module client racket
-                                         (require unstable/options 'server)
-                                         ((waive-option (waive-option boo)) "error"))
-                                       (require 'client))
-                                      "has no option to waive")
+                                       (require unstable/options 'server)
+                                       ((waive-option (waive-option boo)) "error")))
                                      
-                                     (test-fail
-                                      "failed waive after succesful exercise"
+                                     (test-contract-fail
+                                      "passes with waive after succesful exercise"
                                       (script
                                        (module server racket
                                          (require unstable/options)
@@ -452,10 +520,10 @@
                                          (require unstable/options 'server)
                                          ((waive-option (exercise-option boo)) "error"))
                                        (require 'client))
-                                      "has no option to waive")
+                                      "client")
                                      
-                                     (test-contract-fail
-                                      "failed transfer after succesful waive"
+                                     (test-pass
+                                      "passes transfer after succesful waive"
                                       (script
                                        (module server racket
                                          (require unstable/options)
@@ -465,8 +533,7 @@
                                          (require unstable/options 'server)
                                          (define e-boo (waive-option boo))
                                          (provide (transfer-option e-boo)))
-                                       (require 'client))
-                                      "client")))
+                                       (require 'client)))))
              
              
              (test-suite "invariant/c"
