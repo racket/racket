@@ -228,17 +228,29 @@
                                   "(or/c symbol? token?)"
                                   0 
                                   tok))))
+
+  ;; well-formed-position-token?: any -> boolean
+  ;; Returns true if pt is a position token whose position-token-token
+  ;; is itself a token or a symbol.
+  ;; This is meant to help raise more precise error messages when
+  ;; a tokenizer produces an erroneous position-token wrapped twice.
+  ;; (as often happens when omitting return-without-pos).
+  (define (well-formed-position-token? pt)
+    (and (position-token? pt) 
+         (let ([t (position-token-token pt)])
+           (or (symbol? t)
+               (token? t)))))
   
   ;; extract-src-pos : position-token -> symbol any any any
   (define (extract-src-pos ip)
     (cond
-      ((position-token? ip)
+      ((well-formed-position-token? ip)
        (extract-helper (position-token-token ip)
                        (position-token-start-pos ip)
                        (position-token-end-pos ip)))
       (else
        (raise-argument-error 'parser 
-                             "position-token?"
+                             "well-formed-position-token?"
                              0
                              ip))))
   
