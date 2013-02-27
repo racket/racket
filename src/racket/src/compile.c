@@ -1335,7 +1335,8 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
   Scheme_Object *var, *name, *rest, *dummy, *lex_id = NULL;
   int l, ok;
 
-  env->prefix->non_phaseless = 1;
+  if (rec[drec].comp)
+    env->prefix->non_phaseless = 1;
 
   form = scheme_stx_taint_disarm(form, NULL);
 

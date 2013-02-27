@@ -1772,5 +1772,11 @@
   (test 30 int-def-check2))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure `#%variable-reference' can be compiled and expanded
+
+(compile '(#%variable-reference))
+(expand '(#%variable-reference))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
