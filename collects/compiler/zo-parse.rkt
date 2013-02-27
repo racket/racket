@@ -251,7 +251,7 @@
 (define (read-module v)
   (match v
     [`(,submod-path 
-       ,name ,srcname ,self-modidx ,phase-collapsing?
+       ,name ,srcname ,self-modidx ,cross-phase?
        ,pre-submods ,post-submods
        ,lang-info ,functional? ,et-functional?
        ,rename ,max-let-depth ,dummy
@@ -337,7 +337,7 @@
                     dummy
                     lang-info
                     rename
-                    (if phase-collapsing? '(phase-collapsing) '())
+                    (if cross-phase? '(cross-phase) '())
                     (map read-module pre-submods)
                     (map read-module post-submods))]))]))
 (define (read-module-wrap v)
