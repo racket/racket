@@ -1596,6 +1596,9 @@
           (let ((s (ann (set 2) Any)))
             (if (set? s) (ann s (Setof String)) ((inst set String))))]
 
+        [tc-err (ann (plambda: (a ...) ((x : Integer) y : Symbol ... a) x)
+                     (All (a ...) (Integer a ... a -> Integer)))]
+
         )
   (test-suite
    "check-type tests"
