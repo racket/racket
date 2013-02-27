@@ -1,5 +1,4 @@
 #lang racket/base
-(require compiler/zo-parse)
 
 (define (check-cross-phase is? form)
   (parameterize ([current-namespace (make-base-namespace)])
@@ -7,8 +6,9 @@
     (write (compile `(module m racket/kernel ,form)) o)
     (close-output-port o)
     (define i (open-input-bytes (get-output-bytes o)))
-    (define e (zo-parse i))
-    (unless (equal? is? (and (memq 'cross-phase (mod-flags (compilation-top-code e))) #t))
+    (define e (parameterize ([read-accept-compiled #t])
+                (read i)))
+    (unless (equal? is? (module-compiled-cross-phase-persistent? e))
       (error 'cross-phase "failed: ~s ~s" is? form))))
 
 (check-cross-phase #t '(define-values (x) 5))

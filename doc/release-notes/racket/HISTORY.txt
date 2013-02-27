@@ -1,3 +1,6 @@
+Version 5.3.3.7
+Added module-compiled-cross-phase-persistent?
+
 Version 5.3.3.6
 Added "phase-collapse" module inference and instantiation
 compiler/zo-structs: added flags field to mod

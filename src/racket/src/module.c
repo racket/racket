@@ -60,6 +60,7 @@ static Scheme_Object *module_compiled_imports(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_compiled_exports(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_compiled_lang_info(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_compiled_submodules(int argc, Scheme_Object *argv[]);
+static Scheme_Object *module_compiled_phaseless_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_to_lang_info(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_to_imports(int argc, Scheme_Object *argv[]);
@@ -443,6 +444,7 @@ void scheme_init_module(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY2("module-compiled-exports",         module_compiled_exports,    1, 1, 2, 2, env);
   GLOBAL_PRIM_W_ARITY("module-compiled-language-info",    module_compiled_lang_info,  1, 1, env);
   GLOBAL_PRIM_W_ARITY("module-compiled-submodules",       module_compiled_submodules, 2, 3, env);
+  GLOBAL_PRIM_W_ARITY("module-compiled-cross-phase-persistent?", module_compiled_phaseless_p, 1, 1, env);
   GLOBAL_FOLDING_PRIM("module-path-index?",               module_path_index_p,        1, 1, 1, env); 
   GLOBAL_PRIM_W_ARITY("module-path-index-resolve",        module_path_index_resolve,  1, 1, env); 
   GLOBAL_PRIM_W_ARITY2("module-path-index-split",         module_path_index_split,    1, 1, 2, 2, env); 
@@ -3456,6 +3458,21 @@ static Scheme_Object *module_compiled_submodules(int argc, Scheme_Object *argv[]
   
   scheme_wrong_contract("module-compiled-submodules", "compiled-module-expression?", 0, argc, argv);
   return NULL;
+}
+
+static Scheme_Object *module_compiled_phaseless_p(int argc, Scheme_Object *argv[])
+{
+  Scheme_Module *m;
+
+  m = scheme_extract_compiled_module(argv[0]);
+  if (m) {
+    if (m->phaseless)
+      return scheme_true;
+  } else
+    scheme_wrong_contract("module-compiled-cross-phase-persistent?", 
+                          "compiled-module-expression?", 0, argc, argv);
+  
+  return scheme_false;
 }
 
 static Scheme_Object *module_path_index_p(int argc, Scheme_Object *argv[])
