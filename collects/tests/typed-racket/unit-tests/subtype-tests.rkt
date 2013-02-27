@@ -206,6 +206,12 @@
 
    [(-polydots (a) (->... null (a a) (make-ListDots a 'a)))
     (-poly (a b) (-> a b (-Tuple (list a b))))]
+
+   [(-polydots (b a) (-> (->... (list b) (a a) (make-ValuesDots (list (-result b)) a 'a)) Univ))
+    (-polydots (a) (-> (->... (list) (a a) (make-ValuesDots null a 'a)) Univ))]
+
+   [(-polydots (a) (->... (list) (a a) (make-ListDots a 'a)))
+    (-polydots (b a) (->... (list b) (a a) (-pair b (make-ListDots a 'a))))]
    ))
 
 (define-go

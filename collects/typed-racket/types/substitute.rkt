@@ -5,6 +5,7 @@
          (utils tc-utils)
          (rep free-variance)
          (env index-env tvar-env)
+         (only-in (types base-abbrev) -lst* -result)
          racket/match
          racket/set
          racket/contract
@@ -133,31 +134,36 @@
 
 ;; implements curly brace substitution from the formalism
 ;; substitute-dotted : Type Name Name Type -> Type
-(define (substitute-dotted image image-bound name target)
-  (define (sb t) (substitute-dotted image image-bound name t))
+(define (substitute-dotted pre-image image image-bound name target)
+  (define (sb t) (substitute-dotted pre-image image image-bound name t))
   (if (or (set-member? (free-vars-names (free-idxs* target)) name)
           (set-member? (free-vars-names (free-vars* target)) name))
       (type-case (#:Type sb #:Filter (sub-f sb))
                  target
                  [#:ValuesDots types dty dbound
-                               (make-ValuesDots (map sb types)
-                                                (sb dty)
-                                                (if (eq? name dbound) image-bound dbound))]
+                               (let ((extra-types (if (eq? name dbound) pre-image null)))
+                                 (make-ValuesDots (append (map sb types) (map -result extra-types))
+                                                  (sb dty)
+                                                  (if (eq? name dbound) image-bound dbound)))]
                  [#:ListDots dty dbound
-                             (make-ListDots (sb dty)
-                                            (if (eq? name dbound) image-bound dbound))]
+                             (apply -lst*
+                               (if (eq? name dbound) pre-image null)
+                               #:tail
+                               (make-ListDots (sb dty)
+                                              (if (eq? name dbound) image-bound dbound)))]
                  [#:F name*
                       (if (eq? name* name)
                           image
                           target)]
                  [#:arr dom rng rest drest kws
-                        (make-arr (map sb dom)
-                                  (sb rng)
-                                  (and rest (sb rest))
-                                  (and drest
-                                       (cons (substitute image (cdr drest) (sb (car drest)))
-                                             (if (eq? name (cdr drest)) image-bound (cdr drest))))
-                                  (map sb kws))])
+                        (let ((extra-types (if (and drest (eq? name (cdr drest))) pre-image null)))
+                          (make-arr (append (map sb dom) extra-types)
+                                    (sb rng)
+                                    (and rest (sb rest))
+                                    (and drest
+                                         (cons (substitute image (cdr drest) (sb (car drest)))
+                                               (if (eq? name (cdr drest)) image-bound (cdr drest))))
+                                    (map sb kws)))])
        target))
 
 ;; substitute many variables
@@ -174,7 +180,6 @@
         [_ acc])))
   (define t-substed-ty (substitute-many t-substs ty))
 
-
   (for/fold ([t t-substed-ty]) ([(v r) (in-hash s)])
     (match r
       [(t-subst img) t]
@@ -182,9 +187,5 @@
        (substitute-dots imgs #f v t)]
       [(i-subst/starred imgs rest)
        (substitute-dots imgs rest v t)]
-      [(i-subst/dotted null dty dbound)
-       (substitute-dotted dty dbound v t)]
       [(i-subst/dotted imgs dty dbound)
-       (int-err "i-subst/dotted nyi")
-       #;
-       (substitute-dotted imgs rest v t)])))
+       (substitute-dotted imgs dty dbound v t)])))
