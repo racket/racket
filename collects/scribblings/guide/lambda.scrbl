@@ -83,7 +83,7 @@ additional arguments.
 (max-mag)
 ]
 
-A @racket[_rest-id] variable is sometimes called a @defterm{rest
+A @racket[_rest-id] variable is sometimes called a @deftech{rest
 argument}, because it accepts the ``rest'' of the function arguments.
 
 @;------------------------------------------------------------------------

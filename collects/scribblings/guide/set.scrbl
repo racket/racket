@@ -49,7 +49,7 @@ guidelines may help explain when using @racket[set!] is appropriate.
 
 @itemize[
 
- @item{As in any modern language, assigning to shared identifier is no
+ @item{As in any modern language, assigning to a shared identifier is no
        substitute for passing an argument to a procedure or getting
        its result.
 
@@ -157,7 +157,7 @@ significantly better algorithm.
 The use of mutable values, such as vectors and hash tables, raises
 fewer suspicions about the style of a program than using @racket[set!]
 directly. Nevertheless, simply replacing @racket[set!]s in a program
-with a @racket[vector-set!]s obviously does not improve the style of
+with @racket[vector-set!]s obviously does not improve the style of
 the program.
 
 @;------------------------------------------------------------------------

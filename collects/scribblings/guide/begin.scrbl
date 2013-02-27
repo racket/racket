@@ -36,7 +36,7 @@ tail position with respect to the @racket[begin] form.
 
 Many forms, such as @racket[lambda] or @racket[cond] support a
 sequence of expressions even without a @racket[begin]. Such positions are
-sometimes said to have an @defterm{implicit begin}.
+sometimes said to have an @deftech{implicit begin}.
 
 @defexamples[
 (define (print-triangle height)

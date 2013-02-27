@@ -48,9 +48,9 @@ which is a shorthand for
 (greet "John" "Doe")
 ]
 
-The function shorthand via @racket[define] also supports a ``rest''
-argument (i.e., a final argument to collect extra arguments in a
-list):
+The function shorthand via @racket[define] also supports a
+@tech{rest argument} (i.e., a final argument to collect extra
+arguments in a list):
 
 @specform[(define (id arg ... . rest-id) body ...+)]{}
 
