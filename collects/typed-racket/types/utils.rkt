@@ -51,7 +51,7 @@
                                " types: expected ~a, got ~a, types were ~a")
                 (length fixed) (length types) types))
      (let ([body* (subst-all (make-simple-substitution fixed types) body)])
-       (substitute-dotted image var dotted body*))]
+       (substitute-dotted null image var dotted body*))]
     [_ (int-err "instantiate-poly-dotted: requires PolyDots type, got ~a" t)]))
 
 
