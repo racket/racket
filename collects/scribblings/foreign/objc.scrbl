@@ -119,7 +119,7 @@ been loaded into the Racket process already. To avoid relying on other
 libraries to load @filepath{Foundation}, explicitly load it with
 @racket[ffi-lib]:
 
-@examples[
+@interaction[
 #:eval objc-eval
 (eval:alts (ffi-lib
             "/System/Library/Frameworks/Foundation.framework/Foundation") (void))
