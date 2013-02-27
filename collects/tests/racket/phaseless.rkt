@@ -9,7 +9,7 @@
     (define i (open-input-bytes (get-output-bytes o)))
     (define e (zo-parse i))
     (unless (equal? is? (and (memq 'phaseless (mod-flags (compilation-top-code e))) #t))
-      (error 'phaseless "failed: ~s ~s\n" is? form))))
+      (error 'phaseless "failed: ~s ~s" is? form))))
 
 (check-phaseless #t '(define-values (x) 5))
 (check-phaseless #t '(define-values (x) '5))
@@ -35,6 +35,7 @@
 
 (check-phaseless #f '(define-values (x) #(x)))
 (check-phaseless #f '(define-values (x) '(x)))
+(check-phaseless #f '(define-values (x) (lambda () (set! x 8))))
 (check-phaseless #f '(define-values (x) (quote-syntax x)))
 (check-phaseless #f '(define-values (x) (lambda () (quote-syntax x))))
 (check-phaseless #f '(define-values (x) (#%variable-reference)))
@@ -73,6 +74,23 @@
       (check-exn)))
   (check-attach namespace-attach-module)
   (check-attach namespace-attach-module-declaration))
+
+;; Check disallowing redeclaration:
+(parameterize ([current-namespace (make-base-namespace)])
+  (parameterize ([compile-enforce-module-constants #f])
+    (eval `(module m racket/kernel
+             (#%provide x)
+             (define-values (x) 5)))
+    (compile `(module m racket/kernel
+                (#%provide x)
+                (define-values (x) 6)))
+    (unless (void?
+             (with-handlers ([exn:fail? void])
+               (eval `(module m racket/kernel
+                        (#%provide x)
+                        (define-values (x) 6)))
+               'ok))
+      (error 'phaseless "redeclaration should have been disallowed"))))
 
 (displayln "All tests passed.")
 

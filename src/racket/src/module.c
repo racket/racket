@@ -6272,7 +6272,7 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
                                         Scheme_Object *prefix,
                                         Scheme_Object *supermodule)
 {
-  Scheme_Module *m;
+  Scheme_Module *m, *old_m;
   Scheme_Env *env;
   Scheme_Env *old_menv;
   Scheme_Config *config;
@@ -6366,11 +6366,24 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
   if (old_menv) {
     if (scheme_module_protected_wrt(old_menv->guard_insp, insp) || old_menv->attached) {
       scheme_contract_error("module->namespace",
-                            "current code inspector cannot re-declare module",
+                            "current code inspector cannot redeclare module",
                             "module name", 1, m->modname,
                             NULL);
       return NULL;
     }
+  }
+
+  if (old_menv)
+    old_m = old_menv->module;
+  else
+    old_m = (Scheme_Module *)scheme_hash_get(env->module_registry->loaded, m->modname);
+  
+  if (old_m && old_m->phaseless) {
+    scheme_contract_error("module->namespace",
+                          "cannot redeclare phaseless module",
+                          "module name", 1, m->modname,
+                          NULL);
+    return NULL;
   }
 
   if (!set_in_pre) {
@@ -7117,7 +7130,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   m->tt_requires = scheme_null;
   m->dt_requires = scheme_null;
 
-  if (iim && iim->phaseless)
+  if (iim && iim->phaseless && rec[drec].comp)
     m->phaseless = scheme_true;
 
   if (iidx) {

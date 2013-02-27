@@ -1203,6 +1203,7 @@ set_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
     var = scheme_register_toplevel_in_prefix(var, env, rec, drec, 0, NULL);
     if (env->genv->module)
       SCHEME_TOPLEVEL_FLAGS(var) |= SCHEME_TOPLEVEL_MUTATED;
+    env->prefix->non_phaseless = 1;
   }
 
   scheme_compile_rec_done_local(rec, drec);

@@ -629,7 +629,7 @@ is specified as @tech{phaseless} (such as
 @racketmodname[racket/kernel]).
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection[#:tag "module-redeclare"]{Module Re-declarations}
+@subsection[#:tag "module-redeclare"]{Module Redeclarations}
 
 @section-index["modules" "re-define"]
 
@@ -642,8 +642,16 @@ module body. If a new variable definition has a counterpart in the old
 declaration, it effectively assigns to the old variable.
 
 If a module is @tech{instantiate}d in any @tech{phase}s before it is
-re-declared, each re-declaration of the module is immediately
+redeclared, each redeclaration of the module is immediately
 @tech{instantiate}d in the same @tech{phase}s.
+
+If the current @tech{inspector} does not manage a module's declaration
+inspector (see @secref["modprotect"]), then the module cannot be
+redeclared. Similarly, a @tech{phaseless} module cannot be redeclared.
+Even if redeclrection succeeds, instantiation of a module that is
+previously instantiated may fail if instantiation for the
+redeclaration attempts to modify variables that are constant (see
+@racket[compile-enforce-module-constants]).
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "submodules"]{Submodules}

@@ -992,8 +992,9 @@ to syntax transformers, via @racket[syntax-local-name].
 @section[#:tag "phaseless-grammar"]{Phaseless Module Declarations}
 
 A module is @tech{phaseless} only if it fits the following grammar,
-which uses non-terminals from @secref["fully-expanded"], and only if
-it includes no uses of @racket[quote-syntax] or @racket[#%variable-reference]:
+which uses non-terminals from @secref["fully-expanded"], only if
+it includes no uses of @racket[quote-syntax] or @racket[#%variable-reference], 
+and only if no module-level binding is @racket[set!]ed.
 
 @racketgrammar*[
 #:literals (module module* #%plain-module-begin begin #%provide
