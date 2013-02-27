@@ -3051,6 +3051,23 @@ int scheme_inspector_sees_part(Scheme_Object *s, Scheme_Object *insp, int pos)
   }
 }
 
+int scheme_struct_is_transparent(Scheme_Object *s)
+{
+  Scheme_Struct_Type *stype;
+  int p;
+
+  if (SCHEME_CHAPERONEP(s))
+    s = SCHEME_CHAPERONE_VAL(s);
+
+  stype = ((Scheme_Structure *)s)->stype;
+
+  for (p = stype->name_pos; p--; ) {
+    if (SCHEME_TRUEP(stype->parent_types[p]->inspector))
+      return 0;
+  }
+
+  return 1;
+}
 
 #define STRUCT_mPROCP(o, v)						\
   (SCHEME_PRIMP(o) && ((((Scheme_Primitive_Proc *)o)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK) == (v)))

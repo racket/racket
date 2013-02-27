@@ -817,6 +817,7 @@ typedef struct Scheme_Struct_Property {
 } Scheme_Struct_Property;
 
 int scheme_inspector_sees_part(Scheme_Object *s, Scheme_Object *insp, int pos);
+int scheme_struct_is_transparent(Scheme_Object *s);
 
 typedef struct Scheme_Struct_Type {
   Scheme_Inclhash_Object iso; /* scheme_struct_type_type */

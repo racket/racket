@@ -930,6 +930,7 @@ END_XFORM_SKIP;
 typedef struct Hash_Info {
   intptr_t depth; /* always odd */
   Scheme_Object *recur;
+  Scheme_Object *insp; /* obtained lazily */
 } Hash_Info;
 
 static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi);
@@ -942,6 +943,7 @@ static Scheme_Object *hash_recur(int argc, Scheme_Object **argv, Scheme_Object *
 
   hi = (Hash_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
   hi->depth += 2;
+  hi->insp = NULL; /* in case recursive call is `parameterize'd */
 
   v = to_signed_hash(equal_hash_key(argv[0], 0, hi));
   
@@ -1297,8 +1299,16 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
         }
       } else {
         Scheme_Object *insp;
-        insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
-        if (scheme_inspector_sees_part(o, insp, -2)) {
+        if (scheme_struct_is_transparent(o))
+          insp = NULL;
+        else {
+          insp = hi->insp;
+          if (!insp) {
+            insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
+            hi->insp = insp;
+          }
+        }
+        if (!insp || scheme_inspector_sees_part(o, insp, -2)) {
           int i;
           Scheme_Structure *s1 = (Scheme_Structure *)o;
 	
@@ -1476,6 +1486,7 @@ intptr_t scheme_equal_hash_key(Scheme_Object *o)
 
   hi.depth = 1;
   hi.recur = NULL;
+  hi.insp = NULL;
 
   return to_signed_hash(equal_hash_key(o, 0, &hi));
 }
@@ -1486,6 +1497,7 @@ intptr_t scheme_equal_hash_key2(Scheme_Object *o)
 
   hi.depth = 1;
   hi.recur = NULL;
+  hi.insp = NULL;
 
   return to_signed_hash(equal_hash_key2(o, &hi));
 }
@@ -1753,8 +1765,15 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
         }
       } else {
         Scheme_Object *insp;
-        insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
-        if (scheme_inspector_sees_part(o, insp, -2)) {
+        if (scheme_struct_is_transparent(o))
+          insp = NULL;
+        else {
+          if (!insp) {
+            insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
+            hi->insp = insp;
+          }
+        }
+        if (!insp || scheme_inspector_sees_part(o, insp, -2)) {
           int i;
           uintptr_t k = 0;
           Scheme_Structure *s1 = (Scheme_Structure *)o;
