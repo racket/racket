@@ -22,7 +22,7 @@
 (check-phase-collapsing #t '(define-values (x) (cons 1 2)))
 (check-phase-collapsing #t '(define-values (x) (list 1 2)))
 (check-phase-collapsing #t '(define-values (x) (cons 1 '())))
-(check-phase-collapsing #t '(#%require racket/private/stx))
+(check-phase-collapsing #t '(#%require racket/tcp))
 (check-phase-collapsing #t '(define-values (x) (lambda (x) x)))
 (check-phase-collapsing #t '(define-values (x) (case-lambda [(x) x] [y y])))
 (check-phase-collapsing #t '(define-values (struct: ? -ref) (make-struct-type-property 'p)))
