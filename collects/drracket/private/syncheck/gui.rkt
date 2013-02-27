@@ -1178,7 +1178,7 @@ If the namespace does not, they are colored the unbound color.
                     (make-object menu-item%
                       jump-to-next-bound-occurrence
                       menu
-                      (λ (item evt) (jump-to-next-callback pos text)))
+                      (λ (item evt) (jump-to-next-callback pos text #f)))
                     (make-object menu-item%
                       jump-to-binding
                       menu
