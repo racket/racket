@@ -190,7 +190,7 @@
                   [(stack) (append '(#%modvars) orig-stack)]
                   [(closed) (make-hasheq)])
        `(,mod-name ,(if (symbol? name) name (last name)) ....
-           ,@(if (null? flags) '() (list `(quote ,@flags)))
+           ,@(if (null? flags) '() (list `(quote ,flags)))
            ,@(let ([l (apply
                        append
                        (for/list ([req (in-list requires)]
