@@ -7,6 +7,7 @@
          (env type-name-env)
          racket/match unstable/match
          racket/function
+         racket/list
          racket/lazy-require
          (prefix-in c: racket/contract)
          (for-syntax racket/base syntax/parse))
@@ -357,15 +358,38 @@
               [((Poly: ns b1) (Poly: ms b2))
                (=> unmatch)
                (unless (= (length ns) (length ms))
-                       (unmatch))
+                 (unmatch))
                (subtype* A0 b1 (subst-all (make-simple-substitution ms (map make-F ns)) b2))]
+              [((PolyDots: (list ns ... n-dotted) b1)
+                (PolyDots: (list ms ... m-dotted) b2))
+               (=> unmatch)
+               (unless (= (length ns) (length ms))
+                 (unmatch))
+               (define subst
+                 (hash-set (make-simple-substitution ms (map make-F ns))
+                           m-dotted (i-subst/dotted null (make-F n-dotted) n-dotted)))
+               (subtype* A0 b1 (subst-all subst b2))]
+              [((PolyDots: (list ns ... n-dotted) b1)
+                (Poly: (list ms ...) b2))
+               (=> unmatch)
+               (unless (<= (length ns) (length ms))
+                 (unmatch))
+               (define subst
+                 (hash-set (make-simple-substitution ns (map make-F (take ms (length ns))))
+                           n-dotted (i-subst (map make-F (drop ms (length ns))))))
+               (subtype* A0 (subst-all subst b1) b2)]
               [((Refinement: par _ _) t)
                (subtype* A0 par t)]
               ;; use unification to see if we can use the polytype here
               [((Poly: vs b) s)
                (=> unmatch)
                (if (infer vs null (list b) (list s) (make-Univ)) A0 (unmatch))]
-              [(s (Poly: vs b))
+              [((PolyDots: (list vs ... vdotted) b) s)
+               (=> unmatch)
+               (if (infer vs (list vdotted) (list b) (list s) (make-Univ) )
+                   A0
+                   (unmatch))]
+              [(s (or (Poly: vs b) (PolyDots: vs b)))
                (=> unmatch)
                (if (null? (fv b)) (subtype* A0 s b) (unmatch))]
               ;; rec types, applications and names (that aren't the same)
@@ -477,7 +501,9 @@
                (subtype* A0 parent other)]
               ;; subtyping on values is pointwise
               [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
-              [((or (Values: _) (AnyValues:)) (AnyValues:)) A0]
+              [((ValuesDots: s-rs s-dty dbound) (ValuesDots: t-rs t-dty dbound))
+               (subtype* (subtypes* A0 s-rs t-rs) s-dty t-dty)]
+              [((or (ValuesDots: _ _ _) (Values: _) (AnyValues:)) (AnyValues:)) A0]
               ;; trivial case for Result
               [((Result: t f o) (Result: t* f o))
                (subtype* A0 t t*)]
@@ -513,6 +539,7 @@
 (provide
   type-compare? subtypes/varargs subtypes)
 
+;(require racket/trace)
 ;(trace subtype*)
 ;(trace supertype-of-one/arr)
 ;(trace arr-subtype*/no-fail)
