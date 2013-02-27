@@ -22,6 +22,7 @@ parenthesized forms in a vector constant represent symbols and lists.
 @examples[
 (eval:alts @#,racketvalfont{#("a" "b" "c")} #("a" "b" "c"))
 (eval:alts @#,racketvalfont{#(name (that tune))} #(name (that tune)))
+(eval:alts @#,racketvalfont{#4(baldwin bruce)} #4(baldwin bruce))
 (vector-ref #("a" "b" "c") 1)
 (vector-ref #(name (that tune)) 1)
 ]
@@ -29,8 +30,8 @@ parenthesized forms in a vector constant represent symbols and lists.
 Like strings, a vector is either mutable or immutable, and vectors
 written directly as expressions are immutable.
 
-Vector can be converted to lists and vice versa via
-@racket[list->vector] and @racket[vector->list]; such conversions are
+Vectors can be converted to lists and vice versa via
+@racket[vector->list] and @racket[list->vector]; such conversions are
 particularly useful in combination with predefined procedures on
 lists. When allocating extra lists seems too expensive, consider
 using looping forms like @racket[for/fold], which recognize vectors as

@@ -7,7 +7,7 @@ Some procedures or expression forms have no need for a result
 value. For example, the @racket[display] procedure is called only for
 the side-effect of writing output. In such cases the result value is
 normally a special constant that prints as @|void-const|.  When the
-result of an expression is simply @|void-const|, the REPL does not
+result of an expression is simply @|void-const|, the @tech{REPL} does not
 print anything.
 
 The @racket[void] procedure takes any number of arguments and returns

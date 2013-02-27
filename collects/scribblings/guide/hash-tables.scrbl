@@ -4,7 +4,7 @@
 @title[#:tag "hash-tables"]{Hash Tables}
 
 A @deftech{hash table} implements a mapping from keys to values, where
-both keys and values can be arbitrary Scheme values, and access and
+both keys and values can be arbitrary Racket values, and access and
 update to the table are normally constant-time operations. Keys are
 compared using @racket[equal?], @racket[eqv?], or @racket[eq?], depending on whether
 the hash table is created with @racket[make-hash],
@@ -21,7 +21,7 @@ the hash table is created with @racket[make-hash],
 
 The @racket[hash], @racket[hasheqv], and @racket[hasheq] functions
 create immutable hash tables from an initial set of keys and values,
-which each value is provided as an argument after its key. Immutable
+in which each value is provided as an argument after its key. Immutable
 hash tables can be extended with @racket[hash-set], which produces a
 new immutable hash table in constant time.
 
@@ -76,9 +76,11 @@ is retained elsewhere.
 Beware that even a weak hash table retains its values strongly, as
 long as the corresponding key is accessible. This creates a catch-22
 dependency when a value refers back to its key, so that the mapping is
-retained permanently. To break the cycle, map the key to an ephemeron
+retained permanently. To break the cycle, map the key to an @defterm{ephemeron}
 that pairs the value with its key (in addition to the implicit pairing
 of the hash table).
+
+@refdetails/gory["ephemerons"]{using ephemerons}
 
 @examples[
 (define ht (make-weak-hasheq))
