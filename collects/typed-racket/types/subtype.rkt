@@ -362,13 +362,19 @@
                (subtype* A0 b1 (subst-all (make-simple-substitution ms (map make-F ns)) b2))]
               [((PolyDots: (list ns ... n-dotted) b1)
                 (PolyDots: (list ms ... m-dotted) b2))
-               (=> unmatch)
-               (unless (= (length ns) (length ms))
-                 (unmatch))
-               (define subst
-                 (hash-set (make-simple-substitution ms (map make-F ns))
-                           m-dotted (i-subst/dotted null (make-F n-dotted) n-dotted)))
-               (subtype* A0 b1 (subst-all subst b2))]
+               (cond
+                 ((< (length ns) (length ms))
+                  (define-values (short-ms rest-ms) (split-at ms (length ns)))
+                  (define subst
+                    (hash-set (make-simple-substitution ns (map make-F short-ms))
+                              n-dotted (i-subst/dotted (map make-F rest-ms) (make-F m-dotted) m-dotted)))
+                  (subtype* A0 (subst-all subst b1) b2))
+                 (else
+                  (define-values (short-ns rest-ns) (split-at ns (length ms)))
+                  (define subst
+                    (hash-set (make-simple-substitution ms (map make-F short-ns))
+                              m-dotted (i-subst/dotted (map make-F rest-ns) (make-F n-dotted) n-dotted)))
+                  (subtype* A0 b1 (subst-all subst b2))))]
               [((PolyDots: (list ns ... n-dotted) b1)
                 (Poly: (list ms ...) b2))
                (=> unmatch)
