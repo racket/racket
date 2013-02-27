@@ -9,7 +9,7 @@
 
 @title{Kernel Forms and Functions}
 
-@defmodule*[(racket/kernel)]{The @racketmodname[racket/kernel] library
+@defmodulelang[racket/kernel]{The @racketmodname[racket/kernel] library
 is a @tech{phase-collapsing} module that provides a minimal set of syntactic
 forms and functions.}
 
@@ -35,3 +35,12 @@ functions that are not exported by @racketmodname[racket/base] because
 @racketmodname[racket/base] exports improved variants. The exact set
 of function bindings exported by @racket[racket/kernel] is unspecified
 and subject to change across versions.
+
+
+@section[#:style '(hidden toc-hidden)]{}
+
+@defmodule[racket/kernel/init]{The @racketmodname[racket/kernel/init]
+library re-provides all of @racketmodname[racket/kernel]. It also
+provides @racket[#%top-interaction], which makes
+@racketmodname[racket/kernel/init] useful with the @Flag{I}
+command-line flag for @exec{racket}.}

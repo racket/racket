@@ -1,6 +1,8 @@
 Version 5.3.3.6
 Added "phase-collapse" module inference and instantiation
 compiler/zo-structs: added flags field to mod
+racket/kernel: removed #%top-interaction
+racket/kernel/init: added
 
 Version 5.3.3.4
 Added impersonator-ephemeron
