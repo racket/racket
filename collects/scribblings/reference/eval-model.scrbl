@@ -599,33 +599,33 @@ top-level variables in higher @tech{phases}, while module
 top-levels are in corresponding higher @tech{phase}s.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection[#:tag "phaseless-modules"]{Phaseless Modules}
+@subsection[#:tag "phase-collapsing-modules"]{Phase-Collapsing Modules}
 
 Module declarations that fit a highly constrained form create
-@deftech{phaseless} modules. A @tech{phaseless} module's
+@deftech{phase-collapsing} modules. A @tech{phase-collapsing} module's
 instantiations across all phases and @tech{module registries} share
 the variables produced by the first instantiation of the module.
 
-The intent of a @tech{phaseless} module is to support values that are
+The intent of a @tech{phase-collapsing} module is to support values that are
 recognizable after @tech{phase} crossings. For example, when a macro
 transformer running in phase 1 raises a syntax error as represented by
 a @racket[exn:fail:syntax] instance, the instance is recognizable by a
 phase-0 exception handler wrapping a call to @racket[eval] or
 @racket[expand] that triggered the syntax error, because the
 @racket[exn:fail:syntax] structure type is defined by a
-@tech{phaseless} module.
+@tech{phase-collapsing} module.
 
-A @tech{phaseless} module imports only other @tech{phaseless} modules,
+A @tech{phase-collapsing} module imports only other @tech{phase-collapsing} modules,
 and it contains only definitions that bind variables to functions,
 structure types and related functions, or structure-type properties
-and related functions. A @tech{phaseless} module never includes syntax
+and related functions. A @tech{phase-collapsing} module never includes syntax
 literals (via @racket[quote-syntax]) or variable references (via
-@racket[#%variable-reference]). See @secref["phaseless-grammar"] for
-the syntactic specification of a @tech{phaseless} module
+@racket[#%variable-reference]). See @secref["phase-collapsing-grammar"] for
+the syntactic specification of a @tech{phase-collapsing} module
 declaration.
 
-A documented module should be assumed non-@tech{phaseless} unless it
-is specified as @tech{phaseless} (such as
+A documented module should be assumed non-@tech{phase-collapsing} unless it
+is specified as @tech{phase-collapsing} (such as
 @racketmodname[racket/kernel]).
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -647,7 +647,7 @@ redeclared, each redeclaration of the module is immediately
 
 If the current @tech{inspector} does not manage a module's declaration
 inspector (see @secref["modprotect"]), then the module cannot be
-redeclared. Similarly, a @tech{phaseless} module cannot be redeclared.
+redeclared. Similarly, a @tech{phase-collapsing} module cannot be redeclared.
 Even if redeclrection succeeds, instantiation of a module that is
 previously instantiated may fail if instantiation for the
 redeclaration attempts to modify variables that are constant (see

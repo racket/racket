@@ -5216,7 +5216,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
     scheme_log(info->logger,
                SCHEME_LOG_DEBUG,
                0,
-               "compilation of phaseless module: %D",
+               "compilation of phase-collapsing module: %D",
                m->modname);
   }
 

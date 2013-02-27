@@ -205,7 +205,7 @@ binding, constructor, etc.}
              [dummy toplevel?]
              [lang-info (or/c #f (vector/c module-path? symbol? any/c))]
              [internal-context (or/c #f #t stx? (vectorof stx?))]
-             [flags (listof (or/c 'phaseless))]
+             [flags (listof (or/c 'phase-collapsing))]
              [pre-submodules (listof mod?)]
              [post-submodules (listof mod?)])]{
   Represents a @racket[module] declaration.
@@ -248,8 +248,8 @@ binding, constructor, etc.}
   syntax-object value embeds an arbitrary lexical context.
 
   The @racket[flags] field records certain properties of the module.
-  The @racket['phaseless] flag indicates that the module body is
-  evaluated once and the results shared across all phases; such a
+  The @racket['phase-collapsing] flag indicates that the module body is
+  evaluated once and the results shared across instances for all phases; such a
   module contains only definitions of functions, structure types, and
   structure type properties.
 

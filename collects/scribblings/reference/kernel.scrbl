@@ -10,7 +10,7 @@
 @title{Kernel Forms and Functions}
 
 @defmodule*[(racket/kernel)]{The @racketmodname[racket/kernel] library
-is a @tech{phaseless} module that provides a minimal set of syntactic
+is a @tech{phase-collapsing} module that provides a minimal set of syntactic
 forms and functions.}
 
 ``Minimal'' means that @racketmodname[racket/kernel] includes only

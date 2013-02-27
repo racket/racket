@@ -989,9 +989,9 @@ information. Inferred and property-assigned names are also available
 to syntax transformers, via @racket[syntax-local-name].
 
 @;----------------------------------------
-@section[#:tag "phaseless-grammar"]{Phaseless Module Declarations}
+@section[#:tag "phase-collapsing-grammar"]{Phase-Collapsing Module Declarations}
 
-A module is @tech{phaseless} only if it fits the following grammar,
+A module is @tech{phase-collapsing} only if it fits the following grammar,
 which uses non-terminals from @secref["fully-expanded"], only if
 it includes no uses of @racket[quote-syntax] or @racket[#%variable-reference], 
 and only if no module-level binding is @racket[set!]ed.
@@ -1003,16 +1003,17 @@ and only if no module-level binding is @racket[set!]ed.
             set! quote-syntax quote with-continuation-mark
             #%plain-app
             cons list make-struct-type make-struct-type-property)
-[phaseless-module (module id module-path
-                   (#%plain-module-begin
-                    phaseless-form ...))]
-[phaseless-form (begin phaseless-form ...)                
+[phase-collapse-module (module id module-path
+                         (#%plain-module-begin
+                           phase-collapse-form ...))]
+[phase-collapse-form (begin phase-collapse-form ...)                
                 (#%provide raw-provide-spec ...)
                 submodule-form
-                (define-values (id ...) phaseless-expr)
+                (define-values (id ...) 
+                  phase-collapse-expr)
                 (#%require raw-require-spec ...)]
-[phaseless-expr id
-                (@#,racket[quote] phaseless-datum)
+[phase-collapse-expr id
+                (@#,racket[quote] phase-collapse-datum)
                 (#%plain-lambda formals expr ...+)
                 (case-lambda (formals expr ...+) ...)
                 (#%plain-app cons expr ...+)
@@ -1020,15 +1021,15 @@ and only if no module-level binding is @racket[set!]ed.
                 (#%plain-app make-struct-type expr ...+)
                 (#%plain-app make-struct-type-property 
                              expr ...+)]
-[phaseless-datum number
+[phase-collapse-datum number
                  boolean
                  identifier
                  string
                  bytes]
 ]
 
-This grammar applies after @tech{expansion}, but because a @tech{phaseless}
-module imports only from other phaseless modules, the only relevant
+This grammar applies after @tech{expansion}, but because a @tech{phase-collapsing}
+module imports only from other phase-collapsing modules, the only relevant
 expansion steps are the implicit introduction of
 @racket[#%plain-module-begin], implicit introduction of @racket[#%plain-app],
 and implicit introduction and/or expansion of @racket[#%datum].

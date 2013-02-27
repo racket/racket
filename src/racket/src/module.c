@@ -6380,7 +6380,7 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
   
   if (old_m && old_m->phaseless) {
     scheme_contract_error("module->namespace",
-                          "cannot redeclare phaseless module",
+                          "cannot redeclare phase-collapsing module",
                           "module name", 1, m->modname,
                           NULL);
     return NULL;
