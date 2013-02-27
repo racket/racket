@@ -1,5 +1,7 @@
 #lang racket/base
-(require racket/contract/base)
+(require racket/contract/base
+         "check-info.rkt"
+         "location.rkt")
 
 ;; struct test : 
 (define-struct test ())
@@ -15,7 +17,16 @@
 ;; struct (exn:test:check struct:exn:test) : (list-of check-info)
 ;;
 ;; The exception thrown to indicate a check has failed
-(define-struct (exn:test:check exn:test) (stack))
+(define-struct (exn:test:check exn:test) (stack)
+  #:property prop:exn:srclocs
+  (lambda (self)
+    ;; Try to get a location from the stack.
+    (define maybe-location (for/or ([check-info (exn:test:check-stack self)])
+                             (and (check-location? check-info) check-info)))
+    (cond [maybe-location
+           (list (location->srcloc (check-info-value maybe-location)))]
+          [else
+           (list)])))
 ;; struct (exn:test:check:internal exn:test:check) : ()
 ;;
 ;; Exception thrown to indicate an internal failure in an
