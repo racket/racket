@@ -474,7 +474,7 @@
   (test (with-handlers ([exn:fail? exn-message])
           (generate-term L #:satisfying (f r_1) = r_2 +inf.0))
         #rx".*generate-term:.*undatum.*"))
-             
+
 
 (let ()
   (define-language L (n 2))
@@ -499,14 +499,14 @@
   (define-language l (n number))
   
   (define-metafunction l
-  [(t n n)
-   1]
-  [(t n 2)
-   2]
-  [(t 1 n)
-   3]
-  [(t n_1 n_2)
-   4])
+    [(t n n)
+     1]
+    [(t n 2)
+     2]
+    [(t 1 n)
+     3]
+    [(t n_1 n_2)
+     4])
   
   (test-equal (generate-term l #:satisfying (t 1 1) = 1 +inf.0)
               '((t 1 1) = 1))
@@ -567,3 +567,34 @@
                  (raise e))])
       (for ([n 10])
         (g)))))
+
+(let ()
+  (define-language L0)
+  (define-relation L0
+    [(a any)])
+  (define-relation L0
+    [(b any)])
+  (define-relation L0
+    [(c any) (a (b any))])
+  
+  (define-metafunction L0
+    [(f any)
+     (a ny)])
+
+  (define-judgment-form L0
+    #:mode (J I O)
+    [(J any_1 any_2)
+     (J (a any_1) any_2)]
+    [(J #t #f)])
+  
+  (test (with-handlers ([exn:fail? exn-message])
+          (generate-term L0 #:satisfying (c any) +inf.0))
+        #rx".*generate-term:.*relation.*")
+  
+  (test (with-handlers ([exn:fail? exn-message])
+          (generate-term L0 #:satisfying (f any_1) = any_2 +inf.0))
+        #rx".*generate-term:.*relation.*")
+  
+  (test (with-handlers ([exn:fail? exn-message])
+          (generate-term L0 #:satisfying (J any_1 any_2) +inf.0))
+        #rx".*generate-term:.*relation.*"))

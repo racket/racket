@@ -1254,6 +1254,31 @@
     (test (term (b 1)) #t)
     (test (term (b 2)) #t)
     (test (term (b 3)) #f))
+  
+  (let ()
+    (define-relation empty-language
+      [(a any)])
+    (define-relation empty-language
+      [(b any)])
+    (define-relation empty-language
+      [(c any) (a (b any))])
+    
+    (define-metafunction empty-language
+      [(f any)
+       (c any)])
+    
+    (define-judgment-form empty-language
+      #:mode (J I O)
+      [(J any_1 (a any_1))])
+    
+    (test (term (a 1)) #t)
+    (test (term (b 2)) #t)
+    (test (term (c 3)) #t)
+    (test (term (c (b (a x)))) #t)
+    (test (term (f q)) #t)
+    (test (judgment-holds (J Z #t)) #t)
+    (test (judgment-holds (J Z Z)) #f)
+    )
 
   
   (exec-syntax-error-tests "syn-err-tests/relation-definition.rktd")

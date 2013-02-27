@@ -1291,11 +1291,13 @@
        (free-identifier=? stx (quote-syntax ...))))
 
 (define-for-syntax (where-keyword? id)
-  (or (free-identifier=? id #'where)
-      (free-identifier=? id #'where/hidden)))
+  (and (identifier? id)
+       (or (free-identifier=? id #'where)
+           (free-identifier=? id #'where/hidden))))
 (define-for-syntax (side-condition-keyword? id)
-  (or (free-identifier=? id #'side-condition)
-      (free-identifier=? id #'side-condition/hidden)))
+  (and (identifier? id)
+       (or (free-identifier=? id #'side-condition)
+           (free-identifier=? id #'side-condition/hidden))))
 ;                                                                        
 ;                                                                        
 ;                                                      ;                 
@@ -1357,7 +1359,7 @@
                      (append (syntax->datum #'new-names) ns))))]
         [(side-cond . rest)
          (side-condition-keyword? #'side-cond)
-         ;; TODO - side condition handling
+         ;; TODO - enable side conditions for judgment form only
          (values ps-rw eqs ns)]
         [(prem-name . prem-body)
          (and (judgment-form-id? #'prem-name) in-judgment-form?)
@@ -1370,9 +1372,9 @@
          ;; TODO - fix when implementing ellipses
          (values ps-rw eqs ns)]
         [term
-         (not in-judgment-form?) ;; in a relation
+         (not in-judgment-form?) ;; in a relation ;; TODO - eliminate this (relations become SCs)
          (let-values ([(term-rws mf-cs) (rewrite-terms (list #'term) ns)])
-           (values (append mf-cs ps-rw)
+           (values (append mf-cs ps-rw) 
                    eqs
                    ns))]
         [else (raise-syntax-error what "malformed premise" prem)])))
@@ -1397,7 +1399,9 @@
                  [((mf-clauses ...) ...) (map (λ (fs) 
                                                 (map (λ (f-id)
                                                        (with-syntax ([f-id f-id])
-                                                         #'(metafunc-proc-gen-clauses f-id)))
+                                                         (if (judgment-form-id? #'f-id)
+                                                             #'(error 'generate-term "generation disabled for relations in term positions")
+                                                             #'(metafunc-proc-gen-clauses f-id))))
                                                      (syntax->list fs)))
                                               (syntax->list #'((f ...) ...)))])
                 (values (syntax->list #'(body-pat ...))

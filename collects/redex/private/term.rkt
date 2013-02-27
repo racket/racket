@@ -70,16 +70,16 @@
     [(_ mf)
      #'(λ (x) (mf x))]))
 
-(define-syntax (mf-map stx)
-  (syntax-case stx ()
-    [(_ inner-apps)
-     #'(λ (l) (map inner-apps l))]))
-
 (define-syntax (jf-apply stx)
   (syntax-case stx ()
     [(_ jf)
      (judgment-form-id? #'jf)
      (judgment-form-term-proc (syntax-local-value #'jf (λ () #f)))]))
+
+(define-syntax (mf-map stx)
+  (syntax-case stx ()
+    [(_ inner-apps)
+     #'(λ (l) (map inner-apps l))]))
 
 (define-for-syntax currently-expanding-term-fn (make-parameter #f))
 
@@ -318,7 +318,11 @@
     [(mf-apply f)
      (and (identifier? #'mf-apply)
           (eq? (syntax-e #'mf-apply) 'mf-apply))
-     #'(metafunc f)]))
+     #'(metafunc f)]
+    [(jf-apply f)
+     (and (identifier? #'jf-apply)
+          (eq? (syntax-e #'jf-apply) 'jf-apply))
+     #'(jform f)]))
 
 (define-syntax (term-let-fn stx)
   (syntax-case stx ()
