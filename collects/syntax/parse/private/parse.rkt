@@ -368,6 +368,7 @@ Conventions:
           (not (assq '#:disable-colon-notation chunks)))
         (define-values (decls0 defs)
           (get-decls+defs chunks #t #:context #'ctx))
+        ;; for-clause : stx -> (values pattern stx (listof stx))
         (define (for-clause clause)
           (syntax-case clause ()
             [[p . rest]
@@ -377,43 +378,44 @@ Conventions:
                                                   #:splicing? #f
                                                   #:decls decls0
                                                   #:context #'ctx))])
-               (with-syntax ([rest rest]
-                             [pattern pattern]
-                             [(local-def ...) (append defs defs2)]
-                             [body-expr
-                              (case (syntax-e #'body-mode)
-                                ((one-template)
-                                 (syntax-case rest ()
-                                   [(template)
-                                    #'(syntax template)]
-                                   [_ (raise-syntax-error #f "expected exactly one template" #'ctx)]))
-                                ((body-sequence)
-                                 (syntax-case rest ()
-                                   [(e0 e ...) #'(let () e0 e ...)]
-                                   [_ (raise-syntax-error #f "expected non-empty clause body"
-                                                          #'ctx clause)]))
-                                (else
-                                 (raise-syntax-error #f "internal error: unknown body mode" #'ctx #'body-mode)))])
-                 #`(let ()
-                     local-def ...
-                     (parse:S x cx pattern pr es body-expr))))]))
+               (let ([body-expr
+                      (case (syntax-e #'body-mode)
+                        ((one-template)
+                         (syntax-case rest ()
+                           [(template)
+                            #'(syntax template)]
+                           [_ (raise-syntax-error #f "expected exactly one template" #'ctx)]))
+                        ((body-sequence)
+                         (syntax-case rest ()
+                           [(e0 e ...) #'(let () e0 e ...)]
+                           [_ (raise-syntax-error #f "expected non-empty clause body"
+                                                  #'ctx clause)]))
+                        (else
+                         (raise-syntax-error #f "internal error: unknown body mode" #'ctx #'body-mode)))])
+                 (values pattern body-expr defs2)))]))
         (unless (stx-list? clauses-stx)
           (raise-syntax-error #f "expected sequence of clauses" #'ctx))
-        (define alternatives
-          (if (stx-pair? clauses-stx)
-              (map for-clause (stx->list clauses-stx))
-              (list #`(fail (failure pr es)))))
-        (with-syntax ([(def ...) (append (get-txlifts-as-definitions) defs)]
-                      [(alternative ...) alternatives])
+        (define-values (patterns body-exprs defs2s)
+          (for/lists (patterns body-exprs defs2s) ([clause (in-list (stx->list clauses-stx))])
+            (for-clause clause)))
+        (with-syntax ([(def ...) (apply append (get-txlifts-as-definitions) defs defs2s)])
           #`(let* ([ctx0 #,context]
                    [pr (ps-empty x ctx0)]
                    [es #f]
                    [cx x]
                    [fh0 (syntax-patterns-fail ctx0)])
+              def ...
               (parameterize ((current-syntax-context ctx0))
                 (with ([fail-handler fh0]
                        [cut-prompt fh0])
-                  (try alternative ...))))))))]))
+                  #,(cond [(pair? patterns)
+                           (with-syntax ([(alternative ...)
+                                          (for/list ([pattern (in-list patterns)]
+                                                     [body-expr (in-list body-exprs)])
+                                            #`(parse:S x cx #,pattern pr es #,body-expr))])
+                             #`(try alternative ...))]
+                          [else
+                           #`(fail (failure pr es))]))))))))]))
 
 ;; ----
 

@@ -271,6 +271,7 @@
      (values entry null)]
     [(den:class name class argu)
      ;; FIXME: integrable syntax classes?
+     ;; FIXME: what if no-arity, no-args?
      (cond [(identifier? name)
             (let* ([pos-count (length (arguments-pargs argu))]
                    [kws (arguments-kws argu)]
