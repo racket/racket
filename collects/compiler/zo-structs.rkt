@@ -139,7 +139,7 @@
                                 [dummy toplevel?]
                                 [lang-info (or/c #f (vector/c module-path? symbol? any/c))]
                                 [internal-context (or/c #f #t stx? (vectorof stx?))]
-                                [flags (listof (or/c 'phaseless))]
+                                [flags (listof (or/c 'phase-collapsing))]
                                 [pre-submodules (listof mod?)]
                                 [post-submodules (listof mod?)]))
 
