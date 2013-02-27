@@ -5216,7 +5216,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
     scheme_log(info->logger,
                SCHEME_LOG_DEBUG,
                0,
-               "compilation of phase-collapsing module: %D",
+               "compilation of cross-phase persistent module: %D",
                m->modname);
   }
 

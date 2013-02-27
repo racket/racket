@@ -1091,7 +1091,7 @@
             [l (cons lang-info l)] ; lang-info
             [l (cons (map convert-module post-submodules) l)]
             [l (cons (map convert-module pre-submodules) l)]
-            [l (cons (if (memq 'phase-collapsing flags) #t #f) l)]
+            [l (cons (if (memq 'cross-phase flags) #t #f) l)]
             [l (cons self-modidx l)]
             [l (cons srcname l)]
             [l (cons (if (pair? name) (car name) name) l)]

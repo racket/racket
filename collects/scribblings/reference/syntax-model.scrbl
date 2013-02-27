@@ -989,9 +989,9 @@ information. Inferred and property-assigned names are also available
 to syntax transformers, via @racket[syntax-local-name].
 
 @;----------------------------------------
-@section[#:tag "phase-collapsing-grammar"]{Phase-Collapsing Module Declarations}
+@section[#:tag "cross-phase persistent-grammar"]{Cross-Phase Persistent Module Declarations}
 
-A module is @tech{phase-collapsing} only if it fits the following grammar,
+A module is @tech{cross-phase persistent} only if it fits the following grammar,
 which uses non-terminals from @secref["fully-expanded"], only if
 it includes no uses of @racket[quote-syntax] or @racket[#%variable-reference], 
 and only if no module-level binding is @racket[set!]ed.
@@ -1003,33 +1003,31 @@ and only if no module-level binding is @racket[set!]ed.
             set! quote-syntax quote with-continuation-mark
             #%plain-app
             cons list make-struct-type make-struct-type-property)
-[phase-collapse-module (module id module-path
-                         (#%plain-module-begin
-                           phase-collapse-form ...))]
-[phase-collapse-form (begin phase-collapse-form ...)                
+[cross-module (module id module-path
+                (#%plain-module-begin
+                  cross-form ...))]
+[cross-form     (begin cross-form ...)                
                 (#%provide raw-provide-spec ...)
                 submodule-form
-                (define-values (id ...) 
-                  phase-collapse-expr)
+                (define-values (id ...) cross-expr)
                 (#%require raw-require-spec ...)]
-[phase-collapse-expr id
-                (@#,racket[quote] phase-collapse-datum)
+[cross-expr id
+                (@#,racket[quote] cross-datum)
                 (#%plain-lambda formals expr ...+)
                 (case-lambda (formals expr ...+) ...)
                 (#%plain-app cons expr ...+)
                 (#%plain-app list expr ...+)
                 (#%plain-app make-struct-type expr ...+)
-                (#%plain-app make-struct-type-property 
-                             expr ...+)]
-[phase-collapse-datum number
+                (#%plain-app make-struct-type-property expr ...+)]
+[cross-datum     number
                  boolean
                  identifier
                  string
                  bytes]
 ]
 
-This grammar applies after @tech{expansion}, but because a @tech{phase-collapsing}
-module imports only from other phase-collapsing modules, the only relevant
+This grammar applies after @tech{expansion}, but because a @tech{cross-phase persistent}
+module imports only from other cross-phase persistent modules, the only relevant
 expansion steps are the implicit introduction of
 @racket[#%plain-module-begin], implicit introduction of @racket[#%plain-app],
 and implicit introduction and/or expansion of @racket[#%datum].
