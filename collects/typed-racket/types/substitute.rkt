@@ -135,7 +135,8 @@
 ;; substitute-dotted : Type Name Name Type -> Type
 (define (substitute-dotted image image-bound name target)
   (define (sb t) (substitute-dotted image image-bound name t))
-  (if (set-member? (free-vars-names (free-idxs* target)) name)
+  (if (or (set-member? (free-vars-names (free-idxs* target)) name)
+          (set-member? (free-vars-names (free-vars* target)) name))
       (type-case (#:Type sb #:Filter (sub-f sb))
                  target
                  [#:ValuesDots types dty dbound
