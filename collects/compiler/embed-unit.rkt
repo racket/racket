@@ -433,20 +433,26 @@
                         [extra-paths 
                          (map symbol-to-lib-form (get-extra-imports actual-filename code))])
                     (let* ([runtime-paths
-                            (parameterize ([current-namespace expand-namespace])
-                              (eval code)
-                              (let ([module-path
-                                     (if (path? module-path)
-                                         (path->complete-path module-path)
-                                         module-path)])
-                                (syntax-case (expand `(,#'module m mzscheme
-                                                        (require (only ,module-path)
-                                                                 mzlib/runtime-path)
-                                                        (runtime-paths ,module-path))) (quote)
-                                  [(_ m mz (#%mb rfs req (quote (spec ...))))
-                                   (syntax->datum #'(spec ...))]
-                                  [_else (error 'create-empbedding-executable
-                                                "expansion mismatch when getting external paths")])))]
+                            (if (module-compiled-cross-phase-persistent? code)
+                                ;; avoid potentially trying to redeclare cross-phase persistent modules,
+                                ;; since redeclaration isn't allowed:
+                                null
+                                ;; check for run-time paths by visinting the module in a fresh
+                                ;; namespace:
+                                (parameterize ([current-namespace expand-namespace])
+                                  (eval code)
+                                  (let ([module-path
+                                         (if (path? module-path)
+                                             (path->complete-path module-path)
+                                             module-path)])
+                                    (syntax-case (expand `(,#'module m mzscheme
+                                                            (require (only ,module-path)
+                                                                     mzlib/runtime-path)
+                                                            (runtime-paths ,module-path))) (quote)
+                                      [(_ m mz (#%mb rfs req (quote (spec ...))))
+                                       (syntax->datum #'(spec ...))]
+                                      [_else (error 'create-empbedding-executable
+                                                    "expansion mismatch when getting external paths")]))))]
                            
                            [extra-runtime-paths (filter
                                                  values
