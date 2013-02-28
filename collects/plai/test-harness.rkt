@@ -69,8 +69,8 @@
     (set! plai-all-test-results (cons result plai-all-test-results))
     (when print?
       (if (abridged-test-output)
-          (apply eprintf "(~s ~v ~v)\n" result)
-          (apply eprintf "(~s ~s ~v ~v ~s)\n" result)))
+          (apply (if error? eprintf printf) "(~s ~v ~v)\n" result)
+          (apply (if error? eprintf printf) "(~s ~s ~v ~v ~s)\n" result)))
     (when (and halt-on-errors? error?)
       (raise (make-exn:test (string->immutable-string (format "test failed: ~s" result))
                             (current-continuation-marks))))))

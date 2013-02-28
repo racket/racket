@@ -1,6 +1,7 @@
 #lang racket
 (require tests/eli-tester
-         racket/runtime-path)
+         racket/runtime-path
+         "../util.rkt")
 
 (define-runtime-path here ".")
 
@@ -23,7 +24,7 @@
 (define (drop-first-line e)
   (regexp-replace "^[^\n]+\n" e ""))
 (define-syntax-rule (capture-output e)
-  (drop-first-line (with-output-to-string (λ () e))))
+  (drop-first-line (with-both-output-to-string (λ () e))))
 
 (test
  (if (run-good?)

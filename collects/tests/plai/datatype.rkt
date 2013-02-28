@@ -1,5 +1,6 @@
 #lang plai
-(require (prefix-in eli: tests/eli-tester))
+(require (prefix-in eli: tests/eli-tester)
+         "util.rkt")
 
 (define-type A
   [mta]
@@ -28,15 +29,14 @@
 
 (define-type t1 (c1 (n number?)))
 
-
 (eli:test
  (i 4)
  
  (regexp-match "\\(exception \\(make-i #f\\) \"make-i.+\" '<no-expected-value> \"at line 36\"\\)"
-               (with-output-to-string (λ () (test/exn (make-i #f) "contract"))))
+               (with-both-output-to-string (λ () (test/exn (make-i #f) "contract"))))
  
  (regexp-match "\\(exception \\(i-f #f\\) \"i-f.+\" '<no-expected-value> \"at line 39\"\\)"
-               (with-output-to-string (λ () (test/exn (i-f #f) "contract"))))
+               (with-both-output-to-string (λ () (test/exn (i-f #f) "contract"))))
  
  
  (type-case A (mta)
@@ -46,13 +46,13 @@
  1
  
  (regexp-match "\\(exception \\(c1 \\(quote not-a-number\\)\\) \"c1.+\" '<no-expected-value> \"at line 49\"\\)"
-               (with-output-to-string (λ () (test (c1 'not-a-number) (list 5)))))
+               (with-both-output-to-string (λ () (test (c1 'not-a-number) (list 5)))))
  
  (regexp-match (regexp-quote "(exception (type-case t (list 1) (c () 1)) \"type-case: expected a value from type t, got: (1)\" '<no-expected-value> \"at line 53\")")
-               (with-output-to-string (λ ()
-                                        (test/exn
-                                         (type-case t (list 1) (c () 1))
-                                         "expected"))))
+               (with-both-output-to-string (λ ()
+                                             (test/exn
+                                              (type-case t (list 1) (c () 1))
+                                              "expected"))))
  
  (type-case "foo" "bar") =error> "this must be a type defined with define-type"
  
