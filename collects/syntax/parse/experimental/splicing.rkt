@@ -18,6 +18,7 @@
 (define-syntax (define-primitive-splicing-syntax-class stx)
 
   (define-syntax-class attr
+    #:commit
     (pattern name:id
              #:with depth #'0)
     (pattern [name:id depth:nat]))

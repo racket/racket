@@ -112,8 +112,9 @@
 
   (define-syntax-class stxclass-ctc
     #:description "syntax-class/c or splicing-syntax-class/c form"
-    #:literals (syntax-class/c)
+    #:literals (syntax-class/c splicing-syntax-class/c)
     #:attributes (rec)
+    #:commit
     (pattern ((~or syntax-class/c splicing-syntax-class/c)
               mand:ctclist
               (~optional opt:ctclist))
@@ -126,6 +127,7 @@
 
   (define-syntax-class ctclist
     #:attributes ([pc.c 1] [kw 1] [kwc.c 1])
+    #:commit
     (pattern ((~or pc:expr (~seq kw:keyword kwc:expr)) ...)
              #:with (pc.c ...) (for/list ([pc-expr (in-list (syntax->list #'(pc ...)))])
                                  (wrap-expr/c #'contract? pc-expr))

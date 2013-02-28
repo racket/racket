@@ -16,6 +16,7 @@
                              #:name [expr-name not-given]
                              #:context [ctx #f])
   #:attributes (c)
+  #:commit
   (pattern y:expr
            #:with
            c (wrap-expr/c ctc-stx
