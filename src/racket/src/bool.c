@@ -57,6 +57,7 @@ typedef struct Equal_Info {
   Scheme_Hash_Table *ht;
   Scheme_Object *recur;
   Scheme_Object *next, *next_next;
+  Scheme_Object *insp;
   int for_chaperone; /* 2 => for impersonator */
 } Equal_Info;
 
@@ -166,6 +167,7 @@ equal_prim (int argc, Scheme_Object *argv[])
   eql.recur = NULL;
   eql.next = NULL;
   eql.next_next = NULL;
+  eql.insp = NULL;
   eql.for_chaperone = 0;
 
   return (is_equal(argv[0], argv[1], &eql) ? scheme_true : scheme_false);
@@ -184,6 +186,7 @@ equalish_prim (int argc, Scheme_Object *argv[])
   eql.recur = NULL;
   eql.next = NULL;
   eql.next_next = argv[2];
+  eql.insp = NULL;
   eql.for_chaperone = 0;
 
   return (is_equal(argv[0], argv[1], &eql) ? scheme_true : scheme_false);
@@ -325,6 +328,7 @@ int scheme_equal (Scheme_Object *obj1, Scheme_Object *obj2)
   eql.recur = NULL;
   eql.next_next = NULL;
   eql.next = NULL;
+  eql.insp = NULL;
   eql.for_chaperone = 0;
 
   return is_equal(obj1, obj2, &eql);
@@ -394,8 +398,15 @@ static Scheme_Object *equal_k(void)
 static Scheme_Object *equal_recur(int argc, Scheme_Object **argv, Scheme_Object *prim)
 {
   Equal_Info *eql = (Equal_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
+  int is_eq;
 
-  return (is_equal(argv[0], argv[1], eql)
+  eql->insp = NULL; /* in case the inspector is changed by context */
+
+  is_eq = is_equal(argv[0], argv[1], eql);
+
+  eql->insp = NULL;
+
+  return (is_eq
           ? scheme_true
           : scheme_false);
 }
@@ -635,9 +646,12 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
         /* Same types, but doesn't have an equality property
            (or checking for chaperone), so check transparency: */
         Scheme_Object *insp;
-        insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
-        if (scheme_inspector_sees_part(obj1, insp, -2)
-            && scheme_inspector_sees_part(obj2, insp, -2)) {
+        if (scheme_struct_is_transparent(obj1))
+          insp = NULL;
+        else {
+          insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
+        }
+        if (!insp || scheme_inspector_sees_part(obj1, insp, -2)) {
 #       include "mzeqchk.inc"
           if (union_check(obj1, obj2, eql))
             return 1;
@@ -790,6 +804,7 @@ int scheme_chaperone_of(Scheme_Object *obj1, Scheme_Object *obj2)
   eql.recur = NULL;
   eql.next = NULL;
   eql.next_next = NULL;
+  eql.insp = NULL;
   eql.for_chaperone = 1;
 
   return is_equal(obj1, obj2, &eql);
@@ -805,6 +820,7 @@ int scheme_impersonator_of(Scheme_Object *obj1, Scheme_Object *obj2)
   eql.recur = NULL;
   eql.next = NULL;
   eql.next_next = NULL;
+  eql.insp = NULL;
   eql.for_chaperone = 2;
 
   return is_equal(obj1, obj2, &eql);
