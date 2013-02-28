@@ -444,7 +444,7 @@ as @racket[(string-join (string-split str sep ....) space)].}
 @defproc[(string-replace [str  string?]
                          [from (or/c string? regexp?)]
                          [to   string?]
-                         [#:all all? any/c #t])
+                         [#:all? all? any/c #t])
          string?]{
 
 Returns @racket[str] with all occurrences of @racket[from] replaced
