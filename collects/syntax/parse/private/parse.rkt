@@ -409,13 +409,309 @@ Conventions:
                 (with ([fail-handler fh0]
                        [cut-prompt fh0])
                   #,(cond [(pair? patterns)
+                           (with-syntax ([(pattern ...) patterns]
+                                         [(body ...) body-exprs])
+                             #'(parse:S* ((x cx pr es)) ((pattern) ...) (body ...)))
+                           #|
                            (with-syntax ([(alternative ...)
                                           (for/list ([pattern (in-list patterns)]
                                                      [body-expr (in-list body-exprs)])
                                             #`(parse:S x cx #,pattern pr es #,body-expr))])
-                             #`(try alternative ...))]
+                             #`(try alternative ...))
+                           |#]
                           [else
                            #`(fail (failure pr es))]))))))))]))
+
+;; ----
+
+;; (parse:S* ((x cx pr es) ...) ((S-pattern ...) ...) (k ...)) : expr[Ans]
+;; In k: attrs(S-pattern) are bound.
+
+;; (parse:S* (in1 ... inN) ((P11 ... P1N) ... (PM1 ... PMN)) (e1 ... eM))
+;; = (parse:S* (in1 ... inN) (row1 ... rowM) (e1 ... eM))
+;; represents the matching matrix
+;;   (_in1_..._inN_|____)
+;;   ( P11 ... P1N | e1 )
+;;   (  ⋮       ⋮  | ⋮  )
+;;   ( PM1 ... PMN | eM )
+
+;; FIXME:
+;; Can collapse pattern P given clauses like
+;;   [P P1 ... | e1]     [P | [P1 ... | e1] ]
+;;   [P P2 ... | e2]  => [  | [P2 ... | e2] ]
+;; if
+;;  - P cannot cut
+;;  - P must succeed at most once (otherwise may reorder backtracking)
+
+(define-syntax (parse:S* stx)
+  (syntax-case stx ()
+    [(parse:S* () (() ...) (k ...))
+     #'(try k ...)]
+    [(parse:S* ins rows ks)
+     ;; Split into uniform sequences of rows according to pattern in column1
+     (with-syntax ([((parser sub-rows sub-ks) ...)
+                    (split-S* (syntax->list #'rows) (syntax->list #'ks))])
+       #'(try (parser ins sub-rows sub-ks) ...))]))
+
+(define-syntax (parse:S*/pairs stx)
+  (syntax-case stx ()
+    [(parse:S*/pairs ins rows ks)
+     ;; First pattern in each row is pat:pair
+     (with-syntax ([((#s(pat:pair _ head tail) . row) ...) #'rows]
+                   [((x cx pr es) . ins) #'ins])
+       (when #f
+         (when (> (length (syntax->list #'rows)) 1)
+           (eprintf "** pairs\n")))
+       #'(let-values ([(datum tcx)
+                       (if (syntax? x)
+                           (values (syntax-e x) x)
+                           (values x cx))])
+           (if (pair? datum)
+               (let ([hx (car datum)]
+                     [hcx (car datum)]
+                     [hpr (ps-add-car pr)]
+                     [tx (cdr datum)]
+                     [tpr (ps-add-cdr pr)])
+                 (parse:S* ((hx hcx hpr es) (tx tcx tpr es) . ins)
+                           ((head tail . row) ...)
+                           ks))
+               (fail (failure pr es)))))]))
+
+(define-syntax (parse:S*/same stx)
+  (syntax-case stx ()
+    [(parse:S*/same ins rows ks)
+     ;; First pattern in each row is same
+     (with-syntax ([((pat1 . row) ...) #'rows]
+                   [((x cx pr es) . ins) #'ins])
+       (with-syntax ([pat1 (stx-car #'(pat1 ...))])
+         (when #f
+           (when (> (length (syntax->list #'rows)) 1)
+             (eprintf "** same: ~e\n" (syntax->datum #'pat1))))
+         #'(parse:S x cx pat1 pr es (parse:S* ins (row ...) ks))))]))
+
+(begin-for-syntax
+ (define (split-S* rows ks)
+   (cond [(null? rows)
+          null]
+         [else
+          (define row1 (syntax->list (car rows)))
+          (define pat1 (car row1))
+          (define k1 (car ks))
+          ;; Now accumulate rows starting with patterns like pat1
+          (define-values (parser keep?) (like-S-pattern? pat1))
+          (let loop ([rows (cdr rows)] [ks (cdr ks)] [rrows (list row1)] [rks (list k1)])
+            (cond [(null? rows)
+                   (cons (list parser (reverse rrows) (reverse rks))
+                         (split-S* rows ks))]
+                  [else
+                   (define row1 (syntax->list (car rows)))
+                   (define pat1 (car row1))
+                   (define k1 (car ks))
+                   (cond [(keep? pat1)
+                          (loop (cdr rows) (cdr ks) (cons row1 rrows) (cons k1 rks))]
+                         [else
+                          (cons (list parser (reverse rrows) (reverse rks))
+                                (split-S* rows ks))])]))]))
+
+ (define (like-S-pattern? pat1)
+   (syntax-case pat1 ()
+     [#s(pat:pair attrs head tail)
+      (values #'parse:S*/pairs
+              (lambda (x) (syntax-case x ()
+                            [#s(pat:pair _ _ _) #t]
+                            [_ #f])))]
+     ;; FIXME: more?
+     [_
+      (values #'parse:S*/same
+              ;; Can collapse only if no cut, succeed once,
+              ;; otherwise cannot collapse.
+              (if (pattern-no-cut/succeeds-once? pat1)
+                  (lambda (x)
+                    (pattern-equal? pat1 x))
+                  (lambda (x)
+                    (when #f
+                      (when (pattern-equal? pat1 x)
+                        (eprintf "** cannot factor out ~e\n" (syntax->datum x))))
+                    #f)))]))
+
+ (define (pattern-no-cut/succeeds-once? p)
+   ;; true if p can succeed at most once, does not cut
+   (let ([p (stx-e p)])
+     (match p
+       [(pat:any _as) #t]
+       [(pat:var _as _n _p _argu _na _ac commit? _r)
+        ;; commit? implies delimit-cut
+        (eq? (stx-e commit?) #t)]
+       [(? pat:integrated?) #t]
+       [(pat:literal _as _lit _ip _lp) #t]
+       [(pat:datum _as _datum) #t]
+       [(pat:action _as _act _pat) #f]
+       [(pat:head _as head tail)
+        (and (pattern-no-cut/succeeds-once? head)
+             (pattern-no-cut/succeeds-once? tail))]
+       [(pat:dots _as heads tail)
+        (let ([heads (syntax->list heads)])
+          ;; Conservative approximation for common case: one head pattern
+          ;; In general, check if heads don't overlap, don't overlap with tail.
+          (and (= (length heads) 1)
+               (let ([head (car heads)])
+                 (and (pattern-no-cut/succeeds-once? head)))
+               (equal? (syntax->datum tail)
+                       (create-pat:datum '()))))]
+       [(pat:and _as patterns)
+        (andmap pattern-no-cut/succeeds-once?
+                (syntax->list patterns))]
+       [(pat:or _as patterns) #f]
+       [(pat:not _as pattern) #f] ;; FIXME: ?
+       [(pat:pair _as head tail)
+        (and (pattern-no-cut/succeeds-once? head)
+             (pattern-no-cut/succeeds-once? tail))]
+       [(pat:vector _as pattern)
+        (pattern-no-cut/succeeds-once? pattern)]
+       [(pat:box _as pattern)
+        (pattern-no-cut/succeeds-once? pattern)]
+       [(pat:pstruct _as key pattern)
+        (pattern-no-cut/succeeds-once? pattern)]
+       [(pat:describe _as pattern _desc _trans _role)
+        (pattern-no-cut/succeeds-once? pattern)]
+       [(pat:delimit _as pattern)
+        (pattern-no-cut/succeeds-once? pattern)]
+       [(pat:commit _as pattern) #t]
+       [(? pat:reflect?) #f]
+       [(pat:post _as pattern)
+        (pattern-no-cut/succeeds-once? pattern)]
+       ;; ----
+       [(hpat:var _as _name _parser _argu _na _ac commit? _role)
+        (eq? (stx-e commit?) #t)]
+       [(hpat:seq _as inner)
+        (pattern-no-cut/succeeds-once? inner)]
+       [(hpat:commit _as inner) #t]
+       ;; ----
+       [(ehpat _as head repc)
+        (and (equal? (syntax->datum repc) #f)
+             (pattern-no-cut/succeeds-once? head))]
+       ;; ----
+       [else #f])))
+
+ (define (pattern-equal? a b)
+   (define-syntax-rule (match/f x [pat . body] ...)
+     (match x [pat . body] ... [_ #f]))
+   (define (subpatterns-equal? as bs)
+     (let ([as (stx->list as)]
+           [bs (stx->list bs)])
+       (and (= (length as) (length bs))
+            (for/and ([a (in-list as)]
+                      [b (in-list bs)])
+              (pattern-equal? a b)))))
+   (define (free-id/f-equal? a b)
+     (or (and (eq? (syntax-e a) #f)
+              (eq? (syntax-e b) #f))
+         (and (identifier? a)
+              (identifier? b)
+              (free-identifier=? a b))))
+   (define (expr-equal? a b)
+     (let ([ad (syntax-e a)]
+           [bd (syntax-e b)])
+       ;; approx: equal? only if ad, bd both simple data (bool, string, etc), no inner stx
+       ;; FIXME: recognize quote exprs, any other common cases?
+       ;; note: "var" case unsafe because of identifier macros
+       (and (equal? ad bd)
+            (free-identifier=? (datum->syntax a '#%datum) #'#%datum)
+            (free-identifier=? (datum->syntax b '#%datum) #'#%datum))))
+   (define result
+     (let ([a (stx-e a)]
+           [b (stx-e b)])
+       (cond [(and (pat:any? a) (pat:any? b)) #t]
+             [(and (pat:var? a) (pat:var? b))
+              (and (free-id/f-equal? (pat:var-parser a) (pat:var-parser b))
+                   (equal-iattrs? (pat:var-attrs a) (pat:var-attrs b))
+                   (equal-argu? (pat:var-argu a) (pat:var-argu b))
+                   (expr-equal? (pat:var-role a) (pat:var-role b)))]
+             [(and (pat:integrated? a) (pat:integrated? b))
+              (and (free-identifier=? (pat:integrated-predicate a)
+                                      (pat:integrated-predicate b))
+                   (equal-iattrs? (pat:integrated-attrs a)
+                                  (pat:integrated-attrs b))
+                   (expr-equal? (pat:integrated-role a) (pat:integrated-role b)))]
+             [(and (pat:literal? a) (pat:literal? b))
+              ;; literals are hard to compare, so compare gensyms attached to
+              ;; literal ids (see rep.rkt) instead
+              (let ([ka (syntax-property (pat:literal-id a) 'literal)]
+                    [kb (syntax-property (pat:literal-id b) 'literal)])
+                (and ka kb (eq? ka kb)))]
+             [(and (pat:datum? a) (pat:datum? b))
+              (equal? (syntax->datum (pat:datum-datum a))
+                      (syntax->datum (pat:datum-datum b)))]
+             [(and (pat:head? a) (pat:head? b))
+              (and (pattern-equal? (pat:head-head a) (pat:head-head b))
+                   (pattern-equal? (pat:head-tail a) (pat:head-tail b)))]
+             [(and (pat:dots? a) (pat:dots? b))
+              (and (subpatterns-equal? (pat:dots-heads a) (pat:dots-heads b))
+                   (pattern-equal? (pat:dots-tail a) (pat:dots-tail b)))]
+             [(and (pat:and? a) (pat:and? b))
+              (subpatterns-equal? (pat:and-patterns a) (pat:and-patterns b))]
+             [(and (pat:or? a) (pat:or? b))
+              (subpatterns-equal? (pat:or-patterns a) (pat:or-patterns b))]
+             [(and (pat:not? a) (pat:not? b))
+              (pattern-equal? (pat:not-pattern a) (pat:not-pattern b))]
+             [(and (pat:pair? a) (pat:pair? b))
+              (and (pattern-equal? (pat:pair-head a) (pat:pair-head b))
+                   (pattern-equal? (pat:pair-tail a) (pat:pair-tail b)))]
+             [(and (pat:vector? a) (pat:vector? b))
+              (pattern-equal? (pat:vector-pattern a) (pat:vector-pattern b))]
+             [(and (pat:box? a) (pat:box? b))
+              (pattern-equal? (pat:box-pattern a) (pat:box-pattern b))]
+             [(and (pat:pstruct? a) (pat:pstruct? b))
+              (and (equal? (syntax->datum (pat:pstruct-key a))
+                           (syntax->datum (pat:pstruct-key b)))
+                   (pattern-equal? (pat:pstruct-pattern a)
+                                   (pat:pstruct-pattern b)))]
+             [(and (pat:describe? a) (pat:describe? b)) #f] ;; can't compare desc exprs
+             [(and (pat:delimit? a) (pat:delimit? b))
+              (pattern-equal? (pat:delimit-pattern a) (pat:delimit-pattern b))]
+             [(and (pat:commit? a) (pat:commit? b))
+              (pattern-equal? (pat:commit-pattern a) (pat:commit-pattern b))]
+             [(and (pat:reflect? a) (pat:reflect? b)) #f] ;; FIXME: ?
+             [(and (pat:post? a) (pat:post? b))
+              (pattern-equal? (pat:post-pattern a) (pat:post-pattern b))]
+             ;; ---
+             [(and (hpat:var? a) (hpat:var? b))
+              (and (free-id/f-equal? (hpat:var-parser a) (hpat:var-parser b))
+                   (equal-iattrs? (hpat:var-attrs a) (hpat:var-attrs b))
+                   (equal-argu? (hpat:var-argu a) (hpat:var-argu b))
+                   (expr-equal? (hpat:var-role a) (hpat:var-role b)))]
+             [(and (hpat:seq? a) (hpat:seq? b))
+              (pattern-equal? (hpat:seq-inner a) (hpat:seq-inner b))]
+             ;; ---
+             [(and (ehpat? a) (ehpat? b))
+              (and (equal? (syntax->datum (ehpat-repc a)) #f)
+                   (equal? (syntax->datum (ehpat-repc b)) #f)
+                   (pattern-equal? (ehpat-head a) (ehpat-head b)))]
+             ;; FIXME: more?
+             [else #f])))
+   (when #f
+     (when (and (equal? (syntax->datum a) (syntax->datum b))
+                (eq? result #f))
+       (eprintf "** pattern-equal? failed on ~e\n" (syntax->datum a))))
+   result)
+
+ (define (equal-iattrs? as bs)
+   (let ([as (wash-iattrs as)]
+         [bs (wash-iattrs bs)])
+     (and (= (length as) (length bs))
+          ;; assumes attrs in same order
+          (for/and ([aa (in-list (wash-iattrs as))]
+                    [ba (in-list (wash-iattrs bs))])
+            (and (bound-identifier=? (attr-name aa) (attr-name ba))
+                 (equal? (attr-depth aa) (attr-depth ba))
+                 (equal? (attr-syntax? aa) (attr-syntax? ba)))))))
+
+ (define (equal-argu? a b)
+   (and (equal? (syntax->datum a) no-arguments)
+        (equal? (syntax->datum b) no-arguments)))
+
+ (define (stx-e x) (if (syntax? x) (syntax-e x) x))
+ )
 
 ;; ----
 
