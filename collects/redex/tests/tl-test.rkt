@@ -424,6 +424,55 @@
     (test (and (redex-match L -b 100) #t) #t)
     (test (redex-match L -b 3) #f))
 
+  ;; The following two tests make sure that `define-union-language`
+  ;; works with extended languages
+  (let ()
+    (define-language LBase
+      (e (+ e e)
+         number))
+
+    (define-extended-language L1 LBase
+      (e ....
+         (- e e)))
+
+    (define-extended-language L2 LBase
+      (e ....
+         (* e e)))
+
+    (define-union-language LMerge (one. L1) (two. L2))
+
+    #|
+    The error that used to be raised:
+    define-union-language: two sublanguages both contribute the non-terminal: one.e in:
+      (one. L1)
+      (one. L1)
+    |#
+
+    (test (and (redex-match LMerge one.e (term (- 0 0))) #t) #t)
+    (test (and (redex-match LMerge two.e (term (* 0 0))) #t) #t))
+
+  (let ()
+    (define-language UT
+      (e (e e)
+         (λ (x) e)
+         x))
+
+    (define-language WT
+      (e (e e)
+         (λ (x t) e)
+         x)
+      (t (→ t t)
+         num))
+
+    (define-extended-language UT+ UT
+      (e ....
+         (foo e e)))
+
+    (define-union-language B (ut. UT+) (wt. WT))
+
+    (test (and (redex-match B ut.e (term (foo x x))) #t) #t)
+    (test (redex-match B wt.e (term (foo x x))) #f))
+
   (let ()
     (test (redex-match empty-language number 'a) #f)
     (test (redex-match empty-language (in-hole hole number) 'a) #f))

@@ -1758,7 +1758,16 @@
        (let ([old-names (language-id-nts #'orig-lang 'define-extended-language)]
              [non-terms (parse-non-terminals #'nt-defs stx)])
          (with-syntax ([((names prods ...) ...) non-terms]
-                       [(all-names ...) (apply append old-names (map car non-terms))]
+                       [(all-names ...)
+                        ;; The names may have duplicates if the extended language
+                        ;; extends non-terminals in the parent language. They need
+                        ;; to be removed for `define-union-language`
+                        (remove-duplicates
+                         (apply append old-names (map car non-terms))
+                         (λ (n1 n2)
+                           (let ([n1 (if (syntax? n1) (syntax-e n1) n1)]
+                                 [n2 (if (syntax? n2) (syntax-e n2) n2)])
+                             (eq? n1 n2))))]
                        [(define-language-name) (generate-temporaries #'(name))])
            #'(begin
                (define define-language-name (extend-language orig-lang (all-names ...) (names prods ...) ...))
