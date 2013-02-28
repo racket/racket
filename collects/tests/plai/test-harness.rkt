@@ -7,7 +7,13 @@
   [id (s symbol?)])
 
 (define-syntax-rule (->string e)
-  (regexp-replace "line [0-9]+" (with-output-to-string (λ () e)) "line ??"))
+  (regexp-replace "line [0-9]+" (with-err-output-to-string (λ () e)) "line ??"))
+
+(define (with-err-output-to-string thunk)
+  (define sp (open-output-string))
+  (parameterize ([current-error-port sp])
+    (thunk))
+  (get-output-string sp))
 
 (define (go catch? errors? abridged?)
   (eli:test 

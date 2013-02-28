@@ -124,7 +124,8 @@ PLAI Scheme provides the following syntactic forms for testing.
 @defform/subs[(test result-expr expected-expr)()]{
 
 If @racket[_result-expr] and @racket[_expected-expr] evaluate to the same
-value, @racket[_result-value], the test prints
+value, @racket[_result-value], the test prints the following expression
+to @racket[(current-error-port)]:
 
 @racketresultfont{(good result-expr result-value expected-value location)}.
 
