@@ -448,8 +448,14 @@
       (one. L1)
     |#
 
+
     (test (and (redex-match LMerge one.e (term (- 0 0))) #t) #t)
-    (test (and (redex-match LMerge two.e (term (* 0 0))) #t) #t))
+    (test (and (redex-match LMerge two.e (term (* 0 0))) #t) #t)
+
+    (define-union-language LMergeUntagged L1 L2)
+
+    (for ([t (list (term 1) (term (* 1 1)) (term (+ 1 1)) (term (- 1 1)))])
+       (test (redex-match? LMergeUntagged e t) #t)))
 
   (let ()
     (define-language UT

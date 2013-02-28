@@ -1911,10 +1911,10 @@
                                        "malformed additional language"
                                        stx orig-lang)])))
        
-       ;; ht : sym -o> stx
+       ;; ht : sym -o> (listof stx)
        ;; maps each non-terminal (with its prefix) to the 
-       ;; syntax object that it comes from in the original
-       ;; define-union-language declaration
+       ;; list syntax object that they comes from in the original
+       ;; define-union-language declaration 
        (define names-table (make-hash))
        
        (for ([normalized-orig-lang (in-list normalized-orig-langs)])
@@ -1922,14 +1922,9 @@
          (for ([no-prefix-nt (in-list (list-ref normalized-orig-lang 2))])
            (define nt (string->symbol (string-append prefix (symbol->string no-prefix-nt))))
            (let ([prev (hash-ref names-table nt #f)])
-             (when prev
-               (raise-syntax-error 'define-union-language 
-                                   (format "two sublanguages both contribute the non-terminal: ~a" nt)
-                                   #f
-                                   #f
-                                   (list prev
-                                         (list-ref normalized-orig-lang 3))))
-             (hash-set! names-table nt (list-ref normalized-orig-lang 3)))))
+             (if prev
+               (hash-set! names-table nt (cons (list-ref normalized-orig-lang 3) prev))
+               (hash-set! names-table nt (list (list-ref normalized-orig-lang 3)))))))
        
        (with-syntax ([(all-names ...) (sort (hash-map names-table (λ (x y) x)) string<=? #:key symbol->string)]
                      [((prefix old-lang _1 _2) ...) normalized-orig-langs]
@@ -1969,10 +1964,26 @@
          (make-nt (string->symbol (string-append prefix (symbol->string (nt-name nt))))
                   (for/list ([rhs (in-list (nt-rhs nt))])
                     (make-rhs (prefix-nts prefix (rhs-pattern rhs)))))))))
-  
+
+  ;; Each language in the union might define the same nt, and might
+  ;; even define the same rhs for the same nt, so merge them to get a
+  ;; proper union.
+  ;; NOTE: This could probably be done when defining new-nts to
+  ;; eliminate a second pass over all the nts.
+  (define merge-nts
+    (let ()
+      (define names-table (make-hash))
+      (for/list ([nt (in-list new-nts)])
+        (let* ([name (nt-name nt)]
+               [prev (hash-ref names-table name #f)])
+          (if prev
+            (hash-set! names-table name (make-nt name (remove-duplicates (append (nt-rhs prev) (nt-rhs nt)))))
+            (hash-set! names-table name nt))))
+      (hash-map names-table (lambda (x y) y))))
+
   (compile-language #f
-                    new-nts
-                    new-nt-map))
+                    merge-nts
+                    (remove-duplicates new-nt-map)))
 
 
 ;; find-primary-nt : symbol lang -> symbol or #f
