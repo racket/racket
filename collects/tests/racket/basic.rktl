@@ -2562,6 +2562,16 @@
   (equal-hash-code ht)
   (equal-secondary-hash-code ht))
 
+;; Check that an equal hash code on an
+;;  mutable, opaque structure does not
+;;  see mutation.
+(let ()
+  (struct a (x [y #:mutable]))
+  (define an-a (a 1 2))
+  (define v (equal-hash-code an-a))
+  (set-a-y! an-a 8)
+  (test v equal-hash-code an-a))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Misc
 

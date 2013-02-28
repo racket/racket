@@ -3061,7 +3061,7 @@ int scheme_struct_is_transparent(Scheme_Object *s)
 
   stype = ((Scheme_Structure *)s)->stype;
 
-  for (p = stype->name_pos; p--; ) {
+  for (p = stype->name_pos + 1; p--; ) {
     if (SCHEME_TRUEP(stype->parent_types[p]->inspector))
       return 0;
   }
