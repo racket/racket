@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual scribble/eval scribble/bnf "guide-utils.rkt"
-          (for-label racket/serialize))
+          (for-label racket/dict racket/serialize))
 
 @(define posn-eval (make-base-eval))
 
@@ -389,7 +389,7 @@ Since the expression reader can generate @tech{prefab} instances, they
 are useful when convenient @tech{serialization} is more important than
 abstraction. @tech{Opaque} and @tech{transparent} structures also can
 be serialized, however, if they are defined with
-@racket[define-serializable-struct] as described in
+@racket[serializable-struct] as described in
 @secref["serialization"].
 
 @; ------------------------------------------------------------
@@ -505,6 +505,27 @@ A @racket[_struct-option] always starts with a keyword:
   (person "John" 10)
   (person "Mary" -1)
   (person 10 10)]}
+
+ @specspecsubform[(code:line #:methods interface-expr [body ...])]{
+  Associates method definitions for the structure type that correspond
+  to a @defterm{generic interface}.  For example, implementing the
+  methods for @racket[gen:dict] allows instances of a structure
+  type to be used as dictionaries. Implementing
+  the methods for @racket[gen:custom-write] allows the customization
+  of how an instance of a structure type is @racket[display]ed.
+
+  @defexamples[
+    (struct cake (candles)
+            #:methods gen:custom-write
+            [(define (write-proc cake port mode)
+               (define n (cake-candles cake))
+               (show "   ~a   ~n" n #\. port)
+               (show " .-~a-. ~n" n #\| port)
+               (show " | ~a | ~n" n #\space port)
+               (show "---~a---~n" n #\- port))
+             (define (show fmt n ch port)
+               (fprintf port fmt (make-string n ch)))])
+    (display (cake 5))]}
 
  @specspecsubform[(code:line #:property prop-expr val-expr)]{
    Associates a @deftech{property} and value with the structure type.
