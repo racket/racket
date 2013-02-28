@@ -973,7 +973,9 @@
                    ("f" lexically-bound)
                    (" (" default-color)
                    ("->i" imported)
-                   (" ((p? " default-color)
+                   (" ((" default-color)
+                   ("p?" lexically-bound)
+                   (" " default-color)
                    ("any/c" imported)
                    (")) (_ (" default-color)
                    ("p?" lexically-bound)
@@ -987,7 +989,7 @@
                    ("a" lexically-bound)
                    (") 1)" default-color))
                  (list '((82 83) (37 38))
-                       '((61 63) (65 67))
+                       '((46 48) (61 63) (65 67))
                        '((6 12) (14 21) (40 43) (49 54) (74 80))))
 
      (build-test "#lang racket/base\n(define red 1)\n(module+ test red)"
