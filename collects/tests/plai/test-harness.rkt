@@ -1,5 +1,6 @@
 #lang plai
-(require (prefix-in eli: tests/eli-tester))
+(require (prefix-in eli: tests/eli-tester)
+         "util.rkt")
 
 (define-type WAE
   [binop (p procedure?) (lhs WAE?) (rhs WAE?)]
@@ -7,7 +8,11 @@
   [id (s symbol?)])
 
 (define-syntax-rule (->string e)
+  (regexp-replace "line [0-9]+" (with-both-output-to-string (λ () e)) "line ??"))
+(define-syntax-rule (->err-string e)
   (regexp-replace "line [0-9]+" (with-err-output-to-string (λ () e)) "line ??"))
+(define-syntax-rule (->out-string e)
+  (regexp-replace "line [0-9]+" (with-output-to-string (λ () e)) "line ??"))
 
 (define (with-err-output-to-string thunk)
   (define sp (open-output-string))
@@ -51,7 +56,21 @@
             "(good 1 1)\n"
             "(good 1 1 1 \"at line ??\")\n"))
     
+    (->out-string (test 1 1))
+    =>
+    (if errors?
+        ""
+        (if abridged?
+            "(good 1 1)\n"
+            "(good 1 1 1 \"at line ??\")\n"))
+    
     (->string (test 1 2))
+    =>
+    (if abridged?
+        "(bad 1 2)\n"
+        "(bad 1 1 2 \"at line ??\")\n")
+    
+    (->err-string (test 1 2))
     =>
     (if abridged?
         "(bad 1 2)\n"
