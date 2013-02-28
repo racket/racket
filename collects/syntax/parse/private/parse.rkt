@@ -294,30 +294,29 @@ Conventions:
                      pr es success cp0 commit?)
      ;; Special case: no variants
      #'(fail (failure pr es))]
+    [(parse:variants x cx relsattrs (variant ...) #t transparent?
+                     pr es success cp0 commit?)
+     (with-syntax ([(#s(variant _ _ pattern (def ...)) ...) #'(variant ...)])
+       #'(let ()
+           def ... ...
+           (try (parse:H x cx rest-x rest-cx rest-pr pattern pr es
+                         (variant-success relsattrs variant
+                                          (rest-x
+                                           rest-cx
+                                           (if 'transparent? rest-pr (ps-pop-opaque rest-pr)))
+                                          success cp0 commit?))
+                ...)))]
     [(parse:variants x cx relsattrs (variant ...) splicing? transparent?
                      pr es success cp0 commit?)
-     #'(try (parse:variant x cx relsattrs variant splicing? transparent?
-                           pr es success cp0 commit?) ...)]))
-
-;; (parse:variant x cx relsattrs variant splicing? pr es success cp0) : expr[Ans]
-(define-syntax (parse:variant stx)
-  (syntax-case stx ()
-    [(parse:variant x cx relsattrs variant #f _ pr es success cp0 commit?)
-     (with-syntax ([#s(variant _ _ pattern (def ...)) #'variant])
-       #`(let ()
-           def ...
-           (parse:S x cx pattern pr es
-                    (variant-success relsattrs variant
-                                     ()
-                                     success cp0 commit?))))]
-    [(parse:variant x cx relsattrs variant #t transparent? pr es success cp0 commit?)
-     (with-syntax ([#s(variant _ _ pattern (def ...)) #'variant])
-       #`(let ()
-           def ...
-           (parse:H x cx rest-x rest-cx rest-pr pattern pr es
-                    (variant-success relsattrs variant
-                                     (rest-x rest-cx (if 'transparent? rest-pr (ps-pop-opaque rest-pr)))
-                                     success cp0 commit?))))]))
+     (with-syntax ([(#s(variant _ _ pattern (def ...)) ...) #'(variant ...)])
+       #'(let ()
+           def ... ...
+           (parse:S* ((x cx pr es))
+                     ((pattern) ...)
+                     ((variant-success relsattrs variant
+                                       ()
+                                       success cp0 commit?)
+                      ...))))]))
 
 ;; (variant-success relsattrs variant (also:id ...) success bool) : expr[Ans]
 (define-syntax (variant-success stx)
@@ -459,7 +458,7 @@ Conventions:
      ;; First pattern in each row is pat:pair
      (with-syntax ([((#s(pat:pair _ head tail) . row) ...) #'rows]
                    [((x cx pr es) . ins) #'ins])
-       (when #f
+       (when #t
          (when (> (length (syntax->list #'rows)) 1)
            (eprintf "** pairs\n")))
        #'(let-values ([(datum tcx)
@@ -484,7 +483,7 @@ Conventions:
      (with-syntax ([((pat1 . row) ...) #'rows]
                    [((x cx pr es) . ins) #'ins])
        (with-syntax ([pat1 (stx-car #'(pat1 ...))])
-         (when #f
+         (when #t
            (when (> (length (syntax->list #'rows)) 1)
              (eprintf "** same: ~e\n" (syntax->datum #'pat1))))
          #'(parse:S x cx pat1 pr es (parse:S* ins (row ...) ks))))]))
@@ -529,7 +528,7 @@ Conventions:
                   (lambda (x)
                     (pattern-equal? pat1 x))
                   (lambda (x)
-                    (when #f
+                    (when #t
                       (when (pattern-equal? pat1 x)
                         (eprintf "** cannot factor out ~e\n" (syntax->datum x))))
                     #f)))]))
@@ -689,7 +688,7 @@ Conventions:
                    (pattern-equal? (ehpat-head a) (ehpat-head b)))]
              ;; FIXME: more?
              [else #f])))
-   (when #f
+   (when #t
      (when (and (equal? (syntax->datum a) (syntax->datum b))
                 (eq? result #f))
        (eprintf "** pattern-equal? failed on ~e\n" (syntax->datum a))))
