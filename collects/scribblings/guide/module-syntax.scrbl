@@ -113,7 +113,7 @@ contains the @racketmodfont{#lang} form.
 The @racketmodfont{#lang} @racketmodname[racket/base] form has the same
 syntax as @racketmodfont{#lang} @racketmodname[racket], except that
 the longhand expansion uses @racketmodname[racket/base] instead of
-@racketmodname[racket]. The @racketmodfont{#lang} @racket[honu] form, in
+@racketmodname[racket]. The @racketmodfont{#lang} @racketmodname[scribble/manual] form, in
 contrast, has a completely different syntax that doesn't even look
 like Racket, and which we do not attempt to describe in this guide.
 
@@ -187,7 +187,7 @@ In addition, a @racket[module*] form can specify @racket[#f] in place of an
 the enclosing module's bindings---including bindings that are not
 exported via @racket[provide].
 
-One use of submodule declared with @racket[module*] and @racket[#f] is
+One use of submodules declared with @racket[module*] and @racket[#f] is
 to export additional bindings through a submodule that are not
 normally exported from the module:
 
@@ -253,7 +253,7 @@ executable or run directly within DrRacket, if the module has a
 @as-index{@racket[main] submodule}, the @racket[main] submodule is run
 after its enclosing module. Declaring a @racket[main] submodule
 thus specifies extra actions to be performed when a module is run directly,
-instead of @racket[required] as a library within a larger program.
+instead of @racket[require]d as a library within a larger program.
 
 A @racket[main] submodule does not have to be declared with
 @racket[module*]. If the @racket[main] module does not need to use
@@ -341,7 +341,7 @@ interleaved with function definitions.
 
 The combining behavior of @racket[module+] is also sometimes helpful
 for a @racket[main] module. Even when combining is not needed,
-@racket[(module+ main ....)]  is preferred as more readable than
+@racket[(module+ main ....)] is preferred as it is more readable than
 @racket[(module* main #f ....)].
 
 @; ----------------------------------------------------------------------
