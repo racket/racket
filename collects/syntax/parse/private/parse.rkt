@@ -434,20 +434,28 @@ Conventions:
 ;; In k: attrs(S-pattern) are bound.
 
 ;; (parse:S* (in1 ... inN) ((P11 ... P1N) ... (PM1 ... PMN)) (e1 ... eM))
-;; = (parse:S* (in1 ... inN) (row1 ... rowM) (e1 ... eM))
+;; or equivalently (parse:S* (in1 ... inN) (row1 ... rowM) (e1 ... eM))
 ;; represents the matching matrix
-;;   (_in1_..._inN_|____)
-;;   ( P11 ... P1N | e1 )
-;;   (  ⋮       ⋮  | ⋮  )
-;;   ( PM1 ... PMN | eM )
+;;   [_in1_..._inN_|____]
+;;   [ P11 ... P1N | e1 ]
+;;   [  ⋮       ⋮  |  ⋮ ]
+;;   [ PM1 ... PMN | eM ]
 
-;; FIXME:
-;; Can collapse pattern P given clauses like
-;;   [P P1 ... | e1]     [P | [P1 ... | e1] ]
-;;   [P P2 ... | e2]  => [  | [P2 ... | e2] ]
+;; Can factor pattern P given clauses like
+;;   [ P P1 ... | e1]     [  | [P1 ... | e1] ]
+;;   [ P  ⋮     |  ⋮]  => [P | [ ⋮     |  ⋮] ]
+ ;   [ P PN ... | eN]     [  | [PN ... | eN] ]
 ;; if
 ;;  - P cannot cut
 ;;  - P must succeed at most once (otherwise may reorder backtracking)
+
+;; Can unfold pair patterns as follows:
+;;   [ (P11 . P12) P1 ... | e1 ]                [ P11 P12 P1 ... | e1 ]
+;;   [      ⋮      ⋮      |  ⋮ ] => check pair, [      ⋮         |  ⋮ ]
+;;   [ (PN1 . PN2) PN ... | eN ]                [ PN1 PN2 PN ... | eN ]
+
+;; Can unfold ~and patterns similarly; ~and-patterns can hide
+;; factoring opportunities.
 
 (define-syntax (parse:S* stx)
   (syntax-case stx ()
@@ -511,7 +519,7 @@ Conventions:
                [first-sub (car subpatterns)]
                [rest-subs (cdr subpatterns)])
           (cond [(not (pat:action? (stx-e first-sub)))
-                 (when DEBUG-OPT-SUCCEED
+                 (when #f ;; DEBUG-OPT-SUCCEED
                    (eprintf ">> unfolding: ~e\n" (syntax->datum p)))
                  (unfold-and first-sub
                              (*append rest-subs onto))]
@@ -570,17 +578,19 @@ Conventions:
       (values #'parse:S*/same
               ;; Can collapse only if no cut, succeed once,
               ;; otherwise cannot collapse.
-              (if (pattern-no-cut/succeeds-once? pat1)
-                  (lambda (x)
-                    (pattern-equal? pat1 x))
-                  (lambda (x)
+              (if (pattern-factorable? pat1)
+                  (lambda (pat2)
+                    (pattern-equal? pat1 pat2))
+                  (lambda (pat2)
                     (when DEBUG-OPT-FAIL
-                      (when (pattern-equal? pat1 x)
-                        (eprintf "** cannot factor out ~e\n" (syntax->datum x))))
+                      (when (pattern-equal? pat1 pat2)
+                        (eprintf "** cannot factor out ~e\n" (syntax->datum pat2))))
                     #f)))]))
 
- (define (pattern-no-cut/succeeds-once? p)
-   ;; true if p can succeed at most once, does not cut
+ (define (pattern-factorable? p)
+   ;; Can factor out p if p can succeed at most once, does not cut
+   ;;  - if p can succeed multiple times, then factoring changes success order
+   ;;  - if p can cut, then factoring changes which choice points are discarded (too few)
    (let ([p (stx-e p)])
      (match p
        [(pat:any _as) #t]
@@ -592,55 +602,53 @@ Conventions:
        [(pat:datum _as _datum) #t]
        [(pat:action _as _act _pat) #f]
        [(pat:head _as head tail)
-        (and (pattern-no-cut/succeeds-once? head)
-             (pattern-no-cut/succeeds-once? tail))]
+        (and (pattern-factorable? head)
+             (pattern-factorable? tail))]
        [(pat:dots _as heads tail)
         (let ([heads (syntax->list heads)])
           ;; Conservative approximation for common case: one head pattern
           ;; In general, check if heads don't overlap, don't overlap with tail.
           (and (= (length heads) 1)
                (let ([head (car heads)])
-                 (and (pattern-no-cut/succeeds-once? head)))
+                 (and (pattern-factorable? head)))
                (equal? (syntax->datum tail)
                        (create-pat:datum '()))))]
        [(pat:and _as patterns)
-        (andmap pattern-no-cut/succeeds-once?
+        (andmap pattern-factorable?
                 (syntax->list patterns))]
        [(pat:or _as patterns) #f]
        [(pat:not _as pattern) #f] ;; FIXME: ?
        [(pat:pair _as head tail)
-        (and (pattern-no-cut/succeeds-once? head)
-             (pattern-no-cut/succeeds-once? tail))]
+        (and (pattern-factorable? head)
+             (pattern-factorable? tail))]
        [(pat:vector _as pattern)
-        (pattern-no-cut/succeeds-once? pattern)]
+        (pattern-factorable? pattern)]
        [(pat:box _as pattern)
-        (pattern-no-cut/succeeds-once? pattern)]
+        (pattern-factorable? pattern)]
        [(pat:pstruct _as key pattern)
-        (pattern-no-cut/succeeds-once? pattern)]
+        (pattern-factorable? pattern)]
        [(pat:describe _as pattern _desc _trans _role)
-        (pattern-no-cut/succeeds-once? pattern)]
+        (pattern-factorable? pattern)]
        [(pat:delimit _as pattern)
-        (pattern-no-cut/succeeds-once? pattern)]
+        (pattern-factorable? pattern)]
        [(pat:commit _as pattern) #t]
        [(? pat:reflect?) #f]
        [(pat:post _as pattern)
-        (pattern-no-cut/succeeds-once? pattern)]
+        (pattern-factorable? pattern)]
        ;; ----
        [(hpat:var _as _name _parser _argu _na _ac commit? _role)
         (eq? (stx-e commit?) #t)]
        [(hpat:seq _as inner)
-        (pattern-no-cut/succeeds-once? inner)]
+        (pattern-factorable? inner)]
        [(hpat:commit _as inner) #t]
        ;; ----
        [(ehpat _as head repc)
         (and (equal? (syntax->datum repc) #f)
-             (pattern-no-cut/succeeds-once? head))]
+             (pattern-factorable? head))]
        ;; ----
        [else #f])))
 
  (define (pattern-equal? a b)
-   (define-syntax-rule (match/f x [pat . body] ...)
-     (match x [pat . body] ... [_ #f]))
    (define (subpatterns-equal? as bs)
      (let ([as (stx->list as)]
            [bs (stx->list bs)])
@@ -648,21 +656,6 @@ Conventions:
             (for/and ([a (in-list as)]
                       [b (in-list bs)])
               (pattern-equal? a b)))))
-   (define (free-id/f-equal? a b)
-     (or (and (eq? (syntax-e a) #f)
-              (eq? (syntax-e b) #f))
-         (and (identifier? a)
-              (identifier? b)
-              (free-identifier=? a b))))
-   (define (expr-equal? a b)
-     (let ([ad (syntax-e a)]
-           [bd (syntax-e b)])
-       ;; approx: equal? only if ad, bd both simple data (bool, string, etc), no inner stx
-       ;; FIXME: recognize quote exprs, any other common cases?
-       ;; note: "var" case unsafe because of identifier macros
-       (and (equal? ad bd)
-            (free-identifier=? (datum->syntax a '#%datum) #'#%datum)
-            (free-identifier=? (datum->syntax b '#%datum) #'#%datum))))
    (define result
      (let ([a (stx-e a)]
            [b (stx-e b)])
@@ -751,12 +744,54 @@ Conventions:
                  (equal? (attr-depth aa) (attr-depth ba))
                  (equal? (attr-syntax? aa) (attr-syntax? ba)))))))
 
- (define (equal-argu? a b)
-   (and (equal? (syntax->datum a) no-arguments)
-        (equal? (syntax->datum b) no-arguments)))
+ (define (expr-equal? a b)
+   ;; Expression equality is undecidable in general. Especially difficult for unexpanded
+   ;; code, but it would be very difficult to set up correct env for local-expand because of
+   ;; attr binding rules. So, do *very* conservative approx: simple variables and literals.
+   ;; FIXME: any other common cases?
+   (cond [(and (identifier? a) (identifier? b))
+          ;; note: "vars" might be identifier macros (unsafe to consider equal),
+          ;; so check var has no compile-time binding
+          (and (free-identifier=? a b)
+               (let/ec k (syntax-local-value a (lambda () (k #t))) #f))]
+         [(syntax-case (list a b) (quote)
+            [((quote ad) (quote bd))
+             (cons (syntax->datum #'ad) (syntax->datum #'bd))]
+            [_ #f])
+          => (lambda (ad+bd)
+               (equal? (car ad+bd) (cdr ad+bd)))]
+         [else
+          ;; approx: equal? only if both simple data (bool, string, etc), no inner stx
+          (let ([ad (syntax-e a)]
+                [bd (syntax-e b)])
+            (and (equal? ad bd)
+                 (free-identifier=? (datum->syntax a '#%datum) #'#%datum)
+                 (free-identifier=? (datum->syntax b '#%datum) #'#%datum)))]))
 
- (define (stx-e x) (if (syntax? x) (syntax-e x) x))
- )
+ (define (equal-argu? a b)
+   (define (unwrap-arguments x)
+     (match (stx-e x)
+       [(arguments pargs kws kwargs)
+        (values (syntax->list pargs)
+                (syntax->datum kws)
+                (syntax->list kwargs))]))
+   (define (list-equal? as bs inner-equal?)
+     (and (= (length as) (length bs))
+          (andmap inner-equal? as bs)))
+   (let-values ([(apargs akws akwargs) (unwrap-arguments a)]
+                [(bpargs bkws bkwargs) (unwrap-arguments b)])
+     (and (list-equal? apargs bpargs expr-equal?)
+          (equal? akws bkws)
+          (list-equal? akwargs bkwargs expr-equal?))))
+
+ (define (free-id/f-equal? a b)
+   (or (and (eq? (syntax-e a) #f)
+            (eq? (syntax-e b) #f))
+       (and (identifier? a)
+            (identifier? b)
+            (free-identifier=? a b))))
+
+ (define (stx-e x) (if (syntax? x) (syntax-e x) x)))
 
 ;; ----
 
