@@ -2182,7 +2182,7 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
         kind = 0;
       t = (Scheme_Hash_Tree *)obj;
       lst = scheme_null;
-      for (i = t->count; i--; ) {
+      for (i = scheme_hash_tree_next(t, -1); i != -1; i = scheme_hash_tree_next(t, i)) {
         scheme_hash_tree_index(t, i, &key, &val);
         lst = scheme_make_pair(scheme_make_pair(key, val), lst);
       }
@@ -2210,7 +2210,6 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
     
     t->count = base->count;
     t->root = base->root;
-    t->elems_box = base->elems_box;
   } else if (SCHEME_HASHTP(obj)) {
     int i;
     Scheme_Object *key, *val, *l = scheme_null, *orig_l;

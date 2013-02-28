@@ -2301,7 +2301,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       Scheme_Hash_Table *t;
       Scheme_Hash_Tree *tr;
       Scheme_Object **keys, **vals, *val, *key, *orig;
-      int i, size, did_one = 0;
+      int i, size, did_one = 0, pos;
 
       orig = obj;
       if (SCHEME_NP_CHAPERONEP(obj))
@@ -2362,10 +2362,12 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         vals = NULL;
         size = tr->count;
       }
+      pos = -1;
       for (i = 0; i < size; i++) {
 	if (!vals || vals[i]) {
           if (!vals) {
-            scheme_hash_tree_index(tr, i, &key, &val);
+            pos = scheme_hash_tree_next(tr, pos);
+            scheme_hash_tree_index(tr, pos, &key, &val);
             if (!SAME_OBJ(obj, orig))
               val = scheme_chaperone_hash_traversal_get(orig, key, &key);
           } else {

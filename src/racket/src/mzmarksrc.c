@@ -1483,7 +1483,6 @@ hash_tree_val {
   Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)p;
 
   gcMARK2(ht->root, gc);
-  gcMARK2(ht->elems_box, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Tree));

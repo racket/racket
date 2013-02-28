@@ -2160,7 +2160,7 @@ static Scheme_Object *hash_table_copy(int argc, Scheme_Object *argv[])
     else
       naya = scheme_make_hash_table(SCHEME_hash_ptr);
 
-    for (i = t->count; i--; ) {
+    for (i = scheme_hash_tree_next(t, -1); i != -1; i = scheme_hash_tree_next(t, i)) {
       scheme_hash_tree_index(t, i, &k, &val);
       if (!SAME_OBJ((Scheme_Object *)t, v))
         val = scheme_chaperone_hash_traversal_get(v, k, &k);

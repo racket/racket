@@ -4580,7 +4580,7 @@ void scheme_check_unsafe_accessible(Scheme_Object *insp, Scheme_Env *from_env)
     int i;
     Scheme_Object *k, *v;
 
-    for (i = t->count; i--; ) {
+    for (i = scheme_hash_tree_next(t, -1); i != -1; i = scheme_hash_tree_next(t, i)) {
       scheme_hash_tree_index(t, i, &k, &v);
       insp = k;
       if (scheme_module_protected_wrt(unsafe_env->guard_insp, insp)) {

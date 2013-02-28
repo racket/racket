@@ -9,7 +9,6 @@ static int hash_tree_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)p;
 
   gcMARK2(ht->root, gc);
-  gcMARK2(ht->elems_box, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Tree));
@@ -19,7 +18,6 @@ static int hash_tree_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)p;
 
   gcFIXUP2(ht->root, gc);
-  gcFIXUP2(ht->elems_box, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Tree));
