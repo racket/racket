@@ -68,7 +68,7 @@ uintptr_t PTR_TO_LONG(Scheme_Object *o)
   short v;
 
   if (SCHEME_INTP(o))
-    return (uintptr_t)o;
+    return (uintptr_t)o >> 1;
 
   v = o->keyex;
 
@@ -109,11 +109,13 @@ uintptr_t PTR_TO_LONG(Scheme_Object *o)
 #endif
     bits = o->type;
 
-  /* Note: low two bits will be ignored */
-  return (bits << 16) | (v & 0xFFFF);
+  /* We need to drop the low two bits of `v', which
+     are used for non-hashing purposes in some types. */
+
+  return (bits << 14) | ((v >> 2) & 0x3FFF);
 }
 #else
-# define PTR_TO_LONG(p) ((uintptr_t)(p))
+# define PTR_TO_LONG(p) ((uintptr_t)(p)>>2)
 #endif
 
 #define FILL_FACTOR 1.4
@@ -158,9 +160,9 @@ static void id_hash_indices(void *_key, intptr_t *_h, intptr_t *_h2)
     
   lkey = PTR_TO_LONG((Scheme_Object *)key);
   if (_h)
-    *_h = to_signed_hash(lkey >> 2);
+    *_h = to_signed_hash(lkey);
   if (_h2)
-    *_h2 = to_signed_hash(lkey >> 3);
+    *_h2 = to_signed_hash(lkey >> 1);
 }
 
 static int not_stx_bound_eq(char *a, char *b)
@@ -220,8 +222,8 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
   } else {
     uintptr_t lkey;
     lkey = PTR_TO_LONG((Scheme_Object *)key);
-    h = (lkey >> 2) & mask;
-    h2 = ((lkey >> 3) & mask) | 1;
+    h = lkey & mask;
+    h2 = ((lkey >> 1) & mask) | 1;
   }
 
   keys = table->keys;
@@ -328,8 +330,8 @@ static Scheme_Object *do_hash_set(Scheme_Hash_Table *table, Scheme_Object *key, 
   mask = table->size - 1;
 
   lkey = PTR_TO_LONG((Scheme_Object *)key);
-  h = (lkey >> 2) & mask;
-  h2 = (lkey >> 3) & mask;
+  h = lkey & mask;
+  h2 = (lkey >> 1) & mask;
 
   h2 |= 1;
 
@@ -383,8 +385,8 @@ XFORM_NONGCING static Scheme_Object *do_hash_get(Scheme_Hash_Table *table, Schem
   mask = table->size - 1;
 
   lkey = PTR_TO_LONG((Scheme_Object *)key);
-  h = (lkey >> 2) & mask;
-  h2 = (lkey >> 3) & mask;
+  h = lkey & mask;
+  h2 = (lkey >> 1) & mask;
 
   h2 |= 1;
 
@@ -625,8 +627,8 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
   } else {
     uintptr_t lkey;
     lkey = PTR_TO_LONG((Scheme_Object *)key);
-    h = (lkey >> 2) & mask;
-    h2 = (lkey >> 3) & mask;
+    h = lkey & mask;
+    h2 = (lkey >> 1) & mask;
   }
 
   h2 |= 0x1;
@@ -916,7 +918,7 @@ void scheme_init_hash_key_procs(void)
 
 intptr_t scheme_hash_key(Scheme_Object *o)
 {
-  return to_signed_hash(PTR_TO_LONG(o) >> 2);
+  return to_signed_hash(PTR_TO_LONG(o));
 }
 
 END_XFORM_SKIP;
@@ -1323,7 +1325,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
 	
           return k;
         } else
-          return k + (PTR_TO_LONG(o) >> 4);
+          return k + (PTR_TO_LONG(o) >> 2);
       }
     }
   case scheme_box_type:
@@ -1448,7 +1450,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
 	
 	return k + (MZ_OPT_HASH_KEY(&s->iso) & 0xFFFC);
       } else
-	return k + (PTR_TO_LONG(o) >> 4);
+	return k + (PTR_TO_LONG(o) >> 2);
     }
 # endif
   case scheme_resolved_module_path_type:
@@ -1472,7 +1474,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       if (h1)
         return h1(o, k, hi);
       else
-        return k + (PTR_TO_LONG(o) >> 4);
+        return k + (PTR_TO_LONG(o) >> 2);
     }
   }
 
@@ -1507,7 +1509,7 @@ intptr_t scheme_eqv_hash_key(Scheme_Object *o)
   if (!SCHEME_INTP(o) && (SCHEME_NUMBERP(o) || SCHEME_CHARP(o)))
     return to_signed_hash(scheme_equal_hash_key(o));
   else
-    return to_signed_hash(PTR_TO_LONG(o) >> 2);
+    return to_signed_hash(PTR_TO_LONG(o));
 }
 
 intptr_t scheme_eqv_hash_key2(Scheme_Object *o)
@@ -1515,7 +1517,7 @@ intptr_t scheme_eqv_hash_key2(Scheme_Object *o)
   if (!SCHEME_INTP(o) && (SCHEME_NUMBERP(o) || SCHEME_CHARP(o)))
     return to_signed_hash(scheme_equal_hash_key2(o));
   else
-    return to_signed_hash(PTR_TO_LONG(o) >> 3);
+    return to_signed_hash(PTR_TO_LONG(o) >> 1);
 }
 
 static Scheme_Object *hash2_recur(int argc, Scheme_Object **argv, Scheme_Object *prim)
@@ -2375,7 +2377,6 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
     }
   } else {
     h = PTR_TO_LONG((Scheme_Object *)key);
-    h = h >> 2;
   }
 
   return (Scheme_Hash_Tree *)hash_tree_set(tree, key, val, h, tree->root, kind);
@@ -2387,7 +2388,6 @@ Scheme_Object *scheme_eq_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *ke
   AVLNode *avl;
 
   h = PTR_TO_LONG((Scheme_Object *)key);
-  h = h >> 2;
 
   avl = avl_find(h, tree->root);
   if (avl) {
