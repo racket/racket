@@ -22,6 +22,13 @@
 
 ;; ============================================================
 
+(begin-for-syntax
+ ;; controls debugging output for optimization successes and failures
+ (define DEBUG-OPT-SUCCEED #f)
+ (define DEBUG-OPT-FAIL #f))
+
+;; ============================================================
+
 (provide define-syntax-class
          define-splicing-syntax-class
          define-integrable-syntax-class
@@ -448,9 +455,13 @@ Conventions:
      #'(try k ...)]
     [(parse:S* ins rows ks)
      ;; Split into uniform sequences of rows according to pattern in column1
-     (with-syntax ([((parser sub-rows sub-ks) ...)
-                    (split-S* (syntax->list #'rows) (syntax->list #'ks))])
-       #'(try (parser ins sub-rows sub-ks) ...))]))
+     (let ([ins (syntax->list #'ins)]
+           [rows (map syntax->list (syntax->list #'rows))]
+           [ks (syntax->list #'ks)])
+       (let-values ([(ins rows) (unfold-and-patterns ins rows)])
+         (with-syntax ([ins ins]
+                       [((parser sub-rows sub-ks) ...) (split-S* rows ks)])
+           #'(try (parser ins sub-rows sub-ks) ...))))]))
 
 (define-syntax (parse:S*/pairs stx)
   (syntax-case stx ()
@@ -458,7 +469,7 @@ Conventions:
      ;; First pattern in each row is pat:pair
      (with-syntax ([((#s(pat:pair _ head tail) . row) ...) #'rows]
                    [((x cx pr es) . ins) #'ins])
-       (when #t
+       (when DEBUG-OPT-SUCCEED
          (when (> (length (syntax->list #'rows)) 1)
            (eprintf "** pairs\n")))
        #'(let-values ([(datum tcx)
@@ -483,17 +494,52 @@ Conventions:
      (with-syntax ([((pat1 . row) ...) #'rows]
                    [((x cx pr es) . ins) #'ins])
        (with-syntax ([pat1 (stx-car #'(pat1 ...))])
-         (when #t
+         (when DEBUG-OPT-SUCCEED
            (when (> (length (syntax->list #'rows)) 1)
              (eprintf "** same: ~e\n" (syntax->datum #'pat1))))
          #'(parse:S x cx pat1 pr es (parse:S* ins (row ...) ks))))]))
 
 (begin-for-syntax
+
+ (define (unfold-and-patterns ins rows)
+   ;; unfold-and : pattern (listof pattern) -> (values pattern (listof pattern))
+   (define (unfold-and p onto)
+     (match (stx-e p)
+       [(pat:and _as subpatterns)
+        ;; pat:and is worth unfolding if first subpattern is not pat:action
+        (let* ([subpatterns (syntax->list subpatterns)]
+               [first-sub (car subpatterns)]
+               [rest-subs (cdr subpatterns)])
+          (cond [(not (pat:action? (stx-e first-sub)))
+                 (when DEBUG-OPT-SUCCEED
+                   (eprintf ">> unfolding: ~e\n" (syntax->datum p)))
+                 (unfold-and first-sub
+                             (*append rest-subs onto))]
+                [else (values p onto)]))]
+       [_ (values p onto)]))
+   (define (*append a b) (if (null? b) a (append a b)))
+   (define (make-and-pattern subs)
+     (cond [(null? subs) (create-pat:any)] ;; shouldn't happen
+           [(null? (cdr subs)) (car subs)]
+           [else
+            (let ([attrs 'unused])  ;; NOTE: attrs unused at this point, and it's a pain to recalc
+              (make-pat:and attrs subs))]))
+   (let-values ([(col1 col2)
+                 (for/lists (col1 col2) ([row (in-list rows)])
+                   (unfold-and (car row) null))])
+     (cond [(ormap pair? col2)
+            (values (cons (car ins) ins)
+                    (for/list ([row (in-list rows)]
+                               [col1 (in-list col1)]
+                               [col2 (in-list col2)])
+                      (list* col1 (make-and-pattern col2) (cdr row))))]
+           [else (values ins rows)])))
+
  (define (split-S* rows ks)
    (cond [(null? rows)
           null]
          [else
-          (define row1 (syntax->list (car rows)))
+          (define row1 (stx->list (car rows)))
           (define pat1 (car row1))
           (define k1 (car ks))
           ;; Now accumulate rows starting with patterns like pat1
@@ -503,7 +549,7 @@ Conventions:
                    (cons (list parser (reverse rrows) (reverse rks))
                          (split-S* rows ks))]
                   [else
-                   (define row1 (syntax->list (car rows)))
+                   (define row1 (stx->list (car rows)))
                    (define pat1 (car row1))
                    (define k1 (car ks))
                    (cond [(keep? pat1)
@@ -528,7 +574,7 @@ Conventions:
                   (lambda (x)
                     (pattern-equal? pat1 x))
                   (lambda (x)
-                    (when #t
+                    (when DEBUG-OPT-FAIL
                       (when (pattern-equal? pat1 x)
                         (eprintf "** cannot factor out ~e\n" (syntax->datum x))))
                     #f)))]))
@@ -688,7 +734,7 @@ Conventions:
                    (pattern-equal? (ehpat-head a) (ehpat-head b)))]
              ;; FIXME: more?
              [else #f])))
-   (when #t
+   (when DEBUG-OPT-FAIL
      (when (and (equal? (syntax->datum a) (syntax->datum b))
                 (eq? result #f))
        (eprintf "** pattern-equal? failed on ~e\n" (syntax->datum a))))
