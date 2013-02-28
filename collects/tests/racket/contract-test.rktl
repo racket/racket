@@ -3341,6 +3341,13 @@
                'neg)
      1))
   
+  ;; this used to cause a runtime error in the code that parses ->i
+  (ctest 'no-crash
+         '->i-no-vars-with-dep
+         (begin (->i ([x () any/c] [y (x) any/c]) any) 'no-crash))
+
+
+  
 ;
 ;
 ;
@@ -12854,7 +12861,7 @@ so that propagation occurs.
                                  'pos
                                  'neg))
                      (f 10)))
-
+  
 
 
 ;

@@ -172,7 +172,10 @@ code does the parsing and validation of the syntax.
       (set! sp (cons from sp))
       (free-identifier-mapping-put!
        neighbors from
-       (cons to (free-identifier-mapping-get neighbors from (λ () '())))))
+       (cons to (free-identifier-mapping-get neighbors from))))
+    
+    (define (init-neighbors var)
+      (free-identifier-mapping-put! neighbors var '()))
     
     (define (no-links from)
       (set! sp (cons from sp))
@@ -182,6 +185,7 @@ code does the parsing and validation of the syntax.
       (for ([a-res (in-list arg/ress)])
         (cond
           [(arg/res-vars a-res)
+           (init-neighbors (arg/res-var a-res))
            (for ([nvar (in-list (arg/res-vars a-res))])
              (link (arg/res-var a-res) nvar))]
           [else
@@ -196,6 +200,7 @@ code does the parsing and validation of the syntax.
       (when a-rst
         (cond
           [(arg/res-vars a-rst)
+           (init-neighbors (arg/res-var a-rst))
            (for ([nvar (in-list (arg/res-vars a-rst))])
              (link (arg/res-var a-rst) nvar))]
           [else
