@@ -5,8 +5,8 @@
                   ;; "racket.css" needs to be installed so it can be shared:
                   #:force-racket-css? #t]
 
-@margin-note{
-  @not-on-the-web{
+@not-on-the-web{
+  @margin-note*{
     This is an installation-specific listing.  Running @exec{raco docs}
     (or @exec{Racket Documentation} on Windows or Mac OS X)
     may open a different page with local and user-specific
