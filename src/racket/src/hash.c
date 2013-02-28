@@ -948,6 +948,8 @@ static Scheme_Object *hash_recur(int argc, Scheme_Object **argv, Scheme_Object *
   hi->insp = NULL; /* in case recursive call is `parameterize'd */
 
   v = to_signed_hash(equal_hash_key(argv[0], 0, hi));
+
+  hi->insp = NULL;
   
   return scheme_make_integer(v);
 }
@@ -1770,6 +1772,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
         if (scheme_struct_is_transparent(o))
           insp = NULL;
         else {
+          insp = hi->insp;
           if (!insp) {
             insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
             hi->insp = insp;
