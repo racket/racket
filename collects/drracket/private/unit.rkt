@@ -5220,19 +5220,24 @@ module browser threading seems wrong.
                   (set! newest-frame #f))]
          [(and name ;; only open a tab if we have a filename
                (preferences:get 'drracket:open-in-tabs))
-          (let ([fr (let loop ([frs (cons (send (group:get-the-frame-group) get-active-frame)
-                                          (send (group:get-the-frame-group) get-frames))])
-                      (cond
-                        [(null? frs) #f]
-                        [else (let ([fr (car frs)])
-                                (or (and (is-a? fr drracket:unit:frame<%>)
-                                         fr)
-                                    (loop (cdr frs))))]))])
-            (if fr
-                (begin (send fr open-in-new-tab name)
-                       (send fr show #t)
-                       fr)
-                (create-new-drscheme-frame name)))]
+          (define frs (send (group:get-the-frame-group) get-frames))
+          (let ([ac (send (group:get-the-frame-group) get-active-frame)])
+            (when (and ac (send ac is-shown?))
+              (set! frs (cons ac (remove ac frs)))))
+          (define fr (let loop ([frs frs])
+                       (cond
+                         [(null? frs) #f]
+                         [else (let ([fr (car frs)])
+                                 (or (and (is-a? fr drracket:unit:frame<%>)
+                                          fr)
+                                     (loop (cdr frs))))])))
+          (cond
+            [fr
+             (send fr open-in-new-tab name)
+             (send fr show #t)
+             fr]
+            [else
+             (create-new-drscheme-frame name)])]
          [else
           (create-new-drscheme-frame name)])]))
   
