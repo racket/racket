@@ -802,21 +802,22 @@
               ;; all of the non-dependent argument contracts
               (list (cons 'arg-names arg-exp-xs) ...)
               ;; all of the dependent argument contracts
-              (list #,@(filter values (map (λ (arg) 
-                                             (and (arg/res-vars arg)
-                                                  (let ([orig-vars (find-orig-vars arg args+rst)])
-                                                    #`(λ (#,@orig-vars val blame)
-                                                        #,@(arg/res-vars arg)
-                                                        ;; this used to use opt/direct, but opt/direct duplicates code (bad!)
-                                                        (un-dep #,(syntax-property
-                                                                   (syntax-property 
-                                                                    (arg/res-ctc arg)
-                                                                    'racket/contract:negative-position 
-                                                                    this->i)
-                                                                   'racket/contract:contract-on-boundary 
-                                                                   (gensym '->i-indy-boundary)) 
-                                                                val blame)))))
-                                           args+rst)))
+              (list #,@(for/list ([arg (in-list args+rst)]
+                                  #:when (arg/res-vars arg))
+                         (define orig-vars (find-orig-vars arg args+rst))
+                         (define ctc-stx
+                           (syntax-property
+                            (syntax-property 
+                             (arg/res-ctc arg)
+                             'racket/contract:negative-position 
+                             this->i)
+                            'racket/contract:contract-on-boundary
+                            (gensym '->i-indy-boundary)))
+                         #`(λ (#,@orig-vars val blame)
+                             #,@(arg/res-vars arg)
+                             ;; this used to use opt/direct, but 
+                             ;; opt/direct duplicates code (bad!)
+                             (un-dep #,ctc-stx val blame))))
               ;; then the non-dependent argument contracts that are themselves dependend on
               (list #,@(filter values
                                (map (λ (arg/res indy-id) 
@@ -830,34 +831,31 @@
                     #`(list (cons 'res-names res-exp-xs) ...)
                     #''())
               #,(if (istx-ress an-istx) 
-                    #`(list #,@(filter values 
-                                       (map (λ (arg) 
-                                              (and (arg/res-vars arg)
-                                                   (let ([orig-vars (find-orig-vars 
-                                                                     arg 
-                                                                     (append (istx-ress an-istx) args+rst))])
-                                                     (if (eres? arg)
-                                                         #`(λ #,orig-vars
-                                                             #,@(arg/res-vars arg)
-                                                             (opt/c #,(syntax-property
-                                                                       (syntax-property 
-                                                                        (arg/res-ctc arg)
-                                                                        'racket/contract:positive-position
-                                                                        this->i)
-                                                                       'racket/contract:contract-on-boundary 
-                                                                       (gensym '->i-indy-boundary))))
-                                                         #`(λ (#,@orig-vars val blame)
-                                                             ;; this used to use opt/direct, but opt/direct duplicates code (bad!)
-                                                             #,@(arg/res-vars arg)
-                                                             (un-dep #,(syntax-property
-                                                                        (syntax-property 
-                                                                         (arg/res-ctc arg)
-                                                                         'racket/contract:positive-position
-                                                                         this->i)
-                                                                        'racket/contract:contract-on-boundary 
-                                                                        (gensym '->i-indy-boundary))
-                                                                     val blame))))))
-                                            (istx-ress an-istx))))
+                    #`(list #,@(for/list ([arg (in-list 
+                                                (istx-ress an-istx))]
+                                          #:when (arg/res-vars arg))
+                                 (define orig-vars 
+                                   (find-orig-vars 
+                                    arg 
+                                    (append (istx-ress an-istx)
+                                            args+rst)))
+                                 (define arg-stx
+                                   (syntax-property
+                                    (syntax-property 
+                                     (arg/res-ctc arg)
+                                     'racket/contract:positive-position
+                                     this->i)
+                                    'racket/contract:contract-on-boundary 
+                                    (gensym '->i-indy-boundary)))
+                                 (if (eres? arg)
+                                     #`(λ #,orig-vars
+                                         #,@(arg/res-vars arg)
+                                         (opt/c #,arg-stx))
+                                     #`(λ (#,@orig-vars val blame)
+                                         ;; this used to use opt/direct, but 
+                                         ;; opt/direct duplicates code (bad!)
+                                         #,@(arg/res-vars arg)
+                                         (un-dep #,arg-stx val blame)))))
                     #''())
               #,(if (istx-ress an-istx)
                     #`(list #,@(filter values
