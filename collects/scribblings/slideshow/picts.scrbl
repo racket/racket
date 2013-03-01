@@ -1155,29 +1155,29 @@ follows:
 @tabular[#:sep @hspace[2]
   (list (list @para{@racket['unhappy] --- @racket[(face* 'none 'plain #t default-face-color 6)]}
               @(small-face 'unhappy))
-        (list @para{@racket['sortof-unhappy] --- @racket[(small-face* 'worried 'grimace #t default-face-color 6)]}
+        (list @para{@racket['sortof-unhappy] --- @racket[(face* 'worried 'grimace #t default-face-color 6)]}
               @(small-face 'sortof-unhappy))
-        (list @para{@racket['sortof-happy] --- @racket[(small-face* 'worried 'medium #f default-face-color 6)]}
+        (list @para{@racket['sortof-happy] --- @racket[(face* 'worried 'medium #f default-face-color 6)]}
                     @(small-face 'sortof-happy))
-        (list @para{@racket['happy] --- @racket[(small-face* 'none 'plain #f default-face-color 6)]}
+        (list @para{@racket['happy] --- @racket[(face* 'none 'plain #f default-face-color 6)]}
                     @(small-face 'happy))
-        (list @para{@racket['happier] --- @racket[(small-face* 'none 'large #f default-face-color 3)]}
+        (list @para{@racket['happier] --- @racket[(face* 'none 'large #f default-face-color 3)]}
                     @(small-face 'happier))
-        (list @para{@racket['embarrassed] --- @racket[(small-face* 'worried 'medium #f default-face-color 3)]}
+        (list @para{@racket['embarrassed] --- @racket[(face* 'worried 'medium #f default-face-color 3)]}
                     @(small-face 'embarrassed))
-        (list @para{@racket['badly-embarrassed] --- @racket[(small-face* 'worried 'medium #t default-face-color 3)]}
+        (list @para{@racket['badly-embarrassed] --- @racket[(face* 'worried 'medium #t default-face-color 3)]}
                     @(small-face 'badly-embarrassed))
-        (list @para{@racket['unhappier] --- @racket[(small-face* 'normal 'large #t default-face-color 3)]}
+        (list @para{@racket['unhappier] --- @racket[(face* 'normal 'large #t default-face-color 3)]}
                     @(small-face 'unhappier))
-        (list @para{@racket['happiest] --- @racket[(small-face* 'normal 'huge #f default-face-color 0 -3)]}
+        (list @para{@racket['happiest] --- @racket[(face* 'normal 'huge #f default-face-color 0 -3)]}
                     @(small-face 'happiest))
-        (list @para{@racket['unhappiest] --- @racket[(small-face* 'normal 'huge #t default-face-color 0 -3)]}
+        (list @para{@racket['unhappiest] --- @racket[(face* 'normal 'huge #t default-face-color 0 -3)]}
                     @(small-face 'unhappiest))
-        (list @para{@racket['mad] --- @racket[(small-face* 'angry 'grimace #t default-face-color 0)]}
+        (list @para{@racket['mad] --- @racket[(face* 'angry 'grimace #t default-face-color 0)]}
                     @(small-face 'mad))
-        (list @para{@racket['mean] --- @racket[(small-face* 'angry 'narrow #f default-face-color 0)]}
+        (list @para{@racket['mean] --- @racket[(face* 'angry 'narrow #f default-face-color 0)]}
                     @(small-face 'mean))
-        (list @para{@racket['surprised] --- @racket[(small-face* 'worried 'oh #t default-face-color -4 -3 2)]}
+        (list @para{@racket['surprised] --- @racket[(face* 'worried 'oh #t default-face-color -4 -3 2)]}
                     @(small-face 'surprised)))
 ]}
 
