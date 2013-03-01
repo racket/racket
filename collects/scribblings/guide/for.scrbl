@@ -438,7 +438,7 @@ but when its @racket[_boolean-expr] is true, all sequences within the
 @racket[_boolean-expr] is true, and it also prevents later
 @racket[_body]s from evaluation in the current iteration.
 
-For example, while using @racket[#:when] between clauses effectively
+For example, while using @racket[#:unless] between clauses effectively
 skips later sequences as well as the body,
 
 @interaction[
