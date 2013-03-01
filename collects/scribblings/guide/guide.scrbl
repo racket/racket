@@ -94,7 +94,7 @@ precise details to @|Racket| and other reference manuals.
  (bib-entry #:key "Sitaram05"
             #:author "Dorai Sitaram"
             #:title "pregexp: Portable Regular Expressions for Scheme and Common Lisp"
-            #:url "http://www.ccs.neu.edu/home/dorai/pregexp/pregexp.html"
+            #:url "http://www.ccs.neu.edu/home/dorai/pregexp/"
             #:date "2002")
 
 )
