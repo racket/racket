@@ -4030,7 +4030,8 @@ case "$host_os" in
     try_kqueue_syscall=yes
     ;;
   openbsd*)
-    LIBS="$LIBS -rdynamic -Wl,--export-dynamic"
+    LIBS="$LIBS -Wl,--export-dynamic"
+    EXTRALIBS="-lcrypto -lGLU -lGL -lcurses"
     enable_pthread=yes
     try_kqueue_syscall=yes
     ;;
