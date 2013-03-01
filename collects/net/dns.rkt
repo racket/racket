@@ -1,12 +1,53 @@
 #lang racket/base
 
-(require racket/udp
+;; DNS query library for Racket
+
+(require racket/contract
+         racket/udp
          racket/system)
 
-(provide dns-get-address
-         dns-get-name
-         dns-get-mail-exchanger
-         dns-find-nameserver)
+(provide (contract-out
+          [dns-get-address
+           (-> ip-address-string? string? ip-address-string?)]
+          [dns-get-name
+           (-> ip-address-string? ip-address-string? string?)]
+          [dns-get-mail-exchanger
+           (-> ip-address-string? ip-address-string? string?)]
+          [dns-find-nameserver
+           (-> (or/c ip-address-string? #f))]))
+
+(module+ test (require rackunit))
+
+;; Contract utilities
+
+;; String -> Boolean
+;; check if the input string represents an IPv4 address
+;; TODO: IPv6, alternative address formats
+(define (ip-address-string? val)
+  ;; String -> Boolean
+  ;; check if the given string has leading zeroes
+  (define (has-leading-zeroes? str)
+    (and (> (string-length str) 1)
+         (char=? (string-ref str 0) #\0)))
+  (and (string? val)
+       (let ([matches
+              (regexp-match #px"^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$"
+                            val)])
+        (and matches
+             (= (length matches) 5)
+             (not (ormap has-leading-zeroes? matches))))))
+
+(module+ test
+  (check-true (ip-address-string? "8.8.8.8"))
+  (check-true (ip-address-string? "80.8.800.8"))
+  (check-true (ip-address-string? "80.8.800.0"))
+  (check-false (ip-address-string? "080.8.800.8"))
+  (check-false (ip-address-string? "vas8.8.800.8"))
+  (check-false (ip-address-string? "80.8.128.8dd"))
+  (check-false (ip-address-string? "0.8.800.008"))
+  (check-false (ip-address-string? "0.8.800.a8"))
+  (check-false (ip-address-string? "potatoes"))
+  (check-false (ip-address-string? "127.0.0")))
 
 ;; UDP retry timeout:
 (define INIT-TIMEOUT 50)
