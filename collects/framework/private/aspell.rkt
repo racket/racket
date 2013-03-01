@@ -19,8 +19,9 @@
 
 (define aspell-candidate-paths
   '("/usr/bin" 
+    "/bin"
     "/usr/local/bin"
-    "/bin"))
+    "/opt/local/bin/"))
 
 (define (find-aspell-binary-path)
   (define aspell (if (eq? (system-type) 'windows) "aspell.exe" "aspell"))
