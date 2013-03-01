@@ -12,7 +12,7 @@
           [dns-get-name
            (-> ip-address-string? ip-address-string? string?)]
           [dns-get-mail-exchanger
-           (-> ip-address-string? ip-address-string? string?)]
+           (-> ip-address-string? string? (or/c bytes? string?))]
           [dns-find-nameserver
            (-> (or/c ip-address-string? #f))]))
 
