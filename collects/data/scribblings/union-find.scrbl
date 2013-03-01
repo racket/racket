@@ -13,7 +13,9 @@
 
 The union-find algorithm and data structure provides
 an API for representing sets that contain a single,
-element. The sets support an (imperative) union operation,
+canonical element. The sets support an (imperative) union 
+operation (the library picks one of the canonical elements
+of the original sets to be the canonical element of the union),
 as well as getting and setting the canonical element.
 
 These operations are not thread-safe.
