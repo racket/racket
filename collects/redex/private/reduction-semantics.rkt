@@ -14,6 +14,8 @@
          racket/trace
          racket/contract
          racket/list
+         racket/set
+         data/union-find
          mzlib/etc)
 
 (require (for-syntax syntax/name
@@ -1745,7 +1747,8 @@
                   (compile-language (list (list '(uniform-names ...) rhs/lw ...) ...)
                                     (list (make-nt 'first-names (list (make-rhs `r-rhs) ...)) ...
                                           (make-nt 'new-name (list (make-rhs '(nt orig-name)))) ...)
-                                    '((uniform-names ...) ...)))))))))]))
+                                    (mk-uf-sets '((uniform-names ...) ...))))))))))]))
+
 
 (define-syntax (define-extended-language stx)
   (syntax-case stx ()
@@ -1902,7 +1905,7 @@
        (define normalized-orig-langs
          (for/list ([orig-lang (in-list (syntax->list #'(orig-langs ...)))])
            (syntax-case orig-lang ()
-             [x (identifier? #'x) (list "" #'x (language-id-nts #'x 'define-union-language) orig-lang)]
+             [x (identifier? #'x) (list #f #'x (language-id-nts #'x 'define-union-language) orig-lang)]
              [(prefix lang)
               (and (identifier? #'prefix)
                    (identifier? #'lang))
@@ -1912,19 +1915,18 @@
                                        stx orig-lang)])))
        
        ;; ht : sym -o> (listof stx)
-       ;; maps each non-terminal (with its prefix) to the 
-       ;; list syntax object that they comes from in the original
+       ;; maps each non-terminal (with its prefix) to a
+       ;; list of syntax objects that they come from in the original
        ;; define-union-language declaration 
        (define names-table (make-hash))
        
        (for ([normalized-orig-lang (in-list normalized-orig-langs)])
          (define prefix (list-ref normalized-orig-lang 0))
          (for ([no-prefix-nt (in-list (list-ref normalized-orig-lang 2))])
-           (define nt (string->symbol (string-append prefix (symbol->string no-prefix-nt))))
-           (let ([prev (hash-ref names-table nt #f)])
-             (if prev
-               (hash-set! names-table nt (cons (list-ref normalized-orig-lang 3) prev))
-               (hash-set! names-table nt (list (list-ref normalized-orig-lang 3)))))))
+           (define nt (string->symbol (string-append (or prefix  "")
+                                                     (symbol->string no-prefix-nt))))
+           (let ([prev (hash-ref names-table nt '())])
+             (hash-set! names-table nt (cons (list-ref normalized-orig-lang 3) prev)))))
        
        (with-syntax ([(all-names ...) (sort (hash-map names-table (λ (x y) x)) string<=? #:key symbol->string)]
                      [((prefix old-lang _1 _2) ...) normalized-orig-langs]
@@ -1944,62 +1946,72 @@
                  '(all-names ...)))))))]))
 
 (define (union-language old-langs/prefixes)
-  (define new-nt-map
-    (apply
-     append
-     (for/list ([old-pr (in-list old-langs/prefixes)])
-       (define prefix (list-ref old-pr 0))
-       (define nt-map (compiled-lang-nt-map (list-ref old-pr 1)))
-       (for/list ([lst (in-list nt-map)])
-         (for/list ([sym (in-list lst)])
-           (string->symbol (string-append prefix (symbol->string sym))))))))
   
-  (define new-nts
-    (apply
-     append
-     (for/list ([old-lang/prefix (in-list old-langs/prefixes)])
-       (define prefix (list-ref old-lang/prefix 0))
-       (define lang (compiled-lang-lang (list-ref old-lang/prefix 1)))
-       (for/list ([nt (in-list lang)])
-         (make-nt (string->symbol (string-append prefix (symbol->string (nt-name nt))))
-                  (for/list ([rhs (in-list (nt-rhs nt))])
-                    (make-rhs (prefix-nts prefix (rhs-pattern rhs)))))))))
+  (define (add-prefix prefix sym)
+    (if prefix
+        (string->symbol
+         (string-append prefix
+                        (symbol->string sym)))
+        sym))
+  
+  ;; nt-maps-with-prefixes : (listof hash[symbol -o> uf-set?])
+  ;; add prefixes on the canonical elements and in the
+  ;; hash-table domains
+  (define nt-maps-with-prefixes
+    (for/list ([old-pr (in-list old-langs/prefixes)])
+      (define prefix (list-ref old-pr 0))
+      (define nt-map (compiled-lang-nt-map (list-ref old-pr 1)))
+      (cond
+        [prefix
+         (define already-prefixed '())
+         (for/hash ([(nt a-uf-set) (in-hash nt-map)])
+           (define already-prefixed?
+             (for/or ([x (in-list already-prefixed)])
+               (uf-same-set? x a-uf-set)))
+           (unless already-prefixed?
+             (uf-set-canonical! a-uf-set (add-prefix prefix (uf-find a-uf-set)))
+             (set! already-prefixed (cons a-uf-set already-prefixed)))
+           (values (add-prefix prefix nt) a-uf-set))]
+        [else nt-map])))
 
-  ;; Each language in the union might define the same nt, and might
-  ;; even define the same rhs for the same nt, so merge them to get a
-  ;; proper union.
-  ;; NOTE: This could probably be done when defining new-nts to
-  ;; eliminate a second pass over all the nts.
-  (define merge-nts
-    (let ()
-      (define names-table (make-hash))
-      (for/list ([nt (in-list new-nts)])
-        (let* ([name (nt-name nt)]
-               [prev (hash-ref names-table name #f)])
-          (if prev
-            (hash-set! names-table name (make-nt name (remove-duplicates (append (nt-rhs prev) (nt-rhs nt)))))
-            (hash-set! names-table name nt))))
-      (hash-map names-table (lambda (x y) y))))
-
+  ;; combine all of the nt-maps into a single one,
+  ;; unioning the sets as approrpriate
+  (define new-nt-map (car nt-maps-with-prefixes))
+  (for ([nt-map (in-list (cdr nt-maps-with-prefixes))])
+    (for ([(k this-uf-set) (in-hash nt-map)])
+      (define final-uf-set (hash-ref new-nt-map k #f))
+      (cond
+        [final-uf-set 
+         (uf-union! final-uf-set this-uf-set)]
+        [else
+         (set! new-nt-map (hash-set new-nt-map k this-uf-set))])))
+  
+  (define names-table (make-hash))
+  (for ([old-lang/prefix (in-list old-langs/prefixes)])
+    (define prefix (list-ref old-lang/prefix 0))
+    (define lang (compiled-lang-lang (list-ref old-lang/prefix 1)))
+    (for ([nt (in-list lang)])
+      (define name (add-prefix prefix (nt-name nt)))
+      (define new-rhses
+        (for/set ([rhs (in-list (nt-rhs nt))])
+          (if prefix 
+              (make-rhs (prefix-nts prefix (rhs-pattern rhs)))
+              rhs)))
+      (hash-set! names-table 
+                 name
+                 (set-union new-rhses (hash-ref names-table name (set))))))
+  
   (compile-language #f
-                    merge-nts
-                    (remove-duplicates new-nt-map)))
+                    (hash-map names-table (λ (name set) (make-nt name (set->list set))))
+                    new-nt-map))
 
 
 ;; find-primary-nt : symbol lang -> symbol or #f
 ;; returns the primary non-terminal for a given nt, or #f if `nt' isn't bound in the language.
 (define (find-primary-nt nt lang)
-  (let ([combined (find-combined-nts nt lang)])
-    (and combined
-         (car combined))))
-
-;; find-combined-nts : symbol lang -> (listof symbol) or #f
-;; returns the combined set of non-terminals for 'nt' from lang
-(define (find-combined-nts nt lang)
-  (ormap (λ (nt-line)
-           (and (member nt nt-line)
-                nt-line))
-         (compiled-lang-nt-map lang)))
+  (define uf/f (hash-ref (compiled-lang-nt-map lang) nt #f))
+  (and uf/f
+       (uf-find uf/f)))
 
 (define (apply-reduction-relation* reductions exp 
                                    #:cache-all? [cache-all? (current-cache-all?)]

@@ -42,6 +42,8 @@ See match-a-pattern.rkt for more details
          racket/match
          racket/contract
          racket/promise
+         racket/set
+         data/union-find
          racket/performance-hint
          (for-syntax racket/base)
          "underscore-allowed.rkt"
@@ -144,7 +146,7 @@ See match-a-pattern.rkt for more details
                (bind-exp rib)
                (loop (cdr ribs))))]))))
 
-;; compile-language : language-pict-info[see pict.rkt] (listof nt) (listof (listof sym)) -> compiled-lang
+;; compile-language : language-pict-info[see pict.rkt] (listof nt) (listof (uf-set/c symbol?)) -> compiled-lang
 (define (compile-language pict-info lang nt-map)
   (let* ([clang-ht (make-hasheq)]
          [clang-list-ht (make-hasheq)]
@@ -209,6 +211,19 @@ See match-a-pattern.rkt for more details
           compatible-context-language)))
     (do-compilation clang-ht clang-list-ht lang)
     (struct-copy compiled-lang clang [delayed-cclang compatible-context-language])))
+
+;; mk-uf-sets : (listof (listof sym)) -> (hash[symbol -o> uf-set?])
+;; in the result hash, each nt maps to a uf-set that represents
+;; the set of non-terminals that are coming from the same group
+(define (mk-uf-sets args)
+  (for/fold ([iht (hash)]) ([same-nts (in-list args)])
+    (define main-name (car same-nts))
+    (define main (uf-new main-name))
+    (for/fold ([iht (hash-set iht main-name main)]) 
+      ([other (in-list (cdr same-nts))])
+      (define next (uf-new other))
+      (uf-union! main next)
+      (hash-set iht other next))))
 
 ;; extract-collapsible-nts : (listof nt) -> (listof any)
 (define (extract-collapsible-nts nts)
@@ -2006,7 +2021,7 @@ See match-a-pattern.rkt for more details
  (bind? predicate/c)
  (bind-name (bind? . -> . symbol?))
  (bind-exp (bind? . -> . any/c))
- (compile-language (-> any/c (listof nt?) (listof (listof symbol?)) compiled-lang?)))
+ (compile-language (-> any/c (listof nt?) (hash/c symbol? uf-set?) compiled-lang?)))
 (provide compiled-pattern? 
          print-stats)
 
@@ -2037,4 +2052,5 @@ See match-a-pattern.rkt for more details
          build-compatible-context-language
          caching-enabled?
          check-redudancy
-         prefix-nts)
+         prefix-nts
+         mk-uf-sets)

@@ -737,11 +737,32 @@ extends all of them.
   Constructs a language that is the union of all of the
   languages listed in the @racket[base/prefix-lang].
   
+  If the two languages have non-terminals in common, then 
+  @racket[define-union-language] will combine all of the productions
+  of the common non-terminals. For example, this definition of @racket[L]:
+  @racketblock[(define-language L1
+                 (e ::=
+                    (+ e e) 
+                    number))
+               (define-language L2
+                 (e ::=
+                    (if e e e)
+                    true 
+                    false))
+               (define-union-language L L1 L2)]
+  is equivalent to this one:
+  @racketblock[(define-language L
+                 (e ::=
+                    (+ e e) 
+                    number
+                    (if e e e)
+                    true 
+                    false))]
+  
   If a language has a prefix, then all of the non-terminals
   from that language have the corresponding prefix in 
-  the union language. The prefix helps avoid collisions
-  between the constituent language's non-terminals
-  (which is illegal).
+  the union language. The prefix helps avoid unintended collisions
+  between the constituent language's non-terminals.
   
   For example, with two these two languages:
   @racketblock[(define-language UT

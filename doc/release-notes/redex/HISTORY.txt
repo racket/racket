@@ -1,3 +1,9 @@
+v5.3.4
+
+  * adjusted define-union-language to allow the unioned languages to
+    have overlapping non-terminals; in that case the productions are
+    combined
+
 v5.3.3
 
 No changes

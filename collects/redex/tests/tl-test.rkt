@@ -456,26 +456,71 @@
 
     (for ([t (list (term 1) (term (* 1 1)) (term (+ 1 1)) (term (- 1 1)))])
        (test (redex-match? LMergeUntagged e t) #t)))
-
+  
+  ;; test that define-union-language properly merges non-terminals
+  (let () 
+    (define-language LBase
+      (e (+ e e) number))
+    
+    (define-extended-language L1 LBase
+      (e ....  (- e e)))
+    
+    (define-extended-language L2 LBase
+      (e ....  (* e e)))
+    
+    ;; Untagged union of two languages that define the same nonterminal
+    (define-union-language LMergeUntagged L1 L2)
+    
+    ;; Tagged merge of two extended languages that define the same
+    ;; nonterminal
+    (define-union-language LMergeTagged (f. L1) (d. L2))
+    
+    (test (redex-match? LMergeUntagged e (term 1)) #t)
+    (test (redex-match? LMergeUntagged e (term (* 1 1))) #t)
+    (test (redex-match? LMergeUntagged e (term (+ 1 1))) #t)
+    (test (redex-match? LMergeUntagged e (term (- 1 1))) #t)
+    
+    (test (redex-match? LMergeTagged f.e 1) #t)
+    (test (redex-match? LMergeTagged d.e 1) #t)
+    
+    (test (redex-match? LMergeTagged f.e (term (+ 1 1))) #t)
+    (test (redex-match? LMergeTagged f.e (term (- 1 1))) #t)
+    (test (redex-match? LMergeTagged f.e (term (* 1 1))) #f)
+    
+    (test (redex-match? LMergeTagged d.e (term (+ 1 1))) #t)
+    (test (redex-match? LMergeTagged d.e (term (* 1 1))) #t)
+    (test (redex-match? LMergeTagged d.e (term (- 1 1))) #f))
+  
+  (let ()
+    (define-language L1 (e f ::= 1))
+    (define-language L2 (e g ::= 2))
+    (define-union-language Lc L1 L2)
+    (test (redex-match? Lc e 1) #t)
+    (test (redex-match? Lc e 2) #t)
+    (test (redex-match? Lc f 1) #t)
+    (test (redex-match? Lc f 2) #t)
+    (test (redex-match? Lc g 1) #t)
+    (test (redex-match? Lc g 2) #t))
+  
   (let ()
     (define-language UT
       (e (e e)
          (λ (x) e)
          x))
-
+    
     (define-language WT
       (e (e e)
          (λ (x t) e)
          x)
       (t (→ t t)
          num))
-
+    
     (define-extended-language UT+ UT
       (e ....
          (foo e e)))
-
+    
     (define-union-language B (ut. UT+) (wt. WT))
-
+    
     (test (and (redex-match B ut.e (term (foo x x))) #t) #t)
     (test (redex-match B wt.e (term (foo x x))) #f))
 
