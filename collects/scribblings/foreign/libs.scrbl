@@ -18,7 +18,7 @@ Returns @racket[#t] if @racket[v] is a @deftech{foreign-library value},
                   [version (or/c string? (listof (or/c string? #f)) #f) #f]
 		  [#:get-lib-dirs get-lib-dirs (-> (listof path?)) get-lib-search-dirs]
 		  [#:fail fail (or/c #f (-> any)) #f]
-                  [#:global? global? any/c #f])
+                  [#:global? global? any/c (eq? 'global (system-type 'so-mode))])
          any]{
 
 Returns a @tech{foreign-library value} or the result of @racket[fail]. 

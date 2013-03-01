@@ -18,7 +18,7 @@ contain a null character; the environment variable named by
 @racket[name] is set to @racket[value]. The return value is
 @racket[#t] if the assignment succeeds, @racket[#f] otherwise.}
 
-@defproc[(system-type [mode (or/c 'os 'word 'gc 'link 'so-suffix 'machine)
+@defproc[(system-type [mode (or/c 'os 'word 'gc 'link 'so-suffix 'so-mode 'machine)
                             'os])
          (or/c symbol? string? bytes? exact-positive-integer?)]{
 
@@ -62,6 +62,11 @@ In @indexed-racket['so-suffix] mode, then the result is a byte string
 that represents the file extension used for shared objects on the
 current platform. The byte string starts with a period, so it is
 suitable as a second argument to @racket[path-replace-suffix].
+
+In @indexed-racket['so-mode] mode, then the result is @racket['local]
+if foreign libraries should be opened in ``local'' mode by default
+(as on most platforms) or @racket['global] if foreign libraries
+should be opened in ``global'' mode.
 
 In @indexed-racket['machine] mode, then the result is a string, which
 contains further details about the current machine in a

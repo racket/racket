@@ -111,7 +111,7 @@
 (define (get-ffi-lib name [version/s ""]
 		     #:fail [fail #f]
 		     #:get-lib-dirs [get-lib-dirs get-lib-search-dirs]
-                     #:global? [global? #f])
+                     #:global? [global? (eq? (system-type 'so-mode) 'global)])
   (cond
    [(not name) (ffi-lib name)] ; #f => NULL => open this executable
    [(not (or (string? name) (path? name)))

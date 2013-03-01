@@ -308,6 +308,8 @@
 # define UNDERSCORE_DYNLOAD_SYMBOL_PREFIX
 #endif
 
+# define USE_DLOPEN_GLOBAL_BY_DEFAULT
+
 # define USE_IEEE_FP_PREDS
 
 # define USE_DYNAMIC_FDSET_SIZE
@@ -1483,6 +1485,9 @@
  /* UNDERSCORE_DYNLOAD_SYMBOL_PREFIX with UNIX_DYNAMIC_LOAD means that
     an extra underscore ("_") must be placed in front of the name passed 
     to dlopen(). */
+
+ /* USE_DLOPEN_GLOBAL_BY_DEFAULT opens shared libraries in "global"
+    mode by default, instead of "local" mode. */
 
  /* LINK_EXTENSIONS_BY_TABLE specifies that the Racket functions
     used by an extension must be manually linked via a table of
