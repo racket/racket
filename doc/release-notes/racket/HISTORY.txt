@@ -1,5 +1,6 @@
 Version 5.3.3.7
 Added module-compiled-cross-phase-persistent?
+slideshow/balloon: add balloon-enable-3d
 
 Version 5.3.3.6
 Added "phase-collapse" module inference and instantiation

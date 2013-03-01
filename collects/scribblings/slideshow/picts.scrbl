@@ -1125,6 +1125,10 @@ relative to the balloon's top-left corner.}
 
 The default background color for a balloon.
 
+@defboolparam[balloon-enable-3d on?]{
+
+A parameter that determines whether balloons are drawn with 3-D shading.}
+
 @; ----------------------------------------
 
 @subsection{Face}

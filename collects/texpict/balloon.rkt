@@ -14,7 +14,8 @@
            balloon-pict
            balloon-point-x
            balloon-point-y
-           balloon-color)
+           balloon-color
+           balloon-enable-3d)
 
   (define-struct balloon (pict point-x point-y))
     
@@ -22,8 +23,12 @@
   (define no-brush (find-brush "white" 'transparent))
   (define black-pen (find-pen "black"))
 
+  (define balloon-enable-3d (make-parameter #t (lambda (x) (and x #t))))
+
   (define (series dc steps start-c end-c f pen? brush?)
-    (color-series dc steps #e0.5 start-c end-c f pen? brush?))
+    (if (balloon-enable-3d)
+        (color-series dc steps #e0.5 start-c end-c f pen? brush?)
+        (color-series dc 0 0 start-c end-c f pen? brush?)))
     
   (define (mk-balloon w h corner-radius spike-pos dx dy
                       [color balloon-color])
@@ -122,9 +127,10 @@
                            (if (string? color) (make-object color% color) color)
                            (lambda (i) (draw-once i #t))
                            #t #t)
-                   (send dc set-brush no-brush)
-                   (send dc set-pen (find-pen dark-color 0.5))
-                   (draw-once 0 #f)
+                   (when (balloon-enable-3d)
+                     (send dc set-brush no-brush)
+                     (send dc set-pen (find-pen dark-color 0.5))
+                     (draw-once 0 #f))
                    
                    (send dc set-pen p)
                    (send dc set-brush b)))
