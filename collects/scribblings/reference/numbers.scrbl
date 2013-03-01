@@ -69,8 +69,8 @@ and @racketvalfont{-nan.f} is the same as @racket[+nan.f].
 
 Calculations with infinites produce results consistent with IEEE
 double- or single-precision floating point where IEEE specifies the result; in
-cases where IEEE provides no specification, such as @racket[(angle
-+inf.0+inf.0i)], the result corresponds to the limit approaching
+cases where IEEE provides no specification,
+the result corresponds to the limit approaching
 infinity, or @racket[+nan.0] or @racket[+nan.f] if no such limit exists.
 
 A @deftech{fixnum} is an exact integer whose two's complement

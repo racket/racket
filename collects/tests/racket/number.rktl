@@ -2110,6 +2110,10 @@
 (test 7/9 rationalize (inexact->exact (atan +inf.0 +inf.0)) 1/100)
 (test 26/11 rationalize (inexact->exact (atan +inf.0 -inf.0)) 1/100)
 (test -7/9 rationalize (inexact->exact (atan -inf.0 +inf.0)) 1/100)
+(test 7/9 rationalize (inexact->exact (angle +inf.0+inf.0i)) 1/100)
+(test 26/11 rationalize (inexact->exact (angle -inf.0+inf.0i)) 1/100)
+(test -7/9 rationalize (inexact->exact (angle +inf.0-inf.0i)) 1/100)
+(test -26/11 rationalize (inexact->exact (angle -inf.0-inf.0i)) 1/100)
 
 (test-nan.0 atan +nan.0)
 (test-nan.0 atan 1 +nan.0)
