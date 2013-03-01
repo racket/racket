@@ -222,7 +222,8 @@
 (define (gen-bib tag group sec-title 
                  style maybe-disambiguator 
                  maybe-render-date-bib maybe-render-date-cite 
-                 maybe-date<? maybe-date=?)
+                 maybe-date<? maybe-date=?
+                 spaces)
   (define disambiguator (or maybe-disambiguator default-disambiguation))
   (define date<? (or maybe-date<? default-date<?))
   (define date=? (or maybe-date=? default-date=?))
@@ -304,12 +305,22 @@
             (bib->para bib (and ambiguous?? (disambiguator num-ambiguous*)) i))
           (values bib num-ambiguous* (cons para* rev-disambiguated*))))
       (reverse rev-disambiguated*)))
+
+  (define (make-space)
+    (list
+      (make-paragraph (make-style #f '()) '(""))
+      (make-paragraph (make-style #f '()) '(""))))
+
   (make-part #f
              `((part ,tag))
              (list sec-title)
              (make-style #f '(unnumbered))
              null
-             (list (make-table (send style bibliography-table-style) disambiguated))
+             (list (make-table (send style bibliography-table-style)
+                               (add-between #:splice? #t
+                                            disambiguated
+                                            (for/list ([i (in-range 1 spaces)])
+                                              (make-space)))))
              null))
 
 (define (bib->entry bib style disambiguation render-date-bib i)
@@ -353,6 +364,7 @@
         (~or (~optional (~seq #:style style) #:defaults ([style #'author+date-style]))
              (~optional (~seq #:disambiguate fn) #:defaults ([fn #'#f]))
              (~optional (~seq #:render-date-in-bib render-date-bib) #:defaults ([render-date-bib #'#f]))
+             (~optional (~seq #:spaces spaces) #:defaults ([spaces #'1]))
              (~optional (~seq #:render-date-in-cite render-date-cite) #:defaults ([render-date-cite #'#f]))
              (~optional (~seq #:date<? date<?) #:defaults ([date<? #'#f]))
              (~optional (~seq #:date=? date=?) #:defaults ([date=? #'#f]))) ...)
@@ -365,7 +377,7 @@
          (define (citet bib-entry . bib-entries)
            (add-inline-cite group (cons bib-entry bib-entries) the-style date<? date=?))
          (define (generate-bibliography #:tag [tag "doc-bibliography"] #:sec-title [sec-title "Bibliography"])
-           (gen-bib tag group sec-title the-style fn render-date-bib render-date-cite date<? date=?))))]))
+           (gen-bib tag group sec-title the-style fn render-date-bib render-date-cite date<? date=? spaces))))]))
 
 (define (ends-in-punc? e)
   (regexp-match? #rx"[.!?,]$" (content->string e)))
