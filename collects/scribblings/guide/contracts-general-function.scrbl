@@ -62,7 +62,7 @@ arguments: @racket[char?]. }
 @item{The last one is a single contract: the result of the function.}
 ]
 
- Note if a default value does not satisfy a contract, you won't get a
+ Note that if a default value does not satisfy a contract, you won't get a
  contract error for this interface. If you can't trust yourself to get
  the initial value right, you need to communicate the initial value
  across a boundary.
@@ -71,7 +71,7 @@ arguments: @racket[char?]. }
 
 The @racket[max] operator consumes at least one real number, but it
  accepts any number of additional arguments. You can write other such
- functions using a ``rest'' argument, such as in @racket[max-abs]:
+ functions using a @tech{rest argument}, such as in @racket[max-abs]:
 
 @margin-note{See @secref["rest-args"] for an introduction to rest
 arguments.}
@@ -424,7 +424,7 @@ racket
 The @racket[->i] contract combinator can also ensure that a
 function only modifies state according to certain
 constraints. For example, consider this contract
-(it is a slightly simplified from the function
+(it is a slightly simplified version from the function
 @racket[preferences:add-panel] in the framework):
 @racketblock[
 (->i ([parent (is-a?/c area-container-window<%>)])
@@ -614,7 +614,7 @@ because the given function accepts only one argument.
  The correct contract uses the @racket[unconstrained-domain->]
  combinator, which specifies only the range of a function, not its
  domain. It is then possible to combine this contract with an arity test to
- specify the correct @racket[n-step]'s contract:
+ specify the correct contract for @racket[n-step]:
 @racketblock[
 (provide
  (contract-out

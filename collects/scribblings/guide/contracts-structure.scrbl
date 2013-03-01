@@ -166,7 +166,7 @@ racket
 
 (define (bst? b) (bst-between? b -inf.0 +inf.0))
   
-(provide (struct node (val left right)))
+(provide (struct-out node))
 (provide (contract-out
           [bst? (any/c . -> . boolean?)]
           [in? (number? bst? . -> . boolean?)]))
@@ -195,19 +195,16 @@ that @racket[in?] looks at, we can still guarantee that
 the tree is at least partially well-formed, but without
 changing the complexity.
 
-To do that, we need to use @racket[define-contract-struct] in place of
-@racket[struct]. Like @racket[struct] (and more like
-@racket[define-struct]), @racket[define-contract-struct] defines a
-maker, predicate, and selectors for a new structure. Unlike
-@racket[define-struct], it also defines contract combinators, in this
-case @racket[node/c] and @racket[node/dc]. Also unlike
-@racket[define-struct], it does not allow mutators, making its structs
-always immutable.
+To do that, we need to use @racket[struct/dc] to define
+@racket[bst-between?]. Like @racket[struct/c], @racket[struct/dc] defines a
+contract for a structure. Unlike
+@racket[struct/c], it allows fields to be marked as lazy, so that
+the contracts are only checked when the matching selector is called.
+Also, it does not allow mutable fields to be marked as lazy.
 
-The @racket[node/c] function accepts a contract for each
+The @racket[struct/dc] form accepts a contract for each
 field of the struct and returns a contract on the
-struct. More interestingly, the syntactic
-form @racket[node/dc] allows us to write dependent
+struct. More interestingly, @racket[struct/dc] allows us to write dependent
 contracts, i.e., contracts where some of the contracts on
 the fields depend on the values of other fields. We can use
 this to define the binary search tree contract:
@@ -215,35 +212,38 @@ this to define the binary search tree contract:
 @racketmod[
 racket
 
-(define-contract-struct node (val left right))
-  
+(struct node (val left right))
+
 (code:comment "determines if `n' is in the binary search tree `b'")
 (define (in? n b) ... as before ...)
-  
+
 (code:comment "bst-between : number number -> contract")
 (code:comment "builds a contract for binary search trees")
 (code:comment "whose values are between low and high")
 (define (bst-between/c low high)
   (or/c null?
-        (node/dc [val (between/c low high)]
-                 [left (val) (bst-between/c low val)]
-                 [right (val) (bst-between/c val high)])))
-  
+        (struct/dc node [val (between/c low high)]
+                        [left (val) #:lazy (bst-between/c low val)]
+                        [right (val) #:lazy (bst-between/c val high)])))
+
 (define bst/c (bst-between/c -inf.0 +inf.0))
 
-(provide make-node node-left node-right node-val node?)
+(provide (struct-out node))
 (provide (contract-out
           [bst/c contract?]
           [in? (number? bst/c . -> . boolean?)]))
 ]
 
-In general, each use of @racket[node/dc] must name the
+In general, each use of @racket[struct/dc] must name the
 fields and then specify contracts for each field. In the
 above, the @racket[val] field is a contract that accepts
 values between @racket[low] and @racket[high].
 The @racket[left] and @racket[right] fields are
 dependent on the value of the @racket[val] field,
-indicated by their second sub-expressions. Their contracts
+indicated by their second sub-expressions. They are
+also marked with the @racket[#:lazy] keyword to indicate
+that they should be checked only when the appropriate
+accessor is called on the struct instance. Their contracts
 are built by recursive calls to
 the @racket[bst-between/c] function. Taken together,
 this contract ensures the same thing that
@@ -263,8 +263,8 @@ body to be a contract and then optimizes that contract.
 @racketblock[
 (define-opt/c (bst-between/c low high)
   (or/c null?
-        (node/dc [val (between/c low high)]
-                 [left (val) (bst-between/c low val)]
-                 [right (val) (bst-between/c val high)])))
+        (struct/dc node [val (between/c low high)]
+                        [left (val) #:lazy (bst-between/c low val)]
+                        [right (val) #:lazy (bst-between/c val high)])))
 ]
 

@@ -10,7 +10,7 @@
 A mathematical function has a @deftech{domain} and a
 @deftech{range}. The domain indicates the kind of values that the
 function can accept as arguments, and the range indicates the kind of
-values that it produces. The conventional notation for a describing a
+values that it produces. The conventional notation for describing a
 function with its domain and range is
 
 @racketblock[
@@ -63,7 +63,7 @@ parties is to blame.
 
 If a client module were to apply @racket[deposit] to @racket['millions],
 it would violate the contract.  The contract-monitoring system would
-catch this violation and blame client for breaking the contract with
+catch this violation and blame the client for breaking the contract with
 the above module. In contrast, if the @racket[balance] function were
 to return @racket['broke], the contract-monitoring system
 would blame the server module.
@@ -75,7 +75,7 @@ combinator}, which combines other contracts to form a contract.
 
 @section{Styles of @racket[->]}
 
-If you are used to mathematical function, you may prefer a contract
+If you are used to mathematical functions, you may prefer a contract
   arrow to appear between the domain and the range of a function, not
   at the beginning. If you have read @|HtDP|, you have seen this many
   times. Indeed, you may have seen contracts such as these in other
@@ -410,11 +410,11 @@ With this little change, the error message becomes quite readable:
 
 In general, each contract error message consists of six sections:
 @itemize[@item{a name for the function or method associated with the contract
-               and either the phrase ``contract violation'' or ``violated it's contract'' 
-               depending on whether the contract was violated by the server or the
-               client; e.g. in the previous example: @lines[0 1]}
-          @item{a description of the precise aspect of the contract that was violated, @lines[1 1]}
-          @item{the complete contract plus a path into it showing which aspect was violated, @lines[2 2]} 
-          @item{the module where the contract was put (or, more generally, the boundary that the contract mediates), @lines[4 1]}
-          @item{who was blamed, @lines[5 1]}
-          @item{and the source location where the contract appears. @lines[6 1]}]
+               and either the phrase ``contract violation'' or ``broke its contract''
+               depending on whether the contract was violated by the client or the
+               server; e.g. in the previous example: @lines[0 1]}
+          @item{a description of the precise aspect of the contract that was violated, @lines[1 2]}
+          @item{the complete contract plus a path into it showing which aspect was violated, @lines[3 2]}
+          @item{the module where the contract was put (or, more generally, the boundary that the contract mediates), @lines[5 1]}
+          @item{who was blamed, @lines[6 1]}
+          @item{and the source location where the contract appears. @lines[7 1]}]
