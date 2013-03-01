@@ -35,12 +35,17 @@
                             val)])
         (and matches
              (= (length matches) 5)
+             ;; check that each octet field is an octet
+             (andmap byte? (map string->number (cdr matches)))
+             ;; leading zeroes lead to query errors
              (not (ormap has-leading-zeroes? matches))))))
 
 (module+ test
   (check-true (ip-address-string? "8.8.8.8"))
-  (check-true (ip-address-string? "80.8.800.8"))
-  (check-true (ip-address-string? "80.8.800.0"))
+  (check-true (ip-address-string? "12.81.255.109"))
+  (check-true (ip-address-string? "192.168.0.1"))
+  (check-false (ip-address-string? "80.8.800.8"))
+  (check-false (ip-address-string? "80.8.800.0"))
   (check-false (ip-address-string? "080.8.800.8"))
   (check-false (ip-address-string? "vas8.8.800.8"))
   (check-false (ip-address-string? "80.8.128.8dd"))
