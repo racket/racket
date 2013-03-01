@@ -19,9 +19,4 @@
   (with-handlers ([exn:fail? (lambda (x)
                                (set! libcrypto-load-fail-reason (exn-message x))
                                #f)])
-    (ffi-lib libcrypto-so '("" "1.0.0" "1.0" "0.9.8b" "0.9.8" "0.9.7")
-             ;; On OpenBSD, libssl is linked in a way that requires libcrypto 
-             ;; to be opened as global:
-             #:global? (member (path->bytes (system-library-subpath #f))
-                               '(#"i386-openbsd"
-                                 #"x86_64-openbsd")))))
+    (ffi-lib libcrypto-so '("" "1.0.0" "1.0" "0.9.8b" "0.9.8" "0.9.7"))))
