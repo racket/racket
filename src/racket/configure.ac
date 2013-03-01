@@ -543,7 +543,7 @@ case "$host_os" in
     try_kqueue_syscall=yes
     ;;
   openbsd*)
-    LIBS="$LIBS -rdynamic -Wl,--export-dynamic"
+    LIBS="$LIBS -Wl,--export-dynamic"
     enable_pthread=yes
     try_kqueue_syscall=yes
     ;;
