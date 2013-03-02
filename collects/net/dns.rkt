@@ -5,6 +5,7 @@
 (require racket/bool
          racket/contract
          racket/format
+         racket/list
          racket/match
          racket/string
          racket/system
@@ -356,13 +357,36 @@
 
 ;; Convert a list of bytes representing an IPv6 address to a string
 (define (ipv6->string lob)
-  (define two-octet-strings
+  (define two-octets
     (for/list ([oct-pair (in-slice 2 (in-list lob))])
       (define oct1 (car oct-pair))
       (define oct2 (cadr oct-pair))
-      (~r (+ (arithmetic-shift oct1 8) oct2)
-          #:base 16)))
-  (string-join two-octet-strings ":"))
+      (+ (arithmetic-shift oct1 8) oct2)))
+  (define compressed (compress two-octets))
+  (define compressed-strs
+    (for/list ([elem compressed])
+     (if (eq? elem '::)
+         "" ; string-join will turn this into ::
+         (~r elem #:base 16))))
+  (string-join compressed-strs ":"))
+
+;; (Listof Number) -> (Listof (U Number '::))
+;; Compress an IPv6 address to its shortest representation
+(define (compress lon)
+  (let loop ([acc '()] [lon lon])
+    (cond [(empty? lon) (reverse acc)]
+          [else
+           (define zeroes (for/list ([n lon] #:break (not (zero? n))) n))
+           (define num-zs (length zeroes))
+           (if (<= num-zs 1)
+               (loop (cons (car lon) acc) (cdr lon))
+               (append (reverse acc) '(::) (drop lon num-zs)))])))
+
+(module+ test
+  (check-equal? (compress '(0 0 0 5 5)) '(:: 5 5))
+  (check-equal? (compress '(0 5 5)) '(0 5 5))
+  (check-equal? (compress '(0 0 5 0 0 5)) '(:: 5 0 0 5))
+  (check-equal? (compress '(0 5 0 0 0 5)) '(0 5 :: 5)))
 
 ;; (NameServer -> (Values Any LB Boolean)) NameServer -> Any
 ;; Run the given query function, trying until an answer is found
