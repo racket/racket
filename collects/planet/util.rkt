@@ -363,7 +363,7 @@
            (define info.rkt
              (let ([real-info
                     (check-info.rkt-sanity 
-                     dir
+                     abs-dir
                      (λ (msg . args) (set! announcements (cons (apply format msg args) announcements)))
                      (λ (bad) (set! warnings (cons bad warnings)))
                      (λ (err) (set! critical-errors (cons err critical-errors))))])
