@@ -34,56 +34,59 @@
 ;; An LB is a (Listof Bytes)
 ;;
 ;; An IPAddressString passes the following predicate
-;;
-;; Any -> Boolean
-;; check if the input string represents an IPv4 address
 (define (ip-address-string? val)
+  (and (string? val)
+       (or (ipv4-string? val)
+           (ipv6-string? val))))
+
+;; String -> Boolean
+;; Check if the input string represents an IPv4 address
+(define (ipv4-string? str)
   ;; String -> Boolean
   ;; check if the given string has leading zeroes
   (define (has-leading-zeroes? str)
     (and (> (string-length str) 1)
          (char=? (string-ref str 0) #\0)))
-  (define (ipv4-string? str)
-    (define matches
-      (regexp-match #px"^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$"
-                    str))
-    (and matches
-         (= (length matches) 5)
-         ;; check that each octet field is an octet
-         (andmap byte? (map string->number (cdr matches)))
-         ;; leading zeroes lead to query errors
-         (not (ormap has-leading-zeroes? matches))))
-  ;; TODO: support dotted quad notation
-  (define (ipv6-string? str)
-    (define re-::/: #px"^([0-9a-fA-F]{1,4})(::|:)")
-    (define re-:: #px"^()(::)")
-    (define re-: #px"^([0-9a-fA-F]{1,4})(:)")
-    (define re-end #px"^[0-9a-fA-F]{1,4}$")
-    (or (regexp-match? #px"^::$" str)   ; special case
-        (let loop ([octet-pairs '()]    ; keep octet-pairs to count
-                   [::? #f]             ; seen a :: in the string yet?
-                   [str str])
-          ;; match digit groups and a separator
-          (define matches
-            (if ::?
-                (regexp-match re-: str)
-                (or (regexp-match re-:: str)
-                    (regexp-match re-::/: str))))
-          (cond [matches
-                 (match-define (list match digits sep) matches)
-                 (define rest (substring str (string-length match)))
-                 ;; we need to make sure there is only one :: at most
-                 (if (or ::? (string=? sep "::"))
-                     (loop (cons digits octet-pairs) #t rest)
-                     (loop (cons digits octet-pairs) #f rest))]
-                [else
-                 (and ;; if there isn't a ::, we need 7+1 octet-pairs
-                      (implies (not ::?) (= (length octet-pairs) 7))
-                      ;; this is the +1 octet pair
-                      (regexp-match? re-end str))]))))
-  (and (string? val)
-       (or (ipv4-string? val)
-           (ipv6-string? val))))
+  (define matches
+    (regexp-match #px"^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$"
+                  str))
+  (and matches
+       (= (length matches) 5)
+       ;; check that each octet field is an octet
+       (andmap byte? (map string->number (cdr matches)))
+       ;; leading zeroes lead to query errors
+       (not (ormap has-leading-zeroes? matches))))
+
+;; String -> Boolean
+;; Check if the input string represents an IPv6 address
+;; TODO: support dotted quad notation
+(define (ipv6-string? str)
+  (define re-::/: #px"^([0-9a-fA-F]{1,4})(::|:)")
+  (define re-:: #px"^()(::)")
+  (define re-: #px"^([0-9a-fA-F]{1,4})(:)")
+  (define re-end #px"^[0-9a-fA-F]{1,4}$")
+  (or (regexp-match? #px"^::$" str) ; special case
+      (let loop ([octet-pairs '()]  ; keep octet-pairs to count
+                 [::? #f]           ; seen a :: in the string yet?
+                 [str str])
+        ;; match digit groups and a separator
+        (define matches
+          (if ::?
+              (regexp-match re-: str)
+              (or (regexp-match re-:: str)
+                  (regexp-match re-::/: str))))
+        (cond [matches
+               (match-define (list match digits sep) matches)
+               (define rest (substring str (string-length match)))
+               ;; we need to make sure there is only one :: at most
+               (if (or ::? (string=? sep "::"))
+                   (loop (cons digits octet-pairs) #t rest)
+                   (loop (cons digits octet-pairs) #f rest))]
+              [else
+               (and ;; if there isn't a ::, we need 7+1 octet-pairs
+                    (implies (not ::?) (= (length octet-pairs) 7))
+                    ;; this is the +1 octet pair
+                    (regexp-match? re-end str))]))))
 
 (module+ test
   (check-true (ip-address-string? "8.8.8.8"))
@@ -404,6 +407,14 @@
                       (not (member ns tried))
                       (loop ns (cons ns tried)))))))))
 
+;; String -> String
+;; Convert an IP address to a suitable format for a reverse lookup
+(define (ip->query-domain ip)
+  (if (ipv4-string? ip)
+      (ip->in-addr.arpa ip)
+      (ip->ip6.arpa ip)))
+
+;; Convert an IPv4 address for reverse lookup
 (define (ip->in-addr.arpa ip)
   (let ([result (regexp-match #rx"^([0-9]+)\\.([0-9]+)\\.([0-9]+)\\.([0-9]+)$"
                               ip)])
@@ -413,6 +424,45 @@
             (list-ref result 2)
             (list-ref result 1))))
 
+;; Convert an IPv6 address for reverse lookup
+(define (ip->ip6.arpa ip)
+  (define has-::? (regexp-match? #rx"::" ip))
+  (define octet-pair-strings
+    (cond [has-::?
+           (define without-:: (regexp-replace #rx"::" ip ":replace-me:"))
+           (define pieces (regexp-split #rx":" without-::))
+           (define num-pieces (sub1 (length pieces))) ; don't count replace-me
+           (flatten
+            ;; put in as many 0s needed to expand the ::
+            (for/list ([piece pieces])
+              (if (string=? piece "replace-me")
+                  (build-list (- 8 num-pieces) (λ _ "0"))
+                  piece)))]
+          [else (regexp-split #rx":" ip)]))
+  ;; convert to nibbles
+  (define nibbles
+    (for/fold ([nibbles '()])
+              ([two-octs octet-pair-strings])
+      (define n (string->number two-octs 16))
+      (define nib1 (arithmetic-shift (bitwise-and #xf000 n) -12))
+      (define nib2 (arithmetic-shift (bitwise-and #x0f00 n) -8))
+      (define nib3 (arithmetic-shift (bitwise-and #x00f0 n) -4))
+      (define nib4 (bitwise-and #x000f n))
+      (append (list nib4 nib3 nib2 nib1) nibbles)))
+  (string-append
+   (string-join
+    (for/list ([n nibbles]) (~r n #:base 16))
+    ".")
+   ".ip6.arpa"))
+
+(module+ test
+  (check-equal?
+   (ip->ip6.arpa "4321:0:1:2:3:4:567:89ab")
+   "b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa")
+  (check-equal?
+   (ip->ip6.arpa "2001:db8::567:89ab")
+   "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa"))
+
 (define (get-ptr-list-from-ans ans)
   (filter (lambda (ans-entry) (eq? (list-ref ans-entry 1) 'ptr)) ans))
 
@@ -420,7 +470,7 @@
   (or (try-forwarding
        (lambda (nameserver)
          (let-values ([(auth? qds ans nss ars reply)
-                       (dns-query/cache nameserver (ip->in-addr.arpa ip) 'ptr 'in)])
+                       (dns-query/cache nameserver (ip->query-domain ip) 'ptr 'in)])
            (values (and (positive? (length (get-ptr-list-from-ans ans)))
                         (let ([s (rr-data (car (get-ptr-list-from-ans ans)))])
                           (let-values ([(name null) (parse-name s reply)])
