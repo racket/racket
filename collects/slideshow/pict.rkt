@@ -49,6 +49,7 @@
                     #:start-angle [sa #f] #:end-angle [ea #f]
                     #:start-pull [sp #f] #:end-pull [ep #f]
                     #:color [col #f]
+                    #:alpha [alpha 1.0]
                     #:line-width [lw #f]
                     #:under? [under? #f]
                     #:solid? [solid? #t]
@@ -58,10 +59,10 @@
                                          src src-find 
                                          dest dest-find
                                          #:style style))
-                    p lw col under?)
+                    p lw col alpha under?)
         (pin-curve* #f #f p src src-find dest dest-find
                     sa ea sp ep 0 col lw under? #t
-                    style)))
+                    style alpha)))
 
   (define (pin-arrow-line sz p 
                           src src-find
@@ -69,6 +70,7 @@
                           #:start-angle [sa #f] #:end-angle [ea #f]
                           #:start-pull [sp #f] #:end-pull [ep #f]
                           #:color [col #f]
+                          #:alpha [alpha 1.0]
                           #:line-width [lw #f]
                           #:under? [under? #f]
                           #:solid? [solid? #t]
@@ -81,10 +83,10 @@
                                                #f #f #f solid?
                                                #:hide-arrowhead? hide-arrowhead?
                                                #:style style))
-                    p lw col under?)
+                    p lw col alpha under?)
         (pin-curve* #f (not hide-arrowhead?) p src src-find dest dest-find
                     sa ea sp ep sz col lw under? solid?
-                    style)))
+                    style alpha)))
   
     (define (pin-arrows-line sz p 
                              src src-find
@@ -92,6 +94,7 @@
                              #:start-angle [sa #f] #:end-angle [ea #f]
                              #:start-pull [sp #f] #:end-pull [ep #f]
                              #:color [col #f]
+                             #:alpha [alpha 1.0]
                              #:line-width [lw #f]
                              #:under? [under? #f]
                              #:solid? [solid? #t]
@@ -104,11 +107,11 @@
                                                   #f #f #f solid?
                                                   #:hide-arrowhead? hide-arrowhead?
                                                   #:style style))
-                      p lw col under?)
+                      p lw col alpha under?)
           (pin-curve* (not hide-arrowhead?) (not hide-arrowhead?)
                       p src src-find dest dest-find
                       sa ea sp ep sz col lw under? solid? 
-                      style)))
+                      style alpha)))
     
   (define (pin-curve* start-arrow? end-arrow? p 
                       src src-find
@@ -116,7 +119,7 @@
                       sa ea sp ep
                       sz col lw
                       under? solid?
-                      style)
+                      style alpha)
     (let-values ([(sx0 sy0) (src-find p src)]
                  [(dx0 dy0) (dest-find p dest)])
       (let* ([sa (or sa
@@ -169,6 +172,9 @@
                     [p (if col
                            (colorize p col)
                            p)]
+                    [p (if (= alpha 1.0)
+                           p
+                           (cellophane p alpha))]
                     [p (if lw
                            (linewidth lw p)
                            p)]
@@ -180,13 +186,16 @@
            sx sy sx0 sy0)))))
 
 
-  (define (finish-pin l p lw col under?)
+  (define (finish-pin l p lw col alpha under?)
     (let* ([l (if lw
                   (linewidth lw l)
                   l)]
            [l (if col
                   (colorize l col)
-                  l)])
+                  l)]
+           [l (if (= alpha 1.0)
+                  l
+                  (cellophane l alpha))])
       (if under?
           (cc-superimpose l p)
           (cc-superimpose p l))))

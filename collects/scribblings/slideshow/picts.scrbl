@@ -393,6 +393,7 @@ argument for consistency with the other functions.}
                       [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a?/c color%)) #f]
+                      [#:alpha alpha (real-in 0.0 1.0)]
                       [#:style style (one-of/c 'transparent 'solid 'xor 'hilite 
                                                'dot 'long-dash 'short-dash 'dot-dash 
                                                'xor-dot 'xor-long-dash 'xor-short-dash 
@@ -411,6 +412,7 @@ argument for consistency with the other functions.}
                       [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a?/c color%)) #f]
+                      [#:alpha alpha (real-in 0.0 1.0)]
                       [#:style style (one-of/c 'transparent 'solid 'xor 'hilite 
                                                'dot 'long-dash 'short-dash 'dot-dash 
                                                'xor-dot 'xor-long-dash 'xor-short-dash 
@@ -431,6 +433,7 @@ argument for consistency with the other functions.}
                       [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a?/c color%)) #f]
+                      [#:alpha alpha (real-in 0.0 1.0)]
                       [#:style style (one-of/c 'transparent 'solid 'xor 'hilite 
                                                'dot 'long-dash 'short-dash 'dot-dash 
                                                'xor-dot 'xor-long-dash 'xor-short-dash 
@@ -466,7 +469,7 @@ defaults produce a straight line):
 
 ]
 
-The @racket[line-width], @racket[color], and @racket[style] arguments
+The @racket[line-width], @racket[color], @racket[alpha], and @racket[style] arguments
 apply to the added line.
 
 When the @racket[hide-arrowhead?] argument is a true value, then space
