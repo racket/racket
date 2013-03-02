@@ -18,9 +18,16 @@
 
 (module+ test (require rackunit))
 
-;; Contract utilities
+;; UDP retry timeout:
+(define INIT-TIMEOUT 50)
 
-;; String -> Boolean
+;; Contract utilities and Data Definitions
+;;
+;; An LB is a (Listof Bytes)
+;;
+;; An IPAddressString passes the following predicate
+;;
+;; Any -> Boolean
 ;; check if the input string represents an IPv4 address
 ;; TODO: IPv6, alternative address formats
 (define (ip-address-string? val)
@@ -54,9 +61,7 @@
   (check-false (ip-address-string? "potatoes"))
   (check-false (ip-address-string? "127.0.0")))
 
-;; UDP retry timeout:
-(define INIT-TIMEOUT 50)
-
+;; A Type is one of the following
 (define types
   '((a 1)
     (ns 2)
@@ -75,11 +80,14 @@
     (mx 15)
     (txt 16)))
 
+;; A Class is one of the following
 (define classes
   '((in 1)
     (cs 2)
     (ch 3)
     (hs 4)))
+
+;;;
 
 (define (cossa i l)
   (cond [(null? l) #f]
@@ -99,27 +107,42 @@
      (arithmetic-shift c 8)
      d))
 
+;; Bytes -> LB
+;; Convert the domain name into a sequence of labels, where each
+;; label is a length octet and then that many octets
 (define (name->octets s)
   (let ([do-one (lambda (s) (cons (bytes-length s) (bytes->list s)))])
     (let loop ([s s])
       (let ([m (regexp-match #rx#"^([^.]*)[.](.*)" s)])
         (if m
-          (append (do-one (cadr m)) (loop (caddr m)))
-          (append (do-one s) (list 0)))))))
+            (append (do-one (cadr m)) (loop (caddr m)))
+            ;; terminate with zero length octet
+            (append (do-one s) (list 0)))))))
 
+;; The query header. See RFC1035 4.1.1 for details
+;;
+;; The opcode & flags are set as:
+;; QR | OPCODE  | AA | TC | RD | RA | Z     | RCODE   |
+;; 0  | 0 0 0 0 | 0  | 0  | 1  | 0  | 0 0 0 | 0 0 0 0 |
+;;
 (define (make-std-query-header id question-count)
-  (append (number->octet-pair id)
-          (list 1 0) ; Opcode & flags (recusive flag set)
-          (number->octet-pair question-count)
-          (number->octet-pair 0)
-          (number->octet-pair 0)
-          (number->octet-pair 0)))
+  (append (number->octet-pair id)             ; 16-bit random identifier
+          (list 1 0)                          ; Opcode & flags
+          (number->octet-pair question-count) ; QDCOUNT
+          (number->octet-pair 0)              ; ANCOUNT
+          (number->octet-pair 0)              ; NSCOUNT
+          (number->octet-pair 0)))            ; ARCOUNT
 
+;; Int16 Bytes Type Class -> LB
+;; Construct a DNS query message
 (define (make-query id name type class)
   (append (make-std-query-header id 1)
-          (name->octets name)
-          (number->octet-pair (cadr (assoc type types)))
-          (number->octet-pair (cadr (assoc class classes)))))
+          ;; Question section. See RF1035 4.1.2
+          (name->octets name)                 ; QNAME
+          (number->octet-pair                 ; QTYPE
+           (cadr (assoc type types)))
+          (number->octet-pair                 ; QCLASS
+           (cadr (assoc class classes)))))
 
 (define (add-size-tag m)
   (append (number->octet-pair (length m)) m))
@@ -197,6 +220,7 @@
       (let-values ([(rr start) (parse start reply)])
         (loop (sub1 n) start (cons rr accum))))))
 
+;; NameServer String Type Class -> (Values Boolean LB LB LB LB LB)
 (define (dns-query nameserver addr type class)
   (unless (assoc type types)
     (raise-type-error 'dns-query "DNS query type" type))
@@ -255,7 +279,12 @@
             (values (positive? (bitwise-and #x4 v0))
                     qds ans nss ars reply)))))))
 
+;; A cache for DNS query data
+;; Stores a (List Boolean LB LB LB LB LB)
 (define cache (make-hasheq))
+
+;; NameServer Address Type Class -> (Values Boolean LB LB LB LB LB)
+;; Execute a DNS query and cache it
 (define (dns-query/cache nameserver addr type class)
   (let ([key (string->symbol (format "~a;~a;~a;~a" nameserver addr type class))])
     (let ([v (hash-ref cache key (lambda () #f))])
@@ -270,8 +299,10 @@
   (format "~a.~a.~a.~a"
           (list-ref s 0) (list-ref s 1) (list-ref s 2) (list-ref s 3)))
 
+;; (NameServer -> (Values Any LB Boolean)) NameServer -> Any
+;; Run the given query function, trying until an answer is found
 (define (try-forwarding k nameserver)
-  (let loop ([nameserver nameserver][tried (list nameserver)])
+  (let loop ([nameserver nameserver] [tried (list nameserver)])
     ;; Normally the recusion is done for us, but it's technically optional
     (let-values ([(v ars auth?) (k nameserver)])
       (or v
