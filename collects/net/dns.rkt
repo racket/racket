@@ -288,7 +288,7 @@
 
   (let* ([query (make-query (random 256) (string->bytes/latin-1 addr)
                             type class)]
-         [udp (udp-open-socket)]
+         [udp (udp-open-socket nameserver 53)]
          [reply
           (dynamic-wind
             void
