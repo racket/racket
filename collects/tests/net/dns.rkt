@@ -22,7 +22,6 @@
         (dns-get-address nameserver *racket-host*) => *racket-ip*
         (dns-get-address nameserver *kame-url* #:ipv6? #t) => *kame-ip*
         (dns-get-name nameserver *racket-ip*) => *racket-host*
-        (dns-get-name nameserver *racket-ip*) => *racket-host*
         (dns-get-mail-exchanger nameserver *racket-url*) => *racket-mx*))
 
 (define (tests)
