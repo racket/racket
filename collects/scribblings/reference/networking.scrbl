@@ -271,7 +271,7 @@ For information about UDP in general, see @italic{TCP/IP Illustrated,
 Volume 1} by W. Richard Stevens.
 
 @defproc[(udp-open-socket [family-hostname (or/c string? #f) #f]
-                          [family-port-no (or/c string? #f) #f])
+                          [family-port-no (or/c (integer-in 1 65535) #f) #f])
          udp?]{
 
 Creates and returns a @deftech{UDP socket} to send and receive
