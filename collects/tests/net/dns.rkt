@@ -13,11 +13,15 @@
 (define *racket-host* "champlain.ccs.neu.edu")
 (define *racket-ip* "129.10.115.116")
 (define *racket-mx* #"aspmx.l.google.com")
+(define *kame-url* "www.kame.net")
+(define *kame-ip* "2001:200:dff:fff1:216:3eff:feb1:44d7")
 
 (module+ main (tests))
 (define (dns-test/nameserver nameserver)
   (test (dns-get-address nameserver *racket-url*) => *racket-ip*
         (dns-get-address nameserver *racket-host*) => *racket-ip*
+        (dns-get-address nameserver *kame-url* #:ipv6? #t) => *kame-ip*
+        (dns-get-name nameserver *racket-ip*) => *racket-host*
         (dns-get-name nameserver *racket-ip*) => *racket-host*
         (dns-get-mail-exchanger nameserver *racket-url*) => *racket-mx*))
 

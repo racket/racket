@@ -14,7 +14,8 @@ improvements.}
 @section[#:tag "dns-proc"]{Functions}
 
 @defproc[(dns-get-address [nameserver string?]
-                          [address string?])
+                          [address string?]
+                          [#:ipv6? ipv6? any/c #f])
          string?]{
 
 Consults the specified nameserver (normally a numerical address like
@@ -23,7 +24,12 @@ Internet address.
 
 The query record sent to the DNS server includes the "recursive" bit,
 but @racket[dns-get-address] also implements a recursive search itself
-in case the server does not provide this optional feature.}
+in case the server does not provide this optional feature.
+
+If @racket[ipv6?] is a true value, then the numerical address
+that is returned will be an IPv6 address. If no AAAA record exists,
+an error will be raised.
+}
 
 
 @defproc[(dns-get-name [nameserver string?]
