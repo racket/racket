@@ -47,7 +47,7 @@
                           (default-extension) style (default-filters)
                           #:dialog-mixin frame:focus-table-mixin)])
         (and f (or (not filter) (filter-match? filter f filter-msg))
-             (let* ([f (normal-case-path (simple-form-path f))]
+             (let* ([f (simple-form-path f)]
                     [dir (path-only f)]
                     [name (file-name-from-path f)])
                (cond
