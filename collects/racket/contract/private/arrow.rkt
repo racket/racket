@@ -72,19 +72,19 @@ v4 todo:
   #`(call-with-immediate-continuation-mark
      contract-key
      (λ (m)
-       (cond
-         [(tail-marks-match? m . #,rng-ctcs)
-          #,(call-gen #'())]
-         [else #,(call-gen rng-checkers)]))))
+       (if (tail-marks-match? m . #,rng-ctcs)
+           #,(call-gen #'())
+           #,(call-gen rng-checkers)))))
 
 (begin-encourage-inline
  (define tail-marks-match?
     (case-lambda
       [(m) (and m (null? m))]
-      [(m rng-ctc) (and m
-                        (not (null? m))
-                        (null? (cdr m))
-                        (procedure-closure-contents-eq? (car m) rng-ctc))]
+      [(m rng-ctc)
+       (and m
+            (not (null? m))
+            (null? (cdr m))
+            (procedure-closure-contents-eq? (car m) rng-ctc))]
       [(m rng-ctc1 rng-ctc2)
        (and m
             (= (length m) 2)
@@ -110,7 +110,7 @@ v4 todo:
                (λ (orig-blame)
                  (let ([rng-blame (blame-add-context orig-blame "the range of")])
                    (let* ([p-app-x (proj-x rng-blame)] ...
-                          [res-checker (λ (res-x ...) (values (p-app-x res-x) ...))])
+                          [res-checker (λ (res-x ...) (values/drop (p-app-x res-x) ...))])
                      (λ (val)
                        (unless (procedure? val)
                          (raise-blame-error orig-blame val '(expected: "a procedure" given: "~v") val))
@@ -241,7 +241,7 @@ v4 todo:
                                                  (with-syntax ([proj (car (syntax->list #'(rng-ctc ...)))]
                                                                [name (car (syntax->list #'(rng-x ...)))])
                                                    #'(proj name))
-                                                 #'(values (rng-ctc rng-x) ...))])
+                                                 #'(values/drop (rng-ctc rng-x) ...))])
                                 #'(case-lambda
                                     [(rng-x ...)
                                      post ...
@@ -299,7 +299,7 @@ v4 todo:
                              (let ([inner-stx-gen
                                     (if need-apply-values?
                                         (λ (s) #`(apply values #,@s this-param ... (dom-ctc dom-x) ... opt+rest-uses))
-                                        (λ (s) #`(values #,@s this-param ... (dom-ctc dom-x) ...)))])
+                                        (λ (s) #`(values/drop #,@s this-param ... (dom-ctc dom-x) ...)))])
                                (if no-rng-checking?
                                    (inner-stx-gen #'())
                                    (check-tail-contract #'(rng-ctc ...) #'(rng-checker-name ...) inner-stx-gen)))]
@@ -307,7 +307,7 @@ v4 todo:
                              (let* ([inner-stx-gen
                                      (if need-apply-values?
                                          (λ (s k) #`(apply values #,@s #,@k this-param ... (dom-ctc dom-x) ... opt+rest-uses))
-                                         (λ (s k) #`(values #,@s #,@k this-param ... (dom-ctc dom-x) ...)))]
+                                         (λ (s k) #`(values/drop #,@s #,@k this-param ... (dom-ctc dom-x) ...)))]
                                     [outer-stx-gen
                                      (if (null? req-keywords)
                                          (λ (s)
@@ -327,7 +327,7 @@ v4 todo:
                   (with-syntax ([(basic-checker-name) (generate-temporaries '(basic-checker))])
                     (cond
                       [(and (null? req-keywords) (null? opt-keywords))
-                       #`(let-values ([(rng-checker-name ...) (values rng-checker ...)])
+                       #`(let-values ([(rng-checker-name ...) (values/drop rng-checker ...)])
                            (let ([basic-lambda-name basic-lambda])
                              (arity-checking-wrapper val blame
                                                      basic-lambda-name
@@ -339,7 +339,7 @@ v4 todo:
                                                      '(req-kwd ...)
                                                      '(opt-kwd ...))))]
                       [(pair? req-keywords)
-                       #`(let-values ([(rng-checker-name ...) (values rng-checker ...)])
+                       #`(let-values ([(rng-checker-name ...) (values/drop rng-checker ...)])
                            (let ([kwd-lambda-name kwd-lambda])
                              (arity-checking-wrapper val blame
                                                      void
@@ -351,7 +351,7 @@ v4 todo:
                                                      '(req-kwd ...)
                                                      '(opt-kwd ...))))]
                       [else
-                       #`(let-values ([(rng-checker-name ...) (values rng-checker ...)])
+                       #`(let-values ([(rng-checker-name ...) (values/drop rng-checker ...)])
                            (let ([basic-lambda-name basic-lambda]
                                  [kwd-lambda-name kwd-lambda])
                              (arity-checking-wrapper val blame
@@ -1561,7 +1561,7 @@ v4 todo:
            (this-parameter ... dom-formals ... . #,(if rst #'rst-formal '()))
            #,(cond
                [rng
-                (let ([rng-checkers (list #'(λ (rng-id ...) (values (rng-proj-x rng-id) ...)))]
+                (let ([rng-checkers (list #'(λ (rng-id ...) (values/drop (rng-proj-x rng-id) ...)))]
                       [rng-length (length (syntax->list rng))])
                   (if rst
                       (check-tail-contract #'(rng-proj-x ...) rng-checkers
@@ -1571,12 +1571,12 @@ v4 todo:
                                                       (rst-proj-x rst-formal))))
                       (check-tail-contract #'(rng-proj-x ...) rng-checkers
                                            (λ (rng-checks)
-                                             #`(values #,@rng-checks this-parameter ...
-                                                       (dom-proj-x dom-formals) ...)))))]
+                                             #`(values/drop #,@rng-checks this-parameter ...
+                                                            (dom-proj-x dom-formals) ...)))))]
                [rst
                 #`(apply values this-parameter ... (dom-proj-x dom-formals) ... (rst-proj-x rst-formal))]
                [else
-                #`(values this-parameter ... (dom-proj-x dom-formals) ...)]))))))
+                #`(values/drop this-parameter ... (dom-proj-x dom-formals) ...)]))))))
 
 ;; Takes a list of (listof projection), and returns one of the
 ;; lists if all the lists contain the same projections. If the list is
@@ -1774,7 +1774,7 @@ v4 todo:
                   (thunk)
                   (let-values ([(x ...) (with-continuation-mark multiple-contract-key fs
                                           (thunk))])
-                    (values (f x) ...)))))))]))
+                    (values/drop (f x) ...)))))))]))
 
 
 (define multiple-contract-key (gensym 'multiple-contract-key))
@@ -2093,3 +2093,9 @@ v4 todo:
      #'-predicate/c]
     [_
      #`(syntax-parameterize ((making-a-method #f)) #,(->/proc/main stx))]))
+
+;; this is to make the expanded versions a little easier to read
+(define-syntax (values/drop stx)
+  (syntax-case stx ()
+    [(_ arg) #'arg]
+    [(_ args ...) #'(values args ...)]))
