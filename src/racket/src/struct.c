@@ -185,6 +185,8 @@ static Scheme_Object *make_chaperone_property_from_c(Scheme_Object *name);
 
 static Scheme_Object *is_liberal_def_ctx(int argc, Scheme_Object **argv, Scheme_Object *self);
 
+/* This needs to be even, so that structure chaperones are
+   distingiushed from procedure chaperones: */
 #define PRE_REDIRECTS 2
 
 #ifdef MZ_PRECISE_GC
@@ -1054,6 +1056,7 @@ static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object 
       }
 
       if (!SCHEME_VECTORP(px->redirects)
+          || (SCHEME_VEC_SIZE(px->redirects) & 1)
           || SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[0]))
         arg = px->prev;
       else {
@@ -1972,6 +1975,7 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *o, in
       Scheme_Object *a[2], *red, *orig;
 
       if (!SCHEME_VECTORP(px->redirects)
+          || (SCHEME_VEC_SIZE(px->redirects) & 1)
           || SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[PRE_REDIRECTS + i])) {
         o = px->prev;
       } else {
@@ -2025,7 +2029,8 @@ static void chaperone_struct_set(const char *who, Scheme_Object *o, int i, Schem
       int half;
 
       o = px->prev;
-      if (SCHEME_VECTORP(px->redirects)) {
+      if (SCHEME_VECTORP(px->redirects)
+          && !(SCHEME_VEC_SIZE(px->redirects) & 1)) {
         half = (SCHEME_VEC_SIZE(px->redirects) - PRE_REDIRECTS) >> 1;
         red = SCHEME_VEC_ELS(px->redirects)[PRE_REDIRECTS + half + i];
         if (SCHEME_TRUEP(red)) {
@@ -2560,7 +2565,8 @@ static Scheme_Object *struct_info_chaperone(Scheme_Object *o, Scheme_Object *si,
 
   while (SCHEME_CHAPERONEP(o)) {
     px = (Scheme_Chaperone *)o;
-    if (SCHEME_VECTORP(px->redirects)) {
+    if (SCHEME_VECTORP(px->redirects)
+        && !(SCHEME_VEC_SIZE(px->redirects) & 1)) {
       proc = SCHEME_VEC_ELS(px->redirects)[1];
       if (SCHEME_TRUEP(proc)) {
         if (SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
@@ -5314,6 +5320,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
 
   if (SCHEME_STRUCTP(val)) {
     stype = ((Scheme_Structure *)val)->stype;
+    /* vector size needs to be even to distinguish it from procedure chaperones: */
     redirects = scheme_make_vector(PRE_REDIRECTS + 2 * stype->num_slots, scheme_false);
   } else {
     stype = NULL;

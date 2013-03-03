@@ -1226,6 +1226,26 @@
   (test (list 11 '(11)) j 10)
   (test '(12 #f 9 #f) values saved))
 
+;; Make sure that `impersonator-prop:application-mark'
+;; is not propagated to further wrapping chaperones:
+(let ()
+  (define msgs '())
+  (define f
+    (chaperone-procedure
+     (λ (x) 'wrong)
+     (λ (x)
+        (call-with-immediate-continuation-mark
+         'key
+         (λ (m)
+            (set! msgs (cons m msgs))
+            (values x))))
+     impersonator-prop:application-mark
+     (cons 'key 'skip-this-check)))
+  
+  (void ((chaperone-procedure f (lambda (x) x)) 42)
+        (f 42))
+  (test '(#f #f) values msgs))
+
 ;; ----------------------------------------
 
 ;; Check that supplying a procedure `to make-keyword-procedure' that 

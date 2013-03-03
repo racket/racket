@@ -3237,7 +3237,7 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
                                              int is_impersonator, int argc, Scheme_Object *argv[])
 {
   Scheme_Chaperone *px;
-  Scheme_Object *val = argv[0], *orig, *naya, *r;
+  Scheme_Object *val = argv[0], *orig, *naya, *r, *app_mark;
   Scheme_Hash_Tree *props;
 
   if (SCHEME_CHAPERONEP(val))
@@ -3261,14 +3261,35 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
                      argv[0]);
 
   props = scheme_parse_chaperone_props(name, 2, argc, argv);
+  if (props) {
+    app_mark = scheme_hash_tree_get(props, scheme_app_mark_impersonator_property);
+    if (app_mark) {
+      /* don't need to keep the property */
+      if (props->count == 1)
+        props = NULL; 
+      else
+        props = scheme_hash_tree_set(props, scheme_app_mark_impersonator_property, NULL);
+      /* app_mark should be (cons mark val) */
+      if (!SCHEME_PAIRP(app_mark))
+        app_mark = scheme_false;
+    } else
+      app_mark = scheme_false;
+  } else
+    app_mark = scheme_false;
 
   px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
   px->iso.so.type = scheme_proc_chaperone_type;
   px->val = val;
   px->prev = argv[0];
   px->props = props;
-  /* put procedure with known-good arity (to speed checking) in a mutable pair: */
-  r = scheme_make_mutable_pair(argv[1], scheme_make_integer(-1));
+
+  /* put procedure with known-good arity (to speed checking) in a vector: */
+  r = scheme_make_vector(3, scheme_make_integer(-1));
+  SCHEME_VEC_ELS(r)[0] = argv[1];
+  SCHEME_VEC_ELS(r)[2] = app_mark;
+
+  /* Vector of odd size for redirects means a procedure chaperone,
+     vector with even slots means a structure chaperone. */
   px->redirects = r;
 
   if (is_impersonator)
@@ -3372,7 +3393,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   Scheme_Cont_Frame_Data cframe;
 
   if (argv == MZ_RUNSTACK) {
-    /* Pushing onto the runstack ensures that `(mcar px->redirects)' won't
+    /* Pushing onto the runstack ensures that `(vector-ref px->redirects 0)' won't
        modify argv. */
     if (MZ_RUNSTACK > MZ_RUNSTACK_START) {
       --MZ_RUNSTACK;
@@ -3404,7 +3425,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     what = "impersonator";
 
   /* Ensure that the original procedure accepts `argc' arguments: */
-  if (argc != SCHEME_INT_VAL(SCHEME_CDR(px->redirects))) {
+  if (argc != SCHEME_INT_VAL(SCHEME_VEC_ELS(px->redirects)[1])) {
     a[0] = px->prev;
     if (!scheme_check_proc_arity(NULL, argc, 0, 0, a)) {
       /* Apply the original procedure, in case the chaperone would accept
@@ -3417,15 +3438,11 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     }
     /* record that argc is ok, on the grounds that the function is likely
        to be applied to argc arguments again */
-    SCHEME_CDR(px->redirects) = scheme_make_integer(argc);
+    SCHEME_VEC_ELS(px->redirects)[1] = scheme_make_integer(argc);
   }
 
-  if (px->props) {
-    app_mark = scheme_hash_tree_get(px->props, scheme_app_mark_impersonator_property);
-    /* app_mark should be (cons mark val) */
-    if (app_mark && !SCHEME_PAIRP(app_mark))
-      app_mark = NULL;
-  } else
+  app_mark = SCHEME_VEC_ELS(px->redirects)[2];
+  if (SCHEME_FALSEP(app_mark))
     app_mark = NULL;
 
   if (app_mark) {
@@ -3440,7 +3457,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   } else
     need_pop_mark = 0;
 
-  v = SCHEME_CAR(px->redirects);
+  v = SCHEME_VEC_ELS(px->redirects)[0];
   if (SAME_TYPE(SCHEME_TYPE(v), scheme_native_closure_type))
     v = _apply_native(v, argc, argv);
   else
@@ -3500,7 +3517,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                      "  expected: %d or %d\n"
                      "  received: %d",
                      what,
-                     SCHEME_CAR(px->redirects),
+                     SCHEME_VEC_ELS(px->redirects)[0],
                      argc, argc + 1,
                      c);
     return NULL;
@@ -3556,7 +3573,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                        "  wrapper: %V\n"
                        "  received: %V",
                        what,
-                       SCHEME_CAR(px->redirects),
+                       SCHEME_VEC_ELS(px->redirects)[0],
                        post);
 
     if (app_mark) {
