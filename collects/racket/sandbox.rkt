@@ -150,7 +150,12 @@
 (define sandbox-path-permissions
   (make-parameter '()
     (lambda (new)
-      (map (lambda (perm) (list (car perm) (path->bregexp (cadr perm))))
+      (map (lambda (perm)
+             (if (and (pair? perm) (symbol? (car perm))
+                      (pair? (cdr perm)) (null? (cddr perm)))
+               (list (car perm) (path->bregexp (cadr perm)))
+               (error 'sandbox-path-permissions
+                      "bad permission spec: ~e" perm)))
            new))))
 
 ;; compresses the (sandbox-path-permissions) value to a "compressed" list of
