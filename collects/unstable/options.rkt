@@ -1,8 +1,9 @@
 #lang racket
 
 
-(provide option/c transfer-option exercise-option waive-option invariant/c
-         has-option?)
+(provide option/c transfer-option exercise-option waive-option tweak-option
+         has-option? has-option-with-contract?
+         invariant/c)
 
 
 (require syntax/location 
@@ -55,54 +56,50 @@
       #t
       (andmap boolean? (third s-info))))
 
-(struct info (val proj blame))
+(struct info (val proj blame with))
 
 (define-values (impersonator-prop:proxy proxy? proxy-info) 
   (make-impersonator-property 'proxy))
 
-(struct proc-proxy (proc ctc proc-info)
-  #:property prop:procedure  (struct-field-index proc)
-  #:property prop:contracted (struct-field-index ctc))
 
-(define (build-proc-proxy ctc proc-info)
-  (let ((val (info-val proc-info)))
-    (proc-proxy
-     (if (object-name val)
-         (procedure-rename
-          val
-          (object-name val))
-       val)
-   ctc
-   proc-info)))
-
-
-(define (build-proxy ctc val proj blame)
-  (let ([proxy-info (info val proj blame)])
-    (cond [(procedure? val)
-           (build-proc-proxy ctc proxy-info)]
-          [(vector? val)
-           (chaperone-vector
-            val
-            (λ (v i val) val)
-            (λ (v i val) val)
-            impersonator-prop:contracted ctc
-            impersonator-prop:proxy proxy-info)]
-          [(hash? val)
-           (chaperone-hash
-            val
-            (λ (h k) (values k (λ (h k v) v)))
-            (λ (h k v) (values k v))
-            (λ (h k) k)
-            (λ (h k) k)
-            impersonator-prop:contracted ctc
-            impersonator-prop:proxy proxy-info)]
-          [else 
-           (chaperone-struct
-            val
-            (first (second (option-structid ctc)))
-            (λ (v f) f)
-            impersonator-prop:contracted ctc
-            impersonator-prop:proxy proxy-info)])))
+(define (build-proxy with ctc val proj blame)
+  (let* ([proxy-info (info val proj blame with)]
+         [ival
+          (cond [(procedure? val)
+                 (chaperone-procedure
+                  val
+                  (make-keyword-procedure
+                   (λ (kwds kwd-args . other-args)
+                       (apply values kwd-args other-args))
+                     (λ args
+                       (apply values args)))
+                  impersonator-prop:contracted ctc
+                  impersonator-prop:proxy proxy-info)]
+                [(vector? val)
+                 (chaperone-vector
+                  val
+                  (λ (v i val) val)
+                  (λ (v i val) val)
+                  impersonator-prop:contracted ctc
+                  impersonator-prop:proxy proxy-info)]
+                [(hash? val)
+                 (chaperone-hash
+                  val
+                  (λ (h k) (values k (λ (h k v) v)))
+                  (λ (h k v) (values k v))
+                  (λ (h k) k)
+                  (λ (h k) k)
+                  impersonator-prop:contracted ctc
+                  impersonator-prop:proxy proxy-info)]
+                [else 
+                 (chaperone-struct
+                  val
+                  (first (second (option-structid ctc)))
+                  (λ (v f) f)
+                  impersonator-prop:contracted ctc
+                  impersonator-prop:proxy proxy-info)])])
+    (cond [with ((proj blame) ival)]
+          [else ival])))
 
 
 (define (run-tester tester val orig-ctc blame here)
@@ -122,19 +119,22 @@
   (apply build-compound-type-name 'option/c 
          (contract-name (option-orig-ctc c))
          (append 
+          (if (option-with c)
+              (list '#:with-contract #t)
+              null)
           (if (eq? (option-tester c) 'dont-care)
               null
               (list '#:tester (option-tester c)))
           (if (eq? (option-flat c) #f)
               null
               (list '#:flat? #t))
-           (if (eq? (option-immutable c) 'dont-care)
+          (if (eq? (option-immutable c) 'dont-care)
               null
               (list '#:immutable (option-immutable c)))
-           (if (eq? (option-invariant c) 'dont-care)
+          (if (eq? (option-invariant c) 'dont-care)
               null
               (list '#:invariant (option-invariant c)))
-           (if (eq? (option-structid c) 'none)
+          (if (eq? (option-structid c) 'none)
               null
               (list '#:struct (fourth (option-structid c)))))))
 
@@ -150,11 +150,11 @@
     (when (and (eq? invariant 'dont-care)
                (or  (not (eq? immutable 'dont-care))
                     (not (eq? flat #f))))
-          (raise-blame-error 
-           blame
-           val
-           '(expected "an invariant keyword argument (based on presence of other keyword arguments)")))
-    (unless (or (and (procedure? val) (eq? structid 'none))
+      (raise-blame-error 
+       blame
+       val
+       '(expected "an invariant keyword argument (based on presence of other keyword arguments)")))
+    (unless (or (and (procedure? val) (not (parameter? val)) (eq? structid 'none))
                 (and (vector? val) (eq? structid 'none))
                 (and (hash? val) (eq? structid 'none))
                 (and (not (eq? structid 'none)) (same-type val structid)))
@@ -165,11 +165,11 @@
 
 
 (define (build-orig-proj c inv flat immutable structid here)
-  (cond [(eq? inv 'dont-care) (option-orig-ctc c)]
+  (cond [(eq? inv 'dont-care) c]
         [else
-         (invariantc (option-orig-ctc c) inv #:struct structid #:flat? flat #:immutable immutable here)]))
+         (invariantc c inv #:struct structid #:flat? flat #:immutable immutable here)]))
 
-(struct option (orig-ctc tester invariant  flat immutable structid here)
+(struct option (orig-ctc with tester invariant  flat immutable structid here)
   #:property prop:contract
   (build-contract-property
    #:name 
@@ -183,29 +183,31 @@
      (λ (blame)
        (λ (val)
          (check-option ctc val blame)
-         (let*  ([tester (option-tester ctc)]
+         (let*  ([with (option-with ctc)]
+                 [tester (option-tester ctc)]
                  [invariant (option-invariant ctc)]
                  [flat (option-flat ctc)]
                  [immutable (option-immutable ctc)]
                  [structid (option-structid ctc)]
                  [here (option-here ctc)]
                  [orig-ctc (option-orig-ctc ctc)]
-                 [exec-ctc (build-orig-proj ctc invariant flat immutable structid here)])
+                 [exec-ctc (build-orig-proj orig-ctc invariant flat immutable structid here)])
            (unless (symbol? tester)
              (run-tester tester val orig-ctc blame here))
-           (build-proxy ctc val (contract-projection exec-ctc)
+           (build-proxy with ctc val (contract-projection exec-ctc)
                         (blame-add-context
                          blame
                          "the option of"))))))))
 
 (define (build-option ctc
+                      #:with-contract [with #f]
                       #:tester [tester 'dont-care]
                       #:invariant [invariant 'dont-care] 
                       #:flat? [flat #f] 
                       #:immutable [immutable 'dont-care]
                       #:struct [structid 'none]
                       here)
-  (option ctc tester invariant flat immutable structid here))
+  (option ctc with tester invariant flat immutable structid here))
 
 
 
@@ -251,13 +253,7 @@
            (cond [(proxy? val)
                   (let ((info (proxy-info val)))
                     (build-proxy
-                     (value-contract val)
-                     (info-val info)
-                     (info-proj info)
-                     (blame-update (info-blame info) pos-blame neg-blame)))]
-                 [(proc-proxy? val)
-                  (let ((info (proc-proxy-proc-info val)))
-                    (build-proxy
+                     (info-with info)
                      (value-contract val)
                      (info-val info)
                      (info-proj info)
@@ -275,10 +271,10 @@
     [(transferc id) 
      (let ([this-one (gensym 'transfer-ctc)])
        (syntax-property
-          (syntax/loc stx
-            (transfer 'id))
-          'racket/contract:contract
-          (vector this-one null (list #'transferc))))]))
+        (syntax/loc stx
+          (transfer 'id))
+        'racket/contract:contract
+        (vector this-one null (list #'transferc))))]))
 
 (define-syntax transfer-option
   (make-provide-pre-transformer
@@ -302,22 +298,35 @@
   (and (has-contract? val) 
        (option? (value-contract val))))
 
+(define (has-option-with-contract? val)
+  (and (has-contract? val) 
+       (option? (value-contract val))
+       (info-with (proxy-info val))))
+
+(define (tweak-option val)
+  (cond [(proxy? val)
+         (let ((info (proxy-info val)))
+           (build-proxy
+            (not (info-with info))
+            (value-contract val)
+            (info-val info)
+            (info-proj info)
+            (info-blame info)))]
+        [else val]))
+
 (define (exercise-option val)
-  (cond [(and (has-contract? val) (option? (value-contract val)))
-         (let ((info (cond [(proxy? val)  (proxy-info val)]
-                           [else (proc-proxy-proc-info val)])))
+  (cond [(proxy? val)
+         (let ([info (proxy-info val)])
            (((info-proj info)
              (info-blame info))
             (info-val info)))]
         [else val]))
 
 (define (waive-option val)
-  (cond [(and (has-contract? val) (option? (value-contract val)))
-         (cond [(proxy? val) (info-val (proxy-info val))]
-               [else (info-val (proc-proxy-proc-info val))])]
+  (cond [(proxy? val) (info-val (proxy-info val))]
         [else val]))
 
-                           
+
 
 ;                                                                                                                
 ;                                                                                                                
@@ -473,14 +482,14 @@
                                             (if (procedure? first)
                                                 (list* first a-wrap rest)
                                                 rest))
-                                            '()
-                                            (second s-info))]
+                                          '()
+                                          (second s-info))]
                 [wrapped-mutators (foldr (λ (first rest) 
                                            (if (procedure? first)
                                                (list* first (m-wrap first) rest)
                                                rest))
-                                           '()
-                                           (third s-info))]
+                                         '()
+                                         (third s-info))]
                 [struct-wrapper
                  (λ (wrapper) 
                    (apply
@@ -508,13 +517,13 @@
           (λ (val)
             (check val raise-blame #f)
             (unless (invariant (((contract-projection orig-ctc) indy-blame) val))
-             (let ([kind (cond [(vector? val) 'vector]
-                               [(hash? val) 'hash]
-                               [else 'struct])])  
-               (raise-blame-error 
-                blame
-                val
-                (format "expected ~s that satisfies ~s given: ~e" kind invariant val))))
+              (let ([kind (cond [(vector? val) 'vector]
+                                [(hash? val) 'hash]
+                                [else 'struct])])  
+                (raise-blame-error 
+                 blame
+                 val
+                 (format "expected ~s that satisfies ~s given: ~e" kind invariant val))))
             (build-inv-proxy ctc val invariant proj blame indy-blame impersonate?)))))))
 
 

@@ -10,6 +10,7 @@
 @defmodule[unstable/options]
 
 @defproc[(option/c [c contract?]
+                   [#:with-contract with boolean? #f]
                    [#:tester tester (or/c (-> any boolean?) 'dont-care) 'dont-care]
                    [#:invariant invariant (or/c (-> any boolean?) 'dont-care) 'dont-care]
                    [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care]
@@ -22,8 +23,12 @@ struct @racket[struct-id]. The data structure must match @racket[c] and pass the
 @racket[tester]. 
 
 When an @racket[option/c] contract is attached to a value, the value is checked against the 
-@racket[tester], if @racket[tester] is a predicate. After that, contract checking is disabled for the value.
+@racket[tester], if @racket[tester] is a predicate. After that,
+contract checking is disabled for the value, if @racket[with] is @racket[#f]. If @racket[with]
+is @racket[#t] contract checking for the value remains enabled for @racket[c].
 
+If @racket[waive-option] is applied to a value guarded by an @racket[option/c]
+contract, then @racket[waive-option] returns the value after removing the @racket[option/c] guard.
 If @racket[exercise-option] is applied to a value guarded by an @racket[option/c]
 contract, then @racket[exercise-option] returns the value with contract checking 
 enabled for @racket[c]. If the @racket[invariant] argument is a predicate, then 
@@ -54,30 +59,40 @@ is a predicate. In any other case, the result is a contract error.
   (require unstable/options)
   (provide 
    (contract-out 
+    [vec (option/c (vectorof number?) #:with-contract #t)]))
+  (define vec (vector 1 2 3 4)))
+(require 'server1)
+(vector-set! vec 1 'foo)
+
+(module server2 racket
+  (require unstable/options)
+  (provide 
+   (contract-out 
     [vec (option/c (vectorof number?) #:tester sorted?)]))
   (define vec (vector 1 42 3 4))
   (define (sorted? vec)
     (for/and ([el vec]
               [cel (vector-drop vec 1)])
              (<= el cel))))
-(require 'server1)
+(require 'server2)
 ]  
 
 
 }
 
-@defproc[(exercise-option [x has-option?]) any/c]{
+@defproc[(exercise-option [x any/c]) any/c]{
 
 Returns @racket[x] with contract ckecking enabled if an @racket[option/c] guards
-@racket[x]. In any other case it returns @racket[x].                                          
+@racket[x]. In any other case it returns @racket[x]. The result of @racket[exercise-option]
+loses the guard related to @racket[option/c], if it has one to begin with, and thus its contract checking status cannot change further.
                                             
 @defexamples[
 #:eval the-eval
-(module server2 racket
+(module server3 racket
   (require unstable/options)
   (provide (contract-out [foo (option/c (-> number? symbol?))]))
   (define foo (λ (x) x)))
-(require 'server2 unstable/options)
+(require 'server3 unstable/options)
 (define e-foo (exercise-option foo))
 (foo 42)
 (e-foo 'wrong)
@@ -101,49 +116,80 @@ each @racket[id] is provided from the module as usual.
 
  @defexamples[
 #:eval the-eval
-(module server3 racket
+(module server4 racket
   (require unstable/options)
   (provide (contract-out [foo (option/c (-> number? symbol?))]))
   (define foo (λ (x) x)))
 (module middleman racket
-  (require unstable/options 'server3)
+  (require unstable/options 'server4)
   (provide (transfer-option foo)))
 (require 'middleman unstable/options)
 (define e-foo (exercise-option foo))
 (e-foo 1)
 (e-foo 'wrong)
-(module server4 racket
+(module server5 racket
   (require unstable/options)
   (provide [transfer-option boo])
   (define (boo x) x))
-(require 'server4)
+(require 'server5)
 (boo 42)] 
 
 
 
-@defproc[(waive-option [x has-option?]) any/c]{ 
+@defproc[(waive-option [x any/c]) any/c]{ 
 
 If an @racket[option/c] guards @racket[x], then @racket[waive-option] returns 
 @racket[x] without the @racket[option/c] guard. 
-In any other case it returns @racket[x].
+In any other case it returns @racket[x]. The result of @racket[waive-option]
+loses the guard related to @racket[option/c], if it had one to begin with, and thus its contract checking status cannot change further.
 
 @defexamples[
 #:eval the-eval
-(module server5 racket
+(module server6 racket
   (require unstable/options)
   (provide (contract-out [bar (option/c (-> number? symbol?))]))
   (define bar (λ (x) x)))
-(require 'server5 unstable/options)
+(require 'server6 unstable/options)
 (define e-bar (waive-option bar))
 (e-bar 'wrong)
-((waive-option e-bar) 42)]  
+((waive-option e-bar) 'wrong)]  
 }    
 
+@defproc[(tweak-option [x any/c]) any/c]{ 
+
+If an @racket[option/c] guards @racket[x] and contract checking for @racket[x] is enabled, 
+then @racket[tweak-option] returns 
+@racket[x] with contract checking for @racket[x] disabled. 
+If an @racket[option/c] guards @racket[x] and contract checking for @racket[x] is disabled, 
+then @racket[tweak-option] returns 
+@racket[x] with contract checking for @racket[x] enabled. 
+In any other case it returns @racket[x]. The result of @racket[tweak-option]
+retains the guard related to @racket[option/c] if it has one to begin with and thus its contract checking status can change further
+using @racket[tweak-option], @racket[exercise-option] or @racket[waive-option].
+
+@defexamples[
+#:eval the-eval
+(module server7 racket
+  (require unstable/options)
+  (provide (contract-out [bar (option/c (-> number? symbol?))]))
+  (define bar (λ (x) x)))
+(require 'server7 unstable/options)
+(define t-bar (tweak-option bar))
+(t-bar 'wrong)
+((tweak-option t-bar) 'wrong)
+((waive-option t-bar) 'wrong)
+((exercise-option t-bar) 'wrong)
+]  
+}    
+ 
+ 
 @defproc[(has-option? [v any/c]) boolean?]{
   Returns @racket[#t] if @racket[v] has an option contract.
 }
 
-
+@defproc[(has-option-with-contract? [v any/c]) boolean?]{
+  Returns @racket[#t] if @racket[v] has an option contract with contract checking enabled.
+}
 
 @defproc[(invariant/c [c contract?]
                    [invariant (-> any boolean?)]
@@ -168,7 +214,7 @@ are chaperone contracts, then the result will be a chaperone contract.
 
 @defexamples[
 #:eval the-eval
-(module server6 racket
+(module server8 racket
    (require unstable/options)
    (provide
      change
@@ -182,7 +228,7 @@ are chaperone contracts, then the result will be a chaperone contract.
     (for/and ([el vec]
               [cel (vector-drop vec 1)])
       (<= el cel))))
-(require 'server6)
+(require 'server8)
 (vector-set! vec 2 42)
 (change)
 (vector-ref vec 2)]

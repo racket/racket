@@ -77,7 +77,7 @@
              (test-suite "options"
                          
                          (test-suite "option/c"
-                                                                          
+                                     
                                      (test-contract-fail 
                                       "failed tester"
                                       (script
@@ -114,7 +114,7 @@
                                          (define f values))
                                        (require 'server))
                                       "ctc")
-                                                                         
+                                     
                                      (test-contract-fail 
                                       "failed option/c no invariant but immutable"
                                       (script
@@ -129,7 +129,7 @@
                                       "server"
                                       "an invariant keyword argument (based on presence of other keyword arguments)")
                                      
-                                      (test-contract-fail 
+                                     (test-contract-fail 
                                       "failed option/c no invariant but flat"
                                       (script
                                        (module server racket
@@ -206,7 +206,7 @@
                                        ((exercise-option f) 2 4)
                                        ((exercise-option f) 2))) 
                                      
-                                      (test-contract-fail
+                                     (test-contract-fail
                                       "fails with option/c on function with case-lambda"
                                       (script
                                        (module server racket
@@ -240,7 +240,7 @@
                                          (define vec #(1 2 3 4 5)))
                                        (require 'server))) 
                                      
-                                      (test-contract-fail
+                                     (test-contract-fail
                                       "failed derived invariant/c (immutable) "
                                       (script
                                        (module server racket
@@ -249,33 +249,33 @@
                                                    [vec (option/c 
                                                          any/c
                                                          #:invariant values
-                                                        #:immutable #t)]))
+                                                         #:immutable #t)]))
                                          (define vec (vector 1 2 3 4 5)))
                                        (module client racket
                                          (require unstable/options)
                                          (require 'server)
                                          (exercise-option vec))
                                        (require 'client))
-                                       "server") 
+                                      "server") 
                                      
-                                      (test-contract-fail
+                                     (test-contract-fail
                                       "failed derived invariant/c (procedure) "
                                       (script
                                        (module server racket
                                          (require unstable/options)
                                          (provide (contract-out 
                                                    [f (option/c 
-                                                         any/c
-                                                         #:invariant values)]))
+                                                       any/c
+                                                       #:invariant values)]))
                                          (define f values))
                                        (module client racket
                                          (require unstable/options)
                                          (require 'server)
                                          (exercise-option f))
                                        (require 'client))
-                                       "server")
-                                      
-                                       (test-fail 
+                                      "server")
+                                     
+                                     (test-fail 
                                       "failed option/c for struct (unbound struct id)"
                                       (script
                                        (module server racket
@@ -333,7 +333,310 @@
                                       "server"
                                       "a struct of type foo"))         
                          
-                         
+                         (test-suite "option/c with contract"
+                                     
+                                     (test-pass
+                                      "passes with simple procedure contract"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo 
+                                                                 (option/c
+                                                                  (-> number? number?)
+                                                                  #:with-contract #t)]))
+                                         (define (boo x) x))
+                                       (require 'server)
+                                       (boo 42)))
+                                     
+                                     (test-contract-fail
+                                      "fails (negative) with simple procedure contract"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo 
+                                                                 (option/c
+                                                                  (-> number? number?)
+                                                                  #:with-contract #t)]))
+                                         (define (boo x) 42))
+                                       (require 'server)
+                                       (boo 'wrong))
+                                      "top-level")
+                                     
+                                     (test-contract-fail
+                                      "fails (positive) with simple procedure contract"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo 
+                                                                 (option/c
+                                                                  (-> number? number?)
+                                                                  #:with-contract #t)]))
+                                         (define (boo x) 'wrong))
+                                       (require unstable/options 'server)
+                                       (boo 42))
+                                      "server")
+                                     
+                                     (test-contract-fail 
+                                      "failed tester"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [vec 
+                                                    (option/c
+                                                     any/c
+                                                     #:with-contract #t
+                                                     #:tester sorted?)]))
+                                         (define vec (vector 1 3 2 4 5))
+                                         (define (sorted? vec)
+                                           (for/and ([el vec]
+                                                     [cel (vector-drop vec 1)])
+                                             (<= el cel))))
+                                       (require 'server))
+                                      "server"
+                                      "option contract tester")
+                                     
+                                     (test-contract-fail 
+                                      "failed option/c with misbehaving tester (indy)"
+                                      (script
+                                       (module ctc racket
+                                         (require unstable/options)
+                                         (provide indy-ctc)
+                                         (define indy-ctc
+                                           (option/c
+                                            (-> number? number?)
+                                            #:with-contract #t 
+                                            #:tester (λ (f) (f 'foo)))))
+                                       (module server racket
+                                         (require unstable/options)
+                                         (require 'ctc)
+                                         (provide (contract-out [f indy-ctc]))
+                                         (define f values))
+                                       (require 'server))
+                                      "ctc")
+                                     
+                                     (test-contract-fail 
+                                      "failed option/c no invariant but immutable"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [vec (option/c 
+                                                         any/c
+                                                         #:with-contract #t
+                                                         #:immutable #t)]))
+                                         (define vec (vector 1 2 3 4 5)))
+                                       (require 'server))
+                                      "server"
+                                      "an invariant keyword argument (based on presence of other keyword arguments)")
+                                     
+                                     (test-contract-fail 
+                                      "failed option/c no invariant but flat"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [vec (option/c 
+                                                         any/c
+                                                         #:with-contract #t
+                                                         #:flat? #t)]))
+                                         (define vec (vector 1 2 3 4 5)))
+                                       (require 'server))
+                                      "server"
+                                      "an invariant keyword argument (based on presence of other keyword arguments)")
+                                     
+                                     (test-contract-fail 
+                                      "failed option/c no invariant but flat and immutable"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [vec (option/c 
+                                                         any/c
+                                                         #:flat? #t
+                                                         #:with-contract #t
+                                                         #:immutable #t)]))
+                                         (define vec (vector 1 2 3 4 5)))
+                                       (require 'server))
+                                      "server"
+                                      "an invariant keyword argument (based on presence of other keyword arguments)")  
+                                     
+                                     (test-pass
+                                      "passes with option/c on function with keyword arguments"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [f (option/c 
+                                                       (-> number? #:more number? number?)
+                                                       #:with-contract #t)]))
+                                         (define (f x #:more y) y))
+                                       (require unstable/options)
+                                       (require 'server)
+                                       (f 2 #:more 3)
+                                       ((exercise-option f) 2 #:more 3))) 
+                                     
+                                     (test-pass
+                                      "passes with option/c on function with optional keyword arguments"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [f (option/c
+                                                       (->* (number?) (#:more number?) number?)
+                                                       #:with-contract #t)]))
+                                         (define (f x #:more [y 3]) y))
+                                       (require unstable/options)
+                                       (require 'server)
+                                       (f 2)
+                                       (f 2 #:more 4)
+                                       ((exercise-option f) 2 #:more 4)
+                                       ((exercise-option f) 2))) 
+                                     
+                                     (test-pass
+                                      "passes with option/c on function with case-lambda"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [f (option/c 
+                                                       (case-> 
+                                                        (-> number? number? number?)
+                                                        (-> number? number?))
+                                                       #:with-contract #t)]))
+                                         (define f (case-lambda 
+                                                     [(lo hi) (max lo hi)]
+                                                     [(single) single])))
+                                       (require unstable/options)
+                                       (require 'server)
+                                       (f 2)
+                                       (f 2 4)
+                                       ((exercise-option f) 2 4)
+                                       ((exercise-option f) 2))) 
+                                     
+                                     (test-contract-fail
+                                      "fails with option/c on function with case-lambda"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [f (option/c
+                                                       (case-> 
+                                                        (-> number? number? number?)
+                                                        (-> number? number?))
+                                                       #:with-contract #t)]))
+                                         (define f (case-lambda 
+                                                     [(lo hi) (max lo hi)]
+                                                     [(single) single])))
+                                       (require unstable/options)
+                                       (require 'server)
+                                       (f 2 "boo"))
+                                      "top-level") 
+                                     
+                                     (test-pass
+                                      "passes with option/c with invariant and flat and immutable"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [vec (option/c 
+                                                         any/c
+                                                         #:with-contract #t
+                                                         #:invariant values
+                                                         #:flat? #t
+                                                         #:immutable #t)]))
+                                         (define vec #(1 2 3 4 5)))
+                                       (require 'server))) 
+                                     
+                                     (test-contract-fail
+                                      "failed derived invariant/c (immutable) "
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [vec (option/c 
+                                                         any/c
+                                                         #:with-contract #t
+                                                         #:invariant values
+                                                         #:immutable #t)]))
+                                         (define vec (vector 1 2 3 4 5)))
+                                       (require 'server))
+                                      "server") 
+                                     
+                                     (test-contract-fail
+                                      "failed derived invariant/c (procedure) "
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [f (option/c 
+                                                       any/c
+                                                       #:with-contract #t
+                                                       #:invariant values)]))
+                                         (define f values))
+                                       (require 'server))
+                                      "server")
+                                     
+                                     (test-fail 
+                                      "failed option/c for struct (unbound struct id)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [s (option/c 
+                                                       any/c
+                                                       #:with-contract #t
+                                                       #:struct boo)]))
+                                         (struct foo (a b))
+                                         (define s (foo 2 2)))
+                                       (require 'server))
+                                      "expected a struct identifier") 
+                                     
+                                     (test-contract-fail 
+                                      "failed option/c for struct (missing struct id)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [s (option/c any/c #:with-contract #t)]))
+                                         (struct foo (a b))
+                                         (define s (foo 2 2)))
+                                       (require 'server))
+                                      "server"
+                                      "a vector or a hash") 
+                                     
+                                     (test-contract-fail 
+                                      "failed option/c for struct (wrong struct id)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [s (option/c 
+                                                       any/c
+                                                       #:struct boo
+                                                       #:with-contract #t)]))
+                                         (struct foo (a b))
+                                         (struct boo (a b))
+                                         (define s (foo 2 2)))
+                                       (require 'server))
+                                      "server"
+                                      "a struct of type boo")  
+                                     
+                                     (test-contract-fail 
+                                      "failed option/c for struct (vector for struct id)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out 
+                                                   [s (option/c 
+                                                       any/c
+                                                       #:struct foo               
+                                                       #:with-contract #t)]))
+                                         (struct foo (a b))
+                                         (define s (vector 2 2)))
+                                       (require 'server))                                      
+                                      "server"
+                                      "a struct of type foo"))
                          
                          (test-suite "transfer-option"
                                      
@@ -352,6 +655,102 @@
                                          (provide (transfer-option boo)))
                                        (require unstable/options 'middle1)
                                        (boo 1)))
+                                     
+                                     (test-pass
+                                      "passes after two transfers (with contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo 
+                                                                 (option/c 
+                                                                  (-> number? number?)
+                                                                  #:with-contract #t)]))
+                                         (define (boo x) x))
+                                       (module middle0 racket
+                                         (require unstable/options 'server)
+                                         (provide (transfer-option boo)))
+                                       (module middle1 racket
+                                         (require unstable/options 'middle0)
+                                         (provide (transfer-option boo)))
+                                       (require unstable/options 'middle1)
+                                       (boo 1)))
+                                     
+                                     
+                                     
+                                     (test-contract-fail
+                                      "fails (positive) after one transfer (with-contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo 
+                                                                 (option/c
+                                                                  (-> number? number?)
+                                                                  #:with-contract #t)]))
+                                         (define (boo x) 'wrong))
+                                       (module client racket
+                                         (require unstable/options 'server)
+                                         (provide (transfer-option boo)))
+                                       (require 'client)
+                                       (displayln (boo 42))
+                                       (boo 42))
+                                      (list "client" "server"))
+                                     
+                                     (test-contract-fail
+                                      "fails (negative) after one transfer (with-contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo 
+                                                                 (option/c
+                                                                  (-> number? number?)
+                                                                  #:with-contract #t)]))
+                                         (define (boo x) x))
+                                       (module client racket
+                                         (require unstable/options 'server)
+                                         (provide (transfer-option boo)))
+                                       (require 'client)
+                                       (boo 'wrong))
+                                      (list "top-level" "client"))
+                                     
+                                     (test-contract-fail
+                                      "fails (positive) after two transfers (with contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo 
+                                                                 (option/c 
+                                                                  (-> number? number?)
+                                                                  #:with-contract #t)]))
+                                         (define (boo x) 'wrong))
+                                       (module middle0 racket
+                                         (require unstable/options 'server)
+                                         (provide (transfer-option boo)))
+                                       (module middle1 racket
+                                         (require unstable/options 'middle0)
+                                         (provide (transfer-option boo)))
+                                       (require unstable/options 'middle1)
+                                       (boo 1))
+                                      (list "middle1" "middle0" "server")) 
+                                     
+                                     (test-contract-fail
+                                      "fails (negative) after two transfers (with contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo 
+                                                                 (option/c 
+                                                                  (-> number? number?)
+                                                                  #:with-contract #t)]))
+                                         (define (boo x) x))
+                                       (module middle0 racket
+                                         (require unstable/options 'server)
+                                         (provide (transfer-option boo)))
+                                       (module middle1 racket
+                                         (require unstable/options 'middle0)
+                                         (provide (transfer-option boo)))
+                                       (require unstable/options 'middle1)
+                                       (boo 'wrong))
+                                      (list "top-level" "middle1" "middle0"))
                                      
                                      (test-pass
                                       "passes after void transfer"
@@ -373,9 +772,9 @@
                                          (require unstable/options 'server)
                                          (provide (transfer-option boo)))
                                        (require 'client)
-                                         (boo 42)))
+                                       (boo 42)))
                                      
-                                      (test-pass
+                                     (test-pass
                                       "passes after void client's transfer after exercise"
                                       (script
                                        (module server racket
@@ -387,12 +786,26 @@
                                          (define e-boo (exercise-option boo))
                                          (provide (transfer-option e-boo)))
                                        (require 'client)
-                                         (e-boo 42))))
+                                       (e-boo 42)))
+                                     
+                                     (test-pass
+                                      "passes after void client's transfer after exercise (with-contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c (-> number? number?))]))
+                                         (define (boo x) x))
+                                       (module client racket
+                                         (require unstable/options 'server)
+                                         (define e-boo (exercise-option boo))
+                                         (provide (transfer-option e-boo)))
+                                       (require 'client)
+                                       (e-boo 42))))
                          
                          (test-suite "exercise-option"
                                      
                                      (test-pass
-                                      "passes after two transfers and waive"
+                                      "passes after two transfers and exercise"
                                       (script
                                        (module server racket
                                          (require unstable/options)
@@ -405,7 +818,7 @@
                                          (require unstable/options 'middle0)
                                          (provide (transfer-option boo)))
                                        (require unstable/options 'middle1)
-                                       ((waive-option boo) 1)))
+                                       ((exercise-option boo) 1)))
                                      
                                      (test-contract-fail
                                       "positive contract failure after successful transfer and exercise"
@@ -470,13 +883,99 @@
                                          (require unstable/options 'server)
                                          (define e-boo (exercise-option boo))
                                          (provide (transfer-option e-boo)))
+                                       (require 'client)))
+                                     
+                                     
+                                     (test-pass
+                                      "passes after two transfers and exercise (with contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c
+                                                                      (-> number? number?)
+                                                                      #:with-contract #t)]))
+                                         (define (boo x) x))
+                                       (module middle0 racket
+                                         (require unstable/options 'server)
+                                         (provide (transfer-option boo)))
+                                       (module middle1 racket
+                                         (require unstable/options 'middle0)
+                                         (provide (transfer-option boo)))
+                                       (require unstable/options 'middle1)
+                                       ((exercise-option boo) 1)))
+                                     
+                                     (test-contract-fail
+                                      "positive contract failure after successful transfer and exercise (with contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c 
+                                                                      (-> number? number?)
+                                                                      #:with-contract #t)]))
+                                         (define (boo x) "wrong!"))
+                                       (module middle racket
+                                         (require unstable/options 'server)
+                                         (provide (transfer-option boo)))
+                                       (module client racket
+                                         (require unstable/options 'middle)
+                                         ((exercise-option boo) 42))
+                                       (require 'client))
+                                      (list "middle" "server"))   
+                                     
+                                     (test-contract-fail
+                                      "negative contract failure after successful transfer and exercise (with contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c 
+                                                                      (-> number? number?)
+                                                                      #:with-contract #t)]))
+                                         (define (boo x) x))
+                                       (module middle racket
+                                         (require unstable/options 'server)
+                                         (provide (transfer-option boo)))
+                                       (module client racket
+                                         (require unstable/options 'middle)
+                                         ((exercise-option boo) "wrong!"))
+                                       (require 'client))
+                                      (list "client" "middle"))   
+                                     
+                                     
+                                     (test-contract-fail
+                                      "passes after exercise after succesful exercise (with contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c 
+                                                                      (-> number? number?)
+                                                                      #:with-contract #t)]))
+                                         (define (boo x) x))
+                                       (module client racket
+                                         (require unstable/options 'server)
+                                         ((exercise-option (exercise-option boo)) "error"))
+                                       (require 'client))
+                                      "client")
+                                     
+                                     (test-pass
+                                      "passes after transfer after succesful exercise (with contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c 
+                                                                      (-> number? number?)
+                                                                      #:with-contract #t)]))
+                                         (define (boo x) x))
+                                       (module client racket
+                                         (require unstable/options 'server)
+                                         (define e-boo (exercise-option boo))
+                                         (provide (transfer-option e-boo)))
                                        (require 'client))))
                          
                          
                          (test-suite "waive-option"
                                      
                                      (test-pass
-                                      "passes after two transfers and exercise"
+                                      "passes after two transfers and waive"
                                       (script
                                        (module server racket
                                          (require unstable/options)
@@ -489,7 +988,7 @@
                                          (require unstable/options 'middle0)
                                          (provide (transfer-option boo)))
                                        (require unstable/options 'middle1)
-                                       ((exercise-option boo) 1)))
+                                       ((waive-option boo) 1)))
                                      
                                      
                                      (test-pass
@@ -510,7 +1009,7 @@
                                        ((waive-option (waive-option boo)) "error")))
                                      
                                      (test-contract-fail
-                                      "passes with waive after succesful exercise"
+                                      "fails with waive after succesful exercise"
                                       (script
                                        (module server racket
                                          (require unstable/options)
@@ -523,7 +1022,7 @@
                                       "client")
                                      
                                      (test-pass
-                                      "passes transfer after succesful waive"
+                                      "passes with transfer after succesful waive"
                                       (script
                                        (module server racket
                                          (require unstable/options)
@@ -533,7 +1032,233 @@
                                          (require unstable/options 'server)
                                          (define e-boo (waive-option boo))
                                          (provide (transfer-option e-boo)))
-                                       (require 'client)))))
+                                       (require 'client)))
+                                     
+                                     (test-pass
+                                      "passes after two transfers and waive (with contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c
+                                                                      (-> number? number?)
+                                                                      #:with-contract #t)]))
+                                         (define (boo x) x))
+                                       (module middle0 racket
+                                         (require unstable/options 'server)
+                                         (provide (transfer-option boo)))
+                                       (module middle1 racket
+                                         (require unstable/options 'middle0)
+                                         (provide (transfer-option boo)))
+                                       (require unstable/options 'middle1)
+                                       ((waive-option boo) 1)))          
+                                     
+                                     
+                                     (test-pass
+                                      "passes after waive after succesful waive (with contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c 
+                                                                      (-> number? number?)
+                                                                      #:with-contract #t)]))
+                                         (define (boo x) x))
+                                       (require unstable/options 'server)
+                                       ((waive-option (waive-option boo)) "error")))
+                                     
+                                     (test-contract-fail
+                                      "fails with waive after succesful exercise (with contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c 
+                                                                      (-> number? number?)
+                                                                      #:with-contract #t)]))
+                                         (define (boo x) x))
+                                       (module client racket
+                                         (require unstable/options 'server)
+                                         ((waive-option (exercise-option boo)) "error"))
+                                       (require 'client))
+                                      "client")
+                                     
+                                     (test-pass
+                                      "passes with transfer after succesful waive (with contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c 
+                                                                      (-> number? number?)
+                                                                      #:with-contract #t)]))
+                                         (define (boo x) x))
+                                       (module client racket
+                                         (require unstable/options 'server)
+                                         (define e-boo (waive-option boo))
+                                         (provide (transfer-option e-boo)))
+                                       (require 'client))))
+                         
+                         (test-suite "tweak-option"
+                                     
+                                     (test-pass
+                                      "passes after two transfers and tweak"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c (-> number? number?))]))
+                                         (define (boo x) x))
+                                       (module middle0 racket
+                                         (require unstable/options 'server)
+                                         (provide (transfer-option boo)))
+                                       (module middle1 racket
+                                         (require unstable/options 'middle0)
+                                         (provide (transfer-option boo)))
+                                       (require unstable/options 'middle1)
+                                       ((tweak-option boo) 1)))
+                                     
+                                     (test-contract-fail
+                                      "fails (negative) after two transfers and tweak"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c (-> number? number?))]))
+                                         (define (boo x) x))
+                                       (module middle0 racket
+                                         (require unstable/options 'server)
+                                         (provide (transfer-option boo)))
+                                       (module middle1 racket
+                                         (require unstable/options 'middle0)
+                                         (provide (transfer-option boo)))
+                                       (require unstable/options 'middle1)
+                                       ((tweak-option boo) 'wrong))
+                                      (list "top-level" "middle1" "middle0"))
+                                     
+                                     (test-contract-fail
+                                      "fails (positive) after two transfers and tweak"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c (-> number? number?))]))
+                                         (define (boo x) 'wrong))
+                                       (module middle0 racket
+                                         (require unstable/options 'server)
+                                         (provide (transfer-option boo)))
+                                       (module middle1 racket
+                                         (require unstable/options 'middle0)
+                                         (provide (transfer-option boo)))
+                                       (require unstable/options 'middle1)
+                                       ((tweak-option boo) 42))
+                                      (list "middle1" "middle0" "server"))
+                                     
+                                     (test-contract-fail 
+                                      "passes after two transfers and tweak"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c (-> number? number?))]))
+                                         (define (boo x) x))
+                                       (module middle0 racket
+                                         (require unstable/options 'server)
+                                         (provide (transfer-option boo)))
+                                       (module middle1 racket
+                                         (require unstable/options 'middle0)
+                                         (provide (transfer-option boo)))
+                                       (require unstable/options 'middle1)
+                                       ((tweak-option boo) 42)
+                                       ((tweak-option boo) 'wrong))
+                                      (list "top-level" "middle1" "middle0"))
+                                     
+                                     (test-pass
+                                      "passes after two transfers and tweak (with-contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c 
+                                                                      (-> number? number?)
+                                                                      #:with-contract #t)]))
+                                         (define (boo x) x))
+                                       (module middle0 racket
+                                         (require unstable/options 'server)
+                                         (provide (transfer-option boo)))
+                                       (module middle1 racket
+                                         (require unstable/options 'middle0)
+                                         (provide (transfer-option boo)))
+                                       (require unstable/options 'middle1)
+                                       ((tweak-option boo) 1)))
+                                     
+                                     
+                                     
+                                     
+                                     (test-pass
+                                      "passes after tweak"
+                                      (script
+                                       (require unstable/options)
+                                       (define (boo x) x)
+                                       (tweak-option boo)))
+                                     
+                                     (test-pass
+                                      "fails after tweak after succesful tweak"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c (-> number? number?))]))
+                                         (define (boo x) x))
+                                       (require unstable/options 'server)
+                                       ((tweak-option (tweak-option boo)) "error")))
+                                     
+                                     (test-contract-fail
+                                      "fails after tweak after succesful tweak (with contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c 
+                                                                      (-> number? number?)
+                                                                      #:with-contract #t)]))
+                                         (define (boo x) x))
+                                       (require unstable/options 'server)
+                                       ((tweak-option (tweak-option boo)) "error"))
+                                      "top-level")
+                                      
+                                     
+                                     (test-contract-fail
+                                      "fails with tweak after succesful exercise"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c (-> number? number?))]))
+                                         (define (boo x) x))
+                                       (module client racket
+                                         (require unstable/options 'server)
+                                         ((tweak-option (exercise-option boo)) "error"))
+                                       (require 'client))
+                                      "client")
+                                     
+                                     (test-contract-fail
+                                      "fails with exercise after tweak exercise"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c (-> number? number?))]))
+                                         (define (boo x) x))
+                                       (module client racket
+                                         (require unstable/options 'server)
+                                         ((exercise-option (tweak-option boo)) "error"))
+                                       (require 'client))
+                                      "client")
+                                     
+                                     (test-contract-fail
+                                      "fails with exercise after tweak exercise (with contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo (option/c 
+                                                                      (-> number? number?)
+                                                                      #:with-contract #t)]))
+                                         (define (boo x) x))
+                                       (module client racket
+                                         (require unstable/options 'server)
+                                         ((exercise-option (tweak-option boo)) "error"))
+                                       (require 'client))
+                                      "client")))
+             
+             
              
              
              (test-suite "invariant/c"
