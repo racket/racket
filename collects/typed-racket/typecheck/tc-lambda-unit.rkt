@@ -327,14 +327,14 @@
                  (values ns dvar)))])
        ;; check the body for side effect
        (extend-indexes dotted
-         (extend-tvars tvars
+         (extend-tvars (cons dotted tvars)
            (maybe-loop form formals bodies (ret expected*))))
        t)]
     [(or (tc-any-results:) #f)
      (match (map syntax-e (syntax->list (plambda-prop form)))
        [(list tvars ... dotted-var '...)
         (let* ([ty (extend-indexes dotted-var
-                     (extend-tvars tvars
+                     (extend-tvars (cons dotted-var tvars)
                        (tc/mono-lambda/type formals bodies #f)))])
           (make-PolyDots (append tvars (list dotted-var)) ty))]
        [tvars

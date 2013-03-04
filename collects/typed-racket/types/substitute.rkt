@@ -38,7 +38,7 @@
 
 ;; substitute-many : Hash[Name,Type] Type -> Type
 (define/cond-contract (substitute-many subst target #:Un [Un (lambda (args) (apply Un args))])
-  ((simple-substitution/c (or/c Values/c arr?)) (#:Un procedure?) . ->* . (or/c Values/c arr?))
+  ((simple-substitution/c (or/c Values/c ValuesDots? arr?)) (#:Un procedure?) . ->* . (or/c Values/c ValuesDots? arr?))
   (define (sb t) (substitute-many subst t #:Un Un))
   (define names (hash-keys subst))
   (define fvs (free-vars* target))
@@ -170,7 +170,7 @@
 ;; substitution = Listof[U List[Name,Type] List[Name,Listof[Type]]]
 ;; subst-all : substitution Type -> Type
 (define/cond-contract (subst-all s ty)
-  (substitution/c (or/c arr? Values/c) . -> . (or/c Values/c arr?))
+  (substitution/c (or/c arr? Values/c ValuesDots?) . -> . (or/c Values/c ValuesDots? arr?))
 
   (define t-substs
     (for/fold ([acc (hash)]) ([(v r) (in-hash s)])

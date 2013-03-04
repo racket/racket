@@ -24,7 +24,8 @@
 (define (do-ret t)
   (match t
     [(Values: (list (Result: ts _ _) ...)) (ret ts)]
-    [(ValuesDots: (list (Result: ts _ _) ...) dty dbound) (ret ts (for/list ([t ts]) (-FS null null)) (for/list ([t ts]) (make-Empty)) dty dbound)]
+    [(ValuesDots: (list (Result: ts _ _) ...) dty dbound)
+     (ret ts (for/list ([t ts]) -no-filter) (for/list ([t ts]) (make-Empty)) dty dbound)]
     [_ (int-err "do-ret fails: ~a" t)]))
 
 (define (tc/apply f args)
@@ -125,7 +126,7 @@
                      (<= (length (car doms*))
                          (length arg-tys))
                      (infer/vararg vars null
-                                   (cons (make-Listof tail-ty) arg-tys)
+                                   (cons (make-ListDots tail-ty tail-bound) arg-tys)
                                    (cons (make-Listof (car rests*))
                                          (car doms*))
                                    (car rests*)

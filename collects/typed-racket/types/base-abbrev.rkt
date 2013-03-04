@@ -9,10 +9,12 @@
          (for-syntax racket/base syntax/parse racket/list)
          (for-template racket/base))
 
-(provide (all-defined-out)
+(provide (except-out (all-defined-out) -FS)
          (rename-out [make-Listof -lst]
                      [make-MListof -mlst]))
 
+(provide/cond-contract
+  [-FS (c:-> Filter/c Filter/c FilterSet?)])
 ;Top and error types
 (define Univ (make-Univ))
 (define -Bottom (make-Union null))
@@ -90,12 +92,11 @@
 (define -no-obj (make-Empty))
 
 
-(define/cond-contract (-FS + -)
-      (c:-> Filter/c Filter/c FilterSet?)
-      (match* (+ -)
-             [((Bot:) _) (make-FilterSet -bot -top)]
-             [(_ (Bot:)) (make-FilterSet -top -bot)]
-             [(+ -) (make-FilterSet + -)]))
+(define (-FS + -)
+  (match* (+ -)
+         [((Bot:) _) (make-FilterSet -bot -top)]
+         [(_ (Bot:)) (make-FilterSet -top -bot)]
+         [(+ -) (make-FilterSet + -)]))
 
 (define/cond-contract (-filter t i [p null])
      (c:->* (Type/c name-ref/c) ((c:listof PathElem?)) Filter/c)
