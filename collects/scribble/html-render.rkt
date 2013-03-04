@@ -566,7 +566,7 @@
                            blocks))
              (table-blockss table)))
           (define ps
-            ((if (nearly-top? d) values cdr)
+            ((if (nearly-top? d) values (lambda (p) (if (pair? p) (cdr p) null)))
              (let flatten ([d d] [prefixes null] [top? #t])
                (let ([prefixes (if (and (not top?) (part-tag-prefix d))
                                    (cons (part-tag-prefix d) prefixes)
