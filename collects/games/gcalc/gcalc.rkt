@@ -5,7 +5,7 @@
 
 #lang racket
 
-(require racket/gui "../show-scribbling.rkt" racket/unit (only-in mzscheme fluid-let))
+(require racket/gui "../show-scribbling.rkt" racket/unit)
 (provide game@)
 
 (define customs '())
@@ -76,8 +76,8 @@
 
 (define SHOW-CELL-SIZE 600)
 
-(define BG-PEN/BRUSH (list (instantiate pen%   ["BLACK" 1 'solid])
-                           (instantiate brush% ["GRAY" 'solid])))
+(define BG-PEN/BRUSH (make-parameter (list (instantiate pen%   ["BLACK" 1 'solid])
+                                           (instantiate brush% ["GRAY" 'solid]))))
 (define HIGHLIGHT-WIDTH 4)
 (define HIGHLIGHT-PEN/BRUSH
   (list (instantiate pen% ["BLACK" HIGHLIGHT-WIDTH 'solid])
@@ -496,14 +496,14 @@
     begin-busy-cursor
     (lambda ()
       (send dc clear)
-      (set-pen/brush dc BG-PEN/BRUSH)
+      (set-pen/brush dc (BG-PEN/BRUSH))
       (send dc draw-rectangle 1 1 size size)
       (let ([expr (draw expr (if eval? EVAL-DEPTH 0)
                         #t #t #t .0 .0 .0 1.0 1.0 1.0 .0)])
         (when name
           (let-values ([(tw th d a) (send dc get-text-extent name)])
             (let ([tw (min tw (- size 6))])
-              (set-pen/brush dc BG-PEN/BRUSH)
+              (set-pen/brush dc (BG-PEN/BRUSH))
               (send dc draw-rectangle (- size tw 3) 1 (+ 3 tw) (+ 2 th))
               (send dc draw-text name (max 0 (- size tw 1)) 2))))
         expr))
@@ -937,7 +937,7 @@
   (let ([dc (instantiate post-script-dc% ())])
     (send dc start-doc "Printing...")
     (send dc start-page)
-    (fluid-let ([BG-PEN/BRUSH (list (instantiate pen%   ("BLACK" 1 'solid))
+    (parameterize ([BG-PEN/BRUSH (list (instantiate pen%   ("BLACK" 1 'solid))
                                     (instantiate brush% ("WHITE" 'solid)))])
       (if (or NOBMP-PRINT (< (expr-size expr) 5000))
         (draw-expr dc expr name)
