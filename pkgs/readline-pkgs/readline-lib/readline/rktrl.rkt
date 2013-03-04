@@ -126,7 +126,7 @@
 ;; to avoid buffering issues between C and Racket, and to allow
 ;; racket threads to run while waiting for input.
 (set-ffi-obj! "rl_getc_function" libreadline (_fun _pointer -> _int)
-              (lambda (_) 
+              (lambda (_)
                 (define next-byte (read-byte real-input-port))
                 (if (eof-object? next-byte) -1 next-byte)))
 
