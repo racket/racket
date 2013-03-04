@@ -19,6 +19,7 @@
 #define __mzscheme_private__
 
 #include "scheme.h"
+#include "longdouble/longdouble.h"
 
 #ifdef CIL_ANALYSIS
 #define ROSYM          __attribute__((__ROSYM__))
@@ -1902,7 +1903,7 @@ XFORM_NONGCING Scheme_Object *scheme_make_small_bignum(intptr_t v, Small_Bignum 
 char *scheme_number_to_string(int radix, Scheme_Object *obj);
 char *scheme_double_to_string (double d, char* s, int slen, int was_single, int *used_buffer);
 #ifdef MZ_LONG_DOUBLE
-char *scheme_long_double_to_string (long double d, char* s, int slen, int *used_buffer);
+char *scheme_long_double_to_string (long_double d, char* s, int slen, int *used_buffer);
 #endif
 
 Scheme_Object *scheme_bignum_copy(const Scheme_Object *n);
@@ -1939,7 +1940,7 @@ Scheme_Object *scheme_bignum_shift(const Scheme_Object *a, intptr_t shift);
 
 XFORM_NONGCING double scheme_bignum_to_double_inf_info(const Scheme_Object *n, intptr_t just_use, intptr_t *only_need);
 #ifdef MZ_LONG_DOUBLE
-XFORM_NONGCING long double scheme_bignum_to_long_double_inf_info(const Scheme_Object *n, intptr_t just_use, intptr_t *only_need);
+XFORM_NONGCING long_double scheme_bignum_to_long_double_inf_info(const Scheme_Object *n, intptr_t just_use, intptr_t *only_need);
 #endif
 #ifdef MZ_USE_SINGLE_FLOATS
 XFORM_NONGCING float scheme_bignum_to_float_inf_info(const Scheme_Object *n, intptr_t just_use, intptr_t *only_need);
@@ -2023,7 +2024,7 @@ XFORM_NONGCING int scheme_is_complex_exact(const Scheme_Object *o);
 
 int scheme_check_double(const char *where, double v, const char *dest);
 #ifdef MZ_LONG_DOUBLE
-int scheme_check_long_double(const char *where, long double v, const char *dest);
+int scheme_check_long_double(const char *where, long_double v, const char *dest);
 #endif
 #ifdef MZ_USE_SINGLE_FLOATS
 int scheme_check_float(const char *where, float v, const char *dest);
@@ -2035,8 +2036,8 @@ double scheme_get_val_as_double(const Scheme_Object *n);
 XFORM_NONGCING int scheme_minus_zero_p(double d);
 
 #ifdef MZ_LONG_DOUBLE
-long double scheme_get_val_as_long_double(const Scheme_Object *n);
-XFORM_NONGCING int scheme_long_minus_zero_p(long double d);
+long_double scheme_get_val_as_long_double(const Scheme_Object *n);
+XFORM_NONGCING int scheme_long_minus_zero_p(long_double d);
 #else
 # define scheme_long_minus_zero_p(d) scheme_minus_zero_p(d)
 #endif
@@ -2107,10 +2108,10 @@ extern int scheme_is_nan(double);
 # endif
 #endif
 
-#define MZ_IS_LONG_INFINITY(d) MZ_IS_INFINITY(d)
-#define MZ_IS_LONG_POS_INFINITY(d) MZ_IS_POS_INFINITY(d)
-#define MZ_IS_LONG_NEG_INFINITY(d) MZ_IS_NEG_INFINITY(d)
-#define MZ_IS_LONG_NAN(d) MZ_IS_NAN(d)
+#define MZ_IS_LONG_INFINITY(d) long_double_is_infinity(d)
+#define MZ_IS_LONG_POS_INFINITY(d) long_double_is_pos_infinity(d)
+#define MZ_IS_LONG_NEG_INFINITY(d) long_double_is_neg_infinity(d)
+#define MZ_IS_LONG_NAN(d) long_double_is_nan(d)
 
 #ifndef MZ_IS_INFINITY
 # define MZ_IS_INFINITY(d) (MZ_IS_POS_INFINITY(d) || MZ_IS_NEG_INFINITY(d))
@@ -2124,9 +2125,9 @@ extern double scheme_floating_point_nzero;
 extern Scheme_Object *scheme_zerod, *scheme_nzerod, *scheme_pi, *scheme_half_pi, *scheme_plus_i, *scheme_minus_i;
 extern Scheme_Object *scheme_inf_object, *scheme_minus_inf_object, *scheme_nan_object;
 #ifdef MZ_LONG_DOUBLE
-extern long double scheme_long_infinity_val, scheme_long_minus_infinity_val;
-extern long double scheme_long_floating_point_zero;
-extern long double scheme_long_floating_point_nzero;
+extern long_double scheme_long_infinity_val, scheme_long_minus_infinity_val;
+extern long_double scheme_long_floating_point_zero;
+extern long_double scheme_long_floating_point_nzero;
 extern Scheme_Object *scheme_zerol, *scheme_nzerol, *scheme_long_scheme_pi;
 extern Scheme_Object *scheme_long_inf_object, *scheme_long_minus_inf_object, *scheme_long_nan_object;
 #endif
@@ -2238,19 +2239,19 @@ double scheme_double_expt(double x, double y);
 
 /***** extflonums *****/
 #ifdef MZ_LONG_DOUBLE
-long double scheme_long_double_truncate(long double x);
-long double scheme_long_double_round(long double x);
-long double scheme_long_double_floor(long double x);
-long double scheme_long_double_ceiling(long double x);
-long double scheme_long_double_sin(long double x);
-long double scheme_long_double_cos(long double x);
-long double scheme_long_double_tan(long double x);
-long double scheme_long_double_asin(long double x);
-long double scheme_long_double_acos(long double x);
-long double scheme_long_double_atan(long double x);
-long double scheme_long_double_log(long double x);
-long double scheme_long_double_exp(long double x);
-long double scheme_long_double_expt(long double x, long double y);
+long_double scheme_long_double_truncate(long_double x);
+long_double scheme_long_double_round(long_double x);
+long_double scheme_long_double_floor(long_double x);
+long_double scheme_long_double_ceiling(long_double x);
+long_double scheme_long_double_sin(long_double x);
+long_double scheme_long_double_cos(long_double x);
+long_double scheme_long_double_tan(long_double x);
+long_double scheme_long_double_asin(long_double x);
+long_double scheme_long_double_acos(long_double x);
+long_double scheme_long_double_atan(long_double x);
+long_double scheme_long_double_log(long_double x);
+long_double scheme_long_double_exp(long_double x);
+long_double scheme_long_double_expt(long_double x, long_double y);
 #endif
 /*========================================================================*/
 /*                     read, eval, print                                  */
@@ -2569,7 +2570,7 @@ typedef struct Scheme_Current_LWC {
   void *saved_v1;
   double saved_save_fp;
 #ifdef MZ_LONG_DOUBLE
-  long double saved_save_extfp;
+  long_double saved_save_extfp;
 #endif
 } Scheme_Current_LWC;
 

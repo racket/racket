@@ -164,8 +164,8 @@ typedef struct Thread_Local_Variables {
   double scheme_jit_save_fp_;
   double scheme_jit_save_fp2_;
 #ifdef MZ_LONG_DOUBLE
-  long double scheme_jit_save_extfp_;
-  long double scheme_jit_save_extfp2_;
+  long_double scheme_jit_save_extfp_;
+  long_double scheme_jit_save_extfp2_;
 #endif
   struct Scheme_Bucket_Table *starts_table_;
   struct Scheme_Bucket_Table *submodule_empty_modidx_table_;

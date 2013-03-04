@@ -739,8 +739,20 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 
 @(defctype* 'double "double"       "FLOAT"  "FLOAT"        "double")
 
-#define ffi_type_slongdouble ffi_type_longdouble
-@@@IFDEF{MZ_LONG_DOUBLE}{typedef long double mz_long_double;}{typedef double mz_long_double;}
+@@@IFDEF{_MSC_VER}{
+  struct struct_align_slongdouble {
+    char c;
+    long_double x;
+  };
+  const ffi_type ffi_type_slongdouble = {		
+    sizeof(long_double),
+    offsetof(struct struct_align_slongdouble, x),
+    FFI_TYPE_STRUCT, NULL					
+  };
+}{
+@DEFINE{ffi_type_slongdouble ffi_type_longdouble}
+}
+@@@IFDEF{MZ_LONG_DOUBLE}{typedef long_double mz_long_double;}{typedef double mz_long_double;}
 @@@IFDEF{MZ_LONG_DOUBLE}{
   @DEFINE{SCHEME_MAYBE_LONG_DBL_VAL(x) SCHEME_LONG_DBL_VAL(x)}
 }{
@@ -759,7 +771,9 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
     return NULL;
   }
 }
+
 @(defctype* '(longdouble "longdouble") "mz_long_double"       "LONG_DBL"  "MAYBE_LONG_DBL"        "maybe_long_double")
+
 
 /* A double that will coerce numbers to doubles: */
 @(defctype* '(double* "double") "double"

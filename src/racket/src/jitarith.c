@@ -662,13 +662,17 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
       /* inexact->exact needs no extra number */
     } else {
 #ifdef MZ_LONG_DOUBLE
-      long double d = second_const;
+      long_double d = long_double_from_int(second_const);
+      if (extfl) {
+        mz_fpu_movi_ld_fppush(fpr1, d, JIT_R2)
+      } else {
+        mz_movi_d_fppush(fpr1, second_const, JIT_R2);
+      }
 #else
       double d = second_const;
+      mz_movi_d_fppush(fpr1, d, JIT_R2);
 #endif
-      MZ_FPUSEL_STMT(extfl,
-                     mz_fpu_movi_ld_fppush(fpr1, d, JIT_R2),
-                     mz_movi_d_fppush(fpr1, d, JIT_R2));
+      
       reversed = !reversed;
       cmp = -cmp;
     }

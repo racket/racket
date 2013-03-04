@@ -263,7 +263,7 @@ static Scheme_Object *wrap_as_long_double(const char *s, int radix)
 Scheme_Object *make_any_long_double()
 {
 #ifdef MZ_LONG_DOUBLE 
-  return scheme_make_long_double(0.0L);
+  return scheme_make_long_double(get_long_double_zero());
 #else
   return wrap_as_long_double("1t0", 10);
 #endif
@@ -365,7 +365,7 @@ static Scheme_Object *read_special_number(const mzchar *str, int pos)
 }
 
 #ifdef MZ_LONG_DOUBLE
-# define WIDEST_DOUBLE long double
+# define WIDEST_DOUBLE long_double
 #else
 # define WIDEST_DOUBLE double
 #endif
@@ -389,7 +389,7 @@ static Scheme_Object *read_special_number(const mzchar *str, int pos)
 END_XFORM_ARITH;
 # endif
 
-static WIDEST_DOUBLE STRTOD(const char *orig_c, char **f, int extfl)
+static double STRTOD(const char *orig_c, char **f, int extfl)
 {
   int neg = 0;
   int found_dot = 0, is_infinity = 0, is_zero = 0;
@@ -498,7 +498,7 @@ START_XFORM_ARITH;
 # endif
 #else
 # ifdef MZ_LONG_DOUBLE
-#  define STRTOD(x, y, extfl) strtold(x, y)
+#  define STRTOD(x, y, extfl) strtod(x, y)
 # else
 #  define STRTOD(x, y, extfl) strtod(x, y)
 # endif
@@ -1213,7 +1213,8 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
       && (has_decimal || has_expt)
       && (len <= MAX_FAST_FLOATREAD_LEN)
       && (!is_long_double || MZ_LONG_DOUBLE_AND(1))) {
-    WIDEST_DOUBLE d;
+    double d = 1.0;
+    long_double ld;
     GC_CAN_IGNORE char *ptr;
 
     if (has_expt && !(str[has_expt + 1])) {
@@ -1246,7 +1247,12 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
 
       loc = scheme_push_c_numeric_locale();
 
-      d = STRTOD(ffl_buf, &ptr, is_long_double);
+#ifdef MZ_LONG_DOUBLE
+      if (is_long_double)
+        ld = long_double_from_string(ffl_buf, &ptr);
+      else
+#endif
+        d = STRTOD(ffl_buf, &ptr, 0);
 
       scheme_pop_c_numeric_locale(loc);
 
@@ -1287,22 +1293,30 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
 #ifdef MZ_USE_SINGLE_FLOATS
 	if (sgl) return scheme_nzerof;
 #endif
-#ifdef MZ_LONG_DOUBLE
-        if (is_long_double) return scheme_nzerol;
-#endif
 	return scheme_nzerod;
       }
     }
 
+#ifdef MZ_LONG_DOUBLE
+    if (is_long_double && long_double_is_zero(ld)) {
+      if (str[delta] == '-') {
+	    /* Make sure it's -0.0 */
+        return scheme_nzerol;
+      }
+    }
+#endif
+
 #ifdef MZ_USE_SINGLE_FLOATS
     if (sgl)
       return scheme_make_float((float)d);
+
 #endif
 #ifdef MZ_LONG_DOUBLE
-    if (is_long_double) return scheme_make_long_double(d);
+    if (is_long_double) return scheme_make_long_double(ld);
 #endif
     return scheme_make_double(d);
   }
+
 
   if (has_decimal || has_expt || (has_hash && !has_slash)) {
     Scheme_Object *mantissa, *exponent, *power, *n;
@@ -1488,8 +1502,8 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
       if (is_long_double) {
 #ifdef MZ_LONG_DOUBLE
         n = scheme_TO_LONG_DOUBLE(n);
-        if ((str[delta] == '-') && (SCHEME_LONG_DBL_VAL(n) == 0.0))
-          n = scheme_make_long_double(-SCHEME_LONG_DBL_VAL(n));
+        if ((str[delta] == '-') && (long_double_is_zero(SCHEME_LONG_DBL_VAL(n))))
+          n = scheme_make_long_double(long_double_neg(SCHEME_LONG_DBL_VAL(n)));
 #else
         /* simply preserve the printable format */
         n = wrap_as_long_double(scheme_utf8_encode_to_buffer(str, len, NULL, 0), radix);
@@ -1727,51 +1741,51 @@ string_to_number (int argc, Scheme_Object *argv[])
   return v;
 }
 
-char *scheme_X_double_to_string (WIDEST_DOUBLE d, char* s, int slen, int was_single, int extfl, int *used_buffer)
+char *scheme_X_double_to_string (double d, char* s, int slen, int was_single, int extfl, int *used_buffer, long_double ld)
 {
-  if (MZ_IS_NAN(d)) {
+#ifdef MZ_LONG_DOUBLE
+  if (extfl && MZ_IS_LONG_NAN(ld)) {
+    return long_not_a_number_str;
+  } else if (extfl && MZ_IS_LONG_POS_INFINITY(ld)) {
+    return long_infinity_str;
+  } else if (extfl && MZ_IS_LONG_NEG_INFINITY(ld)) {
+    return long_minus_infinity_str;
+  } else if (extfl && long_double_is_zero(ld)) {
+    if (scheme_long_minus_zero_p(ld))
+      return "-0.0t0";
+    else
+      return "0.0t0";
+  }
+#endif
+  if (!extfl && MZ_IS_NAN(d)) {
 #ifdef MZ_USE_SINGLE_FLOATS
     if (was_single) return single_not_a_number_str;
 #endif
-#ifdef MZ_LONG_DOUBLE
-    if (extfl) return long_not_a_number_str;
-#endif
     return not_a_number_str;
-  } else if (MZ_IS_POS_INFINITY(d)) {
+  } else if (!extfl && MZ_IS_POS_INFINITY(d)) {
 #ifdef MZ_USE_SINGLE_FLOATS
     if (was_single) return single_infinity_str;
 #endif
-#ifdef MZ_LONG_DOUBLE
-    if (extfl) return long_infinity_str;
-#endif
     return infinity_str;
-  } else if (MZ_IS_NEG_INFINITY(d)) {
+  } else if (!extfl && MZ_IS_NEG_INFINITY(d)) {
 #ifdef MZ_USE_SINGLE_FLOATS
     if (was_single) return single_minus_infinity_str;
 #endif
-#ifdef MZ_LONG_DOUBLE
-    if (extfl) return long_minus_infinity_str;
-#endif
     return minus_infinity_str;
-  } else if (d == 0.0) {
+  } else if (!extfl && d == 0.0) {
     /* Check for -0.0, since some printers get it wrong. */
-    if (scheme_long_minus_zero_p(d)) {
+    if (scheme_minus_zero_p(d)) {
 #ifdef MZ_USE_SINGLE_FLOATS
       if (was_single) return "-0.0f0";
 #endif
-#ifdef MZ_USE_SINGLE_FLOATS
-      if (extfl) return "-0.0t0";
-#endif
       return "-0.0";
-    }
+    } 
 #ifdef MZ_USE_SINGLE_FLOATS
     if (was_single) return "0.0f0";
 #endif
-#ifdef MZ_USE_SINGLE_FLOATS
-      if (extfl) return "0.0t0";
-#endif
       return "0.0";
-  } else {
+  }
+  else {
     /* Initial count for significant digits is 14 (double), 6 digits
        (single), or 18 (extended). That's big enough to get most
        right, small enough to avoid nonsense digits. But we'll loop in
@@ -1787,20 +1801,23 @@ char *scheme_X_double_to_string (WIDEST_DOUBLE d, char* s, int slen, int was_sin
       digits = 14;
     loc = scheme_push_c_numeric_locale();
     while (digits < 30 && digits < slen) {
-      WIDEST_DOUBLE check;
+      double check;
+#ifdef MZ_LONG_DOUBLE
+      long_double long_check;
+#endif
       GC_CAN_IGNORE char *ptr;
 
 #ifdef MZ_LONG_DOUBLE
       if (extfl)
-        sprintf(buffer, "%.*Lg", digits, d);
+        long_double_sprint(buffer, digits, ld);
       else
 #endif
-        sprintf(buffer, "%.*g", digits, (double)d);
+        sprintf(buffer, "%.*g", digits, d);
 
       /* Did we get read-write invariance, yet? */
 #ifdef MZ_LONG_DOUBLE
       if (extfl)
-        check = strtold(buffer, &ptr);
+        long_check = long_double_from_string(buffer, &ptr);
       else
 #endif
         check = strtod(buffer, &ptr);
@@ -1809,16 +1826,16 @@ char *scheme_X_double_to_string (WIDEST_DOUBLE d, char* s, int slen, int was_sin
         break;
 #ifdef MZ_USE_SINGLE_FLOATS
       else if (was_single) {
-        if ((float)check == (float)d)
-          break;
-#endif
-#ifdef MZ_USE_SINGLE_FLOATS
-      } else if (extfl) {
         if (check == d)
           break;
 #endif
+#ifdef MZ_LONG_DOUBLE
+      } else if (extfl) {
+        if (long_double_eqv(long_check, ld))
+          break;
+#endif
       } else
-        if ((double)check == (double)d)
+        if (check == d)
           break;
       
       digits++;
@@ -1863,15 +1880,16 @@ char *scheme_X_double_to_string (WIDEST_DOUBLE d, char* s, int slen, int was_sin
 
 char *scheme_double_to_string (double d, char* s, int slen, int was_single, int *used_buffer)
 {
-  return scheme_X_double_to_string(d, s, slen, was_single, 0, used_buffer);
+  long_double stub;
+  return scheme_X_double_to_string(d, s, slen, was_single, 0, used_buffer, stub);
 }
 
-static char *double_to_string (WIDEST_DOUBLE d, int alloc, int was_single, int extfl)
+static char *double_to_string (double d, int alloc, int was_single, int extfl, long_double ld)
 {
   char buffer[100];
   char *s;
   int used_buffer = 0;
-  s = scheme_X_double_to_string(d, buffer, 100, was_single, extfl, &used_buffer);
+  s = scheme_X_double_to_string(d, buffer, 100, was_single, extfl, &used_buffer, ld);
 
   if (used_buffer) {
     s = (char *)scheme_malloc_atomic(strlen(buffer) + 1);
@@ -1892,16 +1910,16 @@ static char *double_to_string (WIDEST_DOUBLE d, int alloc, int was_single, int e
 }
 
 #ifdef MZ_LONG_DOUBLE
-char *scheme_long_double_to_string (long double d, char* s, int slen, int *used_buffer)
+char *scheme_long_double_to_string (long_double ld, char* s, int slen, int *used_buffer)
 {
-  return scheme_X_double_to_string(d, s, slen, 0, 1, used_buffer);
+  return scheme_X_double_to_string(0.0, s, slen, 0, 1, used_buffer, ld);
 }
 #endif
 
 static char *number_to_allocated_string(int radix, Scheme_Object *obj, int alloc)
 {
   char *s;
-
+  long_double stub;
   if (SCHEME_FLOATP(obj)) {
     if (radix != 10)
       scheme_contract_error("number->string",
@@ -1909,7 +1927,7 @@ static char *number_to_allocated_string(int radix, Scheme_Object *obj, int alloc
                             "number", 1, obj,
                             "requested base", 1, scheme_make_integer(radix),
                             NULL);
-    s = double_to_string(SCHEME_FLOAT_VAL(obj), alloc, SCHEME_FLTP(obj), 0);
+    s = double_to_string(SCHEME_FLOAT_VAL(obj), alloc, SCHEME_FLTP(obj), 0, stub);
   } else if (SCHEME_LONG_DBLP(obj)) {
     if (radix != 10)
       scheme_contract_error("number->string",
@@ -1918,7 +1936,7 @@ static char *number_to_allocated_string(int radix, Scheme_Object *obj, int alloc
                             "requested base", 1, scheme_make_integer(radix),
                             NULL);
 #ifdef MZ_LONG_DOUBLE
-    s = double_to_string(SCHEME_LONG_DBL_VAL(obj), alloc, 0, 1);
+    s = double_to_string(0.0, alloc, 0, 1, SCHEME_LONG_DBL_VAL(obj));
 #else
     s = (char *)((Scheme_Long_Double *)obj)->printed_form;
 #endif
@@ -1996,7 +2014,7 @@ int scheme_check_double(const char *where, double d, const char *dest)
 }
 
 #ifdef MZ_LONG_DOUBLE
-int scheme_check_long_double(const char *where, long double d, const char *dest)
+int scheme_check_long_double(const char *where, long_double d, const char *dest)
 {
   if (MZ_IS_LONG_INFINITY(d)
       || MZ_IS_LONG_NAN(d)) {
@@ -2504,9 +2522,9 @@ static Scheme_Object *bytes_to_long_double (int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE
   intptr_t offset = 0, slen;
-  char *str, buf[sizeof(long double)];
+  char *str, buf[SIZEOF_LONGDOUBLE];
   int bigend = MZ_IS_BIG_ENDIAN;
-  long double d;
+  long_double d;
 
   if (!SCHEME_BYTE_STRINGP(argv[0]))
     scheme_wrong_contract("floating-point-bytes->extfl", "bytes?", 0, argc, argv);
@@ -2562,7 +2580,7 @@ static Scheme_Object *long_double_to_bytes (int argc, Scheme_Object *argv[])
   Scheme_Object *n, *s;
   int size = LONG_DOUBLE_BYTE_LEN;
   int bigend = MZ_IS_BIG_ENDIAN;
-  long double d;
+  long_double d;
   intptr_t offset = 0;
 
   n = argv[0];

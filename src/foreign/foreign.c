@@ -780,9 +780,21 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
  * C->Racket:   scheme_make_double(<C>)
  */
 
+#ifdef _MSC_VER
+struct struct_align_slongdouble {
+  char c;
+  long_double x;
+};
+const ffi_type ffi_type_slongdouble = {
+  sizeof(long_double),
+  offsetof(struct struct_align_slongdouble, x),
+  FFI_TYPE_STRUCT, NULL
+};
+#else /* _MSC_VER undefined */
 #define ffi_type_slongdouble ffi_type_longdouble
+#endif /* _MSC_VER */
 #ifdef MZ_LONG_DOUBLE
-typedef long double mz_long_double;
+typedef long_double mz_long_double;
 #else /* MZ_LONG_DOUBLE undefined */
 typedef double mz_long_double;
 #endif /* MZ_LONG_DOUBLE */
@@ -1948,7 +1960,18 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_LONG_DBLP(val)) {
         mz_long_double tmp;
-        tmp = (mz_long_double)(SCHEME_MAYBE_LONG_DBL_VAL(val));
+        /*
+         * FIXME: as a result of foreign.rktc's code generation,
+         * the following line is supposed to be:
+         *    tmp = (long_double)(SCHEME_MAYBE_LONG_DBL_VAL(val));
+         * Unfortunately, that does not compile, saying
+         *    error C2440: 'type cast' : cannot convert from 'long_double' to 'long_double'
+         * So we must not cast the structure value type into itself.
+         * Good news is that simple assignment without casting works fine.
+         * Probably there is a need for an option in foreign.rktc declaratons
+         * to turn off casting in this partuicular case.
+         */
+        tmp = (SCHEME_MAYBE_LONG_DBL_VAL(val));
         (((mz_long_double*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         wrong_value(who, "_longdouble", val);;
