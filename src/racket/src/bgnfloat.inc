@@ -41,8 +41,8 @@ FP_TYPE SCHEME_BIGNUM_TO_FLOAT_INFO(const Scheme_Object *n, intptr_t skip, intpt
 	
   d = FP_ZEROx;
   while (nl--) {
-    d *= (FP_TYPE)BIG_RADIX;
-    d += *(--na);
+    d = FP_TYPE_MULT(d, FP_TYPE_FROM_DOUBLE(BIG_RADIX));
+    d = FP_TYPE_PLUS(d, FP_TYPE_FROM_UINTPTR(*(--na)));
     if (IS_FLOAT_INF(d))
       break;
     --skipped;
@@ -52,7 +52,7 @@ FP_TYPE SCHEME_BIGNUM_TO_FLOAT_INFO(const Scheme_Object *n, intptr_t skip, intpt
     *_skipped = skipped;
   
   if (!SCHEME_BIGPOS(n))
-    d = -d;
+    d = FP_TYPE_NEG(d);
 
   return d;
 }
@@ -77,42 +77,42 @@ Scheme_Object *SCHEME_BIGNUM_FROM_FLOAT(FP_TYPE d)
 
   SCHEME_CHECK_FLOAT("inexact->exact", d, "integer");
 
-  if (d < FP_ZEROx) {
+  if (FP_TYPE_LESS(d, FP_ZEROx)) {
     negate = 1;
-    d = -d;
+    d = FP_TYPE_NEG(d);
   } else
     negate = 0;
 
-  if (d < FP_ONEx)
+  if (FP_TYPE_LESS(d, FP_ONEx))
     return scheme_make_integer(0);
 
   log = 0;
-  while (r < d) {
+  while (FP_TYPE_LESS(r, d)) {
     log++;
-    r *= FP_TWOx;
+    r = FP_TYPE_MULT(r, FP_TWOx);
   }
 
   if (log > USE_FLOAT_BITS) {
     times = log - USE_FLOAT_BITS;
     log = USE_FLOAT_BITS;
     for (i = 0; i < times; i++) {
-      d /= FP_TWOx;
+      d = FP_TYPE_DIV(d, FP_TWOx);
     }
   } else
     times = 0;
 
-  r = pow(FP_TWOx, (FP_TYPE)log);
+  r = FP_POWx(FP_TWOx, FP_TYPE_FROM_INT(log));
 
   n = scheme_make_small_bignum(0, &s1);
 
   log++;
   while (log--) {
     bignum_double_inplace(&n);
-    if (d >= r) {
-      d -= r;
+    if (FP_TYPE_GREATER_OR_EQV(d, r)) {
+      d = FP_TYPE_MINUS(d, r);
       bignum_add1_inplace(&n);
     }
-    r /= FP_TWOx;
+    r = FP_TYPE_DIV(r, FP_TWOx);
   }
 
   if (times) {
@@ -144,3 +144,14 @@ Scheme_Object *SCHEME_BIGNUM_FROM_FLOAT(FP_TYPE d)
 #undef FP_POWx
 #undef FP_MZ_IS_POS_INFINITY
 #undef FP_scheme_floating_point_nzero
+
+#undef FP_TYPE_FROM_DOUBLE
+#undef FP_TYPE_NEG
+#undef FP_TYPE_LESS
+#undef FP_TYPE_MULT
+#undef FP_TYPE_PLUS
+#undef FP_TYPE_DIV
+#undef FP_TYPE_FROM_INT
+#undef FP_TYPE_GREATER_OR_EQV
+#undef FP_TYPE_MINUS
+#undef FP_TYPE_FROM_UINTPTR

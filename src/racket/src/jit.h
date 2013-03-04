@@ -198,8 +198,8 @@ extern int scheme_jit_malloced;
 THREAD_LOCAL_DECL(extern double scheme_jit_save_fp);
 THREAD_LOCAL_DECL(extern double scheme_jit_save_fp2);
 # ifdef MZ_LONG_DOUBLE
-THREAD_LOCAL_DECL(extern long double scheme_jit_save_extfp);
-THREAD_LOCAL_DECL(extern long double scheme_jit_save_extfp2);
+THREAD_LOCAL_DECL(extern long_double scheme_jit_save_extfp);
+THREAD_LOCAL_DECL(extern long_double scheme_jit_save_extfp2);
 # endif
 #endif
 
@@ -1263,7 +1263,7 @@ int scheme_mz_compute_runstack_restored(mz_jit_state *jitter, int adj, int skip)
 int scheme_mz_retain_it(mz_jit_state *jitter, void *v);
 double *scheme_mz_retain_double(mz_jit_state *jitter, double d);
 #ifdef MZ_LONG_DOUBLE
-long double *scheme_mz_retain_long_double(mz_jit_state *jitter, long double d);
+long_double *scheme_mz_retain_long_double(mz_jit_state *jitter, long_double d);
 #endif
 int scheme_mz_remap_it(mz_jit_state *jitter, int i);
 void scheme_mz_pushr_p_it(mz_jit_state *jitter, int reg);

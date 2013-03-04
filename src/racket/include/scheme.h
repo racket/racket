@@ -348,10 +348,11 @@ typedef struct {
   double double_val;
 } Scheme_Double;
 
+#include "../src/longdouble/longdouble.h"
 #ifdef MZ_LONG_DOUBLE
 typedef struct {
   Scheme_Object so;
-  long double long_double_val;
+  long_double long_double_val;
 } Scheme_Long_Double;
 #else
 typedef struct {
@@ -393,7 +394,7 @@ typedef struct Scheme_Double_Vector {
 typedef struct Scheme_Long_Double_Vector {
   Scheme_Inclhash_Object iso; /* & 0x2 indicates allocated in the MASTERGC */
   intptr_t size;
-  long double els[mzFLEX_ARRAY_DECL];
+  long_double els[mzFLEX_ARRAY_DECL];
 } Scheme_Long_Double_Vector;
 #endif
 

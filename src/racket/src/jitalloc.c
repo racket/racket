@@ -45,8 +45,8 @@ THREAD_LOCAL_DECL(static void *retry_alloc_r1); /* set by prepare_retry_alloc() 
 THREAD_LOCAL_DECL(double scheme_jit_save_fp);
 THREAD_LOCAL_DECL(double scheme_jit_save_fp2);
 # ifdef MZ_LONG_DOUBLE
-THREAD_LOCAL_DECL(long double scheme_jit_save_extfp);
-THREAD_LOCAL_DECL(long double scheme_jit_save_extfp2);
+THREAD_LOCAL_DECL(long_double scheme_jit_save_extfp);
+THREAD_LOCAL_DECL(long_double scheme_jit_save_extfp2);
 # endif
 #endif
 
@@ -296,7 +296,7 @@ Scheme_Object *scheme_jit_make_two_element_ivector(Scheme_Object *a, Scheme_Obje
 #endif
 
 #ifdef CAN_INLINE_ALLOC
-long double ld1;
+long_double ld1;
 
 int scheme_generate_alloc_retry(mz_jit_state *jitter, int i)
 {

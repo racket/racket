@@ -1293,8 +1293,8 @@ SAFE_FL1(fl_sqrt, "flsqrt", sqrt)
 # define UNSAFE_EXTFL(name, op)                                          \
   static Scheme_Object *name(int argc, Scheme_Object *argv[])           \
   {                                                                     \
-    long double v;                                                      \
-    v = SCHEME_LONG_DBL_VAL(argv[0]) op SCHEME_LONG_DBL_VAL(argv[1]);   \
+    long_double v;                                                      \
+    v = op(SCHEME_LONG_DBL_VAL(argv[0]), SCHEME_LONG_DBL_VAL(argv[1]));   \
     return scheme_make_long_double(v);                                  \
   }
 #else
@@ -1307,16 +1307,16 @@ SAFE_FL1(fl_sqrt, "flsqrt", sqrt)
   }
 #endif
 
-UNSAFE_EXTFL(unsafe_extfl_plus, +)
-UNSAFE_EXTFL(unsafe_extfl_minus, -)
-UNSAFE_EXTFL(unsafe_extfl_mult, *)
-UNSAFE_EXTFL(unsafe_extfl_div, /)
+UNSAFE_EXTFL(unsafe_extfl_plus, long_double_plus)
+UNSAFE_EXTFL(unsafe_extfl_minus, long_double_minus)
+UNSAFE_EXTFL(unsafe_extfl_mult, long_double_mult)
+UNSAFE_EXTFL(unsafe_extfl_div, long_double_div)
 
 #ifdef MZ_LONG_DOUBLE
 # define UNSAFE_EXTFL1(name, op)                                        \
   static Scheme_Object *name(int argc, Scheme_Object *argv[])           \
   {                                                                     \
-    long double v;                                                      \
+    long_double v;                                                      \
     v = SCHEME_LONG_DBL_VAL(argv[0]);                                   \
     v = op(v);                                                          \
     return scheme_make_long_double(v);                                  \
@@ -1325,17 +1325,17 @@ UNSAFE_EXTFL(unsafe_extfl_div, /)
 # define UNSAFE_EXTFL1(name, op) UNSAFE_EXTFL(name, op)
 #endif
 
-UNSAFE_EXTFL1(unsafe_extfl_abs, fabsl)
-UNSAFE_EXTFL1(unsafe_extfl_sqrt, sqrtl)
+UNSAFE_EXTFL1(unsafe_extfl_abs, long_double_fabs)
+UNSAFE_EXTFL1(unsafe_extfl_sqrt, long_double_sqrt)
 
 #ifdef MZ_LONG_DOUBLE
 # define SAFE_EXTFL(name, sname, op)                                     \
   static Scheme_Object *name(int argc, Scheme_Object *argv[])           \
   {                                                                     \
-    long double v;                                                      \
+    long_double v;                                                      \
     if (!SCHEME_LONG_DBLP(argv[0])) scheme_wrong_contract(sname, "extflonum?", 0, argc, argv); \
     if (!SCHEME_LONG_DBLP(argv[1])) scheme_wrong_contract(sname, "extflonum?", 1, argc, argv); \
-    v = SCHEME_LONG_DBL_VAL(argv[0]) op SCHEME_LONG_DBL_VAL(argv[1]);   \
+    v = op(SCHEME_LONG_DBL_VAL(argv[0]), SCHEME_LONG_DBL_VAL(argv[1]));   \
     return scheme_make_long_double(v);                                  \
   }
 #else
@@ -1348,16 +1348,16 @@ UNSAFE_EXTFL1(unsafe_extfl_sqrt, sqrtl)
   }
 #endif
 
-SAFE_EXTFL(extfl_plus, "extfl+", +)
-SAFE_EXTFL(extfl_minus, "extfl-", -)
-SAFE_EXTFL(extfl_mult, "extfl*", *)
-SAFE_EXTFL(extfl_div, "extfl/", /)
+SAFE_EXTFL(extfl_plus, "extfl+", long_double_plus)
+SAFE_EXTFL(extfl_minus, "extfl-", long_double_minus)
+SAFE_EXTFL(extfl_mult, "extfl*", long_double_mult)
+SAFE_EXTFL(extfl_div, "extfl/", long_double_div)
 
 #ifdef MZ_LONG_DOUBLE
 # define SAFE_EXTFL1(name, sname, op)                                    \
   static Scheme_Object *name(int argc, Scheme_Object *argv[])           \
   {                                                                     \
-   long double v;                                                       \
+   long_double v;                                                       \
    if (!SCHEME_LONG_DBLP(argv[0])) scheme_wrong_contract(sname, "extflonum?", 0, argc, argv); \
    v = SCHEME_LONG_DBL_VAL(argv[0]);                                    \
    v = op(v);                                                           \
@@ -1367,5 +1367,5 @@ SAFE_EXTFL(extfl_div, "extfl/", /)
 # define SAFE_EXTFL1(name, sname, op) SAFE_EXTFL(name, sname, op)
 #endif
 
-SAFE_EXTFL1(extfl_abs, "extflabs", fabs)
-SAFE_EXTFL1(extfl_sqrt, "extflsqrt", sqrt)
+SAFE_EXTFL1(extfl_abs, "extflabs", long_double_fabs)
+SAFE_EXTFL1(extfl_sqrt, "extflsqrt", long_double_sqrt)

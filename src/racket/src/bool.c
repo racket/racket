@@ -198,10 +198,10 @@ int scheme_eq (Scheme_Object *obj1, Scheme_Object *obj2)
 }
 
 #ifdef MZ_LONG_DOUBLE
-XFORM_NONGCING static MZ_INLINE int long_double_eqv(long double a, long double b)
+XFORM_NONGCING static MZ_INLINE int mz_long_double_eqv(long_double a, long_double b)
 {
 # ifndef NAN_EQUALS_ANYTHING
-  if (a != b) {
+  if (!long_double_eqv(a, b)) {
 # endif
     /* Double-check for NANs: */
     if (MZ_IS_LONG_NAN(a)) {
@@ -215,18 +215,18 @@ XFORM_NONGCING static MZ_INLINE int long_double_eqv(long double a, long double b
     if (MZ_IS_LONG_NAN(b))
       return 0;
     else {
-      if (a == 0.0L) {
-        if (b == 0.0L) {
+      if (long_double_eqv(a, get_long_double_zero()) {
+        if (long_double_eqv(b, get_long_double_zero()) {
           return scheme_long_minus_zero_p(a) == scheme_long_minus_zero_p(b);
         }
       }
-      return (a == b);
+      return long_double_eqv(a, b);
     }
 # else
     return 0;
   }
-  if (a == 0.0L) {
-    if (b == 0.0L) {
+  if (long_double_eqv(a, get_long_double_zero())) {
+    if (long_double_eqv(b, get_long_double_zero())) {
       return scheme_long_minus_zero_p(a) == scheme_long_minus_zero_p(b);
     }
   }
@@ -291,7 +291,7 @@ XFORM_NONGCING static int is_eqv(Scheme_Object *obj1, Scheme_Object *obj2)
     return -1;
 #ifdef MZ_LONG_DOUBLE
   } else if (t1 == scheme_long_double_type) {
-    return long_double_eqv(SCHEME_LONG_DBL_VAL(obj1), SCHEME_LONG_DBL_VAL(obj2));
+    return mz_long_double_eqv(SCHEME_LONG_DBL_VAL(obj1), SCHEME_LONG_DBL_VAL(obj2));
 #endif
 #ifdef MZ_USE_SINGLE_FLOATS
   } else if (t1 == scheme_float_type) {
@@ -530,7 +530,7 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     l2 = SCHEME_EXTFLVEC_SIZE(obj2);
     if (l1 == l2) {
       for (i = 0; i < l1; i++) {
-        if (!long_double_eqv(SCHEME_EXTFLVEC_ELS(obj1)[i],
+        if (!mz_long_double_eqv(SCHEME_EXTFLVEC_ELS(obj1)[i],
                              SCHEME_EXTFLVEC_ELS(obj2)[i]))
           return 0;
       }

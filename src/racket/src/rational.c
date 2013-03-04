@@ -516,6 +516,13 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 }
 
 #define FP_TYPE double
+#define FP_MULT(x, y) x*y
+#define FP_DIV(x, y) x/y
+#define FP_NEG(x) -x
+#define FP_EQV(x,y) x==y
+#define FP_LESS(x, y) x<y
+#define FP_IS_ZERO(x) x==0.0
+#define FP_TYPE_FROM_INT(x) (FP_TYPE)x
 #define SCHEME_RATIONAL_TO_FLOAT scheme_rational_to_double
 #define SCHEME_RATIONAL_FROM_FLOAT scheme_rational_from_double
 #define SCHEME_BIGNUM_TO_FLOAT_INF_INFO scheme_bignum_to_double_inf_info
@@ -528,6 +535,13 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 
 #ifdef MZ_USE_SINGLE_FLOATS
 #define FP_TYPE float
+#define FP_MULT(x, y) x*y
+#define FP_DIV(x, y) x/y
+#define FP_NEG(x) -x
+#define FP_EQV(x,y) x==y
+#define FP_LESS(x, y) x<y
+#define FP_TYPE_FROM_INT(x) (FP_TYPE)x
+#define FP_IS_ZERO(x) x==0.0
 #define SCHEME_RATIONAL_TO_FLOAT scheme_rational_to_float
 #define SCHEME_RATIONAL_FROM_FLOAT scheme_rational_from_float
 #define SCHEME_BIGNUM_TO_FLOAT_INF_INFO scheme_bignum_to_float_inf_info
@@ -540,19 +554,26 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 #endif
 
 #ifdef MZ_LONG_DOUBLE
-# define FP_TYPE long double
+# define FP_TYPE long_double
+# define FP_MULT(x, y) long_double_mult(x,y)
+# define FP_DIV(x, y) long_double_div(x,y)
+# define FP_NEG(x) long_double_neg(x)
+# define FP_EQV(x,y) long_double_eqv(x,y)
+# define FP_LESS(x, y) long_double_less(x,y)
+# define FP_TYPE_FROM_INT(x) long_double_from_int(x)
+# define FP_IS_ZERO(x) long_double_is_zero(x)
 # define SCHEME_RATIONAL_TO_FLOAT scheme_rational_to_long_double
 # define SCHEME_RATIONAL_FROM_FLOAT scheme_rational_from_long_double
 # define SCHEME_BIGNUM_TO_FLOAT_INF_INFO scheme_bignum_to_long_double_inf_info
 # define SCHEME_CHECK_FLOAT scheme_check_long_double
 # define SCHEME_BIGNUM_FROM_FLOAT scheme_bignum_from_long_double
-# define DO_FLOAT_DIV scheme__do_long_double_div
 # define FLOAT_E_MIN -16383
 # define FLOAT_M_BITS 64
-# define FP_ZEROx 0L
-# define FP_POWx powl
-# define FP_MODFx modfl
-# define FP_FREXPx frexpl
+# define FP_ZEROx get_long_double_zero()
+# define FP_POWx pow
+# define FP_MODFx long_double_modf
+# define FP_FREXPx long_double_frexp
+# define FP_LDEXP long_double_ldexp
 # define FP_DOUBLE_TYPE FP_TYPE
 #include "ratfloat.inc"
 #endif

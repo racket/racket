@@ -2267,7 +2267,7 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
       jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE);
     else {
       MZ_FPUSEL_STMT(extfl,
-                     jit_muli_ui(JIT_V1, JIT_V1, sizeof(long double)),
+                     jit_muli_ui(JIT_V1, JIT_V1, SIZEOF_LONGDOUBLE),
                      jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_DOUBLE_SIZE));
     }
     jit_addi_p(JIT_V1, JIT_V1, base_offset);
@@ -3028,7 +3028,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	if (!which)
 	  offset = base_offset + WORDS_TO_BYTES(offset);
 	else if (which == 3)
-          offset = base_offset + (offset * MZ_FPUSEL(extfl, sizeof(long double), sizeof(double)));
+          offset = base_offset + (offset * MZ_FPUSEL(extfl, SIZEOF_LONGDOUBLE, sizeof(double)));
 	else if (which == 1)
 	  offset = offset << LOG_MZCHAR_SIZE;
 	jit_movi_l(JIT_V1, offset);
@@ -3102,7 +3102,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       }
       jit_rshi_ul(JIT_R1, JIT_R1, 1);
       MZ_FPUSEL_STMT(extfl,
-                     jit_muli_ui(JIT_R1, JIT_R1, sizeof(long double)),
+                     jit_muli_ui(JIT_R1, JIT_R1, SIZEOF_LONGDOUBLE),
                      jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_DOUBLE_SIZE));
       if (!is_f64) {
         MZ_FPUSEL_STMT(extfl,
@@ -3945,7 +3945,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 	if (!which)
 	  offset = base_offset + WORDS_TO_BYTES(offset);
 	else if (which == 3)
-          offset = base_offset + (offset * MZ_FPUSEL(extfl, sizeof(long double), sizeof(double)));
+          offset = base_offset + (offset * MZ_FPUSEL(extfl, SIZEOF_LONGDOUBLE, sizeof(double)));
 	else if (which == 1)
 	  offset = offset << LOG_MZCHAR_SIZE;
         else if ((which == 4) || (which == 5))
@@ -4075,7 +4075,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       }
       jit_rshi_ul(JIT_R1, JIT_R1, 1);
       MZ_FPUSEL_STMT(extfl,
-                     jit_muli_ui(JIT_R1, JIT_R1, sizeof(long double)),
+                     jit_muli_ui(JIT_R1, JIT_R1, SIZEOF_LONGDOUBLE),
                      jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_DOUBLE_SIZE));
       if (!is_f64) {
         MZ_FPUSEL_STMT(extfl,

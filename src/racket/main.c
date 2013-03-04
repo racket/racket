@@ -1,3 +1,4 @@
+
 /*
   Racket
   Copyright (c) 2004-2013 PLT Design Inc.
@@ -303,6 +304,9 @@ static __declspec(thread) void *tls_space;
 void load_delayed()
 {
   /* Order matters: load dependencies first */
+# ifdef MZ_LONG_DOUBLE
+  load_delayed_dll(NULL, "longdouble.dll");
+# endif
 # ifndef MZ_PRECISE_GC
   load_delayed_dll(NULL, "libmzgcxxxxxxx.dll");
 # endif
