@@ -3046,14 +3046,14 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
 #ifdef MZ_LONG_DOUBLE
       if (jitter->unbox_extflonum) {
-        long double d;
+        long_double d;
         int fpr0;
 
         if (SCHEME_LONG_DBLP(obj))
           d = SCHEME_LONG_DBL_VAL(obj);
         else {
           bad = "ext";
-          d = 0.0L;
+          d = get_long_double_zero();
         }
 
         fpr0 = JIT_FPU_FPR_0(jitter->unbox_depth);

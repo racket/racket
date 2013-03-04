@@ -139,6 +139,10 @@ pango-1.28.3:
  modules/basic/basic-win32.c:479:
     if (ScriptItemize (wtext, wlen, G_N_ELEMENTS (items) - 1, &control, NULL,
 
+The "longdouble.dll" library is used to implement extflonums. Its
+source is "longdouble.c" in the Racket source directory, and it must
+be compiled using MinGW and with `IMPLEMENTING_MSC_LONGDOUBLE' defined.
+
 Building Racket3m and GRacket3m
 -------------------------------
 

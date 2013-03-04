@@ -150,7 +150,8 @@
 	 (map copy-dll (list
                         (if (equal? "win32\\x86_64" (path->string (system-library-subpath #f)))
                             "libiconv-2.dll"
-                            "iconv.dll")))
+                            "iconv.dll")
+                        "longdouble.dll"))
 	 (when (or (memq 'racketcgc types)
 		   (memq 'gracketcgc types))
 	   (map copy-dll

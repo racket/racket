@@ -640,6 +640,7 @@
 # define USE_ICONV_DLL
 # define NO_MBTOWC_FUNCTIONS
 
+# define MZ_LONG_DOUBLE
 # ifdef _WIN64
 #  define MZ_USE_JIT_X86_64
 # else

@@ -107,12 +107,12 @@ double *scheme_mz_retain_double(mz_jit_state *jitter, double d)
 #endif
 
 #ifdef MZ_LONG_DOUBLE
-long double *scheme_mz_retain_long_double(mz_jit_state *jitter, long double ld)
+long_double *scheme_mz_retain_long_double(mz_jit_state *jitter, long_double ld)
 {
   /* Save a long double into two cells of double */
   void *p;
   if (jitter->retain_start)
-    memcpy(&jitter->retain_double_start[jitter->retained_double], &ld, sizeof(long double));
+    memcpy(&jitter->retain_double_start[jitter->retained_double], &ld, sizeof(long_double));
   p = jitter->retain_double_start + jitter->retained_double;
   jitter->retained_double++;
   jitter->retained_double++;

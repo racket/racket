@@ -531,6 +531,7 @@ union jit_fpu_double_imm {
 #define jit_fpu_pusharg_f(rs)            (jit_fpu_subi_i(JIT_SP,JIT_SP,sizeof(float)), jit_fpu_str_f(JIT_SP,(rs)))
 #define jit_fpu_retval_d(op1)            jit_fpu_movr_d(0, (op1))
 
+#define jit_set_fp_control(v) (PUSHWi(v), FLDCWm(0, JIT_SP, 0, 0), jit_addi_p(JIT_SP,JIT_SP,2))
 
 #if 0
 #define jit_sin()	_OO(0xd9fe)			/* fsin */
@@ -554,6 +555,5 @@ union jit_fpu_double_imm {
 			 FXCHr(1), 			/* fxch st(1) */ \
 			 _OO(0xd9f1))			/* fyl2x */
 #endif
-
 
 #endif

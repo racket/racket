@@ -382,6 +382,10 @@ is compiling floating-point operations as SSE, so be sure to include
 flags like "-mfpmath=sse" or "-mfpmath=387" in CPPFLAGS, and not just
 CFLAGS. See related configuration options below.
 
+The Windows build enables extflonum support through a MinGW-compiled
+"longdouble.dll", since MSVC does not support `long double' as
+extended-precision floating point.
+
 Configuration Options
 ---------------------
 

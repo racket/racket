@@ -79,7 +79,6 @@ static int get_iconv_errno(void)
 # define HAVE_CODESET 1
 # define CODESET 0
 # define ICONV_errno get_iconv_errno()
-extern wchar_t *scheme_get_dll_path(wchar_t *s);
 static int iconv_ready = 0;
 static void init_iconv()
 {

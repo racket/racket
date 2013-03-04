@@ -1033,32 +1033,33 @@ XFORM_NONGCING static uintptr_t dbl_hash2_val(double d)
 }
 
 #ifdef MZ_LONG_DOUBLE
-XFORM_NONGCING static uintptr_t long_dbl_hash_val(long double d) 
+XFORM_NONGCING static uintptr_t long_dbl_hash_val(long_double d) 
   XFORM_SKIP_PROC
 {
   int e;
   
   if (MZ_IS_LONG_NAN(d)) {
-    d = 0.0L;
+    d = get_long_double_zero();
     e = 1000;
   } else if (MZ_IS_LONG_POS_INFINITY(d)) {
-    d = 0.5L;
+    d = get_long_double_one_half();
     e = 1000;
   } else if (MZ_IS_LONG_NEG_INFINITY(d)) {
-    d = -0.5L;
+    d = long_double_neg(get_long_double_one_half());
     e = 1000;
-  } else if (!d && scheme_long_minus_zero_p(d)) {
-    d = 0L;
+  } else if (long_double_eqv(d, get_long_double_zero()) && scheme_long_minus_zero_p(d)) {
+    d = get_long_double_zero();
     e = 1000;
   } else {
     /* frexpl should not be used on inf or nan: */
-    d = frexpl(d, &e);
+    d = long_double_frexp(d, &e);
   }
 
-  return ((uintptr_t)(d * (1 << 30))) + e;
+  return uintptr_from_long_double(long_double_mult_i(d, 1<<30)) + e;
+  /*return ((uintptr_t)(d * (1 << 30))) + e;*/
 }
 
-XFORM_NONGCING static uintptr_t long_dbl_hash2_val(long double d)  
+XFORM_NONGCING static uintptr_t long_dbl_hash2_val(long_double d)  
   XFORM_SKIP_PROC
 {
   int e;
@@ -1069,7 +1070,7 @@ XFORM_NONGCING static uintptr_t long_dbl_hash2_val(long double d)
     e = 1;
   } else {
     /* frexp should not be used on inf or nan: */
-    d = frexpl(d, &e);
+    d = long_double_frexp(d, &e);
   }
   return to_unsigned_hash(e);
 }
@@ -1209,7 +1210,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
   case scheme_extflvector_type:
     {
       intptr_t len = SCHEME_EXTFLVEC_SIZE(o), i;
-      long double d;
+      long_double d;
 
       if (!len)
 	return k + 1;
@@ -1676,7 +1677,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
   case scheme_extflvector_type:
     {
       intptr_t len = SCHEME_EXTFLVEC_SIZE(o), i;
-      long double d;
+      long_double d;
       uintptr_t k = 0;
 
       if (!len)

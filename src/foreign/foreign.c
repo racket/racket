@@ -597,6 +597,9 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 /*****************************************************************************/
 /* Types */
 
+#define MZ_TYPE_CAST(t, e) (t)(e)
+#define MZ_NO_TYPE_CAST(t, e) (e)
+
 /***********************************************************************
  * The following are the only primitive types.
  * The tricky part is figuring out what width-ed types correspond to
@@ -780,12 +783,19 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
  * C->Racket:   scheme_make_double(<C>)
  */
 
+#ifdef _MSC_VER
+struct struct_align_slongdouble {
+  char c;
+  long_double x;
+};
+const ffi_type ffi_type_slongdouble = {
+  sizeof(long_double),
+  offsetof(struct struct_align_slongdouble, x),
+  FFI_TYPE_STRUCT, NULL
+};
+#else /* _MSC_VER undefined */
 #define ffi_type_slongdouble ffi_type_longdouble
-#ifdef MZ_LONG_DOUBLE
-typedef long double mz_long_double;
-#else /* MZ_LONG_DOUBLE undefined */
-typedef double mz_long_double;
-#endif /* MZ_LONG_DOUBLE */
+#endif /* _MSC_VER */
 #ifdef MZ_LONG_DOUBLE
 #define SCHEME_MAYBE_LONG_DBL_VAL(x) SCHEME_LONG_DBL_VAL(x)
 #else /* MZ_LONG_DOUBLE undefined */
@@ -804,6 +814,7 @@ static Scheme_Object *unsupported_make_long_double() {
   return NULL;
 }
 #endif /* MZ_LONG_DOUBLE */
+
 #define FOREIGN_longdouble (16)
 /* Type Name:   longdouble
  * LibFfi type: ffi_type_slongdouble
@@ -813,6 +824,7 @@ static Scheme_Object *unsupported_make_long_double() {
  * S->C offset: 0
  * C->Racket:   scheme_make_maybe_long_double(<C>)
  */
+
 
 /* A double that will coerce numbers to doubles: */
 #define FOREIGN_doubleS (17)
@@ -1858,7 +1870,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_INTP(val)) {
         Tsint32 tmp;
-        tmp = (Tsint32)(SCHEME_INT_VAL(val));
+        tmp = MZ_TYPE_CAST(Tsint32, SCHEME_INT_VAL(val));
         (((Tsint32*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         wrong_value(who, "_fixint", val);;
@@ -1873,7 +1885,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_INTP(val)) {
         Tuint32 tmp;
-        tmp = (Tuint32)(SCHEME_UINT_VAL(val));
+        tmp = MZ_TYPE_CAST(Tuint32, SCHEME_UINT_VAL(val));
         (((Tuint32*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         wrong_value(who, "_ufixint", val);;
@@ -1888,7 +1900,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_INTP(val)) {
         intptr_t tmp;
-        tmp = (intptr_t)(SCHEME_INT_VAL(val));
+        tmp = MZ_TYPE_CAST(intptr_t, SCHEME_INT_VAL(val));
         (((intptr_t*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         wrong_value(who, "_fixnum", val);;
@@ -1903,7 +1915,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_INTP(val)) {
         uintptr_t tmp;
-        tmp = (uintptr_t)(SCHEME_UINT_VAL(val));
+        tmp = MZ_TYPE_CAST(uintptr_t, SCHEME_UINT_VAL(val));
         (((uintptr_t*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         wrong_value(who, "_ufixnum", val);;
@@ -1918,7 +1930,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FLOATP(val)) {
         float tmp;
-        tmp = (float)(SCHEME_FLOAT_VAL(val));
+        tmp = MZ_TYPE_CAST(float, SCHEME_FLOAT_VAL(val));
         (((float*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         wrong_value(who, "_float", val);;
@@ -1933,7 +1945,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FLOATP(val)) {
         double tmp;
-        tmp = (double)(SCHEME_FLOAT_VAL(val));
+        tmp = MZ_TYPE_CAST(double, SCHEME_FLOAT_VAL(val));
         (((double*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         wrong_value(who, "_double", val);;
@@ -1948,7 +1960,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_LONG_DBLP(val)) {
         mz_long_double tmp;
-        tmp = (mz_long_double)(SCHEME_MAYBE_LONG_DBL_VAL(val));
+        tmp = MZ_NO_TYPE_CAST(mz_long_double, SCHEME_MAYBE_LONG_DBL_VAL(val));
         (((mz_long_double*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         wrong_value(who, "_longdouble", val);;
@@ -1963,7 +1975,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_REALP(val)) {
         double tmp;
-        tmp = (double)(scheme_real_to_double(val));
+        tmp = MZ_TYPE_CAST(double, scheme_real_to_double(val));
         (((double*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         wrong_value(who, "_double*", val);;
@@ -1978,7 +1990,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (1) {
         int tmp;
-        tmp = (int)(SCHEME_TRUEP(val));
+        tmp = MZ_TYPE_CAST(int, SCHEME_TRUEP(val));
         (((int*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         wrong_value(who, "_bool", val);;
@@ -1993,7 +2005,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FALSEP_OR_CHAR_STRINGP(val)) {
         mzchar* tmp;
-        tmp = (mzchar*)(ucs4_string_or_null_to_ucs4_pointer(val));
+        tmp = MZ_TYPE_CAST(mzchar*, ucs4_string_or_null_to_ucs4_pointer(val));
         if (basetype_p == NULL || tmp == NULL || 0) {
           (((mzchar**)W_OFFSET(dst,delta))[0]) = tmp;
           return NULL;
@@ -2014,7 +2026,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FALSEP_OR_CHAR_STRINGP(val)) {
         unsigned short* tmp;
-        tmp = (unsigned short*)(ucs4_string_or_null_to_utf16_pointer(val));
+        tmp = MZ_TYPE_CAST(unsigned short*, ucs4_string_or_null_to_utf16_pointer(val));
         if (basetype_p == NULL || tmp == NULL || 0) {
           (((unsigned short**)W_OFFSET(dst,delta))[0]) = tmp;
           return NULL;
@@ -2035,7 +2047,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FALSEP(val)||SCHEME_BYTE_STRINGP(val)) {
         char* tmp;
-        tmp = (char*)(SCHEME_FALSEP(val)?NULL:SCHEME_BYTE_STR_VAL(val));
+        tmp = MZ_TYPE_CAST(char*, SCHEME_FALSEP(val)?NULL:SCHEME_BYTE_STR_VAL(val));
         if (basetype_p == NULL || tmp == NULL || 0) {
           (((char**)W_OFFSET(dst,delta))[0]) = tmp;
           return NULL;
@@ -2056,7 +2068,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FALSEP(val)||SCHEME_PATH_STRINGP(val)) {
         char* tmp;
-        tmp = (char*)(SCHEME_FALSEP(val)?NULL:SCHEME_PATH_VAL(TO_PATH(val)));
+        tmp = MZ_TYPE_CAST(char*, SCHEME_FALSEP(val)?NULL:SCHEME_PATH_VAL(TO_PATH(val)));
         if (basetype_p == NULL || tmp == NULL || 0) {
           (((char**)W_OFFSET(dst,delta))[0]) = tmp;
           return NULL;
@@ -2077,7 +2089,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_SYMBOLP(val)) {
         char* tmp;
-        tmp = (char*)(SCHEME_SYM_VAL(val));
+        tmp = MZ_TYPE_CAST(char*, SCHEME_SYM_VAL(val));
         if (basetype_p == NULL || tmp == NULL || !is_gcable_pointer(val)) {
           (((char**)W_OFFSET(dst,delta))[0]) = tmp;
           return NULL;
@@ -2098,7 +2110,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FFIANYPTRP(val)) {
         void* tmp; intptr_t toff;
-        tmp = (void*)(SCHEME_FFIANYPTR_VAL(val));
+        tmp = MZ_TYPE_CAST(void*, SCHEME_FFIANYPTR_VAL(val));
         toff = SCHEME_FFIANYPTR_OFFSET(val);
         if (basetype_p == NULL || (tmp == NULL && toff == 0) || !is_gcable_pointer(val)) {
           if (_offset) *_offset = 0;
@@ -2123,7 +2135,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (SCHEME_FFIANYPTRP(val)) {
         void* tmp; intptr_t toff;
-        tmp = (void*)(SCHEME_FFIANYPTR_VAL(val));
+        tmp = MZ_TYPE_CAST(void*, SCHEME_FFIANYPTR_VAL(val));
         toff = SCHEME_FFIANYPTR_OFFSET(val);
         if (basetype_p == NULL || (tmp == NULL && toff == 0) || 0) {
           if (_offset) *_offset = 0;
@@ -2148,7 +2160,7 @@ static void* SCHEME2C(const char *who,
 #     endif /* SCHEME_BIG_ENDIAN */
       if (1) {
         Scheme_Object* tmp;
-        tmp = (Scheme_Object*)(val);
+        tmp = MZ_TYPE_CAST(Scheme_Object*, val);
         if (basetype_p == NULL || tmp == NULL || 0) {
           (((Scheme_Object**)W_OFFSET(dst,delta))[0]) = tmp;
           return NULL;

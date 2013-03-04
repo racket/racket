@@ -6388,9 +6388,6 @@ Scheme_Object *scheme_find_links_path(int argc, Scheme_Object *argv[])
 
 static wchar_t *dlldir;
 
-__declspec(dllexport) wchar_t *scheme_get_dll_path(wchar_t *s);
-__declspec(dllexport) void scheme_set_dll_path(wchar_t *p);
-
 wchar_t *scheme_get_dll_path(wchar_t *s)
 {
   if (dlldir) {

@@ -1424,6 +1424,18 @@ static void bignum_add1_inplace(Scheme_Object **_stk_o)
 
 #define USE_FLOAT_BITS 53
 #define FP_TYPE double
+
+#define FP_TYPE_FROM_DOUBLE(x) (FP_TYPE)x
+#define FP_TYPE_NEG(x) (-(x))
+#define FP_TYPE_LESS(x, y) ((x)<(y))
+#define FP_TYPE_MULT(x, y) ((x)*(y))
+#define FP_TYPE_PLUS(x, y) ((x)+(y))
+#define FP_TYPE_DIV(x, y) ((x)/(y))
+#define FP_TYPE_FROM_INT(x) ((FP_TYPE)(x))
+#define FP_TYPE_GREATER_OR_EQV(x, y) ((x)>=(y))
+#define FP_TYPE_MINUS(x, y) ((x)-(y))
+#define FP_TYPE_FROM_UINTPTR
+
 #define IS_FLOAT_INF scheme__is_double_inf
 #define SCHEME_BIGNUM_TO_FLOAT_INFO scheme_bignum_to_double_inf_info
 #define SCHEME_BIGNUM_TO_FLOAT scheme_bignum_to_double
@@ -1434,6 +1446,18 @@ static void bignum_add1_inplace(Scheme_Object **_stk_o)
 #ifdef MZ_USE_SINGLE_FLOATS
 # define USE_FLOAT_BITS 24
 # define FP_TYPE float
+
+# define FP_TYPE_FROM_DOUBLE(x) (FP_TYPE)x
+#define FP_TYPE_NEG(x) (-(x))
+#define FP_TYPE_LESS(x, y) ((x)<(y))
+#define FP_TYPE_MULT(x, y) ((x)*(y))
+#define FP_TYPE_PLUS(x, y) ((x)+(y))
+#define FP_TYPE_DIV(x, y) ((x)/(y))
+#define FP_TYPE_FROM_INT(x) ((FP_TYPE)(x))
+#define FP_TYPE_GREATER_OR_EQV(x, y) ((x)>=(y))
+#define FP_TYPE_MINUS(x, y) ((x)-(y))
+# define FP_TYPE_FROM_UINTPTR 
+
 # define IS_FLOAT_INF scheme__is_float_inf
 # define SCHEME_BIGNUM_TO_FLOAT_INFO scheme_bignum_to_float_inf_info
 # define SCHEME_BIGNUM_TO_FLOAT scheme_bignum_to_float
@@ -1444,16 +1468,26 @@ static void bignum_add1_inplace(Scheme_Object **_stk_o)
 
 #ifdef MZ_LONG_DOUBLE
 # define USE_FLOAT_BITS 64
-# define FP_TYPE long double
+# define FP_TYPE long_double
+# define FP_TYPE_FROM_DOUBLE(x) long_double_from_double(x)
+# define FP_TYPE_NEG(x) long_double_neg(x)
+# define FP_TYPE_LESS(x, y) long_double_less(x, y)
+# define FP_TYPE_MULT(x, y) long_double_mult(x, y)
+# define FP_TYPE_DIV(x, y) long_double_div(x, y)
+# define FP_TYPE_PLUS(x, y) long_double_plus(x, y)
+# define FP_TYPE_FROM_INT(x) long_double_from_int(x)
+# define FP_TYPE_GREATER_OR_EQV(x, y) long_double_greater_or_eqv(x, y)
+# define FP_TYPE_MINUS(x, y) long_double_minus(x, y)
+# define FP_TYPE_FROM_UINTPTR(x) long_double_from_uintptr(x)
 # define IS_FLOAT_INF scheme__is_long_double_inf
 # define SCHEME_BIGNUM_TO_FLOAT_INFO scheme_bignum_to_long_double_inf_info
 # define SCHEME_BIGNUM_TO_FLOAT scheme_bignum_to_long_double
 # define SCHEME_CHECK_FLOAT scheme_check_long_double
 # define SCHEME_BIGNUM_FROM_FLOAT scheme_bignum_from_long_double
-# define FP_ZEROx 0.0L
-# define FP_ONEx 1.0L
-# define FP_TWOx 2.0L
-# define FP_POWx powl
+# define FP_ZEROx get_long_double_zero()
+# define FP_ONEx get_long_double_1()
+# define FP_TWOx get_long_double_2()
+# define FP_POWx long_double_pow
 # define FP_MZ_IS_POS_INFINITY(x) MZ_IS_LONG_POS_INFINITY(x)
 # define FP_scheme_floating_point_nzero scheme_long_floating_point_nzero
 # include "bgnfloat.inc"
