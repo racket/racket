@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require mzlib/foreign (only-in '#%foreign ffi-obj)) (unsafe!)
+(require ffi/unsafe (only-in '#%foreign ffi-obj))
 (provide readline readline-bytes
          add-history add-history-bytes
          history-length history-get history-delete
@@ -108,14 +108,14 @@
                (malloc (add1 (bytes-length cur)) cur 'raw)))))
     complete))
 
-(set-ffi-obj! "rl_readline_name" libreadline _bytes #"mzscheme")
+(set-ffi-obj! "rl_readline_name" libreadline _bytes #"racket")
 
 ;; need to capture the real input port below
 (define real-input-port (current-input-port))
 (unless (eq? 'stdin (object-name real-input-port))
-  (log-warning "mzrl warning: could not capture the real input port\n"))
+  (log-warning "rkt-rl warning: could not capture the real input port\n"))
 (unless (terminal-port? real-input-port)
-  (log-warning "mzrl warning: input port is not a terminal\n"))
+  (log-warning "rkt-rl warning: input port is not a terminal\n"))
 
 
 ;; We need to tell readline to pull content through our own function,
