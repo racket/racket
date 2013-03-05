@@ -2,7 +2,8 @@
 (require racket/place
          racket/port
          "eval-helpers.rkt"
-         compiler/cm)
+         compiler/cm
+         syntax/readerr)
 (provide start)
 
 (struct job (cust response-pc working-thd stop-watching-abnormal-termination))
@@ -125,62 +126,66 @@
            (parameterize ([read-accept-reader #t])
              (read-syntax the-source sp)))
          (ep-log-info "expanding-place.rkt: 08 read")
-         (when (syntax? stx) ;; could be eof
-           (define-values (name lang transformed-stx)
-             (transform-module path
-                               (namespace-syntax-introduce stx)
-                               raise-hopeless-syntax-error))
-           (ep-log-info "expanding-place.rkt: 09 starting expansion")
-           (define log-io? (log-level? expanding-place-logger 'warning))
-           (define-values (in out) (if log-io? 
-                                       (make-pipe)
-                                       (values #f (open-output-nowhere))))
-           (define io-sema (make-semaphore 0))
-           (when log-io?
-             (thread (λ () (catch-and-log in io-sema))))
-           (define original-path (make-parameter #f))
-           (define expanded 
-             (parameterize ([current-output-port out]
-                            [current-error-port out]
-                            [current-load/use-compiled
-                             (let ([ol (current-load/use-compiled)])
-                               (λ (path mod-name)
-                                 (parameterize ([original-path path])
-                                   (ol path mod-name))))]
-                            [current-load
-                             (let ([cl (current-load)])
-                               (λ (path mod-name)
-                                 (set! loaded-paths
-                                       (cons (or (current-module-declare-source)
-                                                 (original-path)
-                                                 path)
-                                             loaded-paths))
-                                 (cl path mod-name)))])
-               (expand transformed-stx)))
-           (when log-io?
-             (close-output-port out)
-             (semaphore-wait io-sema))
-           (channel-put old-registry-chan 
-                        (namespace-module-registry (current-namespace)))
-           (place-channel-put pc-status-expanding-place (void))
-           (ep-log-info "expanding-place.rkt: 10 expanded")
-           (define handler-results
-             (for/list ([handler (in-list handlers)])
-               (list (handler-key handler)
-                     ((handler-proc handler) expanded
-                                             path
-                                             the-source
-                                             orig-cust))))
-           (ep-log-info "expanding-place.rkt: 11 handlers finished")
-           
-           (parameterize ([current-custodian orig-cust])
-             (thread
-              (λ ()
-                (stop-watching-abnormal-termination)
-                (semaphore-post sema)
-                (channel-put result-chan (list handler-results loaded-paths)))))
-           (semaphore-wait sema)
-           (ep-log-info "expanding-place.rkt: 12 finished"))))))
+         (when (eof-object? stx) 
+           (define-values (line col pos) (port-next-location sp))
+           (raise-read-eof-error "no program to process"
+                                 the-source
+                                 1 0 1 pos))
+         (define-values (name lang transformed-stx)
+           (transform-module path
+                             (namespace-syntax-introduce stx)
+                             raise-hopeless-syntax-error))
+         (ep-log-info "expanding-place.rkt: 09 starting expansion")
+         (define log-io? (log-level? expanding-place-logger 'warning))
+         (define-values (in out) (if log-io? 
+                                     (make-pipe)
+                                     (values #f (open-output-nowhere))))
+         (define io-sema (make-semaphore 0))
+         (when log-io?
+           (thread (λ () (catch-and-log in io-sema))))
+         (define original-path (make-parameter #f))
+         (define expanded 
+           (parameterize ([current-output-port out]
+                          [current-error-port out]
+                          [current-load/use-compiled
+                           (let ([ol (current-load/use-compiled)])
+                             (λ (path mod-name)
+                               (parameterize ([original-path path])
+                                 (ol path mod-name))))]
+                          [current-load
+                           (let ([cl (current-load)])
+                             (λ (path mod-name)
+                               (set! loaded-paths
+                                     (cons (or (current-module-declare-source)
+                                               (original-path)
+                                               path)
+                                           loaded-paths))
+                               (cl path mod-name)))])
+             (expand transformed-stx)))
+         (when log-io?
+           (close-output-port out)
+           (semaphore-wait io-sema))
+         (channel-put old-registry-chan 
+                      (namespace-module-registry (current-namespace)))
+         (place-channel-put pc-status-expanding-place (void))
+         (ep-log-info "expanding-place.rkt: 10 expanded")
+         (define handler-results
+           (for/list ([handler (in-list handlers)])
+             (list (handler-key handler)
+                   ((handler-proc handler) expanded
+                                           path
+                                           the-source
+                                           orig-cust))))
+         (ep-log-info "expanding-place.rkt: 11 handlers finished")
+         
+         (parameterize ([current-custodian orig-cust])
+           (thread
+            (λ ()
+              (stop-watching-abnormal-termination)
+              (semaphore-post sema)
+              (channel-put result-chan (list handler-results loaded-paths)))))
+         (semaphore-wait sema)
+         (ep-log-info "expanding-place.rkt: 12 finished")))))
   
   (thread
    (λ ()
