@@ -61,6 +61,18 @@
 (define-values (impersonator-prop:proxy proxy? proxy-info) 
   (make-impersonator-property 'proxy))
 
+(define (build-wrap-proc val)
+  (let-values ([(arity) (procedure-arity val)]
+               [(rkeys akeys) (procedure-keywords val)])
+    (cond 
+      [(and akeys (empty? akeys))
+       values]
+      [else
+       (make-keyword-procedure
+        (λ (kwds kwd-args . other-args)
+          (apply values kwd-args other-args))
+        (λ args
+          (apply values args)))]))) 
 
 (define (build-proxy with ctc val proj blame)
   (let* ([proxy-info (info val proj blame with)]
@@ -68,11 +80,7 @@
           (cond [(procedure? val)
                  (chaperone-procedure
                   val
-                  (make-keyword-procedure
-                   (λ (kwds kwd-args . other-args)
-                       (apply values kwd-args other-args))
-                     (λ args
-                       (apply values args)))
+                  (build-wrap-proc val)
                   impersonator-prop:contracted ctc
                   impersonator-prop:proxy proxy-info)]
                 [(vector? val)
