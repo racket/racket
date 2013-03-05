@@ -870,105 +870,141 @@
                      current-linebreaks))]
          [linebreak-list (or current-linebreaks
                              (map (lambda (x) #f) eqns))]
+         [mode (case style
+                 [(left-right left-right/vertical-side-conditions left-right/compact-side-conditions left-right/beside-side-conditions)
+                  'horizontal]
+                 [(up-down up-down/vertical-side-conditions up-down/compact-side-conditions) 'vertical]
+                 [else (error 'metafunctions->pict "unknown mode")])]
          [=-pict (make-=)]
-         [max-lhs-w (apply max (map pict-width lhss))]
-         [max-line-w/pre-sc (apply
-                             max
-                             (map (lambda (lhs rhs linebreak?)
-                                    (cond
-                                      [(and linebreak? (member #f linebreak-list))
-                                       0]
-                                      [(or linebreak?
-                                           (memq style '(up-down
-                                                         up-down/vertical-side-conditions
-                                                         up-down/compact-side-conditions)))
+         [vertical-side-conditions?
+          (memq style '(up-down/vertical-side-conditions
+                        left-right/vertical-side-conditions
+                        left-right*/vertical-side-conditions))]
+         [compact-side-conditions? 
+          (memq style '(up-down/compact-side-conditions
+                        left-right/compact-side-conditions
+                        left-right*/compact-side-conditions))]
+         [max-line-w/pre-sc (and
+                             compact-side-conditions?
+                             (apply
+                              max
+                              (map (lambda (lhs rhs linebreak?)
+                                     (cond
+                                      [(eq? mode 'vertical)
+                                       (max (+ (pict-width lhs) (pict-width =-pict))
+                                            (pict-width rhs))]
+                                      [linebreak?
                                        (max (pict-width lhs)
-                                            (+ (pict-width rhs) (pict-width =-pict)))]
+                                            (+ (pict-width rhs) sep (pict-width =-pict)))]
                                       [else
                                        (+ (pict-width lhs) (pict-width rhs) (pict-width =-pict)
                                           (* 2 sep))]))
-                                  lhss rhss linebreak-list))]
+                                   lhss rhss linebreak-list)))]
          [scs (map (lambda (eqn)
                      (let ([scs (reverse (list-ref eqn 1))])
-                     (if (null? scs)
-                         #f
-                         (let-values ([(fresh where/sc) (partition metafunc-extra-fresh? scs)])
-                           (side-condition-pict (foldl (λ (clause picts) 
-                                                          (foldr (λ (l ps) (cons (wrapper->pict l) ps))
-                                                                 picts (metafunc-extra-fresh-vars clause)))
-                                                       '() fresh)
-                                                (map (match-lambda
-                                                      [(struct metafunc-extra-where (lhs rhs))
-                                                       (where-pict (wrapper->pict lhs) (wrapper->pict rhs))]
-                                                      [(struct metafunc-extra-side-cond (expr))
-                                                       (wrapper->pict expr)])
-                                                     where/sc)
-                                                (if (memq style '(up-down/vertical-side-conditions
-                                                                  left-right/vertical-side-conditions
-                                                                  left-right*/vertical-side-conditions))
-                                                    0
-                                                    (if (memq style '(up-down/compact-side-conditions
-                                                                      left-right/compact-side-conditions
-                                                                      left-right*/compact-side-conditions))
-                                                        max-line-w/pre-sc
-                                                        +inf.0)))))))
+                       (if (null? scs)
+                           #f
+                           (let-values ([(fresh where/sc) (partition metafunc-extra-fresh? scs)])
+                             (side-condition-pict (foldl (λ (clause picts) 
+                                                            (foldr (λ (l ps) (cons (wrapper->pict l) ps))
+                                                                   picts (metafunc-extra-fresh-vars clause)))
+                                                         '() fresh)
+                                                  (map (match-lambda
+                                                        [(struct metafunc-extra-where (lhs rhs))
+                                                         (where-pict (wrapper->pict lhs) (wrapper->pict rhs))]
+                                                        [(struct metafunc-extra-side-cond (expr))
+                                                         (wrapper->pict expr)])
+                                                       where/sc)
+                                                  (cond
+                                                   [vertical-side-conditions? 
+                                                    ;; maximize line breaks:
+                                                    0]
+                                                   [compact-side-conditions?
+                                                    ;; maximize line break as needed:
+                                                    max-line-w/pre-sc]
+                                                   [else 
+                                                    ;; no line breaks:
+                                                    +inf.0]))))))
                    eqns)])
-    (case style
-      [(left-right left-right/vertical-side-conditions left-right/compact-side-conditions left-right/beside-side-conditions)
+    (case mode
+      [(horizontal)
+       (define (adjust-for-fills rows)
+         ;; Some rows have the form (list <pict> 'fill 'fill),
+         ;; in which case we want the <pict> to span all columns.
+         ;; To do that, we need to know the total width of the first
+         ;; two columns of non-spanning rows.
+         (define max-w-before-rhs (apply 
+                                   max
+                                   (map (lambda (row)
+                                          (match row
+                                            [(list lhs 'fill 'fill)
+                                             (+ sep sep)]
+                                            [else
+                                             (+ (pict-width (car row))
+                                                sep
+                                                (pict-width (cadr row))
+                                                sep)]))
+                                        rows)))
+         (apply
+          append
+          (map (lambda (row)
+                 (match row
+                   [(list lhs 'fill 'fill)
+                    (list
+                     ;; pretend that content is zero-width:
+                     (inset lhs 0 0 (- (pict-width lhs)) 0)
+                     (blank)
+                     ;; blank that's wide enough to ensure that the
+                     ;; right column covers the spanning pict
+                     ;; (and no more)
+                     (blank (max 0 (- (pict-width lhs) max-w-before-rhs))
+                            0))]
+                   [else row]))
+               rows)))
        (table 3
-              (apply append
-                     (map (lambda (lhs sc rhs linebreak?)
-                            (append
-                             (cond
-                               [(and linebreak? (member #f linebreak-list))
-                                (list (inset lhs 0 0 (- 5 (pict-width lhs)) 0)
-                                      (blank)
-                                      (blank))]
-                               [linebreak? (list lhs (blank) (blank))]
-                               [(and sc (eq? style 'left-right/beside-side-conditions))
-                                (list lhs =-pict (htl-append 10 rhs sc))]
-                               [else
-                                (list lhs =-pict rhs)])
-                             (if linebreak?
-                                 (let ([p rhs])
-                                   (list (htl-append sep
-                                                     =-pict
-                                                     (inset p 0 0 (- 5 (pict-width p)) 0))
-                                         (blank)
-                                         ;; n case this line sets the max width, add suitable space in the right:
-                                         (blank (max 0 (- (pict-width p) max-lhs-w sep))
-                                                0)))
-                                 null)
-                             (if (or (not sc)
-                                     (and (not linebreak?)
-                                          (eq? style 'left-right/beside-side-conditions)))
-                                 null
-                                 (list (inset sc 0 0 (- 5 (pict-width sc)) 0)
-                                       (blank)
-                                       ;; In case sc set the max width...
-                                       (blank (max 0 (- (pict-width sc) max-lhs-w (pict-width =-pict) (* 2 sep)))
-                                              0)))))
-                          lhss
-                          scs
-                          rhss
-                          linebreak-list))
-              ltl-superimpose ltl-superimpose
-              sep sep)]
-      [(up-down up-down/vertical-side-conditions up-down/compact-side-conditions)
-       (panorama
-        ;; the side-conditions may hang outside the pict, so bring them back w/ panorama
-        (apply vl-append
-               sep
+              (adjust-for-fills
                (apply append
-                      (map (lambda (lhs sc rhs)
-                             (cons
-                              (vl-append (htl-append lhs =-pict) rhs)
-                              (if (not sc)
+                      (map (lambda (lhs sc rhs linebreak?)
+                             (append
+                              (list
+                               (cond
+                                [linebreak?
+                                 (list lhs 'fill 'fill)]
+                                [(and sc (eq? style 'left-right/beside-side-conditions))
+                                 (list lhs =-pict (htl-append 10 rhs sc))]
+                                [else
+                                 (list lhs =-pict rhs)]))
+                              (if linebreak?
+                                  (list
+                                   (list (htl-append sep =-pict rhs)
+                                         'fill
+                                         'fill))
+                                  null)
+                              (if (or (not sc)
+                                      (and (not linebreak?)
+                                           (eq? style 'left-right/beside-side-conditions)))
                                   null
-                                  (list (inset sc 0 0 (- 5 (pict-width sc)) 0)))))
+                                  (list
+                                   (list sc 'fill 'fill)))))
                            lhss
                            scs
-                           rhss))))])))
+                           rhss
+                           linebreak-list)))
+               ltl-superimpose ltl-superimpose
+               sep sep)]
+      [(vertical)
+       (apply vl-append
+              sep
+              (apply append
+                     (map (lambda (lhs sc rhs)
+                            (cons
+                             (vl-append (htl-append lhs =-pict) rhs)
+                             (if (not sc)
+                                 null
+                                 (list sc))))
+                          lhss
+                          scs
+                          rhss)))])))
 
 (define (metafunction-call name an-lw)
   (struct-copy lw an-lw

@@ -150,7 +150,8 @@
   [(Name (name x-arg arg)) 
    ,(term-let ((x-term-let (term 1)))
               (term (x-where x-term-let)))
-   (where x-where 2)])
+   (where x-where 2)]
+  [(Name number) short])
 
 ;; this tests that the three variable bindings
 ;; (x-arg, x-term-let, and x-where) 
@@ -161,6 +162,38 @@
 (btest (parameterize ([metafunction-pict-style 'up-down/vertical-side-conditions])
          (render-metafunction Name))
        "metafunction-Name-vertical.png")
+
+;; compact turns out to be the same, since a line break is needed before
+;; each side-condition clause:
+(btest (parameterize ([metafunction-pict-style 'up-down/compact-side-conditions])
+         (render-metafunction Name))
+       "metafunction-Name-vertical.png")
+
+;; in horizontal mode:
+(btest (parameterize ([metafunction-pict-style 'left-right])
+         (render-metafunction Name))
+       "metafunction-Name-horizontal.png")
+(btest (parameterize ([metafunction-pict-style 'left-right/beside-side-conditions])
+         (render-metafunction Name))
+       "metafunction-Name-horizontal-scbeside.png")
+(btest (parameterize ([metafunction-pict-style 'left-right/vertical-side-conditions])
+         (render-metafunction Name))
+       "metafunction-Name-horizontal-scvert.png")
+(btest (parameterize ([metafunction-pict-style 'left-right/compact-side-conditions])
+         (render-metafunction Name))
+       "metafunction-Name-horizontal-sccompact.png")
+(btest (parameterize ([metafunction-pict-style 'left-right/compact-side-conditions]
+                      [linebreaks '(#t #f)])
+         (render-metafunction Name))
+       "metafunction-Name-horizontal-lb1.png")
+(btest (parameterize ([metafunction-pict-style 'left-right/compact-side-conditions]
+                      [linebreaks '(#f #t)])
+         (render-metafunction Name))
+       "metafunction-Name-horizontal-lb2.png")
+(btest (parameterize ([metafunction-pict-style 'left-right/beside-side-conditions]
+                      [linebreaks '(#t #f)])
+         (render-metafunction Name))
+       "metafunction-Name-horizontal-scbeside-lb1.png")
 
 ;; makes sure that there is no overlap inside or across metafunction calls  
 ;; or when there are unquotes involved
