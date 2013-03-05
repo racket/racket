@@ -3,6 +3,7 @@ Added module-compiled-cross-phase-persistent?
 Added 'so-mode mode for system-type
 ffi/unsafe: changed ffi-lib to use (system-type 'so-mode)
 slideshow/balloon: add balloon-enable-3d
+scribble/manual: added #:id option to defthing
 
 Version 5.3.3.6
 Added "phase-collapse" module inference and instantiation

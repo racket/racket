@@ -100,7 +100,7 @@ tests to run:
              (defproc #:id [ex (datum->syntax c 'ex)]
                (ex args ...) range w ...)))]
       [(defthing name range w ...)
-       #'(lambda (c) (defthing name range w ...))]))
+       #'(lambda (c) (defthing #:id (datum->syntax c 'name) name range w ...))]))
   (map rewrite-one-def defs names))
 
 

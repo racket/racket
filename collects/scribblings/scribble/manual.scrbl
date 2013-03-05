@@ -1040,18 +1040,26 @@ Like @racket[defparam], but the contract on a parameter argument is
 @racket[boolean?].}
 
 
-@defform[(defthing maybe-kind id contract-expr-datum pre-flow ...)]{
+@defform/subs[(defthing maybe-kind maybe-id id contract-expr-datum
+                pre-flow ...)
+              ([maybe-kind code:blank
+                           (code:line #:kind kind-string-expr)]
+               [maybe-id code:blank
+                         (code:line #:id id-expr)])]{
 
 Like @racket[defproc], but for a non-procedure binding.
 
-If @racket[#:kind kind-string-expr] is supplied as
-@racket[maybe-kind], it is used in the same way as for
+If @racket[#:kind kind-string-expr] is supplied,
+it is used in the same way as for
 @racket[defproc], but the default kind is @racket["value"].
+
+If @racket[#:id id-expr] is supplied, then the result of
+@racket[id-expr] is used in place of @racket[id].
 
 Examples:
 @codeblock[#:keep-lang-line? #f]|{
 #lang scribble/manual
-@defthing[moldy-sandwich sandwich?]
+@defthing[moldy-sandwich sandwich?]{
   Don't eat this. Provided for backwards compatibility.
 }
 }|

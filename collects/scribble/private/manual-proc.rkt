@@ -913,18 +913,21 @@
 
 ;; ----------------------------------------
 
-(define-syntax defthing
-  (syntax-rules ()
-    [(_ #:kind kind id result desc ...)
-     (with-togetherable-racket-variables
-      ()
-      ()
-      (*defthing kind
-                 (list (quote-syntax/loc id)) (list 'id) #f
-                 (list (racketblock0 result))
-                 (lambda () (list desc ...))))]
-    [(_ id result desc ...)
-     (defthing #:kind #f id result desc ...)]))
+(define-syntax (defthing stx)
+  (syntax-parse stx
+    [(_ kind:kind-kw 
+        (~optional (~seq #:id id-expr)
+                   #:defaults ([id-expr #'#f]))
+        id 
+        result 
+        desc ...)
+     #'(with-togetherable-racket-variables
+        ()
+        ()
+        (*defthing kind.kind
+                   (list (or id-expr (quote-syntax/loc id))) (list 'id) #f
+                   (list (racketblock0 result))
+                   (lambda () (list desc ...))))]))
 
 (define-syntax defthing* 
   (syntax-rules ()
