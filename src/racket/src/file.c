@@ -4158,6 +4158,12 @@ static Scheme_Object *resolve_path(int argc, Scheme_Object *argv[])
 	break;
     }
 
+#ifdef BROKEN_READLINK_NUL_TERMINATOR
+    while (len > 0 && buffer[len-1] == 0) {
+      len--;
+    }
+#endif
+
     if (len > 0)
       return scheme_make_sized_path(buffer, len, 1);
   }
