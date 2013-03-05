@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.rkt"
-          (for-label scheme/base scheme/contract
+          (for-label racket/base racket/contract
                      games/show-help games/show-scribbling))
 
 @title{Games: Fun Examples}
@@ -29,7 +29,7 @@ following fields of the collection's @filepath{info.rkt} file are used:
 
  @item{@racketidfont{game} [required] : used as a module name in the
     sub-collection to load for the game; the module must provide a
-    @racketidfont["game@"] unit (see @racketmodname[scheme/unit]) with
+    @racketidfont["game@"] unit (see @racketmodname[racket/unit]) with
     no particular exports; the unit is invoked with no imports to
     start the game.}
 

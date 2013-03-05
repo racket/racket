@@ -1,4 +1,4 @@
-#lang scheme/gui
+#lang racket/gui
 
 ;;; these come from:
 ;;; http://www.ask.ne.jp/~hattori/puzzle/menu.html

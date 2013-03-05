@@ -1,5 +1,3 @@
-;; -*- Scheme -*-
-
 #lang racket
 
 (provide array-make array-ref array-set!
