@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
           (for-label games/cards
-                     scheme/gui/base))
+                     racket/gui/base))
 
 @title{Cards: Virtual Playing Cards Library}
 

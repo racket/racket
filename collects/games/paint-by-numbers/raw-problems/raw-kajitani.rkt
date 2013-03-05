@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (provide raw-kajitani)
 (define raw-kajitani
 '(("Kajitani 15x15"

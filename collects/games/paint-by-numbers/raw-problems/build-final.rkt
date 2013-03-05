@@ -24,17 +24,15 @@ in ...
 ;; shrink-set sexp[set] -> sexp[set]
 (define (shrink-set set)
   (match set
-    [`(unit/sig paint-by-numbers:problem-set^
+    [`(unit 
         (import paint-by-numbers:problem^)
-        
+        (export paint-by-numbers:problem-set^)
         (define set-name ,set-name)
-        
         (define problems (list ,problems ...)))
-     `(unit/sig paint-by-numbers:problem-set^
+     `(unit 
         (import paint-by-numbers:problem^)
-        
+        (export paint-by-numbers:problem-set^)
         (define set-name ,set-name)
-        
         (define problems (list ,@(map shrink-problem problems))))]))
      
 ;; shrink-problem : sexp[problem] -> sexp[problem]

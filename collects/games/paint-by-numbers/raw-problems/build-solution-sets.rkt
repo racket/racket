@@ -270,9 +270,9 @@ The col and row type specs are in sig.rkt and the solution type is:
              (printf "Building ~s\n" set-name)
              (parameterize ([current-output-port port])
                (write
-                `(unit/sig paint-by-numbers:problem-set^
+                `(unit 
                    (import paint-by-numbers:problem^)
-                   
+                   (export paint-by-numbers:problem-set^)
                    (define set-name ,set-name)
                    
                    (define problems

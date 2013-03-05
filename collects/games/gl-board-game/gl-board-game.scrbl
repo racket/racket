@@ -1,9 +1,9 @@
 #lang scribble/doc
 @(require scribble/manual
-          (for-label scheme/base
-                     scheme/contract
+          (for-label racket/base
+                     racket/contract
                      games/gl-board-game
-                     scheme/gui/base
+                     racket/gui/base
                      sgl))
 
 @title{GL Board Game: 3-D Game Support}

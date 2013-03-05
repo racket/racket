@@ -599,7 +599,7 @@
     (save)))
 (define (maybe-save-and-exit)
   (maybe-save)
-  (set! modified? #f) ; can appear again from drscheme
+  (set! modified? #f) ; can appear again from drracket
   (send gcalc-frame show #f))
 
 (define set-options

@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (provide raw-hattori)
 (define raw-hattori

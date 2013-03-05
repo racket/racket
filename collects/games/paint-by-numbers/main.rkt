@@ -1,5 +1,4 @@
-(unit/sig BOARD^
-
+(unit 
   (import [GUI : GUI^]
 	  [SOLVE : SOLVE^]
 	  [fw : framework^]
@@ -7,7 +6,7 @@
 	  [all : paint-by-numbers:all-problems^]
 	  mzlib:pretty-print^
 	  mred^)
-
+  (export BOARD^)
   (define default-font (send the-font-list find-or-create-font 10 'roman 'normal 'normal #f))
   (fw:preferences:set-un/marshall 'paint-by-numbers:font
 				  (lambda (font)
