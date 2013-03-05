@@ -232,7 +232,7 @@ If the namespace does not, they are colored the unbound color.
     
     ;; id : symbol  --  the nominal-source-id from identifier-binding
     ;; filename : path
-    (define-struct def-link (id filename) #:inspector (make-inspector))
+    (define-struct def-link (id filename submods) #:transparent)
     
     (define (get-tacked-var-brush white-on-black?)
       (if white-on-black?
@@ -394,6 +394,11 @@ If the namespace does not, they are colored the unbound color.
             ;; cleanup-texts : (or/c #f (listof text))
             (define cleanup-texts #f)
             
+            ;; definition-targets : hash-table[(list symbol[id-name] (listof symbol[submodname])) 
+            ;;                                 -o> (list text number number)]
+            (define definition-targets (make-hash))
+            
+            
             ;; bindings-table : hash-table[(list text number number) -o> (setof (list text number number))]
             ;; this is a private field
             (define bindings-table (make-hash))
@@ -551,7 +556,8 @@ If the namespace does not, they are colored the unbound color.
               (set! tacked-hash-table (make-hasheq))
               (set! arrow-records (make-hasheq))
               (set! bindings-table (make-hash))
-              (set! cleanup-texts '()))
+              (set! cleanup-texts '())
+              (set! definition-targets (make-hash)))
             
             (define/public (syncheck:arrows-visible?)
               (or arrow-records cursor-pos cursor-text cursor-eles cursor-tooltip))
@@ -642,6 +648,12 @@ If the namespace does not, they are colored the unbound color.
                       [callback
                        (λ (x y)
                          (visit-docs-url))]))))
+            
+            (define/public (syncheck:add-definition-target source start-pos end-pos id mods)
+              (hash-set! definition-targets (list id mods) (list source start-pos end-pos)))
+            ;; syncheck:find-definition-target : sym (listof sym) -> (or/c (list/c text number number) #f)
+            (define/public (syncheck:find-definition-target id mods)
+              (hash-ref definition-targets (list id mods) #f))
             
             ;; no longer used, but must be here for backwards compatibility
             (define/public (syncheck:add-rename-menu id to-be-renamed/poss name-dup?) (void))
@@ -787,9 +799,9 @@ If the namespace does not, they are colored the unbound color.
                   (add-to-range/key to-text to-pos (+ to-pos 1) tail-arrow #f #f))))
             
             ;; syncheck:add-jump-to-definition : text start end id filename -> void
-            (define/public (syncheck:add-jump-to-definition text start end id filename)
+            (define/public (syncheck:add-jump-to-definition text start end id filename submods)
               (when arrow-records
-                (add-to-range/key text start end (make-def-link id filename) #f #f)))
+                (add-to-range/key text start end (make-def-link id filename submods) #f #f)))
             
             ;; syncheck:add-mouse-over-status : text pos-left pos-right string -> void
             (define/public (syncheck:add-mouse-over-status text pos-left pos-right str)
@@ -1168,11 +1180,14 @@ If the namespace does not, they are colored the unbound color.
                   (unless (null? def-links)
                     (add-sep)
                     (let ([def-link (car def-links)])
-                      (make-object menu-item%
-                        jump-to-definition
-                        menu
-                        (λ (item evt)
-                          (jump-to-definition-callback def-link)))))
+                      (new menu-item%
+                           [label (if (def-link->tab/pos def-link)
+                                      jump-to-definition
+                                      (string-constant cs-open-defining-file))]
+                           [parent menu]
+                           [callback
+                            (λ (item evt)
+                              (jump-to-definition-callback def-link))])))
                   (unless (null? var-arrows)
                     (add-sep)
                     (make-object menu-item%
@@ -1472,12 +1487,39 @@ If the namespace does not, they are colored the unbound color.
                         [else (loop (cdr arrows))])]))]))
             
             ;; jump-to : (list text number number) -> void
-            (define/private (jump-to to-arrow)
+            (define/public (jump-to to-arrow)
               (let ([end-text (list-ref to-arrow 0)]
                     [end-pos-left (list-ref to-arrow 1)]
                     [end-pos-right (list-ref to-arrow 2)])
-                (send end-text set-position end-pos-left end-pos-right)
-                (send end-text set-caret-owner #f 'global)))
+                (send end-text set-caret-owner #f 'global)
+                (define admin (send end-text get-admin))
+                (when admin 
+                  (define vxb (box 0.0))
+                  (define vyb (box 0.0))
+                  (define vwb (box 0.0))
+                  (define vhb (box 0.0))
+                  (define pxb (box 0.0))
+                  (define pyb (box 0.0))
+                  (send admin get-view vxb vyb vwb vhb)
+                  (send end-text position-location end-pos-left pxb pyb #t #f #t)
+                  (define vx (unbox vxb))
+                  (define vy (unbox vyb))
+                  (define vw (unbox vwb))
+                  (define vh (unbox vhb))
+                  (define px (unbox pxb))
+                  (define py (unbox pyb))
+                  (unless (and (<= vx px (+ vx vw))
+                               (<= vy py (+ vy vh)))
+                    (send end-text scroll-editor-to
+                          (max 0 (- px (* .2 vw)))
+                          (max 0 (- py (* .2 vh)))
+                          vw vh
+                          #t
+                          'none)))
+                ;; set-position after attempting to scroll, or
+                ;; else set-position's scrolling will cause the
+                ;; 'unless' test above to skip the call to scroll-editor-to
+                (send end-text set-position end-pos-left end-pos-right)))
             
             ;; jump-to-binding-callback : (listof arrow) -> void
             ;; callback for the jump popup menu item
@@ -1501,11 +1543,28 @@ If the namespace does not, they are colored the unbound color.
                           (jump-to-definition-callback (car vec-ents)))))))))
             
             (define/private (jump-to-definition-callback def-link)
-              (let* ([filename (def-link-filename def-link)]
-                     [id-from-def (def-link-id def-link)]
-                     [frame (fw:handler:edit-file filename)])
-                (when (is-a? frame syncheck-frame<%>)
-                  (send frame syncheck:button-callback id-from-def))))
+              (define go/f (def-link->tab/pos def-link))
+              (cond
+                [go/f (go/f)]
+                [else (handler:edit-file (def-link-filename def-link))]))
+            
+            ;; def-link->tab/pos : def-link -> (or/c #f (-> void?))
+            ;; if the result is a function, invoking it will open the file
+            ;; in the def-link and jump to the appropriate position in the file
+            (define/private (def-link->tab/pos a-def-link)
+              (match-define (def-link id filename submods) a-def-link)
+              (define tab
+                (for/or ([frame (in-list (send (group:get-the-frame-group) get-frames))])
+                  (send frame find-matching-tab filename)))
+              (define dt 
+                (and tab
+                     (send (send tab get-defs) syncheck:find-definition-target id submods)))
+              (and dt
+                   (λ ()
+                     (define frame (send tab get-frame))
+                     (send frame change-to-tab tab)
+                     (send frame show #t)
+                     (send (send tab get-defs) jump-to dt))))
             
             (define/augment (after-set-next-settings settings)
               (let ([frame (get-top-level-window)])
@@ -1742,12 +1801,14 @@ If the namespace does not, they are colored the unbound color.
              (send defs-text syncheck:add-mouse-over-status defs-text pos-left pos-right str)]
             [`#(syncheck:add-background-color ,color ,start ,fin)
              (send defs-text syncheck:add-background-color defs-text color start fin)]
-            [`#(syncheck:add-jump-to-definition ,start ,end ,id ,filename)
-             (send defs-text syncheck:add-jump-to-definition defs-text start end id filename)]
+            [`#(syncheck:add-jump-to-definition ,start ,end ,id ,filename ,submods)
+             (send defs-text syncheck:add-jump-to-definition defs-text start end id filename submods)]
             [`#(syncheck:add-require-open-menu ,start-pos ,end-pos ,file)
              (send defs-text syncheck:add-require-open-menu defs-text start-pos end-pos file)]
-            [`#(syncheck:add-docs-menu,start-pos ,end-pos ,key ,the-label ,path ,definition-tag ,tag)
+            [`#(syncheck:add-docs-menu ,start-pos ,end-pos ,key ,the-label ,path ,definition-tag ,tag)
              (send defs-text syncheck:add-docs-menu defs-text start-pos end-pos key the-label path definition-tag tag)]
+            [`#(syncheck:add-definition-target ,start-pos ,end-pos ,id ,mods)
+             (send defs-text syncheck:add-definition-target defs-text start-pos end-pos id mods)]
             [`#(syncheck:add-id-set ,to-be-renamed/poss ,name-dup-pc ,name-dup-id)
              (define other-side-dead? #f)
              (define (name-dup? name) 
@@ -1858,7 +1919,7 @@ If the namespace does not, they are colored the unbound color.
         (inherit open-status-line close-status-line update-status-line ensure-rep-hidden)
         ;; syncheck:button-callback : (case-> (-> void) ((union #f syntax) -> void)
         ;; this is the only function that has any code running on the user's thread
-        (define/public (syncheck:button-callback [jump-to-id #f])
+        (define/public (syncheck:button-callback)
           (when (send check-syntax-button is-enabled?)
             (open-status-line 'drracket:check-syntax:status)
             (update-status-line 'drracket:check-syntax:status status-init)
@@ -2022,54 +2083,12 @@ If the namespace does not, they are colored the unbound color.
                              (open-status-line 'drracket:check-syntax:status)
                              (update-status-line 'drracket:check-syntax:status status-coloring-program)
                              (parameterize ([current-annotations definitions-text])
-                               (expanded-expression sexp (if jump-to-id (make-visit-id jump-to-id) void)))
+                               (expanded-expression sexp))
                              (close-status-line 'drracket:check-syntax:status))))))
                      (update-status-line 'drracket:check-syntax:status status-expanding-expression)
                      (close-status-line 'drracket:check-syntax:status)
                      (loop)])))))))
 
-        (define (make-visit-id jump-to-id)
-          (λ (vars)
-            (when jump-to-id
-              (for ([id (in-list (syntax->list vars))])
-                (let ([binding (identifier-binding id 0)])
-                  (when (pair? binding)
-                    (let ([nominal-source-id (list-ref binding 3)])
-                      (when (eq? nominal-source-id jump-to-id)
-                        (let ([stx id])
-                          (let ([src (find-source-editor stx)]
-                                [pos (syntax-position stx)]
-                                [span (syntax-span stx)])
-                            (when (and (is-a? src text%)
-                                       pos
-                                       span)
-                              (send src begin-edit-sequence)
-                              
-                              ;; try to scroll so stx's location is
-                              ;; near the top of the visible region
-                              (let ([admin (send src get-admin)])
-                                (when admin 
-                                  (let ([wb (box 0.0)]
-                                        [hb (box 0.0)]
-                                        [xb (box 0.0)]
-                                        [yb (box 0.0)])
-                                    (send admin get-view #f #f wb hb)
-                                    (send src position-location (- pos 1) xb yb #t #f #t)
-                                    (let ([w (unbox wb)]
-                                          [h (unbox hb)]
-                                          [x (unbox xb)]
-                                          [y (unbox yb)])
-                                      (send src scroll-editor-to 
-                                            (max 0 (- x (* .1 w)))
-                                            (max 0 (- y (* .1 h)))
-                                            w h
-                                            #t
-                                            'none)))))
-                              
-                              (send src set-position (- pos 1) (+ pos span -1))
-                              (send src end-edit-sequence))))))))))))
-
-        
         ;; set-directory : text -> void
         ;; sets the current-directory based on the file saved in the definitions-text
         (define/private (set-directory definitions-text)

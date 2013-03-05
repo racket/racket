@@ -30,6 +30,10 @@
   ;syncheck:get-bindings-table    ;; test suite uses this one.
   syncheck:clear-error-message
   
+  syncheck:find-definition-target
+  
+  jump-to
+  
   hide-error-report
   get-error-report-text
   get-error-report-visible?

@@ -768,11 +768,21 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                                              [start exact-nonnegative-integer?]
                                              [end exact-nonnegative-integer?]
                                              [id any/c]
-                                             [filename path-string?])
+                                             [filename path-string?]
+                                             [submods (listof symbol?)])
             void?]{
    Called to indicate that there is some identifier at the given location (named @racket[id]) that
-   is defined in the file @racket[filename].
+   is defined in the @racket[submods] of the file @racket[filename] (where an empty list in @racket[submods]
+   means that the identifier is defined at the top-level module).
  }
+                  
+ @defmethod[(syncheck:add-definition-target [source-obj (not/c #f)]
+                                            [start exact-nonnegative-integer?]
+                                            [finish exact-nonnegative-integer?]
+                                            [style-name any/c])]{
+     
+  }
+                                                      
  @defmethod[(syncheck:color-range [source-obj (not/c #f)]
                                   [start exact-nonnegative-integer?]
                                   [finish exact-nonnegative-integer?]

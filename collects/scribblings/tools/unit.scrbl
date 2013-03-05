@@ -282,7 +282,14 @@ safe to call this at anytime, however.
 
 
 }
-
+                 
+@defmethod[(find-matching-tab [p path-string?]) (or/c (is-a?/c drracket:unit:tab%) #f)]{
+  Returns the tab that is currently editing @racket[p], if there is one
+  in this frame. Returns @racket[#f] otherwise.
+}
+@defmethod[(change-to-tab [tab (is-a?/c drracket:unit:tab%)]) void?]{
+  Makes @racket[tab] visible in this frame.
+}
 @defmethod[#:mode override 
            (edit-menu:between-select-all-and-find)
            void?]{

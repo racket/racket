@@ -2996,7 +2996,7 @@ module browser threading seems wrong.
       ;; updates current-tab, definitions-text, and interactactions-text
       ;; to be the nth tab. Also updates the GUI to show the new tab
       (inherit begin-container-sequence end-container-sequence)
-      (define/private (change-to-tab tab)
+      (define/public (change-to-tab tab)
         (unless (eq? current-tab tab)
           (let ([old-tab current-tab])
             (save-visible-tab-regions)
@@ -3179,17 +3179,15 @@ module browser threading seems wrong.
           (when tab
             (change-to-tab tab))))
       
-      (define/private (find-matching-tab filename)
-        (let loop ([tabs tabs])
-          (cond
-            [(null? tabs) #f]
-            [else
-             (let* ([tab (car tabs)]
-                    [tab-filename (send (send tab get-defs) get-filename)])
-               (if (and tab-filename
-                        (pathname-equal? filename tab-filename))
-                   tab
-                   (loop (cdr tabs))))])))
+      (define/public (find-matching-tab filename)
+        (define fn-path (if (string? filename)
+                            (string->path filename)
+                            filename))
+        (for/or ([tab (in-list tabs)])
+          (define tab-filename (send (send tab get-defs) get-filename))
+          (and tab-filename
+               (pathname-equal? fn-path tab-filename)
+               tab)))
       
       (define/override (editing-this-file? filename)
         (ormap (λ (tab)

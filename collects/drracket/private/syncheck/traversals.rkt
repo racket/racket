@@ -58,7 +58,7 @@
              [tl-phase-to-requires (make-hash)]
              [tl-module-lang-requires (make-hash)]
              [expanded-expression
-              (λ (sexp [visit-id void])
+              (λ (sexp)
                 (parameterize ([current-directory (or user-directory (current-directory))]
                                [current-load-relative-directory user-directory])
                   (let ([is-module? (syntax-case sexp (module)
@@ -79,7 +79,7 @@
                              [require-for-templates (make-hash)]
                              [require-for-labels (make-hash)])
                           (annotate-basic sexp
-                                          user-namespace user-directory visit-id
+                                          user-namespace user-directory
                                           phase-to-binders
                                           phase-to-varrefs
                                           phase-to-varsets
@@ -102,7 +102,7 @@
                                              binding-inits))]
                       [else
                        (annotate-basic sexp
-                                       user-namespace user-directory visit-id
+                                       user-namespace user-directory
                                        tl-phase-to-binders
                                        tl-phase-to-varrefs
                                        tl-phase-to-varsets
@@ -133,12 +133,11 @@
     ;; annotate-basic : syntax 
     ;;                  namespace
     ;;                  string[directory]
-    ;;                  syntax[id]
     ;;                  id-set (8 of them)
     ;;                  hash-table[require-spec -> syntax] (three of them)
     ;;               -> void
     (define (annotate-basic stx-obj 
-                            user-namespace user-directory visit-id
+                            user-namespace user-directory
                             phase-to-binders 
                             phase-to-varrefs 
                             phase-to-varsets
@@ -148,11 +147,14 @@
                             module-lang-requires
                             phase-to-requires)
       
-      (let ([maybe-jump (λ (vars) (visit-id vars))])
-        (let level+tail-loop ([stx-obj stx-obj]
-                              [level 0]
-                              [tail-parent-src #f]
-                              [tail-parent-pos #f])
+      (let level+tail+mod-loop ([stx-obj stx-obj]
+                                [level 0]
+                                [tail-parent-src #f]
+                                [tail-parent-pos #f]
+                                ;; mods: (or/f #f   ; => outside a module
+                                ;;             '()  ; => inside the main module in this file
+                                ;;             '(name names ...) ; => inside some submodules named by name & names
+                                [mods #f])
           (define-values (next-tail-parent-src next-tail-parent-pos) 
             (let ([child-src (find-source-editor stx-obj)]
                   [child-pos (syntax-position stx-obj)]
@@ -168,9 +170,13 @@
                  (values child-src child-pos)]
                 [else 
                  (values tail-parent-src tail-parent-pos)])))
-          (let* ([level-loop (λ (sexp level) (level+tail-loop sexp level #f #f))]
-                 [tail-loop (λ (sexp) (level+tail-loop sexp level next-tail-parent-src next-tail-parent-pos))]
-                 [loop (λ (sexp) (level+tail-loop sexp level #f #f))]
+          (let* ([level-loop (λ (sexp level) (level+tail+mod-loop sexp level #f #f mods))]
+                 [tail-loop (λ (sexp) (level+tail+mod-loop sexp level next-tail-parent-src next-tail-parent-pos mods))]
+                 [mod-loop (λ (sexp mod) (level+tail+mod-loop sexp level #f #f 
+                                                              (if mods
+                                                                  (cons mod mods)
+                                                                  '())))]
+                 [loop (λ (sexp) (level+tail+mod-loop sexp level #f #f mods))]
                  [varrefs (lookup-phase-to-mapping phase-to-varrefs level)]
                  [varsets (lookup-phase-to-mapping phase-to-varsets level)]
                  [binders (lookup-phase-to-mapping phase-to-binders level)]
@@ -306,13 +312,13 @@
                (begin
                  (annotate-raw-keyword stx-obj varrefs)
                  (add-binders (syntax vars) binders binding-inits #'b)
-                 (maybe-jump (syntax vars))
+                 (add-definition-target (syntax vars) mods)
                  (loop (syntax b)))]
               [(define-syntaxes names exp)
                (begin
                  (annotate-raw-keyword stx-obj varrefs)
                  (add-binders (syntax names) binders binding-inits #'exp)
-                 (maybe-jump (syntax names))
+                 (add-definition-target (syntax names) mods)
                  (level-loop (syntax exp) (+ level 1)))]
               [(begin-for-syntax exp ...)
                (begin
@@ -324,7 +330,8 @@
                  (hash-set! module-lang-requires (syntax lang) #t)
                  (annotate-require-open user-namespace user-directory (syntax lang))
                  (hash-cons! requires (syntax->datum (syntax lang)) (syntax lang))
-                 (for-each loop (syntax->list (syntax (bodies ...)))))]
+                 (for ([body (in-list (syntax->list (syntax (bodies ...))))])
+                   (mod-loop body (syntax-e #'m-name))))]
               [(module* m-name lang (#%plain-module-begin bodies ...))
                (begin
                  (annotate-raw-keyword stx-obj varrefs)
@@ -333,7 +340,8 @@
                    (annotate-require-open user-namespace user-directory (syntax lang))
                    (hash-cons! requires (syntax->datum (syntax lang)) (syntax lang)))
                  
-                 (for-each loop (syntax->list (syntax (bodies ...)))))]
+                 (for ([body (in-list (syntax->list (syntax (bodies ...))))])
+                   (mod-loop body (syntax-e #'m-name))))]
               
               
               ; top level or module top level only:
@@ -403,7 +411,7 @@
                               (syntax->datum sexp))
                          (and (syntax? sexp)
                               (syntax-source sexp)))
-                 (void))])))))
+                 (void))]))))
     
     (define (hash-cons! ht k v)
       (hash-set! ht k (cons v (hash-ref ht k '()))))
@@ -597,12 +605,13 @@
                                          id 
                                          (syntax->datum req-stx))
                   (when id
-                    (define filename (get-require-filename source-req-path user-namespace user-directory))
+                    (define-values (filename submods) (get-require-filename source-req-path user-namespace user-directory))
                     (when filename
                       (add-jump-to-definition
                        var
                        source-id
-                       filename)))
+                       filename
+                       submods)))
                   (define raw-module-path (phaseless-spec->raw-module-path req-stx))
                   (add-mouse-over var
                                   (format 
@@ -645,8 +654,7 @@
         [_ stx]))
     
     
-    ;; get-module-req-path : binding number [#:nominal? boolean] -> (union #f (list require-sexp sym ?? module-path))
-    ;; argument is the result of identifier-binding or identifier-transformer-binding
+    ;; get-module-req-path : identifier number [#:nominal? boolean] -> (union #f (list require-sexp sym ?? module-path))
     (define (get-module-req-path var phase-level #:nominal? [nominal-source-path? #t])
       (define binding (identifier-binding var phase-level))
       (and (pair? binding)
@@ -781,7 +789,7 @@
     ;; registers the range in the editor so that the
     ;; popup menu in this area allows the programmer to jump
     ;; to the definition of the id.
-    (define (add-jump-to-definition stx id filename)
+    (define (add-jump-to-definition stx id filename submods)
       (let ([source (find-source-editor stx)]
             [defs-text (current-annotations)])
         (when (and source 
@@ -795,7 +803,8 @@
                   pos-left
                   pos-right
                   id
-                  filename)))))
+                  filename
+                  submods)))))
     
     ;; annotate-require-open : namespace string -> (stx -> void)
     ;; relies on current-module-name-resolver, which in turn depends on
@@ -810,9 +819,10 @@
           (when defs-text
             (define start (- (syntax-position require-spec) 1))
             (define end (+ start (syntax-span require-spec)))
-            (define file (get-require-filename (syntax->datum require-spec)
-                                               user-namespace
-                                               user-directory))
+            (define-values (file submods)
+              (get-require-filename (syntax->datum require-spec)
+                                    user-namespace
+                                    user-directory))
             (when file
               (send defs-text syncheck:add-require-open-menu
                     source start end file))))))
@@ -823,16 +833,25 @@
       (parameterize ([current-namespace user-namespace]
                      [current-directory (or user-directory (current-directory))]
                      [current-load-relative-directory user-directory])
-        (let* ([rkt-path/mod-path
-                (with-handlers ([exn:fail? (λ (x) #f)])
-                  (cond
-                    [(module-path-index? datum)
-                     (resolved-module-path-name 
-                      (module-path-index-resolve datum))]
-                    [else
-                     (resolved-module-path-name 
-                      ((current-module-name-resolver) datum #f #f))]))]
-               [rkt-path/f (and (path? rkt-path/mod-path) rkt-path/mod-path)])
+        (define mpi
+          (with-handlers ([exn:fail? (λ (x) #f)])
+            (cond
+              [(module-path-index? datum)
+               (module-path-index-resolve datum)]
+              [else
+               ((current-module-name-resolver) datum #f #f)])))
+        (define rkt-path/mod-path (and mpi (resolved-module-path-name mpi)))
+        (define rkt-path/f (cond
+                             [(path? rkt-path/mod-path) rkt-path/mod-path]
+                             [(and (pair? rkt-path/mod-path)
+                                   (path? (car rkt-path/mod-path)))
+                              (car rkt-path/mod-path)]
+                             [else #f]))
+        (define rkt-submods (cond
+                              [(not rkt-path/mod-path) #f]
+                              [(or (symbol? rkt-path/mod-path) (path? rkt-path/mod-path)) '()]
+                              [(pair? rkt-path/mod-path) (cdr rkt-path/mod-path)]))
+        (define cleaned-up-path
           (let/ec k
             (unless (path? rkt-path/f) (k rkt-path/f))
             (when (file-exists? rkt-path/f) (k rkt-path/f))
@@ -844,7 +863,8 @@
               (let ([ss-path (bytes->path (bytes-append (subbytes bts 0 (- len 4)) #".ss"))])
                 (unless (file-exists? ss-path)
                   (k rkt-path/f))
-                ss-path))))))
+                ss-path))))
+        (values cleaned-up-path rkt-submods)))
     
     ;; possible-suffixes : (listof string)
     ;; these are the suffixes that are checked for the reverse 
@@ -939,7 +959,26 @@
             [else 
              (when binding-to-init
                (add-init-exp binding-to-init stx init-exp))
-             (add-id id-set stx)]))))    
+             (add-id id-set stx)]))))
+    
+    ;; add-definition-target : syntax[(sequence of identifiers)] (listof symbol) -> void
+    (define (add-definition-target stx mods)
+      (when mods
+        (define defs-text (current-annotations))
+        (for ([id (in-list (syntax->list stx))])
+          (define source (syntax-source id))
+          (when (and source 
+                     defs-text
+                     (syntax-position id)
+                     (syntax-span id))
+            (let* ([pos-left (- (syntax-position id) 1)]
+                   [pos-right (+ pos-left (syntax-span id))])
+              (send defs-text syncheck:add-definition-target
+                    source
+                    pos-left
+                    pos-right
+                    (syntax-e id)
+                    mods))))))
     
     ;; annotate-raw-keyword : syntax id-map -> void
     ;; annotates keywords when they were never expanded. eg.

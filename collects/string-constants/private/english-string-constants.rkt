@@ -194,6 +194,7 @@ please adhere to these guidelines:
  (cs-jump-to-next-bound-occurrence "Jump to Next Bound Occurrence")
  (cs-jump-to-binding "Jump to Binding Occurrence")
  (cs-jump-to-definition "Jump to Definition")
+ (cs-open-defining-file "Open Defining File")
  (cs-error-message "Error Message")
  (cs-open-file "Open ~a")
  (cs-rename-var "Rename ~a")
