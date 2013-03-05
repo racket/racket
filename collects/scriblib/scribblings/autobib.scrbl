@@ -41,11 +41,13 @@ function. See below for an example.
                            option ...)
               ([option (code:line #:style style-expr)
                        (code:line #:disambiguate disambiguator-expr)
+                       (code:line #:spaces spaces-expr)
                        (code:line #:render-date-bib render-date-expr)
                        (code:line #:render-date-cite render-date-expr)
                        (code:line #:date<? date-compare-expr)
                        (code:line #:date=? date-compare-expr)])
               #:contracts ([style-expr (or/c author+date-style number-style)]
+                           [spaces-expr number]
                            [disambiguator-expr (or/c #f (-> exact-nonnegative-integer? element?))]
                            [render-date-expr (or/c #f (-> date? element?))]
                            [date-compare-expr (or/c #f (-> date? date? boolean?))])]{
@@ -80,6 +82,9 @@ section for the bibliography. It has the contract
 
 The default value for the @racket[#:tag] argument is @racket["doc-bibliography"]
 and for @racket[#:sec-title] is @racket["Bibliography"].
+
+The optional @racket[spaces-expr] determines the number of blank lines that appear
+between citations. The default number of lines is 1.
 
 The optional @racket[style-expr] determines the way that citations and
 the bibliography are rendered.@margin-note*{Programmer-defined styles
