@@ -58,7 +58,7 @@
              [tl-phase-to-requires (make-hash)]
              [tl-module-lang-requires (make-hash)]
              [expanded-expression
-              (λ (sexp)
+              (λ (sexp [ignored void])
                 (parameterize ([current-directory (or user-directory (current-directory))]
                                [current-load-relative-directory user-directory])
                   (let ([is-module? (syntax-case sexp (module)

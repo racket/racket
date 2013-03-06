@@ -9,7 +9,7 @@
  [make-traversal 
   (-> namespace?
       (or/c path-string? #f)
-      (values (->* (syntax?) ((-> syntax? void?)) void?)
+      (values (->* (syntax?) ((-> any/c void?)) void?)
               (-> void?)))]
  
  [current-max-to-send-at-once

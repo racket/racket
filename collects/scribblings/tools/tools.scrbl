@@ -622,11 +622,7 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
 @defproc[(make-traversal [namespace namespace?]
                          [path (or/c #f path-string?)])
          (values (->* (syntax?)
-                      ((-> (and/c syntax?
-                                  (λ (x)
-                                    (define lst (syntax->list x))
-                                    (and lst (andmap identifier? lst))))
-                           void?))
+                      ((-> any/c void?))
                       void?)
                  (-> void?))]{
   This function creates some local state about a traversal of syntax objects
@@ -635,7 +631,9 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
   one if the program is a module) and then the second one should be called to
   indicate there are no more. 
   
-  The optional argument to the first function is called for each sequence
+  The optional argument to the first function is ignored.
+  It is left there for historical reasons. In the past it
+  was called for each sequence
   of binding identifiers encountered in @racket[define-values], @racket[define-syntaxes],
   and @racket[define-values-for-syntax].
   
