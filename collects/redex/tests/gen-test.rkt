@@ -587,6 +587,13 @@
      (J (a any_1) any_2)]
     [(J #t #f)])
   
+  (test (term (a #t))
+        #t)
+  (test (term (a 42))
+        #t)
+  (test (term (a #f))
+        #t)
+  
   (test (with-handlers ([exn:fail? exn-message])
           (generate-term L0 #:satisfying (c any) +inf.0))
         #rx".*generate-term:.*relation.*")
