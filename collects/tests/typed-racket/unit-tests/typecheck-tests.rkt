@@ -1596,6 +1596,16 @@
           (let ((s (ann (set 2) Any)))
             (if (set? s) (ann s (Setof String)) ((inst set String))))]
 
+        [tc-e (vector-ref (ann (vector 'a 'b) (Vector Symbol Symbol)) 0)
+              -Symbol]
+        [tc-err (vector-ref (ann (vector 'a 'b) (Vector Symbol Symbol)) 4)]
+        [tc-e (vector-ref (ann (vector 'a 'b) (Vector Symbol Symbol)) (+ -1 2))
+              -Symbol]
+        [tc-e (vector-set! (ann (vector 'a 'b) (Vector Symbol Symbol)) 0 'c)
+              -Void]
+        [tc-err (vector-set! (ann (vector 'a 'b) (Vector Symbol Symbol)) -4 'c)]
+        [tc-e (vector-set! (ann (vector 'a 'b) (Vector Symbol Symbol)) (+ -1 2) 'c)
+              -Void]
         )
   (test-suite
    "check-type tests"
