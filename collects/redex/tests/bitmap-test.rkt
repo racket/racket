@@ -170,24 +170,31 @@
        "metafunction-Name-vertical.png")
 
 ;; in horizontal mode:
-(btest (vl-append 
-        (parameterize ([metafunction-pict-style 'left-right])
-          (render-metafunction Name))
-        (parameterize ([metafunction-pict-style 'left-right/beside-side-conditions])
-          (render-metafunction Name))
-        (parameterize ([metafunction-pict-style 'left-right/vertical-side-conditions])
-          (render-metafunction Name))
-        (parameterize ([metafunction-pict-style 'left-right/compact-side-conditions])
-          (render-metafunction Name))
-        (parameterize ([metafunction-pict-style 'left-right/compact-side-conditions]
-                       [linebreaks '(#t #f)])
-          (render-metafunction Name))
-        (parameterize ([metafunction-pict-style 'left-right/compact-side-conditions]
-                       [linebreaks '(#f #t)])
-          (render-metafunction Name))
-        (parameterize ([metafunction-pict-style 'left-right/beside-side-conditions]
-                       [linebreaks '(#t #f)])
-          (render-metafunction Name)))
+(btest (vl-append
+        (clip
+         (parameterize ([metafunction-pict-style 'left-right])
+           (render-metafunction Name)))
+        (clip
+         (parameterize ([metafunction-pict-style 'left-right/beside-side-conditions])
+           (render-metafunction Name)))
+        (clip
+         (parameterize ([metafunction-pict-style 'left-right/vertical-side-conditions])
+           (render-metafunction Name)))
+        (clip
+         (parameterize ([metafunction-pict-style 'left-right/compact-side-conditions])
+           (render-metafunction Name)))
+        (clip
+         (parameterize ([metafunction-pict-style 'left-right/compact-side-conditions]
+                        [linebreaks '(#t #f)])
+           (render-metafunction Name)))
+        (clip
+         (parameterize ([metafunction-pict-style 'left-right/compact-side-conditions]
+                        [linebreaks '(#f #t)])
+           (render-metafunction Name)))
+        (clip
+         (parameterize ([metafunction-pict-style 'left-right/beside-side-conditions]
+                        [linebreaks '(#t #f)])
+           (render-metafunction Name))))
        "metafunction-Name-horizontal.png")
 
 ;; makes sure that there is no overlap inside or across metafunction calls  

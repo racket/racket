@@ -115,7 +115,8 @@
           [old (make-object bitmap-dc% old-bitmap)]
           [diff (make-object bitmap-dc% diff-bitmap)]
           [new-c (make-object color%)]
-          [old-c (make-object color%)])
+          [old-c (make-object color%)]
+          [number-of-different-pixels 0])
      (let loop ([x 0])
        (unless (= x w)
          (let loop ([y 0])
@@ -134,6 +135,7 @@
                    (send diff set-pixel x y new-c)]
                   [else
                    (send new-c set 255 0 0)
+                   (set! number-of-different-pixels (+ number-of-different-pixels 1))
                    (send diff set-pixel x y new-c)])]
                [else 
                 (send new-c set 255 0 0)
@@ -143,7 +145,7 @@
      (send diff set-bitmap #f)
      (send old set-bitmap #f)
      (send new set-bitmap #f)
-     diff-bitmap))
+     (values diff-bitmap number-of-different-pixels)))
 
 (define test-result-single-panel #f)
 (define (get-test-result-single-panel)
@@ -180,12 +182,14 @@
 
 (define (make-failed-panel line-number filename old-bitmap new-bitmap)
   (define diff-bitmap 'unk)
+  (define number-of-different-pixels #f)
   (define f (new vertical-panel% [parent (get-test-result-single-panel)]))
   (define msg (new message% [label (format "line ~a" line-number)] [parent f]))
   (define hp (new horizontal-panel% [parent f]))
   (define vp1 (new vertical-panel% [parent hp]))
   (define vp2 (new vertical-panel% [parent hp]))
   (define computing-label "Computing diff ...")
+  (define differences-msg (new message% [label ""] [auto-resize #t] [parent f]))
   (define computing-msg (new message% [label computing-label] [parent f]))
   (define chk (new check-box% 
                    [label "Show diff"]
@@ -204,11 +208,12 @@
                          (send computing-msg set-label computing-label)
                          (thread
                           (λ ()
-                            (set! diff-bitmap (compute-diffs old-bitmap new-bitmap))
+                            (set!-values (diff-bitmap number-of-different-pixels) (compute-diffs old-bitmap new-bitmap))
                             (queue-callback
                              (λ ()
                                (send computing-msg set-label "")
                                (send chk enable #t)
+                               (send differences-msg set-label (format "~a pixels different" number-of-different-pixels))
                                (update-check)))))]
                         [else
                          (update-check)]))]))
@@ -220,10 +225,14 @@
                     (λ (x y)
                       (send new-bitmap save-file filename 'png))]))
   (define left-label (new message% [parent vp1] [label "Old"]))
+  (define left-size (new message% [parent vp1] 
+                                  [label (format "~ax~a" (send old-bitmap get-width) (send old-bitmap get-height))]))
   (define left-hand (new message%
                          [parent vp1]
                          [label old-bitmap]))
   (define right-label (new message% [parent vp2] [label "New"]))
+  (define right-size (new message% [parent vp2] 
+                                   [label (format "~ax~a" (send new-bitmap get-width) (send new-bitmap get-height))]))
   (define right-hand (new message%
                           [parent vp2]
                           [label new-bitmap]))
