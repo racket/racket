@@ -490,7 +490,7 @@
 (define-for-syntax (do-extended-judgment-form lang syn-err-name body orig stx is-relation?)
   (define nts (definition-nts lang stx syn-err-name))
   (define-values (judgment-form-name dup-form-names mode position-contracts clauses rule-names)
-    (parse-judgment-form-body body syn-err-name stx (identifier? orig)))
+    (parse-judgment-form-body body syn-err-name stx (identifier? orig) is-relation?))
   (define definitions
     #`(begin
         (define-syntax #,judgment-form-name 
@@ -519,7 +519,7 @@
 (define-for-syntax (jf-is-relation? jf-id)
   (judgment-form-relation? (lookup-judgment-form-id jf-id)))
 
-(define-for-syntax (parse-judgment-form-body body syn-err-name full-stx extension?)
+(define-for-syntax (parse-judgment-form-body body syn-err-name full-stx extension? is-relation?)
   (define-syntax-class pos-mode
     #:literals (I O)
     (pattern I)
@@ -535,10 +535,11 @@
   (define-syntax-class horizontal-line
     (pattern x:id #:when (horizontal-line? #'x)))
   (define-syntax-class name
-    (pattern x #:when (or (and (symbol? (syntax-e #'x))
-                               (not (horizontal-line? #'x))
-                               (not (eq? '... (syntax-e #'x))))
-                          (string? (syntax-e #'x)))))
+    (pattern x #:when (and (not is-relation?)
+                           (or (and (symbol? (syntax-e #'x))
+                                    (not (horizontal-line? #'x))
+                                    (not (eq? '... (syntax-e #'x))))
+                               (string? (syntax-e #'x))))))
   (define (parse-rules rules)
     (define-values (backward-rules backward-names)
       (for/fold ([parsed-rules '()]
@@ -1357,10 +1358,14 @@
              (values (append mf-cs ps-rw)
                      (cons #`(eqn 'pat-rw '#,(car term-rws)) eqs)
                      (append (syntax->datum #'new-names) ns))))]
-        [(side-cond . rest)
+        [(side-cond rest)
          (side-condition-keyword? #'side-cond)
-         ;; TODO - enable side conditions for judgment form only
-         (values ps-rw eqs ns)]
+         (if in-judgment-form?
+             (let-values ([(term-rws mf-cs) (rewrite-terms (list #'rest) ns)])
+               (values (append mf-cs ps-rw)
+                       (cons #`(dqn #f '#,(car term-rws)) eqs)
+                       ns))
+             (values ps-rw eqs ns))]
         [(prem-name . prem-body)
          (and (judgment-form-id? #'prem-name) in-judgment-form?)
          (rewrite-jf #'prem-name #'prem-body ns ps-rw eqs)]
@@ -1371,12 +1376,6 @@
          (eq? '... (syntax-e #'var))
          ;; TODO - fix when implementing ellipses
          (values ps-rw eqs ns)]
-        [term
-         (not in-judgment-form?) ;; in a relation ;; TODO - eliminate this (relations become SCs)
-         (let-values ([(term-rws mf-cs) (rewrite-terms (list #'term) ns)])
-           (values (append mf-cs ps-rw) 
-                   eqs
-                   ns))]
         [else (raise-syntax-error what "malformed premise" prem)])))
   (values prems-rev new-eqs new-names))
 

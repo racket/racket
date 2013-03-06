@@ -1387,19 +1387,6 @@
                 (cons #'lhs-pat prev-lhs-pats)))))
   (reverse rev-clauses))
 
-(define-for-syntax (make-rl-clauses lhss rhss nts syn-error-name name lang)
-  (for/list ([lhs (in-list lhss)]
-             [rhs (in-list rhss)])
-    (with-syntax ([(lhs-pat (names ...) (names/ellipses ...)) 
-                   (rewrite-side-conditions/check-errs nts syn-error-name #t lhs)])
-      (define-values (ps-rw eqs p-names) 
-        (rewrite-prems #f (syntax->list rhs) nts (syntax->datum #'(names ...)) 'define-relation))
-      (with-syntax ([(eq ...) eqs]
-                    [(prem-bod ...) ps-rw])
-        #`((clause 'lhs-pat (list eq ...) (list prem-bod ...) #,lang '#,name) 
-           unused-by-relation)))))
-
-
 (define-for-syntax (check-arity-consistency mode contracts full-def)
   (when (and contracts (not (= (length mode) (length contracts))))
     (raise-syntax-error 

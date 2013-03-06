@@ -605,3 +605,57 @@
   (test (with-handlers ([exn:fail? exn-message])
           (generate-term L0 #:satisfying (J any_1 any_2) +inf.0))
         #rx".*generate-term:.*relation.*"))
+
+(let ()
+  
+  (define-syntax-rule (is-not-false e)
+    (test-equal (not e) #f))
+  
+  (define-syntax-rule (is-false e)
+    (test-equal e #f))
+  
+  (define-language L0)
+  
+  (define-relation L0
+    [(R number)
+     number]
+    [(R string)])
+  
+  (define-relation L0
+    [(R2 number)
+     #f]
+    [(R2 string)])
+  
+  (define-relation L0
+    [(R3 any)
+     any])
+  
+  (is-not-false (generate-term L0 #:satisfying (R 5) +inf.0))
+  (is-not-false (generate-term L0 #:satisfying (R "hello") +inf.0))
+  (is-false (generate-term L0 #:satisfying (R #t) +inf.0))
+  (is-false (generate-term L0 #:satisfying (R #f) +inf.0))
+  
+  (is-false (generate-term L0 #:satisfying (R2 5) +inf.0))
+  (is-not-false (generate-term L0 #:satisfying (R2 "hello") +inf.0))
+  (is-false (generate-term L0 #:satisfying (R2 #t) +inf.0))
+  (is-false (generate-term L0 #:satisfying (R2 #f) +inf.0))
+  
+  (is-not-false (generate-term L0 #:satisfying (R3 5) +inf.0))
+  (is-not-false (generate-term L0 #:satisfying (R3 "hello") +inf.0))
+  (is-not-false (generate-term L0 #:satisfying (R3 #t) +inf.0))
+  (is-false (generate-term L0 #:satisfying (R3 #f) +inf.0))
+  
+  
+  (define-judgment-form L0
+    #:mode (J I)
+    [(J (any))
+     (side-condition any)]
+    [(J (any_1 any_2))
+     (J any_1)
+     (J any_2)])
+  
+  (is-not-false (generate-term L0 #:satisfying (J (1)) +inf.0))
+  (is-not-false (generate-term L0 #:satisfying (J ((1) (2))) +inf.0))
+  (is-false (generate-term L0 #:satisfying (J ((1) (#f))) 5))
+  (is-false (generate-term L0 #:satisfying (J ((#f) (2))) 5))
+  (is-not-false (generate-term L0 #:satisfying (J ((#t) (2))) 5)))
