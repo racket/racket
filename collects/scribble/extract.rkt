@@ -22,10 +22,11 @@
                    #'(xwrap (... ...) id))
                  ;; delayed:
                  (with-syntax ([(_ xwrap (... ...)) stx]
-                               [(reqs ((id d) (... ...))) (syntax-local-introduce
-                                                           (datum->syntax #f (get-docs)))])
+                               [(reqs exprs ((id d) (... ...))) (syntax-local-introduce
+                                                                 (datum->syntax #f (get-docs)))])
                    #`(begin
                        (require . reqs)
+                       (begin . exprs)
                        (xwrap (... ...) (list (cons 'id d) (... ...)))))))
            (docs wrap ...)))]))
 

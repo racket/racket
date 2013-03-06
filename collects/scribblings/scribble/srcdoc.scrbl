@@ -63,7 +63,7 @@ to get core Racket forms and basic Scribble functions to use in
 documentation expressions.}
 
 @defform*/subs[#:literals (-> ->* case->)
-               [(proc-doc/names id contract arg-specs desc-expr)]
+               [(proc-doc/names id contract arg-specs (desc-expr ...))]
                ([arg-specs ((arg-id ...) ((arg-id default-expr) ...))
                            (arg-id ...)]
                 [contract (-> arg ... result)
@@ -87,7 +87,7 @@ pairs specify the names and default values of the optional arguments.
 If the contract supports optional arguments, then the first
 @racket[arg-spec]s form must be used, otherwise the second must be used.
 
-The @racket[desc-expr] is a documentation-time expression that
+The @racket[desc-expr] is a sequence of documentation-time expressions that
 produces prose to describe the exported binding---that is, the last
 part of the generated @racket[defproc], so the description can refer
 to the @racket[arg-id]s using @racket[racket].
@@ -101,7 +101,7 @@ can be referenced in documentation prose using the @racket[racket]
 form.}
 
 @defform/subs[#:literals (-> ->i ->d values)
-              (proc-doc id contract desc-expr)
+              (proc-doc id contract (desc-expr ...))
               ([contract (-> result)
                          (->i (arg ...) () (values ress ...))
                          (->i (arg ...) () #:pre (pre-id ...) condition (values ress ...))
@@ -126,9 +126,20 @@ Like @racket[proc-doc], but for an export of an arbitrary value.}
 
 
 @defform[#:literals (parameter/c)
-         (parameter-doc id (parameter/c contract-expr) arg-id desc-expr)]{
+         (parameter-doc id (parameter/c contract-expr) arg-id (desc-expr ...))]{
 
 Like @racket[proc-doc], but for exporting a parameter.}
+
+
+@defform[(begin-for-doc form ...)]{
+
+Like to @racket[begin-for-syntax], but for documentation time instead
+of expansion time. The @racket[form]s can refer to binding
+@racket[require]d with @racket[for-doc].
+
+For example, a definition in @racket[begin-for-doc]
+can be referenced by a @racket[_desc-expr] in
+@racket[proc-doc/names].}
 
 
 @defform[(generate-delayed-documents)]{

@@ -11,11 +11,13 @@
          parameter-doc
          proc-doc
          proc-doc/names
-         generate-delayed-documents)
+         generate-delayed-documents
+         begin-for-doc)
 
 (begin-for-syntax
  (define requires null)
  (define doc-body null)
+ (define doc-exprs null)
  (define generated? #f)
  (define delayed? #f)
 
@@ -59,6 +61,7 @@
 (define-syntax (doc-submodule stx)
   (with-syntax ([((req ...) ...)
                  (map syntax-local-introduce (reverse requires))]
+                [(expr ...) (map syntax-local-introduce (reverse doc-exprs))]
                 [doc-body
                  (map (lambda (s) (syntax-local-introduce
                                    (syntax-shift-phase-level s #f)))
@@ -73,12 +76,14 @@
               (provide get-docs)
               (define (get-docs)
                 (list (quote-syntax (req ... ...))
+                      (quote-syntax (expr ...))
                       (quote-syntax/keep-srcloc doc-body))))))
         ;; normal mode: return an identifier that holds the document:
         (with-syntax ([((id d) ...) #'doc-body])
           #'(begin-for-syntax
              (module* srcdoc #f
                (require req ... ...)
+               expr ...
                (define docs (list (cons 'id d) ...))
                (require (for-syntax racket/base))
                (begin-for-syntax
@@ -130,6 +135,15 @@
                                doc-body))
         (set! requires (cons #'(req ... ...) requires))
         (pre-expand-export #'(combine-out p/c ...) modes)))))
+
+(define-syntax (begin-for-doc stx)
+  (syntax-case stx ()
+    [(_ d ...)
+     (set! doc-exprs (append (reverse (syntax->list 
+                                       (syntax-local-introduce
+                                        #'(d ...))))
+                             doc-exprs))
+     #'(begin)]))
 
 (define-syntax-rule (provide/doc form ...)
   (provide form ...))
