@@ -238,7 +238,7 @@
       (define/public (locate-file name)
         (let* ([normalized
                 ;; allow for the possibility of filenames that are urls
-                (with-handlers ([(λ (x) #t)
+                (with-handlers ([exn:fail?
                                  (λ (x) name)])
                   (normal-case-path
                    (normalize-path name)))]
