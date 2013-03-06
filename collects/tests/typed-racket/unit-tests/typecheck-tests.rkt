@@ -1596,6 +1596,7 @@
           (let ((s (ann (set 2) Any)))
             (if (set? s) (ann s (Setof String)) ((inst set String))))]
 
+        [tc-e/t (ann ((letrec ((x (lambda args 3))) x) 1 2) Byte) -Byte]
         )
   (test-suite
    "check-type tests"

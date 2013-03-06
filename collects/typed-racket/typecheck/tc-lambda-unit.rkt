@@ -367,13 +367,12 @@
 (define (tc/lambda/check form formals bodies expected)
   (tc/lambda/internal form formals bodies expected))
 
-;; form : a syntax object for error reporting
 ;; formals : the formal arguments to the loop
 ;; body : a block containing the body of the loop
 ;; name : the name of the loop
 ;; args : the types of the actual arguments to the loop
 ;; ret : the expected return type of the whole expression
-(define (tc/rec-lambda/check form formals body name args return)
+(define (tc/rec-lambda/check formals body name args return)
   (with-lexical-env/extend
    (syntax->list formals) args
    (let* ([r (tc-results->values return)]
