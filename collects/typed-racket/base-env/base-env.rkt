@@ -1392,8 +1392,10 @@
 
 
 
-[values (-polydots (b a) (cl->* (->acc (list b) b null)
-                                (null (a a) . ->... . (make-ValuesDots null a 'a))))]
+[values (-polydots (a b) (cl->* 
+                           (-> (-values null))
+                           (->acc (list a) a null)
+                           ((list a) (b b) . ->... . (make-ValuesDots (list (-result a)) b 'b))))]
 [call-with-values (-polydots (b a) ((-> (make-ValuesDots null a 'a)) (null (a a) . ->... . b) . -> .  b))]
 
 [read-accept-reader (-Param B B)]

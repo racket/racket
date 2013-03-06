@@ -757,7 +757,11 @@
         [tc-err (apply append (list 1) (list 2) (list 3) (list (list 1) "foo"))]
         [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list 1))) (-lst -PosByte)]
         [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list "foo"))) (-lst (t:Un -String -PosByte))]
-        [tc-err (plambda: (b ...) [y : b ... b] (apply append (map list y)))]
+        [tc-e/t (plambda: (b ...) [y : b ... b] (apply append (map list y)))
+                (-polydots (b) (->... (list) (b b) (-lst Univ)))]
+        [tc-e/t (plambda: (b ...) [y : b ... b] (apply values "foo" y))
+                (-polydots (b) (->... (list) (b b) (make-ValuesDots (list (-result -String)) b 'b)))]
+              
         [tc-e/t (plambda: (b ...) [y : (Listof Integer) ... b] (apply append y))
                 (-polydots (b) (->... (list) ((-lst -Integer) b) (-lst -Integer)))]
 
@@ -1595,6 +1599,12 @@
         [tc-err
           (let ((s (ann (set 2) Any)))
             (if (set? s) (ann s (Setof String)) ((inst set String))))]
+
+        [tc-err (ann (plambda: (a ...) ((x : Integer) y : Symbol ... a) x)
+                     (All (a ...) (Integer a ... a -> Integer)))]
+        [tc-e/t (ann (lambda: (v : (Listof a) ... a) 'done)
+                     (All (a ...) ((Listof a) ... a -> Symbol)))
+                (-polydots (a) (->... null ((-lst a) a) (-values (list -Symbol))))]
 
         )
   (test-suite

@@ -516,7 +516,9 @@
                                                  (tc-expr/check form ann))]
                     [else (internal-tc-expr form)])])
       (match ty
-        [(tc-any-results:)
+        ;; no annotations possible on dotted results
+        [(or (tc-any-results:)
+             (tc-results: _ _ _ _ _))
          (add-typeof-expr form ty)
          ty]
         [(tc-results: ts fs os)

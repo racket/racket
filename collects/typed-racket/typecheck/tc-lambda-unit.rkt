@@ -72,7 +72,7 @@
                           [(> arg-len tys-len) (append arg-tys
                                                        (map (lambda _ (or rest-ty (Un)))
                                                             (drop arg-list tys-len)))]))])
-    (define (check-body)
+    (define (check-body #:drest [drest drest])
       (with-lexical-env/extend
        arg-list arg-types
        (make-lam-result (for/list ([al arg-list] [at arg-types] [a-ty arg-tys]) (list al at)) null
@@ -86,17 +86,17 @@
     (cond
       [(not rest)
        (check-body)]
-      [drest
-       (with-lexical-env/extend
-        (list rest) (list (make-ListDots (car drest) (cdr drest)))
-        (check-body))]
       [(dotted? rest)
        =>
        (lambda (b)
          (let ([dty (get-type rest #:default Univ)])
            (with-lexical-env/extend
             (list rest) (list (make-ListDots dty b))
-            (check-body))))]
+            (check-body #:drest (cons dty b)))))]
+      [drest
+       (with-lexical-env/extend
+        (list rest) (list (make-ListDots (car drest) (cdr drest)))
+        (check-body))]
       [else
        (let ([rest-type (cond
                           [rest-ty rest-ty]
@@ -327,14 +327,14 @@
                  (values ns dvar)))])
        ;; check the body for side effect
        (extend-indexes dotted
-         (extend-tvars tvars
+         (extend-tvars (cons dotted tvars)
            (maybe-loop form formals bodies (ret expected*))))
        t)]
     [(or (tc-any-results:) #f)
      (match (map syntax-e (syntax->list (plambda-prop form)))
        [(list tvars ... dotted-var '...)
         (let* ([ty (extend-indexes dotted-var
-                     (extend-tvars tvars
+                     (extend-tvars (cons dotted-var tvars)
                        (tc/mono-lambda/type formals bodies #f)))])
           (make-PolyDots (append tvars (list dotted-var)) ty))]
        [tvars
