@@ -779,7 +779,7 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
  @defmethod[(syncheck:add-definition-target [source-obj (not/c #f)]
                                             [start exact-nonnegative-integer?]
                                             [finish exact-nonnegative-integer?]
-                                            [style-name any/c])]{
+                                            [style-name any/c]) void?]{
      
   }
                                                       
