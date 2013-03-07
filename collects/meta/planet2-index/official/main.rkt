@@ -20,7 +20,8 @@
          net/sendmail
          meta/planet2-index/basic/main
          web-server/http/id-cookie
-         file/sha1)
+         file/sha1
+         (prefix-in bcrypt- bcrypt))
 
 (define-syntax-rule (while cond e ...)
   (let loop ()
@@ -43,6 +44,8 @@
    (build-path root "secret.key")))
 (define users-path (build-path root "users"))
 (make-directory* users-path)
+(define users.new-path (build-path root "users.new"))
+(make-directory* users.new-path)
 
 (define (client_id)
   (file->string (build-path root "client_id")))
@@ -271,7 +274,7 @@
                     ,@(formlet-display login-formlet)
                     (input ([type "submit"] [value "Log in"])))
               (p "If you enter an unclaimed email address, then an account will be created.")
-              (p "Passwords are stored in the delicious SHA1 format, but transfered as plain-text over the HTTPS connection.")
+              (p "Passwords are stored in the delicious bcrypt format, but transfered as plain-text over the HTTPS connection.")
               ,@(if last-error
                   `((h1 ([class "error"]) ,last-error))
                   '()))))))
@@ -304,9 +307,22 @@
       `(p "Email addresses must not be empty::"
           (tt ,email)))))
 
-  (define password-path (build-path users-path email))
+  (define password-path (build-path users.new-path email))
+  (define old-password-path (build-path users-path email))
 
   (cond
+    [(and (not (file-exists? password-path))
+          (file-exists? old-password-path))
+     (cond
+       [(not (bytes=? (file->bytes old-password-path)
+                      (string->bytes/utf-8 (salty passwd))))
+        (login req (format "The given password is incorrect for email address ~e"
+                           email))]
+       [else
+        (display-to-file (bcrypt-encode (string->bytes/utf-8 passwd))
+                         password-path)
+        (delete-file old-password-path)     
+        (authenticated!)])]
     [(not (file-exists? password-path))
      (send/suspend
       (λ (k-url)
@@ -329,11 +345,12 @@
              ", please click the link it contains to register and log in."))))
 
      (when (not (file-exists? password-path))
-       (display-to-file (salty passwd) password-path))
+       (display-to-file (bcrypt-encode (string->bytes/utf-8 passwd))
+                        password-path))
 
      (authenticated!)]
-    [(not (bytes=? (string->bytes/utf-8 (salty passwd))
-                   (file->bytes password-path)))
+    [(not (bcrypt-check (file->bytes password-path)
+                        (string->bytes/utf-8 passwd)))
      (login req (format "The given password is incorrect for email address ~e"
                         email))]
     [else
