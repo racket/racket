@@ -5,7 +5,8 @@
 (define global-val 'global)
 
 (define (mut-arg arg)
-  (set! arg 'mutated))
+  (set! arg 'mutated)
+  0)
 
 (mut-arg global-val)
 

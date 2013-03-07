@@ -1,10 +1,12 @@
 #lang racket
-
+(require racket/runtime-path)
 (define-syntax (test stx)
   (syntax-case stx ()
     [(_ exp reg)
      (with-syntax ([line (syntax-line stx)])
        #'(test/proc line 'exp reg))]))
+
+(define-runtime-path here ".")
 
 (define ns (make-base-namespace))
 (define tests 0)
@@ -18,7 +20,8 @@
                             (let ([m (exn-message x)])
                               (regexp-match? reg m))))
                      exn-message))
-      (parameterize ([current-namespace ns])
+      (parameterize ([current-namespace ns]
+                     [current-directory here])
         (expand 
          `(,#'module m plai/gc2/mutator
                      (allocator-setup "good-collectors/trivial-collector.rkt" 200)
