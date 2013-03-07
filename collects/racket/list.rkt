@@ -15,6 +15,8 @@
          split-at
          drop-right
          take-right
+         take-while
+         drop-while
          split-at-right
 
          append*
@@ -150,6 +152,29 @@
     (if (pair? lead)
       (cons (car list) (loop (cdr list) (cdr lead)))
       '())))
+
+;; taken from srfi-1 and tweaked
+(define (take-while pred lis)
+  (unless (procedure? pred)
+    (raise-argument-error 'take-while "procedure?" 0 pred lis))
+  (unless (list? lis)
+    (raise-argument-error 'take-while "list?" 1 pred lis))
+  (let recur ([lis lis])
+    (if (null? lis) '()
+        (let ([x (car lis)])
+          (if (pred x)
+              (cons x (recur (cdr lis)))
+              '())))))
+
+(define (drop-while pred lis)
+  (unless (procedure? pred)
+    (raise-argument-error 'drop-while "procedure?" 0 pred lis))
+  (unless (list? lis)
+    (raise-argument-error 'drop-while "list?" 1 pred lis))
+  (let recur ([lis lis])
+    (cond [(null? lis) '()]
+          [(pred (car lis)) (recur (cdr lis))]
+          [else lis])))
 
 (define (split-at-right list n)
   (unless (exact-nonnegative-integer? n)
