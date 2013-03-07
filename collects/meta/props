@@ -1008,7 +1008,7 @@ path/s is either such a string or a list of them.
 "collects/teachpack/2htdp/scribblings/image.scrbl" responsible (robby)
 "collects/teachpack/balls.ss" drdr:command-line (mzc *)
 "collects/teachpack/deinprogramm" responsible (sperber)
-"collects/teachpack/htdp/graphing.ss" drdr:command-line (mzc *)
+"collects/teachpack/htdp/graphing.rkt" drdr:command-line (mzc *)
 "collects/test-engine" responsible (kathyg)
 "collects/tests/algol60" responsible (mflatt robby)
 "collects/tests/compiler" responsible (jay)
