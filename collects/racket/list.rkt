@@ -153,28 +153,28 @@
       (cons (car list) (loop (cdr list) (cdr lead)))
       '())))
 
-;; taken from srfi-1 and tweaked
-(define (take-while pred lis)
+(define (take-while pred list)
   (unless (procedure? pred)
-    (raise-argument-error 'take-while "procedure?" 0 pred lis))
-  (unless (list? lis)
-    (raise-argument-error 'take-while "list?" 1 pred lis))
-  (let recur ([lis lis])
-    (if (null? lis) '()
-        (let ([x (car lis)])
-          (if (pred x)
-              (cons x (recur (cdr lis)))
-              '())))))
+    (raise-argument-error 'take-while "procedure?" 0 pred list))
+  (unless (list? list)
+    (raise-argument-error 'take-while "list?" 1 pred list))
+  (let loop ([list list])
+    (if (null? list)
+      '()
+      (let ([x (car list)])
+        (if (pred x)
+          (cons x (loop (cdr list)))
+          '())))))
 
-(define (drop-while pred lis)
+(define (drop-while pred list)
   (unless (procedure? pred)
-    (raise-argument-error 'drop-while "procedure?" 0 pred lis))
-  (unless (list? lis)
-    (raise-argument-error 'drop-while "list?" 1 pred lis))
-  (let recur ([lis lis])
-    (cond [(null? lis) '()]
-          [(pred (car lis)) (recur (cdr lis))]
-          [else lis])))
+    (raise-argument-error 'drop-while "procedure?" 0 pred list))
+  (unless (list? list)
+    (raise-argument-error 'drop-while "list?" 1 pred list))
+  (let loop ([list list])
+    (cond [(null? list) '()]
+          [(pred (car list)) (loop (cdr list))]
+          [else list])))
 
 (define (split-at-right list n)
   (unless (exact-nonnegative-integer? n)
