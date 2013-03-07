@@ -72,3 +72,10 @@
 (define (gc:flat? a)
   (eq? 'prim (heap-ref a)))
 
+(module+ test
+  (require rackunit)
+  (check-equal? (with-heap (vector 2 3)
+                           (let ([x 0])
+                             (set-root! (car (get-root-set x)) 1)
+                             x))
+                1))

@@ -1,6 +1,11 @@
-#lang scheme
+#lang racket/base
 (require
- (for-syntax scheme))
+ racket/bool
+ racket/contract
+ racket/list
+ racket/class
+ (for-syntax racket/base
+             racket/bool))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Locations
@@ -144,7 +149,8 @@
   (syntax-case stx ()
     [(_ root-id ...)
      (andmap identifier? (syntax->list #'(root-id ...)))
-     #`(get-root-set/proc (list root-id ...)
+     #`(get-root-set/proc (list (λ () root-id) ...)
+                          (list (λ (x) (set! root-id x)) ...)
                           '(root-id ...))]
     [(_ e ...)
      (let ([err (ormap (λ (x) (and (not (identifier? x)) x)) (syntax->list #'(e ...)))])
@@ -156,17 +162,14 @@
                            "missing open parenthesis"
                            stx)]))
 
-(define (get-root-set/proc root-locs root-ids)
+(define (get-root-set/proc root-getters root-setters root-ids)
   (append
-   (for/list ([root-loc (in-list root-locs)]
+   (for/list ([root-getter (in-list root-getters)]
+              [root-setter (in-list root-setters)]
               [root-id (in-list root-ids)])
-     (if (location? root-loc)
-         (make-root root-id
-                    (λ ()
-                      root-loc) 
-                    (λ (loc) 
-                      (set! root-loc loc)))
-         (error 'get-root-set "expected a location, given ~e" root-loc)))
+     (if (location? (root-getter))
+         (make-root root-id root-getter root-setter)
+         (error 'get-root-set "expected a location, given ~e" (root-getter))))
    (get-global-roots)
    (stack-roots)
    (user-specified-roots)))
