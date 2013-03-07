@@ -37,7 +37,7 @@
    datatypes are currently linked as technical terms --- which is a hack.
    Fix the paragraph when we have a better way to link datatype names.}
 
-This @tt{universe.rkt} teachpack implements and provides the functionality
+The @tt{universe.rkt} teachpack implements and provides the functionality
  for creating interactive, graphical programs that consist of plain
  mathematical functions. We refer to such programs as @deftech{world}
  programs. In addition, world programs can also become a part of a

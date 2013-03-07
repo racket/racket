@@ -7,7 +7,7 @@
 
 (define (teachpack tp . name)
   (apply title #:tag tp
-         `(,@name ": " ,(filepath (format "~a.ss" tp))
+         `(,@name ": " ,(filepath (format "~a.rkt" tp))
            ,(index (format "~a teachpack" tp)))))
 
 (define-syntax-rule (def-req beg-require)
