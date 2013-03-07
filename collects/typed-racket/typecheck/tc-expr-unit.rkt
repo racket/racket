@@ -49,12 +49,16 @@
     [(~var i (3d (lambda (x) (eqv? x 0.0)))) -FlonumPosZero]
     [(~var i (3d (lambda (x) (eqv? x -0.0)))) -FlonumNegZero]
     [(~var i (3d (lambda (x) (eqv? x +nan.0)))) -FlonumNan]
+    [(~var i (3d(lambda (x) (eqv? x +inf.0)))) (-val +inf.0)]
+    [(~var i (3d (lambda (x) (eqv? x -inf.0)))) (-val -inf.0)]
     [(~var i (3d (conjoin flonum? positive?))) -PosFlonum]
     [(~var i (3d (conjoin flonum? negative?))) -NegFlonum]
     [(~var i (3d flonum?)) -Flonum] ; for nan
     [(~var i (3d (lambda (x) (eqv? x 0.0f0)))) -SingleFlonumPosZero]
     [(~var i (3d (lambda (x) (eqv? x -0.0f0)))) -SingleFlonumNegZero]
     [(~var i (3d (lambda (x) (eqv? x +nan.f)))) -SingleFlonumNan]
+    [(~var i (3d(lambda (x) (eqv? x +inf.f)))) (-val +inf.f)]
+    [(~var i (3d (lambda (x) (eqv? x -inf.f)))) (-val -inf.f)]
     [(~var i (3d (conjoin single-flonum? positive?))) -PosSingleFlonum]
     [(~var i (3d (conjoin single-flonum? negative?))) -NegSingleFlonum]
     [(~var i (3d single-flonum?)) -SingleFlonum] ; for nan
