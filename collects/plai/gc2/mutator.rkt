@@ -47,6 +47,10 @@
 (define-syntax-parameter mutator-tail-call? #t)
 (define-syntax-parameter mutator-env-roots empty)
 
+(define-syntax-parameter mutator-assignment-allowed? #t)
+(define-syntax-rule (no! e) (syntax-parameterize ([mutator-assignment-allowed? #f]) e))
+(define-syntax-rule (yes! e) (syntax-parameterize ([mutator-assignment-allowed? #t]) e))
+
 ; Sugar Macros
 (define-syntax-rule (->address e) e)
 (define-syntax mutator-and
@@ -112,7 +116,7 @@
     [(_ fe e ...)
      (let ([tmp 
             (syntax-parameterize ([mutator-tail-call? #f])
-                                 fe)])
+                                 (yes! fe))])
        (mutator-begin e ...))]))
 
 ; Real Macros
@@ -124,13 +128,18 @@
          ...))
 (define-syntax-rule (mutator-if test true false)
   (if (syntax-parameterize ([mutator-tail-call? #f])
-                           (collector:deref (->address test)))
+                           (collector:deref (->address (no! test))))
       (->address true)
       (->address false)))
-(define-syntax-rule (mutator-set! id e)
-  (begin
-    (set! id (->address e))
-    (mutator-app void)))
+(define-syntax (mutator-set! stx)
+  (syntax-case stx ()
+    [(_ id e)
+     (let ()
+       (if (syntax-parameter-value #'mutator-assignment-allowed?)
+           #'(begin
+               (set! id (->address (no! e)))
+               (mutator-app void))
+           (raise-syntax-error 'set! "allowed only inside begin expressions and at the top-level" stx)))]))
 (define-syntax (mutator-let-values stx)
   (syntax-case stx ()
     [(_ ([(id ...) expr]
@@ -151,7 +160,7 @@
                                                      #'expr)
                                                     (syntax-parameter-value #'mutator-env-roots))]
                                                   [mutator-tail-call? #f])
-                                                 expr)]
+                                                 (no! expr))]
                            ...)
                (let-values ([(id ...) (values tmp ...)]
                             ...)
@@ -196,7 +205,7 @@
                                                      #'body)
                                                     (list #'free-id ...))]
                                                   [mutator-tail-call? #t])
-                                                 (->address body)))])
+                                                 (->address (no! body))))])
                      closure))])
              #,(if (syntax-parameter-value #'mutator-tail-call?)
                    (syntax/loc stx
@@ -216,6 +225,8 @@
      (local [(define (do-not-expand? exp)
                (and (identifier? exp)
                     (or (free-identifier=? exp #'empty)
+                        (free-identifier=? exp #'collector:set-first!)
+                        (free-identifier=? exp #'collector:set-rest!)
                         (ormap (λ (x) (free-identifier=? x exp))
                                prim-ids))))
              (define exps (syntax->list #'(e ...)))
@@ -238,6 +249,12 @@
      (let ()
        (define prim-app? (ormap (λ (x) (free-identifier=? x #'fe))
                                 prim-ids))
+       (define is-set-fst? (free-identifier=? #'collector:set-first! #'fe))
+       (when (or is-set-fst? (free-identifier=? #'collector:set-rest! #'fe))
+         (unless (syntax-parameter-value #'mutator-assignment-allowed?)
+           (raise-syntax-error (if is-set-fst? 'set-first! 'set-rest!)
+                               "can appear only at the top-level or in a begin"
+                               stx)))
        (with-syntax ([(env-id ...) (syntax-parameter-value #'mutator-env-roots)]
                      [app-exp (if prim-app?
                                   (syntax/loc stx (collector:alloc-flat (fe (collector:deref ae) ...)))
@@ -440,14 +457,24 @@
             (gc->scheme l))))
 
 (provide (rename-out (mutator-set-first! set-first!)))
-(define (mutator-set-first! x y)
-  (collector:set-first! x y)
-  (void))
+(define-syntax (mutator-set-first! stx)
+  (syntax-case stx ()
+    [x 
+     (identifier? #'x)
+     (raise-syntax-error 'set-first! "must appear immediately following an open paren" stx)]
+    [(_ args ...)
+     (begin
+       #'(mutator-app collector:set-first! args ...))]))
 
 (provide (rename-out (mutator-set-rest! set-rest!)))
-(define (mutator-set-rest! x y)
-  (collector:set-rest! x y)
-  (void))
+(define-syntax (mutator-set-rest! stx)
+  (syntax-case stx ()
+    [x 
+     (identifier? #'x)
+     (raise-syntax-error 'set-rest! "must appear immediately following an open paren" stx)]
+    [(_ args ...)
+     (begin
+       #'(mutator-app collector:set-rest! args ...))]))
 
 (provide (rename-out [mutator-empty empty]))
 (define-syntax mutator-empty
