@@ -49,16 +49,6 @@
 (define (client_secret)
   (file->string (build-path root "client_secret")))
 
-(module+ main
-  (define users-old-path (build-path root "users.old"))
-  (when (directory-exists? users-old-path)
-    (for ([u (in-list (directory-list users-old-path))])
-      (define uop (build-path users-old-path u))
-      (display-to-file (salty (file->string uop))
-                       (build-path users-path u))
-      (delete-file uop))
-    (delete-directory users-old-path)))
-
 (define pkgs-path (build-path root "pkgs"))
 (make-directory* pkgs-path)
 
