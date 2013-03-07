@@ -52,7 +52,6 @@
 (define-syntax-rule (yes! e) (syntax-parameterize ([mutator-assignment-allowed? #t]) e))
 
 ; Sugar Macros
-(define-syntax-rule (->address e) e)
 (define-syntax mutator-and
   (syntax-rules ()
     [(_) (mutator-quote #t)]
@@ -123,21 +122,21 @@
 (define-syntax-rule (mutator-define-values (id ...) e)
   (begin (define-values (id ...) 
            (syntax-parameterize ([mutator-tail-call? #f])
-                                (->address e)))
+                                e))
          (add-global-root! (make-env-root id))
          ...))
 (define-syntax-rule (mutator-if test true false)
   (if (syntax-parameterize ([mutator-tail-call? #f])
-                           (collector:deref (->address (no! test))))
-      (->address true)
-      (->address false)))
+                           (collector:deref (no! test)))
+      true
+      false))
 (define-syntax (mutator-set! stx)
   (syntax-case stx ()
     [(_ id e)
      (let ()
        (if (syntax-parameter-value #'mutator-assignment-allowed?)
            #'(begin
-               (set! id (->address (no! e)))
+               (set! id (no! e))
                (mutator-app void))
            (raise-syntax-error 'set! "allowed only inside begin expressions and at the top-level" stx)))]))
 (define-syntax (mutator-let-values stx)
@@ -169,7 +168,7 @@
                                                  (list #'id ... ...)
                                                  #'body-expr)
                                                 (syntax-parameter-value #'mutator-env-roots))])
-                                      (->address body-expr))))))))]
+                                      body-expr)))))))]
     [(_ ([(id ...) expr]
          ...)
         body-expr ...)
@@ -205,7 +204,7 @@
                                                      #'body)
                                                     (list #'free-id ...))]
                                                   [mutator-tail-call? #t])
-                                                 (->address (no! body))))])
+                                                 (no! body)))])
                      closure))])
              #,(if (syntax-parameter-value #'mutator-tail-call?)
                    (syntax/loc stx
@@ -304,7 +303,7 @@
        (call-with-values
         (lambda ()
           (syntax-parameterize ([mutator-tail-call? #f])
-                               (->address expr)))
+                               expr))
         (case-lambda
           [() (void)]
           [(result-addr)
