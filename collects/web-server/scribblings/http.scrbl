@@ -262,6 +262,7 @@ transmission that the server @bold{will not catch}.}
                        [#:domain domain (or/c false/c valid-domain?) #f]
                        [#:max-age max-age (or/c false/c exact-nonnegative-integer?) #f]
                        [#:path path (or/c false/c string?) #f]
+                       [#:expires expires (or/c false/c string?) #f]
                        [#:secure? secure? (or/c false/c boolean?) #f])
           cookie?]{
   Constructs a cookie with the appropriate fields.
@@ -329,7 +330,8 @@ good entropy, if you care about that sort of thing.
  @defproc[(make-id-cookie
            [name cookie-name?]
            [secret-salt bytes?]
-           [value cookie-value?])
+           [value cookie-value?]
+           [#:path path (or/c false/c string?) #f])
           cookie?]{
   Generates an authenticated cookie named @racket[name] containing @racket[value], signed with @racket[secret-salt].
  }
@@ -344,7 +346,8 @@ good entropy, if you care about that sort of thing.
  }
 
  @defproc[(logout-id-cookie
-           [name cookie-name?])
+           [name cookie-name?]
+           [#:path path (or/c false/c string?) #f])
           cookie?]{
   Generates a cookie named @racket[name] that is not validly authenticated.
 

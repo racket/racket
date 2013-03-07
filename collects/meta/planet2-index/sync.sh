@@ -9,3 +9,5 @@ for i in official planet-compat ; do
 done
 
 rsync -a --progress -h --delete --exclude root --exclude compiled --exclude doc ../../planet2/ plt-etc:local/plt/collects/$i/
+
+rsync -a --progress -h --delete --exclude compiled ../../web-server ../../net plt-etc:local/plt/collects/

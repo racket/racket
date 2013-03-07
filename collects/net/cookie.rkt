@@ -61,6 +61,7 @@
  cookie:add-comment
  cookie:add-domain
  cookie:add-max-age
+ cookie:add-expires
  cookie:add-path
  cookie:secure
  cookie:version
@@ -73,7 +74,7 @@
  (struct-out cookie-error))
 
 (define-serializable-struct cookie
-  (name value comment domain max-age path secure version) #:mutable)
+  (name value comment domain max-age path secure version expires) #:mutable)
 (define-struct (cookie-error exn:fail) ())
 
 ;; error* : string args ... -> raises a cookie-error exception
@@ -92,6 +93,7 @@
 ;; cookie-av       =       "Comment" "=" value
 ;;                  |       "Domain" "=" value
 ;;                  |       "Max-Age" "=" value
+;;                  |       "Expires" "=" value
 ;;                  |       "Path" "=" value
 ;;                  |       "Secure"
 ;;                  |       "Version" "=" 1*DIGIT
@@ -106,6 +108,7 @@
                  #f ; current path
                  #f ; normal (non SSL)
                  #f ; default version
+                 #f ; doesn't expire
                  )))
 
 ;;!
@@ -127,7 +130,8 @@
                  (format-if "Max-Age=~a" (cookie-max-age cookie))
                  (format-if "Path=~a" (cookie-path cookie))
                  (and (cookie-secure cookie) "Secure")
-                 (format "Version=~a" (or (cookie-version cookie) 1))))
+                 (format "Version=~a" (or (cookie-version cookie) 1))
+                 (format-if "expires=~a" (cookie-expires cookie))))
    "; "))
 
 (define (cookie:add-comment cookie pre-comment)
@@ -143,6 +147,14 @@
   (unless (cookie? cookie)
     (error* "cookie expected, received: ~a" cookie))
   (set-cookie-domain! cookie domain)
+  cookie)
+
+(define (cookie:add-expires cookie expires)
+  (unless (string? expires)
+    (error* "invalid expires: ~a" expires))
+  (unless (cookie? cookie)
+    (error* "cookie expected, received: ~a" cookie))
+  (set-cookie-expires! cookie expires)
   cookie)
 
 (define (cookie:add-max-age cookie seconds)

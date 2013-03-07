@@ -55,7 +55,7 @@
 (define pkgs-path (build-path root "pkgs"))
 (make-directory* pkgs-path)
 
-(define id-cookie-name "id")
+(define id-cookie-name "pnrid")
 
 ;; XXX Add a caching system
 (define (package-list)
@@ -172,8 +172,9 @@
                 => (λ (user)
                      `(span ([id "logout"])
                             ,user
-                            " | "
-                            (a ([href ,(main-url page/logout)]) "logout")))]
+                            ;;" | "
+                            ;;(a ([href ,(main-url page/logout)]) "logout")
+                            ))]
                [else
                 ""]))
        ,@xexpr-forest
@@ -188,7 +189,7 @@
   (redirect-to
    (main-url page/main)
    #:headers
-   (list (cookie->header (logout-id-cookie id-cookie-name)))))
+   (list (cookie->header (logout-id-cookie id-cookie-name #:path "/")))))
 
 (define (package-list/search ts)
   (filter
@@ -287,7 +288,7 @@
      #:headers
      (list
       (cookie->header
-       (make-id-cookie id-cookie-name secret-key email)))))
+       (make-id-cookie id-cookie-name secret-key email #:path "/")))))
 
   (when (regexp-match (regexp-quote "/") email)
     (send/back
@@ -488,7 +489,7 @@
     (unless (or (not pkg) (equal? new-pkg pkg))
       (package-remove! pkg))
 
-    (update-checksum new-pkg)
+    (update-checksum #t new-pkg)
 
     (define new-tag
       (request-binding/string pkg-req "tag" #f))
@@ -680,34 +681,39 @@
 
 (define (page/manage/update req)
   (update-checksums
+   #t
    (package-list/mine req))
   (redirect-to (main-url page/manage)))
 
-(define (update-checksums pkgs)
-  (for-each update-checksum pkgs))
+(define (update-checksums force? pkgs)
+  (for-each (curry update-checksum force?) pkgs))
 
-(define (update-checksum pkg-name)
+(define (update-checksum force? pkg-name)
   (define i (package-info pkg-name))
   (define old-checksum
     (package-ref i 'checksum))
   (define now (current-seconds))
-  (define new-checksum
-    (package-url->checksum
-     (package-ref i 'source)
-     (list (cons 'client_id (client_id))
-           (cons 'client_secret (client_secret)))))
-  (package-begin
-   (define* i
-     (hash-set i 'checksum
-               (or new-checksum
-                   old-checksum)))
-   (define* i
-     (hash-set i 'last-checked now))
-   (define* i
-     (if (and new-checksum (equal? new-checksum old-checksum))
-       i
-       (hash-set i 'last-updated now)))
-   (package-info-set! pkg-name i)))
+  (define last (hash-ref i 'last-checked -inf.0))
+  (when (or force? 
+            (>= (- now last) (* 24 60 60)))
+    (printf "\tupdating ~a\n" pkg-name)
+    (define new-checksum
+      (package-url->checksum
+       (package-ref i 'source)
+       (list (cons 'client_id (client_id))
+             (cons 'client_secret (client_secret)))))
+    (package-begin
+     (define* i
+       (hash-set i 'checksum
+                 (or new-checksum
+                     old-checksum)))
+     (define* i
+       (hash-set i 'last-checked now))
+     (define* i
+       (if (and new-checksum (equal? new-checksum old-checksum))
+         i
+         (hash-set i 'last-updated now)))
+     (package-info-set! pkg-name i))))
 
 (define basic-start
   (planet2-index/basic package-list package-info))
@@ -719,7 +725,7 @@
      (while true
        (printf "updating checksums\n")
        (with-handlers ([exn:fail? void])
-         (update-checksums (package-list)))
+         (update-checksums #f (package-list)))
        ;; update once per day based on whenever the server started
        (sleep (* 24 60 60)))))
   (serve/servlet

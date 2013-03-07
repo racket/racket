@@ -64,6 +64,12 @@ that a client should retain the cookie.}
 Modifies @racket[cookie] with a path, and also returns
 @racket[cookie].}
 
+@defproc[(cookie:add-expires [cookie cookie?] [path string])
+         cookie?]{
+
+Modifies @racket[cookie] with an expiration, and also returns
+@racket[cookie].}
+
 @defproc[(cookie:secure [cookie cookie?] [secure boolean?])
          cookie?]{
 

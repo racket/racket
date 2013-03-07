@@ -29,11 +29,12 @@
   (and (client-cookie? c)
        (string=? (client-cookie-name c) name)))
 
-(define (make-id-cookie name key data)
+(define (make-id-cookie name key data #:path [path #f])
   (define authored (current-seconds))
   (define digest
     (mac key (list authored data)))
   (make-cookie name
+               #:path path
                (format "~a&~a&~a"
                        digest authored data)))
 
@@ -59,8 +60,8 @@
   (for/or ([c (in-list cookies)])
     (valid-id-cookie? name key timeout c)))
 
-(define (logout-id-cookie name)
-  (make-cookie name "invalid format"))
+(define (logout-id-cookie name #:path [path #f])
+  (make-cookie name "invalid format" #:path path #:expires "Thu, 01 Jan 1970 00:00:00 GMT"))
 
 (provide
  (contract-out
@@ -68,11 +69,12 @@
    (-> path-string?
        bytes?)]
   [logout-id-cookie
-   (-> cookie-name? cookie?)]
+   (->* (cookie-name?) (#:path string?) cookie?)]
   [request-id-cookie
    (->* (cookie-name? bytes? request?)
         (#:timeout number?)
         (or/c false/c cookie-value?))]
   [make-id-cookie
-   (-> cookie-name? bytes? cookie-value?
-       cookie?)]))
+   (->* (cookie-name? bytes? cookie-value?)
+        (#:path string?)
+        cookie?)]))
