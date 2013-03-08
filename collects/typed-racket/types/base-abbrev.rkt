@@ -32,6 +32,11 @@
 ;; Void is needed for Params
 (define -Void (make-Base 'Void #'void? void? #'-Void #f))
 
+;; -lst* Type is needed by substitute for ListDots
+(define -pair make-Pair)
+(define (-lst* #:tail [tail (-val null)] . args)
+  (for/fold ([tl tail]) ([a (reverse args)]) (-pair a tl)))
+
 
 ;; Simple union type, does not check for overlaps
 

@@ -185,6 +185,33 @@
    [FAIL -Fixnum (-seq -Fixnum)]
    [FAIL -NonNegFixnum (-seq -Index)]
    [FAIL (-val 5.0) (-seq -Nat)]
+
+   [(-polydots (a) (->... (list Univ) (a a) (make-ValuesDots null a 'a)))
+    (-polydots (a) (->... (list -String) (a a) (make-ValuesDots null a 'a)))]
+
+   [(-polydots (a) (->... null (Univ a) (make-ValuesDots (list (-result a)) a 'a)))
+    (-polydots (a) (->... null (-String a) (make-ValuesDots (list (-result a)) a 'a)))]
+
+   [(-polydots (a) (->... null (a a) (make-ValuesDots (list (-result -String)) -String 'a)))
+    (-polydots (a) (->... null (a a) (make-ValuesDots (list (-result Univ)) Univ 'a)))]
+
+   [(-polydots (a) (->... null (Univ a) (-values (list Univ))))
+    (->* null Univ Univ)]
+
+
+   [(-polydots (a) (->... null (a a) (make-ListDots a 'a)))
+    (-> -String -Symbol (-Tuple (list -String -Symbol)))]
+   [(-> -String -Symbol (-Tuple (list -String -Symbol)))
+    (-polydots (a) (-> -String -Symbol (-lst (Un -String -Symbol))))]
+
+   [(-polydots (a) (->... null (a a) (make-ListDots a 'a)))
+    (-poly (a b) (-> a b (-Tuple (list a b))))]
+
+   [(-polydots (b a) (-> (->... (list b) (a a) (make-ValuesDots (list (-result b)) a 'a)) Univ))
+    (-polydots (a) (-> (->... (list) (a a) (make-ValuesDots null a 'a)) Univ))]
+
+   [(-polydots (a) (->... (list) (a a) (make-ListDots a 'a)))
+    (-polydots (b a) (->... (list b) (a a) (-pair b (make-ListDots a 'a))))]
    ))
 
 (define-go
