@@ -141,41 +141,38 @@
            (raise-syntax-error 'set! "allowed only inside begin expressions and at the top-level" stx)))]))
 (define-syntax (mutator-let-values stx)
   (syntax-case stx ()
-    [(_ ([(id ...) expr]
-         ...)
-        body-expr)
+    [(_ ([(id ...) expr] ...) body-expr)
      (with-syntax ([((tmp ...) ...)
                     (map generate-temporaries (syntax->list #'((id ...) ...)))])
-       (let ([binding-list (syntax->list #'((tmp ...) ...))])
-         (with-syntax ([((previous-tmp ...) ...)
+       (let ([binding-list (syntax->list #'((id ...) ...))])
+         (with-syntax ([((previous-id ...) ...)
                         (build-list (length binding-list) 
                                     (λ (n) (append-map syntax->list (take binding-list n))))])
            (syntax/loc stx
              (let*-values ([(tmp ...) 
                             (syntax-parameterize ([mutator-env-roots 
                                                    (append
-                                                    (find-referenced-locals
-                                                     (list #'previous-tmp ...)
-                                                     #'expr)
+                                                    (switch-over
+                                                     (syntax->list #'(id ... ...))
+                                                     (syntax->list #'(tmp ... ...))
+                                                     (find-referenced-locals
+                                                      (list #'previous-id ...)
+                                                      #'body-expr))
                                                     (syntax-parameter-value #'mutator-env-roots))]
                                                   [mutator-tail-call? #f])
                                                  (no! expr))]
                            ...)
-               (let-values ([(id ...) (values tmp ...)]
-                            ...)
+               (let-values ([(id ...) (values tmp ...)] ...)
                  (syntax-parameterize ([mutator-env-roots 
                                         (append (find-referenced-locals
                                                  (list #'id ... ...)
                                                  #'body-expr)
                                                 (syntax-parameter-value #'mutator-env-roots))])
                                       body-expr)))))))]
-    [(_ ([(id ...) expr]
-         ...)
-        body-expr ...)
+    [(_ ([(id ...) expr] ...) body-expr ...)
      (syntax/loc stx
        (mutator-let-values
-        ([(id ...) expr]
-         ...)
+        ([(id ...) expr] ...)
         (mutator-begin body-expr ...)))]))
 (define-syntax (mutator-lambda stx)
   (syntax-case stx ()
