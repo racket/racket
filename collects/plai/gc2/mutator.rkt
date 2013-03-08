@@ -221,13 +221,7 @@
 (define-syntax (mutator-app stx)
   (syntax-case stx ()
     [(_ e ...)
-     (local [(define (do-not-expand? exp)
-               (and (identifier? exp)
-                    (or (free-identifier=? exp #'empty)
-                        (free-identifier=? exp #'collector:set-first!)
-                        (free-identifier=? exp #'collector:set-rest!)
-                        (ormap (λ (x) (free-identifier=? x exp))
-                               prim-ids))))
+     (local [(define (do-not-expand? exp) (identifier? exp))
              (define exps (syntax->list #'(e ...)))
              (define tmps
                (generate-temporaries #'(e ...)))]
