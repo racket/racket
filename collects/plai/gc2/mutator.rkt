@@ -332,9 +332,13 @@
                                           gc:set-first! gc:set-rest!))]) 
        (begin
          #`(begin
-             #,(if (alternate-collector)
-                   #`(require #,(datum->syntax #'collector-module (alternate-collector)))
-                   #`(require collector-module))
+             #,(begin
+                 (if (alternate-collector)
+                     #`(require #,(datum->syntax #'collector-module (alternate-collector)))
+                     #`(require #,(syntax-case #'collector-module (mutator-quote)
+                                    [(mutator-quote . x) 
+                                     (datum->syntax #'collector-module (cons #'quote #'x))]
+                                    [else #'collector-module]))))
              
              (set-collector:deref! gc:deref)
              (set-collector:alloc-flat! gc:alloc-flat)
