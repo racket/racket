@@ -14,9 +14,9 @@
   (for ([v (in-vector vs)]
         [i (in-naturals 1)])
        (heap-set! (+ 1 i heap-ptr) v))
-  (set! heap-ptr (+ len heap-ptr))
+  (set! heap-ptr (+ len 2 heap-ptr))
   ;; return the location of this flat data
-  (- heap-ptr len))
+  (- heap-ptr len 2))
 
 (define (gc:closure-code-ptr a)
   (heap-ref (+ a 1)))
@@ -78,4 +78,14 @@
                            (let ([x 0])
                              (set-root! (car (get-root-set x)) 1)
                              x))
-                1))
+                1)
+  
+  (check-equal? (let ([h (make-vector 7)])
+                  (with-heap 
+                   h
+                   (init-allocator)
+                   (define one (gc:alloc-flat 1))
+                   (define clos (gc:closure 'something (vector one)))
+                   (gc:alloc-flat 2))
+                  h)
+                (vector 'prim 1 'closure 'something 0 'prim 2)))
