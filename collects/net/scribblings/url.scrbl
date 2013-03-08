@@ -390,7 +390,7 @@ connections. Each mapping is a list of three elements:
 
 ]
 
-Currently, the only proxiable scheme is @racket["http"]. The default
+Currently, the proxiable schemes are @racket["http"] and @racket["https"]. The default
 mapping is the empty list (i.e., no proxies).}
 
 @defproc[(url-exception? [x any/c])
