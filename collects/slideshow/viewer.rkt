@@ -773,10 +773,9 @@
 		(set! click-regions (map (lambda (cr)
 					   (shift-click-region cr dx dy))
 					 prefetched-click-regions))
-                (swap-interactives! interactives
-                                    (for/hash ([k (in-hash-keys prefetched-interactives)])
-                                      (values (shift-interact k dx dy)
-                                              #t)))
+                (set! interactives (for/hash ([k (in-hash-keys prefetched-interactives)])
+                                     (values (shift-interact k dx dy)
+                                             #t)))
 		(send f set-blank-cursor (null? click-regions)))))
 	  (define/override (on-size w h)
 	    (unless resizing-frame?
