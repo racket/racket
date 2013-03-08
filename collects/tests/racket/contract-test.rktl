@@ -5489,6 +5489,47 @@
       (eval '(require 'with-contract-#%app-client))
       (eval '(list with-contract-#%app-h with-contract-#%app-i)))
    (list 'apped 'apped))
+  
+  (test/spec-passed/result
+   'with-contract-one-contract-app-per-mutation-1
+   '(let* ([counter 0]
+           [ctc (λ (x) (set! counter (add1 counter)) (number? x))])
+      (with-contract foo ([x ctc])
+        (define x 3))
+      (+ x 4)
+      (+ x 6)
+      counter)
+   1)
+  
+  (test/spec-passed/result
+   'with-contract-one-contract-app-per-mutation-2
+   '(let* ([counter 0]
+           [ctc (λ (x) (set! counter (add1 counter)) (number? x))])
+      (with-contract foo ([x ctc])
+        (define x 3))
+      (+ x 4)
+      (+ x 6)
+      (set! x 6)
+      (+ x 6)
+      (+ x 2)
+      counter)
+   ;; 3 because of a double wrapping that occurs for outside mutations
+   ;; (that is, internal gets wrapped, then external gets wrapped again
+   ;; to fix blame.  Could be optimized away if we had blame collapsing,
+   ;; e.g., (contract ctc (contract ctc x n1 p1) n2 p2) =>
+   ;; (contract ctc x n2 p1), so if this breaks after adding such adjust it.
+   3)
+  
+  ;; Check to make sure that any non-delayed set!s within the region don't
+  ;; get overridden when accessing the external version.
+  (test/spec-passed/result
+   'with-contract-on-contract-app-per-mutation-3
+   '(let ()
+      (with-contract foo ([x number?])
+        (define x 3)
+        (set! x 4))
+      x)
+   4)
 
 ;
 ;
