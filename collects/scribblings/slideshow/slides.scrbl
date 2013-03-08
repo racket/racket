@@ -185,6 +185,17 @@ given pict, but that when clicked during a presentation calls
 @racket[thunk].}
 
 
+@defproc[(interactive [pict pict?] [proc (frame% . -> . (-> any))])
+         pict?]{
+
+Creates a pict that embeds the given one, but that creates a floating
+frame at the pict's location on the screen during a
+presentation. After the floating frame is created (and before it is shown),
+@racket[proc] is applied to the frame. The result from @racket[proc]
+must be a procedure that is called when the window is removed (because
+the slide changes, for example).}
+
+
 @defproc[(size-in-pixels [pict pict?]) pict?]{
 
 Scales @racket[pict] so that it is displayed on the screen as

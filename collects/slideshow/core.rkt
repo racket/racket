@@ -21,11 +21,15 @@
 				   page          ; int
 				   page-count    ; int
 				   inset         ; sinset
-				   transitions   ; canvas% bitmap% -> 'went or delay-msecs
+				   [transitions  ; canvas% bitmap% -> 'went or delay-msecs
+                                    #:mutable]
                                    timeout))     ; msecs
   (define/provide-struct just-a-comment (content)) ; content is list of strings and picts
   (define/provide-struct sinset (l t r b))
   (define/provide-struct click-region (left top right bottom thunk show-click?))
+  (define/provide-struct interact (left top right bottom proc)
+    ;; transparent for hashing:
+    #:transparent)
 
   (define zero-inset (make-sinset 0 0 0 0))
       
@@ -1001,6 +1005,27 @@
 					     (+ (* (+ y h) sy) dy)
 					     thunk
 					     show-click?))))
+		     w h
+		     (pict-ascent pict)
+		     (pict-descent pict))))))))
+
+      (define interactive
+	(lambda (pict window-proc)
+	  (let ([w (pict-width pict)]
+		[h (pict-height pict)])
+	    (cons-picture*
+	     pict
+	     `((place 
+		0 0
+		,(dc (lambda (dc x y)
+		       (let-values ([(sx sy) (send dc get-scale)]
+				    [(dx dy) (send dc get-origin)])
+			 (viewer:add-interactive!
+			  (make-interact (+ (* x sx) dx)
+                                         (+ (* y sy) dy)
+                                         (+ (* (+ x w) sx) dx)
+                                         (+ (* (+ y h) sy) dy)
+                                         window-proc))))
 		     w h
 		     (pict-ascent pict)
 		     (pict-descent pict))))))))

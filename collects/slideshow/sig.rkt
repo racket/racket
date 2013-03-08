@@ -28,7 +28,9 @@
      set-page-numbers-visible!
      done-making-slides
      ;; Called when a clickback-containing slide is rendered:
-     add-click-region!))
+     add-click-region!
+     ;; Called when a interactive-containing slide is rendered:
+     add-interactive!))
 
   ;; The core unit's exports, which are the functions used by a 
   ;; Slideshow program:
@@ -78,7 +80,8 @@
      current-page-number-font current-page-number-color current-page-number-adjust
      current-titlet current-para-width
      set-page-numbers-visible! done-making-slides
-     clickback 
+     clickback
+     interactive
      make-slide-inset
      apply-slide-inset
      condense?

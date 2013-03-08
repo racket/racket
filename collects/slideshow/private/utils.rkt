@@ -1,5 +1,5 @@
 
-(module utils mzscheme
+(module utils racket/base
   (require mred
 	   mzlib/class)
 
@@ -17,10 +17,10 @@
 
   (define-syntax define/provide-struct
     (syntax-rules ()
-      [(_ id flds)
+      [(_ id flds flags ...)
        (begin
-	 (define-struct id flds)
-	 (provide (struct id flds)))])))
+	 (define-struct id flds flags ...)
+	 (provide (struct-out id)))])))
 
 
 

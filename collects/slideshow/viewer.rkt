@@ -40,6 +40,7 @@
       (define click-to-advance? #t)
       (define blank-cursor-allowed? #t)
       (define click-regions null)
+      (define interactives #hash())
       (define talk-slide-list null)
       (define given-talk-slide-list null)
       (define talk-slide-reverse-cell-list null)
@@ -132,6 +133,9 @@
       (define (add-click-region! cr)
 	(adjust-cursor)
 	(set! click-regions (cons cr click-regions)))
+
+      (define (add-interactive! ir)
+        (set! interactives (hash-set interactives ir #t)))
 
       (define (make-quad l)
 	(cond
@@ -256,14 +260,18 @@
 		   #t]
 		  [(escape)
 		   (send f set-blank-cursor #f)
-		   (when (equal? 1 (message-box/custom
-				    "Quit"
-				    "Really quit the slide show?"
-				    "&Quit"
-				    "&Cancel"
-				    #f
-				    this
-				    '(default=1 caution)))
+		   (when (equal? 1 (send
+                                    c
+                                    call-with-suspended-interactive
+                                    (lambda ()
+                                      (message-box/custom
+                                       "Quit"
+                                       "Really quit the slide show?"
+                                       "&Quit"
+                                       "&Cancel"
+                                       #f
+                                       this
+                                       '(default=1 caution)))))
 		     (stop-show))
 		   (send f set-blank-cursor blank-cursor-allowed?)
 		   #t]
@@ -646,7 +654,8 @@
       
       (define c%
 	(class canvas%
-	  (inherit get-dc get-client-size make-bitmap)
+	  (inherit get-dc get-client-size make-bitmap
+                   client->screen)
 	  
 	  (define clicking #f)
 	  (define clicking-hit? #f)
@@ -747,6 +756,13 @@
 			       (+ dy (click-region-bottom cr))
 			       (click-region-thunk cr)
 			       (click-region-show-click? cr)))
+	  
+	  (define/private (shift-interact cr dx dy)
+	    (make-interact (+ dx (interact-left cr))
+                           (+ dy (interact-top cr))
+                           (+ dx (interact-right cr))
+                           (+ dy (interact-bottom cr))
+                           (interact-proc cr)))
 
 	  (define/private (paint-prefetch dc)
 	    (let-values ([(cw ch) (get-client-size)])
@@ -757,6 +773,10 @@
 		(set! click-regions (map (lambda (cr)
 					   (shift-click-region cr dx dy))
 					 prefetched-click-regions))
+                (swap-interactives! interactives
+                                    (for/hash ([k (in-hash-keys prefetched-interactives)])
+                                      (values (shift-interact k dx dy)
+                                              #t)))
 		(send f set-blank-cursor (null? click-regions)))))
 	  (define/override (on-size w h)
 	    (unless resizing-frame?
@@ -779,6 +799,8 @@
 	      (send commentary end-edit-sequence)
 	      (send commentary lock #t)
 	      (set! click-regions null)
+              (define old-interactives interactives)
+	      (set! interactives #hash())
 	      (set! clicking #f)
 	      (stop-transition/no-refresh)
               (when (sliderec-timeout (talk-list-ref current-page))
@@ -824,7 +846,50 @@
 	       [else
 		(let ([dc (get-dc)])
 		  (send dc clear)
-		  (paint-slide this dc))])))
+		  (paint-slide this dc))])
+              (swap-interactives! old-interactives interactives)))
+
+          (define interactive-state (make-hash))
+          (define/private (swap-interactives! old new-i)
+            (define shared (for/hash ([k (in-hash-keys old)]
+                                      #:when (hash-ref new-i k #f))
+                             (values k #t)))
+            (for ([k (in-hash-keys old)])
+              (unless (hash-ref shared k #f)
+                (define proc+win (hash-ref interactive-state k #f))
+                (when proc+win
+                  (hash-remove! interactive-state k)
+                  ((car proc+win))
+                  (send (cdr proc+win) show #f))))
+            (for ([k (in-hash-keys new-i)])
+              (unless (hash-ref shared k #f)
+                (define win (new frame%
+                                 [label "Interactive"]
+                                 [style '(float no-resize-border no-caption no-system-menu)]))
+                (define-values (left top) (client->screen (inexact->exact (floor (interact-left k)))
+                                                          (inexact->exact (floor (interact-top k)))))
+                (define-values (right bottom) (client->screen (inexact->exact (ceiling (interact-right k)))
+                                                              (inexact->exact (ceiling (interact-bottom k)))))
+                (define-values (dx dy) (get-display-left-top-inset))
+                (send win move (- left dx) (- top dy))
+                (send win resize (- right left) (- bottom top))
+                (define cancel ((interact-proc k) win))
+                (hash-set! interactive-state k (cons cancel win))
+                (send win show #t)))
+            (set! interactives new-i))
+
+          (define/override on-superwindow-show 
+            (lambda (on?)
+              (unless on?
+                (swap-interactives! interactives #hash()))))
+
+          (define/public (call-with-suspended-interactive thunk)
+            (define i interactives)
+            (swap-interactives! i #hash())
+            (begin0
+             (thunk)
+             (swap-interactives! #hash() i)))
+
           (super-new [style '(no-autoclear)])))
 
       (define two-c%
@@ -988,6 +1053,8 @@
       (define prefetch-schedule-cancel-box (box #f))
       ;; prefetched-click-regions : list
       (define prefetched-click-regions null)
+      ;; prefetched-interactives : hash
+      (define prefetched-interactives #hash())
 
       (define (prefetch-slide canvas n)
 	(set! prefetched-page #f)
@@ -1007,13 +1074,17 @@
 	(when (send prefetch-dc ok?)
 	  (send prefetch-dc clear)
 	  (let ([old-click-regions click-regions]
+                [old-interactives interactives]
 		[old-adjust adjust-cursor])
 	    (set! click-regions null)
+	    (set! interactives #hash())
 	    (set! adjust-cursor void)
 	    (paint-slide canvas prefetch-dc n)
 	    (set! prefetched-click-regions click-regions)
+	    (set! prefetched-interactives interactives)
 	    (set! click-regions old-click-regions)
-	    (set! adjust-cursor old-adjust))
+	    (set! interactives old-interactives)
+            (set! adjust-cursor old-adjust))
 	  (set! prefetched-page n)
 	  (when (and config:use-prefetch-in-preview?
 		     (send f-both is-shown?))

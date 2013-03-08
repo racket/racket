@@ -59,6 +59,7 @@
                                           (define enable-click-advance! void)
                                           (define set-page-numbers-visible! void)
                                           (define add-click-region! void)
+                                          (define add-interactive! void)
                                           (define done-making-slides void))
                    CORE]))))
 	(parameterize ([current-namespace ns])

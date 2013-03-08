@@ -1,6 +1,8 @@
 (module slide racket/base
   (require racket/unit
            racket/contract
+           racket/class
+           racket/gui/base
            texpict/mrpict
            texpict/utils
            "sig.rkt"
@@ -132,11 +134,14 @@
            slide/title/center/timeout
            (rename-out [sinset? slide-inset?]))
   (provide/contract [clickback 
-		     ((pict? (lambda (x)
-			       (and (procedure? x)
-				    (procedure-arity-includes? x 0))))
+		     ((pict? (-> any))
 		      (any/c)
 		      . ->* .
+		      pict?)]
+		    [interactive
+		     (pict? 
+                      ((is-a?/c frame%) . -> . (-> any))
+                      . -> .
 		      pict?)]
 		    [make-slide-inset
 		     (side-inset? side-inset? side-inset? side-inset?

@@ -2,7 +2,8 @@ Version 5.3.3.7
 Added module-compiled-cross-phase-persistent?
 Added 'so-mode mode for system-type
 ffi/unsafe: changed ffi-lib to use (system-type 'so-mode)
-slideshow/balloon: add balloon-enable-3d
+slideshow/balloon: added balloon-enable-3d
+slideshow: added interactive
 scribble/manual: added #:id option to defthing
 scribble/srcdoc: added begin-for-doc
 
