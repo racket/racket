@@ -212,22 +212,23 @@
     (err/rt-test (fun '(1) 2) exn:application:mismatch?)
     (err/rt-test (fun '(1 2 . 3) 3) exn:application:mismatch?)))
 
-;; ---------- take/drop-while ----------
+;; ---------- takef/dropf ----------
 
 (let ()
   (define list-1 '(2 4 6 8 1 3 5))
-  (err/rt-test (take-while 5 '()) exn:application:mismatch?)
-  (err/rt-test (drop-while 5 '()) exn:application:mismatch?)
-  (err/rt-test (take-while even? 1) exn:application:mismatch?)
-  (err/rt-test (drop-while even? 1) exn:application:mismatch?)
-  (test '(2 4 6 8) take-while even? list-1)
-  (test '(1 3 5) drop-while even? list-1)
-  (test '() take-while odd? list-1)
-  (test list-1 drop-while odd? list-1)
-  (test list-1 take-while number? list-1)
-  (test '() drop-while number? list-1)
-  (test '() take-while list? '())
-  (test '() drop-while list? '()))
+  (err/rt-test (takef 5 '()) exn:application:mismatch?)
+  (err/rt-test (dropf 5 '()) exn:application:mismatch?)
+  (err/rt-test (takef even? 1) exn:application:mismatch?)
+  (err/rt-test (dropf even? 1) exn:application:mismatch?)
+  (define (t pred take-l drop-l)
+    (define l (append take-l drop-l))
+    (test take-l takef pred l)
+    (test drop-l dropf pred l))
+  (t even? '() '())
+  (t even? '(2 4) '(5 7))
+  (t even? '(2 4 6 8) '())
+  (t even? '() '(1 3 5))
+  (t symbol? '(a b c) '(1 2 3 x y z)))
 
 ;; ---------- append* ----------
 (let ()

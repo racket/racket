@@ -15,8 +15,8 @@
          split-at
          drop-right
          take-right
-         take-while
-         drop-while
+         takef
+         dropf
          split-at-right
 
          append*
@@ -153,11 +153,11 @@
       (cons (car list) (loop (cdr list) (cdr lead)))
       '())))
 
-(define (take-while pred list)
+(define (takef pred list)
   (unless (procedure? pred)
-    (raise-argument-error 'take-while "procedure?" 0 pred list))
+    (raise-argument-error 'takef "procedure?" 0 pred list))
   (unless (list? list)
-    (raise-argument-error 'take-while "list?" 1 pred list))
+    (raise-argument-error 'takef "list?" 1 pred list))
   (let loop ([list list])
     (if (null? list)
       '()
@@ -166,11 +166,11 @@
           (cons x (loop (cdr list)))
           '())))))
 
-(define (drop-while pred list)
+(define (dropf pred list)
   (unless (procedure? pred)
-    (raise-argument-error 'drop-while "procedure?" 0 pred list))
+    (raise-argument-error 'dropf "procedure?" 0 pred list))
   (unless (list? list)
-    (raise-argument-error 'drop-while "list?" 1 pred list))
+    (raise-argument-error 'dropf "list?" 1 pred list))
   (let loop ([list list])
     (cond [(null? list) '()]
           [(pred (car list)) (loop (cdr list))]

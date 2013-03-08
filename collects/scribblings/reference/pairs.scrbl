@@ -821,7 +821,7 @@ Returns the same result as
 
 except that it can be faster.}
 
-@defproc[(take-while [pred procedure?] [lst list?])
+@defproc[(takef [pred procedure?] [lst list?])
          list?]{
 Returns a fresh list whose elements are taken successively from
 @racket[lst] as long as they satisfy @racket[pred]. The returned
@@ -829,18 +829,18 @@ list includes up to, but not including, the first element in
 @racket[lst] for which @racket[pred] returns @racket[#f].
 
 @mz-examples[#:eval list-eval
-  (take-while even? '(2 4 5 8))
-  (take-while odd? '(2 4 6 8))
+  (dropf even? '(2 4 5 8))
+  (dropf odd? '(2 4 6 8))
 ]}
 
-@defproc[(drop-while [pred procedure?] [lst list?])
+@defproc[(dropf [pred procedure?] [lst list?])
          list?]{
 Returns a fresh list with elements successively removed from
 @racket[lst] from the front as long as they satisfy @racket[pred].
 
 @mz-examples[#:eval list-eval
-  (drop-while even? '(2 4 5 8))
-  (drop-while odd? '(2 4 6 8))
+  (dropf even? '(2 4 5 8))
+  (dropf odd? '(2 4 6 8))
 ]}
 
 @defproc[(take-right [lst any/c] [pos exact-nonnegative-integer?]) any/c]{
