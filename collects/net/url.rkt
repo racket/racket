@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/port racket/string racket/contract/base
+         openssl
          "url-connect.rkt"
          "url-structs.rkt"
          "uri-codec.rkt")
@@ -36,7 +37,7 @@
                    (andmap (lambda (v)
                              (and (list? v)
                                   (= 3 (length v))
-                                  (equal? (car v) "http")
+                                  (member (car v) '("http" "https"))
                                   (string? (car v))
                                   (exact-integer? (caddr v))
                                   (<= 1 (caddr v) 65535)))
@@ -97,14 +98,32 @@
           [(string=? scheme "https") 443]
           [else (url-error "URL scheme ~s not supported" scheme)])))
 
+(define (ssl-connect/proxy proxy proxy-port host host-port)
+  (define-values (in out)
+    (parameterize ([current-connect-scheme "http"])
+      (tcp-connect proxy proxy-port)))
+  (fprintf out "CONNECT ~a:~a HTTP/1.1\r\n\r\n" host host-port)
+  (flush-output out)
+  (define status (read-line in 'return-linefeed))
+  (when (eof-object? status)
+    (error 'http-connect "Proxy '~a' CONNECT closed" proxy))
+  (unless (regexp-match #rx"^HTTP/[0-9]+[.][0-9]+ 200" status)
+    (error 'https-connect "Proxy '~a' no support CONNECT: ~a" proxy status))
+  (http-read-headers in)
+  (ports->ssl-ports in out #:hostname host #:encrypt (current-https-protocol)))
+
 ;; make-ports : url -> in-port x out-port
 (define (make-ports url proxy)
-  (let ([port-number (if proxy
-                       (caddr proxy)
-                       (or (url-port url) (url->default-port url)))]
-        [host (if proxy (cadr proxy) (url-host url))])
-    (parameterize ([current-connect-scheme (url-scheme url)])
-      (tcp-connect host port-number))))
+  (define host (url-host url))
+  (define host-port (or (url-port url) (url->default-port url)))
+  (if proxy
+      (let ([proxy-host (cadr proxy)]
+            [proxy-port (caddr proxy)])
+        (if (equal? (url-scheme url) "https")
+            (ssl-connect/proxy proxy-host proxy-port host host-port)
+            (parameterize ([current-connect-scheme (url-scheme url)])
+              (tcp-connect proxy-host proxy-port))))
+      (tcp-connect host host-port)))
 
 ;; http://getpost-impure-port : bool x url x union (str, #f) x list (str) -> in-port
 (define (http://getpost-impure-port get? url post-data strings)
