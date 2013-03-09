@@ -13,10 +13,10 @@
          drop
          take
          split-at
-         drop-right
-         take-right
          takef
          dropf
+         drop-right
+         take-right
          split-at-right
 
          append*
@@ -117,6 +117,12 @@
           [(pair? list) (cons (car list) (loop (cdr list) (sub1 n)))]
           [else (too-large 'take list0 n0)])))
 
+(define (drop list n)
+  ;; could be defined as `list-tail', but this is better for errors anyway
+  (unless (exact-nonnegative-integer? n)
+    (raise-argument-error 'drop "exact-nonnegative-integer?" 1 list n))
+  (or (drop* list n) (too-large 'drop list n)))
+
 (define (split-at list0 n0)
   (unless (exact-nonnegative-integer? n0)
     (raise-argument-error 'split-at "exact-nonnegative-integer?" 1 list0 n0))
@@ -124,34 +130,6 @@
     (cond [(zero? n) (values (reverse pfx) list)]
           [(pair? list) (loop (cdr list) (sub1 n) (cons (car list) pfx))]
           [else (too-large 'split-at list0 n0)])))
-
-(define (drop list n)
-  ;; could be defined as `list-tail', but this is better for errors anyway
-  (unless (exact-nonnegative-integer? n)
-    (raise-argument-error 'drop "exact-nonnegative-integer?" 1 list n))
-  (or (drop* list n) (too-large 'drop list n)))
-
-;; take/drop-right are originally from srfi-1, uses the same lead-pointer trick
-
-(define (take-right list n)
-  (unless (exact-nonnegative-integer? n)
-    (raise-argument-error 'take-right "exact-nonnegative-integer?" 1 list n))
-  (let loop ([list list]
-             [lead (or (drop* list n) (too-large 'take-right list n))])
-    ;; could throw an error for non-lists, but be more like `take'
-    (if (pair? lead)
-      (loop (cdr list) (cdr lead))
-      list)))
-
-(define (drop-right list n)
-  (unless (exact-nonnegative-integer? n)
-    (raise-argument-error 'drop-right "exact-nonnegative-integer?" n))
-  (let loop ([list list]
-             [lead (or (drop* list n) (too-large 'drop-right list n))])
-    ;; could throw an error for non-lists, but be more like `drop'
-    (if (pair? lead)
-      (cons (car list) (loop (cdr list) (cdr lead)))
-      '())))
 
 (define (takef pred list)
   (unless (procedure? pred)
@@ -175,6 +153,28 @@
     (cond [(null? list) '()]
           [(pred (car list)) (loop (cdr list))]
           [else list])))
+
+;; take/drop-right are originally from srfi-1, uses the same lead-pointer trick
+
+(define (take-right list n)
+  (unless (exact-nonnegative-integer? n)
+    (raise-argument-error 'take-right "exact-nonnegative-integer?" 1 list n))
+  (let loop ([list list]
+             [lead (or (drop* list n) (too-large 'take-right list n))])
+    ;; could throw an error for non-lists, but be more like `take'
+    (if (pair? lead)
+      (loop (cdr list) (cdr lead))
+      list)))
+
+(define (drop-right list n)
+  (unless (exact-nonnegative-integer? n)
+    (raise-argument-error 'drop-right "exact-nonnegative-integer?" n))
+  (let loop ([list list]
+             [lead (or (drop* list n) (too-large 'drop-right list n))])
+    ;; could throw an error for non-lists, but be more like `drop'
+    (if (pair? lead)
+      (cons (car list) (loop (cdr list) (cdr lead)))
+      '())))
 
 (define (split-at-right list n)
   (unless (exact-nonnegative-integer? n)
