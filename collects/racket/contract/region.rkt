@@ -515,9 +515,9 @@
          [(set! i arg)
           (quasisyntax/loc stx
             (begin
-              (set! int-id (contract ctc arg neg pos (quote int-id) (quote-srcloc id)))
+              (set! int-id (contract ctc arg neg pos (quote int-id) (quote-srcloc int-id)))
               (set! ext-id (λ ()
-                             (let ([x (contract ctc int-id pos neg (quote ext-id) (quote-srcloc id))])
+                             (let ([x (contract ctc int-id pos neg (quote ext-id) (quote-srcloc ext-id))])
                                (set! ext-id (λ () x))
                                x)))))]
          [(f arg ...)
@@ -541,7 +541,7 @@
           (quasisyntax/loc stx
             (begin
               (set! int-id arg)
-              (set! ext-id (λ () (let ([x (contract ctc int-id pos neg (quote ext-id) (quote-srcloc id))])
+              (set! ext-id (λ () (let ([x (contract ctc int-id pos neg (quote ext-id) (quote-srcloc ext-id))])
                                    (set! ext-id (λ () x))
                                    x)))))]
          [(f arg ...)
@@ -768,7 +768,7 @@
                                        true-p
                                        ext-id 
                                        (λ ()
-                                         (let ([x (contract ctc-id true-p blame-stx blame-id (quote marked-p) (quote-srcloc marked-p))])
+                                         (let ([x (contract ctc-id true-p blame-stx blame-id (quote ext-id) (quote-srcloc ext-id))])
                                            (set! ext-id (λ () x))
                                            x)))
                                       ...)
