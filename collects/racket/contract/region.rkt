@@ -472,17 +472,15 @@
      (lambda (stx)
        (syntax-case stx (set!)
          [(set! i arg)
-          (quasisyntax/loc stx
+          (syntax/loc stx
             (set! id (contract ctc arg neg pos (quote id) (quote-srcloc id))))]
-         [(f arg ...)
+         [(f . args)
           (with-syntax ([app (datum->syntax stx '#%app)])
-            (quasisyntax/loc stx
-              (app
-               (contract ctc id pos neg (quote id) (quote-srcloc id))
-               arg ...)))]
+            (syntax/loc stx
+              (app (contract ctc id pos neg (quote id) (quote-srcloc id)) . args)))]
          [ident
           (identifier? (syntax ident))
-          (quasisyntax/loc stx
+          (syntax/loc stx
             (contract ctc id pos neg (quote id) (quote-srcloc id)))])))))
 
 #|
@@ -491,12 +489,6 @@
   instead of the old version where there was contract application on external access or mutation.  We do this
   by keeping two secret identifiers, one for external uses and one for internal uses, in sync, with appropriate
   contract application on changes.
-  
-  Why the thunks hidden within the external identifer uses? Because we can have non-delayed mutation within the
-  main body, which requires adding contract wrapping to the external identifer.  But we can't define the contract
-  ids until after the main body, since they might use values defined by the body (e.g., define-struct/contract).
-  This breaks the loop, at the overhead of a thunk call per external access, but since we're removing a contract
-  application on each external access, we should always win.
 
   Also make sure to set up the initial value for the external id as soon as possible (after the corresponding
   definition of the internal id within with-contract-helper), just because I want to reduce the amount of time
@@ -513,20 +505,16 @@
      (lambda (stx)
        (syntax-case stx (set!)
          [(set! i arg)
-          (quasisyntax/loc stx
+          (syntax/loc stx
             (begin
               (set! int-id (contract ctc arg neg pos (quote int-id) (quote-srcloc int-id)))
-              (set! ext-id (λ ()
-                             (let ([x (contract ctc int-id pos neg (quote ext-id) (quote-srcloc ext-id))])
-                               (set! ext-id (λ () x))
-                               x)))))]
-         [(f arg ...)
+              (set! ext-id (contract ctc int-id pos neg (quote ext-id) (quote-srcloc ext-id)))))]
+         [(f . args)
           (with-syntax ([app (datum->syntax stx '#%app)])
-            (quasisyntax/loc stx (app (app ext-id) arg ...)))]
+            (syntax/loc stx (app ext-id . args)))]
          [ident
           (identifier? (syntax ident))
-          (with-syntax ([app (datum->syntax stx '#%app)])
-            (quasisyntax/loc stx (app ext-id)))])))))
+          (syntax/loc stx ext-id)])))))
 
 (define-for-syntax (make-internal-contracted-id-transformer int-id ext-id contract-stx pos-blame-stx neg-blame-stx)
   (with-syntax ([ctc contract-stx]
@@ -538,36 +526,48 @@
      (lambda (stx)
        (syntax-case stx (set!)
          [(set! i arg)
-          (quasisyntax/loc stx
+          (syntax/loc stx
             (begin
               (set! int-id arg)
-              (set! ext-id (λ () (let ([x (contract ctc int-id pos neg (quote ext-id) (quote-srcloc ext-id))])
-                                   (set! ext-id (λ () x))
-                                   x)))))]
-         [(f arg ...)
+              (set! ext-id (contract ctc int-id pos neg (quote ext-id) (quote-srcloc ext-id)))))]
+         [(f . args)
           (with-syntax ([app (datum->syntax stx '#%app)])
-            (quasisyntax/loc stx (app int-id arg ...)))]
+            (syntax/loc stx (app int-id . args)))]
          [ident
           (identifier? (syntax ident))
-          (quasisyntax/loc stx int-id)])))))
+          (syntax/loc stx int-id)])))))
 
+#|
+ with-contract-helper takes syntax of the form:
+
+ (with-contract-helper ((p b e e-expr c c-expr) ...) body)
+
+ where
+ p = internal id (transformer binding)
+ b = bare (internal) id
+ e = bare (external) id
+ e-expr = initialization value for bare external id
+ c = contract id
+ c-expr = initialization value for contract id
+ body = the body of the with-contract form
+
+ Every time a contracted value is defined (that is, a define
+ that defines a value with identifier p), we change it to
+ define b instead.  We then define the contract, then the
+ external identifier, since defining the external identifier
+ requires the contract.  We set up all the transformer bindings
+ before calling with-contract-helper, so we don't need definitions
+ for p (or marked-p, in the main with-contract macro).
+|#   
 (define-syntax (with-contract-helper stx)
   (syntax-case stx ()
     [(_ ())
      #'(begin)]
-    [(_ ((p0 b0 i0 i-expr0) (p b i i-expr) ...))
+    [(_ ((p0 rest0 ...) (p rest ...) ...))
      (raise-syntax-error 'with-contract
                          "no definition found for identifier"
                          #'p0)]
-    [(_ (p0 p ...))
-     (raise-syntax-error 'with-contract
-                         "no definition found for identifier"
-                         #'p0)]
-    ;; p = internal id (transformer binding)
-    ;; b = bare (internal) id
-    ;; e = bare (external) id
-    ;; e-expr = initialization value for bare external id
-    [(_ ((p b e e-expr) ...) body0 body ...)
+    [(_ ((p b e e-expr c c-expr) ...) body0 body ...)
      (let ([expanded-body0 (local-expand #'body0
                                          (syntax-local-context)
                                          (kernel-form-identifier-list))])
@@ -580,18 +580,19 @@
            (let ([id-pair (findf (λ (p) (bound-identifier=? id (car p))) id-pairs)])
              (if id-pair (cadr id-pair) id))))
        (define (rewrite-define head ids expr)
-         (let ([id-pairs (map syntax->list (syntax->list #'((p b e e-expr) ...)))])
+         (let ([id-pairs (map syntax->list (syntax->list #'((p b e e-expr c c-expr) ...)))])
             (let-values ([(used-ps unused-ps) (split-ids id-pairs ids)])
               (with-syntax* ([new-ids (recreate-ids ids used-ps)]
-                             [((e e-expr) ...) (map (λ (p) (list (caddr p) (cadddr p))) used-ps)])
+                             [((e e-expr c c-expr) ...) (map (λ (p) (cddr p)) used-ps)])
                 (list unused-ps
                       (quasisyntax/loc expanded-body0
                         (begin (#,head new-ids #,expr)
+                               (#,head (c ...) (values c-expr ...))
                                (#,head (e ...) (values e-expr ...)))))))))
        (syntax-case expanded-body0 (begin define-values define-syntaxes)
          [(begin sub ...)
           (syntax/loc stx
-            (with-contract-helper ((p b e e-expr) ...) sub ... body ...))]
+            (with-contract-helper ((p b e e-expr c c-expr) ...) sub ... body ...))]
          [(define-syntaxes (id ...) expr)
           (let ([ids (syntax->list #'(id ...))])
             (with-syntax ([(unused-ps def) (rewrite-define #'define-syntaxes ids #'expr)])
@@ -605,38 +606,7 @@
          [else
           (quasisyntax/loc stx
             (begin #,expanded-body0
-                   (with-contract-helper ((p b e e-expr) ...) body ...)))]))]
-    
-    ;; Old expansion, used for top-level
-    [(_ (p ...) body0 body ...)
-     (andmap identifier? (syntax->list #'(p ...)))
-     (let ([expanded-body0 (local-expand #'body0
-                                         (syntax-local-context)
-                                         (kernel-form-identifier-list))])
-       (define (filter-ids to-filter to-remove)
-         (filter (λ (id1)
-                   (not (memf (λ (id2) (bound-identifier=? id1 id2)) to-remove)))
-                 to-filter))
-       (syntax-case expanded-body0 (begin define-values define-syntaxes)
-         [(begin sub ...)
-          (syntax/loc stx
-            (with-contract-helper (p ...) sub ... body ...))]
-         [(define-syntaxes (id ...) expr)
-          (let ([ids (syntax->list #'(id ...))])
-            (with-syntax ([def expanded-body0]
-                          [unused-ps (filter-ids (syntax->list #'(p ...)) ids)])
-              (syntax/loc stx
-                (begin def (with-contract-helper unused-ps body ...)))))]
-         [(define-values (id ...) expr)
-          (let ([ids (syntax->list #'(id ...))])
-            (with-syntax ([def expanded-body0]
-                          [unused-ps (filter-ids (syntax->list #'(p ...)) ids)])
-              (syntax/loc stx
-                (begin def (with-contract-helper unused-ps body ...)))))]
-         [else
-          (quasisyntax/loc stx
-            (begin #,expanded-body0
-                   (with-contract-helper (p ...) body ...)))]))]))
+                   (with-contract-helper ((p b e e-expr c c-expr) ...) body ...)))]))]))
 
 (define-syntax (with-contract stx)
   (define-splicing-syntax-class region-clause
@@ -707,7 +677,7 @@
                                                                         res
                                                                         blame-stx
                                                                         blame-id) ...))))])
-               (quasisyntax/loc stx
+               (syntax/loc stx
                  (let ()
                    (define-values (free-ctc-id ...)
                      (values (verify-contract 'with-contract free-ctc) ...))
@@ -771,46 +741,6 @@
          (with-syntax ([new-stx (add-context #'(splicing-syntax-parameterize 
                                                 ([current-contract-region (λ (stx) #'blame-stx)])
                                                 . body))])
-           (if (eq? (syntax-local-context) 'top-level)
-               (syntax/loc stx
-                 (begin
-                   (define-values (free-ctc-id ...)
-                     (values (verify-contract 'with-contract free-ctc) ...))
-                   (define blame-id
-                     (current-contract-region))
-                   (define-values ()
-                     (begin (contract free-ctc-id
-                                      free-var
-                                      blame-id
-                                      'cant-happen
-                                      (quote free-var)
-                                      (quote-srcloc free-var))
-                            ...
-                            (values)))
-                   (define-syntaxes (free-var-id ...)
-                     (values (make-contracted-id-transformer
-                              (quote-syntax free-var)
-                              (quote-syntax free-ctc-id)
-                              (quote-syntax blame-id)
-                              (quote-syntax blame-stx)) ...))
-                   (with-contract-helper (marked-p ...) new-stx)
-                   (define-values (ctc-id ...)
-                     (values (verify-contract 'with-contract ctc) ...))
-                   (define-values ()
-                     (begin (contract ctc-id
-                                      marked-p
-                                      blame-stx
-                                      'cant-happen
-                                      (quote marked-p)
-                                      (quote-srcloc marked-p))
-                            ...
-                            (values)))
-                   (define-syntaxes (p ...)
-                     (values (make-contracted-id-transformer
-                              (quote-syntax marked-p)
-                              (quote-syntax ctc-id)
-                              (quote-syntax blame-stx)
-                              (quote-syntax blame-id)) ...))))
                (syntax/loc stx
                  (begin
                    (define-values (free-ctc-id ...)
@@ -842,18 +772,15 @@
                    (with-contract-helper ((marked-p
                                            true-p
                                            ext-id
-                                           (λ ()
-                                             (let ([x (contract ctc-id true-p blame-stx blame-id (quote ext-id) (quote-srcloc ext-id))])
-                                               (set! ext-id (λ () x))
-                                               x)))
+                                           (contract ctc-id true-p blame-stx blame-id (quote ext-id) (quote-srcloc ext-id))
+                                           ctc-id
+                                           (verify-contract 'with-contract ctc))
                                           ...)
                                          new-stx)
-                   (define-values (ctc-id ...)
-                     (values (verify-contract 'with-contract ctc) ...))
                    (define-syntaxes (p ...)
                      (values (make-external-contracted-id-transformer
                               (quote-syntax true-p)
                               (quote-syntax ext-id)
                               (quote-syntax ctc-id)
                               (quote-syntax blame-stx)
-                              (quote-syntax blame-id)) ...))))))))]))
+                              (quote-syntax blame-id)) ...)))))))]))
