@@ -180,22 +180,57 @@
   (test '(x x) make-list 2 'x)
   (err/rt-test (make-list -3 'x)))
 
-;; ---------- take/drop[-right] ----------
+;; ---------- take/drop/splt-at[-right] ----------
 (let ()
-  (define-syntax-rule (vals-list expr)
-    (call-with-values (lambda () expr) list))
-  (define (split-at*       l n) (vals-list (split-at       l n)))
-  (define (split-at-right* l n) (vals-list (split-at-right l n)))
+  (define (vals f)
+    (procedure-reduce-arity
+     (lambda xs (call-with-values (lambda () (apply f xs)) list))
+     (procedure-arity f)))
+  (define split-at*        (vals split-at))
+  (define split-at-right*  (vals split-at-right))
+  (define splitf-at*       (vals splitf-at))
+  (define splitf-at-right* (vals splitf-at-right))
   (define funs (list take drop take-right drop-right
                      split-at* split-at-right*))
+  (define ffuns (list takef dropf takef-right dropf-right
+                      splitf-at* splitf-at-right*))
   (define tests
-    ;; -----args------ --take--- --drop--- --take-r--- --drop-r-
-    '([((a b c d) 2)   (a b)     (c d)     (c d)       (a b)    ]
-      [((a b c d) 0)   ()        (a b c d) ()          (a b c d)]
-      [((a b c d) 4)   (a b c d) ()        (a b c d)   ()       ]
-      [((a b c . d) 1) (a)       (b c . d) (c . d)     (a b)    ]
-      [((a b c . d) 3) (a b c)   d         (a b c . d) ()       ]
-      [(99 0)          ()        99        99          ()       ]))
+    ;; -----args------ --take--- --drop--- ---take-r---- --drop-r-
+    '([((a b c d) 0)   (       ) (a b c d)   (       )   (a b c d)]
+      [((a b c d) 1)   (a      ) (  b c d)   (      d)   (a b c  )]
+      [((a b c d) 2)   (a b    ) (    c d)   (    c d)   (a b    )]
+      [((a b c d) 3)   (a b c  ) (      d)   (  b c d)   (a      )]
+      [((a b c d) 4)   (a b c d) (       )   (a b c d)   (       )]
+      [((a b c . d) 0) (     )   (a b c . d)        d    (a b c  )]
+      [((a b c . d) 1) (a    )   (  b c . d) (    c . d) (a b    )]
+      [((a b c . d) 2) (a b  )   (    c . d) (  b c . d) (a      )]
+      [((a b c . d) 3) (a b c)            d  (a b c . d) (       )]
+      [(() 0)          ()        ()          ()          ()       ]
+      [(99 0)          ()        99          99          ()       ]))
+  (define ftests ; the predicate is always `symbol?'
+    ;; ---args---- --takef-- ---dropf--- --takef-r-- --dropf-r--
+    `([(a b c d)   (a b c d) (       )   (a b c d)   (       )  ]
+      [(a b c 4)   (a b c  ) (      4)   (       )   (a b c 4)  ]
+      [(a b 3 4)   (a b    ) (    3 4)   (       )   (a b 3 4)  ]
+      [(a 2 3 4)   (a      ) (  2 3 4)   (       )   (a 2 3 4)  ]
+      [(1 2 3 4)   (       ) (1 2 3 4)   (       )   (1 2 3 4)  ]
+      [(1 2 3 d)   (       ) (1 2 3 d)   (      d)   (1 2 3  )  ]
+      [(1 2 c d)   (       ) (1 2 c d)   (    c d)   (1 2    )  ]
+      [(1 b c d)   (       ) (1 b c d)   (  b c d)   (1      )  ]
+      [(a 2 3 d)   (a      ) (  2 3 d)   (      d)   (a 2 3  )  ]
+      [(1 b c 4)   (       ) (1 b c 4)   (       )   (1 b c 4)  ]
+      [(a b c . d) (a b c  )          d  (a b c . d) (         )]
+      [(a b c . 4) (a b c  )          4  (a b c . 4) (         )]
+      [(a b 3 . 4) (a b    ) (    3 . 4)          4  (a b 3    )]
+      [(a 2 3 . 4) (a      ) (  2 3 . 4)          4  (a 2 3    )]
+      [(1 2 3 . 4) (       ) (1 2 3 . 4)          4  (1 2 3    )]
+      [(1 2 3 . d) (       ) (1 2 3 . d)          d  (1 2 3    )]
+      [(1 2 c . d) (       ) (1 2 c . d) (    c . d) (1 2      )]
+      [(1 b c . d) (       ) (1 b c . d) (  b c . d) (1        )]
+      [(a 2 c . d) (a      ) (  2 c . d) (    c . d) (a 2      )]
+      [(1 b 3 . 4) (       ) (1 b 3 . 4)          4  (1 b 3    )]
+      [()          ()        ()          ()          ()         ]
+      [99          ()        99          99          ()         ]))
   (for ([t tests]
         #:when #t
         [expect `(,@(cdr t)
@@ -203,7 +238,14 @@
                   ,(list (list-ref t 4) (list-ref t 3)))]
         [fun funs])
     (apply test expect fun (car t)))
-  (for ([fun funs])
+  (for ([t ftests]
+        #:when #t
+        [expect `(,@(cdr t)
+                  ,(list (list-ref t 1) (list-ref t 2))
+                  ,(list (list-ref t 4) (list-ref t 3)))]
+        [fun ffuns])
+    (test expect fun symbol? (car t)))
+  (for ([fun (append funs ffuns)])
     (arity-test fun 2 2)
     (err/rt-test (fun 1 1) exn:application:mismatch?)
     (err/rt-test (fun '(1 2 3) 2.0))
@@ -214,16 +256,18 @@
 
 ;; ---------- takef/dropf ----------
 
-(let ()
+#;(let ()
   (define list-1 '(2 4 6 8 1 3 5))
   (err/rt-test (takef 5 '()) exn:application:mismatch?)
   (err/rt-test (dropf 5 '()) exn:application:mismatch?)
   (err/rt-test (takef even? 1) exn:application:mismatch?)
   (err/rt-test (dropf even? 1) exn:application:mismatch?)
+  (define (vals f . xs) (call-with-values (λ() (apply f xs)) list))
   (define (t pred take-l drop-l)
     (define l (append take-l drop-l))
     (test take-l takef pred l)
-    (test drop-l dropf pred l))
+    (test drop-l dropf pred l)
+    (test (list take-l drop-l) vals splitf-at pred l))
   (t even? '() '())
   (t even? '(2 4) '(5 7))
   (t even? '(2 4 6 8) '())

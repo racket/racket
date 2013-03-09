@@ -895,28 +895,41 @@ Returns the same result as
 except that it can be faster.}
 
 
-@defproc[(takef [pred procedure?] [lst list?])
+@defproc[(takef [lst any/c] [pred procedure?])
          list?]{
 
 Returns a fresh list whose elements are taken successively from
-@racket[lst] as long as they satisfy @racket[pred]. The returned list
+@racket[lst] as long as they satisfy @racket[pred].  The returned list
 includes up to, but not including, the first element in @racket[lst] for
 which @racket[pred] returns @racket[#f].
 
-@mz-examples[#:eval list-eval
-  (dropf even? '(2 4 5 8))
-  (dropf odd? '(2 4 6 8))]}
-
-
-@defproc[(dropf [pred procedure?] [lst list?])
-         list?]{
-
-Returns a fresh list with elements successively removed from
-@racket[lst] from the front as long as they satisfy @racket[pred].
+The @racket[lst] argument need not actually be a list; @racket[lst]
+must merely start with a chain of at least @racket[pos] pairs.
 
 @mz-examples[#:eval list-eval
-  (dropf even? '(2 4 5 8))
-  (dropf odd? '(2 4 6 8))]}
+  (dropf '(2 4 5 8) even?)
+  (dropf '(2 4 6 8) odd?)]}
+
+
+@defproc[(dropf [lst any/c] [pred procedure?])
+         any/c]{
+
+Drops elements from the front of @racket[lst] as long as they satisfy
+@racket[pred].
+
+@mz-examples[#:eval list-eval
+  (dropf '(2 4 5 8) even?)
+  (dropf '(2 4 6 8) odd?)]}
+
+
+@defproc[(splitf-at [lst any/c] [pred procedure?])
+         (values list? any/c)]{
+
+Returns the same result as
+
+@racketblock[(values (take lst pred) (drop lst pred))]
+
+except that it can be faster.}
 
 
 @defproc[(take-right [lst any/c] [pos exact-nonnegative-integer?])
@@ -961,6 +974,18 @@ except that it can be faster.
 @mz-examples[#:eval list-eval
   (split-at-right '(1 2 3 4 5 6) 3)
   (split-at-right '(1 2 3 4 5 6) 4)]}
+
+
+@deftogether[(
+  @defproc[(takef-right [lst any/c] [pred procedure?]) list?]
+  @defproc[(dropf-right [lst any/c] [pred procedure?]) any/c]
+  @defproc[(splitf-at-right [lst any/c] [pred procedure?]) (values list? any/c)]
+)]{
+
+Like @racket[takef], @racket[dropf], and @racket[splitf-at], but
+combined with the from-right functionality of @racket[take-right],
+@racket[drop-right], and @racket[split-right-at].}
+
 
 
 @defproc[(add-between [lst list?] [v any/c]
