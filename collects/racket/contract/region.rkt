@@ -774,8 +774,7 @@
                                       ...)
                                      new-stx)
                (define-values (ctc-id ...)
-                 (let-syntax ([marked-p (λ (stx) (quote-syntax true-p))] ...)
-                   (values (verify-contract 'with-contract ctc) ...)))
+                 (values (verify-contract 'with-contract ctc) ...))
                (define-syntaxes (p ...)
                  (values (make-external-contracted-id-transformer
                           (quote-syntax true-p)
