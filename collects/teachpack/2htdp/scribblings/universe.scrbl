@@ -43,7 +43,7 @@ The @tt{universe.rkt} teachpack implements and provides the functionality
  programs. In addition, world programs can also become a part of a
  @deftech{universe}, a collection of worlds that can exchange messages.
 
-The purpose of this documentation is to give experienced Schemers and HtDP
+The purpose of this documentation is to give experienced Racketeers and HtDP
  teachers a concise overview for using the library. The first part of the
  documentation focuses on @tech{world} programs. Section
  @secref["world-example"] presents an illustration of how to design such
@@ -1263,7 +1263,7 @@ optional handlers:
  is the current state of the universe server, while the second argument is
  the (representation of the) world that got disconnected. The resulting
  bundle usually includes this second argument in the third field, telling
- drscheme not to wait for messages from this world anymore.}
+ DrRacket not to wait for messages from this world anymore.}
 }
 
 @item{
