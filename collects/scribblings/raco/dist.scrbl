@@ -57,9 +57,9 @@ platform-specific:
 A distribution also has a @filepath{collects} directory that is used
 as the main library collection directory for the packaged executables.
 By default, the directory is empty. Use the
-@as-index{@DPFlag{copy-collects}} flag of @exec{raco distribute} to
+@as-index{@DPFlag{collects-copy}} flag of @exec{raco distribute} to
 supply a directory whose content is copied into the distribution's
-@filepath{collects} directory. The @DPFlag{copy-collects} flag can be
+@filepath{collects} directory. The @DPFlag{collects-copy} flag can be
 used multiple times to supply multiple directories.
 
 When multiple executables are distributed together, then separately
@@ -71,7 +71,7 @@ directory for library copies using the
 specify the same directory for each executable (so that the set of
 libraries used by all executables are pooled together). Finally, when
 packaging the distribution with @exec{raco distribute}, use the
-@DPFlag{copy-collects} flag to include the copied libraries in the
+@DPFlag{collects-copy} flag to include the copied libraries in the
 distribution.
 
 
