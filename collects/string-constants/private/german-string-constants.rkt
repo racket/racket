@@ -95,6 +95,7 @@
  (cs-jump-to-next-bound-occurrence "Zum nächsten gebundenen Vorkommen springen")
  (cs-jump-to-binding "Zu bindendem Vorkommen springen")
  (cs-jump-to-definition "Zu Definition springen")
+ (cs-open-defining-file "Datei mit Definition öffnen")
  (cs-error-message "Fehlermeldung")
  (cs-open-file "~a öffnen")
  (cs-rename-var "~a umbenennen")
