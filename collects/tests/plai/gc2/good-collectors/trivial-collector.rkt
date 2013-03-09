@@ -5,15 +5,15 @@
   ; calling heap-offset before init-allocator is called gives 'undefined
  (set! heap-ptr 0))
 
-(define (gc:closure code vs)
-  (define len (vector-length vs))
+(define (gc:closure code roots)
+  (define len (length roots))
   (when (> (+ heap-ptr len) (heap-size))
         (error "out of memory"))
   (heap-set! heap-ptr 'closure)
   (heap-set! (+ 1 heap-ptr) code)
-  (for ([v (in-vector vs)]
+  (for ([r (in-list roots)]
         [i (in-naturals 1)])
-       (heap-set! (+ 1 i heap-ptr) v))
+    (heap-set! (+ 1 i heap-ptr) (read-root r)))
   (set! heap-ptr (+ len 2 heap-ptr))
   ;; return the location of this flat data
   (- heap-ptr len 2))
@@ -40,8 +40,8 @@
     (when (> (+ heap-ptr 3) (heap-size))
       (error "out of memory"))
     (heap-set! heap-ptr 'cons)
-    (heap-set! (+ 1 heap-ptr) f)
-    (heap-set! (+ 2 heap-ptr) r)
+    (heap-set! (+ 1 heap-ptr) (read-root f))
+    (heap-set! (+ 2 heap-ptr) (read-root r))
     (set! heap-ptr (+ 3 heap-ptr))
     (- heap-ptr 3)))
 
@@ -74,18 +74,13 @@
 
 (module+ test
   (require rackunit)
-  (check-equal? (with-heap (vector 2 3)
-                           (let ([x 0])
-                             (set-root! (car (get-root-set x)) 1)
-                             x))
-                1)
   
   (check-equal? (let ([h (make-vector 7)])
                   (with-heap 
                    h
                    (init-allocator)
                    (define one (gc:alloc-flat 1))
-                   (define clos (gc:closure 'something (vector one)))
+                   (define clos (gc:closure 'something (list (make-root 'dummy (λ () one) void))))
                    (gc:alloc-flat 2))
                   h)
                 (vector 'prim 1 'closure 'something 0 'prim 2)))

@@ -11,7 +11,7 @@ that prints out all of the flat values in the root set at the point
 when a cons happens. 
 
 Then it sets up various little expressions (in the calls to 'run-one')
-that check the root set contents. 
+that check the root set contents and the arguments to cons.
 
 The roots are printed only if they are flat values and the values 
 themselves are printed, sorted with duplicates removed. (Also the code 
@@ -64,14 +64,16 @@ that the test cases have to be set up somewhat carefully.
         (begin
           (when (> (+ heap-ptr 3) (heap-size))
             (error "out of memory"))
+          (define (get-prim x) (heap-ref (+ (read-root x) 1)))
           (define prim-roots
             (for/list ([x (in-list (get-root-set))]
                        #:when (eq? 'prim (heap-ref (read-root x))))
-              (heap-ref (+ (read-root x) 1))))
-          (printf "~s\n" (cons 'roots (remove-duplicates (sort prim-roots <))))
+              (get-prim x)))
+          (printf "~s\n" (append (cons 'roots (remove-duplicates (sort prim-roots <)))
+                                 (list 'hd (get-prim f) 'tl (get-prim r))))
           (heap-set! heap-ptr 'cons)
-          (heap-set! (+ 1 heap-ptr) f)
-          (heap-set! (+ 2 heap-ptr) r)
+          (heap-set! (+ 1 heap-ptr) (read-root f))
+          (heap-set! (+ 2 heap-ptr) (read-root r))
           (set! heap-ptr (+ 3 heap-ptr))
           (- heap-ptr 3)))
 
@@ -119,21 +121,21 @@ that the test cases have to be set up somewhat carefully.
  @run-one['non-tail-cons]{#lang plai/gc2/mutator
                           (allocator-setup 'gc 200)
                           (first (cons 1 2))}
- '((roots 1 2)))
+ '((roots hd 1 tl 2)))
 
 (check-equal?
  @run-one['tail-cons]{#lang plai/gc2/mutator
                       (allocator-setup 'gc 200)
                       (define (f x) (cons 1 2))
                       (f 3)}
- '((roots 3)))
+ '((roots 3 hd 1 tl 2)))
 
 (check-equal?
  @run-one['tail-cons-with-unused-var]{#lang plai/gc2/mutator
                                       (allocator-setup 'gc 200)
                                       (define (f x) (let ([y 2]) (cons 3 4)))
                                       (f 1)}
- '((roots 1)))
+ '((roots 1 hd 3 tl 4)))
 
 (check-equal?
  @run-one['cons-with-used-var]{#lang plai/gc2/mutator
@@ -142,7 +144,7 @@ that the test cases have to be set up somewhat carefully.
                                                (let ([z (cons 3 4)])
                                                  y)))
                                (f 1)}
- '((roots 1 2 3 4)))
+ '((roots 1 2 hd 3 tl 4)))
 
 
 (check-equal?
@@ -152,7 +154,7 @@ that the test cases have to be set up somewhat carefully.
                                                  (let ([z (cons 3 4)])
                                                    x)))
                                (f 1)}
- '((roots 1 3 4)))
+ '((roots 1 hd 3 tl 4)))
 
 
 (check-equal?
@@ -162,7 +164,7 @@ that the test cases have to be set up somewhat carefully.
                                                             [(z) (cons 3 4)])
                                                    x))
                                  (f 1)}
- '((roots 1 3 4)))
+ '((roots 1 hd 3 tl 4)))
 
 (check-equal?
  @run-one['let-values2]{#lang plai/gc2/mutator
@@ -171,7 +173,7 @@ that the test cases have to be set up somewhat carefully.
                                                    [(z) (cons 3 4)])
                                         y))
                         (f 1)}
- '((roots 1 2 3 4)))
+ '((roots 1 2 hd 3 tl 4)))
 
 (check-equal?
  @run-one['fn-args]{#lang plai/gc2/mutator
@@ -179,7 +181,7 @@ that the test cases have to be set up somewhat carefully.
                     (define (f x) (let ([z (cons 1 2)]) x))
                     (define (g y) (f 3))
                     (g 4)}
- '((roots 1 2 3 4)))
+ '((roots 3 4 hd 1 tl 2)))
 
 (check-equal?
  @run-one['fn-args2]{#lang plai/gc2/mutator
@@ -187,7 +189,7 @@ that the test cases have to be set up somewhat carefully.
                     (define (f x) (let ([z (cons 1 2)]) z))
                     (define (g y) (f 3))
                     (g 4)}
- '((roots 1 2 4)))
+ '((roots 4 hd 1 tl 2)))
 
 (check-equal?
  @run-one['fn-args3]{#lang plai/gc2/mutator
@@ -195,4 +197,4 @@ that the test cases have to be set up somewhat carefully.
                     (define (f x) (cons 1 2))
                     (define (g y) (f 3))
                     (g 4)}
- '((roots 4)))
+ '((roots 4 hd 1 tl 2)))

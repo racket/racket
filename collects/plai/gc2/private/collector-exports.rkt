@@ -1,5 +1,6 @@
-#lang scheme
-(require (for-syntax racket/syntax))
+#lang racket/base
+(require (for-syntax racket/syntax
+                     racket/base))
 (provide (all-defined-out))
 
 (define-syntax (define-collector-export stx)
@@ -7,8 +8,9 @@
     [(_ i)
      (with-syntax 
       ([collector:i (format-id #'i "collector:~a" #'i)]
-       [set-collector:i! (format-id #'i "set-collector:~a!" #'i)])
-      #'(begin (define collector:i false)
+       [set-collector:i! (format-id #'i "set-collector:~a!" #'i)]
+       [uninit-collector:i (format-id #'i "uninit-collector:~a" #'i)])
+      #'(begin (define collector:i 'uninit-collector:i)
                (define (set-collector:i! proc)
                  (set! collector:i proc))))]))
 

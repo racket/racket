@@ -36,7 +36,7 @@
           [mutator-lambda λ]
           (mutator-app #%app)
           (mutator-datum #%datum)
-          (collector:cons cons)
+          (mutator-cons cons)
           (collector:first first)
           (collector:rest rest)
           (mutator-quote quote)
@@ -117,6 +117,33 @@
             (syntax-parameterize ([mutator-tail-call? #f])
                                  (yes! fe))])
        (mutator-begin e ...))]))
+
+(define mutator-cons
+  (let ([cons 
+         (λ (hd tl)
+           (define roots (compute-current-roots))
+           (define-values (hd-roots no-hd-roots)
+             (partition (λ (x) (= hd (read-root x))) roots))
+           (define-values (tl-roots no-hd-no-tl-roots)
+             (partition (λ (x) (= tl (read-root x))) no-hd-roots))
+           (parameterize ([active-roots no-hd-no-tl-roots])
+             (collector:cons (make-root 'hd
+                                        (λ () hd)
+                                        (λ (v)
+                                          (set! hd v)
+                                          (for ([r (in-list hd-roots)])
+                                            (set-root! r v))))
+                             (make-root 'tl
+                                        (λ () tl)
+                                        (λ (v)
+                                          (set! tl v)
+                                          (for ([r (in-list tl-roots)])
+                                            (set-root! r v)))))))])
+    cons))
+
+(define (do-alloc-flat flat)
+  (parameterize ([active-roots (compute-current-roots)])
+    (collector:alloc-flat flat)))
 
 ; Real Macros
 (define-syntax-rule (mutator-define-values (id ...) e)
@@ -205,16 +232,46 @@
                      closure))])
              #,(if (syntax-parameter-value #'mutator-tail-call?)
                    (syntax/loc stx
-                     (#%app collector:closure closure (vector free-id ...)))
+                     (#%app do-collector:closure closure 
+                            (list (λ () free-id) ...)
+                            (list (λ (v) (set! free-id v)) ...)))
                    (syntax/loc stx
                      (with-continuation-mark 
                       gc-roots-key 
                       (list (make-env-root env-id) ...)
-                      (#%app collector:closure closure (vector free-id ...)))))))))]
+                      (#%app do-collector:closure closure
+                             (list (λ () free-id) ...)
+                             (list (λ (v) (set! free-id v)) ...)))))))))]
     [(_ (id ...) body ...)
      (syntax/loc stx
        (mutator-lambda (id ...) (mutator-begin body ...)))]))
 
+(define (do-collector:closure closure getters setters)
+  (define-values (remaining-roots closure-roots)
+    (let loop ([getters getters]
+               [setters setters]
+               [remaining-roots (compute-current-roots)]
+               [closure-roots '()])
+      (cond
+        [(null? getters) (values remaining-roots closure-roots)]
+        [else
+         (define this-loc ((car getters)))
+         (define this-setter (car setters))
+         (define-values (this-other-roots leftovers) 
+           (filter (λ (x) (= (read-root x) this-loc)) remaining-roots))
+         (loop (cdr getters) (cdr setters)
+               leftovers
+               (cons (make-root 'closure-root
+                                (λ () this-loc)
+                                (λ (v) 
+                                  (set! this-loc v)
+                                  (this-setter v)
+                                  (for ([root (in-list this-other-roots)])
+                                    (set-root! v))))
+                     closure-roots))])))
+  (parameterize ([active-roots remaining-roots])
+    (collector:closure closure closure-roots)))
+  
 (define-syntax (mutator-app stx)
   (syntax-case stx ()
     [(_ e ...)
@@ -247,7 +304,7 @@
                                stx)))
        (with-syntax ([(env-id ...) (syntax-parameter-value #'mutator-env-roots)]
                      [app-exp (if prim-app?
-                                  (syntax/loc stx (collector:alloc-flat (fe (collector:deref ae) ...)))
+                                  (syntax/loc stx (do-alloc-flat (fe (collector:deref ae) ...)))
                                   (syntax/loc stx ((deref-proc fe) ae ...)))])
          (if (syntax-parameter-value #'mutator-tail-call?)
              ; If this call is in tail position, we will not need access
@@ -261,13 +318,13 @@
 (define-syntax mutator-quote
   (syntax-rules ()
     [(_ (a . d))
-     (mutator-app collector:cons (mutator-quote a) (mutator-quote d))]
+     (mutator-app mutator-cons (mutator-quote a) (mutator-quote d))]
     [(_ s) 
      (mutator-datum . s)]))
 (define-syntax (mutator-datum stx)
   (syntax-case stx ()
     [(_ . e) 
-     (quasisyntax/loc stx (mutator-anf-app collector:alloc-flat (#%datum . e)))]))
+     (quasisyntax/loc stx (mutator-anf-app do-alloc-flat (#%datum . e)))]))
 
 (define-syntax (mutator-top-interaction stx)
   (syntax-case stx (require provide mutator-define mutator-define-values test/value=? import-primitives)
@@ -404,7 +461,7 @@
                (let ([result (apply renamed-id (map collector:deref args))])
                  (cond
                    [(void? result) (void)]
-                   [(heap-value? result) (collector:alloc-flat result)]
+                   [(heap-value? result) (do-alloc-flat result)]
                    [else 
                     (error 'id (string-append "imported primitive must return <heap-value?>, "
                                               "received ~a" result))]))))
@@ -447,7 +504,7 @@
 (define (member? v l)
   (and (member v l) #t))
 (define (mutator-member? v l)
-  (collector:alloc-flat
+  (do-alloc-flat
    (member? (collector:deref v)
             (gc->scheme l))))
 
@@ -480,17 +537,17 @@
 (define (mutator-empty? loc)
   (cond
     [(collector:flat? loc) 
-     (collector:alloc-flat (empty? (collector:deref loc)))]
+     (do-alloc-flat (empty? (collector:deref loc)))]
     [else 
-     (collector:alloc-flat false)]))
+     (do-alloc-flat false)]))
 
 (provide (rename-out [mutator-cons? cons?]))
 (define (mutator-cons? loc)
-  (collector:alloc-flat (collector:cons? loc)))
+  (do-alloc-flat (collector:cons? loc)))
 
 (provide (rename-out [mutator-eq? eq?]))
 (define (mutator-eq? l1 l2)
-  (collector:alloc-flat (= l1 l2)))
+  (do-alloc-flat (= l1 l2)))
 
 (provide (rename-out [mutator-printf printf]))
 (define-syntax (mutator-printf stx)
