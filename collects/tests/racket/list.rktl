@@ -244,7 +244,7 @@
                   ,(list (list-ref t 1) (list-ref t 2))
                   ,(list (list-ref t 4) (list-ref t 3)))]
         [fun ffuns])
-    (test expect fun symbol? (car t)))
+    (test expect fun (car t) symbol?))
   (for ([fun (append funs ffuns)])
     (arity-test fun 2 2)
     (err/rt-test (fun 1 1) exn:application:mismatch?)
@@ -253,26 +253,6 @@
     (err/rt-test (fun '(1) -1))
     (err/rt-test (fun '(1) 2) exn:application:mismatch?)
     (err/rt-test (fun '(1 2 . 3) 3) exn:application:mismatch?)))
-
-;; ---------- takef/dropf ----------
-
-#;(let ()
-  (define list-1 '(2 4 6 8 1 3 5))
-  (err/rt-test (takef 5 '()) exn:application:mismatch?)
-  (err/rt-test (dropf 5 '()) exn:application:mismatch?)
-  (err/rt-test (takef even? 1) exn:application:mismatch?)
-  (err/rt-test (dropf even? 1) exn:application:mismatch?)
-  (define (vals f . xs) (call-with-values (λ() (apply f xs)) list))
-  (define (t pred take-l drop-l)
-    (define l (append take-l drop-l))
-    (test take-l takef pred l)
-    (test drop-l dropf pred l)
-    (test (list take-l drop-l) vals splitf-at pred l))
-  (t even? '() '())
-  (t even? '(2 4) '(5 7))
-  (t even? '(2 4 6 8) '())
-  (t even? '() '(1 3 5))
-  (t symbol? '(a b c) '(1 2 3 x y z)))
 
 ;; ---------- append* ----------
 (let ()

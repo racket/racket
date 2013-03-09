@@ -135,9 +135,9 @@
           [(pair? list) (loop (cdr list) (sub1 n) (cons (car list) pfx))]
           [else (too-large 'split-at list0 n0)])))
 
-(define (takef pred list)
+(define (takef list pred)
   (unless (procedure? pred)
-    (raise-argument-error 'takef "procedure?" 0 pred list))
+    (raise-argument-error 'takef "procedure?" 0 list pred))
   (let loop ([list list])
     (if (pair? list)
       (let ([x (car list)])
@@ -145,21 +145,21 @@
           (cons x (loop (cdr list)))
           '()))
       ;; could return `list' here, but make it behave like `take'
-      ;; exmaple: (takef symbol? '(a b c . d)) should be similar
+      ;; exmaple: (takef '(a b c . d) symbol?) should be similar
       ;; to (take '(a b c . d) 3)
       '())))
 
-(define (dropf pred list)
+(define (dropf list pred)
   (unless (procedure? pred)
-    (raise-argument-error 'dropf "procedure?" 0 pred list))
+    (raise-argument-error 'dropf "procedure?" 0 list pred))
   (let loop ([list list])
     (if (and (pair? list) (pred (car list)))
       (loop (cdr list))
       list)))
 
-(define (splitf-at pred list)
+(define (splitf-at list pred)
   (unless (procedure? pred)
-    (raise-argument-error 'splitf-at "procedure?" 0 pred list))
+    (raise-argument-error 'splitf-at "procedure?" 0 list pred))
   (let loop ([list list] [pfx '()])
     (if (and (pair? list) (pred (car list)))
       (loop (cdr list) (cons (car list) pfx))
@@ -213,9 +213,9 @@
 ;; one -- reverse the list, look for the place where the predicate flips
 ;; to #f, then use the non-f from-right functions above to do the work.
 
-(define (count-from-right who pred list)
+(define (count-from-right who list pred)
   (unless (procedure? pred)
-    (raise-argument-error who "procedure?" 0 pred list))
+    (raise-argument-error who "procedure?" 0 list pred))
   (let loop ([list list] [rev '()] [n 0])
     (if (pair? list)
       (loop (cdr list) (cons (car list) rev) (add1 n))
@@ -224,12 +224,12 @@
           (loop (sub1 n) (cdr list))
           n)))))
 
-(define (takef-right pred list)
-  (drop list (count-from-right 'takef-right pred list)))
-(define (dropf-right pred list)
-  (take list (count-from-right 'dropf-right pred list)))
-(define (splitf-at-right pred list)
-  (split-at list (count-from-right 'splitf-at-right pred list)))
+(define (takef-right list pred)
+  (drop list (count-from-right 'takef-right list pred)))
+(define (dropf-right list pred)
+  (take list (count-from-right 'dropf-right list pred)))
+(define (splitf-at-right list pred)
+  (split-at list (count-from-right 'splitf-at-right list pred)))
 
 (define append*
   (case-lambda [(ls) (apply append ls)] ; optimize common case
