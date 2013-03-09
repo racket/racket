@@ -58,32 +58,29 @@ On occasion, you will find that you are spending a significant amount of
  you will not know for a long time whether the performance implication
  allow a commit to the PLT repository.
 
-@margin-note*{See @hyperlink["http://tmp.barzilay.org/git.txt"]{Eli
- Barzilay's write-up} on using git in PLT for details.}
+@margin-note*{See
+@hyperlink["http://git.racket-lang.org/intro.html"]{the write-up} on
+using git in PLT for details.}
+
 As a reminder, here are the essential elements of git for working on a
 fork:
 @itemlist[
 
 @item{setup a fork:
-
-@verbatim{
-  ssh pltgit fork plt eli/my-plt}
-}
+  @verbatim{
+    ssh pltgit fork plt eli/my-plt}}
 
 @item{setup mail notifications:
-
-@verbatim{
-  ssh pltgit config set eli/my-plt hooks.counter true
-  ssh pltgit config set eli/my-plt hooks.mailinglist "eli at barzilay.org, ..."
-}}
+  @verbatim{
+    ssh pltgit config set eli/my-plt hooks.counter true
+    ssh pltgit config set eli/my-plt hooks.mailinglist "eli@barzilay.org,..."}}
 
 @item{allow someone else to push commits to my repository:
+  @verbatim{
+    ssh pltgit setperms eli/my-plt
+    RW eli
+    RW someone-else
+    ^D}}
 
-@verbatim{
-  ssh pltgit setperms eli/my-plt
-  RW eli
-  RW someone-else
-  ^D
-}}
 ]
 
