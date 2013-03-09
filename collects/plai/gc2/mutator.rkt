@@ -310,50 +310,51 @@
 (define-for-syntax (allocator-setup-internal stx)
   (syntax-case stx ()
     [(collector-module heap-size)
-     (with-syntax ([(init-allocator gc:deref gc:alloc-flat gc:cons 
-                                    gc:closure gc:closure? gc:closure-code-ptr gc:closure-env-ref
-                                    gc:first gc:rest 
-                                    gc:flat? gc:cons?
-                                    gc:set-first! gc:set-rest!)
+     (with-syntax ([(args ...)
                     (map (λ (s) (datum->syntax stx s))
                          '(init-allocator gc:deref gc:alloc-flat gc:cons 
                                           gc:closure gc:closure? gc:closure-code-ptr gc:closure-env-ref
                                           gc:first gc:rest 
                                           gc:flat? gc:cons?
                                           gc:set-first! gc:set-rest!))]) 
-       (begin
-         #`(begin
-             #,(begin
-                 (if (alternate-collector)
-                     #`(require #,(datum->syntax #'collector-module (alternate-collector)))
-                     #`(require #,(syntax-case #'collector-module (mutator-quote)
-                                    [(mutator-quote . x) 
-                                     (datum->syntax #'collector-module (cons #'quote #'x))]
-                                    [else #'collector-module]))))
-             
-             (set-collector:deref! gc:deref)
-             (set-collector:alloc-flat! gc:alloc-flat)
-             (set-collector:cons! gc:cons)
-             (set-collector:first! gc:first)
-             (set-collector:rest! gc:rest)
-             (set-collector:flat?! gc:flat?)
-             (set-collector:cons?! gc:cons?)
-             (set-collector:set-first!! gc:set-first!)
-             (set-collector:set-rest!! gc:set-rest!)
-             (set-collector:closure! gc:closure)
-             (set-collector:closure?! gc:closure?)
-             (set-collector:closure-code-ptr! gc:closure-code-ptr)
-             (set-collector:closure-env-ref! gc:closure-env-ref)
-             
-             (init-heap! (#%datum . heap-size))
-             (when (gui-available?) 
-               (if (<= (#%datum . heap-size) 500)
-                   (set-ui! (dynamic-require `plai/gc2/private/gc-gui 'heap-viz%))
-                   (printf "Large heap; the heap visualizer will not be displayed.\n")))
-             (init-allocator))))]
+       #`(begin
+           #,(if (alternate-collector)
+                 #`(require #,(datum->syntax #'collector-module (alternate-collector)))
+                 #`(require #,(syntax-case #'collector-module (mutator-quote)
+                                [(mutator-quote . x) 
+                                 (datum->syntax #'collector-module (cons #'quote #'x))]
+                                [else #'collector-module])))
+           (allocator-setup/proc args ... (#%datum . heap-size))))]
     [_ (raise-syntax-error 'mutator 
                            "Mutator must start with an 'allocator-setup' expression, such as: (allocator-setup <module-path> <literal-number>)"
                            stx)]))
+
+(define (allocator-setup/proc init-allocator gc:deref gc:alloc-flat gc:cons 
+                              gc:closure gc:closure? gc:closure-code-ptr gc:closure-env-ref
+                              gc:first gc:rest 
+                              gc:flat? gc:cons?
+                              gc:set-first! gc:set-rest!
+                              heap-size)
+  (set-collector:deref! gc:deref)
+  (set-collector:alloc-flat! gc:alloc-flat)
+  (set-collector:cons! gc:cons)
+  (set-collector:first! gc:first)
+  (set-collector:rest! gc:rest)
+  (set-collector:flat?! gc:flat?)
+  (set-collector:cons?! gc:cons?)
+  (set-collector:set-first!! gc:set-first!)
+  (set-collector:set-rest!! gc:set-rest!)
+  (set-collector:closure! gc:closure)
+  (set-collector:closure?! gc:closure?)
+  (set-collector:closure-code-ptr! gc:closure-code-ptr)
+  (set-collector:closure-env-ref! gc:closure-env-ref)
+  
+  (init-heap! heap-size)
+  (when (gui-available?) 
+    (if (<= heap-size 500)
+        (set-ui! (dynamic-require `plai/gc2/private/gc-gui 'heap-viz%))
+        (printf "Large heap; the heap visualizer will not be displayed.\n")))
+  (init-allocator))  
 
 (define-for-syntax allocator-setup-error-msg
   "Mutator must start with an 'allocator-setup' expression, such as: (allocator-setup <module-path> <literal-number>)")
