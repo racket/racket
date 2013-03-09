@@ -907,8 +907,8 @@ The @racket[lst] argument need not actually be a list; @racket[lst]
 must merely start with a chain of at least @racket[pos] pairs.
 
 @mz-examples[#:eval list-eval
-  (dropf '(2 4 5 8) even?)
-  (dropf '(2 4 6 8) odd?)]}
+  (takef '(2 4 5 8) even?)
+  (takef '(2 4 6 8) odd?)]}
 
 
 @defproc[(dropf [lst any/c] [pred procedure?])
@@ -927,7 +927,7 @@ Drops elements from the front of @racket[lst] as long as they satisfy
 
 Returns the same result as
 
-@racketblock[(values (take lst pred) (drop lst pred))]
+@racketblock[(values (takef lst pred) (dropf lst pred))]
 
 except that it can be faster.}
 
@@ -984,7 +984,7 @@ except that it can be faster.
 
 Like @racket[takef], @racket[dropf], and @racket[splitf-at], but
 combined with the from-right functionality of @racket[take-right],
-@racket[drop-right], and @racket[split-right-at].}
+@racket[drop-right], and @racket[split-at-right].}
 
 
 
