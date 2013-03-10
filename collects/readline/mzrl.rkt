@@ -7,8 +7,10 @@
          set-completion-function!
          readline-newline readline-redisplay)
 
-;; libtermcap needed on some platforms
-(define libtermcap  (with-handlers ([exn:fail? void]) (ffi-lib "libtermcap")))
+;; libncurses and/or libtermcap needed on some platforms
+(void (ffi-lib "libcurses" #:fail (lambda () #f)))
+(void (ffi-lib "libtermcap" #:fail (lambda () #f)))
+
 (define libreadline (ffi-lib "libreadline" '("5" "6" "4" "")))
 
 (define make-byte-string ; helper for the two types below
