@@ -41,7 +41,7 @@ that the test cases have to be set up somewhat carefully.
         (heap-set! (+ 1 heap-ptr) code)
         (for ([v (in-list vs)]
               [i (in-naturals 1)])
-          (heap-set! (+ 1 i heap-ptr) (heap-ref v)))
+          (heap-set! (+ 1 i heap-ptr) (read-root v)))
         (set! heap-ptr (+ len 2 heap-ptr))
         ;; return the location of this flat data
         (- heap-ptr len 2))
