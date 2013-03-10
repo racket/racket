@@ -258,7 +258,7 @@
          (define this-loc ((car getters)))
          (define this-setter (car setters))
          (define-values (this-other-roots leftovers) 
-           (filter (λ (x) (= (read-root x) this-loc)) remaining-roots))
+           (partition (λ (x) (= (read-root x) this-loc)) remaining-roots))
          (loop (cdr getters) (cdr setters)
                leftovers
                (cons (make-root 'closure-root

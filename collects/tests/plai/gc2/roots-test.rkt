@@ -34,14 +34,14 @@ that the test cases have to be set up somewhat carefully.
       (define (init-allocator) (set! heap-ptr 0))
 
       (define (gc:closure code vs)
-        (define len (vector-length vs))
+        (define len (length vs))
         (when (> (+ heap-ptr len) (heap-size))
           (error "out of memory"))
         (heap-set! heap-ptr 'closure)
         (heap-set! (+ 1 heap-ptr) code)
-        (for ([v (in-vector vs)]
+        (for ([v (in-list vs)]
               [i (in-naturals 1)])
-          (heap-set! (+ 1 i heap-ptr) v))
+          (heap-set! (+ 1 i heap-ptr) (heap-ref v)))
         (set! heap-ptr (+ len 2 heap-ptr))
         ;; return the location of this flat data
         (- heap-ptr len 2))
