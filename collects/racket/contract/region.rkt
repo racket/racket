@@ -563,11 +563,11 @@
   (syntax-case stx ()
     [(_ ())
      #'(begin)]
-    [(_ ((p0 rest0 ...) (p rest ...) ...))
+    [(_ ((p0 . rest0) (p . rest) ...))
      (raise-syntax-error 'with-contract
                          "no definition found for identifier"
                          #'p0)]
-    [(_ ((p b e e-expr c c-expr) ...) body0 body ...)
+    [(_ id-info body0 body ...)
      (let ([expanded-body0 (local-expand #'body0
                                          (syntax-local-context)
                                          (kernel-form-identifier-list))])
@@ -579,20 +579,25 @@
          (for/list ([id (in-list ids)])
            (let ([id-pair (findf (λ (p) (bound-identifier=? id (car p))) id-pairs)])
              (if id-pair (cadr id-pair) id))))
+       ;; rewrite-define returns:
+       ;; * The unused parts of id-info
+       ;; * The definition, possibly rewritten to replace certain identifiers
+       ;;   along with any auxillary definitions that should be introduced
+       ;;   (contract and external id defs)
        (define (rewrite-define head ids expr)
-         (let ([id-pairs (map syntax->list (syntax->list #'((p b e e-expr c c-expr) ...)))])
+         (let ([id-pairs (map syntax->list (syntax->list #'id-info))])
             (let-values ([(used-ps unused-ps) (split-ids id-pairs ids)])
               (with-syntax* ([new-ids (recreate-ids ids used-ps)]
-                             [((e e-expr c c-expr) ...) (map (λ (p) (cddr p)) used-ps)])
+                             [((e e-expr c c-expr) ...) (map cddr used-ps)])
                 (list unused-ps
                       (quasisyntax/loc expanded-body0
                         (begin (#,head new-ids #,expr)
-                               (#,head (c ...) (values c-expr ...))
-                               (#,head (e ...) (values e-expr ...)))))))))
+                               (define-values (c ...) (values c-expr ...))
+                               (define-values (e ...) (values e-expr ...)))))))))
        (syntax-case expanded-body0 (begin define-values define-syntaxes)
          [(begin sub ...)
           (syntax/loc stx
-            (with-contract-helper ((p b e e-expr c c-expr) ...) sub ... body ...))]
+            (with-contract-helper id-info sub ... body ...))]
          [(define-syntaxes (id ...) expr)
           (let ([ids (syntax->list #'(id ...))])
             (with-syntax ([(unused-ps def) (rewrite-define #'define-syntaxes ids #'expr)])
@@ -606,7 +611,7 @@
          [else
           (quasisyntax/loc stx
             (begin #,expanded-body0
-                   (with-contract-helper ((p b e e-expr c c-expr) ...) body ...)))]))]))
+                   (with-contract-helper id-info body ...)))]))]))
 
 (define-syntax (with-contract stx)
   (define-splicing-syntax-class region-clause
