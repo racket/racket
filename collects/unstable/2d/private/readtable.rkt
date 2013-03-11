@@ -23,13 +23,13 @@ example uses:
 (provide make-2d-readtable)
 
 (define (make-2d-readtable)
-  (define previous-readtable (current-readtable))
   (make-readtable
    #f
    #\2
    'dispatch-macro
    (case-lambda
      [(char port)
+      (define previous-readtable (current-readtable))
       (define-values (line col pos) (port-next-location port))
       
       ;; the "-2"s here are because the initial line and column
@@ -40,6 +40,7 @@ example uses:
                      (and pos (- pos 2))
                      read/recursive previous-readtable)]
      [(char port source _line _col _pos)
+      (define previous-readtable (current-readtable))
       (dispatch-proc char port source _line _col _pos 
                      (λ (a b c) (read-syntax/recursive source a b c))
                      previous-readtable)])))
