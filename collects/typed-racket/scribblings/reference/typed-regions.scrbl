@@ -11,7 +11,8 @@
 
 @title{Typed Regions}
 
-The @racket[with-type] for allows for localized Typed Racket regions in otherwise untyped code.
+The @racket[with-type] form allows for localized Typed Racket regions in
+otherwise untyped code.
 
 @defform*/subs[[(with-type result-spec fv-clause body ...+)
                 (with-type export-spec fv-clause body ...+)]

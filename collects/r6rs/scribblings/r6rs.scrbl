@@ -394,7 +394,7 @@ several known ways:
        effects of buffering.}
 
  @item{The bindings in a namespace produced by @racket[null-environment]
-       or @racket[racket-report-environment] correspond to @|r5rs| bindings
+       or @racket[scheme-report-environment] correspond to @|r5rs| bindings
        instead of @|r6rs| bindings. In particular, @racket[=>], @racket[else],
        @racket[_], and @racket[...] are not bound.}
 
