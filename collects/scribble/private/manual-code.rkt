@@ -1,6 +1,7 @@
 #lang racket/base
 (require syntax/strip-context
          syntax-color/module-lexer
+         syntax-color/lexer-contract
          "../racket.rkt"
          "../base.rkt"
          "manual-scheme.rkt"
@@ -71,7 +72,9 @@
                 (if (eof-object? lexeme)
                     null
                     (cons (list type (sub1 start) (sub1 end) 0)
-                          (loop mode)))))]
+                          (loop (if (dont-stop? mode)
+                                    (dont-stop-val mode)
+                                    mode))))))]
            [e (parameterize ([read-accept-reader #t])
                 ((or expand 
                      (lambda (stx) 

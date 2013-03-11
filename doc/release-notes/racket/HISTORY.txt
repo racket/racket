@@ -6,6 +6,9 @@ slideshow/balloon: added balloon-enable-3d
 slideshow: added interactive
 scribble/manual: added #:id option to defthing
 scribble/srcdoc: added begin-for-doc
+syntax-color: added special support for dont-stop values;
+ this change is backwards incompatible for code that calls
+ lexers and may call unknown lexers
 
 Version 5.3.3.6
 Added "phase-collapse" module inference and instantiation
