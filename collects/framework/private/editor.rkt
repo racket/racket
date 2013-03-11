@@ -401,11 +401,30 @@
       (set-style-list standard-style-list)
       (set-load-overwrites-styles #f)))
   
+    
+  ;; the 'set-font-size' function can be slow,
+  ;; as it involves redrawing every frame
+  ;; so we do the change on a low-priority
+  ;; callback so we don't get too many of these
+  ;; piling up.
+  (define (set-font-size/callback size)
+    (set! set-font-size-callback-size size)
+    (unless set-font-size-callback-running?
+      (set! set-font-size-callback-running? #t)
+      (queue-callback
+       (λ ()
+         (set-font-size set-font-size-callback-size)
+         (set! set-font-size-callback-running? #f))
+       #f)
+      (set! set-font-size-callback-running? #t)))  
+  (define set-font-size-callback-running? #f)
+  (define set-font-size-callback-size #f)
+
   (define (set-standard-style-list-pref-callbacks)
     (set-font-size (preferences:get 'framework:standard-style-list:font-size))
     (set-font-name (preferences:get 'framework:standard-style-list:font-name))
     (set-font-smoothing (preferences:get 'framework:standard-style-list:smoothing))
-    (preferences:add-callback 'framework:standard-style-list:font-size (λ (p v) (set-font-size v)))
+    (preferences:add-callback 'framework:standard-style-list:font-size (λ (p v) (set-font-size/callback v)))
     (preferences:add-callback 'framework:standard-style-list:font-name (λ (p v) (set-font-name v)))
     (preferences:add-callback 'framework:standard-style-list:smoothing (λ (p v) (set-font-smoothing v)))
     
