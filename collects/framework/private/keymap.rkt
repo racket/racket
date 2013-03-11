@@ -1027,7 +1027,13 @@
             (λ (txt evt)
               (define start (send txt get-start-position))
               (when (= start (send txt get-end-position))
-                (widen-unicode-ascii-art-box txt start)))])
+                (widen-unicode-ascii-art-box txt start)))]
+           
+           [center-in-unicode-ascii-art-box
+            (λ (txt evt)
+              (define start (send txt get-start-position))
+              (when (= start (send txt get-end-position))
+                (center-in-unicode-ascii-art-box txt start)))])
       
       (λ (kmap)
         (let* ([map (λ (key func) 
@@ -1050,6 +1056,7 @@
           
           (add "normalize-unicode-ascii-art-box" normalize-unicode-ascii-art-box)
           (add "widen-unicode-ascii-art-box" widen-unicode-ascii-art-box)
+          (add "center-in-unicode-ascii-art-box" center-in-unicode-ascii-art-box)
           (add "shift-focus" (shift-focus values))
           (add "shift-focus-backwards" (shift-focus reverse))
           
@@ -1146,6 +1153,7 @@
           
           (map "c:x;r;a" "normalize-unicode-ascii-art-box")
           (map "c:x;r;w" "widen-unicode-ascii-art-box")
+          (map "c:x;r;c" "center-in-unicode-ascii-art-box")
           
           (map "~m:c:\\" "TeX compress")
           (map "~c:m:\\" "TeX compress")
@@ -1551,6 +1559,47 @@
          [else                          (set-c t pos "═")])))
      (send t end-edit-sequence)))
 
+(define (center-in-unicode-ascii-art-box txt insertion-pos)
+  (define (find-something start-pos inc char-p?)
+    (define-values (x y) (pos->xy txt start-pos))
+    (let loop ([pos start-pos])
+      (cond
+        [(char-p? (send txt get-character pos))
+         pos]
+        [else
+         (define new-pos (inc pos))
+         (cond
+           [(<= 0 new-pos (send txt last-position))
+            (define-values (x2 y2) (pos->xy txt new-pos))
+            (cond
+              [(= y2 y)
+               (loop new-pos)]
+              [else #f])]
+           [else #f])])))
+  
+  (define (adjust-space before-space after-space pos)
+    (cond
+      [(< before-space after-space) 
+       (send txt insert (make-string (- after-space before-space) #\space) pos pos)]
+      [(> before-space after-space) 
+       (send txt delete pos (+ pos (- before-space after-space)))]))
+  
+  (define left-bar (find-something insertion-pos sub1 (λ (x) (equal? x #\║))))
+  (define right-bar (find-something insertion-pos add1 (λ (x) (equal? x #\║))))
+  (when (and left-bar right-bar (< left-bar right-bar))
+    (define left-space-edge (find-something (+ left-bar 1) add1 (λ (x) (not (char-whitespace? x)))))
+    (define right-space-edge (find-something (- right-bar 1) sub1 (λ (x) (not (char-whitespace? x)))))
+    (when (and left-space-edge right-space-edge)
+      (define before-left-space-count (- left-space-edge left-bar 1))
+      (define before-right-space-count (- right-bar right-space-edge 1))
+      (define tot-space (+ before-left-space-count before-right-space-count))
+      (define after-left-space-count (floor (/ tot-space 2)))
+      (define after-right-space-count (ceiling (/ tot-space 2)))
+      (send txt begin-edit-sequence)
+      (adjust-space before-right-space-count after-right-space-count (+ right-space-edge 1))
+      (adjust-space before-left-space-count after-left-space-count (+ left-bar 1))
+      (send txt end-edit-sequence))))
+
 (define (trace-unicode-ascii-art-box t start-pos only-double-barred-chars? f)
   (define visited (make-hash))
   (let loop ([pos start-pos])
@@ -1601,7 +1650,6 @@
   (define para (send text position-paragraph pos))
   (define start (send text paragraph-start-position para))
   (values (- pos start) para))
-
 
 (define (xy->pos text x y)
   (cond
@@ -1753,5 +1801,47 @@
                    "║  ║ ║\n"
                    "╠══╬═╣\n"
                    "║  ║ ║\n")))
+  
+  (let ([t (new text%)])
+    (send t insert "║ x   ║\n")
+    (center-in-unicode-ascii-art-box t 1)
+    (check-equal? (send t get-text)
+                  "║  x  ║\n"))
+  
+  (let ([t (new text%)])
+    (send t insert "║x    ║\n")
+    (center-in-unicode-ascii-art-box t 1)
+    (check-equal? (send t get-text)
+                  "║  x  ║\n"))
+  
+  (let ([t (new text%)])
+    (send t insert "║    x║\n")
+    (center-in-unicode-ascii-art-box t 1)
+    (check-equal? (send t get-text)
+                  "║  x  ║\n"))
+  
+  (let ([t (new text%)])
+    (send t insert "║abcde║\n")
+    (center-in-unicode-ascii-art-box t 1)
+    (check-equal? (send t get-text)
+                  "║abcde║\n"))
+  
+  (let ([t (new text%)])
+    (send t insert "║║\n")
+    (center-in-unicode-ascii-art-box t 1)
+    (check-equal? (send t get-text)
+                  "║║\n"))
+  
+  (let ([t (new text%)])
+    (send t insert "║abcde \n")
+    (center-in-unicode-ascii-art-box t 1)
+    (check-equal? (send t get-text)
+                  "║abcde \n"))
+  
+  (let ([t (new text%)])
+    (send t insert " abcde║\n")
+    (center-in-unicode-ascii-art-box t 1)
+    (check-equal? (send t get-text)
+                  " abcde║\n"))
   
   )
