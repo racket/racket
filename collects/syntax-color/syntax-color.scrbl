@@ -6,7 +6,7 @@
                      syntax-color/module-lexer
                      syntax-color/scribble-lexer
                      syntax-color/default-lexer
-                     framework/framework
+                     framework
                      framework/private/color
                      racket))
 
@@ -31,6 +31,21 @@ Parenthesis matching code built on top of @racket[token-tree%].
 
 @; ----------------------------------------------------------------------
 
+@section{Lexer Contract & the Don't Stop struct}
+
+@defmodule[syntax-color/lexer-contract]
+
+@defthing[lexer/c contract?]{
+  Checks to be sure a lexing function is well-behaved. For more
+  details, see @xmethod[color:text<%> start-colorer].
+}
+
+@defstruct[dont-stop ([val any/c])]{
+  A struct used to indicate to the lexer that it should not
+  allow itself to be interrupted. For more details,
+  see @xmethod[color:text<%> start-colorer].
+}
+
 @section{Racket Lexer}
 
 @defmodule[syntax-color/racket-lexer]
@@ -38,9 +53,9 @@ Parenthesis matching code built on top of @racket[token-tree%].
 @defproc[(racket-lexer [in input-port?]) 
          (values (or/c string? eof-object?) 
                  symbol?
-                 (or/c symbol? false/c) 
-                 (or/c number? false/c) 
-                 (or/c number? false/c))]{
+                 (or/c symbol? #f) 
+                 (or/c number? #f) 
+                 (or/c number? #f))]{
 
 A lexer for Racket, including reader extensions (@secref[#:doc'(lib
 "scribblings/reference/reference.scrbl")]{Reader_Extension}), built
@@ -67,9 +82,9 @@ The @racket[racket-lexer] function returns 5 values:
 @defproc[(racket-lexer/status [in input-port?]) 
          (values (or/c string? eof-object?) 
                  symbol?
-                 (or/c symbol? false/c) 
-                 (or/c number? false/c) 
-                 (or/c number? false/c)
+                 (or/c symbol? #f) 
+                 (or/c number? #f) 
+                 (or/c number? #f)
                  (or/c 'datum 'open 'close 'continue))]{
 
 Like @racket[racket-lexer], but returns an extra value. The last
@@ -81,9 +96,9 @@ as whitespace) on a datum.}
 @defproc[(racket-nobar-lexer/status [in input-port?]) 
          (values (or/c string? eof-object?) 
                  symbol?
-                 (or/c symbol? false/c) 
-                 (or/c number? false/c) 
-                 (or/c number? false/c)
+                 (or/c symbol? #f) 
+                 (or/c number? #f) 
+                 (or/c number? #f)
                  (or/c 'datum 'open 'close 'continue))]{
 
 Like @racket[racket-lexer/status], except it treats
@@ -97,9 +112,9 @@ This function is used by @racket[scribble-lexer].}
 @defproc[(default-lexer [in input-port?]) 
          (values (or/c string? eof-object?)
                  symbol? 
-                 (or/c symbol? false/c) 
-                 (or/c number? false/c)
-                 (or/c number? false/c))]
+                 (or/c symbol? #f) 
+                 (or/c number? #f)
+                 (or/c number? #f))]
 
 A lexer that only identifies @litchar{(}, @litchar{)}, @litchar{[},
 @litchar{]}, @litchar["{"], and @litchar["}"] built specifically for
@@ -132,9 +147,9 @@ A lexer that only identifies @litchar{(}, @litchar{)}, @litchar{[},
                                    (cons/c (-> input-port? any/c any) any/c))])
          (values (or/c string? eof-object?) 
                  symbol?
-                 (or/c symbol? false/c) 
-                 (or/c number? false/c) 
-                 (or/c number? false/c)
+                 (or/c symbol? #f) 
+                 (or/c number? #f) 
+                 (or/c number? #f)
                  exact-nonnegative-integer?
                  (or/c #f 
                        (-> input-port? any)
@@ -191,9 +206,9 @@ Like @racket[racket-lexer], but with several differences:
                          [mode any/c])
          (values (or/c string? eof-object?) 
                  symbol?
-                 (or/c symbol? false/c) 
-                 (or/c number? false/c) 
-                 (or/c number? false/c)
+                 (or/c symbol? #f) 
+                 (or/c number? #f) 
+                 (or/c number? #f)
                  exact-nonnegative-integer?
                  any/c)]{
 
@@ -206,9 +221,9 @@ Like @racket[racket-lexer], but for Racket extended with Scribble's
                                 [mode any/c])
          (values (or/c string? eof-object?) 
                  symbol?
-                 (or/c symbol? false/c) 
-                 (or/c number? false/c) 
-                 (or/c number? false/c)
+                 (or/c symbol? #f) 
+                 (or/c number? #f) 
+                 (or/c number? #f)
                  exact-nonnegative-integer?
                  any/c)]{
 
@@ -234,7 +249,7 @@ FIXME: many methods are not yet documented.
   Creates a token tree with a single element.
  }
 
- @defmethod[(get-root) (or/c node? false/c)]{
+ @defmethod[(get-root) (or/c node? #f)]{
   Returns the root node in the tree.
  }
 
@@ -251,8 +266,8 @@ FIXME: many methods are not yet documented.
 @defproc[(node-token-length [n node?]) natural-number/c]
 @defproc[(node-token-data [n node?]) any/c]
 @defproc[(node-left-subtree-length [n node?]) natural-number/c]
-@defproc[(node-left [n node?]) (or/c node? false/c)]
-@defproc[(node-right [n node?]) (or/c node? false/c)]
+@defproc[(node-left [n node?]) (or/c node? #f)]
+@defproc[(node-right [n node?]) (or/c node? #f)]
 )]{
 
 Functions for working with nodes in a @racket[token-tree%].}

@@ -11,6 +11,7 @@ added get-regions
          syntax-color/token-tree
          syntax-color/paren-tree
          syntax-color/default-lexer
+         syntax-color/lexer-contract
          string-constants
          "../preferences.rkt"
          "sig.rkt"
@@ -303,7 +304,7 @@ added get-regions
             (set-lexer-state-invalid-tokens-mode! ls mode))
           (sync-invalid ls))))
     
-    (define/private (re-tokenize-move-to-next-ls start-time did-something?)
+    (define/private (re-tokenize-move-to-next-ls start-time ok-to-stop?)
       (cond
         [(null? re-tokenize-lses) 
          ;; done: return #t
@@ -317,25 +318,29 @@ added get-regions
                                    (lexer-state-end-pos ls)
                                    (λ (x) #f)))
          (port-count-lines! in)
-         (continue-re-tokenize start-time did-something? ls in
+         (continue-re-tokenize start-time ok-to-stop? ls in
                                (lexer-state-current-pos ls)
                                (lexer-state-current-lexer-mode ls))]))
     
     (define re-tokenize-lses #f)
     
-    (define/private (continue-re-tokenize start-time did-something? ls in in-start-pos lexer-mode)
+    (define/private (continue-re-tokenize start-time ok-to-stop? ls in in-start-pos lexer-mode)
       (cond
-        [(and did-something? ((+ start-time 20.0) . <= . (current-inexact-milliseconds)))
+        [(and ok-to-stop? ((+ start-time 20.0) . <= . (current-inexact-milliseconds)))
          #f]
         [else
          (define-values (_line1 _col1 pos-before) (port-next-location in))
-         (define-values (lexeme type data new-token-start new-token-end backup-delta new-lexer-mode) 
+         (define-values (lexeme type data new-token-start new-token-end backup-delta new-lexer-mode/cont) 
            (get-token in in-start-pos lexer-mode))
          (define-values (_line2 _col2 pos-after) (port-next-location in))
+         (define new-lexer-mode (if (dont-stop? new-lexer-mode/cont)
+                                    (dont-stop-val new-lexer-mode/cont)
+                                    new-lexer-mode/cont))
+         (define next-ok-to-stop? (not (dont-stop? new-lexer-mode/cont)))
          (cond
            [(eq? 'eof type) 
             (set-lexer-state-up-to-date?! ls #t)
-            (re-tokenize-move-to-next-ls start-time #t)]
+            (re-tokenize-move-to-next-ls start-time next-ok-to-stop?)]
            [else
             (unless (<= pos-before new-token-start pos-after)
               (error 'color:text<%>
@@ -369,9 +374,9 @@ added get-regions
                                (lexer-state-invalid-tokens ls))
                  (set-lexer-state-invalid-tokens-start! ls +inf.0)
                  (set-lexer-state-up-to-date?! ls #t)
-                 (re-tokenize-move-to-next-ls start-time #t)]
+                 (re-tokenize-move-to-next-ls start-time next-ok-to-stop?)]
                 [else
-                 (continue-re-tokenize start-time #t ls in in-start-pos new-lexer-mode)]))])]))
+                 (continue-re-tokenize start-time next-ok-to-stop? ls in in-start-pos new-lexer-mode)]))])]))
 
     (define/private (add-colorings type in-start-pos new-token-start new-token-end)
       (define sp (+ in-start-pos (sub1 new-token-start)))
@@ -511,7 +516,11 @@ added get-regions
                                    [else (if (lexer-state-up-to-date? (car lexer-states))
                                              (loop (cdr lexer-states))
                                              lexer-states)])))
-        (define finished? (re-tokenize-move-to-next-ls (current-inexact-milliseconds) #f))
+        (define finished? (re-tokenize-move-to-next-ls 
+                           (current-inexact-milliseconds) 
+                           ;; #f initially here ensures we do at least
+                           ;; one step of tokenization before giving up
+                           #f))
         (c-log (format "coloring stopped ~a" (if finished? "because it finished" "with more to do")))
         (when finished?
           (update-lexer-state-observers)

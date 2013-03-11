@@ -108,7 +108,10 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
      ;; #lang-selected language consumes and produces a mode:
      (let-values ([(lexeme type data new-token-start new-token-end backup-delta new-mode) 
                    ((car mode) in offset (cdr mode))])
-       (values lexeme type data new-token-start new-token-end backup-delta (cons (car mode) new-mode)))]
+       (values lexeme type data new-token-start new-token-end backup-delta 
+               (if (dont-stop? new-mode)
+                   (dont-stop (cons (car mode) (dont-stop-val new-mode)))
+                   (cons (car mode) new-mode))))]
     [else
      ;; #lang-selected language (or default) doesn't deal with modes:
      (let-values ([(lexeme type data new-token-start new-token-end) 
