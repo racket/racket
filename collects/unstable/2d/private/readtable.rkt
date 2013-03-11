@@ -84,7 +84,13 @@ example uses:
        (for/list ([line (in-vector lines)])
          (length line)))
      
-     `(,(string->symbol (string-append "2d" (apply string kwd-chars)))
+     (define kwd-str (string-append "2d" (apply string kwd-chars)))
+     (define kwd-port (open-input-string kwd-str))
+     (port-count-lines! kwd-port)
+     (set-port-next-location! kwd-port _line (and _col (+ _col 1)) (and _pos (+ _pos 1)))
+     (define kwd-stx (read-syntax source kwd-port))
+     
+     `(,kwd-stx
        
        ,table-column-breaks
        ,heights
