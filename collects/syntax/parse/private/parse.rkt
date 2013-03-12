@@ -31,7 +31,8 @@
          define/syntax-parse
          syntax-parser/template
          parser/rhs
-         define-eh-alternative-set)
+         define-eh-alternative-set
+         (for-syntax rhs->parser))
 
 (begin-for-syntax
  (define (tx:define-*-syntax-class stx splicing?)
@@ -89,65 +90,71 @@
           (parameterize ((current-syntax-context #'ctx))
             (parse-rhs #'rhss (syntax->datum #'relsattrs) (syntax-e #'splicing?)
                        #:context #'ctx)))
-        (define-values (transparent? description variants defs commit? delimit-cut?)
-          (match the-rhs
-            [(rhs _ _ transparent? description variants defs (options commit? delimit-cut?) _)
-             (values transparent? description variants defs commit? delimit-cut?)]))
-        (define vdefss (map variant-definitions variants))
-        (define formals* (rewrite-formals #'formals #'x #'rl))
-        (define body
-          (cond [(null? variants)
-                 #'(fail (failure pr es))]
-                [(syntax-e #'splicing?)
-                 (with-syntax ([(alternative ...)
-                                (for/list ([variant (in-list variants)])
-                                  (define pattern (variant-pattern variant))
-                                  (with-syntax ([pattern pattern]
-                                                [iattrs (pattern-attrs pattern)]
-                                                [commit? commit?]
-                                                [result-pr
-                                                 (if transparent?
-                                                     #'rest-pr
-                                                     #'(ps-pop-opaque rest-pr))])
-                                    #'(parse:H x cx rest-x rest-cx rest-pr pattern pr es
-                                               (variant-success relsattrs iattrs (rest-x rest-cx result-pr)
-                                                                success cp0 commit?))))])
-                   #'(try alternative ...))]
-                [else
-                 (with-syntax ([matrix
-                                (optimize-matrix
-                                 (for/list ([variant (in-list variants)])
-                                   (define pattern (variant-pattern variant))
-                                   (with-syntax ([iattrs (pattern-attrs pattern)]
-                                                 [commit? commit?])
-                                     (pk1 (list pattern)
-                                          #'(variant-success relsattrs iattrs ()
-                                                             success cp0 commit?)))))])
-                   #'(parse:matrix ((x cx pr es)) matrix))]))
-        (with-syntax ([formals* formals*]
-                      [(def ...) defs]
-                      [((vdef ...) ...) vdefss]
-                      [description (or description (symbol->string (syntax-e #'name)))]
-                      [transparent? transparent?]
-                      [delimit-cut? delimit-cut?]
-                      [body body])
-          #`(lambda (x cx pr es fh0 cp0 rl success . formals*)
-              (with ([this-syntax x]
-                     [this-role rl])
-                    def ...
-                    vdef ... ...
-                    (#%expression
-                     (syntax-parameterize ((this-context-syntax
-                                            (syntax-rules ()
-                                              [(tbs) (ps-context-syntax pr)])))
-                       (let ([es (es-add-thing pr description 'transparent? rl es)]
-                             [pr (if 'transparent? pr (ps-add-opaque pr))])
-                         (with ([fail-handler fh0]
-                                [cut-prompt cp0])
-                           ;; Update the prompt, if required
-                           ;; FIXME: can be optimized away if no cut exposed within variants
-                           (with-maybe-delimit-cut delimit-cut?
-                             body))))))))))]))
+        (rhs->parser #'name #'formals #'relsattrs the-rhs (syntax-e #'splicing?))))]))
+
+(begin-for-syntax
+ (define (rhs->parser name formals relsattrs the-rhs splicing?)
+   (define-values (transparent? description variants defs commit? delimit-cut?)
+     (match the-rhs
+       [(rhs _ _ transparent? description variants defs (options commit? delimit-cut?) _)
+        (values transparent? description variants defs commit? delimit-cut?)]))
+   (define vdefss (map variant-definitions variants))
+   (define formals* (rewrite-formals formals #'x #'rl))
+   (define body
+     (cond [(null? variants)
+            #'(fail (failure pr es))]
+           [splicing?
+            (with-syntax ([(alternative ...)
+                           (for/list ([variant (in-list variants)])
+                             (define pattern (variant-pattern variant))
+                             (with-syntax ([pattern pattern]
+                                           [relsattrs relsattrs]
+                                           [iattrs (pattern-attrs pattern)]
+                                           [commit? commit?]
+                                           [result-pr
+                                            (if transparent?
+                                                #'rest-pr
+                                                #'(ps-pop-opaque rest-pr))])
+                               #'(parse:H x cx rest-x rest-cx rest-pr pattern pr es
+                                          (variant-success relsattrs iattrs (rest-x rest-cx result-pr)
+                                                           success cp0 commit?))))])
+              #'(try alternative ...))]
+           [else
+            (with-syntax ([matrix
+                           (optimize-matrix
+                            (for/list ([variant (in-list variants)])
+                              (define pattern (variant-pattern variant))
+                              (with-syntax ([iattrs (pattern-attrs pattern)]
+                                            [relsattrs relsattrs]
+                                            [commit? commit?])
+                                (pk1 (list pattern)
+                                     #'(variant-success relsattrs iattrs ()
+                                                        success cp0 commit?)))))])
+              #'(parse:matrix ((x cx pr es)) matrix))]))
+   (with-syntax ([formals* formals*]
+                 [(def ...) defs]
+                 [((vdef ...) ...) vdefss]
+                 [description (or description (symbol->string (syntax-e name)))]
+                 [transparent? transparent?]
+                 [delimit-cut? delimit-cut?]
+                 [body body])
+     #`(lambda (x cx pr es fh0 cp0 rl success . formals*)
+         (with ([this-syntax x]
+                [this-role rl])
+               def ...
+               vdef ... ...
+               (#%expression
+                (syntax-parameterize ((this-context-syntax
+                                       (syntax-rules ()
+                                         [(tbs) (ps-context-syntax pr)])))
+                  (let ([es (es-add-thing pr description 'transparent? rl es)]
+                        [pr (if 'transparent? pr (ps-add-opaque pr))])
+                    (with ([fail-handler fh0]
+                           [cut-prompt cp0])
+                      ;; Update the prompt, if required
+                      ;; FIXME: can be optimized away if no cut exposed within variants
+                      (with-maybe-delimit-cut delimit-cut?
+                        body))))))))))
 
 (define-syntax (syntax-parse stx)
   (syntax-case stx ()
