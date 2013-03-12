@@ -1612,6 +1612,10 @@
         [tc-err (vector-set! (ann (vector 'a 'b) (Vector Symbol Symbol)) -4 'c)]
         [tc-e (vector-set! (ann (vector 'a 'b) (Vector Symbol Symbol)) (+ -1 2) 'c)
               -Void]
+        [tc-err
+          (ann 
+            ((letrec ((x (lambda (acc #{ v : Symbol}) (if v (list v) acc)))) x) null (list 'bad 'prog))
+            (Listof Symbol))]
         )
   (test-suite
    "check-type tests"
