@@ -537,10 +537,14 @@
           (identifier? (syntax ident))
           (syntax/loc stx int-id)])))))
 
+(define-syntax-rule (add-blame-region blame . body)
+  (splicing-syntax-parameterize ([current-contract-region (λ (stx) #'blame)])
+    . body))
+
 #|
  with-contract-helper takes syntax of the form:
 
- (with-contract-helper ((p b e e-expr c c-expr) ...) body)
+ (with-contract-helper ((p b e e-expr c c-expr) ...) blame . body)
 
  where
  p = internal id (transformer binding)
@@ -549,7 +553,8 @@
  e-expr = initialization value for bare external id
  c = contract id
  c-expr = initialization value for contract id
- body = the body of the with-contract form
+ blame = blame syntax for the contract region that's being defined
+ body = the body expressions of the with-contract form
 
  Every time a contracted value is defined (that is, a define
  that defines a value with identifier p), we change it to
@@ -561,16 +566,16 @@
 |#   
 (define-syntax (with-contract-helper stx)
   (syntax-case stx ()
-    [(_ ())
+    [(_ () blame)
      #'(begin)]
-    [(_ ((p0 . rest0) (p . rest) ...))
+    [(_ ((p0 . rest0) (p . rest) ...) blame)
      (raise-syntax-error 'with-contract
                          "no definition found for identifier"
                          #'p0)]
-    [(_ id-info body0 body ...)
+    [(_ id-info blame body0 body ...)
      (let ([expanded-body0 (local-expand #'body0
                                          (syntax-local-context)
-                                         (kernel-form-identifier-list))])
+                                         (cons #'define (kernel-form-identifier-list)))])
        (define (split-ids to-filter to-match)
          (partition (λ (pair1)
                       (memf (λ (pair2) (bound-identifier=? (car pair1) pair2)) to-match))
@@ -594,24 +599,29 @@
                         (begin (#,head new-ids #,expr)
                                (define-values (c ...) (values c-expr ...))
                                (define-values (e ...) (values e-expr ...)))))))))
-       (syntax-case expanded-body0 (begin define-values define-syntaxes)
+       (syntax-case expanded-body0 (begin define define-values define-syntaxes)
          [(begin sub ...)
           (syntax/loc stx
-            (with-contract-helper id-info sub ... body ...))]
+            (with-contract-helper id-info blame sub ... body ...))]
+         [(define rest ...)
+          (let-values ([(def-id body-stx) (normalize-definition expanded-body0 #'lambda #t #t)])
+            (with-syntax ([(unused-ps def) (rewrite-define #'define-values (list def-id) body-stx)])
+              (syntax/loc stx
+                (begin (add-blame-region blame def) (with-contract-helper unused-ps blame body ...)))))]
          [(define-syntaxes (id ...) expr)
           (let ([ids (syntax->list #'(id ...))])
             (with-syntax ([(unused-ps def) (rewrite-define #'define-syntaxes ids #'expr)])
-                 (syntax/loc stx
-                   (begin def (with-contract-helper unused-ps body ...)))))]
+              (syntax/loc stx
+                (begin (add-blame-region blame def) (with-contract-helper unused-ps blame body ...)))))]
          [(define-values (id ...) expr)
           (let ([ids (syntax->list #'(id ...))])
             (with-syntax ([(unused-ps def) (rewrite-define #'define-values ids #'expr)])
               (syntax/loc stx
-                (begin def (with-contract-helper unused-ps body ...)))))]
+                (begin (add-blame-region blame def) (with-contract-helper unused-ps blame body ...)))))]
          [else
           (quasisyntax/loc stx
-            (begin #,expanded-body0
-                   (with-contract-helper id-info body ...)))]))]))
+            (begin (add-blame-region blame #,expanded-body0)
+                   (with-contract-helper id-info blame body ...)))]))]))
 
 (define-syntax (with-contract stx)
   (define-splicing-syntax-class region-clause
@@ -743,9 +753,7 @@
                      [(true-p ...) (map tid-marker protected)]
                      [(ext-id ...) (map eid-marker protected)]
                      [(marked-p ...) (add-context #`#,protected)])
-         (with-syntax ([new-stx (add-context #'(splicing-syntax-parameterize 
-                                                ([current-contract-region (λ (stx) #'blame-stx)])
-                                                . body))])
+         (with-syntax ([new-stx (add-context #'body)])
                (syntax/loc stx
                  (begin
                    (define-values (free-ctc-id ...)
@@ -781,6 +789,8 @@
                                            ctc-id
                                            (verify-contract 'with-contract ctc))
                                           ...)
+                                         blame-stx
+                                         .
                                          new-stx)
                    (define-syntaxes (p ...)
                      (values (make-external-contracted-id-transformer
