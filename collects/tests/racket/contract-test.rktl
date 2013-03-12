@@ -5040,7 +5040,22 @@
       1)
    "top-level")
 
+  (test/spec-passed
+   'define/contract
+   '(let ()
+      (define/contract (f x #:y [y 3])
+        (->* (integer?) (#:y integer?) integer?)
+        x)
+      (f 3 #:y 7)))
 
+  (test/spec-failed
+   'define/contract
+   '(let ()
+      (define/contract (f x #:y [y 3])
+        (->* (integer?) (#:y integer?) integer?)
+        x)
+      (f 3 #:y #f))
+   "top-level")
 
 ;
 ;
