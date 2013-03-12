@@ -80,6 +80,11 @@
                         ;; make up a fake name if none exists, this is an error case anyway
                         (and drest (cons (or rest (generate-temporary)) drest))
                         (tc-exprs/check (syntax->list body) ret-ty))))
+    ;; Check that the number of formal arguments is valid for the expected type.
+    ;; Thus it must be able to accept the number of arguments that the expected
+    ;; type has. So we check for three cases, if the function doesn't accept
+    ;; enough argument, if it requires too many arguments, or if it doesn't support rest arguments
+    ;; if needed.
     (when (or (and (< arg-len tys-len) (not rest))
               (> arg-len tys-len)
               (and (or rest-ty drest) (not rest)))
@@ -230,6 +235,8 @@
                                    #:when (and (not r) (not dr) (= (length a) (length (syntax->list fml)))))
                 f)]
              [else
+              ;; fml is an improper list, thus the function has a rest argument, and so valid
+              ;; types must have at least as many positional arguments as it does.
               (for/list ([a argss] [f fs]  [r rests] [dr drests]
                                    #:when (>= (length a) (sub1 (syntax-len fml))))
                 f)])]
