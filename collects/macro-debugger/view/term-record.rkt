@@ -191,6 +191,8 @@
           [(cons (struct misstep (type s1 exn)) rs)
            (list* (make misstep type s1 exn)
                   (loop rs))]
+          [(cons (and r (remarkstep type s1 contents)) rs)
+           (list* r (loop rs))]
           ['()
            null])))
 
