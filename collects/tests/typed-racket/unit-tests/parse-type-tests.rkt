@@ -43,7 +43,16 @@
                 (parse-type (syntax ty))))]))
 
 (define-syntax (pt-test stx)
-  (syntax-case stx ()
+  (syntax-case stx (FAIL)
+    [(_ FAIL ty-stx)
+     (syntax/loc stx (pt-test FAIL ty-stx initial-tvar-env))]
+    [(_ FAIL ty-stx tvar-env)
+     (quasisyntax/loc stx
+       (test-exn #,(format "~a" (syntax->datum #'ty-stx))
+                 exn:fail:syntax?
+                 (parameterize ([current-tvars tvar-env]
+                                [delay-errors? #f])
+                   (lambda () (parse-type (quote-syntax ty-stx))))))]
     [(_ ts tv) (syntax/loc stx (pt-test ts tv initial-tvar-env))]
     [(_ ty-stx ty-val tvar-env)
      (quasisyntax/loc
@@ -66,6 +75,9 @@
 (define (parse-type-tests)
   (pt-tests
    "parse-type tests"
+   [FAIL UNBOUND]
+   [FAIL List]
+   [FAIL (All (A) (List -> Boolean))]
    [Number N]
    [Any Univ]
    [(List Number String) (-Tuple (list N -String))]
