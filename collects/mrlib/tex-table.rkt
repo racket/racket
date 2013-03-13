@@ -186,12 +186,7 @@
     ("vdots" "⋮")
     ("ddots" "⋱")
     ("cdots" "⋯")
-    ("hdots" "⋯")
-    ("udots" "⋰")
-    ("downtherefore" "∵")
-    ("uptherefore" "∴")
-    ("vdotdot" "∶")
-    ("squaredots" "∷")))
+    ("hdots" "⋯")))
 
 (module+ test
   (require racket/match)
