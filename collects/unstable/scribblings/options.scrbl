@@ -100,18 +100,13 @@ loses the guard related to @racket[option/c], if it has one to begin with, and t
 ]  
 } 
                                       
-@defform[(transfer-option id ...)]{
-                                   
-A @racket[_provide-spec] for use in @racket[provide] (currently only for
-the same @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{phase level}
-as the @racket[provide] form; for example,
-@racket[transfer-option] cannot be nested within @racket[for-syntax]). Each @racket[id]
-is provided from the module if @racket[id] is bound to a value guarded with an 
-@racket[option/c] contract. In addition, @racket[transfer-option] modifies the blame 
+@defthing[transfer/c contract?]{
+
+A contract that accepts any value. If the value is guarded with an 
+@racket[option/c] contract, @racket[transfer/c] modifies the blame 
 information for the @racket[option/c] contract by adding the providing module and its client 
-to the positive and negative blame parties respectively. If @racket[id] is not bound to a value guarded with an 
-@racket[option/c] contract, then @racket[(provide [transfer id ...])] is equivalent to @racket[(provide id ...)] i.e. 
-each @racket[id] is provided from the module as usual.
+to the positive and negative blame parties respectively. If the value is not a value guarded with an 
+@racket[option/c] contract, then @racket[transfer/c] is equivalent to @racket[any/c].
 }                   
 
  @defexamples[
@@ -122,14 +117,14 @@ each @racket[id] is provided from the module as usual.
   (define foo (λ (x) x)))
 (module middleman racket
   (require unstable/options 'server4)
-  (provide (transfer-option foo)))
+  (provide (contract-out [foo transfer/c])))
 (require 'middleman unstable/options)
 (define e-foo (exercise-option foo))
 (e-foo 1)
-(e-foo 'wrong)
+;(e-foo 'wrong)
 (module server5 racket
   (require unstable/options)
-  (provide [transfer-option boo])
+  (provide (contract-out [boo transfer/c]))
   (define (boo x) x))
 (require 'server5)
 (boo 42)] 

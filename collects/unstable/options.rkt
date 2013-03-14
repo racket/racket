@@ -1,7 +1,7 @@
 #lang racket
 
 
-(provide option/c transfer-option exercise-option waive-option tweak-option
+(provide option/c #;transfer-option exercise-option waive-option tweak-option transfer/c
          has-option? has-option-with-contract?
          invariant/c)
 
@@ -238,69 +238,27 @@
           (vector this-one (list #'optionc) null))))]))
 
 
-
-(define (transferc-name c)
-  (apply build-compound-type-name 'transfer-option (transfer-id c) empty))
-
-(struct transfer (id)
+(struct transferc ()
   #:property prop:contract
   (build-contract-property
-   #:name 
-   transferc-name
    #:projection
    (λ (ctc)
      (λ (blame)
        (λ (val)
-         (let ([option-blame
-                (blame-add-context 
-                 blame
-                 (format "~a does not have an option in" val)
-                 #:important (format "~a" (transfer-id ctc)))]
+         (let ([s val]
                [pos-blame (blame-positive blame)]
                [neg-blame (blame-negative blame)])
            (cond [(proxy? val)
-                  (let ((info (proxy-info val)))
+                  (let ([info (proxy-info s)])
                     (build-proxy
                      (info-with info)
-                     (value-contract val)
+                     (value-contract s)
                      (info-val info)
                      (info-proj info)
                      (blame-update (info-blame info) pos-blame neg-blame)))]
                  [else val])))))))
 
-(define-syntax (transfer/c stx)
-  (syntax-case stx ()
-    [x
-     (identifier? #'x)
-     (syntax-property
-      (syntax/loc stx transfer/c)
-      'racket/contract:contract
-      (vector (gensym 'ctc) (list stx) null))]
-    [(transferc id) 
-     (let ([this-one (gensym 'transfer-ctc)])
-       (syntax-property
-        (syntax/loc stx
-          (transfer 'id))
-        'racket/contract:contract
-        (vector this-one null (list #'transferc))))]))
-
-(define-syntax transfer-option
-  (make-provide-pre-transformer
-   (lambda (stx modes)
-     (unless (or (null? modes)
-                 (and (= 1 (length modes))
-                      (zero? (car modes))))
-       (raise-syntax-error #f
-                           "allowed only in relative phase-level 0"
-                           stx))
-     (syntax-case stx ()
-       [(_ id ... )
-        (syntax-local-lift-module-end-declaration
-         (with-syntax ([(new-id ...) (generate-temporaries #'(id ...))])
-           #`(begin
-               (begin (define new-id id) ...)
-               (provide (contract-out [rename new-id id (transfer/c id)] ...)))))])
-     #`(combine-out))))
+(define/final-prop transfer/c (transferc))
 
 (define (has-option? val)
   (and (has-contract? val) 
