@@ -436,7 +436,7 @@
                                    (if (Row-unmatch (car blocks))
                                        #`(call-with-continuation-prompt
                                           (lambda () (let ([#,(Row-unmatch (car blocks))
-                                                        (lambda () (abort-current-continuation match-prompt-tag))])
+                                                            (lambda () (abort-current-continuation match-prompt-tag))])
                                                        rhs))
                                           match-prompt-tag
                                           (lambda () (#,esc)))

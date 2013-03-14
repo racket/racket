@@ -163,8 +163,8 @@
 (define (ext:wrap f)
   (lambda (conn . args)
     (with-handlers ([exn:fail? (lambda (exn)
-                            (kill-connection! conn)
-                            (raise exn))])
+                                 (kill-connection! conn)
+                                 (raise exn))])
       (apply f conn args)
       (flush-output (connection-o-port conn)))))
 

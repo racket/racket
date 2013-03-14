@@ -1,7 +1,7 @@
 #lang typed-scheme
 (require/typed
-scheme/base
-[values (All (T) ((Any -> Boolean) -> (Any -> Boolean : T)))])
+ scheme/base
+ [values (All (T) ((Any -> Boolean) -> (Any -> Boolean : T)))])
 
 (: number->string? (Any -> Boolean : (Number -> String)))
 (define (number->string? x)

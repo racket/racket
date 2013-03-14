@@ -20,29 +20,23 @@
     (check-false (negative? (segment-y s)))
     (check-true (< (segment-y s) (frame-info-adjusted-height finfo)))))
 
-;Display tests 
-(let ([vr (viewable-region 3 3 500 500)]) 
-  (for ([i (in-range 4 503)]) 
-    (check-true (in-viewable-region-horiz vr i) 
-                (format "~a should be in ~a" 
-                        i 
-                        vr)))
-  (for ([i (in-range 0 2)]) 
-    (check-false (in-viewable-region-horiz vr i) 
-                 (format "~a should not be in ~a" 
-                         i 
-                         vr))
-  (for ([i (in-range 504 1000)]) 
-    (check-false (in-viewable-region-horiz vr i) 
-                 (format "~a should not be in ~a" 
-                         i 
-                         vr)))))
+;Display tests
+(let ([vr (viewable-region 3 3 500 500)])
+  (for ([i (in-range 4 503)])
+    (check-true (in-viewable-region-horiz vr i)
+                (format "~a should be in ~a" i vr)))
+  (for ([i (in-range 0 2)])
+    (check-false (in-viewable-region-horiz vr i)
+                 (format "~a should not be in ~a" i vr))
+    (for ([i (in-range 504 1000)])
+      (check-false (in-viewable-region-horiz vr i)
+                   (format "~a should not be in ~a" i vr)))))
 
-(let ([vr (viewable-region 0 0 732 685)]) 
-  (check-true (in-viewable-region-horiz vr 10)) 
-  (check-true (in-viewable-region-horiz vr 63.0)) 
-  (check-true (in-viewable-region-horiz vr 116.0)) 
-  (check-true (in-viewable-region-horiz vr 169.0)) 
+(let ([vr (viewable-region 0 0 732 685)])
+  (check-true (in-viewable-region-horiz vr 10))
+  (check-true (in-viewable-region-horiz vr 63.0))
+  (check-true (in-viewable-region-horiz vr 116.0))
+  (check-true (in-viewable-region-horiz vr 169.0))
   (check-true (in-viewable-region-horiz vr 222)))
 
 (let ([vr (viewable-region 0 0 732 685)] 

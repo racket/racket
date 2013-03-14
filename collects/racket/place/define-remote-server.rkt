@@ -48,20 +48,20 @@
       #;(printf "FORM_NAME ~a ~a ~a\n" #'form-name (syntax->datum #'form-name)
               (equal? (syntax->datum #'form-name) 'define-named-remote-server))
       (with-syntax ([receive-line
-                      (cond
-                        [(eq? (syntax->datum #'form-name) 'define-named-remote-server)
-                          #'(list (list fname-symbol args (... ...)) src)]
-                        [else
-                          #'(list fname-symbol args (... ...))])]
+                     (cond
+                       [(eq? (syntax->datum #'form-name) 'define-named-remote-server)
+                        #'(list (list fname-symbol args (... ...)) src)]
+                       [else
+                        #'(list fname-symbol args (... ...))])]
                     [send-dest
-                      (cond
-                        [(eq? (syntax->datum #'form-name) 'define-named-remote-server)
-                          #'src]
-                        [else
-                          #'ch])])
+                     (cond
+                       [(eq? (syntax->datum #'form-name) 'define-named-remote-server)
+                        #'src]
+                       [else
+                        #'ch])])
 (define x
 #'(define-syntax (form-name stx)
-  (syntax-case stx ()
+   (syntax-case stx ()
     [(_ name forms (... ...))
      (let ()
 
@@ -111,41 +111,39 @@
                           (syntax-case r ()
                             [(define-type (fname args (... ...)) body (... ...))
                              (let ()
-                             (with-syntax ([fname-symbol #'(quote fname)]
-                                           [(send-line (... ...))
-                                             (cond
-                                               [(is-id? 'define-rpc #'define-type) #'((dplace/place-channel-put send-dest result))]
-                                               [(is-id? 'define-cast #'define-type) #'()]
-                                               [else (raise "Bad define in define-remote-server")])])
-                               #'[receive-line
-                                   (define result
-                                     (let ()
-                                       body (... ...)))
-                                   send-line (... ...)
-                                   (loop)]))]))])
-        #`(lambda (ch)
-            (let ()
-              states2 (... ...)
-              (let loop ()
-                (define msg (dplace/place-channel-get ch))
-                (define (log-to-parent-real msg #:severity [severity 'info])
-                  (dplace/place-channel-put ch (log-message severity msg)))
-                (syntax-parameterize ([log-to-parent (make-rename-transformer #'log-to-parent-real)])
+                               (with-syntax ([fname-symbol #'(quote fname)]
+                                             [(send-line (... ...))
+                                              (cond
+                                                [(is-id? 'define-rpc #'define-type) #'((dplace/place-channel-put send-dest result))]
+                                                [(is-id? 'define-cast #'define-type) #'()]
+                                                [else (raise "Bad define in define-remote-server")])])
+                                 #'[receive-line
+                                    (define result
+                                      (let ()
+                                        body (... ...)))
+                                    send-line (... ...)
+                                    (loop)]))]))])
+          #`(lambda (ch)
+              (let ()
+                states2 (... ...)
+                (let loop ()
+                  (define msg (dplace/place-channel-get ch))
+                  (define (log-to-parent-real msg #:severity [severity 'info])
+                    (dplace/place-channel-put ch (log-message severity msg)))
+                  (syntax-parameterize ([log-to-parent (make-rename-transformer #'log-to-parent-real)])
                     (match msg
-                      cases (... ...)
-                    ))
-                loop)
-                ))))
-    (with-syntax ([mkname (string->id stx (format "make-~a" (id->string #'name)))])
-      (define x
-        #`(begin
-          (require racket/place
-                   racket/match)
-          #,@trans-rpcs
-          (define/provide mkname #,trans-place)
-          (void)))
-      ;(pretty-print (syntax->datum x))
-      x))]))
+                      cases (... ...)))
+                  loop)))))
+      (with-syntax ([mkname (string->id stx (format "make-~a" (id->string #'name)))])
+        (define x
+          #`(begin
+              (require racket/place
+                       racket/match)
+              #,@trans-rpcs
+              (define/provide mkname #,trans-place)
+              (void)))
+        ;(pretty-print (syntax->datum x))
+        x))]))
 )
 ;(pretty-print (syntax->datum x))
 x)]))
@@ -156,5 +154,3 @@ x)]))
 (provide define-remote-server
          define-named-remote-server
          log-to-parent)
-
-

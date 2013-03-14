@@ -49,10 +49,11 @@
   (syntax-parse stx
     [(require/contract nm:renameable hidden:id cnt lib)
      #`(begin (require (only-in lib [nm.orig-nm nm.orig-nm-r]))
-              (define-syntax nm.nm (make-rename-transformer
-                (syntax-property (syntax-property (quote-syntax hidden)
-                    'not-free-identifier=? #t)
-                  'not-provide-all-defined #t)))
+              (define-syntax nm.nm
+                (make-rename-transformer
+                 (syntax-property (syntax-property (quote-syntax hidden)
+                                                   'not-free-identifier=? #t)
+                                  'not-provide-all-defined #t)))
               (define-ignored hidden
                 (contract cnt
                           (get-alternate nm.orig-nm-r)

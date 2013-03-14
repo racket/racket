@@ -34,9 +34,9 @@
                               #:key 
                               [with-gl (lambda (f) (f))]
                               [mask (send bm get-loaded-mask)])
-    (let ([w (send bm get-width)]
-          [h (send bm get-height)]
-          [rgba (argb->rgba (bitmap->argb bm mask))])
+    (define w (send bm get-width))
+    (define h (send bm get-height))
+    (define rgba (argb->rgba (bitmap->argb bm mask)))
     (with-gl
      (lambda ()
        (let ((tex (gl-vector-ref (glGenTextures 1) 0))
@@ -67,4 +67,4 @@
          (gl-disable 'texture-2d)
          (gl-end-list)
          
-         list-id))))))
+         list-id)))))

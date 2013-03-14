@@ -956,7 +956,7 @@
                     (report-mismatch update-deps)]
                    [x
                     (eprintf "Invalid input: ~e\n" x)
-                 (loop)]))]))]
+                    (loop)]))]))]
       [else
        (λ ()
          (define final-pkg-dir

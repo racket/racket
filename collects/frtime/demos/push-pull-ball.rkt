@@ -17,13 +17,13 @@
 (define pos2
   (rec pos
     (until (make-posn 100 100)
-            (inf-delay
-            (let ([brnch (posn+ pos
-                                (posn* (normalize (posn- pos1 pos))
-                                       (- (posn-diff pos pos1) (add1 (* 2 radius)))))])
-              (if (< (posn-diff pos pos1) (* 2 radius))
-                  brnch
-                  pos))))))
+      (inf-delay
+       (let ([brnch (posn+ pos
+                           (posn* (normalize (posn- pos1 pos))
+                                  (- (posn-diff pos pos1) (add1 (* 2 radius)))))])
+         (if (< (posn-diff pos pos1) (* 2 radius))
+             brnch
+             pos))))))
 
 (display-shapes
  (list

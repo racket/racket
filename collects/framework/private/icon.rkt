@@ -31,9 +31,9 @@
   (export framework:icon^)
   
   (define eof-bitmap (delay/sync (let ([bm (make-object bitmap% eof-bitmap-path)])
-                              (unless (send bm ok?)
-                                (error 'eof-bitmap "not ok ~s\n" eof-bitmap-path))
-                              bm)))
+                                   (unless (send bm ok?)
+                                     (error 'eof-bitmap "not ok ~s\n" eof-bitmap-path))
+                                   bm)))
   (define (get-eof-bitmap) (force eof-bitmap))
   
   (define anchor-bitmap (delay/sync (make-object bitmap% anchor-bitmap-path)))

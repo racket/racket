@@ -398,10 +398,10 @@
 [map (-polydots (c a b)
                 (cl->*
                  (-> (-> a c) (-pair a (-lst a)) (-pair c (-lst c)))
-                ((list
-                  ((list a) (b b) . ->... . c)
-                  (-lst a))
-                 ((-lst b) b) . ->... .(-lst c))))]
+                 ((list
+                   ((list a) (b b) . ->... . c)
+                   (-lst a))
+                  ((-lst b) b) . ->... .(-lst c))))]
 [for-each (-polydots (c a b) ((list ((list a) (b b) . ->... . Univ) (-lst a))
                               ((-lst b) b) . ->... . -Void))]
 #;[fold-left (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
@@ -473,11 +473,10 @@
 ;thread-suspend-evt
 
 ;Section 10.1.4
-[thread-send (-poly (a)
- (cl->*
-  (-> -Thread Univ -Void)
-  (-> -Thread Univ (-val #f) (-opt -Void))
-  (-> -Thread Univ (-> a) (Un -Void a))))]
+[thread-send
+ (-poly (a) (cl->* (-> -Thread Univ -Void)
+                   (-> -Thread Univ (-val #f) (-opt -Void))
+                   (-> -Thread Univ (-> a) (Un -Void a))))]
 [thread-receive (-> Univ)]
 [thread-try-receive (-> Univ)]
 [thread-rewind-receive (-> (-lst Univ) -Void)]
@@ -552,9 +551,10 @@
 [char-whitespace? (-> -Char B)]
 [char-blank? (-> -Char B)]
 [char-iso-control? (-> -Char B)]
-[char-general-category (-> -Char (apply Un (map -val
-  '(lu ll lt lm lo mn mc me nd nl no ps pe pi pf pd
-    pc po sc sm sk so zs zp zl cc cf cs co cn))))]
+[char-general-category
+ (-> -Char (apply Un (map -val
+                          '(lu ll lt lm lo mn mc me nd nl no ps pe pi pf pd
+                            pc po sc sm sk so zs zp zl cc cf cs co cn))))]
 [make-known-char-range-list (-> (-lst (-Tuple (list -PosInt -PosInt B))))]
 
 [char-upcase (-> -Char -Char)]
@@ -823,7 +823,8 @@
 
 
 
-[build-path (cl->*
+[build-path
+ (cl->*
   ((list -Pathlike*) -Pathlike* . ->* . -Path)
   ((list -SomeSystemPathlike*) -SomeSystemPathlike* . ->* . -SomeSystemPath))]
 [build-path/convention-type
@@ -1567,10 +1568,10 @@
                           -Index))]
 [vector-filter (-poly (a b) (cl->*
                               ((asym-pred a Univ (-FS (-filter b 0) -top))
-                              (-vec a)
-                              . -> .
-                              (-vec b))
-                             ((a . -> . Univ) (-vec a) . -> . (-vec a))))]
+                               (-vec a)
+                               . -> .
+                               (-vec b))
+                              ((a . -> . Univ) (-vec a) . -> . (-vec a))))]
 
 [vector-filter-not
  (-poly (a b) (cl->* ((a . -> . Univ) (-vec a) . -> . (-vec a))))]
@@ -1580,7 +1581,7 @@
                ((-vec a) -Integer . -> . (-vec a))
                ((-vec a) -Integer -Integer . -> . (-vec a))))]
 [vector-map (-polydots (c a b) ((list ((list a) (b b) . ->... . c) (-vec a))
-                         ((-vec b) b) . ->... .(-vec c)))]
+                                ((-vec b) b) . ->... .(-vec c)))]
 [vector-map! (-polydots (a b) ((list ((list a) (b b) . ->... . a) (-vec a))
                                ((-vec b) b) . ->... .(-vec a)))]
 [vector-append (-poly (a) (->* (list) (-vec a) (-vec a)))]
@@ -1623,9 +1624,9 @@
                                     (arg-in (make-opt-in-port in))
                                     (arg-err (make-opt-out-port err))
                                     (result (-values (list -Subprocess
-                                                 (make-opt-in-port (not out))
-                                                 (make-opt-out-port (not in))
-                                                 (make-opt-in-port (not err))))))
+                                                           (make-opt-in-port (not out))
+                                                           (make-opt-out-port (not in))
+                                                           (make-opt-in-port (not err))))))
                                 (if exact
                                     (-> arg-out arg-in arg-err -Pathlike (-val 'exact) -String result)
                                     (->* (list arg-out arg-in arg-err -Pathlike)
@@ -1661,32 +1662,29 @@
 
 [process (-> -String
              (-values (list -Input-Port -Output-Port -Nat -Input-Port
-              (cl->*
-                (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
-                (-> (-val 'exit-code) (-opt -Byte))
-                (-> (-val 'wait) ManyUniv)
-                (-> (-val 'interrupt) -Void)
-                (-> (-val 'kill) -Void)))))]
+                            (cl->* (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
+                                   (-> (-val 'exit-code) (-opt -Byte))
+                                   (-> (-val 'wait) ManyUniv)
+                                   (-> (-val 'interrupt) -Void)
+                                   (-> (-val 'kill) -Void)))))]
 
 
 [process*
  (cl->*
    (->* (list -Pathlike) (Un -Path -String -Bytes)
-             (-values (list -Input-Port -Output-Port -Nat -Input-Port
-              (cl->*
-                (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
-                (-> (-val 'exit-code) (-opt -Byte))
-                (-> (-val 'wait) ManyUniv)
-                (-> (-val 'interrupt) -Void)
-                (-> (-val 'kill) -Void)))))
+        (-values (list -Input-Port -Output-Port -Nat -Input-Port
+                       (cl->* (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
+                              (-> (-val 'exit-code) (-opt -Byte))
+                              (-> (-val 'wait) ManyUniv)
+                              (-> (-val 'interrupt) -Void)
+                              (-> (-val 'kill) -Void)))))
    (-> -Pathlike (-val 'exact) -String
-             (-values (list -Input-Port -Output-Port -Nat -Input-Port
-              (cl->*
-                (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
-                (-> (-val 'exit-code) (-opt -Byte))
-                (-> (-val 'wait) ManyUniv)
-                (-> (-val 'interrupt) -Void)
-                (-> (-val 'kill) -Void))))))]
+       (-values (list -Input-Port -Output-Port -Nat -Input-Port
+                      (cl->* (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
+                             (-> (-val 'exit-code) (-opt -Byte))
+                             (-> (-val 'wait) ManyUniv)
+                             (-> (-val 'interrupt) -Void)
+                             (-> (-val 'kill) -Void))))))]
 
 [process/ports
  (let* ((fun-type
@@ -1720,12 +1718,12 @@
                (err-vals '(#t #f stdout)))
           (for*/list ((out bools) (in bools) (err err-vals))
             (make-specific-case out in err)))))
- (apply cl->*
-  (append
-    specific-cases
-    (list
-     (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -String
-                (-lst* (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port) fun-type))))))]
+   (apply cl->*
+    (append
+      specific-cases
+      (list
+       (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -String
+           (-lst* (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port) fun-type))))))]
 
 [process*/ports
  (let* ((fun-type
@@ -1765,14 +1763,14 @@
                (err-vals '(#t #f stdout)))
           (for*/list ((out bools) (in bools) (err err-vals) (exact bools))
             (make-specific-case out in err exact)))))
- (apply cl->*
-  (append specific-cases
-   (list
-     (->* (list (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -Pathlike)
+   (apply cl->*
+    (append specific-cases
+     (list
+       (->* (list (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -Pathlike)
             (Un -Path -String -Bytes)
-              (-lst* (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port) fun-type))
-     (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -Pathlike (-val 'exact) -String
-              (-lst* (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port) fun-type))))))]
+            (-lst* (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port) fun-type))
+       (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -Pathlike (-val 'exact) -String
+           (-lst* (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port) fun-type))))))]
 
 
 
@@ -2327,8 +2325,8 @@
 ;12.1.10.1
 [port->list
  (-poly (a) (cl->*
-  (-> (-lst Univ))
-  (->opt (-> -Input-Port a) [-Input-Port] (-lst a))))]
+             (-> (-lst Univ))
+             (->opt (-> -Input-Port a) [-Input-Port] (-lst a))))]
 [port->string (->opt [-Input-Port] -String)]
 [port->bytes (->opt [-Input-Port] -Bytes)]
 #|

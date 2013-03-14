@@ -22,7 +22,7 @@
  (bytes-sort
   #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\n\r\n<a href=\"#\">link</a>")
 
-(write-response (response/xexpr '(html)))
+ (write-response (response/xexpr '(html)))
  =>
  (bytes-sort
   #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\n\r\n<html></html>")

@@ -267,35 +267,35 @@ END
      (test-read-xml
       "<?xml version=\"1.0\"? encoding=\"UTF-8\" standalone=\"yes\"?><br />"
       '(make-document
-  (make-prolog
-   (list
-    (make-p-i
-     (make-source (make-location 1 0 1) (make-location 1 56 57))
-     xml
-     "version=\"1.0\"? encoding=\"UTF-8\" standalone=\"yes\""))
-   #f
-   (list))
-  (make-element
-   (make-source (make-location 1 56 57) (make-location 1 62 63))
-   'br
-   (list)
-   (list))
-  (list)))
+        (make-prolog
+         (list
+          (make-p-i
+           (make-source (make-location 1 0 1) (make-location 1 56 57))
+           xml
+           "version=\"1.0\"? encoding=\"UTF-8\" standalone=\"yes\""))
+         #f
+         (list))
+        (make-element
+         (make-source (make-location 1 56 57) (make-location 1 62 63))
+         'br
+         (list)
+         (list))
+        (list)))
 
      (test-read-xml #:document-different? #t
       "<br /><?xml version=\"1.0\"? encoding=\"UTF-8\" standalone=\"yes\"?>"
       '(make-document
-  (make-prolog (list) #f (list))
-  (make-element
-   (make-source (make-location 1 0 1) (make-location 1 6 7))
-   'br
-   (list)
-   (list))
-  (list
-   (make-p-i
-    (make-source (make-location 1 6 7) (make-location 1 62 63))
-    xml
-    "version=\"1.0\"? encoding=\"UTF-8\" standalone=\"yes\""))))
+        (make-prolog (list) #f (list))
+        (make-element
+         (make-source (make-location 1 0 1) (make-location 1 6 7))
+         'br
+         (list)
+         (list))
+        (list
+         (make-p-i
+          (make-source (make-location 1 6 7) (make-location 1 62 63))
+          xml
+          "version=\"1.0\"? encoding=\"UTF-8\" standalone=\"yes\""))))
      
      ; XXX need more read-xml tests
      

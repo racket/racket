@@ -199,14 +199,14 @@
 (define (trim-dqs e pat)
   (define p-vars
     (let loop ([p pat])
-    (match p
-      [`(name ,id ,pat)
-       (set-union (set id)
-                  (loop pat))]
-      [`(list ,pats ...)
-       (apply set-union (for/list ([p pats])
-                          (loop p)))]
-      [_ (set)])))
+      (match p
+        [`(name ,id ,pat)
+         (set-union (set id)
+                    (loop pat))]
+        [`(list ,pats ...)
+         (apply set-union (for/list ([p pats])
+                            (loop p)))]
+        [_ (set)])))
   (struct-copy env e
                [dqs (for/list ([dq (env-dqs e)])
                       (trim-dq-vars dq p-vars))]))
@@ -243,8 +243,8 @@
          (values l r)]
         [else
          (for/fold ([l1 l] [r1 r])
-           ([a-pair (in-list (for*/list ([a vals] [b (set-remove vals a)])
-                             (list a b)))])
+                   ([a-pair (in-list (for*/list ([a vals] [b (set-remove vals a)])
+                                       (list a b)))])
            (values (cons (first a-pair) l1)
                    (cons (second a-pair) r1)))])))
   (let loop ([ps dqps]
@@ -386,14 +386,14 @@
   (let/ec fail
     (define new-f
       (for/list ([a-p-rule (in-list fringe)])
-      (define new-cs (for/list ([c (in-list (partial-rule-clauses a-p-rule))] 
-                                #:when (do-unification (fresh-clause-vars c) (partial-rule-pat a-p-rule) env))
-                       c))
-      (when (empty? new-cs)
-        (fail #f))
-      (struct-copy partial-rule 
-                   a-p-rule
-                   [clauses new-cs])))
+        (define new-cs (for/list ([c (in-list (partial-rule-clauses a-p-rule))] 
+                                  #:when (do-unification (fresh-clause-vars c) (partial-rule-pat a-p-rule) env))
+                         c))
+        (when (empty? new-cs)
+          (fail #f))
+        (struct-copy partial-rule 
+                     a-p-rule
+                     [clauses new-cs])))
     (define candidate-length (length (partial-rule-clauses (car new-f))))
     (if (< candidate-length 2)
         new-f

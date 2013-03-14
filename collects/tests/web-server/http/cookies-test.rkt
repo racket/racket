@@ -131,13 +131,13 @@
      
      (test-equal? "Google"
                   (request-cookies 
-                  (make-request 
-                   #"GET" (string->url "http://test.com/foo")
-                   (list (make-header #"Cookie" 
-                                      #"teaching-order=course;
+                   (make-request 
+                    #"GET" (string->url "http://test.com/foo")
+                    (list (make-header #"Cookie" 
+                                       #"teaching-order=course;
 __utmz=165257760.1272597702.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)\r\n"))
-                   (delay empty) #f
-                   "host" 80 "client"))
+                    (delay empty) #f
+                    "host" 80 "client"))
                   (list (make-client-cookie "teaching-order" "course" #f #f)
                         (make-client-cookie "__utmz" "165257760.1272597702.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)" #f #f)))
                   

@@ -14,7 +14,7 @@
               [id (identifier? stx)
                   (begin
                     (unless (dict-ref id-hash stx false)
-                    (dict-set! id-hash stx true)))]
+                      (dict-set! id-hash stx true)))]
               [_ (void)])])
     (find stx)
     (filter (λ (env-id) (dict-ref id-hash env-id false)) env-ids)))

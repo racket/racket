@@ -319,7 +319,7 @@
                                                 (if up? style cap-style)
                                                 (if up? size cap-size)
                                                 0)]
-                               [rest (loop (cdr l) (not up?))])
+                                [rest (loop (cdr l) (not up?))])
                            (if (and up? (pair? (cdr l)))
                                ;; kern capital followed by non-captial
                                (let ([plain-first (not-caps-text first-string

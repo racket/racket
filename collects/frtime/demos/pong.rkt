@@ -92,7 +92,7 @@
      . =#=> .
      (match-lambda
        [(list _ y) (when (and (> y 150) (< y 250))
-                add1)])))
+                     add1)])))
    0))
 
 (define p1-score (mk-score (lambda (x) (< x 10))))

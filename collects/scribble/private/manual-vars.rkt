@@ -112,9 +112,9 @@
                                               (bound-identifier-mapping-put! ht #'arg #t)]
                                              [else (void)])))
                                      (cdr s-exp))
-                                  (unless (identifier? (car s-exp))
-                                    ;; Curried:
-                                    (do-proc (car s-exp)))))])
+                                    (unless (identifier? (car s-exp))
+                                      ;; Curried:
+                                      (do-proc (car s-exp)))))])
                         (do-proc s-exp))]
                      [(form form/none form/maybe non-term)
                       (define skip-id (case (syntax-e kind)

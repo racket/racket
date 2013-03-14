@@ -170,16 +170,16 @@
                   (name . args)))]))
 
 (define all-image-tests
-  (test-suite
-   "Tests for images"
+ (test-suite
+  "Tests for images"
 
-   (test-case
-    "image?"
-    (check-pred image? (rectangle 10 10 'solid 'blue))
-    (check-pred image? (rectangle 10 10 "solid" 'blue))
-    (check-pred image? (rectangle 10 10 'outline 'blue))
-    (check-pred image? (rectangle 10 10 "outline" 'blue))
-    (check-false (image? 5)))
+  (test-case
+   "image?"
+   (check-pred image? (rectangle 10 10 'solid 'blue))
+   (check-pred image? (rectangle 10 10 "solid" 'blue))
+   (check-pred image? (rectangle 10 10 'outline 'blue))
+   (check-pred image? (rectangle 10 10 "outline" 'blue))
+   (check-false (image? 5)))
   
   (test-case
    "color-list"

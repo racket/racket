@@ -55,26 +55,27 @@
 
 (define (kill-safe-test proxy?)
   (unless (ANYFLAGS 'isora 'isdb2)
-    (test-case (format "kill-safe test~a" (if proxy? " (proxy)" ""))
-    (call-with-connection
-     (lambda (c0)
-       (let ([c (if proxy?
-                    (kill-safe-connection c0)
-                    c0)])
-         (query-exec c "create temporary table ks_numbers (n integer)")
-         (for ([i (in-range 1000)])
-           (query-exec c (sql "insert into ks_numbers (n) values ($1)") i))
-         (define (do-interactions)
-           (for ([i (in-range 10)])
-             (query-list c "select n from ks_numbers")))
-         (define threads (make-hasheq))
+    (test-case
+     (format "kill-safe test~a" (if proxy? " (proxy)" ""))
+     (call-with-connection
+      (lambda (c0)
+        (let ([c (if proxy?
+                     (kill-safe-connection c0)
+                     c0)])
+          (query-exec c "create temporary table ks_numbers (n integer)")
+          (for ([i (in-range 1000)])
+            (query-exec c (sql "insert into ks_numbers (n) values ($1)") i))
+          (define (do-interactions)
+            (for ([i (in-range 10)])
+              (query-list c "select n from ks_numbers")))
+          (define threads (make-hasheq))
 
-         (for ([i (in-range 20)])
-           (let ([t (thread do-interactions)])
-             (hash-set! threads (thread do-interactions) #t)
-             (kill-thread t)))
-         (for ([t (in-hash-keys threads)])
-           (sync t))))))))
+          (for ([i (in-range 20)])
+            (let ([t (thread do-interactions)])
+              (hash-set! threads (thread do-interactions) #t)
+              (kill-thread t)))
+          (for ([t (in-hash-keys threads)])
+            (sync t))))))))
 
 (define (async-test)
   (unless (ANYFLAGS 'isora 'isdb2)

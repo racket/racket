@@ -258,11 +258,12 @@
   (partit num cnt id))
 
 (define rmpi-build-default-config
-  (make-keyword-procedure (lambda (kws kw-args . rest)
-    (for/hash ([kw kws]
-               [kwa kw-args])
-;      (displayln (keyword? kw))
-      (values kw kwa)))))
+  (make-keyword-procedure
+   (lambda (kws kw-args . rest)
+     (for/hash ([kw kws]
+                [kwa kw-args])
+       ;; (displayln (keyword? kw))
+       (values kw kwa)))))
 
 (define (rmpi-launch default config #:no-wait [no-wait #f])
   (define (lookup-config-value rest key-str)

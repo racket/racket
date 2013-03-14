@@ -100,7 +100,7 @@
                                         [t (ty l t)]
                                         [r (tx r b)]
                                         [b (ty r b)])
-                                  (values l t (- r l) (- b t))))))))
+                                    (values l t (- r l) (- b t))))))))
                       ;; no dc un-transformation needed
                       (values l t (- r l) (- b t)))
                   (let-values ([(l2 t2 w2 h2) (send (caar paths) get-bounding-box)])

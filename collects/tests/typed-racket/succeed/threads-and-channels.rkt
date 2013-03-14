@@ -58,15 +58,15 @@
 (thread-cell-set! tc 1)
 
 (thread-wait (thread (lambda ()
- (displayln (thread-cell-ref tc))
- (thread-cell-set! tc 2)
- (displayln (thread-cell-ref tc)))))
+                       (displayln (thread-cell-ref tc))
+                       (thread-cell-set! tc 2)
+                       (displayln (thread-cell-ref tc)))))
 
 (thread-cell-ref tc)
 
 (define blocked-thread
  (thread (lambda ()
-  (channel-get ((inst make-channel 'unused))))))
+           (channel-get ((inst make-channel 'unused))))))
 
 
 (thread-suspend blocked-thread)

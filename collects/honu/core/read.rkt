@@ -399,7 +399,7 @@
     (lambda (current tokens table)
       (define added (add-dispatch-rule
                       (add-dispatch-rule dispatch-table [list next do-end-encloser])
-                    [list null? (do-fail failure-name)]))
+                      [list null? (do-fail failure-name)]))
       (define-values (sub-tree unparsed)
                      (do-parse (list (make-syntax head (car tokens) source))
                                (cdr tokens) added))

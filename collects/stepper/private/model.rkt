@@ -70,8 +70,8 @@
 (provide/contract
  [go (->*
       (program-expander-contract       ; program-expander
-      (step-result? . -> . void?)     ; receive-result
-      (or/c render-settings? false/c)) ; render-settings
+       (step-result? . -> . void?)     ; receive-result
+       (or/c render-settings? false/c)) ; render-settings
       (#:raw-step-receiver 
        (-> continuation-mark-set? symbol? void?)
        #:disable-error-handling? boolean?)

@@ -8,9 +8,9 @@
 
 (define y
   (let ([outer-local
-       (let ([inner-local 'value-expected])
-         inner-local)])
-  outer-local))
+         (let ([inner-local 'value-expected])
+           inner-local)])
+    outer-local))
 
 (test/value=? y 'value-expected)
 

@@ -8,6 +8,6 @@
 (: make-empty-env (case-lambda [-> Environment]
                               [Environment -> Environment]))
 (define make-empty-env
- (case-lambda: [() (make-Environment #f (make-hasheq))]
-               [((parent : Environment)) (make-Environment parent
-(make-hasheq))]))
+ (case-lambda:
+  [() (make-Environment #f (make-hasheq))]
+  [((parent : Environment)) (make-Environment parent (make-hasheq))]))

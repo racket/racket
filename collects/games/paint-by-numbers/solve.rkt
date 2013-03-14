@@ -624,8 +624,8 @@
                                                      (board-width final-board)
                                                      (board-height final-board)))])
                    (values final-board new-row-tries new-col-tries (or row-changed col-changed))))
-              'full-set
-              'caller))
+               'full-set
+               'caller))
             
             ; on 2002-10-17, I wrapped another layer of looping around the inner loop.
             ; the purpose of this outer loop is to allow the solver to ignore rows (or

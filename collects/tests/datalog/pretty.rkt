@@ -9,9 +9,9 @@
    "Pretty"
    
    (test-equal? "program"
- (format-program
-  (parse-program
-   (open-input-string #<<END
+                (format-program
+                 (parse-program
+                  (open-input-string #<<END
 parent(john, douglas).
 parent(john, douglas)?
 parent(john, ebbon)?

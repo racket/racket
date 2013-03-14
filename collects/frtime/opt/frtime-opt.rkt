@@ -559,7 +559,7 @@
                (map list (syntax->list #'(IDS ...)) optimized-vals)]
               [body #`(begin EXPR ...)]
               [optimized-body (recursively-optimize-expr body equiv-map #f)])
-       #`(letrec-syntaxes+values SYNTAX-STUFF #,optimized-bindings #,optimized-body))]
+         #`(letrec-syntaxes+values SYNTAX-STUFF #,optimized-bindings #,optimized-body))]
       
       [(if . ARGS)
        (let* ([optimized-args (map (lambda (expr)

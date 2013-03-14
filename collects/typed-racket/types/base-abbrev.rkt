@@ -209,14 +209,14 @@
                    (with-syntax ([((extra ...) ...)
                                   (for/list ([i (in-range (add1 (length l)))])
                                     (take l i))])
-                   #'(make-Function
-                      (list
-                       (make-arr* (list ty ... extra ...)
-                                  rng
-                                  #:kws (sort #:key (match-lambda [(Keyword: kw _ _) kw])
-                                              (list (make-Keyword 'k kty opt) ...)
-                                              keyword<?))
-                       ...))))]))
+                     #'(make-Function
+                        (list
+                         (make-arr* (list ty ... extra ...)
+                                    rng
+                                    #:kws (sort #:key (match-lambda [(Keyword: kw _ _) kw])
+                                                (list (make-Keyword 'k kty opt) ...)
+                                                keyword<?))
+                         ...))))]))
 
 (define (make-arr-dots dom rng dty dbound)
   (make-arr* dom rng #:drest (cons dty dbound)))

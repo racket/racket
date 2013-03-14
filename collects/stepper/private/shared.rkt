@@ -570,9 +570,12 @@
       attached))
 
   (define (values-map fn . lsts)
-  (apply values (apply map list
-                       (apply map (lambda args (call-with-values (lambda () (apply fn args)) list))
-                              lsts))))
+    (apply values
+           (apply map list
+                  (apply map (lambda args
+                               (call-with-values (lambda () (apply fn args))
+                                   list))
+                         lsts))))
   
   ; produces the list of numbers from a to b (inclusive)
   (define (a...b a b)

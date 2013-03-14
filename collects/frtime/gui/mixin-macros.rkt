@@ -19,7 +19,7 @@
                          [getting-name (string->symbol
                                         (format "get-~a-e" (syntax-e s-field-name)))]
                          [renamed-update (string->symbol
-                                        (format "renamed-~a" (syntax-e (syntax update-call))))])
+                                          (format "renamed-~a" (syntax-e (syntax update-call))))])
              (syntax
               (lambda (super)
                 (class super

@@ -19,10 +19,9 @@
   (syntax-case* spec (override augment) (λ (x y) (eq? (syntax-e x) (syntax-e y)))
     [(override method (x ...) ...)
      #'@defmethod*[(((method (orig (is-a?/c text%)) (call-super (-> any)) (x any/c) ...) any) ...)]{
-      Returns the result of invoking @racket[call-super].
+          Returns the result of invoking @racket[call-super].
     }]
     [(augment default method (x ...) ...)
      #'@defmethod*[(((method (orig (is-a?/c text%)) (call-inner (-> any)) (x any/c) ...) any) ...)]{
-       Returns the result of invoking @racket[call-super].
+          Returns the result of invoking @racket[call-super].
     }]))
-

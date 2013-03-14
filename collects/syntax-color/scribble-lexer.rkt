@@ -27,22 +27,21 @@
           (hash-set! rx-keys rx (make-ephemeron rx bstr))
           rx))))
 
-(define (scribble-inside-lexer orig-in offset mode)
-  (let ([mode (or mode
-                  (list
-                   (make-text #rx"^@"
-                              #f
-                              #f
-                              #rx".*?(?:(?=[@\r\n])|$)"
-                              #f
-                              #f)))]
-        [in (special-filter-input-port orig-in
-                                       (lambda (v s)
-                                         (bytes-set! s 0 (char->integer #\.))
-                                         1))])
-    (let-values ([(line col pos) (port-next-location orig-in)])
-      (when line 
-        (port-count-lines! in)))
+(define (scribble-inside-lexer orig-in offset orig-mode)
+  (define mode (or orig-mode
+                   (list
+                    (make-text #rx"^@"
+                               #f
+                               #f
+                               #rx".*?(?:(?=[@\r\n])|$)"
+                               #f
+                               #f))))
+  (define in (special-filter-input-port
+              orig-in
+              (lambda (v s) (bytes-set! s 0 (char->integer #\.)) 1)))
+  (let-values ([(line col pos) (port-next-location orig-in)])
+    (when line
+      (port-count-lines! in)))
   (let-values ([(line col pos) (port-next-location in)]
                [(l) (car mode)])
 
@@ -362,7 +361,7 @@
             (enter-simple-opener (cdr mode))]
            [else
             (scribble-inside-lexer in offset (cdr mode))])]
-         [else (error "bad mode")])))))
+         [else (error "bad mode")]))))
 
 (define (scribble-lexer in offset mode)
   (scribble-inside-lexer in offset (or mode (list (make-scheme 'many #f)))))

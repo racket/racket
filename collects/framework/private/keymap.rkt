@@ -25,9 +25,9 @@
                   [-get-file get-file]))
   (init-depend mred^)
 
-;; if I put this in main.rkt with the others, it doesn't happen
-;; early enough... ? JBC, 2011-07-12
-(preferences:set-default 'framework:automatic-parens #f boolean?)  
+  ;; if I put this in main.rkt with the others, it doesn't happen
+  ;; early enough... ? JBC, 2011-07-12
+  (preferences:set-default 'framework:automatic-parens #f boolean?)
 
 
   (define user-keybindings-files (make-hash))
@@ -931,8 +931,8 @@
             (λ (adjust)
               (λ (text event)
                 (when (is-a? text editor:basic<%>)
-                (let ([frame (send text get-top-level-window)])
-                  (let ([found-one? #f])
+                  (let ([frame (send text get-top-level-window)]
+                        [found-one? #f])
                     (let/ec k
                       (let ([go
                              (λ ()
@@ -952,7 +952,7 @@
                         ;;; or the last editor-canvas had the focus. either way,
                         ;;; the next thing should get the focus
                         (set! found-one? #t)
-                        (go))))))))]
+                        (go)))))))]
            
            [TeX-compress
             (let* ([biggest (apply max (map (λ (x) (string-length (car x))) tex-shortcut-table))])

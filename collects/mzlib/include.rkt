@@ -90,13 +90,13 @@
                             (if (regexp-match? #rx#"[.]rkt$" b)
                                 (path-replace-suffix p #".ss")
                                 p)))])
-	   
+
            (let ([c-file (if (file-exists? orig-c-file)
-                         orig-c-file
-                         (let ([p2 (rkt->ss orig-c-file)])
-                           (if (file-exists? p2)
-                               p2
-                               orig-c-file)))])
+                             orig-c-file
+                             (let ([p2 (rkt->ss orig-c-file)])
+                               (if (file-exists? p2)
+                                   p2
+                                   orig-c-file)))])
              (register-external-file c-file)
 
              (let ([read-syntax (if (syntax-e reader)

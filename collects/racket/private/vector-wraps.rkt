@@ -117,9 +117,9 @@
                        (fXvector-set! v i (let () last-body ...))
                        (add1 i)))
                     v)))))]
-      [(_ #:length length-expr (for-clause ...) body ...)
-       (for_/fXvector #'(fv #:length length-expr #:fill fXzero (for-clause ...) body ...) 
-                      orig-stx for_/fXvector-stx for_/fold/derived-stx wrap-all?)]))
+         [(_ #:length length-expr (for-clause ...) body ...)
+          (for_/fXvector #'(fv #:length length-expr #:fill fXzero (for-clause ...) body ...) 
+                         orig-stx for_/fXvector-stx for_/fold/derived-stx wrap-all?)]))
 
      (define-syntax (for/fXvector stx)
        (for_/fXvector stx stx #'for/fXvector #'for/fold/derived #f))

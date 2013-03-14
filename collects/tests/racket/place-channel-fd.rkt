@@ -64,8 +64,9 @@
 
   (write-string "Hello\n" o)
   (close-output-port o)
-  (with-input-from-file "test1" (lambda () 
-    (check-equal? (port->string) "Hello\nBye\nHello\n" "output file contents match")))
+  (with-input-from-file "test1"
+    (lambda ()
+      (check-equal? (port->string) "Hello\nBye\nHello\n" "output file contents match")))
 
   (define o2 (open-output-file "test1" #:exists 'replace))
   (define l (make-list 1024 1))
@@ -76,8 +77,9 @@
 
   (write-string "HELLO\n" o2)
   (close-output-port o2)
-  (with-input-from-file "test1" (lambda () 
-    (check-equal? (port->string) "HELLO\nBYE\nHELLO\n" "output file contents match")))
+  (with-input-from-file "test1"
+    (lambda ()
+      (check-equal? (port->string) "HELLO\nBYE\nHELLO\n" "output file contents match")))
 
   (define i2 (open-input-file "test2"))
   (place-channel-put p (cons i2 l))

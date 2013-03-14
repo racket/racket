@@ -238,9 +238,9 @@
   ((sym)
    ((default (λ () (error 'get-preference/gui "unknown pref ~s" sym)))))
   @{Like @racket[get-preference], but has more sophisticated error handling.
-  In particular, it passes a @racket[#:timeout-lock-there] argument that
-  informs the user that the preferences file is locked (and offers the alternative
-  of not showing the message again).})
+    In particular, it passes a @racket[#:timeout-lock-there] argument that
+    informs the user that the preferences file is locked (and offers the alternative
+    of not showing the message again).})
 
  
  (proc-doc/names

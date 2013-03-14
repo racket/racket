@@ -48,7 +48,7 @@
 (begin-encourage-inline
   
   (: exponential-dist (case-> (-> Exponential-Dist)
-                      (Real -> Exponential-Dist)))
+                              (Real -> Exponential-Dist)))
   (define (exponential-dist [s 1.0])
     (let ([s  (fl s)])
       (define pdf (opt-lambda: ([x : Real] [log? : Any #f])

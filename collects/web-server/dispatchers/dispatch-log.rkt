@@ -84,10 +84,10 @@
              [(list req)
               (loop
                (with-handlers ([exn:fail? (lambda (e)
-                                       ((error-display-handler) "dispatch-log.rkt Error writing log entry" e)
-                                       (with-handlers ([exn:fail? (lambda (e) #f)])
-                                         (close-output-port log-p))
-                                       #f)])
+                                            ((error-display-handler) "dispatch-log.rkt Error writing log entry" e)
+                                            (with-handlers ([exn:fail? (lambda (e) #f)])
+                                              (close-output-port log-p))
+                                            #f)])
                  (define the-log-p
                    (if (not (and log-p (file-exists? log-path)))
                        (begin

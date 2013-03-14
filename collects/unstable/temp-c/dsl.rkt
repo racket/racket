@@ -9,12 +9,11 @@
 (provide call ret with-monitor label
          re->monitor-predicate/concurrent
          re->monitor-predicate/serial
-         (all-from-out
-          "monitor.rkt"
-         unstable/automata/re
-         unstable/automata/re-ext))
+         (all-from-out "monitor.rkt"
+                       unstable/automata/re
+                       unstable/automata/re-ext))
 
-(define-syntax-parameter stx-monitor-id 
+(define-syntax-parameter stx-monitor-id
   (λ (stx) (raise-syntax-error 'label "Used outside monitor" stx)))
 
 (define-syntax-rule (label n K)

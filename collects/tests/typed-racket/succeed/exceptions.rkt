@@ -8,8 +8,8 @@
  (syntax-case stx ()
   ((_ body ...)
    #'(call/cc (lambda: ((k : (Any -> Nothing)))
-      (parameterize ((abort k))
-        body ...))))))
+                (parameterize ((abort k))
+                  body ...))))))
 
 (call-with-exception-handler
  (lambda (v) (displayln v) ((abort) v))

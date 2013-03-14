@@ -162,7 +162,7 @@
 					(caddr state)
 					(cadddr state)
 					(list->vector (map list->vector (car (cddddr state)))))])
-		   (editor problem))]
+                     (editor problem))]
 		  [(player)
 		   (let ([name (cadr state)]
 			 [problem

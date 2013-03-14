@@ -106,12 +106,12 @@
       (define lazy-interval-map-init
         (delay
           (with-log-time "forcing clickback mapping"
-          (uninterruptible
-           (for ([range (send/i range range<%> all-ranges)])
-             (let ([stx (range-obj range)]
-                   [start (range-start range)]
-                   [end (range-end range)])
-               (interval-map-set! mapping (+ start-position start) (+ start-position end) stx)))))))
+           (uninterruptible
+            (for ([range (send/i range range<%> all-ranges)])
+              (let ([stx (range-obj range)]
+                    [start (range-start range)]
+                    [end (range-end range)])
+                (interval-map-set! mapping (+ start-position start) (+ start-position end) stx)))))))
       (define (the-callback position)
         (force lazy-interval-map-init)
         (send/i controller selection-manager<%> set-selected-syntax
@@ -123,7 +123,7 @@
     ;; Clears all highlighting and reapplies all non-foreground styles.
     (define/public (refresh)
       (with-log-time "refresh"
-      (with-unlock text
+       (with-unlock text
         (uninterruptible
          (let ([undo-select/highlight-d (get-undo-select/highlight-d)])
            (for ([r (in-list to-undo-styles)])

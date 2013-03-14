@@ -111,12 +111,12 @@
      (with-handlers
          ; Applying the predicate shouldn't raise an exception.
          ([exn+catching? (λ (exn) 
-                  (print-error
-                   'pred-exception
-                   test-sexp
-                   (exn-message exn)
-                   '<no-expected-value>
-                   loc))])
+                           (print-error
+                            'pred-exception
+                            test-sexp
+                            (exn-message exn)
+                            '<no-expected-value>
+                            loc))])
        (let ([test-result (return-exception (test-thunk))])
          (if (or (exn:plai? test-result)
                  (not (exn? test-result)))

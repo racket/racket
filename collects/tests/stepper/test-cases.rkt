@@ -59,7 +59,7 @@
 ;; * a `finished-stepping' is added if no error was specified
 ;; * a `{...}' is replaced with `(hilite ...)'
 
- (t 'mz1 m:mz
+(t 'mz1 m:mz
    (for-each (lambda (x) x) '(1 2 3))
    :: {(for-each (lambda (x) x) `(1 2 3))} -> (... {1} ...)
    :: ... -> (... {2} ...)
@@ -1119,18 +1119,18 @@
                       (9 false (check-expect (hilite 2) 2)))))
 
   (let ([errmsg "rest: expected argument of type <non-empty list>; given ()"])
-  (t1 'check-error
-      m:upto-int/lam
-      "(check-error (+ (+ 3 4) (rest empty)) (string-append \"rest: \" \"expected argument of type <non-empty list>; given ()\")) (check-expect (+ 3 1) 4) (+ 4 5)"
-      `((before-after ((hilite (+ 4 5)))
-                      ((hilite 9)))
-        (before-after (9 (check-error (+ (+ 3 4) (rest empty)) (hilite (string-append "rest: " "expected argument of type <non-empty list>; given ()"))))
-                      (9 (check-error (+ (+ 3 4) (rest empty)) (hilite ,errmsg))))
-        (before-after (9 (check-error (+ (hilite (+ 3 4)) (rest empty)) ,errmsg))
-                      (9 (check-error (+ (hilite 7) (rest empty)) ,errmsg)))
-        (before-after (9 true (check-expect (hilite (+ 3 1)) 4))
-                      (9 true (check-expect (hilite 4) 4))))))
-  
+    (t1 'check-error
+        m:upto-int/lam
+        "(check-error (+ (+ 3 4) (rest empty)) (string-append \"rest: \" \"expected argument of type <non-empty list>; given ()\")) (check-expect (+ 3 1) 4) (+ 4 5)"
+        `((before-after ((hilite (+ 4 5)))
+                        ((hilite 9)))
+          (before-after (9 (check-error (+ (+ 3 4) (rest empty)) (hilite (string-append "rest: " "expected argument of type <non-empty list>; given ()"))))
+                        (9 (check-error (+ (+ 3 4) (rest empty)) (hilite ,errmsg))))
+          (before-after (9 (check-error (+ (hilite (+ 3 4)) (rest empty)) ,errmsg))
+                        (9 (check-error (+ (hilite 7) (rest empty)) ,errmsg)))
+          (before-after (9 true (check-expect (hilite (+ 3 1)) 4))
+                        (9 true (check-expect (hilite 4) 4))))))
+
   (t1 'check-error-bad
       m:upto-int/lam
       "(check-error (+ (+ 3 4) (rest empty)) (string-append \"b\" \"ogus\")) (check-expect (+ 3 1) 4) (+ 4 5)"

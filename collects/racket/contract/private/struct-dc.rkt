@@ -535,7 +535,7 @@
             #t]
            [(#:selector sel-id)
             (identifier? #'sel-id)
-           #t]
+            #t]
            [(sel-id #:parent struct-id)
             (and (identifier? #'sel-id)
                  (identifier? #'struct-id))

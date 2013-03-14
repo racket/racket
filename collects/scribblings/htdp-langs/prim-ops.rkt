@@ -63,16 +63,13 @@
     @section[#:tag (string-append section-prefix " Pre-Defined Variables")]{Pre-Defined Variables}
 
     @defthing[empty empty?]{
-
-    The empty list.}
+      The empty list.}
 
     @defthing[true boolean?]{
-
-    The true value.}
+      The true value.}
 
     @defthing[false boolean?]{
-
-    The false value.}
+      The false value.}
 
     @section[#:tag (string-append section-prefix " Template Variables")]{Template Variables}
     @; MF: I tried abstracting but I failed

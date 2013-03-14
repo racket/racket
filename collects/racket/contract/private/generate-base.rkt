@@ -72,16 +72,15 @@
    (λ (fuel)
      (rand 256))
   
-  bytes?
-  (λ (fuel)
-    (let* ([len (rand-choice
-                 [1/10 0]
-                 [1/10 1]
-                 [else (+ 2 (rand 260))])]
-           [bstr (build-list len
-                             (λ (x)
-                               (rand 256)))])
-      (apply bytes bstr)))))
+   bytes?
+   (λ (fuel)
+     (let* ([len (rand-choice
+                  [1/10 0]
+                  [1/10 1]
+                  [else (+ 2 (rand 260))])]
+            [bstr (build-list len
+                              (λ (x) (rand 256)))])
+       (apply bytes bstr)))))
 
 
 ;; thread-cell

@@ -14,10 +14,10 @@
 (struct xml:object (tag elements))
 
 (begin-for-syntax
-(define (debug . x)
-  (void)
-  #;
-  (apply printf x)))
+  (define (debug . x)
+    (void)
+    #;
+    (apply printf x)))
 
 (define (xml->string xml)
   (match xml

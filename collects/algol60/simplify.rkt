@@ -146,22 +146,22 @@
          (map (lambda (extra)
                 (if (identifier? extra)
                     (make-a60:type-decl (->stx 'integer) (list extra))
-                    (make-a60:switch-decl (car extra) (map (lambda (x) 
-                                                             (make-a60:variable (datum->syntax-object #f x) null)) 
-                                                           (cdr extra)))))
+                    (make-a60:switch-decl
+                     (car extra)
+                     (map (lambda (x)
+                            (make-a60:variable (datum->syntax-object #f x)
+                                               null))
+                          (cdr extra)))))
               extra-decls))
         (if (null? new-statements)
             (list (cons (gensym 'other) (make-a60:dummy)))
             new-statements)))
 
      (define (simplify stmt ctx)
-       (simplify-statement stmt (lambda (x)
-				  (datum->syntax-object
-				   ctx
-				   x))))
-     
+       (simplify-statement stmt (lambda (x) (datum->syntax-object ctx x))))
+
      (define (simplify-statement stmt ->stx)
-	 (match stmt
+       (match stmt
          [($ a60:block decls statements)
           (flatten/label-block decls statements ->stx)]
          [($ a60:compound statements)

@@ -20,19 +20,19 @@
             ((~and kw2 #%plain-app) (~and m map) f l))
            #:with opt
            (begin (reset-unboxed-gensym)
-           (with-syntax ([(f* lp v lst) (map unboxed-gensym '(f* loop v lst))]
-                         [l ((optimize) #'l)]
-                         [f ((optimize) #'f)])
-             (log-optimization "apply-map" "apply-map deforestation."
-                               this-syntax)
-             (add-disappeared-use #'appl)
-             (add-disappeared-use #'kw2)
-             (add-disappeared-use #'m)
-             (syntax/loc/origin
-              this-syntax #'kw
-              (let ([f* f])
-                (let lp ([v op.identity] [lst l])
-                  (if (null? lst)
-                      v
-                      (lp (op v (f* (unsafe-car lst)))
-                          (unsafe-cdr lst))))))))))
+                  (with-syntax ([(f* lp v lst) (map unboxed-gensym '(f* loop v lst))]
+                                [l ((optimize) #'l)]
+                                [f ((optimize) #'f)])
+                    (log-optimization "apply-map" "apply-map deforestation."
+                                      this-syntax)
+                    (add-disappeared-use #'appl)
+                    (add-disappeared-use #'kw2)
+                    (add-disappeared-use #'m)
+                    (syntax/loc/origin
+                     this-syntax #'kw
+                     (let ([f* f])
+                       (let lp ([v op.identity] [lst l])
+                         (if (null? lst)
+                             v
+                             (lp (op v (f* (unsafe-car lst)))
+                                 (unsafe-cdr lst))))))))))

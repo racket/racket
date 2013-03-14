@@ -47,9 +47,9 @@
 				 #'(when (signature? ?temp)
 				     ?raise))))
 			   (syntax->list #'((?temp ?exp) ...)))))
-       #'(let ((?temp ?exp) ...)
-	   ?check ...
-	   (make-case-signature '?name (list ?temp ...) equal? ?stx)))))
+         #'(let ((?temp ?exp) ...)
+             ?check ...
+             (make-case-signature '?name (list ?temp ...) equal? ?stx)))))
     ((predicate ?exp)
      (with-syntax ((?stx (phase-lift stx))
 		   (?name name))

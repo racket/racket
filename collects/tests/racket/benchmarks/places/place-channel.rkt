@@ -11,28 +11,31 @@
         (fprintf out "~a" txt))))
 
 (define (print-out msg B/sE)
-  (displayln (list msg 
-    (exact->inexact B/sE) 'bytes-per-second
-    (exact->inexact (/ B/sE (* 1024 1024))) 'MB-per-second)))
+  (displayln
+   (list msg
+         (exact->inexact B/sE) 'bytes-per-second
+         (exact->inexact (/ B/sE (* 1024 1024)))
+         'MB-per-second)))
 
 (define (processes-byte-message-test)
-  (let ([pl
-    (pp:place/base (bo ch)
-      (define message-size (* 4024 1024))
-      (define count 10)
-      (define fourk-b-message (make-bytes message-size 66))
-      (for ([i (in-range count)])
-       (place-channel-get ch)
-       (place-channel-put ch fourk-b-message)))])
+  (let ([pl (pp:place/base
+             (bo ch)
+             (define message-size (* 4024 1024))
+             (define count 10)
+             (define fourk-b-message (make-bytes message-size 66))
+             (for ([i (in-range count)])
+               (place-channel-get ch)
+               (place-channel-put ch fourk-b-message)))])
 
     (define message-size (* 4024 1024))
     (define four-k-message (make-bytes message-size 65))
     (define count 10)
     (define-values (r t1 t2 t3)
-      (time-apply (lambda ()
-      (for ([i (in-range count)])
-        (pp:place-channel-put pl four-k-message)
-        (pp:place-channel-get pl))) null))
+      (time-apply
+       (lambda ()
+         (for ([i (in-range count)])
+           (pp:place-channel-put pl four-k-message)
+           (pp:place-channel-get pl))) null))
 
 
     (print-out "processes-emulated-places" (/ (* 2 count message-size) (/ t2 1000)))
@@ -62,10 +65,11 @@ END
     (define four-k-message (make-bytes message-size 65))
     (define count 150)
     (define-values (r t1 t2 t3)
-      (time-apply (lambda ()
-      (for ([i (in-range count)])
-        (place-channel-put pl four-k-message)
-        (place-channel-get pl))) null))
+      (time-apply
+       (lambda ()
+         (for ([i (in-range count)])
+           (place-channel-put pl four-k-message)
+           (place-channel-get pl))) null))
 
 
     (print-out "places" (/ (* 2 count message-size) (/ t2 1000)))
@@ -87,16 +91,18 @@ END
   "pct1.rkt")
 
   (let ([pl (dynamic-place "pct1.rkt" 'place-main)])
-    (define tree (let loop ([depth 8])
-      (if (depth . <= . 0)
-        1
-        (cons (loop (sub1 depth)) (loop (sub1 depth))))))
+    (define tree
+      (let loop ([depth 8])
+        (if (depth . <= . 0)
+            1
+            (cons (loop (sub1 depth)) (loop (sub1 depth))))))
     (define count 500)
     (define-values (r t1 t2 t3)
-      (time-apply (lambda ()
-      (for ([i (in-range count)])
-        (place-channel-put pl tree)
-        (place-channel-get pl))) null))
+      (time-apply
+       (lambda ()
+         (for ([i (in-range count)])
+           (place-channel-put pl tree)
+           (place-channel-get pl))) null))
 
     (define s (* (- (expt 2 9) 1) 4 8 count))
     (printf "cons-tree ~a ~a ~a ~a\n" t1 t2 t3  (exact->inexact (/ t2 1000)))
