@@ -1771,4 +1771,21 @@ please adhere to these guidelines:
   ; puts the path to the spell program in the ~a and then the error message
   ; is put following this string (with a blank line in between)
   (spell-program-wrote-to-stderr-on-startup "The spell program (~a) printed an error message:")
+  
+  ;; GUI for installing a planet2 package; available via File|Install Package...
+  (install-pkg-menu-item... "Install Package...")
+  (install-pkg-dialog-title "Install Package")
+  (install-pkg-source-label "Package Source")
+  (install-pkg-type-label "Package Source Type")
+  (install-pkg-infer "Infer")
+  (install-pkg-file "File")
+  (install-pkg-dir "Directory")
+  (install-pkg-dir-url "URL Directory")
+  (install-pkg-file-url "URL File")
+  (install-pkg-github "Github")
+  (install-pkg-name "Name (consulting resolver)")
+  (install-pkg-inferred-as "Type inferred to be ~a")
+  (install-pkg-force? "Overwrite Existing?")
+  (install-pkg-command-line "Equivalent Command Line Invocation:")
+  (install-pkg-error-installing-title "Error Installing Package")
   )
