@@ -1,9 +1,13 @@
 #lang racket/base
 (require racket/list
+         racket/contract
          net/url)
 
-(provide package-source->name+type
-         package-source->name)
+(provide
+ (contract-out
+  [package-source->name+type (-> string? (or/c #f symbol?) 
+                                 (values (or/c #f string?) (or/c #f symbol?)))]
+  [package-source->name (-> string? (or/c #f string?))]))
 
 (define rx:package-name #rx"^[-_a-zA-Z0-9]+$")
 (define rx:archive #rx"[.](plt|zip|tar|tgz|tar[.]gz)$")
@@ -27,7 +31,7 @@
    [(null? p) #f]
    [else (or (last-non-empty (cdr p))
              (and (not (equal? "" (path/param-path (car p))))
-                  (car p)))]))
+                  (path/param-path (car p))))]))
 
 (define (package-source->name+type s type)
   ;; returns (values inferred-name inferred-type);
@@ -66,17 +70,18 @@
                             (validate-name 
                              (if (= (length p) 3)
                                  (path/param-path (second (reverse p)))
-                                 (path/param-path (last-non-empty p))))))))
+                                 (last-non-empty p)))))))
               (values name (or type 'github))]
              [(if type
                   (eq? type 'file-url)
                   (and (pair? p)
+                       (path/param? (last p))
                        (regexp-match? rx:archive (path/param-path (last p)))))
               (values (and (pair? p)
-                           (extract-archive-name (path/param-path (last-non-empty p))))
+                           (extract-archive-name (last-non-empty p)))
                       'file-url)]
              [else
-              (values (validate-name (path/param-path (last-non-empty p))) 'dir-url)]))
+              (values (validate-name (last-non-empty p)) 'dir-url)]))
           (values #f #f)))
     (values (validate-name name) (or type (and name-type)))]
    [(and (not type)
@@ -101,3 +106,8 @@
 (define (package-source->name s)
   (define-values (name type) (package-source->name+type s #f))
   name)
+
+(module+ test
+  (require (submod "..") rackunit)
+  (check-equal? (package-source->name "http://")
+                #f))
