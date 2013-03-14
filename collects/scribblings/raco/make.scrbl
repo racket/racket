@@ -319,7 +319,12 @@ compilation starts. The argument to the procedure is the file's path.}
 
 A parameter for a procedure of one argument that is called to report
  compilation-manager actions, such as checking a file. The argument to
- the procedure is a string.}
+ the procedure is a string.
+ 
+ The default value of the parameter logs the argument, along with 
+ @racket[current-inexact-milliseconds] to, a logger named @racket['compiler/cm]
+ at the @racket['debug] level.
+ }
 
 @defparam[manager-skip-file-handler proc (-> path? (or/c (cons/c number? promise?) #f))]{
 

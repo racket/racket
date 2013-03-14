@@ -20,7 +20,7 @@
          manager-skip-file-handler
          file-stamp-in-collection
          file-stamp-in-paths
-         (rename-out [trace manager-trace-handler])
+         manager-trace-handler
          get-file-sha1
          get-compiled-file-sha1
          with-compile-output
@@ -29,8 +29,13 @@
          make-compile-lock
          compile-lock->parallel-lock-client)
 
+(define cm-logger (make-logger 'compiler/cm (current-logger)))
+(define (default-manager-trace-handler str)
+  (when (log-level? cm-logger 'debug)
+    (log-message cm-logger 'debug str (current-inexact-milliseconds))))
+
 (define manager-compile-notify-handler (make-parameter void))
-(define trace (make-parameter void))
+(define manager-trace-handler (make-parameter default-manager-trace-handler))
 (define indent (make-parameter ""))
 (define trust-existing-zos (make-parameter #f))
 (define manager-skip-file-handler (make-parameter (λ (x) #f)))
@@ -131,8 +136,10 @@
     (reroot-path base root)]))
 
 (define (trace-printf fmt . args)
-  (let ([t (trace)])
-    (unless (eq? t void)
+  (let ([t (manager-trace-handler)])
+    (unless (or (eq? t void)
+                (and (equal? t default-manager-trace-handler)
+                     (not (log-level? cm-logger 'debug))))
       (t (string-append (indent) (apply format fmt args))))))
 
 (define (get-deps code path)
