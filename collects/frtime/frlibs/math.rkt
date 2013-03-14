@@ -12,4 +12,3 @@
   
   ;; circular constants and aliases
   (define e (exp 1.0)))
-  
