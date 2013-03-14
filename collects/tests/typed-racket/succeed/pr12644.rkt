@@ -9,14 +9,14 @@
 
 (: v (Listof (U inf Byte)))
 (define v
-  (list 
+  (list
     (with-handlers ((void values)) 2)
     (with-handlers ((void add1)) 3)
     (with-handlers ((void f)) 4)
     (with-handlers ((void g)) 5)))
 
 
-(list 
+(list
   (with-handlers ((void values)) 6)
   (with-handlers ((void add1)) 7)
   (with-handlers ((void f)) 8)

@@ -34,7 +34,7 @@
   (for/hash ([v (in-list vs)] [t (in-list ts)])
     (values v (t-subst t))))
 
-
+;; TODO: Figure out if free var checking/short circuiting is actually a performance improvement.
 
 ;; substitute-many : Hash[Name,Type] Type -> Type
 (define/cond-contract (substitute-many subst target #:Un [Un (lambda (args) (apply Un args))])
@@ -132,16 +132,18 @@
                                       (map sb kws)))])
       target))
 
-;; implements curly brace substitution from the formalism
-;; substitute-dotted : Type Name Name Type -> Type
+;; implements curly brace substitution from the formalism, with the addition
+;; that a substitution can include fixed args in addition to a different dotted arg
+;; substitute-dotted : Listof[Type] Type Name Name Type -> Type
 (define (substitute-dotted pre-image image image-bound name target)
   (define (sb t) (substitute-dotted pre-image image image-bound name t))
+  ;; We do a quick check on the free variables to see if we can short circuit the substitution
   (if (or (set-member? (free-vars-names (free-idxs* target)) name)
           (set-member? (free-vars-names (free-vars* target)) name))
       (type-case (#:Type sb #:Filter (sub-f sb))
                  target
                  [#:ValuesDots types dty dbound
-                               (let ((extra-types (if (eq? name dbound) pre-image null)))
+                               (let ([extra-types (if (eq? name dbound) pre-image null)])
                                  (make-ValuesDots (append (map sb types) (map -result extra-types))
                                                   (sb dty)
                                                   (if (eq? name dbound) image-bound dbound)))]
@@ -156,7 +158,7 @@
                           image
                           target)]
                  [#:arr dom rng rest drest kws
-                        (let ((extra-types (if (and drest (eq? name (cdr drest))) pre-image null)))
+                        (let ([extra-types (if (and drest (eq? name (cdr drest))) pre-image null)])
                           (make-arr (append (map sb dom) extra-types)
                                     (sb rng)
                                     (and rest (sb rest))
