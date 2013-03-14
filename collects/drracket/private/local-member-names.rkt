@@ -29,3 +29,23 @@
 ;; online check syntax has finished
 (define-local-member-name
   get-online-expansion-colors)
+
+
+
+;; used by the module language  
+(define-local-member-name
+  frame-show-bkg-running
+  set-expand-error/status
+  update-frame-expand-error
+  expand-error-next
+  expand-error-prev
+  hide-module-language-error-panel
+  fetch-data-to-send
+  clear-old-error
+  set-bottom-bar-status
+  
+  get-oc-status
+  set-oc-status
+  
+  set-dep-paths
+  set-dirty-if-dep)

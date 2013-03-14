@@ -27,6 +27,23 @@
          "rectangle-intersect.rkt"
          framework/private/logging-timer)
 
+;; submodule to make these accessible to the test suite
+(module oc-status-structs racket/base
+  ;; the online compilation state for individual tabs
+  ;; oc-state is either:
+  ;;   (clean symbol? string? (listof (vector number? number?)))
+  ;;   (dirty boolean?)
+  ;;   (running symbol? string?)
+  (struct clean (error-type error-message error-locs) #:transparent)
+  (struct dirty (timer-pending?) #:transparent)
+  (struct running (sym str) #:transparent)
+  
+  (provide (struct-out clean)
+           (struct-out dirty)
+           (struct-out running)))
+
+(require (submod "." oc-status-structs))
+
 #|
 ;; this code tracks which lines have been executed 
 ;; for use while (manually) testing the oc state machine
@@ -883,23 +900,6 @@
                              filename))))))]
         [else #f])))
   
-  (define-local-member-name
-    frame-show-bkg-running
-    set-expand-error/status
-    update-frame-expand-error
-    expand-error-next
-    expand-error-prev
-    hide-module-language-error-panel
-    fetch-data-to-send
-    clear-old-error
-    set-bottom-bar-status
-    
-    get-oc-status
-    set-oc-status
-    
-    set-dep-paths
-    set-dirty-if-dep)
-  
   (define online-expansion-logger (make-logger 'online-expansion-state-machine (current-logger)))
   (define-syntax-rule
     (define/oc-log (id . args) . body)
@@ -1701,15 +1701,6 @@
           (send dc draw-text label 2 (+ 2 (* i th)))))
       (super-new [stretchable-width #f] [stretchable-height #f])))
 
-  
-  ;; the online compilation state for individual tabs
-  ;; oc-state is either:
-  ;;   (clean symbol? string? (listof (vector number? number?)))
-  ;;   (dirty boolean?)
-  ;;   (running symbol? string?)
-  (struct clean (error-type error-message error-locs) #:transparent)
-  (struct dirty (timer-pending?) #:transparent)
-  (struct running (sym str) #:transparent)
   
   ;; get-current-oc-state : -> (or/c tab #f) (or/c tab #f) (listof tab) (listof tab)
   ;; the tabs in the results are only those that are in the module language

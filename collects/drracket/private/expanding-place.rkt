@@ -97,6 +97,24 @@
          (define sema (make-semaphore 0))
          (ep-log-info "expanding-place.rkt: 02 setting basic parameters")
          (set-basic-parameters/no-gui)
+         
+         (define loaded-paths '())
+         (define original-path (make-parameter #f))
+         (current-load/use-compiled
+          (let ([ol (current-load/use-compiled)])
+            (λ (path mod-name)
+              (parameterize ([original-path path])
+                (ol path mod-name)))))
+         (current-load
+          (let ([cl (current-load)])
+            (λ (path mod-name)
+              (set! loaded-paths
+                    (cons (or (current-module-declare-source)
+                              (original-path)
+                              path)
+                          loaded-paths))
+              (cl path mod-name))))
+         
          (ep-log-info "expanding-place.rkt: 03 setting module language parameters")
          (set-module-language-parameters settings
                                          module-language-parallel-lock-client
@@ -110,7 +128,6 @@
          (ep-log-info "expanding-place.rkt: 05 installing security guard")
          (install-security-guard) ;; must come after the call to set-module-language-parameters
          (ep-log-info "expanding-place.rkt: 06 setting uncaught-exception-handler")
-         (define loaded-paths '())
          (uncaught-exception-handler
           (λ (exn)
             (parameterize ([current-custodian orig-cust])
@@ -143,24 +160,9 @@
          (define io-sema (make-semaphore 0))
          (when log-io?
            (thread (λ () (catch-and-log in io-sema))))
-         (define original-path (make-parameter #f))
          (define expanded 
            (parameterize ([current-output-port out]
-                          [current-error-port out]
-                          [current-load/use-compiled
-                           (let ([ol (current-load/use-compiled)])
-                             (λ (path mod-name)
-                               (parameterize ([original-path path])
-                                 (ol path mod-name))))]
-                          [current-load
-                           (let ([cl (current-load)])
-                             (λ (path mod-name)
-                               (set! loaded-paths
-                                     (cons (or (current-module-declare-source)
-                                               (original-path)
-                                               path)
-                                           loaded-paths))
-                               (cl path mod-name)))])
+                          [current-error-port out])
              (expand transformed-stx)))
          (when log-io?
            (close-output-port out)
