@@ -69,12 +69,11 @@ to delegate to the scheme-lexer (in the 'no-lang-line mode).
            (for ([i (in-range (file-position in) (file-position p))])
              (read-byte-or-special in))
            
-           (define the-lexer (or (get-info 'color-lexer #f) racket-lexer))
-           (when (has-option? the-lexer)
-             (set! the-lexer 
-                   (if (trusted-lexer? the-lexer)
-                       (waive-option the-lexer)
-                       (exercise-option the-lexer))))
+           (define the-lexer 
+             (let ([raw-lexer (or (get-info 'color-lexer #f) racket-lexer)])
+               (if (trusted-lexer? raw-lexer)
+                   (waive-option raw-lexer)
+                   (exercise-option raw-lexer))))
            
            ;; Produce language as first token:
            (values

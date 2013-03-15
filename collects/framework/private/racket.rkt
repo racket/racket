@@ -12,7 +12,8 @@
          "sig.rkt"
          "../gui-utils.rkt"
          "../preferences.rkt"
-         racket/match)
+         racket/match
+         unstable/options)
 
 (import mred^
         [prefix preferences: framework:preferences^]
@@ -1270,6 +1271,8 @@
   (interface ()
     ))
 
+(define module-lexer/waived (waive-option module-lexer))
+
 (define text-mode-mixin
   (mixin (color:text-mode<%> mode:surrogate-text<%>) (-text-mode<%>)
     
@@ -1301,7 +1304,7 @@
      'framework:tabify
      (lambda (k v) (set! tabify-pref v)))
     (define/private (racket-lexer-wrapper in offset mode)
-      (let-values (((lexeme type paren start end backup-delta mode) (module-lexer in offset mode)))
+      (let-values (((lexeme type paren start end backup-delta mode) (module-lexer/waived in offset mode)))
         (cond
           ((and (eq? type 'symbol)
                 (get-keyword-type lexeme tabify-pref))
