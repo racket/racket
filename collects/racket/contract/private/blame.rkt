@@ -45,17 +45,26 @@
 
 (define -make-blame
   (let ([make-blame
-         (λ (source value build-name positive negative original?)
+         (lambda (source value build-name positive negative original?)
+           (unless (srcloc? source)
+             (raise-type-error 'make-blame "source location (srcloc?)" 0
+               source value build-name positive negative original?))
+           (unless (procedure? build-name)
+             (raise-type-error 'make-blame "procedure" 2
+               source value build-name positive negative original?))
+           (unless (procedure-arity-includes? build-name 0)
+             (raise-type-error 'make-blame "procedure of 0 arguments" 2
+               source value build-name positive negative original?))
            (make-blame 
-            source
-            value
-            build-name
-            (list positive)
-            (list negative)
-            original?
-            '()
-            #t 
-            #f))])
+             source
+             value
+             build-name
+             (list positive)
+             (list negative)
+             original?
+             '()
+             #t 
+             #f))])
     make-blame))
 
 ;; s : (or/c string? #f)
