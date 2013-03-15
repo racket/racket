@@ -185,8 +185,7 @@
     (define to-be-copied-module-specs
       (list ''#%foreign
             '(lib "mzlib/pconvert-prop.rkt")
-            '(lib "planet/terse-info.rkt")
-            '(lib "syntax/rect.rkt")))
+            '(lib "planet/terse-info.rkt")))
     
     ;; ensure that they are all here.
     (for-each (λ (x) (dynamic-require x #f)) to-be-copied-module-specs)
