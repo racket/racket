@@ -1092,7 +1092,8 @@ reduce it further).
                                    (where pat @#,tttterm)
                                    (where/hidden pat @#,tttterm)
                                    (judgment-holds 
-                                    (judgment-form-id pat/term ...))])]{
+                                    (judgment-form-id pat/term ...))
+                                   (clause-name name)])]{
 
 The @racket[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side
@@ -1108,6 +1109,23 @@ Raises an exception recognized by @racket[exn:fail:redex?] if
 no clauses match, if one of the clauses matches multiple ways
 (and that leads to different results for the different matches),
 or if the contract is violated.
+
+The @racket[side-condition] extra is evaluated after a successful match
+to the corresponding argument pattern. If it returns @racket[#f],
+the clause is considered not to have matched, and the next one is tried.
+The @racket[side-condition/hidden] extra behaves the same, but is
+not typeset.
+
+The @racket[where] and @racket[where/hidden] extra are like
+@racket[side-condition] and @racket[side-condition/hidden],
+except the match guards the clause.
+
+The @racket[judgment-holds] clause is like @racket[side-condition]
+and @racket[where], except the given judgment must hold for the
+clause to be taken.
+
+The @racket[clause-name] is used only when typesetting. See
+@racket[metafunction-cases].
 
 Note that metafunctions are assumed to always return the same results
 for the same inputs, and their results are cached, unless
@@ -2704,15 +2722,18 @@ precede ellipses that represent argument sequences; when it is
 
 @defparam[metafunction-cases 
           cases
-          (or/c #f (and/c (listof (and/c integer?
-                                         (or/c zero? positive?)))
+          (or/c #f (and/c (listof (or/c exact-nonnegative-integer? 
+                                        string?))
                           pair?))]{
 
-Controls which cases in a metafunction are rendered. If it is @racket[#f] (the default), then all of the
-cases appear. If it is a list of numbers, then only the selected cases appear (counting from @racket[0]).
+Controls which cases in a metafunction are rendered. If it is @racket[#f]
+(the default), then all of the cases appear. If it is a list, then only 
+the selected cases appear. The numbers indicate the cases counting from
+@racket[0] and the strings indicate cases named with @racket[clause-name].
 
 This parameter also controls how which clauses in judgment forms are rendered, but
-only in the case that @racket[judgment-form-cases] is @racket[#f].
+only in the case that @racket[judgment-form-cases] is @racket[#f] (and in that
+case, only the numbers are used).
 }
                                   
 @defparam[judgment-form-cases 

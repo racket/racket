@@ -13,6 +13,7 @@
          defined-check
          not-expression-context
          
+         metafunc-proc-clause-names
          metafunc-proc-pict-info
          metafunc-proc-lang
          metafunc-proc-multi-arg?
@@ -72,13 +73,14 @@
                               variable-not-otherwise-mentioned hole symbol))
 
 (define-values (struct:metafunc-proc make-metafunc-proc metafunc-proc? metafunc-proc-ref metafunc-proc-set!)
-  (make-struct-type 'metafunc-proc #f 10 0 #f null (current-inspector) 0))
-(define metafunc-proc-pict-info (make-struct-field-accessor metafunc-proc-ref 1))
-(define metafunc-proc-lang (make-struct-field-accessor metafunc-proc-ref 2))
-(define metafunc-proc-multi-arg? (make-struct-field-accessor metafunc-proc-ref 3))
-(define metafunc-proc-name (make-struct-field-accessor metafunc-proc-ref 4))
-(define metafunc-proc-in-dom? (make-struct-field-accessor metafunc-proc-ref 5))
-(define metafunc-proc-dom-pat (make-struct-field-accessor metafunc-proc-ref 6))
-(define metafunc-proc-cases (make-struct-field-accessor metafunc-proc-ref 7))
-(define metafunc-proc-gen-clauses (make-struct-field-accessor metafunc-proc-ref 8))
-(define metafunc-proc-lhs-pats (make-struct-field-accessor metafunc-proc-ref 9))
+  (make-struct-type 'metafunc-proc #f 11 0 #f null (current-inspector) 0))
+(define metafunc-proc-clause-names (make-struct-field-accessor metafunc-proc-ref 1))
+(define metafunc-proc-pict-info (make-struct-field-accessor metafunc-proc-ref 2))
+(define metafunc-proc-lang (make-struct-field-accessor metafunc-proc-ref 3))
+(define metafunc-proc-multi-arg? (make-struct-field-accessor metafunc-proc-ref 4))
+(define metafunc-proc-name (make-struct-field-accessor metafunc-proc-ref 5))
+(define metafunc-proc-in-dom? (make-struct-field-accessor metafunc-proc-ref 6))
+(define metafunc-proc-dom-pat (make-struct-field-accessor metafunc-proc-ref 7))
+(define metafunc-proc-cases (make-struct-field-accessor metafunc-proc-ref 8))
+(define metafunc-proc-gen-clauses (make-struct-field-accessor metafunc-proc-ref 9))
+(define metafunc-proc-lhs-pats (make-struct-field-accessor metafunc-proc-ref 10))
