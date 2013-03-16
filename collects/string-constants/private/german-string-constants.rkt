@@ -1646,4 +1646,21 @@
   ; puts the path to the spell program in the ~a and then the error message
   ; is put following this string (with a blank line in between)
   (spell-program-wrote-to-stderr-on-startup "Der Rechtschreibchecker (~a) hat eine Fehlermeldung ausgegeben:")
+  
+  ;; GUI for installing a planet2 package; available via File|Install Package...
+  (install-pkg-menu-item... "Paket installieren...")
+  (install-pkg-dialog-title "Paket installieren")
+  (install-pkg-source-label "Packet-Quelltext")
+  (install-pkg-type-label "Typ Paket-Quelltext")
+  (install-pkg-infer "Inferieren")
+  (install-pkg-file "Datei")
+  (install-pkg-dir "Verzeichnis")
+  (install-pkg-dir-url "URL Verzeichnis")
+  (install-pkg-file-url "URL Datei")
+  (install-pkg-github "Github")
+  (install-pkg-name "Name (frage Auflöser)")
+  (install-pkg-inferred-as "Typ inferiert als ~a")
+  (install-pkg-force? "Existierendes überschreiben?")
+  (install-pkg-command-line "Äquivalente Kommandozeilen-Aufruf:")
+  (install-pkg-error-installing-title "Fehler beim Installieren von Paket")
  )
