@@ -80,7 +80,7 @@
   #:attributes (name ann-name bound ty formal-ty)
   #:literals (:)
   (pattern (~seq name:id : ty bnd:ddd/bound)
-           #:with formal-ty #'(ty bnd)
+           #:with formal-ty #'(ty . bnd)
            #:attr bound (attribute bnd.bound)
            #:with ann-name (syntax-property (syntax-property #'name 'type-label #'ty)
                                             'type-dotted (attribute bnd.bound))))
