@@ -2,7 +2,7 @@
  ([not-judgment-form junk])
  (judgment-holds (not-judgment-form z (s z))))
 
-(#rx"a?: mode specifies a 1-ary relation but use supplied 2 terms"
+(#rx"a[?]: mode specifies a 1-ary relation but use supplied 2 terms"
  ([bad-judgment (a? a q)])
  ([name a?])
  (let ()

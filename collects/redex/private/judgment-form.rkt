@@ -21,7 +21,8 @@
              racket/syntax
              syntax/id-table
              racket/list
-             syntax/parse))
+             syntax/parse
+             syntax/stx))
 
 (require
  (for-template "term.rkt"))
@@ -720,9 +721,9 @@
 (define-syntax (judgment-holds stx)
   (syntax-case stx ()
     [(_  (jf-id . args))
-     #'(#%expression (judgment-holds/derivation judgment-holds #f (jf-id . args)))]
+     #`(#%expression (judgment-holds/derivation judgment-holds #f #,(stx-car (stx-cdr stx))))]
     [(_  (jf-id . args) trm)
-     #'(#%expression (judgment-holds/derivation judgment-holds #f (jf-id . args) trm))]))
+     #`(#%expression (judgment-holds/derivation judgment-holds #f #,(stx-car (stx-cdr stx)) trm))]))
 
 (define-syntax (build-derivations stx)
   (syntax-case stx ()
