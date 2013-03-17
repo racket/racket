@@ -2571,7 +2571,7 @@
 [pretty-print (Univ [-Output-Port (one-of/c 0 1)] . ->opt . -Void)]
 [pretty-write (Univ [-Output-Port] . ->opt . -Void)]
 [pretty-display (Univ [-Output-Port] . ->opt . -Void)]
-[pretty-format (Univ [-Output-Port] . ->opt . -Void)]
+[pretty-format (Univ [-Nat] . ->opt . -String)]
 [pretty-print-handler (-> Univ -Void)]
 
 [pretty-print-columns (-Param (Un -Nat (-val 'infinity)) (Un -Nat (-val 'infinity)))]
