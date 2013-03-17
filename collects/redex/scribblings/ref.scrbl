@@ -1936,20 +1936,23 @@ Like @racket[check-reduction-relation] but for metafunctions.
 containing arguments to the metafunction. Similarly, @racket[prepare-expr]
 produces and consumes argument lists.}
 
+@(redex-eval '(random-seed 0))
 @examples[
 #:eval redex-eval
        (define-language empty-lang)
-       
-       (random-seed 0)
 
        (define-metafunction empty-lang
          Σ : number ... -> number
          [(Σ) 0]
          [(Σ number) number]
-         [(Σ number_1 number_2 number_3 ...) 
-          (Σ ,(+ (term number_1) (term number_2)) number_3 ...)])
+         [(Σ number_1 number_2) ,(+ (term number_1) (term number_2))]
+         [(Σ number_1 number_2 ...) (Σ number_1 (Σ number_2 ...))])
        
-       (check-metafunction Σ (λ (args) (printf "~s\n" args)) #:attempts 2)]
+       (check-metafunction Σ (λ (args) 
+                               (printf "trying ~s\n" args)
+                               (equal? (apply + args)
+                                       (term (Σ ,@args))))
+                           #:attempts 2)]
 
 @defproc[(default-attempt-size [n natural-number/c]) natural-number/c]{
 The default value of the @racket[#:attempt-size] argument to 
