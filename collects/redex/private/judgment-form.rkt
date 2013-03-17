@@ -719,8 +719,10 @@
 
 (define-syntax (judgment-holds stx)
   (syntax-case stx ()
-    [(_  args ...)
-     #'(#%expression (judgment-holds/derivation judgment-holds #f args ...))]))
+    [(_  (jf-id . args))
+     #'(#%expression (judgment-holds/derivation judgment-holds #f (jf-id . args)))]
+    [(_  (jf-id . args) trm)
+     #'(#%expression (judgment-holds/derivation judgment-holds #f (jf-id . args) trm))]))
 
 (define-syntax (build-derivations stx)
   (syntax-case stx ()
