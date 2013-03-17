@@ -32,6 +32,12 @@
      #'((tech (racketvarfont "pattern")) args ...)]
     [x (identifier? #'x) #'(tech (racketvarfont "pattern"))]))
 
+@(define-syntax (ttpattern-sequence stx)
+   (syntax-case stx ()
+    [(_ args ...)
+     #'((tech #:key "pattern" (racketvarfont "pattern-sequence")) args ...)]
+    [x (identifier? #'x) #'(tech #:key "pattern" (racketvarfont "pattern-sequence"))]))
+
 @(define-syntax (pattern stx)
    (syntax-case stx ()
     [(_ args ...)
@@ -1082,7 +1088,7 @@ reduce it further).
                [(name @#,ttpattern ...) @#,tttterm metafunction-extras ...] 
                ...)
              ([metafunction-contract (code:line) 
-                                     (code:line id : @#,ttpattern ... -> range)]
+                                     (code:line id : @#,ttpattern-sequence ... -> range)]
               [range @#,ttpattern
                      (code:line @#,ttpattern or range)
                      (code:line @#,ttpattern ∨ range)
