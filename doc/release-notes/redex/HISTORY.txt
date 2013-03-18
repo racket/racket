@@ -4,6 +4,13 @@ v5.3.4
     have overlapping non-terminals; in that case the productions are
     combined
 
+  * Adjust check-metafunction and check-reduction-relation so that
+    they skip over randomly generated terms that don't match the
+    contract spec (or #:domain spec). This means that when there is a
+    case in the metafunction (or reduction-relation) whose nominal
+    pattern is more general than the contract would allow, that those
+    terms are discarded instead of used as inputs to the predicate.
+
 v5.3.3
 
 No changes
