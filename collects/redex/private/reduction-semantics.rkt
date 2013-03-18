@@ -1143,7 +1143,7 @@
           prev-metafunction
           (λ ()
             (raise-syntax-error syn-error-name "expected a previously defined metafunction" orig-stx prev-metafunction))))
-       (let*-values ([(contract-name dom-ctcs codom-contracts pats)
+       (let*-values ([(contract-name dom-ctc codom-contracts pats)
                       (split-out-contract orig-stx syn-error-name #'rest #f)]
                      [(name _) (defined-name (list contract-name) pats orig-stx)])
          (when (and prev-metafunction (eq? (syntax-e #'name) (syntax-e prev-metafunction)))
@@ -1160,7 +1160,7 @@
                                                             #,prev-metafunction
                                                             name
                                                             name-predicate
-                                                            #,dom-ctcs
+                                                            #,dom-ctc
                                                             #,codom-contracts
                                                             #,pats
                                                             #,syn-error-name))
@@ -1204,9 +1204,9 @@
 
 (define-syntax (generate-metafunction stx)
   (syntax-case stx ()
-    [(_ orig-stx lang prev-metafunction name name-predicate dom-ctcs codom-contracts pats syn-error-name)
+    [(_ orig-stx lang prev-metafunction name name-predicate dom-ctc codom-contracts pats syn-error-name)
      (let ([prev-metafunction (and (syntax-e #'prev-metafunction) #'prev-metafunction)]
-           [dom-ctcs (syntax-e #'dom-ctcs)]
+           [dom-ctc (syntax-e #'dom-ctc)]
            [codom-contracts (syntax-e #'codom-contracts)]
            [pats (syntax-e #'pats)]
            [syn-error-name (syntax-e #'syn-error-name)])
@@ -1271,12 +1271,12 @@
                                                (syntax-column lhs)))
                                      pats)]
                                [(dom-side-conditions-rewritten dom-names dom-names/ellipses)
-                                (if dom-ctcs
+                                (if dom-ctc
                                     (rewrite-side-conditions/check-errs
                                      lang-nts
                                      syn-error-name
                                      #f
-                                     dom-ctcs)
+                                     dom-ctc)
                                     #'(any () ()))]
                                [((codom-side-conditions-rewritten codom-names codom-names/ellipses) ...)
                                 (map (λ (codom-contract)
@@ -1356,7 +1356,7 @@
                                      #`(extend-lhs-pats #,(term-fn-get-id (syntax-local-value prev-metafunction))
                                                         new-lhs-pats)
                                      #`new-lhs-pats)))
-                            #,(if dom-ctcs #'dsc #f)
+                            #,(if dom-ctc #'dsc #f)
                             `(codom-side-conditions-rewritten ...)
                             'name))))
                     'disappeared-use

@@ -11,6 +11,10 @@ v5.3.4
     pattern is more general than the contract would allow, that those
     terms are discarded instead of used as inputs to the predicate.
 
+  * Added the #:pre keyword to define-metafunction. It allows
+    contracts that have to relate different arguments to a
+    metafunction.
+
 v5.3.3
 
 No changes

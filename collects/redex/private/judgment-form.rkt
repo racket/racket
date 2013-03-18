@@ -393,13 +393,15 @@
        (with-syntax* ([((name trms ...) rest ...) (car pats)]
                       [(mode-stx ...) #`(#:mode (name I))]
                       [(ctc-stx ...) (if dom-ctcs 
-                                         (with-syntax ([(d-ctc ...) dom-ctcs])
-                                           #`(#:contract (name (d-ctc ...)))) 
+                                         #`(#:contract (name #,dom-ctcs)) 
                                          #'())]
                       [(clauses ...) pats]
                       [new-body #`(mode-stx ... ctc-stx ... clauses ...)])
                      (do-extended-judgment-form #'lang (syntax-e #'def-form-id) #'new-body #f stx #t)))]))
 
+;; if relation? is true, then the contract is a list of redex patterns
+;; if relation? is false, then the contract is a single redex pattern
+;;   (meant to match the actual argument as a sequence)
 (define-for-syntax (split-out-contract stx syn-error-name rest relation?)
   ;; initial test determines if a contract is specified or not
   (cond
@@ -427,7 +429,7 @@
                [(null? more)
                 (raise-syntax-error syn-error-name "expected an ->" stx)]
                [(eq? (syntax-e (car more)) '->)
-                (define-values (raw-clauses rev-codomains)
+                (define-values (raw-clauses rev-codomains pre-condition)
                   (let loop ([prev (car more)]
                              [more (cdr more)]
                              [codomains '()])
@@ -438,7 +440,7 @@
                        (define after-this-one (cdr more))
                        (cond
                          [(null? after-this-one)
-                          (values null (cons (car more) codomains))]
+                          (values null (cons (car more) codomains) #t)]
                          [else
                           (define kwd (cadr more))
                           (cond
@@ -446,12 +448,26 @@
                              (loop kwd 
                                    (cddr more)
                                    (cons (car more) codomains))]
+                            [(and (not relation?) (equal? (syntax-e kwd) '#:pre))
+                             (when (null? (cddr more)) 
+                               (raise-syntax-error 'define-metafunction 
+                                                   "expected an expression to follow #:pre keyword"
+                                                   kwd))
+                             (values (cdddr more)
+                                     (cons (car more) codomains)
+                                     (caddr more))]
                             [else
                              (values (cdr more)
-                                     (cons (car more) codomains))])])])))
+                                     (cons (car more) codomains)
+                                     #t)])])])))
                 (let ([doms (reverse dom-pats)]
                       [clauses (check-clauses stx syn-error-name raw-clauses relation?)])
-                  (values #'id doms (reverse rev-codomains) clauses))]
+                  (values #'id 
+                          (if relation?
+                              doms
+                              #`(side-condition #,doms (term #,pre-condition)))
+                          (reverse rev-codomains)
+                          clauses))]
                [else
                 (loop (cdr more) (cons (car more) dom-pats))]))])]
        [_

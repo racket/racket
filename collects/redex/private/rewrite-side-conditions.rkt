@@ -107,7 +107,9 @@
                                           (if line
                                               (format "~a:?" line)
                                               (syntax-position stx)))))])
-               (values (syntax/loc term
+               (values (syntax/loc (if (syntax? term)
+                                       term
+                                       (datum->syntax #f 'whatever #f))
                          (side-condition
                           pre-term
                           ,(lambda (bindings)

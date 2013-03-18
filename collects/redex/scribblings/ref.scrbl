@@ -1088,7 +1088,10 @@ reduce it further).
                [(name @#,ttpattern ...) @#,tttterm metafunction-extras ...] 
                ...)
              ([metafunction-contract (code:line) 
-                                     (code:line id : @#,ttpattern-sequence ... -> range)]
+                                     (code:line id : @#,ttpattern-sequence ... -> range
+                                                maybe-pre-condition)]
+              [maybe-pre-condition (code:line #:pre @#,tttterm)
+                                   (code:line)]
               [range @#,ttpattern
                      (code:line @#,ttpattern or range)
                      (code:line @#,ttpattern ∨ range)
@@ -1107,14 +1110,21 @@ expressions. The first argument indicates the language used
 to resolve non-terminals in the pattern expressions. Each of
 the rhs-expressions is implicitly wrapped in @|tttterm|. 
 
+The contract, if present, is matched against every input to
+the metafunction and, if the match fails, an exception is raised.
+If present, the term inside the @racket[maybe-pre-condition] is evaluated
+after a successful match to the input pattern in the contract (with
+any variables from the input contract bound). If
+it returns @racket[#f], then the input contract is considered to not
+have matched and an error is also raised.
+
 The @racket[side-condition], @racket[hidden-side-condition],
 @racket[where], and @racket[where/hidden] clauses behave as
 in the @racket[reduction-relation] form.
 
-Raises an exception recognized by @racket[exn:fail:redex?] if
-no clauses match, if one of the clauses matches multiple ways
-(and that leads to different results for the different matches),
-or if the contract is violated.
+The resulting metafunction raises an exception recognized by @racket[exn:fail:redex?] if
+no clauses match or if one of the clauses matches multiple ways
+(and that leads to different results for the different matches).
 
 The @racket[side-condition] extra is evaluated after a successful match
 to the corresponding argument pattern. If it returns @racket[#f],
@@ -1227,7 +1237,7 @@ and @racket[#f] otherwise.
                rule rule ...)
              ([mode-spec (code:line #:mode (form-id pos-use ...))]
               [contract-spec (code:line) 
-                             (code:line #:contract (form-id @#,ttpattern ...))]
+                             (code:line #:contract (form-id @#,ttpattern-sequence ...))]
               [pos-use I
                        O]
               [rule [premise
