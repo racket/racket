@@ -93,6 +93,8 @@ typedef struct {
 # else
 typedef long double mz_long_double;
 # endif
+#else
+typedef double mz_long_double;
 #endif
 
 #ifdef DONT_ITIMER

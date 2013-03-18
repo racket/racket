@@ -1204,10 +1204,14 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
       && (len <= MAX_FAST_FLOATREAD_LEN)
       && (!is_long_double || MZ_LONG_DOUBLE_AND(1))) {
     double d = 1.0;
-    long_double ld;
+#ifdef MZ_LONG_DOUBLE
+    mz_long_double ld;
+#endif
     GC_CAN_IGNORE char *ptr;
 
+#ifdef MZ_LONG_DOUBLE
     memset(&ld, 0, sizeof(ld)); /* avoid a compiler warning */
+#endif
 
     if (has_expt && !(str[has_expt + 1])) {
       if (report)
