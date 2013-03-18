@@ -2039,9 +2039,12 @@ real_to_double_flonum (int argc, Scheme_Object *argv[])
 static Scheme_Object *
 real_to_long_double_flonum (int argc, Scheme_Object *argv[])
 {
-  CHECK_MZ_LONG_DOUBLE_UNSUPPORTED("real->extfl");
 #ifdef MZ_LONG_DOUBLE
+  CHECK_MZ_LONG_DOUBLE_UNSUPPORTED("real->extfl");
   return scheme_TO_LONG_DOUBLE(argv[0]);
+#else
+  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED, "real->extfl" ": " NOT_SUPPORTED_STR);
+  ESCAPED_BEFORE_HERE;
 #endif
 }
 
@@ -4015,7 +4018,8 @@ extfl_to_exact (int argc, Scheme_Object *argv[])
   
   return scheme_rational_from_long_double(d);
 #else
-  CHECK_MZ_LONG_DOUBLE_UNSUPPORTED("extfl->exact");
+  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED, "extfl->exact" ": " NOT_SUPPORTED_STR);
+  ESCAPED_BEFORE_HERE;
 #endif
 }
 

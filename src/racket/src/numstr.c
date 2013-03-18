@@ -1925,6 +1925,7 @@ static char *number_to_allocated_string(int radix, Scheme_Object *obj, int alloc
                             "number", 1, obj,
                             "requested base", 1, scheme_make_integer(radix),
                             NULL);
+    memset(&stub, 0, sizeof(long_double));
     s = double_to_string(SCHEME_FLOAT_VAL(obj), alloc, SCHEME_FLTP(obj), 0, stub);
   } else if (SCHEME_LONG_DBLP(obj)) {
     if (radix != 10)
