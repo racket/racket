@@ -1473,15 +1473,15 @@
 [bitwise-and
  (let ([mix-with-int
         (lambda (t)
-          (list (->* null t t) ; closed
-                (->* (list -Int) t t) ; brings result down
+          (list (->* (list t) t t) ; closed
+                (->* (list -Int t) t t) ; brings result down
                 (->* (list t -Int) t t)))])
    (from-cases (-> -NegFixnum) ; no args -> -1
                (map mix-with-int (list -Zero -Byte -Index -NonNegFixnum))
                ;; closed on negatives, but not closed if we mix with positives
-               (map varop (list -NegFixnum -NonPosFixnum))
+               (map varop-1+ (list -NegFixnum -NonPosFixnum))
                (map mix-with-int (list -Fixnum -Nat))
-               (map varop (list -NegInt -NonPosInt))
+               (map varop-1+ (list -NegInt -NonPosInt))
                (null -Int . ->* . -Int)))]
 [bitwise-ior
  (from-cases (varop -Zero)
@@ -1510,18 +1510,18 @@
   (-> -One -One)
   (-> -One -One -Zero)
   (-> -One -One -One -One)
-  (map varop (list -Zero -Byte -Index -NonNegFixnum))
+  (map varop-1+ (list -Zero -Byte -Index -NonNegFixnum))
   (-> -NegFixnum -NegFixnum)
   (-> -NonPosFixnum -NonPosFixnum)
-  (-> -NonPosFixnum -NonPosFixnum -NonNegFixnum)
+  (-> -NegFixnum -NegFixnum -NonNegFixnum) ; both have to be negative: (0 -1) -> -1
   (commutative-binop -NegFixnum -NonNegFixnum -NegFixnum)
-  (commutative-binop -NonPosFixnum -NonNegFixnum -NonPosFixnum)
-  (map varop (list -Fixnum -Nat))
+  (-> -NegFixnum -NonNegFixnum -NonPosFixnum) ; not commutative: (<pos> (ann 0 <non-pos>)) -> <pos>
+  (map varop-1+ (list -Fixnum -Nat))
   (-> -NegInt -NegInt)
   (-> -NonPosInt -NonPosInt)
-  (-> -NonPosInt -NonPosInt -Nat)
+  (-> -NegInt -NegInt -Nat)
   (commutative-binop -NegInt -Nat -NegInt)
-  (commutative-binop -NonPosInt -Nat -NonPosInt)
+  (-> -NegInt -Nat -NonPosInt) ; see above
   (varop -Int))]
 [bitwise-bit-set? (-> -Int -Int B)]
 [bitwise-bit-field
