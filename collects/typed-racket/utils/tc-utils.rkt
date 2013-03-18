@@ -55,7 +55,7 @@ don't depend on any other portion of the system
                #;(syntax-source-module stx))
       (log-message l 'warning
                    (format "Typed Racket has detected unreachable code: ~.s"
-                           (syntax->datum (locate-stx e)))
+                           (locate-stx e))
                    e))))
 
 (define (locate-stx stx)
