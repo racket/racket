@@ -1207,6 +1207,8 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
     long_double ld;
     GC_CAN_IGNORE char *ptr;
 
+    memset(&ld, 0, sizeof(ld)); /* avoid a compiler warning */
+
     if (has_expt && !(str[has_expt + 1])) {
       if (report)
 	scheme_read_err(complain, stxsrc, line, col, pos, span, 0, indentation,
@@ -1790,13 +1792,14 @@ char *scheme_X_double_to_string (double d, char* s, int slen, int was_single, in
       digits = 14;
     loc = scheme_push_c_numeric_locale();
     while (digits < 30 && digits < slen) {
-      double check;
+      double check = 0.0;
 #ifdef MZ_LONG_DOUBLE
       long_double long_check;
 #endif
       GC_CAN_IGNORE char *ptr;
 
 #ifdef MZ_LONG_DOUBLE
+      memset(&long_check, 0, sizeof(long_check)); /* avoid a compiler warning */
       if (extfl)
         long_double_sprint(buffer, digits, ld);
       else
