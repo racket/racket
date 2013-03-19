@@ -13,7 +13,8 @@
          (rep type-rep free-variance)
          (types utils abbrev type-table)
          (private parse-type type-annotation type-contract)
-         (env global-env init-envs type-name-env type-alias-env lexical-env env-req mvar-env)
+         (env global-env init-envs type-name-env type-alias-env
+              lexical-env env-req mvar-env scoped-tvar-env)
          syntax/id-table
          (utils tc-utils mutated-vars)
          "provide-handling.rkt"
@@ -157,7 +158,8 @@
 
       ;; top-level type annotation
       [(define-values () (begin (quote-syntax (:-internal id:identifier ty)) (#%plain-app values)))
-       (register-type/undefined #'id (parse-type #'ty))]
+       (register-type/undefined #'id (parse-type #'ty))
+       (register-scoped-tvars #'id (parse-literal-alls #'ty))]
 
 
       ;; values definitions
@@ -243,6 +245,8 @@
               [ts (map lookup-type vars)])
          (unless (for/and ([v (syntax->list #'(var ...))])
                    (free-id-table-ref unann-defs v (lambda _ #f)))
+           (when (= 1 (length vars))
+             (add-scoped-tvars #'expr (lookup-scoped-tvars (first vars))))
            (tc-expr/check #'expr (ret ts)))
          (void))]
 
