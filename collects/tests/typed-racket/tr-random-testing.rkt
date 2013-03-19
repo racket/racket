@@ -175,6 +175,8 @@
      (sin E*)
      (tan E*)
      (sqr E*)
+     (make-rectangular E* E*)
+     (make-polar E* E*)
      ])
 ;; generated from: (map car (file->list "base-env-parts"))
 

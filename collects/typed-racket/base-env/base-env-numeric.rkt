@@ -1610,8 +1610,9 @@
 [round (round-type)]
 
 [make-rectangular (cl->* (-Rat -Rat . -> . -ExactNumber)
-                         (-Flonum -Real . -> . -FloatComplex)
-                         (-Real -Flonum . -> . -FloatComplex)
+                         (-Flonum -Flonum . -> . -FloatComplex)
+                         (-Flonum (Un -PosReal -NegReal) . -> . -FloatComplex) ; no exact 0
+                         ((Un -PosReal -NegReal) -Flonum . -> . -FloatComplex)
                          (-SingleFlonum -SingleFlonum . -> . -SingleFlonumComplex)
                          (-InexactReal -InexactReal . -> . -InexactComplex)
                          (-Real -Real . -> . N))]
