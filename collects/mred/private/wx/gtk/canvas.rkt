@@ -757,8 +757,6 @@
                         (gtk_adjustment_get_page_size vscroll-adj))))))))
          (refresh-for-autoscroll)))
 
-     (define/public (warp-pointer x y) (void))
-
      (define/override (get-virtual-h-pos)
        (inexact->exact (ceiling (gtk_adjustment_get_value hscroll-adj))))
      (define/override (get-virtual-v-pos)

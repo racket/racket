@@ -9,6 +9,8 @@ scribble/srcdoc: added begin-for-doc
 syntax-color: added special support for dont-stop values;
  this change is backwards incompatible for code that calls
  lexers and may call unknown lexers
+racket/gui/base: moved warp-pointer from canvas<%> to
+ window<%> and restored its functionality
 
 Version 5.3.3.6
 Added "phase-collapse" module inference and instantiation

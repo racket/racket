@@ -70,6 +70,10 @@
 
 (define-gdk gdk_keyval_to_unicode (_fun _uint -> _uint32))
 
+(define-gtk gtk_widget_get_display (_fun _GtkWidget -> _GdkDisplay))
+(define-gtk gtk_widget_get_screen (_fun _GtkWidget -> _GdkScreen))
+(define-gdk gdk_display_warp_pointer (_fun _GdkDisplay _GdkScreen _int _int -> _void))
+
 (define-cstruct _GtkRequisition ([width _int]
                                  [height _int]))
 (define-cstruct _GtkAllocation ([x _int]
@@ -732,6 +736,15 @@
 
     (define/public (get-client-delta)
       (values 0 0))
+
+    (define/public (warp-pointer x y)
+      (define xb (box x))
+      (define yb (box y))
+      (client-to-screen xb yb)
+      (gdk_display_warp_pointer (gtk_widget_get_display gtk)
+                                (gtk_widget_get_screen gtk)
+                                (unbox xb)
+                                (unbox yb)))
 
     (define/public (gets-focus?) #t)))
 

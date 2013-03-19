@@ -292,12 +292,5 @@ See @racket[canvas<%>] for information on canvas flushing.
 Beware that suspending flushing for a canvas can discourage refreshes
 for other windows in the same frame on some platforms.}
 
-
-@defmethod[(warp-pointer [x (integer-in 0 10000)]
-                         [y (integer-in 0 10000)])
-           void?]{
-Moves the cursor to the given location on the canvas.
-
-}
 }
 

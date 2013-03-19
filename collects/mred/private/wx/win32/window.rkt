@@ -70,10 +70,12 @@
 (define-user32 SetCapture (_wfun _HWND -> _HWND))
 (define-user32 ReleaseCapture (_wfun -> _BOOL))
 
-(define-user32 WindowFromPoint (_fun _POINT -> _HWND))
-(define-user32 GetParent (_fun _HWND -> _HWND))
-(define-user32 SetParent (_fun _HWND _HWND -> (r : _HWND)
-                               -> (unless r (failed 'SetParent))))
+(define-user32 WindowFromPoint (_wfun _POINT -> _HWND))
+(define-user32 GetParent (_wfun _HWND -> _HWND))
+(define-user32 SetParent (_wfun _HWND _HWND -> (r : _HWND)
+                                -> (unless r (failed 'SetParent))))
+
+(define-user32 SetCursorPos (_wfun _int _int -> _BOOL))
 
 (define-cstruct _NMHDR
   ([hwndFrom _HWND]
@@ -439,6 +441,12 @@
       (ClientToScreen (get-client-hwnd) p)
       (set-box! x (POINT-x p))
       (set-box! y (POINT-y p))))
+
+  (define/public (warp-pointer x y)
+    (define xb (box x))
+    (define yb (box y))
+    (client-to-screen xb yb)
+    (void (SetCursorPos (unbox xb) (unbox yb))))
 
   (define/public (in-content? p)
     (ScreenToClient (get-client-hwnd) p)

@@ -790,8 +790,6 @@
          (when (y . >= . 0) (scroll-pos v-scroller (floor (* y (scroll-range v-scroller)))))
          (refresh-for-autoscroll)))
 
-     (define/public (warp-pointer x y) (void))
-
      (define/override (get-virtual-h-pos)
        (scroll-pos h-scroller))
 

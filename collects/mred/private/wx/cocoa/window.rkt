@@ -451,6 +451,9 @@
 
 (define-cocoa NSFilenamesPboardType _id)
 
+(define _CGError _int32)
+(define-appserv CGWarpMouseCursorPosition (_fun _NSPoint -> _CGError))
+
 (define window%
   (class object%
     (init-field parent 
@@ -886,6 +889,12 @@
             (tellv compose-cocoa orderOut: #f))))
     (define/public (get-saved-marked) saved-marked)
     (define/public (get-saved-selected) saved-sel)
+
+    (define/public (warp-pointer x y)
+      (define xb (box x))
+      (define yb (box y))
+      (client-to-screen xb yb)
+      (void (CGWarpMouseCursorPosition (make-NSPoint (unbox xb) (unbox yb)))))
 
     (define/private (create-compose-window)
       (unless compose-cocoa

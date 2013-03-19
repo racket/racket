@@ -28,7 +28,7 @@
   (interface (subwindow<%>)
     min-client-width min-client-height
     on-char on-event on-paint on-tab-in
-    warp-pointer get-dc
+    get-dc
     set-canvas-background get-canvas-background
     set-resize-corner))
 
@@ -43,9 +43,6 @@
     (define min-client-width (param (lambda () wx) min-client-width))
     (define min-client-height (param (lambda () wx) min-client-height))
     (public min-client-width min-client-height)
-
-    (define warp-pointer (entry-point (lambda (x y) (send wx warp-pointer x y))))
-    (public warp-pointer)
 
     (define get-dc (entry-point (lambda () (send wx get-dc))))
     (public get-dc)

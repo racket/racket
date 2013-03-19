@@ -576,5 +576,12 @@ window is shown.
 
 }
 
+@defmethod[(warp-pointer [x (integer-in -10000 10000)]
+                         [y (integer-in -10000 10000)])
+           void?]{
+Moves the cursor to the given location in the window's local coordinates.
+
+}
+
 }
 

@@ -569,8 +569,6 @@
                            (->long (* y (get-real-scroll-range 'vertical)))))
          (refresh-for-autoscroll)))
 
-     (define/public (warp-pointer x y) (void))
-
      (define/public (set-resize-corner on?)
        (void))
 

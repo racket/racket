@@ -105,6 +105,7 @@
       get-client-size get-size get-width get-height get-x get-y
       get-cursor set-cursor popup-menu
       show is-shown? on-superwindow-show refresh
+      warp-pointer
       get-handle get-client-handle))
 
   (define subwindow<%> 
@@ -205,6 +206,10 @@
        [get-cursor (lambda () cursor)]
        [set-cursor (entry-point
                     (lambda (x)
+                      (unless (or (not x) (x . is-a? . wx:cursor%))
+                        (raise-argument-error (who->name '(method window<%> set-cursor))
+                                              "(or/c (is-a?/c cursor%) #f)"
+                                              x))
                       (send wx set-cursor x)
                       (set! cursor x)))]
 
@@ -221,7 +226,13 @@
        [on-superwindow-show (lambda (visible?) (void))]
        [on-superwindow-enable (lambda (active?) (void))]
 
-       [refresh (entry-point (lambda () (send wx refresh)))])
+       [refresh (entry-point (lambda () (send wx refresh)))]
+       
+       [warp-pointer (entry-point (lambda (x y) 
+                                    (let ([who '(method window<%> warp-pointer)])
+                                      (check-init-pos-integer who x)
+                                      (check-init-pos-integer who y))
+                                    (send wx warp-pointer x y)))])
       (define wx #f)
       (super-make-object (lambda () (set! wx (mk-wx)) wx) get-wx-panel get-outer-wx-panel mismatches parent)
       (unless enabled (enable #f)))))
