@@ -1,9 +1,9 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-	 (rep type-rep)
-	 (utils tc-utils)
-	 (env global-env mvar-env)
+         (rep type-rep)
+         (utils tc-utils)
+         (env global-env mvar-env scoped-tvar-env)
          (except-in (types subtype union resolve utils generalize))
          (private parse-type)
          (contract-req)
@@ -57,6 +57,7 @@
 
 (define (type-ascription stx)
   (define (pt prop)
+    (add-scoped-tvars stx (parse-literal-alls prop))
     (if (syntax? prop)
         (parse-tc-results prop)
         (parse-tc-results/id stx prop)))

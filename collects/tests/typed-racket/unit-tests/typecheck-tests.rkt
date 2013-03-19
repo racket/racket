@@ -1638,7 +1638,8 @@
               (-polydots (a) (->... (list) (a a) (make-ListDots a 'a)))
               #:expected (ret (-polydots (a) (->... (list) (a a) (make-ListDots a 'a))))]
 
-
+        [tc-e/t (ann (lambda (x) #t) (All (a) Any))
+                (-poly (a) Univ)]
         [tc-e
            ((inst filter Any Symbol) symbol? null)
            (-lst -Symbol)]

@@ -2,7 +2,7 @@
 
 ;; Test alpha equivalent types
 
-(: x (All (A) (A -> A)))                                                                                                     
+(: x (All (A) (A -> A)))
 (define x (plambda: (C) ((f : C)) f))
 
 (: y (All (A) (A A -> A)))

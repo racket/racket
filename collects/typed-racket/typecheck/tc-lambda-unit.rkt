@@ -2,14 +2,14 @@
 
 (require "../utils/utils.rkt"
          racket/dict racket/list syntax/parse racket/syntax syntax/stx
-         racket/match syntax/id-table
+         racket/match syntax/id-table racket/set
          (contract-req)
          (except-in (rep type-rep) make-arr)
          (rename-in (except-in (types abbrev utils union) -> ->* one-of/c)
                     [make-arr* make-arr])
          (private type-annotation)
          (typecheck signatures tc-metafunctions tc-subst check-below)
-         (env type-env-structs lexical-env tvar-env index-env)
+         (env type-env-structs lexical-env tvar-env index-env scoped-tvar-env)
          (utils tc-utils)
          (for-template racket/base "internal-forms.rkt"))
 
@@ -328,83 +328,124 @@
   (define d (syntax-property stx 'typechecker:plambda))
   (and d (car (flatten d))))
 
+(define (has-poly-annotation? form)
+  (or (plambda-prop form) (cons? (lookup-scoped-tvar-layer form))))
+
+(define (remove-poly-layer tvarss)
+  (filter cons? (map rest tvarss)))
+
+(define (get-poly-layer tvarss)
+  (map first tvarss))
+
+(define (get-poly-tvarss form)
+  (let ([plambda-tvars
+          (let ([p (plambda-prop form)])
+            (match (and p (map syntax-e (syntax->list p)))
+              [#f #f]
+              [(list var ... dvar '...)
+               (list (list var dvar))]
+              [(list id ...)
+               (list id)]))]
+        [scoped-tvarss
+          (for/list ((tvarss (lookup-scoped-tvar-layer form)))
+            (for/list ((tvar tvarss))
+              (match tvar
+                [(list (list v ...) dotted-v)
+                 (list (map syntax-e v) (syntax-e dotted-v))]
+                [(list v ...) (map syntax-e v)])))])
+    (if plambda-tvars
+        (cons plambda-tvars scoped-tvarss)
+        scoped-tvarss)))
+
+
 ;; tc/plambda syntax syntax-list syntax-list type -> Poly
 ;; formals and bodies must by syntax-lists
-(define/cond-contract (tc/plambda form formals bodies expected)
+(define/cond-contract (tc/plambda form tvarss-list formals bodies expected)
   (syntax? syntax? syntax? (or/c tc-results/c #f) . -> . Type/c)
   (define/cond-contract (maybe-loop form formals bodies expected)
     (syntax? syntax? syntax? tc-results/c . -> . Type/c)
     (match expected
-      [(tc-result1: (Function: _)) (tc/mono-lambda/type formals bodies expected)]
       [(tc-result1: (or (Poly: _ _) (PolyDots: _ _)))
-       (tc/plambda form formals bodies expected)]
-      [(tc-result1: (Error:)) (tc/mono-lambda/type formals bodies #f)]
+       (tc/plambda form (remove-poly-layer tvarss-list) formals bodies expected)]
       [(tc-result1: (and v (Values: _))) (maybe-loop form formals bodies (values->tc-results v #f))]
-      [_ (int-err "expected not an appropriate tc-result: ~a" expected)]))
+      [_ 
+        (define remaining-layers (remove-poly-layer tvarss-list))
+        (if (null? remaining-layers)
+            (tc/mono-lambda/type formals bodies expected)
+            (tc/plambda form remaining-layers formals bodies expected))]))
+  ;; check the bodies appropriately
+  ;; and make both annotated and declared type variables point to the
+  ;; same actual type variables (the fresh names)
+  (define (extend-and-loop form ns formals bodies expected)
+    (let loop ((tvarss tvarss))
+      (match tvarss
+        [(list) (maybe-loop form formals bodies expected)]
+        [(cons (list (list tvars ...) dotted) rest-tvarss)
+         (extend-indexes dotted
+            (extend-tvars/new tvars ns
+              (loop rest-tvarss)))]
+        [(cons tvars rest-tvarss)
+         (extend-tvars/new tvars ns
+           (loop rest-tvarss))])))
+  (define tvarss (get-poly-layer tvarss-list))
+
   (match expected
     [(tc-result1: (and t (Poly-fresh: ns fresh-ns expected*)))
-     (let* ([tvars (let ([p (plambda-prop form)])
-                     (when (and (pair? p) (eq? '... (car (last p))))
-                       (tc-error
-                        "Expected a polymorphic function without ..., but given function had ..."))
-                     (and p (map syntax-e (syntax->list p))))])
-       ;; make sure the declared type variable arity matches up with the
-       ;; annotated type variable arity
-       (when tvars
-        (unless (= (length tvars) (length ns))
-          (tc-error "Expected ~a type variables, but given ~a"
-                    (length ns) (length tvars))))
-       ;; check the bodies appropriately
-       (if tvars
-           ;; make both annotated and given type variables point to the
-           ;; same actual type variables (the fresh names)
-           (extend-tvars/new ns fresh-ns
-            (extend-tvars/new tvars fresh-ns
-             (maybe-loop form formals bodies (ret expected*))))
-           ;; no plambda: type variables given
-           (extend-tvars/new ns fresh-ns
-            (maybe-loop form formals bodies (ret expected*))))
-       t)]
+     ;; make sure the declared and annotated type variable arities match up
+     ;; with the expected type variable arity
+     (for ((tvars tvarss))
+       (when (and (cons? tvars) (list? (first tvars)))
+         (tc-error
+          "Expected a polymorphic function without ..., but given function/annotation had ..."))
+       (unless (= (length tvars) (length fresh-ns))
+         (tc-error "Expected ~a type variables, but given ~a"
+                   (length fresh-ns) (length tvars))))
+     (make-Poly #:original-names ns fresh-ns (extend-and-loop form fresh-ns formals bodies (ret expected*)))]
     [(tc-result1: (and t (PolyDots-names: (list ns ... dvar) expected*)))
-     (let-values
-         ([(tvars dotted)
-           (let ([p (plambda-prop form)])
-             (if p
-                 (match (map syntax-e (syntax->list p))
-                   [(list var ... dvar '...)
-                    (values var dvar)]
-                   [_ (tc-error "Expected a polymorphic function with ..., but given function had no ...")])
-                 (values ns dvar)))])
-       ;; check the body for side effect
-       (extend-indexes dotted
-         (extend-tvars tvars
-           (maybe-loop form formals bodies (ret expected*))))
-       t)]
-    [(or (tc-result1: _) (tc-any-results:) #f)
-     (match (map syntax-e (syntax->list (plambda-prop form)))
-       [(list tvars ... dotted-var '...)
-        (let* ([ty (extend-indexes dotted-var
-                     (extend-tvars tvars
-                       (tc/mono-lambda/type formals bodies #f)))])
-          (make-PolyDots (append tvars (list dotted-var)) ty))]
-       [tvars
-        (let* (;; manually make some fresh names since
-               ;; we don't use a match expander
-               [fresh-tvars (map gensym tvars)]
-               [ty (extend-tvars/new tvars fresh-tvars
-                     (tc/mono-lambda/type formals bodies #f))])
-          ;(printf "plambda: ~a ~a ~a \n" literal-tvars new-tvars ty)
-          (make-Poly fresh-tvars ty #:original-names tvars))])]
-    [_ (int-err "not a good expected value: ~a" expected)]))
+     ;; make sure the declared and annotated type variable arities match up
+     ;; with the expected type variable arity
+     (for ((tvars tvarss))
+       (match tvars
+         [(list (list vars ...) dotted)
+          (unless (= (length vars) (length ns))
+            (tc-error "Expected ~a non-dotted type variables, but given ~a"
+                      (length ns) (length vars)))]
+         [else
+           (tc-error "Expected a polymorphic function with ..., but function/annotation had no ...")]))
+     (make-PolyDots (append ns (list dvar)) (extend-and-loop form ns formals bodies (ret expected*)))]
+    [(or (tc-results: _) (tc-any-results:) #f)
+     (define lengths
+       (for/set ((tvars tvarss))
+         (match tvars
+           [(list (list vars ...) dotted)
+            (length vars)]
+           [(list vars ...)
+            (length vars)])))
+     (define dots
+       (for/set ((tvars tvarss))
+         (match tvars
+           [(list (list vars ...) dotted) #t]
+           [(list vars ...) #f])))
+     (unless (= 1 (set-count lengths))
+      (tc-error "Expected annotations to have the same number of type variables, but given ~a"
+                (set->list lengths)))
+     (unless (= 1 (set-count dots))
+      (tc-error "Expected annotations to all have ... or none to have ..., but given both"))
+     (define dotted (and (set-first dots) (second (first tvarss))))
+     (define ns (build-list (set-first lengths) (lambda (_) (gensym))))
+     (define results (extend-and-loop form ns formals bodies expected))
+     (if dotted
+         (make-PolyDots (append ns (list dotted)) results)
+         (make-Poly #:original-names (first tvarss) ns results))]))
 
 ;; typecheck a sequence of case-lambda clauses, which is possibly polymorphic
 ;; tc/lambda/internal syntax syntax-list syntax-list option[type] -> tc-result
 (define (tc/lambda/internal form formals bodies expected)
-  (if (or (plambda-prop form)
+  (if (or (has-poly-annotation? form)
           (match expected
             [(tc-result1: t) (or (Poly? t) (PolyDots? t))]
             [_ #f]))
-      (ret (tc/plambda form formals bodies expected) true-filter)
+      (ret (tc/plambda form (get-poly-tvarss form) formals bodies expected) true-filter)
       (ret (tc/mono-lambda/type formals bodies expected) true-filter)))
 
 ;; tc/lambda : syntax syntax-list syntax-list -> tc-result
