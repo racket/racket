@@ -17,8 +17,8 @@
 (define-syntax-rule (method class/interface method-name)
   (*method 'method-name (quote-syntax class/interface)))
 
-(define-syntax-rule (xmethod a b)
-  (elem (method a b) " in " (racket a)))
+(define-syntax-rule (xmethod class/intf-id method-id)
+  (elem (method class/intf-id method-id) " in " (racket class/intf-id)))
 
 (define (*method sym id)
   (**method sym id))

@@ -264,7 +264,7 @@ sub-sub-commands:
  @itemlist[
 
  @item{@DFlag{type} @nonterm{type} or @Flag{t} @nonterm{type} --- specifies an interpretation of the package source,
-       where @nonterm{type} is either @exec{file}, @exec{dir}, @exec{url}, @exec{github}, 
+       where @nonterm{type} is either @exec{file}, @exec{dir}, @exec{file-url}, @exec{dir-url}, @exec{github}, 
        or @exec{name}.}
 
  @item{@DFlag{name} @nonterm{pkg} or @Flag{n} @nonterm{pkg} --- specifies the name of the package,

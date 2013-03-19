@@ -22,15 +22,15 @@
 
 (define-syntax (normal-receiver stx)
   (syntax-case stx ()
-    [(_ ch x body ...) 
+    [(_ ch x body ...)
       #'(let ([x (place-channel-get ch)])
-        (place-channel-put ch (begin body ...)))]))
+          (place-channel-put ch (begin body ...)))]))
 
 (define-syntax (big-receiver stx)
   (syntax-case stx ()
-    [(_ ch x body ...) 
+    [(_ ch x body ...)
       #'(let ([x (car (place-channel-get ch))])
-        (place-channel-put ch (cons (begin body ...) big)))]))
+          (place-channel-put ch (cons (begin body ...) big)))]))
 
 (define (test expect fun . args)
   (printf "~s ==> " (cons fun args))

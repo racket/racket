@@ -230,17 +230,18 @@
     (define toc (call-with-input-file (build-path sample-solutions-dir "toc.rkt") read))
 
 
-  (define labels
-    (let* ([all-info (call-with-input-file (build-path (collection-path "solutions") 
-                                                       'up 'up "proj" "book" "solutions"
-                                                       "labels.scm") read)]
-           [ex-labels (filter (lambda (x) (and (string=? (substring (car x) 0 3) "ex:")
-                                               (> (string-length (car x)) 3)))
-                              all-info)])
-      (map (lambda (x) 
-             (cons (string-append (substring (car x) 3 (string-length (car x))) ".scm")
-                   (cdr x)))
-           ex-labels)))
+    (define labels
+      (let* ([all-info (call-with-input-file (build-path (collection-path "solutions") 
+                                                         'up 'up "proj" "book" "solutions"
+                                                         "labels.scm")
+                         read)]
+             [ex-labels (filter (lambda (x) (and (string=? (substring (car x) 0 3) "ex:")
+                                                 (> (string-length (car x)) 3)))
+                                all-info)])
+        (map (lambda (x) 
+               (cons (string-append (substring (car x) 3 (string-length (car x))) ".scm")
+                     (cdr x)))
+             ex-labels)))
     
     (define sample-solutions
       (sort

@@ -114,46 +114,48 @@
                                                           #f))))
     (unless (eq? 'all omit-paths)
       (let ([init (parameterize ([current-directory dir]
-                     [current-load-relative-directory dir]
-                     ;; Verbose compilation manager:
-                     [manager-trace-handler (if verbose?
-                                                (let ([op (current-output-port)])
-                                                  (lambda (s) (fprintf op "~a\n" s)))
-                                                (manager-trace-handler))]
-                     [manager-compile-notify-handler
-                      (lambda (path) ((compile-notify-handler) path))]
-                     [manager-skip-file-handler
-                      (lambda (path) (and skip-path
-                                          (let ([b (path->bytes (simplify-path path #f))]
-                                                [len (bytes-length skip-path)])
-                                            (and ((bytes-length b) . > . len)
-                                                 (bytes=? (subbytes b 0 len) skip-path)))
-                                          (list -inf.0 "")))])
-        (let* ([sses (append
-                      ;; Find all .rkt/.ss/.scm files:
-                      (filter extract-base-filename/ss (directory-list))
-                      ;; Add specified doc sources:
-                      (if skip-docs?
-                          null
-                          (map (lambda (s) (if (string? s) (string->path s) s))
-                               (map car (info* 'scribblings (lambda () null))))))]
-               [sses (remove* omit-paths sses)])
-          (worker null sses)))])
-      
-      (if (compile-subcollections)
-        (begin 
-          (when (info* 'compile-subcollections (lambda () #f))
-            (printf "Warning: ignoring `compile-subcollections' entry in info ~a\n"
-                    dir))
-          (for/fold ([init init]) ([p (directory-list dir)])
-            (let ([p* (build-path dir p)])
-              (if (and (directory-exists? p*) (not (member p omit-paths)))
-                  (compile-directory-visitor p* (c-get-info/full p*) worker omit-root
-                                             #:verbose verbose?
-                                             #:skip-path skip-path
-                                             #:skip-doc-sources? skip-docs?)
-                  init))))
-        init))))
+                                 [current-load-relative-directory dir]
+                                 ;; Verbose compilation manager:
+                                 [manager-trace-handler
+                                  (if verbose?
+                                      (let ([op (current-output-port)])
+                                        (lambda (s) (fprintf op "~a\n" s)))
+                                      (manager-trace-handler))]
+                                 [manager-compile-notify-handler
+                                  (lambda (path) ((compile-notify-handler) path))]
+                                 [manager-skip-file-handler
+                                  (lambda (path)
+                                    (and skip-path
+                                         (let ([b (path->bytes (simplify-path path #f))]
+                                               [len (bytes-length skip-path)])
+                                           (and ((bytes-length b) . > . len)
+                                                (bytes=? (subbytes b 0 len) skip-path)))
+                                         (list -inf.0 "")))])
+                    (let* ([sses (append
+                                  ;; Find all .rkt/.ss/.scm files:
+                                  (filter extract-base-filename/ss (directory-list))
+                                  ;; Add specified doc sources:
+                                  (if skip-docs?
+                                      null
+                                      (map (lambda (s) (if (string? s) (string->path s) s))
+                                           (map car (info* 'scribblings (lambda () null))))))]
+                           [sses (remove* omit-paths sses)])
+                      (worker null sses)))])
+
+        (if (compile-subcollections)
+          (begin 
+            (when (info* 'compile-subcollections (lambda () #f))
+              (printf "Warning: ignoring `compile-subcollections' entry in info ~a\n"
+                      dir))
+            (for/fold ([init init]) ([p (directory-list dir)])
+              (let ([p* (build-path dir p)])
+                (if (and (directory-exists? p*) (not (member p omit-paths)))
+                    (compile-directory-visitor p* (c-get-info/full p*) worker omit-root
+                                               #:verbose verbose?
+                                               #:skip-path skip-path
+                                               #:skip-doc-sources? skip-docs?)
+                    init))))
+          init))))
   (define (compile-directory dir info 
                              #:verbose [verbose? #t] 
                              #:skip-path [orig-skip-path #f]

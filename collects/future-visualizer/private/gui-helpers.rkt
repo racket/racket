@@ -65,7 +65,7 @@
                                [parent par] 
                                [redraw-on-resize #t] 
                                [pict-builder (λ (vregion)
-                                             (rotate (lc-superimpose (colorize (filled-rectangle (viewable-region-height vregion) 
+                                               (rotate (lc-superimpose (colorize (filled-rectangle (viewable-region-height vregion) 
                                                                                                  HEADER-HEIGHT) 
                                                                                (header-backcolor))
                                                                      text-container)

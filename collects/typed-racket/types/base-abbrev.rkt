@@ -32,6 +32,11 @@
 ;; Void is needed for Params
 (define -Void (make-Base 'Void #'void? void? #'-Void #f))
 
+;; -lst* Type is needed by substitute for ListDots
+(define -pair make-Pair)
+(define (-lst* #:tail [tail (-val null)] . args)
+  (for/fold ([tl tail]) ([a (reverse args)]) (-pair a tl)))
+
 
 ;; Simple union type, does not check for overlaps
 
@@ -204,14 +209,14 @@
                    (with-syntax ([((extra ...) ...)
                                   (for/list ([i (in-range (add1 (length l)))])
                                     (take l i))])
-                   #'(make-Function
-                      (list
-                       (make-arr* (list ty ... extra ...)
-                                  rng
-                                  #:kws (sort #:key (match-lambda [(Keyword: kw _ _) kw])
-                                              (list (make-Keyword 'k kty opt) ...)
-                                              keyword<?))
-                       ...))))]))
+                     #'(make-Function
+                        (list
+                         (make-arr* (list ty ... extra ...)
+                                    rng
+                                    #:kws (sort #:key (match-lambda [(Keyword: kw _ _) kw])
+                                                (list (make-Keyword 'k kty opt) ...)
+                                                keyword<?))
+                         ...))))]))
 
 (define (make-arr-dots dom rng dty dbound)
   (make-arr* dom rng #:drest (cons dty dbound)))

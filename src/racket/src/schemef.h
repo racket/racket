@@ -619,7 +619,7 @@ MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_long_halves(uintptr_t lo
 MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_unsigned_long_halves(uintptr_t lowhalf, uintptr_t hihalf);
 MZ_EXTERN Scheme_Object *scheme_make_double(double d);
 #ifdef MZ_LONG_DOUBLE
-MZ_EXTERN Scheme_Object *scheme_make_long_double(long double d);
+MZ_EXTERN Scheme_Object *scheme_make_long_double(mz_long_double d);
 #endif
 #ifdef MZ_USE_SINGLE_FLOATS
 MZ_EXTERN Scheme_Object *scheme_make_float(float f) ;
@@ -643,7 +643,7 @@ XFORM_NONGCING MZ_EXTERN int scheme_get_unsigned_long_long_val(Scheme_Object *o,
 
 MZ_EXTERN double scheme_real_to_double(Scheme_Object *r);
 #ifdef MZ_LONG_DOUBLE
-MZ_EXTERN long double scheme_real_to_long_double(Scheme_Object *r);
+MZ_EXTERN mz_long_double scheme_real_to_long_double(Scheme_Object *r);
 #endif
 
 MZ_EXTERN Scheme_Object *scheme_make_cptr(void *cptr, Scheme_Object *typetag);
@@ -707,8 +707,8 @@ MZ_EXTERN Scheme_Object *scheme_make_bignum_from_unsigned_long_long(umzlonglong 
 XFORM_NONGCING MZ_EXTERN double scheme_bignum_to_double(const Scheme_Object *n);
 MZ_EXTERN Scheme_Object *scheme_bignum_from_double(double d);
 #ifdef MZ_LONG_DOUBLE
-XFORM_NONGCING MZ_EXTERN long double scheme_bignum_to_long_double(const Scheme_Object *n);
-MZ_EXTERN Scheme_Object *scheme_bignum_from_long_double(long double d);
+XFORM_NONGCING MZ_EXTERN mz_long_double scheme_bignum_to_long_double(const Scheme_Object *n);
+MZ_EXTERN Scheme_Object *scheme_bignum_from_long_double(mz_long_double d);
 #endif
 #ifdef MZ_USE_SINGLE_FLOATS
 XFORM_NONGCING MZ_EXTERN float scheme_bignum_to_float(const Scheme_Object *n);
@@ -731,8 +731,8 @@ MZ_EXTERN Scheme_Object *scheme_make_rational(const Scheme_Object *r, const Sche
 MZ_EXTERN double scheme_rational_to_double(const Scheme_Object *n);
 MZ_EXTERN Scheme_Object *scheme_rational_from_double(double d);
 #ifdef MZ_LONG_DOUBLE
-MZ_EXTERN long double scheme_rational_to_long_double(const Scheme_Object *n);
-MZ_EXTERN Scheme_Object *scheme_rational_from_long_double(long double d);
+MZ_EXTERN mz_long_double scheme_rational_to_long_double(const Scheme_Object *n);
+MZ_EXTERN Scheme_Object *scheme_rational_from_long_double(mz_long_double d);
 #endif
 #ifdef MZ_USE_SINGLE_FLOATS
 MZ_EXTERN float scheme_rational_to_float(const Scheme_Object *n);

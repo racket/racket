@@ -10,7 +10,7 @@
 
 See @racketmodname[openssl/sha1] for a faster implementation.
 
-@defproc[(sha1 [in input-port]) string?]{
+@defproc[(sha1 [in input-port?]) string?]{
 
 Returns a 40-character string that represents the SHA-1 hash (in
 hexadecimal notation) of the content from @racket[in], consuming all
@@ -24,7 +24,7 @@ The @racket[sha1] function composes @racket[bytes->hex-string] with
 (sha1 (open-input-bytes #"abc"))
 ]}
 
-@defproc[(sha1-bytes [in input-port]) bytes?]{
+@defproc[(sha1-bytes [in input-port?]) bytes?]{
 
 Returns a 20-byte byte string that represents the SHA-1 hash of the
 content from @racket[in], consuming all of the input from @racket[in]
@@ -39,7 +39,11 @@ until an end-of-file.
 
 Converts the given byte string to a string representation, where each
 byte in @racket[bstr] is converted to its two-digit hexadecimal
-representation in the resulting string.}
+representation in the resulting string.
 
+@examples[
+#:eval sha1-eval
+(bytes->hex-string #"turtles")
+]}
 
 @close-eval[sha1-eval]

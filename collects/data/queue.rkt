@@ -100,17 +100,17 @@
       ([(var) (in-queue* queue-expression)]
        (with-syntax ([queue-expression/c (wrap-expr/c #'queue? #'queue-expression
                                                       #:macro #'in-queue*)])
-       #'[(var)
-          (:do-in ([(queue) queue-expression/c])
-                  (void) ;; handled by contract
-                  ([link (queue-head queue)])
-                  link
-                  ([(var) (link-value link)])
-                  #t
-                  #t
-                  ((link-tail link)))]))
-       ([(var ...) (in-queue* queue-expression)]
-        #f))))
+         #'[(var)
+            (:do-in ([(queue) queue-expression/c])
+                    (void) ;; handled by contract
+                    ([link (queue-head queue)])
+                    link
+                    ([(var) (link-value link)])
+                    #t
+                    #t
+                    ((link-tail link)))]))
+      ([(var ...) (in-queue* queue-expression)]
+       #f))))
 
 ;; --- contracts ---
 (define queue/c queue?)

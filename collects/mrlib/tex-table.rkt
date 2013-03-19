@@ -182,9 +182,11 @@
     ("S" "§")
 
     ("newpage" "\f")
-
-    ))
-
+    
+    ("vdots" "⋮")
+    ("ddots" "⋱")
+    ("cdots" "⋯")
+    ("hdots" "⋯")))
 
 (module+ test
   (require racket/match)

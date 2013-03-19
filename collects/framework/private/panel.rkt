@@ -525,13 +525,13 @@
   
   (define horizontal-dragable% (horizontal-dragable-mixin (dragable-mixin panel%)))
 
-(define splitter<%> (interface () split-horizontal split-vertical collapse))
-;; we need a private interface so we can use `generic' because `generic'
-;; doesn't work on mixins
-(define splitter-private<%> (interface () self-vertical? self-horizontal?))
+  (define splitter<%> (interface () split-horizontal split-vertical collapse))
+  ;; we need a private interface so we can use `generic' because `generic'
+  ;; doesn't work on mixins
+  (define splitter-private<%> (interface () self-vertical? self-horizontal?))
 
-(define splitter-mixin
-  (mixin (area-container<%> dragable<%>) (splitter<%> splitter-private<%>)
+  (define splitter-mixin
+   (mixin (area-container<%> dragable<%>) (splitter<%> splitter-private<%>)
     (super-new)
     (inherit get-children add-child
              delete-child

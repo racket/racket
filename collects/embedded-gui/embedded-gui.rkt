@@ -3,8 +3,8 @@
   (define-syntax (require/provide stx)
     (syntax-case stx ()
       [(_ filename ...)
-      #'(begin (require filename ...)
-               (provide (all-from filename) ...))]))
+       #'(begin (require filename ...)
+                (provide (all-from filename) ...))]))
   
   (require/provide
    "private/interface.rkt"

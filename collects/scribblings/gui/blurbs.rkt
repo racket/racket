@@ -25,25 +25,25 @@
 
   (define (labelsimplestripped where what)
     @elem{If @litchar{&} occurs in @|where|, it is specially parsed; 
-          under Windows and X, the character
- following @litchar{&} is underlined in the displayed control to
- indicate a keyboard mnemonic. (Under Mac OS X, mnemonic underlines are
- not shown.) The mnemonic is meaningless for a @|what| (as far as
- @xmethod[top-level-window<%> on-traverse-char] is concerned),
- but it is supported for consistency with other control types. A
- programmer may assign a meaning to the mnemonic (e.g., by overriding
- @method[top-level-window<%> on-traverse-char]).})
+      under Windows and X, the character
+      following @litchar{&} is underlined in the displayed control to
+      indicate a keyboard mnemonic. (Under Mac OS X, mnemonic underlines are
+      not shown.) The mnemonic is meaningless for a @|what| (as far as
+      @xmethod[top-level-window<%> on-traverse-char] is concerned),
+      but it is supported for consistency with other control types. A
+      programmer may assign a meaning to the mnemonic (e.g., by overriding
+      @method[top-level-window<%> on-traverse-char]).})
 
   (define (labelstripped where detail what)
     @elem{If @litchar{&} occurs in @|where|@|detail|, it
- is specially parsed as for @racket[button%].})
+      is specially parsed as for @racket[button%].})
 
   (define (bitmapuseinfo pre what thing and the)
    @elem{@|pre| @|what| is @|thing|,@|and| if @|the|
- bitmap has a mask (see @xmethod[bitmap% get-loaded-mask])
- that is the same size as the bitmap, then the mask is used for the
- label. Modifying a bitmap while it is used as a label has
- an unspecified effect on the displayed label.})
+     bitmap has a mask (see @xmethod[bitmap% get-loaded-mask])
+     that is the same size as the bitmap, then the mask is used for the
+     label. Modifying a bitmap while it is used as a label has
+     an unspecified effect on the displayed label.})
 
   (define-syntax bitmaplabeluse
    (syntax-rules ()
@@ -79,20 +79,21 @@
 
   (define insertcharundos
     @elem{Multiple calls to the character-inserting method are grouped together
- for undo purposes, since this case of the method is typically used
- for handling user keystrokes. However, this undo-grouping feature
- interferes with the undo grouping performed by
- @method[editor<%> begin-edit-sequence] and
- @method[editor<%> end-edit-sequence], so the string-inserting
- method should be used instead during undoable edit sequences.})
+      for undo purposes, since this case of the method is typically used
+      for handling user keystrokes. However, this undo-grouping feature
+      interferes with the undo grouping performed by
+      @method[editor<%> begin-edit-sequence] and
+      @method[editor<%> end-edit-sequence], so the string-inserting
+      method should be used instead during undoable edit sequences.})
 
   (define (insertscrolldetails what)
-    @elem{@|what| editor's display is scrolled to show the new selection @techlink{position}.})
+    @elem{@|what| editor's display is scrolled to show the new selection
+          @techlink{position}.})
 
   (define (insertmovedetails what)
     @elem{If the insertion @techlink{position} is before
-or equal to the selection's start/end @techlink{position}, then the selection's
-start/end @techlink{position} is incremented by @|what|.})
+      or equal to the selection's start/end @techlink{position}, then the
+      selection's start/end @techlink{position} is incremented by @|what|.})
 
   (define OVD
     @elem{The result is only valid when the editor is displayed 
@@ -100,9 +101,10 @@ start/end @techlink{position} is incremented by @|what|.})
           @method[editor<%> get-admin] returns an administrator (not @racket[#f]).})
 
   (define (FCAX c details)
-    @elem{@|c|alling this method may force the recalculation of @techlink{location}
-information@|details|, even if the editor currently has delayed refreshing (see
-@method[editor<%> refresh-delayed?]).})
+    @elem{
+      @|c|alling this method may force the recalculation of @techlink{location}
+      information@|details|, even if the editor currently has delayed
+      refreshing (see @method[editor<%> refresh-delayed?]).})
 
   (define FCA (FCAX "C" ""))
   (define FCAMW (FCAX "C" " if a maximum width is set for the editor"))
@@ -180,11 +182,14 @@ information@|details|, even if the editor currently has delayed refreshing (see
     @elem{The editor's style list must contain @style, otherwise
           the style is not changed. See also @xmethod[style-list% convert].})
 
-  (define (FontKWs font) @elem{The @|font| argument determines the font for the control.})
-  (define (FontLabelKWs font label-font) @elem{The @|font| argument determines the font for the control content, 
-                               and @|label-font| determines the font for the control label.})
+  (define (FontKWs font)
+    @elem{The @|font| argument determines the font for the control.})
+  (define (FontLabelKWs font label-font)
+    @elem{The @|font| argument determines the font for the control content, 
+          and @|label-font| determines the font for the control label.})
 
-  (define (WindowKWs enabled) @elem{For information about the @|enabled| argument, see @racket[window<%>].})
+  (define (WindowKWs enabled)
+    @elem{For information about the @|enabled| argument, see @racket[window<%>].})
   (define-inline (SubareaKWs)
     @elem{For information about the @racket[horiz-margin] and @racket[vert-margin]
               arguments, see @racket[subarea<%>].})

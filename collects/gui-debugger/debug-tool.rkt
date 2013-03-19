@@ -465,13 +465,13 @@
                               id (list-tail frames (send (get-tab) get-frame-num))
                                           ;; id found
                                           (lambda (val _)
-                                (cond
-                                  [(render val) => (lambda (str)
-                                                     (string-append
-                                                      (symbol->string (syntax-e id)) " = " str))]
-                                  [else ""]))
+                                            (cond
+                                              [(render val) => (lambda (str)
+                                                                 (string-append
+                                                                  (symbol->string (syntax-e id)) " = " str))]
+                                              [else ""]))
                                           ;; id not found
-                              (lambda () ""))])
+                                          (lambda () ""))])
                        (send (get-tab) set-mouse-over-msg (clean-status rendered))))))
                (super on-event event)]
               [(send event button-down? 'right)

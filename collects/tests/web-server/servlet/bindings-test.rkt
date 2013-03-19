@@ -33,7 +33,7 @@
      (check-equal? (request-bindings
                     (make-request #"GET" (string->url "http://test.com/foo")
                                   empty (delay (list (make-binding:form #"key" #"val")
-                                              (make-binding:form #"key2" #"val")))
+                                                     (make-binding:form #"key2" #"val")))
                                   #f
                                                                                   "host" 80 "client"))
                    '((key . "val")

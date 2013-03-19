@@ -95,9 +95,9 @@ be all strings or all byte strings, and the result is of the same
 type.}
 
 
-@defproc[(replaces-field [field (or/c string? bytes?)]
-                         [value (or/c string? bytes? false/c)]
-                         [header (or/c string? bytes?)])
+@defproc[(replace-field [field (or/c string? bytes?)]
+                        [value (or/c string? bytes? false/c)]
+                        [header (or/c string? bytes?)])
           (or/c string? bytes?)]{
 
 Composes @racket[remove-field] and (if @racket[value] is not

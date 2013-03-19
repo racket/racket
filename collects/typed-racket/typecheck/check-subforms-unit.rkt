@@ -6,7 +6,7 @@
          racket/match
          "signatures.rkt" "tc-metafunctions.rkt"
          "tc-funapp.rkt" "tc-subst.rkt"
-         (types utils abbrev union subtype)
+         (types utils abbrev union subtype resolve)
          (utils tc-utils)
          (rep type-rep))
 
@@ -42,10 +42,15 @@
   ;; The result of applying the function to a single argument of type (Un)
   ;; FIXME: (Un) is the wrong type, see above fixme
   (define (get-result-ty t)
-    (match t
-      [(tc-result1: (Function: _))
-       (tc/funapp #'here #'(here) t (list (ret (Un))) #f)]
-      [_ (int-err "Unsupported function type in get-result-ty: \n~a" t)]))
+    (let loop ((t t))
+      (match t
+        [(Function: _)
+         (tc/funapp #'here #'(here) (ret t) (list (ret (Un))) #f)]
+        [(? needs-resolving? t)
+         (loop (resolve t))]
+        [(or (Poly: ns _) (PolyDots: (list ns ... _) _))
+         (loop (instantiate-poly t (map (λ (n) Univ) ns)))]
+        [_ (int-err "Unsupported function type in get-result-ty: \n~a" t)])))
   (let loop ([form form])
     (parameterize ([current-orig-stx form])
       (syntax-parse form
@@ -59,10 +64,8 @@
          #:when (syntax-property form 'typechecker:exn-handler)
          (let ([t (single-value form)])
            (match t
-             [(tc-result1: (Function: _))
-              (set! handler-tys (cons (get-result-ty t) handler-tys))]
-             [(tc-results: t)
-              (tc-error "Exception handler must be a function, got \n~a" t)]))]
+             [(tc-result1: t)
+              (set! handler-tys (cons (get-result-ty t) handler-tys))]))]
         [stx
          ;; this is the body of the with-handlers
          #:when (syntax-property form 'typechecker:exn-body)

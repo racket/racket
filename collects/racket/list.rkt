@@ -13,11 +13,15 @@
          drop
          take
          split-at
+         takef
+         dropf
+         splitf-at
          drop-right
          take-right
-         take-while
-         drop-while
          split-at-right
+         takef-right
+         dropf-right
+         splitf-at-right
 
          append*
          flatten
@@ -117,6 +121,12 @@
           [(pair? list) (cons (car list) (loop (cdr list) (sub1 n)))]
           [else (too-large 'take list0 n0)])))
 
+(define (drop list n)
+  ;; could be defined as `list-tail', but this is better for errors anyway
+  (unless (exact-nonnegative-integer? n)
+    (raise-argument-error 'drop "exact-nonnegative-integer?" 1 list n))
+  (or (drop* list n) (too-large 'drop list n)))
+
 (define (split-at list0 n0)
   (unless (exact-nonnegative-integer? n0)
     (raise-argument-error 'split-at "exact-nonnegative-integer?" 1 list0 n0))
@@ -125,11 +135,35 @@
           [(pair? list) (loop (cdr list) (sub1 n) (cons (car list) pfx))]
           [else (too-large 'split-at list0 n0)])))
 
-(define (drop list n)
-  ;; could be defined as `list-tail', but this is better for errors anyway
-  (unless (exact-nonnegative-integer? n)
-    (raise-argument-error 'drop "exact-nonnegative-integer?" 1 list n))
-  (or (drop* list n) (too-large 'drop list n)))
+(define (takef list pred)
+  (unless (procedure? pred)
+    (raise-argument-error 'takef "procedure?" 0 list pred))
+  (let loop ([list list])
+    (if (pair? list)
+      (let ([x (car list)])
+        (if (pred x)
+          (cons x (loop (cdr list)))
+          '()))
+      ;; could return `list' here, but make it behave like `take'
+      ;; exmaple: (takef '(a b c . d) symbol?) should be similar
+      ;; to (take '(a b c . d) 3)
+      '())))
+
+(define (dropf list pred)
+  (unless (procedure? pred)
+    (raise-argument-error 'dropf "procedure?" 0 list pred))
+  (let loop ([list list])
+    (if (and (pair? list) (pred (car list)))
+      (loop (cdr list))
+      list)))
+
+(define (splitf-at list pred)
+  (unless (procedure? pred)
+    (raise-argument-error 'splitf-at "procedure?" 0 list pred))
+  (let loop ([list list] [pfx '()])
+    (if (and (pair? list) (pred (car list)))
+      (loop (cdr list) (cons (car list) pfx))
+      (values (reverse pfx) list))))
 
 ;; take/drop-right are originally from srfi-1, uses the same lead-pointer trick
 
@@ -153,29 +187,6 @@
       (cons (car list) (loop (cdr list) (cdr lead)))
       '())))
 
-(define (take-while pred list)
-  (unless (procedure? pred)
-    (raise-argument-error 'take-while "procedure?" 0 pred list))
-  (unless (list? list)
-    (raise-argument-error 'take-while "list?" 1 pred list))
-  (let loop ([list list])
-    (if (null? list)
-      '()
-      (let ([x (car list)])
-        (if (pred x)
-          (cons x (loop (cdr list)))
-          '())))))
-
-(define (drop-while pred list)
-  (unless (procedure? pred)
-    (raise-argument-error 'drop-while "procedure?" 0 pred list))
-  (unless (list? list)
-    (raise-argument-error 'drop-while "list?" 1 pred list))
-  (let loop ([list list])
-    (cond [(null? list) '()]
-          [(pred (car list)) (loop (cdr list))]
-          [else list])))
-
 (define (split-at-right list n)
   (unless (exact-nonnegative-integer? n)
     (raise-argument-error 'split-at-right "exact-nonnegative-integer?" n))
@@ -186,6 +197,39 @@
     (if (pair? lead)
       (loop (cdr list) (cdr lead) (cons (car list) pfx))
       (values (reverse pfx) list))))
+
+;; For just `takef-right', it's possible to do something smart that
+;; scans the list in order, keeping a pointer to the beginning of the
+;; "current good block".  This avoids a double scan *but* the payment is
+;; in applying the predicate on all emlements.  There might be a point
+;; in that in some cases, but probably in most cases it's best to apply
+;; it in reverse order, get the index, then do the usual thing -- in
+;; many cases applying the predicate on all items could be more
+;; expensive than the allocation needed for reverse.
+;;
+;; That's mildly useful in a completely unexciting way, but when it gets
+;; to the other *f-right functions, it gets worse in that the first
+;; approach won't work, so there's not much else to do than the second
+;; one -- reverse the list, look for the place where the predicate flips
+;; to #f, then use the non-f from-right functions above to do the work.
+
+(define (count-from-right who list pred)
+  (unless (procedure? pred)
+    (raise-argument-error who "procedure?" 0 list pred))
+  (let loop ([list list] [rev '()] [n 0])
+    (if (pair? list)
+      (loop (cdr list) (cons (car list) rev) (add1 n))
+      (let loop ([n n] [list rev])
+        (if (and (pair? list) (pred (car list)))
+          (loop (sub1 n) (cdr list))
+          n)))))
+
+(define (takef-right list pred)
+  (drop list (count-from-right 'takef-right list pred)))
+(define (dropf-right list pred)
+  (take list (count-from-right 'dropf-right list pred)))
+(define (splitf-at-right list pred)
+  (split-at list (count-from-right 'splitf-at-right list pred)))
 
 (define append*
   (case-lambda [(ls) (apply append ls)] ; optimize common case

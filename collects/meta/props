@@ -813,7 +813,7 @@ path/s is either such a string or a list of them.
 "collects/meta/images/mkheart.rkt" drdr:command-line #f
 "collects/meta/images/taking-screenshots/racket-widget.scm" drdr:command-line #f
 "collects/meta/planet2-index" responsible (jay)
-"collects/meta/planet2-index/official/main.rkt" drdr:command-line (raco "test" *)
+"collects/meta/planet2-index/official/main.rkt" drdr:command-line #f
 "collects/meta/planet2-index/planet-compat/main.rkt" drdr:command-line (raco "test" *)
 "collects/meta/props" responsible (eli jay) drdr:command-line (racket "-um" * "verify")
 "collects/meta/web" drdr:command-line #f
@@ -942,6 +942,7 @@ path/s is either such a string or a list of them.
 "collects/redex/tests/pict-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/rg-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/run-tests.rkt" drdr:command-line (racket * "--examples" "--no-bitmap-gui") drdr:timeout 360
+"collects/redex/tests/ryr-test.rkt" drdr:timeout 200
 "collects/redex/tests/stepper-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/term-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/test-docs-complete.rkt" drdr:command-line (raco "make" *)

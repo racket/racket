@@ -422,10 +422,11 @@
 (define (ybase-sum) (/ yscale-base (- 1 yscale-base)))
 (define (find-ybase-center)
   (define mid (/ (ybase-sum) 2))
-  (define sums (for/hash ([i 10]) (values (abs (- mid
-                                             (apply + (for/list ([k i]) 
-                                                        (expt yscale-base i)))))
-                                          i)))
+  (define sums (for/hash ([i 10])
+                 (values (abs (- mid
+                                 (apply + (for/list ([k i]) 
+                                            (expt yscale-base i)))))
+                         i)))
   (hash-ref sums (apply min (hash-keys sums))))
 
 
@@ -679,11 +680,12 @@
     (define/private (map-y-int y)
       (hash-ref map-y-int-memo y
                 (λ ()
-                  (define res (if (< 0 y)
-                                  (+ Y-SHIFT (* (apply + (for/list ([i (in-range 1 y)]) 
-                                                      (expt yscale-base i)))
-                                           y-scale))
-                                  (- Y-SHIFT (* (+ (abs y) 1) y-scale))))
+                  (define res
+                    (if (< 0 y)
+                        (+ Y-SHIFT (* (apply + (for/list ([i (in-range 1 y)]) 
+                                                 (expt yscale-base i)))
+                                      y-scale))
+                        (- Y-SHIFT (* (+ (abs y) 1) y-scale))))
                   (hash-set! map-y-int-memo y res)
                   res)))
     (define/private (map-y y)

@@ -25,6 +25,7 @@
 
 #include "schpriv.h"
 #include "nummacs.h"
+#include "longdouble/longdouble.h"
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
@@ -234,12 +235,12 @@ READ_ONLY Scheme_Object *scheme_single_inf_object, *scheme_single_minus_inf_obje
 #endif
 
 #ifdef MZ_LONG_DOUBLE
-READ_ONLY long double scheme_long_infinity_val;
-READ_ONLY long double scheme_long_minus_infinity_val;
-READ_ONLY long double scheme_long_floating_point_zero = 0.0L;
-READ_ONLY long double scheme_long_floating_point_nzero = 0.0L; /* negated below; many compilers treat -0.0 as 0.0, 
+READ_ONLY long_double scheme_long_infinity_val;
+READ_ONLY long_double scheme_long_minus_infinity_val;
+READ_ONLY long_double scheme_long_floating_point_zero;
+READ_ONLY long_double scheme_long_floating_point_nzero; /* negated below; many compilers treat -0.0 as 0.0, 
                                                                   but otherwise correctly implement fp negation */
-READ_ONLY static long double long_not_a_number_val;
+READ_ONLY static long_double long_not_a_number_val;
 
 READ_ONLY Scheme_Object *scheme_long_inf_object, *scheme_long_minus_inf_object, *scheme_long_nan_object;
 
@@ -271,8 +272,8 @@ static void to_double_prec(void)
 #if defined(ASM_DBLPREC_CONTROL_87) || defined(ASM_EXTPREC_CONTROL_87)
 static void to_extended_prec(void)
 {
-  int _dblprec = 0x37F;
-  asm ("fldcw %0" : : "m" (_dblprec));
+  int _extprec = 0x37F;
+  asm ("fldcw %0" : : "m" (_extprec));
 }
 #endif
 
@@ -301,6 +302,13 @@ void scheme_configure_floating_point(void)
      should do this, but explicitly masking exceptions
      makes Racket work under Bochs 2.1.1 with Win95 */
   _control87(_MCW_EM, _MCW_EM);
+  /* When MZ_LONG_DOUBLE is defined, it might make sense
+     to try to put the processor in extended-precision
+     mode, but control87() seems to disallow that, and
+     library functions seem to reset the mode, anyway.
+     So, we set and restore the mode as needed in
+     the "longdouble.c"-based DLL and JIT-generated
+     code. */
 #endif
 #ifdef ALPHA_CONTROL_FP
   {
@@ -410,40 +418,39 @@ scheme_init_number (Scheme_Env *env)
 #endif
 
 #ifdef MZ_LONG_DOUBLE
+  scheme_long_floating_point_zero = get_long_double_zero();
 #if defined(HUGE_VALL) && !defined(USE_DIVIDE_MAKE_INFINITY)
   scheme_long_infinity_val = HUGE_VALL;
 #else
 #ifndef USE_LONG_INFINITY_FUNC
-  scheme_long_infinity_val = 1.0L / scheme_long_floating_point_zero;
+  scheme_long_infinity_val = long_double_div(get_long_double_1(), scheme_long_floating_point_zero);
 #else
   scheme_long_infinity_val = long_infinity();
 #endif
 #endif
 
 #ifdef ZERO_LONG_MINUS_ZERO_IS_LONG_POS_ZERO
-  scheme_long_floating_point_nzero = -1.0L / scheme_long_infinity_val;
+  scheme_long_floating_point_nzero = long_double_div(long_double_neq(long_double_1(), scheme_long_infinity_val));
 #else
-  scheme_long_floating_point_nzero = - scheme_long_floating_point_nzero;
+  scheme_long_floating_point_nzero = long_double_neg(scheme_long_floating_point_nzero);
 #endif
 
-  scheme_long_minus_infinity_val = -scheme_long_infinity_val;
-  long_not_a_number_val = scheme_long_infinity_val + scheme_long_minus_infinity_val;
+  scheme_long_minus_infinity_val = long_double_neg(scheme_long_infinity_val);
+  long_not_a_number_val = long_double_plus(scheme_long_infinity_val, scheme_long_minus_infinity_val);
+  long_not_a_number_val = long_double_sqrt(long_double_neg(get_long_double_1()));
   
-  scheme_zerol = scheme_make_long_double(1.0L);
-  SCHEME_LONG_DBL_VAL(scheme_zerol) = 0.0L;
-  scheme_nzerol = scheme_make_long_double(-1.0L);
+  scheme_zerol = scheme_make_long_double(get_long_double_1());
+  SCHEME_LONG_DBL_VAL(scheme_zerol) = get_long_double_zero();
+  scheme_nzerol = scheme_make_long_double(long_double_neg(get_long_double_1()));
   SCHEME_LONG_DBL_VAL(scheme_nzerol) = scheme_long_floating_point_nzero;
   
-  scheme_long_pi = scheme_make_long_double(atan2l(0.0L, -1.0L));
-  scheme_long_half_pi = scheme_make_long_double(atan2l(0.0L, -1.0L)/2);
+  scheme_long_pi = scheme_make_long_double(get_long_double_pi());
+  scheme_long_half_pi = scheme_make_long_double(get_long_double_half_pi());
 
-  scheme_long_plus_i = scheme_make_complex(scheme_make_integer(0), scheme_make_integer(1));
-  scheme_long_minus_i = scheme_make_complex(scheme_make_integer(0), scheme_make_integer(-1));
-  
   scheme_long_inf_object = scheme_make_long_double(scheme_long_infinity_val);
   scheme_long_minus_inf_object = scheme_make_long_double(scheme_long_minus_infinity_val);
 #ifdef NAN_EQUALS_ANYTHING
-  scheme_long_nan_object = scheme_make_long_double(1L);
+  scheme_long_nan_object = scheme_make_long_double(get_long_double_1());
   SCHEME_LONG_DBL_VAL(scheme_long_nan_object) = long_not_a_number_val;
 #else
   scheme_long_nan_object = scheme_make_long_double(long_not_a_number_val);
@@ -1055,7 +1062,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extflvector-length", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_extflvector_ref, "extflvector-ref", 2, 2);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_BINARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1064,7 +1071,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extflvector-ref", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_extflvector_set, "extflvector-set!", 3, 3);
-  if (MZ_LONG_DOUBLE_AND(1))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(1))
     flags = SCHEME_PRIM_IS_NARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1073,7 +1080,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extflvector-set!", p, env);
 
   p = scheme_make_folding_prim(integer_to_extfl, "->extfl", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1082,7 +1089,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("->extfl", p, env);
 
   p = scheme_make_folding_prim(extfl_to_integer, "extfl->exact-integer", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_comp()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_comp()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1090,7 +1097,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extfl->exact-integer", p, env);
 
   p = scheme_make_folding_prim(real_to_long_double_flonum, "real->extfl", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1099,7 +1106,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("real->extfl", p, env);
 
   p = scheme_make_folding_prim(extfl_to_exact, "extfl->exact", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(1))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(1))
     flags = SCHEME_PRIM_IS_NARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1107,7 +1114,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extfl->exact", p, env);
   
   p = scheme_make_folding_prim(extfl_to_inexact, "extfl->inexact", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(1))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(1))
     flags = SCHEME_PRIM_IS_NARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1115,7 +1122,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extfl->inexact", p, env);
 
   p = scheme_make_folding_prim(fx_to_extfl, "fx->extfl", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1124,7 +1131,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("fx->extfl", p, env);
 
   p = scheme_make_folding_prim(extfl_to_fx, "extfl->fx", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_comp()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_comp()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1135,7 +1142,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
 
 
   p = scheme_make_folding_prim(extfl_truncate, "extfltruncate", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1145,7 +1152,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extfltruncate", p, env);
 
   p = scheme_make_folding_prim(extfl_round, "extflround", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1155,7 +1162,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extflround", p, env);
 
   p = scheme_make_folding_prim(extfl_ceiling, "extflceiling", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1165,7 +1172,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extflceiling", p, env);
 
   p = scheme_make_folding_prim(extfl_floor, "extflfloor", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1175,7 +1182,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extflfloor", p, env);
 
   p = scheme_make_folding_prim(extfl_sin, "extflsin", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1185,7 +1192,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extflsin", p, env);
 
   p = scheme_make_folding_prim(extfl_cos, "extflcos", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1195,7 +1202,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extflcos", p, env);
 
   p = scheme_make_folding_prim(extfl_tan, "extfltan", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1205,7 +1212,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extfltan", p, env);
 
   p = scheme_make_folding_prim(extfl_asin, "extflasin", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1215,7 +1222,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extflasin", p, env);
 
   p = scheme_make_folding_prim(extfl_acos, "extflacos", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1225,7 +1232,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extflacos", p, env);
 
   p = scheme_make_folding_prim(extfl_atan, "extflatan", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1235,7 +1242,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extflatan", p, env);
 
   p = scheme_make_folding_prim(extfl_log, "extfllog", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1245,7 +1252,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extfllog", p, env);
 
   p = scheme_make_folding_prim(extfl_exp, "extflexp", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1255,7 +1262,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   scheme_add_global_constant("extflexp", p, env);
 
   p = scheme_make_folding_prim(extfl_expt, "extflexpt", 2, 2, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_BINARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1438,7 +1445,7 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
   int flags;
 
   p = scheme_make_folding_prim(unsafe_fx_to_extfl, "unsafe-fx->extfl", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1448,7 +1455,7 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
   scheme_add_global_constant("unsafe-fx->extfl", p, env);
 
   p = scheme_make_folding_prim(unsafe_extfl_to_fx, "unsafe-extfl->fx", 1, 1, 1);
-  if (MZ_LONG_DOUBLE_AND(1))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(1))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1460,7 +1467,7 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
 
   p = scheme_make_immed_prim(unsafe_extflvector_length, "unsafe-extflvector-length",
                              1, 1);
-  if (MZ_LONG_DOUBLE_AND(1))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(1))
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1471,7 +1478,7 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
 
   p = scheme_make_immed_prim(unsafe_extflvector_ref, "unsafe-extflvector-ref",
                              2, 2);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_BINARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1483,7 +1490,7 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
 
   p = scheme_make_immed_prim(unsafe_extflvector_set, "unsafe-extflvector-set!",
                              3, 3);
-  if (MZ_LONG_DOUBLE_AND(1))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(1))
     flags = SCHEME_PRIM_IS_NARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1493,7 +1500,7 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
 
   p = scheme_make_immed_prim(extfl_ref, "unsafe-f80vector-ref",
                              2, 2);
-  if (MZ_LONG_DOUBLE_AND(scheme_can_inline_fp_op()))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
     flags = SCHEME_PRIM_IS_BINARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1505,7 +1512,7 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
   
   p = scheme_make_immed_prim(extfl_set, "unsafe-f80vector-set!",
                              3, 3);
-  if (MZ_LONG_DOUBLE_AND(1))
+  if (MZ_LONG_DOUBLE_AVAIL_AND(1))
     flags = SCHEME_PRIM_IS_NARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
@@ -1767,41 +1774,41 @@ Scheme_Object *scheme_make_double(double d)
 }
 
 #ifdef MZ_LONG_DOUBLE
-XFORM_NONGCING static MZ_INLINE int long_minus_zero_p(long double d)
+XFORM_NONGCING static MZ_INLINE int long_minus_zero_p(long_double d)
 {
-  return (1 / d) < 0;
+  return long_double_less(long_double_div(get_long_double_1(), d), get_long_double_zero());
 }
 
-int scheme_long_minus_zero_p(long double d)
+int scheme_long_minus_zero_p(long_double d)
 {
   return long_minus_zero_p(d);
 }
 
-long double scheme_real_to_long_double(Scheme_Object *r)
+long_double scheme_real_to_long_double(Scheme_Object *r)
 {
   if (SCHEME_INTP(r))
-    return (long double)SCHEME_INT_VAL(r);
+    return long_double_from_int(SCHEME_INT_VAL(r));
   else if (SCHEME_DBLP(r))
-    return (long double)SCHEME_DBL_VAL(r);
+    return long_double_from_double(SCHEME_DBL_VAL(r));
   else if (SCHEME_LONG_DBLP(r))
     return SCHEME_LONG_DBL_VAL(r);
 #ifdef MZ_USE_SINGLE_FLOATS
   else if (SCHEME_FLTP(r))
-    return (long double)SCHEME_FLT_VAL(r);
+    return long_double_from_float(SCHEME_FLT_VAL(r));
 #endif
   else if (SCHEME_BIGNUMP(r))
     return scheme_bignum_to_long_double(r);
   else if (SCHEME_RATIONALP(r))
     return scheme_rational_to_long_double(r);
   else
-    return 0.0L;
+    return get_long_double_zero();
 }
 
-Scheme_Object *scheme_make_long_double(long double d)
+Scheme_Object *scheme_make_long_double(long_double d)
 {
   GC_CAN_IGNORE Scheme_Long_Double *sd;
   
-  if (d == 0.0L) {
+  if (long_double_eqv(d, get_long_double_zero())) {
     if (long_minus_zero_p(d))
       return scheme_nzerol;
 #ifdef NAN_EQUALS_ANYTHING
@@ -1985,7 +1992,7 @@ static Scheme_Object *
 extflonum_available_p(int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE
-  return scheme_true;
+  return (long_double_available() ? scheme_true : scheme_false);
 #else
   return scheme_false;
 #endif
@@ -2033,11 +2040,11 @@ static Scheme_Object *
 real_to_long_double_flonum (int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE
+  CHECK_MZ_LONG_DOUBLE_UNSUPPORTED("real->extfl");
   return scheme_TO_LONG_DOUBLE(argv[0]);
 #else
-  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-                   "real->extfl: " NOT_SUPPORTED_STR);
-  return NULL;
+  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED, "real->extfl" ": " NOT_SUPPORTED_STR);
+  ESCAPED_BEFORE_HERE;
 #endif
 }
 
@@ -2510,42 +2517,42 @@ double scheme_double_floor(double x) { return floor(x); }
 double scheme_double_ceiling(double x) { return ceil(x); }
 
 #ifdef MZ_LONG_DOUBLE
-XFORM_NONGCING static long double SCH_ROUNDL(long double d)
+XFORM_NONGCING static long_double SCH_ROUNDL(long_double d)
 {
-  long double i, frac;
+  long_double i, frac;
   int invert;
 
 #ifdef FMOD_CAN_RETURN_POS_ZERO
-  if ((d == 0.0L) && long_minus_zero_p(d))
+  if (long_double_eqv(d, get_long_double_zero()) && long_minus_zero_p(d))
     return d;
 #endif
 
-  if (d < 0.0L) {
-    d = -d;
+  if (long_double_less(d, get_long_double_zero())) {
+    d = long_double_neg(d);
     invert = 1;
   } else
     invert = 0;
 
-  frac = modfl(d, &i);
-  if (frac < 0.5L)
+  frac = long_double_modf(d, &i);
+  if (long_double_less(frac, get_long_double_one_half()))
     d = i;
-  else if (frac > 0.5L)
-    d = i + 1;
-  else if (fmodl(i, 2.0L) != 0.0L)
-    d = i + 1;
+  else if (long_double_greater(frac, get_long_double_one_half()))
+    d = long_double_plus(i, get_long_double_1());
+  else if (!long_double_eqv(long_double_fmod(i, get_long_double_2()), get_long_double_zero()))
+    d = long_double_plus(i, get_long_double_1());
   else
     d = i;
 
   if (invert)
-    d = -d;
+    d = long_double_neg(d);
 
   return d;
 }
 
-long double scheme_long_double_truncate(long double x) { return truncl(x); }
-long double scheme_long_double_round(long double x) { return SCH_ROUNDL(x); }
-long double scheme_long_double_floor(long double x) { return floorl(x); }
-long double scheme_long_double_ceiling(long double x) { return ceill(x); }
+long_double scheme_long_double_truncate(long_double x) { return long_double_trunc(x); }
+long_double scheme_long_double_round(long_double x) { return SCH_ROUNDL(x); }
+long_double scheme_long_double_floor(long_double x) { return long_double_floor(x); }
+long_double scheme_long_double_ceiling(long_double x) { return long_double_ceil(x); }
 #endif
 
 #ifdef MZ_USE_SINGLE_FLOATS
@@ -2922,6 +2929,24 @@ static double SCH_ATAN(double v)
   return v;
 }
 
+static double SCH_ATAN2(double v, double v2)
+{
+#ifdef ATAN2_DOESNT_WORK_WITH_INFINITIES
+  if (MZ_IS_INFINITY(v) && MZ_IS_INFINITY(v2)) {
+    v = MZ_IS_POS_INFINITY(v) ? 1.0 : -1.0;
+    v2 = MZ_IS_POS_INFINITY(v2) ? 1.0 : -1.0;
+  }
+#endif
+  
+#ifdef ATAN2_DOESNT_WORK_WITH_NAN
+  if (MZ_IS_NAN(v) || MZ_IS_NAN(v2))
+    return scheme_nan_object;
+#endif
+  
+  return atan2(v, v2);
+}
+
+
 #ifdef LOG_ZERO_ISNT_NEG_INF
 static double SCH_LOG(double d) { if (d == 0.0) return scheme_minus_infinity_val; else return log(d); }
 #else
@@ -2939,14 +2964,14 @@ double scheme_double_log(double x) { return SCH_LOG(x); }
 double scheme_double_exp(double x) { return exp(x); }
 
 #ifdef MZ_LONG_DOUBLE
-long double scheme_long_double_sin(long double x) { return sinl(x); }
-long double scheme_long_double_cos(long double x) { return cosl(x); }
-long double scheme_long_double_tan(long double x) { return tanl(x); }
-long double scheme_long_double_asin(long double x) { return asinl(x); }
-long double scheme_long_double_acos(long double x) { return acosl(x); }
-long double scheme_long_double_atan(long double x) { return atanl(x); }
-long double scheme_long_double_log(long double x) { return logl(x); }
-long double scheme_long_double_exp(long double x) { return exp(x); }
+long_double scheme_long_double_sin(long_double x) { return long_double_sin(x); }
+long_double scheme_long_double_cos(long_double x) { return long_double_cos(x); }
+long_double scheme_long_double_tan(long_double x) { return long_double_tan(x); }
+long_double scheme_long_double_asin(long_double x) { return long_double_asin(x); }
+long_double scheme_long_double_acos(long_double x) { return long_double_acos(x); }
+long_double scheme_long_double_atan(long_double x) { return long_double_atan(x); }
+long_double scheme_long_double_log(long_double x) { return long_double_log(x); }
+long_double scheme_long_double_exp(long_double x) { return long_double_exp(x); }
 #endif
 
 
@@ -3078,19 +3103,7 @@ atan_prim (int argc, Scheme_Object *argv[])
       }
     }
 
-#ifdef ATAN2_DOESNT_WORK_WITH_INFINITIES
-    if (MZ_IS_INFINITY(v) && MZ_IS_INFINITY(v2)) {
-      v = MZ_IS_POS_INFINITY(v) ? 1.0 : -1.0;
-      v2 = MZ_IS_POS_INFINITY(v2) ? 1.0 : -1.0;
-    }
-#endif
-
-#ifdef ATAN2_DOESNT_WORK_WITH_NAN
-    if (MZ_IS_NAN(v) || MZ_IS_NAN(v2))
-      return scheme_nan_object;
-#endif
-
-    v = atan2(v, v2);
+    v = SCH_ATAN2(v, v2);
   } else { /* 1-argument case */
     if (argv[0] == zeroi)
       return zeroi;
@@ -3258,7 +3271,7 @@ static double protected_pow(double x, double y)
      word while calling pow(); note that the x87 control 
      word is thread-specific */
 #ifndef MZ_LONG_DOUBLE
-  to_extended_prec(); 
+  to_extended_prec();
 #endif
   x = pow(x, y);
 #ifndef MZ_LONG_DOUBLE
@@ -3268,10 +3281,10 @@ static double protected_pow(double x, double y)
 }
 
 #ifdef MZ_LONG_DOUBLE
-static long double protected_powl(long double x, long double y)
+static long_double protected_powl(long_double x, long_double y)
 {
   /* we use extended precision at all */
-  x = powl(x, y);
+  x = long_double_pow(x, y);
   return x;
 }
 #endif
@@ -3279,7 +3292,7 @@ static long double protected_powl(long double x, long double y)
 #else
 # define protected_pow pow
 # ifdef MZ_LONG_DOUBLE
-#  define protected_powl powl
+#  define protected_powl long_double_pow
 # endif
 #endif
 
@@ -3373,25 +3386,25 @@ static double sch_pow(double x, double y)
 }
 
 #ifdef MZ_LONG_DOUBLE
-static long double sch_powl(long double x, long double y)
+static long_double sch_powl(long_double x, long_double y)
 {
   /* Like sch_pow(), but with an extra case for x < 0 and non-integer y */
 
-  if (x == 1.0L)
-    return 1.0L; /* even for NaN */
-  else if (y == 0.0L)
-    return 1.0L; /* even for NaN */
+  if (long_double_eqv(x, get_long_double_1()))
+    return get_long_double_1(); /* even for NaN */
+  else if (long_double_is_zero(y))
+    return get_long_double_1(); /* even for NaN */
   else if (MZ_IS_LONG_NAN(x))
     return long_not_a_number_val;
   else if (MZ_IS_LONG_NAN(y))
     return long_not_a_number_val;
-  else if (x == 0.0L) {
+  else if (long_double_eqv(x, get_long_double_zero())) {
     int neg = 0;
-    if (y < 0L) {
+    if (long_double_less(y, get_long_double_zero())) {
       neg = 1;
-      y = -y;
+      y = long_double_neg(y);
     }
-    if (fmodl(y, 2.0L) == 1.0L) {
+    if (long_double_eqv(long_double_fmod(y, get_long_double_2()), get_long_double_1())) {
       if (neg) {
         if (long_minus_zero_p(x))
           return scheme_long_minus_infinity_val;
@@ -3403,45 +3416,45 @@ static long double sch_powl(long double x, long double y)
       if (neg)
         return scheme_long_infinity_val;
       else
-        return 0.0L;
+        return get_long_double_zero();
     }    
   } else if (MZ_IS_LONG_POS_INFINITY(y)) {
-    if (x == -1.0L)
-      return 1.0L;
-    else if ((x < 1.0L) && (x > -1.0L))
-      return 0.0L;
+    if (long_double_eqv(x, get_long_double_minus_1()))
+      return get_long_double_1();
+    else if ((long_double_less(x, get_long_double_1())) && (long_double_greater(x, get_long_double_minus_1())))
+      return get_long_double_zero();
     else
       return scheme_long_infinity_val;
   } else if (MZ_IS_LONG_NEG_INFINITY(y)) {
-    if (x == -1.0L)
-      return 1.0L;
-    else if ((x < 1.0L) && (x > -1.0L))
+    if (long_double_eqv(x, get_long_double_minus_1()))
+      return get_long_double_1();
+    else if (long_double_less(x, get_long_double_1()) && (long_double_greater(x, get_long_double_minus_1())))
       return scheme_long_infinity_val;
     else
-      return 0.0L;
+      return get_long_double_zero();
   } else if (MZ_IS_LONG_POS_INFINITY(x)) {
-    if (y < 0.0L)
-      return 0.0L;
+    if (long_double_less(y, get_long_double_zero()))
+      return get_long_double_zero();
     else
       return scheme_long_infinity_val;
   } else if (MZ_IS_LONG_NEG_INFINITY(x)) {
     int neg = 0;
-    if (y < 0.0L) {
+    if (long_double_less(y, get_long_double_zero())) {
       neg = 1;
-      y = -y;
+      y = long_double_neg(y);
     }
-    if (fmodl(y, 2.0L) == 1.0L) {
+    if (long_double_eqv(long_double_fmod(y, get_long_double_2()), get_long_double_1())) {
       if (neg)
         return scheme_long_floating_point_nzero;
       else
         return scheme_long_minus_infinity_val;
     } else {
       if (neg)
-        return 0.0L;
+        return get_long_double_zero();
       else
         return scheme_long_infinity_val;
     }
-  } else if ((x < 0.0L) && (y != floorl(y))) {
+  } else if (long_double_less(x, get_long_double_zero()) && (!long_double_eqv(y, long_double_floor(y)))) {
     /* powl() on some platforms has trouble with this case */
     return long_not_a_number_val;
   } else {
@@ -3613,7 +3626,7 @@ double scheme_double_expt(double x, double y) {
 }
 
 #ifdef MZ_LONG_DOUBLE
-long double scheme_long_double_expt(long double x, long double y) {
+long_double scheme_long_double_expt(long_double x, long_double y) {
   return sch_powl(x, y);
 }
 #endif
@@ -3801,7 +3814,7 @@ static Scheme_Object *angle(int argc, Scheme_Object *argv[])
     id = TO_DOUBLE_VAL(i);
     rd = TO_DOUBLE_VAL(r);
 
-    v = atan2(id, rd);
+    v = SCH_ATAN2(id, rd);
 
 #ifdef MZ_USE_SINGLE_FLOATS
     if (was_single)
@@ -3960,13 +3973,13 @@ static Scheme_Object *exact_to_extfl (int argc, Scheme_Object *argv[])
   Scheme_Type t;
 
   if (SCHEME_INTP(o))
-    return scheme_make_long_double(SCHEME_INT_VAL(o));
+    return scheme_make_long_double(long_double_from_int(SCHEME_INT_VAL(o)));
 
   t = _SCHEME_TYPE(o);
   if (t == scheme_float_type)
-    return scheme_make_long_double(SCHEME_FLOAT_VAL(o));
+    return scheme_make_long_double(long_double_from_double(SCHEME_FLOAT_VAL(o)));
   if (t == scheme_double_type)
-    return scheme_make_long_double(SCHEME_DBL_VAL(o));
+    return scheme_make_long_double(long_double_from_double(SCHEME_DBL_VAL(o)));
   if (t == scheme_long_double_type)
     return o;
   if (t == scheme_bignum_type)
@@ -3985,7 +3998,9 @@ extfl_to_exact (int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE
   Scheme_Object *o = argv[0], *i;
-  long double d;
+  long_double d;
+
+  CHECK_MZ_LONG_DOUBLE_UNSUPPORTED("extfl->exact");
 
   if (!SCHEME_LONG_DBLP(o))
     scheme_wrong_type("extfl->exact", "extflonum", 0, argc, argv);
@@ -3993,8 +4008,8 @@ extfl_to_exact (int argc, Scheme_Object *argv[])
   d = SCHEME_LONG_DBL_VAL(o);
 
   /* Try simple case: */
-  i = scheme_make_integer((intptr_t)d);
-  if ((long double)SCHEME_INT_VAL(i) == d) {
+  i = scheme_make_integer((intptr_t)int_from_long_double(d));
+  if (long_double_eqv_i(int_from_long_double(d), d)) {
 # ifdef NAN_EQUALS_ANYTHING
     if (!MZ_IS_LONG_NAN(d))
 #endif
@@ -4003,9 +4018,8 @@ extfl_to_exact (int argc, Scheme_Object *argv[])
   
   return scheme_rational_from_long_double(d);
 #else
-  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-                   "extfl->exact: " NOT_SUPPORTED_STR);
-  return NULL;
+  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED, "extfl->exact" ": " NOT_SUPPORTED_STR);
+  ESCAPED_BEFORE_HERE;
 #endif
 }
 
@@ -4015,10 +4029,12 @@ extfl_to_inexact (int argc, Scheme_Object *argv[])
 #ifdef MZ_LONG_DOUBLE
   Scheme_Object *o = argv[0];
 
+  CHECK_MZ_LONG_DOUBLE_UNSUPPORTED("extfl->inexact");
+
   if (!SCHEME_LONG_DBLP(o))
     scheme_wrong_type("extfl->inexact", "extflonum", 0, argc, argv);
 
-  return scheme_make_double(SCHEME_LONG_DBL_VAL(o));
+  return scheme_make_double(double_from_long_double(SCHEME_LONG_DBL_VAL(o)));
 #else
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
                    "extfl->inexact: " NOT_SUPPORTED_STR);
@@ -4523,6 +4539,9 @@ Scheme_Object *scheme_checked_flvector_set (int argc, Scheme_Object *argv[])
 
 #ifndef MZ_LONG_DOUBLE
 # define Scheme_Long_Double_Vector void
+#endif
+
+#if !defined(MZ_LONG_DOUBLE) || defined(MZ_LONG_DOUBLE_API_IS_EXTERNAL)
 static Scheme_Object *unsupported(const char *name)
 {
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
@@ -4539,7 +4558,7 @@ Scheme_Long_Double_Vector *scheme_alloc_extflvector(intptr_t size)
 
   vec = (Scheme_Long_Double_Vector *)scheme_malloc_fail_ok(scheme_malloc_atomic_tagged, 
                                                            sizeof(Scheme_Long_Double_Vector) 
-                                                           + ((size - mzFLEX_DELTA) * sizeof(long double)));
+                                                           + ((size - mzFLEX_DELTA) * sizeof(long_double)));
   vec->iso.so.type = scheme_extflvector_type;
   vec->size = size;
   
@@ -4574,6 +4593,8 @@ static Scheme_Object *do_extflvector (const char *name, Scheme_Long_Double_Vecto
 {
 #ifdef MZ_LONG_DOUBLE
   int i;
+
+  WHEN_LONG_DOUBLE_UNSUPPORTED(unsupported(name));
 
   for (i = 0; i < argc; i++) {
     if (!SCHEME_LONG_DBLP(argv[i])) {
@@ -4612,8 +4633,10 @@ static Scheme_Object *do_make_extflvector (const char *name, int as_shared, int 
 #ifdef MZ_LONG_DOUBLE
   Scheme_Long_Double_Vector *vec;
   intptr_t size;
-  long double d;
+  long_double d;
   int i;
+
+  WHEN_LONG_DOUBLE_UNSUPPORTED(unsupported(name));
 
   if (SCHEME_INTP(argv[0]))
     size = SCHEME_INT_VAL(argv[0]);
@@ -4642,7 +4665,7 @@ static Scheme_Object *do_make_extflvector (const char *name, int as_shared, int 
   if (argc > 1)
     d = SCHEME_LONG_DBL_VAL(argv[1]);
   else
-    d = 0.0L;
+    d = get_long_double_zero();
   for (i = 0; i < size; i++) {
     vec->els[i] = d;
   }
@@ -4666,6 +4689,8 @@ static Scheme_Object *make_shared_extflvector (int argc, Scheme_Object *argv[])
 Scheme_Object *scheme_extflvector_length(Scheme_Object *vec)
 {
 #ifdef MZ_LONG_DOUBLE
+  WHEN_LONG_DOUBLE_UNSUPPORTED(unsupported("extflvector-length"));
+
   if (!SCHEME_EXTFLVECTORP(vec))
     scheme_wrong_contract("extflvector-length", "extflvector?", 0, 1, &vec);
 
@@ -4678,10 +4703,14 @@ Scheme_Object *scheme_extflvector_length(Scheme_Object *vec)
 static Scheme_Object *extfl_ref (int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE
-  long double v;
+  long_double v;
   Scheme_Object *p;
+
+  WHEN_LONG_DOUBLE_UNSUPPORTED(unsupported("unsafe-f80vector-ref"));
+
   p = ((Scheme_Structure *)argv[0])->slots[0];
-  v = ((long double *)SCHEME_CPTR_VAL(p))[SCHEME_INT_VAL(argv[1])];
+
+  v = long_double_array_ref(SCHEME_CPTR_VAL(p), SCHEME_INT_VAL(argv[1]));
   return scheme_make_long_double(v);
 #else
   return unsupported("unsafe-f80vector-ref");
@@ -4693,7 +4722,8 @@ static Scheme_Object *extfl_set (int argc, Scheme_Object *argv[])
 #ifdef MZ_LONG_DOUBLE
   Scheme_Object *p;
   p = ((Scheme_Structure *)argv[0])->slots[0];
-  ((long double *)SCHEME_CPTR_VAL(p))[SCHEME_INT_VAL(argv[1])] = SCHEME_LONG_DBL_VAL(argv[2]);
+
+  long_double_array_set(SCHEME_CPTR_VAL(p), SCHEME_INT_VAL(argv[1]), SCHEME_LONG_DBL_VAL(argv[2]));
   return scheme_void;
 #else
   return unsupported("unsafe-f80vector-set!");
@@ -4708,9 +4738,11 @@ static Scheme_Object *extflvector_length (int argc, Scheme_Object *argv[])
 Scheme_Object *scheme_checked_extflvector_ref (int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE
-  long double d;
+  long_double d;
   Scheme_Object *vec;
   intptr_t len, pos;
+
+  WHEN_LONG_DOUBLE_UNSUPPORTED(unsupported("extflvector-ref"));
 
   vec = argv[0];
   if (!SCHEME_EXTFLVECTORP(vec))
@@ -4739,6 +4771,8 @@ Scheme_Object *scheme_checked_extflvector_set (int argc, Scheme_Object *argv[])
 #ifdef MZ_LONG_DOUBLE
   Scheme_Object *vec;
   intptr_t len, pos;
+
+  WHEN_LONG_DOUBLE_UNSUPPORTED(unsupported("extflvector-set!"));
 
   vec = argv[0];
   if (!SCHEME_EXTFLVECTORP(vec))
@@ -5061,9 +5095,10 @@ static Scheme_Object *fx_to_extfl (int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE
   intptr_t v;
+  WHEN_LONG_DOUBLE_UNSUPPORTED(unsupported("fx->extfl"));
   if (!SCHEME_INTP(argv[0])) scheme_wrong_contract("fx->extfl", "fixnum?", 0, argc, argv);
   v = SCHEME_INT_VAL(argv[0]);
-  return scheme_make_long_double(v);
+  return scheme_make_long_double(long_double_from_int(v));
 #else
   return unsupported("fx->extfl");
 #endif
@@ -5072,17 +5107,18 @@ static Scheme_Object *fx_to_extfl (int argc, Scheme_Object *argv[])
 static Scheme_Object *extfl_to_fx (int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE
-  long double d;
+  long_double d;
   intptr_t v;
   Scheme_Object *o;
 
-  if (!SCHEME_LONG_DBLP(argv[0])
-      /* && !scheme_is_integer(argv[0]) */)
+  WHEN_LONG_DOUBLE_UNSUPPORTED(unsupported("extfl->fx"));
+
+  if (!SCHEME_LONG_DBLP(argv[0]))
     scheme_wrong_contract("extfl->fx", "(and/c extflonum?)", 0, argc, argv);
 
   d = SCHEME_LONG_DBL_VAL(argv[0]);
-  v = (intptr_t)d;
-  if ((long double)v == d) {
+  v = (intptr_t)int_from_long_double(d);
+  if (long_double_eqv_i(v, d)) {
     o = scheme_make_integer_value(v);
     if (SCHEME_INTP(o))
       return o;
@@ -5101,7 +5137,8 @@ static Scheme_Object *extfl_to_fx (int argc, Scheme_Object *argv[])
 # define SAFE_EXTFL(op) \
   static Scheme_Object * extfl_ ## op (int argc, Scheme_Object *argv[]) \
   {                                                                     \
-    long double v;                                                           \
+    long_double v;                                                           \
+    WHEN_LONG_DOUBLE_UNSUPPORTED(unsupported("extfl" #op));             \
     if (!SCHEME_LONG_DBLP(argv[0])) scheme_wrong_contract("extfl" #op, "extflonum?", 0, argc, argv); \
     v = scheme_long_double_ ## op (SCHEME_LONG_DBL_VAL(argv[0]));       \
       return scheme_make_long_double(v);                                \
@@ -5131,7 +5168,7 @@ SAFE_EXTFL(log)
 # define SAFE_BIN_EXTFL(op)                                              \
   static Scheme_Object * extfl_ ## op (int argc, Scheme_Object *argv[]) \
   {                                                                     \
-    long double v;                                                      \
+    long_double v;                                                      \
     if (!SCHEME_LONG_DBLP(argv[0])) scheme_wrong_contract("extfl" #op, "extflonum?", 0, argc, argv); \
     if (!SCHEME_LONG_DBLP(argv[1])) scheme_wrong_contract("extfl" #op, "extflonum?", 1, argc, argv); \
     v = scheme_long_double_ ## op (SCHEME_LONG_DBL_VAL(argv[0]), SCHEME_LONG_DBL_VAL(argv[1])); \
@@ -5234,7 +5271,7 @@ static Scheme_Object *unsafe_fx_to_extfl (int argc, Scheme_Object *argv[])
   intptr_t v;
   if (scheme_current_thread->constant_folding) return exact_to_extfl(argc, argv);
   v = SCHEME_INT_VAL(argv[0]);
-  return scheme_make_long_double(v);
+  return scheme_make_long_double(long_double_from_int(v));
 #else
   return fx_to_extfl(argc, argv);
 #endif
@@ -5245,7 +5282,7 @@ static Scheme_Object *unsafe_extfl_to_fx (int argc, Scheme_Object *argv[])
 #ifdef MZ_LONG_DOUBLE
   intptr_t v;
   if (scheme_current_thread->constant_folding) return extfl_to_exact(argc, argv);
-  v = (intptr_t)(SCHEME_LONG_DBL_VAL(argv[0]));
+  v = (intptr_t)int_from_long_double(SCHEME_LONG_DBL_VAL(argv[0]));
   return scheme_make_integer(v);
 #else
   return extfl_to_fx(argc, argv);
@@ -5265,7 +5302,7 @@ static Scheme_Object *unsafe_extflvector_ref (int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE
   intptr_t pos;
-  long double d;
+  long_double d;
 
   pos = SCHEME_INT_VAL(argv[1]);
   d = SCHEME_EXTFLVEC_ELS(argv[0])[pos];
@@ -5389,6 +5426,7 @@ static Scheme_Object *unsafe_flimag_part (int argc, Scheme_Object *argv[])
 static Scheme_Object *integer_to_extfl (int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE
+  WHEN_LONG_DOUBLE_UNSUPPORTED(unsupported("->extfl"));
   if (SCHEME_INTP(argv[0])
       || SCHEME_BIGNUMP(argv[0])) {
     return exact_to_extfl(argc, argv);
@@ -5404,6 +5442,7 @@ static Scheme_Object *integer_to_extfl (int argc, Scheme_Object *argv[])
 static Scheme_Object *extfl_to_integer (int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE
+  WHEN_LONG_DOUBLE_UNSUPPORTED(unsupported("extfl->exact-integer"));
   if (SCHEME_LONG_DBLP(argv[0])) {
     Scheme_Object *o;
     o = extfl_to_exact(argc, argv);
@@ -5417,3 +5456,7 @@ static Scheme_Object *extfl_to_integer (int argc, Scheme_Object *argv[])
   return unsupported("extfl->exact-integer");
 #endif
 }
+
+#ifdef MZ_LONG_DOUBLE_API_IS_EXTERNAL
+# include "longdouble/longdouble.c"
+#endif

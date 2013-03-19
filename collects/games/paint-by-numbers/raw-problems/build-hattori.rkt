@@ -31,10 +31,10 @@
 	 [new-bitmap-height (floor (/ (- puzzle-height 1) pixel-size))])
 
     (begin
-    (eprintf "size of picture: ~a x ~a\n" raw-width raw-height)
-    (eprintf "  size of image: ~a x ~a\n" image-width image-height)
-    (eprintf "grid-start (~a, ~a)\n" grid-x-start grid-y-start)
-    (eprintf "size of puzzle: ~a x ~a\n" puzzle-width puzzle-height))
+      (eprintf "size of picture: ~a x ~a\n" raw-width raw-height)
+      (eprintf "  size of image: ~a x ~a\n" image-width image-height)
+      (eprintf "grid-start (~a, ~a)\n" grid-x-start grid-y-start)
+      (eprintf "size of puzzle: ~a x ~a\n" puzzle-width puzzle-height))
     (reverse
      (let loop ([j new-bitmap-height])
        (cond

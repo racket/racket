@@ -433,10 +433,10 @@
                                                   (car spec)))
                                            arg-specs)
                                     #'unknown)])
-                    (cons var
-                          (if (ormap (lambda (x) (bound-identifier=? var x)) by-value-vars)
-                              spec
-                              (list 'by-name spec)))))
+                      (cons var
+                            (if (ormap (lambda (x) (bound-identifier=? var x)) by-value-vars)
+                                spec
+                                (list 'by-name spec)))))
                   arg-vars)
              context))
      

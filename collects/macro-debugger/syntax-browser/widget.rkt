@@ -134,32 +134,32 @@
         (define range (send/i display display<%> get-range))
         (define offset (send/i display display<%> get-start-position))
         (with-log-time "substitutions"
-        (for ([subst (in-list substitutions)])
-          (for ([r (in-list (send/i range range<%> get-ranges (car subst)))])
-            (send -text insert (cdr subst)
-                  (+ offset (car r))
-                  (+ offset (cdr r))
-                  #f)
-            (send -text change-style
-                  (code-style -text (send/i config config<%> get-syntax-font-size))
-                  (+ offset (car r))
-                  (+ offset (cdr r))
-                  #f))))
+         (for ([subst (in-list substitutions)])
+           (for ([r (in-list (send/i range range<%> get-ranges (car subst)))])
+             (send -text insert (cdr subst)
+                   (+ offset (car r))
+                   (+ offset (cdr r))
+                   #f)
+             (send -text change-style
+                   (code-style -text (send/i config config<%> get-syntax-font-size))
+                   (+ offset (car r))
+                   (+ offset (cdr r))
+                   #f))))
         ;; Apply highlighting
         (with-log-time "highlights"
-        (for ([hi-stxs (in-list hi-stxss)] [hi-color (in-list hi-colors)])
-          (send/i display display<%> highlight-syntaxes hi-stxs hi-color)))
+         (for ([hi-stxs (in-list hi-stxss)] [hi-color (in-list hi-colors)])
+           (send/i display display<%> highlight-syntaxes hi-stxs hi-color)))
         ;; Underline binders (and shifted binders)
         (with-log-time "underline binders"
-        (send/i display display<%> underline-syntaxes
-                (let ([binder-list (hash-map binders (lambda (k v) k))])
-                  (append (apply append (map get-shifted binder-list))
-                          binder-list))))
+         (send/i display display<%> underline-syntaxes
+                 (let ([binder-list (hash-map binders (lambda (k v) k))])
+                   (append (apply append (map get-shifted binder-list))
+                           binder-list))))
         (send display refresh)
 
         ;; Make arrows (& billboards, when enabled)
         (with-log-time "add arrows"
-        (when (send config get-draw-arrows?)
+         (when (send config get-draw-arrows?)
           (define (definite-phase id)
             (and definites
                  (or (eomap-ref definites id #f)

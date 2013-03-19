@@ -114,7 +114,8 @@
 (define-metafunction lang
   [(T x y)
    1
-   (side-condition (not (eq? (term x) (term y))))]
+   (side-condition (not (eq? (term x) (term y))))
+   (clause-name first-one)]
   [(T x x) 
    (any_1 any_2)
    (where any_1 2)
@@ -123,7 +124,9 @@
 ;; in this test, the metafunction has 2 clauses 
 ;; with a side-condition on the first clause
 ;; and a 'where' in the second clause
-(btest (render-metafunction T) "metafunction-T.png")
+(btest (parameterize ([metafunction-cases '("first-one" 1)])
+         (render-metafunction T))
+       "metafunction-T.png")
 
 ;; in this test, the `x' is italic and the 'z' is sf, since 'x' is in the grammar, and 'z' is not.
 (btest (render-lw 

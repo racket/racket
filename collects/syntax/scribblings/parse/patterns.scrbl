@@ -218,7 +218,7 @@ An identifier can be either a @tech{pattern variable}, an
 @item{If @racket[id] is of the form @racket[_pvar-id:syntax-class-id]
   (that is, two names joined by a colon character), it is an
   @tech{annotated pattern variable}, and the pattern is equivalent to
-  @racket[(~var pvar-id syntax-class-id)].
+  @racket[(~var _pvar-id _syntax-class-id)].
 
   @myexamples[
     (syntax-parse #'a
@@ -235,6 +235,10 @@ An identifier can be either a @tech{pattern variable}, an
      #:declare t two
      (syntax->datum #'(t t.x t.y))])
   ]
+
+  Note that an @racket[id] of the form @racket[_:syntax-class-id] is
+  legal; see the discussion of a @ref[~var s+] form with a zero-length
+  @svar[pvar-id].
 }
 
 @item{Otherwise, @racket[id] is a @tech{pattern variable}, and the
@@ -265,7 +269,7 @@ class inserted.
 
 An @deftech{annotated pattern variable}. The pattern matches only
 terms accepted by @svar[syntax-class-id] (parameterized by the
-@racket[arg-expr]s, if present).
+@racket[arg]s, if present).
 
 In addition to binding @svar[pvar-id], an annotated pattern
 variable also binds @deftech{nested attributes} from the syntax
@@ -273,7 +277,10 @@ class. The names of the nested attributes are formed by prefixing
 @svar[pvar-id.] (that is, @svar[pvar-id] followed by a ``dot''
 character) to the name of the syntax class's attribute.
 
-If @svar[pvar-id] is @racket[_], no attributes are bound.
+If @svar[pvar-id] is @racket[_], no attributes are bound.  If
+@svar[pvar-id] is the zero-length identifier (@racket[||]), then
+@svar[pvar-id] is not bound, but the nested attributes of
+@racket[syntax-class-use] are bound without prefixes.
 
 If @racket[role-expr] is given and evaluates to a string, it is
 combined with the syntax class's description in error messages.

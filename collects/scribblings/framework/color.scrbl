@@ -1,7 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual scribble/extract)
-@(require (for-label framework))
-@(require (for-label scheme/gui))
+@(require (for-label framework scheme/gui syntax-color/lexer-contract))
 @title{Color}
 
 @definterface[color:text<%> (text:basic<%>)]{
@@ -17,7 +16,7 @@
                                                          (or/c exact-positive-integer? #f)))
                                              (-> input-port? 
                                                  exact-nonnegative-integer?
-                                                 any/c
+                                                 (not/c dont-stop?)
                                                  (values any/c 
                                                          symbol? 
                                                          (or/c symbol? #f)
@@ -57,20 +56,36 @@
           is also relative to the port's location, just like the previous value.}]
 
     When @racket[get-token] accepts an offset and mode value in addition to an
-    input port, it must also return two extra results, which are a backup
-    distance and new mode. The offset given to @racket[get-token] can be added
+    input port, it must also return two extra results.
+    The offset given to @racket[get-token] can be added
     to the position of the input port to obtain absolute coordinates within a
-    text stream. The mode argument allows @racket[get-token] to communicate
+    text stream. The extra two results are
+    @itemize[@item{a new mode; 
+    The mode argument allows @racket[get-token] to communicate
     information from earlier parsing to later.  When @racket[get-token] is
     called for the beginning on a stream, the mode argument is @racket[#f];
     thereafter, the mode returned for the previous token is provided to
-    @racket[get-token] for the next token. The mode should not be a mutable
+    @racket[get-token] for the next token. 
+    
+    If the mode result is a @racket[dont-stop] struct, then the value inside
+    the struct is considered the new mode, and the colorer is guaranteed
+    not to be interrupted until at least the next call to this tokenizing
+    function that does not return a @racket[dont-stop] struct (unless, of course,
+    it returns an eof token, in which case the new mode result is ignored).
+    This is useful, for example, when a lexer has to read ahead in the buffer
+    to decide on the tokens at this point; then that read-ahead will be 
+    inconsistent if an edit happens; returning a @racket[dont-stop]
+    struct ensures that no changes to the buffer happen.
+    
+    The mode should not be a mutable
     value; if part of the stream is re-tokenized, the mode saved from the
     immediately preceding token is given again to the @racket[get-token]
-    function. The backup distance returned by @racket[get-token] indicates the
+    function.}
+    @item{a backup distance;
+    The backup distance returned by @racket[get-token] indicates the
     maximum number of characters to back up (counting from the start of the
     token) and for re-parsing after a change to the editor within the token's
-    region.
+    region.}]
 
     The @racket[get-token] function must obey the following invariants:
     @itemize[

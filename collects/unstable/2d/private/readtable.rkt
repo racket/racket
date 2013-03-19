@@ -24,10 +24,10 @@ example uses:
 
 (define (make-2d-readtable)
   (define previous-readtable (current-readtable))
-  (make-readtable
-   #f
+  (make-readtable 
+   previous-readtable 
    #\2
-   'dispatch-macro
+   'dispatch-macro 
    (case-lambda
      [(char port)
       (define-values (line col pos) (port-next-location port))
@@ -43,7 +43,6 @@ example uses:
       (dispatch-proc char port source _line _col _pos 
                      (λ (a b c) (read-syntax/recursive source a b c))
                      previous-readtable)])))
-
 
 (define (dispatch-proc char port source _line _col _pos /recursive previous-readtable)
   (define next-char (peek-char port))
@@ -84,7 +83,13 @@ example uses:
        (for/list ([line (in-vector lines)])
          (length line)))
      
-     `(,(string->symbol (string-append "2d" (apply string kwd-chars)))
+     (define kwd-str (string-append "2d" (apply string kwd-chars)))
+     (define kwd-port (open-input-string kwd-str))
+     (port-count-lines! kwd-port)
+     (set-port-next-location! kwd-port _line (and _col (+ _col 1)) (and _pos (+ _pos 1)))
+     (define kwd-stx (read-syntax source kwd-port))
+     
+     `(,kwd-stx
        
        ,table-column-breaks
        ,heights
@@ -102,7 +107,7 @@ example uses:
            `[,(sort (set->list set-of-indicies) compare/xy)
              ,@(read-subparts source scratch-port 
                               initial-space-count table-column-breaks heights set-of-indicies
-                              previous-readtable /recursive)]))]
+                              /recursive)]))]
     [else
      (/recursive 
       (input-port-append #f (open-input-string "#2") port)
@@ -112,7 +117,7 @@ example uses:
 
 (define (read-subparts source scratch-port 
                        initial-space-count table-column-breaks heights lhs
-                       previous-readtable /recursive)
+                       /recursive)
   (with-handlers (#;
                   [exn:fail:read?
                    (λ (exn)
@@ -129,7 +134,7 @@ example uses:
                                     source
                                     initial-space-count table-column-breaks heights lhs))))])
     (let loop ()
-      (define o (/recursive scratch-port #f previous-readtable))
+      (define o (/recursive scratch-port #f (current-readtable)))
       (cond
         [(eof-object? o) '()]
         [else (cons o (loop))]))))

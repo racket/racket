@@ -60,7 +60,7 @@
 
 (define ((exec-error-tests setup exec) path)
   (for ([test (read-tests (build-path this-dir path))])
-       (exec-error-test test exec setup)))
+    (exec-error-test test exec setup)))
 (define exec-syntax-error-tests
   (exec-error-tests syntax-error-test-setup expand))
 (define exec-runtime-error-tests

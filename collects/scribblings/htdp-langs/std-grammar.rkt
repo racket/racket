@@ -66,8 +66,8 @@
 @t{An @racket[_name] or a @racket[_variable] is a sequence of characters
 not including a space or one of the following:}
 
-@t{@hspace[2] @litchar{"} @litchar{,} @litchar{'} @litchar{`} 
-@litchar{(} @litchar{)} @litchar{[} @litchar{]} 
+@t{@hspace[2] @litchar{"} @litchar{,} @litchar{'} @litchar{`}
+@litchar{(} @litchar{)} @litchar{[} @litchar{]}
 @litchar["{"] @litchar["}"] @litchar{|} @litchar{;}
 @litchar{#}}
 
@@ -85,7 +85,7 @@ symbols, strings may be split into characters and manipulated by a
 variety of functions.  For example, @racket["abcdef"],
 @racket["This is a string"], and @racket[#,ex-str] are all strings.}
 
-@t{A @racket[_character] begins with @litchar{#\} and has the        
+@t{A @racket[_character] begins with @litchar{#\} and has the
 name of the character. For example, @racket[#\a], @racket[#\b],
 and @racket[#\space] are characters.}
 

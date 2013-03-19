@@ -157,7 +157,7 @@
                 (add-cite group (car v) 'autobib-author #f #f style)
                 (add-date-cites group v (send style get-item-sep) style sort? bib-date<? bib-date=?)))))
      (send style get-group-sep))
-   (list (send style get-cite-close)))))
+    (list (send style get-cite-close)))))
 
 (define (extract-bib-author b)
   (or (auto-bib-author b)

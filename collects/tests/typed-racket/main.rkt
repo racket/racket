@@ -74,7 +74,7 @@
             (when (verbose?)
               (log-warning (format "TR tests: waiting for ~a ~a" dir p)))
             (force prm))))))
-  (make-test-suite dir tests)))
+    (make-test-suite dir tests)))
 
 (define succ-tests (mk-tests "succeed"
                              (lambda (p thnk) 

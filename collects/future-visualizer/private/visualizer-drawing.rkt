@@ -211,9 +211,10 @@
                [last-x 0]
                [ticks '()]
                [last-label-x-extent 0]
-               [remain-segs segs]) ([i (in-range 0 (floor (/ (- (trace-end-time tr)
-                                                         trace-start)
-                                                      DEFAULT-TIME-INTERVAL)))])
+               [remain-segs segs])
+              ([i (in-range 0 (floor (/ (- (trace-end-time tr)
+                                           trace-start)
+                                        DEFAULT-TIME-INTERVAL)))])
       (define tick-rel-time (* (add1 i) DEFAULT-TIME-INTERVAL))
       (define tick-time (+ trace-start tick-rel-time))
       (define want-x (+ last-x (* DEFAULT-TIME-INTERVAL timeToPixMod)))

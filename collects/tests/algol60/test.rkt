@@ -25,10 +25,10 @@
 (check-equal?
  (capture-output
   @literal-algol{
-begin
-  printsln (`hello world')
-end
-})
+    begin
+      printsln (`hello world')
+    end
+  })
  '(run "hello world\n" ""))
 
 (check-pred
@@ -37,8 +37,8 @@ end
                            (list-ref x 1))))
  (capture-output
   @literal-algol{
-begin
-}))
+    begin
+  }))
 
 
 (check-pred
@@ -47,14 +47,15 @@ begin
                            (list-ref x 1))))
  (capture-output
   @literal-algol{
-procedure Absmax(a) Size:(n, m) Result:(y) Subscripts:(i, k);
-   value n, m; array a; integer n, m, i, k; real y;
-begin integer p, q;
-   y := 0; i := k := 1;
-   for p:=1 step 1 until n do
-   for q:=1 step 1 until m do
-       if abs(a[p, q]) > y then
-           begin y := abs(a[p, q]);
-           i := p; k := q
-           end
-end Absmax}))
+    procedure Absmax(a) Size:(n, m) Result:(y) Subscripts:(i, k);
+       value n, m; array a; integer n, m, i, k; real y;
+    begin integer p, q;
+       y := 0; i := k := 1;
+       for p:=1 step 1 until n do
+       for q:=1 step 1 until m do
+           if abs(a[p, q]) > y then
+               begin y := abs(a[p, q]);
+               i := p; k := q
+               end
+    end Absmax
+  }))

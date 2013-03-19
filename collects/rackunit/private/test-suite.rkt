@@ -133,8 +133,7 @@
 
 (define (tests->test-suite-action tests)
   (lambda (fdown fup fhere seed)
-    (parameterize
-        ([current-seed seed])
+    (parameterize ([current-seed seed])
       (for-each
        (lambda (t)
          (cond
@@ -152,7 +151,7 @@
              (format "tests->test-suite-action received ~a in list of tests ~a, which is not a test." t tests)
              (current-continuation-marks)))]))
        tests)
-    (current-seed))))
+      (current-seed))))
 
 ;; make-test-suite : string [#:before thunk] [#:after thunk] (listof test?) -> test-suite?
 ;;

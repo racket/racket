@@ -84,8 +84,8 @@
                creation-tree))
 
 (struct rtcall-info (fid 
-                    block-hash ; prim name --o--> number of blocks
-                    sync-hash) ; op name --o--> number of syncs 
+                     block-hash ; prim name --o--> number of blocks
+                     sync-hash) ; op name --o--> number of syncs 
   #:transparent)
 
 ;(struct process-timeline timeline (proc-index))
@@ -319,8 +319,8 @@
 (define (event-pos-description index timeline-len) 
   (cond 
     [(zero? index) (if (= index (sub1 timeline-len)) 
-                   'singleton 
-                   'start)] 
+                       'singleton 
+                       'start)] 
     [(= index (sub1 timeline-len)) 'end] 
     [else 'interior]))
 
@@ -425,11 +425,11 @@
                          <))
   (define non-gc-evts (filter (λ (e) (not (gc-event? e))) all-evts))
   (define future-tl-hash (let ([h (make-hash)]) 
-                 (for ([evt (in-list non-gc-evts)]) 
-                   (let* ([fid (event-future-id evt)]
-                          [existing (hash-ref h fid '())]) 
-                     (hash-set! h fid (cons evt existing))))
-                 h))
+                           (for ([evt (in-list non-gc-evts)]) 
+                             (let* ([fid (event-future-id evt)]
+                                    [existing (hash-ref h fid '())]) 
+                               (hash-set! h fid (cons evt existing))))
+                           h))
   (for ([fid (in-list (hash-keys future-tl-hash))]) 
     (hash-set! future-tl-hash fid (reverse (hash-ref future-tl-hash fid)))) 
   (define-values (block-hash sync-hash rtcalls-per-future-hash) (build-rtcall-hashes all-evts))

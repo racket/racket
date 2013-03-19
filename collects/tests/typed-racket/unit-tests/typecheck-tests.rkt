@@ -1602,6 +1602,20 @@
               (list (-vec -Integer) (-vec -Integer))]
 
         [tc-e/t (ann ((letrec ((x (lambda args 3))) x) 1 2) Byte) -Byte]
+        [tc-e (vector-ref (ann (vector 'a 'b) (Vector Symbol Symbol)) 0)
+              -Symbol]
+        [tc-err (vector-ref (ann (vector 'a 'b) (Vector Symbol Symbol)) 4)]
+        [tc-e (vector-ref (ann (vector 'a 'b) (Vector Symbol Symbol)) (+ -1 2))
+              -Symbol]
+        [tc-e (vector-set! (ann (vector 'a 'b) (Vector Symbol Symbol)) 0 'c)
+              -Void]
+        [tc-err (vector-set! (ann (vector 'a 'b) (Vector Symbol Symbol)) -4 'c)]
+        [tc-e (vector-set! (ann (vector 'a 'b) (Vector Symbol Symbol)) (+ -1 2) 'c)
+              -Void]
+        [tc-err
+          (ann 
+            ((letrec ((x (lambda (acc #{ v : Symbol}) (if v (list v) acc)))) x) null (list 'bad 'prog))
+            (Listof Symbol))]
         )
   (test-suite
    "check-type tests"

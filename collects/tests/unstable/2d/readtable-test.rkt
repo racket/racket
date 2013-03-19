@@ -48,6 +48,28 @@
   ;; we still get some result back.
   (check-true (pair? (read wp))))
 
+(parameterize ([current-readtable (make-2d-readtable)])
+  (define sp (open-input-string 
+              (string-append "#2d\n"
+                             "╔══╦══╗\n"
+                             "║1 ║2 ║\n"
+                             "╠══╬══╣\n"
+                             "║4 ║3 ║\n"
+                             "╚══╩══╝\n")))
+  (port-count-lines! sp)
+  ;; make sure that if there is no source location information,
+  ;; we still get some result back.
+  (define stx (read-syntax "the source" sp))
+  (define initial-keyword (car (syntax-e stx)))
+  (check-not-false (syntax-source initial-keyword))
+  (check-not-false (syntax-line initial-keyword))
+  (check-not-false (syntax-column initial-keyword))
+  (check-not-false (syntax-position initial-keyword))
+  (check-not-false (syntax-span initial-keyword))
+  (check-not-false (syntax-original? initial-keyword))
+  (check-not-equal? (syntax-position stx) 
+                    (syntax-position initial-keyword)))
+
 (define (get-err-locs inputs)
   (with-handlers ([exn:fail:read? exn:fail:read-srclocs])
     (define p (open-input-string (apply string-append inputs)))

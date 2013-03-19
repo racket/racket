@@ -14,11 +14,11 @@
 
 (begin-for-syntax
   (define-syntax-class argument-spec
-  #:description "argument specification"
-  (pattern [name:id contract:expr])
-  (pattern [name:id contract:expr default:expr])
-  (pattern [kw:keyword name:id contract:expr])
-  (pattern [kw:keyword name:id contract:expr default:expr])))
+    #:description "argument specification"
+    (pattern [name:id contract:expr])
+    (pattern [name:id contract:expr default:expr])
+    (pattern [kw:keyword name:id contract:expr])
+    (pattern [kw:keyword name:id contract:expr default:expr])))
 
 ;; A define-with-value form for scribble documentation
 (define (def/value def val . pre-flows)

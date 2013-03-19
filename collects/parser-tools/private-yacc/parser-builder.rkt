@@ -9,8 +9,9 @@
   
   (provide/contract
    (build-parser ((string? any/c any/c (listof identifier?) (listof identifier?)
-                  (listof identifier?) (union syntax? false/c) syntax?) . ->* .
-                 (any/c any/c any/c any/c))))
+                   (listof identifier?) (union syntax? false/c) syntax?)
+                  . ->* .
+                  (any/c any/c any/c any/c))))
   
   ;; fix-check-syntax : (listof identifier?) (listof identifier?) (listof identifier?)
   ;;                    (union syntax? false/c) syntax?) -> syntax?

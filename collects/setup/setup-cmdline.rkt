@@ -102,13 +102,13 @@
                                   (cdr (car collections/archives))
                                   '())])
          (cond
-         [raco?
-          (check-collections short-name rest)
-          (values (append pre-collections (map list rest))
-                  pre-archives)]
-         [else
-          (values pre-collections
-                  (append pre-archives rest))])))
+           [raco?
+            (check-collections short-name rest)
+            (values (append pre-collections (map list rest))
+                    pre-archives)]
+           [else
+            (values pre-collections
+                    (append pre-archives rest))])))
      (if raco? '("collection") '("archive"))
      (lambda (s)
        (display s)

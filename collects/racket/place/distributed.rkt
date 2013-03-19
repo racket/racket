@@ -143,10 +143,11 @@
   (define (which cmd)
     (define path (getenv "PATH"))
     (and path
-         (exists? (map (lambda (x) (build-path x cmd)) (regexp-split (case (system-type 'os)
-                                    [(unix macosx) ":"]
-                                    [(windows) "#:;"])
-                                  path)))))
+         (exists? (map (lambda (x) (build-path x cmd))
+                       (regexp-split (case (system-type 'os)
+                                       [(unix macosx) ":"]
+                                       [(windows) "#:;"])
+                                     path)))))
   (or (which "ssh")
       (fallback-paths)
       (raise "ssh binary not found")))
@@ -173,21 +174,21 @@
   (let loop ([t 0]
              [wait-time start-seconds])
     (with-handlers ([exn? (lambda (e)
-                  (cond [(t . < . times)
-                         (klogger (format "backing off ~a sec to ~a:~a" (expt 2 t) rname rport))
-                         (sleep wait-time)
-                         (loop (add1 t) (* 2 wait-time))]
-                        [else (raise e)]))])
+                            (cond [(t . < . times)
+                                   (klogger (format "backing off ~a sec to ~a:~a" (expt 2 t) rname rport))
+                                   (sleep wait-time)
+                                   (loop (add1 t) (* 2 wait-time))]
+                                  [else (raise e)]))])
       (tcp-connect rname (->number rport)))))
 
 (define (tcp-connect/retry rname rport #:times [times 10] #:delay [delay 1])
   (let loop ([t 0])
     (with-handlers ([exn? (lambda (e)
-                  (cond [(t . < . times)
-                         (klogger (format "waiting ~a sec to retry connection to ~a:~a" delay rname rport))
-                         (sleep delay)
-                         (loop (add1 t))]
-                        [else (raise e)]))])
+                            (cond [(t . < . times)
+                                   (klogger (format "waiting ~a sec to retry connection to ~a:~a" delay rname rport))
+                                   (sleep delay)
+                                   (loop (add1 t))]
+                                  [else (raise e)]))])
       (tcp-connect rname (->number rport)))))
 
 (define (format-log-message severity msg)

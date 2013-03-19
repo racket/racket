@@ -12,7 +12,7 @@
                 (directory-list pth)))))
 
 (define (test-mutator m)
-  (printf "Running ~a\n" m)
+  (printf "Running ~a\n" (simplify-path m))
   (parameterize ([current-namespace (make-base-empty-namespace)])
     (dynamic-require m #f)))
 

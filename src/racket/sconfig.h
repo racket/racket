@@ -640,6 +640,7 @@
 # define USE_ICONV_DLL
 # define NO_MBTOWC_FUNCTIONS
 
+# define MZ_LONG_DOUBLE
 # ifdef _WIN64
 #  define MZ_USE_JIT_X86_64
 # else
@@ -983,6 +984,8 @@
 
 # define USE_DYNAMIC_FDSET_SIZE
 
+# define BROKEN_READLINK_NUL_TERMINATOR
+
 #if defined(i386)
 # define MZ_USE_JIT_I386
 # define MZ_JIT_USE_MPROTECT
@@ -1143,6 +1146,10 @@
  /* NO_MKDIR means that there is no mkdir() function. */
 
  /* NO_READLINK means that there is no readlink() function. */
+
+ /* BROKEN_READLINK_NUL_TERMINATOR means that readlink() may
+    report a length that includes trailing NUL terminators,
+    which should be stripped away. */
 
  /* USE_GETDISK uses getdisk() and setdisk() to implement the
      filesystem-root-list primitive under DOS. */

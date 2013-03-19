@@ -33,7 +33,6 @@
 
 
 (define -App make-App)
-(define -pair make-Pair)
 (define -mpair make-MPair)
 (define -Param make-Param)
 (define -box make-Box)
@@ -51,8 +50,6 @@
 
 
 
-(define (-lst* #:tail [tail (-val null)] . args)
-  (for/fold ([tl tail]) ([a (reverse args)]) (-pair a tl)))
 
 (define (-Tuple l)
   (foldr -pair (-val '()) l))

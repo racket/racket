@@ -6,7 +6,7 @@
      (display i)))
 
 (for: : Void ((i : Integer (ann '(1 2 3) (Sequenceof Integer))) ; doesn't
-             (j : Char "abc"))
+              (j : Char "abc"))
      (display (list i j)))
 
 

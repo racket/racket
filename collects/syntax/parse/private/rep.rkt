@@ -271,6 +271,7 @@
      (values entry null)]
     [(den:class name class argu)
      ;; FIXME: integrable syntax classes?
+     ;; FIXME: what if no-arity, no-args?
      (cond [(identifier? name)
             (let* ([pos-count (length (arguments-pargs argu))]
                    [kws (arguments-kws argu)]
@@ -314,7 +315,8 @@
               (for/list ([lse (in-list (literalset-literals litset))])
                 (match lse
                   [(lse:lit internal external lit-phase)
-                   (let ([internal (get/check-id internal)])
+                   (let ([internal (get/check-id internal)]
+                         [external (syntax-property external 'literal (gensym))])
                      (make den:lit internal external input-phase lit-phase))]
                   [(lse:datum-lit internal external)
                    (let ([internal (get/check-id internal)])
@@ -1269,7 +1271,8 @@
 (define (check-literal-entry stx ctx)
   (define (go internal external phase)
     (txlift #`(check-literal #,external #,phase #,ctx))
-    (make den:lit internal external phase phase))
+    (let ([external (syntax-property external 'literal (gensym))])
+      (make den:lit internal external phase phase)))
   (syntax-case stx ()
     [(internal external #:phase phase)
      (and (identifier? #'internal) (identifier? #'external))

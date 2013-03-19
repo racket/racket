@@ -1092,39 +1092,39 @@
                                    (pp-list vecl extra pp-expr #f depth
                                             pair? car cdr pair-open pair-close
                                             qd))))]
-                          [(flvector? obj)   
-                              (let ([vecl (flvector->repeatless-list obj)])
-                                (if (and qd (zero? qd))
-                                    (pp-pair (cons (make-unquoted 'flvector) vecl)
-                                             extra depth
-                                             pair? car cdr pair-open pair-close
-                                             qd)
-                                    (begin
-                                      (out "#fl")
-                                      (when print-vec-length?
-                                        (out (number->string (flvector-length obj))))
+                          [(flvector? obj)
+                           (let ([vecl (flvector->repeatless-list obj)])
+                             (if (and qd (zero? qd))
+                                 (pp-pair (cons (make-unquoted 'flvector) vecl)
+                                          extra depth
+                                          pair? car cdr pair-open pair-close
+                                          qd)
+                                 (begin
+                                   (out "#fl")
+                                   (when print-vec-length?
+                                     (out (number->string (flvector-length obj))))
                                    (pp-list vecl extra pp-expr #f depth
                                             pair? car cdr pair-open pair-close
                                             qd))))]
-                          [(fxvector? obj)   
-                              (let ([vecl (fxvector->repeatless-list obj)])
-                                (if (and qd (zero? qd))
-                                    (pp-pair (cons (make-unquoted 'fxvector) vecl)
-                                             extra depth
-                                             pair? car cdr pair-open pair-close
-                                             qd)
-                                    (begin
-                                      (out "#fx")
-                                      (when print-vec-length?
-                                        (out (number->string (fxvector-length obj))))
+                          [(fxvector? obj)
+                           (let ([vecl (fxvector->repeatless-list obj)])
+                             (if (and qd (zero? qd))
+                                 (pp-pair (cons (make-unquoted 'fxvector) vecl)
+                                          extra depth
+                                          pair? car cdr pair-open pair-close
+                                          qd)
+                                 (begin
+                                   (out "#fx")
+                                   (when print-vec-length?
+                                     (out (number->string (fxvector-length obj))))
                                    (pp-list vecl extra pp-expr #f depth
                                             pair? car cdr pair-open pair-close
                                             qd))))]
 			  [(and (custom-write? obj)
 				(not (struct-type? obj)))
                            (let ([qd (let ([kind (if (custom-print-quotable? obj)
-                                            (custom-print-quotable-accessor obj)
-                                            'self)])
+                                                   (custom-print-quotable-accessor obj)
+                                                   'self)])
                                        (if (memq kind '(self never))
                                            qd
                                            (to-quoted out qd obj)))])

@@ -1376,10 +1376,10 @@
                      (set! flow-locked? #f)
                      (when deleted?
                        (end-edit-sequence)))])
-            (cond
-             [(or isnip snipsl) 
-              (insert-snips (if isnip (list isnip) snipsl) start success-finish fail-finish)]
-             [else (insert-string str start success-finish fail-finish)])))))
+              (cond
+                [(or isnip snipsl) 
+                 (insert-snips (if isnip (list isnip) snipsl) start success-finish fail-finish)]
+                [else (insert-string str start success-finish fail-finish)])))))
       (assert (consistent-snip-lines 'post-do-insert))))
   
   (define/private (insert-snips snipsl start success-finish fail-finish)
@@ -2609,15 +2609,15 @@
                   (= current v)
                   (and (v . <= . 0) (current . <= . 0))
                   (not (can-set-size-constraint?)))
-      (on-set-size-constraint)
+        (on-set-size-constraint)
 
-      (set! graphic-maybe-invalid? #t)
-      (set! graphic-maybe-invalid-force? #t)
-      (setter v)
-      (set! changed? #t)
-      (need-refresh -1 -1)
+        (set! graphic-maybe-invalid? #t)
+        (set! graphic-maybe-invalid-force? #t)
+        (setter v)
+        (set! changed? #t)
+        (need-refresh -1 -1)
 
-      (after-set-size-constraint))))
+        (after-set-size-constraint))))
 
   (def/override (set-min-width [(make-alts nonnegative-real? (symbol-in none)) w])
     (set-m-x w min-width (lambda (w) (set! min-width w))))
@@ -5658,93 +5658,93 @@
                   (get-default-print-size W H))
                 (when (not (zero? page))
                   (send (current-ps-setup) get-editor-margin hm vm)))
-            (let ([H (- H (* 2 vm))]
-                  [W (- W (* 2 hm))])
+              (let ([H (- H (* 2 vm))]
+                    [W (- W (* 2 hm))])
 
-              ;; H is the total page height;
-              ;; line is the line that we haven't finished printing;
-              ;; y is the starting location to print for this page;
-              ;; h is the height that we're hoping to fit into the page
-              ;; i is the line number
-              (let ploop ([this-page 1]
-                          [line first-line]
-                          [y 0.0]
-                          [next-h 0.0]
-                          [i 0])
-                (and 
-                 line
-                 (let ([h next-h]
-                       [next-h 0.0])
-                   (let loop ([h h]
-                              [i i]
-                              [line line]
-                              [can-continue? #t]
-                              [unline 0.0])
-                     (cond
-                      [(or (zero? h)
-                           (and (i . < . num-valid-lines)
-                                (or (zero? page)
-                                    ((mline-h line) . < . (- H h)))
-                                can-continue?))
-                       (let ([lh (mline-h line)]
-                             [new-page? (new-page-line? line)])
-                         (loop (+ h lh)
-                               (add1 i)
-                               (mline-next line)
-                               (not new-page?)
-                               (if new-page? lh unline)))]
-                      [else
-                       (let-values ([(h i line)
-                                     (cond
-                                      [(and (not (zero? page))
-                                            (h . < . H)
-                                            (i . < . num-valid-lines)
-                                            ((mline-h line) . > . H))
-                                       ;; we'll have to break it up anyway; start now?
-                                       (let* ([pos (find-scroll-line (+ y H))]
-                                              [py (scroll-line-location pos)])
-                                         (if (py . > . (+ y h))
-                                             ;; yes, at least one line will fit
-                                             (values (+ h (mline-h line))
-                                                     (add1 i)
-                                                     (mline-next line))
-                                             (values h i line)))]
-                                      [else
-                                       (values h i line)])])
-                         (let-values ([(next-h h)
-                                       (if (and (not (zero? page))
-                                                (h . > . H))
-                                           ;; only happens if we have something that's too big to fit on a page;
-                                           ;; look for internal scroll positions
+                ;; H is the total page height;
+                ;; line is the line that we haven't finished printing;
+                ;; y is the starting location to print for this page;
+                ;; h is the height that we're hoping to fit into the page
+                ;; i is the line number
+                (let ploop ([this-page 1]
+                            [line first-line]
+                            [y 0.0]
+                            [next-h 0.0]
+                            [i 0])
+                  (and 
+                   line
+                   (let ([h next-h]
+                         [next-h 0.0])
+                     (let loop ([h h]
+                                [i i]
+                                [line line]
+                                [can-continue? #t]
+                                [unline 0.0])
+                       (cond
+                         [(or (zero? h)
+                              (and (i . < . num-valid-lines)
+                                   (or (zero? page)
+                                       ((mline-h line) . < . (- H h)))
+                                   can-continue?))
+                          (let ([lh (mline-h line)]
+                                [new-page? (new-page-line? line)])
+                            (loop (+ h lh)
+                                  (add1 i)
+                                  (mline-next line)
+                                  (not new-page?)
+                                  (if new-page? lh unline)))]
+                         [else
+                          (let-values ([(h i line)
+                                        (cond
+                                          [(and (not (zero? page))
+                                                (h . < . H)
+                                                (i . < . num-valid-lines)
+                                                ((mline-h line) . > . H))
+                                           ;; we'll have to break it up anyway; start now?
                                            (let* ([pos (find-scroll-line (+ y H))]
                                                   [py (scroll-line-location pos)])
-                                             (if (py . > . y)
-                                                 (let ([new-h (- py y)])
-                                                   (values (- h new-h)
-                                                           new-h))
-                                                 (values next-h h)))
-                                           (values next-h h))])
-                           (or (if print?
-                                   (begin
-                                     (when (or (page . <= . 0)
-                                               (= this-page page))
-                                       (begin
-                                         (when (page . <= . 0)
-                                           (send dc start-page))
-                                         (do-redraw dc 
-                                                    (+ y (if (zero? i) 0 1))
-                                                    (+ y (- h 1 unline))
-                                                    0 W (+ (- y) vm) hm
-                                                    'no-caret #f #f)
-                                         (when (page . <= . 0)
-                                           (send dc end-page))))
-                                     #f)
-                                   (= this-page page))
-                               (ploop (add1 this-page)
-                                      line
-                                      (+ y h)
-                                      next-h 
-                                      i))))])))))))))))
+                                             (if (py . > . (+ y h))
+                                                 ;; yes, at least one line will fit
+                                                 (values (+ h (mline-h line))
+                                                         (add1 i)
+                                                         (mline-next line))
+                                                 (values h i line)))]
+                                          [else
+                                           (values h i line)])])
+                            (let-values ([(next-h h)
+                                          (if (and (not (zero? page))
+                                                   (h . > . H))
+                                              ;; only happens if we have something that's too big to fit on a page;
+                                              ;; look for internal scroll positions
+                                              (let* ([pos (find-scroll-line (+ y H))]
+                                                     [py (scroll-line-location pos)])
+                                                (if (py . > . y)
+                                                    (let ([new-h (- py y)])
+                                                      (values (- h new-h)
+                                                              new-h))
+                                                    (values next-h h)))
+                                              (values next-h h))])
+                              (or (if print?
+                                      (begin
+                                        (when (or (page . <= . 0)
+                                                  (= this-page page))
+                                          (begin
+                                            (when (page . <= . 0)
+                                              (send dc start-page))
+                                            (do-redraw dc 
+                                                       (+ y (if (zero? i) 0 1))
+                                                       (+ y (- h 1 unline))
+                                                       0 W (+ (- y) vm) hm
+                                                       'no-caret #f #f)
+                                            (when (page . <= . 0)
+                                              (send dc end-page))))
+                                        #f)
+                                      (= this-page page))
+                                  (ploop (add1 this-page)
+                                         line
+                                         (+ y h)
+                                         next-h 
+                                         i))))])))))))))))
 
   (define/override (do-has-print-page? dc page)
     (has/print-page dc page #f))

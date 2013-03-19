@@ -510,7 +510,7 @@
 
 (define: (mrg32k3a-random-large [state : State] [n : Nb]) : Nb ; n > m-max
   (do: : Integer ((k : Integer 2 (+ k 1))
-                 (mk : Integer (* mrg32k3a-m-max mrg32k3a-m-max) (* mk mrg32k3a-m-max)))
+                  (mk : Integer (* mrg32k3a-m-max mrg32k3a-m-max) (* mk mrg32k3a-m-max)))
       ((>= mk n)
        (let* ((mk-by-n (quotient mk n))
               (a (* mk-by-n n)))
@@ -530,7 +530,7 @@
 
 (define: (mrg32k3a-random-real-mp [state : State] [unit : Real]) : Number
   (do: : Real ((k : Integer 1 (+ k 1))
-       (u : Real (- (/ 1 unit) 1) (/ u mrg32k3a-m1)))
+               (u : Real (- (/ 1 unit) 1) (/ u mrg32k3a-m1)))
       ((<= u 1)
        (/ (exact->inexact (+ (mrg32k3a-random-power state k) 1))
           (exact->inexact (+ (expt mrg32k3a-m-max k) 1))))))
@@ -545,7 +545,7 @@
 
 (define: (make-random-source) : Random
   (let: ((state : State (mrg32k3a-pack-state ; make a new copy
-                (list->vector (vector->list mrg32k3a-initial-state)))))
+                         (list->vector (vector->list mrg32k3a-initial-state)))))
     (:random-source-make
      (lambda: ()
        (mrg32k3a-state-ref state))

@@ -6,11 +6,9 @@
                      [2d-read-syntax read-syntax]
                      [2d-get-info get-info]))
 
-(define 2d-readtable (make-2d-readtable))
-
 (define (wrap-reader p)
   (lambda args
-    (parameterize ([current-readtable 2d-readtable])
+    (parameterize ([current-readtable (make-2d-readtable)])
       (apply p args))))
 
 (define-values (2d-read 2d-read-syntax 2d-get-info)

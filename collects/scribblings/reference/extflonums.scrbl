@@ -12,7 +12,8 @@ platforms with extended-precision hardware and where the
 extflonum implementation does not conflict with normal
 double-precision arithmetic (i.e., on x86 and x86_64 platforms when
 Racket is compiled to use SSE instructions for floating-point
-operations).
+operations, and on Windows when @as-index{@filepath{longdouble.dll}}
+is available).
 
 A extflonum is @bold{not} a @tech{number} in the sense of
 @racket[number?]. Only extflonum-specific operations such as 

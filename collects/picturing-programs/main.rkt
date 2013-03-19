@@ -15,7 +15,7 @@
 	 show-it)
 
 (provide provide all-defined-out all-from-out rename-out except-out
-prefix-out struct-out)
+         prefix-out struct-out)
 
 (define (show-it img)
   (check-arg 'show-it (image? img) "image" "first" img)

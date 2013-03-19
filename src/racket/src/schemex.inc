@@ -112,6 +112,7 @@
   scheme_extension_table->scheme_log = scheme_log;
   scheme_extension_table->scheme_log_w_data = scheme_log_w_data;
   scheme_extension_table->scheme_log_message = scheme_log_message;
+  scheme_extension_table->scheme_log_name_message = scheme_log_name_message;
   scheme_extension_table->scheme_log_abort = scheme_log_abort;
   scheme_extension_table->scheme_log_warning = scheme_log_warning;
   scheme_extension_table->scheme_glib_log_message = scheme_glib_log_message;
@@ -349,6 +350,9 @@
   scheme_extension_table->scheme_string_recase = scheme_string_recase;
   scheme_extension_table->scheme_make_vector = scheme_make_vector;
   scheme_extension_table->scheme_alloc_flvector = scheme_alloc_flvector;
+#ifdef MZ_LONG_DOUBLE
+  scheme_extension_table->scheme_alloc_extflvector = scheme_alloc_extflvector;
+#endif
   scheme_extension_table->scheme_alloc_fxvector = scheme_alloc_fxvector;
   scheme_extension_table->scheme_make_integer_value = scheme_make_integer_value;
   scheme_extension_table->scheme_make_integer_value_from_unsigned = scheme_make_integer_value_from_unsigned;
@@ -357,6 +361,9 @@
   scheme_extension_table->scheme_make_integer_value_from_long_halves = scheme_make_integer_value_from_long_halves;
   scheme_extension_table->scheme_make_integer_value_from_unsigned_long_halves = scheme_make_integer_value_from_unsigned_long_halves;
   scheme_extension_table->scheme_make_double = scheme_make_double;
+#ifdef MZ_LONG_DOUBLE
+  scheme_extension_table->scheme_make_long_double = scheme_make_long_double;
+#endif
 #ifdef MZ_USE_SINGLE_FLOATS
   scheme_extension_table->scheme_make_float = scheme_make_float;
 #endif
@@ -375,6 +382,9 @@
   scheme_extension_table->scheme_get_long_long_val = scheme_get_long_long_val;
   scheme_extension_table->scheme_get_unsigned_long_long_val = scheme_get_unsigned_long_long_val;
   scheme_extension_table->scheme_real_to_double = scheme_real_to_double;
+#ifdef MZ_LONG_DOUBLE
+  scheme_extension_table->scheme_real_to_long_double = scheme_real_to_long_double;
+#endif
   scheme_extension_table->scheme_make_cptr = scheme_make_cptr;
   scheme_extension_table->scheme_make_offset_cptr = scheme_make_offset_cptr;
   scheme_extension_table->scheme_make_external_cptr = scheme_make_external_cptr;
@@ -402,6 +412,10 @@
   scheme_extension_table->scheme_make_bignum_from_unsigned_long_long = scheme_make_bignum_from_unsigned_long_long;
   scheme_extension_table->scheme_bignum_to_double = scheme_bignum_to_double;
   scheme_extension_table->scheme_bignum_from_double = scheme_bignum_from_double;
+#ifdef MZ_LONG_DOUBLE
+  scheme_extension_table->scheme_bignum_to_long_double = scheme_bignum_to_long_double;
+  scheme_extension_table->scheme_bignum_from_long_double = scheme_bignum_from_long_double;
+#endif
 #ifdef MZ_USE_SINGLE_FLOATS
   scheme_extension_table->scheme_bignum_to_float = scheme_bignum_to_float;
   scheme_extension_table->scheme_bignum_from_float = scheme_bignum_from_float;
@@ -417,6 +431,10 @@
   scheme_extension_table->scheme_make_rational = scheme_make_rational;
   scheme_extension_table->scheme_rational_to_double = scheme_rational_to_double;
   scheme_extension_table->scheme_rational_from_double = scheme_rational_from_double;
+#ifdef MZ_LONG_DOUBLE
+  scheme_extension_table->scheme_rational_to_long_double = scheme_rational_to_long_double;
+  scheme_extension_table->scheme_rational_from_long_double = scheme_rational_from_long_double;
+#endif
 #ifdef MZ_USE_SINGLE_FLOATS
   scheme_extension_table->scheme_rational_to_float = scheme_rational_to_float;
   scheme_extension_table->scheme_rational_from_float = scheme_rational_from_float;

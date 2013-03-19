@@ -46,11 +46,11 @@
                               (datum->syntax-object b (string->symbol (format "$~a-start-pos" i)) b stx-for-original-property)]
                              [end-pos-id
                               (datum->syntax-object b (string->symbol (format "$~a-end-pos" i)) b stx-for-original-property)])
-                       (set! biggest-pos (cons start-pos-id end-pos-id))
-                       `(,(datum->syntax-object b name b stx-for-original-property)
-                         ,start-pos-id
-                         ,end-pos-id
-                         ,@(get-args (add1 i) (cdr rhs)))))
+                         (set! biggest-pos (cons start-pos-id end-pos-id))
+                         `(,(datum->syntax-object b name b stx-for-original-property)
+                           ,start-pos-id
+                           ,end-pos-id
+                           ,@(get-args (add1 i) (cdr rhs)))))
                       (else
                        `(,(datum->syntax-object b name b stx-for-original-property)
                          ,@(get-args (add1 i) (cdr rhs)))))))))])

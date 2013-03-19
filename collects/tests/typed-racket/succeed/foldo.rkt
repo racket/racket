@@ -14,11 +14,11 @@
     (syntax-case stx ()
       [(_ name path ...)
        (with-syntax ([(match-clause ...) (map path->clause (syntax-e #'(path ...)))])
-       #`(define (name p )
-           (let* ([dirnames (map path->string (explode-path p))])
-             (match (reverse dirnames) ; goofy backwards matching because ... matches greedily
-               match-clause ...
-               [_ #f]))))]))
+         #`(define (name p )
+             (let* ([dirnames (map path->string (explode-path p))])
+               (match (reverse dirnames) ; goofy backwards matching because ... matches greedily
+                 match-clause ...
+                 [_ #f]))))]))
 
   (define-excluder default-excluder
     "compiled" ".git")

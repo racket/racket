@@ -121,11 +121,11 @@
   (if (empty? (node-children parent)) 
       (attributed-node parent 'leaf 0 depth '()) 
       (let-values ([(leaves achn) 
-                   (for/fold ([l 0] [achildren '()]) ([child (in-list (node-children parent))]) 
-                     (let ([anode (build-attr-tree child (add1 depth))]) 
-                       (if (leaf? anode) 
-                           (values (add1 l) (cons anode achildren)) 
-                           (values (+ l (attributed-node-num-leaves anode)) (cons anode achildren)))))]) 
+                    (for/fold ([l 0] [achildren '()]) ([child (in-list (node-children parent))]) 
+                      (let ([anode (build-attr-tree child (add1 depth))]) 
+                        (if (leaf? anode) 
+                            (values (add1 l) (cons anode achildren)) 
+                            (values (+ l (attributed-node-num-leaves anode)) (cons anode achildren)))))]) 
         (attributed-node parent 
                          'interior 
                          leaves 

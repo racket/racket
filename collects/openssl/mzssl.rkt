@@ -372,9 +372,7 @@ TO DO:
 (define-syntax with-failure
   (syntax-rules ()
     [(_ thunk body ...)
-     (with-handlers ([exn? (lambda (exn)
-                       (thunk)
-                       (raise exn))])
+     (with-handlers ([exn? (lambda (exn) (thunk) (raise exn))])
        body ...)]))
 
 (define (get-error-message id)

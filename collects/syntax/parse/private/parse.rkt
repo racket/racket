@@ -10,6 +10,7 @@
                      "rep-patterns.rkt"
                      "rep.rkt"
                      "kws.rkt"
+                     "opt.rkt"
                      "txlift.rkt")
          "keywords.rkt"
          racket/syntax
@@ -30,7 +31,8 @@
          define/syntax-parse
          syntax-parser/template
          parser/rhs
-         define-eh-alternative-set)
+         define-eh-alternative-set
+         (for-syntax rhs->parser))
 
 (begin-for-syntax
  (define (tx:define-*-syntax-class stx splicing?)
@@ -81,23 +83,78 @@
 
 (define-syntax (parser/rhs stx)
   (syntax-case stx ()
-    [(parser/rhs name formals attrs rhss splicing? ctx)
+    [(parser/rhs name formals relsattrs rhss splicing? ctx)
      (with-disappeared-uses
-      (let ([rhs
-             (parameterize ((current-syntax-context #'ctx))
-               (parse-rhs #'rhss (syntax->datum #'attrs) (syntax-e #'splicing?)
-                          #:context #'ctx))])
-        #`(parser/rhs/parsed name formals attrs
-                             #,rhs #,(and (rhs-description rhs) #t)
-                             splicing? ctx)))]))
+      (let ()
+        (define the-rhs
+          (parameterize ((current-syntax-context #'ctx))
+            (parse-rhs #'rhss (syntax->datum #'relsattrs) (syntax-e #'splicing?)
+                       #:context #'ctx)))
+        (rhs->parser #'name #'formals #'relsattrs the-rhs (syntax-e #'splicing?))))]))
 
-(define-syntax (parser/rhs/parsed stx)
-  (syntax-case stx ()
-    [(prp name formals attrs rhs rhs-has-description? splicing? ctx)
-     #`(parse:rhs rhs attrs formals splicing?
-                  (if 'rhs-has-description?
-                      #,(rhs-description (syntax-e #'rhs))
-                      (symbol->string 'name)))]))
+(begin-for-syntax
+ (define (rhs->parser name formals relsattrs the-rhs splicing?)
+   (define-values (transparent? description variants defs commit? delimit-cut?)
+     (match the-rhs
+       [(rhs _ _ transparent? description variants defs (options commit? delimit-cut?) _)
+        (values transparent? description variants defs commit? delimit-cut?)]))
+   (define vdefss (map variant-definitions variants))
+   (define formals* (rewrite-formals formals #'x #'rl))
+   (define body
+     (cond [(null? variants)
+            #'(fail (failure pr es))]
+           [splicing?
+            (with-syntax ([(alternative ...)
+                           (for/list ([variant (in-list variants)])
+                             (define pattern (variant-pattern variant))
+                             (with-syntax ([pattern pattern]
+                                           [relsattrs relsattrs]
+                                           [iattrs (pattern-attrs pattern)]
+                                           [commit? commit?]
+                                           [result-pr
+                                            (if transparent?
+                                                #'rest-pr
+                                                #'(ps-pop-opaque rest-pr))])
+                               #'(parse:H x cx rest-x rest-cx rest-pr pattern pr es
+                                          (variant-success relsattrs iattrs (rest-x rest-cx result-pr)
+                                                           success cp0 commit?))))])
+              #'(try alternative ...))]
+           [else
+            (with-syntax ([matrix
+                           (optimize-matrix
+                            (for/list ([variant (in-list variants)])
+                              (define pattern (variant-pattern variant))
+                              (with-syntax ([iattrs (pattern-attrs pattern)]
+                                            [relsattrs relsattrs]
+                                            [commit? commit?])
+                                (pk1 (list pattern)
+                                     #'(variant-success relsattrs iattrs ()
+                                                        success cp0 commit?)))))])
+              #'(parse:matrix ((x cx pr es)) matrix))]))
+   (with-syntax ([formals* formals*]
+                 [(def ...) defs]
+                 [((vdef ...) ...) vdefss]
+                 [description (or description (symbol->string (syntax-e name)))]
+                 [transparent? transparent?]
+                 [delimit-cut? delimit-cut?]
+                 [body body])
+     #`(lambda (x cx pr es fh0 cp0 rl success . formals*)
+         (with ([this-syntax x]
+                [this-role rl])
+               def ...
+               vdef ... ...
+               (#%expression
+                (syntax-parameterize ((this-context-syntax
+                                       (syntax-rules ()
+                                         [(tbs) (ps-context-syntax pr)])))
+                  (let ([es (es-add-thing pr description 'transparent? rl es)]
+                        [pr (if 'transparent? pr (ps-add-opaque pr))])
+                    (with ([fail-handler fh0]
+                           [cut-prompt cp0])
+                      ;; Update the prompt, if required
+                      ;; FIXME: can be optimized away if no cut exposed within variants
+                      (with-maybe-delimit-cut delimit-cut?
+                        body))))))))))
 
 (define-syntax (syntax-parse stx)
   (syntax-case stx ()
@@ -239,45 +296,23 @@ Conventions:
   - fh, cp, rl : id (var)
 |#
 
-;; (parse:rhs rhs relsattrs formals splicing? expr)
-;;   : expr[stxclass-parser]
-;; Takes a list of the relevant attrs; order is significant!
-(define-syntax (parse:rhs stx)
-  (syntax-case stx ()
-    [(parse:rhs #s(rhs _ _ transparent? _ variants (def ...)
-                       #s(options commit? delimit-cut?) _integrate)
-                relsattrs formals splicing? description)
-     (with-syntax ([formals
-                    (let loop ([fstx #'formals])
-                      (syntax-case fstx ()
-                        [([kw arg default] . more)
-                         (keyword? (syntax-e #'kw))
-                         (cons #'(kw arg (with ([this-syntax x] [this-role rl]) default))
-                               (loop #'more))]
-                        [([arg default] . more)
-                         (not (keyword? (syntax-e #'kw)))
-                         (cons #'(arg (with ([this-syntax x] [this-role rl]) default))
-                               (loop #'more))]
-                        [(formal . more)
-                         (cons #'formal (loop #'more))]
-                        [_ fstx]))])
-       #'(lambda (x cx pr es fh0 cp0 rl success . formals)
-           (with ([this-syntax x]
-                  [this-role rl])
-             def ...
-             (#%expression
-              (syntax-parameterize ((this-context-syntax
-                                     (syntax-rules ()
-                                       [(tbs) (ps-context-syntax pr)])))
-                (let ([es (es-add-thing pr description 'transparent? rl es)]
-                      [pr (if 'transparent? pr (ps-add-opaque pr))])
-                  (with ([fail-handler fh0]
-                         [cut-prompt cp0])
-                    ;; Update the prompt, if required
-                    ;; FIXME: can be optimized away if no cut immediately within variants...
-                    (with-maybe-delimit-cut delimit-cut?
-                      (parse:variants x cx relsattrs variants splicing? transparent?
-                                      pr es success cp0 commit?)))))))))]))
+(begin-for-syntax
+ (define (rewrite-formals fstx x-id rl-id)
+   (with-syntax ([x x-id]
+                 [rl rl-id])
+     (let loop ([fstx fstx])
+       (syntax-case fstx ()
+         [([kw arg default] . more)
+          (keyword? (syntax-e #'kw))
+          (cons #'(kw arg (with ([this-syntax x] [this-role rl]) default))
+                (loop #'more))]
+         [([arg default] . more)
+          (not (keyword? (syntax-e #'kw)))
+          (cons #'(arg (with ([this-syntax x] [this-role rl]) default))
+                (loop #'more))]
+         [(formal . more)
+          (cons #'formal (loop #'more))]
+         [_ fstx])))))
 
 ;; (with-maybe-delimit-cut bool expr)
 (define-syntax with-maybe-delimit-cut
@@ -287,47 +322,12 @@ Conventions:
     [(wmdc #f k)
      k]))
 
-;; (parse:variants x cx relsattrs variants splicing? pr es success cp0) : expr[Ans]
-(define-syntax (parse:variants stx)
-  (syntax-case stx ()
-    [(parse:variants x cx relsattrs () splicing? transparent?
-                     pr es success cp0 commit?)
-     ;; Special case: no variants
-     #'(fail (failure pr es))]
-    [(parse:variants x cx relsattrs (variant ...) splicing? transparent?
-                     pr es success cp0 commit?)
-     #'(try (parse:variant x cx relsattrs variant splicing? transparent?
-                           pr es success cp0 commit?) ...)]))
-
-;; (parse:variant x cx relsattrs variant splicing? pr es success cp0) : expr[Ans]
-(define-syntax (parse:variant stx)
-  (syntax-case stx ()
-    [(parse:variant x cx relsattrs variant #f _ pr es success cp0 commit?)
-     (with-syntax ([#s(variant _ _ pattern (def ...)) #'variant])
-       #`(let ()
-           def ...
-           (parse:S x cx pattern pr es
-                    (variant-success relsattrs variant
-                                     ()
-                                     success cp0 commit?))))]
-    [(parse:variant x cx relsattrs variant #t transparent? pr es success cp0 commit?)
-     (with-syntax ([#s(variant _ _ pattern (def ...)) #'variant])
-       #`(let ()
-           def ...
-           (parse:H x cx rest-x rest-cx rest-pr pattern pr es
-                    (variant-success relsattrs variant
-                                     (rest-x rest-cx (if 'transparent? rest-pr (ps-pop-opaque rest-pr)))
-                                     success cp0 commit?))))]))
-
 ;; (variant-success relsattrs variant (also:id ...) success bool) : expr[Ans]
 (define-syntax (variant-success stx)
   (syntax-case stx ()
-    [(variant-success relsattrs #s(variant _ _ pattern _) (also ...) success cp0 commit?)
+    [(variant-success relsattrs iattrs (also ...) success cp0 commit?)
      #`(with-maybe-reset-fail commit? cp0
-         (base-success-expr #,(pattern-attrs (wash #'pattern))
-                            relsattrs
-                            (also ...)
-                            success))]))
+         (base-success-expr iattrs relsattrs (also ...) success))]))
 
 ;; (with-maybe-reset-fail bool id expr)
 (define-syntax with-maybe-reset-fail
@@ -368,6 +368,7 @@ Conventions:
           (not (assq '#:disable-colon-notation chunks)))
         (define-values (decls0 defs)
           (get-decls+defs chunks #t #:context #'ctx))
+        ;; for-clause : stx -> (values pattern stx (listof stx))
         (define (for-clause clause)
           (syntax-case clause ()
             [[p . rest]
@@ -377,43 +378,91 @@ Conventions:
                                                   #:splicing? #f
                                                   #:decls decls0
                                                   #:context #'ctx))])
-               (with-syntax ([rest rest]
-                             [pattern pattern]
-                             [(local-def ...) (append defs defs2)]
-                             [body-expr
-                              (case (syntax-e #'body-mode)
-                                ((one-template)
-                                 (syntax-case rest ()
-                                   [(template)
-                                    #'(syntax template)]
-                                   [_ (raise-syntax-error #f "expected exactly one template" #'ctx)]))
-                                ((body-sequence)
-                                 (syntax-case rest ()
-                                   [(e0 e ...) #'(let () e0 e ...)]
-                                   [_ (raise-syntax-error #f "expected non-empty clause body"
-                                                          #'ctx clause)]))
-                                (else
-                                 (raise-syntax-error #f "internal error: unknown body mode" #'ctx #'body-mode)))])
-                 #`(let ()
-                     local-def ...
-                     (parse:S x cx pattern pr es body-expr))))]))
+               (let ([body-expr
+                      (case (syntax-e #'body-mode)
+                        ((one-template)
+                         (syntax-case rest ()
+                           [(template)
+                            #'(syntax template)]
+                           [_ (raise-syntax-error #f "expected exactly one template" #'ctx)]))
+                        ((body-sequence)
+                         (syntax-case rest ()
+                           [(e0 e ...) #'(let () e0 e ...)]
+                           [_ (raise-syntax-error #f "expected non-empty clause body"
+                                                  #'ctx clause)]))
+                        (else
+                         (raise-syntax-error #f "internal error: unknown body mode" #'ctx #'body-mode)))])
+                 (values pattern body-expr defs2)))]))
         (unless (stx-list? clauses-stx)
           (raise-syntax-error #f "expected sequence of clauses" #'ctx))
-        (define alternatives
-          (if (stx-pair? clauses-stx)
-              (map for-clause (stx->list clauses-stx))
-              (list #`(fail (failure pr es)))))
-        (with-syntax ([(def ...) (append (get-txlifts-as-definitions) defs)]
-                      [(alternative ...) alternatives])
+        (define-values (patterns body-exprs defs2s)
+          (for/lists (patterns body-exprs defs2s) ([clause (in-list (stx->list clauses-stx))])
+            (for-clause clause)))
+        (with-syntax ([(def ...) (apply append (get-txlifts-as-definitions) defs defs2s)])
           #`(let* ([ctx0 #,context]
                    [pr (ps-empty x ctx0)]
                    [es #f]
                    [cx x]
                    [fh0 (syntax-patterns-fail ctx0)])
+              def ...
               (parameterize ((current-syntax-context ctx0))
                 (with ([fail-handler fh0]
                        [cut-prompt fh0])
-                  (try alternative ...))))))))]))
+                  #,(cond [(pair? patterns)
+                           (with-syntax ([matrix
+                                          (optimize-matrix
+                                           (for/list ([pattern (in-list patterns)]
+                                                      [body-expr (in-list body-exprs)])
+                                             (pk1 (list pattern) body-expr)))])
+                             #'(parse:matrix ((x cx pr es)) matrix))
+                           #|
+                           (with-syntax ([(alternative ...)
+                                          (for/list ([pattern (in-list patterns)]
+                                                     [body-expr (in-list body-exprs)])
+                                            #`(parse:S x cx #,pattern pr es #,body-expr))])
+                             #`(try alternative ...))
+                           |#]
+                          [else
+                           #`(fail (failure pr es))]))))))))]))
+
+;; ----
+
+;; (parse:matrix ((x cx pr es) ...) (PK ...)) : expr[Ans]
+;; (parse:matrix (in1 ... inN) (#s(pk1 (P11 ... P1N) e1) ... #s(pk1 (PM1 ... PMN) eM)))
+;; represents the matching matrix
+;;   [_in1_..._inN_|____]
+;;   [ P11 ... P1N | e1 ]
+;;   [  ⋮       ⋮  |  ⋮ ]
+;;   [ PM1 ... PMN | eM ]
+
+(define-syntax (parse:matrix stx)
+  (syntax-case stx ()
+    [(parse:matrix ins (pk ...))
+     #'(try (parse:pk ins pk) ...)]))
+
+(define-syntax (parse:pk stx)
+  (syntax-case stx ()
+    [(parse:pk () #s(pk1 () k))
+     #'k]
+    [(parse:pk ((x cx pr es) . ins) #s(pk1 (pat1 . pats) k))
+     #'(parse:S x cx pat1 pr es (parse:pk ins #s(pk1 pats k)))]
+    [(parse:pk ((x cx pr es) . ins) #s(pk/same pat1 inner))
+     #'(parse:S x cx pat1 pr es (parse:matrix ins inner))]
+    [(parse:pk ((x cx pr es) . ins) #s(pk/pair inner))
+     #'(let-values ([(datum tcx)
+                     (if (syntax? x)
+                         (values (syntax-e x) x)
+                         (values x cx))])
+         (if (pair? datum)
+             (let ([hx (car datum)]
+                   [hcx (car datum)]
+                   [hpr (ps-add-car pr)]
+                   [tx (cdr datum)]
+                   [tpr (ps-add-cdr pr)])
+               (parse:matrix ((hx hcx hpr es) (tx tcx tpr es) . ins) inner))
+             (fail (failure pr es))))]
+    [(parse:pk (in1 . ins) #s(pk/and inner))
+     #'(parse:matrix (in1 in1 . ins) inner)]))
 
 ;; ----
 

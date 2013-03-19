@@ -12,16 +12,13 @@
         [out (∀∃/c-out ctc)]
         [pred? (∀∃/c-pred? ctc)]
         [neg? (∀∃/c-neg? ctc)])
-  (λ (blame)
-    (if (eq? neg? (blame-swapped? blame))
-        (λ (val)
-          (if (pred? val)
-              (out val)
-              (raise-blame-error blame
-                                 val 
-                                 "non-polymorphic value: ~e"
-                                 val)))
-	in))))
+    (λ (blame)
+      (if (eq? neg? (blame-swapped? blame))
+          (λ (val)
+            (if (pred? val)
+                (out val)
+                (raise-blame-error blame val "non-polymorphic value: ~e" val)))
+          in))))
 
 (define-struct ∀∃/c (in out pred? name neg?)
   #:omit-define-syntaxes

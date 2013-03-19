@@ -94,21 +94,21 @@
                (path->complete-path p base)]
               [(string? p) (string->path p)]
               [(path? p) p]
-	[(and (list? p)
-	      (= 2 (length p))
-	      (eq? 'so (car p))
-	      (string? (cadr p)))
-	 (let ([f (path-replace-suffix (cadr p) (system-type 'so-suffix))])
-	   (or (ormap (lambda (p)
-			(let ([p (build-path p f)])
-			  (and (file-exists? p)
-			       p)))
-		      (get-lib-search-dirs))
-	       (cadr p)))]
-	[(and (list? p)
-	      ((length p) . > . 1)
-	      (eq? 'lib (car p))
-	      (andmap string? (cdr p)))
+              [(and (list? p)
+                    (= 2 (length p))
+                    (eq? 'so (car p))
+                    (string? (cadr p)))
+               (let ([f (path-replace-suffix (cadr p) (system-type 'so-suffix))])
+                 (or (ormap (lambda (p)
+                              (let ([p (build-path p f)])
+                                (and (file-exists? p)
+                                     p)))
+                            (get-lib-search-dirs))
+                     (cadr p)))]
+              [(and (list? p)
+                    ((length p) . > . 1)
+                    (eq? 'lib (car p))
+                    (andmap string? (cdr p)))
                (let* ([strs (regexp-split #rx"/" 
                                           (let ([s (cadr p)])
                                             (if (regexp-match? #rx"[./]" s)
@@ -121,8 +121,8 @@
                             (list "mzlib")
                             (append (cddr p) (drop-right strs 1)))))]
               [(and (list? p)
-	      ((length p) . = . 3)
-	      (eq? 'module (car p))
+                    ((length p) . = . 3)
+                    (eq? 'module (car p))
                     (or (not (caddr p))
                         (variable-reference? (caddr p))))
                (let ([p (cadr p)]

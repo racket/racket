@@ -78,10 +78,10 @@
           [w (NSSize-width (NSRect-size f))]
           [y (+ (NSPoint-y (NSRect-origin f))
                 (NSSize-height (NSRect-size f)))])
-    (lambda (p)
-      (let ([h (tell #:type _CGFloat cocoa-mb menuBarHeight)])
-        (and (<= x (NSPoint-x p) (+ x w))
-             (<= (- y h) (NSPoint-y p) y)))))))
+      (lambda (p)
+        (let ([h (tell #:type _CGFloat cocoa-mb menuBarHeight)])
+          (and (<= x (NSPoint-x p) (+ x w))
+               (<= (- y h) (NSPoint-y p) y)))))))
 
 (set-menu-bar-hooks! in-menu-bar-range)
 

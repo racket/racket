@@ -1227,6 +1227,10 @@ typedef _uc		jit_insn;
 
 #define FNSTSWr(RD)		((RD == _AX || RD == _EAX) ? _OO (0xdfe0)		\
 				 : JITFAIL ("AX or EAX expected"))
+
+#define FLDCWm(D, B, I, S) _O_r_X(0xd9, 5, D,B,I,S)
+#define FNSTCWm(D, B, I, S) _O_r_X(0xd9, 7, D,B,I,S)
+
 /* N byte NOPs */
 #define NOPi(N)		(((  (N)    >= 8) ? (_jit_B(0x8d),_jit_B(0xb4),_jit_B(0x26),_jit_I(0x00),_jit_B(0x90)) : (void) 0), \
 			 (( ((N)&7) == 7) ? (_jit_B(0x8d),_jit_B(0xb4),_jit_B(0x26),_jit_I(0x00)) : \

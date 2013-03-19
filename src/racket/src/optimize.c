@@ -2624,8 +2624,8 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
         return scheme_make_double(0.0);
     }
 #ifdef MZ_LONG_DOUBLE
-    z1 = (SCHEME_LONG_DBLP(app->rand1) && (SCHEME_LONG_DBL_VAL(app->rand1) == 0.0L));
-    z2 = (SCHEME_LONG_DBLP(app->rand2) && (SCHEME_LONG_DBL_VAL(app->rand2) == 0.0L));
+    z1 = (SCHEME_LONG_DBLP(app->rand1) && long_double_is_zero(SCHEME_LONG_DBL_VAL(app->rand1)));
+    z2 = (SCHEME_LONG_DBLP(app->rand2) && long_double_is_zero(SCHEME_LONG_DBL_VAL(app->rand2)));
 
     if (IS_NAMED_PRIM(app->rator, "unsafe-extfl+")) {
       if (z1)
@@ -2636,17 +2636,17 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
       if (z2)
         return app->rand1;
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-extfl*")) {
-      if (SCHEME_LONG_DBLP(app->rand1) && (SCHEME_LONG_DBL_VAL(app->rand1) == 1.0L))
+      if (SCHEME_LONG_DBLP(app->rand1) && long_double_is_1(SCHEME_LONG_DBL_VAL(app->rand1)))
         return app->rand2;
-      if (SCHEME_LONG_DBLP(app->rand2) && (SCHEME_LONG_DBL_VAL(app->rand2) == 1.0L))
+      if (SCHEME_LONG_DBLP(app->rand2) && long_double_is_1(SCHEME_LONG_DBL_VAL(app->rand2)))
         return app->rand1;
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-extfl/")) {
-      if (SCHEME_LONG_DBLP(app->rand2) && (SCHEME_LONG_DBL_VAL(app->rand2) == 1.0L))
+      if (SCHEME_LONG_DBLP(app->rand2) && long_double_is_1(SCHEME_LONG_DBL_VAL(app->rand2)))
         return app->rand1;
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-extflremainder")
                || IS_NAMED_PRIM(app->rator, "unsafe-extflmodulo")) {
-      if (SCHEME_LONG_DBLP(app->rand2) && (SCHEME_LONG_DBL_VAL(app->rand2) == 1.0L))
-        return scheme_make_long_double(0.0L);
+      if (SCHEME_LONG_DBLP(app->rand2) && long_double_is_1(SCHEME_LONG_DBL_VAL(app->rand2)))
+        return scheme_make_long_double(get_long_double_zero());
     }
 #endif
   }

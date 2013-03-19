@@ -74,7 +74,8 @@
               ; the reduction graph produces a cutoff result; with it
               ; a cylce produces a pending, which is treated identically.
               (hash-set! cache s (cons c 'pending))
-              (let ([r (cond [(term (halted? ,s)) 
+              (let ([r
+                     (cond [(term (halted? ,s)) 
                             (make-answer 
                              (if (eq? s 'error)
                                  'error
@@ -98,9 +99,9 @@
                                                       (make-non-conf 
                                                        (list (answer-value (car answers))
                                                              (answer-value (car others))))))))))))])])
-              (begin
-                (hash-set! cache s (cons c r))
-                r))))))))
+                (begin
+                  (hash-set! cache s (cons c r))
+                  r))))))))
 
 (define (verified/cycles? expr cycles verified?)
   (and (verified? expr)

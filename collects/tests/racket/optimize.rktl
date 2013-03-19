@@ -2923,6 +2923,99 @@
     ))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; define-inline
+
+(require (only-in racket/performance-hint define-inline))
+(let ([O (open-output-string)])
+  ;; Compares output to make sure that things are evaluated the right number of
+  ;; times, and in the right order.
+  (define-syntax-rule (show x r) (begin (display x O) r))
+  (define-syntax-rule (test/output E result output)
+    (begin (test result (lambda () E))
+           (test #t equal? output
+                 (bytes->string/utf-8 (get-output-bytes O #t)))))
+  ;;
+  (define-inline (f x) (+ x x))
+  (test/output (f (show 'arg1 1))
+               2 "arg1")
+  ;;
+  (define-inline (f2 x y) (+ x y))
+  (test/output (f2 (show 'arg1 1) (show 'arg2 2))
+               3 "arg1arg2")
+  ;;
+  (define-inline (g #:x [x 0]) (f x))
+  (test/output (g #:x (show 'arg1 1))
+               2 "arg1")
+  (test/output (g)
+               0 "")
+  ;;
+  (define-inline (h #:x x) (f x))
+  (test/output (h #:x (show 'arg1 1))
+               2 "arg1")
+  ;;
+  (define-inline (i [x 0]) (f x))
+  (test/output (i (show 'arg1 1))
+               2 "arg1")
+  (test/output (i)
+               0 "")
+  ;;
+  (define-inline (j x #:y [y 0]) (+ x y))
+  (test/output (j (show 'arg1 1) #:y (show 'arg2 2))
+               3 "arg1arg2")
+  (test/output (j #:y (show 'arg1 2) (show 'arg2 1))
+               3 "arg1arg2")
+  (test/output (j (show 'arg1 1))
+               1 "arg1")
+  ;;
+  (define-inline (k x [y x]) (+ x y))
+  (test/output (k (show 'arg1 1) (show 'arg2 2))
+               3 "arg1arg2")
+  (test/output (k (show 'arg1 1))
+               2 "arg1")
+  ;;
+  (define-inline (l . x) (+ (apply + x) (apply + x)))
+  (test/output (l (show 'arg1 1) (show 'arg2 2))
+               6 "arg1arg2")
+  ;;
+  (define-inline (l2 y . x) (+ y y (apply + x) (apply + x)))
+  (test/output (l2 (show 'arg0 3) (show 'arg1 1) (show 'arg2 2))
+               12 "arg0arg1arg2")
+  ;;
+  (define-inline (l3 y [z 0] . x) (+ y y z z z (apply + x) (apply + x)))
+  (test/output (l3 (show 'arg0 3) (show 'arg1 1) (show 'arg2 2))
+               13 "arg0arg1arg2")
+  (test/output (l3 (show 'arg0 3))
+               6 "arg0")
+  ;;
+  (define-inline (l4 #:x [x 0] . y) (+ x x x (apply + y) (apply + y)))
+  (test/output (l4 #:x (show 'arg1 1))
+               3 "arg1")
+  (test/output (l4 #:x (show 'arg1 1) (show 'arg2 2) (show 'arg3 3))
+               13 "arg1arg2arg3")
+  (test/output (l4 (show 'arg2 2) (show 'arg3 3))
+               10 "arg2arg3")
+  ;; test for function fallback (recursion)
+  (define-inline (sum . l) (if (null? l) 0 (+ (car l) (apply sum (cdr l)))))
+  (test/output (sum 1 2 3 4)
+               10 "")
+  ;; higher-order use
+  (define-inline (add2 x) (+ x 2))
+  (test/output (add2 3)
+               5 "")
+  (test/output (map add2 '(1 2 3))
+               '(3 4 5) "")
+  ;; currying syntax
+  (define-inline ((adder x) y) (+ x y))
+  (test/output (let ([add2 (adder (show 'arg1 2))])
+                 (+ (add2 (show 'arg2 1)) (add2 (show 'arg2 2))))
+               7 "arg1arg2arg2")
+  (define-inline (even? x) (if (zero? x) #t (odd?  (sub1 x))))
+  (define-inline (odd? x)  (if (zero? x) #f (even? (sub1 x))))
+  (test/output (odd? 2)
+               #f "")
+  )
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (report-errs)

@@ -354,8 +354,8 @@
   [(encode-as-π (lam x e) a)  (in a x (in a v (encode-as-π e v)))]
   [(encode-as-π x a)          (out x a zero)]
   [(encode-as-π (e_1 e_2) a)  (nu v ((encode-as-π e_1 v)
-                                    (nu a_x (out v a_x (out v a (binding-encode a_x e_2))))))
-                               (where a_x ,(variable-not-in (term e_2) (term x)))])
+                                     (nu a_x (out v a_x (out v a (binding-encode a_x e_2))))))
+                              (where a_x ,(variable-not-in (term e_2) (term x)))])
 
 ;; binding-encode : represent a binding.  This is the key idea: represent a binding
 ;; as a replicating agent that listens on a channel and delivers a channel corresponding

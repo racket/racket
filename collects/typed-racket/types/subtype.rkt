@@ -7,6 +7,7 @@
          (env type-name-env)
          racket/match unstable/match
          racket/function
+         racket/list
          racket/lazy-require
          (prefix-in c: racket/contract)
          (for-syntax racket/base syntax/parse))
@@ -243,6 +244,7 @@
           (parameterize ([current-seen A0])
             (match* (s t)
               [(_ (Univ:)) A0]
+              [((or (ValuesDots: _ _ _) (Values: _) (AnyValues:)) (AnyValues:)) A0]
               ;; error is top and bot
               [(_ (Error:)) A0]
               [((Error:) _) A0]
@@ -357,15 +359,48 @@
               [((Poly: ns b1) (Poly: ms b2))
                (=> unmatch)
                (unless (= (length ns) (length ms))
-                       (unmatch))
+                 (unmatch))
+               ;; substitute ns for ms in b2 to make it look like b1
                (subtype* A0 b1 (subst-all (make-simple-substitution ms (map make-F ns)) b2))]
+              [((PolyDots: (list ns ... n-dotted) b1)
+                (PolyDots: (list ms ... m-dotted) b2))
+               (cond
+                 [(< (length ns) (length ms))
+                  (define-values (short-ms rest-ms) (split-at ms (length ns)))
+                  ;; substitute ms for ns in b1 to make it look like b2
+                  (define subst
+                    (hash-set (make-simple-substitution ns (map make-F short-ms))
+                              n-dotted (i-subst/dotted (map make-F rest-ms) (make-F m-dotted) m-dotted)))
+                  (subtype* A0 (subst-all subst b1) b2)]
+                 [else
+                  (define-values (short-ns rest-ns) (split-at ns (length ms)))
+                  ;; substitute ns for ms in b2 to make it look like b1
+                  (define subst
+                    (hash-set (make-simple-substitution ms (map make-F short-ns))
+                              m-dotted (i-subst/dotted (map make-F rest-ns) (make-F n-dotted) n-dotted)))
+                  (subtype* A0 b1 (subst-all subst b2))])]
+              [((PolyDots: (list ns ... n-dotted) b1)
+                (Poly: (list ms ...) b2))
+               (=> unmatch)
+               (unless (<= (length ns) (length ms))
+                 (unmatch))
+               ;; substitute ms for ns in b1 to make it look like b2
+               (define subst
+                 (hash-set (make-simple-substitution ns (map make-F (take ms (length ns))))
+                           n-dotted (i-subst (map make-F (drop ms (length ns))))))
+               (subtype* A0 (subst-all subst b1) b2)]
               [((Refinement: par _ _) t)
                (subtype* A0 par t)]
               ;; use unification to see if we can use the polytype here
               [((Poly: vs b) s)
                (=> unmatch)
-               (if (infer vs null (list b) (list s) (make-Univ)) A0 (unmatch))]
-              [(s (Poly: vs b))
+               (if (infer vs null (list b) (list s) Univ) A0 (unmatch))]
+              [((PolyDots: (list vs ... vdotted) b) s)
+               (=> unmatch)
+               (if (infer vs (list vdotted) (list b) (list s) Univ)
+                   A0
+                   (unmatch))]
+              [(s (or (Poly: vs b) (PolyDots: vs b)))
                (=> unmatch)
                (if (null? (fv b)) (subtype* A0 s b) (unmatch))]
               ;; rec types, applications and names (that aren't the same)
@@ -477,7 +512,8 @@
                (subtype* A0 parent other)]
               ;; subtyping on values is pointwise
               [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
-              [((or (Values: _) (AnyValues:)) (AnyValues:)) A0]
+              [((ValuesDots: s-rs s-dty dbound) (ValuesDots: t-rs t-dty dbound))
+               (subtype* (subtypes* A0 s-rs t-rs) s-dty t-dty)]
               ;; trivial case for Result
               [((Result: t f o) (Result: t* f o))
                (subtype* A0 t t*)]
@@ -513,6 +549,7 @@
 (provide
   type-compare? subtypes/varargs subtypes)
 
+;(require racket/trace)
 ;(trace subtype*)
 ;(trace supertype-of-one/arr)
 ;(trace arr-subtype*/no-fail)

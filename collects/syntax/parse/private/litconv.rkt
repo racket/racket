@@ -30,6 +30,7 @@
 
   (define-syntax-class header
     #:description "name or name with formal parameters"
+    #:commit
     (pattern name:id
              #:with formals #'()
              #:attr arity (arity 0 0 null null))

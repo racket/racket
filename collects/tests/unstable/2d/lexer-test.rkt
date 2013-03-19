@@ -2,6 +2,7 @@
 (require rackunit
          syntax-color/racket-lexer
          syntax-color/scribble-lexer
+         syntax-color/lexer-contract
          unstable/options
          unstable/2d/private/lexer)
 
@@ -28,7 +29,9 @@
     (cons (list val tok paren start end backup)
           (cond
             [(equal? tok 'eof) '()]
-            [else (loop new-mode)]))))
+            [else (loop (if (dont-stop? new-mode)
+                            (dont-stop-val new-mode)
+                            new-mode))]))))
 
 (check-equal?
  (run-lexer "1234\n#2d\n")

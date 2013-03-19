@@ -15,19 +15,17 @@
                                "expected an identifier"
                                stx
                                x)))
-       #'(make-polymorphic-contract 'parametric->/c
-                                    opaque/c
+       #'(make-polymorphic-contract opaque/c
                                     '(x ...)
                                     (lambda (x ...) c)))]))
 
-(define-struct polymorphic-contract [title barrier vars body]
+
+(define-struct polymorphic-contract [barrier vars body]
   #:property prop:contract
   (build-contract-property
    #:name
    (lambda (c)
-     (list (polymorphic-contract-title c)
-           (polymorphic-contract-vars c)
-           '...))
+     `(parametric->/c ,(polymorphic-contract-vars c) ...))
    #:projection
    (lambda (c)
      (lambda (blame)
@@ -71,15 +69,18 @@
   #:property prop:contract
   (build-contract-property
    #:name (lambda (c) (barrier-contract-name c))
+   #:first-order (λ (c) (barrier-contract-pred c))
    #:projection
    (lambda (c)
+     (define mk (barrier-contract-make c))
+     (define pred (barrier-contract-pred c))
+     (define get (barrier-contract-get c))
      (lambda (blame)
        (if (equal? (blame-original? blame) (barrier-contract-positive? c))
-         (lambda (x)
-           ((barrier-contract-make c) x))
-         (lambda (x)
-           (if ((barrier-contract-pred c) x)
-             ((barrier-contract-get c) x)
-             (raise-blame-error blame x '(expected: "~a" given: "~e")
-                                (barrier-contract-name c)
-                                x))))))))
+           mk
+           (lambda (x)
+             (if (pred x)
+                 (get x)
+                 (raise-blame-error blame x '(expected: "~a" given: "~e")
+                                    (barrier-contract-name c)
+                                    x))))))))

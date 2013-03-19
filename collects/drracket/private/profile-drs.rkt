@@ -59,9 +59,7 @@ itself.
   (define (update-buttons)
     (send resume-b enable (and current-sampler (not running?)))
     (send pause-b enable (and current-sampler running?))
-    (send start-stop-b set-label (if current-sampler
-                                "Stop"
-                                "Start")))
+    (send start-stop-b set-label (if current-sampler "Stop" "Start")))
   
   (define running? #f)
   (define current-sampler #f)

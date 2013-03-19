@@ -239,6 +239,10 @@ Scheme_Env *scheme_engine_instance_init()
   printf("#if 0\nengine_instance_init @ %" PRIdPTR "\n", scheme_get_process_milliseconds());
 #endif
 
+#ifdef MZ_LONG_DOUBLE_API_IS_EXTERNAL
+  scheme_load_long_double_dll();
+#endif
+
   scheme_starting_up = 1;
 
   scheme_init_finalization();

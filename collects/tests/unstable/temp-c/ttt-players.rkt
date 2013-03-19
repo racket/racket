@@ -43,7 +43,7 @@
   (define (turn b board-ref board-set)
     (or
      (for*/or ([r (in-range 3)]
-              [c (in-range 3)])
+               [c (in-range 3)])
        (and (board-ref b r c)
             (board-set b r c mark)))
      (board-set b 0 0 mark)))

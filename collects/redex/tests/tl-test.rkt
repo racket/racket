@@ -1134,6 +1134,21 @@
           '(2 1)))
   
   (let ()
+    (define-metafunction empty-language
+      [(same any_1 any_1) #t]
+      [(same any_1 any_2) #f])
+    
+    (define-metafunction empty-language
+      m : any_1 any_2 -> any_3
+      #:pre (same any_1 any_2)
+      [(m any_x any_y) any_x])
+    
+    (test (term (m 1 1)) 1)
+    (test (with-handlers ((exn:fail:redex? exn-message))
+            (term (m 1 2)))
+          #rx"is not in my domain"))
+  
+  (let ()
     (define-language L
       (n z (s n)))
     

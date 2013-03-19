@@ -890,7 +890,7 @@
                            (+ s1 (stx-size (cdr stx) (- up-to s1))))]
             [(vector? stx) (stx-size (vector->list stx) up-to)]
             [(struct? stx) (stx-size (struct->vector stx) up-to)]
-           [(box? stx) (add1 (stx-size (unbox stx) (sub1 up-to)))]
+            [(box? stx) (add1 (stx-size (unbox stx) (sub1 up-to)))]
             [else 1]))
 
   ;; Generates a list-ref expression; if use-tail-pos

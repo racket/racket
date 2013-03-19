@@ -185,7 +185,7 @@
                              [height (int2 in)]
                              [planes (int2 in)]
                              [bits-per-pixel (int2 in)])
-                       (values width height bits-per-pixel BI_RGB 0 #f))])])
+                         (values width height bits-per-pixel BI_RGB 0 #f))])])
         (let* ([color-count (if (zero? color-count)
                                 (arithmetic-shift 1 bits-per-pixel)
                                 color-count)]

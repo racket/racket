@@ -65,8 +65,8 @@
 				   (lambda (this-info other-info)
 				     #f))
 		       #:=?-proc (=?-proc
-				 (lambda (this-info other-info)
-				   #f)))
+                                  (lambda (this-info other-info)
+                                    #f)))
   (really-make-signature name enforcer syntax-promise arbitrary-promise info-promise <=?-proc =?-proc))
 
 (define (signature-syntax sig)

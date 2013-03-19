@@ -128,39 +128,35 @@
 
   (define result
     (let loop ([ts tasks]
-             [idle-mappers connections]
-             [mapping null]
-             [ready-to-reduce null]
-             [reducing null])
-    ;(printf "STATE\n")
-    ;(pretty-print (list ts idle-mappers mapping ready-to-reduce reducing))
-    ;(flush-output)
-    (match (list ts idle-mappers mapping ready-to-reduce reducing)
-      [(list (cons tsh tst) (cons imh imt) mapping rtr r)
-        (*channel-put (second imh) (list 'map mapper sorter (list tsh)))
-        (loop tst imt (cons imh mapping) rtr r)]
-      [(list ts im m (cons rtr1 (cons rtr2 rtrt)) r)
-        (*channel-put (second rtr1) (list 'reduce-to reducer sorter (first rtr2)))
-        (loop ts im m rtrt (cons rtr1 (cons rtr2 r)))]
-      [(list (list) im (list) (list rtr) (list))
-        (*channel-put (second rtr) (list 'get-results))
-        (second (*channel-get (second rtr)))]
-      [else ; wait
-        (apply sync/enable-break (for/list ([m (append mapping reducing)])
-           (wrap-evt (second m)
-             (lambda (e)
-               (match e
-                 [(list 'reduce-ready)
-                   (loop ts idle-mappers (remove m mapping) (cons m ready-to-reduce) (remove m reducing))]
-                 [(list 'reduce-done)
-                   (loop ts (cons m idle-mappers) mapping ready-to-reduce (remove m reducing))]
-                 [else
-                   (raise (format "Unknown response message ~a" e))])))))])))
+               [idle-mappers connections]
+               [mapping null]
+               [ready-to-reduce null]
+               [reducing null])
+      ;; (printf "STATE\n")
+      ;; (pretty-print (list ts idle-mappers mapping ready-to-reduce reducing))
+      ;; (flush-output)
+      (match (list ts idle-mappers mapping ready-to-reduce reducing)
+        [(list (cons tsh tst) (cons imh imt) mapping rtr r)
+         (*channel-put (second imh) (list 'map mapper sorter (list tsh)))
+         (loop tst imt (cons imh mapping) rtr r)]
+        [(list ts im m (cons rtr1 (cons rtr2 rtrt)) r)
+         (*channel-put (second rtr1) (list 'reduce-to reducer sorter (first rtr2)))
+         (loop ts im m rtrt (cons rtr1 (cons rtr2 r)))]
+        [(list (list) im (list) (list rtr) (list))
+         (*channel-put (second rtr) (list 'get-results))
+         (second (*channel-get (second rtr)))]
+        [else ; wait
+         (apply sync/enable-break
+                (for/list ([m (append mapping reducing)])
+                  (wrap-evt (second m)
+                    (lambda (e)
+                      (match e
+                        [(list 'reduce-ready)
+                         (loop ts idle-mappers (remove m mapping) (cons m ready-to-reduce) (remove m reducing))]
+                        [(list 'reduce-done)
+                         (loop ts (cons m idle-mappers) mapping ready-to-reduce (remove m reducing))]
+                        [else
+                         (raise (format "Unknown response message ~a" e))])))))])))
 
   (or (and outputer ((apply-dynamic-require outputer) result))
       result))
-
-
-
-
-

@@ -164,14 +164,17 @@
   (syntax-case stx ()
     [(_ lst (name listvar) body ...)
       #'(begin
-        (define places (for/list ([i (in-range (processor-count))])
-          (place/lambda (name ch)
-            (place-channel-put ch ((lambda (listvar) body ...) (place-channel-get ch))))))
+          (define places
+            (for/list ([i (in-range (processor-count))])
+              (place/lambda (name ch)
+                (place-channel-put ch
+                                   ((lambda (listvar) body ...)
+                                    (place-channel-get ch))))))
 
-        (for ([p places]
-              [item (split-n (processor-count) lst)])
-          (place-channel-put p item))
-        (define result ((lambda (listvar) body ...) (map place-channel-get places)))
-        (map place-wait places)
-        (map place-kill places)
-        result)]))
+          (for ([p places]
+                [item (split-n (processor-count) lst)])
+            (place-channel-put p item))
+          (define result ((lambda (listvar) body ...) (map place-channel-get places)))
+          (map place-wait places)
+          (map place-kill places)
+          result)]))

@@ -78,15 +78,20 @@ todo:
               (loop (+ i 1)
                     str-offset)])))
        
+       (define next-tokens 
+         (cdr (2d-lexer-state-pending-tokens 
+               a-2d-lexer-state)))
+       (define new-state
+         (struct-copy 2d-lexer-state
+                      a-2d-lexer-state
+                      [pending-tokens next-tokens]))
        (values val tok paren 
                pos
                (+ (- end start) pos)
                start
-               (struct-copy 2d-lexer-state
-                            a-2d-lexer-state
-                            [pending-tokens
-                             (cdr (2d-lexer-state-pending-tokens 
-                                   a-2d-lexer-state))]))]
+               (if (null? next-tokens)
+                   new-state
+                   (dont-stop new-state)))]
       [(equal? #\# (peek-char port))
        (define pp (peeking-input-port port))
        (define chars (list (read-char pp) (read-char pp) (read-char pp)))
@@ -347,9 +352,10 @@ todo:
         (values first-tok-string 'hash-colon-keyword #f
                 pos (+ pos (string-length first-tok-string)) 
                 0
-                (2d-lexer-state final-tokens
-                                #t
-                                (2d-lexer-state-chained-state a-2d-lexer-state)))])]))
+                (dont-stop
+                 (2d-lexer-state final-tokens
+                                 #t
+                                 (2d-lexer-state-chained-state a-2d-lexer-state))))])]))
 
 (define (cropped-regions start end regions)
   (define result-regions '())

@@ -689,26 +689,25 @@
      (--> (store (sf_1 ... (x_1 #f) sf_2 ...) (in-hole E_1 (reinit x_1)))
           (store (sf_1 ... (x_1 #t) sf_2 ...) (in-hole E_1 'ignore))
           "6init")
-    (--> (store (sf_1 ... (x_1 b) sf_2 ...) (in-hole E_1 (reinit x_1)))
-         (store (sf_1 ... (x_1 b) sf_2 ...) (in-hole E_1 'ignore))
-         "6reinit"
-         (side-condition (term b)))
-    (--> (store (sf_1 ... (x_1 b) sf_2 ...) (in-hole E_1 (reinit x_1)))
-         (store (sf_1 ... (x_1 b) sf_2 ...) (in-hole E_1 (raise (make-cond "reinvoked continuation of letrec init"))))
-         "6reinite"
-         (side-condition (term b)))
-    
-    (--> (store (sf_1 ...) (in-hole E_1 (letrec ([x_1 e_1] ...) e_2 e_3 ...)))
-         (store (sf_1 ... (lx bh) ... (ri #f) ...)
-                (in-hole E_1 
-                         ((lambda (x_1 ...) 
-                            (l! lx x_1) ...
-                            (r6rs-subst-many ((x_1 lx) ... e_2))
-                            (r6rs-subst-many ((x_1 lx) ... e_3)) ...)
-                          (begin0
-                            (r6rs-subst-many ((x_1 lx) ... e_1))
-                            (reinit ri))
-                          ...)))
+     (--> (store (sf_1 ... (x_1 b) sf_2 ...) (in-hole E_1 (reinit x_1)))
+          (store (sf_1 ... (x_1 b) sf_2 ...) (in-hole E_1 'ignore))
+          "6reinit"
+          (side-condition (term b)))
+     (--> (store (sf_1 ... (x_1 b) sf_2 ...) (in-hole E_1 (reinit x_1)))
+          (store (sf_1 ... (x_1 b) sf_2 ...) (in-hole E_1 (raise (make-cond "reinvoked continuation of letrec init"))))
+          "6reinite"
+          (side-condition (term b)))
+     
+     (--> (store (sf_1 ...) (in-hole E_1 (letrec ([x_1 e_1] ...) e_2 e_3 ...)))
+          (store (sf_1 ... (lx bh) ... (ri #f) ...)
+                 (in-hole E_1 
+                          ((lambda (x_1 ...) 
+                             (l! lx x_1) ...
+                             (r6rs-subst-many ((x_1 lx) ... e_2))
+                             (r6rs-subst-many ((x_1 lx) ... e_3)) ...)
+                           (begin0 (r6rs-subst-many ((x_1 lx) ... e_1))
+                             (reinit ri))
+                           ...)))
           "6letrec"
           (side-condition (unique? (term (x_1 ...))))
           (fresh ((lx ...) 

@@ -662,13 +662,18 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
       /* inexact->exact needs no extra number */
     } else {
 #ifdef MZ_LONG_DOUBLE
-      long double d = second_const;
+      long_double d;
+      d = long_double_from_int(second_const);
+      if (extfl) {
+        mz_fpu_movi_ld_fppush(fpr1, d, JIT_R2)
+      } else {
+        mz_movi_d_fppush(fpr1, second_const, JIT_R2);
+      }
 #else
       double d = second_const;
+      mz_movi_d_fppush(fpr1, d, JIT_R2);
 #endif
-      MZ_FPUSEL_STMT(extfl,
-                     mz_fpu_movi_ld_fppush(fpr1, d, JIT_R2),
-                     mz_movi_d_fppush(fpr1, d, JIT_R2));
+      
       reversed = !reversed;
       cmp = -cmp;
     }
@@ -696,6 +701,21 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
 #endif
 
     if (arith) {
+#ifdef MZ_NEED_SET_EXTFL_MODE
+      int need_control_reset = 0;
+      if (extfl) {
+        switch (arith) {
+        case ARITH_ADD:
+        case ARITH_MUL:
+        case ARITH_DIV:
+        case ARITH_SUB:
+        case ARITH_SQRT:
+          jit_set_fp_control(0x37f);
+          need_control_reset = 1;
+          break;
+        }
+      }
+#endif
       switch (arith) {
       case ARITH_ADD:
         jit_FPSEL_addr_xd_fppop(extfl, fpr0, fpr0, fpr1);
@@ -934,6 +954,11 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
         }
 #endif
       }
+#ifdef MZ_NEED_SET_EXTFL_MODE
+      if (extfl && need_control_reset) {
+        jit_set_fp_control(0x27f);
+      }
+#endif
     } else {
       /* The "anti" variants below invert the branch. Unlike the "un" 
          variants, the "anti" variants invert the comparison result

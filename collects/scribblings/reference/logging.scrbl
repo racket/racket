@@ -85,7 +85,7 @@ otherwise.}
 
 @defproc[(make-logger [name (or/c symbol? #f) #f]
                       [parent (or/c logger? #f) #f]
-                      [notify-callback (vector? . -> . any/c)])
+                      [notify-callback (vector? . -> . any/c) #f])
          logger?]{
 
 Creates a new @tech{logger} with an optional name and parent.

@@ -145,47 +145,41 @@
   (set! global-roots (cons root global-roots)))
 
 (provide get-root-set)
-(define-syntax (get-root-set stx)
-  (syntax-case stx ()
-    [(_ root-id ...)
-     (andmap identifier? (syntax->list #'(root-id ...)))
-     #`(get-root-set/proc (list (λ () root-id) ...)
-                          (list (λ (x) (set! root-id x)) ...)
-                          '(root-id ...))]
-    [(_ e ...)
-     (let ([err (ormap (λ (x) (and (not (identifier? x)) x)) (syntax->list #'(e ...)))])
-       (raise-syntax-error false
-                           "expected an identifier to treat as a root"
-                           stx
-                           err))]
-    [_ (raise-syntax-error false
-                           "missing open parenthesis"
-                           stx)]))
+(define (get-root-set) (append (active-roots) (user-specified-roots)))
 
-(define (get-root-set/proc root-getters root-setters root-ids)
-  (append
-   (for/list ([root-getter (in-list root-getters)]
-              [root-setter (in-list root-setters)]
-              [root-id (in-list root-ids)])
-     (if (location? (root-getter))
-         (make-root root-id root-getter root-setter)
-         (error 'get-root-set "expected a location, given ~e" (root-getter))))
-   (get-global-roots)
-   (stack-roots)
-   (user-specified-roots)))
+(provide compute-current-roots)
+(define (compute-current-roots) (append (get-global-roots) (stack-roots)))
+
+(provide active-roots)
+(define active-roots (make-parameter '()))
 
 (provide with-roots)
-(define-syntax-rule 
-  (with-roots e1 e2 e3 ...)
-  (with-roots/proc e1 (λ () e2 e3 ...)))
+(define-syntax (with-roots stx)
+  (syntax-case stx ()
+    [(_ (x ...) e2 e3 ...)
+     (begin
+       (for ([x (in-list (syntax->list #'(x ...)))])
+         (unless (identifier? #'x)
+           (raise-syntax-error 'with-roots "expected an identifier" stx x)))
+       #'(with-roots/proc 
+          (list (λ () x) ...)
+          (list (λ (v) (set! x v)) ...)
+          (λ () e2 e3 ...)))]))
 
-(define (with-roots/proc roots thunk)
+(define (with-roots/proc getters setters thunk)
   (define c (listof location?))
-  (unless (c roots)
-    (raise-argument-error 'with-roots
-                          (format "~s" (contract-name c))
-                          roots))
-  (parameterize ([user-specified-roots (append roots (user-specified-roots))])
+  (for ([getter (in-list getters)])
+    (define rt (getter))
+    (unless (location? rt)
+      (raise-argument-error 'with-roots
+                            'location?
+                            rt)))
+  (parameterize ([user-specified-roots 
+                  (append
+                   (map (λ (x y) (make-root 'user-specified x y))
+                        getters 
+                        setters)
+                   (user-specified-roots))])
     (thunk)))
 
 (define user-specified-roots (make-parameter '()))

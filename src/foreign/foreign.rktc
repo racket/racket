@@ -516,6 +516,9 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 /*****************************************************************************/
 /* Types */
 
+@DEFINE{MZ_TYPE_CAST(t, e) (t)(e)}
+@DEFINE{MZ_NO_TYPE_CAST(t, e) (e)}
+
 @(begin
 ;; Types are defined with the `defctype' function.  This looks like:
 ;;   (defctype 'type-name
@@ -597,10 +600,11 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
          [pred  (prop 'pred (and macro @list{SCHEME_@|macro|P}))]
          [s->c  (prop 's->c (and macro @list{SCHEME_@|macro|_VAL}))]
          [c->s  (prop 'c->s)]
-         [offset (prop 'offset #f)])
+         [offset (prop 'offset #f)]
+         [cast (prop 'cast 'MZ_TYPE_CAST)])
     (output (describe-type stype cname ftype ctype pred s->c c->s offset))
     `(,type (stype ,stype) (cname ,cname) (ftype ,ftype) (ctype ,ctype)
-      (macro ,macro) (pred ,pred) (s->c ,s->c) (c->s ,c->s) (offset ,offset))))
+      (macro ,macro) (pred ,pred) (s->c ,s->c) (c->s ,c->s) (offset ,offset) (cast ,cast))))
 
 (define (defctype name . args)
   (set! types (append types (list (make-ctype name args)))))
@@ -625,7 +629,8 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
                      [s->c  (id 's->c)]
                      [c->s  (id 'c->s)]
                      [offset (id 'offset)]
-                     [ptr?  (id 'ptr?)])
+                     [ptr?  (id 'ptr?)]
+                     [cast  (id 'cast)])
          #'(maplines #:semicolons? 'semi?
                      (lambda (t)
                        (define data (cdr t))
@@ -640,11 +645,12 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
                               [c->s  (get 'c->s)]
                               [offset (get 'offset)]
                               [ptr? (or (equal? "pointer" ftype)
-                                        (equal? "gcpointer" ftype))])
+                                        (equal? "gcpointer" ftype))]
+                              [cast (get 'cast)])
                          body ...))
                      types)))]))
 
-(define (defctype* name/+ftype ctype pred s->c c->s)
+(define (defctype* name/+ftype ctype pred s->c c->s . more)
   (let ([name (if (pair? name/+ftype) (car name/+ftype) name/+ftype)]
         [ftype (and (pair? name/+ftype) (cadr name/+ftype))])
     (apply defctype name
@@ -652,7 +658,8 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
         ,@(if ftype `(ftype ,ftype) `())
         pred ,(if (string? pred) @list{SCHEME_@|pred|P}     pred)
         s->c ,(if (string? s->c) @list{SCHEME_@|s->c|_VAL}  s->c)
-        c->s ,(if (string? c->s) @list{scheme_make_@|c->s|} c->s)))))
+        c->s ,(if (string? c->s) @list{scheme_make_@|c->s|} c->s)
+        ,@more))))
 
 )
 
@@ -739,8 +746,19 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 
 @(defctype* 'double "double"       "FLOAT"  "FLOAT"        "double")
 
-#define ffi_type_slongdouble ffi_type_longdouble
-@@@IFDEF{MZ_LONG_DOUBLE}{typedef long double mz_long_double;}{typedef double mz_long_double;}
+@@@IFDEF{_MSC_VER}{
+  struct struct_align_slongdouble {
+    char c;
+    long_double x;
+  };
+  const ffi_type ffi_type_slongdouble = {		
+    sizeof(long_double),
+    offsetof(struct struct_align_slongdouble, x),
+    FFI_TYPE_STRUCT, NULL					
+  };
+}{
+  @DEFINE{ffi_type_slongdouble ffi_type_longdouble}
+}
 @@@IFDEF{MZ_LONG_DOUBLE}{
   @DEFINE{SCHEME_MAYBE_LONG_DBL_VAL(x) SCHEME_LONG_DBL_VAL(x)}
 }{
@@ -759,7 +777,10 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
     return NULL;
   }
 }
-@(defctype* '(longdouble "longdouble") "mz_long_double"       "LONG_DBL"  "MAYBE_LONG_DBL"        "maybe_long_double")
+
+@(defctype* '(longdouble "longdouble") "mz_long_double" "LONG_DBL"  "MAYBE_LONG_DBL" "maybe_long_double"
+   'cast 'MZ_NO_TYPE_CAST)
+
 
 /* A double that will coerce numbers to doubles: */
 @(defctype* '(double* "double") "double"
@@ -1544,7 +1565,7 @@ static void* SCHEME2C(const char *who,
                    }}
                    if (@f[pred]) {
                      @ctype tmp@";"@and[offset]{ intptr_t toff@";"}
-                     tmp = (@ctype)(@f[s->c]);
+                     tmp = @cast(@ctype, @f[s->c]);
                      @and[offset @list{toff = SCHEME_@|offset|_OFFSET(val);@"\n"}]@;
                      @(if ptr?
                           @list{if (basetype_p == NULL || @;

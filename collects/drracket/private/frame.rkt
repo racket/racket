@@ -1,19 +1,222 @@
-#lang racket/unit
-  (require string-constants
-           racket/match
+#lang racket/base
+
+(module install-pkg racket/base
+  (require racket/gui/base 
            racket/class
-           racket/string
-           racket/file
-           racket/math
-           "drsig.rkt"
-           mred
-           framework
-           net/url
-           net/head
-           setup/plt-installer
-           help/bug-report
-           setup/unpack)
+           string-constants
+           planet2/name
+           racket/list
+           framework)
+  (provide install-pkg)
   
+  (define sc-install-pkg-dialog-title (string-constant install-pkg-dialog-title))
+  (define sc-install-pkg-source-label (string-constant install-pkg-source-label))
+  (define sc-install-pkg-type-label (string-constant install-pkg-type-label))
+  (define sc-install-pkg-infer (string-constant install-pkg-infer))
+  (define sc-install-pkg-file (string-constant install-pkg-file))
+  (define sc-install-pkg-dir (string-constant install-pkg-dir))
+  (define sc-install-pkg-dir-url (string-constant install-pkg-dir-url))
+  (define sc-install-pkg-file-url (string-constant install-pkg-file-url))
+  (define sc-install-pkg-github (string-constant install-pkg-github))
+  (define sc-install-pkg-name (string-constant install-pkg-name))
+  (define sc-install-pkg-inferred-as (string-constant install-pkg-inferred-as))
+  (define sc-install-pkg-force? (string-constant install-pkg-force?))
+  (define sc-install-pkg-command-line (string-constant install-pkg-command-line))
+  
+  (define (install-pkg parent)
+    (define dlg (new dialog% 
+                     [parent parent] 
+                     [label sc-install-pkg-dialog-title]
+                     [alignment '(right center)]))
+    (define tf (new text-field% 
+                    [parent dlg] 
+                    [min-width 600]
+                    [label sc-install-pkg-source-label]
+                    [callback (λ (_1 _2) (adjust-all))]))
+    
+    (define details-parent (new vertical-panel% [parent dlg]))
+    (define details-panel (new group-box-panel% 
+                               [label (string-constant autosave-details)]
+                               [parent details-parent]
+                               [alignment '(left center)]))
+    (define button-panel (new horizontal-panel% 
+                              [parent dlg] 
+                              [stretchable-height #f] 
+                              [alignment '(right center)]))
+    
+
+    (define details-shown? #f)
+    (define details-button (new button% 
+                                [label (string-constant show-details-button-label)]
+                                [parent button-panel]
+                                [callback
+                                 (λ (a b)
+                                   (set! details-shown? (not details-shown?))
+                                   (adjust-all))]))
+    (new horizontal-panel% [parent button-panel])
+    (define-values (ok-button cancel-button)
+      (gui-utils:ok/cancel-buttons button-panel
+                                   (λ (_1 _2) 
+                                     (set! ok? #t)
+                                     (send dlg show #f))
+                                   (λ (_1 _2) (send dlg show #f))))
+    (send details-parent change-children (λ (l) '()))
+    (define choice (new choice%
+                        [label sc-install-pkg-type-label]
+                        [parent details-panel]
+                        [stretchable-width #t]
+                        [callback (λ (x y) (adjust-all))]
+                        [choices (list sc-install-pkg-infer
+                                       sc-install-pkg-file
+                                       sc-install-pkg-dir
+                                       sc-install-pkg-file-url
+                                       sc-install-pkg-dir-url
+                                       sc-install-pkg-github
+                                       sc-install-pkg-name)]))
+    
+    (define inferred-msg-parent (new horizontal-panel% 
+                                     [parent details-panel]
+                                     [stretchable-height #f]
+                                     [alignment '(right center)]))
+    (define inferred-msg (new message% [label ""] [parent inferred-msg-parent] [auto-resize #t]))
+    (define cb (new check-box% 
+                    [label sc-install-pkg-force?] 
+                    [parent details-panel]
+                    [callback (λ (a b) (adjust-all))]))
+    
+    (new message% [parent details-panel] [label sc-install-pkg-command-line])
+    (define cmdline-panel (new horizontal-panel% [parent details-panel] [stretchable-height #f]))
+    (new horizontal-panel% [parent cmdline-panel] [min-width 12] [stretchable-width #f])
+    (define cmdline-msg (new message% 
+                             [parent cmdline-panel]
+                             [stretchable-width #t]
+                             [label ""]
+                             [font (send (send (editor:get-standard-style-list)
+                                               find-named-style
+                                               "Standard")
+                                         get-font)]))
+    
+    (define (selected-type)
+      (case (send choice get-selection)
+        [(0) #f]
+        [(1) 'file]
+        [(2) 'dir]
+        [(3) 'file-url]
+        [(4) 'dir-url]
+        [(5) 'github]
+        [(6) 'name]))
+    
+    (define (type->str type)
+      (case type
+        [(file) sc-install-pkg-file]
+        [(name) sc-install-pkg-name]
+        [(dir) sc-install-pkg-dir]
+        [(github) sc-install-pkg-github]
+        [(file-url) sc-install-pkg-file-url]
+        [(dir-url) sc-install-pkg-dir-url]
+        [else (error 'type->str "unknown type ~s\n" type)]))
+    
+    (define (adjust-all)
+      (adjust-inferred)
+      (adjust-cmd-line)
+      (adjust-details-shown)
+      (adjust-ok/cancel))
+    
+    (define (adjust-ok/cancel)
+      (send ok-button enable (compute-cmd-line)))
+    
+    (define (adjust-details-shown)
+      (define current-details-shown-state?
+        (and (member details-panel (send details-parent get-children))
+             #t))
+      (unless (equal? current-details-shown-state? 
+                      details-shown?)
+        (cond
+          [details-shown?
+           (send details-button set-label (string-constant hide-details-button-label))
+           (send details-parent change-children
+                 (λ (l) (list details-panel)))]
+          [else
+           (send details-button set-label (string-constant show-details-button-label))
+           (send details-parent change-children
+                 (λ (l) '()))])))
+    
+    (define (adjust-inferred)
+      (define new-lab
+        (and (equal? #f (selected-type))
+             (let-values ([(_ actual-type)
+                           (package-source->name+type (send tf get-value) #f)])
+               (and actual-type
+                    (format sc-install-pkg-inferred-as (type->str actual-type))))))
+      (send inferred-msg set-label (or new-lab "")))
+    
+    (define (adjust-cmd-line)
+      (define (convert-to-string s)
+        (cond
+          [(string? s)
+           (if (regexp-match #rx" " s)
+               (string-append "\"" s "\"")
+               s)]
+          [(keyword? s) (regexp-replace #rx"^#:" (format "~a" s) "--")]
+          [(symbol? s) (symbol->string s)]
+          [(boolean? s) #f]
+          [else (error 'convert-to-string "unk ~s" s)]))
+      (define cmd-line (compute-cmd-line))
+      (send cmdline-msg set-label
+            (if cmd-line
+                (string-append
+                 (if (eq? (system-type) 'windows)
+                     "raco.exe"
+                     "raco")
+                 " pkg install "
+                 (apply string-append
+                        (add-between 
+                         (filter values (map convert-to-string cmd-line))
+                         " ")))
+                "")))
+    
+    (define (compute-cmd-line)
+      (define the-pkg (send tf get-value))
+      (and (not (equal? the-pkg ""))
+           (append
+            (if (send cb get-value)
+                '(#:force #t)
+                '())
+            (if (selected-type)
+                (list '#:type (selected-type))
+                '())
+            (list the-pkg))))
+    
+    (adjust-all)
+    
+    (define ok? #f)
+    
+    (send dlg show #t)
+    (and ok? (compute-cmd-line))))
+
+(module main racket
+  (require (submod ".." install-pkg))
+  (install-pkg #f))
+
+(require string-constants
+         racket/match
+         racket/class
+         racket/string
+         racket/file
+         racket/math
+         racket/unit
+         "drsig.rkt"
+         racket/gui/base
+         framework
+         net/url
+         net/head
+         setup/plt-installer
+         help/bug-report
+         setup/unpack
+         planet2
+         (submod "." install-pkg))
+(provide frame@)
+(define-unit frame@  
   (import [prefix drracket:unit: drracket:unit^]
           [prefix drracket:app: drracket:app^]
           [prefix help: drracket:help-desk^]
@@ -170,11 +373,28 @@
       (define/override (file-menu:open-string) (string-constant open-menu-item))
       
       (define/override (file-menu:between-open-and-revert file-menu) 
-        (make-object menu-item% 
-          (string-constant install-plt-file-menu-item...)
-          file-menu
-          (λ (item evt)
-            (install-plt-file this)))
+        (new menu-item% 
+             [label (string-constant install-plt-file-menu-item...)]
+             [parent file-menu]
+             [callback (λ (item evt)
+                         (install-plt-file this))])
+        (new menu-item% 
+             [label (string-constant install-pkg-menu-item...)]
+             [parent file-menu]
+             [callback
+              (λ (item evt)
+                (define res (install-pkg this))
+                (when res
+                  (with-handlers ((exn:fail?
+                                   (λ (x)
+                                     (define sp (open-output-string))
+                                     (parameterize ([current-error-port sp])
+                                       (drracket:init:original-error-display-handler
+                                        (exn-message x) 
+                                        x))
+                                     (message-box (string-constant install-pkg-error-installing-title)
+                                                  (get-output-string sp)))))
+                    (apply install res))))])
         (super file-menu:between-open-and-revert file-menu))
       
       (define/override (file-menu:between-print-and-close menu)
@@ -785,4 +1005,6 @@
                         [parent saved-bug-reports-menu]
                         [label (string-constant disacard-all-saved-bug-reports)]
                         [callback (λ (x y) (discard-all-saved-bug-reports))])]))))])
-    (drracket:app:add-language-items-to-help-menu menu))
+    (drracket:app:add-language-items-to-help-menu menu)))
+
+

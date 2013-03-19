@@ -1084,12 +1084,12 @@
             [(send pre-installed-lb get-selection)
              =>
              (lambda (i) `(lib ,(send pre-installed-lb get-string i) 
-                          "teachpack"
-                          "deinprogramm"))]
+                               "teachpack"
+                               "deinprogramm"))]
             [(send user-installed-lb get-selection)
              =>
              (lambda (i) `(lib ,(send user-installed-lb get-string i)
-                          ,user-installed-teachpacks-collection))]
+                               ,user-installed-teachpacks-collection))]
             [else (error 'figure-out-answer "no selection!")]))
         
         

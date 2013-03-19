@@ -7,13 +7,14 @@
          racket/contract)
 
 (provide/contract 
- [make-cookie ((cookie-name? cookie-value?) (#:comment (or/c false/c string?)
-                                            #:domain (or/c false/c valid-domain?)
-                                            #:max-age (or/c false/c exact-nonnegative-integer?)
-                                            #:path (or/c false/c string?)
-                                            #:expires (or/c false/c string?)
-                                            #:secure? (or/c false/c boolean?))
-                                 . ->* . cookie?)]
+ [make-cookie ((cookie-name? cookie-value?)
+               (#:comment (or/c false/c string?)
+                #:domain (or/c false/c valid-domain?)
+                #:max-age (or/c false/c exact-nonnegative-integer?)
+                #:path (or/c false/c string?)
+                #:expires (or/c false/c string?)
+                #:secure? (or/c false/c boolean?))
+               . ->* . cookie?)]
  [cookie->header (cookie? . -> . header?)])
 
 (define-syntax setter

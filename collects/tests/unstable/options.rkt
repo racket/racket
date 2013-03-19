@@ -638,7 +638,7 @@
                                       "server"
                                       "a struct of type foo"))
                          
-                         (test-suite "transfer-option"
+                         (test-suite "transfer/c"
                                      
                                      (test-pass
                                       "passes after two transfers"
@@ -649,10 +649,10 @@
                                          (define (boo x) x))
                                        (module middle0 racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module middle1 racket
                                          (require unstable/options 'middle0)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require unstable/options 'middle1)
                                        (boo 1)))
                                      
@@ -668,10 +668,10 @@
                                          (define (boo x) x))
                                        (module middle0 racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module middle1 racket
                                          (require unstable/options 'middle0)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require unstable/options 'middle1)
                                        (boo 1)))
                                      
@@ -689,7 +689,7 @@
                                          (define (boo x) 'wrong))
                                        (module client racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require 'client)
                                        (displayln (boo 42))
                                        (boo 42))
@@ -707,10 +707,10 @@
                                          (define (boo x) x))
                                        (module client racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require 'client)
                                        (boo 'wrong))
-                                      (list "top-level" "client"))
+                                      (list "top-level" "top-level"))
                                      
                                      (test-contract-fail
                                       "fails (positive) after two transfers (with contract)"
@@ -724,10 +724,10 @@
                                          (define (boo x) 'wrong))
                                        (module middle0 racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module middle1 racket
                                          (require unstable/options 'middle0)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require unstable/options 'middle1)
                                        (boo 1))
                                       (list "middle1" "middle0" "server")) 
@@ -744,20 +744,20 @@
                                          (define (boo x) x))
                                        (module middle0 racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module middle1 racket
                                          (require unstable/options 'middle0)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require unstable/options 'middle1)
                                        (boo 'wrong))
-                                      (list "top-level" "middle1" "middle0"))
+                                      (list "top-level" "top-level" "top-level"))
                                      
                                      (test-pass
                                       "passes after void transfer"
                                       (script
                                        (module server racket
                                          (require unstable/options)
-                                         (provide [transfer-option boo])
+                                         (provide (contract-out [boo transfer/c]))
                                          (define (boo x) x))
                                        (require 'server)))
                                      
@@ -770,7 +770,7 @@
                                          (define (boo x) x))
                                        (module client racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require 'client)
                                        (boo 42)))
                                      
@@ -784,7 +784,7 @@
                                        (module client racket
                                          (require unstable/options 'server)
                                          (define e-boo (exercise-option boo))
-                                         (provide (transfer-option e-boo)))
+                                         (provide (contract-out [e-boo transfer/c])))
                                        (require 'client)
                                        (e-boo 42)))
                                      
@@ -798,9 +798,57 @@
                                        (module client racket
                                          (require unstable/options 'server)
                                          (define e-boo (exercise-option boo))
-                                         (provide (transfer-option e-boo)))
+                                         (provide (contract-out [e-boo transfer/c])))
                                        (require 'client)
-                                       (e-boo 42))))
+                                       (e-boo 42)))
+                                     
+                                     (test-contract-fail
+                                      "fails (positive-ho) after three transfers and exercise (with-contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo 
+                                                                 (option/c
+                                                                 (-> number? number?)
+                                                                 #:with-contract #t)]
+                                                                [bar (-> transfer/c number?)]))
+                                         (define (boo x) 'wrong)
+                                         (define (bar f) ((exercise-option f) 42)))
+                                       (module client racket
+                                         (require unstable/options 'server)
+                                         (provide (contract-out [boo transfer/c]
+                                                                [bar transfer/c])))
+                                       (module client1 racket
+                                         (require unstable/options 'client)
+                                         (provide (contract-out [boo transfer/c]
+                                                                [bar transfer/c])))                                      
+                                       (require 'client1)
+                                       (bar boo))
+                                      (list "top-level" "client1" "client" "server"))
+                                     
+                                     (test-contract-fail
+                                      "fails (negative-ho) after three transfers and exercise (with-contract)"
+                                      (script
+                                       (module server racket
+                                         (require unstable/options)
+                                         (provide (contract-out [boo 
+                                                                 (option/c
+                                                                 (-> number? number?)
+                                                                 #:with-contract #t)]
+                                                                [bar (-> transfer/c number?)]))
+                                         (define (boo x) 'wrong)
+                                         (define (bar f) ((exercise-option f) 'wrong)))
+                                       (module client racket
+                                         (require unstable/options 'server)
+                                         (provide (contract-out [boo transfer/c]
+                                                                [bar transfer/c])))
+                                       (module client1 racket
+                                         (require unstable/options 'client)
+                                         (provide (contract-out [boo transfer/c]
+                                                                [bar transfer/c])))                                      
+                                       (require 'client1)
+                                       (bar boo))
+                                      (list "server" "top-level" "top-level" "top-level"))) 
                          
                          (test-suite "exercise-option"
                                      
@@ -813,10 +861,10 @@
                                          (define (boo x) x))
                                        (module middle0 racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module middle1 racket
                                          (require unstable/options 'middle0)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require unstable/options 'middle1)
                                        ((exercise-option boo) 1)))
                                      
@@ -829,7 +877,7 @@
                                          (define (boo x) "wrong!"))
                                        (module middle racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module client racket
                                          (require unstable/options 'middle)
                                          ((exercise-option boo) 42))
@@ -845,12 +893,12 @@
                                          (define (boo x) x))
                                        (module middle racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module client racket
                                          (require unstable/options 'middle)
                                          ((exercise-option boo) "wrong!"))
                                        (require 'client))
-                                      (list "client" "middle"))   
+                                      (list "client" "client"))   
                                      
                                      (test-pass
                                       "passes after void exercise"
@@ -882,7 +930,7 @@
                                        (module client racket
                                          (require unstable/options 'server)
                                          (define e-boo (exercise-option boo))
-                                         (provide (transfer-option e-boo)))
+                                         (provide (contract-out [e-boo transfer/c])))
                                        (require 'client)))
                                      
                                      
@@ -897,10 +945,10 @@
                                          (define (boo x) x))
                                        (module middle0 racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module middle1 racket
                                          (require unstable/options 'middle0)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require unstable/options 'middle1)
                                        ((exercise-option boo) 1)))
                                      
@@ -915,7 +963,7 @@
                                          (define (boo x) "wrong!"))
                                        (module middle racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module client racket
                                          (require unstable/options 'middle)
                                          ((exercise-option boo) 42))
@@ -933,12 +981,12 @@
                                          (define (boo x) x))
                                        (module middle racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module client racket
                                          (require unstable/options 'middle)
                                          ((exercise-option boo) "wrong!"))
                                        (require 'client))
-                                      (list "client" "middle"))   
+                                      (list "client" "client"))   
                                      
                                      
                                      (test-contract-fail
@@ -968,7 +1016,7 @@
                                        (module client racket
                                          (require unstable/options 'server)
                                          (define e-boo (exercise-option boo))
-                                         (provide (transfer-option e-boo)))
+                                         (provide (contract-out [e-boo transfer/c])))
                                        (require 'client))))
                          
                          
@@ -983,10 +1031,10 @@
                                          (define (boo x) x))
                                        (module middle0 racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module middle1 racket
                                          (require unstable/options 'middle0)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require unstable/options 'middle1)
                                        ((waive-option boo) 1)))
                                      
@@ -1031,7 +1079,7 @@
                                        (module client racket
                                          (require unstable/options 'server)
                                          (define e-boo (waive-option boo))
-                                         (provide (transfer-option e-boo)))
+                                         (provide (contract-out [e-boo transfer/c])))
                                        (require 'client)))
                                      
                                      (test-pass
@@ -1045,10 +1093,10 @@
                                          (define (boo x) x))
                                        (module middle0 racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module middle1 racket
                                          (require unstable/options 'middle0)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require unstable/options 'middle1)
                                        ((waive-option boo) 1)))          
                                      
@@ -1092,7 +1140,7 @@
                                        (module client racket
                                          (require unstable/options 'server)
                                          (define e-boo (waive-option boo))
-                                         (provide (transfer-option e-boo)))
+                                         (provide (contract-out [e-boo transfer/c])))
                                        (require 'client))))
                          
                          (test-suite "tweak-option"
@@ -1106,10 +1154,10 @@
                                          (define (boo x) x))
                                        (module middle0 racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module middle1 racket
                                          (require unstable/options 'middle0)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require unstable/options 'middle1)
                                        ((tweak-option boo) 1)))
                                      
@@ -1122,13 +1170,13 @@
                                          (define (boo x) x))
                                        (module middle0 racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module middle1 racket
                                          (require unstable/options 'middle0)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require unstable/options 'middle1)
                                        ((tweak-option boo) 'wrong))
-                                      (list "top-level" "middle1" "middle0"))
+                                      (list "top-level" "top-level" "top-level"))
                                      
                                      (test-contract-fail
                                       "fails (positive) after two transfers and tweak"
@@ -1139,16 +1187,16 @@
                                          (define (boo x) 'wrong))
                                        (module middle0 racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module middle1 racket
                                          (require unstable/options 'middle0)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require unstable/options 'middle1)
                                        ((tweak-option boo) 42))
                                       (list "middle1" "middle0" "server"))
                                      
                                      (test-contract-fail 
-                                      "passes after two transfers and tweak"
+                                      "fails (negative) two transfers and tweak"
                                       (script
                                        (module server racket
                                          (require unstable/options)
@@ -1156,14 +1204,14 @@
                                          (define (boo x) x))
                                        (module middle0 racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module middle1 racket
                                          (require unstable/options 'middle0)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require unstable/options 'middle1)
                                        ((tweak-option boo) 42)
                                        ((tweak-option boo) 'wrong))
-                                      (list "top-level" "middle1" "middle0"))
+                                      (list "top-level" "top-level" "top-level"))
                                      
                                      (test-pass
                                       "passes after two transfers and tweak (with-contract)"
@@ -1176,16 +1224,14 @@
                                          (define (boo x) x))
                                        (module middle0 racket
                                          (require unstable/options 'server)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (module middle1 racket
                                          (require unstable/options 'middle0)
-                                         (provide (transfer-option boo)))
+                                         (provide (contract-out [boo transfer/c])))
                                        (require unstable/options 'middle1)
                                        ((tweak-option boo) 1)))
                                      
-                                     
-                                     
-                                     
+                  
                                      (test-pass
                                       "passes after tweak"
                                       (script

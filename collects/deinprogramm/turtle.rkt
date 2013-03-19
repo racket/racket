@@ -150,16 +150,16 @@
    (lambda (length)
      (lambda (t)
        (let* ((h (get-h t))
-             (w (get-w t))
-             (x (get-x t))
-             (y (get-y t))
-             (angle (get-angle t))
-             (image (get-image t))
-             (color (get-color t))
-             (state (get-state t))
-             ; Compute new coordinats
-             (newx (+ x (* length (cos (grad->rad angle)))))
-             (newy (+ y (* length (sin (grad->rad angle))))))
+              (w (get-w t))
+              (x (get-x t))
+              (y (get-y t))
+              (angle (get-angle t))
+              (image (get-image t))
+              (color (get-color t))
+              (state (get-state t))
+              ; Compute new coordinats
+              (newx (+ x (* length (cos (grad->rad angle)))))
+              (newy (+ y (* length (sin (grad->rad angle))))))
          (new-turtle-priv
           h w 
           newx newy angle 

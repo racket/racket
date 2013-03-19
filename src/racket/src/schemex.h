@@ -497,7 +497,7 @@ Scheme_Object *(*scheme_make_integer_value_from_long_halves)(uintptr_t lowhalf, 
 Scheme_Object *(*scheme_make_integer_value_from_unsigned_long_halves)(uintptr_t lowhalf, uintptr_t hihalf);
 Scheme_Object *(*scheme_make_double)(double d);
 #ifdef MZ_LONG_DOUBLE
-Scheme_Object *(*scheme_make_long_double)(long double d);
+Scheme_Object *(*scheme_make_long_double)(mz_long_double d);
 #endif
 #ifdef MZ_USE_SINGLE_FLOATS
 Scheme_Object *(*scheme_make_float)(float f) ;
@@ -518,7 +518,7 @@ int (*scheme_get_long_long_val)(Scheme_Object *o, mzlonglong *v);
 int (*scheme_get_unsigned_long_long_val)(Scheme_Object *o, umzlonglong *v);
 double (*scheme_real_to_double)(Scheme_Object *r);
 #ifdef MZ_LONG_DOUBLE
-long double;
+mz_long_double (*scheme_real_to_long_double)(Scheme_Object *r);
 #endif
 Scheme_Object *(*scheme_make_cptr)(void *cptr, Scheme_Object *typetag);
 Scheme_Object *(*scheme_make_offset_cptr)(void *cptr, intptr_t offset, Scheme_Object *typetag);
@@ -571,8 +571,8 @@ Scheme_Object *(*scheme_make_bignum_from_unsigned_long_long)(umzlonglong v);
 double (*scheme_bignum_to_double)(const Scheme_Object *n);
 Scheme_Object *(*scheme_bignum_from_double)(double d);
 #ifdef MZ_LONG_DOUBLE
-long double;
-Scheme_Object *(*scheme_bignum_from_long_double)(long double d);
+mz_long_double (*scheme_bignum_to_long_double)(const Scheme_Object *n);
+Scheme_Object *(*scheme_bignum_from_long_double)(mz_long_double d);
 #endif
 #ifdef MZ_USE_SINGLE_FLOATS
 float (*scheme_bignum_to_float)(const Scheme_Object *n);
@@ -593,8 +593,8 @@ Scheme_Object *(*scheme_make_rational)(const Scheme_Object *r, const Scheme_Obje
 double (*scheme_rational_to_double)(const Scheme_Object *n);
 Scheme_Object *(*scheme_rational_from_double)(double d);
 #ifdef MZ_LONG_DOUBLE
-long double;
-Scheme_Object *(*scheme_rational_from_long_double)(long double d);
+mz_long_double (*scheme_rational_to_long_double)(const Scheme_Object *n);
+Scheme_Object *(*scheme_rational_from_long_double)(mz_long_double d);
 #endif
 #ifdef MZ_USE_SINGLE_FLOATS
 float (*scheme_rational_to_float)(const Scheme_Object *n);

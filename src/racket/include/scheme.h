@@ -83,6 +83,20 @@
 # endif
 #endif
 
+#ifdef MZ_LONG_DOUBLE
+# if defined(_MSC_VER)
+#  define MZ_NEED_SET_EXTFL_MODE 1
+#  define BYTES_RESERVED_FOR_LONG_DOUBLE 16
+typedef struct {
+  char bytes[BYTES_RESERVED_FOR_LONG_DOUBLE];
+} mz_long_double;
+# else
+typedef long double mz_long_double;
+# endif
+#else
+typedef double mz_long_double;
+#endif
+
 #ifdef DONT_ITIMER
 # undef USE_ITIMER
 #endif
@@ -351,7 +365,7 @@ typedef struct {
 #ifdef MZ_LONG_DOUBLE
 typedef struct {
   Scheme_Object so;
-  long double long_double_val;
+  mz_long_double long_double_val;
 } Scheme_Long_Double;
 #else
 typedef struct {
@@ -393,7 +407,7 @@ typedef struct Scheme_Double_Vector {
 typedef struct Scheme_Long_Double_Vector {
   Scheme_Inclhash_Object iso; /* & 0x2 indicates allocated in the MASTERGC */
   intptr_t size;
-  long double els[mzFLEX_ARRAY_DECL];
+  mz_long_double els[mzFLEX_ARRAY_DECL];
 } Scheme_Long_Double_Vector;
 #endif
 

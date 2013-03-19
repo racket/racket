@@ -44,13 +44,13 @@
                     [(shift) (send evt get-shiftdown)]
                     [(option) (send evt get-alt-down)]))
                 shortcut-prefix))
-    (values (string-append (string-constant the-racket-language)
-                           (format " (~aR)" menukey-string))
-            (string-append (string-constant teaching-languages)
-                           (format " (~aT)" menukey-string))
-            (string-append (string-constant other-languages)
-                           (format " (~aO)" menukey-string))
-            mouse-event-uses-shortcut-prefix?)))
+      (values (string-append (string-constant the-racket-language)
+                             (format " (~aR)" menukey-string))
+              (string-append (string-constant teaching-languages)
+                             (format " (~aT)" menukey-string))
+              (string-append (string-constant other-languages)
+                             (format " (~aO)" menukey-string))
+              mouse-event-uses-shortcut-prefix?)))
   
   (provide language-configuration@)
   

@@ -28,16 +28,16 @@
                 'make-enumeration
                 "list of symbols"
                 enum))])
-  (unless (mlist? enum) (bad))
-  (let ([enum (mlist->list enum)])
-    (unless (andmap symbol? enum) (bad))
-    (let ([ht (make-hasheq)])
-      (make-universe
-       ht
-       (for/list ([s (in-list enum)]
-                  #:when (not (hash-ref ht s #f)))
-         (hash-set! ht s (arithmetic-shift 1 (hash-count ht)))
-         s))))))
+    (unless (mlist? enum) (bad))
+    (let ([enum (mlist->list enum)])
+      (unless (andmap symbol? enum) (bad))
+      (let ([ht (make-hasheq)])
+        (make-universe
+         ht
+         (for/list ([s (in-list enum)]
+                    #:when (not (hash-ref ht s #f)))
+           (hash-set! ht s (arithmetic-shift 1 (hash-count ht)))
+           s))))))
 
 (define (make-enumeration enum)
   (let ([uni (make-enumeration-universe enum)])
@@ -236,26 +236,26 @@
                       (arithmetic-shift 1 (hash-count ht)))))
        (with-syntax ([(val ...)
                       (map (lambda (s) (hash-ref ht (syntax-e s))) syms)])
-       #'(begin
-           (define enum-universe (make-enumeration-universe (mlist 'sym ...)))
-           (define-syntax (type-name stx)
-             (syntax-case* stx (sym ...) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
-               [(_ sym) #''sym]
-               ...
-               [(_ other)
-                (identifier? #'other)
-                (raise-syntax-error #f "not in enumeration" stx #'other)]))
-           (define-syntax (bit-value stx)
-             (syntax-case* stx (sym ...) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
-               [(_ orig sym) #'val]
-               ...
-               [(_ orig s)
-                (raise-syntax-error #f "not in enumeration" #'orig #'s)]))
-           (...
-            (define-syntax (constructor stx)
-              (syntax-case stx ()
-                [(_ s ...)
-                 (andmap identifier? (syntax->list #'(s ...)))
-                 (with-syntax ([orig stx])
-                   #'(make-enum-set (bitwise-ior (bit-value orig s) ...)
-                                    enum-universe))]))))))]))
+         #'(begin
+             (define enum-universe (make-enumeration-universe (mlist 'sym ...)))
+             (define-syntax (type-name stx)
+               (syntax-case* stx (sym ...) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
+                 [(_ sym) #''sym]
+                 ...
+                 [(_ other)
+                  (identifier? #'other)
+                  (raise-syntax-error #f "not in enumeration" stx #'other)]))
+             (define-syntax (bit-value stx)
+               (syntax-case* stx (sym ...) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
+                 [(_ orig sym) #'val]
+                 ...
+                 [(_ orig s)
+                  (raise-syntax-error #f "not in enumeration" #'orig #'s)]))
+             (...
+              (define-syntax (constructor stx)
+                (syntax-case stx ()
+                  [(_ s ...)
+                   (andmap identifier? (syntax->list #'(s ...)))
+                   (with-syntax ([orig stx])
+                     #'(make-enum-set (bitwise-ior (bit-value orig s) ...)
+                                      enum-universe))]))))))]))

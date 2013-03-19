@@ -629,7 +629,7 @@ functions. If the OpenSSL library cannot be opened, this library logs
 a warning and falls back to the implementation in
 @racketmodname[file/sha1].}
 
-@defproc[(sha1 [in input-port]) string?]{
+@defproc[(sha1 [in input-port?]) string?]{
 
 Returns a 40-character string that represents the SHA-1 hash (in
 hexadecimal notation) of the content from @racket[in], consuming all
@@ -638,7 +638,7 @@ of the input from @racket[in] until an end-of-file.
 The @racket[sha1] function composes @racket[bytes->hex-string] with
 @racket[sha1-bytes].}
 
-@defproc[(sha1-bytes [in input-port]) bytes?]{
+@defproc[(sha1-bytes [in input-port?]) bytes?]{
 
 Returns a 20-byte byte string that represents the SHA-1 hash of the
 content from @racket[in], consuming all of the input from @racket[in]

@@ -16,14 +16,13 @@
                               halt-on-errors print-only-errors
                               test-inexact-epsilon plai-ignore-exn-strings
                               plai-all-test-results)
-                     (only-in plai/collector
+                     (only-in plai/gc2/collector
                               root?
                               heap-size
                               location?
                               heap-value?
                               heap-set! heap-ref with-heap
-                              get-root-set read-root set-root!
-                              procedure-roots)
+                              get-root-set read-root set-root! make-root)
                      plai/scribblings/fake-collector
                      plai/scribblings/fake-mutator
                      plai/scribblings/fake-web
@@ -31,7 +30,7 @@
                      (only-in plai/web
                               no-web-browser
                               static-files-path)
-                     (only-in plai/mutator
+                     (only-in plai/gc2/mutator
                               set-first!
                               set-rest!
                               import-primitives
@@ -84,9 +83,10 @@ Determines if @racket[v] is a root.
   Returns the value at @racket[_loc].
 }
 
-@defform/subs[(get-root-set id ...)()]{
-  Returns the current roots as a list.  Local roots are created for the
-  identifiers @racket[_id] as well.
+@defform[(get-root-set)]{
+  Returns the current @racket[root?]s as a list. This returns
+  valid roots only when invoked via the mutator language. Otherwise
+  it returns only what has been set up with @racket[with-roots].
 }
 
 @defproc[(read-root (root root?)) location?]{
@@ -94,13 +94,21 @@ Determines if @racket[v] is a root.
 }
 
 @defproc[(set-root! (root root?) (loc location?)) void?]{
-  Updates the root to reference the given location.
+  Updates @racket[root] to refer to @racket[loc].
 }
 
-@defproc[(procedure-roots (proc procedure?)) (listof root?)]{
-  Given a closure stored on the heap, returns a list of the roots reachable
-  from the closure's environment.  If @racket[_proc] is not reachable, the
-  empty list is returned.
+@defproc[(make-root [name symbol?] [get (-> location?)] [set (-> location? void?)])
+         root?]{
+  Creates a new root. When @racket[read-root] is called, it invokes
+  @racket[get] and when @racket[set-root!] is called, it invokes
+  @racket[set].
+  
+  For example, this creates a root that uses the local variable
+  @racket[x] to hold its location:
+  @racketblock[(let ([x 1])
+                 (make-root 'x
+                            (λ () x)
+                            (λ (new-x) (set! x new-x))))]
 }
 
 @defform[(with-heap heap-expr body-expr ...)
@@ -115,28 +123,35 @@ Determines if @racket[v] is a root.
         2)
   ]}
                                                      
-@defform[(with-roots roots-expr expr1 expr2 ...)
+@defform[(with-roots (root-var ...) expr1 expr2 ...)
          #:contracts ([roots-expr (listof location?)])]{
   Evaluates each of @racket[expr1] and the @racket[expr2]s in
-  in a context with the result of @racket[roots-expr]
-  as additional roots.
+  in a context with additional roots, one for each of
+  the @racket[root-var]s. The @racket[get-root-set] function
+  returns these additional roots. Calling @racket[read-root] on
+  one of the newly created roots returns the value of the 
+  corresponding @racket[root-var] and calling @racket[set-root!]
+  mutates the corresponding variable.
   
-  This function is intended to be used in test suites
+  This form is intended to be used in test suites
   for collectors. Since your test suites are not running
   in the @racketmod[plai/gc2/mutator] language, @racket[get-root-set]
   returns a list consisting only of the roots it created,
   not all of the other roots it normally would return.
-  Use this function to note specific locations as roots
+  Use @racket[with-roots] to note specific locations as roots
   and set up better tests for your GC.
   
   @racketblock[
     (test (with-heap (make-vector 4)
                      (define f1 (gc:alloc-flat 1))
-                     (define c1 (gc:cons f1 f1))
-                     (with-roots (list c1)
+                     (define r1 (make-root 'f1 
+                                           (λ () f1)
+                                           (λ (v) (set! f1 v))))
+                     (define c1 (gc:cons r1 r1))
+                     (with-roots (c1)
                                  (gc:deref
                                   (gc:first
-                                   (gc:cons f1 f1)))))
+                                   (gc:cons r1 r1)))))
           1)]
   
 }
@@ -178,9 +193,9 @@ language exposes the environment via the @racket[procedure-roots] function.
 
 }
 
-@defproc[(gc:cons (first location?) (rest location?)) location?]{
+@defproc[(gc:cons (first root?) (rest root?)) location?]{
 
-Given the location of the @racket[_first] and @racket[_rest] values, this
+Given two roots, one for the @racket[first] and @racket[rest] values, this
 procedure must allocate a cons cell on the heap.  If there is insufficient
 space to allocate the cons cell, it should signal an error.
 
@@ -202,37 +217,37 @@ field. Otherwise, it should signal an error.
 
 @defproc[(gc:set-first! (cons-cell location?) (first-value location?)) void?]{
 
-If @racket[_cons-cell] refers to a cons cell, set the head of the cons cell to
-@racket[_first-value].  Otherwise, signal an error.
+If @racket[cons-cell] refers to a cons cell, set the head of the cons cell to
+@racket[first-value].  Otherwise, signal an error.
 
 }
 
 @defproc[(gc:set-rest! (cons-cell location?) (rest-value location?)) void?]{
 
-If @racket[_cons-cell] refers to a cons cell, set the tail of the cons cell to
-@racket[_rest-value].  Otherwise, signal an error.
+If @racket[cons-cell] refers to a cons cell, set the tail of the cons cell to
+@racket[rest-value].  Otherwise, signal an error.
 
 }
 
 @defproc[(gc:cons? (loc location?)) boolean?]{
 
 
-Returns @racket[true] if @racket[_loc] refers to a cons cell.  This function
+Returns @racket[#true] if @racket[loc] refers to a cons cell.  This function
 should never signal an error.
 
 }
 
 @defproc[(gc:flat? (loc location?)) boolean?]{
 
-Returns @racket[true] if @racket[_loc] refers to a flat value.  This function
+Returns @racket[#true] if @racket[loc] refers to a flat value.  This function
 should never signal an error.
 
 }
 
-@defproc[(gc:closure [code-ptr heap-value?] [free-vars (vectorof location?)]) 
+@defproc[(gc:closure [code-ptr heap-value?] [free-vars (listof root?)]) 
          location?]{
-  Allocates a closure with 'code-ptr' and the free variables
-  in the vector 'free-vars'.                                                                               
+  Allocates a closure with @racket[code-ptr] and the free variables
+  in the list @racket[free-vars].
 }
 @defproc[(gc:closure-code-ptr [loc location?]) heap-value?]{
  Given a location returned from an earlier allocation

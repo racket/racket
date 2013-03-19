@@ -19,7 +19,7 @@
       (when old-val
         (eprintf "WARNING: collected information for key multiple times: ~e; values: ~e ~e\n"
                  key old-val val))
-    (hash-set! ht key val))))
+      (hash-set! ht key val))))
 
 (define (resolve-get/where part ri key)
   (let ([key (tag-key key ri)])

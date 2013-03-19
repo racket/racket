@@ -228,13 +228,13 @@
 (require (for-meta 2 (submod "." analysis)))
 
 (begin-for-syntax
-(define-syntax (parse-stuff stx)
-  (syntax-parse stx
-    [(_ stuff ...)
-     (emit-remark "Parse stuff ~a\n" #'(stuff ...))
-     (phase2:parse-all #'(stuff ...))
-     #;
-     (honu->racket (parse-all #'(stuff ...)))])))
+  (define-syntax (parse-stuff stx)
+    (syntax-parse stx
+      [(_ stuff ...)
+       (emit-remark "Parse stuff ~a\n" #'(stuff ...))
+       (phase2:parse-all #'(stuff ...))
+       #;
+       (honu->racket (parse-all #'(stuff ...)))])))
 
 (begin-for-syntax
   (define-syntax (create-honu-macro stx)

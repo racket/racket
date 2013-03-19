@@ -187,6 +187,8 @@ selected.
                                       (list @litchar{║  ║  ║})
                                       (list @litchar{╚══╩══╝}))]
                        }
+@keybinding["C-x r c"]{Centers the contents of the current line inside the enclosing
+                       cell of the enclosing ASCII art rectangle.}
 ]
 
 @section{File Operations}

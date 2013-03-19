@@ -63,11 +63,8 @@
 (define-syntax (time-n stx)
   (syntax-case stx ()
     [(_ msg cnt body ...)
-      #'(let-values ([(r ct rt gct) (time-apply
-            (lambda ()
-              body ...
-            )
-            null)])
+      #'(let-values ([(r ct rt gct)
+                      (time-apply (lambda () body ...) null)])
           (displayln (list msg cnt ct rt gct))
           (if (pair? r) (car r) r))
 #|
