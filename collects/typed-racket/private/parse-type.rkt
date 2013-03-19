@@ -27,7 +27,9 @@
                        ;; context of the given syntax object
                        [parse-type/id (syntax? c:any/c . c:-> . Type/c)]
                        [parse-tc-results (syntax? . c:-> . tc-results/c)]
-                       [parse-tc-results/id (syntax? c:any/c . c:-> . tc-results/c)])
+                       [parse-tc-results/id (syntax? c:any/c . c:-> . tc-results/c)]
+                       [parse-literal-alls (syntax? . c:-> . (values (listof identifier?)
+                                                                     (listof identifier?)))])
 
 (provide star ddd/bound)
 (print-complex-filters? #t)
@@ -39,27 +41,35 @@
   (let* ([stx* (datum->syntax loc datum loc loc)])
     (p stx*)))
 
-;; Syntax -> Type
-;; Parse the body under a Forall quantifier
-(define (parse-all-body s)
-  (syntax-parse s
-    [(ty)
-     (parse-type #'ty)]
-    [(x ...)
+;; The body of a Forall type
+(define-syntax-class all-body
+  #:attributes (type)
+  (pattern (type))
+  (pattern (x ...)
      #:fail-unless (= 1 (length
                          (for/list ([i (syntax->list #'(x ...))]
                                     #:when (and (identifier? i)
                                                 (free-identifier=? i #'t:->)))
-                                   i)))
-     #f
-     (parse-type s)]))
+                                   i))) #f
+     #:attr type #'(x ...)))
 
-;; Syntax (Syntax -> Type) -> Type
+(define (parse-literal-alls stx)
+  (syntax-parse stx #:literals (t:All)
+    [(t:All (~or (vars:id ... v:id dd:ddd) (vars:id ...)) . t:all-body)
+     (define vars-list (syntax->list #'(vars ...)))
+     (cons (if (attribute v)
+               (list vars-list #'v)
+               vars-list)
+           (parse-literal-alls #'t.type))]
+    [_ null]))
+
+
+;; Syntax -> Type
 ;; Parse a Forall type
-(define (parse-all-type stx parse-type)
+(define (parse-all-type stx)
   ;(printf "parse-all-type: ~a \n" (syntax->datum stx))
   (syntax-parse stx #:literals (t:All)
-    [((~and kw t:All) (vars:id ... v:id dd:ddd) . t)
+    [((~and kw t:All) (vars:id ... v:id dd:ddd) . t:all-body)
      (when (check-duplicate-identifier (syntax->list #'(vars ... v)))
        (tc-error "All: duplicate type variable or index"))
      (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
@@ -67,14 +77,14 @@
        (add-disappeared-use #'kw)
        (extend-indexes v
          (extend-tvars vars
-           (make-PolyDots (append vars (list v)) (parse-all-body #'t)))))]
-    [((~and kw t:All) (vars:id ...) . t)
+           (make-PolyDots (append vars (list v)) (parse-type #'t.type)))))]
+    [((~and kw t:All) (vars:id ...) . t:all-body)
      (when (check-duplicate-identifier (syntax->list #'(vars ...)))
        (tc-error "All: duplicate type variable"))
      (let* ([vars (map syntax-e (syntax->list #'(vars ...)))])
        (add-disappeared-use #'kw)
        (extend-tvars vars
-         (make-Poly vars (parse-all-body #'t))))]
+         (make-Poly vars (parse-type #'t.type))))]
     [(t:All (_:id ...) _ _ _ ...) (tc-error "All: too many forms in body of All type")]
     [(t:All . rest) (tc-error "All: bad syntax")]))
 
@@ -252,7 +262,7 @@
        (add-disappeared-use #'kw)
        (-val (syntax->datum #'t))]
       [((~and kw t:All) . rest)
-       (parse-all-type stx parse-type)]
+       (parse-all-type stx)]
       [((~and kw t:Opaque) p?)
        (add-disappeared-use #'kw)
        (make-Opaque #'p? (syntax-local-certifier))]
