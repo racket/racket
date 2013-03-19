@@ -110,7 +110,7 @@
 (define (random-integer->random-real E)
   (define r (random))
   ;; probability 0.25 each
-  (cond [(r . < . 0.25)  r]
+  (cond [(r . < . 0.25)  E]
         [(r . < . 0.50)  (random-integer->random-exact-rational E)]
         [(r . < . 0.75)  (random-integer->random-flonum E)]
         [else            (random-integer->random-single-flonum E)]))
