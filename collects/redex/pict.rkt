@@ -14,7 +14,9 @@
            'horizontal-left-align
            'horizontal))
 
-(provide reduction-rule-style/c render-term term->pict)
+(provide reduction-rule-style/c render-term term->pict
+         term->pict/pretty-write
+         render-term/pretty-write)
 
 (provide/contract
  [render-reduction-relation
