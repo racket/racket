@@ -309,6 +309,9 @@ void scheme_configure_floating_point(void)
      So, we set and restore the mode as needed in
      the "longdouble.c"-based DLL and JIT-generated
      code. */
+# if defined(MZ_LONG_DOUBLE) && !defined(_WIN64)
+  _control87(_PC_64|_RC_NEAR,_MCW_PC|_MCW_RC);
+# endif
 #endif
 #ifdef ALPHA_CONTROL_FP
   {

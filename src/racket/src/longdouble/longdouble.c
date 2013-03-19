@@ -27,12 +27,16 @@ LDBL_DLL_API int get_x87_control()
 
 static void ext_mode()
 {
+#if defined(__x86_64)
   set_x87_control(0x37F);
+#endif
 }
 
 static void default_mode()
 {
+#if defined(__x86_64)
   set_x87_control(0x27F);
+#endif
 }
 
 long_double get_long_double_infinity_val()
