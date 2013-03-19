@@ -1,20 +1,18 @@
 #lang racket/base
 
 (define (configure data)
-  ;; (printf "Configuring\n")
-  (current-read-interaction even-read))
+  (current-read-interaction the-read))
 (provide configure)
 
 (require datalog/parse
          datalog/private/compiler)
 
-; XXX This is almost certainly wrong.
-(define (even-read src ip)
-  (begin0
-    (compile-statement
-     (parameterize ([current-source-name src])
-       (parse-statement ip)))
-    (current-read-interaction odd-read)))
-(define (odd-read src ip)
-  (current-read-interaction even-read)
-  eof)
+(define (the-read src ip)
+  (cond
+    [(or (not (char-ready? ip))
+         (eof-object? (peek-char ip)))
+     eof]
+    [else
+     (compile-statement
+      (parameterize ([current-source-name src])
+        (parse-statement ip)))]))
