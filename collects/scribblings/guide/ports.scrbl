@@ -4,8 +4,8 @@
 @title[#:tag "ports"]{Input and Output Ports}
 
 A @deftech{port} encapsulates an I/O stream, normally for just one
-direction. An @defterm{input port} reads from a stream, and an
-@defterm{output port} writes to a string.
+direction. An @deftech{input port} reads from a stream, and an
+@deftech{output port} writes to a string.
 
 For many procedures that accept a port argument, the argument is
 optional, and it defaults to either the @defterm{current input port}

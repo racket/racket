@@ -3,9 +3,14 @@
 
 @title[#:tag "ports" #:style 'toc]{Ports}
 
-@deftech{Ports} produce and consume bytes. When a port is provided to
-a character-based operation, the port's bytes are decoded; see
-@secref["encodings"].
+@deftech{Ports} produce and/or consume bytes. An @deftech{input port}
+produces bytes, while an @deftech{output port} produces bytes (and
+some ports are both input ports and output ports). When an input port
+is provided to a character-based operation, the bytes are decoded to a
+character, and character-based output operations similarly encode the
+character to bytes; see @secref["encodings"]. In addition to bytes and
+characters encoded as bytes, some ports can produce and/or consume
+arbitrary values as @deftech{special} results.
 
 When a port corresponds to a file, network connection, or some other
 system resource, it must be explicitly closed via
@@ -13,6 +18,19 @@ system resource, it must be explicitly closed via
 via @racket[custodian-shutdown-all]) to release low-level resources
 associated with the port. For any kind of port, after it is closed,
 attempting to read from or write to the port raises @racket[exn:fail].
+
+Data produced by a @tech{input port} can be read or @deftech[#:key
+"peek"]{peeked}. When data is read, it is considered consumed and
+removed from the port's stream. When data is @tech{peek}ed, it remains
+in the port's stream to be returned again by the next read or
+@tech{peek}. Previously peeked data can be @deftech[#:key
+"commit"]{committed}, which causes the data to be removed from the
+port as for a read in a way that can be synchronized with other
+attempts to @tech{peek} or read through a @tech{synchronizable
+event}. Both read and @tech{peek} operations are normally blocking, in
+the sense that the read or @tech{peek} operation does not complete
+until data is available from the port; non-blocking variants of read
+and @tech{peek} operations are also available.
 
 The global variable @racket[eof] is bound to the end-of-file value,
 and @racket[eof-object?] returns @racket[#t] only when applied to this

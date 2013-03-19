@@ -11,7 +11,7 @@
 
 Reads a single character from @racket[in]---which may involve reading
 several bytes to UTF-8-decode them into a character (see
-@secref["ports"]); a minimal number of bytes are read/peeked to
+@secref["ports"]); a minimal number of bytes are read/@tech{peek}ed to
 perform the decoding. If no bytes are available before an end-of-file,
 then @racket[eof] is returned.}
 
@@ -122,7 +122,7 @@ Like @racket[read-line], but reads bytes and produces a byte string.}
                       [in input-port? (current-input-port)])
          (or/c string? eof-object?)]{
 
-@margin-note{To read an entire port as a string use @racket[port->string].}
+@margin-note{To read an entire port as a string, use @racket[port->string].}
 
 Returns a string containing the next @racket[amt] characters from
 @racket[in].
@@ -149,7 +149,7 @@ encountering an error, the characters are dropped.}
 @defproc[(read-bytes [amt exact-nonnegative-integer?]
                      [in input-port? (current-input-port)])
          (or/c bytes? eof-object?)]{
-@margin-note{To read an entire port as bytes use @racket[port->bytes].}
+@margin-note{To read an entire port as bytes, use @racket[port->bytes].}
 Like @racket[read-string], but reads bytes and produces a byte string.}
 
 @examples[#:eval si-eval
@@ -269,8 +269,8 @@ no bytes will have been read from @racket[in].}
          (or/c string? eof-object?)]{
 
 Similar to @racket[read-string], except that the returned characters
-are preserved in the port for future reads. (More precisely, undecoded
-bytes are left for future reads.) The @racket[skip-bytes-amt] argument
+are @tech{peek}ed: preserved in the port for future reads and @tech{peeks}. (More precisely, undecoded
+bytes are left for future reads and peeks.) The @racket[skip-bytes-amt] argument
 indicates a number of bytes (@italic{not} characters) in the input
 stream to skip before collecting characters to return; thus, in total,
 the next @racket[skip-bytes-amt] bytes plus @racket[amt] characters
@@ -286,15 +286,15 @@ read. No such overhead is required when peeking into a string port
 procedure (depending on how the peek procedure is implemented; see
 @secref["customport"]).
 
-If a port produces @racket[eof] mid-stream, peek skips beyond the
-@racket[eof] always produce @racket[eof] until the @racket[eof] is
+If a port produces @racket[eof] mid-stream, attempts to skip beyond the
+@racket[eof] for a @tech{peek} always produce @racket[eof] until the @racket[eof] is
 read.}
 
 @defproc[(peek-bytes [amt exact-nonnegative-integer?]
                      [skip-bytes-amt exact-nonnegative-integer?]
                      [in input-port? (current-input-port)])
          (or/c bytes? eof-object?)]{
-Like @racket[peek-string], but peeks bytes and produces a byte string.}
+Like @racket[peek-string], but @tech{peeks} bytes and produces a byte string.}
 
 @defproc[(peek-string! [str (and/c string? (not/c immutable?))]
                        [skip-bytes-amt exact-nonnegative-integer?]
@@ -302,7 +302,7 @@ Like @racket[peek-string], but peeks bytes and produces a byte string.}
                        [start-pos exact-nonnegative-integer? 0]
                        [end-pos exact-nonnegative-integer? (string-length str)])
          (or/c exact-positive-integer? eof-object?)]{
-Like @racket[read-string!], but for peeking, and with a
+Like @racket[read-string!], but for @tech{peek}ing, and with a
 @racket[skip-bytes-amt] argument like @racket[peek-string].}
 
 @defproc[(peek-bytes! [bstr (and/c bytes? (not/c immutable?))]
@@ -311,7 +311,7 @@ Like @racket[read-string!], but for peeking, and with a
                       [start-pos exact-nonnegative-integer? 0]
                       [end-pos exact-nonnegative-integer? (bytes-length bstr)])
          (or/c exact-positive-integer? eof-object?)]{
-Like @racket[peek-string!], but peeks bytes, puts them into a byte
+Like @racket[peek-string!], but @tech{peeks} bytes, puts them into a byte
 string, and returns the number of bytes read.}
 
 @defproc[(peek-bytes-avail! [bstr (and/c bytes? (not/c immutable?))]
@@ -322,13 +322,13 @@ string, and returns the number of bytes read.}
                             [end-pos exact-nonnegative-integer? (bytes-length bstr)])
          (or/c exact-nonnegative-integer? eof-object? procedure?)]{
 
-Like @racket[read-bytes-avail!], but for peeking, and with two extra
+Like @racket[read-bytes-avail!], but for @tech{peek}ing, and with two extra
 arguments. The @racket[skip-bytes-amt] argument is as in
 @racket[peek-bytes].  The @racket[progress] argument must be either
 @racket[#f] or an event produced by
 @racket[port-progress-evt] for @racket[in].
 
-To peek, @racket[peek-bytes-avail!] blocks until finding an
+To @tech{peek}, @racket[peek-bytes-avail!] blocks until finding an
 end-of-file, at least one byte (or special) past the skipped bytes, or
 until a non-@racket[#f] @racket[progress] becomes ready. Furthermore,
 if @racket[progress] is ready before bytes are peeked, no bytes are
@@ -348,7 +348,7 @@ case that @racket[progress] becomes ready before bytes are peeked.}
                              [end-pos exact-nonnegative-integer? (bytes-length bstr)])
          (or/c exact-nonnegative-integer? eof-object? procedure?)]{
 
-Like @racket[read-bytes-avail!*], but for peeking, and with
+Like @racket[read-bytes-avail!*], but for @tech{peek}ing, and with
 @racket[skip-bytes-amt] and @racket[progress] arguments like
 @racket[peek-bytes-avail!]. Since this procedure never blocks, it may
 return before even @racket[skip-amt] bytes are available from the
@@ -361,7 +361,7 @@ port.}
                                          [start-pos exact-nonnegative-integer? 0]
                                          [end-pos exact-nonnegative-integer? (bytes-length bstr)])
          (or/c exact-nonnegative-integer? eof-object? procedure?)]{
-Like @racket[read-bytes-avail!/enable-break], but for peeking, and
+Like @racket[read-bytes-avail!/enable-break], but for @tech{peek}ing, and
 with @racket[skip-bytes-amt] and @racket[progress] arguments like
 @racket[peek-bytes-avail!].}
 
@@ -369,10 +369,10 @@ with @racket[skip-bytes-amt] and @racket[progress] arguments like
 @defproc[(read-char-or-special [in input-port? (current-input-port)])
          (or/c char? eof-object? any/c)]{
 
-Like @racket[read-char], but if the input port returns a non-byte
+Like @racket[read-char], but if the input port returns a @tech{special}
 value (through a value-generating procedure in a custom port; see
 @secref["customport"] and @secref["special-comments"] for
-details), then the non-byte value is returned.}
+details), then the @tech{special} value is returned.}
 
 @defproc[(read-byte-or-special [in input-port? (current-input-port)])
          (or/c byte? eof-object? any/c)]{
@@ -384,7 +384,7 @@ instead of a character.}
                     [skip-bytes-amt exact-nonnegative-integer? 0])
          (or/c char? eof-object?)]{
 
-Like @racket[read-char], but peeks instead of reading, and skips
+Like @racket[read-char], but @tech{peeks} instead of reading, and skips
 @racket[skip-bytes-amt] bytes (not characters) at the start of the
 port.}
 
@@ -392,7 +392,7 @@ port.}
                     [skip-bytes-amt exact-nonnegative-integer? 0])
          (or/c byte? eof-object?)]{
 
-Like @racket[peek-char], but reads and returns a byte instead of a
+Like @racket[peek-char], but @tech{peeks} and returns a byte instead of a
 character.}
 
 @defproc[(peek-char-or-special [in input-port? (current-input-port)]
@@ -407,7 +407,7 @@ value after @racket[skip-bytes-amt] byte positions, then it is returned.}
                                [progress (or/c progress-evt? #f) #f])
          (or/c byte? eof-object? any/c)]{
 
-Like @racket[peek-char-or-special], but reads and returns a byte
+Like @racket[peek-char-or-special], but @tech{peeks} and returns a byte
 instead of a character, and it supports a @racket[progress] argument
 like @racket[peek-bytes-avail!].}
 
@@ -436,7 +436,7 @@ but ports created with @racket[make-input-port] (see
                              [in input-port? (current-input-port)])
          boolean?]{
 
-Attempts to commit as read the first @racket[amt] previously peeked
+Attempts to @tech{commit} as read the first @racket[amt] previously @tech{peek}ed
 bytes, non-byte specials, and @racket[eof]s from @racket[in], or the
 first @racket[eof] or special value peeked from
 @racket[in]. Mid-stream @racket[eof]s can be
