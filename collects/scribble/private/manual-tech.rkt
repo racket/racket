@@ -7,7 +7,8 @@
 
 (provide/contract
  [deftech (() (#:normalize? any/c
-               #:style? any/c) 
+               #:style? any/c
+               #:key (or/c string? #f))
            #:rest (listof pre-content?) . ->* . element?)]
  [tech (() 
         (#:doc (or/c module-path? false/c) 
@@ -37,11 +38,14 @@
          [s (datum-intern-literal s)])
     (make-elem style c (list 'tech (doc-prefix doc prefix s)))))
 
-(define (deftech #:style? [style? #t] #:normalize? [normalize? #t] . s)
+(define (deftech #:style? [style? #t] 
+          #:normalize? [normalize? #t] 
+          #:key [key #f]
+          . s)
   (let* ([e (if style?
                 (apply defterm s)
                 (make-element #f (decode-content s)))]
-         [t (*tech make-target-element #f #f #f (list e) #f normalize?)])
+         [t (*tech make-target-element #f #f #f (list e) key normalize?)])
     (make-index-element #f
                         (list t)
                         (target-element-tag t)

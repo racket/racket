@@ -1418,6 +1418,7 @@ Alias of @racket[hyperlink] for backward compatibility.}
 Alias of @racket[other-doc] for backward compatibility.}
 
 @defproc[(deftech [pre-content pre-content?] ...
+                  [#:key key (or/c string? #f) #f]
                   [#:normalize? normalize? any/c #t]
                   [#:style? style? any/c #t]) element?]{
 
@@ -1425,9 +1426,10 @@ Produces an element for the @tech{decode}d @racket[pre-content], and
 also defines a term that can be referenced elsewhere using
 @racket[tech].
 
-The @racket[content->string] result of the @tech{decode}d
-@racket[pre-content] is used as a key for references; if
-@racket[normalize?] is true, then the string is normalized as follows:
+When @racket[key] is @racket[#f], the @racket[content->string] result
+of the @tech{decode}d @racket[pre-content] is used as a key for
+references. If @racket[normalize?] is true, then the key string is
+normalized as follows:
 
 @itemize[
 
