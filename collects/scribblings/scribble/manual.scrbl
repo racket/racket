@@ -812,7 +812,7 @@ Examples:
 
 
 @defform/subs[(defform maybe-kind maybe-id maybe-literals form-datum
-                maybe-contracts
+                maybe-grammar maybe-contracts
                 pre-flow ...)
               ([maybe-kind code:blank
                            (code:line #:kind kind-string-expr)]
@@ -821,6 +821,8 @@ Examples:
                          (code:line #:id [id id-expr])]
                [maybe-literals code:blank
                                (code:line #:literals (literal-id ...))]
+               [maybe-grammar code:blank
+                              (code:line #:grammar ([nonterm-id clause-datum ...+] ...))]
                [maybe-contracts code:blank
                                 (code:line #:contracts ([subform-datum contract-expr-datum]
                                                         ...))])]{
@@ -856,19 +858,24 @@ non-terminal. If @racket[#:literals] clause is provided, however,
 instances of the @racket[literal-id]s are typeset normally (i.e., as
 determined by the enclosing context).
 
+If a @racket[#:grammar] clause is provided, it includes an auxiliary
+grammar of non-terminals shown with the @racket[id] form. Each
+@racket[nonterm-id] is specified as being any of the corresponding
+@racket[clause-datum]s.
+
 If a @racket[#:contracts] clause is provided, each
 @racket[subform-datum] (typically an identifier that serves as a
-meta-variable in @racket[form-datum]) is shown as producing a value
-that must satisfy the contract described by
+meta-variable in @racket[form-datum] or @racket[clause-datum]) is
+shown as producing a value that must satisfy the contract described by
 @racket[contract-expr-datum].  Use @racket[#:contracts] only to
-specify constraints on a @emph{value} produced by an expression;
-for constraints on the @emph{syntax} of a @racket[subform-datum],
-use grammar notation instead, possibly through an 
-auxiliary grammar specified using @racket[defform/subs].
+specify constraints on a @emph{value} produced by an expression; for
+constraints on the @emph{syntax} of a @racket[subform-datum], use
+grammar notation instead, possibly through an auxiliary grammar
+specified with @racket[#:grammar].
 
-The typesetting of @racket[form-datum], @racket[subform-datum], and
-@racket[contract-expr-datum] preserves the source layout, like
-@racket[racketblock].
+The typesetting of @racket[form-datum], @racket[clause-datum],
+@racket[subform-datum], and @racket[contract-expr-datum] preserves the
+source layout, like @racket[racketblock].
 
 Examples:
 @codeblock[#:keep-lang-line? #f]|{
@@ -889,11 +896,22 @@ Examples:
   the @racket[ingredient-expr]s will be mixed into the resulting
   sandwich.
 }
+
+@defform[(sandwich-factory maybe-name factory-component ...)
+         #:grammar
+         [(maybe-name (code:line)
+                      name)
+          (factory-component (code:line #:protein protein-expr)
+                             [vegetable vegetable-expr])]]{
+  Constructs a sandwich factory. If @racket[maybe-name] is provided,
+  the factory will be named. Each of the @racket[factory-component]
+  clauses adds an additional ingredient to the sandwich pipeline.
+}
 }|
 }
 
 @defform[(defform* maybe-kind maybe-id maybe-literals [form-datum ...+]
-           maybe-contracts
+           maybe-grammar maybe-contracts
            pre-flow ...)]{
 
 Like @racket[defform], but for multiple forms using the same
@@ -911,42 +929,9 @@ Examples:
 }|
 }
 
-@defform[(defform/subs maybe-kind maybe-id maybe-literals form-datum
-           ([nonterm-id clause-datum ...+] ...)
-           maybe-contracts
-           pre-flow ...)]{
 
-Like @racket[defform], but including an auxiliary grammar of
-non-terminals shown with the @racket[_id] form. Each
-@racket[nonterm-id] is specified as being any of the corresponding
-@racket[clause-datum]s, where the formatting of each
-@racket[clause-datum] is preserved.
-
-Examples:
-@codeblock[#:keep-lang-line? #f]|{
-#lang scribble/manual
-@defform/subs[(sandwich-factory maybe-name factory-component ...)
-              [(maybe-name (code:line)
-                           name)
-               (factory-component (code:line #:protein protein-expr)
-                                  [vegetable vegetable-expr])]]{
-  Constructs a sandwich factory. If @racket[maybe-name] is provided,
-  the factory will be named. Each of the @racket[factory-component]
-  clauses adds an additional ingredient to the sandwich pipeline.
-}
-}|
-}
-
-
-@defform[(defform*/subs maybe-kind maybe-id maybe-literals [form-datum ...+]
-           ([nonterm-id clause-datum ...+] ...)
-           maybe-contracts
-           pre-flow ...)]{
-
-Like @racket[defform/subs], but for multiple forms for @racket[_id].}
-
-
-@defform[(defform/none maybe-kind maybe-literal form-datum maybe-contracts
+@defform[(defform/none maybe-kind maybe-literal form-datum 
+           maybe-grammar maybe-contracts
            pre-flow ...)]{
 
 Like @racket[defform], but without registering a definition.}
@@ -966,7 +951,7 @@ inline element. Use this form sparingly, because the typeset form does
 not stand out to the reader as a specification of @racket[id].}
 
 
-@defform[(specform maybe-literals datum maybe-contracts
+@defform[(specform maybe-literals datum maybe-grammar maybe-contracts
            pre-flow ...)]{
 
 Like @racket[defform], but without indexing or registering a
@@ -974,7 +959,7 @@ definition, and with indenting on the left for both the specification
 and the @racket[pre-flow]s.}
 
 
-@defform[(specsubform maybe-literals datum maybe-contracts
+@defform[(specsubform maybe-literals datum maybe-grammar maybe-contracts
            pre-flow ...)]{
 
 Similar to @racket[defform], but without any specific identifier being
@@ -989,16 +974,7 @@ procedure. In this description, a reference to any identifier in
 @racket[datum] is typeset as a sub-form non-terminal.}
 
 
-@defform[(specsubform/subs maybe-literals datum
-           ([nonterm-id clause-datum ...+] ...)
-           maybe-contracts
-           pre-flow ...)]{
-
-Like @racket[specsubform], but with a grammar like
-@racket[defform/subs].}
-
-
-@defform[(specspecsubform maybe-literals datum maybe-contracts
+@defform[(specspecsubform maybe-literals datum maybe-grammar maybe-contracts
            pre-flow ...)]{
 
 Like @racket[specsubform], but indented an extra level. Since using
@@ -1007,13 +983,47 @@ nests indentation, @racket[specspecsubform] is for extra indentation
 without nesting a description.}
 
 
+@deftogether[[
+@defform[(defform/subs maybe-kind maybe-id maybe-literals form-datum
+           ([nonterm-id clause-datum ...+] ...)
+           maybe-contracts
+           pre-flow ...)]
+@defform[(defform*/subs maybe-kind maybe-id maybe-literals [form-datum ...+]
+           ([nonterm-id clause-datum ...+] ...)
+           maybe-contracts
+           pre-flow ...)]
+@defform[(specform/subs maybe-literals datum
+           ([nonterm-id clause-datum ...+] ...)
+           maybe-contracts
+           pre-flow ...)]
+@defform[(specsubform/subs maybe-literals datum
+           ([nonterm-id clause-datum ...+] ...)
+           maybe-contracts
+           pre-flow ...)]
 @defform[(specspecsubform/subs maybe-literals datum
           ([nonterm-id clause-datum ...+] ...)
           maybe-contracts
-          pre-flow ...)]{
+          pre-flow ...)]]]{
 
-Like @racket[specspecsubform], but with a grammar like
-@racket[defform/subs].}
+Like @racket[defform], @racket[defform*], @racket[specform],
+@racket[specsubform], and @racket[specspecsubform], respectively, but
+the auxiliary grammar is mandatory and the @racket[#:grammar] keyword
+is omitted.
+
+Examples:
+@codeblock[#:keep-lang-line? #f]|{
+#lang scribble/manual
+@defform/subs[(sandwich-factory maybe-name factory-component ...)
+              [(maybe-name (code:line)
+                           name)
+               (factory-component (code:line #:protein protein-expr)
+                                  [vegetable vegetable-expr])]]{
+  Constructs a sandwich factory. If @racket[maybe-name] is provided,
+  the factory will be named. Each of the @racket[factory-component]
+  clauses adds an additional ingredient to the sandwich pipeline.
+}
+}|
+}
 
 
 @defform[(defparam id arg-id contract-expr-datum pre-flow ...)]{
