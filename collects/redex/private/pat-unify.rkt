@@ -23,7 +23,10 @@
          pat*-clause-p?s
          bind-names
          remove-empty-dqs
-         unif-fail)
+         unif-fail
+         dq)
+
+;(require racket/trace)
 ;;
 ;; atom := `any | `number | `string | `integer | `boolean | `real | `variable | `variable-not-otherwise-mentioned
 ;; var  := symbol?
@@ -49,6 +52,7 @@
 (struct p*e (p e) #:transparent)
 
 (struct env (eqs dqs) #:transparent)
+(struct dq (params dq) #:transparent)
 (define empty-env (env (hash) '()))
 
 (struct unif-fail () #:transparent)
@@ -162,7 +166,7 @@
                           (list->dq-pairs dq-sides/id)))]
                 [found-dqs
                  (for/list ([pdq found-pre-dqs])
-                   (disunify* (first pdq) (second pdq) (hash-copy static-eqs) L))])
+                   (disunify* '() (first pdq) (second pdq) (hash-copy static-eqs) L))])
            (and (for/and ([d found-dqs]) d)
                 (let* ([real-dqs (filter (λ (dq) (not (boolean? dq))) found-dqs)]
                        [new-dqs (check-and-resimplify static-eqs (append real-dqs (env-dqs e)) L)])
@@ -181,7 +185,7 @@
                 (list->dq-pairs (cdr dq-sides)))]))
 
 ;; pat pat env lang -> (or/c env #f)
-(define (disunify t u e L)
+(define (disunify params t u e L)
   ;(-> pat? pat? env/c any/c (or/c env/c #f))
   (parameterize ([new-eqs (make-hash)])
     (define eqs (hash-copy (env-eqs e)))
@@ -192,7 +196,7 @@
        e]
       [else
        (define bn-eqs (hash-copy eqs))
-       (define new-dq (disunify* t* u* eqs L)) 
+       (define new-dq (disunify* params t* u* eqs L)) 
        (match new-dq
          [#f #f]
          [#t 
@@ -230,11 +234,11 @@
 ;; simplified - first element in lhs of all inequations is a var not occuring in lhs of eqns
 (define (check-and-resimplify eqs dqs L)
   (define-values (dqs-notok dqs-ok) 
-    (partition (λ (dq)
+    (partition (λ (a-dq)
                  (hash-has-key? 
                   eqs
-                  (lvar (match dq
-                          [`((list (name ,v1 ,(bound)) ,vs ...) (list ,t1 ,ts ...))
+                  (lvar (match a-dq
+                          [(dq ps `((list (name ,v1 ,(bound)) ,vs ...) (list ,t1 ,ts ...)))
                            v1]))))
                (remove-empty-dqs dqs)))
   (let loop ([ok dqs-ok]
@@ -244,23 +248,52 @@
        ok]
       [else
        (match notok
-         [`((,vars-p* ,term-p*) ,rest ...)
-          (let ([new-dq (disunify* vars-p* term-p* (hash-copy eqs) L)])
+         [`(,(dq ps `(,vars-p* ,term-p*)) ,rest ...)
+          (let ([new-dq (disunify* ps vars-p* term-p* (hash-copy eqs) L)])
             (and new-dq
                  (match new-dq
                    [#t (loop ok rest)]
-                   [`((list)(list)) (loop ok rest)]
+                   #;[`((list)(list)) (loop ok rest)]
                    [else (loop (cons new-dq ok) rest)])))])])))
 
 ;; disunfy* pat* pat* eqs lang -> dq or boolean (dq is a pat*)
-(define (disunify* u* t* eqs L)
+(define (disunify* params u* t* eqs L)
   (parameterize ([new-eqs (make-hash)])
     (let ([res (unify* u* t* eqs L)])
       (cond
         [(unif-fail? res) #t]
         [(empty? (hash-keys (new-eqs))) #f]
         [else
-         (extend-dq (new-eqs) base-dq)]))))
+         (define-values (new-ps new-dq)
+           (param-elim params (extend-dq (new-eqs) base-dq)))
+         (match new-dq
+           [`((list) (list))
+            #f]
+           [else
+            (dq new-ps new-dq)])
+         #;(extend-dq (new-eqs) base-dq)]))))
+
+(define (param-elim params unquantified-dq)             
+  (let loop ([dq-rest unquantified-dq]                                             
+             [ps params]             
+             [new-dq-l '()]          
+             [new-dq-r '()])         
+    ;(printf "~s ~s ~s ~s\n" dq-rest ps new-dq-l new-dq-r)                                                       
+    (match dq-rest                   
+      ['((list) (list))              
+       (values ps `((list ,@new-dq-l) (list ,@new-dq-r)))]       
+      [`((list (name ,v1,(bound)) ,vs ...) (list ,t1 ,ts ...))    
+       (cond                         
+         [(member v1 params)         
+          (loop `((list ,@vs) (list ,@ts))          
+                (remove v1 ps)                      
+                new-dq-l                            
+                new-dq-r)]           
+         [else                       
+          (loop `((list ,@vs) (list ,@ts))          
+                ps                                  
+                (cons `(name ,v1 ,(bound)) new-dq-l)
+                (cons t1 new-dq-r))])]))) 
 
 
 ;; the "root" pats will be pats without names,
@@ -609,6 +642,7 @@
      (values (lvar id) res)]))
 
 
+;(trace disunify*)
 
 
 

@@ -59,28 +59,30 @@
                    (env-dqs e-right))))
 
 (define (dqs->dqset dqs)
-  (for/set ([dq (in-list dqs)])
-           (for/fold ([dq-pairs (set)])
-             ([ls (first dq)]
-              [rs (second dq)])
-             (set-add dq-pairs (cons ls rs)))))
+  (for/set ([the-dq (in-list dqs)])
+           (match the-dq
+             [(dq ps dq-e)
+              (for/fold ([dq-pairs (set)])
+                ([ls (first dq-e)]
+                 [rs (second dq-e)])
+                (set-add dq-pairs (cons ls rs)))])))
 
-(check-equal? (dqs->dqset `(((list (name a ,(bound))
-                                   (name b ,(bound)))
-                             (list a-cant-be
-                                   b-cant-be))))
+(check-equal? (dqs->dqset (list (dq '() `((list (name a ,(bound))
+                                                (name b ,(bound)))
+                                          (list a-cant-be
+                                                b-cant-be)))))
               (set (set (cons 'list 'list)
                         (cons `(name a ,(bound)) 'a-cant-be)
                         (cons `(name b ,(bound)) 'b-cant-be))))
 
-(check-equal? (dqs->dqset `(((list (name a ,(bound))
-                                   (name b ,(bound)))
-                             (list a-cant-be
-                                   b-cant-be))
-                            ((list (name c ,(bound))
-                                   (name d ,(bound)))
-                             (list c-cant-be
-                                   d-cant-be))))
+(check-equal? (dqs->dqset `(,(dq '() `((list (name a ,(bound))
+                                             (name b ,(bound)))
+                                       (list a-cant-be
+                                             b-cant-be)))
+                            ,(dq '() `((list (name c ,(bound))
+                                             (name d ,(bound)))
+                                       (list c-cant-be
+                                             d-cant-be)))))
               (set (set (cons 'list 'list)
                         (cons `(name c ,(bound)) 'c-cant-be)
                         (cons `(name d ,(bound)) 'd-cant-be))
@@ -873,42 +875,45 @@
 ;; TODO tests on the dqs here are currently order-dependent
 
 (check-false
- (disunify* `(list (name x_1 ,(bound))) 
+ (disunify* '()
+            `(list (name x_1 ,(bound))) 
             `(list (name x_2 ,(bound))) 
             (make-hash `((,(lvar 'x_1) . a)
                          (,(lvar 'x_2) . a)))
             L0))
 (check-not-false
- (disunify* `(list (name x_1 ,(bound))) 
+ (disunify* '()
+            `(list (name x_1 ,(bound))) 
             `(list (name x_2 ,(bound))) 
             (make-hash `((,(lvar 'x_1) . (nt x))
                          (,(lvar 'x_2) . a)))
             L0))
 (check-not-false
- (disunify* `(list (name x_1 ,(bound))) 
+ (disunify* '()
+            `(list (name x_1 ,(bound))) 
             `(list (name x_2 ,(bound))) 
             (make-hash `((,(lvar 'x_1) . (nt x))
                          (,(lvar 'x_2) . (nt x))))
             L0))
 (check-false 
- (disunify* 'a '(cstr (s) a) (make-hash) L0))
+ (disunify* '() 'a '(cstr (s) a) (make-hash) L0))
 (check-false
  (let ([h (make-hash (list (cons (lvar 'a2) 'a)))])
-   (disunify* `(name a2 ,(bound)) '(cstr (s) a) h L0)))
+   (disunify* '() `(name a2 ,(bound)) '(cstr (s) a) h L0)))
 (check-false
  (let ([h (make-hash (list (cons (lvar 'a2) 'a)
                            (cons (lvar 's6) '(cstr (s) a))))])
-   (disunify* `(name a2 ,(bound)) `(name s6 ,(bound)) h L0)))
+   (disunify* '() `(name a2 ,(bound)) `(name s6 ,(bound)) h L0)))
 
 (define (make-eqs eqs)
   (for/hash ([eq eqs])
     (values (car eq) (cdr eq))))
 
 (define (make-dqs dqs)
-  (for/list ([dq dqs])
-    (list (car dq) (cdr dq))))
+  (for/list ([the-dq dqs])
+    (dq '() (list (car the-dq) (cdr the-dq)))))
 
-(define-syntax (test-disunify stx)
+(define-syntax (test-disunify/no-params stx)
   (syntax-case stx ()
     [(_ t u eqs dqs eqs′ dqs′)
      (quasisyntax/loc stx
@@ -916,7 +921,7 @@
               [eqs-out (make-eqs eqs′)]
               [dqs-in (check-and-resimplify eqs-in (make-dqs dqs) L0)]
               [dqs-out (make-dqs dqs′)]
-              [res (disunify t u (env eqs-in dqs-in) L0)])
+              [res (disunify '() t u (env eqs-in dqs-in) L0)])
          #,(syntax/loc stx
              (check-not-false
               (env-equal?
@@ -926,7 +931,7 @@
      (quasisyntax/loc stx
        (let* ([eqs-in (make-eqs eqs)]
               [dqs-in (check-and-resimplify eqs (make-dqs dqs) L0)]
-              [res (disunify t u (env eqs-in dqs-in) L0)])
+              [res (disunify '() t u (env eqs-in dqs-in) L0)])
          (if true/false
              #,(syntax/loc stx (check-not-false res))
              #,(syntax/loc stx (check-false res)))))]))
@@ -953,33 +958,33 @@
              (check-not-false res)
              (check-false res))))]))
 
-(test-disunify 1 2 '() '() '() '())
-(test-disunify '(list 1 2) '(list 1 3) '() '() '() '())
-(test-disunify `(list (name x any) (name y any)) `(list 1)
+(test-disunify/no-params 1 2 '() '() '() '())
+(test-disunify/no-params '(list 1 2) '(list 1 3) '() '() '() '())
+(test-disunify/no-params `(list (name x any) (name y any)) `(list 1)
                  `((,(lvar 'x) . any)
                    (,(lvar 'y) . any))
                  '() 
                  `((,(lvar 'x) . any)
                    (,(lvar 'y) . any))
                  '())
-(test-disunify `(name x any) 4
+(test-disunify/no-params `(name x any) 4
                `((,(lvar 'x) . ,(lvar 'y))
                  (,(lvar 'y) . 3))
                '()
                `((,(lvar 'x) . ,(lvar 'y))
                  (,(lvar 'y) . 3))
                '())
-(test-disunify `(name x any) 1 
+(test-disunify/no-params `(name x any) 1 
                `((,(lvar 'x) . 1)) '() #f)
-(test-disunify 1 `(name x any)
+(test-disunify/no-params 1 `(name x any)
                '() '()  `((,(lvar 'x) . any))
                `(((list (name x ,(bound))) . (list 1))))
-(test-disunify `(name x any) 3
+(test-disunify/no-params `(name x any) 3
                `((,(lvar 'x) . ,(lvar 'y))
                  (,(lvar 'y) . 3))
                '() #f)
 ;; does violate the occurs check (stolen from Colmerauer '84)
-(test-disunify 1 `(name z any)
+(test-disunify/no-params 1 `(name z any)
                `((,(lvar 'x) . ,(lvar 'y))
                  (,(lvar 'y) . (list (name y ,(bound)) (name z ,(bound))))
                  (,(lvar 'z) . any))
