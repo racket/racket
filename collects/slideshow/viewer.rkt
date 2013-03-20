@@ -11,6 +11,7 @@
 	   texpict/utils
 	   scheme/math
 	   mrlib/include-bitmap
+           racket/format
 	   "sig.rkt"
 	   "core.rkt"
 	   "private/utils.rkt")
@@ -213,7 +214,8 @@
 	  (define/override on-superwindow-show (lambda (on?)
 						 (unless on?
 						   (when (and close-bg? background-f)
-						     (send background-f show #f)))))
+						     (send background-f show #f))
+                                                   (stop-time-update!))))
 
 	  (define/override on-subwindow-char
 	    (lambda (w e)
@@ -308,6 +310,7 @@
 	    (send f-both show #f)
 	    (when use-background-frame?
 	      (send f show #f))
+            (stop-time-update!)
 	    (send f show #f)
 	    (when config:print-slide-seconds?
 	      (printf "Total Time: ~a seconds\n"
@@ -402,6 +405,7 @@
 		  (send f show #f)
 		  (yield)
 		  (send background-f show #t))
+                (start-time-update!)
 		(send f show #t)
 		(when config:two-frames?
 		  (send f-both show #t)))))
@@ -669,7 +673,30 @@
 		  (send (get-dc) draw-bitmap bm 0 0))]
 	       [else
 		(send dc clear)
-		(paint-slide this dc)])))
+		(paint-slide this dc)])
+              (show-time dc)))
+
+          (define/private (show-time dc)
+            (when config:show-time?
+              (define c (send dc get-text-foreground))
+              (define f (send dc get-font))
+              (define time-size 10)
+              (send dc set-text-foreground (make-color 100 100 100))
+              (send dc set-font (make-font #:size time-size #:size-in-pixels? #t))
+              (let-values ([(cw ch) (get-client-size)])
+                (let ([dx (floor (/ (- cw config:use-screen-w) 2))]
+                      [dy (floor (/ (- ch config:use-screen-h) 2))]
+                      [d (seconds->date (current-seconds))])
+                  (send dc draw-text 
+                        (~a (let ([h (modulo (date-hour d) 12)])
+                              (if (zero? h) 12 h))
+                            ":" 
+                            (~a #:width 2 #:align 'right #:pad-string "0" 
+                                (date-minute d)))
+                        (+ dx 5)
+                        (+ dy (- config:use-screen-h time-size 5)))))
+              (send dc set-text-foreground c)
+              (send dc set-font f)))
 	  
 	  (inherit get-top-level-window)
 	  (define/override (on-event e)
@@ -846,6 +873,7 @@
 		(let ([dc (get-dc)])
 		  (send dc clear)
 		  (paint-slide this dc))])
+              (show-time (get-dc))
               (swap-interactives! old-interactives interactives)))
 
           (define interactive-state (make-hash))
@@ -1110,6 +1138,24 @@
 
       (define c (make-object c% f))
       (define c-both (make-object two-c% f-both))
+
+      (define time-update-thread #f)
+      (define (start-time-update!)
+        (when config:show-time?
+          (unless time-update-thread
+            (set! time-update-thread
+                  (thread (lambda ()
+                            (let loop ([prev-minute #f])
+                              (define m (date-minute (seconds->date (current-seconds))))
+                              (unless (equal? m prev-minute)
+                                (queue-callback
+                                 (lambda () (send c refresh))))
+                              (sleep 1)
+                              (loop m))))))))
+      (define (stop-time-update!)
+        (when time-update-thread
+          (kill-thread time-update-thread)
+          (set! time-update-thread #f)))
       
       (define refresh-page
 	(lambda ([immediate-prefetch? #f])
@@ -1338,4 +1384,5 @@
 	     (send f-both show #f))
 	   (when background-f
 	     (send background-f show #f))
+           (stop-time-update!)
 	   (eh exn))))))

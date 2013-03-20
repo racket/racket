@@ -30,6 +30,7 @@
     (define show-gauge? #f)
     (define keep-titlebar? #f)
     (define show-page-numbers? #t)
+    (define show-time? #f)
     (define quad-view? #f)
     (define pixel-scale (if quad-view? 1/2 1))
     (define print-slide-seconds? #f)
@@ -121,6 +122,7 @@
          (set! commentary? #t)
          (set! commentary-on-slide? #t))
         (("--time") "time seconds per slide" (set! print-slide-seconds? #t))
+        (("--clock") "show clock" (set! show-time? #t))
         #:ps
         "After requiring <slide-module-file>, if a `slideshow' submodule exists,"
         " it is required. Otherwise, if a `main' submodule exists, it is required."
