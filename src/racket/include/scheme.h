@@ -85,8 +85,14 @@
 
 #ifdef MZ_LONG_DOUBLE
 # if defined(_MSC_VER)
-#  define MZ_NEED_SET_EXTFL_MODE 1
-#  define BYTES_RESERVED_FOR_LONG_DOUBLE 16
+#  if defined(_WIN64) || !defined(MZ_USE_JIT_SSE)
+#   define MZ_NEED_SET_EXTFL_MODE 1
+#  endif
+#  ifdef _WIN64
+#   define BYTES_RESERVED_FOR_LONG_DOUBLE 16
+#  else
+#   define BYTES_RESERVED_FOR_LONG_DOUBLE 12
+#  endif
 typedef struct {
   char bytes[BYTES_RESERVED_FOR_LONG_DOUBLE];
 } mz_long_double;

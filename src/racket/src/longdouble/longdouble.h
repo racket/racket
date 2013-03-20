@@ -6,7 +6,7 @@
 # if defined(_X86_64) || defined(_M_X64) || defined(_WIN64)
 #  define SIZEOF_LONGDOUBLE 16
 # else
-#  define SIZEOF_LONGDOUBLE 16
+#  define SIZEOF_LONGDOUBLE 12
 # endif
 
 # ifdef BYTES_RESERVED_FOR_LONG_DOUBLE
