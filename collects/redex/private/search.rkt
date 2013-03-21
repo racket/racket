@@ -29,7 +29,8 @@
 (define-struct prem (mk-clauses pat) #:transparent)
 ;; eq/dqs : (listof (or/c eq? dq?))
 (define-struct eqn (lhs rhs) #:transparent)
-(define-struct dqn (lhs rhs) #:transparent)
+;; ps : (listof symbol?) - the universally quantified variables ("parameters")
+(define-struct dqn (ps lhs rhs) #:transparent)
 (define (prem-clauses prem) ((prem-mk-clauses prem)))
 
 (define-struct partial-rule (pat clauses tr-loc bound) 
@@ -164,36 +165,31 @@
 (define (do-unification clse input env)
   (match clse
     [(clause head-pat eq/dqs prems lang name)
+     (define-values (eqs dqs) (partition eqn? eq/dqs))
      (define env1
        (let loop ([e env]
-                  [eqdqs eq/dqs])
-          (match eqdqs
-            ['() e]
-            [(cons eqdq rest)
-             (match eqdq
-               [(eqn lhs rhs)
-                (loop e rest)]
-               [(dqn lhs rhs)
-                (define u-res (disunify lhs rhs e lang))
-                (and u-res
-                     (loop (trim-dqs u-res rhs) rest))])])))
+                  [dqs dqs])
+         (match dqs
+           ['() e]
+           [(cons (dqn ps lhs rhs) rest)
+            (dqn ps lhs rhs)
+            (define u-res (disunify ps lhs rhs e lang))
+            (and u-res
+                 (loop u-res rest))])))
      (define head-p*e (and env1 (unify input head-pat env1 lang)))
      (cond
        [head-p*e
         (define res-p (p*e-p head-p*e))
         (let loop ([e (p*e-e head-p*e)]
-                   [eqdqs eq/dqs])
-          (match eqdqs
+                   [eqs eqs])
+          (match eqs
             ['() 
              (p*e (p*e-p head-p*e) e)]
-            [(cons eqdq rest)
-             (match eqdq
-               [(eqn lhs rhs)
-                (define u-res (unify lhs rhs e lang))
-                (and u-res
-                     (loop (p*e-e u-res) rest))]
-               [(dqn lhs rhs)
-                (loop e rest)])]))]
+            [(cons (eqn lhs rhs) rest)
+             (eqn lhs rhs)
+             (define u-res (unify lhs rhs e lang))
+             (and u-res
+                  (loop (p*e-e u-res) rest))]))]
        [else #f])]))
 
 (define (trim-dqs e pat)
@@ -302,9 +298,15 @@
                            [(eqn lhs rhs)
                             (eqn (fresh-pat-vars lhs instantiations)
                                  (fresh-pat-vars rhs instantiations))]
-                           [(dqn lhs rhs)
-                            (dqn (fresh-pat-vars lhs instantiations)
-                                 (fresh-pat-vars rhs (make-hash)))]))]
+                           [(dqn ps lhs rhs)
+                            (dqn (map (λ (id) (hash-ref instantiations id
+                                                       (λ () 
+                                                         (define unique-id (make-uid id))
+                                                         (hash-set! instantiations id unique-id)
+                                                         unique-id)))
+                                      ps)
+                                 (fresh-pat-vars lhs instantiations)
+                                 (fresh-pat-vars rhs instantiations))]))]
                [prems (for/list ([p (clause-prems clause-raw)])
                         (match p
                           [(prem mk-clauses pat)

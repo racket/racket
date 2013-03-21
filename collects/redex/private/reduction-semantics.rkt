@@ -29,7 +29,8 @@
                      racket/list
                      syntax/parse
                      syntax/parse/experimental/contract
-                     syntax/name))
+                     syntax/name
+                     racket/syntax))
 
 (define (language-nts lang)
   (hash-map (compiled-lang-ht lang) (λ (x y) x)))
@@ -1143,7 +1144,7 @@
           prev-metafunction
           (λ ()
             (raise-syntax-error syn-error-name "expected a previously defined metafunction" orig-stx prev-metafunction))))
-       (let*-values ([(contract-name dom-ctc codom-contracts pats)
+       (let*-values ([(contract-name dom-ctcs codom-contracts pats)
                       (split-out-contract orig-stx syn-error-name #'rest #f)]
                      [(name _) (defined-name (list contract-name) pats orig-stx)])
          (when (and prev-metafunction (eq? (syntax-e #'name) (syntax-e prev-metafunction)))
@@ -1160,7 +1161,7 @@
                                                             #,prev-metafunction
                                                             name
                                                             name-predicate
-                                                            #,dom-ctc
+                                                            #,dom-ctcs
                                                             #,codom-contracts
                                                             #,pats
                                                             #,syn-error-name))
@@ -1204,9 +1205,9 @@
 
 (define-syntax (generate-metafunction stx)
   (syntax-case stx ()
-    [(_ orig-stx lang prev-metafunction name name-predicate dom-ctc codom-contracts pats syn-error-name)
+    [(_ orig-stx lang prev-metafunction name name-predicate dom-ctcs codom-contracts pats syn-error-name)
      (let ([prev-metafunction (and (syntax-e #'prev-metafunction) #'prev-metafunction)]
-           [dom-ctc (syntax-e #'dom-ctc)]
+           [dom-ctcs (syntax-e #'dom-ctcs)]
            [codom-contracts (syntax-e #'codom-contracts)]
            [pats (syntax-e #'pats)]
            [syn-error-name (syntax-e #'syn-error-name)])
@@ -1271,12 +1272,12 @@
                                                (syntax-column lhs)))
                                      pats)]
                                [(dom-side-conditions-rewritten dom-names dom-names/ellipses)
-                                (if dom-ctc
+                                (if dom-ctcs
                                     (rewrite-side-conditions/check-errs
                                      lang-nts
                                      syn-error-name
                                      #f
-                                     dom-ctc)
+                                     dom-ctcs)
                                     #'(any () ()))]
                                [((codom-side-conditions-rewritten codom-names codom-names/ellipses) ...)
                                 (map (λ (codom-contract)
@@ -1356,7 +1357,7 @@
                                      #`(extend-lhs-pats #,(term-fn-get-id (syntax-local-value prev-metafunction))
                                                         new-lhs-pats)
                                      #`new-lhs-pats)))
-                            #,(if dom-ctc #'dsc #f)
+                            #,(if dom-ctcs #'dsc #f)
                             `(codom-side-conditions-rewritten ...)
                             'name))))
                     'disappeared-use
@@ -1404,11 +1405,12 @@
         (define clause-stx
           (with-syntax ([(prem-rw ...) ps-rw]
                         [(eqs ...) extra-eqdqs]
-                        [(prev-lhs-pat ...) prev-lhs-pats]
+                        [(((lhs-pat-ps ...) prev-lhs-pat) ...)
+                         (map fix-and-extract-dq-vars prev-lhs-pats)]
                         [(mf-clauses ...) mf-clausess]
                         [(rhs-pat) rhs-pats])
             #`((clause '(list lhs-pat rhs-pat)
-                       (list eqs ... (dqn 'lhs-pat 'prev-lhs-pat) ...)
+                       (list eqs ... (dqn '(lhs-pat-ps ...) 'prev-lhs-pat 'lhs-pat) ...)
                        (list prem-rw ... mf-clauses ...)
                        #,lang
                        '#,name)
@@ -1417,6 +1419,30 @@
                 (cons #'lhs-pat prev-lhs-pats)))))
   (reverse rev-clauses))
 
+(define-for-syntax (fix-and-extract-dq-vars pat)
+  (define new-ids (hash))
+  (let recur ([pat pat])
+    (syntax-case pat (list name)
+      [(name vname p)
+       (with-syntax ([((vs ...) new-p) (recur #'p)]
+                     [new-vn (datum->syntax #'vname
+                                            (let* ([vn (syntax-e #'vname)]
+                                                   [vn-sym (format "~s_" vn)])
+                                              (hash-ref new-ids vn
+                                                        (λ ()
+                                                          (define new 
+                                                            (syntax-e (generate-temporary vn-sym)))
+                                                          (set! new-ids (hash-set new-ids vn new))
+                                                          new)))
+                                            #'vname)])
+         #'((new-vn vs ...) (name new-vn new-p)))]
+      [(list ps ...)
+       (with-syntax* ([(((vs ...) new-ps) ...) (map recur (syntax->list #'(ps ...)))]
+                      [(u-vs ...) (remove-duplicates (syntax->list #'(vs ... ...)) #:key syntax-e)])
+         #'((u-vs ...) (list new-ps ...)))]
+      [pat
+       #'(() pat)])))
+  
 (define-for-syntax (check-arity-consistency mode contracts full-def)
   (when (and contracts (not (= (length mode) (length contracts))))
     (raise-syntax-error 
