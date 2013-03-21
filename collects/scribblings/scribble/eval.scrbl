@@ -100,10 +100,14 @@ uses an evaluator whose language is @racketmodname[typed/racket/base].}
 Like @racket[interaction], but without insetting the code via
 @racket[nested].}
 
+@defform[(interaction/no-prompt maybe-eval maybe-escape datum)]{
+  Like @racket[interaction], but does not render the output with a prompt.
+}
+
 @defform[(interaction-eval maybe-eval maybe-escape datum)]{
 
 Like @racket[interaction], evaluates the @racket[quote]d form of
-@racket[datum], but returns the empty string.}
+@racket[datum], but returns the empty string and does not catch errors.}
 
 
 @defform[(interaction-eval-show maybe-eval maybe-escape datum)]{

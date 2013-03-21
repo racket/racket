@@ -12,6 +12,7 @@
 
 (provide interaction
          interaction0
+         interaction/no-prompt
          interaction-eval
          interaction-eval-show
          racketblock+eval (rename-out [racketblock+eval schemeblock+eval])
@@ -460,6 +461,12 @@
     [(_ #:escape id (eval:alts a b)) (racketinput* #:escape id a)]
     [(_ #:escape id e) (racketinput0 #:escape id e)]))
 
+(define-syntax racketblock*
+  (syntax-rules (eval:alts code:comment)
+    [(_ #:escape id (code:comment . rest)) (racketblock0 #:escape id (code:comment . rest))]
+    [(_ #:escape id (eval:alts a b)) (racketblock #:escape id a)]
+    [(_ #:escape id e) (racketblock0 #:escape id e)]))
+
 (define-code racketblock0+line (to-paragraph/prefix "" "" (list " ")))
 
 (define-syntax (racketdefinput* stx)
@@ -505,6 +512,12 @@
 (define-syntax (interaction stx)
   (syntax-case stx ()
     [(H e ...) (syntax/loc stx (code-inset (-interaction H e ...)))]))
+
+(define-syntax (interaction/no-prompt stx)
+  (syntax-case stx ()
+    [(H e ...)
+     (syntax/loc stx
+       (code-inset (titled-interaction who #f #f racketblock* e ...)))]))
 
 (define-syntax (interaction0 stx)
   (syntax-case stx ()
