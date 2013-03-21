@@ -1011,8 +1011,36 @@
                  (list '((6 17) (19 26))
                        '((27 36) (38 43))))
 
-
-
+     (build-test "#lang racket\n(begin-for-syntax (module m racket/base (let ([x 1]) x)))"
+                 '(("#lang racket\n(" default-color)
+                   ("begin-for-syntax" imported)
+                   (" (" default-color)
+                   ("module" imported)
+                   (" m racket/base (" default-color)
+                   ("let" imported)
+                   (" ([" default-color)
+                   ("x" lexically-bound)
+                   (" 1]) " default-color)
+                   ("x" lexically-bound)
+                   (")))" default-color))
+                 (list '((60 61) (66 67))
+                       '((6 12) (14 30) (32 38))))
+     
+     (build-test "#lang racket\n(define-for-syntax x 1)\n(begin-for-syntax (module* m #f x))"
+                 '(("#lang racket\n(" default-color)
+                   ("define-for-syntax" imported)
+                   (" " default-color)
+                   ("x" lexically-bound)
+                   (" 1)\n(" default-color)
+                   ("begin-for-syntax" imported)
+                   (" (" default-color)
+                   ("module*" imported)
+                   (" m #f " default-color)
+                   ("x" imported)
+                   ("))" default-color))
+                 (list '((6 12) (14 31) (38 54) (56 63))
+                       '((32 33) ((69 70)))))
+     
      (build-rename-test "(lambda (x) x)"
                         9
                         "x"

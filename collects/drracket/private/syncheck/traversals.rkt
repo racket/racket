@@ -136,10 +136,10 @@
     ;;                  id-set (8 of them)
     ;;                  hash-table[require-spec -> syntax] (three of them)
     ;;               -> void
-    (define (annotate-basic stx-obj 
+    (define (annotate-basic stx-obj
                             user-namespace user-directory
-                            phase-to-binders 
-                            phase-to-varrefs 
+                            phase-to-binders
+                            phase-to-varrefs
                             phase-to-varsets
                             phase-to-tops
                             binding-inits
@@ -149,13 +149,14 @@
       
       (let level+tail+mod-loop ([stx-obj stx-obj]
                                 [level 0]
+                                [level-of-enclosing-module 0]
                                 [tail-parent-src #f]
                                 [tail-parent-pos #f]
                                 ;; mods: (or/f #f   ; => outside a module
                                 ;;             '()  ; => inside the main module in this file
                                 ;;             '(name names ...) ; => inside some submodules named by name & names
                                 [mods #f])
-          (define-values (next-tail-parent-src next-tail-parent-pos) 
+          (define-values (next-tail-parent-src next-tail-parent-pos)
             (let ([child-src (find-source-editor stx-obj)]
                   [child-pos (syntax-position stx-obj)]
                   [defs-text (current-annotations)])
@@ -163,30 +164,36 @@
                 [(and child-src child-pos defs-text)
                  (when (and tail-parent-src tail-parent-pos)
                    (unless (and (eq? tail-parent-src child-src)
-                                (equal? tail-parent-pos child-pos)) 
+                                (equal? tail-parent-pos child-pos))
                      (send defs-text syncheck:add-tail-arrow
                            tail-parent-src (- tail-parent-pos 1)
                            child-src (- child-pos 1))))
                  (values child-src child-pos)]
-                [else 
+                [else
                  (values tail-parent-src tail-parent-pos)])))
-          (let* ([level-loop (λ (sexp level) (level+tail+mod-loop sexp level #f #f mods))]
-                 [tail-loop (λ (sexp) (level+tail+mod-loop sexp level next-tail-parent-src next-tail-parent-pos mods))]
-                 [mod-loop (λ (sexp mod) (level+tail+mod-loop sexp level #f #f 
+          (let* ([level-loop (λ (sexp level) (level+tail+mod-loop sexp level level-of-enclosing-module
+                                                                  #f #f
+                                                                  mods))]
+                 [tail-loop (λ (sexp) (level+tail+mod-loop sexp level level-of-enclosing-module
+                                                           next-tail-parent-src next-tail-parent-pos
+                                                           mods))]
+                 [mod-loop (λ (sexp mod) (level+tail+mod-loop sexp 0
+                                                              (+ level level-of-enclosing-module)
+                                                              #f #f
                                                               (if mods
                                                                   (cons mod mods)
                                                                   '())))]
-                 [loop (λ (sexp) (level+tail+mod-loop sexp level #f #f mods))]
-                 [varrefs (lookup-phase-to-mapping phase-to-varrefs level)]
-                 [varsets (lookup-phase-to-mapping phase-to-varsets level)]
-                 [binders (lookup-phase-to-mapping phase-to-binders level)]
-                 [tops (lookup-phase-to-mapping phase-to-tops level)]
-                 [requires (hash-ref! phase-to-requires level (λ () (make-hash)))]
+                 [loop (λ (sexp) (level+tail+mod-loop sexp level level-of-enclosing-module #f #f mods))]
+                 [varrefs (lookup-phase-to-mapping phase-to-varrefs (+ level level-of-enclosing-module))]
+                 [varsets (lookup-phase-to-mapping phase-to-varsets (+ level level-of-enclosing-module))]
+                 [binders (lookup-phase-to-mapping phase-to-binders (+ level level-of-enclosing-module))]
+                 [tops (lookup-phase-to-mapping phase-to-tops (+ level level-of-enclosing-module))]
+                 [requires (hash-ref! phase-to-requires (+ level level-of-enclosing-module) (λ () (make-hash)))]
                  [collect-general-info
                   (λ (stx)
-                    (add-origins stx varrefs)
-                    (add-disappeared-bindings stx binders varrefs)
-                    (add-disappeared-uses stx varrefs))])
+                    (add-origins stx varrefs level-of-enclosing-module)
+                    (add-disappeared-bindings stx binders varrefs level-of-enclosing-module)
+                    (add-disappeared-uses stx varrefs level-of-enclosing-module))])
             (collect-general-info stx-obj)
             
             (define (list-loop/tail-last bodies)
@@ -201,89 +208,89 @@
                      (body-loop (car bodies) (cdr bodies))]))))
             
             (syntax-case* stx-obj (#%plain-lambda case-lambda if begin begin0 let-values letrec-values set!
-                                                  quote quote-syntax with-continuation-mark 
+                                                  quote quote-syntax with-continuation-mark
                                                   #%plain-app #%top #%plain-module-begin
-                                                  define-values define-syntaxes begin-for-syntax 
+                                                  define-values define-syntaxes begin-for-syntax
                                                   module module*
                                                   #%require #%provide #%expression)
               (λ (x y) (free-identifier=? x y level 0))
               [(#%plain-lambda args bodies ...)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
-                 (add-binders (syntax args) binders #f #f)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
+                 (add-binders (syntax args) binders #f #f level-of-enclosing-module)
                  (list-loop/tail-last (syntax->list (syntax (bodies ...)))))]
               [(case-lambda [argss bodiess ...]...)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (for-each
                   (λ (args bodies)
-                    (add-binders args binders #f #f)
+                    (add-binders args binders #f #f level-of-enclosing-module)
                     (list-loop/tail-last (syntax->list bodies)))
                   (syntax->list (syntax (argss ...)))
                   (syntax->list (syntax ((bodiess ...) ...)))))]
               [(if test then else)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (loop (syntax test))
                  (tail-loop (syntax then))
                  (tail-loop (syntax else)))]
               [(begin bodies ...)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (list-loop/tail-last (syntax->list (syntax (bodies ...)))))]
               
               ;; treat a single body expression specially, since this has
               ;; different tail behavior.
               [(begin0 body)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (tail-loop (syntax body)))]
               
               [(begin0 bodies ...)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (for-each loop (syntax->list (syntax (bodies ...)))))]
               
               [(let-values (bindings ...) bs ...)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (for-each collect-general-info (syntax->list (syntax (bindings ...))))
                  (with-syntax ([(((xss ...) es) ...) (syntax (bindings ...))])
-                   (for-each (λ (x es) (add-binders x binders binding-inits es))
+                   (for-each (λ (x es) (add-binders x binders binding-inits es level-of-enclosing-module))
                              (syntax->list (syntax ((xss ...) ...)))
                              (syntax->list (syntax (es ...))))
                    (for-each loop (syntax->list (syntax (es ...))))
                    (list-loop/tail-last (syntax->list (syntax (bs ...))))))]
               [(letrec-values (bindings ...) bs ...)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (for-each collect-general-info (syntax->list (syntax (bindings ...))))
                  (with-syntax ([(((xss ...) es) ...) (syntax (bindings ...))])
-                   (for-each (λ (x es) (add-binders x binders binding-inits es))
+                   (for-each (λ (x es) (add-binders x binders binding-inits es level-of-enclosing-module))
                              (syntax->list (syntax ((xss ...) ...)))
                              (syntax->list (syntax (es ...))))
                    (for-each loop (syntax->list (syntax (es ...))))
                    (list-loop/tail-last (syntax->list (syntax (bs ...))))))]
               [(set! var e)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  
                  ;; tops are used here because a binding free use of a set!'d variable
                  ;; is treated just the same as (#%top . x).
-                 (add-id varsets (syntax var))  
+                 (add-id varsets (syntax var) level-of-enclosing-module)
                  (if (identifier-binding (syntax var) 0)
-                     (add-id varrefs (syntax var))
-                     (add-id tops (syntax var)))
+                     (add-id varrefs (syntax var) level-of-enclosing-module)
+                     (add-id tops (syntax var) level-of-enclosing-module))
                  
                  (loop (syntax e)))]
               [(quote datum)
-               (annotate-raw-keyword stx-obj varrefs)]
+               (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)]
               [(quote-syntax datum)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (let loop ([stx #'datum])
                    (cond [(identifier? stx)
-                          (add-id templrefs stx)]
+                          (add-id templrefs stx level-of-enclosing-module)]
                          [(syntax? stx)
                           (loop (syntax-e stx))]
                          [(pair? stx)
@@ -296,37 +303,37 @@
                          [else (void)])))]
               [(with-continuation-mark a b c)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (loop (syntax a))
                  (loop (syntax b))
                  (tail-loop (syntax c)))]
               [(#%plain-app pieces ...)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (for-each loop (syntax->list (syntax (pieces ...)))))]
               [(#%top . var)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
-                 (add-id tops (syntax var)))]
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
+                 (add-id tops (syntax var) level-of-enclosing-module))]
               [(define-values vars b)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
-                 (add-binders (syntax vars) binders binding-inits #'b)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
+                 (add-binders (syntax vars) binders binding-inits #'b level-of-enclosing-module)
                  (add-definition-target (syntax vars) mods)
                  (loop (syntax b)))]
               [(define-syntaxes names exp)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
-                 (add-binders (syntax names) binders binding-inits #'exp)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
+                 (add-binders (syntax names) binders binding-inits #'exp level-of-enclosing-module)
                  (add-definition-target (syntax names) mods)
                  (level-loop (syntax exp) (+ level 1)))]
               [(begin-for-syntax exp ...)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (for-each (lambda (e) (level-loop e (+ level 1))) (syntax->list (syntax (exp ...)))))]
               [(module m-name lang (#%plain-module-begin bodies ...))
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (hash-set! module-lang-requires (syntax lang) #t)
                  (annotate-require-open user-namespace user-directory (syntax lang))
                  (hash-cons! requires (syntax->datum (syntax lang)) (syntax lang))
@@ -334,7 +341,7 @@
                    (mod-loop body (syntax-e #'m-name))))]
               [(module* m-name lang (#%plain-module-begin bodies ...))
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (when (syntax-e #'lang)
                    (hash-set! module-lang-requires (syntax lang) #t)
                    (annotate-require-open user-namespace user-directory (syntax lang))
@@ -370,16 +377,16 @@
                        [else
                         (handle-phaseless-spec spec level)])))
                  (define (handle-phaseless-spec stx level)
-                   (define require-ht (hash-ref! phase-to-requires level
-                                                 (λ () 
+                   (define require-ht (hash-ref! phase-to-requires (+ level level-of-enclosing-module)
+                                                 (λ ()
                                                    (define h (make-hash))
-                                                   (hash-set! phase-to-requires level h)
+                                                   (hash-set! phase-to-requires (+ level level-of-enclosing-module) h)
                                                    h)))
                    (define raw-module-path (phaseless-spec->raw-module-path stx))
                    (annotate-require-open user-namespace user-directory raw-module-path)
                    (when (syntax-original? raw-module-path)
                      (define key (syntax->datum raw-module-path))
-                     (hash-set! require-ht 
+                     (hash-set! require-ht
                                 key
                                 (cons stx (hash-ref require-ht key '())))))
                  
@@ -390,18 +397,18 @@
               [(#%provide provide-specs ...)
                (let ([provided-varss (map extract-provided-vars
                                           (syntax->list (syntax (provide-specs ...))))])
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (for ([provided-vars (in-list provided-varss)])
                    (for ([provided-var (in-list provided-vars)])
-                     (add-id varrefs provided-var))))]
+                     (add-id varrefs provided-var level-of-enclosing-module))))]
               
               [(#%expression arg)
                (begin
-                 (annotate-raw-keyword stx-obj varrefs)
+                 (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (tail-loop #'arg))]
               [id
                (identifier? (syntax id))
-               (add-id varrefs stx-obj)]
+               (add-id varrefs stx-obj level-of-enclosing-module)]
               [_
                (begin
                  #;
@@ -416,8 +423,8 @@
     (define (hash-cons! ht k v)
       (hash-set! ht k (cons v (hash-ref ht k '()))))
     
-    ;; add-disappeared-bindings : syntax id-set -> void
-    (define (add-disappeared-bindings stx binders disappaeared-uses)
+    ;; add-disappeared-bindings : syntax id-set integer -> void
+    (define (add-disappeared-bindings stx binders disappaeared-uses level-of-enclosing-module)
       (let ([prop (syntax-property stx 'disappeared-binding)])
         (when prop
           (let loop ([prop prop])
@@ -426,11 +433,11 @@
                (loop (car prop))
                (loop (cdr prop))]
               [(identifier? prop)
-               (add-origins prop disappaeared-uses)
-               (add-id binders prop)])))))
+               (add-origins prop disappaeared-uses level-of-enclosing-module)
+               (add-id binders prop level-of-enclosing-module)])))))
     
-    ;; add-disappeared-uses : syntax id-set -> void
-    (define (add-disappeared-uses stx id-set)
+    ;; add-disappeared-uses : syntax id-set integer -> void
+    (define (add-disappeared-uses stx id-set level-of-enclosing-module)
       (let ([prop (syntax-property stx 'disappeared-use)])
         (when prop
           (let loop ([prop prop])
@@ -439,7 +446,7 @@
                (loop (car prop))
                (loop (cdr prop))]
               [(identifier? prop)
-               (add-id id-set prop)])))))
+               (add-id id-set prop level-of-enclosing-module)])))))
     
     ;; annotate-variables : namespace directory string id-set[four of them] (listof syntax) (listof syntax) -> void
     ;; colors in and draws arrows for variables, according to their classifications
@@ -537,7 +544,7 @@
       (hash-for-each
        unused
        (λ (k v)
-         (for-each (λ (stx) 
+         (for-each (λ (stx)
                      (unless (hash-ref module-lang-requires stx #f)
                        (define defs-text (current-annotations))
                        (define source-editor (find-source-editor stx))
@@ -550,7 +557,7 @@
                            (send defs-text syncheck:add-background-color
                                  source-editor start fin "firebrick")))
                        (color stx unused-require-style-name)))
-                   (hash-ref requires k 
+                   (hash-ref requires k
                              (λ ()
                                (error 'syncheck/traversals.rkt "requires doesn't have a mapping for ~s" k)))))))
     
@@ -601,8 +608,8 @@
               (define unused (hash-ref! unused/phases req-phase-level #f))
               (when unused (hash-remove! unused req-path))
               (for ([req-stx (in-list req-stxes)])
-                (when (id/require-match? (syntax->datum var) 
-                                         id 
+                (when (id/require-match? (syntax->datum var)
+                                         id
                                          (syntax->datum req-stx))
                   (when id
                     (define-values (filename submods) (get-require-filename source-req-path user-namespace user-directory))
@@ -614,7 +621,7 @@
                        submods)))
                   (define raw-module-path (phaseless-spec->raw-module-path req-stx))
                   (add-mouse-over var
-                                  (format 
+                                  (format
                                    (string-constant cs-mouse-over-import)
                                    (syntax-e var)
                                    req-path))
@@ -703,7 +710,7 @@
     ;;   (list (let ([y 1]) x x)
     ;;         (let ([z 1]) x)))
     ;; (m w w w)
-    ;; if you do that here, then which def site do you pick? 
+    ;; if you do that here, then which def site do you pick?
     ;; and note that picking both of them leads to double counting
     ;; it seems possible to have a different datastructure (one that
     ;; records the src locs of each 'end' position of each arrow)
@@ -714,7 +721,7 @@
           (define start (car val))
           (define end (cdr val))
           (define (show-starts)
-            (add-mouse-over/loc (list-ref key 0) (list-ref key 1) (list-ref key 2) 
+            (add-mouse-over/loc (list-ref key 0) (list-ref key 1) (list-ref key 2)
                                 (cond
                                   [(zero? start)
                                    (string-constant cs-zero-varrefs)]
@@ -724,7 +731,7 @@
                                    (format (string-constant cs-n-varrefs) start)])))
           (define (show-ends)
             (unless (= 1 end)
-              (add-mouse-over/loc (list-ref key 0) (list-ref key 1) (list-ref key 2) 
+              (add-mouse-over/loc (list-ref key 0) (list-ref key 1) (list-ref key 2)
                                   (format (string-constant cs-binder-count) end))))
           (cond
             [(zero? end)   ;; assume this is a binder, show uses
@@ -867,7 +874,7 @@
         (values cleaned-up-path rkt-submods)))
     
     ;; possible-suffixes : (listof string)
-    ;; these are the suffixes that are checked for the reverse 
+    ;; these are the suffixes that are checked for the reverse
     ;; module-path mapping.
     (define possible-suffixes '(".rkt" ".ss" ".scm" ""))
     
@@ -883,17 +890,17 @@
                                test)))
                       possible-suffixes)))))
     
-    ;; add-origins : sexp id-set -> void
-    (define (add-origins sexp id-set)
+    ;; add-origins : sexp id-set integer -> void
+    (define (add-origins sexp id-set level-of-enclosing-module)
       (let ([origin (syntax-property sexp 'origin)])
         (when origin
           (let loop ([ct origin])
             (cond
-              [(pair? ct) 
+              [(pair? ct)
                (loop (car ct))
                (loop (cdr ct))]
-              [(syntax? ct) 
-               (add-id id-set ct)]
+              [(syntax? ct)
+               (add-id id-set ct level-of-enclosing-module)]
               [else (void)])))))
     
     ;; FIXME: handle for-template and for-label
@@ -904,19 +911,19 @@
          (identifier? (syntax identifier))
          (list (syntax identifier))]
         
-        [(rename local-identifier export-identifier) 
+        [(rename local-identifier export-identifier)
          (list (syntax local-identifier))]
         
         ;; why do I even see this?!?
         [(struct struct-identifier (field-identifier ...))
          null]
         
-        [(all-from module-name) null] 
+        [(all-from module-name) null]
         [(all-from-except module-name identifier ...)
          null]
         [(all-defined-except identifier ...)
          (syntax->list #'(identifier ...))]
-        [_ 
+        [_
          null]))
     
     
@@ -937,11 +944,11 @@
     
     (define (symbolic-compare? x y) (eq? (syntax-e x) (syntax-e y)))
     
-    ;; add-binders : syntax id-set (or/c #f id-set) (or/c #f syntax) -> void
+    ;; add-binders : syntax id-set (or/c #f id-set) (or/c #f syntax) integer -> void
     ;; transforms an argument list into a bunch of symbols/symbols
     ;; and puts them into the id-set
     ;; effect: colors the identifiers
-    (define (add-binders stx id-set binding-to-init init-exp)
+    (define (add-binders stx id-set binding-to-init init-exp level-of-enclosing-module)
       (let loop ([stx stx])
         (let ([e (if (syntax? stx) (syntax-e stx) stx)])
           (cond
@@ -952,14 +959,14 @@
                    (begin
                      (when binding-to-init
                        (add-init-exp binding-to-init fst init-exp))
-                     (add-id id-set fst)
+                     (add-id id-set fst level-of-enclosing-module)
                      (loop rst))
                    (loop rst)))]
             [(null? e) (void)]
-            [else 
+            [else
              (when binding-to-init
                (add-init-exp binding-to-init stx init-exp))
-             (add-id id-set stx)]))))
+             (add-id id-set stx level-of-enclosing-module)]))))
     
     ;; add-definition-target : syntax[(sequence of identifiers)] (listof symbol) -> void
     (define (add-definition-target stx mods)
@@ -967,7 +974,7 @@
         (define defs-text (current-annotations))
         (for ([id (in-list (syntax->list stx))])
           (define source (syntax-source id))
-          (when (and source 
+          (when (and source
                      defs-text
                      (syntax-position id)
                      (syntax-span id))
@@ -980,16 +987,16 @@
                     (syntax-e id)
                     mods))))))
     
-    ;; annotate-raw-keyword : syntax id-map -> void
+    ;; annotate-raw-keyword : syntax id-map integer -> void
     ;; annotates keywords when they were never expanded. eg.
     ;; if someone just types `(λ (x) x)' it has no 'origin
     ;; field, but there still are keywords.
-    (define (annotate-raw-keyword stx id-map)
+    (define (annotate-raw-keyword stx id-map level-of-enclosing-module)
       (let ([lst (syntax-e stx)])
         (when (pair? lst)
           (let ([f-stx (car lst)])
             (when (identifier? f-stx)
-              (add-id id-map f-stx))))))
+              (add-id id-map f-stx level-of-enclosing-module))))))
     
 ;                                                                                             
 ;                                                                                             
@@ -1089,7 +1096,7 @@
       ;; In the more common case, there will be multiple, distinct uses of an identifier that
       ;; are spelled the same way in the file, eg (+ (let ([x 1]) x) (let ([x 2]) x)). In
       ;; this case, the 'x' entry in the table will point to a list of length two,
-      ;; with each of the corresponding list of identifiers in the pair still being a 
+      ;; with each of the corresponding list of identifiers in the pair still being a
       ;; singleton list.
       ;;
       ;; In the bizarro case, some macro will have taken an identifier from its input and
@@ -1108,7 +1115,7 @@
         (when defs-text
           (for ([phase-to-mapping (in-list phase-tos)])
             (for ([(level id-set) (in-hash phase-to-mapping)])
-              (for-each-ids 
+              (for-each-ids
                id-set
                (λ (vars)
                  (for ([var (in-list vars)])
@@ -1156,7 +1163,7 @@
                          ;; here we are in the bizarro case; we need to union the sets
                          ;; in the added-source-loc-sets list.
                          (define pairs-to-merge (cons free-id-matching-pair added-source-loc-sets))
-                         (define removed-sets (filter (λ (x) (not (memq x pairs-to-merge))) 
+                         (define removed-sets (filter (λ (x) (not (memq x pairs-to-merge)))
                                                       (hash-ref table var-sym)))
                          (define new-pair (pair (apply append (map pair-ids pairs-to-merge))
                                                 (apply set-union (map pair-locs pairs-to-merge))))
@@ -1168,7 +1175,7 @@
              (for ([a-pair (in-list pairs)])
                (define loc-lst (set->list (pair-locs a-pair)))
                (define ids (pair-ids a-pair))
-               (define (name-dup? new-str) 
+               (define (name-dup? new-str)
                  (and (for/or ([phase-to-map (in-list phase-tos)])
                         (for/or ([(level id-set) (in-hash phase-to-map)])
                           (for/or ([id (in-list ids)])
@@ -1191,7 +1198,7 @@
                     (send defs-text syncheck:add-id-set
                           (take loc-lst max-to-send-at-once)
                           name-dup?)
-                    ;; drop one fewer so that we're sure that the 
+                    ;; drop one fewer so that we're sure that the
                     ;; sets get unioned properly
                     (loop (drop loc-lst (- max-to-send-at-once 1))
                           (- len (- max-to-send-at-once 1)))]))))))))
@@ -1245,9 +1252,10 @@
           (free-identifier-mapping-put! mapping id new))))
     
     ;; add-id : id-set identifier -> void
-    (define (add-id mapping id)
+    (define (add-id mapping id level-of-enclosing-module)
       (when (syntax-original? id)
-        (let* ([old (free-identifier-mapping-get mapping id (λ () '()))]
+        (let* ([id (syntax-shift-phase-level id level-of-enclosing-module)]
+               [old (free-identifier-mapping-get mapping id (λ () '()))]
                [new (cons id old)])
           (free-identifier-mapping-put! mapping id new))))
     
