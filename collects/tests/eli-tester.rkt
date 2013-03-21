@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require scheme/match scheme/list scheme/string
+(require scheme/match scheme/list scheme/string rackunit/log
          (for-syntax scheme/base scheme/match))
 
 (define-syntax (safe stx)
@@ -162,6 +162,8 @@
            (lambda ()
              (test-context #f)
              (let ([num (mcar c)] [exns (mcdr c)])
+               (for ([i (in-range num)]) (test-log! #t))
+               (for ([i (in-list exns)]) (test-log! #f))
                (if (null? exns)
                    (case pass
                      [(loud) (printf "~a test~a passed\n" num (if (= num 1) "" "s"))]

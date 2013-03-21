@@ -3,6 +3,7 @@
 (require racket/match
          (for-syntax racket/base
                      "location.rkt")
+         rackunit/log
          "base.rkt"
          "check-info.rkt"
          "format.rkt"
@@ -71,6 +72,7 @@
   (syntax-rules ()
     ((_)
      (let ([marks (current-continuation-marks)])
+       (test-log! #f)
        (raise
         (make-exn:test:check
          "Check failure"
@@ -81,6 +83,7 @@
   (syntax-rules ()
     ((_)
      (let ([marks (current-continuation-marks)])
+       (test-log! #f)
        (raise
         (make-exn:test:check:internal
          "Internal failure"
@@ -93,6 +96,7 @@
 ;; given parameter.  Useful for propogating internal
 ;; errors to the outside world.
 (define (refail-check exn)
+  (test-log! #f)
   (raise
    (make-exn:test:check "Check failure"
                         (exn-continuation-marks exn)
@@ -121,7 +125,8 @@
                                   (if message
                                       (list (make-check-message message))
                                       null))
-                             (lambda () (begin expr ...)))))
+                             (lambda () (begin0 (begin expr ...) (test-log! #t))))))
+                       
                        ;; All checks should return (void).
                        (void)))]
                    [check-secret-name (datum->syntax stx (gensym (syntax->datum (syntax name))))])

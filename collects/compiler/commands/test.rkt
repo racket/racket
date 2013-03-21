@@ -3,6 +3,7 @@
          racket/match
          racket/path
          raco/command-name
+         rackunit/log
          planet2/lib)
 
 (define submodules '())
@@ -145,4 +146,5 @@
   "Interpret arguments as packages"
   (set! packages? #t)]
  #:args file-or-directory
- (for-each do-test-wrap file-or-directory))
+ (begin (for-each do-test-wrap file-or-directory)
+        (test-log #:display? #t #:exit? #t)))
