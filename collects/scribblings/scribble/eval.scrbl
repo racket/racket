@@ -196,3 +196,12 @@ is supplied as the first argument to the parameter's value, and the
 second argument is the form to evaluate. The last argument is
 @racket[#t] if exceptions are being captured (to display exception
 results), @racket[#f] otherwise.}
+
+@defparam[scribble-exn->string handler (-> (or/c exn? any/c) string?)]{
+  A parameter that controls how exceptions are rendered by 
+  @racket[interaction]. Defaults to
+  @racketblock[(λ (e)
+                 (if (exn? e)
+                     (exn-message e)
+                     (format "uncaught exception: ~s" e)))]
+}

@@ -30,6 +30,7 @@
          make-eval-factory
          close-eval
 
+         scribble-exn->string
          scribble-eval-handler)
 
 (define scribble-eval-handler
@@ -242,9 +243,7 @@
   (define (do-ev s)
     (with-handlers ([(lambda (x) (not (exn:break? x)))
                      (lambda (e)
-                       (cons (if (exn? e)
-                               (exn-message e)
-                               (format "uncaught exception: ~s" e))
+                       (cons ((scribble-exn->string) e)
                              (get-outputs)))])
       (cons (render-value (do-plain-eval ev s #t)) (get-outputs))))
   (define (do-ev/expect s expect)
@@ -263,6 +262,13 @@
           (if (nothing-to-eval? s)
               (list (list (void)) "" "")
               (do-ev/expect s expect))))))
+
+(define scribble-exn->string
+  (make-parameter
+   (λ (e)
+     (if (exn? e)
+         (exn-message e)
+         (format "uncaught exception: ~s" e)))))
 
 ;; Since we evaluate everything in an interaction before we typeset,
 ;;  copy each value to avoid side-effects.
