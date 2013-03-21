@@ -17,29 +17,30 @@ complex syntax, such as lists of distinct identifiers and formal
 arguments with keywords. Macros that manipulate the same syntactic
 structures can share syntax class definitions.
 
-@defform*/subs[#:literals (pattern)
-               [(define-syntax-class name-id stxclass-option ...
-                  stxclass-variant ...+)
-                (define-syntax-class (name-id . kw-formals) stxclass-option ... 
-                  stxclass-variant ...+)]
-               ([stxclass-option
-                 (code:line #:attributes (attr-arity-decl ...))
-                 (code:line #:description description-expr)
-                 (code:line #:opaque)
-                 (code:line #:commit)
-                 (code:line #:no-delimit-cut)
-                 (code:line #:literals (literal-entry ...))
-                 (code:line #:datum-literals (datum-literal-entry ...))
-                 (code:line #:literal-sets (literal-set ...))
-                 (code:line #:conventions (convention-id ...))
-                 (code:line #:local-conventions (convention-rule ...))
-                 (code:line #:disable-colon-notation)]
-                [attr-arity-decl
-                 attr-name-id
-                 (attr-name-id depth)]
-                [stxclass-variant
-                 (pattern syntax-pattern pattern-directive ...)])
-               #:contracts ([description-expr (or/c string? #f)])]{
+@defform*[#:literals (pattern)
+          [(define-syntax-class name-id stxclass-option ...
+             stxclass-variant ...+)
+           (define-syntax-class (name-id . kw-formals) stxclass-option ... 
+             stxclass-variant ...+)]
+          #:grammar
+          ([stxclass-option
+            (code:line #:attributes (attr-arity-decl ...))
+            (code:line #:description description-expr)
+            (code:line #:opaque)
+            (code:line #:commit)
+            (code:line #:no-delimit-cut)
+            (code:line #:literals (literal-entry ...))
+            (code:line #:datum-literals (datum-literal-entry ...))
+            (code:line #:literal-sets (literal-set ...))
+            (code:line #:conventions (convention-id ...))
+            (code:line #:local-conventions (convention-rule ...))
+            (code:line #:disable-colon-notation)]
+           [attr-arity-decl
+            attr-name-id
+            (attr-name-id depth)]
+           [stxclass-variant
+            (pattern syntax-pattern pattern-directive ...)])
+          #:contracts ([description-expr (or/c string? #f)])]{
 
 Defines @racket[name-id] as a @deftech{syntax class}, which
 encapsulates one or more @tech{single-term patterns}.
@@ -52,9 +53,10 @@ non-empty sequence of @racket[pattern] variants.
 
 The following options are supported:
 
-@specsubform/subs[(code:line #:attributes (attr-arity-decl ...))
-                  ([attr-arity-decl attr-id
-                                    (attr-id depth)])]{
+@specsubform[(code:line #:attributes (attr-arity-decl ...))
+             #:grammar
+             ([attr-arity-decl attr-id
+                               (attr-id depth)])]{
 
 Declares the attributes of the syntax class. An attribute arity
 declaration consists of the attribute name and optionally its ellipsis
@@ -181,11 +183,12 @@ follows:
                (code:line #:when condition-expr)
                (code:line #:do [def-or-expr ...])]
 
-@specsubform/subs[(code:line #:declare pvar-id stxclass maybe-role)
-                  ([stxclass syntax-class-id
-                             (syntax-class-id arg ...)]
-                   [maybe-role (code:line)
-                               (code:line #:role role-expr)])]{
+@specsubform[(code:line #:declare pvar-id stxclass maybe-role)
+             #:grammar
+             ([stxclass syntax-class-id
+                        (syntax-class-id arg ...)]
+              [maybe-role (code:line)
+                          (code:line #:role role-expr)])]{
 
 Associates @racket[pvar-id] with a syntax class and possibly a role,
 equivalent to replacing each occurrence of @racket[pvar-id] in the

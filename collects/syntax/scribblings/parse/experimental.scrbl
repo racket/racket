@@ -20,15 +20,16 @@ compatibility.
 
 @defmodule[syntax/parse/experimental/provide]
 
-@defform/subs[#:literals (syntax-class/c)
-              (provide-syntax-class/contract
-                [syntax-class-id syntax-class-contract] ...)
-              ([syntax-class-contract
-                (syntax-class/c (mandatory-arg ...))
-                (syntax-class/c (mandatory-arg ...)
-                                (optional-arg ...))]
-               [arg contract-expr (code:line keyword contract-expr)])
-              #:contracts ([contract-expr contract?])]{
+@defform[#:literals (syntax-class/c)
+         (provide-syntax-class/contract
+           [syntax-class-id syntax-class-contract] ...)
+         #:grammar
+         ([syntax-class-contract
+           (syntax-class/c (mandatory-arg ...))
+           (syntax-class/c (mandatory-arg ...)
+                           (optional-arg ...))]
+          [arg contract-expr (code:line keyword contract-expr)])
+         #:contracts ([contract-expr contract?])]{
 
 Provides the syntax class (or splicing syntax class)
 @racket[syntax-class-id] with the given contracts imposed on its
@@ -101,9 +102,10 @@ error is raised.
                            (~splicing-reflect var-id (reified-expr arg-expr ...)
                                               maybe-attrs)]]
 
-@specsubform/subs[(@#,(defhere ~reflect) var-id (reified-expr arg-expr ...) maybe-attrs)
-                  ([maybe-attrs (code:line)
-                                (code:line #:attributes (attr-arity-decl ...))])]{
+@specsubform[(@#,(defhere ~reflect) var-id (reified-expr arg-expr ...) maybe-attrs)
+             #:grammar
+         ([maybe-attrs (code:line)
+                                  (code:line #:attributes (attr-arity-decl ...))])]{
 
 Like @racket[~var], except that the syntax class position is an
 expression evaluating to a reified syntax object, not a syntax class
@@ -189,9 +191,10 @@ sets of terms but also repetition constraints.
 This module provides @deftech{ellipsis-head alternative sets},
 reusable encapsulations of @|EHpatterns|.
 
-@defform/subs[#:literals (pattern)
-              (define-eh-alternative-set name eh-alternative ...)
-              ([alternative (pattern EH-pattern)])]{
+@defform[#:literals (pattern)
+         (define-eh-alternative-set name eh-alternative ...)
+         #:grammar
+         ([alternative (pattern EH-pattern)])]{
 
 Defines @racket[name] as an ellipsis-head alternative set. Using
 @racket[name] (via @racket[~eh-var]) in an ellipsis-head pattern is
@@ -246,11 +249,12 @@ their attributes with @racket[name].
 
 @defmodule[syntax/parse/experimental/specialize]
 
-@defform/subs[(define-syntax-class/specialize header syntax-class-use)
-              ([header id
-                       (id . kw-formals)]
-               [syntax-class-use target-stxclass-id
-                                 (target-stxclass-id arg ...)])]{
+@defform[(define-syntax-class/specialize header syntax-class-use)
+         #:grammar
+         ([header id
+                  (id . kw-formals)]
+          [syntax-class-use target-stxclass-id
+                            (target-stxclass-id arg ...)])]{
 
 Defines @racket[id] as a syntax class with the same attributes,
 options (eg, @racket[#:commit], @racket[#:no-delimit-cut]), and
@@ -272,22 +276,23 @@ patterns as @racket[target-stxclass-id] but with the given
 
 @(define literal-ellipsis (racket ...))
 
-@defform/subs[#:literals (?? ?@)
-              (template tmpl)
-              ([tmpl pattern-variable-id
-                     (head-tmpl . tmpl)
-                     (head-tmpl ellipsis ...+ . tmpl)
-                     (metafunction-id . tmpl)
-                     (?? tmpl tmpl)
-                     #(@#,svar[head-tmpl] ...)
-                     #s(prefab-struct-key @#,svar[head-tmpl] ...)
-                     #&@#,svar[tmpl]
-                     constant-term]
-               [head-templ tmpl
-                           (?? head-tmpl)
-                           (?? head-tmpl head-tmpl)
-                           (?@ . tmpl)]
-               [ellipsis @#,literal-ellipsis])]{
+@defform[#:literals (?? ?@)
+         (template tmpl)
+         #:grammar
+         ([tmpl pattern-variable-id
+                (head-tmpl . tmpl)
+                (head-tmpl ellipsis ...+ . tmpl)
+                (metafunction-id . tmpl)
+                (?? tmpl tmpl)
+                #(@#,svar[head-tmpl] ...)
+                #s(prefab-struct-key @#,svar[head-tmpl] ...)
+                #&@#,svar[tmpl]
+                constant-term]
+          [head-templ tmpl
+                      (?? head-tmpl)
+                      (?? head-tmpl head-tmpl)
+                      (?@ . tmpl)]
+          [ellipsis @#,literal-ellipsis])]{
 
 Constructs a syntax object from a syntax template, like
 @racket[syntax], but provides additional templating forms for dealing

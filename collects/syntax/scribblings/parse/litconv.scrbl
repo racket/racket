@@ -15,19 +15,20 @@ As a remedy, @racketmodname[syntax/parse] offers @deftech{literal
 sets}. A literal set is defined via @racket[define-literal-set] and
 used via the @racket[#:literal-set] option of @racket[syntax-parse].
 
-@defform/subs[(define-literal-set id maybe-phase maybe-imports maybe-datum-literals
-                (literal ...))
-              ([literal literal-id
-                        (pattern-id literal-id)]
-               [maybe-phase (code:line)
-                            (code:line #:for-template)
-                            (code:line #:for-syntax)
-                            (code:line #:for-label)
-                            (code:line #:phase phase-level)]
-               [maybe-datum-literals (code:line)
-                                     (code:line #:datum-literals (datum-literal ...))]
-               [maybe-imports (code:line)
-                              (code:line #:literal-sets (imported-litset-id ...))])]{
+@defform[(define-literal-set id maybe-phase maybe-imports maybe-datum-literals
+           (literal ...))
+         #:grammar
+          ([literal literal-id
+                    (pattern-id literal-id)]
+           [maybe-phase (code:line)
+                        (code:line #:for-template)
+                        (code:line #:for-syntax)
+                        (code:line #:for-label)
+                        (code:line #:phase phase-level)]
+           [maybe-datum-literals (code:line)
+                                 (code:line #:datum-literals (datum-literal ...))]
+           [maybe-imports (code:line)
+                          (code:line #:literal-sets (imported-litset-id ...))])]{
 
 Defines @racket[id] as a @tech{literal set}. Each @racket[literal] can
 have a separate @racket[pattern-id] and @racket[literal-id]. The
@@ -114,12 +115,13 @@ the @racket[_phase] argument defaults to
 ]
 }
 
-@defform/subs[(define-conventions name-id convention-rule ...)
-              ([convention-rule (name-pattern syntax-class)]
-               [name-pattern exact-id
-                             name-rx]
-               [syntax-class syntax-class-id
-                             (syntax-class-id expr ...)])]{
+@defform[(define-conventions name-id convention-rule ...)
+         #:grammar
+         ([convention-rule (name-pattern syntax-class)]
+          [name-pattern exact-id
+                        name-rx]
+          [syntax-class syntax-class-id
+                        (syntax-class-id expr ...)])]{
 
 Defines @deftech{conventions} that supply default syntax classes for
 pattern variables. A pattern variable that has no explicit syntax

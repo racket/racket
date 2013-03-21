@@ -20,27 +20,28 @@ of @tech{syntax patterns}, which is described in detail in
 Two parsing forms are provided: @racket[syntax-parse] and
 @racket[syntax-parser].
 
-@defform/subs[(syntax-parse stx-expr parse-option ... clause ...+)
-              ([parse-option (code:line #:context context-expr)
-                             (code:line #:literals (literal ...))
-                             (code:line #:datum-literals (datum-literal ...))
-                             (code:line #:literal-sets (literal-set ...))
-                             (code:line #:conventions (convention-id ...))
-                             (code:line #:local-conventions (convention-rule ...))
-                             (code:line #:disable-colon-notation)]
-               [literal literal-id
-                        (pattern-id literal-id)
-                        (pattern-id literal-id #:phase phase-expr)]
-               [datum-literal literal-id
-                              (pattern-id literal-id)]
-               [literal-set literal-set-id
-                            (literal-set-id literal-set-option ...)]
-               [literal-set-option (code:line #:at context-id)
-                                   (code:line #:phase phase-expr)]
-               [clause (syntax-pattern pattern-directive ... body ...+)])
-              #:contracts ([stx-expr syntax?]
-                           [context-expr syntax?]
-                           [phase-expr (or/c exact-integer? #f)])]{
+@defform[(syntax-parse stx-expr parse-option ... clause ...+)
+         #:grammar
+         ([parse-option (code:line #:context context-expr)
+                        (code:line #:literals (literal ...))
+                        (code:line #:datum-literals (datum-literal ...))
+                        (code:line #:literal-sets (literal-set ...))
+                        (code:line #:conventions (convention-id ...))
+                        (code:line #:local-conventions (convention-rule ...))
+                        (code:line #:disable-colon-notation)]
+          [literal literal-id
+                   (pattern-id literal-id)
+                   (pattern-id literal-id #:phase phase-expr)]
+          [datum-literal literal-id
+                         (pattern-id literal-id)]
+          [literal-set literal-set-id
+                       (literal-set-id literal-set-option ...)]
+          [literal-set-option (code:line #:at context-id)
+                              (code:line #:phase phase-expr)]
+          [clause (syntax-pattern pattern-directive ... body ...+)])
+         #:contracts ([stx-expr syntax?]
+                      [context-expr syntax?]
+                      [phase-expr (or/c exact-integer? #f)])]{
 
 Evaluates @racket[stx-expr], which should produce a syntax object, and
 matches it against the @racket[clause]s in order. If some clause's
@@ -74,11 +75,12 @@ failures; otherwise @racket[stx-expr] is used. The
     [(x:id ...) 'ok]))
 }
 
-@specsubform/subs[(code:line #:literals (literal ...))
-                  ([literal literal-id
-                            (pattern-id literal-id)
-                            (pattern-id literal-id #:phase phase-expr)])
-                  #:contracts ([phase-expr (or/c exact-integer? #f)])]{
+@specsubform[(code:line #:literals (literal ...))
+             #:grammar
+             ([literal literal-id
+                       (pattern-id literal-id)
+                       (pattern-id literal-id #:phase phase-expr)])
+             #:contracts ([phase-expr (or/c exact-integer? #f)])]{
 
 @margin-note*{
   Unlike @racket[syntax-case], @racket[syntax-parse] requires all
@@ -105,9 +107,10 @@ occurrence of @racket[pattern-id] were replaced with the following pattern:
 @racketblock[(~literal literal-id #:phase phase-expr)]
 }
 
-@specsubform/subs[(code:line #:datum-literals (datum-literal ...))
-                  ([datum-literal literal-id
-                                  (pattern-id literal-id)])]{
+@specsubform[(code:line #:datum-literals (datum-literal ...))
+             #:grammar
+             ([datum-literal literal-id
+                             (pattern-id literal-id)])]{
 
 Like @racket[#:literals], but the literals are matched as symbols
 instead of as identifiers.
@@ -118,12 +121,13 @@ pattern:
 @racketblock[(~datum literal-id)]
 }
 
-@specsubform/subs[(code:line #:literal-sets (literal-set ...))
-                  ([literal-set literal-set-id
-                                (literal-set-id literal-set-option ...)]
-                   [literal-set-option (code:line #:at lctx)
-                                       (code:line #:phase phase-expr)])
-                  #:contracts ([phase-expr (or/c exact-integer? #f)])]{
+@specsubform[(code:line #:literal-sets (literal-set ...))
+             #:grammar
+             ([literal-set literal-set-id
+                           (literal-set-id literal-set-option ...)]
+              [literal-set-option (code:line #:at lctx)
+                                  (code:line #:phase phase-expr)])
+             #:contracts ([phase-expr (or/c exact-integer? #f)])]{
 
 Many literals can be declared at once via one or more @tech{literal
 sets}, imported with the @racket[#:literal-sets] option. See
