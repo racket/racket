@@ -752,7 +752,7 @@
         (begin
           (set! given-h-scrolls-per-page -2)
           #f)
-        (let loop ([retval #f])
+        (let loop ([retval #f] [iters 0])
           (let-boxes ([sx 0]
                       [sy 0])
               (get-scroll sx sy)
@@ -806,7 +806,7 @@
 
                                           (set! scroll-offset -scroll-offset)
 
-                                          (let-values ([(num-scrolls vspp)
+                                          (let-values ([(vnum-scrolls vspp)
                                                         (if (positive? vnum-scrolls)
                                                             (let ([num-lines (- (send med num-scroll-lines) 1)])
                                                               (values vnum-scrolls
@@ -908,8 +908,24 @@
                               (set! scroll-width hnum-scrolls)
                               (set! scroll-height vnum-scrolls)
 
+                              (when (and go-again? (iters . > . 2))
+                                ;; we're not reaching a fixpoint, so
+                                ;; it seems that a horizontal scroll
+                                ;; is needed iff there's a vertical
+                                ;; scrollbar; force a fixpoint
+                                (cond
+                                 [(and auto-x? auto-y?)
+                                  (set! xscroll-on? #f)
+                                  (set! yscroll-on? #f)]
+                                 ;; I don't think these cases are possible,
+                                 ;; but in case I have it wrong, conservatively
+                                 ;; force scrollbars on.
+                                 [auto-x? (set! xscroll-on? #t)]
+                                 [auto-y? (set! yscroll-on? #t)])
+                                (show-scrollbars xscroll-on? yscroll-on?))
+
                               (if go-again?
-                                  (loop #t)
+                                  (loop #t (add1 iters))
                                   #t))))))
 
                     retval)))))))
