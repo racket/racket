@@ -479,7 +479,7 @@ a different instantiation of a module.
 @section{Hacking XREPL}
 
 XREPL is mainly a convenience tool, and as such you might want to hack
-it to better suite your needs.  Currently, there is no convenient way to
+it to better suit your needs.  Currently, there is no convenient way to
 customize and extend it, but this will be added in the future.
 
 Meanwhile, if you're interested in tweaking XREPL, the @cmd[enter]
