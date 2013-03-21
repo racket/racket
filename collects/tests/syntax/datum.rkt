@@ -30,6 +30,18 @@
       (datum-case '#(1 2 3) ()
         [#(a b c) (datum (c b a))]))
 
+(test 5
+      (datum-case '#&5 ()
+        [#&x (datum x)]))
+
+(test '(3 2 1)
+      (datum-case '#&(1 2 3) ()
+        [#&(a b c) (datum (c b a))]))
+
+(test '(5)
+      (datum-case '#&((((5)))) ()
+        [#&((((x)))) (datum (x))]))
+
 (test '(3 2 1)
       (datum-case '#s(q 1 2 3) ()
         [#s(q a b c) (datum (c b a))]))

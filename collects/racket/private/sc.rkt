@@ -361,6 +361,20 @@
                                               #f)))
                                    did-var?
                                    #f)))))]
+                     [(stx-box? p)
+                      (let*-values ([(content) (unbox (syntax-e p))]
+                                    [(match-content did-var? <false>) (m&e content content use-ellipses? last? #f)])
+                        (if just-vars?
+                            (values match-content #f #f)
+                            (values
+                             (if interp-box
+                                 (vector 'box match-content)
+                                 `(lambda (e)
+                                    (if ,(if s-exp? '(box? e) '(stx-box? e))
+                                        ,(app match-content `(unbox ,(if s-exp? 'e '(syntax-e e))))
+                                        #f)))
+                             did-var?
+                             #f)))]
                      [(and (syntax? p)
                            (prefab-struct-key (syntax-e p)))
                       =>
@@ -511,6 +525,7 @@
                                                       [(syntax? p) (loop (syntax-e p))]
                                                       [(pair? p) (or (loop (car p)) (loop (cdr p)))]
                                                       [(vector? p) (loop (vector->list p))]
+                                                      [(box? p) (loop (unbox p))]
                                                       [(struct? p) (loop (struct->vector p))]
                                                       [else #f]))
                                                    (pfx-loop (string-append "_" pfx))
@@ -663,6 +678,13 @@
                         (if proto-r
                             `(lambda (r)
                                (list->vector (,(if s-exp? 'values 'stx->list) ,(apply-to-r e))))
+                            ;; variables were hashed
+                            (void)))]
+                     [(stx-box? p)
+                      (let ([e (expander (unbox (syntax-e p)) proto-r p use-ellipses? use-tail-pos hash! #t)])
+                        (if proto-r
+                            `(lambda (r)
+                               (box (,(if s-exp? 'values 'syntax-e) ,(apply-to-r e))))
                             ;; variables were hashed
                             (void)))]
                      [(and (syntax? p)
@@ -946,6 +968,8 @@
                      (list p))]
                 [(stx-vector? p #f)
                  (sub (vector->list (syntax-e p)) use-ellipses?)]
+                [(stx-box? p)
+                 (sub (unbox (syntax-e p)) use-ellipses?)]
                 [(and (syntax? p)
                       (prefab-struct-key (syntax-e p)))
                  (sub (cdr (vector->list (struct->vector (syntax-e p)))) use-ellipses?)]

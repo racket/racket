@@ -23,6 +23,7 @@
                         (pattern ... pattern ellipsis pattern ... . pattern)
                         (code:line #,(tt "#")(pattern ...))
                         (code:line #,(tt "#")(pattern ... pattern ellipsis pattern ...))
+                        (code:line #,(tt "#&")pattern)
                         (code:line #,(tt "#s")(key-datum pattern ...))
                         (code:line #,(tt "#s")(key-datum pattern ... pattern ellipsis pattern ...))
                         (ellipsis stat-pattern)
@@ -127,6 +128,11 @@ A syntax object matches a @racket[pattern] as follows:
  Like a @racket[(pattern ... pattern ellipsis pattern ...)] pattern,
  but matching a vector syntax object whose elements match the
  corresponding sub-@racket[pattern]s.}
+
+ @specsubform[(code:line #,(tt "#&")pattern)]{
+
+ Matches a box syntax object whose content matches the
+ @racket[pattern].}
 
  @specsubform[(code:line #,(tt "#s")(key-datum pattern ...))]{
 
@@ -265,6 +271,7 @@ the individual @racket[stx-expr].
                          (template-elem ...)
                          (template-elem ...+ . template)
                          (code:line #,(tt "#")(template-elem ...))
+                         (code:line #,(tt "#&")template)
                          (code:line #,(tt "#s")(key-datum template-elem ...))
                          (ellipsis stat-template)
                          const]
@@ -273,6 +280,7 @@ the individual @racket[stx-expr].
                               (stat-template ...)
                               (stat-template ... . stat-template)
                               (code:line #,(tt "#")(stat-template ...))
+                              (code:line #,(tt "#&")stat-template)
                               (code:line #,(tt "#s")(key-datum stat-template ...))
                               const]
                [ellipsis #,lit-ellipsis])]{
@@ -351,6 +359,11 @@ Template forms produce a syntax object as follows:
 
    Like the @racket[(template-elem ...)] form, but producing a syntax
    object whose datum is a vector instead of a list.}
+
+ @specsubform[(code:line #,(tt "#&")template)]{
+
+   Produces a syntax object whose datum is a box holding the
+   syntax object produced by @racket[template].}
 
  @specsubform[(code:line #,(tt "#s")(key-datum template-elem ...))]{
 

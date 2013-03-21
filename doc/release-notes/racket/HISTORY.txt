@@ -1,11 +1,13 @@
 Version 5.3.3.7
 Added module-compiled-cross-phase-persistent?
 Added 'so-mode mode for system-type
+Changed syntax-case, etc. to support box patterns
 ffi/unsafe: changed ffi-lib to use (system-type 'so-mode)
 slideshow/balloon: added balloon-enable-3d
 slideshow: added interactive
 scribble/manual: added #:id option to defthing
 scribble/srcdoc: added begin-for-doc
+syntax/datum: Changed datum-case to support box patterns
 syntax-color: added special support for dont-stop values;
  this change is backwards incompatible for code that calls
  lexers and may call unknown lexers

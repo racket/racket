@@ -256,6 +256,12 @@
                                                   m
                                                   (append m body))
                                               body)))))))])))]
+              [(eq? i 'box)
+               (let ([match-content (vector-ref pat 1)])
+                 (and (if s-exp?
+                          (box? e)
+                          (stx-box? e))
+                      (loop match-content (unbox (if s-exp? e (syntax-e e))) cap)))]
               [(eq? i 'prefab)
                (and (if s-exp?
                         (equal? (vector-ref pat 1) (prefab-struct-key e))

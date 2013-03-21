@@ -122,6 +122,15 @@
     (lambda (p pos)
       (vector-ref (syntax-e p) pos)))
 
+  ;; a syntax box?
+  (define-values (stx-box?)
+    (lambda (p)
+      (if (syntax? p) 
+	  (if (box? (syntax-e p))
+	      #t
+	      #f)
+	  #f)))
+
   (define-values (stx-prefab?)
     (lambda (key v)
       (if (syntax? v)
@@ -203,6 +212,7 @@
   (#%provide identifier? stx-null? stx-null/#f stx-pair? stx-list?
              stx-car stx-cdr stx->list
              stx-vector? stx-vector-ref
+             stx-box?
              stx-prefab?
              stx-check/esc cons/#f append/#f
              stx-rotate stx-rotate*

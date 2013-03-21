@@ -136,6 +136,12 @@
             ((ull (+ nn mm) ((- n m) (- p q)))
              (ull (+ pp qq) ((- nn mm) (- pp qq))))))
 
+(test 5 syntax-e (syntax-case #'#&5 ()
+                   [#&x #'x]))
+(test '(0 1 2 3 4) syntax->datum
+      (syntax-case #'#&(1 2 3) ()
+                   [#&(x ...) #'(0 x ... 4)]))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test basic expansion and property propagation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
