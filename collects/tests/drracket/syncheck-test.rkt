@@ -1039,7 +1039,7 @@
                    ("x" imported)
                    ("))" default-color))
                  (list '((6 12) (14 31) (38 54) (56 63))
-                       '((32 33) ((69 70)))))
+                       '((32 33) (69 70))))
      
      (build-rename-test "(lambda (x) x)"
                         9
