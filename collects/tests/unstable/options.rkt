@@ -47,10 +47,10 @@
 
 (define (has-proper-blame? blame msg [extra ""])
   (define options-preface 
-    (regexp-quote " -- multiple blame parties due to option contract transfers --\n"))
+    (regexp-quote "blaming multiple parties:"))
   (define (multi-blame->regexp blame)
     (foldr 
-     (λ (fst rst) (string-append (format "~a\n" fst) rst))
+     (λ (fst rst) (string-append (format "\n  ~a" fst) rst))
      ""
      blame))
   (define reg
