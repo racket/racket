@@ -1729,5 +1729,19 @@
 (test #\[ syntax-property (quasisyntax [x y]) 'paren-shape)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check srcloc on result of `syntax-local-value/immediate':
+
+(let ()
+  (define-syntax (displayln-syntax-local-value/immediate stx)
+    (syntax-case stx ()
+      [(_ id)
+       (let-values ([(x y)
+                     (syntax-local-value/immediate (datum->syntax #'id
+                                                                  (syntax-e #'id)))])
+         #`#,(syntax-source y))]))
+  (define-syntax ++ (make-rename-transformer (datum->syntax #'here '+)))
+  (test #f values (displayln-syntax-local-value/immediate ++)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
