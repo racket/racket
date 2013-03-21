@@ -202,8 +202,17 @@
       [else
        (format "~a:" self-or-not)]))
   
-  (define blaming-line 
-    (format " blaming: ~a" (show/display (convert-blame-party (blame-positive blme)))))
+  (define blame-parties (blame-positive blme))
+  (define blaming-line
+    (cond
+      [(null? (cdr blame-parties))
+       (format " blaming: ~a" (car blame-parties))]
+      [else
+       (apply
+        string-append 
+        " blaming multiple parties:"
+        (for/list ([party (in-list blame-parties)])
+          (format "\n  ~a" party)))]))
   
   (define from-line 
     (if (blame-original? blme)
