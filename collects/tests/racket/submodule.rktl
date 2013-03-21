@@ -836,5 +836,19 @@
     (void)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check phase-level-2 submodules:
+
+(module check-module-meta-2 racket
+  (require (for-meta 2 racket/base))
+  
+  (begin-for-syntax
+   (begin-for-syntax
+    (module* main #f
+      (define v 'ok)
+      (provide v)))))
+
+(test 'ok dynamic-require '(submod 'check-module-meta-2 main) 'v)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

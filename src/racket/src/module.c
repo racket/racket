@@ -7158,7 +7158,13 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     } else if (SAME_OBJ(super_phase_shift, scheme_make_integer(-1))) {
       m->tt_requires = ins;
     } else {
-      scheme_signal_error("internal error: incomplete"); /* FIXME */
+      Scheme_Hash_Table *oht;
+      oht = m->other_requires;
+      if (!oht) {
+        oht = scheme_make_hash_table_equal();
+        m->other_requires = oht;
+      }
+      scheme_hash_set(oht, super_phase_shift, ins);
     }
   }
 
