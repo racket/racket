@@ -23,10 +23,7 @@
                       [end (start type) (end/c start type)]
                       [backup exact-nonnegative-integer?]
                       [new-mode any/c])))
-   #:tester (λ (lexer) (and (procedure? lexer) 
-                        (or (procedure-arity-includes? lexer 1)
-                            (procedure-arity-includes? lexer 3))
-                        (try-some-random-streams lexer)))))
+   #:tester (λ (lexer) (try-some-random-streams lexer))))
 
 (define (try-some-random-streams lexer)
   (define 3ary-lexer
@@ -38,8 +35,6 @@
       [else lexer]))
   (for ([x (in-range 10)])
     (define size (random 100))
-    (define (pick-one . args)
-      (list-ref args (random (length args))))
     (define (quash-backslash-r c)
       ;; it isn't clear the spec is right in
       ;; the case of \r\n combinations, so we
@@ -50,8 +45,11 @@
                (λ (c) 
                  (quash-backslash-r
                   (case (random 3)
-                    [(0) (pick-one #\space #\) #\( #\@ #\{ #\} #\" #\λ #\Σ #\nul)]
-                    [(1 2) (integer->char (random 255))])))))
+                    [(0)
+                     (define s " ()@{}\"λΣ\0")
+                     (string-ref s (random (string-length s)))]
+                    [(1 2)
+                     (integer->char (random 255))])))))
     (define in (open-input-string s))
     (port-count-lines! in)
     (let loop ([mode #f][offset 0])
