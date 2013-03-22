@@ -865,9 +865,9 @@ path/s is either such a string or a list of them.
 "collects/parser-tools" responsible (mflatt)
 "collects/parser-tools/private-lex/error-tests.rkt" drdr:command-line #f
 "collects/picturing-programs" responsible (sbloch)
+"collects/pkg" responsible (jay)
 "collects/plai" responsible (jay)
 "collects/planet" responsible (robby)
-"collects/pkg" responsible (jay)
 "collects/plot" responsible (ntoronto)
 "collects/plot/scribblings/plot.scrbl" drdr:timeout 180
 "collects/plot/tests/extreme-bounds-tests.rkt" drdr:timeout 150
@@ -1137,6 +1137,8 @@ path/s is either such a string or a list of them.
 "collects/tests/net/websocket/example.rkt" drdr:command-line #f
 "collects/tests/net/websocket.rkt" responsible (jay)
 "collects/tests/openssl" responsible (mflatt)
+"collects/tests/pkg" responsible (jay) drdr:command-line (mzc *)
+"collects/tests/pkg/test-pkgs" drdr:command-line #f
 "collects/tests/plai" responsible (jay)
 "collects/tests/plai/gc/bad-mutators" drdr:command-line #f
 "collects/tests/plai/gc/other-mutators" drdr:command-line #f
@@ -1157,8 +1159,6 @@ path/s is either such a string or a list of them.
 "collects/tests/planet/test-docs-complete.rkt" drdr:command-line (raco "make" *)
 "collects/tests/planet/thread-safe-resolver.rkt" drdr:command-line (raco "make" *) drdr:timeout 1000
 "collects/tests/planet/version.rkt" drdr:command-line (raco "make" *)
-"collects/tests/pkg" responsible (jay) drdr:command-line (mzc *)
-"collects/tests/pkg/test-pkgs" drdr:command-line #f
 "collects/tests/profile" responsible (eli)
 "collects/tests/r6rs" responsible (mflatt)
 "collects/tests/racket" responsible (mflatt)
@@ -1423,13 +1423,13 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/ztest.rktl" drdr:command-line #f
 "collects/tests/racklog" responsible (jay)
 "collects/tests/rackunit" responsible (jay noel)
-"collects/tests/rackunit/standalone-check-test.rkt" drdr:command-line #f
-"collects/tests/rackunit/standalone-test-case-test.rkt" drdr:command-line #f
 "collects/tests/rackunit/log.rkt" drdr:command-line (racket "-t" *)
 "collects/tests/rackunit/pr10950.rkt" drdr:command-line (racket "-t" *)
 "collects/tests/rackunit/run-tests.rkt" drdr:command-line (racket "-t" *)
-"collects/tests/rackunit/tl.rkt" drdr:command-line (racket "-t" *)
+"collects/tests/rackunit/standalone-check-test.rkt" drdr:command-line #f
+"collects/tests/rackunit/standalone-test-case-test.rkt" drdr:command-line #f
 "collects/tests/rackunit/standalone.rkt" drdr:command-line (racket "-jt" *)
+"collects/tests/rackunit/tl.rkt" drdr:command-line (racket "-t" *)
 "collects/tests/run-automated-tests.rkt" responsible (eli) drdr:command-line (mzc "-k" *) drdr:timeout 600
 "collects/tests/scribble" responsible (eli mflatt)
 "collects/tests/scribble/main.rkt" drdr:command-line #f
