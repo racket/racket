@@ -1091,6 +1091,19 @@
               (,(lvar 'd) . (nt Q))) 
             '() #f)
 
+;; resolve fully
+;; (necessary for parameter elimination to be correct)
+(check-not-false
+ (env-equal?
+  (disunify
+   '(a)
+   '(list (name a any) (name a any))
+   '(list (name b any) 2)
+   (env '#hash() '())
+   #f)
+  (env (hash (lvar 'a) 'any (lvar 'b) 'any)
+       (list (dq '() `((list (name b ,(bound))) (list 2)))))))
+
 
 
 (let ([untested

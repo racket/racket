@@ -1300,7 +1300,7 @@
                                      (syntax->list #'(lhs-names ...))
                                      (syntax->list #'(lhs-namess/ellipses ...))
                                      (syntax->list (syntax (rhs/wheres ...))))]
-                               [((gen-clause lhs-pat) ...)
+                               [((gen-clause lhs-pat lhs-ps/pat*) ...)
                                 (make-mf-clauses (syntax->list #'(lhs ...))
                                                  (syntax->list #'(rhs ...))
                                                  (syntax->list #'((stuff ...) ...))
@@ -1322,7 +1322,9 @@
                                 #,(if prev-metafunction
                                       #`(metafunc-proc-cases #,(term-fn-get-id (syntax-local-value prev-metafunction)))
                                       #'null)]
-                               [new-lhs-pats '(lhs-pat ...)])
+                               [new-lhs-pats '(lhs-pat ...)]
+                               [new-lhs-ps/pats '(lhs-ps/pat* ...)])
+                           
                            (build-metafunction 
                             lang
                             cases
@@ -1348,7 +1350,7 @@
                                     #`(extend-mf-clauses #,(term-fn-get-id (syntax-local-value prev-metafunction))
                                                          (λ ()
                                                            #,(check-pats #'(list gen-clause ...)))
-                                                         new-lhs-pats)]
+                                                         new-lhs-ps/pats)]
                                    [else
                                     #`(memoize0
                                        (λ ()
@@ -1367,14 +1369,16 @@
 (define (extend-lhs-pats old-m new-pats)
   (append new-pats (metafunc-proc-lhs-pats old-m)))
 
-(define (extend-mf-clauses old-mf new-clauses new-lhs-pats)
+(define (extend-mf-clauses old-mf new-clauses new-lhs-ps/pats)
   (memoize0
    (λ ()
      (define old-clauses
        (for/list ([old-clauses (in-list ((metafunc-proc-gen-clauses old-mf)))]
                   [old-lhs-pat (in-list (metafunc-proc-lhs-pats old-mf))])
-         (define new-dqs (for/list ([new-lhs-pat (in-list new-lhs-pats)])
-                           (dqn old-lhs-pat new-lhs-pat)))
+         (define new-dqs (for/list ([new-lhs-ps/pat (in-list new-lhs-ps/pats)])
+                           (dqn (first new-lhs-ps/pat)
+                                old-lhs-pat 
+                                (second new-lhs-ps/pat))))
          (struct-copy clause old-clauses
                       [eq/dqs
                        (append 
@@ -1393,30 +1397,30 @@
       ans)))
 
 (define-for-syntax (make-mf-clauses lhss rhss extrass nts err-name name lang)
-  (define-values (rev-clauses _)
-    (for/fold ([clauses '()]
-               [prev-lhs-pats '()]) ([lhs (in-list lhss)]
-                                     [rhs (in-list rhss)]
-                                     [extras (in-list extrass)])
-      (with-syntax ([(lhs-pat (names ...) (names/ellipses ...)) (rewrite-side-conditions/check-errs nts err-name #t lhs)])
+  (define-values (rev-clauses _1 _2)
+    (for/fold ([clauses '()] [prev-lhs-pats '()] [prev-lhs-pats* '()]) 
+      ([lhs (in-list lhss)] [rhs (in-list rhss)] [extras (in-list extrass)])
+      (with-syntax* ([(lhs-pat (names ...) (names/ellipses ...)) (rewrite-side-conditions/check-errs nts err-name #t lhs)]
+                     [((lhs-pat-ps* ...) lhs-pat*) (fix-and-extract-dq-vars #'lhs-pat)])
         (define-values (ps-rw extra-eqdqs p-names) 
           (rewrite-prems #f (syntax->list extras) nts (syntax->datum #'(names ...)) 'define-metafunction))
         (define-values (rhs-pats mf-clausess) (rewrite-terms (list rhs) p-names)) 
         (define clause-stx
           (with-syntax ([(prem-rw ...) ps-rw]
                         [(eqs ...) extra-eqdqs]
-                        [(((lhs-pat-ps ...) prev-lhs-pat) ...)
-                         (map fix-and-extract-dq-vars prev-lhs-pats)]
+                        [(((prev-lhs-pat-ps ...) prev-lhs-pat) ...) prev-lhs-pats*]
                         [(mf-clauses ...) mf-clausess]
                         [(rhs-pat) rhs-pats])
             #`((clause '(list lhs-pat rhs-pat)
-                       (list eqs ... (dqn '(lhs-pat-ps ...) 'prev-lhs-pat 'lhs-pat) ...)
+                       (list eqs ... (dqn '(prev-lhs-pat-ps ...) 'prev-lhs-pat 'lhs-pat) ...)
                        (list prem-rw ... mf-clauses ...)
                        #,lang
                        '#,name)
-               lhs-pat)))
+               lhs-pat
+               ((lhs-pat-ps* ...) lhs-pat*))))
         (values (cons clause-stx clauses)
-                (cons #'lhs-pat prev-lhs-pats)))))
+                (cons #'lhs-pat prev-lhs-pats)
+                (cons #'((lhs-pat-ps* ...) lhs-pat*) prev-lhs-pats*)))))
   (reverse rev-clauses))
 
 (define-for-syntax (fix-and-extract-dq-vars pat)
@@ -1426,12 +1430,11 @@
       [(name vname p)
        (with-syntax ([((vs ...) new-p) (recur #'p)]
                      [new-vn (datum->syntax #'vname
-                                            (let* ([vn (syntax-e #'vname)]
-                                                   [vn-sym (format "~s_" vn)])
+                                            (let ([vn (syntax-e #'vname)])
                                               (hash-ref new-ids vn
                                                         (λ ()
                                                           (define new 
-                                                            (syntax-e (generate-temporary vn-sym)))
+                                                            (syntax-e (generate-temporary (format "~s_" vn))))
                                                           (set! new-ids (hash-set new-ids vn new))
                                                           new)))
                                             #'vname)])

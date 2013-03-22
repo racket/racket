@@ -23,10 +23,10 @@
          pat*-clause-p?s
          bind-names
          remove-empty-dqs
-         unif-fail
+         (struct-out unif-fail)
          dq)
 
-;(require racket/trace)
+
 ;;
 ;; atom := `any | `number | `string | `integer | `boolean | `real | `variable | `variable-not-otherwise-mentioned
 ;; var  := symbol?
@@ -213,16 +213,49 @@
   (filter (λ (dq) (not (equal? base-dq dq)))
           dqs))
 
-(define (extend-dq eqs ineq0)
+(define (extend-dq new-eqs ineq0 eqs)
   (for/fold ([ineq ineq0])
-    ([(k v) (in-hash eqs)])
+    ([(k v) (in-hash new-eqs)])
     (match ineq
       [`((list ,vars ...) (list ,terms ...))
        (match* (k v)
          [((lvar id-l) (lvar id-r))
-          `((list ,@vars (name ,id-l ,(bound))) (list ,@terms (name ,id-r ,(bound))))]
+          `((list ,@vars (name ,id-l ,(bound))) 
+            (list ,@terms ,(resolve-no-nts/var v eqs)))]
          [((lvar id-l) pat*-r)
-          `((list ,@vars (name ,id-l ,(bound))) (list ,@terms ,pat*-r))])])))
+          `((list ,@vars (name ,id-l ,(bound))) 
+            (list ,@terms ,(resolve-no-nts/pat v eqs)))])])))
+
+(define (resolve-no-nts/var lv eqs)
+  (define-values (rep pat) (lookup (lvar-id lv) eqs))
+  (if (not (groundable? pat))
+      `(name ,(lvar-id rep) ,(bound))
+      (resolve-no-nts/pat pat eqs)))
+
+(define (resolve-no-nts/pat pat eqs)
+  (let recur ([p pat])
+        (match p
+          [`(name ,id ,(bound))
+           (resolve-no-nts/var (lvar id) eqs)]
+          [`(list ,ps ...)
+           `(list ,@(for/list ([p ps]) (recur p)))]
+          [`(cstr (,cs ...) p)
+           (recur p)]
+          [else
+           (unless (groundable? p)
+             (error 'resolve/termable-pat 
+                    "non-termable pat at internal pattern position: ~s" p))
+           p])))
+
+
+(define (groundable? p)
+  (match p
+    [`(nt ,_) #f]
+    [(? predef-pat? _) #f]
+    [`(cstr ,_ ,p)
+     (groundable? p)]
+    [else #t]))
+           
                 
 (define (hash/mut->imm h0)
   (for/fold ([h (hash)])
@@ -265,7 +298,7 @@
         [(empty? (hash-keys (new-eqs))) #f]
         [else
          (define-values (new-ps new-dq)
-           (param-elim params (extend-dq (new-eqs) base-dq)))
+           (param-elim params (extend-dq (new-eqs) base-dq eqs)))
          (match new-dq
            [`((list) (list))
             #f]
@@ -640,10 +673,4 @@
      (lookup new-id env)]
     [else
      (values (lvar id) res)]))
-
-
-;(trace disunify*)
-
-
-
 

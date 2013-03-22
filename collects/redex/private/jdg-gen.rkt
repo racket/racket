@@ -1,16 +1,19 @@
 #lang racket/base
 
-(require
- (only-in "rg.rkt"
-          [compile rg:compile])
- (only-in "reduction-semantics.rkt"
-          do-test-match)
- "pat-unify.rkt"
- (for-syntax racket/base)
- racket/match)
+(require racket/match
+         racket/set
+         (only-in "rg.rkt"
+                  [compile rg:compile])
+         (only-in "reduction-semantics.rkt"
+                  do-test-match)
+         "pat-unify.rkt"
+         (for-syntax racket/base))
 
 (provide pat->term
-         check-dq)
+         check-dq
+         dq)
+
+
 
 ;; term generation
 
@@ -72,31 +75,31 @@
 (define (check-dqs dqs term-e lang eqs)
   (for/and ([dq dqs])
     (define te (hash-copy term-e))
-    (define rhs (list-ref dq 0))
-    (define lhs (list-ref dq 1))
-    (check-dq rhs lhs te lang eqs)))
-
-(define sym-index 0)
+    (check-dq dq te lang eqs)))
 
 (struct not-ground ())
 
-(define (check-dq rhs lhs term-e lang eqs)
-  (set! sym-index 0)
-  (define rhs-term (pat->term/term-e rhs term-e eqs lang))
-  (define lhs-term (pat->term/term-e lhs term-e eqs lang))
-  (not (equal? rhs-term lhs-term)))
+(define (check-dq the-dq term-e lang eqs)
+  (match-define (dq ps `(,lhs ,rhs)) the-dq)
+  (define rhs-term (pat->term/term-e ps rhs term-e eqs lang))
+  (define lhs-term (pat->term/term-e ps lhs term-e eqs lang))
+  (not (compare-partial-terms rhs-term lhs-term)))
   
-(define (pat->term/term-e t term-e actual-e lang)
+(define (pat->term/term-e ps t term-e actual-e lang)
   (call/ec
    (λ (fail)
      (let recur ([p t])
        (match p
          [`(name ,var ,(bound))
-          (if (hash-has-key? term-e (lvar var))
-              (recur (hash-ref term-e (lvar var)))
-              (let ([new-val (recur (hash-ref actual-e (lvar var)))])
-                (hash-set! term-e (lvar var) new-val)
-                new-val))]
+          (cond
+            [(member var ps)
+             `(name ,var ,(bound))]
+            [(hash-has-key? term-e (lvar var))
+             (recur (hash-ref term-e (lvar var)))]
+            [else
+             (let ([new-val (recur (hash-ref actual-e (lvar var)))])
+               (hash-set! term-e (lvar var) new-val)
+               new-val)])]
          [`(cstr  (,nts ...) ,pat)
           (recur pat)]
          [`(list ,ps ...)
@@ -108,6 +111,37 @@
          [else
           (let-values ([(p bs) (gen-term p lang 2)])
            p)])))))
+
+(define (compare-partial-terms l r)
+  (define param-vals (hash))
+  (define (update-param-vals p v)
+    (set! param-vals
+          (hash-set param-vals p
+              (set-add (hash-ref param-vals p (λ () (set))) v))))
+  (and
+   (let recur ([l l]
+               [r r])
+     (match* (l r)
+       [(`(name ,lv ,(bound)) `(name ,rv ,(bound)))
+        (update-param-vals lv r)
+        (update-param-vals rv l)
+        #t]
+       [(`(name ,lv ,(bound)) _)
+        (update-param-vals lv r)
+        #t]
+       [(_ `(name ,rv ,(bound)))
+        (update-param-vals rv l)
+        #t]
+       [(`(,l-ts ...) `(,r-ts ...))
+        (and (= (length l-ts) (length r-ts))
+             (for/and ([lt l-ts]
+                       [rt r-ts])
+               (recur lt rt)))]
+       [(_ _)
+        (equal? l r)]))
+   ;; TODO: handle case where param appears twice against different stuff
+   (for/and ([vs (in-list (hash-values param-vals))])
+     ((set-count vs) . < . 2))))
                    
 
 (define (gen-term pat lang size [num-atts 1] [retries 100])
@@ -128,3 +162,4 @@
      (lookup new-id env)]
     [else
      (values (lvar id) res)]))
+

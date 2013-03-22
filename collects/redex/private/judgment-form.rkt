@@ -1382,7 +1382,7 @@
          (if in-judgment-form?
              (let-values ([(term-rws mf-cs) (rewrite-terms (list #'rest) ns)])
                (values (append mf-cs ps-rw)
-                       (cons #`(dqn #f '#,(car term-rws)) eqs)
+                       (cons #`(dqn '() #f '#,(car term-rws)) eqs)
                        ns))
              (values ps-rw eqs ns))]
         [(prem-name . prem-body)

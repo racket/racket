@@ -8,35 +8,44 @@
                   bound
                   lvar))
 
+
+(define-syntax-rule (is-not-false e)
+  (test-equal (not e) #f))
+
+(define-syntax-rule (is-false e)
+  (test-equal e #f))
+
 (let ()
   (define-language L0)
   
-  (test-equal (check-dq `a `a (make-hash) L0 (hash))
+  (test-equal (check-dq (dq '() (list `a `a)) (make-hash) L0 (hash))
               #f)
-  (test-equal (check-dq `a `b (make-hash) L0 (hash))
+  (test-equal (check-dq (dq '() (list `a `b)) (make-hash) L0 (hash))
               #t)
-  (test-equal (check-dq `(list a) `(list a) (make-hash) L0 (hash))
+  (test-equal (check-dq (dq '() (list `(list a) `(list a))) (make-hash) L0 (hash))
               #f)
-  (test-equal (check-dq `(list a) `(list b) (make-hash) L0 (hash))
+  (test-equal (check-dq (dq '() (list `(list a) `(list b))) (make-hash) L0 (hash))
               #t)
-  (test-equal (check-dq `(list number) `(list variable) (make-hash) L0 (hash))
+  (test-equal (check-dq (dq '() (list `(list number) `(list variable))) (make-hash) L0 (hash))
               #t)
-  (test-equal (check-dq `(list a) `(list number) (make-hash) L0 (hash))
+  (test-equal (check-dq (dq '() (list `(list a) `(list number))) (make-hash) L0 (hash))
               #t)
-  (test-equal (check-dq `(list 2) `(list variable-not-otherwise-mentioned) (make-hash) L0 (hash))
+  (test-equal (check-dq (dq '() (list `(list 2) `(list variable-not-otherwise-mentioned))) (make-hash) L0 (hash))
               #t)
-  (test-equal (check-dq `(list a b) `(list a number) (make-hash) L0 (hash))
+  (test-equal (check-dq (dq '() (list `(list a b) `(list a number))) (make-hash) L0 (hash))
               #t)
-  (test-equal (check-dq `(list a b) `(list a b) (make-hash) L0 (hash))
+  (test-equal (check-dq (dq '() (list `(list a b) `(list a b))) (make-hash) L0 (hash))
               #f)
-  (test-equal (check-dq `(list (name a ,(bound)))
-                        `(list (name a ,(bound)))
+  (test-equal (check-dq (dq '()
+                            (list `(list (name a ,(bound)))
+                                  `(list (name a ,(bound)))))
                         (make-hash)
                         L0
                         (hash (lvar 'a) 'number))
               #f)
-  (test-equal (check-dq `(name a ,(bound))
-                        `(name b ,(bound))
+  (test-equal (check-dq (dq '()
+                            (list `(name a ,(bound))
+                                  `(name b ,(bound))))
                         (make-hash (list (cons (lvar 'a) '(1 2 3))
                                          (cons (lvar 'b) '(1 2 3))))
                         L0
@@ -152,26 +161,6 @@
   )
 
 (let ()
-  (define-language STLC
-    (τ int
-       (τ → τ))
-    (Γ ([x τ] Γ)
-       •)
-    (x variable-not-otherwise-mentioned))
-  
-  (define-metafunction STLC
-    [(lookup x ([x τ] Γ))
-     τ]
-    [(lookup x ([x_1 τ] Γ))
-     (lookup x Γ)])
-  
-  (test-equal (generate-term STLC
-                             #:satisfying
-                             (lookup x ([x int] ([x (int → int)] •))) = (int → int)
-                             6)
-              #f))
-
-(let ()
   
   (define-language simple
     (e (+ e e)
@@ -280,6 +269,12 @@
      (typ-if Γ e_1 int)
      (typ-if Γ e_2 τ)
      (typ-if Γ e_3 τ)])
+  
+  (test-equal (generate-term STLC
+                             #:satisfying
+                             (lookup x ([x int] ([x (int → int)] •))) = (int → int)
+                             6)
+              #f)
   
   (test-equal (judgment-holds (typeof ([x_1 int] ([x_1 (int → int)] •)) (x_1 5) int))
               #f)
@@ -404,6 +399,19 @@
   (test-equal (generate-term L #:satisfying (is-a/b? c) = any +inf.0)
               '((is-a/b? c) = F))
   
+  (test-equal (generate-term L #:satisfying (is-a? a) = F +inf.0)
+              #f)
+  (test-equal (generate-term L #:satisfying (is-a? b) = T +inf.0)
+              #f)
+  (test-equal (generate-term L #:satisfying (is-a? c) = T +inf.0)
+              #f)
+  (test-equal (generate-term L #:satisfying (is-a/b? a) = F +inf.0)
+              #f)
+  (test-equal (generate-term L #:satisfying (is-a/b? b) = F +inf.0)
+              #f)
+  (test-equal (generate-term L #:satisfying (is-a/b? c) = T +inf.0)
+              #f)
+  
   (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? a) = any +inf.0)
               '((is-a/b/c/d/e? a) = T))
   (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? b) = any +inf.0)
@@ -415,7 +423,20 @@
   (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? e) = any +inf.0)
               '((is-a/b/c/d/e? e) = T))
   (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? f) = any +inf.0)
-              '((is-a/b/c/d/e? f) = F)))
+              '((is-a/b/c/d/e? f) = F))
+  
+  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? a) = F +inf.0)
+              #f)
+  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? b) = F +inf.0)
+              #f)
+  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? c) = F +inf.0)
+              #f)
+  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? d) = F +inf.0)
+              #f)
+  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? e) = F +inf.0)
+              #f)
+  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? f) = T +inf.0)
+              #f))
 
 ;; errors for unsupprted pats
 (let ()
@@ -608,11 +629,6 @@
 
 (let ()
   
-  (define-syntax-rule (is-not-false e)
-    (test-equal (not e) #f))
-  
-  (define-syntax-rule (is-false e)
-    (test-equal e #f))
   
   (define-language L0)
   
@@ -659,3 +675,39 @@
   (is-false (generate-term L0 #:satisfying (J ((1) (#f))) 5))
   (is-false (generate-term L0 #:satisfying (J ((#f) (2))) 5))
   (is-not-false (generate-term L0 #:satisfying (J ((#t) (2))) 5)))
+
+(let ()
+  (define-language L0)
+  
+  (define-metafunction L0
+    [(f (any_1 any_2))
+     2]
+    [(f any_1)
+     1])
+  
+  (define-judgment-form L0
+    #:mode (J I I)
+    [(J (any_1 any_2) 2)]
+    [(J any_1 1)])
+  
+  
+  (test-equal (generate-term L0
+                             #:satisfying
+                             (f (any_1 any_2)) = 1
+                             +inf.0)
+              #f)
+  
+  (test-equal (not
+               (generate-term L0
+                              #:satisfying
+                              (f (any_1 any_2)) = 2
+                              +inf.0))
+              #f)
+  (is-not-false
+   (for/and ([_ 50])
+     (match (generate-term L0
+                           #:satisfying
+                           (f any) = 1
+                           5)
+       [`((f (,a ,b)) = 1) #f]
+       [else #t]))))
