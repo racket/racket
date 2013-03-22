@@ -150,7 +150,6 @@
 
 ;; pat pat env -> (or/c p*e #f)
 (define (unify t u e L)
-  ;(-> pat? pat? env/c compiled-lang? (or/c p*e/c #f))
   (parameterize ([dqs-found (make-hash)])
     (define eqs (hash-copy (env-eqs e)))
     (define t* (bind-names t eqs L))
@@ -186,7 +185,6 @@
 
 ;; pat pat env lang -> (or/c env #f)
 (define (disunify params t u e L)
-  ;(-> pat? pat? env/c any/c (or/c env/c #f))
   (parameterize ([new-eqs (make-hash)])
     (define eqs (hash-copy (env-eqs e)))
     (define t* (bind-names t eqs L))
@@ -243,8 +241,8 @@
            (recur p)]
           [else
            (unless (groundable? p)
-             (error 'resolve/termable-pat 
-                    "non-termable pat at internal pattern position: ~s" p))
+             (error resolve-no-nts/pat 
+                    "non-groundable pat at internal pattern position: ~s" p))
            p])))
 
 
@@ -286,7 +284,6 @@
             (and new-dq
                  (match new-dq
                    [#t (loop ok rest)]
-                   #;[`((list)(list)) (loop ok rest)]
                    [else (loop (cons new-dq ok) rest)])))])])))
 
 ;; disunfy* pat* pat* eqs lang -> dq or boolean (dq is a pat*)
@@ -303,15 +300,13 @@
            [`((list) (list))
             #f]
            [else
-            (dq new-ps new-dq)])
-         #;(extend-dq (new-eqs) base-dq)]))))
+            (dq new-ps new-dq)])]))))
 
 (define (param-elim params unquantified-dq)             
   (let loop ([dq-rest unquantified-dq]                                             
              [ps params]             
              [new-dq-l '()]          
              [new-dq-r '()])         
-    ;(printf "~s ~s ~s ~s\n" dq-rest ps new-dq-l new-dq-r)                                                       
     (match dq-rest                   
       ['((list) (list))              
        (values ps `((list ,@new-dq-l) (list ,@new-dq-r)))]       

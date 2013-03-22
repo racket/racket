@@ -96,12 +96,11 @@
     [else (values #f fs)]))
 
 (define (choose-rule env fringe fail)
-  ;(-> env? (listof partial-rule?) number? (-> (or/c env? #f)) (or/c env? #f))
   (cond
     [(empty? fringe)
      (values env fail)]
     [else
-     (define new-f fringe #;(prune-fringe fringe env))
+     (define new-f fringe)
      (if new-f
          (push-down (car new-f) env (cdr new-f) fail)
          (fail-back fail))]))
@@ -134,7 +133,6 @@
                (define prem-cls (prem-clauses prem))
                (make-partial-rule (prem-pat prem) 
                                   (if (positive? bound)
-                                      #;(shuffle-clauses-stlc prem-cls (sub1 bound))
                                       (shuffle prem-cls)
                                       (order-clauses prem-cls))
                                   (cons n tr-loc)
@@ -191,80 +189,6 @@
              (and u-res
                   (loop (p*e-e u-res) rest))]))]
        [else #f])]))
-
-(define (trim-dqs e pat)
-  (define p-vars
-    (let loop ([p pat])
-      (match p
-        [`(name ,id ,pat)
-         (set-union (set id)
-                    (loop pat))]
-        [`(list ,pats ...)
-         (apply set-union (for/list ([p pats])
-                            (loop p)))]
-        [_ (set)])))
-  (struct-copy env e
-               [dqs (for/list ([dq (env-dqs e)])
-                      (trim-dq-vars dq p-vars))]))
-
-;; remove variables from lhs patterns from dqs
-;; since we only care about constraints on the input pattern
-;; if it's on one side of one equation, drop it
-;; if it's on one side of two equations, eliminate it
-(define (trim-dq-vars dq vs)
-  (define dqps0 (dq->dq-pairs dq))
-  (define var-vals (make-hash))
-  (define (update-vvs id val)
-    (hash-set! var-vals id 
-                    (set-union (set val)
-                               (hash-ref var-vals id (set)))))
-  (define (eliminable? id) (set-member? vs id))
-  (define dqps
-    (for/fold ([new-dps '()])
-      ([d dqps0])
-      (match d
-        [(dqp `(name ,(? eliminable? id) ,_) r)
-         (update-vvs id r)
-         new-dps]
-        [(dqp l `(name ,(? eliminable? id) ,_))
-         (update-vvs id l)
-         new-dps]
-        [else
-         (cons d new-dps)])))
-  (define-values (ls0 rs0)
-    (for/fold ([l '()] [r '()])
-      ([(id vals) (in-hash var-vals)])
-      (cond
-        [(< (set-count vals) 2)
-         (values l r)]
-        [else
-         (for/fold ([l1 l] [r1 r])
-                   ([a-pair (in-list (for*/list ([a vals] [b (set-remove vals a)])
-                                       (list a b)))])
-           (values (cons (first a-pair) l1)
-                   (cons (second a-pair) r1)))])))
-  (let loop ([ps dqps]
-             [new-ls ls0]
-             [new-rs rs0])
-    (match ps
-      ['()
-       (list (cons 'list (reverse new-ls)) 
-             (cons 'list (reverse new-rs)))]
-      [(cons (dqp (list 'name id bnd) r) ps+)
-       (if (set-member? vs id)
-           (loop ps+ new-ls new-rs)
-           (loop ps+ 
-                 (cons (list 'name id bnd) new-ls)
-                 (cons r new-rs)))]
-      [else
-       (error 'disunify "bad-dq: ~s" dq)])))
-
-(define-struct dqp (l r))
-
-(define (dq->dq-pairs dq)
-  (map (λ (a b) (dqp a b)) 
-       (cdr (first dq)) 
-       (cdr (second dq))))
            
          
 
@@ -377,177 +301,4 @@
 
 (define (set-last-gen-trace! trace)
   (set! most-recent-trace trace))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; the following is experimental and is not currently used....
-
-
-(define (prune-fringe fringe env)
-  (let/ec fail
-    (define new-f
-      (for/list ([a-p-rule (in-list fringe)])
-        (define new-cs (for/list ([c (in-list (partial-rule-clauses a-p-rule))] 
-                                  #:when (do-unification (fresh-clause-vars c) (partial-rule-pat a-p-rule) env))
-                         c))
-        (when (empty? new-cs)
-          (fail #f))
-        (struct-copy partial-rule 
-                     a-p-rule
-                     [clauses new-cs])))
-    (define candidate-length (length (partial-rule-clauses (car new-f))))
-    (if (< candidate-length 2)
-        new-f
-        (let loop ([unchecked new-f]
-                   [checked '()])
-          (cond
-            [(empty? unchecked)
-             (reverse checked)]
-            [(< (length (partial-rule-clauses (car unchecked))) candidate-length)
-             (cons (car unchecked) (append (reverse checked) (cdr unchecked)))]
-            [else
-             (loop (cdr unchecked) (cons (car unchecked) checked))])))))
-  
-
-(define bound-fac
-  (let ([memo (hash)])
-    (λ (b)
-      (hash-ref memo b (λ () (* 1000 (- 1 (exp (- (* 1.75 b))))))))))
-  
-;; specific to examples/chalmers/stlc
-;; waht about preferring bound variables to constants
-(define (shuffle-clauses-stlc clauses bound)
-  (cond
-    [(= (length clauses) 5) ;; typeof - last 3 recur
-     (define-values (base v-rec)
-       (split-at clauses 2))
-     (define v-c (car v-rec))
-     (define rec (cdr v-rec))
-     (if (< (bound-fac bound) (random 1000))
-         (append (shuffle base) (shuffle v-rec))
-         (append (shuffle v-rec) (shuffle base)))]
-    [(= (length clauses) 4) ;; const - all base
-     (shuffle clauses)]
-    [(= (length clauses) 3) ;; lookup - #2 recurs
-     (define-values (base rec)
-       (values (list (list-ref clauses 0) (list-ref clauses 2))
-               (list (list-ref clauses 1))))
-     (if (< (bound-fac bound) (random 1000))
-         (append (shuffle base) (shuffle rec))
-         (append (shuffle rec) (shuffle base)))]))
-
-(define (better-shuffle-clauses clauses bound)
-  (cond
-    [(zero? (random 2))
-     (shuffle clauses)]
-    [(= (length clauses) 5) ;; typeof - last 3 recur
-     (define app-weight (* (terms/depth bound) (terms/depth bound)))
-     (define lam-weight (terms/depth bound))
-     (define var-weight (vars/depth bound))
-     (define cst-weight 3)
-     (define num-weight 1)
-     (define total (+ app-weight lam-weight var-weight cst-weight num-weight))
-     (define rnd (big-random total))
-     (define idx (cond [(rnd . < . app-weight) 4]
-                       [(rnd . < . (+ lam-weight app-weight)) 3]
-                       [(rnd . < . (+ lam-weight app-weight var-weight)) 2]
-                       [(rnd . < . (+ lam-weight app-weight var-weight cst-weight)) 1]
-                       [else 0]))
-     (define-values (h t) (split-at clauses idx))
-     (cons (list-ref clauses idx)
-           (shuffle (append h (cdr t))))]
-    [(= (length clauses) 4) ;; const - all base
-     (shuffle clauses)]
-    [(= (length clauses) 3) ;; lookup - #2 recurs
-     (define rec-weight (vars/depth bound))
-     (if ((big-random (+ rec-weight 2)) . < . 2)
-         (append (shuffle (list (list-ref clauses 0) (list-ref clauses 2)))
-                 (list (list-ref clauses 2)))
-         (append (list (list-ref clauses 2))
-                 (shuffle (list (list-ref clauses 0) (list-ref clauses 2)))))]
-    #;[else
-     (shuffle clauses)]))
-
-(define (big-random n)
-  (if (n . < . 4294967087)
-      (random n)
-      (+ (random 4294967087) (big-random (- n 4294967087)))))
-
-
-(define (shuffle-clauses-poly-stlc clauses bound)
-  (cond
-    [(equal? (clause-name (car clauses)) 'typeof) ;; typeof - last 4 recur
-     (define-values (base rec)
-       (split-at clauses 2))
-     (if (< (bound-fac bound) (random 1000))
-         (append (shuffle base) (shuffle rec))
-         (append (shuffle rec) (shuffle base)))]
-    [(equal? (clause-name (car clauses)) 'const-type) ;; const - all base
-     (shuffle clauses)]
-    [(equal? (clause-name (car clauses)) 'lookup) ;; lookup - #2 recurs
-     (define-values (base rec)
-       (values (list (list-ref clauses 0) (list-ref clauses 2))
-               (list (list-ref clauses 1))))
-     (if (< (bound-fac bound) (random 1000))
-         (append (shuffle base) (shuffle rec))
-         (append (shuffle rec) (shuffle base)))]
-    [else
-     (shuffle clauses)]))
-
-(define-syntax (define-memo stx)
-  (syntax-case stx ()
-    [(_ (f-id args ...) body)
-     #'(define f-id
-         (let ([memo (make-hash)])
-           (λ (args ...)
-             (hash-ref memo (list args ...)
-                       (λ ()
-                         (define res (begin body))
-                         (hash-set! memo (list args ...) res)
-                         res)))))]))
-
-(define-memo (terms/depth d)
-  (cond
-    [(= d 0) 1]
-    [else
-     (+ 1 
-        (vars/depth (sub1 d)) ;; vars 
-        (terms/depth (sub1 d)) ;; lambda
-        (* (terms/depth (sub1 d)) ;; app
-           (terms/depth (sub1 d))))]))
-
-(define-memo (vars/depth d)
-  (cond
-    [(= d 0) 1]
-    [else
-     (+ 1
-        (vars/depth (sub1 d)))]))
-
-
-(define (score-rule rule env)
-  (match rule
-    [(partial-rule pat clauses tr-loc bound)
-     (length
-      (filter (λ (c)
-                (do-unification (fresh-clause-vars c) pat env))
-              clauses))]))
-
-(define (pick-rule rules env)
-  (let loop ([rs-seen '()]
-             [rs rules])
-    (match rs
-      ['() rs-seen]
-      [(cons r rs*)
-       (if ((score-rule r env) . < . 2)
-           (cons r (append rs* rs-seen))
-           (loop (cons r rs-seen) rs*))])))
-
-(define (sort-rules rules env)
-  (define weights (sort (for/list ([i (length rules)])
-                          (list (score-rule (list-ref rules i) env) i))
-                        <
-                        #:key first))
-  (for/list ([w (in-list weights)])
-    (list-ref rules (second w))))
 

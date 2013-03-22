@@ -17,9 +17,8 @@
 
 ;; term generation
 
-;; pat->term pat* env -> term
+;; pat->term lang pat* env env -> term
 (define (pat->term lang pat full-env [term-e (make-hash)])
-  ;(printf "\np->t: ~s\n\n ~s\n" pat full-env)
   (define nt-matchers (make-hash))
   (define eqs (env-eqs full-env))
   (define (get-matcher nt)
