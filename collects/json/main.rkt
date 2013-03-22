@@ -78,13 +78,13 @@
            (define first? #t)
            (for ([(k v) (in-hash x)])
              (unless (symbol? k)
-               (raise-type-error 'write-json "bad JSON key value" k))
+               (raise-type-error 'write-json "legal JSON key value" k))
              (if first? (set! first? #f) (write-bytes #"," o))
              (write (symbol->string k) o) ; no `printf' => proper escapes
              (write-bytes #":" o)
              (loop v))
            (write-bytes #"}" o)]
-          [else (raise-type-error 'write-json "bad JSON value" x)]))
+          [else (raise-type-error 'write-json "legal JSON value" x)]))
   (void))
 
 ;; ----------------------------------------------------------------------------
