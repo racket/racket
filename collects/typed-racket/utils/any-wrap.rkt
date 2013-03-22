@@ -9,7 +9,7 @@
   (define (fail v)
     (raise-blame-error 
      (blame-swap b) v 
-     "Attempted to use a higher-order value passed as `Any` in untyped code"))
+     "Attempted to use a higher-order value passed as `Any` in untyped code: ~v" v))
 
   (define (t v)
     (define (wrap-struct s)
