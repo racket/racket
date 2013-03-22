@@ -4,7 +4,7 @@
          racket/path
          raco/command-name
          rackunit/log
-         planet2/lib)
+         pkg/lib)
 
 (define submodules '())
 (define run-anyways? #t)

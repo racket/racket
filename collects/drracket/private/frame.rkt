@@ -4,7 +4,7 @@
   (require racket/gui/base 
            racket/class
            string-constants
-           planet2/name
+           pkg/name
            racket/list
            framework)
   (provide install-pkg)
@@ -213,7 +213,7 @@
          setup/plt-installer
          help/bug-report
          setup/unpack
-         planet2
+         pkg
          (submod "." install-pkg))
 (provide frame@)
 (define-unit frame@  

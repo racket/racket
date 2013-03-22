@@ -1611,7 +1611,7 @@
   (planet-docs-building "PLaneT: Dokumentation bauen (ausgelöst durch ~a)...")
   (planet-no-status "PLaneT") ;; this can happen when there is status shown in a different and then the user switches to a tab where planet hasn't been used
 
-  (bug-report-field-planet2 "Info Package-System")
+  (bug-report-field-pkg "Info Package-System")
   
 
  ;; string normalization. To see this, paste some text with a ligature into DrRacket
@@ -1647,7 +1647,7 @@
   ; is put following this string (with a blank line in between)
   (spell-program-wrote-to-stderr-on-startup "Der Rechtschreibchecker (~a) hat eine Fehlermeldung ausgegeben:")
   
-  ;; GUI for installing a planet2 package; available via File|Install Package...
+  ;; GUI for installing a pkg package; available via File|Install Package...
   (install-pkg-menu-item... "Paket installieren...")
   (install-pkg-dialog-title "Paket installieren")
   (install-pkg-source-label "Packet-Quelltext")

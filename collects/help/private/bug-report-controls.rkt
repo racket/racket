@@ -7,7 +7,7 @@
          setup/dirs
          setup/link
          framework
-         (prefix-in planet2: planet2)
+         (prefix-in pkg: pkg)
          (for-syntax racket/base
                      racket/list)
          "buginfo.rkt"
@@ -248,9 +248,9 @@
      #f
      #:top-panel synthesized-panel))
   
-  (define planet2-info
+  (define pkg-info
     (make-big-text
-     (string-constant bug-report-field-planet2)
+     (string-constant bug-report-field-pkg)
      #:stretch? #t
      #:top-panel synthesized-panel))
   
@@ -322,7 +322,7 @@
                    (format "Human Language: ~a\n" (send human-language get-value))
                    (format "(current-memory-use) ~a\n" (send memory-use get-value))
                    (format "Links: ~a\n" (send links-ctrl get-value))
-                   (format "Planet2 (show):\n~a\n" (send (send planet2-info get-editor) get-text))
+                   (format "raco pkg (show):\n~a\n" (send (send pkg-info get-editor) get-text))
                    "\n"
                    "\nCollections:\n"
                    (format "~a" (send (send collections get-editor) get-text))
@@ -440,14 +440,14 @@
                      (links #:root? #t)
                      (links #:user? #f #:root? #t)))
   
-  (define planet2-info-sp (open-output-string))
-  (parameterize ([current-output-port planet2-info-sp])
+  (define pkg-info-sp (open-output-string))
+  (parameterize ([current-output-port pkg-info-sp])
     (with-handlers ([exn:fail? (lambda (exn)
                                  (printf "ERROR:\n~a" (exn-message exn)))])
-      (planet2:show)))
-  (send (send planet2-info get-editor)
+      (pkg:show)))
+  (send (send pkg-info get-editor)
         insert
-        (get-output-string planet2-info-sp))
+        (get-output-string pkg-info-sp))
   
   (send human-language set-value (format "~a" (this-language)))
   (send memory-use set-value (format "~a" (current-memory-use)))
