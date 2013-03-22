@@ -64,4 +64,23 @@ END
  
  (test-mutator (build-path here "other-mutators" "quote.rkt"))
  =error> "alloc: out of space"
- )
+ 
+ (when (run-good?)
+   (test
+    (capture-output (test-mutator (build-path here "good-mutators" "mv.rkt")))
+    =>
+    #<<END
+Value at location 23:
+31
+Values at locations 25 and 27:
+1
+2
+Values at locations 29, 31, 33, 35, and 37:
+3
+4
+5
+6
+7
+
+END
+    )))

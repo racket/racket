@@ -14,6 +14,7 @@
          (for-syntax scheme/stxparam-exptime))
 
 (provide else require provide #%top
+         values
          test/location=? 
          test/value=?
          (rename-out
@@ -355,13 +356,46 @@
         (case-lambda
           [() (void)]
           [(result-addr)
+           (show-one-result result-addr)]
+          [result-addrs
+           (show-multiple-results result-addrs)])))]))
+
+(define (show-one-result result-addr)
+  (cond
+    [(procedure? result-addr)
+     (printf "Imported procedure:\n")
+     result-addr]
+    [(location? result-addr)
+     (printf "Value at location ~a:\n" result-addr)
+     (gc->scheme result-addr)]))
+
+(define (show-multiple-results results)
+  (define addrs
+    (for/list ([result-addr (in-list results)]
+               #:when (location? result-addr))
+      result-addr))
+  
+  (printf "Values at locations ")
+  (cond
+    [(= (length addrs) 2)
+     (printf "~a and ~a:\n" (car addrs) (cadr addrs))]
+    [else
+     (let loop ([addr (car addrs)]
+                [addrs (cdr addrs)])
+       (cond
+         [(null? addrs)
+          (printf "and ~a:\n" addr)]
+         [else
+          (printf "~a, " addr)
+          (loop (car addrs) (cdr addrs))]))])
+  (apply values 
+         (for/list ([result (in-list results)])
            (cond
-             [(procedure? result-addr)
-              (printf "Imported procedure:\n")
-              result-addr]
-             [(location? result-addr)
-              (printf "Value at location ~a:\n" result-addr)
-              (gc->scheme result-addr)])])))]))
+             [(procedure? result)
+              result]
+             [(location? result)
+              (gc->scheme result)]))))
+             
 
 ; Module Begin
 (define-for-syntax (allocator-setup-internal stx)
