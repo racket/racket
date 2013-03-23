@@ -30,7 +30,7 @@
         [ty (cdr pr)])
     (register-resolved-type-alias (datum->syntax #'here (syntax->datum nm)) ty)))
 
-(dynamic-require '(submod typed-racket/base-env/base-types #%type-decl) #f)
+((dynamic-require '(submod typed-racket/base-env/base-types initialize) 'initialize-type-names))
 
 (define-syntax (run-one stx)
   (syntax-case stx ()

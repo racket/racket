@@ -9,7 +9,7 @@
          (rep type-rep filter-rep object-rep)
          rackunit)
 
-(dynamic-require '(submod typed-racket/base-env/base-types #%type-decl) #f)
+((dynamic-require '(submod typed-racket/base-env/base-types initialize) 'initialize-type-names))
 
 (provide type-annotation-tests)
 

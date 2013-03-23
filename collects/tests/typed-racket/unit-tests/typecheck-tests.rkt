@@ -42,7 +42,7 @@
 (provide typecheck-tests g)
 
 (b:init) (n:init) (initialize-structs) (initialize-indexing)
-(dynamic-require '(submod typed-racket/base-env/base-types #%type-decl) #f)
+((dynamic-require '(submod typed-racket/base-env/base-types initialize) 'initialize-type-names))
 
 (define N -Number)
 (define B -Boolean)

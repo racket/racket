@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require
- (for-syntax racket/base  "env/env-req.rkt")
+ (for-syntax racket/base racket/lazy-require "env/env-req.rkt")
  (for-syntax "utils/timing.rkt") ;; only for timing/debugging
  ;; the below requires are needed since they provide identifiers
  ;; that may appear in the residual program
@@ -14,34 +14,54 @@
          with-type
          (for-syntax do-standard-inits))
 
+(module init-base-env racket/base
+  (require racket/lazy-require)
+  (provide (rename-out (init init-base-env)))
+  (lazy-require (typed-racket/base-env/base-env (init))))
+(module init-base-env-numeric racket/base
+  (require racket/lazy-require)
+  (provide (rename-out (init init-base-env-numeric)))
+  (lazy-require (typed-racket/base-env/base-env-numeric (init))))
+
+(begin-for-syntax
+  (require 'init-base-env)
+  (require 'init-base-env-numeric)
+  (lazy-require
+    [typed-racket/base-env/base-structs (initialize-structs)]
+    [typed-racket/base-env/base-env-indexing (initialize-indexing)]
+    [typed-racket/base-env/base-special-env (initialize-special)]
+    [typed-racket/base-env/base-contracted (initialize-contracted)]
+    [(submod typed-racket/base-env/base-types initialize) (initialize-type-names)]))
+
 (define-for-syntax initialized #f)
 (define-for-syntax (do-standard-inits)
   (unless initialized
     (do-time "Starting initialization")
-    ((dynamic-require 'typed-racket/base-env/base-structs 'initialize-structs))
+    (initialize-structs)
     (do-time "Finshed base-structs")
-    ((dynamic-require 'typed-racket/base-env/base-env-indexing 'initialize-indexing))
+    (initialize-indexing)
     (do-time "Finshed base-env-indexing")
-    ((dynamic-require 'typed-racket/base-env/base-env 'init))
+    (init-base-env)
     (do-time "Finshed base-env")
-    ((dynamic-require 'typed-racket/base-env/base-env-numeric 'init))
+    (init-base-env-numeric)
     (do-time "Finshed base-env-numeric")
-    ((dynamic-require 'typed-racket/base-env/base-special-env 'initialize-special))
+    (initialize-special)
     (do-time "Finished base-special-env")
-    ((dynamic-require 'typed-racket/base-env/base-contracted 'initialize-contracted))
+    (initialize-contracted)
     (do-time "Finished base-contracted")
-    (dynamic-require '(submod typed-racket/base-env/base-types #%type-decl) #f)
+    (initialize-type-names)
     (do-time "Finished base-types")
     (set! initialized #t))
   (do-requires))
 
 (define-syntax-rule (drivers [name sym] ...)
   (begin
+    (begin-for-syntax
+      (lazy-require (typed-racket/core (sym ...))))
     (define-syntax (name stx)
       (do-time (format "Calling ~a driver" 'name))      
-      (define f (dynamic-require 'typed-racket/core 'sym))
       (do-time (format "Loaded core ~a" 'sym))
-      (begin0 (f stx do-standard-inits)
+      (begin0 (sym stx do-standard-inits)
               (do-time "Finished, returning to Racket")))
     ...))
 
