@@ -42,9 +42,12 @@
               ...))
        (=> fail)
        (unless (for/and ([b bound]) (or (not b) (eq? bound0 b))) (fail))
+       ;; Do not check this in an environment where bound0 is a type variable.
+       (define f-type (tc-expr #'f))
+       ;; Check that the function applies successfully to the element type
+       ;; We need the bound to be considered a type var here so that inference works
        (match (extend-tvars (list bound0)
-                ;; just check that the function applies successfully to the element type
-                (tc/funapp #'f #'(arg0 arg ...) (tc-expr #'f) (cons (ret t0) (map ret t)) expected))
+                (tc/funapp #'f #'(arg0 arg ...) f-type (cons (ret t0) (map ret t)) expected))
          [(tc-result1: t) (ret (make-ListDots t bound0))]
          [(tc-results: ts)
           (tc-error/expr #:return (ret (Un))

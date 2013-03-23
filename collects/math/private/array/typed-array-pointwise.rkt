@@ -25,11 +25,11 @@
                                               (map array-shape arrs))))
      (let ([arr0  (array-broadcast arr0 ds)]
            [arr1  (array-broadcast arr1 ds)]
-           [arrs  (map (λ: ([arr : (Array T)]) (array-broadcast arr ds)) arrs)])
+           [arrs  (map (plambda: (S) ([arr : (Array S)]) (array-broadcast arr ds)) arrs)])
        (define g0 (unsafe-array-proc arr0))
        (define g1 (unsafe-array-proc arr1))
        (define gs (map unsafe-array-proc arrs))
        (array-default-strict
         (unsafe-build-array
          ds (λ: ([js : Indexes]) (apply f (g0 js) (g1 js)
-                                        (map (λ: ([g : (Indexes -> T)]) (g js)) gs))))))]))
+                                        (map (plambda: (S) ([g : (Indexes -> S)]) (g js)) gs))))))]))

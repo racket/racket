@@ -13,7 +13,7 @@
               (B ... B -> (values A ... A))))))
 (define (map-with-funcs . fs)
   (lambda as
-    (apply values (map (lambda: ([f : (B ... B -> A)])
+    (apply values (map (plambda: (C) ([f : (B ... B -> C)])
                                  (apply f as))
                         fs))))
 
