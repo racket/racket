@@ -9639,7 +9639,7 @@
 
   (test/no-error '(syntax/c (list/c #f)))
   (contract-error-test 'syntax/c-non-flat '(syntax/c (vector/c #f))
-                       (λ (x) (regexp-match #rx"expected a flat contract" (exn-message x))))
+                       (λ (x) (regexp-match? #rx"flat-contract[?]" (exn-message x))))
 
 
 ;
@@ -12251,6 +12251,7 @@ so that propagation occurs.
   (test-name '(unconstrained-domain-> number?) (unconstrained-domain-> number?))
 
   (test-name '(or/c) (or/c))
+  (test-name '(or/c '()) (or/c '()))
   (test-name '(or/c integer? gt0?) (or/c integer? (let ([gt0? (lambda (x) (> x 0))]) gt0?)))
   (test-name '(or/c integer? boolean?)
              (or/c (flat-contract integer?)
@@ -12303,7 +12304,7 @@ so that propagation occurs.
   (test-name 'printable/c printable/c)
   (test-name '(or/c 'a 'b 'c) (symbols 'a 'b 'c))
   (test-name '(or/c 1 2 3) (one-of/c 1 2 3))
-  (test-name '(one-of/c '() 'x 1 #f #\a (void) (letrec ([x x]) x))
+  (test-name '(or/c '() 'x 1 #f #\a void? undefined?)
              (one-of/c '() 'x 1 #f #\a (void) (letrec ([x x]) x)))
 
   (test-name '(or/c #f #t #\a "x") (or/c #f #t #\a "x"))

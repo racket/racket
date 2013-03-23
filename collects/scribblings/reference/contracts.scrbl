@@ -240,7 +240,7 @@ between @racket[j] and @racket[k], inclusive.}
 A flat contract that requires the input to be an exact non-negative integer.}
 
 
-@defproc[(string-len/c [len exact-nonnegative-integer?]) flat-contract?]{
+@defproc[(string-len/c [len real?]) flat-contract?]{
 
 Returns a flat contract that recognizes strings that have fewer than
 @racket[len] characters.}
