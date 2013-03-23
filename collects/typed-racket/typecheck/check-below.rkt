@@ -95,9 +95,13 @@
      (unless (for/and ([t t1] [s t2]) (subtype t s))
        (tc-error/expr "Expected ~a, but got ~a" (stringify t2) (stringify t1)))
      expected]
-    [((tc-results: t1 f o dty dbound) (tc-results: t2 f o dty dbound))
+    [((tc-results: t1 f o dty1 dbound) (tc-results: t2 f o dty2 dbound))
+     (unless (= (length t1) (length t2))
+       (tc-error/expr "Expected ~a non dotted values, but got ~a" (length t2) (length t1)))
      (unless (andmap subtype t1 t2)
        (tc-error/expr "Expected ~a, but got ~a" (stringify t2) (stringify t1)))
+     (unless (subtype dty1 dty2)
+       (tc-error/expr "Expected ~a in ..., but got ~a" dty2 dty1))
      expected]
     [((tc-results: t1 fs os) (tc-results: t2 fs os))
      (unless (= (length t1) (length t2))
@@ -136,5 +140,5 @@
        (tc-error/expr "Expected ~a, but got ~a" t2 t1))
      expected]
     [((tc-results: ts fs os dty dbound) (tc-results: ts* fs* os* dty* dbound*))
-     (int-err "dotted types in check-below nyi: ~a ~a" dty dty*)]
+     (int-err "dotted types with different bounds/filters/objects in check-below nyi: ~a ~a" tr1 expected)]
     [(a b) (int-err "unexpected input for check-below: ~a ~a" a b)]))
