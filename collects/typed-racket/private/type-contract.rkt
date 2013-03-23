@@ -319,12 +319,13 @@
         [(Base: sym cnt _ _ _) #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt))]
         [(Refinement: par p? cert)
          #`(and/c #,(t->c par) (flat-contract #,(cert p?)))]
+        ;; TODO: figure out how to catch contracts that will always fail and
+        ;; prevent them at creation time, without misidentifying good
+        ;; contracts.
+        ;; e.x. (All (a b) ((U a b) -> Boolean)).
         [(Union: elems)
-         (let-values ([(vars notvars) (partition F? elems)])
-           (unless (>= 1 (length vars)) (exit (fail)))
-           (with-syntax
-               ([cnts (append (map t->c vars) (map t->c notvars))])
-             #'(or/c . cnts)))]
+         (with-syntax ([cnts (map t->c elems)])
+           #'(or/c . cnts))]
         [(and t (Function: _)) (t->c/fun t)]
         [(Set: t)
          #`(set/c #,(t->c t #:kind (contract-kind-min kind chaperone-sym)))]

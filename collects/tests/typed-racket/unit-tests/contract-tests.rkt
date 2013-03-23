@@ -4,7 +4,7 @@
          (for-syntax scheme/base)
          (for-template scheme/base)
          (private type-contract)
-         (types abbrev numeric-tower)
+         (types abbrev numeric-tower union)
          rackunit)
 
 (define-syntax-rule (t e)
@@ -18,10 +18,13 @@
 
 (define (contract-tests)
   (test-suite "Contract Tests"
-              (t (-Number . -> . -Number))
-              (t (-Promise -Number))
-              (t (-set Univ)) 
-              ))
+    [t (-Number . -> . -Number)]
+    [t (-Promise -Number)]
+    [t (-set Univ)]
+    [t (-poly (a b) (a b . -> . (Un a b)))]
+    [t (-poly (a) ((-mu b (-lst (Un a b))) . -> . -Nat))]
+;   [t/fail (-poly (a b) ((Un a b) . -> . (Un a b)))]
+ ))
 
 (define-go contract-tests)
 (provide contract-tests)
