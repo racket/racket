@@ -232,7 +232,7 @@
 (define -Thread-Group
   (make-Base 'Thread-Group #'thread-group? thread-group? #'-Thread-Group))
 (define -Struct-Type-Property
-  (make-Base 'Struct-Type-Property #'struct-type-property? struct-type-property? #'Struct-Type-Property))
+  (make-Base 'Struct-Type-Property #'struct-type-property? struct-type-property? #'-Struct-Type-Property))
 (define -Impersonator-Property
   (make-Base 'Impersonator-Property #'impersonator-property? impersonator-property? #'-Impersonator-Property))
 
