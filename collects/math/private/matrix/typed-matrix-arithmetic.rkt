@@ -35,7 +35,7 @@
       (unsafe-build-array
        ((inst vector Index) m n)
        (λ: ([js : Indexes]) (apply f (g0 js) (g1 js)
-                                   (map (λ: ([g : (Indexes -> T)]) (g js)) gs)))))]))
+                                   (map (plambda: (S) ([g : (Indexes -> S)]) (g js)) gs)))))]))
 
 (: matrix=? ((Matrix Number) (Matrix Number) -> Boolean))
 (define (matrix=? arr0 arr1)
