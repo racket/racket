@@ -64,21 +64,16 @@ This file defines two sorts of primitives. All of them are provided into any mod
          racket/vector)
 (provide index?) ; useful for assert, and racket doesn't have it
 
+;; Lazily loaded b/c they're only used sometimes, so we save a lot
+;; of loading by not having them when they are unneeded
 (begin-for-syntax 
   (lazy-require ["../rep/type-rep.rkt" (make-Opaque Error?)]
-                [syntax/define (normalize-definition)]))
+                [syntax/define (normalize-definition)]
+                [typed-racket/private/parse-type (parse-type)]
+                [typed-racket/private/type-contract (type->contract)]
+                [typed-racket/env/type-name-env (register-type-name)]))
 
 (define-for-syntax (ignore stx) (syntax-property stx 'typechecker:ignore #t))
-
-;; dynamically loaded b/c they're only used at the top-level, so we save a lot
-;; of loading by not having them when we're in a module
-(define-for-syntax (parse-type stx) ((dynamic-require 'typed-racket/private/parse-type 'parse-type) stx))
-(define-for-syntax type->contract
-  (make-keyword-procedure
-   (lambda (kws kw-args . rest)
-     (keyword-apply
-      (dynamic-require 'typed-racket/private/type-contract 'type->contract)
-      kws kw-args rest))))
 
 (define-syntaxes (require/typed-legacy require/typed)
  (let ()
@@ -293,8 +288,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (pattern #:name-exists))
   (syntax-parse stx
     [(_ ty:id pred:id lib (~optional ne:name-exists-kw) ...)
-     ((dynamic-require 'typed-racket/env/type-name-env 'register-type-name)
-      #'ty (make-Opaque #'pred (syntax-local-certifier)))
+     (register-type-name #'ty (make-Opaque #'pred (syntax-local-certifier)))
      (with-syntax ([hidden (generate-temporary #'pred)])
        (quasisyntax/loc stx
          (begin

@@ -2,7 +2,7 @@
 
 (require "utils/utils.rkt"
          (except-in syntax/parse id)
-         racket/pretty racket/promise
+         racket/pretty racket/promise racket/lazy-require
          (private type-contract)
          (types utils)
          (typecheck typechecker provide-handling tc-toplevel)
@@ -11,6 +11,7 @@
          (rep type-rep)
          (for-syntax racket/base)
          (for-template racket/base))
+(lazy-require [typed-racket/optimizer/optimizer (optimize-top)])
 
 (provide tc-setup invis-kw maybe-optimize)
 
@@ -21,10 +22,8 @@
 (define (maybe-optimize body)
   ;; do we optimize?
   (if (optimize?)
-      (let ([optimize-top
-             (begin0 (dynamic-require 'typed-racket/optimizer/optimizer
-                                      'optimize-top)
-               (do-time "Loading optimizer"))])
+      (begin
+        (do-time "Starting optimizer")
         (begin0 (map optimize-top (syntax->list body))
           (do-time "Optimized")))
       body))
