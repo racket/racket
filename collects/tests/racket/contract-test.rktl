@@ -39,6 +39,17 @@
       [(_ a ...)
        (syntax (contract-eval `(,test a ...)))]))
 
+  (define-syntax (ctest-no-error stx)
+    (syntax-case stx ()
+      [(_ name e)
+       (syntax
+         (ctest
+           #t
+           name
+           (with-handlers ([exn:fail? (lambda (x) `(exn ,(exn-message x)))])
+             e
+             #t)))]))
+
   (define (contract-error-test name exp exn-ok?)
     (test #t
           name
@@ -4763,7 +4774,6 @@
                              (λ (hash k) k)
                              (λ (hash k) k))])
       (contract (hash/c any/c any/c) v 'pos 'neg)))
-  
   
 ;
 ;
@@ -13619,7 +13629,7 @@ so that propagation occurs.
             1 "a")))
 
 
-  (let* ([blame-pos (contract-eval '(make-blame #'here #f (λ () 'integer?) 'positive 'negative #t))]
+  (let* ([blame-pos (contract-eval '(make-blame (srcloc #f #f #f #f #f) #f (λ () 'integer?) 'positive 'negative #t))]
          [blame-neg (contract-eval `(blame-swap ,blame-pos))])
     (ctest "something ~a" blame-fmt->-string ,blame-neg "something ~a")
     (ctest "promised: ~s\n produced: ~e" blame-fmt->-string ,blame-pos '(expected: "~s" given: "~e"))
@@ -14941,6 +14951,182 @@ so that propagation occurs.
              (,get-last-part-of-path (blame-negative ,blame)))))
 
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;;  Blame Object properties
+  ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (contract-eval
+    '(begin
+       (module blame-ok/c racket/base
+         (require racket/contract)
+         (define (blame-proj name)
+           (lambda (b)
+             (unless (blame? b)
+               (raise-type-error name "a blame object" b))
+             (define src (blame-source b))
+             (unless (srcloc? src)
+               (raise-type-error name "a srcloc" src))
+             (lambda (x) x)))
+         (define impersonator-blame-ok/c
+           (make-contract
+             #:name 'impersonator-blame-ok/c
+             #:projection (blame-proj 'impersonator-blame-ok/c)))
+         (define chaperone-blame-ok/c
+           (make-chaperone-contract
+             #:name 'chaperone-blame-ok/c
+             #:projection (blame-proj 'chaperone-blame-ok/c)))
+         (define flat-blame-ok/c
+           (make-flat-contract
+             #:name 'flat-blame-ok/c
+             #:projection (blame-proj 'flat-blame-ok/c)))
+         (provide
+           impersonator-blame-ok/c
+           chaperone-blame-ok/c
+           flat-blame-ok/c))
+       (require 'blame-ok/c)
+       (module blame-ok-dynamic racket/base
+         (require racket/contract 'blame-ok/c)
+         (define five 5)
+         (provide
+           (contract-out
+             [rename five impersonator-five impersonator-blame-ok/c]
+             [rename five chaperone-five chaperone-blame-ok/c]
+             [rename five flat-five flat-blame-ok/c])))))
+
+  (begin
+    (ctest-no-error
+      'blame-object/impersonator/contract-out
+      (dynamic-require ''blame-ok-dynamic 'impersonator-five))
+    (ctest-no-error
+      'blame-object/chaperone/contract-out
+      (dynamic-require ''blame-ok-dynamic 'chaperone-five))
+    (ctest-no-error
+      'blame-object/flat/contract-out
+      (dynamic-require ''blame-ok-dynamic 'flat-five)))
+
+  (begin
+    (ctest-no-error
+      'blame-object/impersonator/contract
+      (contract impersonator-blame-ok/c 5 'pos 'neg 'five #',#'location))
+    (ctest-no-error
+      'blame-object/chaperone/contract
+      (contract chaperone-blame-ok/c 5 'pos 'neg 'five #',#'location))
+    (ctest-no-error
+      'blame-object/flat/contract
+      (contract flat-blame-ok/c 5 'pos 'neg 'five #',#'location)))
+
+  (begin
+    (ctest-no-error
+      'blame-object/impersonator/define/contract
+      (let ()
+        (define/contract five impersonator-blame-ok/c 5)
+        five))
+    (ctest-no-error
+      'blame-object/chaperone/define/contract
+      (let ()
+        (define/contract five chaperone-blame-ok/c 5)
+        five))
+    (ctest-no-error
+      'blame-object/flat/define/contract
+      (let ()
+        (define/contract five flat-blame-ok/c 5)
+        five)))
+
+  (begin
+    (ctest-no-error
+      'blame-object/impersonator/with-contract-definition-export
+      (let ()
+        (with-contract internal-region ([five impersonator-blame-ok/c])
+          (define five 5))
+        five))
+    (ctest-no-error
+      'blame-object/chaperone/with-contract-definition-export
+      (let ()
+        (with-contract internal-region ([five chaperone-blame-ok/c])
+          (define five 5))
+        five))
+    (ctest-no-error
+      'blame-object/flat/with-contract-definition-export
+      (let ()
+        (with-contract internal-region ([five flat-blame-ok/c])
+          (define five 5))
+        five)))
+
+  (begin
+    (ctest-no-error
+      'blame-object/impersonator/with-contract-definition-import
+      (let ()
+        (define five 5)
+        (with-contract internal-region () #:freevar five impersonator-blame-ok/c
+          (define six (add1 five)))
+        six))
+    (ctest-no-error
+      'blame-object/chaperone/with-contract-definition-import
+      (let ()
+        (define five 5)
+        (with-contract internal-region () #:freevar five chaperone-blame-ok/c
+          (define six (add1 five)))
+        six))
+    (ctest-no-error
+      'blame-object/flat/with-contract-definition-import
+      (let ()
+        (define five 5)
+        (with-contract internal-region () #:freevar five flat-blame-ok/c
+          (define six (add1 five)))
+        six)))
+
+  (begin
+    (ctest-no-error
+      'blame-object/impersonator/with-contract-expression-result
+      (with-contract internal-region #:result impersonator-blame-ok/c
+        5))
+    (ctest-no-error
+      'blame-object/chaperone/with-contract-expression-result
+      (with-contract internal-region #:result chaperone-blame-ok/c
+        5))
+    (ctest-no-error
+      'blame-object/flat/with-contract-expression-result
+      (with-contract internal-region #:result flat-blame-ok/c
+        5)))
+
+  (begin
+    (ctest-no-error
+      'blame-object/impersonator/with-contract-expression-import
+      (let ()
+        (define five 5)
+        (with-contract internal-region #:result any/c #:freevar five impersonator-blame-ok/c
+          five)))
+    (ctest-no-error
+      'blame-object/chaperone/with-contract-expression-import
+      (let ()
+        (define five 5)
+        (with-contract internal-region #:result any/c #:freevar five chaperone-blame-ok/c
+          five)))
+    (ctest-no-error
+      'blame-object/flat/with-contract-expression-import
+      (let ()
+        (define five 5)
+        (with-contract internal-region #:result any/c #:freevar five flat-blame-ok/c
+          five))))
+
+  (begin
+    (ctest-no-error
+      'blame-object/impersonator/define-struct/contract
+      (let ()
+        (define-struct/contract thing ([stuff impersonator-blame-ok/c]))
+        (thing-stuff (thing 5))))
+    (ctest-no-error
+      'blame-object/chaperone/define-struct/contract
+      (let ()
+        (define-struct/contract thing ([stuff chaperone-blame-ok/c]))
+        (thing-stuff (thing 5))))
+    (ctest-no-error
+      'blame-object/flat/define-struct/contract
+      (let ()
+        (define-struct/contract thing ([stuff flat-blame-ok/c]))
+        (thing-stuff (thing 5)))))
 
 ;
 ;
