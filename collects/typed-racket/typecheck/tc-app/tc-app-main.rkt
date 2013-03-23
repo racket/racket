@@ -65,7 +65,7 @@
            rest #f (list (Keyword: _ _ #f) ...))
      (cond
        [(< (length domain) (length args)) rest]
-       [(= (length domain) (length args))]
+       [(= (length domain) (length args)) #t]
        [else #f])]
     [_ #f]))
 
@@ -82,10 +82,10 @@
      (let* ([f-ty (single-value #'f)]
             [args* (syntax->list #'args)])
        (define (matching-arities arrs)
-         (for/list ((arr arrs) #:when (arr-matches? arr args*)) arr))
+         (for/list ([arr (in-list arrs)] #:when (arr-matches? arr args*)) arr))
        (define (has-drest/filter? arrs)
-        (or (ormap has-filter? arrs)
-            (ormap arr-drest arrs)))
+         (for/or ([arr arrs])
+           (or (has-filter? arr) (arr-drest arr))))
 
        (define arg-tys
          (match f-ty
@@ -95,14 +95,14 @@
              (Function:
                (app matching-arities
                  (list (arr: doms ranges rests drests _) ..1))))
-            (define generators
-              (for/list ((dom (in-list doms)) (rest (in-list rests)))
-                (let-values (((has-next? next)
-                              (sequence-generate (in-sequences (in-list dom) (in-cycle (in-value rest))))))
-                  next)))
-            (for/list ([a (in-list args*)])
-              (match-define (cons t types) (for/list ((gen generators)) (gen)))
-              (if (for/and ((t2 types)) (equal? t t2))
+            (define matching-domains
+              (in-values-sequence
+                (apply in-parallel
+                  (for/list ((dom (in-list doms)) (rest (in-list rests)))
+                    (in-sequences (in-list dom) (in-cycle (in-value rest)))))))
+            (for/list ([a (in-list args*)] [types matching-domains])
+              (match-define (cons t ts) types)
+              (if (for/and ((t2 ts)) (equal? t t2))
                   (tc-expr/check a (ret t))
                   (single-value a)))]
            [_ (map single-value args*)]))
