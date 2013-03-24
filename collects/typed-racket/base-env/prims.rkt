@@ -137,10 +137,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (unless (< 0 (length (syntax->list #'(c ...))))
          (raise-syntax-error #f "at least one specification is required" stx))
        #`(begin c.spec ...)]
-      [(_ nm:opt-rename ty lib (~optional [~seq #:struct-maker parent]) ...)
-       #`(require/typed #:internal nm ty lib #,@(if (attribute parent)
-                                                    #'(#:struct-maker parent)
-                                                    #'()))]
       [(_ #:internal nm:opt-rename ty lib (~optional [~seq #:struct-maker parent]) ...)
        (with-syntax ([cnt* (generate-temporary #'nm.nm)]
                      [hidden (generate-temporary #'nm.nm)]
@@ -632,6 +628,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
                       [extra-maker (and (attribute input-maker.extra)
                                         (not (bound-identifier=? #'make-name #'nm))
                                         #'maker-name)])
+                     (define (extract-struct-info* id)
+                       (syntax-parse id #:context stx
+                        [(~var id (static struct-info? "identifier bound to a structure type"))
+                         (extract-struct-info (syntax-local-value #'parent))]))
                      (quasisyntax/loc stx
                        (begin
                          (require (only-in lib type-des (nm orig-struct-info)))
@@ -656,7 +656,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                               #,(if (syntax-e #'parent)
                                     (let-values (((parent-type-des parent-maker parent-pred
                                                    parent-sel  parent-mut grand-parent)
-                                                  (apply values (extract-struct-info (syntax-local-value #'parent)))))
+                                                  (apply values (extract-struct-info* #'parent))))
                                       #`(list (quote-syntax type-des)
                                               (quote-syntax real-maker)
                                               (quote-syntax pred)
@@ -679,12 +679,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
                          (dtsi* () spec ([fld : ty] ...) #:maker maker-name #:type-only)
                          #,(ignore #'(require/contract pred hidden (any/c . c-> . boolean?) lib))
                          #,(internal #'(require/typed-internal hidden (Any -> Boolean : nm)))
-                         (require/typed (maker-name real-maker) nm lib #:struct-maker parent)
+                         (require/typed #:internal (maker-name real-maker) nm lib #:struct-maker parent)
 
                          ;This needs to be a different identifier to meet the specifications
                          ;of struct (the id constructor shouldn't expand to it)
                          #,(if (syntax-e #'extra-maker)
-                               #'(require/typed (maker-name extra-maker) nm lib #:struct-maker parent)
+                               #'(require/typed #:internal (maker-name extra-maker) nm lib #:struct-maker parent)
                                #'(begin))
 
                          (require/typed lib

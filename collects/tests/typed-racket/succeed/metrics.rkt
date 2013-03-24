@@ -3,18 +3,20 @@
 
 #;(require "../list.scm"
          "../etc.rkt")
-(require/typed apply-to-scheme-files
-               ((Path -> (Listof (Listof (U #f (Listof (U Real #f))))))
-                Path
-                -> (Listof (U #f (Listof  (Listof ( U #f (Listof (U Real #f)))))))) "foldo.rkt")
+(require/typed "foldo.rkt"
+  (apply-to-scheme-files
+                ((Path -> (Listof (Listof (U #f (Listof (U Real #f))))))
+                 Path
+                 -> (Listof (U #f (Listof  (Listof ( U #f (Listof (U Real #f))))))))))
 
 (define-type-alias top Any)
 (define-type-alias str String)
 
-(require/typed filename-extension (Path -> (U #f Bytes)) (lib "file.rkt"))
-(require/typed normalize-path (Path Path -> Path) (lib "file.rkt"))
-(require/typed explode-path (Path -> (Listof Path)) (lib "file.rkt"))
-(require/typed srfi48::format (Port String String top * -> top)  "patch.rkt")
+(require/typed mzlib/file
+  [filename-extension (Path -> (U #f Bytes))]
+  [normalize-path (Path Path -> Path)]
+  [explode-path (Path -> (Listof Path))])
+(require/typed "patch.rkt" [srfi48::format (Port String String top * -> top)])
 ;; FIXME - prefix
 #;(require/typed srfi48:format ( Port String String top * -> top) (prefix-in srfi48: (lib "48.rkt" "srfi")))
 (require (lib "match.rkt")

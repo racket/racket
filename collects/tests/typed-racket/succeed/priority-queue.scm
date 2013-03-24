@@ -12,10 +12,12 @@
 (require (prefix-in heap: "leftist-heap.ss")
 	 (except-in (lib "67.ss" "srfi") number-compare current-compare =? <?)
 	 (only-in "leftist-heap.ss" comparator))
-(require/typed number-compare (number number -> number) (lib "67.ss" "srfi"))
-(require/typed current-compare (-> (top top -> number)) (lib "67.ss" "srfi"))
-(require/typed =? ((top top -> number) top top -> boolean) (lib "67.ss" "srfi"))
-(require/typed <? ((top top -> number) top top -> boolean) (lib "67.ss" "srfi"))
+(require/typed
+  srfi/67
+  [number-compare (number number -> number)]
+  [current-compare (-> (top top -> number))]
+  [=? ((top top -> number) top top -> boolean)]
+  [<? ((top top -> number) top top -> boolean)])
 
 ; a priority-queue is a heap of  (cons <priority> <element>)
 
