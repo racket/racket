@@ -171,7 +171,7 @@
            (semaphore-wait io-sema))
          (channel-put old-registry-chan 
                       (namespace-module-registry (current-namespace)))
-         (place-channel-put pc-status-expanding-place (void))
+         (place-channel-put pc-status-expanding-place 'finished-expansion)
          (ep-log-info "expanding-place.rkt: 10 expanded")
          (define handler-results
            (for/list ([handler (in-list handlers)])
@@ -213,6 +213,8 @@
       (handle-evt
        abnormal-termination
        (λ (val) 
+         (place-channel-put pc-status-expanding-place
+                            'abnormal-termination)
          (place-channel-put 
           response-pc
           (vector 'abnormal-termination 
@@ -232,6 +234,7 @@
       (handle-evt
        exn-chan
        (λ (exn+loaded-paths)
+         (place-channel-put pc-status-expanding-place 'exn-raised)
          (define exn (list-ref exn+loaded-paths 0))
          (place-channel-put 
           response-pc

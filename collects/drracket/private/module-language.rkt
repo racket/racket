@@ -2016,13 +2016,17 @@
                (define us (current-thread))
                (thread (λ () 
                          (define got-status-update (place-channel-get pc-status-drracket-place))
-                         (queue-callback
-                          (λ ()
-                            (when (and (eq? us pending-thread)
-                                       pending-tell-the-tab-show-bkg-running)
-                              (pending-tell-the-tab-show-bkg-running
-                               'finished-expansion
-                               sc-online-expansion-running))))))
+                         ;; when got-status-update isn't 'finished-expansion, then
+                         ;; that means that expansion won't ever finish (due to
+                         ;; an error or an aborted job)
+                         (when (equal? got-status-update 'finished-expansion)
+                           (queue-callback
+                            (λ ()
+                              (when (and (eq? us pending-thread)
+                                         pending-tell-the-tab-show-bkg-running)
+                                (pending-tell-the-tab-show-bkg-running
+                                 'finished-expansion
+                                 sc-online-expansion-running)))))))
                (define res (place-channel-get pc-out))
                (queue-callback
                 (λ ()
