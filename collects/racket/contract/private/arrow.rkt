@@ -573,7 +573,7 @@ v4 todo:
              (λ args
                 ; Make sure that the args match the contract
                 (begin (unless ((contract-struct-exercise ctc) args (/ fuel 2))
-                           (error "Arg(s) ~a do(es) not match contract ~a\n" ctc))
+                           (error '->-generate "Arg(s) ~a do(es) not match contract ~a\n" ctc))
                        ; Stash the valid value
                        ;(env-stash (generate-env) ctc args)
                        (apply values rngs-gens)))

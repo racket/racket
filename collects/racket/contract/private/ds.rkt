@@ -306,7 +306,9 @@ it around flattened out.
                    (do-selection struct (+ i 1))
                    (wrap-get struct (+ i 1)))]
               [else
-               (error selector-name "expected: ~s, got ~e" 'name struct)]))
+               (raise-argument-error selector-name
+                                     'name
+                                     struct)]))
           
           (define (lazy-contract-name ctc)
             (do-contract-name 'struct/c

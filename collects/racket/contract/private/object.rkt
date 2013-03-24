@@ -87,38 +87,48 @@
 
 (define (subclass?/c %)
   (unless (class? %)
-    (error 'subclass?/c "expected <class>, given: ~e" %))
-  (let ([name (object-name %)])
-    (flat-named-contract
-     `(subclass?/c ,(or name 'unknown%))
-     (lambda (x) (subclass? x %)))))
+    (raise-argument-error 'subclass?/c
+                          'class?
+                          %))
+  (define name (object-name %))
+  (flat-named-contract
+   `(subclass?/c ,(or name 'unknown%))
+   (lambda (x) (subclass? x %))))
 
 (define (implementation?/c <%>)
   (unless (interface? <%>)
-    (error 'implementation?/c "expected <interface>, given: ~e" <%>))
-  (let ([name (object-name <%>)])
-    (flat-named-contract
-     `(implementation?/c ,(or name 'unknown<%>))
-     (lambda (x) (implementation? x <%>)))))
+    (raise-argument-error 'implementation?/c
+                          'interface?
+                          <%>))
+  (define name (object-name <%>))
+  (flat-named-contract
+   `(implementation?/c ,(or name 'unknown<%>))
+   (lambda (x) (implementation? x <%>))))
 
 (define (sub/impl?/c %/<%>)
   (cond
     [(interface? %/<%>) (implementation?/c %/<%>)]
     [(class? %/<%>) (subclass?/c %/<%>)]
-    [else (error 'make-mixin-contract "unknown input ~e" %/<%>)]))
+    [else
+     (raise-argument-error
+      'make-mixin-contract
+      (format "~s" '(or/c interface? class?))
+      %/<%>)]))
 
 (define (is-a?/c <%>)
-  (unless (or (interface? <%>)
-              (class? <%>))
-    (error 'is-a?/c "expected <interface> or <class>, given: ~e" <%>))
-  (let ([name (object-name <%>)])
-    (flat-named-contract
-     (cond
-       [name
-        `(is-a?/c ,name)]
-       [(class? <%>)
-        `(is-a?/c unknown%)]
-       [else `(is-a?/c unknown<%>)])
-     (lambda (x) (is-a? x <%>)))))
+  (unless (or (interface? <%>) (class? <%>))
+    (raise-argument-error
+     'is-a?/c
+     (format "~s" '(or/c interface? class?))
+     <%>))
+  (define name (object-name <%>))
+  (flat-named-contract
+   (cond
+     [name
+      `(is-a?/c ,name)]
+     [(class? <%>)
+      `(is-a?/c unknown%)]
+     [else `(is-a?/c unknown<%>)])
+   (lambda (x) (is-a? x <%>))))
 
 (define mixin-contract (->d ([c% class?]) () [res (subclass?/c c%)]))

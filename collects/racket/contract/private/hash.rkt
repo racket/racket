@@ -55,26 +55,26 @@
           (vector this-one (list #'h/c) null))))]))
 
 (define (hash/c dom rng #:immutable [immutable 'dont-care] #:flat? [flat? #f])
-  (unless (memq immutable '(#t #f dont-care))
-    (error 'hash/c "expected #:immutable argument to be either #t, #f, or 'dont-care, got ~s" immutable))
-  (let ([dom-ctc (if flat?
-                     (coerce-flat-contract 'hash/c dom)
-                     (coerce-contract 'hash/c dom))]
-        [rng-ctc (if flat?
-                     (coerce-flat-contract 'hash/c rng)
-                     (coerce-contract 'hash/c rng))])
-    (unless (chaperone-contract? dom-ctc)
-      (error 'hash/c "expected either a flat or chaperone contract for the domain, got ~s" (contract-name dom-ctc)))
-    (cond
-      [(or flat?
-           (and (eq? immutable #t)
-                (flat-contract? dom-ctc)
-                (flat-contract? rng-ctc)))
-       (make-flat-hash/c dom-ctc rng-ctc immutable)]
-      [(chaperone-contract? rng-ctc)
-       (make-chaperone-hash/c dom-ctc rng-ctc immutable)]
-      [else
-       (make-impersonator-hash/c dom-ctc rng-ctc immutable)])))
+  (unless (member immutable '(#t #f dont-care))
+    (raise-argument-error 'hash/c
+                          "(or/c #t #f 'dont-care) for the #:immutable argument"
+                          immutable))
+  (define dom-ctc (if flat?
+                      (coerce-flat-contract 'hash/c dom)
+                      (coerce-chaperone-contract 'hash/c dom)))
+  (define rng-ctc (if flat?
+                      (coerce-flat-contract 'hash/c rng)
+                      (coerce-contract 'hash/c rng)))
+  (cond
+    [(or flat?
+         (and (eq? immutable #t)
+              (flat-contract? dom-ctc)
+              (flat-contract? rng-ctc)))
+     (make-flat-hash/c dom-ctc rng-ctc immutable)]
+    [(chaperone-contract? rng-ctc)
+     (make-chaperone-hash/c dom-ctc rng-ctc immutable)]
+    [else
+     (make-impersonator-hash/c dom-ctc rng-ctc immutable)]))
 
 (define (check-hash/c ctc val blame) 
   (define dom-ctc (base-hash/c-dom ctc))

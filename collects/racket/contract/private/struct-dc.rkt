@@ -393,14 +393,14 @@
   (case (dep-type subcontract)
     [(#:flat)
      (unless (flat-contract? dep-ctc)
-       (error 'struct/dc "expected a flat contract for the field: ~a, got ~s" 
-              (subcontract-field-name subcontract)
-              (contract-name dep-ctc)))]
+       (raise-argument-error 'struct/dc
+                             (format "a flat-contract? for field ~a" (subcontract-field-name subcontract))
+                             dep-ctc))]
     [(#:chaperone)
      (unless (chaperone-contract? dep-ctc)
-       (error 'struct/dc "expected a chaperone contract for the field: ~a, got ~s" 
-              (subcontract-field-name subcontract)
-              (contract-name dep-ctc)))]))
+       (raise-argument-error 'struct/dc
+                             (format "a chaperone-contract? for field ~a" (subcontract-field-name subcontract))
+                             dep-ctc))]))
 
 (define (struct/dc-stronger? this that)
   (and (base-struct/dc? that)
@@ -463,9 +463,9 @@
     (when (and (indep? subcontract)
                (not (mutable? subcontract)))
       (unless (chaperone-contract? (indep-ctc subcontract))
-        (error 'struct/dc "expected chaperone contracts, but field ~a has ~e"
-               (subcontract-field-name subcontract)
-               (indep-ctc subcontract)))))
+        (raise-argument-error 'struct/dc
+                             (format "a chaperone-contract? for field ~a" (subcontract-field-name subcontract))
+                             (indep-ctc subcontract)))))
   (define (flat-subcontract? subcontract)
     (cond
       [(indep? subcontract) (flat-contract? (indep-ctc subcontract))]

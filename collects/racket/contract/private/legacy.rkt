@@ -38,9 +38,12 @@
              (list (blame-source blame) (blame-value blame))
              (blame-contract blame)))]
     [else
-     (error 'make-proj-contract
-            "expected a projection that accepts 4 or 5 arguments; got: ~e"
-            proj)])))
+     (raise-argument-error 
+      'make-proj-contract
+      (format "~s" '(and/c procedure?
+                           (λ (x) (or/c (procedure-arity-includes? x 4)
+                                        (procedure-arity-includes? x 5)))))
+      proj)])))
 
 (define (contract-proc c)
   (let* ([proj (contract-projection c)])
@@ -71,7 +74,7 @@
 (define (unpack-source info)
   (cond
    [(syntax? info) (build-source-location info)]
-   [(list? info)
+   [(and (list? info) (= 2 (length info)))
     (let ([loc (list-ref info 0)])
       (if (syntax? (srcloc-source loc))
         (struct-copy
@@ -83,15 +86,17 @@
              (srcloc-source loc))))])
         loc))]
    [else
-    (error 'contract
-           "expected a syntax object or list of two elements, got: ~e"
-           info)]))
+    (raise-argument-error 'contract
+                          (format "~s" '(or/c syntax?
+                                              (list/c any/c any/c)))
+                          info)]))
 
 (define (unpack-name info)
   (cond
    [(syntax? info) (and (identifier? info) (syntax-e info))]
-   [(list? info) (list-ref info 1)]
+   [(and (list? info) (= 2 (length info))) (list-ref info 1)]
    [else
-    (error 'contract
-           "expected a syntax object or list of two elements, got: ~e"
-           info)]))
+    (raise-argument-error 'contract
+                          (format "~s" '(or/c syntax?
+                                              (list/c any/c any/c)))
+                          info)]))
