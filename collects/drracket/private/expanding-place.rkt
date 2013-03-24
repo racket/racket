@@ -88,6 +88,8 @@
   (define abnormal-termination (make-channel))
   (define the-source (or path "unsaved editor"))
   (define orig-cust (current-custodian))
+  (define (stop-watching-abnormal-termination) 
+    (channel-put normal-termination #t))
   
   (define working-thd
     (parameterize ([current-custodian cust])
@@ -263,9 +265,6 @@
                '())
            (list-ref exn+loaded-paths 1))))))))
   
-  (define (stop-watching-abnormal-termination) 
-    (channel-put normal-termination #t))
-    
   (job cust response-pc working-thd stop-watching-abnormal-termination))
 
 (define (catch-and-log port sema)
