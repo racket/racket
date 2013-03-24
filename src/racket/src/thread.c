@@ -6759,9 +6759,18 @@ Scheme_Object *scheme_sync_timeout(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *do_scheme_sync_enable_break(const char *who, int with_timeout, int tailok, int argc, Scheme_Object *argv[])
 {
-  if (argc == 2 && SCHEME_FALSEP(argv[0]) && SCHEME_SEMAP(argv[1])) {
-    scheme_wait_sema(argv[1], -1);
-    return scheme_void;
+  Scheme_Object *sema;
+
+  if (with_timeout && (argc == 2) && SCHEME_FALSEP(argv[0]) && SCHEME_SEMAP(argv[1]))
+    sema = argv[1];
+  else if (!with_timeout && (argc == 1) && SCHEME_SEMAP(argv[0]))
+    sema = argv[0];
+  else
+    sema = NULL;
+  
+  if (sema) {
+    scheme_wait_sema(sema, -1);
+    return sema;
   }
 
   return do_sync(who, argc, argv, 1, with_timeout, tailok);

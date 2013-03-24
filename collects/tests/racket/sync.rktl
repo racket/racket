@@ -1236,4 +1236,10 @@
 
 ;; ----------------------------------------
 
+(err/rt-test (sync/enable-break #f (make-semaphore 1)))
+(test #t semaphore? (sync/enable-break (make-semaphore 1)))
+(test #t semaphore? (sync/timeout/enable-break #f (make-semaphore 1)))
+
+;; ----------------------------------------
+
 (report-errs)
