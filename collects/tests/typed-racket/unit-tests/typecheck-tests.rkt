@@ -1639,6 +1639,12 @@
                        (apply (inst values A B ... B) a b)) 
                      (All (A B ...) (A B ... -> (values A B ... B))))
               (-polydots (a b) ((list a) (b b) . ->... . (make-ValuesDots (list (-result a)) b 'b)))]
+
+        [tc-e/t
+          (case-lambda
+            [w 'result]
+            [(x) (add1 "hello")])
+          (->* (list) Univ (-val 'result) : -true-lfilter)]
         )
   (test-suite
    "check-type tests"
