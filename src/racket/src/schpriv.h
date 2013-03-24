@@ -1229,7 +1229,7 @@ int scheme_is_predefined_module_p(Scheme_Object *name);
 /*========================================================================*/
 
 typedef struct {
-  Scheme_Object so;
+  Scheme_Inclhash_Object iso; /* keyex used for flags */
   mzshort num_args; /* doesn't include rator, so arguments are at args[1]...args[num_args] */
   Scheme_Object *args[mzFLEX_ARRAY_DECL];
   /* After array of f & args, array of chars for eval type */
@@ -1244,6 +1244,13 @@ enum {
   SCHEME_EVAL_LOCAL_UNBOX,
   SCHEME_EVAL_GENERAL
 };
+
+/* Flags to indicate to SFS pass that a [tail] application doesn't
+   need clearing before it (because the call is to a immediate
+   primitive or a Racket-implemented function). */
+#define APPN_FLAG_IMMED (1 << 12)
+#define APPN_FLAG_SFS_TAIL (1 << 13)
+#define APPN_FLAG_MASK (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL)
 
 typedef struct {
   Scheme_Inclhash_Object iso; /* keyex used for flags */

@@ -2118,10 +2118,47 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
   return finish_optimize_application(app, info, context, rator_flags);
 }
 
+static int appn_flags(Scheme_Object *rator, Optimize_Info *info)
+{
+  if (SAME_TYPE(SCHEME_TYPE(rator), scheme_compiled_toplevel_type)) {
+    if (info->top_level_consts) {
+      int pos;
+      pos = SCHEME_TOPLEVEL_POS(rator);
+      rator = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
+      rator = no_potential_size(rator);
+      if (!rator) return 0;
+      if (SAME_TYPE(SCHEME_TYPE(rator), scheme_proc_shape_type)) {
+        return APPN_FLAG_SFS_TAIL;
+      } else if (SAME_TYPE(SCHEME_TYPE(rator), scheme_struct_proc_shape_type)) {
+        int ps = SCHEME_PROC_SHAPE_MODE(rator);
+        if ((ps == STRUCT_PROC_SHAPE_PRED)
+            || (ps == STRUCT_PROC_SHAPE_GETTER)
+            || (ps == STRUCT_PROC_SHAPE_SETTER))
+          return (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
+        return 0;
+      }
+    }
+  }
+
+  if (SCHEME_PRIMP(rator)) {
+    int opt = (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_OPT_MASK);
+    if (opt >= SCHEME_PRIM_OPT_IMMEDIATE)
+      return (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
+    return 0;
+  }
+
+  if (SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(rator))
+      || SAME_TYPE(scheme_case_lambda_sequence_type, SCHEME_TYPE(rator))
+      || SAME_TYPE(scheme_noninline_proc_type, SCHEME_TYPE(rator)))
+    return APPN_FLAG_SFS_TAIL;
+  
+  return 0;
+}
+
 static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_Info *info, int context, int rator_flags)
 {
   Scheme_Object *le;
-  int all_vals = 1, i;
+  int all_vals = 1, i, flags;
 
   for (i = app->num_args; i--; ) {
     if (SCHEME_TYPE(app->args[i+1]) < _scheme_compiled_values_types_)
@@ -2149,6 +2186,9 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
     return scheme_null;
 
   register_local_argument_types(app, NULL, NULL, info);
+
+  flags = appn_flags(app->args[0], info);
+  SCHEME_APPN_FLAGS(app) |= flags;
 
   return (Scheme_Object *)app;
 }
@@ -2259,6 +2299,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
 static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimize_Info *info, int context, int rator_flags)
 {
   Scheme_Object *le;
+  int flags;
 
   info->size += 1;
 
@@ -2410,6 +2451,9 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
 
   register_local_argument_types(NULL, app, NULL, info);
 
+  flags = appn_flags(app->rator, info);
+  SCHEME_APPN_FLAGS(app) |= flags;
+
   return (Scheme_Object *)app;
 }
 
@@ -2417,7 +2461,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 {
   Scheme_App3_Rec *app;
   Scheme_Object *le;
-  int rator_flags = 0, sub_context = 0, ty;
+  int rator_flags = 0, sub_context = 0, ty, flags;
 
   app = (Scheme_App3_Rec *)o;
 
@@ -2465,6 +2509,9 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
   /* Check for (apply ... (list ...)) after some optimizations: */
   le = direct_apply((Scheme_Object *)app, app->rator, app->rand2, info);
   if (le) return finish_optimize_app(le, info, context, rator_flags);
+
+  flags = appn_flags(app->rator, info);
+  SCHEME_APPN_FLAGS(app) |= flags;
 
   return finish_optimize_application3(app, info, context, rator_flags);
 }
@@ -5896,6 +5943,8 @@ Scheme_Object *optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_Info *in
       if (!expr) return NULL;
       app2->rand = expr;
 
+      SCHEME_APPN_FLAGS(app2) |= (SCHEME_APPN_FLAGS(app) & APPN_FLAG_MASK);
+
       return (Scheme_Object *)app2;
     }
   case scheme_application_type:
@@ -5910,6 +5959,8 @@ Scheme_Object *optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_Info *in
 	if (!expr) return NULL;
 	app2->args[i] = expr;
       }
+
+      SCHEME_APPN_FLAGS(app2) |= (SCHEME_APPN_FLAGS(app) & APPN_FLAG_MASK);
 
       return (Scheme_Object *)app2;
     }
@@ -5931,6 +5982,8 @@ Scheme_Object *optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_Info *in
       expr = optimize_clone(dup_ok, app->rand2, info, delta, closure_depth);
       if (!expr) return NULL;
       app2->rand2 = expr;
+
+      SCHEME_APPN_FLAGS(app2) |= (SCHEME_APPN_FLAGS(app) & APPN_FLAG_MASK);
 
       return (Scheme_Object *)app2;
     }

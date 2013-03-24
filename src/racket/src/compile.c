@@ -4152,7 +4152,7 @@ Scheme_App_Rec *scheme_malloc_application(int n)
     app = (Scheme_App_Rec *)scheme_malloc_tagged(size);
   }
 
-  app->so.type = scheme_application_type;
+  app->iso.so.type = scheme_application_type;
 
   app->num_args = n - 1;
 

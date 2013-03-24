@@ -219,5 +219,32 @@
   (semaphore-post s))
 
 ;; ----------------------------------------
+;; Check that local variables are cleared for space safety
+;; before a tail `sync' or `thread-wait':
+
+(let ()
+  (define weak-syms (make-weak-hash))
+
+  (define thds
+    (for/list ([i (in-range 100)])
+      (thread (lambda () 
+                (define s (gensym))
+                (define t (current-thread))
+                (define sema (make-semaphore))
+                (define r (random 2))
+                (hash-set! weak-syms s #t)
+                (if (zero? (random 1))
+                    (if (zero? r)
+                        (sync sema)
+                        (thread-wait t))
+                    (displayln s))))))
+
+  (sync (system-idle-evt))
+  (collect-garbage)
+  (test #t < (hash-count weak-syms) 50)
+
+  (for ([t thds]) (kill-thread t)))
+
+;; ----------------------------------------
 
 (report-errs)

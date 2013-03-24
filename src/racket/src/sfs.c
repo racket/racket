@@ -209,14 +209,17 @@ Scheme_Object *scheme_sfs_add_clears(Scheme_Object *expr, Scheme_Object *clears,
   return (Scheme_Object *)s;
 }
 
-static void sfs_note_app(SFS_Info *info, Scheme_Object *rator)
+static void sfs_note_app(SFS_Info *info, Scheme_Object *rator, int flags)
 {
   if (!info->pass) {
     if (!info->tail_pos) {
+      if (flags & APPN_FLAG_IMMED)
+        return;
       if (SAME_OBJ(scheme_values_func, rator))
         /* no need to clear for app of `values' */
         return;
       if (SCHEME_PRIMP(rator)) {
+        /* Double-check for immediate primitives: */
         int opt;
         opt = ((Scheme_Prim_Proc_Header *)rator)->flags & SCHEME_PRIM_OPT_MASK;
         if (opt >= SCHEME_PRIM_OPT_IMMEDIATE)
@@ -225,6 +228,7 @@ static void sfs_note_app(SFS_Info *info, Scheme_Object *rator)
       }
       info->max_nontail = info->ip;
     } else {
+      int tail_ok = (flags & APPN_FLAG_SFS_TAIL);      
       if (!MAX_SFS_CLEARING && (info->selfpos >= 0)) {
         if (SAME_TYPE(SCHEME_TYPE(rator), scheme_local_type)) {
           if ((SCHEME_LOCAL_POS(rator) + info->stackpos) == info->selfpos) {
@@ -235,9 +239,12 @@ static void sfs_note_app(SFS_Info *info, Scheme_Object *rator)
               if ((info->selfstart + i) != info->tlpos)
                 scheme_sfs_used(info, (info->selfstart - info->stackpos) + i);
             }
+            tail_ok = 1;
           }
         }
       }
+      if (!tail_ok)
+        info->max_nontail = info->ip;
     }
   }
 }
@@ -260,7 +267,7 @@ static Scheme_Object *sfs_application(Scheme_Object *o, SFS_Info *info)
     app->args[i] = naya;
   }
 
-  sfs_note_app(info, app->args[0]);
+  sfs_note_app(info, app->args[0], SCHEME_APPN_FLAGS(app) & APPN_FLAG_MASK);
 
   scheme_finish_application(app);
 
@@ -282,7 +289,7 @@ static Scheme_Object *sfs_application2(Scheme_Object *o, SFS_Info *info)
   app->rator = nrator;
   app->rand = nrand;
 
-  sfs_note_app(info, app->rator);
+  sfs_note_app(info, app->rator, SCHEME_APPN_FLAGS(app) & APPN_FLAG_MASK);
 
   scheme_reset_app2_eval_type(app);
   
@@ -307,7 +314,7 @@ static Scheme_Object *sfs_application3(Scheme_Object *o, SFS_Info *info)
   app->rand1 = nrand1;
   app->rand2 = nrand2;
 
-  sfs_note_app(info, app->rator);
+  sfs_note_app(info, app->rator, SCHEME_APPN_FLAGS(app) & APPN_FLAG_MASK);
 
   scheme_reset_app3_eval_type(app);
 
