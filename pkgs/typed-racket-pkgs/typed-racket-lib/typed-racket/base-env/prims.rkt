@@ -1115,24 +1115,51 @@ This file defines two sorts of primitives. All of them are provided into any mod
         (quasisyntax/loc stx (#,l/c k.ann-name . body))]))
     (values (mk #'let/cc) (mk #'let/ec))))
 
+
+(begin-for-syntax
+  (define-syntax-class optional-arg
+    (pattern name:id #:attr value #f)
+    (pattern (name:id value:expr)))
+  (define-splicing-syntax-class lambda-args
+    #:attributes (required-pos
+                  optional-pos
+                  optional-kws
+                  required-kws)
+    (pattern (~seq (~or pos:optional-arg (~seq kw:keyword key:optional-arg)) ...)
+             #:attr optional-pos (length (filter values (attribute pos.value)))
+             #:attr required-pos (- (length (filter values (attribute pos.name)))
+                                    (attribute optional-pos))
+             #:attr optional-kws
+               (for/list ((kw (attribute kw))
+                          (kw-value (attribute key.value))
+                          #:when kw-value)
+                 kw)
+             #:attr required-kws (remove* (attribute optional-kws) (attribute kw)))))
+
+
 ;; annotation to help tc-expr pick out keyword functions
 (define-syntax (-lambda stx)
   (syntax-parse stx
     [(_ formals . body)
-     (define-values (has-kw? has-opt?)
-       (syntax-parse #'formals
-        ((~or (~and rest:id (~bind ((args 1) null)))
-              (args ...)
-              (args ...+ . rest:id))
-         (define arg-list (syntax->list #'(args ...)))
-         (values
-           (ormap keyword? (map syntax-e arg-list))
-           (ormap syntax->list arg-list)))))
-      (opt-lambda-property
-        (kw-lambda-property
-          (syntax/loc stx (λ formals . body))
-          has-kw?)
-        has-opt?)]))
+     (define d (syntax/loc stx (λ formals . body)))
+     (syntax-parse #'formals
+      [(~or (~and (args:lambda-args) (~bind (rest #f)))
+            (args:lambda-args . rest:id))
+       (define kw-property
+         (> (+ (length (attribute args.required-kws))
+               (length (attribute args.optional-kws)))
+            0))
+       (define opt-property
+         (and (> (attribute args.optional-pos) 0)
+           (list
+             (attribute args.required-pos)
+             (attribute args.optional-pos))))
+       (syntax-property
+         (syntax-property d 'kw-lambda kw-property)
+         'opt-lambda opt-property)]
+       ;; This is an error and will be caught by the real lambda
+      [_ d])]))
+
 
 ;; do this ourselves so that we don't get the static bindings,
 ;; which are harder to typecheck

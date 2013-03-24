@@ -263,10 +263,9 @@
            (let-values (((_) (~and find-app (#%plain-app find-method/who _ _ _))))
              (#%plain-app _ _ args ...))))
        (tc/send #'find-app #'rcvr #'meth #'(args ...) expected)]
-      ;; kw/opt function def
-      [(let-values ([(_) fun])
-         . body)
-       #:when (or (kw-lambda-property form) (opt-lambda-property form))
+      ;; kw function def
+      [(let-values ([(_) fun]) . body)
+       #:when (syntax-property form 'kw-lambda)
        (match expected
          [(tc-result1: (and f (or (Function: _)
                                   (Poly: _ (Function: _)))))
@@ -274,6 +273,22 @@
          [(or (tc-results: _) (tc-any-results:))
           (tc-error/expr "Keyword functions must have function type, given ~a" expected)])
        expected]
+      ;; opt function def
+      [(let-values ([(f) fun]) . body)
+       #:when (syntax-property form 'opt-lambda)
+       (define conv-type
+         (match expected
+           [(tc-result1: fun-type)
+            (match-define (list required-pos optional-pos)
+              (syntax-property form 'opt-lambda))
+            (opt-convert fun-type required-pos optional-pos)]
+           [_ #f]))
+       (match-define (tc-result1: returned-fun-type)
+         (if conv-type
+             (tc-expr/check/type #'fun conv-type)
+             (tc-expr #'fun)))
+       (with-lexical-env/extend (list #'f) (list returned-fun-type)
+         (tc-exprs/check (syntax->list #'body) expected))]
       ;; let
       [(let-values ([(name ...) expr] ...) . body)
        (tc/let-values #'((name ...) ...) #'(expr ...) #'body form expected)]

@@ -2,9 +2,10 @@
 
 (require "abbrev.rkt" "../rep/type-rep.rkt"
          "union.rkt" "../utils/tc-utils.rkt"
-         racket/list racket/dict racket/match)
+         racket/list racket/set racket/dict racket/match)
 
-;; convert : [Listof Keyword] [Listof Type] [Listof Type] [Option Type] [Option Type] -> (values Type Type)
+;; convert : [Listof Keyword] [Listof Type] [Listof Type] [Option Type]
+;;           [Option Type] [Option (Pair Type symbol)] boolean -> Type
 (define (convert kw-t plain-t opt-t rng rest drest split?)
   (define-values (mand-kw-t opt-kw-t) (partition (match-lambda [(Keyword: _ _ m) m]) kw-t))
 
@@ -57,13 +58,13 @@
           [(Keyword: _ t _) (list (-val #f) (-val #f))]))
       plain-t
       (for/list ([t (in-list opt-t)]) (-val #f))
-      (for/list ([t (in-list opt-t)]) (-val #f))
-      ;; the kw function protocol passes rest args as an explicit list
-      (if rest (-lst rest) empty))))
-  (if split?
-      (make-Function (list (make-arr* ts/true rng)
-                           (make-arr* ts/false rng)))
-      (make-Function (list (make-arr* ts rng)))))
+      (for/list ([t (in-list opt-t)]) (-val #f)))))
+  (make-Function
+    (if split?
+        (remove-duplicates
+          (list (make-arr* ts/true rng #:rest rest #:drest drest)
+                (make-arr* ts/false rng #:rest rest #:drest drest)))
+        (list (make-arr* ts rng #:rest rest #:drest drest)))))
 
 (define (prefix-of a b)
   (define (rest-equal? a b)
@@ -110,24 +111,59 @@
         (dict-set d prefix (arg-diff prefix e))
         (dict-set d e empty))))
 
+(define (inner-kw-convert arrs split?)
+  (define table (find-prefixes arrs))
+  (define fns
+    (for/set ([(k v) (in-dict table)])
+      (match k
+        [(arr: mand rng rest drest kws)
+         (convert kws mand v rng rest drest split?)])))
+  (apply cl->* (set->list fns)))
+
 (define (kw-convert ft #:split [split? #f])
     (match ft
       [(Function: arrs)
-       (define table (find-prefixes arrs))
-       (define fns 
-         (for/list ([(k v) (in-dict table)])
-           (match k
-             [(arr: mand rng rest drest kws)
-              (convert kws mand v rng rest drest split?)])))
-       (apply cl->* fns)]
-      [(Poly-names: names (Function: arrs))
-       (define table (find-prefixes arrs))
-       (define fns 
-         (for/list ([(k v) (in-dict table)])
-           (match k
-             [(arr: mand rng rest drest kws)
-              (convert kws mand v rng rest drest split?)])))
-       (make-Poly names (apply cl->* fns))]
-      [_ (int-err "kw-convert: non-function type ~a" ft)]))
+       (inner-kw-convert arrs split?)]
+      [(Poly-names: names f)
+       (make-Poly names (kw-convert f #:split split?))]
+      [(PolyDots-names: names f)
+       (make-PolyDots names (kw-convert f #:split split?))]))
 
-(provide kw-convert)
+(define ((opt-convert-arr required-pos optional-pos) arr)
+  (match arr
+    [(arr: args result #f #f '())
+     (define num-args (length args))
+     (and (>= num-args required-pos)
+          (<= num-args (+ required-pos optional-pos))
+          (let* ([required-args (take args required-pos)]
+                 [opt-args (drop args required-pos)]
+                 [missing-opt-args (- (+ required-pos optional-pos) num-args)]
+                 [present-flags (map (λ (t) (-val #t)) opt-args)]
+                 [missing-args (make-list missing-opt-args (-val #f))])
+            (make-arr (append required-args
+                              opt-args
+                              missing-args
+                              present-flags
+                              missing-args)
+                      result
+                      #f
+                      #f
+                      '())))]
+    [(arr: args result _ _ _) #f]))
+
+(define (opt-convert ft required-pos optional-pos)
+  (let/ec exit
+    (let loop ((ft ft))
+      (match ft
+        [(Function: arrs)
+         (let ((arrs (map (opt-convert-arr required-pos optional-pos) arrs)))
+           (if (andmap values arrs)
+               (make-Function arrs)
+               (exit #f)))]
+        [(Poly-names: names f)
+         (make-Poly names (loop f))]
+        [(PolyDots-names: names f)
+         (make-PolyDots names (loop f))]
+        [t t]))))
+
+(provide kw-convert opt-convert)

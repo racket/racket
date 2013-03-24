@@ -1647,6 +1647,11 @@
             [w 'result]
             [(x) (add1 "hello")])
           (->* (list) Univ (-val 'result) : -true-lfilter)]
+
+        [tc-e
+           (opt-lambda: ((x : Symbol 'a)) x)
+           #:ret (ret (t:-> -Symbol -Symbol) (-FS -top -bot))
+           #:expected (ret (t:-> -Symbol -Symbol) (-FS -top -bot))]
         )
   (test-suite
    "check-type tests"
