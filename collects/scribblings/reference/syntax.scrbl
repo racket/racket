@@ -2824,12 +2824,19 @@ heuristics, and should only be used when other inlining attempts (such as
 
 @note-lib-only[racket/lazy-require]
 
-@defform[(lazy-require [module-path (imported-fun-id ...)] ...)]{
+@(define lazy-require-eval (make-base-eval))
+@(lazy-require-eval '(require racket/lazy-require))
 
-Defines each @racket[imported-fun-id] as a function that, when called,
-dynamically requires the export named @racket[imported-fun-id] from
-the module specified by @racket[module-path] and calls it with the
-same arguments.
+@defform[(lazy-require [module-path (fun-import ...)] ...)
+         #:grammar
+         ([fun-import fun-id
+                      (orig-fun-id fun-id)])]{
+
+Defines each @racket[fun-id] as a function that, when called,
+dynamically requires the export named @racket[orig-fun-id] from the
+module specified by @racket[module-path] and calls it with the same
+arguments. If @racket[orig-fun-id] is not given, it defaults to
+@racket[fun-id].
 
 If the enclosing relative phase level is not 0, then
 @racket[module-path] is also placed in a submodule (with a use of
@@ -2841,4 +2848,20 @@ submodule). Introduced submodules have the names
 When the use of a lazily-required function triggers module loading,
 @racket[register-external-module] declares a potential compilation
 dependency (in case the function is used in the process of compiling a
-module).}
+module).
+
+@examples[#:eval lazy-require-eval
+(lazy-require
+  [racket/list (partition)])
+(partition even? '(1 2 3 4 5))
+(module hello racket/base
+  (provide hello)
+  (printf "starting hello server\n")
+  (define (hello) (printf "hello!\n")))
+(lazy-require
+  ['hello ([hello greet])])
+(greet)
+]
+}
+
+@(close-eval lazy-require-eval)
