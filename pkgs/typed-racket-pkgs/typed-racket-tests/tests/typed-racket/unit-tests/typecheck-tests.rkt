@@ -1641,6 +1641,12 @@
                 #:expected (ret (-poly (a) (cl->* (t:-> a a) (t:-> a a a))))]
         [tc-err (plambda: (A) ((x : A)) x)
                 #:expected (ret (list -Symbol -Symbol))]
+
+        [tc-e/t
+          (case-lambda
+            [w 'result]
+            [(x) (add1 "hello")])
+          (->* (list) Univ (-val 'result) : -true-lfilter)]
         )
   (test-suite
    "check-type tests"

@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require syntax/parse
+(require syntax/parse syntax/stx
          (for-template racket/base racket/flonum racket/fixnum)
          "../utils/utils.rkt"
          (types type-table)
@@ -54,4 +54,20 @@
                   (quasisyntax/loc/origin 
                    this-syntax #'kw
                    (#%expression (begin #,(optimize/drop-pure #'tst)
-                                        #,((optimize) #'els)))))))
+                                        #,((optimize) #'els))))))
+  (pattern ((~and kw (~literal case-lambda)) (formals . bodies) ...)
+           #:when (for/or ((formals (syntax->list #'(formals ...))))
+                    (dead-case-lambda-branch? formals))
+           #:with opt
+           (quasisyntax/loc/origin
+             this-syntax #'kw
+             (case-lambda
+               #,@(for/list ((formals (syntax->list #'(formals ...)))
+                             (bodies  (syntax->list #'(bodies ...)))
+                             #:unless (and (dead-case-lambda-branch? formals)
+                                           (log-optimization
+                                             "dead case-lambda branch"
+                                             "Unreachable case-lambda branch elimination."
+                                             formals)))
+                     (cons formals (stx-map (optimize) bodies)))))))
+
