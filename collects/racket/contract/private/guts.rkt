@@ -90,7 +90,7 @@
 (define (coerce-flat-contract name x)
   (define ctc (coerce-contract/f x))
   (unless (flat-contract-struct? ctc)
-    (raise-argument-error name 'flat-contract? x))
+    (raise-argument-error name "flat-contract?" x))
   ctc)
 
 ;; coerce-flat-contacts : symbol (listof any/c) -> (listof flat-contract)
@@ -101,7 +101,7 @@
     (define ctc (coerce-contract/f x))
     (unless (flat-contract-struct? ctc)
       (raise-argument-error name
-                            'flat-contract?
+                            "flat-contract?"
                             i 
                             xs))
     ctc))
@@ -112,7 +112,7 @@
   (unless (chaperone-contract-struct? ctc)
     (raise-argument-error
      name
-     'chaperone-contract?
+     "chaperone-contract?"
      x))
   ctc)
 
@@ -125,7 +125,7 @@
     (unless (chaperone-contract-struct? ctc)
       (apply raise-argument-error
              name
-             'chaperone-contract?
+             "chaperone-contract?"
              i
              xs))
     ctc))
@@ -134,7 +134,7 @@
 (define (coerce-contract name x)
   (or (coerce-contract/f x)
       (raise-argument-error name
-                            'contract?
+                            "contract?"
                             x)))
 
 ;; coerce-contracts : symbols (listof any) -> (listof contract)
