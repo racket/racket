@@ -15,22 +15,10 @@
     (init-field src orig-cust)
     (define trace '())
     
-    (define-values (remote local) (place-channel))
+    (define-values (remote-chan local-chan) (place-channel))
     (define table (make-hash))
 
-    ;; the hope is that changing the custodian like this
-    ;; shouldn't leak these threads, but it does seem to
-    ;; so for now we don't use it
-    (parameterize (#;[current-custodian orig-cust])
-      (thread
-       (λ () 
-         (with-handlers ((exn:fail? (λ (x) (eprintf "online-comp.rkt: thread failed ~a\n" (exn-message x)))))
-           (let loop ()
-             (define id/name (place-channel-get local))
-             (define id (list-ref id/name 0))
-             (define name (list-ref id/name 1))
-             (define res ((hash-ref table id) name))
-             (place-channel-put local res))))))
+    (create-rename-answerer-thread orig-cust local-chan table)
     
     (define/override (syncheck:find-source-object stx)
       (and (equal? src (syntax-source stx))
@@ -60,12 +48,29 @@
     (define/override (syncheck:add-id-set to-be-renamed/poss dup-name?)
       (define id (hash-count table))
       (hash-set! table id dup-name?)
-      (add-to-trace (vector 'syncheck:add-id-set (map cdr to-be-renamed/poss) remote id)))
+      (add-to-trace (vector 'syncheck:add-id-set (map cdr to-be-renamed/poss) remote-chan id)))
     
     (define/public (get-trace) (reverse trace))
     (define/private (add-to-trace thing) 
       (set! trace (cons thing trace)))
     (super-new)))
+
+(define (create-rename-answerer-thread orig-cust local-chan table)
+  ;; the hope is that changing the custodian like this
+  ;; shouldn't leak these threads, but it does seem to
+  ;; so for now we don't use it
+  (parameterize (#;[current-custodian orig-cust])
+    (thread
+     (λ () 
+       (with-handlers ((exn:fail? (λ (x) (eprintf "online-comp.rkt: thread failed ~a\n" (exn-message x)))))
+         (let loop ()
+           (define id/name (place-channel-get local-chan))
+           (define id (list-ref id/name 0))
+           (define name (list-ref id/name 1))
+           (define res ((hash-ref table id) name))
+           (place-channel-put local-chan res)
+           (loop))))))
+  (void))
 
 (define (go expanded path the-source orig-cust)
   (parameterize ([current-max-to-send-at-once 50])
