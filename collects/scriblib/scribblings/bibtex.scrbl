@@ -17,6 +17,10 @@ Uses @racket[define-cite] from @racketmodname[scriblib/autobib], but augments th
        
 Each string is broken along spaces into citations keys that are looked up in the BibTeX database and turned into @racket[bib?] structures.
 
+The only BibTeX entries that are supported are: @litchar{misc},
+@litchar{book}, @litchar{article}, @litchar{inproceedings},
+@litchar{webpage}, @litchar{mastersthesis}, and @litchar{techreport}.
+
 }
 
 @defstruct*[bibdb ([raw (hash/c string? (hash/c string? string?))]

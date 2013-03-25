@@ -69,7 +69,8 @@
              (perror ip 'read-entry "Parsing string, expected }, got ~v; tag is ~v; string is ~v" c tag string)])]
          [c
           (perror ip 'read-entry "Parsing string, expected =, got ~v; tag is ~v" c tag)])]
-      [(app string-downcase "comment")
+      [(or (app string-downcase "comment")
+           (app string-downcase "preamble"))
        (read-char ip)
        (let loop ()
          (read-until (λ (c) (or (char=? c #\{) (char=? c #\}))) ip)
@@ -261,6 +262,12 @@
                   (make-bib #:title (raw-attr "title")
                             #:author (parse-author (raw-attr "author"))
                             #:date (raw-attr "year")
+                            #:url (raw-attr "url"))]                 
+                 ["mastersthesis"
+                  (make-bib #:title (raw-attr "title")
+                            #:author (parse-author (raw-attr "author"))
+                            #:date (raw-attr "year")
+                            #:location (raw-attr "school")
                             #:url (raw-attr "url"))]
                  ["techreport"
                   (make-bib #:title (raw-attr "title")
