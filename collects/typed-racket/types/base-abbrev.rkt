@@ -91,11 +91,8 @@
 
 
 (define/cond-contract (-FS + -)
-      (c:-> Filter/c Filter/c FilterSet?)
-      (match* (+ -)
-             [((Bot:) _) (make-FilterSet -bot -top)]
-             [(_ (Bot:)) (make-FilterSet -top -bot)]
-             [(+ -) (make-FilterSet + -)]))
+  (c:-> Filter/c Filter/c FilterSet?)
+  (make-FilterSet + -))
 
 (define/cond-contract (-filter t i [p null])
      (c:->* (Type/c name-ref/c) ((c:listof PathElem?)) Filter/c)

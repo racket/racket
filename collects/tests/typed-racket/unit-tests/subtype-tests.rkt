@@ -212,6 +212,17 @@
 
    [(-polydots (a) (->... (list) (a a) (make-ListDots a 'a)))
     (-polydots (b a) (->... (list b) (a a) (-pair b (make-ListDots a 'a))))]
+
+   [(-> Univ -Boolean : (-FS (-filter -Symbol 0) (-not-filter -Symbol 0)))
+    (-> Univ -Boolean : (-FS -top -top))]
+   [(-> Univ -Boolean : (-FS -bot -bot))
+    (-> Univ -Boolean : (-FS (-filter -Symbol 0) (-not-filter -Symbol 0)))]
+   [(-> Univ -Boolean : (-FS (-filter -Symbol 0) (-not-filter -Symbol 0)))
+    (-> (Un -Symbol -String) -Boolean : (-FS (-filter -Symbol 0) (-not-filter -Symbol 0)))]
+   [FAIL
+    (-> Univ -Boolean : (-FS (-filter -Symbol 0) (-not-filter -Symbol 0)))
+    (-> Univ -Boolean : (-FS (-filter -String 0) (-not-filter -String 0)))]
+
    ))
 
 (define-go

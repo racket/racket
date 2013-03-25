@@ -373,7 +373,7 @@
 
         [tc-e (let ([x 1]) x) -One]
         [tc-e (let ([x 1]) (boolean? x)) #:ret (ret -Boolean (-FS -bot -top))]
-        [tc-e (boolean? number?) #:ret (ret -Boolean (-FS -bot -top))]
+        [tc-e (boolean? number?) #:ret (ret -Boolean (-FS -bot (-not-filter B #'number?)))]
 
         [tc-e (let: ([x : (Option Number) #f]) x) (t:Un N (-val #f))]
         [tc-e (let: ([x : Any 12]) (not (not x))) -Boolean]
@@ -1102,7 +1102,7 @@
         ;(tc-e (false? #t) #:ret (ret B (-FS -bot -top)))
 
 
-        (tc-e (boolean? true) #:ret (ret B (-FS -top -bot)))
+        (tc-e (boolean? true) #:ret (ret B (-FS (-filter B #'true) -bot)))
         (tc-e (boolean? 6) #:ret (ret B (-FS -bot -top)))
         (tc-e (immutable? (cons 3 4)) B)
 
@@ -1271,11 +1271,13 @@
         (tc-e (namespace? (make-empty-namespace)) #:ret (ret B (-FS -top -bot)))
 
         (tc-e (namespace-anchor? 3) #:ret (ret B (-FS -bot -top)))
-        (tc-e/t (lambda: ((x : Namespace-Anchor)) (namespace-anchor? x)) (t:-> -Namespace-Anchor B : -true-lfilter))
+        (tc-e/t (lambda: ((x : Namespace-Anchor)) (namespace-anchor? x))
+                (t:-> -Namespace-Anchor B : (-FS (-filter -Namespace-Anchor 0) -bot)))
 
 
         (tc-e (variable-reference? 3) #:ret (ret B (-FS -bot -top)))
-        (tc-e/t (lambda: ((x : Variable-Reference)) (variable-reference? x)) (t:-> -Variable-Reference  B : -true-lfilter))
+        (tc-e/t (lambda: ((x : Variable-Reference)) (variable-reference? x))
+                (t:-> -Variable-Reference  B : (-FS (-filter -Variable-Reference 0) -bot)))
 
         (tc-e (system-type 'os) (one-of/c 'unix 'windows 'macosx))
         (tc-e (system-type 'gc) (one-of/c 'cgc '3m))
@@ -1625,6 +1627,9 @@
         [tc-e (filter values empty)
               (-lst -Bottom)]
 
+        [tc-e
+           ((inst filter Any Symbol) symbol? null)
+           (-lst -Symbol)]
         )
   (test-suite
    "check-type tests"
