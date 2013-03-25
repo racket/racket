@@ -1622,6 +1622,9 @@
           (ann 
             ((letrec ((x (lambda (acc #{ v : Symbol}) (if v (list v) acc)))) x) null (list 'bad 'prog))
             (Listof Symbol))]
+        [tc-e (filter values empty)
+              (-lst -Bottom)]
+
         )
   (test-suite
    "check-type tests"
