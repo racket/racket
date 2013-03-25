@@ -791,7 +791,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (lambda (stx)
     (syntax-parse stx #:literals (:)
       [(_ a:optional-standalone-annotation
-          (clause:for-clause ...)
+          clause:for-clauses
           c ...) ; c is not always an expression, can be a break-clause
        (maybe-annotate-body
         (quasisyntax/loc stx
@@ -823,7 +823,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx #:literals (:)
     [(_ : ty
         ((var:optionally-annotated-name) ...)
-        (clause:for-clause ...)
+        clause:for-clauses
         c ...) ; c is not always an expression, can be a break-clause
      (syntax-property
       (quasisyntax/loc stx
@@ -833,7 +833,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
       'type-ascription
       #'ty)]
     [(_ ((var:annotated-name) ...)
-        (clause:for-clause ...)
+        clause:for-clauses
         c ...)
      (syntax-property
       (quasisyntax/loc stx
@@ -846,7 +846,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx #:literals (:)
     [(_ : ty
         ((var:optionally-annotated-name init:expr) ...)
-        (clause:for-clause ...)
+        clause:for-clauses
         c ...) ; c is not always an expression, can be a break-clause
      (syntax-property
       (quasisyntax/loc stx
@@ -855,22 +855,22 @@ This file defines two sorts of primitives. All of them are provided into any mod
           c ...))
       'type-ascription
       #'ty)]
-    [(_ ((var:annotated-name init:expr) ...)
-        (clause:for-clause ...)
+    [(_ accum:accumulator-bindings
+        clause:for-clauses
         c ...)
      (syntax-property
       (quasisyntax/loc stx
-        (for/fold ((var.ann-name init) ...)
+        (for/fold ((accum.ann-name accum.init) ...)
           (clause.expand ... ...)
           c ...))
       'type-ascription
-      #'(values var.ty ...))]))
+      #'(values accum.ty ...))]))
 
 
 (define-syntax (for*: stx)
   (syntax-parse stx #:literals (:)
     [(_ (~seq : Void) ...
-        (clause:for-clause ...)
+        clause:for-clauses
         c ...) ; c is not always an expression, can be a break-clause
      (quasisyntax/loc stx
        (for: (clause.expand* ... ...)
@@ -881,7 +881,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (lambda (stx)
     (syntax-parse stx #:literals (:)
       [(_ a:optional-standalone-annotation
-          (clause:for-clause ...)
+          clause:for-clauses
           c ...) ; c is not always an expression, can be a break-clause
        (maybe-annotate-body
         (quasisyntax/loc stx
@@ -907,7 +907,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx #:literals (:)
     [(_ : ty
         ((var:optionally-annotated-name) ...)
-        (clause:for-clause ...)
+        clause:for-clauses
         c ...) ; c is not always an expression, can be a break-clause
      (syntax-property
       (quasisyntax/loc stx
@@ -917,7 +917,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
       'type-ascription
       #'ty)]
     [(_ ((var:annotated-name) ...)
-        (clause:for-clause ...)
+        clause:for-clauses
         c ...)
      (syntax-property
       (quasisyntax/loc stx
@@ -930,7 +930,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx #:literals (:)
     [(_ : ty
         ((var:optionally-annotated-name init:expr) ...)
-        (clause:for-clause ...)
+        clause:for-clauses
         c ...) ; c is not always an expression, can be a break-clause
      (syntax-property
       (quasisyntax/loc stx
@@ -940,7 +940,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
       'type-ascription
       #'ty)]
     [(_ ((var:annotated-name init:expr) ...)
-        (clause:for-clause ...)
+        clause:for-clauses
         c ...)
      (syntax-property
       (quasisyntax/loc stx
@@ -954,7 +954,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (lambda (stx)
     (syntax-parse stx #:literals (:)
       [(_ a:optional-standalone-annotation
-          (clause:for-clause ...)
+          clause:for-clauses
           c ...) ; c is not always an expression, can be a break-clause
        (cond
         [(syntax-e #'a.ty)
