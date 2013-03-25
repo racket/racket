@@ -7,8 +7,7 @@ static int place_bi_channel_val_SIZE(void *p, struct NewGC *gc) {
 
 static int place_bi_channel_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Place_Bi_Channel *pbc = (Scheme_Place_Bi_Channel *)p;
-  gcMARK2(pbc->sendch, gc);
-  gcMARK2(pbc->recvch, gc);
+  gcMARK2(pbc->link, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place_Bi_Channel));
@@ -16,8 +15,7 @@ static int place_bi_channel_val_MARK(void *p, struct NewGC *gc) {
 
 static int place_bi_channel_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Place_Bi_Channel *pbc = (Scheme_Place_Bi_Channel *)p;
-  gcFIXUP2(pbc->sendch, gc);
-  gcFIXUP2(pbc->recvch, gc);
+  gcFIXUP2(pbc->link, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place_Bi_Channel));

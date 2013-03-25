@@ -13,10 +13,12 @@ through @racket[thread-resume].
 
 A thread that has not terminated can be garbage collected (see
 @secref["gc-model"]) if it is unreachable and suspended or if it is
-unreachable and blocked on only unreachable events through
-@racket[semaphore-wait], @racket[semaphore-wait/enable-break],
+unreachable and blocked on only unreachable events through functions
+such as @racket[semaphore-wait], @racket[semaphore-wait/enable-break],
 @racket[channel-put], @racket[channel-get], @racket[sync],
-@racket[sync/enable-break], or @racket[thread-wait].
+@racket[sync/enable-break], or @racket[thread-wait]. Beware, however,
+of a limitation on @tech{place-channel} blocking; see the
+@elemref['(caveat "place-channel-gc")]{caveat} in @secref["places"].
 
 @margin-note{In GRacket, a handler thread for an eventspace is blocked on
 an internal semaphore when its event queue is empty. Thus, the handler

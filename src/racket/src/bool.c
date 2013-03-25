@@ -702,8 +702,8 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     Scheme_Place_Bi_Channel *bc1, *bc2;
     bc1 = (Scheme_Place_Bi_Channel *)obj1;
     bc2 = (Scheme_Place_Bi_Channel *)obj2;
-   return (SAME_OBJ(bc1->recvch, bc2->recvch)
-           && SAME_OBJ(bc1->sendch, bc2->sendch));
+   return (SAME_OBJ(bc1->link->recvch, bc2->link->recvch)
+           && SAME_OBJ(bc1->link->sendch, bc2->link->sendch));
   } else if (!eql->for_chaperone && ((t1 == scheme_chaperone_type)
                                      || (t1 == scheme_proc_chaperone_type))) {
     /* both chaperones */

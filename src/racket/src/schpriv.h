@@ -4027,11 +4027,12 @@ void scheme_ended_child();
 
 typedef struct Scheme_Place_Async_Channel {
   Scheme_Object so;
-  int in;
-  int out;
-  int count;
-  int size;
-  int delta;
+  intptr_t in;
+  intptr_t out;
+  intptr_t count;
+  intptr_t size;
+  intptr_t delta;
+  intptr_t wr_ref, rd_ref; /* ref counts on readers and writers */
 #if defined(MZ_USE_PLACES)
   mzrt_mutex *lock;
 #endif
@@ -4043,11 +4044,19 @@ typedef struct Scheme_Place_Async_Channel {
   void *wakeup_signal;
 } Scheme_Place_Async_Channel;
 
-typedef struct Scheme_Place_Bi_Channel {
-  Scheme_Object so;
+typedef struct Scheme_Place_Bi_Channel_Link {
+  /* all pointers; allocated as an array */
   Scheme_Place_Async_Channel *sendch;
   Scheme_Place_Async_Channel *recvch;
+  struct Scheme_Place_Bi_Channel_Link *prev, *next;
+} Scheme_Place_Bi_Channel_Link;
+
+typedef struct Scheme_Place_Bi_Channel {
+  Scheme_Object so;
+  Scheme_Place_Bi_Channel_Link *link;
 } Scheme_Place_Bi_Channel;
+
+void scheme_free_place_bi_channels();
 
 typedef struct Scheme_Place {
   Scheme_Object so;

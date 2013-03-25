@@ -558,6 +558,10 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   printf("done @ %" PRIdPTR "\n#endif\n", scheme_get_process_milliseconds());
 #endif
 
+#if defined(MZ_USE_PLACES)
+  REGISTER_SO(place_channel_links);
+#endif
+
   return env;
 }
 
@@ -607,6 +611,7 @@ void scheme_place_instance_destroy(int force)
   scheme_end_futures_per_place();
 #if defined(MZ_USE_PLACES)
   scheme_kill_green_thread_timer();
+  scheme_free_place_bi_channels();
 #endif
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
   GC_destruct_child_gc();

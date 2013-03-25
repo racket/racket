@@ -1515,8 +1515,7 @@ START place;
 place_bi_channel_val {
  mark:
   Scheme_Place_Bi_Channel *pbc = (Scheme_Place_Bi_Channel *)p;
-  gcMARK2(pbc->sendch, gc);
-  gcMARK2(pbc->recvch, gc);
+  gcMARK2(pbc->link, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Place_Bi_Channel));

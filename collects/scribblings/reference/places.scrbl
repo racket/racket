@@ -95,6 +95,16 @@ racket
                                   (place-channel-get pch))))
 ]
 
+Place channels are subject to @tech{garbage collection}, like other
+Racket values, and a @tech{thread} that is blocked reading from a
+@tech{place channel} can be garbage collected if @tech{place
+channel}'s writing end becomes unreachable. @elemtag['(caveat
+"place-channel-gc")]{However}, unlike normal @tech{channel} blocking,
+if otherwise unreachable threads are mutually blocked on place
+channels that are reachable only from the same threads, the threads
+and place channels are all considered reachable, instead of
+unreachable.
+
 
 @defproc[(place-enabled?) boolean?]{
 

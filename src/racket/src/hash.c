@@ -1468,7 +1468,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       k += 7;
       /* a bi channel has sendch and recvch, but
          sends are the same iff recvs are the same: */
-      o = (Scheme_Object *)((Scheme_Place_Bi_Channel *)o)->sendch;
+      o = (Scheme_Object *)((Scheme_Place_Bi_Channel *)o)->link->sendch;
     }
     break;
   default:    
@@ -1890,7 +1890,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
   case scheme_place_bi_channel_type:
     /* a bi channel has sendch and recvch, but
        sends are the same iff recvs are the same: */
-    o = (Scheme_Object *)((Scheme_Place_Bi_Channel *)o)->sendch;
+    o = (Scheme_Object *)((Scheme_Place_Bi_Channel *)o)->link->sendch;
     goto top;
   default:
     {

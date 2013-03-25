@@ -341,6 +341,7 @@ typedef struct Thread_Local_Variables {
   struct Evt **place_evts_;
   struct Scheme_Place_Object *place_object_;
   struct Scheme_Place *all_child_places_;
+  struct Scheme_Place_Bi_Channel_Link *place_channel_links_;
   struct Scheme_Object **reusable_ifs_stack_;
   struct Scheme_Object *empty_self_shift_cache_;
   struct Scheme_Bucket_Table *scheme_module_code_cache_;
@@ -720,6 +721,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define place_evts XOA (scheme_get_thread_local_variables()->place_evts_)
 #define place_object XOA (scheme_get_thread_local_variables()->place_object_)
 #define all_child_places XOA (scheme_get_thread_local_variables()->all_child_places_)
+#define place_channel_links XOA (scheme_get_thread_local_variables()->place_channel_links_)
 #define reusable_ifs_stack XOA (scheme_get_thread_local_variables()->reusable_ifs_stack_)
 #define empty_self_shift_cache XOA (scheme_get_thread_local_variables()->empty_self_shift_cache_)
 #define scheme_module_code_cache XOA (scheme_get_thread_local_variables()->scheme_module_code_cache_)
