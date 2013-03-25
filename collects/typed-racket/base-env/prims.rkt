@@ -896,7 +896,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (begin (define-syntax name (define-for*-variant #'no-colon-name))
               ...))]))
 (define-for*-variants
-  (for*/list: for*/list)
   (for*/and: for*/and)
   (for*/or: for*/or)
   (for*/first: for*/first)
@@ -950,7 +949,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
       'type-ascription
       #'(values var.ty ...))]))
 
-(define-for-syntax (define-for/acc:-variant for*? for/folder: for/folder op initial)
+(define-for-syntax (define-for/acc:-variant for*? for/folder: for/folder op initial final)
   (lambda (stx)
     (syntax-parse stx #:literals (:)
       [(_ a:optional-standalone-annotation
@@ -958,35 +957,38 @@ This file defines two sorts of primitives. All of them are provided into any mod
           c ...) ; c is not always an expression, can be a break-clause
        (cond
         [(syntax-e #'a.ty)
-         ;; ty has to include exact 0 or exact 1 (sum/product respectively),
+         ;; ty has to include exact 0, exact 1, null (sum/product/list respectively),
          ;; the initial value of the accumulator
          ;; (to be consistent with Racket semantics).
          ;; We can't just change the initial value to be 0.0 if we expect a
          ;; Float result. This is problematic in some cases e.g:
          ;; (for/sum: : Float ([i : Float '(1.1)] #:when (zero? (random 1))) i)
          (quasisyntax/loc stx
-           (#,for/folder: : a.ty ([acc : a.ty #,initial])
-                         (clause.expand ... ...)
-                         (let ([new (let () c ...)])
-                           (#,op acc new))))]
+           (#,final
+             (#,for/folder: : a.ty ([acc : a.ty #,initial])
+                           (clause.expand ... ...)
+                           (let ([new (let () c ...)])
+                             (#,op acc new)))))]
         ;; With no annotation, try our luck with the core form.
         ;; Exact base cases cause problems, thus the additional
         ;; annotation on the accumulator above.
         [for*? ((define-for*-variant for/folder) stx)]
         [else ((define-for-variant for/folder) stx)])])))
+
 (define-syntax (define-for/acc:-variants stx)
   (syntax-parse stx
-    [(_ (name for/folder: for/folder for*? op initial) ...)
+    [(_ (name for/folder: for/folder for*? op initial final) ...)
      (quasisyntax/loc stx
        (begin (define-syntax name
                 (define-for/acc:-variant
-                  for*? #'for/folder: #'for/folder #'op #'initial))
+                  for*? #'for/folder: #'for/folder #'op #'initial #'final))
               ...))]))
 (define-for/acc:-variants
-  (for/sum: for/fold: for/sum #f + 0)
-  (for*/sum: for*/fold: for*/sum #t + 0)
-  (for/product: for/fold: for/product #f * 1)
-  (for*/product: for*/fold: for*/product #t * 1))
+  (for/sum: for/fold: for/sum #f + 0 #%expression)
+  (for*/sum: for*/fold: for*/sum #t + 0 #%expression)
+  (for*/list: for*/fold: for*/list #t (lambda (x y) (cons y x)) null reverse)
+  (for/product: for/fold: for/product #f * 1 #%expression)
+  (for*/product: for*/fold: for*/product #t * 1 #%expression))
 
 (define-for-syntax (define-for/hash:-variant hash-maker)
   (lambda (stx)
