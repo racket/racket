@@ -137,10 +137,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (unless (< 0 (length (syntax->list #'(c ...))))
          (raise-syntax-error #f "at least one specification is required" stx))
        #`(begin c.spec ...)]
-      [(_ nm:opt-rename ty lib (~optional [~seq #:struct-maker parent]) ...)
-       #`(require/typed #:internal nm ty lib #,@(if (attribute parent)
-                                                    #'(#:struct-maker parent)
-                                                    #'()))]
       [(_ #:internal nm:opt-rename ty lib (~optional [~seq #:struct-maker parent]) ...)
        (with-syntax ([cnt* (generate-temporary #'nm.nm)]
                      [hidden (generate-temporary #'nm.nm)]
@@ -679,12 +675,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
                          (dtsi* () spec ([fld : ty] ...) #:maker maker-name #:type-only)
                          #,(ignore #'(require/contract pred hidden (any/c . c-> . boolean?) lib))
                          #,(internal #'(require/typed-internal hidden (Any -> Boolean : nm)))
-                         (require/typed (maker-name real-maker) nm lib #:struct-maker parent)
+                         (require/typed #:internal (maker-name real-maker) nm lib #:struct-maker parent)
 
                          ;This needs to be a different identifier to meet the specifications
                          ;of struct (the id constructor shouldn't expand to it)
                          #,(if (syntax-e #'extra-maker)
-                               #'(require/typed (maker-name extra-maker) nm lib #:struct-maker parent)
+                               #'(require/typed #:internal (maker-name extra-maker) nm lib #:struct-maker parent)
                                #'(begin))
 
                          (require/typed lib

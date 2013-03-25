@@ -18,9 +18,9 @@
 
 (module require-tests typed-scheme
   (provide z)
-  (require/typed x Number 'm)
+  (require/typed 'm (x Number))
   (+ x 3)
-  (require/typed y (Number -> Number) 'm)
+  (require/typed 'm (y (Number -> Number)))
   (define: z : Number (y (+ x 4))))
 
 

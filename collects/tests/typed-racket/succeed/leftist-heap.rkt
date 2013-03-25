@@ -44,9 +44,10 @@
 
   ;; fixme - type aliases should work in require
 
-  (require/typed current-compare (-> (top top -> number)) srfi/67)
-  (require/typed =? ((top top -> number) top top -> boolean) srfi/67)
-  (require/typed <? ((top top -> number) top top -> boolean) srfi/67)
+  (require/typed srfi/67
+    [current-compare (-> (top top -> number))]
+    [=? ((top top -> number) top top -> boolean)]
+    [<? ((top top -> number) top top -> boolean)])
 
   ;;; DATA DEFINITION
 
