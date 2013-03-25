@@ -154,6 +154,14 @@
       [(_ _)
        (fail! s t)])))
 
+;; check subtyping of filters, so that predicates subtype correctly
+(define (filter-subtype* A0 s t)
+  (match* (s t)
+   [(f f) A0]
+   [((Bot:) t) A0]
+   [(s (Top:)) A0]
+   [(_ _) (fail! s t)]))
+
 (define (subtypes/varargs args dom rst)
   (with-handlers
       ([exn:subtype? (lambda _ #f)])
@@ -514,12 +522,16 @@
               [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
               [((ValuesDots: s-rs s-dty dbound) (ValuesDots: t-rs t-dty dbound))
                (subtype* (subtypes* A0 s-rs t-rs) s-dty t-dty)]
-              ;; trivial case for Result
-              [((Result: t f o) (Result: t* f o))
-               (subtype* A0 t t*)]
-              ;; we can ignore interesting results
-              [((Result: t f o) (Result: t* (FilterSet: (Top:) (Top:)) (Empty:)))
-               (subtype* A0 t t*)]
+              [((Result: t (FilterSet: ft ff) o) (Result: t* (FilterSet: ft* ff*) o))
+               (subtype-seq A0
+                 (subtype* t t*)
+                 (filter-subtype* ft ft*)
+                 (filter-subtype* ff ff*))]
+              [((Result: t (FilterSet: ft ff) o) (Result: t* (FilterSet: ft* ff*) (Empty:)))
+               (subtype-seq A0
+                 (subtype* t t*)
+                 (filter-subtype* ft ft*)
+                 (filter-subtype* ff ff*))]
               ;; subtyping on other stuff
               [((Syntax: t) (Syntax: t*))
                (subtype* A0 t t*)]
