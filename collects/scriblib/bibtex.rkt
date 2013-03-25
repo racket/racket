@@ -189,10 +189,10 @@
 
 (define-syntax-rule
   (define-bibtex-cite bib-pth
-    ~cite-id citet-id generate-bibliography-id)
+    ~cite-id citet-id generate-bibliography-id . options)
   (begin
     (define bibtex-db (path->bibdb bib-pth))
-    (define-cite autobib-cite autobib-citet generate-bibliography-id)
+    (define-cite autobib-cite autobib-citet generate-bibliography-id . options)
     (define ((make-citer citer) f . r)
       (apply citer
              (filter-map

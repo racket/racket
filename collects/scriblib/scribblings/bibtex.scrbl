@@ -9,11 +9,11 @@
 
 @defmodule[scriblib/bibtex]
 
-@defform[(define-bibtex-cite bib-pth ~cite-id citet-id generate-bibliography-id)]{
+@defform[(define-bibtex-cite bib-pth ~cite-id citet-id generate-bibliography-id . options)]{
 
 Parses @racket[bib-pth] as a BibTeX database.
 
-Uses @racket[define-cite] from @racketmodname[scriblib/autobib], but augments the @racket[~cite-id] and @racket[citet-id] functions so that rather than accepting @racket[bib?] structures, they accept citation key strings.
+Uses @racket[define-cite] from @racketmodname[scriblib/autobib], but augments the @racket[~cite-id] and @racket[citet-id] functions so that rather than accepting @racket[bib?] structures, they accept citation key strings. Any @racket[options] are given to @racket[define-cite] without interpretation.
        
 Each string is broken along spaces into citations keys that are looked up in the BibTeX database and turned into @racket[bib?] structures.
 
