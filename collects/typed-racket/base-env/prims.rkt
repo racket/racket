@@ -628,6 +628,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
                       [extra-maker (and (attribute input-maker.extra)
                                         (not (bound-identifier=? #'make-name #'nm))
                                         #'maker-name)])
+                     (define (extract-struct-info* id)
+                       (syntax-parse id #:context stx
+                        [(~var id (static struct-info? "identifier bound to a structure type"))
+                         (extract-struct-info (syntax-local-value #'parent))]))
                      (quasisyntax/loc stx
                        (begin
                          (require (only-in lib type-des (nm orig-struct-info)))
@@ -652,7 +656,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                               #,(if (syntax-e #'parent)
                                     (let-values (((parent-type-des parent-maker parent-pred
                                                    parent-sel  parent-mut grand-parent)
-                                                  (apply values (extract-struct-info (syntax-local-value #'parent)))))
+                                                  (apply values (extract-struct-info* #'parent))))
                                       #`(list (quote-syntax type-des)
                                               (quote-syntax real-maker)
                                               (quote-syntax pred)
