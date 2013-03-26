@@ -1700,7 +1700,7 @@
              (-SingleFlonum (Un -NegInt -PosInt) . -> . -SingleFlonum)
              (-SingleFlonum -SingleFlonum . -> . (Un -SingleFlonum -SingleFlonumComplex))
              (-InexactReal (Un -NegInt -PosInt) . -> . -InexactReal)
-             (-Real (Un -NegInt -PosInt) . -> . -Real)
+             (-Real -Int . -> . -Real)
              (-InexactReal -InexactReal . -> . (Un -InexactReal -InexactComplex))
              (-FloatComplex (Un -InexactComplex -InexactReal) . -> . -FloatComplex)
              (-SingleFlonumComplex (Un -SingleFlonum -SingleFlonumComplex) . -> . -SingleFlonumComplex)
