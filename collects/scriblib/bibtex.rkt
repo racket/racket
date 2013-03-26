@@ -191,8 +191,17 @@
   (define-bibtex-cite bib-pth
     ~cite-id citet-id generate-bibliography-id . options)
   (begin
-    (define bibtex-db (path->bibdb bib-pth))
     (define-cite autobib-cite autobib-citet generate-bibliography-id . options)
+    (define-bibtex-cite* bib-pth
+      autobib-cite autobib-citet
+      ~cite-id citet-id)))
+
+(define-syntax-rule
+  (define-bibtex-cite* bib-pth
+    autobib-cite autobib-citet
+    ~cite-id citet-id)
+  (begin
+    (define bibtex-db (path->bibdb bib-pth))
     (define ((make-citer citer) f . r)
       (apply citer
              (filter-map
@@ -286,4 +295,5 @@
 (provide (struct-out bibdb)
          path->bibdb
          bibtex-parse
-         define-bibtex-cite)
+         define-bibtex-cite
+         define-bibtex-cite*)

@@ -11,12 +11,11 @@
 (define-runtime-path normal-expected-path "bibtex.normal.txt")
 (define-runtime-path number-expected-path "bibtex.number.txt")
 
-(define-syntax-rule (test-render expected-path options body)
+(define-syntax-rule (test-render* definer expected-path body generate-bibliography-id)
   (let ()
-    (define-bibtex-cite example.bib
-      ~cite-id citet-id generate-bibliography-id . options)
+    definer
 
-    (body ~cite-id citet-id)
+    body
 
     (define actual-path
       (make-temporary-file "~a-bibtex.txt"))
@@ -28,6 +27,23 @@
 
     (test
      (file->string actual-path) => (file->string expected-path))))
+
+(define-syntax-rule (test-render expected-path options body)
+  (begin
+    (test-render* (define-bibtex-cite example.bib
+                    ~cite-id citet-id generate-bibliography-id . options)
+                  expected-path
+                  (body ~cite-id citet-id)
+                  generate-bibliography-id)
+    (test-render* (begin
+                    (define-cite autobib-cite autobib-citet
+                      generate-bibliography-id . options)
+                    (define-bibtex-cite* example.bib
+                      autobib-cite autobib-citet
+                      ~cite-id citet-id))
+                  expected-path
+                  (body ~cite-id citet-id)
+                  generate-bibliography-id)))
 
 (test
  (let ()
