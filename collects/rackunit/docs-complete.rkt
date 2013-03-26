@@ -4,7 +4,8 @@
          scribble/xref
          racket/pretty 
          racket/list
-         racket/contract/base)
+         racket/contract/base
+         syntax/modcode)
 
 ;; checks to make sure that all of the exports of
 ;; the 'what' library are documented
@@ -31,37 +32,20 @@
            [(symbol? x)
             (eq? x f)]))]))
         
-  (define pieces (regexp-split #rx"/" (symbol->string what)))
-  (cond
-    [(null? pieces) (error 'get-docs "bad arg ~s" what)]
-    [(null? (cdr pieces))
-     (set! pieces (list (car pieces) "main"))]
-    [else (void)])
-  (define lib0 (list-ref pieces 0))
-  (define file (last pieces))
-  (define lib1-n (reverse (cdr (reverse (cdr pieces)))))
-  (define (pick-one . args)
-    (for/or ([fmt (in-list args)])
-      (define pth
-        (apply build-path
-               (append (list (collection-path lib0))
-                       lib1-n
-                       (list "compiled"
-                             (format fmt file)))))
-      (and (file-exists? pth)
-           pth)))
   (define-values (val-info stx-info)
     (let/ec k
       (module-compiled-exports
        (parameterize ([read-accept-compiled #t])
-         (define file (pick-one "~a_rkt.zo"
-                                "~a_ss.zo"
-                                "~a_scm.zo"))
-         (if file
-             (call-with-input-file file read)
-             (begin
-               (eprintf "did not find compiled file for ~s\n" what)
-               (k '() '())))))))
+         (define resolve (current-module-name-resolver))
+         (define rmp (resolve what #f #f #f))
+         (define name (resolved-module-path-name rmp))
+         (cond
+           [(path? name) (get-module-code name)]
+           [(and (list? name) (path? (first name)))
+            (get-module-code (first name) #:submodule-path (rest name))]
+           [else
+            (eprintf "did not find compiled file for ~s\n" what)
+            (k '() '())])))))
   
   (define (get n info)
     (define a (assoc n info))
