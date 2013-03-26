@@ -135,7 +135,7 @@
 
 (define (search-term-eval pkg-name info term)
   (match term
-    [(regexp #rx"^ring:(.*?)$" 
+    [(regexp #rx"^ring:(.*?)$"
              (list _ (app string->number (and (not #f) ring))))
      (equal? ring (package-ref info 'ring))]
     [(regexp #rx"^author:(.*?)$" (list _ author))
@@ -733,12 +733,63 @@
 (define (ring-format i)
   (format "~a" i))
 
-(define (package-conflicts? pkg)
-  ;; XXX
+(define page/curate/edit
+  ;; XXX this should allow us to change the ring
+  page/manage/edit)
+
+(define pkg-dirs-path (build-path root "pkg-dirs"))
+(make-directory* pkg-dirs-path)
+
+(define (download-package-source! src dest)
+  ;; XXX this should be provided by pkg/lib
+  (error 'download-package-source! "Not implemented"))
+
+(define (download-package! pkg pd)
+  (and
+   (with-handlers ([exn:fail? (λ (x) #f)])
+     (begin
+       (download-package-source! 
+        (package-ref (package-info pkg) 'source)
+        pd)
+       #t))
+   (write-to-file (current-seconds)
+                  (path-add-suffix pd ".dl-time")
+                  #:exists 'replace)))
+
+(define (package-dir-up-to-date? pkg pd)
+  (define pd-dl-time-path (path-add-suffix pd ".dl-time"))
+  (and (file-exists? pd-dl-time-path)
+       (>= (file->value pd-dl-time-path)
+           (package-ref (package-info pkg) 'last-updated))))
+
+(define (package-dir pkg)
+  (define pd (build-path pkg-dirs-path pkg))
+  (and
+   (cond
+     [(not (directory-exists? pd))
+      (download-package! pkg pd)]
+     [(not (package-dir-up-to-date? pkg pd))
+      (download-package! pkg pd)])
+   pd))
+
+(define (package-dirs-conflict? left-d right right-d)
+  ;; XXX this should be provided by pkg/lib
   #f)
 
 (define (page/curate req)
   (define u (current-user req #t))
+  (define (packages-conflict? left right)
+    (define left-pd (package-dir left))
+    (define right-pd (package-dir right))
+    (and left-pd right-pd
+         (package-dirs-conflict? left-pd right right-pd)))
+  (define (package-conflicts? pkg)
+    (define other-pkgs (remove pkg (append (ring 0) (ring 1))))
+    (define conflicting-pkgs
+      (filter (curry packages-conflict? pkg) other-pkgs))
+    (if (empty? conflicting-pkgs)
+      #f
+      conflicting-pkgs))
   (define (ring i)
     (package-list/search (list (format "ring:~a" i))))
   (cond
@@ -747,21 +798,30 @@
       req
       #:breadcrumb
       (list "Curation")
-      `(h1 "Ring 0")
-      (package-table page/manage/edit (ring 0))
       `(h1 "Ring 0 (conflicts)")
-      (package-table page/manage/edit
+      ;; XXX maybe I should change these so that it
+      ;;  1. displays a distinct link to change it to each ring
+      ;;  2. displays the conflicts (if any)
+      ;;  3. displays the update time
+      ;;  4. doesn't display other stuff
+      ;;  5. highlights 'problems' (conflicts)
+      ;;  6. highlights 'proposals' (non-conflicting ring 2 stuff)
+      ;; Then I think I will just need one table
+      (package-table page/curate/edit
                      (filter package-conflicts? (ring 0)))
-      `(h1 "Ring 1")
-      (package-table page/manage/edit (ring 1))
       `(h1 "Ring 1 (conflicts)")
-      (package-table page/manage/edit
+      (package-table page/curate/edit
                      (filter package-conflicts? (ring 1)))
       `(h1 "Ring 2 (no conflicts)")
-      (package-table page/manage/edit
+      (package-table page/curate/edit
                      (filter (negate package-conflicts?) (ring 2)))
+      `(h1 "Ring 0")
+      (package-table page/curate/edit (ring 0))
+      `(h1 "Ring 1")
+      (package-table page/curate/edit (ring 1))
+
       `(h1 "Ring 2")
-      (package-table page/manage/edit (ring 2)))]
+      (package-table page/curate/edit (ring 2)))]
     [else
      (template
       req
