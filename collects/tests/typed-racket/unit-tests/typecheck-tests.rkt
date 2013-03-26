@@ -1626,6 +1626,10 @@
             (Listof Symbol))]
         [tc-e (filter values empty)
               (-lst -Bottom)]
+        [tc-e (lambda lst (map (plambda: (b) ([x : b]) x) lst))
+              (-polydots (a) (->... (list) (a a) (make-ListDots a 'a)))
+              #:expected (ret (-polydots (a) (->... (list) (a a) (make-ListDots a 'a))))]
+
 
         [tc-e
            ((inst filter Any Symbol) symbol? null)
