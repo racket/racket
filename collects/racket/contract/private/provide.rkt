@@ -18,6 +18,7 @@
                                 [make-module-identifier-mapping make-free-identifier-mapping]
                                 [module-identifier-mapping-get free-identifier-mapping-get]
                                 [module-identifier-mapping-put! free-identifier-mapping-put!]))
+         setup/path-to-relative
          "arrow.rkt"
          "base.rkt"
          "guts.rkt"
@@ -90,7 +91,7 @@
                                    #`(contract contract-id
                                                id
                                                pos-module-source
-                                               (quote-module-name)
+                                               (maybe-call-path->relative-string/library (quote-module-name))
                                                'external-id
                                                #,srcloc-code))))))])
                    (when key (hash-set! saved-id-table key lifted-id))
@@ -118,8 +119,14 @@
    (let ([contract-id (provide/contract-transformer-contract-id self)]
          [id (provide/contract-transformer-id self)]
          [external-id (provide/contract-transformer-external-id self)])
-     (provide/contract-transformer contract-id id external-id new-pos (make-hasheq))))
- )
+     (provide/contract-transformer contract-id id external-id new-pos (make-hasheq)))))
+
+ 
+(define (maybe-call-path->relative-string/library x)
+  (if (path? x)
+      (path->relative-string/library x)
+      x))
+
 
 (define-for-syntax (true-provide/contract provide-stx just-check-errors? who)
   (syntax-case provide-stx ()
