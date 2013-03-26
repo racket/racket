@@ -84,7 +84,7 @@
 ;; Strip any check-params? is there is an
 ;; actual/expected check-info in the same stack frame.  A
 ;; stack frame is delimited by occurrence of a check-name?
-(define (strip-redundant-params stack)
+(define (strip-redundant-params start-stack)
   (define (binary-check-this-frame? stack)
     (let loop ([stack stack])
       (cond
@@ -92,11 +92,11 @@
         [(check-name? (car stack)) #f]
         [(check-actual? (car stack)) #t]
         [else (loop (cdr stack))])))
-  (let loop ([stack stack])
+  (let loop ([stack start-stack])
     (cond
       [(null? stack) null]
       [(check-params? (car stack))
-       (if (binary-check-this-frame? stack)
+       (if (binary-check-this-frame? start-stack)
            (loop (cdr stack))
            (cons (car stack) (loop (cdr stack))))]
       [else (cons (car stack) (loop (cdr stack)))])))

@@ -116,6 +116,24 @@
        (display-exn exn))]
     [else (void)]))
 
+(define (sort-stack l)
+  (sort l < 
+        #:key 
+        (λ (info)
+          (cond
+            [(check-name? info)
+             0]
+            [(check-location? info)
+             1]
+            [(check-params? info)
+             2]
+            [(check-actual? info)
+             3]
+            [(check-expected? info)
+             4]            
+            [else
+             5]))))
+
 (define (textui-display-check-info-stack stack [verbose? #f])
   (for-each
    (lambda (info)
@@ -149,9 +167,10 @@
         (void)]
        [else
         (display-check-info info)]))
-   (if verbose?
-       stack
-       (strip-redundant-params stack))))
+   (sort-stack
+    (if verbose?
+      stack
+      (strip-redundant-params stack)))))
 
 ;; display-verbose-check-info : test-result -> void
 (define (display-verbose-check-info result)
@@ -172,7 +191,7 @@
              (display ": ")
              (write (check-info-value info))))
           (newline))
-        stack)))
+        (sort-stack stack))))
     ((test-error? result)
      (display-exn (test-error-result result)))
     (else
