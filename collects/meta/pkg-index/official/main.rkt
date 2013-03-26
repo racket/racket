@@ -78,6 +78,8 @@
                 [(or 'author 'checksum 'source)
                  (error 'pkg "Package ~e is missing a required field: ~e"
                         (hash-ref pkg-info 'name) key)]
+                ['ring
+                 *default-ring*]
                 ['tags
                  empty]
                 [(or 'last-checked 'last-edit 'last-updated)
@@ -96,6 +98,7 @@
    [("manage" "update") page/manage/update]
    [("manage" "edit" (string-arg)) page/manage/edit]
    [("manage" "upload") page/manage/upload]
+   [("curate") page/curate]
    [else basic-start]))
 
 (define (page/main req)
@@ -132,6 +135,9 @@
 
 (define (search-term-eval pkg-name info term)
   (match term
+    [(regexp #rx"^ring:(.*?)$" 
+             (list _ (app string->number (and (not #f) ring))))
+     (equal? ring (package-ref info 'ring))]
     [(regexp #rx"^author:(.*?)$" (list _ author))
      (equal? author (package-ref info 'author))]
     [_
@@ -172,6 +178,10 @@
                 => (λ (user)
                      `(span ([id "logout"])
                             ,user
+                            ,@(if (curation-administrator? user)
+                                `(" | "
+                                  (a ([href ,(main-url page/curate)]) "curate"))
+                                empty)
                             ;;" | "
                             ;;(a ([href ,(main-url page/logout)]) "logout")
                             ))]
@@ -322,7 +332,7 @@
        [else
         (display-to-file (bcrypt-encode (string->bytes/utf-8 passwd))
                          password-path)
-        (delete-file old-password-path)     
+        (delete-file old-password-path)
         (authenticated!)])]
     [(not (file-exists? password-path))
      (send/suspend
@@ -600,6 +610,9 @@
                           [value ,(or pkg-name "")]))
                  pkg-name)))
          (tr
+          (td "Ring")
+          (td ,(ring-format (package-ref i 'ring))))
+         (tr
           (td "Author")
           (td (a ([href ,(main-url page/search
                                    (list (format "author:~a" author)))])
@@ -688,7 +701,7 @@
     (package-ref i 'checksum))
   (define now (current-seconds))
   (define last (hash-ref i 'last-checked -inf.0))
-  (when (or force? 
+  (when (or force?
             (>= (- now last) (* 24 60 60)))
     (printf "\tupdating ~a\n" pkg-name)
     (define new-checksum
@@ -712,6 +725,51 @@
 (define basic-start
   (pkg-index/basic package-list package-info))
 
+;; Curation
+(define (curation-administrator? u)
+  (member u '("jay.mccarthy@gmail.com")))
+
+(define *default-ring* 2)
+(define (ring-format i)
+  (format "~a" i))
+
+(define (package-conflicts? pkg)
+  ;; XXX
+  #f)
+
+(define (page/curate req)
+  (define u (current-user req #t))
+  (define (ring i)
+    (package-list/search (list (format "ring:~a" i))))
+  (cond
+    [(curation-administrator? u)
+     (template
+      req
+      #:breadcrumb
+      (list "Curation")
+      `(h1 "Ring 0")
+      (package-table page/manage/edit (ring 0))
+      `(h1 "Ring 0 (conflicts)")
+      (package-table page/manage/edit
+                     (filter package-conflicts? (ring 0)))
+      `(h1 "Ring 1")
+      (package-table page/manage/edit (ring 1))
+      `(h1 "Ring 1 (conflicts)")
+      (package-table page/manage/edit
+                     (filter package-conflicts? (ring 1)))
+      `(h1 "Ring 2 (no conflicts)")
+      (package-table page/manage/edit
+                     (filter (negate package-conflicts?) (ring 2)))
+      `(h1 "Ring 2")
+      (package-table page/manage/edit (ring 2)))]
+    [else
+     (template
+      req
+      #:breadcrumb
+      (list "Curation")
+      `(p ([class "error"]) "You are not authorized to curate."))]))
+
+;; Start
 (define (go port)
   (printf "launching on port ~a\n" port)
   (thread
