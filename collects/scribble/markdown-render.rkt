@@ -160,7 +160,17 @@
       (define o (open-output-string))
       (parameterize ([current-output-port o])
         (super render-paragraph p part ri))
-      (define to-wrap (regexp-replace* #rx"\n" (get-output-string o) " "))
+      ;; 1. Remove newlines so we can re-wrap the text.
+      ;;
+      ;; 2. Combine adjacent code spans into one. These result from
+      ;; something like @racket[(x y)] being treated as multiple
+      ;; RktXXX items rather than one. (Although it would be
+      ;; more-correct to handle them at that level, I don't easily see
+      ;; how. As a result I'm handling it after-the-fact, at the
+      ;; text/Markdown stage.)
+      (define to-wrap (regexp-replaces (get-output-string o)
+                                       '([#rx"\n" " "]   ;1
+                                         [#rx"``" ""]))) ;2
       (define lines (wrap-line (string-trim to-wrap) (- 72 (current-indent))))
       (write-note)
       (write-string (car lines))
