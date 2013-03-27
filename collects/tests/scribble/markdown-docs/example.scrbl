@@ -71,6 +71,8 @@ Example of a defproc:
 Returns a new mutable string of length @racket[k] where each position in the
 string is initialized with the character @racket[char]
 
+Blah blah @racket[(or/c string? bytes?)].
+
 }
 
 @margin-note{Note: This is a note. Let's make it long enough that the
