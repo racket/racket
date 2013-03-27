@@ -1,7 +1,9 @@
-#lang scribble/doc
+#lang scribble/manual
 
-@(require scribble/manual
+@(require scribble/eval
           (for-label racket/base racket/contract racket/string))
+@(define my-eval (make-base-eval))
+@(my-eval '(require racket/base))
 
 @section{Section}
 
@@ -34,6 +36,8 @@ _Just underlines_.
 
 ``Dobule quoted''.
 `Single quoted'.
+
+This should NOT be `code` in Markdown.
 
 Example of vebatim:
 
@@ -71,7 +75,23 @@ Example of a defproc:
 Returns a new mutable string of length @racket[k] where each position in the
 string is initialized with the character @racket[char]
 
+Blah blah @racket[(or/c string? bytes?)].
+
 }
+
+Example of Scribble @racket[examples]:
+
+@examples[#:eval my-eval
+(define x 0)
+(displayln x)
+]
+
+Example of Scribble @racket[interaction]:
+
+@interaction[#:eval my-eval
+(define x 0)
+x
+]
 
 @margin-note{Note: This is a note. Let's make it long enough that the
 markdown output will have to line-wrap, to make sure the > mark starts
