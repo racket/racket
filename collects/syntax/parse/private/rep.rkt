@@ -588,9 +588,9 @@
        (for/list ([alt (in-list (eh-alternative-set-alts eh-alt-set))])
          (let* ([iattrs (id-pattern-attrs (eh-alternative-attrs alt) prefix)]
                 [attr-count (length iattrs)])
-           (list (make ehpat (repc-adjust-attrs iattrs (eh-alternative-repc alt))
-                       (create-hpat:var #f (eh-alternative-parser alt) no-arguments iattrs attr-count #f #f)
-                       (eh-alternative-repc alt))
+           (list (create-ehpat
+                  (create-hpat:var #f (eh-alternative-parser alt) no-arguments iattrs attr-count #f #f)
+                  (eh-alternative-repc alt))
                  (replace-eh-alternative-attrs
                   alt (iattrs->sattrs iattrs))))))]
     [(~or . _)
@@ -612,18 +612,7 @@
      (list (parse*-ehpat/bounds stx decls))]
     [_
      (let ([head (parse-head-pattern stx decls)])
-       (list (list (make ehpat (map increase-depth (pattern-attrs head))
-                         head
-                         #f)
-                   stx)))]))
-
-(define (repc-adjust-attrs iattrs repc)
-  (cond [(or (rep:once? repc) (rep:optional? repc))
-         iattrs]
-        [(or (rep:bounds? repc) (eq? #f repc))
-         (map increase-depth iattrs)]
-        [else
-         (error 'repc-adjust-attrs "INTERNAL ERROR: unexpected: ~e" repc)]))
+       (list (list (create-ehpat head #f) stx)))]))
 
 (define (replace-eh-alternative-attrs alt sattrs)
   (match alt
@@ -945,10 +934,7 @@
 (define (parse-pat:plus-dots stx head tail decls)
   (define headp (parse-head-pattern head decls))
   (define tailp (parse-single-pattern tail decls))
-  (define head/rep
-    (make-ehpat (map increase-depth (pattern-attrs headp))
-                headp
-                (make-rep:bounds 1 +inf.0 #f #f #f)))
+  (define head/rep (create-ehpat headp (make-rep:bounds 1 +inf.0 #f #f #f)))
   (create-pat:dots (list head/rep) tailp))
 
 (define (parse-pat:bind stx decls)
@@ -1080,9 +1066,7 @@
 (define (parse*-ehpat/optional stx decls)
   (define-values (head-stx head iattrs name too-many-msg defaults)
     (parse*-optional-pattern stx decls eh-optional-directive-table))
-  (list (make ehpat iattrs
-              head
-              (make rep:optional name too-many-msg defaults))
+  (list (create-ehpat head (make rep:optional name too-many-msg defaults))
         head-stx))
 
 ;; parse*-ehpat/once : stx DeclEnv -> (list EllipsisHeadPattern stx)
@@ -1102,9 +1086,7 @@
              (options-select-value chunks '#:too-many #:default #'#f)]
             [name
              (options-select-value chunks '#:name #:default #'#f)])
-       (list (make ehpat (pattern-attrs head)
-                   head
-                   (make rep:once name too-few-msg too-many-msg))
+       (list (create-ehpat head (make rep:once name too-few-msg too-many-msg))
              #'p))]))
 
 ;; parse*-ehpat/bounds : stx DeclEnv -> (list EllipsisHeadPattern stx)
@@ -1135,10 +1117,9 @@
                (options-select-value chunks '#:too-many #:default #'#f)]
               [name
                (options-select-value chunks '#:name #:default #'#f)])
-         (list (make ehpat (map increase-depth (pattern-attrs head))
-                     head
-                     (make rep:bounds #'min #'max
-                           name too-few-msg too-many-msg))
+         (list (create-ehpat head
+                             (make rep:bounds #'min #'max
+                                   name too-few-msg too-many-msg))
                #'p)))]))
 
 ;; -----

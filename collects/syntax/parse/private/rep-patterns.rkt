@@ -384,6 +384,23 @@ A SideClause is one of
 
 ;; ----
 
+(define (create-ehpat head repc)
+  (let* ([iattrs0 (pattern-attrs head)]
+         [iattrs (repc-adjust-attrs iattrs0 repc)])
+    (ehpat iattrs head repc)))
+
+(define (repc-adjust-attrs iattrs repc)
+  (cond [(rep:once? repc)
+         iattrs]
+        [(rep:optional? repc)
+         (map attr-make-uncertain iattrs)]
+        [(or (rep:bounds? repc) (eq? #f repc))
+         (map increase-depth iattrs)]
+        [else
+         (error 'repc-adjust-attrs "INTERNAL ERROR: unexpected: ~e" repc)]))
+
+;; ----
+
 (define (action/head-pattern->list-pattern p)
   (cond [(action-pattern? p)
          (create-pat:action p (create-pat:any))]
