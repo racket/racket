@@ -30,9 +30,6 @@
   ;;    (exact-floor E)
   ;;    (exact-ceiling E)
   ;;    (exact-truncate E)
-  ;;    (sinh E)
-  ;;    (cosh E)
-  ;;    (tanh E)
   ;;    (nan? E)
   ;;    (infinite? E)
   ;;    ]
@@ -177,6 +174,9 @@
      (sqr E*)
      (make-rectangular E* E*)
      (make-polar E* E*)
+     (sinh E)
+     (cosh E)
+     (tanh E)
      ])
 ;; generated from: (map car (file->list "base-env-parts"))
 
