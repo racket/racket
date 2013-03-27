@@ -110,13 +110,12 @@
           [else ival])))
 
 
-(define (run-tester tester val orig-ctc blame here)
+(define (run-tester tester val orig-proj blame here)
   (let ([indy-blame (blame-replace-negative blame here)]
-        [proj (contract-projection orig-ctc)]
         [option-blame
          (λ (blame context)
            (blame-add-context blame context))])  
-    (unless (tester ((proj indy-blame) val))
+    (unless (tester ((orig-proj indy-blame) val))
       (raise-blame-error 
        (option-blame indy-blame (format "option contract tester ~e of" tester)) 
        val
@@ -149,12 +148,7 @@
 
 
 
-(define (check-option c val blame) 
-  (let ([orig-ctc (option-orig-ctc c)]
-        [structid (option-structid c)]
-        [invariant (option-invariant c)]
-        [immutable (option-immutable c)]
-        [flat (option-flat c)])
+(define (check-option structid invariant flat immutable val blame) 
     (when (and (eq? invariant 'dont-care)
                (or  (not (eq? immutable 'dont-care))
                     (not (eq? flat #f))))
@@ -168,7 +162,7 @@
                 (and (not (eq? structid 'none)) (same-type val structid)))
       (if (eq? structid 'none)
           (raise-blame-error blame val '(expected "a procedure or a vector or a hash" given: "~e") val)  
-          (raise-blame-error blame val '(expected "a struct of type ~a" given: "~e") (fourth structid) val)))))
+          (raise-blame-error blame val '(expected "a struct of type ~a" given: "~e") (fourth structid) val))))
 
 
 
@@ -188,10 +182,7 @@
        ((contract-first-order (option-orig-ctc ctc)) val)))
    #:projection
    (λ (ctc)
-     (λ (blame)
-       (λ (val)
-         (check-option ctc val blame)
-         (let*  ([with (option-with ctc)]
+     (let*  ([with (option-with ctc)]
                  [tester (option-tester ctc)]
                  [invariant (option-invariant ctc)]
                  [flat (option-flat ctc)]
@@ -199,10 +190,15 @@
                  [structid (option-structid ctc)]
                  [here (option-here ctc)]
                  [orig-ctc (option-orig-ctc ctc)]
-                 [exec-ctc (build-orig-proj orig-ctc invariant flat immutable structid here)])
+                 [orig-proj (contract-projection (option-orig-ctc ctc))]
+                 [exec-ctc-proj (contract-projection
+                                 (build-orig-proj orig-ctc invariant flat immutable structid here))])
+       (λ (blame)
+         (λ (val)
+           (check-option structid invariant flat immutable val blame)
            (unless (symbol? tester)
-             (run-tester tester val orig-ctc blame here))
-           (build-proxy with ctc val (contract-projection exec-ctc)
+             (run-tester tester val orig-proj blame here))
+           (build-proxy with ctc val exec-ctc-proj
                         (blame-add-context
                          blame
                          "the option of"))))))))
