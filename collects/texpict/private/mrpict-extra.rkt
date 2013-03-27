@@ -198,6 +198,9 @@
 		    [(and (pair? style)
 			  (memq (car style) '(combine no-combine)))
 		     (loop (cdr style))]
+		    [(and (pair? style)
+			  (is-a? (car style) color%))
+		     (loop (cdr style))]
 		    [else (raise-type-error 'text
 					    "style"
 					    orig-style)]))]
@@ -209,7 +212,14 @@
 			     [(eq? (car style) 'no-combine) #f]
 			     [else (loop (cdr style))]))]
 		[sub? (memq* 'subscript orig-style)]
-		[sup? (memq* 'superscript orig-style)])
+		[sup? (memq* 'superscript orig-style)]
+                [add-color (let loop ([style orig-style])
+                             (cond
+                              [(not (pair? style)) values]
+                              [(is-a? (car style) color%) 
+                               (define c (car style))
+                               (lambda (p) (colorize p c))]
+                              [else (loop (cdr style))]))])
 	    (let ([s-font (if (or sub? sup?)
 			      (extend-font font
 					   (floor (* 6/10 (send font get-point-size)))
@@ -224,64 +234,65 @@
 				       dc
 				       (lambda ()
 					 (send dc get-text-extent string s-font combine?)))])
-		(if (or sub? sup?)
-		    (let-values ([(ww wh wd ws) (with-text-scale
-						 dc
-						 (lambda ()
-						   (send dc get-text-extent "Wy" font)))])
-		      (prog-picture (lambda (dc x y)
-				      (let ([f (send dc get-font)])
-					(send dc set-font s-font)
-					(send dc draw-text string
-					      x (if sub?
-						    (+ y (- wh h))
-						    y)
-					      combine?)
-					(send dc set-font f)))
-				    w wh (- wh wd) wd))
-		    (if (zero? angle)
-			;; Normal case: no rotation
-			(prog-picture (lambda (dc x y)
-					(let ([f (send dc get-font)])
-					  (send dc set-font font)
-					  (send dc draw-text string x y combine?)
-					  (send dc set-font f)))
-				      w h (- h d) d)
-			;; Rotation case. Need to find the bounding box.
-			;; Calculate the four corners, relative to top left as origin:
-			(let* ([tlx 0]
-			       [tly 0]
-			       [ca (cos angle)]
-			       [sa (sin angle)]
-			       [trx (* w ca)]
-			       [try (- (* w sa))]
-			       [brx (+ trx (* h sa))]
-			       [bry (- try (* h ca))]
-			       [blx (* h sa)]
-			       [bly (- (* h ca))]
-			       ;;min-x and min-y must be non-positive,
-			       ;; since tlx and tly are always 0
-			       [min-x (min tlx trx blx brx)]
-			       [min-y (min tly try bly bry)])
-			  (let ([pw (- (max tlx trx blx brx) min-x)]
-				[ph (- (max tly try bly bry) min-y)]
-				[dx (cond
-				     [(and (positive? ca) (positive? sa)) 0]
-				     [(positive? ca) (- (* h sa))]
-				     [(positive? sa) (- (* w ca))]
-				     [else (+ (- (* w ca)) (- (* h sa)))])]
-				[dy (cond
-				     [(and (positive? ca) (negative? sa)) 0]
-				     [(positive? ca) (* w sa)]
-				     [(negative? sa) (- (* h ca))]
-				     [else (+ (- (* h ca)) (* w sa))])])
-			    (prog-picture (lambda (dc x y)
-					    (let ([f (send dc get-font)])
-					      (send dc set-font font)
-					      (send dc draw-text string (+ x dx) (+ y dy)
-						    combine? 0 angle)
-					      (send dc set-font f)))
-					  pw ph ph 0)))))))))
+                (add-color
+                 (if (or sub? sup?)
+                     (let-values ([(ww wh wd ws) (with-text-scale
+                                                  dc
+                                                  (lambda ()
+                                                    (send dc get-text-extent "Wy" font)))])
+                       (prog-picture (lambda (dc x y)
+                                       (let ([f (send dc get-font)])
+                                         (send dc set-font s-font)
+                                         (send dc draw-text string
+                                               x (if sub?
+                                                     (+ y (- wh h))
+                                                     y)
+                                               combine?)
+                                         (send dc set-font f)))
+                                     w wh (- wh wd) wd))
+                     (if (zero? angle)
+                         ;; Normal case: no rotation
+                         (prog-picture (lambda (dc x y)
+                                         (let ([f (send dc get-font)])
+                                           (send dc set-font font)
+                                           (send dc draw-text string x y combine?)
+                                           (send dc set-font f)))
+                                       w h (- h d) d)
+                         ;; Rotation case. Need to find the bounding box.
+                         ;; Calculate the four corners, relative to top left as origin:
+                         (let* ([tlx 0]
+                                [tly 0]
+                                [ca (cos angle)]
+                                [sa (sin angle)]
+                                [trx (* w ca)]
+                                [try (- (* w sa))]
+                                [brx (+ trx (* h sa))]
+                                [bry (- try (* h ca))]
+                                [blx (* h sa)]
+                                [bly (- (* h ca))]
+                                ;;min-x and min-y must be non-positive,
+                                ;; since tlx and tly are always 0
+                                [min-x (min tlx trx blx brx)]
+                                [min-y (min tly try bly bry)])
+                           (let ([pw (- (max tlx trx blx brx) min-x)]
+                                 [ph (- (max tly try bly bry) min-y)]
+                                 [dx (cond
+                                      [(and (positive? ca) (positive? sa)) 0]
+                                      [(positive? ca) (- (* h sa))]
+                                      [(positive? sa) (- (* w ca))]
+                                      [else (+ (- (* w ca)) (- (* h sa)))])]
+                                 [dy (cond
+                                      [(and (positive? ca) (negative? sa)) 0]
+                                      [(positive? ca) (* w sa)]
+                                      [(negative? sa) (- (* h ca))]
+                                      [else (+ (- (* h ca)) (* w sa))])])
+                             (prog-picture (lambda (dc x y)
+                                             (let ([f (send dc get-font)])
+                                               (send dc set-font font)
+                                               (send dc draw-text string (+ x dx) (+ y dy)
+                                                     combine? 0 angle)
+                                               (send dc set-font f)))
+                                           pw ph ph 0))))))))))
 
       (define caps-text
 	(case-lambda

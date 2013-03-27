@@ -227,6 +227,9 @@ The @racket[style] argument must be one of the following:
  @item{@racket[(cons 'unaligned style)] --- disables hinting (which is
        the default), so that metrics are scalable}
 
+ @item{@racket[(cons _color style)] --- where @racket[_color] is a @racket[color%] object,
+       @racket[colorize]s the text}
+
 ]
 
 If both @racket['combine] and @racket['no-combine] are specified, the
