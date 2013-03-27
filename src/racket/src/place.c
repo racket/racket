@@ -2979,6 +2979,11 @@ static void bi_channel_refcount_down(void *_ch, void *data)
 {
   Scheme_Place_Bi_Channel *ch = (Scheme_Place_Bi_Channel *)_ch;
 
+  if (!ch->link->sendch) {
+    /* released by scheme_free_place_bi_channels() already */
+    return;
+  }
+
   if (ch->link->prev)
     ch->link->prev->next = ch->link->next;
   else
@@ -2996,7 +3001,11 @@ void scheme_free_place_bi_channels()
   for (link = place_channel_links; link; link = link->next) {
     async_channel_refcount(link->sendch, 1, -1);
     async_channel_refcount(link->recvch, 0, -1);
+    /* It's possible that a GC will run after this: */
+    link->sendch = NULL;
+    link->recvch = NULL;
   }
+  place_channel_links = NULL;
 }
 
 static void bi_channel_set_finalizer(Scheme_Place_Bi_Channel *ch)
