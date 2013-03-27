@@ -88,6 +88,8 @@
         (define tick? (member (style-name (table-style i))
                               (list 'boxed "defmodule" "RktBlk")))
         (when tick?
+          (when (zero? (table-ticks-depth))
+            (displayln "```racket"))
           (table-ticks-depth (add1 (table-ticks-depth))))
         (define strs (map (lambda (flows)
                             (map (lambda (d)
@@ -111,8 +113,6 @@
                                     (apply max d (map string-length i)))))
                             (apply map list strs)))
         (define x-length (lambda (col) (if (eq? col 'cont) 0 (length col))))
-        (when tick?
-          (displayln (string-append "```racket")))
         (for/fold ([indent? #f]) ([row (in-list strs)])
           (let ([h (apply max 0 (map x-length row))])
             (let ([row* (for/list ([i (in-range h)])
@@ -133,8 +133,9 @@
                 #t)))
           #t)
         (when tick?
-          (displayln "```")
-          (table-ticks-depth (sub1 (table-ticks-depth)))))
+          (table-ticks-depth (sub1 (table-ticks-depth)))
+          (when (zero? (table-ticks-depth))
+            (displayln "```"))))
       null)
 
     (define/override (render-itemization i part ht)
