@@ -16,6 +16,7 @@
                      racket/serialize
                      web-server/stuffers
                      web-server/servlet/servlet-structs
+                     web-server/servlet-dispatch
                      racket/list))
 
 @defmodule[web-server/servlet-env]
@@ -188,8 +189,14 @@ Like always, you don't even need to save the file.
   
  If @racket[stateless?] is true, then the servlet is run as a stateless @racketmod[web-server] module and @racket[stuffer] is used
  as the @tech{stuffer}.
- 
- Advanced users may need the following options:
+
+@racket[serve/servlet] is simpler interface over
+@racket[serve/launch/wait], @racket[dispatch/servlet], and a few of
+the standard @secref["dispatchers" #:doc
+'(lib "web-server/scribblings/web-server-internal.scrbl")]. Some advanced
+customization requires using these underlying pieces of the
+@racketmodname[web-server] directly. However, many simpler customizations do
+not, which the rest of this section describes.
  
  The server listens on @racket[listen-ip] and port @racket[port]. If @racket[listen-ip] is @racket[#f], then the server accepts 
  connections to all of the listening machine's addresses. Otherwise, the server accepts connections only at the interface(s) associated with the given string.
