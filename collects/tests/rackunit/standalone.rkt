@@ -69,7 +69,6 @@ expected:   2
 name:       check-eq?
 location:   (#<path:PLTHOME/collects/tests/rackunit/standalone-test-case-test.rkt> 19 12 520 15)
 expression: (check-eq? 1 2)
-params:     (1 2)
 
 Check failure
 --------------------
@@ -81,7 +80,6 @@ expected:   2
 name:       check-eq?
 location:   (#<path:PLTHOME/collects/tests/rackunit/standalone-test-case-test.rkt> 20 21 558 15)
 expression: (check-eq? 1 2)
-params:     (1 2)
 
 Check failure
 --------------------
