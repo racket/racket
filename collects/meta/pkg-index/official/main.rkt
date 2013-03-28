@@ -797,7 +797,8 @@
      (template
       req
       #:breadcrumb
-      (list "Curation")
+      (list "Packages"
+            "Curation")
       `(h1 "Ring 0 (conflicts)")
       ;; XXX maybe I should change these so that it
       ;;  1. displays a distinct link to change it to each ring
