@@ -14,7 +14,9 @@
                      #:ref-wrap [ref-wrap (lambda (c s) c)])
   (make-counter 0 name target-wrap ref-wrap))
 
-(define (counter-target counter tag label . content)
+(define (counter-target counter tag label 
+                        #:continue? [continue? #f]
+                        . content)
   (let ([content (decode-content content)])
     (define c
       (make-target-element
@@ -37,7 +39,9 @@
                           (list* label 'nbsp "N" content)
                           (cons "N" content)))))
          (lambda (ci)
-           (let ([n (add1 (counter-n counter))])
+           (let ([n (if continue?
+                        (counter-n counter)
+                        (add1 (counter-n counter)))])
              (set-counter-n! counter n)
              (collect-put! ci `(counter (,(counter-name counter) ,tag "value")) n)))))
        `(counter (,(counter-name counter) ,tag))))

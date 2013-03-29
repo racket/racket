@@ -1,5 +1,6 @@
 Version 5.3.3.8
 slideshow/pict: added color% objects to text-style/c
+scriblib/figure: add #:continue? option
 
 Version 5.3.3.7
 Added module-compiled-cross-phase-persistent?

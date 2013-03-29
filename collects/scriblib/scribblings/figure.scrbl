@@ -12,11 +12,26 @@
 @defmodule[scriblib/figure]
 
 @deftogether[(
-@defproc[(figure [tag string?] [caption content?] [#:style style style?] [p pre-flow?] ...) block?]
-@defproc[(figure* [tag string?] [caption content?] [#:style style style?] [p pre-flow?] ...) block?]
-@defproc[(figure** [tag string?] [caption content?] [#:style style style?] [p pre-flow?] ...)
-block?]
-@defproc[(figure-here [tag string?] [caption content?] [#:style style style?] [pre-flow pre-flow?] ...) block?]
+@defproc[(figure [tag string?] [caption content?] 
+                 [p pre-flow?] ...
+                 [#:style style style? center-figure-style]
+                 [#:continue? continue? any/c #f]) 
+         block?]
+@defproc[(figure* [tag string?] [caption content?]
+                  [p pre-flow?] ...
+                  [#:style style style? center-figure-style]
+                 [#:continue? continue? any/c #f])
+         block?]
+@defproc[(figure** [tag string?] [caption content?]
+                   [p pre-flow?] ...
+                   [#:style style style? center-figure-style]
+                   [#:continue? continue? any/c #f])
+         block?]
+@defproc[(figure-here [tag string?] [caption content?]
+                      [pre-flow pre-flow?] ...
+                      [#:style style style? center-figure-style]
+                      [#:continue? continue? any/c #f])
+         block?]
 )]{
 
 Creates a figure. The given @racket[tag] is for use with
@@ -35,7 +50,10 @@ place the figure where the use appears in the source text.
 
 By default, @racket[style] is set so that the content of the figure is
 centered.  Use @racket[left-figure-style], @racket[center-figure-style],
-or @racket[right-figure-style] to specify the alignment.}
+or @racket[right-figure-style] to specify the alignment.
+
+If @racket[continue?] is a true value, then the figure counter is not
+incremented.}
 
 @deftogether[(
 @defthing[left-figure-style style?]
@@ -59,7 +77,9 @@ Generates a reference to one or more figures, using a lowercase word ``figure''.
 Generates a reference to one or more figures, capitalizing the word ``Figure''.}
 
 
-@defproc[(Figure-target [tag string?]) element?]{
+@defproc[(Figure-target [tag string?]
+                        [#:continue? continue? any/c #f]) 
+         element?]{
 
 Generates a new figure label. This function is normally not used
 directly, since it is used by @racket[figure].}
@@ -86,6 +106,9 @@ overriding @filepath{.css} or @filepath{.tex} specification:
        @racket[nested-flow]s for a figure.}
 
  @item{@sn{Legend} --- Wraps the caption for a figure.}
+
+ @item{@sn{LegendContinued} --- Wraps the caption for a figure that
+       does not increment the figure counter.}
 
  @item{@sn{FigureTarget} --- Wraps the label anchor and text within a
        figure's caption.  For Latex output, the corresponding command

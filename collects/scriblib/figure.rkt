@@ -42,6 +42,7 @@
 (define figureinside-style (make-style "FigureInside" figure-style-extras))
 
 (define legend-style (make-style "Legend" figure-style-extras))
+(define legend-continued-style (make-style "LegendContinued" figure-style-extras))
 
 (define centertext-style (make-style "Centertext" figure-style-extras))
 
@@ -54,18 +55,30 @@
                                        figure-style-extras))
     c))
 
-(define (figure tag caption #:style [style center-figure-style] . content)
-  (figure-helper figure-style style tag caption content))
+(define (figure tag caption 
+                #:style [style center-figure-style]
+                #:continue? [continue? #f]
+                . content)
+  (figure-helper figure-style style tag caption content continue?))
 
-(define (figure-here tag caption #:style [style center-figure-style] . content)
-  (figure-helper herefigure-style style tag caption content))
+(define (figure-here tag caption 
+                     #:style [style center-figure-style] 
+                     #:continue? [continue? #f]
+                     . content)
+  (figure-helper herefigure-style style tag caption content continue?))
 
-(define (figure* tag caption #:style [style center-figure-style] . content)
-  (figure-helper figuremulti-style style tag caption content))
-(define (figure** tag caption #:style [style center-figure-style] . content)
-  (figure-helper figuremultiwide-style style tag caption content))
+(define (figure* tag caption 
+                 #:style [style center-figure-style]
+                 #:continue? [continue? #f]
+                 . content)
+  (figure-helper figuremulti-style style tag caption content continue?))
+(define (figure** tag caption 
+                  #:style [style center-figure-style] 
+                  #:continue? [continue? #f]
+                  . content)
+  (figure-helper figuremultiwide-style style tag caption content continue?))
 
-(define (figure-helper figure-style content-style tag caption content)
+(define (figure-helper figure-style content-style tag caption content continue?)
   (make-nested-flow 
    figure-style 
    (list
@@ -74,13 +87,19 @@
      (list (make-nested-flow figureinside-style (decode-flow content))))
     (make-paragraph
      centertext-style
-     (list (make-element legend-style (list (Figure-target tag) caption)))))))
+     (list (make-element (if continue?
+                             legend-continued-style
+                             legend-style)
+                         (list (Figure-target tag #:continue? continue?) caption)))))))
 
 (define figures (new-counter "figure" 
                              #:target-wrap make-figure-target
                              #:ref-wrap make-figure-ref))
-(define (Figure-target tag)
-  (counter-target figures tag "Figure" ": "))
+(define (Figure-target tag #:continue? [continue? #f])
+  (counter-target figures tag 
+                  "Figure" 
+                  (if continue? " (continued): " ": ")
+                  #:continue? continue?))
 
 (define (ref-proc initial)
   (case-lambda 
