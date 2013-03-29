@@ -158,7 +158,7 @@ results rather than @tech{armed} results.}
 
 @defproc[(syntax-protect [stx syntax?]) syntax?]{
 
-Equivalent to @racket[(syntax-arm stx #f #f #t)].}
+Equivalent to @racket[(syntax-arm stx #f #t)].}
 
 
 @defproc[(syntax-disarm [stx syntax?]
