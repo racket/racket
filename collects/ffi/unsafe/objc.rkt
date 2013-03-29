@@ -307,12 +307,12 @@
               (as-atomic (hash-set! msgSends types m))
               m)))))
 
-(define msgSends (make-hash))
+(define msgSends (make-weak-hash))
 (define (objc_msgSend/typed types)
   (lookup-send types msgSends objc_msgSend objc_msgSend_fpret objc_msgSend_stret _id))
 (provide objc_msgSend/typed)
 
-(define msgSendSupers (make-hash))
+(define msgSendSupers (make-weak-hash))
 (define (objc_msgSendSuper/typed types)
   (lookup-send types msgSendSupers objc_msgSendSuper objc_msgSendSuper_fpret objc_msgSendSuper_stret _pointer))
 (provide objc_msgSendSuper/typed)
