@@ -509,7 +509,9 @@
                                                      #,(to-lw/uq/proc tl-pat)))
                                            (syntax->list #'(tl-id ...))
                                            (syntax->list #'(tl-pat ...))))
-                             (list fvars ...))))]))
+                             (list fvars ...))))]
+      ;; just skip over junk here, since syntax error checks elsewhere will catch this
+      [_ #f]))
   
   (define (reduction-relation/helper stx orig-name orig-red-expr lang-id rules shortcuts 
                                      lws 
