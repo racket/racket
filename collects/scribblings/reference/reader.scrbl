@@ -273,13 +273,13 @@ that the digit's actual value is unknown.
 
 @BNF[(list @nunterm{number} @BNF-alt[@nunterm{exact}
                                      @nunterm{inexact}])
-     (list @nunterm{exact} @BNF-alt[@nunterm{exact-integer}
-                                    @nunterm{exact-rational}]
-                                  @nunterm{exact-complex})
+     (list @nunterm{exact} @BNF-alt[@nunterm{exact-rational}
+                                    @nunterm{exact-complex}])
+     (list @nunterm{exact-rational} @BNF-seq[@optional{@nonterm{sign}} @nunterm{unsigned-rational}])
+     (list @nunterm{unsigned-rational} @nunterm{unsigned-integer}
+                                       @BNF-seq[@nunterm{unsigned-integer} @litchar{/} @nunterm{unsigned-integer}])
      (list @nunterm{exact-integer} @BNF-seq[@optional{@nonterm{sign}} @nunterm{unsigned-integer}])
      (list @nunterm{unsigned-integer} @kleeneplus{@nunterm{digit}})
-     (list @nunterm{exact-rational} @BNF-seq[@optional{@nonterm{sign}} @nunterm{unsigned-rational}])
-     (list @nunterm{unsigned-rational} @BNF-seq[@nunterm{unsigned-integer} @litchar{/} @nunterm{unsigned-integer}])
      (list @nunterm{exact-complex} @BNF-seq[@nunterm{exact-rational} @nonterm{sign} @nunterm{unsigned-rational} @litchar{i}])
      (list @nunterm{inexact} @BNF-alt[@nunterm{inexact-real}
                                       @nunterm{inexact-complex}])
