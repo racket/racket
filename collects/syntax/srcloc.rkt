@@ -118,7 +118,7 @@
     (current-continuation-marks))))
 
 (define (good-known? x src line col pos span)
-  (and (or src line col pos span) #t))
+  (and (or src line col pos) #t))
 
 (define (good-source x src line col pos span) src)
 (define (good-line x src line col pos span) line)
