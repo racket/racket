@@ -107,6 +107,7 @@
 
    [special-numbers (:or (:: n a n ".0") (:: i n f ".0"))]   
    [exponent-marker (:or e s f d l)]
+   [exponent-marker16 (:or s l)]
    [sign (char-set "+-")]
    [exactness (:or "#i" "#e" "#I" "#E")]
    [radix2 (:or "#b" "#B")]
@@ -162,7 +163,8 @@
   
   (define-lex-trans make-num
     (syntax-rules ()
-      ((_ digit radix) (:: (make-prefix radix) (make-complex digit)))))
+      ((_ digit radix exponent-marker)
+       (:: (make-prefix radix) (make-complex digit exponent-marker)))))
   
   (define-lex-trans make-prefix
     (syntax-rules ()
@@ -171,28 +173,30 @@
   
   (define-lex-trans make-complex
     (syntax-rules ()
-      ((_ digit)
-       (:or (make-real digit)
-            (:: (make-real digit) "@" (make-real digit))
-            (:: (make-real digit) "+" (:or special-numbers (make-ureal digit)) i)
-            (:: (make-real digit) "-" (:or special-numbers (make-ureal digit)) i)
-            (:: (make-real digit) "+" i)
-            (:: (make-real digit) "-" i)
-            (:: "+" (:or special-numbers (make-ureal digit)) i)
-            (:: "-" (:or special-numbers (make-ureal digit)) i)
+      ((_ digit exponent-marker)
+       (:or (make-real digit exponent-marker)
+            (:: (make-real digit exponent-marker) "@" (make-real digit exponent-marker))
+            (:: (make-real digit exponent-marker) "+" (:or special-numbers (make-ureal digit exponent-marker)) i)
+            (:: (make-real digit exponent-marker) "-" (:or special-numbers (make-ureal digit exponent-marker)) i)
+            (:: (make-real digit exponent-marker) "+" i)
+            (:: (make-real digit exponent-marker) "-" i)
+            (:: "+" (:or special-numbers (make-ureal digit exponent-marker)) i)
+            (:: "-" (:or special-numbers (make-ureal digit exponent-marker)) i)
             (:: "+" i)
             (:: "-" i)))))
   
   (define-lex-trans make-ureal
     (syntax-rules ()
-      ((_ digit) (:or (make-uinteger digit)
-                      (:: (make-uinteger digit) "/" (make-uinteger digit) (:? (make-suffix digit)))
-                      (make-decimal digit)))))
+      ((_ digit exponent-marker)
+       (:or (make-uinteger digit)
+            (:: (make-uinteger digit) "/" (make-uinteger digit) (:? (make-suffix digit exponent-marker)))
+            (make-decimal digit exponent-marker)))))
 
   (define-lex-trans make-real
     (syntax-rules ()
-      ((_ digit) (:or (:: (:? sign) (make-ureal digit))
-                      (:: (char-set "+-") special-numbers)))))
+      ((_ digit exponent-marker)
+       (:or (:: (:? sign) (make-ureal digit exponent-marker))
+            (:: (char-set "+-") special-numbers)))))
   
   (define-lex-trans make-uinteger
     (syntax-rules ()
@@ -200,15 +204,15 @@
   
   (define-lex-trans make-decimal
     (syntax-rules ()
-      ((_ digit)
-       (:or (:: (make-uinteger digit) (make-suffix digit))
-            (:: "." (:+ digit) (:* "#") (make-suffix digit))
-            (:: (:+ digit) "." (:* digit) (:* "#") (make-suffix digit))
-            (:: (:+ digit) (:+ "#") "." (:* "#") (make-suffix digit))))))
+      ((_ digit exponent-marker)
+       (:or (:: (make-uinteger digit) (make-suffix digit exponent-marker))
+            (:: "." (:+ digit) (:* "#") (make-suffix digit exponent-marker))
+            (:: (:+ digit) "." (:* digit) (:* "#") (make-suffix digit exponent-marker))
+            (:: (:+ digit) (:+ "#") "." (:* "#") (make-suffix digit exponent-marker))))))
 
   (define-lex-trans make-suffix
     (syntax-rules ()
-      ((_ digit) (:or "" (:: exponent-marker (:? sign) (:+ digit))))))
+      ((_ digit exponent-marker) (:or "" (:: exponent-marker (:? sign) (:+ digit))))))
 
   
   (define (ret lexeme type paren start-pos end-pos status)
@@ -314,10 +318,10 @@
                'error)
            #f start-pos end-pos 'datum)]
      [(:or character
-           (make-num digit2 radix2)
-           (make-num digit8 radix8)
-           (make-num digit10 (:? radix10))
-           (make-num digit16 radix16))
+           (make-num digit2 radix2 exponent-marker)
+           (make-num digit8 radix8 exponent-marker)
+           (make-num digit10 (:? radix10) exponent-marker)
+           (make-num digit16 radix16 exponent-marker16))
       (ret lexeme 'constant #f start-pos end-pos 'datum)]
      [keyword (ret lexeme 'hash-colon-keyword #f start-pos end-pos 'datum)]
      [str (ret lexeme 'string #f start-pos end-pos 'datum)]

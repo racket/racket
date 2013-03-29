@@ -482,12 +482,8 @@ end-string
 (test "1-inf.0I" "cccccccc")
 
 ;; Bad numbers  
-;; these next two tests are WRONG; if you 
-;; fix something that makes these tests return
-;; the proper results, great! They are this
-;; way now so we notice later.
-(test "#x1E+2" "cccccc") ;; should be "xxxxxx"
-(test "#x1d+2" "cccccc") ;; should be "xxxxxx"
+(test "#x1E+2" "xxxxxx")
+(test "#x1d+2" "xxxxxx")
 
 ;; Keywords
 (test "#:" "hh")
