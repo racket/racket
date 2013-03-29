@@ -127,63 +127,54 @@ Like @racket[wrap], except that @racket[handle] is called in @tech{tail
 position} with respect to the synchronization request, and without
 breaks explicitly disabled.}
 
-@defproc[(guard-evt [generator (-> evt?)]) evt?]{
+
+@defproc[(guard-evt [maker (-> evt?)]) evt?]{
 
 Creates a value that behaves as an event, but that is actually an
-event generator.
+event maker.
 
-An event @racket[_guard] returned by @racket[guard-evt] generates a
-new event every time that @racket[_guard] is used with @racket[sync]
+An event @racket[_guard] returned by @racket[guard-evt] generates an
+event when @racket[_guard] is used with @racket[sync]
 (or whenever it is part of a choice event used with @racket[sync],
-etc.). The generated event is the result of calling
-@racket[_generator] when the synchronization begins; if
-@racket[_generator] returns a non-event, then @racket[_generator]'s
+etc.), where the generated event is the result of calling
+@racket[maker]. The @racket[maker] procedure may be called by
+@racket[sync] at most once for a given call to @racket[sync], but
+@racket[maker] may not be called if a ready event is chosen before
+@racket[_guard] is even considered.
+
+If @racket[maker] returns a non-event, then @racket[maker]'s
 result is replaced with an event that is @tech{ready for
 synchronization} and whose @tech{synchronization result} is
 @racket[_guard].}
 
-@defproc[(nack-guard-evt [generator (evt? . -> . evt?)]) evt?]{
 
-Creates a value that behaves as an event, but that is actually an
-event generator.
+@defproc[(nack-guard-evt [maker (evt? . -> . evt?)]) evt?]{
 
-An event @racket[_nack-guard] returned by @racket[nack-guard-evt]
-applied to @racket[_proc] generates a new event every time that
-@racket[_nack-guard] is used with @racket[sync] (or whenever it is
-part of a choice event used with @racket[sync], etc.). The generated
-event is the result of calling @racket[_generator] with a NACK (``negative
-acknowledgment'') event when the synchronization begins; if
-@racket[_generator] returns a non-event, then @racket[_generator]'s result is
-replaced with an event that is ready and whose result is
-@racket[_nack-guard].
+Like @racket[guard-evt], but when @racket[maker] is called, it is
+given a NACK (``negative acknowledgment'') event. After starting the
+call to @racket[maker], if the event from @racket[maker] is not
+ultimately chosen as the ready event, then the NACK event supplied to
+@racket[maker] becomes @tech{ready for synchronization} with a
+@|void-const| value.
 
-If the event from @racket[_generator] is not ultimately chosen as the
-unblocked event, then the NACK event supplied to @racket[_generator]
-becomes @tech{ready for synchronization} with a @|void-const| value.
-This NACK event becomes @tech{ready for synchronization} when the
-event is abandoned when either some other event is chosen, the
-synchronizing thread is dead, or control escapes from the call to
-@racket[sync] (even if @racket[_nack-guard]'s @racket[_generator] has
-not yet returned a value). If the event returned by
-@racket[_generator] is chosen, then the NACK event never becomes
-@tech{ready for synchronization}.}
+The NACK event becomes @tech{ready for synchronization} when the event
+is abandoned when either some other event is chosen, the synchronizing
+thread is dead, or control escapes from the call to @racket[sync]
+(even if @racket[_nack-guard]'s @racket[maker] has not yet returned a
+value). If the event returned by @racket[maker] is chosen, then the
+NACK event never becomes @tech{ready for synchronization}.}
 
 
-@defproc[(poll-guard-evt [generator (boolean? . -> . evt?)]) evt?]{
+@defproc[(poll-guard-evt [maker (boolean? . -> . evt?)]) evt?]{
 
-Creates a value that behaves as an event, but that is actually an
-event generator.
+Like @racket[guard-evt], but when @racket[maker] is called, it is
+provided a boolean value that indicates whether the event will be used
+for a poll, @racket[#t], or for a blocking synchronization,
+@racket[#f].
 
-An event @racket[_poll-guard]returned by @racket[poll-guard-evt]
-generates a new event every time that @racket[_poll-guard] is used
-with @racket[sync] (or whenever it is part of a choice event used with
-@racket[sync], etc.). The generated event is the result of calling
-@racket[_generator] with a boolean: @racket[#t] if the event will be
-used for a poll, @racket[#f] for a blocking synchronization.
-
-If @racket[#t] is supplied to @racket[_generator], if breaks are
+If @racket[#t] is supplied to @racket[maker], if breaks are
 disabled, if the polling thread is not terminated, and if polling the
-resulting event produces a @tech{synchronization result}, the event
+resulting event produces a @tech{synchronization result}, then the event
 will certainly be chosen for its result.}
 
 
