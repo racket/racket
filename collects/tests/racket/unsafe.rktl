@@ -72,21 +72,26 @@
   (test-bin -21 'unsafe-fx* -21 1)
   (test-bin 0 'unsafe-fx* 0 -2)
   (test-bin 0 'unsafe-fx* -21 0)
+  (err/rt-test (unsafe-fx* 0 (error "bad")) exn:fail?) ; not 0
+  (err/rt-test (unsafe-fx* (error "bad") 0) exn:fail?) ; not 0
   
   (test-bin 3 'unsafe-fxquotient 17 5)
   (test-bin -3 'unsafe-fxquotient 17 -5)
   (test-bin 0 'unsafe-fxquotient 0 -5)
   (test-bin 18 'unsafe-fxquotient 18 1)
+  (err/rt-test (unsafe-fxquotient 0 (error "bad")) exn:fail?) ; not 0
 
   (test-bin 2 'unsafe-fxremainder 17 5)
   (test-bin 2 'unsafe-fxremainder 17 -5)
   (test-bin 0 'unsafe-fxremainder 0 -5)
   (test-bin 0 'unsafe-fxremainder 10 1)
+  (err/rt-test (unsafe-fxremainder (error "bad") 1) exn:fail?) ; not 0
 
   (test-bin 2 'unsafe-fxmodulo 17 5)
   (test-bin -3 'unsafe-fxmodulo 17 -5)
   (test-bin 0 'unsafe-fxmodulo 0 -5)
   (test-bin 0 'unsafe-fxmodulo 10 1)
+  (err/rt-test (unsafe-fxmodulo (error "bad") 1) exn:fail?) ; not 0
 
   (test-bin 3.4 'unsafe-fl+ 1.4 2.0)
   (test-bin -1.1 'unsafe-fl+ 1.0 -2.1)

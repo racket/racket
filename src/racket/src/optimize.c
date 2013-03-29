@@ -2625,15 +2625,18 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
       if (z2)
         return app->rand1;
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-fx*")) {
-      if (z1 || z2)
-        return scheme_make_integer(0);
+      if (z1 || z2) {
+        if ((z1 && z2)
+            || (!z1 && scheme_omittable_expr(app->rand1, 1, 20, 0, info, NULL, -1, 0))
+            || (!z2 && scheme_omittable_expr(app->rand2, 1, 20, 0, info, NULL, -1, 0)))
+          return scheme_make_integer(0);
+      }
       if (SAME_OBJ(app->rand1, scheme_make_integer(1)))
         return app->rand2;
       if (SAME_OBJ(app->rand2, scheme_make_integer(1)))
         return app->rand1;
-    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fx/")
-               || IS_NAMED_PRIM(app->rator, "unsafe-fxquotient")) {
-      if (z1)
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fxquotient")) {
+      if (z1 && scheme_omittable_expr(app->rand2, 1, 20, 0, info, NULL, -1, 0))
         return scheme_make_integer(0);
       if (SAME_OBJ(app->rand2, scheme_make_integer(1)))
         return app->rand1;
@@ -2641,7 +2644,8 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
                || IS_NAMED_PRIM(app->rator, "unsafe-fxmodulo")) {
       if (z1)
         return scheme_make_integer(0);
-      if (SAME_OBJ(app->rand2, scheme_make_integer(1)))
+      if (SAME_OBJ(app->rand2, scheme_make_integer(1))
+          && scheme_omittable_expr(app->rand1, 1, 20, 0, info, NULL, -1, 0))
         return scheme_make_integer(0);
     }
 
@@ -2661,14 +2665,9 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
         return app->rand2;
       if (SCHEME_FLOATP(app->rand2) && (SCHEME_FLOAT_VAL(app->rand2) == 1.0))
         return app->rand1;
-    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fl/")
-               || IS_NAMED_PRIM(app->rator, "unsafe-flquotient")) {
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fl/")) {
       if (SCHEME_FLOATP(app->rand2) && (SCHEME_FLOAT_VAL(app->rand2) == 1.0))
         return app->rand1;
-    } else if (IS_NAMED_PRIM(app->rator, "unsafe-flremainder")
-               || IS_NAMED_PRIM(app->rator, "unsafe-flmodulo")) {
-      if (SCHEME_FLOATP(app->rand2) && (SCHEME_FLOAT_VAL(app->rand2) == 1.0))
-        return scheme_make_double(0.0);
     }
 #ifdef MZ_LONG_DOUBLE
     z1 = (SCHEME_LONG_DBLP(app->rand1) && long_double_is_zero(SCHEME_LONG_DBL_VAL(app->rand1)));
@@ -2690,10 +2689,6 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-extfl/")) {
       if (SCHEME_LONG_DBLP(app->rand2) && long_double_is_1(SCHEME_LONG_DBL_VAL(app->rand2)))
         return app->rand1;
-    } else if (IS_NAMED_PRIM(app->rator, "unsafe-extflremainder")
-               || IS_NAMED_PRIM(app->rator, "unsafe-extflmodulo")) {
-      if (SCHEME_LONG_DBLP(app->rand2) && long_double_is_1(SCHEME_LONG_DBL_VAL(app->rand2)))
-        return scheme_make_long_double(get_long_double_zero());
     }
 #endif
   }
