@@ -215,13 +215,13 @@
   (define blaming-line
     (cond
       [(null? (cdr blame-parties))
-       (format " blaming: ~a" (car blame-parties))]
+       (format " blaming: ~a" (convert-blame-singleton (car blame-parties)))]
       [else
        (apply
         string-append 
         " blaming multiple parties:"
         (for/list ([party (in-list blame-parties)])
-          (format "\n  ~a" party)))]))
+          (format "\n  ~a" (convert-blame-singleton party))))]))
   
   (define from-line 
     (if (blame-original? blme)
