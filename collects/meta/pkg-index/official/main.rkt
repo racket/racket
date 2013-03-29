@@ -611,7 +611,7 @@
                  pkg-name)))
          (tr
           (td "Ring")
-          (td ,(ring-format (package-ref i 'ring))))
+          (td ,(ring-format (package-ref* i 'ring *default-ring*))))
          (tr
           (td "Author")
           (td (a ([href ,(main-url page/search
