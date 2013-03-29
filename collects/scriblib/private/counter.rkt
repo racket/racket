@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket/base
 (require scribble/core
          scribble/decode)
 
@@ -14,6 +14,11 @@
                      #:ref-wrap [ref-wrap (lambda (c s) c)])
   (make-counter 0 name target-wrap ref-wrap))
 
+(define (tag->counter-tag counter tag . kind)
+  (if (generated-tag? tag)
+      `(,(string->symbol (format "counter-~a" kind)) ,tag)
+      `(counter (,(counter-name counter) ,tag ,@kind))))
+
 (define (counter-target counter tag label 
                         #:continue? [continue? #f]
                         . content)
@@ -27,7 +32,7 @@
          (list
           (make-delayed-element
            (lambda (renderer part ri)
-             (let ([n (resolve-get part ri `(counter (,(counter-name counter) ,tag "value")))])
+             (let ([n (resolve-get part ri (tag->counter-tag counter tag "value"))])
                (let ([l (cons (format "~a" n) content)])
                  (if label
                      (list* label 'nbsp l)
@@ -43,16 +48,17 @@
                         (counter-n counter)
                         (add1 (counter-n counter)))])
              (set-counter-n! counter n)
-             (collect-put! ci `(counter (,(counter-name counter) ,tag "value")) n)))))
-       `(counter (,(counter-name counter) ,tag))))
+             (collect-put! ci (generate-tag (tag->counter-tag counter tag "value") ci) n)))))
+       (tag->counter-tag counter tag)))
     (if (counter-target-wrap counter)
         ((counter-target-wrap counter)
          c
-         (format "t:~a" (t-encode (list 'counter (list (counter-name counter) tag)))))
+         (format "t:~a" (t-encode (tag->counter-tag counter tag))))
         c)))
 
 (define (t-encode s)
-  (string-append*
+  (apply
+   string-append
    (map (lambda (c)
           (cond
             [(and (or (char-alphabetic? c) (char-numeric? c))
@@ -65,7 +71,7 @@
 (define (counter-ref counter tag label)
   (let ([n (make-delayed-element
             (lambda (renderer part ri)
-              (let ([n (resolve-get part ri `(counter (,(counter-name counter) ,tag "value")))])
+              (let ([n (resolve-get part ri (tag->counter-tag counter tag "value"))])
                 (if (counter-ref-wrap counter)
                     (let ([id (format "t:~a" (t-encode (list 'counter (list (counter-name counter) tag))))])
                       ((counter-ref-wrap counter)
@@ -86,7 +92,7 @@
           'nbsp
           n)
          n)
-     `(counter (,(counter-name counter) ,tag)))))
+     (tag->counter-tag counter tag))))
 
 (define (counter-collect-value counter)
   (counter-n counter))
