@@ -461,8 +461,13 @@ end-string
 (test "#|#| |# a\na" "xxxxxxxxxxx")
 (test "#|\n#| |# a\na" "xxxxxxxxxxxx")
 
-;; Numbers (mzscheme extensions)
-
+;; Numbers and extflonums
+(test "1e0" "ccc")
+(test "1f0" "ccc")
+(test "1t0" "ccc")
+(test "1.1e0" "ccccc")
+(test "1.1f0" "ccccc")
+(test "1.1t0" "ccccc")
 (test "#b1.1" "ccccc")
 (test "#o1.1" "ccccc")
 (test "#d1.1" "ccccc")
@@ -475,15 +480,34 @@ end-string
 (test "#d1d+2" "cccccc")
 (test "1/2e2" "ccccc")
 (test "+iNf.0" "cccccc")
+(test "+iNf.f" "cccccc")
+(test "+iNf.t" "cccccc")
 (test "-InF.0" "cccccc")
+(test "-InF.f" "cccccc")
+(test "-InF.t" "cccccc")
 (test "+naN.0" "cccccc")
 (test "-nAN.0" "cccccc")
+(test "-nAN.f" "cccccc")
+(test "-nAN.t" "cccccc")
 (test "-inf.0+1i" "ccccccccc")
 (test "1-inf.0I" "cccccccc")
+(test "1#/2" "cccc")
+(test "#e#x+e#s+e@-e#l-e" "ccccccccccccccccc")
+(test "1/0" "ccc")
+(test "#e1" "ccc")
+(test "#i1" "ccc")
+(test "#e1.0+2.3l5i" "cccccccccccc")
 
 ;; Bad numbers  
 (test "#x1E+2" "xxxxxx")
 (test "#x1d+2" "xxxxxx")
+(test "#e1.0+2.3l5" "xxxxxxxxxxx")
+
+;; Bad extflonums
+(test "#e1t0" "xxxxx")
+(test "#i1t0" "xxxxx")
+(test "1t0+2t0i" "iiiiiiii")
+(test "1t0@2t0" "iiiiiii")
 
 ;; Keywords
 (test "#:" "hh")

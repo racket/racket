@@ -22,7 +22,9 @@ A extflonum is @bold{not} a @tech{number} in the sense of
 A literal extflonum is written like an @tech{inexact number},
 but using an explicit @litchar{t} or @litchar{T} exponent marker (see
 @secref["parse-extflonum"]). For example, @racket[3.5t0] is an
-extflonum.
+extflonum. The extflonum infinities and non-a-number values are
+@as-index{@racket[+inf.t]}, @as-index{@racket[-inf.t]}, 
+and @as-index{@racket[+nan.t]}.
 
 If @racket[(extflonum-available?)] produces @racket[#f], then all
 operations exported by @racketmodname[racket/extflonum] raise

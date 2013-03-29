@@ -331,7 +331,9 @@ that the digit's actual value is unknown.
 
 An @tech{extflonum} has the same syntax as an @nunterm{inexact-real}
 that includes an @nunterm{exp-mark}, but with @litchar{t} or
-@litchar{T} in place of the @nunterm{exp-mark}. A @litchar{#b}
+@litchar{T} in place of the @nunterm{exp-mark}. In addition,
+@litchar{+inf.t}, @litchar{-inf.t}, @litchar{+nan.t}, @litchar{-nan.t}
+are @tech{extflonums}. A @litchar{#b}
 (binary), @litchar{#o} (octal), @litchar{#d} (decimal), or
 @litchar{#x} (hexadecimal) radix specification can prefix an
 extflonum, but @litchar{#i} or @litchar{#e} cannot, and a
