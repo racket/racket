@@ -1820,8 +1820,9 @@
 [lcm (from-cases (map unop (list -Zero -One -PosByte -Byte -PosIndex -Index -PosFixnum))
                  (-NegFixnum . -> . -PosFixnum)
                  (-Fixnum . -> . -NonNegFixnum)
-                 (commutative-case -Zero -Real) ; zero anywhere -> zero
-                 (map (lambda (t) (commutative-binop t -One))
+                 (commutative-case -Zero -Rat) ; zero anywhere -> zero
+                 (commutative-case -RealZero -Real)
+                 (map (lambda (t) (commutative-binop -One t))
                       (list -PosByte -Byte -PosIndex -Index -PosFixnum))
                  (commutative-binop -One -NegFixnum -PosFixnum)
                  (commutative-binop -One -Fixnum -NonNegFixnum)
@@ -1838,7 +1839,7 @@
                  (varop-1+ (Un -PosFlonum -NegFlonum) -PosFlonum)
                  (varop-1+ -Flonum -NonNegFlonum)
                  (commutative-case (Un -PosFlonum -NegFlonum) (Un -PosReal -NegReal) -PosFlonum)
-                 (commutative-case -Flonum -Real -NonNegFlonum)
+                 (commutative-case -Flonum (Un -PosReal -NegReal) -NonNegFlonum) ; exact 0 -> exact 0
                  (varop-1+ (Un -PosSingleFlonum -NegSingleFlonum) -PosSingleFlonum)
                  (varop-1+ -SingleFlonum -NonNegSingleFlonum)
                  (varop-1+ (Un -PosInexactReal -NegInexactReal) -PosInexactReal)
