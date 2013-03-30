@@ -2362,7 +2362,7 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
     }
 
     if (SAME_OBJ(argv[0], so_mode_symbol)) {
-#ifdef MZ_DLOPEN_GLOBAL_BY_DEFAULT
+#ifdef USE_DLOPEN_GLOBAL_BY_DEFAULT
       return scheme_intern_symbol("global");
 #else
       return scheme_intern_symbol("local");
