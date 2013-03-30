@@ -21,7 +21,7 @@
 
 
 (define url-host "download.racket-lang.org")
-(define url-path "/libs/12/")
+(define url-path "/libs/13/")
 (define url-base (string-append "http://" url-host url-path))
 (define architecture #f) ;; set in `do-download'
 
@@ -30,7 +30,20 @@
          (parameterize ([current-directory path])
            (for-each delete-path (directory-list)))
          (delete-directory path)]
-        [(or (file-exists? path) (link-exists? path)) (delete-file path)]))
+        [(or (file-exists? path) (link-exists? path)) 
+         (if (eq? (system-type) 'windows)
+             ;; Use a rename-and-delete dance that lets us replace
+             ;; a DLL that might be in use by the Racket process
+             ;; that is running the download:
+             (let ([new-path (path-add-suffix path #".del")])
+               (when (file-exists? new-path)
+                 (delete-file new-path))
+               (rename-file-or-directory path new-path)
+               (with-handlers ([exn:fail:filesystem? 
+                                (lambda (exn)
+                                  (log-error (exn-message exn)))])
+                 (delete-file new-path)))
+             (delete-file path))]))
 
 (define (purify-port port)
   (let ([m (regexp-match-peek-positions #rx#"^HTTP/.*?(?:\r\n\r\n|\n\n|\r\r)"
@@ -74,6 +87,7 @@
       (when (> n 3) (raise-user-error 'download "could not retrieve ~a" file))
       (when (zero? n) (printf " timeout,"))
       (loop (add1 n))))
+  (when (file-exists? file) (delete-path file))
   (rename-file-or-directory tmp file #t)
   (define sz (file-size file))
   (unless (= size sz)

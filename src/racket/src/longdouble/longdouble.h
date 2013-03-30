@@ -1,45 +1,41 @@
 #ifndef MZ_LONGDOUBLE_H
 #define MZ_LONGDOUBLE_H
 
-#if defined(_MSC_VER) || defined(IMPLEMENTING_MSC_LONGDOUBLE)
-/* aligning */
-# if defined(_X86_64) || defined(_M_X64) || defined(_WIN64)
-#  define SIZEOF_LONGDOUBLE 16
-# else
-#  define SIZEOF_LONGDOUBLE 16
-# endif
+#if defined(_MSC_VER)
+# define MZ_LONG_DOUBLE_API_IS_EXTERNAL
+#endif
 
-# ifdef BYTES_RESERVED_FOR_LONG_DOUBLE
+#if defined(__MINGW32__) && defined(MZ_LONG_DOUBLE)
+# define LONG_DOUBLE_STRING_OP_API_IS_EXTERNAL
+#endif
+
+#if defined(MZ_LONG_DOUBLE_API_IS_EXTERNAL)           \
+    || defined(LONG_DOUBLE_STRING_OP_API_IS_EXTERNAL) \
+    || defined(IMPLEMENTING_MSC_LONGDOUBLE)
+# define SIZEOF_LONGDOUBLE 16
+#endif
+
+#ifdef BYTES_RESERVED_FOR_LONG_DOUBLE
 /* check "scheme.h" versus "longdouble.h": */
-#  if BYTES_RESERVED_FOR_LONG_DOUBLE != SIZEOF_LONGDOUBLE
+# if BYTES_RESERVED_FOR_LONG_DOUBLE != SIZEOF_LONGDOUBLE
    !! mismatch in mz_long_double size !!
-#  endif
 # endif
+#endif
              
-# ifdef IMPLEMENTING_MSC_LONGDOUBLE
+#ifdef IMPLEMENTING_MSC_LONGDOUBLE
 typedef union long_double 
 {
   char bytes[SIZEOF_LONGDOUBLE];
   long double val;
 } long_double;
-# else
-#  define long_double mz_long_double
-# endif
-
-#else
-# define long_double mz_long_double
-#endif
-
-#ifdef IMPLEMENTING_MSC_LONGDOUBLE
 # define LDBL_DLL_API __declspec(dllexport)
 # define XFORM_NONGCING /* empty */
 #else
+#  define long_double mz_long_double
 # define LDBL_DLL_API /* empty */
 #endif
 
-#if defined(_MSC_VER) || defined(IMPLEMENTING_MSC_LONGDOUBLE)
-
-#define MZ_LONG_DOUBLE_API_IS_EXTERNAL
+#if defined(MZ_LONG_DOUBLE_API_IS_EXTERNAL) || defined(IMPLEMENTING_MSC_LONGDOUBLE)
 
 void scheme_load_long_double_dll();
 
@@ -121,6 +117,7 @@ XFORM_NONGCING LDBL_DLL_API long_double long_double_array_ref(void *pointer, int
 XFORM_NONGCING LDBL_DLL_API void long_double_array_set(void *pointer, int index, long_double value);
 
 XFORM_NONGCING LDBL_DLL_API long_double long_double_from_string(char* buff, char** p);
+XFORM_NONGCING LDBL_DLL_API void long_double_from_string_indirect(char* buff, char** p, long_double *_ld);
 
 XFORM_NONGCING void to_double_prec();
 XFORM_NONGCING void to_extended_prec();
@@ -199,14 +196,23 @@ XFORM_NONGCING int long_double_available();
 
 # define long_double_frexp(a, i) frexpl(a, i)
 
-# define long_double_from_string(x,y) strtold(x, y)
-
-# define long_double_sprint(buffer,digits,d) sprintf(buffer, "%.*Lg", digits, d)
+# ifdef LONG_DOUBLE_STRING_OP_API_IS_EXTERNAL
+XFORM_NONGCING LDBL_DLL_API long_double long_double_from_string(char* buff, char** p);
+XFORM_NONGCING LDBL_DLL_API void long_double_sprint(char* buffer, int digits, long_double d);
+# else
+#  define long_double_from_string(x,y) strtold(x, y)
+#  define long_double_sprint(buffer,digits,d) sprintf(buffer, "%.*Lg", digits, d)
+# endif
 
 # define long_double_array_ref(pointer,index) ((long_double *)(pointer))[index]
 # define long_double_array_set(pointer,index,value) ((long_double *)(pointer))[index] = (value)
 
-# define long_double_available() 1
+# ifdef LONG_DOUBLE_STRING_OP_API_IS_EXTERNAL
+XFORM_NONGCING void scheme_load_long_double_dll();
+XFORM_NONGCING int long_double_available();
+# else
+#  define long_double_available() 1
+# endif
 
 #endif
 

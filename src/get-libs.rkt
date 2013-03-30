@@ -17,12 +17,12 @@
         ["iconv.dll" 892928]
         ["libeay32.dll" 1099776]
         ["ssleay32.dll" 239104]
-        ["longdouble.dll" 113285]]
+        ["longdouble.dll" 114786]]
        [win32/x86_64
         ["libiconv-2.dll" 1378028]
         ["libeay32.dll" 1503232]
         ["ssleay32.dll" 309760]
-        ["longdouble.dll" 123031]]]
+        ["longdouble.dll" 125176]]]
      ;; Math Libraries
      '[math
        [i386-macosx

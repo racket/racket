@@ -5457,6 +5457,6 @@ static Scheme_Object *extfl_to_integer (int argc, Scheme_Object *argv[])
 #endif
 }
 
-#ifdef MZ_LONG_DOUBLE_API_IS_EXTERNAL
+#if defined(MZ_LONG_DOUBLE_API_IS_EXTERNAL) || defined(LONG_DOUBLE_STRING_OP_API_IS_EXTERNAL)
 # include "longdouble/longdouble.c"
 #endif

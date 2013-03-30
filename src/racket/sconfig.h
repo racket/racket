@@ -627,7 +627,9 @@
 #endif
 
 #if defined(_MSC_VER)
+# define MZ_LONG_DOUBLE
 # define IGNORE_BY_MS_CONTROL_87
+# define MZ_NEED_SET_EXTFL_MODE
 #endif
 #if defined(__MINGW32__)
 # define MZ_TRY_EXTFLONUMS
@@ -640,7 +642,6 @@
 # define USE_ICONV_DLL
 # define NO_MBTOWC_FUNCTIONS
 
-# define MZ_LONG_DOUBLE
 # ifdef _WIN64
 #  define MZ_USE_JIT_X86_64
 # else
@@ -1351,11 +1352,31 @@
     converts (a == a) to TRUE, even if `a' is floating-point. Used
     only when USE_[SCO_]IEEE_FP_PREDS is not defined. */
 
+ /* C_COMPILER_USES_SSE indicates that the C compiler generates SSE
+    instructions for `double' arithmetic. This flag is turned on
+    automatically if __SSE_MATH__ is defined (usually by gcc). */
+
+ /* MZ_LONG_DOUBLE enables extflonum support. */
+
+ /* MZ_TRY_EXTFLONUMS turns on MZ_LONG_DOUBLE if C_COMPILER_USES_SSE. */
+
  /* ASM_DBLPREC_CONTROL_87 uses inline assembly to set Intel '387
     floating-point operations to double-precision instead of
-    extended-precision arithmetic. This definition is turned off
-    if the C compiler and JIT use SSE, and ASM_EXTPREC_CONTROL_87
-    is turned on instead if extflonums are enabled. */
+    extended-precision arithmetic. This definition is turned off if
+    C_COMPILER_USES_SSE, and ASM_EXTPREC_CONTROL_87 is turned on
+    instead if C_COMPILER_USES_SSE and MZ_LONG_DOUBLE. */
+
+ /* ASM_EXTPREC_CONTROL_87 uses inline assembly to set Intel '387
+    floating-point operations to double-precision instead of
+    extended-precision arithmetic. */
+
+ /* MZ_NEED_SET_EXTFL_MODE causes JIT-generated extflonum instructions
+    to set the x87 control word to extended precision just before an
+    extflonum operation, and then set if back to double precision just
+    after. This is needed or Windows (where the default mode is double
+    precision, something about the x64 environment switches the mode
+    back if you try to change it permanently, and "longdouble.dll"
+    does the same switch for non-JITted operations). */
 
  /* IGNORE_BY_BORLAND_CONTROL_87 turns off floating-point error for
     Intel '387 with Borlad-style _control87. DONT_IGNORE_PIPE_SIGNAL

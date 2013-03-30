@@ -701,7 +701,7 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
 #endif
 
     if (arith) {
-#ifdef MZ_NEED_SET_EXTFL_MODE
+#if defined(MZ_LONG_DOUBLE) && defined(MZ_NEED_SET_EXTFL_MODE)
       int need_control_reset = 0;
       if (extfl) {
         switch (arith) {
@@ -954,7 +954,7 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
         }
 #endif
       }
-#ifdef MZ_NEED_SET_EXTFL_MODE
+#if defined(MZ_LONG_DOUBLE) && defined(MZ_NEED_SET_EXTFL_MODE)
       if (extfl && need_control_reset) {
         jit_set_fp_control(0x27f);
       }

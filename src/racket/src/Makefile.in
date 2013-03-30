@@ -201,7 +201,8 @@ fun.@LTO@: $(srcdir)/fun.c
 	$(CC) $(CFLAGS) -c $(srcdir)/fun.c -o fun.@LTO@
 future.@LTO@: $(srcdir)/future.c
 	$(CC) $(CFLAGS) -c $(srcdir)/future.c -o future.@LTO@
-gmp.@LTO@: $(srcdir)/gmp/gmp.c $(srcdir)/gmp/gmplonglong.h $(srcdir)/../include/schthread.h
+gmp.@LTO@: $(srcdir)/gmp/gmp.c $(srcdir)/gmp/gmplonglong.h \
+           $(srcdir)/../include/schthread.h $(srcdir)/../sconfig.h
 	$(CC) $(CFLAGS) -c $(srcdir)/gmp/gmp.c -o gmp.@LTO@
 hash.@LTO@: $(srcdir)/hash.c
 	$(CC) $(CFLAGS) -c $(srcdir)/hash.c -o hash.@LTO@
@@ -365,7 +366,8 @@ network.@LTO@: $(COMMON_HEADERS) \
 numarith.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h $(srcdir)/nummacs.h
 number.@LTO@: $(COMMON_HEADERS) \
-         $(srcdir)/stypes.h $(srcdir)/nummacs.h
+         $(srcdir)/stypes.h $(srcdir)/nummacs.h \
+         $(srcdir)/longdouble/longdouble.c
 numcomp.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h $(srcdir)/nummacs.h
 numstr.@LTO@: $(COMMON_HEADERS) \

@@ -39,6 +39,13 @@ build, not a Windows-style build (e.g., Racket's `system-type' procedure
 returns 'unix, not 'windows, and `racket/gui' uses Gtk instead of
 Win32).
 
+Beware that MinGW/Cygwin builds different from the MSVC build when
+SSE-based floating-point math is enabled in the C compiler. In that
+case, Racket includes sets the floating-point mode to extended
+precision to support extflonums, and changing precision may affect
+other libraries. To avoid the floating-point mode change, disable
+extflonum support with `--disable-extflonum'.
+
 ========================================================================
  Compiling for Mac OS X
 ========================================================================
@@ -382,9 +389,9 @@ is compiling floating-point operations as SSE, so be sure to include
 flags like "-mfpmath=sse" or "-mfpmath=387" in CPPFLAGS, and not just
 CFLAGS. See related configuration options below.
 
-The Windows build enables extflonum support through a MinGW-compiled
-"longdouble.dll", since MSVC does not support `long double' as
-extended-precision floating point.
+The Windows build using MSVC enables extflonum support through a
+MinGW-compiled "longdouble.dll", since MSVC does not support `long
+double' as extended-precision floating point.
 
 Configuration Options
 ---------------------

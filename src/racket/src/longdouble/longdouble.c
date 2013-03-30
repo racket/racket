@@ -1,3 +1,11 @@
+
+/* This file is really three implementations: the external API, glue
+   for the external API, and glue for just the string external API. */
+
+/**********************************************************************/
+/* External long_double implementation                                */
+/**********************************************************************/
+
 #ifdef IMPLEMENTING_MSC_LONGDOUBLE
 
 /* Implement the `long_double' API.
@@ -25,118 +33,120 @@ LDBL_DLL_API int get_x87_control()
   return v;
 }
 
-static void ext_mode()
+static int ext_mode()
 {
+  int m = get_x87_control();
   set_x87_control(0x37F);
+  return m;
 }
 
-static void default_mode()
+static void restore_mode(int m)
 {
-  set_x87_control(0x27F);
+  set_x87_control(m);
 }
 
 long_double get_long_double_infinity_val()
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = 1.0L / get_long_double_zero().val;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double get_long_double_minus_infinity_val()
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = -get_long_double_infinity_val().val;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double get_long_double_zero()
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = 0.0L;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double get_long_double_nzero()
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = -1.0L / get_long_double_infinity_val().val;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double get_long_double_nan()
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = get_long_double_infinity_val().val + get_long_double_minus_infinity_val().val;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double get_long_double_1()
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = 1.0L;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 long_double get_long_double_minus_1()
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = -1.0L;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 long_double get_long_double_2()
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = 2.0L;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double get_long_double_one_half()
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = 0.5L;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double get_long_double_pi()
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = atan2l(0.0L, -1.0L);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double get_long_double_half_pi()
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = atan2l(0.0L, -1.0L)/2.0L;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 long_double long_double_from_int(int a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = (long double) a;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
@@ -144,27 +154,27 @@ long_double long_double_from_int(int a)
 long_double long_double_from_float(float a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = (long double) a;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double long_double_from_double(double a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = (long double) a;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double long_double_from_uintptr(uintptr_t a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = a;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
@@ -185,62 +195,62 @@ intptr_t int_from_long_double(long_double a)
 long_double long_double_plus(long_double a, long_double b)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = a.val + b.val;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double long_double_minus(long_double a, long_double b)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = a.val - b.val;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double long_double_mult(long_double a, long_double b)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = a.val * b.val;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double long_double_mult_i(long_double a, int b)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = a.val * b;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 uintptr_t uintptr_from_long_double(long_double a)
 {
   uintptr_t result;
-  ext_mode();
+  int m = ext_mode();
   result = a.val;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double long_double_div(long_double a, long_double b)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = a.val / b.val;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 long_double long_double_neg(long_double a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = -a.val;
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
@@ -283,9 +293,9 @@ int long_double_is_1(long_double a)
 int long_double_minus_zero_p(long_double a)
 {
   int v;
-  ext_mode();
+  int m = ext_mode();
   v = ((1.0L / a.val) < 0.0L);
-  default_mode();
+  restore_mode(m);
   return v;
 }
 int long_double_is_nan(long_double a)
@@ -310,160 +320,160 @@ int long_double_is_infinity(long_double a)
 long_double long_double_fabs(long_double a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = fabsl(a.val);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double long_double_modf(long_double a, long_double *b)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = modfl(a.val, &b->val);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 long_double long_double_fmod(long_double a, long_double b)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = fmodl(a.val, b.val);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 long_double long_double_trunc(long_double a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = truncl(a.val);
-  default_mode();
+  restore_mode(m);
   return result;
 
 }
 long_double long_double_floor(long_double a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = floorl(a.val);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 long_double long_double_ceil(long_double a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = ceill(a.val);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double long_double_sin(long_double a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = sinl(a.val);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 long_double long_double_cos(long_double a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = cosl(a.val);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 long_double long_double_tan(long_double a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = tanl(a.val);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 long_double long_double_asin(long_double a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = asinl(a.val);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 long_double long_double_acos(long_double a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = acosl(a.val);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 long_double long_double_atan(long_double a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = atanl(a.val);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 long_double long_double_log(long_double a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = logl(a.val);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 long_double long_double_exp(long_double a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = expl(a.val);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double long_double_ldexp(long_double a, int i)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = ldexpl(a.val, i);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double long_double_pow(long_double a, long_double b)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = powl(a.val, b.val);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double long_double_sqrt(long_double a)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = sqrtl(a.val);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 long_double long_double_frexp(long_double a, int* i)
 {
   long_double result;
-  ext_mode();
+  int m = ext_mode();
   result.val = frexpl(a.val, i);
-  default_mode();
+  restore_mode(m);
   return result;
 }
 
 void long_double_sprint(char* buffer, int digits, long_double d)
 {
-  ext_mode();
+  int m = ext_mode();
   __mingw_sprintf(buffer, "%.*Lg", digits, d.val);
-  default_mode();
+  restore_mode(m);
 }
 
 long_double long_double_array_ref(void *pointer, int index)
@@ -484,9 +494,9 @@ long_double long_double_from_string(char* buff, char** p)
   long_double result;
   char* ptr, one_char;
   int n;
-  ext_mode();
+  int m = ext_mode();
   n = __mingw_sscanf(buff, "%Lf%c", &result.val, &one_char);
-  default_mode();
+  restore_mode(m);
   if (n == 1) {
     /* all characters consumed for the number */
     *p = &buff[strlen(buff)];
@@ -498,9 +508,18 @@ long_double long_double_from_string(char* buff, char** p)
   return result;
 }
 
-#else
+void long_double_from_string_indirect(char* buff, char** p, long_double *_ld)
+{
+  *_ld = long_double_from_string(buff, p);
+}
 
-/* Glue code */
+#endif
+
+/**********************************************************************/
+/* Glue for external long_double implementation                       */
+/**********************************************************************/
+
+#ifdef MZ_LONG_DOUBLE_API_IS_EXTERNAL
 
 #ifdef MZ_PRECISE_GC
 START_XFORM_SKIP;
@@ -597,7 +616,7 @@ static long_double fail_from_string(char* buff, char** p)
   double d;
   long_double ld;
 
-  d = strtod(buff, p, 0);
+  d = strtod(buff, p);
   memcpy(&ld, &d, sizeof(double));
 
   return ld;
@@ -773,6 +792,92 @@ long_double long_double_from_string(char* buff, char** p) { return _imp_long_dou
 
 void to_double_prec() { _imp_set_x87_control(0x27F); }
 void to_extended_prec() { _imp_set_x87_control(0x37F); }
+
+#ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+#endif
+
+#endif
+
+/**********************************************************************/
+/* Glue for external long_double string-op implementation             */
+/**********************************************************************/
+
+#ifdef LONG_DOUBLE_STRING_OP_API_IS_EXTERNAL
+
+/* Like regular glue mode, but only for the string operations.
+
+   It may seem strage to resort to a MinGW-compiled DLL to implement
+   functionality when compiling with MinGW, but the MinGW version has
+   to be recent enough to get __mingw_sscanf, so we do things this
+   way to allow building with older MinGWs (such as the default MinGW
+   release at the time of writing). */
+
+#ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+#endif
+
+static int long_double_dll_available;
+
+typedef union dll_long_double 
+{
+  char bytes[SIZEOF_LONGDOUBLE];
+  long double val;
+} dll_long_double;
+
+/* pointers to dynamically loaded functions */
+#define DECLARE_LDBL(res, name, args) \
+  typedef res (* name ## _t)args; \
+  static name ## _t _imp_ ## name;
+DECLARE_LDBL(void, long_double_sprint, (char* buffer, int digits, dll_long_double ld))
+DECLARE_LDBL(void, long_double_from_string_indirect, (char* buff, char** p, dll_long_double *_ld))
+
+static void fail_from_string_indirect(char* buff, char** p, dll_long_double *_ld)
+{
+  double d;
+
+  d = strtod(buff, p);
+  memcpy(_ld, &d, sizeof(double));
+}
+
+static void fail_sprint(char* buffer, int digits, dll_long_double ld)
+{
+  double d;
+  memcpy(&d, &ld, sizeof(double));
+  sprintf(buffer, "%.*Lg", digits, d);
+}
+
+/* initialization */
+void scheme_load_long_double_dll()
+{
+  HANDLE m;
+  m = LoadLibraryW(scheme_get_dll_path(L"longdouble.dll"));
+
+  if (m) long_double_dll_available = 1;
+
+# define EXTRACT_LDBL(name, fail)                      \
+  _imp_ ## name = (name ##_t)(m ? GetProcAddress(m, # name) : NULL);  \
+  if (!(_imp_ ## name)) _imp_ ## name = (name ##_t)fail;
+
+  EXTRACT_LDBL(long_double_sprint, fail_sprint);
+  EXTRACT_LDBL(long_double_from_string_indirect, fail_from_string_indirect);
+}
+
+int long_double_available() {
+  return long_double_dll_available;
+}
+
+void long_double_sprint(char* buffer, int digits, long double d) { 
+  dll_long_double ld;
+  ld.val = d;
+  _imp_long_double_sprint(buffer, digits, ld); 
+}
+
+long double long_double_from_string(char* buff, char** p) { 
+  dll_long_double ld;
+  _imp_long_double_from_string_indirect(buff, p, &ld); 
+  return ld.val;
+}
 
 #ifdef MZ_PRECISE_GC
 END_XFORM_SKIP;
