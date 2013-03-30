@@ -1922,32 +1922,62 @@
 (test (make-arity-at-least 0) procedure-arity (lambda x x))
 (arity-test procedure-arity 1 1)
 
+;; Tests for normalize-arity without arity-at-least
 (test '() normalize-arity '())
 (test 1 normalize-arity 1)
 (test 1 normalize-arity '(1))
 (test '(1 2) normalize-arity '(1 2))
 (test '(1 2) normalize-arity '(2 1))
-(test (make-arity-at-least 2) normalize-arity (list (make-arity-at-least 2) 3))
-(test (list 1 (make-arity-at-least 2))
-      normalize-arity (list (make-arity-at-least 2) 1))
-(test (list 1 (make-arity-at-least 2)) 
-      normalize-arity (list (make-arity-at-least 2) 1 3))
-(test (list 0 1 (make-arity-at-least 2))
-      normalize-arity (list (make-arity-at-least 2) 1 0 3))
-(test (list 0 1 (make-arity-at-least 2))
-      normalize-arity (list (make-arity-at-least 2)
-                            (make-arity-at-least 4) 1 0 3))
-(test (list 0 1 (make-arity-at-least 2))
-      normalize-arity (list (make-arity-at-least 4)
-                            (make-arity-at-least 2) 1 0 3))
 (test (list 1 2) normalize-arity (list 1 1 2 2))
 (test 1 normalize-arity (list 1 1 1))
-(test (list 1 (make-arity-at-least 2))
+
+;; Tests for normalize-arity where everything collapses into arity-at-least
+(test (make-arity-at-least 2) normalize-arity (list (make-arity-at-least 2) 3))
+(test (make-arity-at-least 1)
+      normalize-arity (list (make-arity-at-least 2) 1))
+(test (make-arity-at-least 1)
+      normalize-arity (list (make-arity-at-least 2) 1 3))
+(test (make-arity-at-least 0)
+      normalize-arity (list (make-arity-at-least 2) 1 0 3))
+(test (make-arity-at-least 0)
+      normalize-arity (list (make-arity-at-least 2)
+                            (make-arity-at-least 4) 1 0 3))
+(test (make-arity-at-least 0)
+      normalize-arity (list (make-arity-at-least 4)
+                            (make-arity-at-least 2) 1 0 3))
+(test (make-arity-at-least 1)
       normalize-arity (list (make-arity-at-least 2) 1 1))
-(test (list 1 (make-arity-at-least 2))
+(test (make-arity-at-least 1)
       normalize-arity 
       (list (make-arity-at-least 2)
             (make-arity-at-least 2) 1 1))
+
+;; Tests for normalize-arity that result in a list with arity-at-least.
+(test (list 1 (make-arity-at-least 3))
+      normalize-arity (list (make-arity-at-least 3) 1))
+(test (list 1 (make-arity-at-least 3))
+      normalize-arity (list (make-arity-at-least 3) 1 4))
+(test (list 0 1 (make-arity-at-least 3))
+      normalize-arity (list (make-arity-at-least 3) 1 0 4))
+(test (list 0 1 (make-arity-at-least 3))
+      normalize-arity (list (make-arity-at-least 3)
+                            (make-arity-at-least 5) 1 0 4))
+(test (list 0 1 (make-arity-at-least 3))
+      normalize-arity (list (make-arity-at-least 5)
+                            (make-arity-at-least 3) 1 0 4))
+(test (list 1 (make-arity-at-least 3))
+      normalize-arity (list (make-arity-at-least 3) 1 1))
+(test (list 1 (make-arity-at-least 3))
+      normalize-arity 
+      (list (make-arity-at-least 3)
+            (make-arity-at-least 3) 1 1))
+(test (list 0 1 (make-arity-at-least 3))
+      normalize-arity (list 0 1 3 (make-arity-at-least 4)))
+(test (list 0 1 (make-arity-at-least 3))
+      normalize-arity (list (make-arity-at-least 4) 3 1 0))
+(test (list 0 1 (make-arity-at-least 3))
+      normalize-arity (list 0 1 3 (make-arity-at-least 4)
+                                5 (make-arity-at-least 6)))
 
 (let ()
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1984,7 +2014,7 @@
       (cond
         [(null? (cdr lst))
          (and (arity-at-least? (car lst))
-              (> (arity-at-least-value (car lst)) bound))]
+              (> (arity-at-least-value (car lst)) (+ 1 bound)))]
         [else
          (and (nat? (car lst))
               ((car lst) . > . bound)
@@ -2009,16 +2039,62 @@
         (and (number? (car a))
              (< bound (car a))
              (sorted/bounded-list? (cdr a) (car a)))))
+
+  (define (arity-supports-number? arity n)
+    (cond
+      [(exact-nonnegative-integer? arity) (= arity n)]
+      [(arity-at-least? arity) (<= (arity-at-least-value arity) n)]
+      [(list? arity)
+       (for/or {[elem (in-list arity)]}
+         (arity-supports-number? elem n))]))
+
+  (define (arity-supports-at-least? arity n)
+    (cond
+      [(exact-nonnegative-integer? arity) #f]
+      [(arity-at-least? arity) (<= (arity-at-least-value arity) n)]
+      [(list? arity)
+       (define min-at-least
+         (for/fold {[min-at-least #f]} {[elem (in-list arity)]}
+           (cond
+             [(exact-nonnegative-integer? elem) min-at-least]
+             [(arity-at-least? elem)
+              (cond
+                [(not min-at-least) (arity-at-least-value elem)]
+                [else (min min-at-least (arity-at-least-value elem))])])))
+       (cond
+         [(not min-at-least) #f]
+         [else
+          (for/and {[i (in-range n min-at-least)]}
+            (arity-supports-number? arity i))])]))
+
+  (define (arity-supports? one two)
+    (cond
+      [(exact-nonnegative-integer? two)
+       (arity-supports-number? one two)]
+      [(arity-at-least? two)
+       (arity-supports-at-least? one (arity-at-least-value two))]
+      [(list? two)
+       (for/and {[elem (in-list two)]}
+         (arity-supports? one elem))]))
+
+  (define (arity=? one two)
+    (and (arity-supports? one two) (arity-supports? two one)))
+
+  (define (normalized-arity=? original normalized)
+    (and
+      (normalized-arity? normalized)
+      (arity=? original normalized)))
   
   (for ((i (in-range 1 2000)))
-    (let* ([rand-bound (ceiling (/ i 10))]
-           [l (build-list (random rand-bound)
-                          (λ (i) (if (zero? (random 5))
-                                     (make-arity-at-least (random rand-bound))
-                                     (random rand-bound))))]
-           [res (normalize-arity l)])
-      (unless (normalized-arity? res)
-        (error 'normalize-arity-failed "input ~s; output ~s" l res)))))
+    (define rand-bound (ceiling (/ i 10)))
+    (define l
+      (build-list (random rand-bound)
+        (λ (i) (if (zero? (random 5))
+                   (make-arity-at-least (random rand-bound))
+                   (random rand-bound)))))
+    (define res (normalize-arity l))
+    #:final (not (normalized-arity=? l res))
+    (test #t normalized-arity=? l res)))
 
 (test #t procedure-arity-includes? cons 2)
 (test #f procedure-arity-includes? cons 0)

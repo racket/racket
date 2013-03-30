@@ -38,37 +38,53 @@
   ;;     not in a list)
   (define (normalize-arity arity)
     (if (pair? arity)
-      (let loop ([min-at-least #f] [min-num 0] [as arity] [numbers '()])
-        ;; (1) find the minimal arity-at-least if any, find only numbers
-        (if (pair? as)
-          (let ([a (car as)] [as (cdr as)])
-            (if (arity-at-least? a)
-              (if (and min-at-least (<= min-num (arity-at-least-value a)))
-                (loop min-at-least min-num as numbers)
-                (loop a (arity-at-least-value a) as numbers))
-              (loop min-at-least min-num as (cons a numbers))))
-          ;; (2) remove redundant numbers and sort
-          (let loop ([numbers (sort (if min-at-least
-                                      (filter-below min-num numbers)
-                                      numbers)
-                                    >)] ; reversed in the loop below
-                     [result (if min-at-least (list min-at-least) '())])
-            ;; (3) throw out duplicates (while reversing the list)
-            (cond [(pair? numbers)
-                   (loop (cdr numbers)
-                         (if (and (pair? result)
-                                  (eq? (car numbers) (car result)))
-                           result
-                           (cons (car numbers) result)))]
-                  ;; result is never null (otherwise the input would be null)
-                  [(null? (cdr result)) (car result)]
-                  [else result]))))
-      arity))
+        (let* ([reversed (reverse-sort-arity arity)]
+               [normalized (normalize-reversed-arity reversed '())]
+               [simplified (normalize-singleton-arity normalized)])
+          simplified)
+        arity))
 
-  ;; have my own version of this to avoid a circular dependency
-  (define (filter-below max l)
-    (cond [(null? l) l]
-          [else (let ([x (car l)])
-                  (if (< x max)
-                    (cons x (filter-below max (cdr l)))
-                    (filter-below max (cdr l))))])))
+  (define (normalize-singleton-arity arity)
+    (if (and (pair? arity) (null? (cdr arity)))
+        (car arity)
+        arity))
+
+  (define (normalize-reversed-arity arity tail)
+    (if (pair? arity)
+        (normalize-reversed-arity (cdr arity) (arity-insert (car arity) tail))
+        tail))
+
+  (define (arity-insert elem arity)
+    (if (pair? arity)
+        (let ([next (car arity)])
+          (if (arity-at-least? next)
+              (let ([next-value (arity-at-least-value next)])
+                (if (arity-at-least? elem)
+                    ;; arity-at-least + arity-at-least
+                    (let ([elem-value (arity-at-least-value elem)])
+                      (if (< elem-value next-value)
+                          (cons elem (cdr arity))
+                          arity))
+                    ;; number + arity-at-least
+                    (if (< elem (- next-value 1))
+                        (cons elem arity)
+                        (if (= elem (- next-value 1))
+                            (cons (arity-at-least elem) (cdr arity))
+                            arity))))
+              ;; number + number
+              (if (< elem next)
+                  (cons elem arity)
+                  arity)))
+        (cons elem arity)))
+
+  (define (reverse-sort-arity arity)
+    (sort arity arity>?))
+
+  (define (arity>? a b)
+    (if (arity-at-least? a)
+        (if (arity-at-least? b)
+            (> (arity-at-least-value a) (arity-at-least-value b))
+            #t)
+        (if (arity-at-least? b)
+            #f
+            (> a b)))))
