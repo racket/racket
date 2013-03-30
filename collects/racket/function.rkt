@@ -1,8 +1,8 @@
 #lang racket/base
 
-(require (for-syntax racket/base syntax/name))
+(require (for-syntax racket/base syntax/name) racket/private/norm-arity)
 
-(provide identity const thunk thunk* negate curry curryr)
+(provide identity const thunk thunk* negate curry curryr normalize-arity)
 
 (define (identity x) x)
 
