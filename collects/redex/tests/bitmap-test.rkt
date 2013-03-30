@@ -243,8 +243,11 @@
         (list-ref lws 4)
         "}"))
 
-(btest (with-compound-rewriter 'subst subst-rw
-                               (render-metafunction subst))
+(btest (with-atomic-rewriter
+        'number "number" ;; this rewriter has no effect; here to test that path in the code
+        (with-compound-rewriter
+         'subst subst-rw
+         (render-metafunction subst)))
        "metafunction-subst.png")
 
 

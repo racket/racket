@@ -11,8 +11,10 @@
          racket/match
          racket/draw
          racket/class
+         racket/contract 
          
-         (for-syntax racket/base))
+         (for-syntax racket/base
+                     syntax/parse))
 
 (define pink-code-font 'modern)
 
@@ -68,10 +70,16 @@
        (hole "[]"))))
   
   (define-syntax (with-atomic-rewriter stx)
-    (syntax-case stx ()
-      [(_ name transformer e)
+    (syntax-parse stx
+      [(_ name transformer e:expr)
+       #:declare name
+       (expr/c #'symbol?
+               #:name "atomic-rewriter name")
+       #:declare transformer
+       (expr/c #'(or/c (-> pict?) string?)
+               #:name "atomic-rewriter rewrite")
        #'(parameterize ([atomic-rewrite-table
-                         (cons (list name transformer)
+                         (cons (list name.c transformer.c)
                                (atomic-rewrite-table))])
            e)]))
   
@@ -102,24 +110,31 @@
                         the-name
                         (blank))))))))
   
-  (define-syntax-rule (with-compound-rewriter name rewriter body)
+  (define-syntax-rule 
+    (with-compound-rewriter name rewriter body)
     (with-compound-rewriters ([name rewriter]) body))
-  (define-syntax with-compound-rewriters
-    (syntax-rules ()
-      [(_ ([name rewriter] ...) body)
-       (parameterize ([compound-rewrite-table
-                       (append (reverse (list (list name rewriter) ...))
-                               (compound-rewrite-table))])
-         body)]))
+  (define-syntax (with-compound-rewriters stx)
+    (syntax-parse stx
+      [(_ ([name rewriter] ...) body:expr)
+       #:declare name (expr/c #'symbol? #:name "compound-rewriter name")
+       #:declare rewriter (expr/c #'(-> (listof lw?)
+                                        (listof (or/c lw? string? pict?)))
+                                  #:name "compound-rewriter transformer")
+       #'(parameterize ([compound-rewrite-table
+                         (append (reverse (list (list name rewriter.c) ...))
+                                 (compound-rewrite-table))])
+           body)]))
+  
   
   (define-syntax (with-unquote-rewriter stx)
-    (syntax-case stx ()
-      [(_ transformer e)
-       #'(parameterize ([current-unquote-rewriter transformer])
+    (syntax-parse stx
+      [(_ transformer e:expr)
+       #:declare transformer
+       (expr/c #'(-> lw? lw?)
+               #:name "unquote-rewriter")
+       #'(parameterize ([current-unquote-rewriter transformer.c])
            e)]))
   (define current-unquote-rewriter (make-parameter values))
-                                    
-  
   
   ;; token = string-token | spacer-token | pict-token | align-token | up-token
   

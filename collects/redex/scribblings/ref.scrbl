@@ -2927,14 +2927,12 @@ To replace the pink code, use:
 
 @defform[(with-unquote-rewriter proc expression)]{
 
-It installs @racket[proc] the current unqoute rewriter and
-evaluates expression. If that expression computes any picts,
+Installs @racket[proc] as the current unquote rewriter and
+evaluates @racket[expression]. If that expression computes any picts,
 the unquote rewriter specified is used to remap them.
 
-The @racket[proc] should be a function of one argument. It receives
-a @racket[lw] struct as an argument and should return
-another @racket[lw] that contains a rewritten version of the
-code.
+The @racket[proc] must match the contract @racket[(-> lw? lw?)].
+Its result should be the rewritten version version of the input.
 }
 
 @defform[(with-atomic-rewriter name-symbol
@@ -2947,7 +2945,7 @@ string-or-pict-returning-thunk (applied, in the case of a
 thunk), during the evaluation of expression.
 
 @racket[name-symbol] is expected to evaluate to a symbol. The value
-of string-or-thunk-returning-pict is used whever the symbol
+of string-or-thunk-returning-pict is used whenever the symbol
 appears in a pattern.
 }
 
