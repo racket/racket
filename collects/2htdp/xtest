@@ -11,6 +11,7 @@ run() {
 cd tests 
 
 run key-error.rkt
+run run-movie.rkt
 run bad-draw.rkt
 run error-in-tick.rkt
 run error-in-draw.rkt
