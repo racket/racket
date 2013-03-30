@@ -41,27 +41,10 @@
   (list))
 
 (define table (append binary/small-second-arg-table binary-table unary-table nary-table))
-
-(define (normalize-arity a)
-  (cond
-    [(list? a)
-     (let ([at-least (ormap (λ (x) (and (arity-at-least? x) x)) a)])
-       (if at-least
-           (let ([new-a
-                  (filter (λ (x) (or (not (number? x))
-                                     (< x (arity-at-least-value at-least))))
-                          a)])
-             (if (pair? (cdr new-a))
-                 new-a
-                 (car new-a)))
-           (if (pair? (cdr a))
-               a
-               (car a))))]
-    [else a]))
   
 (define (check-arity fx unsafe-fx)
-  (let ([same-arities? (λ (x y) (equal? (normalize-arity (procedure-arity x))
-                                        (normalize-arity (procedure-arity y))))])
+  (let ([same-arities? (λ (x y) (equal? (procedure-arity x)
+                                        (procedure-arity y)))])
     (test #t
           same-arities?
           fx
