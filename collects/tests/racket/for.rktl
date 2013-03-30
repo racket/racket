@@ -364,4 +364,13 @@
 (test '() 'in-empty-vector (let ([v (in-vector '#(1) 0 0)]) (for/list ([e v]) e)))
 (test '(1) 'in-empty-vector (let ([v (in-vector '#(1) 0 1)]) (for/list ([e v]) e)))
 
+(test '(1 2 3)
+      'sequence-syntax-with-keywords
+      (let ()
+        (define (in-X #:x seq) seq)
+        (for/list ([x (in-X #:x '(1 2 3))]) x)
+        ;; => '(1 2 3)
+        (define-sequence-syntax in-X* (lambda () #'in-X) (lambda (stx) #f))
+        (for/list ([x (in-X* #:x '(1 2 3))]) x)))
+
 (report-errs)
