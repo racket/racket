@@ -151,13 +151,8 @@ A valid arity @racket[_a] is one of the following:
 
 ]
 
-Generally, @racket[procedure-arity] always produces an arity that is normalized. 
-Specifically, it is either the empty list (corresponding to the procedure 
-@racket[(case-lambda)]), one of the first two cases above, or a list
-that contains at least two elements. If it is a list, there is at most one
-@racket[arity-at-least] instance that appears as the last element of the list,
-all of the other elements are sorted in ascending order, and there are no duplicate
-elements.
+The result of @racket[procedure-arity] is always normalized in the sense of
+@racket[normalize-arity].
 
 @mz-examples[
 (procedure-arity cons)
@@ -615,6 +610,39 @@ arguments, and following steps add arguments to the left of these.
 @mz-examples[#:eval fun-eval
   (map (curryr list 'foo) '(1 2 3))
 ]}
+
+@defproc[(normalize-arity [arity procedure-arity?]) procedure-arity?]{
+
+Produces a normalized form of @racket[arity].  Specifically, the result has one
+of the following forms:
+@itemize[
+@item{the empty list;}
+@item{an exact non-negative integer;}
+@item{an @racket[arity-at-least] instance;}
+@item{a list of two or more strictly increasing, exact non-negative integers;
+or}
+@item{a list of one or more strictly increasing, exact non-negative integers
+followed by a single @racket[arity-at-least] instance whose value is greater
+than the preceding integer by at least 2.}
+]
+Based on these restrictions, for any two procedure arity values @racket[a] and
+@racket[b], @racket[(equal? (normalize-arity a) (normalize-arity b))] produces
+a true value if and only if @racket[a] and @racket[b] represent the same set of
+numbers of arguments.
+
+@mz-examples[
+(normalize-arity 1)
+(normalize-arity (list 1))
+(normalize-arity (arity-at-least 2))
+(normalize-arity (list (arity-at-least 2)))
+(normalize-arity (list 1 (arity-at-least 2)))
+(normalize-arity (list (arity-at-least 2) 1))
+(normalize-arity (list (arity-at-least 2) 3))
+(normalize-arity (list 3 (arity-at-least 2)))
+(normalize-arity (list (arity-at-least 6) 0 2 (arity-at-least 4)))
+]
+
+}
 
 
 @close-eval[fun-eval]
