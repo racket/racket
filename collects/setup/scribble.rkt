@@ -662,7 +662,11 @@
          [stamp-file  (sxref-path latex-dest doc "stamp.sxref")]
          [out-file (build-path (doc-dest-dir doc) "index.html")]
          [src-zo (let-values ([(base name dir?) (split-path (doc-src-file doc))])
-                   (build-path base "compiled" (path-add-suffix name ".zo")))]
+                   (define path (build-path base "compiled" (path-add-suffix name ".zo")))
+                   (or (for/or ([root (in-list (current-compiled-file-roots))])
+                         (define p (reroot-path* path root))
+                         (and (file-exists? p) p))
+                       path))]
          [renderer (make-renderer latex-dest doc)]
          [can-run? (can-build? only-dirs doc)]
          [stamp-time (file-or-directory-modify-seconds stamp-file #f (lambda () -inf.0))]
@@ -1106,3 +1110,11 @@
 
 (define (info-deps->doc info)
   (filter-map (lambda (i) (and (info? i) (info-doc i))) (info-deps info)))
+
+(define (reroot-path* base root)
+  (cond
+   [(eq? root 'same) base]
+   [(relative-path? root)
+    (build-path base root)]
+   [else
+    (reroot-path base root)]))
