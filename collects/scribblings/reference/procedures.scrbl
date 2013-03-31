@@ -127,10 +127,11 @@ the @exnraise[exn:fail:contract].
 ]}
 
 @defproc[(procedure-arity [proc procedure?])
-         procedure-arity?]{
+         (and/c procedure-arity? normalized-arity?)]{
 
 Returns information about the number of by-position arguments accepted
-by @racket[proc]. See also @racket[procedure-arity?].}
+by @racket[proc]. See also @racket[procedure-arity?] and
+@racket[normalized-arity?].}
 
 @defproc[(procedure-arity? [v any/c]) boolean?]{
 
@@ -152,7 +153,7 @@ A valid arity @racket[_a] is one of the following:
 ]
 
 The result of @racket[procedure-arity] is always normalized in the sense of
-@racket[normalize-arity].
+@racket[normalized-arity?].
 
 @mz-examples[
 (procedure-arity cons)
@@ -611,10 +612,9 @@ arguments, and following steps add arguments to the left of these.
   (map (curryr list 'foo) '(1 2 3))
 ]}
 
-@defproc[(normalize-arity [arity procedure-arity?]) procedure-arity?]{
+@defproc[(normalized-arity? [arity procedure-arity?]) boolean?]{
 
-Produces a normalized form of @racket[arity].  Specifically, the result has one
-of the following forms:
+A normalized arity has one of the following forms:
 @itemize[
 @item{the empty list;}
 @item{an exact non-negative integer;}
@@ -625,12 +625,27 @@ or}
 followed by a single @racket[arity-at-least] instance whose value is greater
 than the preceding integer by at least 2.}
 ]
-Based on these restrictions, for any two procedure arity values @racket[a] and
-@racket[b], @racket[(equal? (normalize-arity a) (normalize-arity b))] produces
-a true value if and only if @racket[a] and @racket[b] represent the same set of
-numbers of arguments.
+Any two normalized arity values that are @racket[arity=?] must also be
+@racket[equal?].
 
-@mz-examples[
+@mz-examples[#:eval fun-eval
+(normalized-arity? (arity-at-least 1))
+(normalized-arity? (list (arity-at-least 1)))
+(normalized-arity? (list 0 (arity-at-least 2)))
+(normalized-arity? (list (arity-at-least 2) 0))
+(normalized-arity? (list 0 2 (arity-at-least 3)))
+]
+
+}
+
+@defproc[(normalize-arity [arity procedure-arity?])
+         (and/c procedure-arity? normalized-arity?
+                (lambda (x) (arity=? x arity)))]{
+
+Produces a normalized form of @racket[arity].  See also
+@racket[normalized-arity?] and @racket[arity=?].
+
+@mz-examples[#:eval fun-eval
 (normalize-arity 1)
 (normalize-arity (list 1))
 (normalize-arity (arity-at-least 2))
@@ -640,6 +655,56 @@ numbers of arguments.
 (normalize-arity (list (arity-at-least 2) 3))
 (normalize-arity (list 3 (arity-at-least 2)))
 (normalize-arity (list (arity-at-least 6) 0 2 (arity-at-least 4)))
+]
+
+}
+
+@defproc[(arity=? [a procedure-arity?] [b procedure-arity?]) boolean?]{
+
+Returns @racket[#true] if procedures with arity @racket[a] and @racket[b]
+accept the same numbers of arguments, and @racket[#false] otherwise.
+Equivalent to both @racket[(and (arity-includes? a b) (arity-includes? b a))]
+and @racket[(equal? (normalize-arity a) (normalize-arity b))].
+
+@mz-examples[#:eval fun-eval
+(arity=? 1 1)
+(arity=? (list 1) 1)
+(arity=? 1 (list 1))
+(arity=? 1 (arity-at-least 1))
+(arity=? (arity-at-least 1) 1)
+(arity=? 1 (arity-at-least 1))
+(arity=? (arity-at-least 1) (list 1 (arity-at-least 2)))
+(arity=? (list 1 (arity-at-least 2)) (arity-at-least 1))
+(arity=? (arity-at-least 1) (list 1 (arity-at-least 3)))
+(arity=? (list 1 (arity-at-least 3)) (arity-at-least 1))
+(arity=? (list 0 1 2 (arity-at-least 3)) (list (arity-at-least 0)))
+(arity=? (list (arity-at-least 0)) (list 0 1 2 (arity-at-least 3)))
+(arity=? (list 0 2 (arity-at-least 3)) (list (arity-at-least 0)))
+(arity=? (list (arity-at-least 0)) (list 0 2 (arity-at-least 3)))
+]
+
+}
+
+@defproc[(arity-includes? [a procedure-arity?] [b procedure-arity?]) boolean?]{
+
+Returns @racket[#true] if procedures with arity @racket[a] accept any number of
+arguments that procedures with arity @racket[b] accept.
+
+@mz-examples[#:eval fun-eval
+(arity-includes? 1 1)
+(arity-includes? (list 1) 1)
+(arity-includes? 1 (list 1))
+(arity-includes? 1 (arity-at-least 1))
+(arity-includes? (arity-at-least 1) 1)
+(arity-includes? 1 (arity-at-least 1))
+(arity-includes? (arity-at-least 1) (list 1 (arity-at-least 2)))
+(arity-includes? (list 1 (arity-at-least 2)) (arity-at-least 1))
+(arity-includes? (arity-at-least 1) (list 1 (arity-at-least 3)))
+(arity-includes? (list 1 (arity-at-least 3)) (arity-at-least 1))
+(arity-includes? (list 0 1 2 (arity-at-least 3)) (list (arity-at-least 0)))
+(arity-includes? (list (arity-at-least 0)) (list 0 1 2 (arity-at-least 3)))
+(arity-includes? (list 0 2 (arity-at-least 3)) (list (arity-at-least 0)))
+(arity-includes? (list (arity-at-least 0)) (list 0 2 (arity-at-least 3)))
 ]
 
 }
