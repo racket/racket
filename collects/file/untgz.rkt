@@ -2,7 +2,8 @@
 (require racket/file
          "untar.rkt"
          "gunzip.rkt"
-         racket/contract/base)
+         racket/contract/base
+         racket/port)
 
 (provide
  (contract-out
@@ -37,7 +38,10 @@
                   (lambda () (void))
                   (lambda () (gunzip-through-ports in out))
                   (lambda () (close-output-port out))))))
-         (values in2 (lambda () (thread-wait t)))]
+         (values in2 (lambda ()
+                       ;; drain any remaining bytes:
+                       (copy-port in2 (open-output-nowhere))
+                       (thread-wait t)))]
         [else (values in void)]))
      (begin0
       (untar in2 #:dest dest #:strip-count strip-count #:filter filter)
