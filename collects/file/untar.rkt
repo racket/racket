@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/file
          racket/contract/base
+         racket/port
          "private/strip-prefix.rkt")
 
 (provide
@@ -14,6 +15,8 @@
                                exact-nonnegative-integer? exact-nonnegative-integer?
                                . -> . any/c))
               void?)]))
+
+(define-logger untar)
 
 (define (untar in 
                #:dest [dest #f]
@@ -88,7 +91,8 @@
   (cond
    [(and filename create?)
     (case type
-      [(dir) 
+      [(dir)
+       (log-untar-info "directory: ~a" filename)
        (make-directory* filename)
        (cons
         ;; delay directory meta-data updates until after any contained
@@ -102,6 +106,7 @@
              (file-or-directory-modify-seconds* filename mod-time #t))))
         delays)]
       [(file)
+       (log-untar-info "file: ~a" filename)
        (define-values (base name dir?) (split-path filename))
        (make-directory* base)
        (call-with-output-file*
@@ -118,13 +123,16 @@
        (copy-bytes (- total-len size) in #f)
        delays]
       [(link)
+       (log-untar-info "link: ~a" filename)
        (define-values (base name dir?) (split-path filename))
        (make-directory* base)
        (when (file-exists? filename) (delete-file filename))
        (make-file-or-directory-link link-target filename)
        delays]
       [else
-       (error 'untar "cannot handle block type: ~a" type)])]
+       (log-untar-info "ignored ~a: ~a" type filename)
+       (copy-bytes total-len in #f)
+       delays])]
    [else
     (copy-bytes total-len in #f)
     delays]))
@@ -172,7 +180,7 @@
 (define (try-file-op thunk)
   (with-handlers ([exn:fail:filesystem?
                    (lambda (exn)
-                     (log-error "untar: ~a" (exn-message exn))
+                     (log-untar-error (exn-message exn))
                      (void))])
     (thunk)))
 
