@@ -83,8 +83,6 @@
 (define curryr (make-curry #t))
 
 (define (normalized-arity? a)
-  (unless (procedure-arity? a)
-          (raise-argument-error 'normalized-arity? "procedure-arity?" a))
   (or (null? a)
       (arity? a)
       (and (list? a)
@@ -160,7 +158,7 @@
         (for/and {[i (in-range n min-at-least)]}
           (arity-supports-number? arity i))])]))
 
-(define (arity-includes? one two)
+(define (unchecked-arity-includes? one two)
   (cond
     [(exact-nonnegative-integer? two)
      (arity-supports-number? one two)]
@@ -168,7 +166,20 @@
      (arity-supports-at-least? one (arity-at-least-value two))]
     [(list? two)
      (for/and {[elem (in-list two)]}
-       (arity-includes? one elem))]))
+       (unchecked-arity-includes? one elem))]))
+
+(define (arity-includes? one two)
+  (unless (procedure-arity? one)
+    (raise-argument-error 'arity-includes? "procedure-arity?" 0 one two))
+  (unless (procedure-arity? two)
+    (raise-argument-error 'arity-includes? "procedure-arity?" 1 one two))
+  (unchecked-arity-includes? one two))
 
 (define (arity=? one two)
-  (and (arity-includes? one two) (arity-includes? two one)))
+  (unless (procedure-arity? one)
+    (raise-argument-error 'arity=? "procedure-arity?" 0 one two))
+  (unless (procedure-arity? two)
+    (raise-argument-error 'arity=? "procedure-arity?" 1 one two))
+  (and
+    (unchecked-arity-includes? one two)
+    (unchecked-arity-includes? two one)))

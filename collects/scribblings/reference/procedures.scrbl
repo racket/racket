@@ -126,8 +126,7 @@ the @exnraise[exn:fail:contract].
 (keyword-apply f #:z 7 '(#:y) '(2) '(1))
 ]}
 
-@defproc[(procedure-arity [proc procedure?])
-         (and/c procedure-arity? normalized-arity?)]{
+@defproc[(procedure-arity [proc procedure?]) normalized-arity?]{
 
 Returns information about the number of by-position arguments accepted
 by @racket[proc]. See also @racket[procedure-arity?] and
@@ -612,7 +611,7 @@ arguments, and following steps add arguments to the left of these.
   (map (curryr list 'foo) '(1 2 3))
 ]}
 
-@defproc[(normalized-arity? [arity procedure-arity?]) boolean?]{
+@defproc[(normalized-arity? [arity any/c]) boolean?]{
 
 A normalized arity has one of the following forms:
 @itemize[
@@ -625,8 +624,9 @@ or}
 followed by a single @racket[arity-at-least] instance whose value is greater
 than the preceding integer by at least 2.}
 ]
-Any two normalized arity values that are @racket[arity=?] must also be
-@racket[equal?].
+Every normalized arity is a valid procedure arity and satisfies
+@racket[procedure-arity?].  Any two normalized arity values that are
+@racket[arity=?] must also be @racket[equal?].
 
 @mz-examples[#:eval fun-eval
 (normalized-arity? (arity-at-least 1))
@@ -639,8 +639,7 @@ Any two normalized arity values that are @racket[arity=?] must also be
 }
 
 @defproc[(normalize-arity [arity procedure-arity?])
-         (and/c procedure-arity? normalized-arity?
-                (lambda (x) (arity=? x arity)))]{
+         (and/c normalized-arity? (lambda (x) (arity=? x arity)))]{
 
 Produces a normalized form of @racket[arity].  See also
 @racket[normalized-arity?] and @racket[arity=?].

@@ -37,6 +37,8 @@
   ;;   - if there is only one possibility, it is returned by itself (ie,
   ;;     not in a list)
   (define (normalize-arity arity)
+    (unless (procedure-arity? arity)
+            (raise-argument-error 'normalize-arity "procedure-arity?" arity))
     (if (pair? arity)
         (let* ([reversed (reverse-sort-arity arity)]
                [normalized (normalize-reversed-arity reversed '())]
