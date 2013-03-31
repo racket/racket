@@ -230,12 +230,19 @@ argument.}
   symbols.}
 
 
-@defproc[(com-get-property [obj com-object?] [property string?] ...+)
+@defproc[(com-get-property [obj com-object?] 
+                           [property (or/c string?
+                                           (cons/c string? list?))]
+                           ...+)
          any/c]{
 
   Returns the value of the final property by following the indicated
   path of @racket[property]s, where each intermediate property must be a
-  COM object.}
+  COM object.
+
+  Each @racket[property] is either a property-name string or a list
+  that starts with a property-name string and continues with arguments
+  for a parameterized property.}
 
 @defproc[(com-get-property* [obj com-object?] [property string?] [v any/c] ...)
          any/c]{

@@ -12,7 +12,7 @@
          cocreate-instance-from-progid
          cci/progid
 
-         get-active-object-from-coclass
+	 com-get-active-object-from-coclass
          gao/coclass
          
          coclass
@@ -81,10 +81,10 @@
 (define (cci/progid progid [where 'local])
   (cocreate-instance-from-progid progid where))
 
-(define (get-active-object-from-coclass coclass)
-  (com-get-active-object (coclass->clsid* 'get-active-object-from-coclass coclass)))
+(define (com-get-active-object-from-coclass coclass)
+  (com-get-active-object (coclass->clsid* 'com-get-active-object-from-coclass coclass)))
 (define (gao/coclass coclass)
-  (get-active-object-from-coclass coclass))
+  (com-get-active-object-from-coclass coclass))
 
 (define (coclass obj)
   (clsid->coclass (com-object-clsid obj)))

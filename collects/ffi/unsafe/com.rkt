@@ -1946,8 +1946,8 @@
          [t (adjust-any-... args t)])
     (unless (<= (for/fold ([n 0]) ([v (in-list (cadr t))])
                   (if (and (pair? v) (eq? (car v) 'opt))
-                      (add1 n)
-                      n))
+                      n
+                      (add1 n)))
                 (length args)
                 (length (cadr t)))
             (error 'com-invoke "bad argument count for ~s" name))
@@ -2047,7 +2047,16 @@
 (define com-get-property
   (case-lambda
    [(obj name)
-    (do-com-invoke 'com-get-property obj name null INVOKE_PROPERTYGET)]
+    (cond
+     [(string? name)
+      (do-com-invoke 'com-get-property obj name null INVOKE_PROPERTYGET)]
+     [(and (list? name)
+	   (pair? name)
+	   (string? (car name)))
+      (do-com-invoke 'com-get-property obj (car name) (cdr name) INVOKE_PROPERTYGET)]
+     [else
+      (raise-argument-error 'com-get-property "(or/c string? (cons/c string? list))"
+			    name)])]
    [(obj name1 . more-names)
     (check-com-obj 'com-get-property obj)
     (define names (cons name1 more-names))
