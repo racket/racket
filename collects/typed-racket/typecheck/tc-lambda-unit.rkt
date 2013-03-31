@@ -101,7 +101,7 @@
       [(dotted? rest)
        =>
        (lambda (b)
-         (let ([dty (get-type rest #:default Univ)])
+         (let ([dty (extend-tvars (list b) (get-type rest #:default Univ))])
            (with-lexical-env/extend
             (list rest) (list (make-ListDots dty b))
             (check-body))))]
