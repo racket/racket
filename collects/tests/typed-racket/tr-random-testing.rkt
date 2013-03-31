@@ -2,7 +2,7 @@
 
 ;; Random testing of type preservation for reals.
 
-(require redex
+(require redex/reduction-semantics
          racket/flonum racket/unsafe/ops
          racket/sandbox racket/cmdline
          "random-real.rkt")
