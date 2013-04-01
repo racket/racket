@@ -183,8 +183,8 @@
                   #`(c1.bindings ... c2.bindings ... cs.bindings ... ...
                      ;; we want to bind the intermediate results to reuse them
                      ;; the final results are bound to real-binding and imag-binding
-                     #,@(let loop ([o1 (car (syntax->list #'reals))]
-                                   [o2 (car (syntax->list #'imags))]
+                     #,@(let loop ([a  (car (syntax->list #'reals))]
+                                   [b  (car (syntax->list #'imags))]
                                    [e1 (cdr (syntax->list #'reals))]
                                    [e2 (cdr (syntax->list #'imags))]
                                    [rs (append (syntax-map (lambda (x) (unboxed-gensym "unboxed-real-"))
@@ -199,44 +199,44 @@
                           (if (null? e1)
                               (reverse res)
                               (loop (car rs) (car is) (cdr e1) (cdr e2) (cdr rs) (cdr is) (cdr ds)
-                                    ;; complex division, imag part, real part, then denominator (reverse)
-                                    (let ((o-real? (equal? (syntax->datum o2) 0.0))
-                                          (e-real? (equal? (syntax->datum (car e2)) 0.0)))
+                                    (let ()
+                                      (define c (car e1))
+                                      (define d (car e2))
+                                      (define o-real? (equal? (syntax->datum b) 0.0))
+                                      (define e-real? (equal? (syntax->datum d) 0.0))
+                                      ;; we have the same special cases as the Racket `/' primitive
+                                      (define d=0-case
+                                        #`(values (unsafe-fl+ (unsafe-fl/ #,a #,c)
+                                                              (unsafe-fl* #,d #,b))
+                                                  (unsafe-fl- (unsafe-fl/ #,b #,c)
+                                                              (unsafe-fl* #,d #,a))))
+                                      (define c=0-case
+                                        #`(values (unsafe-fl+ (unsafe-fl/ #,b #,d)
+                                                              (unsafe-fl* #,c #,a))
+                                                  (unsafe-fl- (unsafe-fl* #,c #,b)
+                                                              (unsafe-fl/ #,a #,d))))
+                                      (define general-case
+                                        #`(let ([#,(car ds) (unsafe-fl+
+                                                             (unsafe-fl* #,c #,c)
+                                                             (unsafe-fl* #,d #,d))])
+                                            (values (unsafe-fl/ (unsafe-fl+ (unsafe-fl* #,a #,c)
+                                                                            (unsafe-fl* #,b #,d))
+                                                                #,(car ds))
+                                                    (unsafe-fl/ (unsafe-fl- (unsafe-fl* #,b #,c)
+                                                                            (unsafe-fl* #,a #,d))
+                                                                #,(car ds)))))
                                       (cond [(and o-real? e-real?)
                                              (list*
                                               #`((#,(car is)) 0.0) ; currently not propagated
-                                              #`((#,(car rs)) (unsafe-fl/ #,o1 #,(car e1)))
-                                              res)]
-                                            [o-real?
-                                             (list*
-                                              #`((#,(car is))
-                                                 (unsafe-fl/ (unsafe-fl- 0.0
-                                                                         (unsafe-fl* #,o1 #,(car e2)))
-                                                             #,(car ds)))
-                                              #`((#,(car rs)) (unsafe-fl/ (unsafe-fl* #,o1 #,(car e1))
-                                                                          #,(car ds)))
-                                              #`((#,(car ds)) (unsafe-fl+ (unsafe-fl* #,(car e1) #,(car e1))
-                                                                          (unsafe-fl* #,(car e2) #,(car e2))))
-                                              res)]
-                                            [e-real?
-                                             (list*
-                                              #`((#,(car is)) (unsafe-fl/ #,o2 #,(car e1)))
-                                              #`((#,(car rs)) (unsafe-fl/ #,o1 #,(car e1)))
+                                              #`((#,(car rs)) (unsafe-fl/ #,a #,c))
                                               res)]
                                             [else
-                                             (list*
-                                              #`((#,(car is))
-                                                 (unsafe-fl/ (unsafe-fl- (unsafe-fl* #,o2 #,(car e1))
-                                                                         (unsafe-fl* #,o1 #,(car e2)))
-                                                             #,(car ds)))
-                                              #`((#,(car rs))
-                                                 (unsafe-fl/ (unsafe-fl+ (unsafe-fl* #,o1 #,(car e1))
-                                                                         (unsafe-fl* #,o2 #,(car e2)))
-                                                             #,(car ds)))
-                                              #`((#,(car ds))
-                                                 (unsafe-fl+ (unsafe-fl* #,(car e1) #,(car e1))
-                                                             (unsafe-fl* #,(car e2) #,(car e2))))
-                                              res)]))))))))
+                                             ;; (let-values ([(real imag) ...]) ...)
+                                             (list* #`[(#,(car rs) #,(car is))
+                                                       (cond [(unsafe-fl= #,d 0.0) #,d=0-case]
+                                                             [(unsafe-fl= #,c 0.0) #,c=0-case]
+                                                             [else                 #,general-case])]
+                                                    res)]))))))))
   (pattern (#%plain-app (~and op (~literal /)) c1:unboxed-float-complex-opt-expr) ; unary /
            #:when (subtypeof? this-syntax -FloatComplex)
            #:with real-binding (unboxed-gensym "unboxed-real-")
