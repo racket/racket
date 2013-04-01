@@ -192,21 +192,17 @@
 
 (define (print-args port l f)
   (let loop ([l l]
-             [a (let a-c ([a (procedure-arity f)])
-                  (cond [(number? a) (cons (sub1 a) (sub1 a))]
-                        [(arity-at-least? a)
-                         (let ([v (sub1 (arity-at-least-value a))])
-                           (cons v v))]
-                        [else (let ([r (map a-c a)])
-                                (cons (apply min (map car r))
-                                      (apply max (map cdr r))))]))])
+             [n 1])
     (unless (null? l)
+      (define optional? (procedure-arity-includes? f n))
       (fprintf port " ~a<~a>~a"
-               (if (positive? (car a)) "" "[")
+               (if optional? "[" "")
                (car l)
-               (if (positive? (car a)) "" "]"))
-      (unless (positive? (cdr a)) (fprintf port " ..."))
-      (loop (cdr l) (cons (sub1 (car a)) (sub1 (cdr a)))))))
+               (if optional? "]" ""))
+      (when (and (null? (cdr l))
+                 (procedure-arity-includes? f (+ n 2)))
+        (fprintf port " ..."))
+      (loop (cdr l) (add1 n)))))
 
 (define (procedure-arity-includes-at-least? p n)
   (let a-c ([a (procedure-arity p)])
@@ -303,15 +299,11 @@
                  (or (number? a) (arity-at-least? a))))
     (raise-type-error 'parse-command-line "unknown-flag procedure of simple arity, accepting 1 argument (an perhaps more)" unknown-flag))
 
-  (letrec ([a (procedure-arity finish)]
-           [l (length finish-help)]
-           [a-c (lambda (a)
-                  (or (and (number? a) (sub1 a))
-                      (and (arity-at-least? a)
-                           (max 1 (arity-at-least-value a)))
-                      (and (list? a) (apply max (map a-c a)))))])
-    (unless (= (a-c a) l)
-      (error 'parse-command-line "the length of the argument help string list does not match the arity of the finish procedure")))
+  (unless (procedure-arity-includes? finish (add1 (length finish-help)))
+    (raise-arguments-error 'parse-command-line 
+                           "mismatch in length of argument help string and finish procedure arity"
+                           "argument help string" finish-help
+                           "finish procedure" finish))
 
   (let* ([finalled? #f] ; set to true when 'once-final is seen
          [once-spec-set

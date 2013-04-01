@@ -199,4 +199,15 @@
 (syntax-test #'(command-line "hello" #("ok") (=> 'done) (once-any ("-ok" a "the ok flag" 7))))
 (syntax-test #'(command-line "hello" #("ok") (=> 1 2 3 4) (once-any ("-ok" a "the ok flag" 7))))
 
+(err/rt-test (parse-command-line "test" #("x") null (lambda () 'too-few) '("arg")))
+(err/rt-test (parse-command-line "test" #("x") null (lambda (x) 'still-too-few) '("arg")))
+(err/rt-test (parse-command-line "test" #("x") null (lambda (x y z) 'too-many) '("arg")))
+(err/rt-test (parse-command-line "test" #("x") null (lambda (x y z . w) 'too-many) '("arg")))
+(test 'ok parse-command-line "test" #("x") null (lambda (x y) 'ok) '("arg"))
+(test 'ok parse-command-line "test" #("x") null (lambda (x . y) 'ok) '("arg"))
+(test 'ok parse-command-line "test" #("x") null (lambda (x y . z) 'ok) '("arg"))
+(test 'ok parse-command-line "test" #("x") null (case-lambda [(x) 'none] [(x y) 'ok]) '("arg"))
+(test 'ok parse-command-line "test" #("x") null (case-lambda [(x) 'none] [(x . ys) 'ok]) '("arg"))
+(test 'ok parse-command-line "test" #("x") null (case-lambda [(x) 'none] [(x y . z) 'ok]) '("arg"))
+
 (report-errs)
