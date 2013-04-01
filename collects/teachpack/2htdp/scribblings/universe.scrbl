@@ -127,8 +127,8 @@ Example:
 @defproc[(run-movie [r (and/c real? positive?)] [m [Listof image?]])
          true]{
 
- @racket[run-movie] displays the list of images @racket[m] at the rate of
- @racket[r] images per second.}
+ @racket[run-movie] displays the list of images @racket[m], spending 
+ @racket[r] seconds per image.}
 
 
 @;-----------------------------------------------------------------------------

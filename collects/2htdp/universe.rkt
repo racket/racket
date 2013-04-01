@@ -327,7 +327,7 @@
          [hgt (image-height fst)])
     (big-bang 
      m* 
-     (on-tick rest (/ 1 r))
+     (on-tick rest r)
      (on-draw (lambda (m) (if (empty? m) (text "The End" 22 'red) (first m))))
      (stop-when empty?))))
 
