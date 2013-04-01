@@ -1905,8 +1905,8 @@
        (unop -Zero) ; only exact case
        ((Un -PosRat -PosFlonum) . -> . -NonNegFlonum) ; possible underflow, no pos -> pos
        ((Un -NegRat -NegFlonum) . -> . -NonPosFlonum)
-       ((Un -PosSingleFlonum) . -> . -NonNegSingleFlonum)
-       ((Un -NegSingleFlonum) . -> . -NonPosSingleFlonum)
+       (-PosSingleFlonum . -> . -NonNegSingleFlonum)
+       (-NegSingleFlonum . -> . -NonPosSingleFlonum)
        (map unop (list -FlonumNan -NonNegFlonum -NonPosFlonum -Flonum
                        -SingleFlonumNan -PosSingleFlonum -NonNegSingleFlonum -NegSingleFlonum -NonPosSingleFlonum -SingleFlonum
                        -PosInexactReal -NonNegInexactReal -NegInexactReal -NonPosInexactReal -InexactReal
