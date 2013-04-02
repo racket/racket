@@ -30,6 +30,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include <stddef.h>
 #include "libunwind_i.h"
 
+#ifdef CONFIG_DEBUG_FRAME
+# include <stdio.h>
+# include <unistd.h>
+# include <fcntl.h>
+# include <sys/mman.h>
+# include "os-linux.h"
+#endif
+
+#define UNW_PI_FLAG_DEBUG_FRAME        32
+
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 /*                   region-based memory management                   */
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
@@ -260,7 +270,7 @@ do {						\
 				   OPND1_TYPE (operands_signature),
 				   &operand1, arg)) < 0)
 	    return ret;
-	  if (NUM_OPERANDS (operands_signature > 1))
+	  if (NUM_OPERANDS (operands_signature) > 1)
 	    if ((ret = read_operand (as, a, addr,
 				     OPND2_TYPE (operands_signature),
 				     &operand2, arg)) < 0)
@@ -657,12 +667,15 @@ do {						\
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 
 static inline int
-is_cie_id (unw_word_t val)
+is_cie_id (unw_word_t val, int is_debug_frame)
 {
-  /* DWARF spec says CIE_id is 0xffffffff (for 32-bit ELF) or
-     0xffffffffffffffff (for 64-bit ELF).  However, the GNU toolchain
+  /* The CIE ID is normally 0xffffffff (for 32-bit ELF) or
+     0xffffffffffffffff (for 64-bit ELF).  However, .eh_frame
      uses 0.  */
-  return (val == 0 || val == - (unw_word_t) 1);
+  if (is_debug_frame)
+    return (val == - (uint32_t) 1 || val == - (uint64_t) 1);
+  else
+    return (val == 0);
 }
 
 /* Note: we don't need to keep track of more than the first four
@@ -672,7 +685,8 @@ is_cie_id (unw_word_t val)
    repeated.  */
 static inline int
 parse_cie (unw_addr_space_t as, unw_accessors_t *a, unw_word_t addr,
-	   const unw_proc_info_t *pi, struct dwarf_cie_info *dci, void *arg)
+	   const unw_proc_info_t *pi, struct dwarf_cie_info *dci,
+	   unw_word_t base, void *arg)
 {
   uint8_t version, ch, augstr[5], fde_encoding, handler_encoding;
   unw_word_t len, cie_end_addr, aug_size;
@@ -705,13 +719,14 @@ parse_cie (unw_addr_space_t as, unw_accessors_t *a, unw_word_t addr,
     {
       /* the CIE is in the 32-bit DWARF format */
       uint32_t cie_id;
+      /* DWARF says CIE id should be 0xffffffff, but in .eh_frame, it's 0 */
+      const uint32_t expected_id = (base) ? 0xffffffff : 0;
 
       len = u32val;
       cie_end_addr = addr + len;
       if ((ret = dwarf_readu32 (as, a, &addr, &cie_id, arg)) < 0)
 	return ret;
-      /* DWARF says CIE id should be 0xffffffff, but in .eh_frame, it's 0 */
-      if (cie_id != 0)
+      if (cie_id != expected_id)
 	{
 	  Debug (1, "Unexpected CIE id %x\n", cie_id);
 	  return -UNW_EINVAL;
@@ -721,6 +736,9 @@ parse_cie (unw_addr_space_t as, unw_accessors_t *a, unw_word_t addr,
     {
       /* the CIE is in the 64-bit DWARF format */
       uint64_t cie_id;
+      /* DWARF says CIE id should be 0xffffffffffffffff, but in
+	 .eh_frame, it's 0 */
+      const uint64_t expected_id = (base) ? 0xffffffffffffffffull : 0;
 
       if ((ret = dwarf_readu64 (as, a, &addr, &u64val, arg)) < 0)
 	return ret;
@@ -728,9 +746,7 @@ parse_cie (unw_addr_space_t as, unw_accessors_t *a, unw_word_t addr,
       cie_end_addr = addr + len;
       if ((ret = dwarf_readu64 (as, a, &addr, &cie_id, arg)) < 0)
 	return ret;
-      /* DWARF says CIE id should be 0xffffffffffffffff, but in
-	 .eh_frame, it's 0 */
-      if (cie_id != 0)
+      if (cie_id != expected_id)
 	{
 	  Debug (1, "Unexpected CIE id %llx\n", (long long) cie_id);
 	  return -UNW_EINVAL;
@@ -777,14 +793,16 @@ parse_cie (unw_addr_space_t as, unw_accessors_t *a, unw_word_t addr,
 				      arg)) < 0)
     return ret;
 
+  i = 0;
   if (augstr[0] == 'z')
     {
       dci->sized_augmentation = 1;
       if ((ret = dwarf_read_uleb128 (as, a, &addr, &aug_size, arg)) < 0)
 	return ret;
+      i++;
     }
 
-  for (i = 1; i < sizeof (augstr) && augstr[i]; ++i)
+  for (; i < sizeof (augstr) && augstr[i]; ++i)
     switch (augstr[i])
       {
       case 'L':
@@ -810,22 +828,24 @@ parse_cie (unw_addr_space_t as, unw_accessors_t *a, unw_word_t addr,
 	break;
 
       case 'S':
+	/* This is a signal frame. */
+	dci->signal_frame = 1;
+
 	/* Temporarily set it to one so dwarf_parse_fde() knows that
 	   it should fetch the actual ABI/TAG pair from the FDE.  */
 	dci->have_abi_marker = 1;
 	break;
 
       default:
+	Debug (1, "Unexpected augmentation string `%s'\n", augstr);
 	if (dci->sized_augmentation)
 	  /* If we have the size of the augmentation body, we can skip
 	     over the parts that we don't understand, so we're OK. */
-	  return 0;
+	  goto done;
 	else
-	  {
-	    Debug (1, "Unexpected augmentation string `%s'\n", augstr);
-	    return -UNW_EINVAL;
-	  }
+	  return -UNW_EINVAL;
       }
+ done:
   dci->fde_encoding = fde_encoding;
   dci->cie_instr_start = addr;
   Debug (15, "CIE parsed OK, augmentation = \"%s\", handler=0x%lx\n",
@@ -833,12 +853,15 @@ parse_cie (unw_addr_space_t as, unw_accessors_t *a, unw_word_t addr,
   return 0;
 }
 
-/* Extract proc-info from the FDE starting at address ADDR.  */
+/* Extract proc-info from the FDE starting at adress ADDR.
+   
+   Pass BASE as zero for eh_frame behaviour, or a pointer to
+   debug_frame base for debug_frame behaviour.  */
 
 HIDDEN int
 dwarf_extract_proc_info_from_fde (unw_addr_space_t as, unw_accessors_t *a,
 				  unw_word_t *addrp, unw_proc_info_t *pi,
-				  int need_unwind_info,
+				  int need_unwind_info, unw_word_t base,
 				  void *arg)
 {
   unw_word_t fde_end_addr, cie_addr, cie_offset_addr, aug_end_addr = 0;
@@ -857,7 +880,7 @@ dwarf_extract_proc_info_from_fde (unw_addr_space_t as, unw_accessors_t *a,
 
   if (u32val != 0xffffffff)
     {
-      uint32_t cie_offset;
+      int32_t cie_offset;
 
       /* In some configurations, an FDE with a 0 length indicates the
 	 end of the FDE-table.  */
@@ -869,22 +892,25 @@ dwarf_extract_proc_info_from_fde (unw_addr_space_t as, unw_accessors_t *a,
       *addrp = fde_end_addr = addr + u32val;
       cie_offset_addr = addr;
 
-      if ((ret = dwarf_readu32 (as, a, &addr, &cie_offset, arg)) < 0)
+      if ((ret = dwarf_reads32 (as, a, &addr, &cie_offset, arg)) < 0)
 	return ret;
 
-      if (is_cie_id (cie_offset))
+      if (is_cie_id (cie_offset, base != 0))
 	/* ignore CIEs (happens during linear searches) */
 	return 0;
 
-      /* DWARF says that the CIE_pointer in the FDE is a
-	 .debug_frame-relative offset, but the GCC-generated .eh_frame
-	 sections instead store a "pcrelative" offset, which is just
-	 as fine as it's self-contained.  */
-      cie_addr = cie_offset_addr - cie_offset;
+      if (base != 0)
+        cie_addr = base + cie_offset;
+      else
+	/* DWARF says that the CIE_pointer in the FDE is a
+	   .debug_frame-relative offset, but the GCC-generated .eh_frame
+	   sections instead store a "pcrelative" offset, which is just
+	   as fine as it's self-contained.  */
+	cie_addr = cie_offset_addr - cie_offset;
     }
   else
     {
-      uint64_t cie_offset;
+      int64_t cie_offset;
 
       /* the FDE is in the 64-bit DWARF format */
 
@@ -894,21 +920,26 @@ dwarf_extract_proc_info_from_fde (unw_addr_space_t as, unw_accessors_t *a,
       *addrp = fde_end_addr = addr + u64val;
       cie_offset_addr = addr;
 
-      if ((ret = dwarf_readu64 (as, a, &addr, &cie_offset, arg)) < 0)
+      if ((ret = dwarf_reads64 (as, a, &addr, &cie_offset, arg)) < 0)
 	return ret;
 
-      if (is_cie_id (cie_offset))
+      if (is_cie_id (cie_offset, base != 0))
 	/* ignore CIEs (happens during linear searches) */
 	return 0;
 
-      /* DWARF says that the CIE_pointer in the FDE is a
-	 .debug_frame-relative offset, but the GCC-generated .eh_frame
-	 sections instead store a "pcrelative" offset, which is just
-	 as fine as it's self-contained.  */
-      cie_addr = (unw_word_t) ((uint64_t) cie_offset_addr - cie_offset);
+      if (base != 0)
+	cie_addr = base + cie_offset;
+      else
+	/* DWARF says that the CIE_pointer in the FDE is a
+	   .debug_frame-relative offset, but the GCC-generated .eh_frame
+	   sections instead store a "pcrelative" offset, which is just
+	   as fine as it's self-contained.  */
+	cie_addr = (unw_word_t) ((uint64_t) cie_offset_addr - cie_offset);
     }
 
-  if ((ret = parse_cie (as, a, cie_addr, pi, &dci, arg)) < 0)
+  Debug (15, "looking for CIE at address %lx\n", (long) cie_addr);
+
+  if ((ret = parse_cie (as, a, cie_addr, pi, &dci, base, arg)) < 0)
     return ret;
 
   /* IP-range has same encoding as FDE pointers, except that it's
@@ -942,9 +973,9 @@ dwarf_extract_proc_info_from_fde (unw_addr_space_t as, unw_accessors_t *a,
     {
       pi->format = UNW_INFO_FORMAT_TABLE;
       pi->unwind_info_size = sizeof (dci);
-      pi->unwind_info = malloc_in_rgn (as, sizeof(struct dwarf_cie_info));
+      pi->unwind_info = malloc_in_rgn(as, sizeof(struct dwarf_cie_info));
       if (!pi->unwind_info)
-	return UNW_ENOMEM;
+	return -UNW_ENOMEM;
 
       if (dci.have_abi_marker)
 	{
@@ -1016,10 +1047,15 @@ run_cfi_program (struct dwarf_cursor *c, dwarf_state_record_t *sr,
 
   as = c->as;
   arg = c->as_arg;
+  if (c->pi.flags & UNW_PI_FLAG_DEBUG_FRAME)
+    {
+      /* .debug_frame CFI is stored in local address space.  */
+      arg = NULL;
+    }
   a = unw_get_accessors (as);
   curr_ip = c->pi.start_ip;
 
-  while (curr_ip < ip && *addr < end_addr)
+  while (curr_ip <= ip && *addr < end_addr)
     {
       if ((ret = dwarf_readu8 (as, a, addr, &op, arg)) < 0)
 	return ret;
@@ -1324,6 +1360,22 @@ fetch_proc_info (struct dwarf_cursor *c, unw_word_t ip, int need_unwind_info)
 {
   int ret;
 
+  /* The 'ip' can point either to the previous or next instruction
+     depending on what type of frame we have: normal call or a place
+     to resume execution (e.g. after signal frame).
+
+     For a normal call frame we need to back up so we point within the
+     call itself; this is important because a) the call might be the
+     very last instruction of the function and the edge of the FDE,
+     and b) so that run_cfi_program() runs locations up to the call
+     but not more.
+
+     For execution resume, we need to do the exact opposite and look
+     up using the current 'ip' value.  That is where execution will
+     continue, and it's important we get this right, as 'ip' could be
+     right at the function entry and hence FDE edge, or at instruction
+     that manipulates CFA (push/pop). */
+  if (c->use_prev_instr)
   --ip;
 
   if (c->pi_valid && !need_unwind_info)
@@ -1335,6 +1387,15 @@ fetch_proc_info (struct dwarf_cursor *c, unw_word_t ip, int need_unwind_info)
     return ret;
 
   c->pi_valid = 1;
+
+  /* Update use_prev_instr for the next frame. */
+  if (need_unwind_info)
+  {
+    assert(c->pi.unwind_info);
+    struct dwarf_cie_info *dci = c->pi.unwind_info;
+    c->use_prev_instr = ! dci->signal_frame;
+  }
+
   return ret;
 }
 
@@ -1465,7 +1526,7 @@ hash (unw_word_t ip)
 static inline long
 cache_match (dwarf_reg_state_t *rs, unw_word_t ip)
 {
-  if (ip == rs->ip)
+  if (rs->valid && (ip == rs->ip))
     return 1;
   return 0;
 }
@@ -1552,7 +1613,9 @@ rs_new (struct dwarf_rs_cache *cache, struct dwarf_cursor * c)
 
   rs->hint = 0;
   rs->ip = c->ip;
+  rs->valid = 1;
   rs->ret_addr_column = c->ret_addr_column;
+  rs->signal_frame = 0;
 
   return rs;
 }
@@ -1687,16 +1750,21 @@ apply_reg_state (struct dwarf_cursor *c, struct dwarf_reg_state *rs)
 
 	case DWARF_WHERE_EXPR:
 	  addr = rs->reg[i].val;
-	  if ((ret = eval_location_expr (c, as, a, addr, c->loc + i, arg)) , 0)
+	  if ((ret = eval_location_expr (c, as, a, addr, c->loc + i, arg)) < 0)
 	    return ret;
 	  break;
 	}
     }
   c->cfa = cfa;
-  ret = dwarf_get (c, c->loc[c->ret_addr_column], &ip);
-  if (ret < 0)
-    return ret;
-  c->ip = ip;
+   /* DWARF spec says undefined return address location means end of stack. */
+  if (DWARF_IS_NULL_LOC (c->loc[c->ret_addr_column]))
+    c->ip = 0;
+  else {
+    ret = dwarf_get (c, c->loc[c->ret_addr_column], &ip);
+    if (ret < 0)
+      return ret;
+    c->ip = ip;
+  }
   /* XXX: check for ip to be code_aligned */
 
   if (c->ip == prev_ip && c->cfa == prev_cfa)
@@ -1749,6 +1817,7 @@ dwarf_find_save_locs (struct dwarf_cursor *c)
   if (rs)
     {
       c->ret_addr_column = rs->ret_addr_column;
+      c->use_prev_instr = ! rs->signal_frame;
       goto apply;
     }
 
@@ -1856,7 +1925,7 @@ linear_search (unw_addr_space_t as, unw_word_t ip,
   while (i++ < fde_count && addr < eh_frame_end)
     {
       fde_addr = addr;
-      if ((ret = dwarf_extract_proc_info_from_fde (as, a, &addr, pi, 0, arg))
+      if ((ret = dwarf_extract_proc_info_from_fde (as, a, &addr, pi, 0, 0, arg))
 	  < 0)
 	return ret;
 
@@ -1866,7 +1935,7 @@ linear_search (unw_addr_space_t as, unw_word_t ip,
 	    return 1;
 	  addr = fde_addr;
 	  if ((ret = dwarf_extract_proc_info_from_fde (as, a, &addr, pi,
-						       need_unwind_info, arg))
+						       need_unwind_info, 0, arg))
 	      < 0)
 	    return ret;
 	  return 1;
@@ -1874,6 +1943,401 @@ linear_search (unw_addr_space_t as, unw_word_t ip,
     }
   return -UNW_ENOINFO;
 }
+
+#ifdef CONFIG_DEBUG_FRAME
+/* Load .debug_frame section from FILE.  Allocates and returns space
+   in *BUF, and sets *BUFSIZE to its size.  IS_LOCAL is 1 if using the
+   local process, in which case we can search the system debug file
+   directory; 0 for other address spaces, in which case we do not; or
+   -1 for recursive calls following .gnu_debuglink.  Returns 0 on
+   success, 1 on error.  Succeeds even if the file contains no
+   .debug_frame.  */
+/* XXX: Could use mmap; but elf_map_image keeps tons mapped in.  */
+
+static int
+load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local)
+{
+  FILE *f;
+  Elf_W (Ehdr) ehdr;
+  Elf_W (Half) shstrndx;
+  Elf_W (Shdr) *sec_hdrs = NULL;
+  char *stringtab = NULL;
+  unsigned int i;
+  size_t linksize = 0;
+  char *linkbuf = NULL;
+  
+  *buf = NULL;
+  *bufsize = 0;
+  
+  f = fopen (file, "r");
+  
+  if (!f)
+    return 1;
+  
+  if (fread (&ehdr, sizeof (Elf_W (Ehdr)), 1, f) != 1)
+    goto file_error;
+  
+  shstrndx = ehdr.e_shstrndx;
+  
+  Debug (4, "opened file '%s'. Section header at offset %d\n",
+         file, (int) ehdr.e_shoff);
+
+  fseek (f, ehdr.e_shoff, SEEK_SET);
+  sec_hdrs = calloc (ehdr.e_shnum, sizeof (Elf_W (Shdr)));
+  if (fread (sec_hdrs, sizeof (Elf_W (Shdr)), ehdr.e_shnum, f) != ehdr.e_shnum)
+    goto file_error;
+  
+  Debug (4, "loading string table of size %zd\n",
+	   sec_hdrs[shstrndx].sh_size);
+  stringtab = malloc (sec_hdrs[shstrndx].sh_size);
+  fseek (f, sec_hdrs[shstrndx].sh_offset, SEEK_SET);
+  if (fread (stringtab, 1, sec_hdrs[shstrndx].sh_size, f) != sec_hdrs[shstrndx].sh_size)
+    goto file_error;
+  
+  for (i = 1; i < ehdr.e_shnum && *buf == NULL; i++)
+    {
+      char *secname = &stringtab[sec_hdrs[i].sh_name];
+
+      if (strcmp (secname, ".debug_frame") == 0)
+        {
+	  *bufsize = sec_hdrs[i].sh_size;
+	  *buf = malloc (*bufsize);
+
+	  fseek (f, sec_hdrs[i].sh_offset, SEEK_SET);
+	  if (fread (*buf, 1, *bufsize, f) != *bufsize)
+	    goto file_error;
+
+	  Debug (4, "read %zd bytes of .debug_frame from offset %zd\n",
+		 *bufsize, sec_hdrs[i].sh_offset);
+	}
+      else if (strcmp (secname, ".gnu_debuglink") == 0)
+	{
+	  linksize = sec_hdrs[i].sh_size;
+	  linkbuf = malloc (linksize);
+
+	  fseek (f, sec_hdrs[i].sh_offset, SEEK_SET);
+	  if (fread (linkbuf, 1, linksize, f) != linksize)
+	    goto file_error;
+
+	  Debug (4, "read %zd bytes of .gnu_debuglink from offset %zd\n",
+		 linksize, sec_hdrs[i].sh_offset);
+	}
+    }
+
+  free (stringtab);
+  free (sec_hdrs);
+
+  fclose (f);
+
+  /* Ignore separate debug files which contain a .gnu_debuglink section. */
+  if (linkbuf && is_local == -1)
+    {
+      free (linkbuf);
+      return 1;
+    }
+
+  free (linkbuf);
+
+  return 0;
+
+/* An error reading image file. Release resources and return error code */
+file_error:
+  free(stringtab);
+  free(sec_hdrs);
+  free(linkbuf);
+  fclose(f);
+
+  return 1;
+}
+
+/* Locate the binary which originated the contents of address ADDR. Return
+   the name of the binary in *name (space is allocated by the caller)
+   Returns 0 if a binary is successfully found, or 1 if an error occurs.  */
+
+static int
+find_binary_for_address (unw_word_t ip, char *name, size_t name_size)
+{
+#if defined(__linux) && (!UNW_REMOTE_ONLY)
+  struct map_iterator mi;
+  int found = 0;
+  int pid = getpid ();
+  unsigned long segbase, mapoff, hi;
+
+  maps_init (&mi, pid);
+  while (maps_next (&mi, &segbase, &hi, &mapoff))
+    if (ip >= segbase && ip < hi)
+      {
+	size_t len = strlen (mi.path);
+
+	if (len + 1 <= name_size)
+	  {
+	    memcpy (name, mi.path, len + 1);
+	    found = 1;
+	  }
+	break;
+      }
+  maps_close (&mi);
+  return !found;
+#endif
+
+  return 1;
+}
+
+/* Locate and/or try to load a debug_frame section for address ADDR.  Return
+   pointer to debug frame descriptor, or zero if not found.  */
+
+static struct unw_debug_frame_list *
+locate_debug_info (unw_addr_space_t as, unw_word_t addr, const char *dlname,
+		   unw_word_t start, unw_word_t end)
+{
+#ifndef PATH_MAX
+# define PATH_MAX 1024
+#endif
+  struct unw_debug_frame_list *w, *fdesc = 0;
+  char path[PATH_MAX];
+  char *name = path;
+  int err;
+  char *buf;
+  size_t bufsize;
+
+  /* First, see if we loaded this frame already.  */
+
+  for (w = as->debug_frames; w; w = w->next)
+    {
+      Debug (4, "checking %p: %lx-%lx\n", w, (long)w->start, (long)w->end);
+      if (addr >= w->start && addr < w->end)
+	return w;
+    }
+
+  /* If the object name we receive is blank, there's still a chance of locating
+     the file by parsing /proc/self/maps.  */
+
+  if (strcmp (dlname, "") == 0)
+    {
+      err = find_binary_for_address (addr, name, sizeof(path));
+      if (err)
+        {
+	  Debug (15, "tried to locate binary for 0x%" PRIx64 ", but no luck\n",
+		 (uint64_t) addr);
+          return 0;
+	}
+    }
+  else
+    name = (char*) dlname;
+
+  err = load_debug_frame (name, &buf, &bufsize, 1);
+  
+  if (!err)
+    {
+      fdesc = malloc (sizeof (struct unw_debug_frame_list));
+
+      fdesc->start = start;
+      fdesc->end = end;
+      fdesc->debug_frame = buf;
+      fdesc->debug_frame_size = bufsize;
+      fdesc->index = NULL;
+      fdesc->next = as->debug_frames;
+      
+      as->debug_frames = fdesc;
+    }
+  
+  return fdesc;
+}
+
+struct debug_frame_tab
+  {
+    struct table_entry *tab;
+    uint32_t length;
+    uint32_t size;
+  };
+
+static void
+debug_frame_tab_append (struct debug_frame_tab *tab,
+			unw_word_t fde_offset, unw_word_t start_ip)
+{
+  unsigned int length = tab->length;
+
+  if (length == tab->size)
+    {
+      tab->size *= 2;
+      tab->tab = realloc (tab->tab, sizeof (struct table_entry) * tab->size);
+    }
+  
+  tab->tab[length].fde_offset = fde_offset;
+  tab->tab[length].start_ip_offset = start_ip;
+  
+  tab->length = length + 1;
+}
+
+static void
+debug_frame_tab_shrink (struct debug_frame_tab *tab)
+{
+  if (tab->size > tab->length)
+    {
+      tab->tab = realloc (tab->tab, sizeof (struct table_entry) * tab->length);
+      tab->size = tab->length;
+    }
+}
+
+static int
+debug_frame_tab_compare (const void *a, const void *b)
+{
+  const struct table_entry *fa = a, *fb = b;
+  
+  if (fa->start_ip_offset > fb->start_ip_offset)
+    return 1;
+  else if (fa->start_ip_offset < fb->start_ip_offset)
+    return -1;
+  else
+    return 0;
+}
+
+PROTECTED int
+dwarf_find_debug_frame (unw_addr_space_t unw_local_addr_space, 
+			int found, unw_dyn_info_t *di_debug, unw_word_t ip,
+			unw_word_t segbase, const char* obj_name,
+			unw_word_t start, unw_word_t end)
+{
+  unw_dyn_info_t *di;
+  struct unw_debug_frame_list *fdesc = 0;
+  unw_accessors_t *a;
+  unw_word_t addr;
+
+  Debug (15, "Trying to find .debug_frame for %s\n", obj_name);
+  di = di_debug;
+
+  fdesc = locate_debug_info (unw_local_addr_space, ip, obj_name, start, end);
+
+  if (!fdesc)
+    {
+      Debug (15, "couldn't load .debug_frame\n");
+      return found;
+    }
+  else
+    {
+      char *buf;
+      size_t bufsize;
+      unw_word_t item_start, item_end = 0;
+      uint32_t u32val = 0;
+      uint64_t cie_id = 0;
+      struct debug_frame_tab tab;
+
+      Debug (15, "loaded .debug_frame\n");
+
+      buf = fdesc->debug_frame;
+      bufsize = fdesc->debug_frame_size;
+
+      if (bufsize == 0)
+       {
+         Debug (15, "zero-length .debug_frame\n");
+         return found;
+       }
+
+      /* Now create a binary-search table, if it does not already exist.  */
+      if (!fdesc->index)
+       {
+         addr = (unw_word_t) (uintptr_t) buf;
+
+         a = unw_get_accessors (unw_local_addr_space);
+
+         /* Find all FDE entries in debug_frame, and make into a sorted
+            index.  */
+
+         tab.length = 0;
+         tab.size = 16;
+         tab.tab = calloc (tab.size, sizeof (struct table_entry));
+
+         while (addr < (unw_word_t) (uintptr_t) (buf + bufsize))
+           {
+             uint64_t id_for_cie;
+             item_start = addr;
+
+             dwarf_readu32 (unw_local_addr_space, a, &addr, &u32val, NULL);
+
+             if (u32val == 0)
+               break;
+             else if (u32val != 0xffffffff)
+               {
+                 uint32_t cie_id32 = 0;
+                 item_end = addr + u32val;
+                 dwarf_readu32 (unw_local_addr_space, a, &addr, &cie_id32,
+                                NULL);
+                 cie_id = cie_id32;
+                 id_for_cie = 0xffffffff;
+               }
+             else
+               {
+                 uint64_t u64val = 0;
+                 /* Extended length.  */
+                 dwarf_readu64 (unw_local_addr_space, a, &addr, &u64val, NULL);
+                 item_end = addr + u64val;
+
+                 dwarf_readu64 (unw_local_addr_space, a, &addr, &cie_id, NULL);
+                 id_for_cie = 0xffffffffffffffffull;
+               }
+
+             /*Debug (1, "CIE/FDE id = %.8x\n", (int) cie_id);*/
+
+             if (cie_id == id_for_cie)
+               ;
+             /*Debug (1, "Found CIE at %.8x.\n", item_start);*/
+             else
+               {
+                 unw_word_t fde_addr = item_start;
+                 unw_proc_info_t this_pi;
+                 int err;
+
+                 /*Debug (1, "Found FDE at %.8x\n", item_start);*/
+
+                 err = dwarf_extract_proc_info_from_fde (unw_local_addr_space,
+                                                         a, &fde_addr,
+                                                         &this_pi, 0,
+                                                         (uintptr_t) buf,
+                                                         NULL);
+
+                 if (err == 0)
+                   {
+                     Debug (15, "start_ip = %lx, end_ip = %lx\n",
+                            (long) this_pi.start_ip, (long) this_pi.end_ip);
+                     debug_frame_tab_append (&tab,
+                                             item_start - (unw_word_t) (uintptr_t) buf,
+                                             this_pi.start_ip);
+                   }
+                 /*else
+                   Debug (1, "FDE parse failed\n");*/
+               }
+
+             addr = item_end;
+           }
+
+         debug_frame_tab_shrink (&tab);
+         qsort (tab.tab, tab.length, sizeof (struct table_entry),
+                debug_frame_tab_compare);
+         /* for (i = 0; i < tab.length; i++)
+            {
+            fprintf (stderr, "ip %x, fde offset %x\n",
+            (int) tab.tab[i].start_ip_offset,
+            (int) tab.tab[i].fde_offset);
+            }*/
+         fdesc->index = tab.tab;
+         fdesc->index_size = tab.length;
+       }
+
+      di->format = UNW_INFO_FORMAT_TABLE;
+      di->start_ip = fdesc->start;
+      di->end_ip = fdesc->end;
+      di->u.rti.name_ptr = (unw_word_t) (uintptr_t) obj_name;
+      di->u.rti.table_data = (unw_word_t *) fdesc;
+      di->u.rti.table_len = sizeof (*fdesc) / sizeof (unw_word_t);
+      di->u.rti.segbase = segbase;
+
+      found = 1;
+      Debug (15, "found debug_frame table\n");
+    }
+  return found;
+}
+
+#endif /* CONFIG_DEBUG_FRAME */
 
 /* Info is a pointer to a unw_dyn_info_t structure and, on entry,
    member u.rti.segbase contains the instruction-pointer we're looking
@@ -1918,8 +2382,9 @@ callback (struct dl_phdr_info *info, size_t size, void *ptr)
 
           Debug(18, "check %lx versus %lx-%lx\n", ip, vaddr, vaddr + phdr->p_memsz);
 
-	  if (ip >= vaddr && ip < vaddr + phdr->p_memsz)
+	  if (ip >= vaddr && ip < vaddr + phdr->p_memsz) {
 	    p_text = phdr;
+	  }
 
 	  if (vaddr + phdr->p_filesz > max_load_addr)
 	    max_load_addr = vaddr + phdr->p_filesz;
@@ -1929,8 +2394,37 @@ callback (struct dl_phdr_info *info, size_t size, void *ptr)
       else if (phdr->p_type == PT_DYNAMIC)
 	p_dynamic = phdr;
     }
-  if (!p_text || !p_eh_hdr)
+  if (!p_text || !p_eh_hdr) {
+#ifdef CONFIG_DEBUG_FRAME
+    /* Find the start/end of the described region by parsing the phdr_info
+       structure.  */
+    unw_word_t start, end;
+    start = (unw_word_t) -1;
+    end = 0;
+
+    for (n = 0; n < info->dlpi_phnum; n++)
+      {
+        if (info->dlpi_phdr[n].p_type == PT_LOAD)
+          {
+            unw_word_t seg_start = info->dlpi_addr + info->dlpi_phdr[n].p_vaddr;
+            unw_word_t seg_end = seg_start + info->dlpi_phdr[n].p_memsz;
+            
+            if (seg_start < start)
+              start = seg_start;
+            
+            if (seg_end > end)
+              end = seg_end;
+          }
+      }
+    
+    return dwarf_find_debug_frame (cb_data->as,
+				   0, &cb_data->di, ip,
+                                   info->dlpi_addr, info->dlpi_name, start,
+                                   end);
+#else
     return 0;
+#endif  /* CONFIG_DEBUG_FRAME */
+  }
 
   if (likely (p_eh_hdr->p_vaddr >= p_text->p_vaddr
 	      && p_eh_hdr->p_vaddr < p_text->p_vaddr + p_text->p_memsz))
@@ -2058,6 +2552,7 @@ dwarf_find_proc_info (unw_addr_space_t as, unw_word_t ip,
   cb_data.ip = ip;
   cb_data.pi = pi;
   cb_data.need_unwind_info = need_unwind_info;
+  cb_data.single_fde = 0;
 
 #ifndef UW_NO_SYNC
   sigprocmask (SIG_SETMASK, &unwi_full_mask, &saved_mask);
@@ -2112,19 +2607,42 @@ dwarf_search_unwind_table (unw_addr_space_t as, unw_word_t ip,
 			   unw_dyn_info_t *di, unw_proc_info_t *pi,
 			   int need_unwind_info, void *arg)
 {
-  const struct table_entry *e = NULL;
+  const struct table_entry *e = NULL, *table;
   unw_word_t segbase = 0, fde_addr;
   unw_accessors_t *a;
   int ret;
+  size_t table_len;
+  unw_word_t debug_frame_base;
 
-  assert (di->format == UNW_INFO_FORMAT_REMOTE_TABLE
-	  && (ip >= di->start_ip && ip < di->end_ip));
+  assert (ip >= di->start_ip && ip < di->end_ip);
 
   a = unw_get_accessors (as);
 
+  if (di->format == UNW_INFO_FORMAT_REMOTE_TABLE)
+    {
+      table = (const struct table_entry *) (uintptr_t) di->u.rti.table_data;
+      table_len = di->u.rti.table_len * sizeof (unw_word_t);
+      debug_frame_base = 0;
+    }
+  else
+    {
+#ifdef CONFIG_DEBUG_FRAME
+      struct unw_debug_frame_list *fdesc = (void *) di->u.rti.table_data;
+
+      /* UNW_INFO_FORMAT_TABLE (i.e. .debug_frame) is read from local address
+         space.  Both the index and the unwind tables live in local memory, but
+         the address space to check for properties like the address size and
+         endianness is the target one.  */
+      table = fdesc->index;
+      table_len = fdesc->index_size * sizeof (struct table_entry);
+      debug_frame_base = (uintptr_t) fdesc->debug_frame;
+#else
+      assert(0);
+#endif
+    }
+
   segbase = di->u.rti.segbase;
-  e = lookup ((struct table_entry *) di->u.rti.table_data,
-              di->u.rti.table_len * sizeof (unw_word_t), ip - segbase);
+  e = lookup (table, table_len, ip - segbase);
 
   if (!e)
     {
@@ -2134,10 +2652,23 @@ dwarf_search_unwind_table (unw_addr_space_t as, unw_word_t ip,
     }
   Debug (15, "ip=0x%lx, start_ip=0x%lx\n",
 	 (long) ip, (long) (e->start_ip_offset + segbase));
-  fde_addr = e->fde_offset + segbase;
+  if (debug_frame_base)
+    fde_addr = e->fde_offset + debug_frame_base;
+  else
+    fde_addr = e->fde_offset + segbase;
   if ((ret = dwarf_extract_proc_info_from_fde (as, a, &fde_addr, pi,
-					       need_unwind_info, arg)) < 0)
+					       need_unwind_info, 
+					       debug_frame_base, arg)) < 0)
     return ret;
+
+  /* .debug_frame uses an absolute encoding that does not know about any
+     shared library relocation.  */
+  if (di->format == UNW_INFO_FORMAT_TABLE)
+    {
+      pi->start_ip += segbase;
+      pi->end_ip += segbase;
+      pi->flags = UNW_PI_FLAG_DEBUG_FRAME;
+    }
 
   if (ip < pi->start_ip || ip >= pi->end_ip)
     return -UNW_ENOINFO;
@@ -2203,7 +2734,7 @@ int dl_iterate_phdr (DL_Iter_Callback callback, void *p)
 
 /***********************************************************************/
 
-#ifdef PLAIN_X86
+#if defined(PLAIN_X86)
 static uint8_t dwarf_to_unw_regnum_map[19] =
   {
     UNW_X86_EAX, UNW_X86_ECX, UNW_X86_EDX, UNW_X86_EBX,
@@ -2212,7 +2743,7 @@ static uint8_t dwarf_to_unw_regnum_map[19] =
     UNW_X86_ST0, UNW_X86_ST1, UNW_X86_ST2, UNW_X86_ST3,
     UNW_X86_ST4, UNW_X86_ST5, UNW_X86_ST6, UNW_X86_ST7
   };
-#else 
+#elif defined(UNW_X86_64)
 static uint8_t dwarf_to_unw_regnum_map[17] =
   {
     UNW_X86_64_RAX,
@@ -2238,27 +2769,114 @@ static uint8_t dwarf_to_unw_regnum_map[17] =
 int
 unw_get_reg (unw_cursor_t *cursor, int regnum, unw_word_t *valp)
 {
-  void *p;
+  struct cursor *c = (struct cursor *)cursor;
+  dwarf_loc_t loc = DWARF_NULL_LOC;
+  
+#ifdef UNW_ARM
+  switch (regnum)
+    {
+    case UNW_ARM_R0:
+    case UNW_ARM_R1:
+    case UNW_ARM_R2:
+    case UNW_ARM_R3:
+    case UNW_ARM_R4:
+    case UNW_ARM_R5:
+    case UNW_ARM_R6:
+    case UNW_ARM_R7:
+    case UNW_ARM_R8:
+    case UNW_ARM_R9:
+    case UNW_ARM_R10:
+    case UNW_ARM_R11:
+    case UNW_ARM_R12:
+    case UNW_ARM_R14:
+    case UNW_ARM_R15:
+      loc = c->dwarf.loc[regnum - UNW_ARM_R0];
+      break;
 
-  p = tdep_uc_addr(((struct cursor *)cursor)->dwarf.as_arg, regnum);
-  if (p) {
-    *valp = *(unw_word_t *)p;
-    return 1;
-  } else {
-    *valp = -1;
-    return 0;
-  }
+    case UNW_ARM_R13:
+      *valp = c->dwarf.cfa;
+      return 0;
+
+      /* FIXME: Initialise coprocessor & shadow registers?  */
+
+    default:
+      Debug (1, "bad register number %u\n", reg);
+      return -UNW_EBADREG;
+    }
+#endif
+
+#ifdef UNW_X86_64
+  unsigned int mask;
+  int arg_num;
+
+  switch (regnum)
+    {
+
+    case UNW_X86_64_RIP:
+      if (write)
+	c->dwarf.ip = *valp;		/* also update the RIP cache */
+      loc = c->dwarf.loc[REG_RIP];
+      break;
+
+    case UNW_X86_64_CFA:
+    case UNW_X86_64_RSP:
+      if (write)
+	return -UNW_EREADONLYREG;
+      *valp = c->dwarf.cfa;
+      return 0;
+
+    case UNW_X86_64_RAX:
+    case UNW_X86_64_RDX:
+      arg_num = regnum - UNW_X86_64_RAX;
+      mask = (1 << arg_num);
+      if (write)
+	{
+	  c->dwarf.eh_args[arg_num] = *valp;
+	  c->dwarf.eh_valid_mask |= mask;
+	  return 0;
+	}
+      else if ((c->dwarf.eh_valid_mask & mask) != 0)
+	{
+	  *valp = c->dwarf.eh_args[arg_num];
+	  return 0;
+	}
+      else
+	loc = c->dwarf.loc[(regnum == UNW_X86_64_RAX) ? REG_RAX : REG_RDX];
+      break;
+
+    case UNW_X86_64_RCX: loc = c->dwarf.loc[REG_RCX]; break;
+    case UNW_X86_64_RBX: loc = c->dwarf.loc[REG_RBX]; break;
+
+    case UNW_X86_64_RBP: loc = c->dwarf.loc[REG_RBP]; break;
+    case UNW_X86_64_RSI: loc = c->dwarf.loc[REG_RSI]; break;
+    case UNW_X86_64_RDI: loc = c->dwarf.loc[REG_RDI]; break;
+    case UNW_X86_64_R8: loc = c->dwarf.loc[REG_R8]; break;
+    case UNW_X86_64_R9: loc = c->dwarf.loc[REG_R9]; break;
+    case UNW_X86_64_R10: loc = c->dwarf.loc[REG_R10]; break;
+    case UNW_X86_64_R11: loc = c->dwarf.loc[REG_R11]; break;
+    case UNW_X86_64_R12: loc = c->dwarf.loc[REG_R12]; break;
+    case UNW_X86_64_R13: loc = c->dwarf.loc[REG_R13]; break;
+    case UNW_X86_64_R14: loc = c->dwarf.loc[REG_R14]; break;
+    case UNW_X86_64_R15: loc = c->dwarf.loc[REG_R15]; break;
+
+    default:
+      Debug (1, "bad register number %u\n", regnum);
+      return -UNW_EBADREG;
+    }
+#endif
+
+  return dwarf_get (&c->dwarf, loc, valp);
 }
 
 void *
-tdep_uc_addr (ucontext_t *uc, int reg)
+tdep_uc_addr (unw_context_t *uc, int reg)
 {
   void *addr;
 
   switch (reg)
     {
 #ifdef LINUX
-# ifdef PLAIN_X86
+# if defined(PLAIN_X86)
     case UNW_X86_GS:  addr = &uc->uc_mcontext.gregs[REG_GS]; break;
     case UNW_X86_FS:  addr = &uc->uc_mcontext.gregs[REG_FS]; break;
     case UNW_X86_ES:  addr = &uc->uc_mcontext.gregs[REG_ES]; break;
@@ -2276,7 +2894,7 @@ tdep_uc_addr (ucontext_t *uc, int reg)
     case UNW_X86_CS:  addr = &uc->uc_mcontext.gregs[REG_CS]; break;
     case UNW_X86_EFLAGS:  addr = &uc->uc_mcontext.gregs[REG_EFL]; break;
     case UNW_X86_SS:  addr = &uc->uc_mcontext.gregs[REG_SS]; break;
-# else
+# elif defined(UNW_X86_64)
     case UNW_X86_64_R8: addr = &uc->uc_mcontext.gregs[REG_R8]; break;
     case UNW_X86_64_R9: addr = &uc->uc_mcontext.gregs[REG_R9]; break;
     case UNW_X86_64_R10: addr = &uc->uc_mcontext.gregs[REG_R10]; break;
@@ -2294,6 +2912,24 @@ tdep_uc_addr (ucontext_t *uc, int reg)
     case UNW_X86_64_RCX: addr = &uc->uc_mcontext.gregs[REG_RCX]; break;
     case UNW_X86_64_RSP: addr = &uc->uc_mcontext.gregs[REG_RSP]; break;
     case UNW_X86_64_RIP: addr = &uc->uc_mcontext.gregs[REG_RIP]; break;
+# elif defined(UNW_ARM)
+    case UNW_ARM_R0:
+    case UNW_ARM_R1:
+    case UNW_ARM_R2:
+    case UNW_ARM_R3:
+    case UNW_ARM_R4:
+    case UNW_ARM_R5:
+    case UNW_ARM_R6:
+    case UNW_ARM_R7:
+    case UNW_ARM_R8:
+    case UNW_ARM_R9:
+    case UNW_ARM_R10:
+    case UNW_ARM_R11:
+    case UNW_ARM_R12:
+    case UNW_ARM_R13:
+    case UNW_ARM_R14:
+    case UNW_ARM_R15:
+      addr = &(uc->regs[reg]); break;
 # endif
 #endif
 #ifdef OS_X
@@ -2323,7 +2959,11 @@ tdep_uc_addr (ucontext_t *uc, int reg)
 
 int dwarf_to_unw_regnum(reg)
 {
+#ifdef UNW_ARM
+  return (((reg) < 16) ? (reg) : 0);
+#else
   return (((reg) <= DWARF_REGNUM_MAP_LENGTH) ? dwarf_to_unw_regnum_map[reg] : 0);
+#endif
 }
 
 #ifdef PLAIN_X86
@@ -2340,7 +2980,9 @@ int dwarf_to_unw_regnum(reg)
 #define EFLAGS	9
 #define TRAPNO	10
 #define ST0	11
-#else
+#endif
+
+#ifdef UNW_X86_64
 /* DWARF column numbers for x86_64: */
 #define RAX	0
 #define RDX	1
@@ -2402,7 +3044,9 @@ common_init (struct cursor *c)
 
   return 0;
 }
-#else
+#endif
+
+#ifdef UNW_X86_64
 static inline int
 common_init (struct cursor *c)
 {
@@ -2448,7 +3092,61 @@ common_init (struct cursor *c)
 }
 #endif
 
-int unw_init_local (unw_cursor_t *cursor, ucontext_t *uc)
+#ifdef UNW_ARM
+static inline int
+common_init (struct cursor *c)
+{
+  int i, ret;
+
+  c->dwarf.loc[UNW_ARM_R0] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R0);
+  c->dwarf.loc[UNW_ARM_R1] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R1);
+  c->dwarf.loc[UNW_ARM_R2] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R2);
+  c->dwarf.loc[UNW_ARM_R3] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R3);
+  c->dwarf.loc[UNW_ARM_R4] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R4);
+  c->dwarf.loc[UNW_ARM_R5] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R5);
+  c->dwarf.loc[UNW_ARM_R6] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R6);
+  c->dwarf.loc[UNW_ARM_R7] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R7);
+  c->dwarf.loc[UNW_ARM_R8] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R8);
+  c->dwarf.loc[UNW_ARM_R9] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R9);
+  c->dwarf.loc[UNW_ARM_R10] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R10);
+  c->dwarf.loc[UNW_ARM_R11] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R11);
+  c->dwarf.loc[UNW_ARM_R12] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R12);
+  c->dwarf.loc[UNW_ARM_R13] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R13);
+  c->dwarf.loc[UNW_ARM_R14] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R14);
+  c->dwarf.loc[UNW_ARM_R15] = DWARF_REG_LOC (&c->dwarf, UNW_ARM_R15);
+  for (i = UNW_ARM_R15 + 1; i < DWARF_NUM_PRESERVED_REGS; ++i)
+    c->dwarf.loc[i] = DWARF_NULL_LOC;
+
+  ret = dwarf_get (&c->dwarf, c->dwarf.loc[UNW_ARM_R15], &c->dwarf.ip);
+  if (ret < 0)
+    return ret;
+
+  /* FIXME: correct for ARM?  */
+  ret = dwarf_get (&c->dwarf, DWARF_REG_LOC (&c->dwarf, UNW_ARM_R13),
+		   &c->dwarf.cfa);
+  if (ret < 0)
+    return ret;
+
+  c->sigcontext_format = ARM_SCF_NONE;
+  c->sigcontext_addr = 0;
+
+  /* FIXME: Initialisation for other registers.  */
+
+  c->dwarf.args_size = 0;
+  c->dwarf.ret_addr_column = 0;
+  c->dwarf.pi_valid = 0;
+  c->dwarf.hint = 0;
+  c->dwarf.prev_rs = 0;
+
+  return 0;
+}
+#endif
+
+#ifdef CONFIG_DEBUG_FRAME
+struct unw_debug_frame_list *shared_debug_frames;
+#endif
+
+int unw_init_local (unw_cursor_t *cursor, unw_context_t *uc)
 {
   struct cursor *c = (struct cursor *) cursor;
   unw_addr_space_t as;
@@ -2458,6 +3156,10 @@ int unw_init_local (unw_cursor_t *cursor, ucontext_t *uc)
   as = (unw_addr_space_t)malloc(sizeof(struct unw_addr_space));
   memset(as, 0, sizeof(struct unw_addr_space));
 
+#ifdef CONFIG_DEBUG_FRAME
+  as->debug_frames = shared_debug_frames;
+#endif
+
   c->dwarf.as = as;
   c->dwarf.as_arg = uc;
   return common_init (c);
@@ -2466,6 +3168,11 @@ int unw_init_local (unw_cursor_t *cursor, ucontext_t *uc)
 void unw_destroy_local(unw_cursor_t *cursor)
 {
   struct cursor *c = (struct cursor *) cursor;
+
+#ifdef CONFIG_DEBUG_FRAME
+  shared_debug_frames = c->dwarf.as->debug_frames;
+#endif
+
   free_all_allocated(c->dwarf.as);
   free(c->dwarf.as);
 }
@@ -2515,7 +3222,12 @@ unw_word_t unw_get_ip(unw_cursor_t *c)
 
 unw_word_t unw_get_frame_pointer(unw_cursor_t *c)
 {
-  return *(unw_word_t *)safe_pointer(((struct cursor *)c)->dwarf.loc[6 /* = BP */].val);
+#ifdef UNW_ARM
+# define JIT_FRAME_POINTER_ID 11
+#else
+# define JIT_FRAME_POINTER_ID 6 /* = BP */
+#endif
+  return *(unw_word_t *)safe_pointer(((struct cursor *)c)->dwarf.loc[JIT_FRAME_POINTER_ID].val);
 }
 
 void unw_manual_step(unw_cursor_t *_c, 
@@ -2537,7 +3249,7 @@ void unw_manual_step(unw_cursor_t *_c,
 
   c->dwarf.ip = *(unw_word_t *)safe_pointer((unw_word_t)ip_addr);
   c->dwarf.cfa = *(unw_word_t *)safe_pointer((unw_word_t)sp_addr);
-  c->dwarf.ret_addr_column = RIP;
+  c->dwarf.ret_addr_column = UNW_TDEP_IP;
   c->dwarf.pi_valid = 0;
   c->dwarf.hint = 0;
   c->dwarf.prev_rs = 0;

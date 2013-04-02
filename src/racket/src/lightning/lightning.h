@@ -64,6 +64,19 @@ extern "C" {
 
 #endif
 
+#ifdef MZ_USE_JIT_ARM
+
+#include "arm/asm-common.h"
+#include "arm/asm.h"
+#include "arm/funcs.h"
+#include "arm/funcs-common.h"
+#include "arm/core.h"
+#include "arm/core-common.h"
+#include "arm/fp.h"
+#include "arm/fp-common.h"
+
+#endif
+
 #ifndef JIT_R0
 #error GNU lightning does not support the current target
 #endif

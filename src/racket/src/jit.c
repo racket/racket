@@ -933,7 +933,7 @@ static void patch_branch_addr(mz_jit_state *jitter, Branch_Info_Addr *addr, int 
   } else if (addr[i].kind == BRANCH_ADDR_UCBRANCH) {
     mz_patch_ucbranch(addr[i].addr);
   } else {
-    jit_patch_movi(addr[i].addr, (_jit.x.pc));
+    jit_patch_movi(addr[i].addr, jit_get_ip());
   }
 }
 
@@ -972,7 +972,7 @@ void scheme_add_or_patch_branch_true_movi(mz_jit_state *jitter, Branch_Info *for
   if (for_branch->true_needs_jump) {
     add_branch(for_branch, ref, BRANCH_ADDR_TRUE, BRANCH_ADDR_MOVI);
   } else {
-    jit_patch_movi(ref, (_jit.x.pc));
+    jit_patch_movi(ref, jit_get_ip());
   }
 }
 
@@ -2353,7 +2353,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       CHECK_RUNSTACK_OVERFLOW();
       /* Copy args: */
       jit_ldxi_l(JIT_R1, JIT_R1, &((Scheme_Thread *)0x0)->ku.multiple.array);
-      refloop = _jit.x.pc;
+      refloop = jit_get_ip();
       ref3 = jit_blei_l(jit_forward(), JIT_R2, 0);
       jit_subi_l(JIT_R2, JIT_R2, JIT_WORD_SIZE);
       jit_ldxr_p(JIT_R0, JIT_R1, JIT_R2);
@@ -2983,6 +2983,8 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         __END_TINY_JUMPS__(1);
       }
 
+      CHECK_LIMIT();
+
       /* Key and value are (still) on runstack */
       if (!wcm_may_replace) {
         (void)jit_calli(sjc.wcm_nontail_code);
@@ -3020,8 +3022,8 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         mz_rs_sync();
 
         jit_movi_i(JIT_R0, WORDS_TO_BYTES(c));
-        jit_movi_i(JIT_R1, &(((Scheme_Prefix *)0x0)->a[i + p + 1]));
-        jit_movi_i(JIT_R2, &(((Scheme_Prefix *)0x0)->a[p]));
+        jit_movi_i(JIT_R1, (int)&(((Scheme_Prefix *)0x0)->a[i + p + 1]));
+        jit_movi_i(JIT_R2, (int)&(((Scheme_Prefix *)0x0)->a[p]));
         (void)jit_calli(sjc.quote_syntax_code);
 
         CHECK_LIMIT();
@@ -3232,6 +3234,9 @@ typedef struct {
   Scheme_Native_Closure *nc;
   int argc, argv_delta;
   Scheme_Object **argv;
+#ifdef NEED_RETAIN_CODE_POINTERS
+  void *retain_code;
+#endif
 } Generate_Closure_Data;
 
 static int do_generate_closure(mz_jit_state *jitter, void *_data)
@@ -3239,10 +3244,13 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   Generate_Closure_Data *gdata = (Generate_Closure_Data *)_data;
   Scheme_Closure_Data *data = gdata->data;
   void *start_code, *tail_code, *code_end, *arity_code;
+#ifdef NEED_RETAIN_CODE_POINTERS
+  void *retain_code = NULL;
+#endif
   int i, r, cnt, has_rest, is_method, num_params, to_args, argc, argv_delta;
   Scheme_Object **argv;
 
-  start_code = jit_get_ip().ptr;
+  start_code = jit_get_ip();
 
   jitter->nc = gdata->nc;
 
@@ -3278,23 +3286,30 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     shared_arity_code = sjc.shared_arity_check[num_params][has_rest][is_method];
     if (!shared_arity_code) {
       shared_arity_code = generate_lambda_simple_arity_check(num_params, has_rest, is_method, 1);
+      shared_arity_code = jit_adjust_ip(shared_arity_code);
       sjc.shared_arity_check[num_params][has_rest][is_method] = shared_arity_code;
     }
 
-    arity_code = jit_get_ip().ptr;
+    arity_code = jit_get_ip();
   
     if (!has_rest)
       (void)jit_bnei_i(shared_arity_code, JIT_R1, num_params);
     else
       (void)jit_blti_i(shared_arity_code, JIT_R1, num_params);
-  } else
+  } else {
     arity_code = generate_lambda_simple_arity_check(num_params, has_rest, is_method, 0);
+#ifdef NEED_RETAIN_CODE_POINTERS
+    retain_code = MALLOC_N(void*,2);
+    ((void **)retain_code)[1] = arity_code;
+#endif
+    arity_code = jit_adjust_ip(arity_code);
+  }
 
   /* A tail call starts here. Caller must ensure that the stack is big
      enough, right number of arguments (at start of runstack), closure
      is in R0. If the closure has a rest arg, also ensure argc in R1
      and argv in R2. */
-  tail_code = jit_get_ip().ptr;
+  tail_code = jit_get_ip();
 
   /* 0 params and has_rest => (lambda args E) where args is not in E,
      so accept any number of arguments and just clear them (for space 
@@ -3558,7 +3573,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
 
   jitter->self_data = data;
 
-  jitter->self_restart_code = jit_get_ip().ptr;
+  jitter->self_restart_code = jit_get_ip();
   jitter->self_restart_space = jitter->flostack_space;
   jitter->self_restart_offset = jitter->flostack_offset;
   if (!has_rest)
@@ -3586,7 +3601,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     jit_ret();
   }
 
-  code_end = jit_get_ip().ptr;
+  code_end = jit_get_ip();
 
   if (jitter->retain_start) {
     gdata->arity_code = arity_code;
@@ -3597,6 +3612,13 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     gdata->max_tail_depth = jitter->max_tail_depth;
     gdata->code_end = code_end;
     gdata->patch_depth = jitter->patch_depth;
+#ifdef NEED_RETAIN_CODE_POINTERS
+    if (retain_code)
+      ((void **)retain_code)[0] = jit_unadjust_ip(start_code);
+    else
+      retain_code = jit_unadjust_ip(start_code);
+    gdata->retain_code = retain_code;
+#endif
   }
 
   return 1;
@@ -3644,10 +3666,14 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
   tail_code = gdata.tail_code;
   
   if (data->name) {
-    scheme_jit_add_symbol((uintptr_t)start_code, (uintptr_t)gdata.code_end - 1, data->name, 1);
+    scheme_jit_add_symbol((uintptr_t)jit_unadjust_ip(start_code),
+                          (uintptr_t)jit_unadjust_ip(gdata.code_end) - 1,
+                          data->name, 1);
   } else {
 #ifdef MZ_USE_DWARF_LIBUNWIND
-    scheme_jit_add_symbol((uintptr_t)start_code, (uintptr_t)gdata.code_end - 1, scheme_null, 1);
+    scheme_jit_add_symbol((uintptr_t)jit_unadjust_ip(start_code),
+                          (uintptr_t)jit_unadjust_ip(gdata.code_end) - 1,
+                          scheme_null, 1);
 #endif
   }
   
@@ -3682,6 +3708,9 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
   ndata->u2.name = data->name;
   /* Let-depth is in bytes instead of words: */
   ndata->max_let_depth = max_depth;
+#ifdef NEED_RETAIN_CODE_POINTERS
+  ndata->retain_code = gdata.retain_code;
+#endif
 }
 
 void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv, int argv_delta)
@@ -3948,17 +3977,20 @@ static int do_generate_case_lambda_dispatch(mz_jit_state *jitter, void *_data)
   Generate_Case_Dispatch_Data *data = (Generate_Case_Dispatch_Data *)_data;
   void *start_code, *arity_code;
 
-  start_code = jit_get_ip().ptr;
+  start_code = jit_get_ip();
   
   generate_function_prolog(jitter, start_code, data->ndata->max_let_depth);
   CHECK_LIMIT();
   
   if (generate_case_lambda_dispatch(jitter, data->c, data->ndata, 1)) {
-    arity_code = jit_get_ip().ptr;
+    arity_code = jit_get_ip();
     if (generate_case_lambda_dispatch(jitter, data->c, data->ndata, 0)) {
       data->ndata->start_code = start_code;
       data->ndata->arity_code = arity_code;
-      
+#ifdef NEED_RETAIN_CODE_POINTERS
+      data->ndata->retain_code = jit_unadjust_ip(start_code);
+#endif
+
       return 1;
     }
   }

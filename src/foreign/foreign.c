@@ -1796,6 +1796,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(Tsint8));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(Tsint8)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (!(get_byte_val(val,&(((Tsint8*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_int8", val);;
       return NULL;
     case FOREIGN_uint8:
@@ -1805,6 +1810,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(Tuint8));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(Tuint8)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (!(get_ubyte_val(val,&(((Tuint8*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_uint8", val);;
       return NULL;
     case FOREIGN_int16:
@@ -1814,6 +1824,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(Tsint16));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(Tsint16)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (!(get_short_val(val,&(((Tsint16*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_int16", val);;
       return NULL;
     case FOREIGN_uint16:
@@ -1823,6 +1838,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(Tuint16));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(Tuint16)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (!(get_ushort_val(val,&(((Tuint16*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_uint16", val);;
       return NULL;
     case FOREIGN_int32:
@@ -1832,6 +1852,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(Tsint32));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(Tsint32)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (!(scheme_get_realint_val(val,&(((Tsint32*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_int32", val);;
       return NULL;
     case FOREIGN_uint32:
@@ -1841,6 +1866,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(Tuint32));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(Tuint32)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (!(scheme_get_unsigned_realint_val(val,&(((Tuint32*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_uint32", val);;
       return NULL;
     case FOREIGN_int64:
@@ -1850,6 +1880,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(Tsint64));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(Tsint64)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (!(scheme_get_long_long_val(val,&(((Tsint64*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_int64", val);;
       return NULL;
     case FOREIGN_uint64:
@@ -1859,6 +1894,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(Tuint64));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(Tuint64)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (!(scheme_get_unsigned_long_long_val(val,&(((Tuint64*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_uint64", val);;
       return NULL;
     case FOREIGN_fixint:
@@ -1868,6 +1908,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(Tsint32));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(Tsint32)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (SCHEME_INTP(val)) {
         Tsint32 tmp;
         tmp = MZ_TYPE_CAST(Tsint32, SCHEME_INT_VAL(val));
@@ -1883,6 +1928,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(Tuint32));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(Tuint32)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (SCHEME_INTP(val)) {
         Tuint32 tmp;
         tmp = MZ_TYPE_CAST(Tuint32, SCHEME_UINT_VAL(val));
@@ -1898,6 +1948,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(intptr_t));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(intptr_t)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (SCHEME_INTP(val)) {
         intptr_t tmp;
         tmp = MZ_TYPE_CAST(intptr_t, SCHEME_INT_VAL(val));
@@ -1913,6 +1968,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(uintptr_t));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(uintptr_t)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (SCHEME_INTP(val)) {
         uintptr_t tmp;
         tmp = MZ_TYPE_CAST(uintptr_t, SCHEME_UINT_VAL(val));
@@ -1928,6 +1988,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(float));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(float)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (SCHEME_FLOATP(val)) {
         float tmp;
         tmp = MZ_TYPE_CAST(float, SCHEME_FLOAT_VAL(val));
@@ -1943,6 +2008,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(double));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(double)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (SCHEME_FLOATP(val)) {
         double tmp;
         tmp = MZ_TYPE_CAST(double, SCHEME_FLOAT_VAL(val));
@@ -1958,6 +2028,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(mz_long_double));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(mz_long_double)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (SCHEME_LONG_DBLP(val)) {
         mz_long_double tmp;
         tmp = MZ_NO_TYPE_CAST(mz_long_double, SCHEME_MAYBE_LONG_DBL_VAL(val));
@@ -1973,6 +2048,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(double));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(double)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (SCHEME_REALP(val)) {
         double tmp;
         tmp = MZ_TYPE_CAST(double, scheme_real_to_double(val));
@@ -1988,6 +2068,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(int));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(int)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (1) {
         int tmp;
         tmp = MZ_TYPE_CAST(int, SCHEME_TRUEP(val));
@@ -2003,6 +2088,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(mzchar*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(mzchar*)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (SCHEME_FALSEP_OR_CHAR_STRINGP(val)) {
         mzchar* tmp;
         tmp = MZ_TYPE_CAST(mzchar*, ucs4_string_or_null_to_ucs4_pointer(val));
@@ -2024,6 +2114,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(unsigned short*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(unsigned short*)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (SCHEME_FALSEP_OR_CHAR_STRINGP(val)) {
         unsigned short* tmp;
         tmp = MZ_TYPE_CAST(unsigned short*, ucs4_string_or_null_to_utf16_pointer(val));
@@ -2045,6 +2140,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(char*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(char*)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (SCHEME_FALSEP(val)||SCHEME_BYTE_STRINGP(val)) {
         char* tmp;
         tmp = MZ_TYPE_CAST(char*, SCHEME_FALSEP(val)?NULL:SCHEME_BYTE_STR_VAL(val));
@@ -2066,6 +2166,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(char*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(char*)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (SCHEME_FALSEP(val)||SCHEME_PATH_STRINGP(val)) {
         char* tmp;
         tmp = MZ_TYPE_CAST(char*, SCHEME_FALSEP(val)?NULL:SCHEME_PATH_VAL(TO_PATH(val)));
@@ -2087,6 +2192,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(char*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(char*)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (SCHEME_SYMBOLP(val)) {
         char* tmp;
         tmp = MZ_TYPE_CAST(char*, SCHEME_SYM_VAL(val));
@@ -2108,6 +2218,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(void*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(void*)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (SCHEME_FFIANYPTRP(val)) {
         void* tmp; intptr_t toff;
         tmp = MZ_TYPE_CAST(void*, SCHEME_FFIANYPTR_VAL(val));
@@ -2133,6 +2248,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(void*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(void*)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (SCHEME_FFIANYPTRP(val)) {
         void* tmp; intptr_t toff;
         tmp = MZ_TYPE_CAST(void*, SCHEME_FFIANYPTR_VAL(val));
@@ -2158,6 +2278,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(Scheme_Object*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(Scheme_Object*)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (1) {
         Scheme_Object* tmp;
         tmp = MZ_TYPE_CAST(Scheme_Object*, val);
@@ -2179,6 +2304,11 @@ static void* SCHEME2C(const char *who,
         delta += (sizeof(intptr_t)-sizeof(void*));
       }
 #     endif /* SCHEME_BIG_ENDIAN */
+#     ifdef FFI_CALLBACK_NEED_INT_CLEAR
+      if (sizeof(void*)<sizeof(intptr_t) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+      }
+#     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
       if (!(ret_loc)) wrong_value(who, "_fpointer", val);;
       break;
     case FOREIGN_struct:

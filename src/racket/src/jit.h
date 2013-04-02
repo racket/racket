@@ -67,9 +67,6 @@ END_XFORM_ARITH;
 #endif
 
 #ifdef MZ_USE_JIT_PPC
-# ifndef DEFINE_LIGHTNING_FUNCS
-#  define SUPPRESS_LIGHTNING_FUNCS
-# endif
 # define DEFINE_LIGHTNING_FUNCS_STATIC /* empty */
 # define jit_notify_freed_code scheme_jit_notify_freed_code
 # define jit_flush_code scheme_jit_flush_code
@@ -77,8 +74,13 @@ END_XFORM_ARITH;
 # define _jit_epilog scheme_jit_epilog
 #endif
 
+#ifndef DEFINE_LIGHTNING_FUNCS
+# define SUPPRESS_LIGHTNING_FUNCS
+#endif
+
 #include "lightning/lightning.h"
 #define _jit (jitter->js)
+#define _jitp (&_jit)
 
 #ifdef MZ_USE_JIT_X86_64
 # define JIT_LOG_WORD_SIZE 3
@@ -128,18 +130,23 @@ END_XFORM_ARITH;
 #if defined(MZ_USE_JIT_I386) && !defined(MZ_USE_JIT_X86_64)
 # define USE_TINY_JUMPS
 #endif
+#if defined(MZ_USE_JIT_ARM)
+/* For ARM, long jumps are needed for jumps longer than 2^23: */
+# define NEED_LONG_JUMPS
+# define LONG_JUMPS_DEFAULT(x) 1
+#endif
 
-#if defined(MZ_PRECISE_GC) && defined(MZ_USE_JIT_I386)
-# define USE_FLONUM_UNBOXING
+#if defined(MZ_PRECISE_GC)
+# if defined(MZ_USE_JIT_I386)
+#  define USE_FLONUM_UNBOXING
+# endif
+# if defined(MZ_USE_JIT_ARM) && defined(__ARM_PCS_VFP)
+#  define USE_FLONUM_UNBOXING
+# endif
 #endif
 
 #ifdef MZ_USE_FUTURES
 # define MZ_USE_LWC
-#endif
-
-#define JIT_NOT_RET JIT_R1
-#if JIT_NOT_RET == JIT_RET
-Fix me! See use.
 #endif
 
 #ifdef MZ_USE_SINGLE_FLOATS
@@ -177,12 +184,12 @@ static void assert_failure(int where) { printf("JIT assert failed %d\n", where);
 extern int jit_sizes[NUM_CATEGORIES];
 extern int jit_counts[NUM_CATEGORIES];
 extern int jit_code_size;
-# define START_JIT_DATA() void *__pos = jit_get_ip().ptr; uintptr_t __total = 0
+# define START_JIT_DATA() void *__pos = jit_get_ip(); uintptr_t __total = 0
 # define END_JIT_DATA(where) if (jitter->retain_start) { \
-                              jit_sizes[where] += __total + ((uintptr_t)jit_get_ip().ptr - (uintptr_t)__pos); \
+                              jit_sizes[where] += __total + ((uintptr_t)jit_get_ip() - (uintptr_t)__pos); \
                               jit_counts[where]++; }
-# define PAUSE_JIT_DATA() __total += ((uintptr_t)jit_get_ip().ptr - (uintptr_t)__pos)
-# define RESUME_JIT_DATA() __pos = jit_get_ip().ptr
+# define PAUSE_JIT_DATA() __total += ((uintptr_t)jit_get_ip() - (uintptr_t)__pos)
+# define RESUME_JIT_DATA() __pos = jit_get_ip()
 # define RECORD_CODE_SIZE(s) jit_code_size += s
 #else
 # define START_JIT_DATA() /* empty */
@@ -555,8 +562,8 @@ void *scheme_jit_get_threadlocal_table();
 #  define tl_scheme_jit_save_extfp (&scheme_jit_save_extfp)
 #  define tl_scheme_jit_save_extfp2 (&scheme_jit_save_extfp2)
 # endif
-# define tl_scheme_fuel_counter (&scheme_fuel_counter)
-# define tl_scheme_jit_stack_boundary (&scheme_jit_stack_boundary)
+# define tl_scheme_fuel_counter ((void *)&scheme_fuel_counter)
+# define tl_scheme_jit_stack_boundary ((void *)&scheme_jit_stack_boundary)
 #endif
 
 /*========================================================================*/
@@ -709,6 +716,8 @@ int check_location;
       is one word past alignment. Push 1 to realign (but
       mz_push_locals() pushes 3, because we need at least
       two locals). 
+    - On ARM, the stack should be 8-byte aligned, and
+      jit_prolog() leaves the stack in an aligned state.
 */
 
 /*    LOCAL1 is used to save the value current_cont_mark_stack,
@@ -740,7 +749,7 @@ int check_location;
 
    * On some platforms, a lightweight function created with
      mz_prolog() and mz_epilog() uses LOCAL2 to save the return
-     address. On those platforms, though, LOCAL3 is dufferent from
+     address. On those platforms, though, LOCAL3 is different from
      LOCAL2. So, LOCAL3 can always be used for temporary storage in
      such functions (assuming that they're called from a function that
      pushes locals, and that nothing else is using LOCAL2).
@@ -773,7 +782,8 @@ int check_location;
 #define mz_set_local_p(x, l) mz_set_local_p_x(x, l, JIT_FP)
 #define mz_get_local_p(x, l) mz_get_local_p_x(x, l, JIT_FP)
 
-#ifdef MZ_USE_JIT_PPC
+/* --- PPC --- */
+#if defined(MZ_USE_JIT_PPC)
 /* JIT_LOCAL1, JIT_LOCAL2, and JIT_LOCAL3 are offsets in the stack frame. */
 # define JIT_LOCAL1 56
 # define JIT_LOCAL2 60
@@ -821,7 +831,40 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 }
 # endif
 # define _jit_prolog_again scheme_jit_prolog_again
-#else
+#endif
+
+/* --- ARM --- */
+#ifdef MZ_USE_JIT_ARM
+# define JIT_LOCAL1 JIT_FRAME_EXTRA_SPACE_OFFSET
+# define JIT_LOCAL2 (JIT_FRAME_EXTRA_SPACE_OFFSET+4)
+# define JIT_LOCAL3 (JIT_FRAME_EXTRA_SPACE_OFFSET+8)
+# define JIT_LOCAL4 (JIT_FRAME_EXTRA_SPACE_OFFSET+12)
+# define JIT_FRAME_FLOSTACK_OFFSET JIT_FRAME_EXTRA_SPACE_OFFSET
+# define mz_set_local_p_x(x, l, FP) jit_stxi_p(l, FP, x)
+# define mz_get_local_p_x(x, l, FP) jit_ldxi_p(x, FP, l)
+# define mz_patch_branch_at(a, v) jit_patch_at(a, v)
+# define mz_patch_ucbranch_at(a, v) jit_patch_at(a, v)
+# define mz_prolog(x) (mz_set_local_p(JIT_LR, JIT_LOCAL2))
+# define mz_epilog(x) (mz_get_local_p(x, JIT_LOCAL2), jit_jmpr(x))
+# define mz_epilog_without_jmp() /* empty */
+# define jit_shuffle_saved_regs() /* empty */
+# define jit_unshuffle_saved_regs() /* empty */
+# define mz_push_locals() /* empty */
+# define mz_pop_locals() /* empty */
+# ifdef SUPPRESS_LIGHTNING_FUNCS
+void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg);
+# else
+void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
+{
+  jit_movr_p(JIT_LR, ret_addr_reg);
+  arm_prolog(_jitp, n);
+}
+# endif
+# define _jit_prolog_again scheme_jit_prolog_again
+#endif
+
+/* --- x86[_64] --- */
+#if defined(JIT_X86_64) || defined(JIT_X86_PLAIN)
 /* From frame pointer, -1 is saved frame pointer, -2 is saved ESI/R12,
    and -3 is saved EDI/R13. On entry to a procedure, prolog pushes 4
    since the call (which also pushed), so if the stack was 16-bytes
@@ -934,8 +977,8 @@ static jit_insn *fp_tmpr;
 # define mz_st_fppop_x(i, r, FP, extfl) (check_fp_depth(i, FP), (void)jit_FPSEL_stxi_xd_fppop(extfl, (JIT_FRAME_FLOSTACK_OFFSET - (i)), FP, r))
 # define mz_st_fppop(i, r, extfl) mz_st_fppop_x(i, r, JIT_FP, extfl) 
 
-#define mz_patch_branch(a) mz_patch_branch_at(a, (_jit.x.pc))
-#define mz_patch_ucbranch(a) mz_patch_ucbranch_at(a, (_jit.x.pc))
+#define mz_patch_branch(a) mz_patch_branch_at(a, jit_get_ip())
+#define mz_patch_ucbranch(a) mz_patch_ucbranch_at(a, jit_get_ip())
 
 #ifdef NEED_LONG_JUMPS
 # define __START_SHORT_JUMPS__(cond) if (cond) { _jitl.long_jumps = 0; }
@@ -1233,14 +1276,14 @@ static void emit_indentation(mz_jit_state *jitter)
 # define JIT_BUFFER_PAD_SIZE 100
 #endif
 
-#define PAST_LIMIT() ((uintptr_t)jit_get_ip().ptr > (uintptr_t)jitter->limit)
+#define PAST_LIMIT() ((uintptr_t)jit_get_raw_ip() > (uintptr_t)jitter->limit)
 #define CHECK_LIMIT() if (PAST_LIMIT()) return past_limit(jitter, __FILE__, __LINE__);
 #if 1
 # define past_limit(j, f, l) 0
 #else
 static int past_limit(mz_jit_state *jitter, const char *file, int line)
 {
-  if (((uintptr_t)jit_get_ip().ptr > (uintptr_t)jitter->limit + JIT_BUFFER_PAD_SIZE)
+  if (((uintptr_t)jit_get_raw_ip() > (uintptr_t)jitter->limit + JIT_BUFFER_PAD_SIZE)
       || (jitter->retain_start)) {
     printf("way past %s %d\n", file, line); abort();
   }

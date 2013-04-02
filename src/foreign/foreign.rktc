@@ -1553,6 +1553,11 @@ static void* SCHEME2C(const char *who,
                          ((int*)W_OFFSET(dst,delta))[0] = 0;
                          delta += (sizeof(intptr_t)-sizeof(@ctype));
                        }}
+                       @@IFDEF{FFI_CALLBACK_NEED_INT_CLEAR}{
+                         if (sizeof(@ctype)<sizeof(intptr_t) && ret_loc) {
+                           ((int*)W_OFFSET(dst,delta))[0] = 0;
+                         }
+                       }
                        if (!(@(if ptr? "ret_loc" (pred "val" x)))) @;
                          @wrong-type["val" stype];
                        @(if ptr? "break" "return NULL");}]
@@ -1563,6 +1568,11 @@ static void* SCHEME2C(const char *who,
                      ((int*)W_OFFSET(dst,delta))[0] = 0;
                      delta += (sizeof(intptr_t)-sizeof(@ctype));
                    }}
+                   @@IFDEF{FFI_CALLBACK_NEED_INT_CLEAR}{
+                     if (sizeof(@ctype)<sizeof(intptr_t) && ret_loc) {
+                       ((int*)W_OFFSET(dst,delta))[0] = 0;
+                     }
+                   }
                    if (@f[pred]) {
                      @ctype tmp@";"@and[offset]{ intptr_t toff@";"}
                      tmp = @cast(@ctype, @f[s->c]);
