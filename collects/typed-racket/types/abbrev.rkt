@@ -269,23 +269,6 @@
 (define -force (make-ForcePE))
 
 
-;; convenient syntax
-
-
-(define-syntax -poly
-  (syntax-rules ()
-    [(_ (vars ...) ty)
-     (let ([vars (-v vars)] ...)
-       (make-Poly (list 'vars ...) ty))]))
-
-(define-syntax -polydots
-  (syntax-rules ()
-    [(_ (vars ... dotted) ty)
-     (let ([dotted (-v dotted)]
-           [vars (-v vars)] ...)
-       (make-PolyDots (list 'vars ... 'dotted) ty))]))
-
-
 ;; function type constructors
 
 (define top-func (make-Function (list (make-top-arr))))
