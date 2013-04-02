@@ -79,7 +79,7 @@
   ;; of the exact 0 problem, but since float-opt-expr checks whether the
   ;; surrounding expressing is of type Float and not just Real, this is safe
   (pattern e:real-expr
-           #:with opt #'(exact->inexact e)))
+           #:with opt #'(real->double-flonum e)))
 
 (define (log-float-real-missed-opt stx irritants)
   (log-missed-optimization
