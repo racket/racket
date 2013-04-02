@@ -29,16 +29,14 @@
                             new%)))))])
       (values
        (letrec ([add-extender
-                 (case-lambda
-                   [(extension) (add-extender extension #t)]
-                   [(extension before?)
-                    (when built-yet?
-                      (error 'extender "cannot build a new extension of ~a after initialization"
-                             name))
-                    (set! extensions 
-                          (if before?
-                              (compose (verify extension) extensions)
-                              (compose extensions (verify extension))))])])
+                 (λ (extension [before? #t])
+                   (when built-yet?
+                     (error 'extender "cannot build a new extension of ~a after initialization"
+                            name))
+                   (set! extensions 
+                         (if before?
+                             (compose (verify extension) extensions)
+                             (compose extensions (verify extension)))))])
          add-extender)
        (λ ()
          (unless built-yet?

@@ -971,30 +971,29 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:get/extend:extend-tab
-  (case->
-   ((make-mixin-contract drracket:unit:tab<%>) . -> . void?)
-   ((make-mixin-contract drracket:unit:tab<%>) boolean? . -> . void?))
-  ((mixin) (mixin before?))
+  (->* ((make-mixin-contract drracket:unit:tab<%>))
+       (boolean?)
+       void?)
+  ((mixin) ((before? #t)))
+  
   
   @{This class implements the tabs in DrRacket. One is created for each tab
     in a frame (each frame always has at least one tab, even if the tab bar is not shown)
     
-    The argument, @racket[before], controls if the mixin is applied before or
-    after already installed mixins.
-    If unsupplied, this is the same as supplying @racket[#t].})
+    The @racket[before] argument controls if the mixin is applied before or
+    after already installed mixins.})
  
  (proc-doc/names
   drracket:get/extend:extend-interactions-text
-  (case->
-   ((make-mixin-contract drracket:rep:text<%>) . -> . void?)
-   ((make-mixin-contract drracket:rep:text<%>) boolean? . -> . void?))
-  ((mixin) (mixin before?))
+  (->* ((make-mixin-contract drracket:rep:text<%>))
+       (boolean?)
+       void?)
+  ((mixin) ((before? #t)))
   
   @{This text is used in the bottom window of DrRacket frames.
     
-    The argument, @racket[before], controls if the mixin is applied before or
-    after already installed mixins.
-    If unsupplied, this is the same as supplying @racket[#t].})
+    The @racket[before] argument controls if the mixin is applied before or
+    after already installed mixins.})
  
  (proc-doc/names
   drracket:get/extend:get-interactions-text
@@ -1007,16 +1006,15 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:get/extend:extend-definitions-text
-  (case->
-   ((make-mixin-contract drracket:unit:definitions-text<%>) . -> . void?)
-   ((make-mixin-contract drracket:unit:definitions-text<%>) boolean? . -> . void?))
-  ((mixin) (mixin before?))
+  (->* ((make-mixin-contract drracket:unit:definitions-text<%>))
+       (boolean?)
+       void?)
+  ((mixin) ((before? #t)))
   
   @{This text is used in the top window of DrRacket frames.
     
-    The argument, @racket[before], controls if the mixin is applied before or
-    after already installed mixins.
-    If unsupplied, this is the same as supplying @racket[#f].})
+    The @racket[before] argument controls if the mixin is applied before or
+    after already installed mixins.})
  
  (proc-doc/names
   drracket:get/extend:get-definitions-text
@@ -1029,16 +1027,15 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:get/extend:extend-interactions-canvas
-  (case->
-   ((make-mixin-contract drracket:unit:interactions-canvas%) . -> . void?)
-   ((make-mixin-contract drracket:unit:interactions-canvas%) boolean? . -> . void?))
-  ((mixin) (mixin before?))
+  (->* ((make-mixin-contract drracket:unit:interactions-canvas%))
+       (boolean?)
+       void?)
+  ((mixin) ((before? #t)))
   
   @{This canvas is used in the bottom window of DrRacket frames.
     
-    The argument, @racket[before], controls if the mixin is applied before or
-    after already installed mixins.
-    If unsupplied, this is the same as supplying @racket[#f].})
+    The @racket[before] argument, controls if the mixin is applied before or
+    after already installed mixins.})
  
  (proc-doc/names
   drracket:get/extend:get-interactions-canvas
@@ -1051,16 +1048,15 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:get/extend:extend-definitions-canvas
-  (case->
-   ((make-mixin-contract drracket:unit:definitions-canvas%) . -> . void?)
-   ((make-mixin-contract drracket:unit:definitions-canvas%) boolean? . -> . void?))
-  ((mixin) (mixin before?))
+  (->* ((make-mixin-contract drracket:unit:definitions-canvas%))
+       (boolean?)
+       void?)
+  ((mixin) ((before? #t)))
   
   @{This canvas is used in the top window of DrRacket frames.
     
-    The argument, @racket[before], controls if the mixin is applied before or
-    after already installed mixins.
-    If unsupplied, this is the same as supplying @racket[#f].})
+    The @racket[before] argument controls if the mixin is applied before or
+    after already installed mixins.})
  
  (proc-doc/names
   drracket:get/extend:get-definitions-canvas
@@ -1073,16 +1069,15 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:get/extend:extend-unit-frame
-  (case->
-   ((make-mixin-contract drracket:unit:frame%) . -> . void?)
-   ((make-mixin-contract drracket:unit:frame%) boolean? . -> . void?))
-  ((mixin) (mixin before?))
+  (->* ((make-mixin-contract drracket:unit:frame%))
+       (boolean?)
+       void?)
+  ((mixin) ((before? #t)))
   
   @{This is the frame that implements the main DrRacket window.
     
     The argument, @racket[before], controls if the mixin is applied before or
-    after already installed mixins.
-    If unsupplied, this is the same as supplying @racket[#f].})
+    after already installed mixins.})
  
  (proc-doc/names
   drracket:get/extend:get-unit-frame
