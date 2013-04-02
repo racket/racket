@@ -39,7 +39,7 @@
 (define (unbox-one-complex-/ a b c d res-real res-imag)
   (define both-real? (and (equal? (syntax->datum b) 0.0)
                           (equal? (syntax->datum d) 0.0)))
-  ;; we have the same special cases as the Racket `/' primitive
+  ;; we have the same cases as the Racket `/' primitive (except for the non-float ones)
   (define d=0-case
     #`(values (unsafe-fl+ (unsafe-fl/ #,a #,c)
                           (unsafe-fl* #,d #,b))
@@ -50,17 +50,22 @@
                           (unsafe-fl* #,c #,a))
               (unsafe-fl- (unsafe-fl* #,c #,b)
                           (unsafe-fl/ #,a #,d))))
-  (define den-name (unboxed-gensym))
+
   (define general-case
-    #`(let ([#,den-name (unsafe-fl+
-                         (unsafe-fl* #,c #,c)
-                         (unsafe-fl* #,d #,d))])
-        (values (unsafe-fl/ (unsafe-fl+ (unsafe-fl* #,a #,c)
-                                        (unsafe-fl* #,b #,d))
-                            #,den-name)
-                (unsafe-fl/ (unsafe-fl- (unsafe-fl* #,b #,c)
-                                        (unsafe-fl* #,a #,d))
-                            #,den-name))))
+    #`(let* ([cm    (unsafe-flabs #,c)]
+             [dm    (unsafe-flabs #,d)]
+             [swap? (unsafe-fl< cm dm)]
+             [a     (if swap? #,b #,a)]
+             [b     (if swap? #,a #,b)]
+             [c     (if swap? #,d #,c)]
+             [d     (if swap? #,c #,d)]
+             [r     (unsafe-fl/ c d)]
+             [den   (unsafe-fl+ d (unsafe-fl* c r))]
+             [i     (if swap?
+                        (unsafe-fl/ (unsafe-fl- a (unsafe-fl* b r)) den)
+                        (unsafe-fl/ (unsafe-fl- (unsafe-fl* b r) a) den))])
+        (values (unsafe-fl/ (unsafe-fl+ b (unsafe-fl* a r)) den)
+                i)))
   (cond [both-real?
          #`[(#,res-real #,res-imag)
             (values (unsafe-fl/ #,a #,c)
