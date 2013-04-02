@@ -5389,109 +5389,6 @@ _ACEOF
   fi
 fi
 
-if test "${enable_libffi}" = "default" ; then
-  case "$host_os" in
-  darwin*)
-        enable_libffi=no
-  ;;
-  *)
-        enable_libffi=yes
-  ;;
-  esac
-fi
-
-if test "${enable_libffi}" = "yes" ; then
- if test "${enable_foreign}" = "yes" ; then
-  { echo "$as_me:$LINENO: checking for libffi" >&5
-echo $ECHO_N "checking for libffi... $ECHO_C" >&6; }
-
-  # Try to get flags form pkg-config:
-  libffi_config_prog="pkg-config libffi"
-  libffi_config_preflags=`$libffi_config_prog --cflags-only-I  2> /dev/null`
-  if test "$?" = 0 ; then
-    libffi_config_cflags=`$libffi_config_prog --cflags-only-other  2> /dev/null`
-    if test "$?" = 0 ; then
-      libffi_config_libs=`$libffi_config_prog --libs  2> /dev/null`
-      if test "$?" != 0 ; then
-        libffi_config_preflags=""
-        libffi_config_cflags=""
-        libffi_config_libs="-lffi"
-      fi
-    else
-      libffi_config_preflags=""
-      libffi_config_cflags=""
-      libffi_config_libs="-lffi"
-    fi
-  else
-    libffi_config_preflags=""
-    libffi_config_cflags=""
-    libffi_config_libs="-lffi"
-  fi
-
-  OLD_CFLAGS="${CFLAGS}"
-  OLD_LIBS="${LIBS}"
-  CFLAGS="${CFLAGS} ${libffi_config_preflags} ${libffi_config_cflags}"
-  LIBS="${LIBS} ${libffi_config_libs}"
-  cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-#include <ffi.h>
-int
-main ()
-{
-ffi_cif cif;
-              ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 0, &ffi_type_void, NULL);
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest$ac_exeext &&
-       $as_test_x conftest$ac_exeext; then
-  have_libffi=yes
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	have_libffi=no
-fi
-
-rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
-      conftest$ac_exeext conftest.$ac_ext
-  { echo "$as_me:$LINENO: result: $have_libffi" >&5
-echo "${ECHO_T}$have_libffi" >&6; }
-  if test "${have_libffi}" = "no" ; then
-    CFLAGS="${OLD_CFLAGS}"
-    LIBS="${OLD_LIBS}"
-    echo "Building own libffi"
-  else
-    CFLAGS="${OLD_CFLAGS}"
-    PREFLAGS="${PREFLAGS} ${libffi_config_preflags}"
-    COMPFLAGS="${COMPFLAGS} ${libffi_config_cflags}"
-    echo "Using installed libffi"
-    OWN_LIBFFI="OFF"
-  fi
- fi
-fi
-
 if test "${check_for_mprotect}" = "yes" ; then
    msg="for mmap and mprotect"
   { echo "$as_me:$LINENO: checking $msg" >&5
@@ -8735,8 +8632,123 @@ _ACEOF
   fi
 fi
 
+############## libffi ################
+
+# Depends on pthread on some platforms
+
 if test "${enable_pthread}" = "" ; then
   enable_pthread=no
+fi
+
+if test "${enable_libffi}" = "yes" ; then
+   complain_if_libffi_fails=yes
+fi
+
+if test "${enable_libffi}" = "default" ; then
+  case "$host_os" in
+  darwin*)
+        enable_libffi=no
+  ;;
+  *)
+        enable_libffi=yes
+  ;;
+  esac
+fi
+
+if test "${enable_libffi}" = "yes" ; then
+ if test "${enable_foreign}" = "yes" ; then
+  { echo "$as_me:$LINENO: checking for libffi" >&5
+echo $ECHO_N "checking for libffi... $ECHO_C" >&6; }
+
+  # Try to get flags form pkg-config:
+  libffi_config_prog="pkg-config libffi"
+  libffi_config_preflags=`$libffi_config_prog --cflags-only-I  2> /dev/null`
+  if test "$?" = 0 ; then
+    libffi_config_cflags=`$libffi_config_prog --cflags-only-other  2> /dev/null`
+    if test "$?" = 0 ; then
+      libffi_config_libs=`$libffi_config_prog --libs  2> /dev/null`
+      if test "$?" != 0 ; then
+        libffi_config_preflags=""
+        libffi_config_cflags=""
+        libffi_config_libs="-lffi"
+      fi
+    else
+      libffi_config_preflags=""
+      libffi_config_cflags=""
+      libffi_config_libs="-lffi"
+    fi
+  else
+    libffi_config_preflags=""
+    libffi_config_cflags=""
+    libffi_config_libs="-lffi"
+  fi
+
+  OLD_CFLAGS="${CFLAGS}"
+  OLD_LIBS="${LIBS}"
+  CFLAGS="${CFLAGS} ${libffi_config_preflags} ${libffi_config_cflags}"
+  LIBS="${LIBS} ${libffi_config_libs}"
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <ffi.h>
+int
+main ()
+{
+ffi_cif cif;
+              ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 0, &ffi_type_void, NULL);
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  have_libffi=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	have_libffi=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+  { echo "$as_me:$LINENO: result: $have_libffi" >&5
+echo "${ECHO_T}$have_libffi" >&6; }
+  if test "${have_libffi}" = "no" ; then
+    CFLAGS="${OLD_CFLAGS}"
+    LIBS="${OLD_LIBS}"
+    echo "Building own libffi"
+    if test "${complain_if_libffi_fails}" = "yes" ; then
+       echo configure: unable to link to libffi
+       exit 1
+    fi
+  else
+    CFLAGS="${OLD_CFLAGS}"
+    PREFLAGS="${PREFLAGS} ${libffi_config_preflags}"
+    COMPFLAGS="${COMPFLAGS} ${libffi_config_cflags}"
+    echo "Using installed libffi"
+    OWN_LIBFFI="OFF"
+  fi
+ fi
 fi
 
 ############## Solaris grunge ################
