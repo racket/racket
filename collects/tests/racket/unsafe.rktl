@@ -92,6 +92,7 @@
   (test-bin 0 'unsafe-fxmodulo 0 -5)
   (test-bin 0 'unsafe-fxmodulo 10 1)
   (err/rt-test (unsafe-fxmodulo (error "bad") 1) exn:fail?) ; not 0
+  (err/rt-test (unsafe-fxmodulo 0 (error "bad")) exn:fail?) ; not 0
 
   (test-bin 3.4 'unsafe-fl+ 1.4 2.0)
   (test-bin -1.1 'unsafe-fl+ 1.0 -2.1)

@@ -2642,7 +2642,7 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
         return app->rand1;
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-fxremainder")
                || IS_NAMED_PRIM(app->rator, "unsafe-fxmodulo")) {
-      if (z1)
+      if (z1 && scheme_omittable_expr(app->rand2, 1, 20, 0, info, NULL, -1, 0))
         return scheme_make_integer(0);
       if (SAME_OBJ(app->rand2, scheme_make_integer(1))
           && scheme_omittable_expr(app->rand1, 1, 20, 0, info, NULL, -1, 0))
