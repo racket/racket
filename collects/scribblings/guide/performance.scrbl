@@ -70,7 +70,7 @@ On some platforms, bytecode is further compiled to native code via a
 compiler substantially speeds programs that execute tight loops,
 arithmetic on small integers, and arithmetic on inexact real
 numbers. Currently, @tech{JIT} compilation is supported for x86,
-x86_64 (a.k.a. AMD64), and 32-bit PowerPC processors. The @tech{JIT}
+x86_64 (a.k.a. AMD64), ARM, and 32-bit PowerPC processors. The @tech{JIT}
 compiler can be disabled via the @racket[eval-jit-enabled] parameter
 or the @DFlag{no-jit}/@Flag{j} command-line flag for @exec{racket}.
 

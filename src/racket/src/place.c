@@ -319,8 +319,6 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   place_data->parent_gc = parent_gc;
   
   {
-    Scheme_Object *so;
-
     in_arg = args[2];
     out_arg = args[3];
     err_arg = args[4];

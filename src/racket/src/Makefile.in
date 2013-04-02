@@ -305,6 +305,11 @@ JIT_HEADERS = $(srcdir)/jit.h $(srcdir)/jitfpu.h $(srcdir)/stypes.h \
         $(srcdir)/lightning/ppc/asm.h $(srcdir)/lightning/ppc/asm-common.h \
         $(srcdir)/lightning/ppc/funcs.h $(srcdir)/lightning/ppc/funcs-common.h \
         $(srcdir)/lightning/ppc/fp.h $(srcdir)/lightning/ppc/fp-common.h \
+        $(srcdir)/lightning/arm/core.h $(srcdir)/lightning/arm/core-common.h \
+        $(srcdir)/lightning/arm/asm.h $(srcdir)/lightning/arm/asm-common.h \
+        $(srcdir)/lightning/arm/funcs.h $(srcdir)/lightning/arm/funcs-common.h \
+        $(srcdir)/lightning/arm/fp.h $(srcdir)/lightning/arm/fp-common.h \
+        $(srcdir)/lightning/arm/fp-vfp.h $(srcdir)/lightning/arm/fp-swf.h \
         $(srcdir)/future.h $(srcdir)/jit_ts.c $(srcdir)/jit_ts_protos.h
 
 salloc.@LTO@: $(COMMON_HEADERS) \

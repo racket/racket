@@ -207,7 +207,7 @@ typedef struct FSSpec mzFSSpec;
 #endif
 
 #ifndef MZ_DONT_USE_JIT
-# if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_X86_64)
+# if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_X86_64) || defined(MZ_USE_JIT_ARM)
 #  define MZ_USE_JIT
 # endif
 #endif

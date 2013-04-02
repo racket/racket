@@ -58,6 +58,7 @@ void scheme_register_stack_cache_stack(void)
 typedef void *(*Get_Stack_Proc)();
 
 #ifdef MZ_USE_JIT_PPC
+# define NEXT_FRAME_OFFSET 0
 # ifdef _CALL_DARWIN
 #  define RETURN_ADDRESS_OFFSET 2
 # else
@@ -65,7 +66,12 @@ typedef void *(*Get_Stack_Proc)();
 # endif
 #endif
 #ifdef MZ_USE_JIT_I386
+# define NEXT_FRAME_OFFSET 0
 # define RETURN_ADDRESS_OFFSET 1
+#endif
+#ifdef MZ_USE_JIT_ARM
+# define NEXT_FRAME_OFFSET JIT_NEXT_FP_OFFSET
+# define RETURN_ADDRESS_OFFSET (JIT_NEXT_FP_OFFSET+1)
 #endif
 
 #define CACHE_STACK_MIN_TRIGGER 128
@@ -109,7 +115,7 @@ static void check_stack(void)
       }
     }
 
-    q = *(void **)p;
+    q = ((void **)p)[NEXT_FRAME_OFFSET];
     if (STK_COMP((uintptr_t)q, (uintptr_t)p))
       break;
     p = q;
@@ -330,23 +336,31 @@ Scheme_Object *scheme_native_stack_trace(void)
 
     name = find_symbol((uintptr_t)q);
 #ifdef MZ_USE_DWARF_LIBUNWIND
-    if (name) manual_unw = 1;
+    if (name && !manual_unw) {
+      manual_unw = 1;
+# ifdef MZ_USE_JIT_ARM
+      use_unw = 0;
+      p = (void *)unw_get_frame_pointer(&c);
+      if (!(STK_COMP((uintptr_t)p, stack_end)
+	    && STK_COMP(stack_start, (uintptr_t)p)))
+	break;
+# endif
+    }
 #endif
 
     if (SCHEME_FALSEP(name) || SCHEME_VOIDP(name)) {
       /* Code uses special calling convention */
-#ifdef MZ_USE_JIT_PPC
+#if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_ARM)
       /* JIT_LOCAL2 has the next return address */
       q = ((void **)p)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
 #endif
 #ifdef MZ_USE_JIT_I386
-
 # ifdef MZ_USE_DWARF_LIBUNWIND
       if (use_unw) {
 	q = (void *)unw_get_frame_pointer(&c);
       } else
 # endif
-	q = *(void **)p;
+	q = ((void **)p)[NEXT_FRAME_OFFSET];
 
       /* q is now the frame pointer for the former q,
 	 so we can find the actual q */
@@ -368,7 +382,7 @@ Scheme_Object *scheme_native_stack_trace(void)
     } else if (SCHEME_EOFP(name)) {
       /* Stub (to mark start of running a module body, for example) */
       /* JIT_LOCAL2 has the name to use */
-#ifdef MZ_USE_JIT_PPC
+#if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_ARM)
       name = *(Scheme_Object **)((void **)p)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
 #endif
 #ifdef MZ_USE_JIT_I386
@@ -450,7 +464,7 @@ Scheme_Object *scheme_native_stack_trace(void)
 #endif
 
     if (!use_unw) {
-      q = *(void **)p;
+      q = ((void **)p)[NEXT_FRAME_OFFSET];
       if (STK_COMP((uintptr_t)q, (uintptr_t)p))
         break;
       p = q;

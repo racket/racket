@@ -132,7 +132,7 @@ int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int flags
   algn = GC_alloc_alignment();
 
   __START_TINY_JUMPS__(1);
-  reffail = _jit.x.pc;
+  reffail = jit_get_ip();
   mz_tl_ldi_p(JIT_V1, tl_GC_gen0_alloc_page_ptr);
   jit_subi_l(JIT_R2, JIT_V1, 1);
   jit_andi_l(JIT_R2, JIT_R2, (algn - 1));
@@ -141,21 +141,30 @@ int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int flags
   __END_TINY_JUMPS__(1);
 
   /* Failure handling */
-  if (keep_r0_r1) {
-    if (inline_retry) {
-      scheme_generate_alloc_retry(jitter, 1);
-      CHECK_LIMIT();
-    } else {
-      (void)jit_calli(sjc.retry_alloc_code_keep_r0_r1);
-    }
-  } else if (keep_fpr1) {
-    (void)jit_calli(sjc.retry_alloc_code_keep_fpr1);
-#ifdef MZ_LONG_DOUBLE
-  } else if (keep_extfpr1) {
-    (void)jit_calli(sjc.retry_alloc_code_keep_extfpr1);
-#endif
+  if (inline_retry) {
+    int mode;
+    if (keep_r0_r1)
+      mode = 1;
+    else if (keep_fpr1)
+      mode = 2;
+    else if (keep_extfpr1)
+      mode = 3;
+    else
+      mode = 0;
+    scheme_generate_alloc_retry(jitter, mode);
+    CHECK_LIMIT();
   } else {
-    (void)jit_calli(sjc.retry_alloc_code);
+    if (keep_r0_r1) {
+      (void)jit_calli(sjc.retry_alloc_code_keep_r0_r1);
+    } else if (keep_fpr1) {
+      (void)jit_calli(sjc.retry_alloc_code_keep_fpr1);
+#ifdef MZ_LONG_DOUBLE
+    } else if (keep_extfpr1) {
+      (void)jit_calli(sjc.retry_alloc_code_keep_extfpr1);
+#endif
+    } else {
+      (void)jit_calli(sjc.retry_alloc_code);
+    }
   }
   __START_TINY_JUMPS__(1);
   (void)jit_jmpi(reffail);

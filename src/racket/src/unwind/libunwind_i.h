@@ -530,6 +530,7 @@ typedef struct dwarf_reg_state
     unsigned short lru_chain;	  /* used for least-recently-used chain */
     unsigned short coll_chain;	/* used for hash collisions */
     unsigned short hint;	      /* hint for next rs to try (or -1) */
+    char valid, signal_frame;
   }
 dwarf_reg_state_t;
 
@@ -549,6 +550,7 @@ typedef struct dwarf_cie_info
     uint8_t lsda_encoding;
     unsigned int sized_augmentation : 1;
     unsigned int have_abi_marker : 1;
+    unsigned int signal_frame : 1;
   }
 dwarf_cie_info_t;
 
@@ -581,6 +583,8 @@ typedef struct dwarf_cursor
 
     short hint; /* faster lookup of the rs cache */
     short prev_rs;
+
+    int use_prev_instr;
   }
 dwarf_cursor_t;
 
@@ -637,6 +641,7 @@ HIDDEN int dwarf_extract_proc_info_from_fde (unw_addr_space_t as,
 					     unw_word_t *fde_addr,
 					     unw_proc_info_t *pi,
 					     int need_unwind_info,
+                                             unw_word_t base,
 					     void *arg);
 HIDDEN int dwarf_find_save_locs (struct dwarf_cursor *c);
 HIDDEN int dwarf_read_encoded_pointer (unw_addr_space_t as,
@@ -649,6 +654,23 @@ HIDDEN int dwarf_step (struct dwarf_cursor *c);
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXX End dwarf.h XXXXXXXXXXXXXXXXXXXXXXXXXX*/
 
+#ifdef CONFIG_DEBUG_FRAME
+struct unw_debug_frame_list
+  {
+    /* The start (inclusive) and end (exclusive) of the described region.  */
+    unw_word_t start;
+    unw_word_t end;
+    /* The debug frame itself.  */
+    char *debug_frame;
+    size_t debug_frame_size;
+    /* Index (for binary search).  */
+    struct table_entry *index;
+    size_t index_size;
+    /* Pointer to next descriptor.  */
+    struct unw_debug_frame_list *next;
+  };
+#endif
+
 struct unw_addr_space
   {
     void *mem_pool;
@@ -660,6 +682,9 @@ struct unw_addr_space
     uint32_t cache_generation;
 #endif
     struct dwarf_rs_cache global_cache;
+#ifdef CONFIG_DEBUG_FRAME
+    struct unw_debug_frame_list *debug_frames;
+#endif
    };
 
 struct cursor
@@ -672,7 +697,8 @@ struct cursor
       {
 	X86_SCF_NONE,			/* no signal frame encountered */
 	X86_SCF_LINUX_SIGFRAME,		/* classic x86 sigcontext */
-	X86_SCF_LINUX_RT_SIGFRAME	/* POSIX ucontext_t */
+	X86_SCF_LINUX_RT_SIGFRAME,	/* POSIX ucontext_t */
+        ARM_SCF_NONE
       }
     sigcontext_format;
     unw_word_t sigcontext_addr;
@@ -756,7 +782,7 @@ extern void tdep_init (void);
 extern int tdep_search_unwind_table (unw_addr_space_t as, unw_word_t ip,
 				     unw_dyn_info_t *di, unw_proc_info_t *pi,
 				     int need_unwind_info, void *arg);
-extern void *tdep_uc_addr (ucontext_t *uc, int reg);
+extern void *tdep_uc_addr (unw_context_t *uc, int reg);
 extern int tdep_get_elf_image (struct elf_image *ei, pid_t pid, unw_word_t ip,
 			       unsigned long *segbase, unsigned long *mapoff);
 extern int tdep_access_reg (struct cursor *c, unw_regnum_t reg,

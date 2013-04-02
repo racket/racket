@@ -49,7 +49,7 @@ static volatile uintptr_t code_low, code_high;
 
 static void *get_end_pointer(mz_jit_state *jitter)
 {
-  return jit_get_ip().ptr;
+  return jit_unadjust_ip(jit_get_ip());
 }
 
 int scheme_mz_retain_it(mz_jit_state *jitter, void *v)
@@ -204,6 +204,10 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
 #endif
   }
 
+#ifdef MZ_USE_JIT_ARM
+  jit_get_cpu();
+#endif
+
   while (1) {
     memset(jitter, 0, sizeof(_jitter));
 #ifdef SET_DEFAULT_LONG_JUMPS
@@ -282,7 +286,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
     }
 #endif
 
-    (void)jit_set_ip(buffer).ptr;
+    (void)jit_set_ip(buffer);
     jitter->limit = (char *)buffer + size_pre_retained_double - padding;
     if (known_size) {
       jitter->retain_double_start = (double *)jitter->limit;
@@ -348,7 +352,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
     if (PAST_LIMIT() || (jitter->retain_start
 			 && (jitter->retained > num_retained))) {
       scheme_console_printf("JIT buffer overflow: %p [%p,%p] (%d)!!\n", 
-			    jit_get_ip().ptr, 
+			    jit_get_ip(), 
 			    buffer, jitter->limit,
 			    !!jitter->retain_start);
       abort();
@@ -366,11 +370,11 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
 	scheme_signal_error("internal error: ended with unbox_extflonum");
       if (known_size) {
 	/* That was in the permanent area, so return: */
-	jit_flush_code(buffer, jit_get_ip().ptr);
+	jit_flush_code(buffer, jit_get_raw_ip());
 	return buffer;
       } else {
 	/* Allocate permanent area and jit again: */
-	known_size = ((uintptr_t)jit_get_ip().ptr) - (uintptr_t)buffer;
+	known_size = ((uintptr_t)jit_get_raw_ip()) - (uintptr_t)buffer;
         /* Make sure room for pointers is aligned: */
 	if (known_size & (JIT_WORD_SIZE - 1)) {
 	  known_size += (JIT_WORD_SIZE - (known_size & (JIT_WORD_SIZE - 1)));

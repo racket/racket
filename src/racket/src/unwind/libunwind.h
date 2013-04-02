@@ -32,11 +32,23 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #if defined(i386)
 # define PLAIN_X86
 #endif
+#if defined(__x86_64__)
+# define UNW_X86_64
+#endif
+#if defined(__arm__)
+# define UNW_ARM
+#endif
 
-#ifdef PLAIN_X86
+#if defined(PLAIN_X86)
 # define UNW_IP UNW_X86_EIP
-#else
+#elif defined(UNW_X86_64)
 # define UNW_IP UNW_X86_64_RIP
+#elif defined(UNW_ARM)
+# define UNW_IP UNW_ARM_RIP
+#endif
+
+#ifdef UNW_ARM
+# define CONFIG_DEBUG_FRAME
 #endif
 
 #if defined(__cplusplus) || defined(c_plusplus)
@@ -44,10 +56,12 @@ extern "C" {
 #endif
 
 #include <inttypes.h>
-#define _XOPEN_SOURCE /* needed for Mac OS X */
-#define __USE_GNU
-#include <ucontext.h>
-#undef __USE_GNU
+#ifndef UNW_ARM
+# define _XOPEN_SOURCE /* needed for Mac OS X */
+# define __USE_GNU
+# include <ucontext.h>
+# undef __USE_GNU
+#endif
 
   /* XXXXXXXXXXXXXXXXXXXX x86 Target XXXXXXXXXXXXXXXXXXXX */
 
@@ -157,13 +171,17 @@ typedef enum
   }
 x86_regnum_t;
 
+/* On x86, we can directly use ucontext_t as the unwind context.  */
+typedef ucontext_t unw_tdep_context_t;
+#define unw_tdep_getcontext(uc)		(getcontext (uc), 0)
+
 #endif
 
   /* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
 
   /* XXXXXXXXXXXXXXXXXXXX x86_64 Target XXXXXXXXXXXXXXXXXXXX */
 
-#ifndef PLAIN_X86
+#ifdef UNW_X86_64
 
 #define UNW_TARGET		x86_64
 #define UNW_TARGET_X86_64	1
@@ -216,6 +234,94 @@ typedef enum
   }
 x86_64_regnum_t;
 
+/* On x86, we can directly use ucontext_t as the unwind context.  */
+typedef ucontext_t unw_tdep_context_t;
+#define unw_tdep_getcontext(uc)		(getcontext (uc), 0)
+
+#endif
+
+  /* XXXXXXXXXXXXXXXXXXXX ARM Target XXXXXXXXXXXXXXXXXXXX */
+
+#ifdef UNW_ARM
+
+#define UNW_TARGET		ARM
+#define UNW_TARGET_ARM          1
+
+#define _U_TDEP_QP_TRUE	0	/* see libunwind-dynamic.h  */
+
+/* This needs to be big enough to accommodate "struct cursor", while
+   leaving some slack for future expansion.  Changing this value will
+   require recompiling all users of this library.  Stack allocation is
+   relatively cheap and unwind-state copying is relatively rare, so we
+   want to err on making it rather too big than too small.  */
+#define UNW_TDEP_CURSOR_LEN	127
+
+typedef uint32_t unw_word_t;
+typedef int32_t unw_sword_t;
+
+typedef double unw_tdep_fpreg_t;
+
+typedef enum
+  {
+    UNW_ARM_R0,
+    UNW_ARM_R1,
+    UNW_ARM_R2,
+    UNW_ARM_R3,
+    UNW_ARM_R4,
+    UNW_ARM_R5,
+    UNW_ARM_R6,
+    UNW_ARM_R7,
+    UNW_ARM_R8,
+    UNW_ARM_R9,
+    UNW_ARM_R10,
+    UNW_ARM_R11,
+    UNW_ARM_R12,
+    UNW_ARM_R13,
+    UNW_ARM_RSP = UNW_ARM_R13,
+    UNW_ARM_R14,
+    UNW_ARM_R15,
+    UNW_ARM_RIP = UNW_ARM_R15,
+
+    UNW_TDEP_LAST_REG = UNW_ARM_R15,
+
+    UNW_TDEP_IP = UNW_ARM_RIP,
+    UNW_TDEP_SP = UNW_ARM_RSP,
+    UNW_TDEP_EH = UNW_ARM_R0
+
+  }
+arm_regnum_t;
+
+typedef struct {
+  unsigned long regs[16];
+} unw_tdep_context_t;
+  
+/* There is no getcontext() on ARM.  Use a stub version which only saves GP
+   registers.  FIXME: Not ideal, may not be sufficient for all libunwind
+   use cases.  Stores pc+8, which is only approximately correct, really.  */
+#ifndef __thumb__
+#define unw_tdep_getcontext(uc) (({					\
+  unw_tdep_context_t *unw_ctx = (uc);					\
+  register unsigned long *unw_base asm ("r0") = unw_ctx;		\
+  __asm__ __volatile__ (						\
+    "stmia %[base], {r0-r15}"						\
+    : : [base] "r" (unw_base) : "memory");				\
+  }), 0)
+#else /* __thumb__ */
+#define unw_tdep_getcontext(uc) (({					\
+  unw_tdep_context_t *unw_ctx = (uc);					\
+  register unsigned long *unw_base asm ("r0") = unw_ctx;		\
+  __asm__ __volatile__ (						\
+    ".align 2\nbx pc\nnop\n.code 32\n"					\
+    "stmia %[base], {r0-r15}\n"						\
+    "orr %[base], pc, #1\nbx %[base]"					\
+    : [base] "+r" (unw_base) : : "memory", "cc");			\
+  }), 0)
+#endif
+
+#ifndef PT_GNU_EH_FRAME
+# define PT_GNU_EH_FRAME -1
+#endif
+
 #endif
 
   /* XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX */
@@ -227,15 +333,6 @@ typedef struct unw_tdep_save_loc
     /* Additional target-dependent info on a save location.  */
   }
 unw_tdep_save_loc_t;
-
-/* On x86, we can directly use ucontext_t as the unwind context.  */
-typedef ucontext_t unw_tdep_context_t;
-
-/* XXX this is not ideal: an application should not be prevented from
-   using the "getcontext" name just because it's using libunwind.  We
-   can't just use __getcontext() either, because that isn't exported
-   by glibc...  */
-#define unw_tdep_getcontext(uc)		(getcontext (uc), 0)
 
 
 typedef struct unw_dyn_remote_table_info

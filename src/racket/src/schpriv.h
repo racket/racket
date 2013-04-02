@@ -2572,6 +2572,11 @@ typedef struct Scheme_Native_Closure_Data {
 #ifdef MZ_PRECISE_GC
   void **retained; /* inside code */
 #endif
+#if defined(MZ_USE_JIT_ARM) && !defined(MZ_PRECISE_GC)
+# define NEED_RETAIN_CODE_POINTERS
+  /* Thumb code is off by one, need real start for GC */
+  void *retain_code;
+#endif
 } Scheme_Native_Closure_Data;
 
 #define SCHEME_NATIVE_CLOSURE_DATA_FLAGS(obj) MZ_OPT_HASH_KEY(&(obj)->iso)
@@ -3840,7 +3845,7 @@ intptr_t scheme_port_closed_p (Scheme_Object *port);
 #define CURRENT_OUTPUT_PORT(config) scheme_get_param(config, MZCONFIG_OUTPUT_PORT)
 #define CHECK_PORT_CLOSED(who, kind, port, closed) if (closed) scheme_raise_exn(MZEXN_FAIL, "%s: " kind " port is closed", who);
 
-#ifdef USE_FCNTL_O_NONBLOCK
+#if defined(USE_FCNTL_O_NONBLOCK)
 # define MZ_NONBLOCKING O_NONBLOCK
 #else
 # define MZ_NONBLOCKING FNDELAY

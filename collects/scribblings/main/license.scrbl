@@ -21,7 +21,7 @@ General Public License (LGPL).  This means
 
 ]
 
-See @filepath{doc/release-notes/COPYING.txt} in your Racket installation
+See @filepath{doc/release-notes/COPYING_LESSER.txt} in your Racket installation
 for more information.
 
 @copyright{
@@ -88,7 +88,7 @@ Racket software includes or extends the following copyrighted material:
 
 @copyright{
   GNU lightning
-  Copyright (c) 1994, 1995, 1996, 1999, 2000, 2001, 2002
+  Copyright (c) 1994, 1995, 1996, 1999, 2000, 2001, 2002, 2011
   Free Software Foundation, Inc.
 }
 

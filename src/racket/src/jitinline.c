@@ -412,7 +412,7 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
     if (inline_rator && (kind != INLINE_STRUCT_PROC_PRED)) {
       __START_SHORT_JUMPS__(1);
       ref = jit_bmci_ul(jit_forward(), JIT_R1, 0x1);
-      refslow = _jit.x.pc;
+      refslow = jit_get_ip();
       if (kind == INLINE_STRUCT_PROC_SET)
         scheme_restore_struct_temp(jitter, JIT_V1);
       __END_SHORT_JUMPS__(1);
@@ -662,7 +662,7 @@ int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args,
 
   /* Slow path: non-struct-prop proc, or argument type is
      bad for a getter. */
-  refslow = _jit.x.pc;
+  refslow = jit_get_ip();
   if (inline_slow) {
     if (num_args == 1) {
       jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
@@ -1224,7 +1224,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
         if (!sjc.skip_checks) {
           if (!i) {
             ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
-            reffail = _jit.x.pc;
+            reffail = jit_get_ip();
             __END_TINY_JUMPS__(1);
             if (steps == 1) {
               if (name[1] == 'a') {
@@ -1289,7 +1289,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __START_TINY_JUMPS__(1);
 
       ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
-      reffail = _jit.x.pc;
+      reffail = jit_get_ip();
       __END_TINY_JUMPS__(1);
       if (name[2] == 'a') {
         (void)jit_calli(sjc.bad_mcar_code);
@@ -1398,7 +1398,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
         ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
         __END_TINY_JUMPS__(1);
         
-        reffail = _jit.x.pc;
+        reffail = jit_get_ip();
         if (for_fl) {
           MZ_FPUSEL_STMT(extfl,
                          (void)jit_calli(sjc.bad_extflvector_length_code),
@@ -1477,7 +1477,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
       __END_TINY_JUMPS__(1);
 
-      reffail = _jit.x.pc;
+      reffail = jit_get_ip();
       (void)jit_calli(sjc.unbox_code);
       jit_movr_p(dest, JIT_R0);
 
@@ -1580,7 +1580,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __START_TINY_JUMPS__(1);
 
       ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
-      reffail = _jit.x.pc;
+      reffail = jit_get_ip();
       __END_TINY_JUMPS__(1);
       if (name[0] == 'i') {
         (void)jit_calli(sjc.imag_part_code);
@@ -1842,7 +1842,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __START_TINY_JUMPS__(1);
 
       ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
-      reffail = _jit.x.pc;
+      reffail = jit_get_ip();
       __END_TINY_JUMPS__(1);
       (void)jit_calli(sjc.bad_char_to_integer_code);
       __START_TINY_JUMPS__(1);
@@ -1869,14 +1869,14 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __START_TINY_JUMPS__(1);
 
       ref = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
-      refslow = _jit.x.pc;
+      refslow = jit_get_ip();
       __END_TINY_JUMPS__(1);
       (void)jit_calli(sjc.slow_integer_to_char_code);
       __START_TINY_JUMPS__(1);
       refdone = jit_jmpi(jit_forward());
       mz_patch_branch(ref);
-      (void)jit_blti_l(refslow, JIT_R0, scheme_make_integer(0));
-      (void)jit_bgti_l(refslow, JIT_R0, scheme_make_integer(255));
+      (void)jit_blti_p(refslow, JIT_R0, scheme_make_integer(0));
+      (void)jit_bgti_p(refslow, JIT_R0, scheme_make_integer(255));
 
       jit_rshi_l(JIT_R0, JIT_R0, 1);
       jit_lshi_l(JIT_R2, JIT_R0, JIT_LOG_WORD_SIZE);
@@ -2077,7 +2077,7 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
   if (!SCHEME_CHARP(r1)) {
     GC_CAN_IGNORE jit_insn *pref;
     pref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
-    reffail = _jit.x.pc;
+    reffail = jit_get_ip();
     (void)jit_movi_p(JIT_R2, ((Scheme_Primitive_Proc *)rator)->prim_val);
     __END_SHORT_JUMPS__(branch_short);
     if (direction > 0) {
@@ -2097,7 +2097,7 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
     if (!reffail) {
       GC_CAN_IGNORE jit_insn *pref;
       pref = jit_bmci_ul(jit_forward(), JIT_R1, 0x1);
-      reffail = _jit.x.pc;
+      reffail = jit_get_ip();
       (void)jit_movi_p(JIT_R2, ((Scheme_Primitive_Proc *)rator)->prim_val);
       __END_SHORT_JUMPS__(branch_short);
       if (direction > 0) {
@@ -2174,7 +2174,7 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
     }
     __END_TINY_JUMPS__(1);
 
-    reffail = _jit.x.pc;
+    reffail = jit_get_ip();
     if (int_ready) {
       jit_fixnum_l(JIT_R1, JIT_R1);
     }
@@ -3024,7 +3024,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       
 	offset = SCHEME_INT_VAL(app->rand2);
         if (!unsafe || can_chaperone)
-          (void)jit_movi_p(JIT_R1, offset);
+          (void)jit_movi_l(JIT_R1, offset);
 	if (!which)
 	  offset = base_offset + WORDS_TO_BYTES(offset);
 	else if (which == 3)
@@ -3208,7 +3208,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       __START_TINY_JUMPS__(1);
       ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
-      reffail = _jit.x.pc;
+      reffail = jit_get_ip();
       __END_TINY_JUMPS__(1);
       if (set_mcar)
         (void)jit_calli(sjc.bad_set_mcar_code);
@@ -3268,7 +3268,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       ref = mz_beqi_t(jit_forward(), JIT_R0, scheme_box_type, JIT_R2);
       if (ref3)
         mz_patch_branch(ref3);
-      reffail = _jit.x.pc;
+      reffail = jit_get_ip();
       (void)jit_calli(sjc.set_box_code);
       ref2 = jit_jmpi(jit_forward());
       mz_patch_branch(ref);
@@ -3395,7 +3395,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
       ref2 = jit_bgei_i(jit_forward(), JIT_R2, scheme_bignum_type);
       /* (slow path) */
-      refslow = _jit.x.pc;
+      refslow = jit_get_ip();
       (void)jit_calli(sjc.make_rectangular_code);
       jit_retval(dest);
       CHECK_LIMIT();
@@ -3446,7 +3446,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       __START_TINY_JUMPS__(1);
       ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
-      refslow = _jit.x.pc;
+      refslow = jit_get_ip();
       (void)jit_calli(sjc.bad_make_flrectangular_code);
       mz_patch_branch(ref);
       (void)mz_bnei_t(refslow, JIT_R0, scheme_double_type, JIT_R2);
@@ -3604,7 +3604,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       __START_TINY_JUMPS__(1);
       /* Fail if this isn't a pointer (0x1 is the integer tag) */
       ref = jit_bmci_ul(jit_forward(), JIT_R1, 0x1);
-      reffail = _jit.x.pc;
+      reffail = jit_get_ip();
       __END_TINY_JUMPS__(1);
 
       (void)jit_calli(sjc.box_cas_fail_code);
@@ -3643,7 +3643,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 #ifdef MZ_USE_FUTURES
     if (scheme_is_multithreaded(0)) {
       jit_lock_cmpxchgr_l(JIT_R1, JIT_V1); /* implicitly uses JIT_R0 */
-      reffalse = (JNEm(jit_forward(), 0,0,0), _jit.x.pc);
+      reffalse = (JNEm(jit_forward(), 0,0,0), jit_get_ip());
     } else
 #endif
       {
@@ -3941,7 +3941,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       } else {
 	intptr_t offset;
 	offset = SCHEME_INT_VAL(app->args[2]);
-	(void)jit_movi_p(JIT_R1, offset);
+	(void)jit_movi_l(JIT_R1, offset);
 	if (!which)
 	  offset = base_offset + WORDS_TO_BYTES(offset);
 	else if (which == 3)

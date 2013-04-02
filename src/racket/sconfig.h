@@ -156,39 +156,49 @@
 
 #if defined(linux)
 
+# ifdef __ANDROID__
+#  define SPLS_LINUX "android"
+# else
+#  define SPLS_LINUX "linux"
+# endif
+
 # if defined(i386)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-linux"
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-" SPLS_LINUX
 #  define REGISTER_POOR_MACHINE
 #  define MZ_TRY_EXTFLONUMS
 #  define ASM_DBLPREC_CONTROL_87
 # endif
 # if defined(powerpc)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-linux"
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-" SPLS_LINUX
 # endif
 # if defined(__mc68000__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "m68k-linux"
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "m68k-" SPLS_LINUX
 # endif
 # if defined(mips)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips-linux"
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips-" SPLS_LINUX
 # endif
 # if defined(__alpha__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "alpha-linux"
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "alpha-" SPLS_LINUX
 # endif
 # if defined(__hppa__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "hppa-linux"
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "hppa-" SPLS_LINUX
 # endif
 # if defined(__sparc__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc-linux"
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc-" SPLS_LINUX
 #  define FLUSH_SPARC_REGISTER_WINDOWS
 # endif
+# if defined(__arm__) || defined(__thumb__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm-" SPLS_LINUX
+#  define FFI_CALLBACK_NEED_INT_CLEAR
+# endif
 # if defined(__x86_64__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-linux"
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-" SPLS_LINUX
 #  define REGISTER_POOR_MACHINE
 #  define ASM_DBLPREC_CONTROL_87
 #  define MZ_TRY_EXTFLONUMS
 # endif
 # ifndef SCHEME_PLATFORM_LIBRARY_SUBPATH
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "unknown-linux"
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "unknown-" SPLS_LINUX
 # endif
 
 # include "uconfig.h"
@@ -215,6 +225,10 @@
 
 # define MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT
 
+# ifdef __ANDROID__
+#  define USE_FCNTL_O_NONBLOCK
+# endif
+
 # define FLAGS_ALREADY_SET
 
 #if defined(i386)
@@ -228,6 +242,10 @@
 #endif
 #if defined(powerpc)
 # define MZ_USE_JIT_PPC
+#endif
+# if defined(__arm__)
+# define MZ_USE_JIT_ARM
+# define MZ_USE_DWARF_LIBUNWIND
 #endif
 
 #endif
@@ -1654,6 +1672,10 @@
 
  /* WIN32S_HACK uses a special hack to implement threads under Win32s
     with some compilers. Obsolete. */
+
+ /* FFI_CALLBACK_NEED_INT_CLEAR indiates thet libffi callback results
+    that are smaller than an `int' should clear `int'-sized space
+    in the result area. */
 
 #endif  /* FLAGS_ALREADY_SET */
 
