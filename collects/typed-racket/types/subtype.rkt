@@ -361,8 +361,11 @@
               ;; recur structurally on dotted lists, assuming same bounds
               [((ListDots: s-dty dbound) (ListDots: t-dty dbound))
                (subtype* A0 s-dty t-dty)]
+              ;; For dotted lists and regular lists, we check that (All (dbound) s-dty) is a subtype
+              ;; of t-elem, so that no matter what dbound is instatiated with s-dty is still a subtype
+              ;; of t-elem. We cannot just replace dbound with Univ because of variance issues.
               [((ListDots: s-dty dbound) (Listof: t-elem))
-               (subtype* A0 (substitute Univ dbound s-dty) t-elem)]
+               (subtype* A0 (-poly (dbound) s-dty) t-elem)]
               ;; quantification over two types preserves subtyping
               [((Poly: ns b1) (Poly: ms b2))
                (=> unmatch)
