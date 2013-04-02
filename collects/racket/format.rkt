@@ -318,7 +318,7 @@
                           (string-append
                            (cond [(string? format-exponent) format-exponent]
                                  [(= base 10) "e"]
-                                 [else (format "×~s^" base)])
+                                 [else (format "x~s^" base)])
                            (if (negative? exponent) "-" "+")
                            (%pad (number->string (abs exponent))
                                  #:pad-to 2
