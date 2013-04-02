@@ -305,7 +305,7 @@
                                              #'1.0))
                      ((real-binding)   #,(if (syntax->datum #'c.imag-binding)
                                              #'(unsafe-fl* (unsafe-flcos c.imag-binding) scaling-factor)
-                                             #'0.0))
+                                             #'1.0))
                      ((imag-binding)   #,(if (syntax->datum #'c.imag-binding)
                                              #'(unsafe-fl* (unsafe-flsin c.imag-binding) scaling-factor)
                                              #'0.0)))))
