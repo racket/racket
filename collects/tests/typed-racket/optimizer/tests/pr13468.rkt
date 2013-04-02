@@ -6,9 +6,6 @@ TR opt: pr13468.rkt 86:5 (- (ann 6.0+2.3i Float-Complex)) -- unboxed unary float
 TR opt: pr13468.rkt 87:13 6.0+2.3i -- unboxed literal
 TR opt: pr13468.rkt 87:13 6.0+2.3i -- unboxed literal
 TR opt: pr13468.rkt 87:5 (/ (ann 6.0+2.3i Float-Complex)) -- unboxed unary float complex
-TR opt: pr13468.rkt 88:13 0.0+0.0i -- unboxed literal
-TR opt: pr13468.rkt 88:42 1 -- float-arg-expr in complex ops
-TR opt: pr13468.rkt 88:5 (/ (ann 0.0+0.0i Float-Complex) (ann 1 Number)) -- unboxed binary float complex
 TR missed opt: pr13468.rkt 91:5 (expt (ann -5.0 Flonum) (ann 2.0 Flonum)) -- unexpected complex type
 TR opt: pr13468.rkt 112:21 0.0 -- float-arg-expr in complex ops
 TR opt: pr13468.rkt 112:5 (magnitude (ann 0.0 Flonum-Zero)) -- unboxed unary float complex
@@ -81,6 +78,9 @@ TR opt: pr13468.rkt 143:5 (real-part (ann 6.0 Flonum)) -- unboxed unary float co
 0)
 
 #lang typed/racket
+
+
+
 
 ;; Most bothersome missing cases:
 (ann (- (ann 6.0+2.3i Float-Complex)) Float-Complex)

@@ -1,10 +1,10 @@
 #lang racket/base
 
-(require syntax/parse syntax/id-table racket/dict unstable/syntax
+(require syntax/parse syntax/id-table racket/dict unstable/syntax racket/match
          "../utils/utils.rkt" racket/unsafe/ops
          (for-template racket/base racket/math racket/flonum racket/unsafe/ops)
          (utils tc-utils)
-         (types numeric-tower)
+         (types numeric-tower subtype type-table utils)
          (optimizer utils numeric-utils logging float))
 
 (provide float-complex-opt-expr
@@ -209,7 +209,7 @@
                         c1:unboxed-float-complex-opt-expr
                         c2:unboxed-float-complex-opt-expr
                         cs:unboxed-float-complex-opt-expr ...)
-           #:when (or (subtypeof? this-syntax -FloatComplex) (subtypeof? this-syntax -Number))
+           #:when (subtypeof? this-syntax -FloatComplex)
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
            #:with reals (syntax-map get-part-or-0.0
@@ -462,7 +462,7 @@
 
 (define-syntax-class float-complex-op
   #:commit
-  (pattern (~or (~literal +) (~literal -) (~literal *) (~literal /) (~literal conjugate) (~literal exp))))
+  (pattern (~or (~literal +) (~literal -) (~literal *) (~literal conjugate) (~literal exp))))
 
 (define-syntax-class float-complex->float-op
   #:commit
@@ -585,6 +585,26 @@
 
   (pattern (#%plain-app op:float-complex-op e:expr ...)
            #:when (subtypeof? this-syntax -FloatComplex)
+           #:with exp*:unboxed-float-complex-opt-expr this-syntax
+           #:with real-binding #'exp*.real-binding
+           #:with imag-binding #'exp*.imag-binding
+           #:with (bindings ...) #'(exp*.bindings ...)
+           #:with opt
+           (begin (reset-unboxed-gensym)
+                  (add-disappeared-use #'op)
+                  #`(let*-values (exp*.bindings ...)
+                      (unsafe-make-flrectangular #,(get-part-or-0.0 #'exp*.real-binding)
+                                                 #,(get-part-or-0.0 #'exp*.imag-binding)))))
+
+  ;; division is special. can only optimize if none of the arguments can be exact 0.
+  ;; otherwise, optimization is unsound (we'd give a result where we're supposed to throw an error)
+  (pattern (#%plain-app (~literal /) e:expr ...)
+           #:when (subtypeof? this-syntax -FloatComplex)
+           #:when (for/and ([c (syntax->list #'(e ...))])
+                    (match (type-of c)
+                      [(tc-result1: t)
+                       (not (subtype -Zero t))]
+                      [_ #f]))
            #:with exp*:unboxed-float-complex-opt-expr this-syntax
            #:with real-binding #'exp*.real-binding
            #:with imag-binding #'exp*.imag-binding
