@@ -212,6 +212,10 @@
 
    [(-polydots (a) (->... (list) (a a) (make-ListDots a 'a)))
     (-polydots (b a) (->... (list b) (a a) (-pair b (make-ListDots a 'a))))]
+
+   [FAIL (make-ListDots (-box (make-F 'a)) 'a) (-lst (-box Univ))]
+   [(make-ListDots (-> -Symbol (make-F 'a)) 'a) (-lst (-> -Symbol Univ))]
+
    ))
 
 (define-go
