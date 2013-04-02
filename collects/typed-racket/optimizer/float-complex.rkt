@@ -35,6 +35,42 @@
       stx
       #'0.0))
 
+;; a+bi / c+di, names for real and imag parts of result -> one let-values binding clause
+(define (unbox-one-complex-/ a b c d res-real res-imag)
+  (define both-real? (and (equal? (syntax->datum b) 0.0)
+                          (equal? (syntax->datum d) 0.0)))
+  ;; we have the same special cases as the Racket `/' primitive
+  (define d=0-case
+    #`(values (unsafe-fl+ (unsafe-fl/ #,a #,c)
+                          (unsafe-fl* #,d #,b))
+              (unsafe-fl- (unsafe-fl/ #,b #,c)
+                          (unsafe-fl* #,d #,a))))
+  (define c=0-case
+    #`(values (unsafe-fl+ (unsafe-fl/ #,b #,d)
+                          (unsafe-fl* #,c #,a))
+              (unsafe-fl- (unsafe-fl* #,c #,b)
+                          (unsafe-fl/ #,a #,d))))
+  (define den-name (unboxed-gensym))
+  (define general-case
+    #`(let ([#,den-name (unsafe-fl+
+                         (unsafe-fl* #,c #,c)
+                         (unsafe-fl* #,d #,d))])
+        (values (unsafe-fl/ (unsafe-fl+ (unsafe-fl* #,a #,c)
+                                        (unsafe-fl* #,b #,d))
+                            #,den-name)
+                (unsafe-fl/ (unsafe-fl- (unsafe-fl* #,b #,c)
+                                        (unsafe-fl* #,a #,d))
+                            #,den-name))))
+  (cond [both-real?
+         #`[(#,res-real #,res-imag)
+            (values (unsafe-fl/ #,a #,c)
+                    0.0)]] ; currently not propagated
+        [else
+         #`[(#,res-real #,res-imag)
+            (cond [(unsafe-fl= #,d 0.0) #,d=0-case]
+                  [(unsafe-fl= #,c 0.0) #,c=0-case]
+                  [else                 #,general-case])]]))
+
 ;; it's faster to take apart a complex number and use unsafe operations on
 ;; its parts than it is to use generic operations
 ;; we keep the real and imaginary parts unboxed as long as we stay within
@@ -193,50 +229,12 @@
                                    [is (append (syntax-map (lambda (x) (unboxed-gensym "unboxed-imag-"))
                                                            #'(cs.imag-binding ...))
                                                (list #'imag-binding))]
-                                   [ds (syntax-map (lambda (x) (unboxed-gensym))
-                                                   #'(c2.real-binding cs.real-binding ...))]
                                    [res '()])
                           (if (null? e1)
                               (reverse res)
-                              (loop (car rs) (car is) (cdr e1) (cdr e2) (cdr rs) (cdr is) (cdr ds)
-                                    (let ()
-                                      (define c (car e1))
-                                      (define d (car e2))
-                                      (define o-real? (equal? (syntax->datum b) 0.0))
-                                      (define e-real? (equal? (syntax->datum d) 0.0))
-                                      ;; we have the same special cases as the Racket `/' primitive
-                                      (define d=0-case
-                                        #`(values (unsafe-fl+ (unsafe-fl/ #,a #,c)
-                                                              (unsafe-fl* #,d #,b))
-                                                  (unsafe-fl- (unsafe-fl/ #,b #,c)
-                                                              (unsafe-fl* #,d #,a))))
-                                      (define c=0-case
-                                        #`(values (unsafe-fl+ (unsafe-fl/ #,b #,d)
-                                                              (unsafe-fl* #,c #,a))
-                                                  (unsafe-fl- (unsafe-fl* #,c #,b)
-                                                              (unsafe-fl/ #,a #,d))))
-                                      (define general-case
-                                        #`(let ([#,(car ds) (unsafe-fl+
-                                                             (unsafe-fl* #,c #,c)
-                                                             (unsafe-fl* #,d #,d))])
-                                            (values (unsafe-fl/ (unsafe-fl+ (unsafe-fl* #,a #,c)
-                                                                            (unsafe-fl* #,b #,d))
-                                                                #,(car ds))
-                                                    (unsafe-fl/ (unsafe-fl- (unsafe-fl* #,b #,c)
-                                                                            (unsafe-fl* #,a #,d))
-                                                                #,(car ds)))))
-                                      (cond [(and o-real? e-real?)
-                                             (list*
-                                              #`((#,(car is)) 0.0) ; currently not propagated
-                                              #`((#,(car rs)) (unsafe-fl/ #,a #,c))
-                                              res)]
-                                            [else
-                                             ;; (let-values ([(real imag) ...]) ...)
-                                             (list* #`[(#,(car rs) #,(car is))
-                                                       (cond [(unsafe-fl= #,d 0.0) #,d=0-case]
-                                                             [(unsafe-fl= #,c 0.0) #,c=0-case]
-                                                             [else                 #,general-case])]
-                                                    res)]))))))))
+                              (loop (car rs) (car is) (cdr e1) (cdr e2) (cdr rs) (cdr is)
+                                    (cons (unbox-one-complex-/ a b (car e1) (car e2) (car rs) (car is))
+                                          res)))))))
   (pattern (#%plain-app (~and op (~literal /)) c1:unboxed-float-complex-opt-expr) ; unary /
            #:when (subtypeof? this-syntax -FloatComplex)
            #:with real-binding (unboxed-gensym "unboxed-real-")
@@ -246,25 +244,9 @@
                                     complex-unboxing-opt-msg
                                     this-syntax)
                   (add-disappeared-use #'op)
-                  ;; (/ 1.0+0.0i c1)
-                  ;; = (+ (/ (+ (* 1.0 c1.real) (* 0.0 c1.imag)) (+ c1.real^2 c1.imag^2))
-                  ;;      (/ (- (* 0.0 c1.real) (* 1.0 c1.imag)) (+ c1.real^2 c1.imag^2))*i)
-                  ;; = (+ (/ c1.real         (+ c1.real^2 c1.imag^2))
-                  ;;      (/ (- 0.0 c1.imag) (+ c1.real^2 c1.imag^2))*i)
-                  (with-syntax ([denominator-binding (unboxed-gensym)])
-                    #`(c1.bindings ...
-                       [(denominator-binding)
-                        #,(cond [(not (syntax->datum #'c1.imag-binding)) ; only real part
-                                 #'(unsafe-fl* c1.real-binding c1.real-binding)]
-                                [(not (syntax->datum #'c1.real-binding)) ; only imag part
-                                 #'(unsafe-fl* c1.imag-binding c1.imag-binding)]
-                                [else ; both parts
-                                 #'(unsafe-fl+ (unsafe-fl* c1.real-binding c1.real-binding)
-                                               (unsafe-fl* c1.imag-binding c1.imag-binding))])]
-                       [(real-binding) (unsafe-fl/ #,(get-part-or-0.0 #'c1.real-binding)
-                                                   denominator-binding)]
-                       [(imag-binding) (unsafe-fl/ (unsafe-fl- 0.0 #,(get-part-or-0.0 #'c1.imag-binding))
-                                                   denominator-binding)]))))
+                  #`(c1.bindings ...
+                     #,(unbox-one-complex-/ #'1.0 #'0.0 #'c1.real-binding #'c1.imag-binding
+                                            #'real-binding #'imag-binding))))
 
   (pattern (#%plain-app (~and op (~literal conjugate)) c:unboxed-float-complex-opt-expr)
            #:when (subtypeof? this-syntax -FloatComplex)
