@@ -108,7 +108,7 @@
       [(file)
        (log-untar-info "file: ~a" filename)
        (define-values (base name dir?) (split-path filename))
-       (make-directory* base)
+       (when (path? base) (make-directory* base))
        (call-with-output-file*
         filename
         #:exists 'truncate
@@ -125,7 +125,7 @@
       [(link)
        (log-untar-info "link: ~a" filename)
        (define-values (base name dir?) (split-path filename))
-       (make-directory* base)
+       (when (path? base) (make-directory* base))
        (when (file-exists? filename) (delete-file filename))
        (make-file-or-directory-link link-target filename)
        delays]

@@ -1,5 +1,5 @@
 #lang racket/base
-(require file/untar file/untgz file/unzip racket/file racket/system
+(require file/untar file/untgz file/unzip racket/file racket/system racket/set
          tests/eli-tester)
 
 (provide tests)
@@ -96,7 +96,23 @@
   (untgz (path-replace-suffix a.tar #".tar.gz") #:dest "sub")
   (test (diff "ex1" (build-path "sub" "ex1") #t))
   (delete-directory/files "sub")
-  (file-or-directory-permissions* more-dir "rwx"))
+  (file-or-directory-permissions* more-dir "rwx")
+  
+  
+  ;; make sure top-level file extraction works
+  (untgz (open-input-bytes
+          ;; bytes gotten from 'tar' and 'gzip' command-line tools
+          (bytes-append
+           #"\37\213\b\b\3774\\Q\0\3robby.1.tar\0\3631Lf\2405000031Q"
+           #"\0\321\346f\246`\332\300\b\302\207\1\5C#C#s\3c#cS\3\5\3CC33C"
+           #"\6\5\3\232\273\f\bJ\213K\22\213\200N)\312OJ\252\304\243\16\250"
+           #",-\r\217<\324\37pz\210\200\214\324\234\202\324\"\275\242\354\22"
+           #"\332\331AR\374\233\233\2\343\337\330\330\310|4\376G\301(\30\5"
+           #"\243\200\226\0\0\342 \234\3\0\b\0\0")))
+  (test (file-exists? "L1c"))
+  (test (file-exists? "helper.rkt"))
+  (delete-file "L1c")
+  (delete-file "helper.rkt"))
 
 (define (unzip-tests*)
   (make-directory* "ex1")
