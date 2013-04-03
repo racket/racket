@@ -269,7 +269,7 @@ void scheme_init_network(Scheme_Env *env)
   GLOBAL_FOLDING_PRIM  ( "udp?"                      , udp_p                    , 1 , 1 , 1 , netenv ) ;
   GLOBAL_PRIM_W_ARITY  ( "udp-bound?"                , udp_bound_p              , 1 , 1 , netenv ) ;
   GLOBAL_PRIM_W_ARITY  ( "udp-connected?"            , udp_connected_p          , 1 , 1 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-bind!"                 , udp_bind                 , 3 , 3 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-bind!"                 , udp_bind                 , 3 , 4 , netenv ) ;
   GLOBAL_PRIM_W_ARITY  ( "udp-connect!"              , udp_connect              , 3 , 3 , netenv ) ;
 
   GLOBAL_PRIM_W_ARITY  ( "udp-send-to"               , udp_send_to              , 4 , 6 , netenv ) ;
@@ -3276,6 +3276,19 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
     /* BIND CASE */
     else {
       int ok;
+
+      if ((argc > 3) && SCHEME_TRUEP(argv[3])) {
+	int one = 1;
+	if (setsockopt(udp->s, SOL_SOCKET, SO_REUSEADDR, (void *) &one, sizeof(one))) {
+	  scheme_raise_exn(MZEXN_FAIL_NETWORK,
+			   "%s: can't set SO_REUSEADDR\n"
+			   "  system error: %E",
+			   name,
+			   SOCK_ERRNO());
+	  return NULL;
+	}
+      }
+
       if (udp_bind_addr == NULL ) {
         GC_CAN_IGNORE mz_unspec_address ua;
         memset(&ua, 0, sizeof(mz_unspec_address));
