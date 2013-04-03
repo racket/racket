@@ -235,6 +235,18 @@ Examples:
          #"</p></body></html>"))
  ]
 }
+                   
+@defproc[(response/output [output (-> output-port? void?)]
+                          [#:code code number? 200]
+                          [#:message message bytes? #"Okay"]
+                          [#:seconds seconds number? (current-seconds)]
+                          [#:mime-type mime-type (or/c bytes? #f) TEXT/HTML-MIME-TYPE]
+                          [#:headers headers (listof header?) '()]
+                          [#:cookies cookies (listof cookie?) '()])
+         response?]{
+Equivalent to
+@racketblock[(response code message seconds mime-type headers output)]
+}
 
 @defthing[TEXT/HTML-MIME-TYPE bytes?]{Equivalent to @racket[#"text/html; charset=utf-8"].}
 
