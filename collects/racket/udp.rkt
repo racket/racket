@@ -23,7 +23,15 @@
              udp-receive!-evt 
              udp-send-evt 
              udp-send-to-evt
-             udp-addresses)
+             udp-addresses
+	     udp-multicast-loopback?
+	     udp-multicast-set-loopback!
+	     udp-multicast-ttl
+	     udp-multicast-set-ttl!
+	     udp-multicast-interface
+	     udp-multicast-set-interface!
+	     udp-multicast-join-group!
+	     udp-multicast-leave-group!)
       
   (define-values (udp-addresses)
     (case-lambda
