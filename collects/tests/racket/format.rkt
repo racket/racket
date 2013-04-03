@@ -247,7 +247,7 @@
     "9.876e-01")
 
 (tc (~r #:notation 'exponential 100 #:base 2)
-    "1.1001×2^+06")
+    "1.1001x2^+06")
 
 (tc (~r #:notation 'exponential 1234 #:format-exponent "E")
     "1.234E+03")
@@ -267,7 +267,7 @@
 
 (tc (~r 3735928559 #:base '(up 16) #:precision 6 #:notation 'exponential)
     ;; note rounding!
-    "D.EADBEF×16^+07")
+    "D.EADBEFx16^+07")
 
 (tc (~r 33.99508664763296 #:precision 1 #:min-width 5)
     "   34")
