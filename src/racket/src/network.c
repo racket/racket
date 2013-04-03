@@ -229,6 +229,14 @@ static Scheme_Object *udp_write_ready_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *udp_read_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *udp_write_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *udp_write_to_evt(int argc, Scheme_Object *argv[]);
+static Scheme_Object *udp_multicast_loopback_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *udp_multicast_set_loopback(int argc, Scheme_Object *argv[]);
+static Scheme_Object *udp_multicast_ttl(int argc, Scheme_Object *argv[]);
+static Scheme_Object *udp_multicast_set_ttl(int argc, Scheme_Object *argv[]);
+static Scheme_Object *udp_multicast_interface(int argc, Scheme_Object *argv[]);
+static Scheme_Object *udp_multicast_set_interface(int argc, Scheme_Object *argv[]);
+static Scheme_Object *udp_multicast_join_group(int argc, Scheme_Object *argv[]);
+static Scheme_Object *udp_multicast_leave_group(int argc, Scheme_Object *argv[]);
 
 static int tcp_check_accept_evt(Scheme_Object *ae, Scheme_Schedule_Info *sinfo);
 static void tcp_accept_evt_needs_wakeup(Scheme_Object *_ae, void *fds);
@@ -287,6 +295,15 @@ void scheme_init_network(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY  ( "udp-receive!-evt"          , udp_read_evt             , 2 , 4 , netenv ) ;
   GLOBAL_PRIM_W_ARITY  ( "udp-send-evt"              , udp_write_evt            , 2 , 4 , netenv ) ;
   GLOBAL_PRIM_W_ARITY  ( "udp-send-to-evt"           , udp_write_to_evt         , 4 , 6 , netenv ) ;
+
+  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-loopback?"   , udp_multicast_loopback_p , 1 , 1 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-set-loopback!", udp_multicast_set_loopback,2, 2 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-ttl"         , udp_multicast_ttl        , 1 , 1 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-set-ttl!"    , udp_multicast_set_ttl    , 2 , 2 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-interface"   , udp_multicast_interface  , 1 , 1 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-set-interface!", udp_multicast_set_interface,2,2, netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-join-group!" , udp_multicast_join_group , 3 , 3 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-leave-group!", udp_multicast_leave_group, 3 , 3 , netenv ) ;
 
   scheme_finish_primitive_module(netenv);
 
@@ -3934,6 +3951,353 @@ static void udp_evt_needs_wakeup(Scheme_Object *_uw, void *fds)
     udp_send_needs_wakeup((Scheme_Object *)uw->udp, fds);
 }
 #endif
+
+static int udp_check_open(char const *name, int argc, Scheme_Object *argv[]) {
+  if (!SCHEME_UDPP(argv[0])) {
+    scheme_wrong_contract(name, "udp?", 0, argc, argv);
+    return 0; /* Why does no-one else expect control back after scheme_wrong_contract? */
+    /* Or, conversely, why does everyone expect control back after scheme_raise_exn? */
+  }
+
+#ifdef UDP_IS_SUPPORTED
+  {
+    Scheme_UDP *udp = (Scheme_UDP *) argv[0];
+
+    if (udp->s == INVALID_SOCKET) {
+      scheme_raise_exn(MZEXN_FAIL_NETWORK,
+                       "%s: udp socket was already closed\n"
+                       "  socket: %V",
+                       name, udp);
+      return 0;
+    }
+
+    return 1;
+  }
+#else
+  return 0;
+#endif
+}
+
+static Scheme_Object *
+udp_multicast_loopback_p(int argc, Scheme_Object *argv[])
+{
+  if (!udp_check_open("udp-multicast-loopback?", argc, argv))
+    return NULL;
+
+#ifdef UDP_IS_SUPPORTED
+  {
+    Scheme_UDP *udp = (Scheme_UDP *) argv[0];
+    u_char loop;
+    unsigned int loop_len = sizeof(loop);
+    int status;
+    status = getsockopt(udp->s, IPPROTO_IP, IP_MULTICAST_LOOP, (void *) &loop, &loop_len);
+    if (status)
+      status = SOCK_ERRNO();
+    if (status) {
+      scheme_raise_exn(MZEXN_FAIL_NETWORK,
+		       "udp-multicast-loopback?: getsockopt failed\n"
+		       "  system error: %N",
+		       0, status);
+      return NULL;
+    } else {
+      return (loop ? scheme_true : scheme_false);
+    }
+  }
+#else
+  return scheme_void;
+#endif
+}
+
+static Scheme_Object *
+udp_multicast_set_loopback(int argc, Scheme_Object *argv[])
+{
+  if (!udp_check_open("udp-multicast-set-loopback!", argc, argv))
+    return NULL;
+
+#ifdef UDP_IS_SUPPORTED
+  {
+    Scheme_UDP *udp = (Scheme_UDP *) argv[0];
+    u_char loop = SCHEME_TRUEP(argv[1]) ? 1 : 0;
+    unsigned int loop_len = sizeof(loop);
+    int status;
+    status = setsockopt(udp->s, IPPROTO_IP, IP_MULTICAST_LOOP, (void *) &loop, loop_len);
+    if (status)
+      status = SOCK_ERRNO();
+    if (status) {
+      scheme_raise_exn(MZEXN_FAIL_NETWORK,
+		       "udp-multicast-set-loopback!: setsockopt failed\n"
+		       "  system error: %N",
+		       0, status);
+      return NULL;
+    } else {
+      return scheme_void;
+    }
+  }
+#else
+  return scheme_void;
+#endif
+}
+
+static Scheme_Object *
+udp_multicast_ttl(int argc, Scheme_Object *argv[])
+{
+  if (!udp_check_open("udp-multicast-ttl", argc, argv))
+    return NULL;
+
+#ifdef UDP_IS_SUPPORTED
+  {
+    Scheme_UDP *udp = (Scheme_UDP *) argv[0];
+    u_char ttl;
+    unsigned int ttl_len = sizeof(ttl);
+    int status;
+    status = getsockopt(udp->s, IPPROTO_IP, IP_MULTICAST_TTL, (void *) &ttl, &ttl_len);
+    if (status)
+      status = SOCK_ERRNO();
+    if (status) {
+      scheme_raise_exn(MZEXN_FAIL_NETWORK,
+		       "udp-multicast-ttl: getsockopt failed\n"
+		       "  system error: %N",
+		       0, status);
+      return NULL;
+    } else {
+      return scheme_make_integer(ttl);
+    }
+  }
+#else
+  return scheme_void;
+#endif
+}
+
+static Scheme_Object *
+udp_multicast_set_ttl(int argc, Scheme_Object *argv[])
+{
+  if (!udp_check_open("udp-multicast-set-ttl!", argc, argv))
+    return NULL;
+  if (!SCHEME_INTP(argv[1]) || (SCHEME_INT_VAL(argv[1]) < 0) || (SCHEME_INT_VAL(argv[1]) >= 256)) {
+    scheme_wrong_contract("udp-multicast-set-ttl!", "byte?", 1, argc, argv);
+    return NULL;
+  }
+
+#ifdef UDP_IS_SUPPORTED
+  {
+    Scheme_UDP *udp = (Scheme_UDP *) argv[0];
+    u_char ttl = (u_char) SCHEME_INT_VAL(argv[1]);
+    unsigned int ttl_len = sizeof(ttl);
+    int status;
+    status = setsockopt(udp->s, IPPROTO_IP, IP_MULTICAST_TTL, (void *) &ttl, ttl_len);
+    if (status)
+      status = SOCK_ERRNO();
+    if (status) {
+      scheme_raise_exn(MZEXN_FAIL_NETWORK,
+		       "udp-multicast-set-ttl!: setsockopt failed\n"
+		       "  system error: %N",
+		       0, status);
+      return NULL;
+    } else {
+      return scheme_void;
+    }
+  }
+#else
+  return scheme_void;
+#endif
+}
+
+static Scheme_Object *
+udp_multicast_interface(int argc, Scheme_Object *argv[])
+{
+  if (!udp_check_open("udp-multicast-interface", argc, argv))
+    return NULL;
+
+#ifdef UDP_IS_SUPPORTED
+  {
+    Scheme_UDP *udp = (Scheme_UDP *) argv[0];
+    struct in_addr intf;
+    unsigned int intf_len = sizeof(intf);
+    int status;
+    status = getsockopt(udp->s, IPPROTO_IP, IP_MULTICAST_IF, (void *) &intf, &intf_len);
+    if (status)
+      status = SOCK_ERRNO();
+    if (status) {
+      scheme_raise_exn(MZEXN_FAIL_NETWORK,
+		       "udp-multicast-interface: getsockopt failed\n"
+		       "  system error: %N",
+		       0, status);
+      return NULL;
+    } else {
+      char host_buf[MZ_SOCK_HOST_NAME_MAX_LEN];
+      unsigned char *b = (unsigned char *) &intf; /* yes, this is in network order */
+      sprintf(host_buf, "%d.%d.%d.%d", b[0], b[1], b[2], b[3]);
+      return scheme_make_utf8_string(host_buf);
+    }
+  }
+#else
+  return scheme_void;
+#endif
+}
+
+static Scheme_Object *
+udp_multicast_set_interface(int argc, Scheme_Object *argv[])
+{
+  if (!udp_check_open("udp-multicast-set-interface!", argc, argv))
+    return NULL;
+  if (!SCHEME_CHAR_STRINGP(argv[1]) && !SCHEME_FALSEP(argv[1])) {
+    scheme_wrong_contract("udp-multicast-set-interface!", "(or/c string? #f)", 1, argc, argv);
+    return NULL;
+  }
+
+#ifdef UDP_IS_SUPPORTED
+  {
+    Scheme_UDP *udp = (Scheme_UDP *) argv[0];
+    struct in_addr intf;
+    unsigned int intf_len = sizeof(intf);
+    int status;
+
+    if (SCHEME_FALSEP(argv[1])) {
+      intf.s_addr = INADDR_ANY;
+    } else {
+      Scheme_Object *bs;
+      char *address = "";
+      GC_CAN_IGNORE struct mz_addrinfo *if_addr = NULL;
+      int err;
+      bs = scheme_char_string_to_byte_string(argv[1]);
+      address = SCHEME_BYTE_STR_VAL(bs);
+      if_addr = scheme_get_host_address(address, -1, &err, MZ_PF_INET, 0, 0);
+      if (!if_addr) {
+	scheme_raise_exn(MZEXN_FAIL_NETWORK,
+			 "udp-multicast-set-interface!: can't resolve interface address\n"
+			 "  address: %s\n"
+			 "  system error: %N",
+			 address ? address : "<unspec>", 1, err);
+	return NULL;
+      }
+      intf = ((struct sockaddr_in *)if_addr->ai_addr)->sin_addr;
+      mz_freeaddrinfo(if_addr);
+    }
+
+    status = setsockopt(udp->s, IPPROTO_IP, IP_MULTICAST_IF, (void *) &intf, intf_len);
+    if (status)
+      status = SOCK_ERRNO();
+    if (status) {
+      scheme_raise_exn(MZEXN_FAIL_NETWORK,
+		       "udp-multicast-set-interface!: setsockopt failed\n"
+		       "  system error: %N",
+		       0, status);
+      return NULL;
+    } else {
+      return scheme_void;
+    }
+  }
+#else
+  return scheme_void;
+#endif
+}
+
+#ifdef UDP_IS_SUPPORTED
+
+static Scheme_Object *
+do_udp_multicast_join_or_leave_group(char const *name, int optname, Scheme_UDP *udp, Scheme_Object *multiaddrname, Scheme_Object *ifaddrname)
+{
+  struct ip_mreq mreq;
+  unsigned int mreq_len = sizeof(mreq);
+  int status;
+
+  if (SCHEME_FALSEP(ifaddrname)) {
+    mreq.imr_interface.s_addr = INADDR_ANY;
+  } else {
+    Scheme_Object *bs;
+    char *address = "";
+    GC_CAN_IGNORE struct mz_addrinfo *if_addr = NULL;
+    int err;
+    bs = scheme_char_string_to_byte_string(ifaddrname);
+    address = SCHEME_BYTE_STR_VAL(bs);
+    if_addr = scheme_get_host_address(address, -1, &err, MZ_PF_INET, 0, 0);
+    if (!if_addr) {
+      scheme_raise_exn(MZEXN_FAIL_NETWORK,
+		       "%s: can't resolve interface address\n"
+		       "  address: %s\n"
+		       "  system error: %N",
+		       name, address ? address : "<unspec>", 1, err);
+      return NULL;
+    }
+    mreq.imr_interface = ((struct sockaddr_in *)if_addr->ai_addr)->sin_addr;
+    mz_freeaddrinfo(if_addr);
+  }
+
+  {
+    Scheme_Object *bs;
+    char *address = "";
+    GC_CAN_IGNORE struct mz_addrinfo *group_addr = NULL;
+    int err;
+    bs = scheme_char_string_to_byte_string(multiaddrname);
+    address = SCHEME_BYTE_STR_VAL(bs);
+    group_addr = scheme_get_host_address(address, -1, &err, MZ_PF_INET, 0, 0);
+    if (!group_addr) {
+      scheme_raise_exn(MZEXN_FAIL_NETWORK,
+		       "%s: can't resolve group address\n"
+		       "  address: %s\n"
+		       "  system error: %N",
+		       name, address ? address : "<unspec>", 1, err);
+      return NULL;
+    }
+    mreq.imr_multiaddr = ((struct sockaddr_in *)group_addr->ai_addr)->sin_addr;
+    mz_freeaddrinfo(group_addr);
+  }
+
+  status = setsockopt(udp->s, IPPROTO_IP, optname, (void *) &mreq, mreq_len);
+  if (status)
+    status = SOCK_ERRNO();
+  if (status) {
+    scheme_raise_exn(MZEXN_FAIL_NETWORK,
+		     "%s: setsockopt failed\n"
+		     "  system error: %N",
+		     name, 0, status);
+    return NULL;
+  } else {
+    return scheme_void;
+  }
+}
+
+#endif
+
+static Scheme_Object *
+udp_multicast_join_or_leave_group(char const *name, int optname, int argc, Scheme_Object *argv[])
+{
+  if (!udp_check_open(name, argc, argv))
+    return NULL;
+  if (!SCHEME_CHAR_STRINGP(argv[1])) {
+    scheme_wrong_contract(name, "string?", 1, argc, argv);
+    return NULL;
+  }
+  if (!SCHEME_CHAR_STRINGP(argv[2]) && !SCHEME_FALSEP(argv[2])) {
+    scheme_wrong_contract(name, "(or/c string? #f)", 2, argc, argv);
+    return NULL;
+  }
+
+#ifdef UDP_IS_SUPPORTED
+  return do_udp_multicast_join_or_leave_group(name, optname,
+					      (Scheme_UDP *) argv[0], argv[1], argv[2]);
+#else
+  return scheme_void;
+#endif
+}
+
+static Scheme_Object *
+udp_multicast_join_group(int argc, Scheme_Object *argv[])
+{
+  return udp_multicast_join_or_leave_group("udp-multicast-join-group!",
+					   IP_ADD_MEMBERSHIP,
+					   argc,
+					   argv);
+}
+
+static Scheme_Object *
+udp_multicast_leave_group(int argc, Scheme_Object *argv[])
+{
+  return udp_multicast_join_or_leave_group("udp-multicast-leave-group!",
+					   IP_DROP_MEMBERSHIP,
+					   argc,
+					   argv);
+}
 
 /*========================================================================*/
 /*                       precise GC traversers                            */
