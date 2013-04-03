@@ -293,7 +293,8 @@ non-@racket[#f], then the socket's protocol family is IPv4.}
 @defproc[(udp-bind! [udp-socket udp?]
                     [hostname-string (or/c string? #f)]
                     [port-no (and/c exact-nonnegative-integer?
-                                    (integer-in 0 65535))])
+                                    (integer-in 0 65535))]
+		    [reuse? any/c #f])
          void?]{
 
 Binds an unbound @racket[udp-socket] to the local port number
@@ -325,8 +326,12 @@ socket is later used again in a send, then the later send may change
 the socket's automatic binding.
 
 If @racket[udp-socket] is already bound or closed, the
-@exnraise[exn:fail:network].}
+@exnraise[exn:fail:network].
 
+If the @racket[reuse?] argument is true, then @racket[udp-bind!] will
+set the @tt{SO_REUSEADDR} socket option before binding, permitting the
+sharing of access to a UDP port between many processes on a single
+machine when using UDP multicast.}
 
 @defproc[(udp-connect! [udp-socket udp?]
                        [hostname-string (or/c string? #f)]
