@@ -1024,6 +1024,7 @@ added get-regions
     ;; See docs
     ;; smart-skip : (or/c #f 'adjacent 'forward)
     (define/public (insert-close-paren pos char flash? fixup? [smart-skip #f])
+      (begin-edit-sequence)
       (define closers (map symbol->string (map cadr pairs)))
       (define closer (get-close-paren pos
                                       (if fixup? ;; Ensure preference for given character:
@@ -1066,7 +1067,7 @@ added get-regions
                      (format "invalid smart-skip option: ~a" smart-skip))])]
           [else
            (insert)]))
-      
+      (end-edit-sequence)
       (when (and flash? (not stopped?)) (flash-from end-pos)))
     
     ;; find-closer : exact-nonnegative-integer? -> (or/c #f string?)
