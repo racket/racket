@@ -4925,12 +4925,21 @@ static void merge_closure_local_type_map(Scheme_Closure_Data *data1, Scheme_Clos
       cl2->has_tymap = 1;
       cl2->local_type_map = cl1->local_type_map;
     } else if (cl2->local_type_map) {
-      int i;
+      int i, recheck = 0;
       for (i = data1->num_params; i--; ) {
         if (cl1->local_type_map[i] != cl2->local_type_map[i]) {
-          cl2->local_type_map = NULL;
+          cl1->local_type_map[i] = 0;
+          cl2->local_type_map[i] = 0;
+          recheck = 1;
+        }
+      }
+      if (recheck) {
+        for (i = data1->num_params; i--; ) {
+          if (cl1->local_type_map[i]) break;
+        }
+        if (i < 0) {
           cl1->local_type_map = NULL;
-          break;
+          cl2->local_type_map = NULL;
         }
       }
     } else {
