@@ -82,6 +82,8 @@
                 (ipv6 (bytes 38 7 248 176 64 9 8 0 0 0 0 0 0 0 16 14)))
   (check-equal? (make-ip-address (bytes 38 7 248 176 64 9 8 0 0 0 0 0 0 0 16 14))
                 (ipv6 (bytes 38 7 248 176 64 9 8 0 0 0 0 0 0 0 16 14)))
+  (check-equal? (make-ip-address "0.0.0.1")
+                (ipv4 (bytes 0 0 0 1)))
   (check-not-equal? (make-ip-address "128.0.0.1")
                     (make-ip-address "255.3.255.0"))
 
@@ -112,7 +114,7 @@
        ;; check that each octet field is an octet
        (andmap byte? (map string->number (cdr matches)))
        ;; leading zeroes lead to query errors
-       (not (ormap has-leading-zeroes? matches))))
+       (not (ormap has-leading-zeroes? (cdr matches)))))
 
 ;; String -> Boolean
 ;; Check if the input string represents an IPv6 address
@@ -146,6 +148,8 @@
                     (regexp-match? re-end str))]))))
 
 (module+ test
+  (check-true (ip-address-string? "0.0.0.0"))
+  (check-true (ip-address-string? "0.1.0.2"))
   (check-true (ip-address-string? "8.8.8.8"))
   (check-true (ip-address-string? "12.81.255.109"))
   (check-true (ip-address-string? "192.168.0.1"))
