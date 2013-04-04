@@ -100,15 +100,16 @@ Type-annotated versions of
 @section{Anonymous Functions}
 
 @defform/subs[(lambda: formals . body)
-([formals ([v : t] ...)
-          ([v : t] ... . [v : t *])
-          ([v : t] ... . [v : t ...])])]{
+              ([formals ([v : t] ...)
+                        ([v : t] ... v : t *)
+                        ([v : t] ... v : t ooo bound)])]{
 A function of the formal arguments @racket[v], where each formal
 argument has the associated type.  If a rest argument is present, then
 it has type @racket[(Listof t)].}
 @defform[(λ: formals . body)]{
 An alias for the same form using @racket[lambda:].}
-@defform[(plambda: (a ...) formals . body)]{
+@defform*[[(plambda: (a ...) formals . body)
+           (plambda: (a ... b ooo) formals . body)]]{
 A polymorphic function, abstracted over the type variables
 @racket[a]. The type variables @racket[a] are bound in both the types
 of the formal, and in any type expressions in the @racket[body].}
@@ -124,14 +125,16 @@ different arity.
         (map + lst1 lst2)]))]
 For the type declaration of @racket[add-map] look at @racket[case-lambda].}
 
-@defform[(pcase-lambda: (a ...) [formals body] ...)]{
+@defform*[[(pcase-lambda: (a ...) [formals body] ...)
+           (pcase-lambda: (a ... b ooo) [formals body] ...)]]{
 A polymorphic function of multiple arities.}
 @defform/subs[(opt-lambda: formals . body)
 ([formals ([v : t] ... [v : t default] ...)
-          ([v : t] ... [v : t default] ... . [v : t *])
-          ([v : t] ... [v : t default] ... . [v : t ...])])]{
+          ([v : t] ... [v : t default] ... v : t *)
+          ([v : t] ... [v : t default] ... v : t ooo bound)])]{
 A function with optional arguments.}
-@defform[(popt-lambda: (a ...) formals . body)]{
+@defform*[[(popt-lambda: (a ...) formals . body)
+           (popt-lambda: (a ... a ooo) formals . body)]]{
 A polymorphic function with optional arguments.}
 
 
@@ -228,27 +231,31 @@ annotations are optional.
 @section{Definitions}
 
 @defform*[[(define: v : t e)
-           (define: (f . formals) : t . body)
            (define: (a ...) v : t e)
-           (define: (a ...) (f . formals) : t . body)]]{
+           (define: (a ... a ooo) v : t e)
+           (define: (f . formals) : t . body)
+           (define: (a ...) (f . formals) : t . body)
+           (define: (a ... a ooo) (f . formals) : t . body)]]{
 These forms define variables, with annotated types.  The first form
-defines @racket[v] with type @racket[t] and value @racket[e]. The third
-form does the same, but allows the specification of type variables.
-The second and fourth forms defines a function @racket[f] with appropriate
-types. In most cases, use of @racket[:] is preferred to use of @racket[define:].
+defines @racket[v] with type @racket[t] and value @racket[e]. The second
+form does the same, but allows the specification of type variables. The third
+allows for polydotted variables. The fourth, fifth, and sixth forms define a
+function @racket[f] with appropriate types. In most cases, use of @racket[:] is
+preferred to use of @racket[define:].
 
 @ex[(define: foo : Integer 10)
+
+    (define: (A) mt-seq : (Sequenceof A) empty-sequence)
 
     (define: (add [first : Integer]
                   [rest  : Integer]) : Integer
       (+ first rest))
 
-    (define: (A) mt-seq : (Sequenceof A) empty-sequence)
-
     (define: (A) (poly-app [func : (A A -> A)]
                            [first : A]
                            [rest  : A]) : A
-      (func first rest))]}
+      (func first rest))]
+}
 
 
 
@@ -338,19 +345,28 @@ returned by @racket[e], protected by a contract ensuring that it has type
 ]
 }
 
-@defform[(inst e t ...)]{Instantiate the type of @racket[e] with types
-@racket[t ...].  @racket[e] must have a polymorphic type with the
-appropriate number of type variables. This is legal only in expression
-contexts.
+@defform*[[(inst e t ...)
+           (inst e t ... t ooo bound)]]{
+Instantiate the type of @racket[e] with types @racket[t ...] or with the
+poly-dotted types @racket[t ... t ooo bound]. @racket[e] must
+have a polymorphic type that can be applied to the supplied number of type
+variables. This is legal only in expression contexts.
 @ex[(foldl (inst cons Integer Integer) null (list 1 2 3 4))
 
     (: fold-list : (All (A) (Listof A) -> (Listof A)))
     (define (fold-list lst)
       (foldl (inst cons A A) null lst))
 
-    (fold-list (list "1" "2" "3" "4"))]}
+    (fold-list (list "1" "2" "3" "4"))
 
-@defform/none[#{e |@| t ...}]{A reader abbreviation for @racket[(inst e t ...)].}
+    (: my-values : (All (A B ...) (A B ... -> (values A B ... B))))
+    (define (my-values arg . args)
+      (apply (inst values A B ... B) arg args))]}
+
+@defform/none[#{e |@| t ...}]{
+A reader abbreviation for @racket[(inst e t ...)].}
+@defform/none[#{e |@| t ... t ooo bound}]{
+A reader abbreviation for @racket[(inst e t ... t ooo bound)].}
 
 @section{Require}
 
