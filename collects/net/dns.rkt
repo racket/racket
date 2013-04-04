@@ -25,7 +25,7 @@
           [dns-get-mail-exchanger
            (-> (or/c ip-address? ip-address-string?)
                string?
-               (or/c bytes? string?))]
+               string?)]
           [dns-find-nameserver
            (-> (or/c ip-address-string? #f))]))
 
@@ -398,7 +398,7 @@
            (values (let loop ([ans ans][best-pref +inf.0][exchanger #f])
                      (cond
                        [(null? ans)
-                        (or exchanger
+                        (or (and exchanger (bytes->string/latin-1 exchanger))
                             ;; Does 'soa mean that the input address is fine?
                             (and (ormap (lambda (ns) (eq? (rr-type ns) 'soa))
                                         nss)
