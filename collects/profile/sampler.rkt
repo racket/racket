@@ -72,7 +72,7 @@
         [(list? t) (for-each loop t)]
         [(not (custodian? t))
          (raise-type-error
-          who "thread, custodian, or a list of threads/csutodians" to-track)]
+          who "thread, custodian, or a list of threads/custodians" to-track)]
         ;; test that it's subordinate
         [(with-handlers ([exn:fail:contract? (λ (_) #t)])
            (custodian-managed-list t super-cust) #f)
