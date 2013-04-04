@@ -600,11 +600,26 @@
   ;; otherwise, optimization is unsound (we'd give a result where we're supposed to throw an error)
   (pattern (#%plain-app (~literal /) e:expr ...)
            #:when (subtypeof? this-syntax -FloatComplex)
-           #:when (for/and ([c (syntax->list #'(e ...))])
-                    (match (type-of c)
-                      [(tc-result1: t)
-                       (not (subtype -Zero t))]
-                      [_ #f]))
+           #:when (let ([irritants
+                         (for/list ([c (syntax->list #'(e ...))]
+                                    #:when (match (type-of c)
+                                             [(tc-result1: t)
+                                              (subtype -Zero t)]
+                                             [_ #t]))
+                           c)])
+                    (define safe-to-opt? (null? irritants))
+                    ;; result is Float-Complex, but unsafe to optimize, missed optimization
+                    (unless safe-to-opt?
+                      (log-missed-optimization
+                       "Float-Complex division, potential exact 0s on the rhss"
+                       (string-append
+                        "This expression has a Float-Complex type, but cannot be safely unboxed. "
+                        "The second (and later) arguments could potentially be exact 0."
+                        (if (null? irritants)
+                            ""
+                            "\nTo fix, change the highlighted expression(s) to have Float (or Float-Complex) type(s)."))
+                       this-syntax irritants))
+                    safe-to-opt?)
            #:with exp*:unboxed-float-complex-opt-expr this-syntax
            #:with real-binding #'exp*.real-binding
            #:with imag-binding #'exp*.imag-binding
