@@ -329,5 +329,9 @@
 (define (bytes-of-length n)
   (flat-named-contract
     `(bytes-of-length ,n)
-    (λ (bs) (= (bytes-length bs) n))))
+    (λ (bs) (and (bytes? bs) (= (bytes-length bs) n)))))
+
+(module+ test
+  (check-true ((bytes-of-length 5) (bytes 1 2 3 4 5)))
+  (check-false ((bytes-of-length 5) "moogle")))
 
