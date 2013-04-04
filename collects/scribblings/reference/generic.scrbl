@@ -69,7 +69,7 @@ availability.
 
 When @racket[maybe-defaults] is provided, each generic function
 uses @racket[pred?]s to dispatch to the given default implementations,
-@racket[method-impl]s, before dispatching to the generic method table.
+@racket[method-impl]s, if dispatching to the generic method table fails.
 The syntax of the @racket[method-impl]s is the same as the methods
 provided for the @racket[#:methods] keyword for @racket[struct].}
 

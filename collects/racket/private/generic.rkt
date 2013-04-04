@@ -127,7 +127,8 @@
                           (generate-temporary 'get-generics))]
                      ;; for each generic method, builds a cond clause to do the
                      ;; predicate dispatch found in method-impl-list
-                     [((cond-impl ...) ...) marked-generics])
+                     [((cond-impl ...) ...) marked-generics]
+                     [(-name?) (generate-temporaries #'(name?))])
          #`(begin
              (define-syntax name (list #'prop:name #'generic ...))
              ; XXX optimize no kws or opts
@@ -197,15 +198,16 @@
                  (lambda given-args
                    (define this (list-ref given-args generic-this-idx))
                    (cond
+                    [#,(if prop-defined-already?
+                           #'(name? this)
+                           #'(-name? this))
+                     (let ([m (vector-ref (get-generics this) generic-idx)])
+                       (if m 
+                           (apply m given-args)
+                           (error 'generic "not implemented for ~e" this)))]
                     ;; default cases
                     [(pred? this) (apply cond-impl given-args)]
                     ...
-                    ;; Fallthrough
-                    [(name? this)
-                     (let ([m (vector-ref (get-generics this) generic-idx)])
-                       (if m
-                           (apply m given-args)
-                           (error 'generic "not implemented for ~e" this)))]
                     [else (raise-argument-error 'generic name-str this)])))))
              ...)))]))
 
