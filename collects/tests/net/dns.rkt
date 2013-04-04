@@ -12,7 +12,7 @@
 (define *racket-url* "racket-lang.org")
 (define *racket-host* "champlain.ccs.neu.edu")
 (define *racket-ip* "129.10.115.116")
-(define *racket-mx* #"aspmx.l.google.com")
+(define *racket-mx* "aspmx.l.google.com")
 (define *kame-url* "www.kame.net")
 (define *kame-ip* "2001:200:dff:fff1:216:3eff:feb1:44d7")
 
