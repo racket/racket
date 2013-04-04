@@ -1630,6 +1630,10 @@
         [tc-e
            ((inst filter Any Symbol) symbol? null)
            (-lst -Symbol)]
+        [tc-e/t (ann (plambda: (A B ...) ((a : A) b : B ... B)
+                       (apply (inst values A B ... B) a b)) 
+                     (All (A B ...) (A B ... -> (values A B ... B))))
+              (-polydots (a b) ((list a) (b b) . ->... . (make-ValuesDots (list (-result a)) b 'b)))]
         )
   (test-suite
    "check-type tests"
