@@ -76,7 +76,7 @@
         [range-delimiter-regexp #px#","]
         [range-regexp           #px#"^([0-9]*)-([0-9]*)$"]
         [range-error            (lambda (header)
-                                  (display (format "Bad Range header: ~s. File a Racket bug report!\n"
+                                  (display (format "Bad Range header: ~s. File a Racket problem report!\n"
                                                    (header-value header))
                                            (current-error-port))
                                   #f)])

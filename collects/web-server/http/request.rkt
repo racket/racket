@@ -134,7 +134,7 @@
 
 ;; msie-from-local-machine? : table str str -> bool
 
-;; to work around a bug in MSIE for documents < 265 bytes when
+;; to work around an error in MSIE for documents < 265 bytes when
 ;; connecting from the local machine.  The server could pad the
 ;; response as MSIIS does, but closing the connection works, too.  We
 ;; do not check for version numbers since IE 6 under windows is 5.2

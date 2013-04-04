@@ -105,9 +105,9 @@ Here is an example typical of what you will find in many applications:
 
 @defmodule[web-server/http/bindings]{
 
-These functions, while convenient, could introduce subtle bugs into your
+These functions, while convenient, could introduce subtle errors into your
 application. Examples: that they are case-insensitive could introduce
-a bug; if the data submitted is not in UTF-8 format, then the conversion
+an error; if the data submitted is not in UTF-8 format, then the conversion
 to a string will fail; if an attacker submits a form field as if it were
 a file, when it is not, then the @racket[request-bindings] will hold a
 @racket[bytes?] object and your program will error; and, for file uploads
