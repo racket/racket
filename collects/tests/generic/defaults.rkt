@@ -41,3 +41,24 @@
   (check-false (stream-empty? l4))
   (check-equal? (stream-first l4) 1)
   (check-equal? (stream-first (stream-rest l4)) 2))
+
+(struct a ())
+
+(define-generics bool-able
+  (to-bool bool-able)
+  #:defaults
+  ([a? (define (to-bool a) #t)]))
+
+(struct b a ()
+  #:methods gen:bool-able
+  [(define (to-bool b) #f)])
+
+(module+ test
+  (define my-a (a))
+  (define my-b (b))
+
+  (check-true (bool-able? my-a))
+  (check-true (bool-able? my-b))
+
+  (check-true (to-bool my-a))
+  (check-false (to-bool my-b)))
