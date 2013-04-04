@@ -7,7 +7,9 @@
          racket/pretty ;; attached into new namespace via anchor
          racket/sandbox racket/promise racket/port
          racket/gui/dynamic
-         (for-syntax racket/base)
+         (for-syntax racket/base syntax/srcloc unstable/struct)
+         racket/stxparam
+         racket/splicing
          scribble/text/wrap)
 
 (provide interaction
@@ -32,7 +34,8 @@
          close-eval
 
          scribble-exn->string
-         scribble-eval-handler)
+         scribble-eval-handler
+         with-eval-preserve-source-locations)
 
 (define scribble-eval-handler
   (make-parameter (lambda (ev c? x) (ev x))))
@@ -412,6 +415,15 @@
                    [else s]))))
         list)))
 
+(define-syntax-parameter quote-expr-preserve-source? #f)
+
+(define-syntax (with-eval-preserve-source-locations stx)
+  (syntax-case stx ()
+    [(with-eval-preserve-source-locations e ...)
+     (syntax/loc stx
+       (splicing-syntax-parameterize ([quote-expr-preserve-source? #t])
+         e ...))]))
+
 ;; Quote an expression to be evaluated or wrap as escaped:
 (define-syntax quote-expr
   (syntax-rules (eval:alts eval:result eval:results)
@@ -422,13 +434,63 @@
     [(_ (eval:results es)) (make-eval-results es "" "")]
     [(_ (eval:results es out)) (make-eval-results es out "")]
     [(_ (eval:results es out err)) (make-eval-results es out err)]
+    [(_ e) (base-quote-expr e)]))
+
+(define orig-stx (read-syntax 'orig (open-input-string "()")))
+
+(define-syntax (base-quote-expr stx)
+  (syntax-case stx ()
     [(_ e)
-     ;; Using quote means that sandbox evaluation works on
-     ;; sexprs; to get it to work on syntaxes, use
-     ;;   (strip-context (quote-syntax e)))
-     ;; while importing
-     ;;   (require syntax/strip-context)
-     'e]))
+     (cond [(syntax-parameter-value #'quote-expr-preserve-source?)
+            ;; Preserve source; produce an expression resulting in a
+            ;; syntax object with no lexical context (like strip-context)
+            ;; but with (quotable) source locations.
+            ;; Also preserve syntax-original?, since that seems important
+            ;; to some syntax-based code (eg redex term->pict).
+            (define (get-source-location e)
+              (let* ([src (build-source-location-list e)]
+                     [old-source (source-location-source src)]
+                     [new-source
+                      (cond [(path? old-source) ;; not quotable/writable
+                             ;;(path->string old-source) ;; don't leak build paths
+                             'eval]
+                            [(or (string? old-source)
+                                 (symbol? old-source))
+                             ;; Okay? Or should this be replaced also?
+                             old-source]
+                            [else #f])])
+                (update-source-location src #:source new-source)))
+            (let loop ([e #'e])
+              (cond [(syntax? e)
+                     (let ([src (get-source-location e)]
+                           [original? (syntax-original? (syntax-local-introduce e))])
+                       #`(syntax-property
+                          (datum->syntax #f
+                                         #,(loop (syntax-e e))
+                                         (quote #,src)
+                                         #,(if original? #'orig-stx #'#f))
+                          'paren-shape
+                          (quote #,(syntax-property e 'paren-shape))))]
+                    [(pair? e)
+                     #`(cons #,(loop (car e)) #,(loop (cdr e)))]
+                    [(vector? e)
+                     #`(list->vector #,(loop (vector->list e)))]
+                    [(box? e)
+                     #`(box #,(loop (unbox e)))]
+                    [(prefab-struct-key e)
+                     => (lambda (key)
+                          #`(apply make-prefab-struct
+                                   (quote #,key)
+                                   #,(loop (struct->list e))))]
+                    [else
+                     #`(quote #,e)]))]
+           [else
+            ;; Using quote means that sandbox evaluation works on
+            ;; sexprs; to get it to work on syntaxes, use
+            ;;   (strip-context (quote-syntax e)))
+            ;; while importing
+            ;;   (require syntax/strip-context)
+            #'(quote e)])]))
 
 (define (do-interaction-eval ev e)
   (let-values ([(e expect) (extract-to-evaluate e)])

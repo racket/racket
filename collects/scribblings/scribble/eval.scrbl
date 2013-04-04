@@ -209,3 +209,13 @@ results), @racket[#f] otherwise.}
                      (exn-message e)
                      (format "uncaught exception: ~s" e)))]
 }
+
+@defform[(with-eval-preserve-source-locations expr ...)]{
+
+By default, the evaluation forms provided by this module, such as
+@racket[interaction] and @racket[examples], discard the source
+locations from the expressions they evaluate. Within a
+@racket[with-eval-preserve-source-locations] form, the source
+locations are preserved. This can be useful for documenting forms that
+depend on source locations, such as Redex's typesetting macros.
+}
