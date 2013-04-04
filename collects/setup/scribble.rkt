@@ -15,7 +15,6 @@
          scheme/match
          scheme/serialize
          compiler/cm
-         syntax/modread
          scribble/base-render
          scribble/core
          scribble/html-properties
