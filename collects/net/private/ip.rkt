@@ -52,7 +52,7 @@
         #:guard (λ (bytes _) (bytes->immutable-bytes bytes))
         #:methods gen:equal+hash
         [(define (equal-proc addr1 addr2 rec)
-           (equal? (ipv4-bytes addr1) (ipv4-bytes addr1)))
+           (equal? (ipv4-bytes addr1) (ipv4-bytes addr2)))
          (define (hash-proc addr rec) (rec (ipv4-bytes addr)))
          (define (hash2-proc addr rec) (rec (ipv4-bytes addr)))])
 
@@ -61,7 +61,7 @@
         #:guard (λ (bytes _) (bytes->immutable-bytes bytes))
         #:methods gen:equal+hash
         [(define (equal-proc addr1 addr2 rec)
-           (equal? (ipv6-bytes addr1) (ipv6-bytes addr1)))
+           (equal? (ipv6-bytes addr1) (ipv6-bytes addr2)))
          (define (hash-proc addr rec) (rec (ipv6-bytes addr)))
          (define (hash2-proc addr rec) (rec (ipv6-bytes addr)))])
 
@@ -82,6 +82,8 @@
                 (ipv6 (bytes 38 7 248 176 64 9 8 0 0 0 0 0 0 0 16 14)))
   (check-equal? (make-ip-address (bytes 38 7 248 176 64 9 8 0 0 0 0 0 0 0 16 14))
                 (ipv6 (bytes 38 7 248 176 64 9 8 0 0 0 0 0 0 0 16 14)))
+  (check-not-equal? (make-ip-address "128.0.0.1")
+                    (make-ip-address "255.3.255.0"))
 
   (let ([ip-bytes (bytes 127 0 0 1)])
     (define ip (make-ip-address ip-bytes))
