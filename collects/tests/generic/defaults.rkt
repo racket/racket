@@ -62,4 +62,3 @@
 
   (check-true (to-bool my-a))
   (check-false (to-bool my-b)))
-
