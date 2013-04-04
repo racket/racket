@@ -872,6 +872,7 @@
 	  [t2 (get-output-bytes s2)])
       (or (bytes=? t1 t2)
 	  (begin
+            #;
 	    (printf "~s\n~s\n" 
                     (zo-parse (open-input-bytes t1))
                     (zo-parse (open-input-bytes t2)))
@@ -3014,6 +3015,33 @@
   (test/output (odd? 2)
                #f "")
   )
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the compiler unboxes the `v'
+;; argument in the loop below:
+
+(let ()
+  (define l '(module m racket/base
+               (require racket/flonum)
+               (define (f)
+                 (let loop ([n 1000][v 0.0])
+                   (if (zero? n)
+                       v
+                       (loop (- n 1)
+                             (fl+ v 2.0)))))))
+  (define b
+    (let ([o (open-output-bytes)])
+      (write (compile l) o)
+      (parameterize ([read-accept-compiled #t])
+        (zo-parse (open-input-bytes (get-output-bytes o))))))
+  (let* ([m (compilation-top-code b)]
+         [d (car (mod-body m))]
+         [b (closure-code (def-values-rhs d))]
+         [c (application-rator (lam-body b))]
+         [l (closure-code c)]
+         [ts (lam-param-types l)])
+    (test 'flonum cadr ts)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
