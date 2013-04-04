@@ -19,7 +19,7 @@ benchmarking, see @secref[#:doc '(lib
 
 Typed Racket's optimizer is turned on by default. If you want to
 deactivate it (for debugging, for instance), you must add the
-@racket[#:no-optimize] keyword when specifying the language of your
+@as-index{@racket[#:no-optimize]} keyword when specifying the language of your
 program:
 
 @racketmod[typed/racket #:no-optimize]
