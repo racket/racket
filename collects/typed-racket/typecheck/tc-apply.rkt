@@ -24,7 +24,8 @@
 (define (do-ret t)
   (match t
     [(Values: (list (Result: ts _ _) ...)) (ret ts)]
-    [(ValuesDots: (list (Result: ts _ _) ...) dty dbound) (ret ts (for/list ([t ts]) (-FS null null)) (for/list ([t ts]) (make-Empty)) dty dbound)]
+    [(ValuesDots: (list (Result: ts _ _) ...) dty dbound)
+     (ret ts (for/list ([t ts]) (make-NoFilter)) (for/list ([t ts]) (make-Empty)) dty dbound)]
     [_ (int-err "do-ret fails: ~a" t)]))
 
 (define (tc/apply f args)
