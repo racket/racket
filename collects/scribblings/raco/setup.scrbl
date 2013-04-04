@@ -25,7 +25,8 @@
                     launcher/launcher-sig
                     dynext/file-sig
                     racket/gui/base
-                    racket/future))
+                    racket/future
+                    mrlib/terminal))
 
 @(define-syntax-rule (local-module mod . body)
    (begin
@@ -717,18 +718,22 @@ v
   A thunk that is run after a @filepath{.plt} file is installed.}
 
 @defproc[(with-installer-window
-          (do-install ((or/c (is-a?/c dialog%) (is-a?/c frame%)) 
-                       . -> . void?))
-          (cleanup-thunk (-> any)))
+          [do-install (-> (or/c (is-a?/c dialog%) (is-a?/c frame%))
+                          void?)]
+          [cleanup-thunk (-> any)])
          void?]{
-  Creates a frame, sets up the current error and output ports, and
-  turns on the busy cursor before calling @racket[do-install] in a separate
-  thread. 
 
-  Returns before the installation process is complete;
-  @racket[cleanup-thunk] is called on a queued callback to the
-  eventspace active when @racket[with-installer-window] is
-  invoked.}
+  Equivalent to
+  @racketblock[(define installer-run (on-installer-run))
+               (parameterize ([on-terminal-run 
+                               (λ ()
+                                 (printf "\nInstallation complete.\n")
+                                 (installer-run))])
+                 (in-terminal
+                  (λ (custodian tlw) (do-install tlw))
+                  #:title (string-constant plt-installer-progress-window-title)
+                  #:cleanup-thunk cleanup-thunk))]
+  }
 
 @defproc[(run-single-installer (file path-string?)
                                (get-dir-proc (-> (or/c path-string? false/c))))
