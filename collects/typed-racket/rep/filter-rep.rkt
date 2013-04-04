@@ -42,18 +42,7 @@
   [#:fold-rhs (*OrFilter (map filter-rec-id fs))]
   [#:frees (λ (f) (combine-frees (map f fs)))])
 
-(def-filter FilterSet (thn els)
-  [#:contract (->i ([t any/c]
-                    [e any/c])
-                   (#:syntax [stx #f])
-                   #:pre (t e)
-                   (and (cond [(Bot? t) #t]
-                              [(Bot? e) (Top? t)]
-                              [else (Filter/c-predicate? t)])
-                        (cond [(Bot? e) #t]
-                              [(Bot? t) (Top? e)]
-                              [else (Filter/c-predicate? e)]))
-                   [result FilterSet?])]
+(def-filter FilterSet ([thn Filter/c] [els Filter/c])
   [#:fold-rhs (*FilterSet (filter-rec-id thn) (filter-rec-id els))])
 
 ;; represents no info about the filters of this expression
