@@ -417,19 +417,20 @@ functions and continuation mark functions.
 @section{Other Type Constructors}
 
 @defform*/subs[#:id -> #:literals (* ...)
-	       [(dom ... -> rng)
-	        (dom ... rest * -> rng)
-		(dom ... rest #,(racket ...) bound -> rng)
+               [(dom ... -> rng)
+                (dom ... rest * -> rng)
+                (dom ... rest ooo bound -> rng)
                 (dom -> rng : pred)]
-               ([dom type
+               ([ooo #,(racket ...)]
+                [dom type
                      (code:line keyword type)
                      [keyword type]])]{
-  is the type of functions from the (possibly-empty)
+  The type of functions from the (possibly-empty)
   sequence @racket[dom ...] to the @racket[rng] type.  The second form
   specifies a uniform rest argument of type @racket[rest], and the
   third form specifies a non-uniform rest argument of type
   @racket[rest] with bound @racket[bound].  In the third form, the
-  second occurrence of @racket[...] is literal, and @racket[bound]
+  @racket[...] introduced by @racket[ooo] is literal, and @racket[bound]
   must be an identifier denoting a type variable. In the fourth form,
   there must be only one @racket[dom] and @racket[pred] is the type
   checked by the predicate. @racket[dom] can include both mandatory and
@@ -461,7 +462,9 @@ functions and continuation mark functions.
 
 @defform/none[(t t1 t2 ...)]{is the instantiation of the parametric type
   @racket[t] at types @racket[t1 t2 ...]}
-@defform[(All (v ...) t)]{is a parameterization of type @racket[t], with
+@defform*[[(All (a ...) t)
+           (All (a ... a ooo) t)]]{
+  is a parameterization of type @racket[t], with
   type variables @racket[v ...].  If @racket[t] is a function type
       constructed with @racket[->], the outer pair of parentheses
       around the function type may be omitted.
