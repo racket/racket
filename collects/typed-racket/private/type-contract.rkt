@@ -190,7 +190,7 @@
                         (append (map t->c/neg (drop last-dom (length first-dom)))
                                 (append-map conv opt-kws)))]
                      [rng* (process-rngs (map t->c rngs))]
-                     [(rst-spec ...) (if rst #'(#:rest (listof #,(t->c/neg rest))) #'())])
+                     [(rst-spec ...) (if rst #`(#:rest (listof #,(t->c/neg rst))) #'())])
                   #'((dom* ...) (opt-dom* ...) rst-spec ... . ->* . rng*))])]
             [else
              (define ((f [case-> #f]) a)
