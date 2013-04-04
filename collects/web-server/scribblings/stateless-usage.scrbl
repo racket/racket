@@ -50,7 +50,7 @@ Second, the defunctionalization process is sensitive to the syntactic
 structure of your program. Therefore, if you change your program in a
 trivial way, for example, changing a constant, then all serialized
 continuations will be obsolete and will error when deserialization is
-attempted. This is a feature, not a bug! It is a small price to pay
+attempted. This is a feature, not an error! It is a small price to pay
 for protection from the sorts of errors that would occur if your
 program were changed in a meaningful way. If you use the
 @racket[default-stuffer] or @racketmodname[web-server/stuffers/hash],
