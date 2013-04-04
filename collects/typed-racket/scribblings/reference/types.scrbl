@@ -293,6 +293,8 @@ corresponding to @racket[trest], where @racket[bound]
 
 @ex[
 (list 'a 'b 'c)
+(plambda: (a ...) ([sym : Symbol] boxes : (Boxof a) ... a)
+  (ann (cons sym boxes) (List Symbol (Boxof a) ... a)))
 (map symbol->string (list 'a 'b 'c))
 ]
 
