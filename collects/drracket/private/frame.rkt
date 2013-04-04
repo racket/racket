@@ -23,6 +23,8 @@
   (define sc-install-pkg-force? (string-constant install-pkg-force?))
   (define sc-install-pkg-command-line (string-constant install-pkg-command-line))
   
+  (preferences:set-default 'drracket:gui-installer-pkg-source "" string?)
+  
   (define (install-pkg parent)
     (define dlg (new dialog% 
                      [parent parent] 
@@ -32,7 +34,10 @@
                     [parent dlg] 
                     [min-width 600]
                     [label sc-install-pkg-source-label]
-                    [callback (λ (_1 _2) (adjust-all))]))
+                    [callback (λ (_1 _2) 
+                                (preferences:set 'drracket:gui-installer-pkg-source (send tf get-value))
+                                (adjust-all))]))
+    (send tf set-value (preferences:get 'drracket:gui-installer-pkg-source))
     
     (define details-parent (new vertical-panel% [parent dlg]))
     (define details-panel (new group-box-panel% 
@@ -213,6 +218,7 @@
          setup/plt-installer
          help/bug-report
          setup/unpack
+         mrlib/terminal
          pkg
          (submod "." install-pkg))
 (provide frame@)
@@ -385,16 +391,10 @@
               (λ (item evt)
                 (define res (install-pkg this))
                 (when res
-                  (with-handlers ((exn:fail?
-                                   (λ (x)
-                                     (define sp (open-output-string))
-                                     (parameterize ([current-error-port sp])
-                                       (drracket:init:original-error-display-handler
-                                        (exn-message x) 
-                                        x))
-                                     (message-box (string-constant install-pkg-error-installing-title)
-                                                  (get-output-string sp)))))
-                    (apply install res))))])
+                  (parameterize ([error-display-handler drracket:init:original-error-display-handler])
+                    (in-terminal 
+                     #:title (string-constant install-pkg-dialog-title)
+                     (λ (cust parent) (apply install res))))))])
         (super file-menu:between-open-and-revert file-menu))
       
       (define/override (file-menu:between-print-and-close menu)

@@ -22,7 +22,7 @@
 ;; runs the installer in a separate thread and returns immediately,
 ;; before the installation is complete. The cleanup thunk is called when installation completes
 (define (in-terminal do-install
-                     #:title [title  "mrlib/terminal"]
+                     #:title [title "mrlib/terminal"]
                      #:abort-label [abort-label (string-constant plt-installer-abort-installation)]
                      #:aborted-message [aborted-message (string-constant plt-installer-aborted)]
                      #:cleanup-thunk [cleanup-thunk void])
@@ -104,7 +104,7 @@
      void))
   
   (define plain-style (send (editor:get-standard-style-list) find-named-style "Standard"))
-  (define red-delta (make-object style-delta%))
+  (define red-delta (make-object style-delta% 'change-italic))
   (send red-delta set-delta-foreground "red")
   (define error-style (send (editor:get-standard-style-list) find-or-create-style 
                             plain-style
@@ -138,14 +138,16 @@
                      (lambda ()
                        (cleanup-thunk)))))))))
          
-         (parameterize ([current-output-port output-port]
-                        [current-error-port error-port]
-                        [exit-handler
-                         (λ (x)
-                           (unless (equal? x 0)
-                             (eprintf "exited with code: ~s\n" x))
-                           (custodian-shutdown-all installer-cust))])
-           (do-install inst-eventspace dlg))
+         (let/ec k
+           (parameterize ([current-output-port output-port]
+                          [current-error-port error-port]
+                          [error-escape-handler (λ () (k (void)))]
+                          [exit-handler
+                           (λ (x)
+                             (unless (equal? x 0)
+                               (eprintf "exited with code: ~s\n" x))
+                             (custodian-shutdown-all installer-cust))])
+             (do-install inst-eventspace dlg)))
          (parameterize ([current-eventspace orig-eventspace])
            (queue-callback
             (lambda ()
