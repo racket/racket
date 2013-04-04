@@ -49,6 +49,7 @@
 
 (struct ipv4 (bytes)
         #:transparent
+        #:guard (λ (bytes _) (bytes->immutable-bytes bytes))
         #:methods gen:equal+hash
         [(define (equal-proc addr1 addr2 rec)
            (equal? (ipv4-bytes addr1) (ipv4-bytes addr1)))
@@ -57,6 +58,7 @@
 
 (struct ipv6 (bytes)
         #:transparent
+        #:guard (λ (bytes _) (bytes->immutable-bytes bytes))
         #:methods gen:equal+hash
         [(define (equal-proc addr1 addr2 rec)
            (equal? (ipv6-bytes addr1) (ipv6-bytes addr1)))
@@ -79,7 +81,13 @@
   (check-equal? (make-ip-address "2607:f8b0:4009:800::100e")
                 (ipv6 (bytes 38 7 248 176 64 9 8 0 0 0 0 0 0 0 16 14)))
   (check-equal? (make-ip-address (bytes 38 7 248 176 64 9 8 0 0 0 0 0 0 0 16 14))
-                (ipv6 (bytes 38 7 248 176 64 9 8 0 0 0 0 0 0 0 16 14))))
+                (ipv6 (bytes 38 7 248 176 64 9 8 0 0 0 0 0 0 0 16 14)))
+
+  (let ([ip-bytes (bytes 127 0 0 1)])
+    (define ip (make-ip-address ip-bytes))
+    (bytes-set! ip-bytes 0 255)
+    (check-equal? ip (make-ip-address "127.0.0.1")
+                  "IP addresses should be immutable")))
 
 (define (ip-address-string? val)
   (and (string? val)
