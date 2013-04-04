@@ -19,7 +19,7 @@ A stateful servlet should @racket[provide] the following exports:
 }
 
 @defthing[manager manager?]{
- The manager for the continuations of this servlet. See @secref["managers"] for options.
+ The @tech{manager} for the continuations of this servlet. See @secref["managers"] for options.
 }
 
 @defproc[(start [initial-request request?])

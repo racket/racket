@@ -8,7 +8,7 @@ up memory on the server. Furthermore, garbage collection can not be used
 to free this memory, because there are roots outside the system: users'
 browsers, bookmarks, brains, and notebooks. Therefore, some other strategy
 must be used if memory usage is to be controlled. This functionality is
-pluggable through the manager interface.
+pluggable through the @deftech{manager} interface.
 
 @; ------------------------------------------------------------
 @section[#:tag "manager"]{General}

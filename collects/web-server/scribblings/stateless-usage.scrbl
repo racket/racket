@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "web-server.rkt"
           (for-label racket/serialize
+                     web-server/lang/stuff-url
                      web-server/lang/abort-resume
                      web-server/lang/web))
 
@@ -49,9 +50,12 @@ Second, the defunctionalization process is sensitive to the syntactic
 structure of your program. Therefore, if you change your program in a
 trivial way, for example, changing a constant, then all serialized
 continuations will be obsolete and will error when deserialization is
-attempted. This is a feature, not a bug! It is a small price to pay for
-protection from the sorts of errors that would occur if your program
-were changed in a meaningful way.
+attempted. This is a feature, not a bug! It is a small price to pay
+for protection from the sorts of errors that would occur if your
+program were changed in a meaningful way. If you use the
+@racket[default-stuffer] or @racketmodname[web-server/stuffers/hash],
+then whenever you change your servlet's code, you can safely delete
+all saved continuations, because they won't be used any longer.
 
 Third, the values in the lexical scope of your continuations must be
 serializable for the continuations itself to be serializable. This means

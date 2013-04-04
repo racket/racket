@@ -22,13 +22,13 @@ A stateless servlet should @racket[provide] the following exports:
 }
 
 @defthing[stuffer (stuffer/c serializable? bytes?)]{
- This is the stuffer that will be used for the servlet.
+ This is the @tech{stuffer} that will be used for the servlet.
       
  If it is not provided, it defaults to @racket[default-stuffer].
 }
 
 @defthing[manager manager?]{
- This is the manager that will be used for the servlet.
+ This is the @tech{manager} that will be used for the servlet.
       
  If it is not provided, it defaults to @racket[(create-none-manager #f)].
 }
