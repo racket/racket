@@ -56,9 +56,16 @@
       (make-Function (list (make-arr* ts rng #:rest rest #:drest drest)))))
 
 (define (prefix-of a b)
+  (define (rest-equal? a b)
+    (match* (a b)
+      [(#f #f) #t]
+      [(#f _) #f]
+      [(_ #f) #f]
+      [(a b) (type-equal? a b)]))
   (define (drest-equal? a b)
     (match* (a b)
       [((list t b) (list t* b*)) (and (type-equal? t t*) (equal? b b*))]
+      [(#f #f) #t]
       [(_ _) #f]))
   (define (kw-equal? a b)
     (and (equal? (length a) (length b))
@@ -68,10 +75,10 @@
     [((arr: args result rest drest kws)
       (arr: args* result* rest* drest* kws*))
      (and (< (length args) (length args*))
-          (or (equal? rest rest*) (type-equal? rest rest*))
-          (or (equal? drest drest*) (drest-equal? drest drest*))
+          (rest-equal? rest rest*)
+          (drest-equal? drest drest*)
           (type-equal? result result*)
-          (or (equal? kws kws*) (kw-equal? kws kws*))
+          (kw-equal? kws kws*)
           (for/and ([p args] [p* args*])
             (type-equal? p p*)))]))
 
