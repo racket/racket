@@ -4,7 +4,7 @@
          racket/class
          "plt-installer-sig.rkt"
          (prefix-in single: "plt-single-installer.rkt")
-         (prefix-in mrlib/terminal: mrlib/terminal)
+         mrlib/terminal
          string-constants)
 
 (provide plt-installer@)
@@ -25,7 +25,7 @@
                     (λ ()
                       (printf "\nInstallation complete.\n")
                       (installer-run))])
-      (mrlib/terminal:in-terminal
+      (in-terminal
        (λ (custodian frame) (do-install frame))
        #:title (string-constant plt-installer-progress-window-title)
        #:cleanup-thunk cleanup-thunk)))
