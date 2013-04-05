@@ -373,10 +373,10 @@ mz-manuals := (scribblings: "main/") ; generates main pages (next line)
               (scribblings: "{{info|icons}.rkt|*.png}" "compiled")
 
 mr-base := (package: "gracket") (bin: "gracket-text")
-           (package: "mred") (bin: "mred-text")  (package: "framework")
+           (package: "mred") (bin: "mred-text")
 mr-manuals := (doc+src: "gui/") (doc+src: "draw/")
 
-dr-base := (package: "drracket") (package: "drscheme")
+dr-base := (package: "drracket") (package: "drscheme") (package: "framework")
 dr-manuals := (doc+src: "tools/")
 
 ;; Misc hooks, to be added on by package rules below
@@ -612,7 +612,7 @@ dr-extras :+= (package: "images/")
 plt-extras :+= (package: "icons/")
 
 ;; -------------------- string
-mr-extras :+= (package: "string-constants")
+dr-extras :+= (package: "string-constants")
 
 ;; -------------------- defaults
 dr-extras :+= (collects: "defaults/")
