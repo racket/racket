@@ -45,7 +45,7 @@
                                                  (syntax-e #'form))])
        (if (syntax->datum #'lang-stx)
            (let ([lang-nts (let loop ([ls #'lang-stx])
-                             (define slv (syntax-local-value ls))
+                             (define slv (syntax-local-value ls (λ () #'lang-stx)))
                              (if (term-id? slv)
                                  (loop (term-id-prev-id slv))
                                  (language-id-nts ls 'term)))])
