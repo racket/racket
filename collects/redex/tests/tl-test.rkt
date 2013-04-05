@@ -661,6 +661,23 @@
                (in-domain? (f y)))
      #f))
   
+  (let ()
+    (define-language foo)
+
+    (test (term-let ([bar 23])
+                    (term 5 #:lang foo))
+          5)
+
+    (test (term-let ([foo 23])
+                    (term 6 #:lang foo))
+          6)
+
+    (test (term-let ([foo 12])
+                    (term-let ([foo 23])
+                              (term 7 #:lang foo)))
+          7)
+    )
+  
   ; Extension reinterprets the base meta-function's contract
   ; according to the new language.
   (let ()

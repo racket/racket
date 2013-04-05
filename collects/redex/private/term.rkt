@@ -44,7 +44,11 @@
                                                  stx
                                                  (syntax-e #'form))])
        (if (syntax->datum #'lang-stx)
-           (let ([lang-nts (language-id-nts #'lang-stx 'term)])
+           (let ([lang-nts (let loop ([ls #'lang-stx])
+                             (define slv (syntax-local-value ls))
+                             (if (term-id? slv)
+                                 (loop (term-id-prev-id slv))
+                                 (language-id-nts ls 'term)))])
              #`(term/nts t #,lang-nts))
            #'(term/nts t #f)))]))
 
@@ -390,10 +394,7 @@
          (syntax
           (datum-case rhs1 ()
                       [new-x1
-                       ;; syntax local value on an id to check if it's bound correctly in
-                       ;; a term
-                       ;; term (term #:lang L (x_1 y_2)) term -> optional argument with lang
-                       (let-syntax ([orig-names (make-term-id #'new-names depths)] ...)
+                       (let-syntax ([orig-names (make-term-id #'new-names depths #'orig-names)] ...)
                          (term-let/error-name error-name ((x rhs) ...) body1 body2 ...))]
                       [_ no-match]))))]
     [(_ error-name () body1 body2 ...)
