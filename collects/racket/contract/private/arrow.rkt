@@ -1729,15 +1729,19 @@ v4 todo:
         (make-impersonator-case-> dom-ctcs rst-ctcs rng-ctcs specs mctc? wrapper))))
 
 (define (get-case->-dom-ctcs ctc)
-  (apply append
-         (map (λ (doms rst) (if rst
-                                (append doms (list rst))
-                                doms))
-              (base-case->-dom-ctcs ctc)
-              (base-case->-rst-ctcs ctc))))
+  (for/fold ([acc '()])
+      ([doms (in-list (base-case->-dom-ctcs ctc))]
+       [rst  (in-list (base-case->-rst-ctcs ctc))])
+    (append acc
+            (if rst
+                (append doms (list rst))
+                doms))))
 
 (define (get-case->-rng-ctcs ctc)
-  (apply append (map (λ (x) (or x '())) (base-case->-rng-ctcs ctc))))
+  (for/fold ([acc '()])
+      ([x (in-list (base-case->-rng-ctcs ctc))]
+       #:when x)
+    (append acc x)))
 
 
 
