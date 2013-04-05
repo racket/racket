@@ -23,4 +23,5 @@
 @include-section["parcheesi.scrbl"]
 @include-section["checkers.scrbl"]
 @include-section["chat-noir.scrbl"]
+@include-section["tally-maze.scrbl"]
 @include-section["gcalc.scrbl"]
