@@ -5,6 +5,7 @@
            racket/class
            string-constants
            pkg/name
+           pkg/lib
            racket/list
            framework)
   (provide install-pkg)
@@ -22,6 +23,12 @@
   (define sc-install-pkg-inferred-as (string-constant install-pkg-inferred-as))
   (define sc-install-pkg-force? (string-constant install-pkg-force?))
   (define sc-install-pkg-command-line (string-constant install-pkg-command-line))
+  
+  (define sc-install-pkg-action-label (string-constant install-pkg-action-label))
+  (define sc-install-pkg-install (string-constant install-pkg-install))
+  (define sc-install-pkg-update (string-constant install-pkg-update))
+  (define sc-action-inferred-to-be-update (string-constant install-pkg-action-inferred-to-be-update))
+  (define sc-action-inferred-to-be-install (string-constant install-pkg-action-inferred-to-be-install))
   
   (preferences:set-default 'drracket:gui-installer-pkg-source "" string?)
   
@@ -84,6 +91,21 @@
                                      [stretchable-height #f]
                                      [alignment '(right center)]))
     (define inferred-msg (new message% [label ""] [parent inferred-msg-parent] [auto-resize #t]))
+    
+    (define action-choice (new choice%
+                               [label sc-install-pkg-action-label]
+                               [parent details-panel]
+                               [stretchable-width #t]
+                               [callback (λ (x y) (adjust-all))]
+                               [choices (list sc-install-pkg-infer
+                                              sc-install-pkg-install
+                                              sc-install-pkg-update)]))
+    (define inferred-action-msg-parent (new horizontal-panel% 
+                                            [parent details-panel]
+                                            [stretchable-height #f]
+                                            [alignment '(right center)]))
+    (define inferred-action-msg (new message% [label ""] [parent inferred-action-msg-parent] [auto-resize #t]))
+    
     (define cb (new check-box% 
                     [label sc-install-pkg-force?] 
                     [parent details-panel]
@@ -121,11 +143,41 @@
         [(dir-url) sc-install-pkg-dir-url]
         [else (error 'type->str "unknown type ~s\n" type)]))
     
+    (define currently-installed-pkgs (installed-pkg-names))
+    (define (get-current-action)
+      (case (send action-choice get-selection)
+        [(0) 
+         (define current-name (package-source->name (send tf get-value)))
+         (cond
+           [(and current-name (member current-name currently-installed-pkgs))
+            'update]
+           [else 
+            'install])]
+        [(1) 'install]
+        [(2) 'update]))
+      
+    
     (define (adjust-all)
       (adjust-inferred)
+      (adjust-inferred-action)
+      (adjust-checkbox)
       (adjust-cmd-line)
       (adjust-details-shown)
       (adjust-ok/cancel))
+    
+    (define (adjust-checkbox)
+      (send cb enable (equal? 'install (get-current-action))))
+    
+    (define (adjust-inferred-action)
+      (define action (get-current-action))
+      (define new-lab
+        (cond
+          [(equal? 0 (send action-choice get-selection)) 
+           (case (get-current-action)
+             [(install) sc-action-inferred-to-be-install]
+             [(update) sc-action-inferred-to-be-update])]
+          [else ""]))
+      (send inferred-action-msg set-label new-lab))
     
     (define (adjust-ok/cancel)
       (send ok-button enable (compute-cmd-line)))
@@ -173,7 +225,7 @@
                  (if (eq? (system-type) 'windows)
                      "raco.exe"
                      "raco")
-                 " pkg install "
+                 " pkg "
                  (apply string-append
                         (add-between 
                          (filter values (map convert-to-string cmd-line))
@@ -181,16 +233,23 @@
                 "")))
     
     (define (compute-cmd-line)
-      (define the-pkg (send tf get-value))
+      (define the-pkg 
+        (cond
+          [(and (equal? 'update (get-current-action))
+                (package-source->name (send tf get-value)))
+           =>
+           values]
+          [else (send tf get-value)]))
       (and (not (equal? the-pkg ""))
-           (append
-            (if (send cb get-value)
-                '(#:force #t)
-                '())
-            (if (selected-type)
-                (list '#:type (selected-type))
-                '())
-            (list the-pkg))))
+           (cons (get-current-action)
+                 (append
+                  (if (send cb get-value)
+                      '(#:force #t)
+                      '())
+                  (if (selected-type)
+                      (list '#:type (selected-type))
+                      '())
+                  (list the-pkg)))))
     
     (adjust-all)
     
@@ -394,7 +453,11 @@
                   (parameterize ([error-display-handler drracket:init:original-error-display-handler])
                     (in-terminal 
                      #:title (string-constant install-pkg-dialog-title)
-                     (λ (cust parent) (apply install res))))))])
+                     (λ (cust parent) 
+                       (define action (case (car res)
+                                        [(install) install]
+                                        [(update) update]))
+                       (apply action (cdr res)))))))])
         (super file-menu:between-open-and-revert file-menu))
       
       (define/override (file-menu:between-print-and-close menu)
