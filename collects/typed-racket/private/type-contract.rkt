@@ -422,7 +422,7 @@
         [(Syntax: (Base: 'Symbol _ _ _ _)) #'identifier?]
         [(Syntax: t)
          #`(syntax/c #,(t->c t #:kind flat-sym))]
-        [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]
+        [(Value: v) #`(flat-named-contract '#,v (lambda (x) (equal? x '#,v)))]
         ;; TODO Is this sound?
 	[(Param: in out) 
 	 (set-impersonator!)
