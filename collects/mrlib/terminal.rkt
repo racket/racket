@@ -32,7 +32,7 @@
 
   (define on-terminal-run-proc (on-terminal-run))
   
-  (define dlg #f)
+  (define frame #f)
   (define text #f)
   (define close-button #f)
   (define kill-button #f)
@@ -41,19 +41,46 @@
   (parameterize ([current-eventspace inst-eventspace])
     (queue-callback
      (λ ()
-       (set! dlg (new (class dialog%
-                        (define/augment (can-close?) (send close-button is-enabled?))
-                        (define/augment (on-close) (close-callback))
-                        (super-new [label title]
-                                   [width 600]
-                                   [height 300]
-                                   [style '(resize-border)]))))
+       (set! frame (new (class frame%
+                          (define/augment (can-close?) (send close-button is-enabled?))
+                          (define/augment (on-close) (close-callback))
+                          (super-new [label title]
+                                     [width 600]
+                                     [height 300]))))
+       (define mb (new menu-bar% [parent frame]))
+       (define edit-menu (new menu% 
+                              [label (string-constant edit-menu)]
+                              [parent mb]))
+       (define copy-menu-item 
+         (new menu-item%
+              [parent edit-menu]
+              [label (string-constant copy-menu-item)]
+              [shortcut #\c]
+              [demand-callback
+               (λ (item)
+                 (send copy-menu-item enable
+                       (not (= (send text get-start-position)
+                               (send text get-end-position)))))]
+              [callback
+               (λ (item evt)
+                 (send text copy))]))
+       (define select-all-item 
+         (new menu-item%
+              [parent edit-menu]
+              [label (string-constant select-all-menu-item)]
+              [shortcut #\a]
+              [callback
+               (λ (item evt)
+                 (send text set-position 0 (send text last-position)))]))
+                                    
        (set! text (new (text:hide-caret/selection-mixin text:standard-style-list%)))
-       (define canvas (new editor-canvas% [parent dlg] [editor text]))
+       (define canvas (new editor-canvas%
+                           [parent frame]
+                           [editor text]))
        (define button-panel (new horizontal-panel%
-                                 (parent dlg)
-                                 (stretchable-height #f)
-                                 (alignment '(center center))))
+                                 [parent frame]
+                                 [stretchable-height #f]
+                                 [alignment '(center center)]))
        (set! kill-button (new button%
                               [label abort-label]
                               [parent button-panel]
@@ -66,7 +93,7 @@
          (custodian-shutdown-all installer-cust)
          (fprintf output-port "\n~a\n" aborted-message))
        (define (close-callback)
-         (send dlg show #f)
+         (send frame show #f)
          (custodian-shutdown-all installer-cust))
        (send close-button enable #f)
        (send canvas allow-tab-exit #t)
@@ -75,7 +102,7 @@
        (send text lock #t)
        (send text hide-caret #t)
        (semaphore-post setup-sema)
-       (send dlg show-without-yield))))
+       (send frame show #t))))
   
   (semaphore-wait setup-sema)
   
@@ -147,7 +174,7 @@
                              (unless (equal? x 0)
                                (eprintf "exited with code: ~s\n" x))
                              (custodian-shutdown-all installer-cust))])
-             (do-install inst-eventspace dlg)))
+             (do-install inst-eventspace frame)))
          (parameterize ([current-eventspace orig-eventspace])
            (queue-callback
             (lambda ()
