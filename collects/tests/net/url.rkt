@@ -43,7 +43,9 @@
   (test (combine-url/relative-vec (->vec base) relative)
         => (->vec expected)))
 
-(define (run-tests)
+(provide tests)
+(module+ main (tests))
+(define (tests)
   (test
    ;; Test the current-proxy-servers parameter can be set
    (parameterize ([current-proxy-servers '(("http" "proxy.com" 3128))])
@@ -373,7 +375,3 @@
      ))
 
   )
-
-(provide tests)
-(module+ main (tests))
-(define (tests) (test do (run-tests)))
