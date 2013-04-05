@@ -1133,6 +1133,11 @@
                      (list (~a (package-directory pkg)))
                      empty))))))))
 
+(define (installed-pkg-names)
+  (with-package-lock/read-only
+    (define db (read-pkg-db))
+    (sort (hash-keys db) string-ci<=?)))
+  
 (define (config-cmd config:set key+vals)
   (cond
     [config:set
@@ -1289,4 +1294,6 @@
                         #:ignore-checksums? boolean?)
         (or/c #f (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [get-default-package-scope
-   (-> (or/c 'i 'u 's))]))
+   (-> (or/c 'i 'u 's))]
+  [installed-pkg-names
+   (-> (listof string?))]))
