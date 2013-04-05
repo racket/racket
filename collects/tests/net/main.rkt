@@ -1,6 +1,8 @@
 #lang racket/base
 
 (require tests/eli-tester
+         (prefix-in ip:        "ip.rkt")
+         (prefix-in dns:       "dns.rkt")
          (prefix-in ucodec:    "uri-codec.rkt")
          (prefix-in url:       "url.rkt")
          (prefix-in cgi:       "cgi.rkt")
@@ -13,7 +15,9 @@
          (prefix-in websocket: "websocket.rkt"))
 
 (define (tests)
-  (test do (url:tests)
+  (test do (ip:tests)
+        do (dns:tests)
+        do (url:tests)
         do (ucodec:tests)
         do (ucodec:noels-tests)
         do (cgi:tests)

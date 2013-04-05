@@ -3,15 +3,11 @@
 ;; DNS query library for Racket
 
 (require "private/ip.rkt"
-         racket/bool
          racket/contract
          racket/format
-         racket/list
-         racket/match
          racket/string
          racket/system
-         racket/udp
-         (only-in unstable/sequence in-slice))
+         racket/udp)
 
 (provide (contract-out
           [dns-get-address
@@ -29,8 +25,6 @@
           [dns-find-nameserver
            (-> (or/c ip-address-string? #f))]))
 
-(module+ test (require rackunit))
-
 ;; UDP retry timeout:
 (define INIT-TIMEOUT 50)
 
@@ -39,23 +33,23 @@
 
 ;; A Type is one of the following
 (define types
-  '((a 1)
-    (ns 2)
-    (md 3)
-    (mf 4)
-    (cname 5)
-    (soa 6)
-    (mb 7)
-    (mg 8)
-    (mr 9)
-    (null 10)
-    (wks 11)
-    (ptr 12)
+  '((a      1)
+    (ns     2)
+    (md     3)
+    (mf     4)
+    (cname  5)
+    (soa    6)
+    (mb     7)
+    (mg     8)
+    (mr     9)
+    (null  10)
+    (wks   11)
+    (ptr   12)
     (hinfo 13)
     (minfo 14)
-    (mx 15)
-    (txt 16)
-    (aaaa 28)))
+    (mx    15)
+    (txt   16)
+    (aaaa  28)))
 
 ;; A Class is one of the following
 (define classes
@@ -67,9 +61,9 @@
 ;;;
 
 (define (cossa i l)
-  (cond [(null? l) #f]
+  (cond [(null? l)            #f]
         [(equal? (cadar l) i) (car l)]
-        [else (cossa i (cdr l))]))
+        [else                 (cossa i (cdr l))]))
 
 (define (number->octet-pair n)
   (list (arithmetic-shift n -8)
@@ -88,13 +82,13 @@
 ;; Convert the domain name into a sequence of labels, where each
 ;; label is a length octet and then that many octets
 (define (name->octets s)
-  (let ([do-one (lambda (s) (cons (bytes-length s) (bytes->list s)))])
-    (let loop ([s s])
-      (let ([m (regexp-match #rx#"^([^.]*)[.](.*)" s)])
-        (if m
-            (append (do-one (cadr m)) (loop (caddr m)))
-            ;; terminate with zero length octet
-            (append (do-one s) (list 0)))))))
+  (define (do-one s) (cons (bytes-length s) (bytes->list s)))
+  (let loop ([s s])
+    (define m (regexp-match #rx#"^([^.]*)[.](.*)" s))
+    (if m
+        (append (do-one (cadr m)) (loop (caddr m)))
+        ;; terminate with zero length octet
+        (append (do-one s) (list 0)))))
 
 ;; The query header. See RFC1035 4.1.1 for details
 ;;
@@ -134,27 +128,26 @@
   (car rr))
 
 (define (parse-name start reply)
-  (let ([v (car start)])
-    (cond
-      [(zero? v)
-       ;; End of name
-       (values #f (cdr start))]
-      [(zero? (bitwise-and #xc0 v))
-       ;; Normal label
-       (let loop ([len v][start (cdr start)][accum null])
-         (if (zero? len)
-           (let-values ([(s start) (parse-name start reply)])
-             (let ([s0 (list->bytes (reverse accum))])
-               (values (if s (bytes-append s0 #"." s) s0)
-                       start)))
-           (loop (sub1 len) (cdr start) (cons (car start) accum))))]
-      [else
-       ;; Compression offset
-       (let ([offset (+ (arithmetic-shift (bitwise-and #x3f v) 8)
-                        (cadr start))])
-         (let-values ([(s ignore-start)
-                       (parse-name (list-tail reply offset) reply)])
-           (values s (cddr start))))])))
+  (define v (car start))
+  (cond
+    [(zero? v)
+     ;; End of name
+     (values #f (cdr start))]
+    [(zero? (bitwise-and #xc0 v))
+     ;; Normal label
+     (let loop ([len v] [start (cdr start)] [accum null])
+       (if (zero? len)
+         (let-values ([(s start) (parse-name start reply)])
+           (define s0 (list->bytes (reverse accum)))
+           (values (if s (bytes-append s0 #"." s) s0)
+                   start))
+         (loop (sub1 len) (cdr start) (cons (car start) accum))))]
+    [else
+     ;; Compression offset
+     (define offset (+ (arithmetic-shift (bitwise-and #x3f v) 8)
+                       (cadr start)))
+     (define-values [s ignore-start] (parse-name (list-tail reply offset) reply))
+     (values s (cddr start))]))
 
 (define (parse-rr start reply)
   (let-values ([(name start) (parse-name start reply)])
@@ -191,7 +184,7 @@
       (values (list name type class) start))))
 
 (define (parse-n parse start reply n)
-  (let loop ([n n][start start][accum null])
+  (let loop ([n n] [start start] [accum null])
     (if (zero? n)
       (values (reverse accum) start)
       (let-values ([(rr start) (parse start reply)])
@@ -205,58 +198,51 @@
     (raise-type-error 'dns-query "DNS query class" class))
 
   (define nameserver (ip-address->string nameserver-ip))
-
-  (let* ([query (make-query (random 256) (string->bytes/latin-1 addr)
-                            type class)]
-         [udp (udp-open-socket nameserver 53)]
-         [reply
-          (dynamic-wind
-            void
-            (lambda ()
-              (let ([s (make-bytes 512)])
-                (let retry ([timeout INIT-TIMEOUT])
-                  (udp-send-to udp nameserver 53 (list->bytes query))
-                  (sync (handle-evt (udp-receive!-evt udp s)
-                                    (lambda (r)
-                                      (bytes->list (subbytes s 0 (car r)))))
-                        (handle-evt (alarm-evt (+ (current-inexact-milliseconds)
-                                                  timeout))
-                                    (lambda (v)
-                                      (retry (* timeout 2))))))))
-            (lambda () (udp-close udp)))])
-
-    ;; First two bytes must match sent message id:
-    (unless (and (= (car reply) (car query))
-                 (= (cadr reply) (cadr query)))
-      (error 'dns-query "bad reply id from server"))
-
-    (let ([v0 (caddr reply)]
-          [v1 (cadddr reply)])
-      ;; Check for error code:
-      (let ([rcode (bitwise-and #xf v1)])
-        (unless (zero? rcode)
-          (error 'dns-query "error from server: ~a"
-                 (case rcode
-                   [(1) "format error"]
-                   [(2) "server failure"]
-                   [(3) "name error"]
-                   [(4) "not implemented"]
-                   [(5) "refused"]))))
-
-      (let ([qd-count (octet-pair->number (list-ref reply 4) (list-ref reply 5))]
-            [an-count (octet-pair->number (list-ref reply 6) (list-ref reply 7))]
-            [ns-count (octet-pair->number (list-ref reply 8) (list-ref reply 9))]
-            [ar-count (octet-pair->number (list-ref reply 10) (list-ref reply 11))])
-
-        (let ([start (list-tail reply 12)])
-          (let*-values ([(qds start) (parse-n parse-ques start reply qd-count)]
-                        [(ans start) (parse-n parse-rr start reply an-count)]
-                        [(nss start) (parse-n parse-rr start reply ns-count)]
-                        [(ars start) (parse-n parse-rr start reply ar-count)])
-            (unless (null? start)
-              (error 'dns-query "error parsing server reply"))
-            (values (positive? (bitwise-and #x4 v0))
-                    qds ans nss ars reply)))))))
+  (define query (make-query (random 256) (string->bytes/latin-1 addr)
+                            type class))
+  (define udp (udp-open-socket nameserver 53))
+  (define reply
+    (dynamic-wind
+      void
+      (lambda ()
+        (define s (make-bytes 512))
+        (let retry ([timeout INIT-TIMEOUT])
+          (udp-send-to udp nameserver 53 (list->bytes query))
+          (sync (handle-evt (udp-receive!-evt udp s)
+                            (lambda (r) (bytes->list (subbytes s 0 (car r)))))
+                (handle-evt (alarm-evt (+ (current-inexact-milliseconds)
+                                          timeout))
+                            (lambda (v) (retry (* timeout 2)))))))
+      (lambda () (udp-close udp))))
+  ;; First two bytes must match sent message id:
+  (unless (and (= (car reply)  (car query))
+               (= (cadr reply) (cadr query)))
+    (error 'dns-query "bad reply id from server"))
+  (define v0 (caddr reply))
+  (define v1 (cadddr reply))
+  ;; Check for error code:
+  (let ([rcode (bitwise-and #xf v1)])
+    (unless (zero? rcode)
+      (error 'dns-query "error from server: ~a"
+             (case rcode
+               [(1) "format error"]
+               [(2) "server failure"]
+               [(3) "name error"]
+               [(4) "not implemented"]
+               [(5) "refused"]))))
+  (define qd-count (octet-pair->number (list-ref reply 4) (list-ref reply 5)))
+  (define an-count (octet-pair->number (list-ref reply 6) (list-ref reply 7)))
+  (define ns-count (octet-pair->number (list-ref reply 8) (list-ref reply 9)))
+  (define ar-count (octet-pair->number (list-ref reply 10) (list-ref reply 11)))
+  (define start (list-tail reply 12))
+  (let*-values ([(qds start) (parse-n parse-ques start reply qd-count)]
+                [(ans start) (parse-n parse-rr start reply an-count)]
+                [(nss start) (parse-n parse-rr start reply ns-count)]
+                [(ars start) (parse-n parse-rr start reply ar-count)])
+    (unless (null? start)
+      (error 'dns-query "error parsing server reply"))
+    (values (positive? (bitwise-and #x4 v0))
+            qds ans nss ars reply)))
 
 ;; A cache for DNS query data
 ;; Stores a (List Boolean LB LB LB LB LB)
@@ -290,10 +276,10 @@
     (let-values ([(v ars auth?) (k nameserver)])
       (or v
           (and (not auth?)
-               (let* ([ns (ormap (lambda (ar)
-                                   (and (eq? (rr-type ar) 'a)
-                                        (ip->string (rr-data ar))))
-                                 ars)])
+               (let ([ns (ormap (lambda (ar)
+                                  (and (eq? (rr-type ar) 'a)
+                                       (ip->string (rr-data ar))))
+                                ars)])
                  (and ns
                       (not (member ns tried))
                       (loop ns (cons ns tried)))))))))
@@ -307,41 +293,21 @@
 
 ;; Convert an IPv4 address for reverse lookup
 (define (ip->in-addr.arpa ip)
-  (define bytes (ipv4-bytes ip))
-  (format "~a.~a.~a.~a.in-addr.arpa"
-          (bytes-ref bytes 3) (bytes-ref bytes 2)
-          (bytes-ref bytes 1) (bytes-ref bytes 0)))
-
-(module+ test
-  (check-equal? (ip->in-addr.arpa (ipv4 (bytes 8 8 8 8)))
-                "8.8.8.8.in-addr.arpa")
-  (check-equal? (ip->in-addr.arpa (ipv4 (bytes 127 0 0 1)))
-                "1.0.0.127.in-addr.arpa"))
+  (apply format "~a.~a.~a.~a.in-addr.arpa"
+         (reverse (bytes->list (ipv4-bytes ip)))))
 
 ;; Convert an IPv6 address for reverse lookup
 (define (ip->ip6.arpa ip)
-  (define nibbles
-    (for/fold ([nibbles '()])
-              ([byte (ipv6-bytes ip)])
-      (define nib1 (arithmetic-shift (bitwise-and #xf0 byte) -4))
-      (define nib2 (bitwise-and #x0f byte))
-      (append (list nib2 nib1) nibbles)))
-  (string-append
-   (string-join
-    (for/list ([n nibbles]) (~r n #:base 16))
-    ".")
-   ".ip6.arpa"))
-
-(module+ test
-  (check-equal?
-   (ip->ip6.arpa (make-ip-address "4321:0:1:2:3:4:567:89ab"))
-   "b.a.9.8.7.6.5.0.4.0.0.0.3.0.0.0.2.0.0.0.1.0.0.0.0.0.0.0.1.2.3.4.ip6.arpa")
-  (check-equal?
-   (ip->ip6.arpa (make-ip-address "2001:db8::567:89ab"))
-   "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa"))
+  (string-join
+   (for/fold ([nibbles '()])
+             ([byte (in-bytes (ipv6-bytes ip))])
+     (define nib1 (arithmetic-shift (bitwise-and #xf0 byte) -4))
+     (define nib2 (bitwise-and #x0f byte))
+     (append (list (~r nib2 #:base 16) (~r nib1 #:base 16)) nibbles))
+   "." #:after-last ".ip6.arpa"))
 
 (define (get-ptr-list-from-ans ans)
-  (filter (lambda (ans-entry) (eq? (list-ref ans-entry 1) 'ptr)) ans))
+  (filter (λ (ans-entry) (eq? (list-ref ans-entry 1) 'ptr)) ans))
 
 (define (dns-get-name nameserver-ip-or-string ip-or-string)
   (define nameserver (if (ip-address? nameserver-ip-or-string)
@@ -365,7 +331,7 @@
 
 ;; Get resource records corresponding to the given type
 (define (get-records-from-ans ans type)
-  (for/list ([ans-entry ans]
+  (for/list ([ans-entry (in-list ans)]
              #:when (eq? (list-ref ans-entry 1) type))
     ans-entry))
 
@@ -404,12 +370,12 @@
                                         nss)
                                  addr))]
                        [else
-                        (let ([d (rr-data (car ans))])
-                          (let ([pref (octet-pair->number (car d) (cadr d))])
-                            (if (< pref best-pref)
-                              (let-values ([(name start) (parse-name (cddr d) reply)])
-                                (loop (cdr ans) pref name))
-                              (loop (cdr ans) best-pref exchanger))))]))
+                        (define d (rr-data (car ans)))
+                        (define pref (octet-pair->number (car d) (cadr d)))
+                        (if (< pref best-pref)
+                            (let-values ([(name start) (parse-name (cddr d) reply)])
+                              (loop (cdr ans) pref name))
+                            (loop (cdr ans) best-pref exchanger))]))
                    ars auth?)))
        nameserver)
       (error 'dns-get-mail-exchanger "bad address")))
@@ -421,34 +387,34 @@
        (with-input-from-file "/etc/resolv.conf"
          (lambda ()
            (let loop ()
-             (let ([l (read-line)])
-               (or (and (string? l)
-                        (let ([m (regexp-match
-                                  #rx"nameserver[ \t]+([0-9]+[.][0-9]+[.][0-9]+[.][0-9]+)"
-                                  l)])
-                          (and m (cadr m))))
-                   (and (not (eof-object? l))
-                        (loop))))))))]
+             (define line (read-line))
+             (or (and (string? line)
+                      (let ([m (regexp-match
+                                #rx"nameserver[ \t]+([0-9]+[.][0-9]+[.][0-9]+[.][0-9]+)"
+                                line)])
+                        (and m (cadr m))))
+                 (and (not (eof-object? line))
+                      (loop)))))))]
     [(windows)
-     (let ([nslookup (find-executable-path "nslookup.exe" #f)])
-       (and nslookup
-            (let-values ([(pin pout pid perr proc)
-                          (apply
-                           values
-                           (process/ports
-                            #f (open-input-file "NUL") (current-error-port)
-                            nslookup))])
-              (let loop ([name #f] [ip #f] [try-ip? #f])
-                (let ([line (read-line pin 'any)])
-                  (cond [(eof-object? line)
-                         (close-input-port pin)
-                         (proc 'wait)
-                         (or ip name)]
-                        [(and (not name)
-                              (regexp-match #rx"^Default Server: +(.*)$" line))
-                         => (lambda (m) (loop (cadr m) #f #t))]
-                        [(and try-ip?
-                              (regexp-match #rx"^Address: +(.*)$" line))
-                         => (lambda (m) (loop name (cadr m) #f))]
-                        [else (loop name ip #f)]))))))]
+     (define nslookup (find-executable-path "nslookup.exe" #f))
+     (and nslookup
+          (let-values ([(pin pout pid perr proc)
+                        (apply
+                         values
+                         (process/ports
+                          #f (open-input-file "NUL") (current-error-port)
+                          nslookup))])
+            (let loop ([name #f] [ip #f] [try-ip? #f])
+              (define line (read-line pin 'any))
+              (cond [(eof-object? line)
+                     (close-input-port pin)
+                     (proc 'wait)
+                     (or ip name)]
+                    [(and (not name)
+                          (regexp-match #rx"^Default Server: +(.*)$" line))
+                     => (lambda (m) (loop (cadr m) #f #t))]
+                    [(and try-ip?
+                          (regexp-match #rx"^Address: +(.*)$" line))
+                     => (lambda (m) (loop name (cadr m) #f))]
+                    [else (loop name ip #f)]))))]
     [else #f]))
