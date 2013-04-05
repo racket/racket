@@ -558,7 +558,8 @@ mz-extras :+= (package: "planet")
 mz-extras :+= (package: "pkg")
 
 ;; -------------------- mrlib
-mr-extras :+= (+ (package: "mrlib/")
+mr-extras :+= (+ (- (package: "mrlib/") 
+                    (srcfile: "mrlib/terminal.rkt"))
                  (collects: "hierlist/")
                  (collects: "icons/turn-{up|down}{|-click}.png")
                  (tests: "aligned-pasteboard/"))
@@ -582,6 +583,8 @@ dr-extras :+= (collects: "help") (doc: "help")
               (bin: "Racket Documentation")
               (bin: "plt-help") (man: "plt-help")
 
+dr-extras :+= (srcfile: "mrlib/terminal.rkt")
+              
 ;; -------------------- lang
 plt-extras :+= (package: "lang/" #:docs "htdp-langs/")
 
