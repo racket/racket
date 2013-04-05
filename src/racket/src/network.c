@@ -4111,7 +4111,7 @@ udp_multicast_interface(int argc, Scheme_Object *argv[])
 #ifdef UDP_IS_SUPPORTED
   {
     Scheme_UDP *udp = (Scheme_UDP *) argv[0];
-    struct in_addr intf;
+    GC_CAN_IGNORE struct in_addr intf;
     unsigned int intf_len = sizeof(intf);
     int status;
     status = getsockopt(udp->s, IPPROTO_IP, IP_MULTICAST_IF, (void *) &intf, &intf_len);
@@ -4148,7 +4148,7 @@ udp_multicast_set_interface(int argc, Scheme_Object *argv[])
 #ifdef UDP_IS_SUPPORTED
   {
     Scheme_UDP *udp = (Scheme_UDP *) argv[0];
-    struct in_addr intf;
+    GC_CAN_IGNORE struct in_addr intf;
     unsigned int intf_len = sizeof(intf);
     int status;
 
@@ -4197,7 +4197,7 @@ udp_multicast_set_interface(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 do_udp_multicast_join_or_leave_group(char const *name, int optname, Scheme_UDP *udp, Scheme_Object *multiaddrname, Scheme_Object *ifaddrname)
 {
-  struct ip_mreq mreq;
+  GC_CAN_IGNORE struct ip_mreq mreq;
   unsigned int mreq_len = sizeof(mreq);
   int status;
 
