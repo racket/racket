@@ -34,8 +34,6 @@
     (struct ipv4 ([bytes (bytes-of-length 4)]))
     (struct ipv6 ([bytes (bytes-of-length 16)]))))
 
-(module+ test (require rackunit))
-
 ;; data definitions
 
 ;; An IPAddress is one of
@@ -72,26 +70,6 @@
     [(? ipv6-string?) (ipv6 (ipv6-string->bytes input))]
     [(? (bytes-of-length 4)) (ipv4 input)]
     [(? (bytes-of-length 16)) (ipv6 input)]))
-
-(module+ test
-  (check-equal? (make-ip-address "127.0.0.1")
-                (ipv4 (bytes 127 0 0 1)))
-  (check-equal? (make-ip-address (bytes 127 0 0 1))
-                (ipv4 (bytes 127 0 0 1)))
-  (check-equal? (make-ip-address "2607:f8b0:4009:800::100e")
-                (ipv6 (bytes 38 7 248 176 64 9 8 0 0 0 0 0 0 0 16 14)))
-  (check-equal? (make-ip-address (bytes 38 7 248 176 64 9 8 0 0 0 0 0 0 0 16 14))
-                (ipv6 (bytes 38 7 248 176 64 9 8 0 0 0 0 0 0 0 16 14)))
-  (check-equal? (make-ip-address "0.0.0.1")
-                (ipv4 (bytes 0 0 0 1)))
-  (check-not-equal? (make-ip-address "128.0.0.1")
-                    (make-ip-address "255.3.255.0"))
-
-  (let ([ip-bytes (bytes 127 0 0 1)])
-    (define ip (make-ip-address ip-bytes))
-    (bytes-set! ip-bytes 0 255)
-    (check-equal? ip (make-ip-address "127.0.0.1")
-                  "IP addresses should be immutable")))
 
 (define (ip-address-string? val)
   (and (string? val)
@@ -147,39 +125,6 @@
                     ;; this is the +1 octet pair
                     (regexp-match? re-end str))]))))
 
-(module+ test
-  (check-true (ip-address-string? "0.0.0.0"))
-  (check-true (ip-address-string? "0.1.0.2"))
-  (check-true (ip-address-string? "8.8.8.8"))
-  (check-true (ip-address-string? "12.81.255.109"))
-  (check-true (ip-address-string? "192.168.0.1"))
-  (check-true (ip-address-string? "2001:0db8:85a3:0000:0000:8a2e:0370:7334"))
-  (check-true (ip-address-string? "2001:200:dff:fff1:216:3eff:feb1:44d7"))
-  (check-true (ip-address-string? "2001:db8:85a3:0:0:8a2e:370:7334"))
-  (check-true (ip-address-string? "2001:db8:85a3::8a2e:370:7334"))
-  (check-true (ip-address-string? "0:0:0:0:0:0:0:1"))
-  (check-true (ip-address-string? "0:0:0:0:0:0:0:0"))
-  (check-true (ip-address-string? "::"))
-  (check-true (ip-address-string? "::0"))
-  (check-true (ip-address-string? "::ffff:c000:0280"))
-  (check-true (ip-address-string? "2001:db8::2:1"))
-  (check-true (ip-address-string? "2001:db8:0:0:1::1"))
-  (check-false (ip-address-string? ""))
-  (check-false (ip-address-string? ":::"))
-  (check-false (ip-address-string? "::0::"))
-  (check-false (ip-address-string? "2001::db8::2:1"))
-  (check-false (ip-address-string? "2001:::db8:2:1"))
-  (check-false (ip-address-string? "52001:db8::2:1"))
-  (check-false (ip-address-string? "80.8.800.8"))
-  (check-false (ip-address-string? "80.8.800.0"))
-  (check-false (ip-address-string? "080.8.800.8"))
-  (check-false (ip-address-string? "vas8.8.800.8"))
-  (check-false (ip-address-string? "80.8.128.8dd"))
-  (check-false (ip-address-string? "0.8.800.008"))
-  (check-false (ip-address-string? "0.8.800.a8"))
-  (check-false (ip-address-string? "potatoes"))
-  (check-false (ip-address-string? "127.0.0")))
-
 ;; String -> Bytes
 ;; converts a string representating an IPv4 address to bytes
 (define (ipv4-string->bytes ip)
@@ -189,16 +134,6 @@
            (string->number (list-ref result 2))
            (string->number (list-ref result 3))
            (string->number (list-ref result 4)))))
-
-(module+ test
-  (check-equal? (ipv4-string->bytes "0.8.255.0")
-                (bytes 0 8 255 0))
-  (check-equal? (ipv4-string->bytes "8.8.8.8")
-                (bytes 8 8 8 8))
-  (check-equal? (ipv4-string->bytes "12.81.255.109")
-                (bytes 12 81 255 109))
-  (check-equal? (ipv4-string->bytes "192.168.0.1")
-                (bytes 192 168 0 1)))
 
 ;; String -> Bytes
 ;; converts a string representing an IPv6 address to bytes
@@ -224,34 +159,12 @@
            (loop (bytes-append result (octet-pair-string->bytes (car splitted)))
                  (cdr splitted))])))
 
-(module+ test
-  (check-equal? (ipv6-string->bytes "2001:0db8:85a3:0000:0000:8a2e:0370:7334")
-                (bytes 32 1 13 184 133 163 0 0 0 0 138 46 3 112 115 52))
-  (check-equal? (ipv6-string->bytes "2001:200:dff:fff1:216:3eff:feb1:44d7")
-                (bytes 32 1 2 0 13 255 255 241 2 22 62 255 254 177 68 215))
-  (check-equal? (ipv6-string->bytes "2001:db8:85a3:0:0:8a2e:370:7334")
-                (bytes 32 1 13 184 133 163 0 0 0 0 138 46 3 112 115 52))
-  (check-equal? (ipv6-string->bytes "2001:db8:85a3::8a2e:370:7334")
-                (bytes 32 1 13 184 133 163 0 0 0 0 138 46 3 112 115 52))
-  (check-equal? (ipv6-string->bytes "2607:f8b0:4009:800::100e")
-                (bytes 38 7 248 176 64 9 8 0 0 0 0 0 0 0 16 14))
-  (check-equal? (ipv6-string->bytes "::1")
-                (bytes 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1))
-  (check-equal? (ipv6-string->bytes "::ffff")
-                (bytes 0 0 0 0 0 0 0 0 0 0 0 0 0 0 255 255)))
-
 ;; IPAddress -> Bytestring
 ;; Turn an ip struct into a byte string
 (define (ip-address->bytes ip)
   (match ip
     [(? ipv4?) (ipv4-bytes ip)]
     [(? ipv6?) (ipv6-bytes ip)]))
-
-(module+ test
-  (check-equal? (ip-address->bytes (make-ip-address "8.8.8.8"))
-                (bytes 8 8 8 8))
-  (check-equal? (ip-address->bytes (make-ip-address "::1"))
-                (bytes 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1)))
 
 ;; IPAddress -> String
 ;; Convert an IP address to a string
@@ -260,25 +173,10 @@
     [(? ipv4?) (ipv4->string (ipv4-bytes ip))]
     [(? ipv6?) (ipv6->string (ipv6-bytes ip))]))
 
-(module+ test
-  (check-equal? (ip-address->string (make-ip-address "8.8.8.8"))
-                "8.8.8.8")
-  (check-equal? (ip-address->string (make-ip-address "::1"))
-                "::1"))
-
 ;; Bytes -> String
 ;; Convert a bytestring for an IPv4 address to a string
 (define (ipv4->string bytes)
-  (string-join (for/list ([b bytes]) (~r b)) "."))
-
-(module+ test
-  (check-equal? (ipv4->string (bytes 0 0 0 0)) "0.0.0.0")
-  (check-equal? (ipv4->string (bytes 255 255 0 1))
-                "255.255.0.1")
-  (check-equal? (ipv4->string (bytes 127 0 0 1))
-                "127.0.0.1")
-  (check-equal? (ipv4->string (bytes 8 8 8 8))
-                "8.8.8.8"))
+  (string-join (for/list ([b (in-bytes bytes)]) (~r b)) "."))
 
 ;; Bytes -> String
 ;; Convert a bytestring representing an IPv6 address to a string
@@ -291,7 +189,7 @@
   (define compressed (compress two-octets))
   ;; add an extra "" if :: is at the start
   (define compressed-strs
-    (for/list ([elem compressed])
+    (for/list ([elem (in-list compressed)])
       (if (eq? elem '::)
           "" ; string-join will turn this into ::
           (~r elem #:base 16))))
@@ -301,41 +199,21 @@
         compressed-strs))
   (string-join compressed-strs* ":"))
 
-(module+ test
-  (check-equal? (ipv6->string (bytes 32 1 13 184 133 163 0 0 0 0 138 46 3 112 115 52))
-                "2001:db8:85a3::8a2e:370:7334")
-  (check-equal? (ipv6->string (bytes 38 7 248 176 64 9 8 0 0 0 0 0 0 0 16 14))
-                "2607:f8b0:4009:800::100e")
-  (check-equal? (ipv6->string (bytes 0 0 0 0 0 0 0 0 0 0 0 0 0 0 255 255))
-                "::ffff")
-  (check-equal? (ipv6->string (bytes 255 255 0 0 0 0 0 0 0 0 0 0 0 0 255 255))
-                "ffff::ffff"))
-
 ;; (Listof Number) -> (Listof (U Number '::))
 ;; Compress an IPv6 address to its shortest representation
 (define (compress lon)
   (let loop ([acc '()] [lon lon])
     (cond [(empty? lon) (reverse acc)]
           [else
-           (define zeroes (for/list ([n lon] #:break (not (zero? n))) n))
+           (define zeroes
+             (for/list ([n (in-list lon)] #:break (not (zero? n))) n))
            (define num-zs (length zeroes))
            (if (<= num-zs 1)
                (loop (cons (car lon) acc) (cdr lon))
                (append (reverse acc) '(::) (drop lon num-zs)))])))
-
-(module+ test
-  (check-equal? (compress '(0 0 0 5 5)) '(:: 5 5))
-  (check-equal? (compress '(0 5 5)) '(0 5 5))
-  (check-equal? (compress '(0 0 5 0 0 5)) '(:: 5 0 0 5))
-  (check-equal? (compress '(0 5 0 0 0 5)) '(0 5 :: 5)))
 
 ;; contract helper
 (define (bytes-of-length n)
   (flat-named-contract
     `(bytes-of-length ,n)
     (λ (bs) (and (bytes? bs) (= (bytes-length bs) n)))))
-
-(module+ test
-  (check-true ((bytes-of-length 5) (bytes 1 2 3 4 5)))
-  (check-false ((bytes-of-length 5) "moogle")))
-
