@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require racket/contract
          redex/reduction-semantics
          redex/pict
@@ -126,9 +126,11 @@
       (with-atomic-rewriter
        (cadr l)
        (let ([rw (car l)])
-         (if (string? rw)
-             (lambda () (text rw (default-style) (default-font-size)))
-             rw))
+         (cond [(string? rw)
+                (lambda () (text rw (default-style) (default-font-size)))]
+               [(pict? rw)
+                (lambda () rw)]
+               [else rw]))
        (with-atomic-rewriter* thunk (cddr l)))))
 (define (with-compound-rewriter* thunk l)
   (if (null? l)

@@ -1,15 +1,15 @@
 #lang scribble/manual
-@(require racket/stxparam scribble/base scribble/eval "utils.rkt"
+@(require racket/stxparam scribble/base scribble/eval "../utils.rkt"
           (for-syntax racket/base syntax/srcloc)
-          (for-label racket/base racket/contract slideshow/pict redex unstable/redex))
+          (for-label racket/base racket/contract slideshow/pict redex unstable/gui/redex))
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require redex/reduction-semantics redex/pict unstable/redex slideshow/pict))
+@(the-eval '(require redex/reduction-semantics redex/pict unstable/gui/redex slideshow/pict))
 
 @title[#:tag "redex"]{Redex}
 @unstable-header[]
 
-@defmodule[unstable/redex]
+@defmodule[unstable/gui/redex]
 
 This library provides functions to help typesetting for
 @racketmodname[redex] models. The following example program provides
@@ -50,7 +50,7 @@ notations.
 (add-atomic-rewriters!
  'empty "∅"
  'formula "φ"
- 'ZZ "\u2124"
+ 'ZZ (text "Z" '(bold . modern) (default-font-size)) ;; "\u2124" doesn't work with latex/pdf output
  'variable-not-otherwise-mentioned
      (lambda () (text "x, y, z, ..." (literal-style) (default-font-size)))
  'true (lambda () (text "true" '(caps . modern) (default-font-size)))
@@ -59,7 +59,7 @@ notations.
  'same? (binary-rw " = ")
  'in? (binary-rw " ∈ ")
  'Set (bracket-rw 'curly)
- 'Powerset (function-rw "𝒫 ")
+ 'Powerset (function-rw "P") ;; "𝒫 " doesn't work with latex/pdf output
  'Union (binary-rw "∪")
  'implies (binary-rw " ⇒ " #:parenthesize-left '(implies)))
 (with-rewriters
