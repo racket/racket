@@ -22,12 +22,12 @@
   (define-values [thd port] (tcp-serve dest text))
   (values thd (port->splitstr port)))
 
-(define ((progress-proc dir) get-count)
+(define ((progress-proc output dir) get-count)
   (thread
    (lambda ()
      (let loop ()
-       (define-values (count changed-evt) (get-count))
-       (printf "~a bytes ~aloaded\n" count dir)
+       (define-values [count changed-evt] (get-count))
+       (fprintf output "~a bytes ~aloaded\n" count dir)
        (sync changed-evt)
        (loop)))))
 
@@ -51,12 +51,23 @@
         (set! conn (ftp-establish-connection server port user passwd))
         (ftp-connection? conn)
         (when (ftp-connection? conn)
+          (define output (open-output-bytes))
           (test (ftp-cd conn "gnu")
                 (for ([f (in-list (ftp-directory-list conn))])
                   (match-define (list* type ftp-date name ?size) f)
                   (test (ftp-make-file-seconds ftp-date)))
-                (ftp-download-file conn tmp-dir pth #:progress (progress-proc "down"))
-                (ftp-upload-file conn (path->string (build-path tmp-dir pth)) #:progress (progress-proc "up"))
+                (ftp-download-file conn tmp-dir pth
+                                   #:progress (progress-proc output "down"))
+                ;; Note: It would be nice to test the output but there is no
+                ;; easy way that I see to wait for the progress thread to
+                ;; finish (it stays alive after the transfer), and it's
+                ;; probably a bad idea to make a test that expects a specific
+                ;; output
+                ;; (get-output-bytes output #t) => #"0 bytes downloaded\n"
+                ;; (get-output-bytes output #t) => #"744 bytes uploaded\n"
+                (ftp-upload-file conn (path->string (build-path tmp-dir pth))
+                                 #:progress (progress-proc output "up"))
+                ;; (get-output-bytes output #t) => #"744 bytes uploaded\n"
                 (ftp-delete-file conn "3dldf/test.file")
                 (ftp-make-directory conn "test")
                 (ftp-delete-directory conn "test")
