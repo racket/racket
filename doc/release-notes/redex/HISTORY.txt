@@ -15,6 +15,12 @@ v5.3.4
     contracts that have to relate different arguments to a
     metafunction.
 
+  * Fixed the way random generation for define-judgment-form works so
+    that it properly handles metafunctions (i.e., it properly takes
+    into account that previous patterns in a metafunction must not
+    match when generating a particular clause)
+
+
 v5.3.3
 
 No changes
