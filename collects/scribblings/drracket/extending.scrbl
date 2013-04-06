@@ -120,6 +120,19 @@ Several environment variables can affect DrRacket's behavior:
        those collections are loaded (The contents of the environment
        variable are @racket[read] and expected to be a single symbol
        or a list of symbols).}
+ 
+ @item{@indexed-envvar{PLTDRREPL} : When this environment variable is
+        set, DrRacket starts a read-eval-print loop with all of
+        the forms and functions from the @racketmodname[racket]
+        module and those described in @other-doc['(lib "scribblings/tools/tools.scrbl")].
+        
+        If it is not set to @litchar{-q}, then @racket[(find-system-path 'init-file)]
+        is loaded as well.
+        
+        A new thread is created to evaluate REPL expressions, so be 
+        sure to use @racket[queue-callback] to evaluate expressions
+        that mutate the GUI (to avoid race-conditions).
+        }
 
  @item{@indexed-envvar{PLTDRCM} : When this environment variable is
        set, DrRacket installs the compilation manager before starting

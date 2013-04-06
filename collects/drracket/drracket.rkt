@@ -6,6 +6,8 @@
 
 (define first-parallel? (getenv "PLTDRPAR"))
 
+(define repl (getenv "PLTDRREPL"))
+
 (define install-cm? (and (not debugging?)
                          (getenv "PLTDRCM")))
 
@@ -149,3 +151,14 @@
     ((dynamic-require 'drracket/private/profile-drs 'start-profile) orig-cust)))
 
 (dynamic-require 'drracket/private/drracket-normal #f)
+
+(when repl
+  (printf "Welcome to DrRacket, v~a\n" (version))
+  (namespace-require 'racket)
+  (namespace-require 'drracket/tool-lib)
+  (unless (equal? repl "-q")
+    (define init-file (find-system-path 'init-file))
+    (when (file-exists? init-file)
+      (load init-file)))
+  (void (thread read-eval-print-loop)))
+
