@@ -81,7 +81,7 @@
         [`() xexprs]
         [`("" . ,r) (compact r)]
         [`(,(? string? s) ...)
-         (list (apply string-append xexprs))]
+         (list (xexpr->string (apply string-append xexprs)))]
         [`(,(? string? s1) ,(? string? s2) . ,r)
          (compact `(,(string-append s1 s2) . ,r))]
         [`((span ([class ,c]) . ,b1) (span ([class ,c]) . ,b2) . ,r)
