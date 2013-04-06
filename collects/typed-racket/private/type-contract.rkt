@@ -116,9 +116,7 @@
 (define (contract-kind->keyword sym)
   (string->keyword (symbol->string sym)))
 
-(define (type->contract ty fail #:out [out? #f] #:typed-side [from-typed? #t] #:kind [kind 'impersonator])
-  (unless (equal? out? from-typed?)
-    (error 'not-equal))
+(define (type->contract ty fail #:typed-side [from-typed? #t] #:kind [kind 'impersonator])
   (define vars (make-parameter '()))  
   (define current-contract-kind (make-parameter flat-sym))
   (define (increase-current-contract-kind! kind)
