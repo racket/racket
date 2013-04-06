@@ -1190,6 +1190,8 @@
       (pkg-error "directory does not exist\n  path: ~a" dir))
     (match create:format
       ['MANIFEST
+       (printf "creating manifest for ~a\n"
+               dir)
        (with-output-to-file
            (build-path dir "MANIFEST")
          #:exists 'replace
@@ -1198,8 +1200,10 @@
                                (find-files file-exists?)))])
              (display f)
              (newline))))]
-      [else
+      [else      
        (define pkg (format "~a.~a" dir create:format))
+       (printf "packing ~a into ~a\n"
+               dir pkg)
        (define pkg-name
          (regexp-replace
           (regexp (format "~a$" (regexp-quote (format ".~a" create:format))))
@@ -1239,8 +1243,11 @@
          [x
           (pkg-error "invalid package format\n  format: ~a" x)])
        (define chk (format "~a.CHECKSUM" pkg))
-       (with-output-to-file chk #:exists 'replace
-                            (λ () (display (call-with-input-file pkg sha1))))])))
+       (printf "writing package checksum to ~a\n"
+               chk)
+       (with-output-to-file chk
+         #:exists 'replace
+         (λ () (display (call-with-input-file pkg sha1))))])))
 
 (define dep-behavior/c
   (or/c false/c
