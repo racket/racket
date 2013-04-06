@@ -787,13 +787,13 @@ symbols, and that return a symbol.
 [(->i (mandatory-dependent-dom ...)
       dependent-rest
       pre-condition
-      dep-range
+      dependent-range
       post-condition)
  (->i (mandatory-dependent-dom ...)
       (optional-dependent-dom ...)
       dependent-rest
       pre-condition
-      dep-range
+      dependent-range
       post-condition)]
 ([mandatory-dependent-dom id+ctc
                           (code:line keyword id+ctc)]
