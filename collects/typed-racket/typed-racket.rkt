@@ -14,19 +14,10 @@
          with-type
          (for-syntax do-standard-inits))
 
-(module init-base-env racket/base
-  (require racket/lazy-require)
-  (provide (rename-out (init init-base-env)))
-  (lazy-require (typed-racket/base-env/base-env (init))))
-(module init-base-env-numeric racket/base
-  (require racket/lazy-require)
-  (provide (rename-out (init init-base-env-numeric)))
-  (lazy-require (typed-racket/base-env/base-env-numeric (init))))
-
 (begin-for-syntax
-  (require 'init-base-env)
-  (require 'init-base-env-numeric)
   (lazy-require
+    [typed-racket/base-env/base-env ((init init-base-env))]
+    [typed-racket/base-env/base-env-numeric ((init init-base-env-numeric))]
     [typed-racket/base-env/base-structs (initialize-structs)]
     [typed-racket/base-env/base-env-indexing (initialize-indexing)]
     [typed-racket/base-env/base-special-env (initialize-special)]

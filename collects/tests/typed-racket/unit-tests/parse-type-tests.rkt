@@ -6,6 +6,7 @@
          (rename-in (types subtype union utils abbrev numeric-tower)
                     [Un t:Un] [-> t:->] [->* t:->*])
          (base-env base-types base-types-extra colon)
+         (submod typed-racket/base-env/base-types initialize)
          (for-template (base-env base-types base-types-extra base-env colon))
          (private parse-type)
          rackunit
@@ -30,7 +31,7 @@
         [ty (cdr pr)])
     (register-resolved-type-alias (datum->syntax #'here (syntax->datum nm)) ty)))
 
-((dynamic-require '(submod typed-racket/base-env/base-types initialize) 'initialize-type-names))
+(initialize-type-names)
 
 (define-syntax (run-one stx)
   (syntax-case stx ()

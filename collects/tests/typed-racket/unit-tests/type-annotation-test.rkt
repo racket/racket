@@ -7,9 +7,10 @@
          (env type-env-structs init-envs)
          (utils tc-utils)
          (rep type-rep filter-rep object-rep)
+         (submod typed-racket/base-env/base-types initialize)
          rackunit)
 
-((dynamic-require '(submod typed-racket/base-env/base-types initialize) 'initialize-type-names))
+(initialize-type-names)
 
 (provide type-annotation-tests)
 
