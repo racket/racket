@@ -10,40 +10,40 @@
 
 
 (define-syntax-rule (is-not-false e)
-  (test-equal (not e) #f))
+  (test (not e) #f))
 
 (define-syntax-rule (is-false e)
-  (test-equal e #f))
+  (test e #f))
 
 (let ()
   (define-language L0)
   
-  (test-equal (check-dq (dq '() (list `a `a)) (make-hash) L0 (hash))
+  (test (check-dq (dq '() (list `a `a)) (make-hash) L0 (hash))
               #f)
-  (test-equal (check-dq (dq '() (list `a `b)) (make-hash) L0 (hash))
+  (test (check-dq (dq '() (list `a `b)) (make-hash) L0 (hash))
               #t)
-  (test-equal (check-dq (dq '() (list `(list a) `(list a))) (make-hash) L0 (hash))
+  (test (check-dq (dq '() (list `(list a) `(list a))) (make-hash) L0 (hash))
               #f)
-  (test-equal (check-dq (dq '() (list `(list a) `(list b))) (make-hash) L0 (hash))
+  (test (check-dq (dq '() (list `(list a) `(list b))) (make-hash) L0 (hash))
               #t)
-  (test-equal (check-dq (dq '() (list `(list number) `(list variable))) (make-hash) L0 (hash))
+  (test (check-dq (dq '() (list `(list number) `(list variable))) (make-hash) L0 (hash))
               #t)
-  (test-equal (check-dq (dq '() (list `(list a) `(list number))) (make-hash) L0 (hash))
+  (test (check-dq (dq '() (list `(list a) `(list number))) (make-hash) L0 (hash))
               #t)
-  (test-equal (check-dq (dq '() (list `(list 2) `(list variable-not-otherwise-mentioned))) (make-hash) L0 (hash))
+  (test (check-dq (dq '() (list `(list 2) `(list variable-not-otherwise-mentioned))) (make-hash) L0 (hash))
               #t)
-  (test-equal (check-dq (dq '() (list `(list a b) `(list a number))) (make-hash) L0 (hash))
+  (test (check-dq (dq '() (list `(list a b) `(list a number))) (make-hash) L0 (hash))
               #t)
-  (test-equal (check-dq (dq '() (list `(list a b) `(list a b))) (make-hash) L0 (hash))
+  (test (check-dq (dq '() (list `(list a b) `(list a b))) (make-hash) L0 (hash))
               #f)
-  (test-equal (check-dq (dq '()
+  (test (check-dq (dq '()
                             (list `(list (name a ,(bound)))
                                   `(list (name a ,(bound)))))
                         (make-hash)
                         L0
                         (hash (lvar 'a) 'number))
               #f)
-  (test-equal (check-dq (dq '()
+  (test (check-dq (dq '()
                             (list `(name a ,(bound))
                                   `(name b ,(bound))))
                         (make-hash (list (cons (lvar 'a) '(1 2 3))
@@ -70,29 +70,29 @@
     [(r-sum (s n_1) n_2 (s n_3))
      (r-sum n_1 n_2 n_3)])
   
-  (test-equal (judgment-holds (sum z (s z) (s z)))
+  (test (judgment-holds (sum z (s z) (s z)))
               #t)
   
-  (test-equal (judgment-holds (sum (s z) (s z) (s (s z))))
+  (test (judgment-holds (sum (s z) (s z) (s (s z))))
               #t)
   
-  (test-equal (generate-term nats #:satisfying (sum z (s z) n) +inf.0)
+  (test (generate-term nats #:satisfying (sum z (s z) n) +inf.0)
               '(sum z (s z) (s z)))
   
-  (test-equal (generate-term nats #:satisfying (sum (s z) (s z) n) +inf.0)
+  (test (generate-term nats #:satisfying (sum (s z) (s z) n) +inf.0)
               '(sum (s z) (s z) (s (s z))))
   
-  (test-equal (generate-term nats #:satisfying (sum z z (s z)) 5)
+  (test (generate-term nats #:satisfying (sum z z (s z)) 5)
               #f)
   
   (for ([_ 100])
     (match (generate-term nats #:satisfying (sum n_1 n_2 n_3) 5)
       [`(sum ,l ,r ,res)
-       (test-equal (judgment-holds (sum ,l ,r n) n)
+       (test (judgment-holds (sum ,l ,r n) n)
                    `(,res))])
     (match (generate-term nats #:satisfying (r-sum n_1 n_2 n_3) 5)
       [`(r-sum ,l ,r ,res)
-       (test-equal (term (r-sum ,l ,r ,res))
+       (test (term (r-sum ,l ,r ,res))
                    #t)])))
 
 (let ()
@@ -133,7 +133,7 @@
     (match (generate-term lists #:satisfying (not-in a l) 5)
       [`(not-in a ,l)
        (unless (judgment-holds (not-in a ,l)) (printf "l: ~s\n" l))
-       (test-equal (judgment-holds (not-in a ,l))
+       (test (judgment-holds (not-in a ,l))
                    #t)]
       [#f
        (void)])))
@@ -150,7 +150,7 @@
      (tree T_2)]
     [(tree (L number))])
   
-  (test-equal
+  (test
    (not
     (empty?
      (filter
@@ -176,7 +176,7 @@
     (define t (generate-term simple #:satisfying (double e_1 e_2) +inf.0))
     (match t
       [`(double ,e1 ,e2)
-       (test-equal (judgment-holds (double ,e1 ,e2))
+       (test (judgment-holds (double ,e1 ,e2))
                    #t)]
       [#f
        (void)]))
@@ -200,29 +200,29 @@
     [(double2 e_1 e_2)
      (where e_2 (duplicate e_1))])
   
-  (test-equal (term (duplicate 1 2))
+  (test (term (duplicate 1 2))
               '(+ (+ 1 1) (+ 2 2)))
   
-  (test-equal (term (duplicate 1))
+  (test (term (duplicate 1))
               '(+ 1 1 1))
   
-  (test-equal (term (duplicate 2 2))
+  (test (term (duplicate 2 2))
               '(+ 2 2 2))
   
-  (test-equal (judgment-holds (double2 (+ 1 2) (+ (+ 1 1) (+ 2 2))))
+  (test (judgment-holds (double2 (+ 1 2) (+ (+ 1 1) (+ 2 2))))
               #t)
   
-  (test-equal (judgment-holds (double2 1 (+ 1 1 1)))
+  (test (judgment-holds (double2 1 (+ 1 1 1)))
               #t)
   
-  (test-equal (judgment-holds (double2 (+ 2 2) (+ 2 2 2)))
+  (test (judgment-holds (double2 (+ 2 2) (+ 2 2 2)))
               #t)
   
   (for ([_ 100])
     (define t (generate-term simple #:satisfying (double2 e_1 e_2) +inf.0))
     (match t
       [`(double2 ,e1 ,e2)
-       (test-equal (judgment-holds (double2 ,e1 ,e2))
+       (test (judgment-holds (double2 ,e1 ,e2))
                    #t)]
       [#f
        (void)])))
@@ -270,15 +270,15 @@
      (typ-if Γ e_2 τ)
      (typ-if Γ e_3 τ)])
   
-  (test-equal (generate-term STLC
+  (test (generate-term STLC
                              #:satisfying
                              (lookup x ([x int] ([x (int → int)] •))) = (int → int)
                              6)
               #f)
   
-  (test-equal (judgment-holds (typeof ([x_1 int] ([x_1 (int → int)] •)) (x_1 5) int))
+  (test (judgment-holds (typeof ([x_1 int] ([x_1 (int → int)] •)) (x_1 5) int))
               #f)
-  (test-equal (judgment-holds (typeof ([x_2 int] ([x_1 (int → int)] •)) (x_1 5) int))
+  (test (judgment-holds (typeof ([x_2 int] ([x_1 (int → int)] •)) (x_1 5) int))
               #t)
   
   (for ([_ 100])
@@ -286,7 +286,7 @@
     (match term
       [`(typeof ,g ,e ,t)
        (define tp (judgment-holds (typeof ,g ,e τ) τ))
-       (test-equal tp `(,t))]
+       (test tp `(,t))]
       [#f
        (void)]))
   
@@ -295,18 +295,18 @@
     (match term
       [`(typ-if ,g ,e ,t)
        (define tp (judgment-holds (typ-if ,g ,e τ) τ))
-       (test-equal tp `(,t))]
+       (test tp `(,t))]
       [#f
        (void)]))
   
   (define g (redex-generator STLC (typeof • e τ) 5))
   (define terms (filter values (for/list ([_ 400]) (g))))
-  (test-equal (length terms)
+  (test (length terms)
               (length (remove-duplicates terms)))
   (map (match-lambda
          [`(typeof ,g ,e ,t)
           (define tp (judgment-holds (typeof ,g ,e τ) τ))
-          (test-equal tp `(,t))])
+          (test tp `(,t))])
        terms)
   (void)
   )
@@ -330,9 +330,9 @@
     #:mode (filtered I I O)
     [(filtered e n (fltr n e))])
   
-  (test-equal (generate-term l #:satisfying (filtered (1 (2 (3 (4 •)))) 3 (1 (2 (4 •)))) +inf.0)
+  (test (generate-term l #:satisfying (filtered (1 (2 (3 (4 •)))) 3 (1 (2 (4 •)))) +inf.0)
               '(filtered (1 (2 (3 (4 •)))) 3 (1 (2 (4 •)))))
-  (test-equal (generate-term l #:satisfying (filtered (1 (2 (3 (4 •)))) 5 (1 (2 (4 •)))) +inf.0)
+  (test (generate-term l #:satisfying (filtered (1 (2 (3 (4 •)))) 5 (1 (2 (4 •)))) +inf.0)
               #f)
   
   (for ([_ 50])
@@ -340,7 +340,7 @@
     (match term
       [`(filtered ,e1 ,n ,e2)
        (define tp (judgment-holds (filtered ,e1 ,n e_2) e_2))
-       (test-equal tp `(,e2))]
+       (test tp `(,e2))]
       [#f
        (void)]))
   
@@ -348,17 +348,17 @@
     (define t (generate-term l #:satisfying (fltr n e) = e_1 5))
     (match t
       [`((fltr ,n ,e) = ,e1)
-       (test-equal (term (fltr ,n ,e)) e1)]
+       (test (term (fltr ,n ,e)) e1)]
       [#f
        (void)]))
   
   (define g (redex-generator l (fltr n e_1) = e_2 5))
   (define terms (filter values (for/list ([_ 50]) (g))))
-  (test-equal (length terms)
+  (test (length terms)
               (length (remove-duplicates terms)))
   (map (match-lambda
          [`((fltr ,n ,e) = ,e1)
-          (test-equal (term (fltr ,n ,e)) e1)])
+          (test (term (fltr ,n ,e)) e1)])
        terms)
   (void))
 
@@ -386,56 +386,56 @@
     [(is-a/b/c/d/e? e) T])
   
   
-  (test-equal (generate-term L #:satisfying (is-a? a) = any +inf.0)
+  (test (generate-term L #:satisfying (is-a? a) = any +inf.0)
               '((is-a? a) = T))
-  (test-equal (generate-term L #:satisfying (is-a? b) = any +inf.0)
+  (test (generate-term L #:satisfying (is-a? b) = any +inf.0)
               '((is-a? b) = F))
-  (test-equal (generate-term L #:satisfying (is-a? c) = any +inf.0)
+  (test (generate-term L #:satisfying (is-a? c) = any +inf.0)
               '((is-a? c) = F))
-  (test-equal (generate-term L #:satisfying (is-a/b? a) = any +inf.0)
+  (test (generate-term L #:satisfying (is-a/b? a) = any +inf.0)
               '((is-a/b? a) = T))
-  (test-equal (generate-term L #:satisfying (is-a/b? b) = any +inf.0)
+  (test (generate-term L #:satisfying (is-a/b? b) = any +inf.0)
               '((is-a/b? b) = T))
-  (test-equal (generate-term L #:satisfying (is-a/b? c) = any +inf.0)
+  (test (generate-term L #:satisfying (is-a/b? c) = any +inf.0)
               '((is-a/b? c) = F))
   
-  (test-equal (generate-term L #:satisfying (is-a? a) = F +inf.0)
+  (test (generate-term L #:satisfying (is-a? a) = F +inf.0)
               #f)
-  (test-equal (generate-term L #:satisfying (is-a? b) = T +inf.0)
+  (test (generate-term L #:satisfying (is-a? b) = T +inf.0)
               #f)
-  (test-equal (generate-term L #:satisfying (is-a? c) = T +inf.0)
+  (test (generate-term L #:satisfying (is-a? c) = T +inf.0)
               #f)
-  (test-equal (generate-term L #:satisfying (is-a/b? a) = F +inf.0)
+  (test (generate-term L #:satisfying (is-a/b? a) = F +inf.0)
               #f)
-  (test-equal (generate-term L #:satisfying (is-a/b? b) = F +inf.0)
+  (test (generate-term L #:satisfying (is-a/b? b) = F +inf.0)
               #f)
-  (test-equal (generate-term L #:satisfying (is-a/b? c) = T +inf.0)
+  (test (generate-term L #:satisfying (is-a/b? c) = T +inf.0)
               #f)
   
-  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? a) = any +inf.0)
+  (test (generate-term L #:satisfying (is-a/b/c/d/e? a) = any +inf.0)
               '((is-a/b/c/d/e? a) = T))
-  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? b) = any +inf.0)
+  (test (generate-term L #:satisfying (is-a/b/c/d/e? b) = any +inf.0)
               '((is-a/b/c/d/e? b) = T))
-  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? c) = any +inf.0)
+  (test (generate-term L #:satisfying (is-a/b/c/d/e? c) = any +inf.0)
               '((is-a/b/c/d/e? c) = T))
-  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? d) = any +inf.0)
+  (test (generate-term L #:satisfying (is-a/b/c/d/e? d) = any +inf.0)
               '((is-a/b/c/d/e? d) = T))
-  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? e) = any +inf.0)
+  (test (generate-term L #:satisfying (is-a/b/c/d/e? e) = any +inf.0)
               '((is-a/b/c/d/e? e) = T))
-  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? f) = any +inf.0)
+  (test (generate-term L #:satisfying (is-a/b/c/d/e? f) = any +inf.0)
               '((is-a/b/c/d/e? f) = F))
   
-  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? a) = F +inf.0)
+  (test (generate-term L #:satisfying (is-a/b/c/d/e? a) = F +inf.0)
               #f)
-  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? b) = F +inf.0)
+  (test (generate-term L #:satisfying (is-a/b/c/d/e? b) = F +inf.0)
               #f)
-  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? c) = F +inf.0)
+  (test (generate-term L #:satisfying (is-a/b/c/d/e? c) = F +inf.0)
               #f)
-  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? d) = F +inf.0)
+  (test (generate-term L #:satisfying (is-a/b/c/d/e? d) = F +inf.0)
               #f)
-  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? e) = F +inf.0)
+  (test (generate-term L #:satisfying (is-a/b/c/d/e? e) = F +inf.0)
               #f)
-  (test-equal (generate-term L #:satisfying (is-a/b/c/d/e? f) = T +inf.0)
+  (test (generate-term L #:satisfying (is-a/b/c/d/e? f) = T +inf.0)
               #f))
 
 ;; errors for unsupprted pats
@@ -503,7 +503,7 @@
     [(n any) any])
   (define-metafunction L
     [(f n) (n 1)])
-  (test-equal (generate-term L #:satisfying (f any_1) = any_2 +inf.0)
+  (test (generate-term L #:satisfying (f any_1) = any_2 +inf.0)
               '((f 2) = (2 1))))
 
 (let ()
@@ -512,7 +512,7 @@
     [(n any) any])
   (define-metafunction L
     [(f n) n])
-  (test-equal (generate-term L #:satisfying (f any_1) = any_2 +inf.0)
+  (test (generate-term L #:satisfying (f any_1) = any_2 +inf.0)
               '((f 2) = 2)))
 
 (let ()
@@ -529,25 +529,25 @@
     [(t n_1 n_2)
      4])
   
-  (test-equal (generate-term l #:satisfying (t 1 1) = 1 +inf.0)
+  (test (generate-term l #:satisfying (t 1 1) = 1 +inf.0)
               '((t 1 1) = 1))
-  (test-equal (generate-term l #:satisfying (t 1 1) = 2 +inf.0)
+  (test (generate-term l #:satisfying (t 1 1) = 2 +inf.0)
               #f)
-  (test-equal (generate-term l #:satisfying (t 1 2) = 2 +inf.0)
+  (test (generate-term l #:satisfying (t 1 2) = 2 +inf.0)
               '((t 1 2) = 2))
-  (test-equal (generate-term l #:satisfying (t 1 2) = 3 +inf.0)
+  (test (generate-term l #:satisfying (t 1 2) = 3 +inf.0)
               #f)
-  (test-equal (generate-term l #:satisfying (t 1 3) = 3 +inf.0)
+  (test (generate-term l #:satisfying (t 1 3) = 3 +inf.0)
               '((t 1 3) = 3))
-  (test-equal (generate-term l #:satisfying (t 1 3) = 4 +inf.0)
+  (test (generate-term l #:satisfying (t 1 3) = 4 +inf.0)
               #f)
-  (test-equal (generate-term l #:satisfying (t 6 7) = 4 +inf.0)
+  (test (generate-term l #:satisfying (t 6 7) = 4 +inf.0)
               '((t 6 7) = 4))
-  (test-equal (generate-term l #:satisfying (t 6 7) = 3 +inf.0)
+  (test (generate-term l #:satisfying (t 6 7) = 3 +inf.0)
               #f)
-  (test-equal (generate-term l #:satisfying (t 6 7) = 2 +inf.0)
+  (test (generate-term l #:satisfying (t 6 7) = 2 +inf.0)
               #f)
-  (test-equal (generate-term l #:satisfying (t 6 7) = 1 +inf.0)
+  (test (generate-term l #:satisfying (t 6 7) = 1 +inf.0)
               #f))
 
 
@@ -562,11 +562,11 @@
     [(or-eval (or (or e_1 e_2) e_3)) (or-eval (or e_1 (or e_2 e_3)))]
     [(or-eval (or F e)) (or-eval e)])
   
-  (test-equal (generate-term L #:satisfying (or-eval F) +inf.0)
+  (test (generate-term L #:satisfying (or-eval F) +inf.0)
               #f)
-  (test-equal (generate-term L #:satisfying (or-eval T) +inf.0)
+  (test (generate-term L #:satisfying (or-eval T) +inf.0)
               '(or-eval T))
-  (test-equal (generate-term L #:satisfying (or-eval (or (or F F) T)) +inf.0)
+  (test (generate-term L #:satisfying (or-eval (or (or F F) T)) +inf.0)
               '(or-eval (or (or F F) T))))
 
 (let ()
@@ -691,13 +691,13 @@
     [(J any_1 1)])
   
   
-  (test-equal (generate-term L0
+  (test (generate-term L0
                              #:satisfying
                              (f (any_1 any_2)) = 1
                              +inf.0)
               #f)
   
-  (test-equal (not
+  (test (not
                (generate-term L0
                               #:satisfying
                               (f (any_1 any_2)) = 2
