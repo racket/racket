@@ -190,7 +190,10 @@
    get-definitions-text
    get-interactions-canvas
    get-definitions-canvas
-   get-unit-frame))
+   get-unit-frame
+   
+   allow-re-extension!
+   disallow-re-extension!))
 
 (define-signature drracket:unit-cm^
   (tab%
