@@ -1,5 +1,6 @@
 #lang racket/base
 (require "arrow.rkt"
+         "arr-i.rkt"
          "guts.rkt"
          "prop.rkt"
          "misc.rkt"
@@ -80,15 +81,14 @@
 
 
 (define (make-mixin-contract . %/<%>s)
-  (->d ([c% (and/c (flat-contract class?)
+  (->i ([c% (and/c (flat-contract class?)
                    (apply and/c (map sub/impl?/c %/<%>s)))])
-       ()
-       [res (subclass?/c c%)]))
+       [res (c%) (subclass?/c c%)]))
 
 (define (subclass?/c %)
   (unless (class? %)
     (raise-argument-error 'subclass?/c
-                          'class?
+                          "class?"
                           %))
   (define name (object-name %))
   (flat-named-contract
@@ -98,7 +98,7 @@
 (define (implementation?/c <%>)
   (unless (interface? <%>)
     (raise-argument-error 'implementation?/c
-                          'interface?
+                          "interface?"
                           <%>))
   (define name (object-name <%>))
   (flat-named-contract
@@ -131,4 +131,4 @@
      [else `(is-a?/c unknown<%>)])
    (lambda (x) (is-a? x <%>))))
 
-(define mixin-contract (->d ([c% class?]) () [res (subclass?/c c%)]))
+(define mixin-contract (->i ([c% class?]) [res (c%) (subclass?/c c%)]))
