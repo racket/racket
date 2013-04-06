@@ -4,6 +4,7 @@ racket/udp: added multicast support: udp-multicast-join-group!,
  udp-multicast-set-interface!, udp-multicast-set-loopback!,
  udp-multicast-loopback?, udp-multicast-set-ttl!,
  udp-multicast-ttl
+racket/udp: added reuse? argument to udp-bind!
 scribble/eval: extended make-base-eval to be more like
  make-evaluator
 
