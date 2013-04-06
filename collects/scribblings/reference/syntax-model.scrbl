@@ -1015,10 +1015,11 @@ and only if no module-level binding is @racket[set!]ed.
                 (@#,racket[quote] cross-datum)
                 (#%plain-lambda formals expr ...+)
                 (case-lambda (formals expr ...+) ...)
-                (#%plain-app cons expr ...+)
-                (#%plain-app list expr ...+)
-                (#%plain-app make-struct-type expr ...+)
-                (#%plain-app make-struct-type-property expr ...+)]
+                (#%plain-app cons cross-expr ...+)
+                (#%plain-app list cross-expr ...+)
+                (#%plain-app make-struct-type cross-expr ...+)
+                (#%plain-app make-struct-type-property
+                             cross-expr ...+)]
 [cross-datum     number
                  boolean
                  identifier
