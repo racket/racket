@@ -643,7 +643,7 @@ function UncompactUrl(url) {
 
 function UncompactHtml(x) {
   if (typeof x == "string") {
-    return SanitizeHTML(x);
+    return x;
   } else if (!(x instanceof Array)) {
     return alert("Internal error in PLT docs");
   } else if ((x.length == 2) && (typeof(x[0]) == "number")) {
