@@ -101,23 +101,29 @@ can be referenced in documentation prose using the @racket[racket]
 form.}
 
 @defform/subs[#:literals (-> ->i ->d values)
-              (proc-doc id contract (desc-expr ...))
+              (proc-doc id contract maybe-defs (desc-expr ...))
               ([contract (-> result)
-                         (->i (arg ...) () (values ress ...))
-                         (->i (arg ...) () #:pre (pre-id ...) condition (values ress ...))
-                         (->i (arg ...) () res)
-                         (->i (arg ...) () #:pre (pre-id ...) condition [name res])
-                         (->i (arg ...) () #:rest rest res)
+                         (->i (arg ...) (opt ...) maybe-pre [id res])
+                         (->i (arg ...) (opt ...) maybe-pre (values [id res] ...))
+                         (->i (arg ...) (opt ...) #:rest rest [id result-expr])
 
-                         (->d (arg ...) () (values [id result] ...))
-                         (->d (arg ...) () #:pre-cond expr (values [id result] ...))
-                         (->d (arg ...) () [id result])
-                         (->d (arg ...) () #:pre-cond expr [id result])
-                         (->d (arg ...) () #:rest id rest [id result])])]{
+                         (->d (arg ...) () maybe-precond (values [id result] ...))
+                         (->d (arg ...) () maybe-precond [id result])
+                         (->d (arg ...) () #:rest id rest [id result])]
+               [maybe-pre (code:line)
+                          (code:line #:pre (pre-id ...) condition)]
+               [maybe-defs (code:line)
+                           (default-expr default-expr ...)])]{
 
 Like @racket[proc-doc], but supporting contract forms that embed
-argument names. Only a subset of @racket[->i] and @racket[->d] forms are
-currently supported.}
+argument identifiers. Only a subset of @racket[->i] and @racket[->d] forms are
+currently supported.
+
+If the sequence of optional arguments, @racket[(opt ...)] is empty then
+the @racket[maybe-arg-desc] must be not be present. If it is non-empty,
+then it must have as many default expressions are there are optional
+arguments.
+}
 
 
 @defform[(thing-doc id contract-expr dec-expr)]{
