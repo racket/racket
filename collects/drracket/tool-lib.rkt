@@ -969,6 +969,7 @@ all of the names in the tools library, for use defining keybindings
  ;   ;;;;                                                                 
  
  
+ 
  (proc-doc/names
   drracket:get/extend:extend-tab
   (->* ((make-mixin-contract drracket:unit:tab<%>))
@@ -1002,7 +1003,9 @@ all of the names in the tools library, for use defining keybindings
   
   @{Once this function is called, 
     @racket[drracket:get/extend:extend-interactions-text] 
-    raises an error, disallowing any more extensions.})
+    raises an error, disallowing any more extensions.
+    
+    See also @racket[drracket:get/extend:allow-re-extension!].})
  
  (proc-doc/names
   drracket:get/extend:extend-definitions-text
@@ -1014,7 +1017,9 @@ all of the names in the tools library, for use defining keybindings
   @{This text is used in the top window of DrRacket frames.
     
     The @racket[before] argument controls if the mixin is applied before or
-    after already installed mixins.})
+    after already installed mixins.
+    
+    See also @racket[drracket:get/extend:allow-re-extension!].})
  
  (proc-doc/names
   drracket:get/extend:get-definitions-text
@@ -1023,7 +1028,9 @@ all of the names in the tools library, for use defining keybindings
   
   @{Once this function is called,
     @racket[drracket:get/extend:extend-definitions-text] 
-    raises an error, disallowing any more extensions.})
+    raises an error, disallowing any more extensions.
+    
+    See also @racket[drracket:get/extend:allow-re-extension!].})
  
  (proc-doc/names
   drracket:get/extend:extend-interactions-canvas
@@ -1044,7 +1051,9 @@ all of the names in the tools library, for use defining keybindings
   
   @{Once this function is called, 
     @racket[drracket:get/extend:extend-interactions-canvas]
-    raises an error, disallowing any more extensions.})
+    raises an error, disallowing any more extensions.
+    
+    See also @racket[drracket:get/extend:allow-re-extension!].})
  
  (proc-doc/names
   drracket:get/extend:extend-definitions-canvas
@@ -1056,7 +1065,9 @@ all of the names in the tools library, for use defining keybindings
   @{This canvas is used in the top window of DrRacket frames.
     
     The @racket[before] argument controls if the mixin is applied before or
-    after already installed mixins.})
+    after already installed mixins.
+    
+    See also @racket[drracket:get/extend:allow-re-extension!].})
  
  (proc-doc/names
   drracket:get/extend:get-definitions-canvas
@@ -1065,7 +1076,9 @@ all of the names in the tools library, for use defining keybindings
   
   @{Once this function is called, 
     @racket[drracket:get/extend:extend-definitions-canvas]
-    raises an error, disallowing any more extensions.})
+    raises an error, disallowing any more extensions.
+    
+    See also @racket[drracket:get/extend:allow-re-extension!].})
  
  (proc-doc/names
   drracket:get/extend:extend-unit-frame
@@ -1077,7 +1090,9 @@ all of the names in the tools library, for use defining keybindings
   @{This is the frame that implements the main DrRacket window.
     
     The argument, @racket[before], controls if the mixin is applied before or
-    after already installed mixins.})
+    after already installed mixins.
+    
+    See also @racket[drracket:get/extend:allow-re-extension!].})
  
  (proc-doc/names
   drracket:get/extend:get-unit-frame
@@ -1086,9 +1101,24 @@ all of the names in the tools library, for use defining keybindings
   
   @{Once this function is called, 
     @racket[drracket:get/extend:extend-unit-frame]
-    raises an error, disallowing any more extensions.})
+    raises an error, disallowing any more extensions.
+    
+    See also @racket[drracket:get/extend:allow-re-extension!].})
  
+ (proc-doc/names
+  drracket:get/extend:disallow-re-extension!
+  (-> void?)
+  ()
+  @{Once this is called, re-extension of the mixins described in this
+    section is not allowed. This is the default state of mixin extension,
+    but it can be changed by @racket[drracket:get/extend:allow-re-extension!].})
  
+ (proc-doc/names
+  drracket:get/extend:allow-re-extension!
+  (-> void?)
+  ()
+  @{Once this is called, re-extension of the mixins described in this
+    section are now allowed.})
  
  ;                                                
  ;                                                

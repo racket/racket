@@ -13,6 +13,10 @@
         [prefix drracket:module-language-tools: drracket:module-language-tools^])
 (export drracket:get/extend^)
 
+(define re-extension-allowed? #f)
+(define (allow-re-extension!) (set! re-extension-allowed? #t))
+(define (disallow-re-extension!) (set! re-extension-allowed? #f))
+
 (define make-extender
   (λ (get-base% name [final-mixin values])
     (let ([extensions (λ (x) x)]
@@ -27,22 +31,26 @@
                      new%
                      (error 'extend-% "expected output of extension to create a subclass of its input, got: ~a"
                             new%)))))])
+      (define (add-extender extension [before? #t])
+        (when built-yet?
+          (cond
+            [re-extension-allowed? 
+             (set! built-yet? #f)]
+            [else
+             (error 'extender "cannot build a new extension of ~a after initialization"
+                    name)]))
+        (set! extensions 
+              (if before?
+                  (compose (verify extension) extensions)
+                  (compose extensions (verify extension)))))
+      (define (get-built)
+        (unless built-yet?
+          (set! built-yet? #t)
+          (set! built (final-mixin (extensions (get-base%)))))
+        built)
       (values
-       (letrec ([add-extender
-                 (λ (extension [before? #t])
-                   (when built-yet?
-                     (error 'extender "cannot build a new extension of ~a after initialization"
-                            name))
-                   (set! extensions 
-                         (if before?
-                             (compose (verify extension) extensions)
-                             (compose extensions (verify extension)))))])
-         add-extender)
-       (λ ()
-         (unless built-yet?
-           (set! built-yet? #t)
-           (set! built (final-mixin (extensions (get-base%)))))
-         built)))))
+       (procedure-rename add-extender (string->symbol (format "extend-~a" name)))
+       (procedure-rename get-built (string->symbol (format "get-~a" name)))))))
 
 (define (get-base-tab%)
   (drracket:module-language:module-language-online-expand-tab-mixin
