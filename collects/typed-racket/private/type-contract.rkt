@@ -129,7 +129,7 @@
         (loop t (not pos?) (not from-typed?) structs-seen kind))
       (define (t->c/fun f #:method [method? #f])
         (match f
-          [(Function: (list (top-arr:))) (if pos? #'(case->) #'procedure?)]
+          [(Function: (list (top-arr:))) #'(case->)]
           [(Function: arrs)
            (set-chaperone!)
            ;; Try to generate a single `->*' contract if possible.
