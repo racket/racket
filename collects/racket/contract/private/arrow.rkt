@@ -1593,7 +1593,8 @@ v4 todo:
 (define-syntax (case-> stx)
   (syntax-case stx ()
     [(_ cases ...)
-     (begin 
+     (let ()
+       (define name (syntax-local-infer-name stx))
        (with-syntax ([(((dom-proj ...)
                         rst-proj
                         rng-proj
@@ -1624,7 +1625,11 @@ v4 todo:
                                       (λ (kwds kwd-args . args)
                                         (raise-blame-error blame f "expected no keywords, got keyword ~a" (car kwds)))
                                       (λ args
-                                        (apply (case-lambda [formals body] ...) args)))]
+                                        (apply #,(let ([case-lam (syntax/loc stx (case-lambda [formals body] ...))])
+                                                   (if name 
+                                                       #`(let ([#,name #,case-lam]) #,name)
+                                                       case-lam))
+                                               args)))]
                                     [same-rngs (same-range-projections (list (list rng-proj-x ...) ...))])
                                 (if same-rngs
                                     (wrapper
