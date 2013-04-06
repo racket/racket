@@ -462,18 +462,11 @@ or @secref["manual-deploy"].
 
 @subsection[#:tag "github-deploy"]{GitHub Deployment}
 
-First, @link["https://github.com/signup/free"]{create a free account} on GitHub,
-then @link["https://github.com/new"]{create a repository for your
-package} (@link["https://help.github.com/articles/create-a-repo"]{documentation}).
-Initialize the Git repository locally and do your first push like this:
-
-@commandline{git init}
-@commandline{git add *}
-@commandline{git commit -m "First commit"}
-@commandline{git remote add origin https://github.com/@nonterm{user}/@nonterm{package}.git}
-@commandline{git push -u origin master}
-
-Now, publish your package source as:
+First, @link["https://github.com/signup/free"]{create a free account}
+on GitHub, then
+@link["https://help.github.com/articles/create-a-repo"]{create a
+repository for your package}. After that, publish your package source
+as:
 
 @inset{@exec{github://github.com/@nonterm{user}/@nonterm{package}/@nonterm{branch}}}
 
