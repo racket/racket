@@ -1,3 +1,10 @@
+Version 5.3.3.9
+racket/udp: added multicast support: udp-multicast-join-group!,
+ udp-multicast-leave-group!, udp-multicast-interface,
+ udp-multicast-set-interface!, udp-multicast-set-loopback!,
+ udp-multicast-loopback?, udp-multicast-set-ttl!,
+ udp-multicast-ttl
+
 Version 5.3.3.8
 slideshow/pict: added color% objects to text-style/c
 scriblib/figure: add #:continue? option
