@@ -602,54 +602,68 @@ or @racket[0] if the socket is unconnected.
 
 If the given port has been closed, the @exnraise[exn:fail:network].}
 
-@defproc[(udp-multicast-loopback? [udp-port udp?]) boolean?]{
-Retrieves the @tt{IP_MULTICAST_LOOP} setting of the given socket.
-Returns @racket[#t] if the socket will receive datagrams it sends to
-its own multicast addresses, and @racket[#f] otherwise.}
 
-@defproc[(udp-multicast-set-loopback! [udp-port udp?] [loopback? any/c]) void?]{
-Sets the @tt{IP_MULTICAST_LOOP} setting of the given socket. If
-@racket[loopback?] is non-@racket[#f], enables self-receipt of
-multicast datagrams sent on the socket; if @racket[#f], disables
-self-receipt.}
+@deftogether[(
+@defproc[(udp-multicast-join-group! [udp-socket udp?]
+				    [multicast-addr string?]
+				    [hostname (or/c string? #f)]) void?]
+@defproc[(udp-multicast-leave-group! [udp-socket udp?]
+				     [multicast-addr string?]
+				     [hostname (or/c string? #f)]) void?]
+)]{
+Adds or removes @racket[udp-socket] to a named multicast group.
 
-@defproc[(udp-multicast-ttl [udp-port udp?]) byte?]{
-Retrieves the current @tt{IP_MULTICAST_TTL} setting of the given
-socket. This will almost always be 1.}
+The @racket[multicast-addr] argument must be a valid IPv4 multicast
+IP address; for example, @racket["224.0.0.251"] is the appropriate
+address for the mDNS protocol. The @racket[hostname] argument selects the
+interface that the socket uses to receive (not send) multicast datagrams;
+if @racket[hostname] is @racket[#f] or @racket["0.0.0.0"], the kernel
+selects an interface automatically.
 
-@defproc[(udp-multicast-set-ttl! [udp-port udp?] [ttl byte?]) void?]{
-Change the @tt{IP_MULTICAST_TTL} setting of the given socket. It is
-very important that this number be as low as possible; usually 1 is
-what you want. In fact, it is @emph{very} seldom that this routine
-will need to be called at all. See the documentation for your
-operating system's IP stack.}
+Leaving a group requires the same @racket[multicast-addr] and
+@racket[hostname] arguments that were used to join the group.}
 
-@defproc[(udp-multicast-interface [udp-port udp?]) string?]{
-Retrieve the interface the socket will @emph{send} multicast datagrams
-on. If this is @racket["0.0.0.0"], the kernel will automatically select an
+
+
+@deftogether[(
+@defproc[(udp-multicast-interface [udp-socket udp?]) string?]
+@defproc[(udp-multicast-set-interface! [udp-socket udp?]
+				       [hostname (or/c string? #f)])
+	void?]
+)]{
+
+Retrieves or sets the interface that @racket[udp-socket] uses to
+send (not receive) multicast datagrams. If the result or @racket[hostname] is either
+@racket[#f] or @racket["0.0.0.0"], the kernel automatically selects an
 interface when a multicast datagram is sent.}
 
-@defproc[(udp-multicast-set-interface! [udp-port udp?]
-				       [ifname (or/c string? #f)])
-	void?]{
-Set the interface the socket is to use to @emph{send} multicast
-datagrams on. If @racket[ifname] is either @racket[#f] or
-@racket["0.0.0.0"], the kernel will automatically select an interface
-when a multicast datagram is sent.}
 
-@defproc[(udp-multicast-join-group! [udp-port udp?]
-				    [multicast-addr string?]
-				    [ifname (or/c string? #f)]) void?]{}
-@defproc[(udp-multicast-leave-group! [udp-port udp?]
-				     [multicast-addr string?]
-				     [ifname (or/c string? #f)]) void?]{
-Join or leave the named multicast group. @racket[multicast-addr]
-should be a valid IPv4 multicast IP address; for example,
-@racket["224.0.0.251"] is the appropriate address for the mDNS
-protocol. @racket[ifname] selects the interface the socket is to use
-in order to @emph{receive} multicast datagrams. If it is @racket[#f]
-or @racket["0.0.0.0"], the kernel will select an interface
-automatically.
+@deftogether[(
+@defproc[(udp-multicast-set-loopback! [udp-socket udp?] [loopback? any/c]) void?]
+@defproc[(udp-multicast-loopback? [udp-socket udp?]) boolean?]
+)]{
 
-Leaving a group requires specification of the same parameters that
-were used to join the group.}
+@margin-note{Loopback settings correspond to the
+@as-index{@tt{IP_MULTICAST_LOOP}} setting of the socket.}
+
+Sets or checks whether @racket[udp-socket] receives its own multicast
+datagrams: a @racket[#t] result or a true value for @racket[loopback?]
+indicates that self-receipt is enabled, and @racket[#f] indicates that
+self-receipt is disabled.}
+
+
+@deftogether[(
+@defproc[(udp-multicast-set-ttl! [udp-socket udp?] [ttl byte?]) void?]
+@defproc[(udp-multicast-ttl [udp-socket udp?]) byte?]
+)]{
+
+@margin-note{Time-to-live settings correspond to the
+@as-index{@tt{IP_MULTICAST_TTL}} setting of the socket.}
+
+Sets or retrieves the current time-to-live setting of
+@racket[udp-socket].
+
+The time-to-live setting should almost always be 1, and it is
+important that this number is as low as possible. In fact, these
+functions seldom should be used at all. See the documentation for your
+platform's IP stack.}
