@@ -148,14 +148,7 @@
 (define-syntax-rule (provide/doc form ...)
   (provide form ...))
 
-(define-for-syntax (remove->i-deps stx)
-  (syntax-case stx ()
-    [(id (id2 ...) ctc)
-     #'(id ctc)]
-    [(id ctc)
-     #'(id ctc)]
-    [else
-     (error 'remove->i-deps "unknown thing ~s" stx)]))
+
 
 (provide define-provide/doc-transformer
          (for-syntax
@@ -174,96 +167,153 @@
   (define-syntax id
     (make-provide/doc-transformer rhs)))
 
-
-(define-provide/doc-transformer proc-doc
-  (lambda (stx)
+(module transformers racket/base
+  (require (for-template racket/base racket/contract)
+           racket/contract)
+  (provide proc-doc-transformer proc-doc/names-transformer)
+  
+  (define (remove->i-deps stx-lst arg?)
+    (let loop ([stx-lst stx-lst])
+      (cond
+        [(null? stx-lst) '()]
+        [else
+         (define fst (car stx-lst))
+         (syntax-case fst ()
+           [kwd
+            (and arg? (keyword? (syntax-e #'kwd)))
+            (let ()
+              (when (null? (cdr stx-lst))
+                (raise-syntax-error 'proc-doc "expected something to follow keyword" stx-lst))
+              (define snd (cadr stx-lst))
+              (syntax-case snd ()
+                [(id (id2 ...) ctc)
+                 (cons #'(kwd id ctc) (loop (cddr stx-lst)))]
+                [(id ctc)
+                 (cons #'(kwd id ctc) (loop (cddr stx-lst)))]
+                [else
+                 (raise-syntax-error 'proc-doc "unknown argument spec in ->i" snd)]))]
+           [(id (id2 ...) ctc)
+            (cons #'(id ctc) (loop (cdr stx-lst)))]
+           [(id ctc)
+            (cons #'(id ctc) (loop (cdr stx-lst)))]
+           [else
+            (raise-syntax-error 'proc-doc (if arg? "unknown argument spec in ->i" "unknown result spec in ->i") fst)])])))
+  
+  (define (proc-doc-transformer stx)
     (syntax-case stx ()
-      [(_ id contract desc)
-       (with-syntax ([(header result (body-stuff ...))
-                      (syntax-case #'contract (->d ->i -> values)
-                        [(->d (req ...) () (values [name res] ...))
-                         #'((id req ...) (values res ...) ())]
-                        [(->d (req ...) () #:pre-cond condition (values [name res] ...))
-                         #'((id req ...) (values res ...) ((bold "Pre-condition: ") (racket condition) "\n" "\n"))]
-                        [(->d (req ...) () [name res])
-                         #'((id req ...) res ())]
-                        [(->d (req ...) () #:pre-cond condition [name res])
-                         #'((id req ...) res ((bold "Pre-condition: ")  (racket condition) "\n" "\n" ))]
-                        [(->d (req ...) () #:rest rest rest-ctc [name res])
-                         #'((id req ... [rest rest-ctc] (... ...)) res ())]
-                        [(->d (req ...) (one more ...) whatever)
-                         (raise-syntax-error
-                          #f
-                          (format "unsupported ->d contract form for ~a, optional arguments non-empty, must use proc-doc/names"
-                                  (syntax->datum #'id))
-                          stx
-                          #'contract)]
-                        [(->d whatever ...) 
-                         (raise-syntax-error
-                          #f
-                          (format "unsupported ->d contract form for ~a" (syntax->datum #'id))
-                          stx
-                          #'contract)]
-                        
-                        [(->i (req ...) () (values ress ...))
-                         (with-syntax ([(req ...) (map remove->i-deps (syntax->list #'(req ...)))]
-                                       [([name res] ...) (map remove->i-deps (syntax->list #'(req ...)))])
-                           #'((id req ...) (values res ...) ()))]
-                        [(->i (req ...) () #:pre (pre-id ...) condition (values ress ...))
-                         (with-syntax ([(req ...) (map remove->i-deps (syntax->list #'(req ...)))]
-                                       [([name res] ...) (map remove->i-deps (syntax->list #'(req ...)))])
-                           #'((id req ...) (values res ...) ((bold "Pre-condition: ") (racket condition) "\n" "\n")))]
-                        [(->i (req ...) () res)
-                         (with-syntax ([(req ...) (map remove->i-deps (syntax->list #'(req ...)))]
-                                       [[name res] (remove->i-deps #'res)])
-                           #'((id req ...) res ()))]
-                        [(->i (req ...) () #:pre (pre-id ...) condition [name res])
-                         (with-syntax ([(req ...) (map remove->i-deps (syntax->list #'(req ...)))]
-                                       [[name res] (remove->i-deps #'res)])
-                           #'((id req ...) res ((bold "Pre-condition: ")  (racket condition) "\n" "\n" )))]
-                        [(->i (req ...) () #:rest rest res)
-                         (with-syntax ([(req ...) (map remove->i-deps (syntax->list #'(req ...)))]
-                                       [[name res] (remove->i-deps #'res)]
-                                       [[name-t rest-ctc] (remove->i-deps #'rest)])
-                           #'((id req ... [name-t rest-ctc] (... ...)) res ()))]
-                        [(->i (req ...) (one more ...) whatever)
-                         (raise-syntax-error
-                          #f
-                          (format "unsupported ->i contract form for ~a, optional arguments non-empty, must use proc-doc/names"
-                                  (syntax->datum #'id))
-                          stx
-                          #'contract)]
-                        [(->i whatever ...) 
-                         (raise-syntax-error
-                          #f
-                          (format "unsupported ->i contract form for ~a" (syntax->datum #'id))
-                          stx
-                          #'contract)]
-                        
-                        [(-> result)
-                         #'((id) result ())]
-                        [(-> whatever ...) 
-                         (raise-syntax-error
-                          #f
-                          (format "unsupported -> contract form for ~a, must use proc-doc/names if there are arguments"
-                                  (syntax->datum #'id))
-                          stx
-                          #'contract)]
-                        [(id whatever ...)
-                         (raise-syntax-error
-                          #f
-                          (format "unsupported ~a contract form (unable to synthesize argument names)" (syntax->datum #'id))
-                          stx
-                          #'contract)])])
+      [(_ id contract . desc+stuff)
+       (let ()
+         (define (one-desc desc+stuff)
+           (syntax-case desc+stuff ()
+             [(desc) #'desc]
+             [() (raise-syntax-error 'proc-doc "expected a description expression" stx)]
+             [(a b . c) (raise-syntax-error 'proc-doc "expected just a single description expression" stx #'a)]))
+         (define (parse-opts opts desc+stuff)
+           (syntax-case opts ()
+             [() #`(() #,(one-desc desc+stuff))]
+             [(opt ...)
+              (with-syntax ([(opt ...) (remove->i-deps (syntax->list #'(opt ...)) #t)])
+                (syntax-case desc+stuff ()
+                  [((defaults ...) . desc+stuff)
+                   (let ()
+                     (define def-list (syntax->list #'(defaults ...)))                
+                     (define opt-list (syntax->list #'(opt ...)))
+                     (unless (= (length def-list) (length opt-list))
+                       (raise-syntax-error 'proc-doc
+                                           (format "expected ~a default values, but got ~a"
+                                                   (length opt-list) (length def-list))
+                                           stx
+                                           opts))
+                     #`(#,(for/list ([opt (in-list opt-list)]
+                                     [def (in-list def-list)])
+                            (syntax-case opt ()
+                              [(id ctc)
+                               #`(id ctc #,def)]
+                              [(kwd id ctc)
+                               #`(kwd id ctc #,def)]))
+                        #,(one-desc #'desc+stuff)))]))]))
+         (define-values (header result body-extras desc)
+           (syntax-case #'contract (->d ->i -> values)
+             [(->d (req ...) () (values [name res] ...))
+              (values #'(id req ...) #'(values res ...) #'() (one-desc #'desc+stuff))]
+             [(->d (req ...) () #:pre-cond condition (values [name res] ...))
+              (values #'(id req ...) #'(values res ...) #'((bold "Pre-condition: ") (racket condition) "\n" "\n") (one-desc #'desc+stuff))]
+             [(->d (req ...) () [name res])
+              (values #'(id req ...) #'res #'() (one-desc #'desc+stuff))]
+             [(->d (req ...) () #:pre-cond condition [name res])
+              (values #'(id req ...) #'res #'((bold "Pre-condition: ")  (racket condition) "\n" "\n" ) (one-desc #'desc+stuff))]
+             [(->d (req ...) () #:rest rest rest-ctc [name res])
+              (values #'(id req ... [rest rest-ctc] (... ...)) #'res #'() (one-desc #'desc+stuff))]
+             [(->d (req ...) (one more ...) whatever)
+              (raise-syntax-error
+               #f
+               (format "unsupported ->d contract form for ~a, optional arguments non-empty, must use proc-doc/names"
+                       (syntax->datum #'id))
+               stx
+               #'contract)]
+             [(->d whatever ...) 
+              (raise-syntax-error
+               #f
+               (format "unsupported ->d contract form for ~a" (syntax->datum #'id))
+               stx
+               #'contract)]
+             
+             [(->i (req ...) (opt ...) (values ress ...))
+              (with-syntax ([(req ...) (remove->i-deps (syntax->list #'(req ...)) #t)]
+                            [((opt ...) desc) (parse-opts #'(opt ...) #'desc+stuff)]
+                            [([name res] ...) (remove->i-deps (syntax->list #'(req ...)) #f)])
+                (values #'(id req ... opt ...) #'(values res ...) #'() #'desc))]
+             [(->i (req ...) (opt ...) #:pre (pre-id ...) condition (values ress ...))
+              (with-syntax ([(req ...) (remove->i-deps (syntax->list #'(req ...)) #t)]
+                            [((opt ...) desc) (parse-opts #'(opt ...) #'desc+stuff)]
+                            [([name res] ...) (remove->i-deps (syntax->list #'(req ...)) #f)])
+                (values #'(id req ... opt ...) #'(values res ...) #'((bold "Pre-condition: ") (racket condition) "\n" "\n") #'desc))]
+             [(->i (req ...) (opt ...) res)
+              (with-syntax ([(req ...) (remove->i-deps (syntax->list #'(req ...)) #t)]
+                            [((opt ...) desc) (parse-opts #'(opt ...) #'desc+stuff)]
+                            [([name res]) (remove->i-deps (list #'res) #f)])
+                (values #'(id req ... opt ...) #'res #'() #'desc))]
+             [(->i (req ...) (opt ...) #:pre (pre-id ...) condition [name res])
+              (with-syntax ([(req ...) (remove->i-deps (syntax->list #'(req ...)) #t)]
+                            [((opt ...) desc) (parse-opts #'(opt ...) #'desc+stuff)]
+                            [([name res]) (remove->i-deps (list #'res) #f)])
+                (values #'(id req ... opt ...) #'res #'((bold "Pre-condition: ")  (racket condition) "\n" "\n" ) #'desc))]
+             [(->i (req ...) (opt ...) #:rest rest res)
+              (with-syntax ([(req ...) (remove->i-deps (syntax->list #'(req ...)) #t)]
+                            [((opt ...) desc) (parse-opts #'(opt ...) #'desc+stuff)]
+                            [([name-t rest-ctc]) (remove->i-deps (list #'rest) #t)]
+                            [([name res]) (remove->i-deps (list #'res) #f)])
+                (values #'(id req ... opt ... [name-t rest-ctc] (... ...)) #'res #'() #'desc))]
+             [(->i whatever ...) 
+              (raise-syntax-error
+               #f
+               (format "unsupported ->i contract form for ~a" (syntax->datum #'id))
+               stx
+               #'contract)]
+             
+             [(-> result)
+              (values #'(id) #'result #'() (one-desc #'desc+stuff))]
+             [(-> whatever ...) 
+              (raise-syntax-error
+               #f
+               (format "unsupported -> contract form for ~a, must use proc-doc/names if there are arguments"
+                       (syntax->datum #'id))
+               stx
+               #'contract)]
+             [(id whatever ...)
+              (raise-syntax-error
+               #f
+               (format "unsupported ~a contract form (unable to synthesize argument names)" (syntax->datum #'id))
+               stx
+               #'contract)]))
          (values
           #'[id contract]
-          #'(defproc header result body-stuff ... . desc)
+          #`(defproc #,header #,result #,@body-extras #,@desc)
           #'(scribble/manual
              racket/base) ; for `...'
-          #'id))])))
-
-(define-provide/doc-transformer proc-doc/names
-  (lambda (stx)
+          #'id))]))
+  
+  (define (proc-doc/names-transformer stx)
     (syntax-case stx ()
       [(_ id contract names desc)
        (with-syntax ([header                      
@@ -373,7 +423,9 @@
                             (λ (doms args)
                               (unless (= (length (syntax->list doms))
                                          (length (syntax->list args)))
-                                (raise-syntax-error #f "mismatched case argument list and domain contract" stx)))
+                                (raise-syntax-error #f "mismatched case argument list and domain contract" stx
+                                                    #f 
+                                                    (list doms args))))
                             (syntax->list #'((doms ...) ...))
                             (syntax->list #'((args ...) ...)))
                            #'([(id (args doms) ...) rng] ...))]
@@ -388,6 +440,10 @@
           #'(defproc* header . desc)
           #'((only-in scribble/manual defproc*))
           #'id))])))
+
+(require (for-syntax (submod "." transformers)))
+(define-provide/doc-transformer proc-doc proc-doc-transformer)
+(define-provide/doc-transformer proc-doc/names proc-doc/names-transformer)
 
 (define-provide/doc-transformer parameter-doc
   (lambda (stx)
@@ -432,3 +488,43 @@
      (begin
        (set! delayed? #t)
        #'(begin))]))
+
+
+(module+ test
+  (require (submod ".." transformers) 
+           rackunit
+           racket/contract)
+  
+  (define (try-docs transformer input) 
+    (define-values (_0 docs _1 _2) (transformer input))
+    (syntax->datum docs))
+  
+  (check-equal? (try-docs proc-doc-transformer #'(_ f (-> void?) ()))
+                '(defproc (f) void?))
+  (check-equal? (try-docs proc-doc-transformer #'(_ f (->i ([x integer?]) () [result void?]) ()))
+                '(defproc (f [x integer?]) void?))
+  (check-equal? (try-docs proc-doc-transformer #'(_ f (->i ([x integer?] #:y [y boolean?]) () [res void?]) ()))
+                '(defproc (f [x integer?] [#:y y boolean?]) void?))
+  (check-equal? (try-docs proc-doc-transformer #'(_ f (->i ([x integer?]) ([y boolean?] [z char?]) [result void?]) (#t #\x) ()))
+                '(defproc (f [x integer?] [y boolean? #t] [z char? #\x]) void?))
+  (check-equal? (try-docs proc-doc-transformer #'(_ f (->i ([x integer?] #:y [y boolean?]) ([z char?] #:w [w string?]) [res void?]) (#\a "b") ()))
+                '(defproc (f [x integer?] [#:y y boolean?] [z char? #\a] [#:w w string? "b"]) void?))
+  
+  (check-equal? (try-docs proc-doc-transformer
+                          #'(_ g
+                               (->i ([str string?])
+                                    ()
+                                    #:rest [rest (listof any/c)]
+                                    [res (str) integer?])
+                               ()))
+                '(defproc (g (str string?) (rest (listof any/c)) ...) integer?))
+  
+  (check-equal? (try-docs proc-doc/names-transformer #'(_ f (-> integer? char? boolean?) (a b) ()))
+                '(defproc* (((f [a integer?] [b char?]) boolean?))))
+  (check-equal? (try-docs proc-doc/names-transformer #'(_ f (->* (integer? char?) () boolean?) ((a b) ()) ()))
+                '(defproc* (((f [a integer?] [b char?]) boolean?))))
+  (check-equal? (try-docs proc-doc/names-transformer #'(_ f (->* (integer? char?) (string? number?) boolean?) ((a b) ((c "a") (d 11))) ()))
+                '(defproc* (((f [a integer?] [b char?] [c string? "a"] [d number? 11]) boolean?))))
+  (check-equal? (try-docs proc-doc/names-transformer #'(_ f (case-> (-> integer? char?) (-> string? number? boolean? void?)) ((a) (b c d)) ()))
+                '(defproc* (((f [a integer?]) char?)
+                            ((f [b string?] [c number?] [d boolean?]) void?)))))
