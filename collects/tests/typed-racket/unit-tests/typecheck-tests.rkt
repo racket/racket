@@ -12,6 +12,7 @@
                     base-types-extra
                     base-env-indexing base-structs)
           define lambda λ)
+         (submod typed-racket/base-env/base-types initialize)
          (typecheck typechecker)
          (rep type-rep filter-rep object-rep)
          (rename-in (types utils union numeric-tower abbrev filter-ops)
@@ -41,8 +42,7 @@
 
 (provide typecheck-tests g)
 
-(b:init) (n:init) (initialize-structs) (initialize-indexing)
-((dynamic-require '(submod typed-racket/base-env/base-types initialize) 'initialize-type-names))
+(b:init) (n:init) (initialize-structs) (initialize-indexing) (initialize-type-names)
 
 (define N -Number)
 (define B -Boolean)
