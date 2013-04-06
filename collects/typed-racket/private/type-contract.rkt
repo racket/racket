@@ -117,6 +117,8 @@
   (string->keyword (symbol->string sym)))
 
 (define (type->contract ty fail #:out [out? #f] #:typed-side [from-typed? #t] #:kind [kind 'impersonator])
+  (unless (equal? out? from-typed?)
+    (error 'not-equal))
   (define vars (make-parameter '()))  
   (define current-contract-kind (make-parameter flat-sym))
   (define (increase-current-contract-kind! kind)
@@ -205,7 +207,7 @@
                               (and rst (t->c/neg rst))))]
                    ;; functions with filters or objects
                    [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f '())
-                    (if (and out? pos?)
+                    (if (and from-typed? pos?)
                         (values (map t->c/neg dom)
                                 null
                                 (map t->c rngs)
