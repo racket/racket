@@ -969,156 +969,156 @@ all of the names in the tools library, for use defining keybindings
  ;   ;;;;                                                                 
  
  
- 
- (proc-doc/names
-  drracket:get/extend:extend-tab
-  (->* ((make-mixin-contract drracket:unit:tab<%>))
-       (boolean?)
-       void?)
-  ((mixin) ((before? #t)))
-  
-  
-  @{This class implements the tabs in DrRacket. One is created for each tab
-    in a frame (each frame always has at least one tab, even if the tab bar is not shown)
-    
-    The @racket[before] argument controls if the mixin is applied before or
-    after already installed mixins.})
- 
- (proc-doc/names
-  drracket:get/extend:extend-interactions-text
-  (->* ((make-mixin-contract drracket:rep:text<%>))
-       (boolean?)
-       void?)
-  ((mixin) ((before? #t)))
-  
-  @{This text is used in the bottom window of DrRacket frames.
-    
-    The @racket[before] argument controls if the mixin is applied before or
-    after already installed mixins.})
- 
- (proc-doc/names
-  drracket:get/extend:get-interactions-text
-  (-> (implementation?/c drracket:rep:text<%>))
-  ()
-  
-  @{Once this function is called, 
-    @racket[drracket:get/extend:extend-interactions-text] 
-    raises an error, disallowing any more extensions.
-    
-    See also @racket[drracket:get/extend:allow-re-extension!].})
- 
- (proc-doc/names
-  drracket:get/extend:extend-definitions-text
-  (->* ((make-mixin-contract drracket:unit:definitions-text<%>))
-       (boolean?)
-       void?)
-  ((mixin) ((before? #t)))
-  
-  @{This text is used in the top window of DrRacket frames.
-    
-    The @racket[before] argument controls if the mixin is applied before or
-    after already installed mixins.
-    
-    See also @racket[drracket:get/extend:allow-re-extension!].})
- 
- (proc-doc/names
-  drracket:get/extend:get-definitions-text
-  (-> (implementation?/c drracket:unit:definitions-text<%>))
-  ()
-  
-  @{Once this function is called,
-    @racket[drracket:get/extend:extend-definitions-text] 
-    raises an error, disallowing any more extensions.
-    
-    See also @racket[drracket:get/extend:allow-re-extension!].})
- 
- (proc-doc/names
-  drracket:get/extend:extend-interactions-canvas
-  (->* ((make-mixin-contract drracket:unit:interactions-canvas%))
-       (boolean?)
-       void?)
-  ((mixin) ((before? #t)))
-  
-  @{This canvas is used in the bottom window of DrRacket frames.
-    
-    The @racket[before] argument, controls if the mixin is applied before or
-    after already installed mixins.})
- 
- (proc-doc/names
-  drracket:get/extend:get-interactions-canvas
-  (-> (subclass?/c drracket:unit:interactions-canvas%))
-  ()
-  
-  @{Once this function is called, 
-    @racket[drracket:get/extend:extend-interactions-canvas]
-    raises an error, disallowing any more extensions.
-    
-    See also @racket[drracket:get/extend:allow-re-extension!].})
- 
- (proc-doc/names
-  drracket:get/extend:extend-definitions-canvas
-  (->* ((make-mixin-contract drracket:unit:definitions-canvas%))
-       (boolean?)
-       void?)
-  ((mixin) ((before? #t)))
-  
-  @{This canvas is used in the top window of DrRacket frames.
-    
-    The @racket[before] argument controls if the mixin is applied before or
-    after already installed mixins.
-    
-    See also @racket[drracket:get/extend:allow-re-extension!].})
- 
- (proc-doc/names
-  drracket:get/extend:get-definitions-canvas
-  (-> (subclass?/c drracket:unit:definitions-canvas%))
-  ()
-  
-  @{Once this function is called, 
-    @racket[drracket:get/extend:extend-definitions-canvas]
-    raises an error, disallowing any more extensions.
-    
-    See also @racket[drracket:get/extend:allow-re-extension!].})
- 
- (proc-doc/names
+ (proc-doc
   drracket:get/extend:extend-unit-frame
-  (->* ((make-mixin-contract drracket:unit:frame%))
-       (boolean?)
-       void?)
-  ((mixin) ((before? #t)))
+  (->i ([mixin (make-mixin-contract drracket:unit:frame%)])
+       ([before boolean?]
+        #:name-for-changes [name-for-changes (or/c #f symbol?)])
+       [result void?])
+  (#t #f)
   
-  @{This is the frame that implements the main DrRacket window.
+  @{Extends the class that is used for the frame that implements the main DrRacket window.
     
-    The argument, @racket[before], controls if the mixin is applied before or
+    The @racket[before] argument controls if the mixin is applied before or
     after already installed mixins.
     
-    See also @racket[drracket:get/extend:allow-re-extension!].})
+    If @racket[name-for-changes] is a symbol and @racket[drracket:get/extend:allow-re-extension!]
+    has been called (without a subsequent call to @racket[drracket:get/extend:disallow-re-extension!])
+    then calling this function replaces any earlier mixins that have been added
+    that have the same name. Otherwise, calling this with the same name
+    twice is an error and calling it once @racket[drracket:get/extend:get-frame] has been
+    called is an error.})
  
- (proc-doc/names
+ (proc-doc
   drracket:get/extend:get-unit-frame
   (-> (subclass?/c drracket:unit:frame%))
-  ()
   
-  @{Once this function is called, 
+  @{Returns a class whose objects are used for the DrRacket frames.
+    
+    Once this function is called, 
     @racket[drracket:get/extend:extend-unit-frame]
     raises an error, disallowing any more extensions.
     
     See also @racket[drracket:get/extend:allow-re-extension!].})
+
+ (proc-doc
+  drracket:get/extend:extend-tab
+  (->i ([mixin (make-mixin-contract drracket:unit:tab<%>)])
+       ([before boolean?]
+        #:name-for-changes [name-for-changes (or/c #f symbol?)])
+       [result void?])
+  (#t #f)
+  @{Like @racket[drracket:get/extend:extend-unit-frame], except it extends the class 
+    that implements the tabs in DrRacket. One is created for each tab
+    in a frame (each frame always has at least one tab, even if the tab bar is not shown).})
  
- (proc-doc/names
+ (proc-doc
+  drracket:get/extend:get-tab
+  (-> (implementation?/c drracket:unit:tab<%>))
+  
+  @{Like @racket[drracket:get/extend:get-unit-frame], except it
+    returns the class used for tabs.})
+ 
+ (proc-doc
+  drracket:get/extend:extend-definitions-text
+  (->i ([mixin (make-mixin-contract drracket:unit:definitions-text<%>)])
+       ([before boolean?]
+        #:name-for-changes [name-for-changes (or/c #f symbol?)])
+       [result void?])
+  (#t #f)
+  
+  @{Like @racket[drracket:get/extend:extend-unit-frame], except
+         this text is used in the top window of DrRacket frames.})
+ 
+ (proc-doc
+  drracket:get/extend:get-definitions-text
+  (-> (implementation?/c drracket:unit:definitions-text<%>))
+  
+  @{Like @racket[drracket:get/extend:get-unit-frame], except
+         for the text that is used in the top window of DrRacket frames.})
+
+ 
+ (proc-doc
+  drracket:get/extend:extend-interactions-text
+  (->i ([mixin (make-mixin-contract drracket:rep:text<%>)])
+       ([before boolean?]
+        #:name-for-changes [name-for-changes (or/c #f symbol?)])
+       [result void?])
+  (#t #f)
+  @{Like @racket[drracket:get/extend:extend-unit-frame], except it extends the class 
+    that implements the the editor in the interactions window.})
+ 
+ (proc-doc
+  drracket:get/extend:get-interactions-text
+  (-> (implementation?/c drracket:rep:text<%>))
+  
+  @{Like @racket[drracket:get/extend:get-unit-frame] except it returns
+         the class that implements the editor in the interactions window.})
+ 
+  
+ (proc-doc
+  drracket:get/extend:extend-definitions-canvas
+  (->i ([mixin (make-mixin-contract drracket:unit:definitions-canvas%)])
+       ([before boolean?]
+        #:name-for-changes [name-for-changes (or/c #f symbol?)])
+       [result void?])
+  (#t #f)
+  
+  @{Like @racket[drracket:get/extend:extend-unit-frame], except it extends the class 
+    that implements the definitions window's @racket[editor-canvas%].})
+ 
+ (proc-doc
+  drracket:get/extend:get-definitions-canvas
+  (-> (subclass?/c drracket:unit:definitions-canvas%))
+  
+  @{Like @racket[drracket:get/extend:get-unit-frame] except it returns
+         the class that implements the definitions window's @racket[editor-canvas%].})
+ 
+ (proc-doc
+  drracket:get/extend:extend-interactions-canvas
+  (->i ([mixin (make-mixin-contract drracket:unit:interactions-canvas%)])
+       ([before boolean?]
+        #:name-for-changes [name-for-changes (or/c #f symbol?)])
+       [result void?])
+  (#t #f)
+  
+  @{Like @racket[drracket:get/extend:extend-unit-frame], except it extends the class 
+    that implements the interactions window's @racket[editor-canvas%].})
+ 
+ (proc-doc
+  drracket:get/extend:get-interactions-canvas
+  (-> (subclass?/c drracket:unit:interactions-canvas%))
+  
+  @{Like @racket[drracket:get/extend:get-unit-frame] except it returns
+         the class that implements the definitions window's @racket[editor-canvas%].})
+ 
+ 
+ (proc-doc
   drracket:get/extend:disallow-re-extension!
   (-> void?)
-  ()
   @{Once this is called, re-extension of the mixins described in this
     section is not allowed. This is the default state of mixin extension,
     but it can be changed by @racket[drracket:get/extend:allow-re-extension!].})
  
- (proc-doc/names
+ (proc-doc
   drracket:get/extend:allow-re-extension!
   (-> void?)
-  ()
   @{Once this is called, re-extension of the mixins described in this
-    section are now allowed.})
+    section are now allowed (see @racket[drracket:get/extend:extend-unit-frame]
+    for details of how to effect a re-extension).
+    
+    This mode is intended to support a faster development cycle, not for production code.
+    Specifically, the issue is that replacing mixins in this manner does not affect any
+    objects that have already been create and thus 
+    there can, in general, be a mixture of old and new objects in a single DrRacket.
+    If some kind of systematic change to the classes is wanted, consider instead using
+    the @racketmodname[racket/surrogate] library.
+    
+    Once an extension happens, newly created objects will use the new mixins. 
+    Mostly, however, creating a new frame will create a new set of all of the objects
+    that are extended in this section, so that can be used to experiment more quickly
+    with changes.
+    })
  
  ;                                                
  ;                                                
