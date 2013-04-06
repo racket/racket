@@ -222,6 +222,6 @@
    ("Select the format of the package to be created;"
     "valid <fmt>s are: zip (the default), tgz, plt")]
   [#:bool manifest () "Creates a manifest file for a directory, rather than an archive"]
-  #:args (maybe-dir)
+  #:args (package-directory)
   (parameterize ([current-pkg-error (pkg-error 'create)])
-    (create-cmd (if manifest 'MANIFEST (or format 'zip)) maybe-dir))])
+    (create-cmd (if manifest 'MANIFEST (or format 'zip)) package-directory))])
