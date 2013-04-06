@@ -89,7 +89,7 @@
       [(dict-ref defs internal-id #f)
        =>
        (match-lambda
-         [(def-binding _ (app (λ (ty) (type->contract ty (λ () #f) #:out #t)) (? values cnt)))
+         [(def-binding _ (app (λ (ty) (type->contract ty (λ () #f))) (? values cnt)))
           (values
            (with-syntax* ([id internal-id]
                           [cnt-id (cnt-id-introducer #'id)]
