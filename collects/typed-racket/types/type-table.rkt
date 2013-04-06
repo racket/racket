@@ -100,6 +100,18 @@
       (eq? t? (hash-ref tautology-contradiction-table e 'not-there)))
     (values (mk 'tautology) (mk 'contradiction) (mk 'neither))))
 
+;; keeps track of case-lambda branches that never get evaluated, so that the
+;; optimizer can eliminate dead code. The key is the formals syntax object.
+;; 1 possible value: #t
+(define case-lambda-dead-table (make-hasheq))
+
+(define (add-dead-case-lambda-branch formals)
+  (when (optimize?)
+    (hash-set! case-lambda-dead-table formals #t)))
+(define (dead-case-lambda-branch? formals)
+  (hash-ref case-lambda-dead-table formals #f))
+
+
 (provide/cond-contract
  [add-typeof-expr (syntax? tc-results/c . -> . any/c)]
  [type-of (syntax? . -> . tc-results/c)]
@@ -116,4 +128,6 @@
  [add-neither (syntax? . -> . any)]
  [tautology? (syntax? . -> . boolean?)]
  [contradiction? (syntax? . -> . boolean?)]
- [neither? (syntax? . -> . boolean?)])
+ [neither? (syntax? . -> . boolean?)]
+ [add-dead-case-lambda-branch (syntax? . -> . any)]
+ [dead-case-lambda-branch? (syntax? . -> . boolean?)])

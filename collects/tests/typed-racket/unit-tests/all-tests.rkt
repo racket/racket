@@ -11,6 +11,7 @@
  "subst-tests.rkt" ;; pass
  "infer-tests.rkt" ;; pass
  "type-annotation-test.rkt" ;; pass
+ "keyword-expansion-test.rkt" ;;pass
 
  "module-tests.rkt" ;; pass
  "contract-tests.rkt"
@@ -38,6 +39,7 @@
                   module-tests
                   fv-tests
                   contract-tests
+                  keyword-tests
                   ;; this uses dynamic require because the file fails to compile when there's a test failure
                   (λ () ((dynamic-require special 'typecheck-special-tests))))])
      (f))))
