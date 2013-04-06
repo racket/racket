@@ -1901,28 +1901,29 @@
 
   (define/oc-log (oc-timer-expired)
     (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
-    (define-values (editor-contents filename/loc) (send (send dirty/pending-tab get-defs) fetch-data-to-send))
-    (cond
-      [editor-contents
-       (line-of-interest)
-       (when running-tab
+    (when dirty/pending-tab
+      (define-values (editor-contents filename/loc) (send (send dirty/pending-tab get-defs) fetch-data-to-send))
+      (cond
+        [editor-contents
          (line-of-interest)
-         (stop-place-running)
-         (send running-tab set-oc-status (dirty #f)))
-       (send dirty/pending-tab set-oc-status (running 'running sc-online-expansion-running))
-       (define settings (tab-in-module-language dirty/pending-tab))
-       (send-to-place editor-contents
-                      filename/loc
-                      (module-language-settings->prefab-module-settings settings)
-                      (λ (res) (oc-finished res))
-                      (λ (a b) (oc-status-message a b)))]
-      [else
-       (line-of-interest)
-       (send dirty/pending-tab set-oc-status
-             (clean 'exn
-                    sc-only-raw-text-files-supported
-                    (list (vector (+ filename/loc 1) 1))))
-       (oc-maybe-start-something)]))
+         (when running-tab
+           (line-of-interest)
+           (stop-place-running)
+           (send running-tab set-oc-status (dirty #f)))
+         (send dirty/pending-tab set-oc-status (running 'running sc-online-expansion-running))
+         (define settings (tab-in-module-language dirty/pending-tab))
+         (send-to-place editor-contents
+                        filename/loc
+                        (module-language-settings->prefab-module-settings settings)
+                        (λ (res) (oc-finished res))
+                        (λ (a b) (oc-status-message a b)))]
+        [else
+         (line-of-interest)
+         (send dirty/pending-tab set-oc-status
+               (clean 'exn
+                      sc-only-raw-text-files-supported
+                      (list (vector (+ filename/loc 1) 1))))
+         (oc-maybe-start-something)])))
 
   (define/oc-log (oc-finished res)
     (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
