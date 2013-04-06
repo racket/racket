@@ -603,7 +603,7 @@
      (define the-table
        `(table
          (tr
-          (td "Name")
+          (td "Package Name")
           (td ,(if edit-details
                  `(input ([name "name"]
                           [type "text"]
@@ -624,7 +624,8 @@
               `(span (input ([name "source"]
                              [type "text"]
                              [value ,(package-ref* i 'source "")]))
-                     " (" (a ([href "http://pre.racket-lang.org/docs/html/pkg/Package_Concepts.html#(tech._package._source)"]) "details") ")")
+                     ;; XXX change to pkg soon
+                     " (" (a ([href "http://docs.racket-lang.org/planet2/Package_Concepts.html#%28tech._package._source%29"]) "details") ")")
               `(a ([href
                     ,(package-url->useful-url (package-ref i 'source))])
                   ,(package-ref i 'source)))))
