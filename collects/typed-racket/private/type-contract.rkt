@@ -205,7 +205,7 @@
                               (and rst (t->c/neg rst))))]
                    ;; functions with filters or objects
                    [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f '())
-                    (if (and from-typed? pos?)
+                    (if from-typed?
                         (values (map t->c/neg dom)
                                 null
                                 (map t->c rngs)
