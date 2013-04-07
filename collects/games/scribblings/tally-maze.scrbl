@@ -1,6 +1,20 @@
 #lang scribble/doc
 @(require "common.rkt" racket/class racket/draw (only-in slideshow/pict dc))
 
+@(define (add-commas n)
+   (define s (number->string n))
+   (apply string-append
+          (reverse
+           (let loop ([digits (reverse (string->list s))])
+             (cond
+               [(null? digits) '()]
+               [(<= (length digits) 3) (list (apply string (reverse digits)))]
+               [else (list* (format ",~a~a~a"
+                                    (list-ref digits 2)
+                                    (list-ref digits 1)
+                                    (list-ref digits 0))
+                            (loop (cdddr digits)))])))))
+
 @gametitle["Tally Maze" "tally-maze" "Maze Enumeration Game"]
 
 The object of @game{Tally Maze} is to help the blue ball 
@@ -18,7 +32,8 @@ in the maze to reach your blue ball and they take it.
 
 The @litchar{n} key, however, adjusts the maze. More precisely,
 it moves forward to the next maze in an enumeration of all 
-40058175322602445443958933855600640 of the mazes that the game
+@(add-commas 254377512893447941210664002794210519990861507330048)
+of the mazes that the game
 supports. Each maze is only a little bit different from
 the one before, so you have to plan ahead in order to understand
 how the current maze differs from the next one. (Use the
@@ -28,7 +43,7 @@ Beware, however, that planning ahead one maze is not enough;
 although one pumpkin just chases you in the current maze,
 the other pumpkin tries to track where you might go if
 you advance to the next maze and to wait for you there.
-Not all games are winnable, although I believe most are.
+Not all games are winnable (although I hope most are).
 
 Thanks to Lazy Crazy (@url{http://lazycrazy.deviantart.com}) for
 the blue ball icons and to YOOtheme (@url{http://www.yootheme.com/icons})

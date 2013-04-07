@@ -42,8 +42,8 @@
 (define game@
   (unit (import)
         (export)
-(define maze-w 10)
-(define maze-h 10)
+(define maze-w 12)
+(define maze-h 12)
 
 (struct state 
   (maze-index maze edges 
@@ -264,12 +264,12 @@
       (and (= (car (state-player (current-state))) (- maze-w 1))
            (= (cdr (state-player (current-state))) (- maze-h 1)))))
   
-
+(define min-cell-size 55)
 (define f (new frame% [label "Tally Maze"] [width 600] [height 600]))
 (define game-canvas (new game-canvas% 
                          [parent f]
-                         [min-width (* maze-w 60)]
-                         [min-height (* maze-h 60)]))
+                         [min-width (* maze-w min-cell-size)]
+                         [min-height (* maze-h min-cell-size)]))
 (define hp (new horizontal-panel% [parent f] [alignment '(right center)] [stretchable-height #f]))
 (define msg (new message% [parent hp] [label (format "Game #~a" initial-number)]))
 (void (new vertical-panel% [parent hp]))
