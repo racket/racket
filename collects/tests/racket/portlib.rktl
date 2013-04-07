@@ -1021,9 +1021,11 @@
        (set! res (sync (read-bytes-evt 2 i))))))
   
   (write-bytes #"1" o)
-  (sleep 0.1)
+  (sync (system-idle-evt))
+  (thread-suspend t)
   (write-bytes #"2" o)
   (test #"1" read-bytes 1 i)
+  (thread-resume t)
   (sleep)
   (write-bytes #"34" o)
   
