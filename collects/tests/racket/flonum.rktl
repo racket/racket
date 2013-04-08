@@ -157,6 +157,13 @@
 (test-sequence [(2.0 4.0 6.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0) 1 6 2))
 (test-sequence [(8.0 6.0 4.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0) 7 2 -2))
 
+;; Check safety:
+(err/rt-test (for/flvector ([i 5]) 8))
+(err/rt-test (for/flvector #:length 5 ([i 5]) 8))
+(err/rt-test (for/flvector #:length 5 #:fill 0.0 ([i 5]) 8))
+(err/rt-test (for/flvector #:length 5 #:fill 0 ([i 5]) 8.0))
+(err/rt-test (for/flvector #:length 10 #:fill 0 ([i 5]) 8.0))
+
 ;; ----------------------------------------
 ;; Check corners of `flexpt':
 ;;  Tests by Neil T.:
