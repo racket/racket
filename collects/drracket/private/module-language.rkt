@@ -1224,34 +1224,41 @@
       
       (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
         (super on-paint before? dc left top right bottom dx dy draw-caret)
-        (unless before?
-          (define saved-brush (send dc get-brush))
-          (define saved-pen (send dc get-pen))
-          (define smoothing (send dc get-smoothing))
-          (send dc set-smoothing 'smoothed)
-          
-          (send dc set-brush "red" 'solid)
-          (send dc set-pen (send the-pen-list find-or-create-pen "red" 1 'transparent))
-          (send dc set-alpha 
-                (if (preferences:get 'framework:white-on-black?)
-                    .5
-                    .25))
-          (define path (new dc-path%))
+        (unless (null? online-error-ranges)
+          (unless before?
             
-          (for ([an-error-range (in-list online-error-ranges)])
-            (define-values (x y w h) (get-box an-error-range))
+            (define path (new dc-path%))
+            (define found-something-to-draw? #f)
             
-            (send path move-to (+ dx x) (+ dy y))
-            (send path line-to (+ dx x w) (+ dy y))
-            (send path line-to (+ dx x w) (+ dy y h))
-            (send path arc (+ dx x) (+ dy y) (* w 2/3) h (* pi 3/2) (* pi 1/2))
-            (send path close))
-          
-          (send dc draw-path path)
-          (send dc set-alpha 1)
-          (send dc set-brush saved-brush)
-          (send dc set-pen saved-pen)
-          (send dc set-smoothing smoothing)))
+            (for ([an-error-range (in-list online-error-ranges)])
+              (define-values (x y w h) (get-box an-error-range))
+              (when (rectangles-intersect? x y (+ x w) (+ y h)
+                                           left top right bottom)
+                (set! found-something-to-draw? #t)
+                (send path move-to (+ dx x) (+ dy y))
+                (send path line-to (+ dx x w) (+ dy y))
+                (send path line-to (+ dx x w) (+ dy y h))
+                (send path arc (+ dx x) (+ dy y) (* w 2/3) h (* pi 3/2) (* pi 1/2))
+                (send path close)))
+            
+            (when found-something-to-draw?
+              (define saved-brush (send dc get-brush))
+              (define saved-pen (send dc get-pen))
+              (define smoothing (send dc get-smoothing))
+              (send dc set-smoothing 'smoothed)
+              
+              (send dc set-brush "red" 'solid)
+              (send dc set-pen "red" 1 'transparent)
+              (send dc set-alpha 
+                    (if (preferences:get 'framework:white-on-black?)
+                        .5
+                        .25))
+              
+              (send dc draw-path path)
+              (send dc set-alpha 1)
+              (send dc set-brush saved-brush)
+              (send dc set-pen saved-pen)
+              (send dc set-smoothing smoothing)))))
       
       (define/override (on-event evt)
         (define-values (mx my) 
