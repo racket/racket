@@ -4,7 +4,8 @@
          racket/gui/base
          racket/class
          racket/set
-         racket/list)
+         racket/list
+         math/base)
 (module+ test (require rackunit))
 
 (provide pick-a-maze
@@ -86,15 +87,11 @@
 
 (define (pick-a-maze maze-w maze-h)
   (define maze-count (spec-k (maze/s maze-w maze-h)))
-  (define digits (max 1 (- (string-length (number->string maze-count)) 1)))
-  (string->number
-   (apply
-    string-append
-    (for/list ([i (in-range digits)])
-      (format "~a"
-              (if (= i 0)
-                  (+ (random 9) 1)
-                  (random 10)))))))
+  (+ (if (zero? (random 2))
+         (/ maze-count 2)
+         0)
+     (random-natural (/ maze-count 4))
+     (random-natural (/ maze-count 4))))
 
 (define (draw-maze dc dx dy w h edges maze-w maze-h 
                    #:next-edges [next-edges #f] 
@@ -367,7 +364,7 @@
 (define (show-mazes)
   
   ;(define maze-w 34) (define maze-h 44)
-  (define maze-w 20) (define maze-h 20)
+  (define maze-w 12) (define maze-h 12)
   ;(define maze-w 2) (define maze-h 3)
   ;(define maze-w 16) (define maze-h 16)
   ;(define maze-w 8) (define maze-h 8)
@@ -391,7 +388,7 @@
                   (λ (c dc) 
                     (send dc set-smoothing 'smoothed)
                     (define-values (w h) (send c get-client-size))
-                    (draw-maze dc w h current-edges maze-w maze-h 
+                    (draw-maze dc 0 0 w h current-edges maze-w maze-h 
                                #:next-edges next-edges 
                                #:solution current-solution))]))
   (define bp (new horizontal-panel% [parent f] [stretchable-height #f]))
@@ -470,26 +467,6 @@
   (move-to starting-point)
   (send f show #t))
 
-;(module+ main (show-mazes))
-(module+ main
-  (define chan (make-channel))
-  (collect-garbage) (collect-garbage) (collect-garbage) 
-  (collect-garbage) (collect-garbage) (collect-garbage)
-  (void
-   (thread
-    (λ ()
-      (let loop ([m (current-memory-use)])
-        (sync
-         (handle-evt
-          (alarm-evt (+ (current-inexact-milliseconds) 100))
-          (λ (_) (loop (max m (current-memory-use)))))
-         
-         (handle-evt
-          chan
-          (λ (c)
-            (channel-put c m))))))))
-  (void (time (maze/s 20 20)))
-  (let ([c (make-channel)])
-    (channel-put chan c)
-    (printf "peak mem use ~ak\n" (round (/ (channel-get c) 1024)))))
+(module+ main (show-mazes))
+
 
