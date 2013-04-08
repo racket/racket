@@ -391,13 +391,14 @@
                [th (send style get-text-height dc)]
                [old-font (send dc get-font)])
           (send dc set-font (send style get-font))
-          (let-values ([(nw nh na nd) (send dc get-text-extent improper-nums)]
-                       [(dw dh da dd) (send dc get-text-extent dens)]
-                       [(ww wh wa wd) (send dc get-text-extent improper-prefix)])
+          (let-values ([(nw nh nd na) (send dc get-text-extent improper-nums)]
+                       [(dw dh dd da) (send dc get-text-extent dens)]
+                       [(ww wh wd wa) (send dc get-text-extent improper-prefix)])
+            (define frac-h (+ nh dh 1))
             (set-box/f! h (+ nh dh 1))
             (set-box/f! w (+ ww (max nw dw)))
-            (set-box/f! descent (+ wd (/ dh 2)))
-            (set-box/f! space  (+ wa (/ nh 2)))
+            (set-box/f! descent (+ wd (/ (- frac-h wh) 2)))
+            (set-box/f! space  (+ wa (/ (- frac-h wh) 2)))
             (set-box/f! lspace 0)
             (set-box/f! rspace 0))))
       
