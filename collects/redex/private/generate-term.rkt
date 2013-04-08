@@ -501,9 +501,9 @@
   (define gen (search/next (mk-clauses) pat size lang))
   (define (termify search-res)
     (cond
-      [search-res
+      [(not-failed? search-res)
        (define exp (pat->term lang (p*e-p search-res) (p*e-e search-res)))
-       (and exp
+       (and (not-failed? exp)
             (cons jf-id exp))]
       [else #f]))
   (λ ()
@@ -516,11 +516,11 @@
                            size
                            lang))
   (define (termify res)
-    (and res
+    (and (not-failed? res)
          (match res
            [(p*e lhs+rhs env)
             (define lhs+rhs-term (pat->term lang lhs+rhs env))
-            (and lhs+rhs-term
+            (and (not-failed? lhs+rhs-term)
                  (match lhs+rhs-term
                    [(list lhs-term rhs-term)
                     `((,fn ,@lhs-term) = ,rhs-term)]))])))

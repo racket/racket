@@ -711,3 +711,47 @@
                            5)
        [`((f (,a ,b)) = 1) #f]
        [else #t]))))
+
+(let ()
+  (define-language L0)
+  
+  (define-relation L0
+    [(R (#f #f #f) 3)]
+    [(R (#f #f) 2)]
+    [(R #f 1)])
+  
+  (is-not-false
+   (generate-term
+    L0
+    #:satisfying
+    (R any_1 any_2)
+    +inf.0))
+  
+  (is-not-false
+   (generate-term
+    L0
+    #:satisfying
+    (R (any_1 any_2) any_3)
+    +inf.0))
+  
+  (is-not-false
+   (generate-term
+    L0
+    #:satisfying
+    (R (any_1 any_2 any_3) any_4)
+    +inf.0))
+  
+  (is-false
+   (generate-term
+    L0
+    #:satisfying
+    (R (any_1 any_2) 3)
+    +inf.0))
+  
+  (is-not-false
+   (generate-term
+    L0
+    #:satisfying
+    (R #f any)
+    +inf.0))
+  )

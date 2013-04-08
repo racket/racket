@@ -23,7 +23,9 @@
          pat*-clause-p?s
          bind-names
          remove-empty-dqs
+         and/fail
          (struct-out unif-fail)
+         not-failed?
          dq)
 
 
@@ -157,7 +159,7 @@
     (define res (and/fail (not-failed? t*) 
                           (not-failed? u*)
                           (unify* t* u* eqs L)))
-    (and (not-failed? res)
+    (and/fail (not-failed? res)
          (let* ([static-eqs (hash/mut->imm eqs)]
                 [found-pre-dqs 
                  (apply set-union (set) 
@@ -166,12 +168,12 @@
                 [found-dqs
                  (for/list ([pdq found-pre-dqs])
                    (disunify* '() (first pdq) (second pdq) (hash-copy static-eqs) L))])
-           (and (for/and ([d found-dqs]) d)
-                (let* ([real-dqs (filter (λ (dq) (not (boolean? dq))) found-dqs)]
-                       [new-dqs (check-and-resimplify static-eqs (append real-dqs (env-dqs e)) L)])
-                  (and new-dqs
-                       (p*e res
-                            (env static-eqs new-dqs)))))))))
+           (and/fail (for/and ([d found-dqs]) d)
+                     (let* ([real-dqs (filter (λ (dq) (not (boolean? dq))) found-dqs)]
+                            [new-dqs (check-and-resimplify static-eqs (append real-dqs (env-dqs e)) L)])
+                       (and/fail new-dqs
+                                 (p*e res
+                                      (env static-eqs new-dqs)))))))))
 
 (define (list->dq-pairs dq-sides)
   (cond

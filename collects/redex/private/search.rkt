@@ -61,10 +61,10 @@
       (define-values (ans fails)
         (with-handlers ([exn:fail:redex:search-failure? (λ (e) 
                                                           (define f-conts (exn:fail:redex:search-failure-fails e))
-                                                          (values #f (trim-fails f-conts)))])
+                                                          (values (unif-fail) (trim-fails f-conts)))])
           (define-values (env/f fails)
             (fail-back fs))
-          (values (and env/f (unify fresh-pat 'any env/f lang))
+          (values (and/fail env/f (unify fresh-pat 'any env/f lang))
                   fails)))
       (set-last-gen-trace! (generation-trace))
       (set! fs (shuffle-fails fails))  ;; how to test if we're randomizing here?
@@ -174,9 +174,9 @@
             (define u-res (disunify ps lhs rhs e lang))
             (and u-res
                  (loop u-res rest))])))
-     (define head-p*e (and env1 (unify input head-pat env1 lang)))
+     (define head-p*e (and/fail env1 (unify input head-pat env1 lang)))
      (cond
-       [head-p*e
+       [(not-failed? head-p*e)
         (define res-p (p*e-p head-p*e))
         (let loop ([e (p*e-e head-p*e)]
                    [eqs eqs])
