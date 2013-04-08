@@ -226,8 +226,8 @@
           (p*e? res-pe-bkwd)
           (p*e-equivalent? res-pe res-pe-bkwd eqs))
      (p*e (p*e-p res-pe) (env-eqs (p*e-e res-pe)))]
-    [(and (not res-pe)
-          (not res-pe-bkwd))
+    [(and (unif-fail? res-pe)
+          (unif-fail? res-pe-bkwd))
      #f]
     [else 
      (list 'different-orders=>different-results
@@ -241,13 +241,13 @@
   (define res-p (unify*/lt p1 p2 e L))
   (define res-p-bkwd (unify*/lt p2 p1 e2 L))
   (cond
-    [(and res-p
-          res-p-bkwd
+    [(and (not-failed? res-p)
+          (not-failed? res-p-bkwd)
           (p*e-equivalent? (p*e res-p (env e '())) 
                            (p*e res-p-bkwd (env e2 '())) eqs))
      res-p]
-    [(and (not res-p)
-          (not res-p-bkwd))
+    [(and (unif-fail? res-p)
+          (unif-fail? res-p-bkwd))
      #f]
     [else 
      (list 'different-orders=>different-results
@@ -852,12 +852,14 @@
                                                           (name e2 ,(bound))))
                                       (env (m-hash (lvar 'e1) `(cstr (e) (nt e))
                                                    (lvar 'e2) `(nt e)) '()))))
-(check-false (pat->term λn `(cstr (x) (list (nt e) (nt e))) (env (hash) '())))
+(check-equal? (pat->term λn `(cstr (x) (list (nt e) (nt e))) (env (hash) '()))
+              (unif-fail))
 (check-not-false (pat->term λn `(cstr (e) (list (nt e) (nt e))) (env (hash) '())))
-(check-false (pat->term λn `(cstr (x) (list (name e1 ,(bound))
-                                            (name e2 ,(bound))))
-                        (env (m-hash (lvar 'e1) `(cstr (e) (nt e))
-                                     (lvar 'e2) `(nt e)) '())))
+(check-equal? (pat->term λn `(cstr (x) (list (name e1 ,(bound))
+                                             (name e2 ,(bound))))
+                         (env (m-hash (lvar 'e1) `(cstr (e) (nt e))
+                                      (lvar 'e2) `(nt e)) '()))
+              (unif-fail))
 (check-not-false
  (redex-match λn (e_1 e_1) (pat->term λn `(list (name x1 ,(bound))
                                                 (name x2 ,(bound)))
@@ -955,8 +957,8 @@
               [dqs-in (make-dqs dqs)]
               [res (unify/lt t u (env eqs-in dqs-in) L0)])
          (if true/false
-             (check-not-false res)
-             (check-false res))))]))
+             (check-not-false (not-failed? res))
+             (check-equal? res (unif-fail)))))]))
 
 (test-disunify/no-params 1 2 '() '() '() '())
 (test-disunify/no-params '(list 1 2) '(list 1 3) '() '() '() '())
