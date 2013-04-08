@@ -69,7 +69,7 @@ a pattern variable to the keyword itself, as in this sub-pattern:
 The second problem can be solved using @emph{repetition constraints}:
 @racketblock[
 (struct name:id super:maybe-super (field:field ...)
-  (~or (~optional (~seq (~and #:mutable) mutable-kw))
+  (~or (~optional (~seq (~and #:mutable mutable-kw)))
        (~optional (~seq #:super super-expr:expr))
        (~optional (~seq #:inspector inspector:expr))
        (~optional (~seq #:auto-value auto:expr))
@@ -104,7 +104,7 @@ mutually exclusive, such as @racket[#:inspector],
               (~seq (~and #:transparent transparent-kw))
               (~seq (~and #:prefab prefab-kw)))
          #:name "#:inspector, #:transparent, or #:prefab option")
-       (~optional (~seq (~and #:mutable) mutable-kw)
+       (~optional (~seq (~and #:mutable mutable-kw))
                   #:name "#:mutable option")
        (~optional (~seq #:super super-expr:expr)
                   #:name "#:super option")
