@@ -67,7 +67,7 @@
                              (let ([new-vec (if (eq? i (unsafe-fXvector-length vec))
                                                 (grow-fXvector vec)
                                                 vec)])
-                               (unsafe-fXvector-set! new-vec i (let () last-body ...))
+                               (fXvector-set! new-vec i (let () last-body ...))
                                (values new-vec (unsafe-fx+ i 1))))])
                 (shrink-fXvector vec i))))]
          [(for*/fXvector #:length length-expr #:fill fill-expr (for-clause ...) body ...)

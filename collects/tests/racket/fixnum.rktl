@@ -215,4 +215,12 @@
 (test-sequence [(2 4 6)] (in-fxvector (fxvector 1 2 3 4 5 6 7 8) 1 6 2))
 (test-sequence [(8 6 4)] (in-fxvector (fxvector 1 2 3 4 5 6 7 8) 7 2 -2))
 
+;; Check safety:
+(err/rt-test (for/fxvector ([i 5]) 8.0))
+(err/rt-test (for/fxvector #:length 5 ([i 5]) 8.0))
+(err/rt-test (for/fxvector #:length 5 #:fill 0 ([i 5]) 8.0))
+(err/rt-test (for/fxvector #:length 5 #:fill 0.0 ([i 5]) 8))
+(err/rt-test (for/fxvector #:length 10 #:fill 0.0 ([i 5]) 8))
+
+
 (report-errs)
