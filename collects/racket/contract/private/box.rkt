@@ -122,7 +122,10 @@
                         (list* (cadr args) (car args) new-args)))]
              [else (append (reverse new-args)
                            (cons (syntax-property
-                                  (car args)
+                                  (syntax-property
+                                   (car args)
+                                   'racket/contract:negative-position
+                                   this-one)
                                   'racket/contract:positive-position
                                   this-one)
                                  (cdr args)))])))

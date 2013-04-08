@@ -25,8 +25,11 @@
       [else
        (loop (cdr args)
              (cons (syntax-property
-                    (car args)
-                    'racket/contract:positive-position
+                    (syntax-property
+                     (car args)
+                     'racket/contract:positive-position
+                     this-one)
+                    'racket/contract:negative-position
                     this-one)
                    new-args))])))
 
