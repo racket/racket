@@ -41,35 +41,42 @@
          (match pat
            [`(nt ,p-nt)
             (define all-nts (cons p-nt nts))
-            (for/or ([nt-pat all-nts])
+            (for/not-failed ([nt-pat all-nts])
               (define term (recur `(nt ,nt-pat)))
-              (and (for/and ([nt (remove nt-pat all-nts)])
-                     ((get-matcher nt) term))
-                   term))]
+              (and/fail (for/and ([nt (remove nt-pat all-nts)])
+                          ((get-matcher nt) term))
+                        term))]
            [`any
-            (for/or ([nt-pat nts])
+            (for/not-failed ([nt-pat nts])
               (define term (recur `(nt ,nt-pat)))
-              (and (for/and ([nt (remove nt-pat nts)])
-                     ((get-matcher nt) term))
-                   term))]
+              (and/fail (for/and ([nt (remove nt-pat nts)])
+                          ((get-matcher nt) term))
+                        term))]
            [else
             (define term (recur pat))
-            (and (for/and ([nt nts])
-                   ((get-matcher nt) term))
-                 term)])]
+            (and/fail (for/and ([nt nts])
+                        ((get-matcher nt) term))
+                      term)])]
         [`(name ,var ,pat)
          (error 'make-term "can't instantiate a term with an unbound variable: ~s" p)]
         [`(list ,ps ...)
          (call/ec (λ (fail)
                     (for/list ([p ps])
                       (let ([res (recur p)])
-                        (unless res (fail #f))
+                        (unless (not-failed? res) (fail (unif-fail)))
                         res))))]
         [else
          (let-values ([(p bs) (gen-term p lang 2)])
            p)])))
-  (and (check-dqs (remove-empty-dqs (env-dqs full-env)) term-e lang eqs)
-       res-term))
+  (and/fail (check-dqs (remove-empty-dqs (env-dqs full-env)) term-e lang eqs)
+            res-term))
+
+(define-syntax-rule (for/not-failed ((x xs)) b ...)
+  (for/fold ([res (unif-fail)])
+    ([x xs])
+    #:break (not-failed? res)
+    b ...))
+    
 
 (define (check-dqs dqs term-e lang eqs)
   (for/and ([dq dqs])
