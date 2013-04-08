@@ -387,7 +387,7 @@ View and modify package configuration options. It accepts the following @nonterm
 }
 
 @item{@command/toc{create} @nonterm{option} ... @nonterm{package-directory}
---- Bundles a package. It accepts the following @nonterm{option}s:
+--- Bundles a package directory into a package archive. It accepts the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{format} @nonterm{format} --- Specifies the archive format. 
@@ -482,9 +482,16 @@ package source when they use @exec{raco pkg update}.
 
 @subsection[#:tag "manual-deploy"]{Manual Deployment}
 
+@margin-note{By default, @exec{raco pkg create} generates a Zip
+archive. For more options, refer to the @command-ref{create}
+documentation. If you want to generate an archive through some other
+means, simply archive what you made in the first part of this
+section. For more formal details, refer to the @tech{package}
+definition.}
+
 Alternatively, you can deploy your package by publishing it on a URL
 you control. If you do this, it is preferable to create an archive
-first:
+from your package directory first:
 
 @commandline{raco pkg create @nonterm{package}}
 
