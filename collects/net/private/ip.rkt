@@ -16,7 +16,7 @@
     [ip-address? (-> any/c boolean?)]
 
     ;; check if a given string is a valid representation of an IP address
-    [ip-address-string? (-> string? boolean?)]
+    [ip-address-string? (-> any/c boolean?)]
 
     ;; construct an IP address from various inputs
     [make-ip-address
