@@ -192,3 +192,99 @@
   (udp-close s))
 
 
+;; UDP Multicast
+(let ((s (udp-open-socket)))
+
+  (test #t boolean? (udp-multicast-loopback? s))
+  (test (void) udp-multicast-set-loopback! s #f)
+  (test #f udp-multicast-loopback? s)
+  (test (void) udp-multicast-set-loopback! s #t)
+  (test #t udp-multicast-loopback? s)
+  (test (void) udp-multicast-set-loopback! s 1234) ;; generalized schemely booleans
+  (test #t udp-multicast-loopback? s)
+
+  (test #t byte? (udp-multicast-ttl s))
+  (test (void) udp-multicast-set-ttl! s 255)
+  (test 255 udp-multicast-ttl s)
+  (test (void) udp-multicast-set-ttl! s 0)
+  (test 0 udp-multicast-ttl s)
+  (test (void) udp-multicast-set-ttl! s 1)
+  (test 1 udp-multicast-ttl s)
+  (err/rt-test (udp-multicast-set-ttl! s 'spoon) exn:fail:contract?)
+
+  (test #t string? (udp-multicast-interface s))
+  ;; Using 8.8.8.0 here ought to fail except within a very specific network inside Google
+  ;; (see also "whois 8.8.8.0")
+  (err/rt-test (udp-multicast-set-interface! s "8.8.8.0") exn:fail:network?)
+  (test (void) udp-multicast-set-interface! s "0.0.0.0")
+  (test "0.0.0.0" udp-multicast-interface s)
+  (test (void) udp-multicast-set-interface! s #f)
+  (test "0.0.0.0" udp-multicast-interface s)
+
+  ;; These will only work when the loopback interface is specifically
+  ;; on 127.0.0.1. Other commonish possibilities include 127.0.1.1, so
+  ;; we can't assume a blanket rule here. See also
+  ;; https://github.com/tonyg/racket-nat-traversal/blob/b505a49835a832be98343f45d46f19f8d483edb9/interfaces.rkt#L28-34.
+  ;;
+  ;; (test (void) udp-multicast-set-interface! s "127.0.0.1")
+  ;; (test "127.0.0.1" udp-multicast-interface s)
+  ;;
+  ;; Oh, but we can use DNS names, thanks to the way Racket's
+  ;; address-lookup stuff works!
+  (test (void) udp-multicast-set-interface! s "localhost")
+
+  (err/rt-test (udp-multicast-join-group! 'bonk "233.252.0.0" "0.0.0.0") exn:fail:contract?)
+  (err/rt-test (udp-multicast-join-group! s 'bonk "0.0.0.0") exn:fail:contract?)
+  (err/rt-test (udp-multicast-join-group! s "233.252.0.0" 'bonk) exn:fail:contract?)
+
+  (err/rt-test (udp-multicast-join-group! s "127.0.0.0" "0.0.0.0") exn:fail:network?)
+  (err/rt-test (udp-multicast-join-group! s "233.252.0.0" "8.8.8.0") exn:fail:network?)
+  ;; http://tools.ietf.org/html/rfc5771 section 9.2:
+  ;;
+  ;; The first /24 in [AD-HOC Block III], 233.252.0.0/24, is assigned
+  ;; as "MCAST-TEST-NET" for use in documentation and example code.
+  ;; 233.252.0.0/24 SHOULD be used in conjunction with the [RFC2606]
+  ;; domain names example.com or example.net in vendor and protocol
+  ;; documentation. Addresses within 233.252.0.0/24 MUST NOT appear on
+  ;; the public Internet.
+  (err/rt-test (udp-multicast-leave-group! s "233.252.0.0" "0.0.0.0") exn:fail:network?)
+  (test (void) udp-multicast-join-group! s "233.252.0.0" "0.0.0.0")
+  (test (void) udp-multicast-leave-group! s "233.252.0.0" "0.0.0.0")
+  (err/rt-test (udp-multicast-leave-group! s "233.252.0.0" "0.0.0.0") exn:fail:network?)
+  (test (void) udp-multicast-join-group! s "233.252.0.0" #f)
+  (test (void) udp-multicast-leave-group! s "233.252.0.0" #f)
+  (err/rt-test (udp-multicast-leave-group! s "233.252.0.0" #f) exn:fail:network?)
+  (test (void) udp-multicast-join-group! s "233.252.0.0" "0.0.0.0")
+  (test (void) udp-multicast-leave-group! s "233.252.0.0" #f)
+  (test (void) udp-multicast-join-group! s "233.252.0.0" #f)
+  (test (void) udp-multicast-leave-group! s "233.252.0.0" "0.0.0.0")
+
+  (test (void) udp-bind! s #f 0 #t)
+  (test (void) udp-multicast-join-group! s "233.252.0.0" "localhost")
+
+  (let*-values (((la lp ra rp) (udp-addresses s #t))
+		((s2) (udp-open-socket))
+		((b) (make-bytes 8 0)))
+    (test (void) udp-multicast-set-interface! s2 "localhost")
+    (test (void) udp-send-to s2 "233.252.0.0" lp #"hi")
+    (sleep 0.05)
+    (let-values (((packet-length ra1 rp1) (udp-receive!* s b)))
+      (test 2 values packet-length)
+      (test #"hi\0\0\0\0\0\0" values b))
+
+    (test (void) udp-multicast-leave-group! s "233.252.0.0" "localhost")
+
+    (test (void) udp-send-to s2 "233.252.0.0" lp #"hi")
+    (sleep 0.05)
+    (let-values (((packet-length ra1 rp1) (udp-receive!* s b)))
+      (test #f values packet-length))
+
+    (test (void) udp-close s2))
+
+  (test (void) udp-close s)
+  ;; It's closed
+  (err/rt-test (udp-multicast-loopback? s) exn:fail:network?)
+  (err/rt-test (udp-multicast-set-loopback! s #t) exn:fail:network?)
+  )
+
+
