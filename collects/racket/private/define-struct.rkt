@@ -319,7 +319,8 @@
             (raise-syntax-error #f
                                 "not a name for a generics group"
                                 gen:foo gen:foo))
-          (unless (identifier? gen:foo) (bad-generics))
+          (unless (and (identifier? gen:foo) (identifier-binding gen:foo))
+            (bad-generics))
           (define gen:foo-val (syntax-local-value gen:foo))
           (unless (and (list? gen:foo-val)
                        (>= (length gen:foo-val) 1))
