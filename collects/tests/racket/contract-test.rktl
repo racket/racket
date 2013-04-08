@@ -8567,6 +8567,20 @@
               (class object% (super-new) (define/public (m x) x))
               'pos
               'neg))
+  
+  (test/spec-passed
+   '->m-kwd-first-order-1
+   '(contract (class/c [m (->m #:x number? number?)])
+              (class object% (super-new) (define/public (m #:x x) x))
+              'pos
+              'neg))
+
+  (test/pos-blame
+   '->m-kwd-first-order-2
+   '(contract (class/c [m (->m #:y number? number?)])
+              (class object% (super-new) (define/public (m #:x x) x))
+              'pos
+              'neg))
 
   (test/spec-passed
    '->*m-first-order-1

@@ -293,8 +293,8 @@ v4 todo:
                                (tx s)))])
               (with-syntax ([kwd-lam-params
                              (if dom-rest
-                                 #'(dom-x ... [opt-dom-x unspecified-dom] ... kwd-param ... . rest-x)
-                                 #'(dom-x ... [opt-dom-x unspecified-dom] ... kwd-param ...))]
+                                 #'(this-param ... dom-x ... [opt-dom-x unspecified-dom] ... kwd-param ... . rest-x)
+                                 #'(this-param ... dom-x ... [opt-dom-x unspecified-dom] ... kwd-param ...))]
                             [basic-return
                              (let ([inner-stx-gen
                                     (if need-apply-values?
