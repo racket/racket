@@ -23,6 +23,7 @@
          opt/info-change-val
          
          opt/unknown
+         opt-error-name
          
          optres-exp
          optres-lifts
@@ -262,7 +263,7 @@
     (build-optres
      #:exp #'(partial-var val)
      #:lifts (list (cons #'lift-var 
-                         #'(coerce-contract 'opt/c uctc)))
+                         #`(coerce-contract '#,(opt-error-name) uctc)))
      #:superlifts null
      #:partials
      (list (cons
@@ -280,6 +281,9 @@
      #:stronger-ribs null
      #:chaperone #'(chaperone-contract? lift-var)
      #:name #'(contract-name lift-var))))
+
+
+(define opt-error-name (make-parameter 'opt/c))
 
 ;; combine-two-chaperone?s : (or/c boolean? syntax?) (or/c boolean? syntax?) -> (or/c boolean? syntax?)
 (define (combine-two-chaperone?s chaperone-a? chaperone-b?)
