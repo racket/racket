@@ -21,7 +21,7 @@ to another module.
 
 @defproc[(resolved-module-path? [v any/c]) boolean?]{
 
-Returns @racket[#f] if @racket[v] is a @tech{resolved module path},
+Returns @racket[#t] if @racket[v] is a @tech{resolved module path},
 @racket[#f] otherwise.}
 
 @defproc[(make-resolved-module-path [path (or/c symbol? 
