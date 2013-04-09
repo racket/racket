@@ -515,7 +515,7 @@ typedef void (*call_extfp_bin_proc)(void);
 
 int scheme_generate_unboxing(mz_jit_state *jitter, int target)
 {
-  int fpr0;
+  int fpr0 USED_ONLY_SOMETIMES;
 
 #ifdef MZ_LONG_DOUBLE
   if (jitter->unbox_extflonum) {
@@ -601,7 +601,8 @@ static int generate_float_point_arith(mz_jit_state *jitter, Scheme_Object *rator
 {
 #if defined(INLINE_FP_OPS) || defined(INLINE_FP_COMP)
   GC_CAN_IGNORE jit_insn *ref8, *ref9, *ref10, *refd, *refdt, *refs = NULL, *refs2 = NULL;
-  int no_alloc = unboxed_result, need_post_pop = 0;
+  int no_alloc = unboxed_result;
+  int need_post_pop USED_ONLY_SOMETIMES = 0;
 
   if (!unsafe_fl && !unboxed) {
     /* Maybe they're doubles */
@@ -1237,7 +1238,7 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
       if (!(inlined_flonum1 && inlined_flonum2)) {
         if ((can_direct1 || (unsafe_fl > 0)) && !inlined_flonum2) {
 #ifdef USE_FLONUM_UNBOXING
-          int fpr0;
+          int fpr0 USED_ONLY_SOMETIMES;
           fpr0 = JIT_FPUSEL_FPR_0(extfl, jitter->unbox_depth);
           mz_ld_fppush(fpr0, jitter->flostack_offset, extfl);
           scheme_mz_flostack_restore(jitter, flostack, flopos, 1, 1);
@@ -1885,7 +1886,7 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
               CHECK_LIMIT();
             } else if (arith == ARITH_EX_INEX) {
               /* exact->inexact */
-              int fpr0;
+              int fpr0 USED_ONLY_SOMETIMES;
               fpr0 = JIT_FPUSEL_FPR_0(extfl, jitter->unbox_depth);
               jit_rshi_l(JIT_R0, JIT_R0, 1);
               jit_FPSEL_extr_l_xd_fppush(extfl, fpr0, JIT_R0);

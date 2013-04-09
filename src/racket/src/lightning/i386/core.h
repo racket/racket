@@ -703,12 +703,12 @@ XFORM_NONGCING static intptr_t _CHECK_TINY(intptr_t diff) { if ((diff < -128) ||
 #define _jit_stixi_l(id, rd, is)	MOVQim((is),  (id), (rd), 0,   0)
 
 #ifdef JIT_X86_64
-# define jit_ldi_l(d, is) (_u32P((intptr_t)(is)) ? _jit_ldi_l(d, is) : (jit_movi_l(d, is), jit_ldr_l(d, d)))
+# define jit_ldi_l(d, is) (_u32P((intptr_t)(is)) ? _jit_ldi_l(d, (int)(intptr_t)(is)) : (jit_movi_l(d, (intptr_t)(is)), jit_ldr_l(d, d)))
 # define jit_sti_l(id, rs) (_u32P((intptr_t)(id)) ? _jit_sti_l(id, rs) : (jit_movi_l(JIT_REXTMP, (intptr_t)(id)), MOVQrQm(rs, 0, JIT_REXTMP, 0, 0)))
-# define jit_ldi_i(d, is) (_u32P((intptr_t)(is)) ? _jit_ldi_i(d, is) : (jit_movi_l(d, is), jit_ldr_i(d, d)))
+# define jit_ldi_i(d, is) (_u32P((intptr_t)(is)) ? _jit_ldi_i(d, (intptr_t)(is)) : (jit_movi_l(d, (intptr_t)(is)), jit_ldr_i(d, d)))
 # define jit_sti_i(id, rs) (_u32P((intptr_t)(id)) ? _jit_sti_i(id, rs) : (jit_movi_l(JIT_REXTMP, (intptr_t)(id)), MOVQrm(rs, 0, JIT_REXTMP, 0, 0)))
 # define jit_stir_l(rd, is) (_u32P((intptr_t)(is)) ? _jit_stir_l(rd, is) : (jit_movi_l(JIT_REXTMP, (intptr_t)(is)), jit_str_l(rd, JIT_REXTMP)))
-# define jit_stixi_l(id, rd, is) (_u32P((intptr_t)(is)) ? _jit_stixi_l(id, rd, is) : (jit_movi_l(JIT_REXTMP, is), jit_stxi_l(id, rd, JIT_REXTMP)))
+# define jit_stixi_l(id, rd, is) (_u32P(is) ? _jit_stixi_l((intptr_t)(id), rd, is) : (jit_movi_l(JIT_REXTMP, is), jit_stxi_l((intptr_t)(id), rd, JIT_REXTMP)))
 #else
 # define jit_ldi_l(d, is) _jit_ldi_l(d, is)
 # define jit_sti_l(id, rs) _jit_sti_l(id, rs)
@@ -718,8 +718,8 @@ XFORM_NONGCING static intptr_t _CHECK_TINY(intptr_t diff) { if ((diff < -128) ||
 # define jit_stixi_l(id, rd, is) _jit_stixi_l(id, rd, is) 
 #endif
 
-#define jit_stir_p(rd, is) jit_stir_l(rd, is)
-#define jit_stixi_p(id, rd, is) jit_stixi_l(id, rd, is)
+#define jit_stir_p(rd, is) jit_stir_l(rd, (intptr_t)(is))
+#define jit_stixi_p(id, rd, is) jit_stixi_l(id, rd, (intptr_t)(is))
 
 #define jit_lock_cmpxchgr_i(rd, rs) LOCK_PREFIX(CMPXCHGr(rd, rs))
 #define jit_lock_cmpxchgr_s(rd, rs) LOCK_PREFIX(CMPXCHGWr(rd, rs))

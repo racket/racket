@@ -1117,7 +1117,7 @@ static int generate_flonum_local_boxing(mz_jit_state *jitter, int pos, int local
   offset = scheme_mz_flostack_pos(jitter, local_pos);
   offset = JIT_FRAME_FLOSTACK_OFFSET - offset;
   if (jitter->unbox) {
-    int fpr0;
+    int fpr0 USED_ONLY_SOMETIMES;
     fpr0 = JIT_FPUSEL_FPR_0(extfl, jitter->unbox_depth);
     jit_FPSEL_ldxi_xd_fppush(extfl, fpr0, JIT_FP, offset);
     jitter->unbox_depth++;
@@ -1202,7 +1202,7 @@ static int generate_closure(Scheme_Closure_Data *data,
 # endif
       {
         /* Non-inlined alloc */
-        GC_CAN_IGNORE jit_insn *refr;
+        GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
 
         JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
   
@@ -1232,7 +1232,7 @@ static int generate_closure(Scheme_Closure_Data *data,
   scheme_mz_load_retained(jitter, JIT_R0, code);
   jit_pusharg_p(JIT_R0);
   {
-    GC_CAN_IGNORE jit_insn *refr;
+    GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
     (void)mz_finish_lwe(ts_scheme_make_native_closure, refr);
   }
   jit_retval(JIT_R0);
@@ -1380,7 +1380,7 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter, int t
   scheme_mz_load_retained(jitter, JIT_R0, ndata);
   jit_pusharg_p(JIT_R0);
   {
-    GC_CAN_IGNORE jit_insn *refr;
+    GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
     (void)mz_finish_lwe(ts_scheme_make_native_case_closure, refr);
   }
   jit_retval(JIT_R1);
@@ -1491,7 +1491,7 @@ static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
 # ifdef MZ_USE_LWC
         /* For lighweight continuations, we need to be able to recognize
            and adjust mark-stack depths: */
-        jit_movi_l(JIT_R2, SCHEME_EVAL_WAITING);
+        jit_movi_p(JIT_R2, SCHEME_EVAL_WAITING);
         mz_pushr_p(JIT_R2); /* no sync */
 # endif
       }
@@ -1984,7 +1984,8 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
     {
       /* Other parts of the JIT rely on this code modifying only the target register,
          unless the type is SCHEME_FLONUM_TYPE */
-      int pos, flonum, extfl;
+      int pos, flonum;
+      int extfl USED_ONLY_IF_FLONUM_UNBOXING;
       START_JIT_DATA();
 #ifdef USE_FLONUM_UNBOXING
       flonum = (SCHEME_GET_LOCAL_TYPE(obj) == SCHEME_LOCAL_TYPE_FLONUM);
@@ -2434,7 +2435,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       mz_prepare(1);
       jit_pusharg_p(JIT_R2);
       {
-        GC_CAN_IGNORE jit_insn *refr;
+        GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
         (void)mz_finish_lwe(ts_scheme_make_envunbox, refr);
       }
       jit_retval(JIT_R0);
@@ -2486,7 +2487,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         jit_pusharg_p(JIT_R2);
         jit_pusharg_p(JIT_R1);
         {
-          GC_CAN_IGNORE jit_insn *refr;
+          GC_CAN_IGNORE jit_insn *refr  USED_ONLY_FOR_FUTURES;
           if (is_const) {
             (void)mz_finish_lwe(ts_make_global_const_ref, refr);
           } else {
@@ -2774,7 +2775,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	  mz_prepare(1);
 	  jit_pusharg_p(JIT_R0);
           {
-            GC_CAN_IGNORE jit_insn *refr;
+            GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
             (void)mz_finish_lwe(ts_scheme_make_envunbox, refr);
           }
 	  jit_retval(JIT_R0);
@@ -3022,8 +3023,8 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         mz_rs_sync();
 
         jit_movi_i(JIT_R0, WORDS_TO_BYTES(c));
-        jit_movi_i(JIT_R1, (int)&(((Scheme_Prefix *)0x0)->a[i + p + 1]));
-        jit_movi_i(JIT_R2, (int)&(((Scheme_Prefix *)0x0)->a[p]));
+        jit_movi_i(JIT_R1, (int)(intptr_t)&(((Scheme_Prefix *)0x0)->a[i + p + 1]));
+        jit_movi_i(JIT_R2, (int)(intptr_t)&(((Scheme_Prefix *)0x0)->a[p]));
         (void)jit_calli(sjc.quote_syntax_code);
 
         CHECK_LIMIT();
@@ -3049,7 +3050,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 #ifdef MZ_LONG_DOUBLE
       if (jitter->unbox_extflonum) {
         long_double d;
-        int fpr0;
+        int fpr0 USED_ONLY_SOMETIMES;
 
         if (SCHEME_LONG_DBLP(obj))
           d = SCHEME_LONG_DBL_VAL(obj);
@@ -3064,7 +3065,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 #endif
       {
         double d;
-        int fpr0;
+        int fpr0 USED_ONLY_SOMETIMES;
         
         if (SCHEME_FLOATP(obj))
           d = SCHEME_FLOAT_VAL(obj);
@@ -3318,7 +3319,8 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   if (has_rest && data->num_params) {
     /* If runstack == argv and argc == cnt, then we didn't
        copy args down, and we need to make room for scheme_null. */
-    GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refrts;
+    GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3;
+    GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
 	  
     CHECK_LIMIT();
     
@@ -3800,7 +3802,8 @@ static int generate_simple_arity_check(mz_jit_state *jitter, int num_params, int
      true dynamically for all jumps to the code. Also, at JIT time, make sure
      that jitter is initialized with a size-3 prolog. */
 
-  GC_CAN_IGNORE jit_insn *ref, *ref2, *refrts;
+  GC_CAN_IGNORE jit_insn *ref, *ref2;
+  GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
 
   __START_TINY_JUMPS__(1);
 
@@ -3912,7 +3915,8 @@ static int generate_case_lambda_dispatch(mz_jit_state *jitter, Scheme_Case_Lambd
   Scheme_Closure_Data *data;
   Scheme_Object *o;
   int i, cnt, has_rest, offset, num_params;
-  GC_CAN_IGNORE jit_insn *ref = NULL, *refrts;
+  GC_CAN_IGNORE jit_insn *ref = NULL;
+  GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
 
   cnt = c->count;
   for (i = 0; i < cnt; i++) {

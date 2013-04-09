@@ -3,7 +3,7 @@
    All rights reserved.
 
    Please see full copyright in the documentation
-   Search for "FIXME" for known improvement points 
+   Search for "FIXME" for known improvement points
 
    This is a hybrid copying/mark-compact collector. The nursery
    (generation 0) is copied into the old generation (generation 1),
@@ -27,7 +27,7 @@
 
 /* #define GC_MP_CNT */
 /* GC MProtect Counters */
-#ifdef GC_MP_CNT 
+#ifdef GC_MP_CNT
 int mp_write_barrier_cnt;
 int mp_mark_cnt;
 int mp_alloc_med_big_cnt;
@@ -58,7 +58,7 @@ intptr_t mp_ac_freed;
 #include "platforms.h"
 #include "../src/schpriv.h"
 #include "gc2.h"
-#include "gc2_dump.h" 
+#include "gc2_dump.h"
 
 /* the number of tags to use for tagged objects */
 #define NUMBER_OF_TAGS 512
@@ -121,15 +121,15 @@ enum {
   MMU_NON_PROTECTABLE   = 0,
   MMU_PROTECTABLE       = 1,
 };
-  
 
-static const char *type_name[PAGE_TYPES] = { 
-  "tagged", 
-  "atomic", 
+
+static const char *type_name[PAGE_TYPES] = {
+  "tagged",
+  "atomic",
   "array",
-  "tagged array", 
+  "tagged array",
   "pair",
-  "big" 
+  "big"
 };
 
 #include "newgc.h"
@@ -181,12 +181,12 @@ static void free_mpage(mpage *page);
 
 #if defined(MZ_USE_PLACES) && defined(GC_DEBUG_PAGES)
 static FILE* gcdebugOUT(NewGC *gc) {
-  
+
   if (gc->GCVERBOSEFH) { fflush(gc->GCVERBOSEFH); }
-  else { 
+  else {
     char buf[50];
     sprintf(buf, "GCDEBUGOUT_%i", gc->place_id);
-    gc->GCVERBOSEFH = fopen(buf, "w"); 
+    gc->GCVERBOSEFH = fopen(buf, "w");
   }
   return gc->GCVERBOSEFH;
 }
@@ -262,7 +262,7 @@ MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 
 
 /* # define LOG_APAGE_SIZE ... see gc2_obj.h */
-/* These are computed from the previous settings. You shouldn't mess with 
+/* These are computed from the previous settings. You shouldn't mess with
    them */
 #define PTR(x) ((void*)(x))
 #define PPTR(x) ((void**)(x))
@@ -337,14 +337,13 @@ inline static size_t size_to_apage_count(size_t len) {
   return (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
 }
 
-inline static size_t round_to_apage_size(size_t sizeb) {  
+inline static size_t round_to_apage_size(size_t sizeb) { 
   sizeb += APAGE_SIZE - 1;
   sizeb -= sizeb & (APAGE_SIZE - 1);
   return sizeb;
 }
 
-  
-inline static void check_used_against_max(NewGC *gc, size_t len) 
+inline static void check_used_against_max(NewGC *gc, size_t len)
 {
   intptr_t page_count;
 
@@ -364,7 +363,7 @@ inline static void check_used_against_max(NewGC *gc, size_t len)
       if(gc->used_pages > gc->max_pages_for_use) {
         garbage_collect(gc, 1, 0, NULL); /* hopefully *this* will free enough space */
         if(gc->used_pages > gc->max_pages_for_use) {
-          /* too much memory allocated. 
+          /* too much memory allocated.
            * Inform the thunk and then die semi-gracefully */
           if(GC_out_of_memory) {
             gc->used_pages -= page_count;
@@ -390,9 +389,9 @@ void shared_pagemap_set(void *ptr, size_t len, NewGC *owner)
   if (!lock) {
     mzrt_mutex_create(&lock);
 # ifdef SIXTY_FOUR_BIT_INTEGERS
-    shared_pagemap = ofm_malloc_zero(PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***)); 
+    shared_pagemap = ofm_malloc_zero(PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***));
 # else
-    shared_pagemap = ofm_malloc_zero(PAGEMAP32_SIZE * sizeof (mpage*)); 
+    shared_pagemap = ofm_malloc_zero(PAGEMAP32_SIZE * sizeof (mpage*));
 # endif
   }
 
@@ -412,7 +411,7 @@ void check_page_owner(NewGC *gc, const void *p)
     mzrt_mutex_lock(lock);
     owner = (NewGC *)pagemap_find_page(shared_pagemap, p);
     if (owner && (owner != gc) && (owner != MASTERGC) && (owner != SHARED_PAGE_ORPHANED)) {
-      printf("%p is owned by place %i not the current place %i\n", p, owner->place_id, gc->place_id);  
+      printf("%p is owned by place %i not the current place %i\n", p, owner->place_id, gc->place_id);
       abort();
     }
     mzrt_mutex_unlock(lock);
@@ -446,7 +445,7 @@ static void free_pages(NewGC *gc, void *p, size_t len, int type, int expect_mpro
 
 static void check_excessive_free_pages(NewGC *gc) {
   /* If we have too many idle pages --- 4 times used pages --- then flush.
-     We choose 4 instead of 2 for "excessive" because a block cache (when 
+     We choose 4 instead of 2 for "excessive" because a block cache (when
      available) has a fill factor of 2, and flushing will not reduce that. */
   if (mmu_memory_allocated(gc->mmu) > ((gc->used_pages << (LOG_APAGE_SIZE + 2)))) {
     mmu_flush_freed_pages(gc->mmu);
@@ -593,7 +592,7 @@ static void dump_page_map(NewGC *gc, const char *when)
 #endif
   mpage *page;
 
-  intptr_t skips = 0, did_one = 0; 
+  intptr_t skips = 0, did_one = 0;
 
   printf("Page map (%s):\n", when);
 
@@ -681,12 +680,12 @@ static void dump_page_map(NewGC *gc, const char *when)
 
 
 /* These procedures modify or use the page map. The page map provides us very
-   fast mappings from pointers to the page the reside on, if any. The page 
+   fast mappings from pointers to the page the reside on, if any. The page
    map itself serves two important purposes:
 
-   Between collections, it maps pointers to write-protected pages, so that 
+   Between collections, it maps pointers to write-protected pages, so that
    the write-barrier can identify what page a write has happened to and
-   mark it as potentially containing pointers from gen 1 to gen 0. 
+   mark it as potentially containing pointers from gen 1 to gen 0.
 
    During collections, it maps pointers to "from" pages. */
 
@@ -746,7 +745,7 @@ int GC_is_allocated(void *p)
 #endif
 
 /* struct objhead is defined in gc2_obj.h */
-/* Make sure alloction starts out double-word aligned. 
+/* Make sure alloction starts out double-word aligned.
    The header on each allocated object is one word, so to make
    the content double-word aligned, we may need a prefix. */
 #ifdef GC_ALIGN_SIXTEEN
@@ -756,7 +755,7 @@ int GC_is_allocated(void *p)
 #  define PREFIX_WSIZE 3
 # endif
 # define CHECK_ALIGN_MASK 0xF
-#elif defined(GC_ALIGN_EIGHT) 
+#elif defined(GC_ALIGN_EIGHT)
 # if defined(SIXTY_FOUR_BIT_INTEGERS)
 #  define PREFIX_WSIZE 0
 # else
@@ -773,7 +772,7 @@ int GC_is_allocated(void *p)
                                                          + (NUM(p) & (~(APAGE_SIZE - 1))) + PREFIX_SIZE)))
 
 /* this is the maximum size of an object that will fit on a page, in words.
-   the "- 3" is basically used as a fudge/safety factor, and has no real, 
+   the "- 3" is basically used as a fudge/safety factor, and has no real,
    important meaning. */
 #define MAX_OBJECT_SIZE  (APAGE_SIZE - ((PREFIX_WSIZE + 3) * WORD_SIZE))
 
@@ -782,7 +781,7 @@ int GC_is_allocated(void *p)
 #define ASSERT_VALID_INFOPTR(objptr) GC_ASSERT(!(((intptr_t)(objptr) + sizeof(objhead)) & CHECK_ALIGN_MASK))
 
 /* Generation 0. Generation 0 is a set of very large pages in a list(gc->gen0.pages),
-   plus a set of smaller bigpages in a separate list(gc->gen0.big_pages). 
+   plus a set of smaller bigpages in a separate list(gc->gen0.big_pages).
    The former is purely an optimization, saving us from constantly deallocating 
    and allocating the entire nursery on every GC. The latter is useful because it simplifies
    the allocation process (which is also a speed hack, come to think of it) 
@@ -1657,7 +1656,8 @@ intptr_t GC_message_objects_size(void *param) {
   MsgMemory *msgm = (MsgMemory *) param;
   if (!msgm) { return sizeof(param); }
   if (msgm->big_pages && msgm->size < 1024) {
-    printf("Error: message allocators with big pages should be bigger than %lu!\n", msgm->size);
+    printf("Error: message allocators with big pages should be bigger than %" PRIdPTR "u!\n",
+	   msgm->size);
     exit(1);
   }
   return msgm->size;
@@ -2612,7 +2612,7 @@ static void master_collect_initiate(NewGC *gc) {
       }
     }
     if (count != (MASTERGCINFO->alive -1)) {
-      printf("GC2 count != MASTERGCINFO->alive %i %li\n", count, MASTERGCINFO->alive);
+      printf("GC2 count != MASTERGCINFO->alive %i %" PRIdPTR "i\n", count, MASTERGCINFO->alive);
       abort();
     }
 #if defined(GC_DEBUG_PAGES)
@@ -3654,12 +3654,14 @@ void GC_dump_with_traces(int flags,
         sprintf(buf, "unknown,%d", i);
         tn = buf;
       }
-      GCPRINT(GCOUTF, "  %20.20s: %10ld %10ld\n", tn, counts[i], gcWORDS_TO_BYTES(sizes[i]));
+      GCPRINT(GCOUTF, "  %20.20s: %10" PRIdPTR "d %10" PRIdPTR "d\n",
+	      tn, counts[i], gcWORDS_TO_BYTES(sizes[i]));
     }
   }
   GCPRINT(GCOUTF, "End Racket3m\n");
 
-  GCWARN((GCOUTF, "Generation 0: %lu of %li bytes used\n", (uintptr_t) gen0_size_in_use(gc), gc->gen0.max_size));
+  GCWARN((GCOUTF, "Generation 0: %" PRIdPTR "u of %" PRIdPTR "i bytes used\n",
+	  (uintptr_t) gen0_size_in_use(gc), gc->gen0.max_size));
 
   for(i = 0; i < PAGE_TYPES; i++) {
     uintptr_t total_use = 0, count = 0;
@@ -3668,7 +3670,7 @@ void GC_dump_with_traces(int flags,
       total_use += page->size;
       count++;
     }
-    GCWARN((GCOUTF, "Generation 1 [%s]: %li bytes used in %li pages\n", 
+    GCWARN((GCOUTF, "Generation 1 [%s]: %" PRIdPTR "i bytes used in %" PRIdPTR "i pages\n",
             type_name[i], total_use, count));
   }
 
@@ -3690,20 +3692,21 @@ void GC_dump_with_traces(int flags,
           start += info->size;
         }
       }
-      GCWARN((GCOUTF, " %li [%li/%li]", count, page_count, gc->med_pages[i]->size));
+      GCWARN((GCOUTF, " %" PRIdPTR "i [%" PRIdPTR "i/%" PRIdPTR "i]",
+	      count, page_count, gc->med_pages[i]->size));
     }
   }
   GCWARN((GCOUTF, "\n"));
 
 
   GCWARN((GCOUTF,"\n"));
-  GCWARN((GCOUTF,"Current memory use: %li\n", GC_get_memory_use(NULL)));
-  GCWARN((GCOUTF,"Peak memory use after a collection: %li\n", gc->peak_memory_use));
-  GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %li (+%li)\n", 
+  GCWARN((GCOUTF,"Current memory use: %" PRIdPTR "i\n", GC_get_memory_use(NULL)));
+  GCWARN((GCOUTF,"Peak memory use after a collection: %" PRIdPTR "i\n", gc->peak_memory_use));
+  GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %" PRIdPTR "i (+%" PRIdPTR "i)\n",
           gc->used_pages * APAGE_SIZE, 
           mmu_memory_allocated(gc->mmu) - (gc->used_pages * APAGE_SIZE)));
-  GCWARN((GCOUTF,"# of major collections: %li\n", gc->num_major_collects));
-  GCWARN((GCOUTF,"# of minor collections: %li\n", gc->num_minor_collects));
+  GCWARN((GCOUTF,"# of major collections: %" PRIdPTR "i\n", gc->num_major_collects));
+  GCWARN((GCOUTF,"# of minor collections: %" PRIdPTR "i\n", gc->num_minor_collects));
   GCWARN((GCOUTF,"# of installed finalizers: %i\n", gc->num_fnls));
   GCWARN((GCOUTF,"# of traced ephemerons: %i\n", gc->num_last_seen_ephemerons));
   GCWARN((GCOUTF,"# of immobile boxes: %i\n", num_immobiles));

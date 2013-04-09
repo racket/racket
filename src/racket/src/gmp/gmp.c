@@ -22,6 +22,12 @@ MA 02111-1307, USA. */
 #include "gmp-impl.h"
 #include "gmplonglong.h"
 
+#if defined(__GNUC__)
+# define USED_ONLY_SOMETIMES __attribute__((unused))
+#else
+# define USED_ONLY_SOMETIMES /* empty */
+#endif
+
 extern void *scheme_malloc_gmp(uintptr_t, void **mem_pool);
 extern void scheme_free_gmp(void *, void **mem_pool);
 THREAD_LOCAL_DECL(static void *gmp_mem_pool);
@@ -1882,8 +1888,9 @@ mpn_sb_get_str (unsigned char *str, size_t len,
   else /* not base 10 */
     {
       unsigned chars_per_limb;
-      mp_limb_t big_base, big_base_inverted;
-      unsigned normalization_steps;
+      mp_limb_t big_base;
+      mp_limb_t big_base_inverted USED_ONLY_SOMETIMES;
+      unsigned normalization_steps USED_ONLY_SOMETIMES;
 
       chars_per_limb = __mp_bases[base].chars_per_limb;
       big_base = __mp_bases[base].big_base;
@@ -2759,7 +2766,8 @@ mpn_tdiv_qr (qp, rp, qxn, np, nn, dp, dn)
 	       it catches all cases where the quotient is 2 too large.  */
 	    {
 	      mp_limb_t dl, x;
-	      mp_limb_t h, l;
+	      mp_limb_t h;
+	      mp_limb_t l USED_ONLY_SOMETIMES;
 
 	      if (in - 2 < 0)
 		dl = 0;
@@ -4355,7 +4363,7 @@ mpn_mod_1 (mp_srcptr up, mp_size_t un, mp_limb_t d)
 {
   mp_size_t  i;
   mp_limb_t  n1, n0, r;
-  mp_limb_t  dummy;
+  mp_limb_t  dummy USED_ONLY_SOMETIMES;
 
   ASSERT (un >= 0);
   ASSERT (d != 0);
@@ -5032,7 +5040,8 @@ mpn_bdivmod (mp_ptr qp, mp_ptr up, mp_size_t usize,
   if (usize == 2 && vsize == 2 &&
       (d == GMP_NUMB_BITS || d == 2*GMP_NUMB_BITS))
     {
-      mp_limb_t hi, lo;
+      mp_limb_t hi;
+      mp_limb_t lo USED_ONLY_SOMETIMES;
       mp_limb_t q = (up[0] * v_inv) & GMP_NUMB_MASK;
       umul_ppmm (hi, lo, q, vp[0] << GMP_NAIL_BITS);
       up[0] = 0;

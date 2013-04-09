@@ -31,7 +31,6 @@
 
 #ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Waddress"
-#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
 #endif
 
 /* Separate JIT_PRECISE_GC lets us test some 3m support in non-3m mode: */
@@ -167,6 +166,30 @@ END_XFORM_ARITH;
 # ifdef CAN_INLINE_ALLOC
 #  define INLINE_FP_OPS
 # endif
+#endif
+
+#if defined(__GNUC__)
+# define USED_ONLY_SOMETIMES __attribute__((unused))
+#else
+# define USED_ONLY_SOMETIMES /* empty */
+#endif
+
+#if !defined(MZ_USE_FUTURES)
+# define USED_ONLY_FOR_FUTURES USED_ONLY_SOMETIMES
+#else
+# define USED_ONLY_FOR_FUTURES /* empty */
+#endif
+
+#if !defined(USE_FLONUM_UNBOXING)
+# define USED_ONLY_IF_FLONUM_UNBOXING USED_ONLY_SOMETIMES
+#else
+# define USED_ONLY_IF_FLONUM_UNBOXING /* empty */
+#endif
+
+#if !defined(MZ_LONG_DOUBLE)
+# define USED_ONLY_IF_LONG_DOUBLE USED_ONLY_SOMETIMES
+#else
+# define USED_ONLY_IF_LONG_DOUBLE /* empty */
 #endif
 
 #include "jitfpu.h"
@@ -1085,18 +1108,18 @@ static jit_insn *fp_tmpr;
 
 #ifdef MZ_USE_LWC
 # ifdef JIT_RUNSTACK_BASE
-#  define SAVE_RS_BASE_REG() jit_stxi_p((int)&((Scheme_Current_LWC *)0x0)->runstack_base_end, JIT_R0, JIT_RUNSTACK_BASE)
+#  define SAVE_RS_BASE_REG() jit_stxi_p((intptr_t)&((Scheme_Current_LWC *)0x0)->runstack_base_end, JIT_R0, JIT_RUNSTACK_BASE)
 # else
 #  define SAVE_RS_BASE_REG() (void)0
 # endif
 # define adjust_lwc_return_address(pc) ((jit_insn *)((char *)(pc) - jit_return_pop_insn_len()))
 # define mz_finish_lwe(d, refr) (mz_tl_ldi_p(JIT_R0, tl_scheme_current_lwc), \
-                                 jit_stxi_p((int)&((Scheme_Current_LWC *)0x0)->frame_end, JIT_R0, JIT_FP), \
-                                 jit_stxi_p((int)&((Scheme_Current_LWC *)0x0)->stack_end, JIT_R0, JIT_SP), \
-                                 jit_stxi_p((int)&((Scheme_Current_LWC *)0x0)->saved_v1, JIT_R0, JIT_V1), \
+                                 jit_stxi_p((intptr_t)&((Scheme_Current_LWC *)0x0)->frame_end, JIT_R0, JIT_FP), \
+                                 jit_stxi_p((intptr_t)&((Scheme_Current_LWC *)0x0)->stack_end, JIT_R0, JIT_SP), \
+                                 jit_stxi_p((intptr_t)&((Scheme_Current_LWC *)0x0)->saved_v1, JIT_R0, JIT_V1), \
                                  SAVE_RS_BASE_REG(),                    \
                                  refr = jit_patchable_movi_p(JIT_R1, jit_forward()), \
-                                 jit_stxi_p((int)&((Scheme_Current_LWC *)0x0)->original_dest, JIT_R0, JIT_R1), \
+                                 jit_stxi_p((intptr_t)&((Scheme_Current_LWC *)0x0)->original_dest, JIT_R0, JIT_R1), \
                                  mz_finish(d),                          \
                                  jit_patch_movi(refr, adjust_lwc_return_address(_jit.x.pc)))
 #else
@@ -1614,7 +1637,3 @@ Scheme_Object *scheme_jit_continuation_apply_install(Apply_LWC_Args *args);
 #define INLINE_STRUCT_PROC_PROP_GET_W_DEFAULT 5
 #define INLINE_STRUCT_PROC_PROP_PRED 6
 #define INLINE_STRUCT_PROC_CONSTR 7
-
-
-
-

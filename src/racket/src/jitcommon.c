@@ -200,7 +200,8 @@ static Scheme_Object **ts_scheme_on_demand(Scheme_Object **rs) XFORM_SKIP_PROC
 static int common0(mz_jit_state *jitter, void *_data)
 {
   int in;
-  GC_CAN_IGNORE jit_insn *ref, *ref2;
+  GC_CAN_IGNORE jit_insn *ref;
+  GC_CAN_IGNORE jit_insn *ref2 USED_ONLY_FOR_FUTURES;
 
   /* *** check_arity_code *** */
   /* Called as a function: */
@@ -321,7 +322,7 @@ static int common0(mz_jit_state *jitter, void *_data)
 static int common1(mz_jit_state *jitter, void *_data)
 {
   int i;
-  GC_CAN_IGNORE jit_insn *ref;
+  GC_CAN_IGNORE jit_insn *ref USED_ONLY_FOR_FUTURES;
 
   /* *** [bad_][m]{car,cdr,...,{imag,real}_part}_code *** */
   /* Argument is in R2 for cXX+r, R0 otherwise */
@@ -864,10 +865,10 @@ static int common2(mz_jit_state *jitter, void *_data)
   jit_retval(JIT_R1); /* = pointer to a stack_cache_stack element */
   CHECK_LIMIT();
   /* Extract old return address and jump to it */
-  jit_ldxi_l(JIT_R0, JIT_R1, (int)&((Stack_Cache_Elem *)0x0)->orig_result);
+  jit_ldxi_l(JIT_R0, JIT_R1, &((Stack_Cache_Elem *)0x0)->orig_result);
   (void)jit_movi_p(JIT_R2, NULL);
-  jit_stxi_l((int)&((Stack_Cache_Elem *)0x0)->orig_result, JIT_R1, JIT_R2);
-  jit_ldxi_l(JIT_R2, JIT_R1, (int)&((Stack_Cache_Elem *)0x0)->orig_return_address);
+  jit_stxi_l(&((Stack_Cache_Elem *)0x0)->orig_result, JIT_R1, JIT_R2);
+  jit_ldxi_l(JIT_R2, JIT_R1, &((Stack_Cache_Elem *)0x0)->orig_return_address);
   jit_movr_p(JIT_RET, JIT_R0);
 #ifdef MZ_USE_JIT_PPC
   jit_ldxi_p(JIT_AUX, JIT_SP, 44);
@@ -911,7 +912,8 @@ static int common2(mz_jit_state *jitter, void *_data)
   /*** values_code ***/
   /* Arguments on runstack, V1 has count */
   {
-    GC_CAN_IGNORE jit_insn *refslow, *ref1, *refloop, *ref2;
+    GC_CAN_IGNORE jit_insn *refslow, *ref1, *refloop;
+    GC_CAN_IGNORE jit_insn *ref2 USED_ONLY_FOR_FUTURES;
 
     sjc.values_code = jit_get_ip();
     mz_prolog(JIT_R1);
@@ -968,7 +970,8 @@ static int generate_apply_proxy(mz_jit_state *jitter, int setter)
    original chaperone and index on runstack;
    for setter, put back result in R2, vec in R0, and index in V1 */
 {
-  GC_CAN_IGNORE jit_insn *ref, *ref1, *ref2, *refrts;
+  GC_CAN_IGNORE jit_insn *ref, *ref1, *ref2;
+  GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
 
   CHECK_LIMIT();
   jit_ldr_p(JIT_R2, JIT_RUNSTACK);
@@ -1053,7 +1056,8 @@ static int common3(mz_jit_state *jitter, void *_data)
   for (iii = 0; iii < 2; iii++) { /* ref, set */
     for (ii = -1; ii < 4; ii++) { /* chap-vector, vector, string, bytes, fx */
       for (i = 0; i < 2; i++) { /* check index? */
-	GC_CAN_IGNORE jit_insn *ref, *reffail, *refrts;
+	GC_CAN_IGNORE jit_insn *ref, *reffail;
+	GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
 	Scheme_Type ty;
 	int offset, count_offset, log_elem_size;
         void *code;
@@ -1064,8 +1068,8 @@ static int common3(mz_jit_state *jitter, void *_data)
 	case -1:
 	case 0:
 	  ty = scheme_vector_type;
-	  offset = (int)&SCHEME_VEC_ELS(0x0);
-	  count_offset = (int)&SCHEME_VEC_SIZE(0x0);
+	  offset = (int)(intptr_t)&SCHEME_VEC_ELS(0x0);
+	  count_offset = (int)(intptr_t)&SCHEME_VEC_SIZE(0x0);
 	  log_elem_size = JIT_LOG_WORD_SIZE;
           if (ii == -1) {
             if (!iii) {
@@ -1097,8 +1101,8 @@ static int common3(mz_jit_state *jitter, void *_data)
 	  break;
 	case 1:
 	  ty = scheme_char_string_type;
-	  offset = (int)&SCHEME_CHAR_STR_VAL(0x0);
-	  count_offset = (int)&SCHEME_CHAR_STRLEN_VAL(0x0);
+	  offset = (int)(intptr_t)&SCHEME_CHAR_STR_VAL(0x0);
+	  count_offset = (int)(intptr_t)&SCHEME_CHAR_STRLEN_VAL(0x0);
 	  log_elem_size = LOG_MZCHAR_SIZE;
 	  if (!iii) {
 	    if (!i) {
@@ -1116,8 +1120,8 @@ static int common3(mz_jit_state *jitter, void *_data)
 	  break;
 	case 2:
 	  ty = scheme_byte_string_type;
-	  offset = (int)&SCHEME_BYTE_STR_VAL(0x0);
-	  count_offset = (int)&SCHEME_BYTE_STRLEN_VAL(0x0);
+	  offset = (int)(intptr_t)&SCHEME_BYTE_STR_VAL(0x0);
+	  count_offset = (int)(intptr_t)&SCHEME_BYTE_STRLEN_VAL(0x0);
 	  log_elem_size = 0;
 	  if (!iii) {
 	    if (!i) {
@@ -1136,8 +1140,8 @@ static int common3(mz_jit_state *jitter, void *_data)
 	default:
 	case 3:
 	  ty = scheme_fxvector_type;
-	  offset = (int)&SCHEME_VEC_ELS(0x0);
-	  count_offset = (int)&SCHEME_VEC_SIZE(0x0);
+	  offset = (int)(intptr_t)&SCHEME_VEC_ELS(0x0);
+	  count_offset = (int)(intptr_t)&SCHEME_VEC_SIZE(0x0);
 	  log_elem_size = JIT_LOG_WORD_SIZE;
 	  if (!iii) {
 	    if (!i) {
@@ -1382,7 +1386,8 @@ static int gen_struct_slow(mz_jit_state *jitter, int kind, int ok_proc,
                            GC_CAN_IGNORE jit_insn **_bref5,
                            GC_CAN_IGNORE jit_insn **_bref6)
 {
-  GC_CAN_IGNORE jit_insn *bref5, *bref6, *refrts;
+  GC_CAN_IGNORE jit_insn *bref5, *bref6;
+  GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
 
   jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES((kind == 3) ? 2 : 1));
   CHECK_RUNSTACK_OVERFLOW();
@@ -1669,7 +1674,7 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
 static int common4(mz_jit_state *jitter, void *_data)
 {
   int i, ii, iii;
-  GC_CAN_IGNORE jit_insn *ref;
+  GC_CAN_IGNORE jit_insn *ref USED_ONLY_FOR_FUTURES;
 
   /* *** {flvector}_{ref,set}_check_index_code *** */
   /* Same calling convention as for vector ops.    */
@@ -1769,7 +1774,8 @@ static int common4(mz_jit_state *jitter, void *_data)
   /* *** syntax_e_code *** */
   /* R0 is (potential) syntax object */
   {
-    GC_CAN_IGNORE jit_insn *ref, *reffail, *refrts;
+    GC_CAN_IGNORE jit_insn *ref, *reffail;
+    GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
     sjc.syntax_e_code = jit_get_ip();
     __START_TINY_JUMPS__(1);
     mz_prolog(JIT_R2);
@@ -2521,7 +2527,7 @@ static int common6(mz_jit_state *jitter, void *_data)
   /* wcm_chaperone */
   /* key and value are on runstack and are updated there */
   {
-    GC_CAN_IGNORE jit_insn *ref2;
+    GC_CAN_IGNORE jit_insn *ref2 USED_ONLY_FOR_FUTURES;
     sjc.wcm_chaperone = jit_get_ip();
 
     mz_prolog(JIT_R2);
@@ -2747,8 +2753,9 @@ static int common8_5(mz_jit_state *jitter, void *_data)
   /* first argument is in R0, second in R1 */
   for (i = 0; i < 2; i++) {
     void *code;
-    GC_CAN_IGNORE jit_insn *refslow, *refloop, *refdone, *ref, *refr;
+    GC_CAN_IGNORE jit_insn *refslow, *refloop, *refdone, *ref;
     GC_CAN_IGNORE jit_insn *refmaybedone, *refresume;
+    GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
 
     code = jit_get_ip();
     if (i == 0)
@@ -2903,7 +2910,8 @@ static int common10(mz_jit_state *jitter, void *_data)
   /* proc_arity_includes_code */
   /* R0 has proc, R1 has arity */
   {
-    GC_CAN_IGNORE jit_insn *ref, *refslow, *refr ,*ref_nc, *ref_prim, *refno;
+    GC_CAN_IGNORE jit_insn *ref, *refslow, *ref_nc, *ref_prim, *refno;
+    GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
     
     sjc.proc_arity_includes_code = jit_get_ip();
 
@@ -3019,7 +3027,7 @@ static int common11(mz_jit_state *jitter, void *_data)
   /* bad_char_to_integer_code */
   /* R0 has argument */
   {
-    GC_CAN_IGNORE jit_insn *refr;
+    GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
     
     sjc.bad_char_to_integer_code = jit_get_ip();
 
@@ -3044,7 +3052,7 @@ static int common11(mz_jit_state *jitter, void *_data)
   /* slow_integer_to_char_code */
   /* R0 has argument */
   {
-    GC_CAN_IGNORE jit_insn *refr;
+    GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
     
     sjc.slow_integer_to_char_code = jit_get_ip();
 
@@ -3098,7 +3106,8 @@ static int more_common0(mz_jit_state *jitter, void *_data)
   /* *** check_proc_extract_code *** */
   /* arguments are on the Scheme stack */
   {
-    GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refslow, *refrts;
+    GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refslow;
+    GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
     
     sjc.struct_proc_extract_code = jit_get_ip();
     mz_prolog(JIT_V1);
@@ -3649,11 +3658,11 @@ static int more_common1(mz_jit_state *jitter, void *_data)
        code; put them back in place just before we get to the 
        continuation */
 #ifdef JIT_X86_64
-    jit_stxi_p((int)&((Apply_LWC_Args *)0x0)->saved_r14, JIT_R0, JIT_R(14));
-    jit_stxi_p((int)&((Apply_LWC_Args *)0x0)->saved_r15, JIT_R0, JIT_R(15));
+    jit_stxi_p((intptr_t)&((Apply_LWC_Args *)0x0)->saved_r14, JIT_R0, JIT_R(14));
+    jit_stxi_p((intptr_t)&((Apply_LWC_Args *)0x0)->saved_r15, JIT_R0, JIT_R(15));
 # ifdef _WIN64
-    jit_stxi_p((int)&((Apply_LWC_Args *)0x0)->saved_r12, JIT_R0, JIT_R(12));
-    jit_stxi_p((int)&((Apply_LWC_Args *)0x0)->saved_r13, JIT_R0, JIT_R(13));
+    jit_stxi_p((intptr_t)&((Apply_LWC_Args *)0x0)->saved_r12, JIT_R0, JIT_R(12));
+    jit_stxi_p((intptr_t)&((Apply_LWC_Args *)0x0)->saved_r13, JIT_R0, JIT_R(13));
 # endif
 #endif
 
@@ -3686,38 +3695,38 @@ static int more_common1(mz_jit_state *jitter, void *_data)
     jit_movr_p(JIT_FP, JIT_R2);
 
     /* Restore saved V1: */
-    jit_ldxi_p(JIT_R1, JIT_R0, (int)&((Apply_LWC_Args *)0x0)->lwc);
-    jit_ldxi_l(JIT_V1, JIT_R1, (int)&((Scheme_Current_LWC *)0x0)->saved_v1);
+    jit_ldxi_p(JIT_R1, JIT_R0, (intptr_t)&((Apply_LWC_Args *)0x0)->lwc);
+    jit_ldxi_l(JIT_V1, JIT_R1, (intptr_t)&((Scheme_Current_LWC *)0x0)->saved_v1);
     CHECK_LIMIT();
 
     /* Restore runstack, runstack_start, and thread-local pointer */
-    jit_ldxi_p(JIT_RUNSTACK, JIT_R0, (int)&((Apply_LWC_Args *)0x0)->new_runstack);
+    jit_ldxi_p(JIT_RUNSTACK, JIT_R0, (intptr_t)&((Apply_LWC_Args *)0x0)->new_runstack);
 # ifdef THREAD_LOCAL_USES_JIT_V2
-    jit_ldxi_p(JIT_V2, JIT_R0, (int)&((Apply_LWC_Args *)0x0)->new_threadlocal);
+    jit_ldxi_p(JIT_V2, JIT_R0, (intptr_t)&((Apply_LWC_Args *)0x0)->new_threadlocal);
 # else
-    jit_ldxi_p(JIT_RUNSTACK_BASE, JIT_R0, (int)&((Apply_LWC_Args *)0x0)->new_runstack_base);
+    jit_ldxi_p(JIT_RUNSTACK_BASE, JIT_R0, (intptr_t)&((Apply_LWC_Args *)0x0)->new_runstack_base);
 # endif
 # ifdef JIT_X86_64
-    jit_ldxi_p(JIT_R14, JIT_R0, (int)&((Apply_LWC_Args *)0x0)->new_threadlocal);
+    jit_ldxi_p(JIT_R14, JIT_R0, (intptr_t)&((Apply_LWC_Args *)0x0)->new_threadlocal);
 # endif
 
     /* restore preserved registers that we otherwise don't use */
 # ifdef JIT_X86_64
     /* saved_r14 is installed in the topmost frame already */
-    jit_ldxi_p(JIT_R(15), JIT_R0, (int)&((Apply_LWC_Args *)0x0)->saved_r15);
+    jit_ldxi_p(JIT_R(15), JIT_R0, (intptr_t)&((Apply_LWC_Args *)0x0)->saved_r15);
 # ifdef _WIN64
-    jit_ldxi_p(JIT_R(12), JIT_R0, (int)&((Apply_LWC_Args *)0x0)->saved_r12);
-    jit_ldxi_p(JIT_R(13), JIT_R0, (int)&((Apply_LWC_Args *)0x0)->saved_r13);
+    jit_ldxi_p(JIT_R(12), JIT_R0, (intptr_t)&((Apply_LWC_Args *)0x0)->saved_r12);
+    jit_ldxi_p(JIT_R(13), JIT_R0, (intptr_t)&((Apply_LWC_Args *)0x0)->saved_r13);
 # endif
 # endif
     CHECK_LIMIT();
 
     /* Prepare to jump to original return: */
-    jit_ldxi_p(JIT_R1, JIT_R0, (int)&((Apply_LWC_Args *)0x0)->lwc);
-    jit_ldxi_l(JIT_R2, JIT_R1, (int)&((Scheme_Current_LWC *)0x0)->original_dest);
+    jit_ldxi_p(JIT_R1, JIT_R0, (intptr_t)&((Apply_LWC_Args *)0x0)->lwc);
+    jit_ldxi_l(JIT_R2, JIT_R1, (intptr_t)&((Scheme_Current_LWC *)0x0)->original_dest);
 
     /* install result value: */
-    jit_ldxi_p(JIT_R0, JIT_R0, (int)&((Apply_LWC_Args *)0x0)->result);
+    jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&((Apply_LWC_Args *)0x0)->result);
 
     jit_jmpr(JIT_R2);
 
