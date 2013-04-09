@@ -33,6 +33,7 @@
          optres-stronger-ribs
          optres-chaperone
          optres-no-negative-blame?
+         optres-name
          build-optres
          
          combine-two-chaperone?s
@@ -40,9 +41,9 @@
 
 ;; (define/opter (<contract-combinator> opt/i opt/info stx) body)
 ;;
-;; An opter is to a function with the following signature: 
+;; An opter is a function with the following signature: 
 ;;
-;; opter : (syntax opt/info -> <opter-results>) opt/info list-of-ids -> opt-res
+;; opter : (syntax opt/info -> optres) opt/info list-of-ids -> optres
 ;;
 ;; The first argument can be used to recursively process sub-contracts
 ;; It returns what an opter returns and its results should be accumulated
@@ -90,7 +91,8 @@
                 opt
                 stronger-ribs
                 chaperone
-                no-negative-blame?))
+                no-negative-blame?
+                name))
 (define (build-optres #:exp exp
                       #:lifts lifts
                       #:superlifts superlifts
@@ -99,7 +101,8 @@
                       #:opt opt
                       #:stronger-ribs stronger-ribs
                       #:chaperone chaperone
-                      #:no-negative-blame? [no-negative-blame? (syntax? flat)])
+                      #:no-negative-blame? [no-negative-blame? (syntax? flat)]
+                      #:name [name #''unknown-name])
   (optres exp 
           lifts
           superlifts
@@ -108,7 +111,8 @@
           opt
           stronger-ribs
           chaperone
-          no-negative-blame?))
+          no-negative-blame?
+          name))
 
 ;; a hash table of opters
 (define opters-table
@@ -274,7 +278,8 @@
      #:flat #f
      #:opt #'lift-var
      #:stronger-ribs null
-     #:chaperone #'(chaperone-contract? lift-var))))
+     #:chaperone #'(chaperone-contract? lift-var)
+     #:name #'(contract-name lift-var))))
 
 ;; combine-two-chaperone?s : (or/c boolean? syntax?) (or/c boolean? syntax?) -> (or/c boolean? syntax?)
 (define (combine-two-chaperone?s chaperone-a? chaperone-b?)

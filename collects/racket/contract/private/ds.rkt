@@ -354,7 +354,7 @@ it around flattened out.
                               (cdr free-vars))])))
             
             (let*-values ([(inner-val) #'val]
-                          [(clauses lifts superlifts stronger-ribs)
+                          [(clauses lifts superlifts stronger-ribs names)
                            (build-enforcer-clauses opt/i
                                                    (opt/info-change-val inner-val opt/info)
                                                    name
@@ -379,7 +379,8 @@ it around flattened out.
                               (values f-x ...)))))
                  lifts
                  superlifts
-                 stronger-ribs))))
+                 stronger-ribs
+                 names))))
           
           ;;
           ;; struct/dc opter
@@ -391,7 +392,7 @@ it around flattened out.
                      (helper-id-var (car (generate-temporaries (syntax (helper)))))
                      (contract/info-var (car (generate-temporaries (syntax (contract/info)))))
                      (id-var (car (generate-temporaries (syntax (id))))))
-                 (let-values ([(enforcer lifts superlifts stronger-ribs)
+                 (let-values ([(enforcer lifts superlifts stronger-ribs names)
                                (build-enforcer opt/i
                                                opt/info
                                                'struct/dc
@@ -470,7 +471,8 @@ it around flattened out.
                             #:flat #f
                             #:opt #f
                             #:stronger-ribs stronger-ribs
-                            #:chaperone #f)))))))])))))))
+                            #:chaperone #f
+                            #:name names)))))))])))))))
 
 (define-syntax (define-contract-struct stx)
   (syntax-case stx ()
