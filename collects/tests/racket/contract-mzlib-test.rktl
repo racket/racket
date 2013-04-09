@@ -4141,7 +4141,7 @@ so that propagation occurs.
              (or/c integer? boolean?))
   (test-name '(or/c (-> (>=/c 5) (>=/c 5)) boolean?)
              (or/c (-> (>=/c 5) (>=/c 5)) boolean?))
-  (test-name '(or/c (-> (>=/c 5) (>=/c 5)) boolean?)
+  (test-name '(or/c boolean? (-> (>=/c 5) (>=/c 5)))
              (or/c boolean? (-> (>=/c 5) (>=/c 5))))
   (test-name '(or/c (-> (>=/c 5) (>=/c 5))
                     (-> (<=/c 5) (<=/c 5) (<=/c 5)))
@@ -4596,7 +4596,7 @@ so that propagation occurs.
                    (flat-contract boolean?)))
   (test-name '(or/c (-> (>=/c 5) (>=/c 5)) boolean?)
              (or/c (-> (>=/c 5) (>=/c 5)) boolean?))
-  (test-name '(or/c (-> (>=/c 5) (>=/c 5)) boolean?)
+  (test-name '(or/c boolean? (-> (>=/c 5) (>=/c 5)))
              (or/c boolean? (-> (>=/c 5) (>=/c 5))))
 
   
