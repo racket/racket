@@ -443,7 +443,9 @@ Optionally, enter your directory and create a basic @filepath{info.rkt} file:
 
 The @filepath{info.rkt} file is not necessary if you have no dependencies, but
 you may wish to create it to simplify adding dependencies in the
-future.
+future. (Note that this @filepath{info.rkt} is for the package, not for
+a collection; definitions such as @racket[scribblings] or
+@racket[raco-commands] work only in a collection's @filepath{info.rkt}.)
 
 Next, inside the @nonterm{package} directory, create directories for
 the collections and modules that your package will provide. For
