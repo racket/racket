@@ -171,26 +171,33 @@
 ;; contract combinators and attempts to "unroll" those combinators to save
 ;; on things such as closure allocation time.
 (define-syntax (opt/c stx)  
-  (syntax-case stx ()
-    [(_ e)
-     (let ()
-       (define info (make-opt/info #'ctc #'val #'blame #f '() #f #f #'this #'that))
-       (define an-optres (opt/i info #'e))
-       (bind-superlifts
-        (optres-superlifts an-optres)
-        (bind-lifts
-         (optres-lifts an-optres)
-         #`(make-opt-contract
-            (λ (ctc)
-              (λ (blame)
-                #,(bind-superlifts
-                   (optres-partials an-optres)
-                   #`(λ (val) #,(optres-exp an-optres)))))
-            #,(optres-name an-optres)
-            (λ (this that) #f)
-            (vector)
-            (begin-lifted (box #f))
-            #,(optres-chaperone an-optres)))))]))
+  (define-values (exp error-name-sym)
+    (syntax-case stx ()
+      [(_ e) (values #'e 'opt/c)]
+      [(_ e #:error-name x) 
+       (begin
+         (unless (identifier? #'x)
+           (raise-syntax-error 'opt/c "expected a name" stx #'x))
+         (values #'e (syntax-e #'x)))]))
+  
+  (parameterize ([opt-error-name error-name-sym])
+    (define info (make-opt/info #'ctc #'val #'blame #f '() #f #f #'this #'that))
+    (define an-optres (opt/i info exp))
+    (bind-superlifts
+     (optres-superlifts an-optres)
+     (bind-lifts
+      (optres-lifts an-optres)
+      #`(make-opt-contract
+         (λ (ctc)
+           (λ (blame)
+             #,(bind-superlifts
+                (optres-partials an-optres)
+                #`(λ (val) #,(optres-exp an-optres)))))
+         #,(optres-name an-optres)
+         (λ (this that) #f)
+         (vector)
+         (begin-lifted (box #f))
+         #,(optres-chaperone an-optres))))))
 
 ;; this macro optimizes 'e' as a contract,
 ;; using otherwise-id if it does not recognize 'e'.

@@ -2247,14 +2247,31 @@ describes the expected type of contract and must be one of the keywords
 @racket[type] is not given, an impersonator contract is created.}
 
 
-@defform[(opt/c contract-expr)]{
+@defform/subs[(opt/c contract-expr maybe-name)
+              ([maybe-name (code:line)
+                           (code:line #:error-name id)])]{
 
 This optimizes its argument contract expression by
 traversing its syntax and, for known contract combinators,
 fuses them into a single contract combinator that avoids as
 much allocation overhead as possible. The result is a
 contract that should behave identically to its argument,
-except faster (due to less allocation).}
+except faster.
+
+If the @racket[#:error-name] argument is present, and
+@racket[contract-expr] evaluates to a non-contract
+expression, then @racket[opt/c] raises an error using
+@racket[id] as the name of the primitive, instead of using
+the name @racket[opt/c].
+
+@examples[#:eval (contract-eval)
+                 (define/contract (f x)
+                   (opt/c '(not-a-contract))
+                   x)
+                 (define/contract (f x)
+                   (opt/c '(not-a-contract) #:error-name define/contract)
+                   x)]
+}
 
 
 @defform[(define-opt/c (id id ...) expr)]{
