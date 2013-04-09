@@ -69,33 +69,39 @@
   (setup-printf "error running" (module-path-prefix->string (doc-src-spec doc)))
   (eprintf errstr))
 
-;; We use a lock to control writing to the database, because
-;; the database or binding doesn't seem to deal well with concurrent
-;; writers within a process.
+;; We use a lock to control writing to the database. It's not
+;; strictly necessary, but place channels can deal with blocking
+;; more efficiently than the database connection.
 (define no-lock void)
 (define (lock-via-channel lock-ch)
-  (let ([saved-ch #f])
-    (lambda (mode)
-      (case mode
-        [(lock)
-         (define ch (sync lock-ch))
-         (place-channel-put ch 'lock)
-         (set! saved-ch ch)]
-        [(unlock)
-         (place-channel-put saved-ch 'done)
-         (set! saved-ch #f)]))))
+  (if lock-ch
+      (let ([saved-ch #f])
+        (lambda (mode)
+          (case mode
+            [(lock)
+             (define ch (sync lock-ch))
+             (place-channel-put ch 'lock)
+             (set! saved-ch ch)]
+            [(unlock)
+             (place-channel-put saved-ch 'done)
+             (set! saved-ch #f)])))
+      void))
 (define lock-ch #f)
 (define lock-ch-in #f)
 (define (init-lock-ch!)
   (unless lock-ch
-    (set!-values (lock-ch lock-ch-in) (place-channel))
-    (thread (lambda ()
-              (define-values (ch ch-in) (place-channel))
-              (let loop ()
-                (place-channel-put lock-ch-in ch)
-                (place-channel-get ch-in)
-                (place-channel-get ch-in)
-                (loop))))))
+    ;; If places are not available, then tasks will be run
+    ;; in separate OS processes, and we can do without an
+    ;; extra lock.
+    (when (place-enabled?)
+      (set!-values (lock-ch lock-ch-in) (place-channel))
+      (thread (lambda ()
+                (define-values (ch ch-in) (place-channel))
+                (let loop ()
+                  (place-channel-put lock-ch-in ch)
+                  (place-channel-get ch-in)
+                  (place-channel-get ch-in)
+                  (loop)))))))
 (define (call-with-lock lock thunk)
   (lock 'lock)
   (dynamic-wind
