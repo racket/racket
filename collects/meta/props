@@ -1573,6 +1573,7 @@ path/s is either such a string or a list of them.
 "collects/xrepl" responsible (eli)
 "doc/release-notes/COPYING-libscheme.txt" responsible (mflatt)
 "doc/release-notes/COPYING.txt" responsible (mflatt)
+"doc/release-notes/COPYING_LESSER.txt" responsible (mflatt)
 "doc/release-notes/drracket" responsible (robby)
 "doc/release-notes/gracket" responsible (mflatt)
 "doc/release-notes/plai" responsible (jay)
