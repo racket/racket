@@ -5,18 +5,14 @@
           "lang-names.rkt"
           scribble/decode
           (for-syntax scheme)
-          (for-label (except-in scheme
-                                error printf)
-                     (prefix-in scheme:
-                                scheme)
-                     (only-in plai/main
-                              type-case define-type error
-                              test test/pred test/exn test/regexp
-                              abridged-test-output
-                              plai-catch-test-exn
-                              halt-on-errors print-only-errors
-                              test-inexact-epsilon plai-ignore-exn-strings
-                              plai-all-test-results)
+          (for-label (only-in racket/base
+                              list modulo
+                              procedure? path-string? 
+                              input-port? string? void?
+                              exact-nonnegative-integer?
+                              exact-positive-integer?)
+                     (only-in racket/contract/base
+                              or/c listof any/c)
                      (only-in plai/collector
                               root?
                               heap-size
@@ -25,17 +21,13 @@
                               heap-set! heap-ref with-heap
                               get-root-set read-root set-root!
                               procedure-roots)
+                     plai/scribblings/fake-collector2
+                     plai/scribblings/fake-mutator2
                      plai/random-mutator
                      (only-in plai/web
                               no-web-browser
                               static-files-path)
-                     (only-in plai/mutator
-                              set-first!
-                              set-rest!
-                              import-primitives
-                              test/location=?
-                              test/value=?
-                              printf)))
+                     plai/gc2/mutator))
 
 @title[#:tag "gc2-mutator"]{GC Mutator Language, 2}
 
@@ -57,7 +49,7 @@ The first expression of a mutator must be:
 @defform/subs[
 (allocator-setup collector-module 
                  heap-size)
-([heap-size exact-nonnegative-integer?])]{
+([heap-size exact-nonnegative-integer])]{
 
 @racket[_collector-module] specifies the path to the garbage collector that the
 mutator should use.  The collector must be written in the @COLLECT-LANG
@@ -75,9 +67,12 @@ as @racket[gc:cons], written in the collector.
 The @MUTATE-LANG language supports the following procedures and syntactic
 forms:
 
+@(define-syntax-rule (defprocthing id content ...)
+   @defthing[id procedure? content ...]) 
+
 @(define-syntax (document/lift stx)
    (syntax-case stx ()
-     [(_ a ...)
+     [(_ defidform a ...)
       (with-syntax ([(doc ...)
                      (for/list ([a (in-list (syntax->list #'(a ...)))])
                        (syntax-case a ()
@@ -92,12 +87,13 @@ forms:
         #'(begin
             doc ...))]))
 
-@document/lift[if and or cond case define-values let let-values let* 
+@document/lift[defidform
+               if and or cond case define-values let let-values let* 
                   (set! @splice[@list{Unlike Racket's @|rkt:set!|, this @racket[set!] is syntactically allowed only
                                       in positions that discard its result, e.g., at the top-level
                                       or in a @racket[begin] expression (although not as the last expression
                                       in a @racket[begin]).}])
-                  quote error begin]
+                  quote begin]
 
 @defform[(define (id arg-id ...) body-expression ...+)]{
   Just like Racket's @racket[define], except restricted to the simpler form
@@ -109,7 +105,8 @@ forms:
   simpler form above.
 }
 
-@document/lift[add1 sub1 zero? + - * / even? odd? = < > <= >= 
+@document/lift[defprocthing
+               error add1 sub1 zero? + - * / even? odd? = < > <= >= 
                     symbol? symbol=? number? boolean? empty? eq?]
 
 @defproc[(cons [hd any/c] [tl any/c]) cons?]{
@@ -153,7 +150,7 @@ forms:
 
 @defidform[empty]{
   The identifier @racket[empty] is defined to invoke
-  @racket[(gc:alloc-flat empty)] wherever it is used.
+  @racket[(gc:alloc-flat '())] wherever it is used.
 }
 
 @defidform[print-only-errors]{
@@ -275,7 +272,7 @@ of random mutators:
          (listof heap-value?)]{
   Processes @racket[input] looking for occurrences of @racket[heap-value?]s in
   the source of the program and returns them. This makes a good start for the
-  @racket[heap-values] argument to @racket[save-random-mutator].
+  @racket[_heap-values] argument to @racket[save-random-mutator].
 
   If @racket[input] is a port, its contents are assumed to be a well-formed
   PLAI program. If @racket[input] is a file, the contents of the file are used.

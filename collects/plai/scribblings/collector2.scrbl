@@ -23,9 +23,8 @@
                               heap-value?
                               heap-set! heap-ref with-heap
                               get-root-set read-root set-root! make-root)
-                     plai/scribblings/fake-collector
-                     plai/scribblings/fake-mutator
-                     plai/scribblings/fake-web
+                     plai/scribblings/fake-collector2
+                     plai/scribblings/fake-mutator2
                      plai/random-mutator
                      (only-in plai/web
                               no-web-browser
@@ -39,7 +38,7 @@
                               printf)))
 
 
-@title[#:tag "gc2-collector"]{GC Collector, 2}
+@title[#:tag "gc2-collector"]{GC Collector Language, 2}
 
 @defmodulelang[plai/gc2/collector]
 
