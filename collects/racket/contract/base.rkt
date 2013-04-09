@@ -11,7 +11,8 @@
          "private/misc.rkt"
          "private/provide.rkt"
          "private/guts.rkt"
-         "private/opters.rkt" ;; required for effect to install the opters
+         "private/opters.rkt"       ;; required for effect to install the opters
+         "private/basic-opters.rkt" ;; required for effect to install the opters
          "private/opt.rkt"
          "private/out.rkt")
 

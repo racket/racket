@@ -94,7 +94,8 @@
    #:flat predicate
    #:opt #f
    #:stronger-ribs null
-   #:chaperone #t))
+   #:chaperone #t
+   #:name #`'#,konst))
 
 (define (opt-constant-contract-failure blame val compare should-be)
   (raise-blame-error blame val '(expected "a value ~a to ~e") compare should-be))
@@ -185,7 +186,7 @@
                 #,(bind-superlifts
                    (optres-partials an-optres)
                    #`(λ (val) #,(optres-exp an-optres)))))
-            (λ () e)
+            #,(optres-name an-optres)
             (λ (this that) #f)
             (vector)
             (begin-lifted (box #f))
@@ -202,8 +203,7 @@
        [else
         (define info (make-opt/info #'ctc #'val #'blame #f '() #f #f #'this #'that))
         (define an-optres (opt/i info #'e))
-        #`(let ([ctc e] ;;; hm... what to do about this?!
-                [val val-e]
+        #`(let ([val val-e]
                 [blame blame-e])
             #,(bind-superlifts
                (optres-superlifts an-optres)
@@ -292,13 +292,13 @@
 ;; the stronger-vars don't seem to be used anymore for stronger; probably
 ;; they should be folded into the lifts and then there should be a separate
 ;; setup for consolidating stronger checks
-(define-struct opt-contract (proj orig-ctc stronger stronger-vars stamp chaperone?)
-  #:property orig-ctc-prop (λ (ctc) ((opt-contract-orig-ctc ctc)))
+(define-struct opt-contract (proj name stronger stronger-vars stamp chaperone?)
   #:property prop:opt-chaperone-contract (λ (ctc) (opt-contract-chaperone? ctc))
+  #:property prop:custom-write (λ (val port mode) (fprintf port "#<opt-contract: ~.s>" (opt-contract-name val)))
   #:property prop:contract
   (build-contract-property
    #:projection (λ (ctc) ((opt-contract-proj ctc) ctc))
-   #:name (λ (ctc) (contract-name ((orig-ctc-get ctc) ctc)))
+   #:name (λ (ctc) (opt-contract-name ctc))
    #:stronger
    (λ (this that)
       (and (opt-contract? that)

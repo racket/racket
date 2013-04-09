@@ -20,7 +20,6 @@
                      (val (opt/info-val opt/info)))
          (syntax (partial-var val)))
        (list (cons lift-var 
-                   ;; FIXME needs to get the contract name somehow
                    (with-syntax ((uctc uctc))
                      (syntax (coerce-contract 'opt/c uctc)))))
        '()
@@ -28,13 +27,15 @@
               partial-var
               (with-syntax ((lift-var lift-var)
                             (blame (opt/info-blame opt/info)))
-                (syntax ((contract-projection lift-var) blame))))))))
+                (syntax ((contract-projection lift-var) blame)))))
+       #`(contract-name #,lift-var))))
   
   (define (opt/or-ctc ps)
     (define lift-from-hos null)
     (define superlift-from-hos null)
     (define partial-from-hos null)
-    (define-values (opt-ps lift-ps superlift-ps partial-ps stronger-ribs hos ho-ctc chaperone? no-negative-blame)
+    (define name-from-hos #f)
+    (define-values (opt-ps lift-ps superlift-ps partial-ps stronger-ribs hos ho-ctc chaperone? no-negative-blame names)
       (let loop ([ps ps]
                  [next-ps null]
                  [lift-ps null]
@@ -44,7 +45,8 @@
                  [hos null]
                  [ho-ctc #f]
                  [chaperone? #t]
-                 [no-negative-blame #t])
+                 [no-negative-blame #t]
+                 [names '()])
         (cond
           [(null? ps) (values next-ps
                               lift-ps
@@ -54,7 +56,8 @@
                               (reverse hos)
                               ho-ctc
                               chaperone?
-                              no-negative-blame)]
+                              no-negative-blame
+                              (reverse names))]
           [else
            (define ps-optres (opt/i opt/info (car ps)))
            (if (optres-flat ps-optres)
@@ -67,7 +70,8 @@
                      hos
                      ho-ctc
                      (combine-two-chaperone?s chaperone? (optres-chaperone ps-optres))
-                     (combine-two-no-negative-blame no-negative-blame (optres-no-negative-blame? ps-optres)))
+                     (combine-two-no-negative-blame no-negative-blame (optres-no-negative-blame? ps-optres))
+                     (cons (optres-name ps-optres) names))
                (if (null? hos)
                    (loop (cdr ps)
                          next-ps
@@ -78,7 +82,8 @@
                          (cons (car ps) hos)
                          (optres-exp ps-optres)
                          (combine-two-chaperone?s chaperone? (optres-chaperone ps-optres))
-                         (combine-two-no-negative-blame no-negative-blame (optres-no-negative-blame? ps-optres)))
+                         (combine-two-no-negative-blame no-negative-blame (optres-no-negative-blame? ps-optres))
+                         (cons (optres-name ps-optres) names))
                    (loop (cdr ps)
                          next-ps
                          lift-ps
@@ -88,7 +93,8 @@
                          (cons (car ps) hos)
                          ho-ctc
                          chaperone?
-                         no-negative-blame)))])))
+                         no-negative-blame
+                         names)))])))
     (with-syntax ((next-ps
                    (with-syntax (((opt-p ...) (reverse opt-ps)))
                      (syntax (or opt-p ...)))))
@@ -111,10 +117,11 @@
              (if next-ps val ho-ctc)))]
          ;; FIXME something's not right with this case.
          [(> (length hos) 1)
-          (define-values (exp new-lifts new-superlifts new-partials) (opt/or-unknown stx))
+          (define-values (exp new-lifts new-superlifts new-partials name) (opt/or-unknown stx))
           (set! lift-from-hos new-lifts)
           (set! superlift-from-hos new-superlifts)
           (set! partial-from-hos new-partials)
+          (set! name-from-hos name)
           #`(if next-ps val #,exp)])
        #:lifts
        (append lift-ps lift-from-hos)
@@ -127,7 +134,8 @@
        #:opt #f
        #:stronger-ribs stronger-ribs
        #:chaperone chaperone?
-       #:no-negative-blame? no-negative-blame)))
+       #:no-negative-blame? no-negative-blame
+       #:name (or name-from-hos #`(list 'or/c #,@names)))))
   
   (syntax-case stx (or/c)
     [(or/c p ...)
@@ -176,8 +184,8 @@
                        (with-syntax ([this this]
                                      [that that])
                          (syntax (<= this that))))))
-              #:chaperone
-              #t)))))]))
+              #:chaperone #t
+              #:name #''(between/c n m))))))]))
 
 (define (raise-opt-between/c-error blame val lo hi)
   (raise-blame-error
@@ -186,7 +194,7 @@
    '(expected: "a number between ~a and ~a" given: "~e")
    lo hi val))
 
-(define-for-syntax (single-comparison-opter opt/info stx check-arg comparison arg)
+(define-for-syntax (single-comparison-opter opt/info stx check-arg comparison arg name)
   (with-syntax ([comparison comparison])
     (let*-values ([(lift-low lifts2) (lift/binding arg 'single-comparison-val empty-lifts)])
       (with-syntax ([m lift-low])
@@ -214,7 +222,8 @@
                       (with-syntax ([this this]
                                     [that that])
                         (syntax (comparison this that))))))
-             #:chaperone #t)))))))
+             #:chaperone #t
+             #:name #`'(#,name m))))))))
 
 (define (raise-opt-single-comparison-opter-error blame val comparison m)
   (raise-blame-error
@@ -233,7 +242,8 @@
       (λ (m) (with-syntax ([m m])
                #'(check-unary-between/c '=/c m)))
       #'=
-      #'x)]))
+      #'x
+      '=/c)]))
 
 (define/opter (>=/c opt/i opt/info stx)
   (syntax-case stx (>=/c)
@@ -244,7 +254,8 @@
       (λ (m) (with-syntax ([m m])
                #'(check-unary-between/c '>=/c m)))
       #'>=
-      #'low)]))
+      #'low
+      '>=/c)]))
 
 (define/opter (<=/c opt/i opt/info stx)
   (syntax-case stx (<=/c)
@@ -255,7 +266,8 @@
       (λ (m) (with-syntax ([m m])
                #'(check-unary-between/c '<=/c m)))
       #'<=
-      #'high)]))
+      #'high
+      '<=/c)]))
 
 (define/opter (>/c opt/i opt/info stx)
   (syntax-case stx (>/c)
@@ -266,7 +278,8 @@
       (λ (m) (with-syntax ([m m])
                #'(check-unary-between/c '>/c m)))
       #'>
-      #'low)]))
+      #'low
+      '>/c)]))
 
 (define/opter (</c opt/i opt/info stx)
   (syntax-case stx (</c)
@@ -277,7 +290,8 @@
       (λ (m) (with-syntax ([m m])
                #'(check-unary-between/c '</c m)))
       #'<
-      #'high)]))
+      #'high
+      '</c)]))
 
 ;; only used by the opters
 (define (flat-contract/predicate? pred)
@@ -326,7 +340,8 @@
        #:stronger-ribs
        (append (optres-stronger-ribs optres-hd) (optres-stronger-ribs optres-tl))
        #:chaperone
-       (combine-two-chaperone?s (optres-chaperone optres-hd) (optres-chaperone optres-tl)))))
+       (combine-two-chaperone?s (optres-chaperone optres-hd) (optres-chaperone optres-tl))
+       #:name #`(list 'cons/c #,(optres-name optres-hd) #,(optres-name optres-tl)))))
   
   (syntax-case stx (cons/c)
     [(_ hdp tlp) (opt/cons-ctc #'hdp #'tlp)]))
@@ -374,7 +389,11 @@
          #f)
      #:opt #f
      #:stronger-ribs (optres-stronger-ribs optres-ele)
-     #:chaperone (optres-chaperone optres-ele))))
+     #:chaperone (optres-chaperone optres-ele)
+     #:name #`(list '#,(if non-empty?
+                           'non-empty-listof
+                           'listof)
+                    #,(optres-name optres-ele)))))
 
 (define/opter (listof opt/i opt/info stx)
   (syntax-case stx ()
@@ -392,7 +411,7 @@
   (define (opt/arrow-ctc doms rngs)
     (let*-values ([(dom-vars rng-vars) (values (generate-temporaries doms)
                                                (generate-temporaries rngs))]
-                  [(next-doms lifts-doms superlifts-doms partials-doms stronger-ribs-dom dom-chaperone?)
+                  [(next-doms lifts-doms superlifts-doms partials-doms stronger-ribs-dom dom-chaperone? dom-names)
                    (let loop ([vars dom-vars]
                               [doms doms]
                               [next-doms null]
@@ -400,14 +419,16 @@
                               [superlifts-doms null]
                               [partials-doms null]
                               [stronger-ribs null]
-                              [chaperone? #t])
+                              [chaperone? #t]
+                              [dom-names '()])
                      (cond
                        [(null? doms) (values (reverse next-doms)
                                              lifts-doms
                                              superlifts-doms
                                              partials-doms
                                              stronger-ribs 
-                                             chaperone?)]
+                                             chaperone?
+                                             (reverse dom-names))]
                        [else
                         (define optres-dom (opt/i (opt/info-swap-blame opt/info) (car doms)))
                         (loop (cdr vars)
@@ -421,8 +442,9 @@
                               (append superlifts-doms (optres-superlifts optres-dom))
                               (append partials-doms (optres-partials optres-dom))
                               (append (optres-stronger-ribs optres-dom) stronger-ribs)
-                              (combine-two-chaperone?s chaperone? (optres-chaperone optres-dom)))]))]
-                  [(next-rngs lifts-rngs superlifts-rngs partials-rngs stronger-ribs-rng rng-chaperone?)
+                              (combine-two-chaperone?s chaperone? (optres-chaperone optres-dom))
+                              (cons (optres-name optres-dom) dom-names))]))]
+                  [(next-rngs lifts-rngs superlifts-rngs partials-rngs stronger-ribs-rng rng-chaperone? rng-names)
                    (let loop ([vars rng-vars]
                               [rngs rngs]
                               [next-rngs null]
@@ -430,14 +452,16 @@
                               [superlifts-rngs null]
                               [partials-rngs null]
                               [stronger-ribs null]
-                              [chaperone? #t])
+                              [chaperone? #t]
+                              [rng-names '()])
                      (cond
                        [(null? rngs) (values (reverse next-rngs)
                                              lifts-rngs
                                              superlifts-rngs
                                              partials-rngs
                                              stronger-ribs
-                                             chaperone?)]
+                                             chaperone?
+                                             (reverse rng-names))]
                        [else
                         (define optres-rng (opt/i opt/info (car rngs)))
                         (loop (cdr vars)
@@ -451,7 +475,8 @@
                               (append superlifts-rngs (optres-superlifts optres-rng))
                               (append partials-rngs (optres-partials optres-rng))
                               (append (optres-stronger-ribs optres-rng) stronger-ribs)
-                              (combine-two-chaperone?s chaperone? (optres-chaperone optres-rng)))]))])
+                              (combine-two-chaperone?s chaperone? (optres-chaperone optres-rng))
+                              (cons (optres-name optres-rng) rng-names))]))])
       (values
        (with-syntax ((val (opt/info-val opt/info))
                      (blame (opt/info-blame opt/info))
@@ -482,11 +507,16 @@
        #f
        #f
        (append stronger-ribs-dom stronger-ribs-rng)
-       (combine-two-chaperone?s dom-chaperone? rng-chaperone?))))
+       (combine-two-chaperone?s dom-chaperone? rng-chaperone?)
+       #`(list '->
+               #,@dom-names
+               #,(if (= 1 (length rng-names))
+                     (car rng-names)
+                     #`(list 'values #,@rng-names))))))
   
   (define (opt/arrow-any-ctc doms)
     (let*-values ([(dom-vars) (generate-temporaries doms)]
-                  [(next-doms lifts-doms superlifts-doms partials-doms stronger-ribs-dom dom-chaperone?)
+                  [(next-doms lifts-doms superlifts-doms partials-doms stronger-ribs-dom dom-chaperone? names)
                    (let loop ([vars dom-vars]
                               [doms doms]
                               [next-doms null]
@@ -494,14 +524,16 @@
                               [superlifts-doms null]
                               [partials-doms null]
                               [stronger-ribs null]
-                              [chaperone? #t])
+                              [chaperone? #t]
+                              [names '()])
                      (cond
                        [(null? doms) (values (reverse next-doms)
                                              lifts-doms
                                              superlifts-doms
                                              partials-doms
                                              stronger-ribs
-                                             chaperone?)]
+                                             chaperone?
+                                             (reverse names))]
                        [else
                         (define optres-dom (opt/i (opt/info-swap-blame opt/info) (car doms)))
                         (loop (cdr vars)
@@ -512,7 +544,8 @@
                               (append superlifts-doms (optres-superlifts optres-dom))
                               (append partials-doms (optres-partials optres-dom))
                               (append (optres-stronger-ribs optres-dom) stronger-ribs)
-                              (combine-two-chaperone?s chaperone? (optres-chaperone optres-dom)))]))])
+                              (combine-two-chaperone?s chaperone? (optres-chaperone optres-dom))
+                              (cons (optres-name optres-dom) names))]))])
       (values
        (with-syntax ((blame (opt/info-blame opt/info))
                      ((dom-arg ...) dom-vars)
@@ -532,7 +565,10 @@
        #f
        #f
        stronger-ribs-dom
-       dom-chaperone?)))
+       dom-chaperone?
+       #`(list '->
+               #,@names
+               'any))))
   
   (syntax-case* stx (-> values any any/c) module-or-top-identifier=?
     [(-> any/c ... any)
@@ -551,35 +587,39 @@
         #:flat #'(procedure-arity-includes? val n)
         #:opt #f
         #:stronger-ribs null
-        #:chaperone #t))]
+        #:chaperone #t
+        #:name #`'(-> #,@(build-list (syntax-e #'n) (λ (x) 'any/c)) any)))]
     [(-> dom ... (values rng ...))
      (if (ormap (λ (x) (keyword? (syntax-e x))) (syntax->list #'(dom ...)))
          (opt/unknown opt/i opt/info stx) ;; give up if there is a mandatory keyword 
-         (let-values ([(next lift superlift partial flat opt stronger-ribs chaperone?)
+         (let-values ([(next lift superlift partial flat opt stronger-ribs chaperone? name)
                        (opt/arrow-ctc (syntax->list (syntax (dom ...)))
                                       (syntax->list (syntax (rng ...))))])
            (if (eq? chaperone? #t)
                (build-optres #:exp next #:lifts lift #:superlifts superlift #:partials partial
-                             #:flat flat #:opt opt #:stronger-ribs stronger-ribs #:chaperone chaperone?)
+                             #:flat flat #:opt opt #:stronger-ribs stronger-ribs #:chaperone chaperone?
+                             #:name name)
                (opt/unknown opt/i opt/info stx))))]
     [(-> dom ... any)
      (if (ormap (λ (x) (keyword? (syntax-e x))) (syntax->list #'(dom ...)))
          (opt/unknown opt/i opt/info stx) ;; give up if there is a mandatory keyword 
-         (let-values ([(next lift superlift partial flat opt stronger-ribs chaperone?)
+         (let-values ([(next lift superlift partial flat opt stronger-ribs chaperone? name)
                        (opt/arrow-any-ctc (syntax->list (syntax (dom ...))))])
            (if (eq? chaperone? #t)
                (build-optres #:exp next #:lifts lift #:superlifts superlift #:partials partial
-                             #:flat flat #:opt opt #:stronger-ribs stronger-ribs #:chaperone chaperone?)
+                             #:flat flat #:opt opt #:stronger-ribs stronger-ribs #:chaperone chaperone?
+                             #:name name)
                (opt/unknown opt/i opt/info stx))))]
     [(-> dom ... rng)
      (if (ormap (λ (x) (keyword? (syntax-e x))) (syntax->list #'(dom ...)))
          (opt/unknown opt/i opt/info stx) ;; give up if there is a mandatory keyword 
-         (let-values ([(next lift superlift partial flat opt stronger-ribs chaperone?)
+         (let-values ([(next lift superlift partial flat opt stronger-ribs chaperone? name)
                        (opt/arrow-ctc (syntax->list (syntax (dom ...)))
                                       (list #'rng))])
            (if (eq? chaperone? #t)
                (build-optres #:exp next #:lifts lift #:superlifts superlift #:partials partial
-                             #:flat flat #:opt opt #:stronger-ribs stronger-ribs #:chaperone chaperone?)
+                             #:flat flat #:opt opt #:stronger-ribs stronger-ribs #:chaperone chaperone?
+                             #:name name)
                (opt/unknown opt/i opt/info stx))))]))
 
 (define (raise-flat-arrow-err blame val n)

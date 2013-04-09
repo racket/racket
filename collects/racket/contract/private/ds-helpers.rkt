@@ -177,13 +177,20 @@ which are then called when the contract's fields are explored
                [maker-args '()]
                [lifts-ps '()]
                [superlifts-ps '()]
-               [stronger-ribs-ps '()])
+               [stronger-ribs-ps '()]
+               [any-deps? #f]
+               [names '()])
       (cond
         [(null? clauses)
          (values (reverse maker-args)
                  lifts-ps
                  superlifts-ps
-                 stronger-ribs-ps)]
+                 stronger-ribs-ps
+                 (if any-deps? ;; the else branch here is an ugly hack
+                     #`(list '#,name #,@(reverse names))
+                     #`(list '#,(string->symbol (regexp-replace #rx"/dc$" (symbol->string name) "/c"))
+                             #,@(map (λ (x) #`(cadr #,x)) 
+                                     (reverse names)))))]
         [else
          (let ([clause (car clauses)]
                [let-var (car let-vars)]
@@ -217,7 +224,10 @@ which are then called when the contract's fields are explored
                       (cons maker-arg maker-args)
                       lifts-ps
                       superlifts-ps
-                      stronger-ribs-ps))]
+                      stronger-ribs-ps
+                      #t
+                      (cons #`(list 'id '(... ...))
+                            names)))]
              [(id (x ...) ctc-exp)
               (begin
                 (unless (identifier? (syntax id))
@@ -242,7 +252,11 @@ which are then called when the contract's fields are explored
                       (cons maker-arg maker-args)
                       (append lifts-ps (optres-lifts an-optres))
                       (append superlifts-ps (optres-superlifts an-optres))
-                      (append stronger-ribs-ps (optres-stronger-ribs an-optres))))]
+                      (append stronger-ribs-ps (optres-stronger-ribs an-optres))
+                      any-deps?
+                      (cons 
+                       #`(list 'id #,(optres-name an-optres))
+                       names)))]
              [(id ctc-exp)
               (raise-syntax-error name "expected identifier" stx (syntax id))]))]))))
 

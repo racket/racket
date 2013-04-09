@@ -10,7 +10,7 @@
 ;;
 ;; opt/pred helper
 ;;
-(define-for-syntax (opt/pred opt/info pred)
+(define-for-syntax (opt/pred opt/info pred #:name [name (syntax-e pred)])
   (with-syntax ((pred pred))
     (build-optres
      #:exp
@@ -26,7 +26,8 @@
      #:flat (syntax (pred val))
      #:opt #f
      #:stronger-ribs null
-     #:chaperone #t)))
+     #:chaperone #t
+     #:name #`'#,name)))
 
 (define (raise-opt/pred-error blame val pred-name)
   (raise-blame-error
@@ -61,12 +62,13 @@
                    #:flat #'#t
                    #:opt #f
                    #:stronger-ribs null
-                   #:chaperone #t)]))
+                   #:chaperone #t
+                   #:name #''any/c)]))
 
 ;;
 ;; false/c
 ;;
-(define/opter (false/c opt/i opt/info stx) (opt/pred opt/info #'not))
+(define/opter (false/c opt/i opt/info stx) (opt/pred opt/info #'not #:name '#f))
 
 ;;
 ;; flat-contract helper
@@ -106,7 +108,8 @@
           #:flat (syntax (lift-pred val))
           #:opt #f
           #:stronger-ribs null
-          #:chaperone #t)))]))
+          #:chaperone #t
+          #:name #'(object-name lift-pred))))]))
 
 ;;
 ;; flat-contract and friends
