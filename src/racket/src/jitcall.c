@@ -520,21 +520,21 @@ int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
 
 int scheme_generate_finish_apply(mz_jit_state *jitter)
 {
-  GC_CAN_IGNORE jit_insn *refr;
+  GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
   (void)mz_finish_lwe(ts__scheme_apply_from_native, refr);
   return 1;
 }
 
 int scheme_generate_finish_tail_apply(mz_jit_state *jitter)
 {
-  GC_CAN_IGNORE jit_insn *refr;
+  GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
   (void)mz_finish_lwe(_scheme_tail_apply_from_native, refr);
   return 1;
 }
 
 int scheme_generate_finish_multi_apply(mz_jit_state *jitter)
 {
-  GC_CAN_IGNORE jit_insn *refr;
+  GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
   (void)mz_finish_lwe(ts__scheme_apply_multi_from_native, refr);
   return 1;
 }
@@ -547,10 +547,10 @@ int scheme_generate_finish_tail_call(mz_jit_state *jitter, int direct_native)
   jit_pusharg_i(JIT_R0);
   jit_pusharg_p(JIT_V1);
   if (direct_native > 1) { /* => some_args_already_in_place */
-    GC_CAN_IGNORE jit_insn *refr;
+    GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
     (void)mz_finish_lwe(_scheme_tail_apply_from_native_fixup_args, refr);
   } else {
-    GC_CAN_IGNORE jit_insn *refr;
+    GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
     (void)mz_finish_lwe(ts__scheme_tail_apply_from_native, refr);
   }
   CHECK_LIMIT();
@@ -730,7 +730,8 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
      If num_rands < 0, then argc is in R0, and need to pop runstack before returning.
      If num_rands == -1, skip prolog. */
   GC_CAN_IGNORE jit_insn *ref, *ref2, *ref4, *ref5, *ref6, *ref7, *ref8, *ref9;
-  GC_CAN_IGNORE jit_insn *ref10, *reftop = NULL, *refagain, *refrts;
+  GC_CAN_IGNORE jit_insn *ref10, *reftop = NULL, *refagain;
+  GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
 #ifndef FUEL_AUTODECEREMENTS
   GC_CAN_IGNORE jit_insn *ref11;
 #endif
@@ -1076,7 +1077,9 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
 /* Last argument is in R0 */
 {
   GC_CAN_IGNORE jit_insn *refslow, *refagain;
-  int i, jmp_tiny, jmp_short;
+  int i;
+  int jmp_tiny USED_ONLY_SOMETIMES;
+  int jmp_short USED_ONLY_SOMETIMES;
   int closure_size = jitter->self_closure_size;
   int space, offset;
 #ifdef USE_FLONUM_UNBOXING
@@ -1233,7 +1236,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
       if (CLOSURE_ARGUMENT_IS_FLONUM(jitter->self_data, i)
           || CLOSURE_ARGUMENT_IS_EXTFLONUM(jitter->self_data, i)) {
         GC_CAN_IGNORE jit_insn *iref;
-        int extfl;
+        int extfl USED_ONLY_IF_LONG_DOUBLE;
         extfl = CLOSURE_ARGUMENT_IS_EXTFLONUM(jitter->self_data, i);
         mz_pushr_p(JIT_R0);
         mz_ld_runstack_base_alt(JIT_R2);

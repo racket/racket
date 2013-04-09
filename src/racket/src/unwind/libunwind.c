@@ -40,6 +40,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 #define UNW_PI_FLAG_DEBUG_FRAME        32
 
+#define UNW_UNUSED(x) /* empty*/
+
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 /*                   region-based memory management                   */
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
@@ -1036,7 +1038,8 @@ run_cfi_program (struct dwarf_cursor *c, dwarf_state_record_t *sr,
 		 struct dwarf_cie_info *dci)
 {
   unw_word_t curr_ip, operand = 0, regnum, val, len, fde_encoding;
-  dwarf_reg_state_t *rs_stack = NULL, *new_rs, *old_rs;
+  dwarf_reg_state_t *rs_stack = NULL, *new_rs;
+  UNW_UNUSED(dwarf_reg_state_t *old_rs;)
   unw_addr_space_t as;
   unw_accessors_t *a;
   uint8_t u8, op;
@@ -1228,7 +1231,7 @@ run_cfi_program (struct dwarf_cursor *c, dwarf_state_record_t *sr,
 	      goto fail;
 	    }
 	  memcpy (&sr->rs_current.reg, &rs_stack->reg, sizeof (rs_stack->reg));
-	  old_rs = rs_stack;
+	  UNW_UNUSED(old_rs = rs_stack);
 	  rs_stack = rs_stack->next;
 	  free_reg_state (old_rs);
 	  Debug (15, "CFA_restore_state\n");
@@ -1345,6 +1348,7 @@ run_cfi_program (struct dwarf_cursor *c, dwarf_state_record_t *sr,
   ret = 0;
 
  fail:
+  UNW_UNUSED(
   /* Free the register-state stack, if not empty already.  */
   while (rs_stack)
     {
@@ -1352,6 +1356,7 @@ run_cfi_program (struct dwarf_cursor *c, dwarf_state_record_t *sr,
       rs_stack = rs_stack->next;
       free_reg_state (old_rs);
     }
+  )
   return ret;
 }
 
@@ -2327,7 +2332,7 @@ dwarf_find_debug_frame (unw_addr_space_t unw_local_addr_space,
       di->start_ip = fdesc->start;
       di->end_ip = fdesc->end;
       di->u.rti.name_ptr = (unw_word_t) (uintptr_t) obj_name;
-      di->u.rti.table_data = (unw_word_t *) fdesc;
+      di->u.rti.table_data = (unw_word_t) (uintptr_t) fdesc;
       di->u.rti.table_len = sizeof (*fdesc) / sizeof (unw_word_t);
       di->u.rti.segbase = segbase;
 
@@ -2349,7 +2354,8 @@ callback (struct dl_phdr_info *info, size_t size, void *ptr)
   unw_dyn_info_t *di = &cb_data->di;
   const Elf_W(Phdr) *phdr, *p_eh_hdr, *p_dynamic, *p_text;
   unw_word_t addr, eh_frame_start, eh_frame_end, fde_count, ip;
-  Elf_W(Addr) load_base, segbase = 0, max_load_addr = 0;
+  Elf_W(Addr) load_base, max_load_addr = 0;
+  UNW_UNUSED(Elf_W(Addr) segbase = 0;)
   int ret, need_unwind_info = cb_data->need_unwind_info;
   unw_proc_info_t *pi = cb_data->pi;
   struct dwarf_eh_frame_hdr *hdr;
@@ -2426,11 +2432,13 @@ callback (struct dl_phdr_info *info, size_t size, void *ptr)
 #endif  /* CONFIG_DEBUG_FRAME */
   }
 
+  /* segbase is currently unused: */
+  UNW_UNUSED(
   if (likely (p_eh_hdr->p_vaddr >= p_text->p_vaddr
-	      && p_eh_hdr->p_vaddr < p_text->p_vaddr + p_text->p_memsz))
+	      && p_eh_hdr->p_vaddr < p_text->p_vaddr + p_text->p_memsz)) {
     /* normal case: eh-hdr is inside text segment */
     segbase = p_text->p_vaddr + load_base;
-  else
+  } else
     {
       /* Special case: eh-hdr is in some other segment; this may
 	 happen, e.g., for the Linux kernel's gate DSO, for
@@ -2446,6 +2454,7 @@ callback (struct dl_phdr_info *info, size_t size, void *ptr)
 	    }
 	}
     }
+  )
 
   if (p_dynamic)
     {
@@ -2578,7 +2587,7 @@ dwarf_find_proc_info (unw_addr_space_t as, unw_word_t ip,
 }
 
 static inline const struct table_entry *
-lookup (struct table_entry *table, size_t table_size, int32_t rel_ip)
+lookup (const struct table_entry *table, size_t table_size, int32_t rel_ip)
 {
   unsigned long table_len = table_size / sizeof (struct table_entry);
   const struct table_entry *e = 0;
@@ -2813,15 +2822,13 @@ unw_get_reg (unw_cursor_t *cursor, int regnum, unw_word_t *valp)
     {
 
     case UNW_X86_64_RIP:
-      if (write)
-	c->dwarf.ip = *valp;		/* also update the RIP cache */
+      c->dwarf.ip = *valp;		/* also update the RIP cache */
       loc = c->dwarf.loc[REG_RIP];
       break;
 
     case UNW_X86_64_CFA:
     case UNW_X86_64_RSP:
-      if (write)
-	return -UNW_EREADONLYREG;
+      return -UNW_EREADONLYREG;
       *valp = c->dwarf.cfa;
       return 0;
 
@@ -2829,13 +2836,7 @@ unw_get_reg (unw_cursor_t *cursor, int regnum, unw_word_t *valp)
     case UNW_X86_64_RDX:
       arg_num = regnum - UNW_X86_64_RAX;
       mask = (1 << arg_num);
-      if (write)
-	{
-	  c->dwarf.eh_args[arg_num] = *valp;
-	  c->dwarf.eh_valid_mask |= mask;
-	  return 0;
-	}
-      else if ((c->dwarf.eh_valid_mask & mask) != 0)
+      if ((c->dwarf.eh_valid_mask & mask) != 0)
 	{
 	  *valp = c->dwarf.eh_args[arg_num];
 	  return 0;

@@ -86,12 +86,12 @@
 #define jit_ldr_f(f0, r0) MOVSSmr(0, r0, _NOREG, _SCL1, f0)
 #define jit_ldr_d(f0, r0) MOVSDmr(0, r0, _NOREG, _SCL1, f0)
 
-#define _jit_ldi_d(f0, i0) MOVSDmr((long)i0, _NOREG, _NOREG, _SCL1, f0)
+#define _jit_ldi_d(f0, i0) MOVSDmr((intptr_t)(i0), _NOREG, _NOREG, _SCL1, f0)
 #ifdef JIT_X86_64
-# define jit_ldi_d(f0, i0) \
-  (_u32P((intptr_t)(i0)) \
-   ? _jit_ldi_d(f0, i0) \
-   : (jit_movi_l(JIT_REXTMP, i0), jit_ldr_d(f0, JIT_REXTMP)))
+# define jit_ldi_d(f0, i0)			\
+  (_u32P((intptr_t)(i0))			\
+   ? _jit_ldi_d(f0, i0)				\
+   : (jit_movi_l(JIT_REXTMP, (intptr_t)(i0)), jit_ldr_d(f0, JIT_REXTMP)))
 #else
 # define jit_ldi_d(f0, i0) _jit_ldi_d(f0, i0)
 #endif
@@ -106,8 +106,8 @@
 #ifdef JIT_X86_64
 # define jit_sti_d(i0, f0) \
   (_u32P((intptr_t)(i0)) \
-   ? _jit_sti_d(i0, f0) \
-   : (jit_movi_l(JIT_REXTMP, i0), jit_str_d(JIT_REXTMP, f0)))
+   ? _jit_sti_d((intptr_t)(i0), f0)					\
+   : (jit_movi_l(JIT_REXTMP, (intptr_t)(i0)), jit_str_d(JIT_REXTMP, f0)))
 #else
 # define jit_sti_d(i0, f0) _jit_sti_d(i0, f0) 
 #endif

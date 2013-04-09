@@ -730,7 +730,7 @@ mp_limb_t mpn_invert_limb _PROTO ((mp_limb_t));
 #ifndef invert_limb
 #define invert_limb(invxl,xl) \
   do {									\
-    mp_limb_t dummy;							\
+    mp_limb_t dummy USED_ONLY_SOMETIMES;				\
     if (xl << 1 == 0)							\
       invxl = ~(mp_limb_t) 0;						\
     else								\
@@ -745,7 +745,8 @@ mp_limb_t mpn_invert_limb _PROTO ((mp_limb_t));
    has to be set.  Put the quotient in Q and the remainder in R.  */
 #define udiv_qrnnd_preinv(q, r, nh, nl, d, di) \
   do {									\
-    mp_limb_t _q, _ql, _r;						\
+    mp_limb_t _q, _r;							\
+    mp_limb_t _ql USED_ONLY_SOMETIMES;					\
     mp_limb_t _xh, _xl;							\
     umul_ppmm (_q, _ql, (nh), (di));					\
     _q += (nh);			/* DI is 2**BITS_PER_MP_LIMB too small */\

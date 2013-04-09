@@ -357,7 +357,8 @@ jitcommon.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
 jitinline.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
 jitprep.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/stypes.h
-jitstack.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS) $(srcdir)/codetab.inc
+jitstack.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS) $(srcdir)/codetab.inc \
+        $(srcdir)/unwind/libunwind.h
 jitstate.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
 list.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/stypes.h  

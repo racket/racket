@@ -640,7 +640,8 @@ int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args,
    For nary case, args on are on runstack.
    If num_args is -1, nary and R1 has the count.*/
 {
-  GC_CAN_IGNORE jit_insn *ref, *refslow, *refrts, *refdone;
+  GC_CAN_IGNORE jit_insn *ref, *refslow, *refdone;
+  GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
   int always_slow = 0;
 
 #ifndef CAN_INLINE_ALLOC
@@ -1356,7 +1357,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
                                      || IS_NAMED_PRIM(rator, "unsafe-extflvector-length"))) {
       GC_CAN_IGNORE jit_insn *reffail, *ref;
       int unsafe = 0, for_fl = 0, for_fx = 0, can_chaperone = 0;
-      int extfl = 0;
+      int extfl USED_ONLY_IF_LONG_DOUBLE = 0;
 
       if (IS_NAMED_PRIM(rator, "unsafe-vector*-length")
           || IS_NAMED_PRIM(rator, "unsafe-fxvector-length")) {
@@ -1822,7 +1823,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       mz_prepare(1);
       jit_pusharg_p(JIT_R0);
       {
-        GC_CAN_IGNORE jit_insn *refr;
+        GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
         (void)mz_finish_lwe(ts_scheme_box, refr);
       }
       jit_retval(dest);
@@ -1903,7 +1904,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
                || IS_NAMED_PRIM(rator, "fsemaphore-try-wait?")) {
       /* Inline calls to future functions that specially support
          running in the future thread: */
-      GC_CAN_IGNORE jit_insn *refr;
+      GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
 
       mz_runstack_skipped(jitter, 1);
       scheme_generate_non_tail(app->rand, jitter, 0, 1, 0);
@@ -2124,8 +2125,8 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
 
   if (!direct) {
     /* Extract character value */
-    jit_ldxi_i(JIT_R0, JIT_R0, (int)&SCHEME_CHAR_VAL((Scheme_Object *)0x0));
-    jit_ldxi_i(JIT_R1, JIT_R1, (int)&SCHEME_CHAR_VAL((Scheme_Object *)0x0));
+    jit_ldxi_i(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CHAR_VAL((Scheme_Object *)0x0));
+    jit_ldxi_i(JIT_R1, JIT_R1, (intptr_t)&SCHEME_CHAR_VAL((Scheme_Object *)0x0));
     ref = jit_bner_i(jit_forward(), JIT_R0, JIT_R1);
   } else {
     ref = jit_bner_p(jit_forward(), JIT_R0, JIT_R1);
@@ -2219,21 +2220,21 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
         (void)jit_bmci_ul(reffail, JIT_R2, 0x1);
       if (for_fx) {
         (void)mz_bnei_t(reffail, JIT_R0, scheme_fxvector_type, JIT_R2);
-        jit_ldxi_l(JIT_R2, JIT_R0, (int)&SCHEME_FXVEC_SIZE(0x0));
+        jit_ldxi_l(JIT_R2, JIT_R0, (intptr_t)&SCHEME_FXVEC_SIZE(0x0));
       } else if (!for_fl) {
         (void)mz_bnei_t(reffail, JIT_R0, scheme_vector_type, JIT_R2);
         if (check_mutable) {
           jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)0x0));
           (void)jit_bmsi_ul(reffail, JIT_R2, 0x1);
         }
-        jit_ldxi_l(JIT_R2, JIT_R0, (int)&SCHEME_VEC_SIZE(0x0));
+        jit_ldxi_l(JIT_R2, JIT_R0, (intptr_t)&SCHEME_VEC_SIZE(0x0));
       } else {
         MZ_FPUSEL_STMT(extfl,
                        (void)mz_bnei_t(reffail, JIT_R0, scheme_extflvector_type, JIT_R2),
                        (void)mz_bnei_t(reffail, JIT_R0, scheme_flvector_type, JIT_R2));
         MZ_FPUSEL_STMT(extfl,
-                       jit_ldxi_l(JIT_R2, JIT_R0, (int)&SCHEME_EXTFLVEC_SIZE(0x0)),
-                       jit_ldxi_l(JIT_R2, JIT_R0, (int)&SCHEME_FLVEC_SIZE(0x0)));
+                       jit_ldxi_l(JIT_R2, JIT_R0, (intptr_t)&SCHEME_EXTFLVEC_SIZE(0x0)),
+                       jit_ldxi_l(JIT_R2, JIT_R0, (intptr_t)&SCHEME_FLVEC_SIZE(0x0)));
       }
       if (!int_ready) {
         jit_rshi_ul(JIT_V1, JIT_R1, 1);
@@ -2298,7 +2299,7 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
     if (!for_fl) {
       jit_ldxr_p(dest, JIT_R0, JIT_V1);
     } else {
-      int fpr0;
+      int fpr0 USED_ONLY_SOMETIMES;
       fpr0 = JIT_FPUSEL_FPR_0(extfl, jitter->unbox_depth);
       jit_FPSEL_ldxr_xd_fppush(extfl, fpr0, JIT_R0, JIT_V1);
       if (unbox_flonum)
@@ -2330,7 +2331,7 @@ static int allocate_rectangular(mz_jit_state *jitter, int dest)
   jit_pusharg_p(JIT_R1);
   jit_pusharg_p(JIT_R0);
   {
-    GC_CAN_IGNORE jit_insn *refr;
+    GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
     (void)mz_finish_lwe(ts_scheme_make_complex, refr);
   }
   jit_retval(dest);
@@ -2461,7 +2462,8 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     
     return 1;
   }  else if (IS_NAMED_PRIM(rator, "equal?")) {
-    GC_CAN_IGNORE jit_insn *ref_f, *ref_d, *refr;
+    GC_CAN_IGNORE jit_insn *ref_f, *ref_d;
+    GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
 
     scheme_generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
     CHECK_LIMIT();
@@ -2897,7 +2899,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	       || IS_NAMED_PRIM(rator, "fxvector-ref")
 	       || IS_NAMED_PRIM(rator, "unsafe-fxvector-ref")) {
       int simple;
-      int which, unsafe = 0, base_offset = ((int)&SCHEME_VEC_ELS(0x0));
+      int which, unsafe = 0, base_offset = (int)(intptr_t)&SCHEME_VEC_ELS(0x0);
       mz_jit_unbox_state ubs;
       int can_chaperone = 1, for_struct = 0, for_fx = 0;
       int extfl = 0;
@@ -2933,18 +2935,18 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         if (MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "extflvector-ref")))
           extfl = 1;
         MZ_FPUSEL_STMT(extfl,
-                       base_offset = ((int)&SCHEME_EXTFLVEC_ELS(0x0)),
-                       base_offset = ((int)&SCHEME_FLVEC_ELS(0x0)));
+                       base_offset = (int)(intptr_t)&SCHEME_EXTFLVEC_ELS(0x0),
+		       base_offset = (int)(intptr_t)&SCHEME_FLVEC_ELS(0x0));
       } else if (IS_NAMED_PRIM(rator, "unsafe-struct*-ref")) {
 	which = 0;
         unsafe = 1;
-        base_offset = ((int)&((Scheme_Structure *)0x0)->slots);
+        base_offset = (int)(intptr_t)&((Scheme_Structure *)0x0)->slots;
         can_chaperone = 0;
         for_struct = 1;
       } else if (IS_NAMED_PRIM(rator, "unsafe-struct-ref")) {
 	which = 0;
         unsafe = 1;
-        base_offset = ((int)&((Scheme_Structure *)0x0)->slots);
+        base_offset = (int)(intptr_t)&((Scheme_Structure *)0x0)->slots;
         for_struct = 1;
       } else if (IS_NAMED_PRIM(rator, "string-ref"))
 	which = 1;
@@ -3081,7 +3083,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
                || IS_NAMED_PRIM(rator, "unsafe-flvector-ref")
                || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-ref")
                                      || IS_NAMED_PRIM(rator, "unsafe-f80vector-ref"))) {
-      int fpr0;
+      int fpr0 USED_ONLY_SOMETIMES;
       int is_f64;
       int extfl;
       mz_jit_unbox_state ubs;
@@ -3106,8 +3108,8 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
                      jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_DOUBLE_SIZE));
       if (!is_f64) {
         MZ_FPUSEL_STMT(extfl,
-                       jit_addi_ul(JIT_R1, JIT_R1, (int)(&SCHEME_EXTFLVEC_ELS(0x0))),
-                       jit_addi_ul(JIT_R1, JIT_R1, (int)(&SCHEME_FLVEC_ELS(0x0))));
+                       jit_addi_ul(JIT_R1, JIT_R1, (intptr_t)(&SCHEME_EXTFLVEC_ELS(0x0))),
+                       jit_addi_ul(JIT_R1, JIT_R1, (intptr_t)(&SCHEME_FLVEC_ELS(0x0))));
       }
 
       if (jitter->unbox)
@@ -3345,7 +3347,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       jit_pusharg_p(JIT_R1);
       jit_pusharg_p(JIT_R0);
       {
-        GC_CAN_IGNORE jit_insn *refr;
+        GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
         (void)mz_finish_lwe(ts_scheme_make_mutable_pair, refr);
       }
       jit_retval(dest);
@@ -3501,7 +3503,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       return 1;
     } else if (IS_NAMED_PRIM(rator, "continuation-mark-set-first")) {
-      GC_CAN_IGNORE jit_insn *refr;
+      GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
 
       LOG_IT(("inlined continuation-mark-set-first\n"));
 
@@ -3686,7 +3688,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 	|| IS_NAMED_PRIM(rator, "unsafe-s16vector-set!")
 	|| IS_NAMED_PRIM(rator, "unsafe-u16vector-set!")) {
       int simple, constval, can_delay_vec, can_delay_index;
-      int which, unsafe = 0, base_offset = ((int)&SCHEME_VEC_ELS(0x0));
+      int which, unsafe = 0, base_offset = (int)(intptr_t)&SCHEME_VEC_ELS(0x0);
       int pushed, flonum_arg;
       int can_chaperone = 1, for_struct = 0, for_fx = 0, check_mutable = 0;
       int extfl = 0;
@@ -3715,21 +3717,21 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         unsafe = 1;
       } else if (IS_NAMED_PRIM(rator, "flvector-set!")) {
 	which = 3;
-        base_offset = ((int)&SCHEME_FLVEC_ELS(0x0));
+        base_offset = (int)(intptr_t)&SCHEME_FLVEC_ELS(0x0);
       } else if (MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "extflvector-set!"))) {
         extfl = 1;
 	which = 3;
-        base_offset = MZ_FPUSEL(extfl, ((int)&SCHEME_EXTFLVEC_ELS(0x0)), 0);
+        base_offset = MZ_FPUSEL(extfl, (intptr_t)&SCHEME_EXTFLVEC_ELS(0x0), 0);
       } else if (IS_NAMED_PRIM(rator, "unsafe-struct*-set!")) {
         which = 0;
         unsafe = 1;
-        base_offset = ((int)&((Scheme_Structure *)0x0)->slots);
+        base_offset = (int)(intptr_t)&((Scheme_Structure *)0x0)->slots;
         can_chaperone = 0;
         for_struct = 1;
       } else if (IS_NAMED_PRIM(rator, "unsafe-struct-set!")) {
         which = 0;
         unsafe = 1;
-        base_offset = ((int)&((Scheme_Structure *)0x0)->slots);
+        base_offset = (int)(intptr_t)&((Scheme_Structure *)0x0)->slots;
         for_struct = 1;
       } else if (IS_NAMED_PRIM(rator, "string-set!"))
 	which = 1;
@@ -4079,8 +4081,8 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
                      jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_DOUBLE_SIZE));
       if (!is_f64) {
         MZ_FPUSEL_STMT(extfl,
-                       jit_addi_ul(JIT_R1, JIT_R1, (int)(&SCHEME_EXTFLVEC_ELS(0x0))),
-                       jit_addi_ul(JIT_R1, JIT_R1, (int)(&SCHEME_FLVEC_ELS(0x0))));
+                       jit_addi_ul(JIT_R1, JIT_R1, (intptr_t)(&SCHEME_EXTFLVEC_ELS(0x0))),
+                       jit_addi_ul(JIT_R1, JIT_R1, (intptr_t)(&SCHEME_FLVEC_ELS(0x0))));
       }
       MZ_FPUSEL_STMT(extfl,
                      jit_fpu_stxr_ld_fppop(JIT_R1, JIT_R0, JIT_FPU_FPR0),
@@ -4141,7 +4143,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         jit_pusharg_l(JIT_R0);
         jit_pusharg_p(JIT_RUNSTACK);
         {
-          GC_CAN_IGNORE jit_insn *refr;
+          GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
           if (star)
             (void)mz_finish_lwe(ts_scheme_jit_make_list_star, refr);
           else
@@ -4175,8 +4177,8 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         mz_runstack_popped(jitter, c);
       } else {
         mz_tl_ldi_p(JIT_R2, tl_scheme_current_thread);
-        jit_stixi_l(((int)&((Scheme_Thread *)0x0)->ku.multiple.count), JIT_R2, 0);
-        jit_stixi_p(((int)&((Scheme_Thread *)0x0)->ku.multiple.array), JIT_R2, NULL);
+        jit_stixi_l(&((Scheme_Thread *)0x0)->ku.multiple.count, JIT_R2, 0);
+        jit_stixi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R2, NULL);
         (void)jit_movi_p(dest, SCHEME_MULTIPLE_VALUES);
       }
 
@@ -4254,7 +4256,7 @@ int scheme_generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry, 
     jit_pusharg_p(JIT_R0);
   }
   {
-    GC_CAN_IGNORE jit_insn *refr;
+    GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
     (void)mz_finish_lwe(ts_scheme_make_pair, refr);
   }
   jit_retval(dest);
@@ -4312,7 +4314,7 @@ static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
 #else
   {
     /* Non-inlined */
-    GC_CAN_IGNORE jit_insn *refr;
+    GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
     JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
     if (c == 1) {
       mz_prepare(1);

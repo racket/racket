@@ -309,7 +309,7 @@ long_double ld1;
 
 int scheme_generate_alloc_retry(mz_jit_state *jitter, int i)
 {
-  GC_CAN_IGNORE jit_insn *refr;
+  GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
 
 #ifdef JIT_USE_FP_OPS
   if (i == 2) {
