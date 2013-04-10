@@ -3,7 +3,7 @@
 
 @title[#:tag "envvars"]{Environment Variables}
 
-A @deftech{environment variable set} encapsulates a partial mapping
+An @deftech{environment variable set} encapsulates a partial mapping
 from byte strings to bytes strings. A Racket process's initial
 @tech{environment variable set} is connected to the operating system's
 environment variables: accesses or changes to the set read or change
@@ -32,7 +32,7 @@ default set for functions such as @racket[environment-variables-get] or
 
 Returns @racket[#t] if @racket[v] is a byte string and if it is valid
 for an environment variable name. An environment variable name must
-contain no bytes the with value @racket[0] or @racket[61], where
+contain no bytes with the value @racket[0] or @racket[61], where
 @racket[61] is @racket[(char->integer #\=)]. On Windows, an
 environment variable name also must have a non-zero length.}
 
@@ -40,7 +40,7 @@ environment variable name also must have a non-zero length.}
 @defproc[(environment-variables-get [name bytes-environment-variable-name?]
                                     [env environment-variables?
                                          (current-environment-variables)])
-         (or/c #f (and/c bytes-no-nul? immutable?))]{
+         (or/c #f (and/c bytes-no-nuls? immutable?))]{
 
 Returns the mapping for @racket[name] in @racket[env], returning
 @racket[#f] if @racket[name] has no mapping.
@@ -52,7 +52,7 @@ initial @tech{environment variable set} of the Racket process.}
 
 
 @defproc[(environment-variables-set! [name bytes-environment-variable-name?]
-                                     [maybe-bstr (or/c bytes-no-nul? #f)]
+                                     [maybe-bstr (or/c bytes-no-nuls? #f)]
                                      [env environment-variables?
                                           (current-environment-variables)]
                                      [fail (-> any)
