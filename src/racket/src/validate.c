@@ -123,7 +123,7 @@ static void noclear_stack_push(struct Validate_Clearing *vc, int pos)
 }
 
 
-static void add_struct_mapping(Scheme_Hash_Table **_st_ht, int pos, int field_count)
+static void add_struct_mapping(Scheme_Hash_Table **_st_ht, int pos, int shape)
 {
   if (!*_st_ht) {
     Scheme_Hash_Table *ht;
@@ -132,7 +132,7 @@ static void add_struct_mapping(Scheme_Hash_Table **_st_ht, int pos, int field_co
   }
   scheme_hash_set(*_st_ht, 
                   scheme_make_integer(pos),
-                  scheme_make_integer(field_count));
+                  scheme_make_integer(shape));
 }
 
 static int phaseless_expr(Scheme_Object *expr)
@@ -184,10 +184,8 @@ void scheme_validate_code(Mz_CPort *port, Scheme_Object *code,
         if (mv_flags & SCHEME_MODVAR_CONST) {
           intptr_t k;
           tl_state[i] = SCHEME_TOPLEVEL_CONST;
-          if (scheme_decode_struct_shape(((Module_Variable *)toplevels[i])->shape, &k)) {
-            if ((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_STRUCT)
-              add_struct_mapping(&st_ht, i, k >> STRUCT_PROC_SHAPE_SHIFT);
-          }
+          if (scheme_decode_struct_shape(((Module_Variable *)toplevels[i])->shape, &k))
+            add_struct_mapping(&st_ht, i, k);
         } else if (mv_flags & SCHEME_MODVAR_FIXED)
           tl_state[i] = SCHEME_TOPLEVEL_FIXED;
         else
@@ -418,15 +416,22 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
                          num_toplevels, num_stxes, num_lifts, tl_use_map,
                          tl_state, tl_timestamp + (stinfo.uses_super ? 1 : 0),
                          NULL, !!only_var, 0, vc, 0, 0, NULL,
-                         size-1, NULL);
+                         size-1, _st_ht);
 
   if (is_struct) {
-    if (_st_ht && (stinfo.field_count == stinfo.init_field_count)) {
-      /* record `struct:' binding as constant across invocations,
-         so that it can be recognized for sub-struct declarations */
-      add_struct_mapping(_st_ht, 
-                         SCHEME_TOPLEVEL_POS(SCHEME_VEC_ELS(data)[1]),
-                         stinfo.field_count);
+    if (_st_ht) {
+      /* Record `struct:' binding as constant across invocations,
+         so that it can be recognized for sub-struct declarations,
+         and so on: */
+      for (i = 1; i < size; i++) {
+        /* For the struct:, we need the init and field counts to be the
+           same, otherwise anything is fine: */
+        if ((i > 1)
+            || (stinfo.field_count == stinfo.init_field_count))
+          add_struct_mapping(_st_ht, 
+                             SCHEME_TOPLEVEL_POS(SCHEME_VEC_ELS(data)[i]),
+                             scheme_get_struct_proc_shape(i-1, &stinfo));
+      }
     }
     /* In any case, treat the bindings as constant */
     result = 2;
@@ -1204,6 +1209,32 @@ static int validate_join_const(int result, int expected_results)
                             : 0));
 }
 
+static int is_functional_rator(Scheme_Object *rator, int num_args, int expected_results,
+                               Scheme_Hash_Table **_st_ht)
+{
+  if (_st_ht && *_st_ht && SAME_TYPE(SCHEME_TYPE(rator), scheme_toplevel_type)) {
+    int flags = (SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_FLAGS_MASK);
+    if (flags == SCHEME_TOPLEVEL_CONST) {
+      /* could be a struct operation... */
+      int pos = SCHEME_TOPLEVEL_POS(rator);
+      Scheme_Object *v;
+      v = scheme_hash_get(*_st_ht, scheme_make_integer(pos));
+      if (v) {
+        int k = SCHEME_INT_VAL(v);
+        if ((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_CONSTR) {
+          if (num_args == (k >> STRUCT_PROC_SHAPE_SHIFT))
+            return 1;
+        } else if ((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_PRED) {
+          if (num_args == 1)
+            return 1;
+        }
+      }
+    }
+  }
+
+  return scheme_is_functional_primitive(rator, num_args, expected_results);
+}
+
 #define CAN_RESET_STACK_SLOT 0
 #if !CAN_RESET_STACK_SLOT
 # define WHEN_CAN_RESET_STACK_SLOT(x) 0
@@ -1506,7 +1537,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
         check_self_call_valid(app->args[0], port, vc, delta, stack);
 
       if (result) {
-        r = scheme_is_functional_primitive(app->args[0], app->num_args, expected_results);
+        r = is_functional_rator(app->args[0], app->num_args, expected_results, _st_ht);
         result = validate_join(result, r);
       }
     }
@@ -1538,7 +1569,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
         check_self_call_valid(app->rator, port, vc, delta, stack);
 
       if (result) {
-        r = scheme_is_functional_primitive(app->rator, 1, expected_results);
+        r = is_functional_rator(app->rator, 1, expected_results, _st_ht);
         result = validate_join(result, r);
       }
     }
@@ -1576,7 +1607,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
         check_self_call_valid(app->rator, port, vc, delta, stack);
 
       if (result) {
-        r = scheme_is_functional_primitive(app->rator, 2, expected_results);
+        r = is_functional_rator(app->rator, 2, expected_results, _st_ht);
         result = validate_join(r, result);
       }
     }
@@ -1829,7 +1860,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
                         num_toplevels, num_stxes, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
                         NULL, 0, 0, vc, 0, SCHEME_LET_ONE_TYPE(lo), procs,
-                        1, NULL);
+                        1, _st_ht);
       result = validate_join_seq(r, result);
 
 #if !CAN_RESET_STACK_SLOT
