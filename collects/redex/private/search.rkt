@@ -186,7 +186,7 @@
             [(cons (eqn lhs rhs) rest)
              (eqn lhs rhs)
              (define u-res (unify lhs rhs e lang))
-             (and u-res
+             (and (not-failed? u-res)
                   (loop (p*e-e u-res) rest))]))]
        [else #f])]))
            
