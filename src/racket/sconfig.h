@@ -163,42 +163,42 @@
 # endif
 
 # if defined(i386)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-" SPLS_LINUX
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-"SPLS_LINUX
 #  define REGISTER_POOR_MACHINE
 #  define MZ_TRY_EXTFLONUMS
 #  define ASM_DBLPREC_CONTROL_87
 # endif
 # if defined(powerpc)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-" SPLS_LINUX
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-"SPLS_LINUX
 # endif
 # if defined(__mc68000__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "m68k-" SPLS_LINUX
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "m68k-"SPLS_LINUX
 # endif
 # if defined(mips)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips-" SPLS_LINUX
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips-"SPLS_LINUX
 # endif
 # if defined(__alpha__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "alpha-" SPLS_LINUX
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "alpha-"SPLS_LINUX
 # endif
 # if defined(__hppa__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "hppa-" SPLS_LINUX
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "hppa-"SPLS_LINUX
 # endif
 # if defined(__sparc__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc-" SPLS_LINUX
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc-"SPLS_LINUX
 #  define FLUSH_SPARC_REGISTER_WINDOWS
 # endif
 # if defined(__arm__) || defined(__thumb__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm-" SPLS_LINUX
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm-"SPLS_LINUX
 #  define FFI_CALLBACK_NEED_INT_CLEAR
 # endif
 # if defined(__x86_64__)
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-" SPLS_LINUX
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-"SPLS_LINUX
 #  define REGISTER_POOR_MACHINE
 #  define ASM_DBLPREC_CONTROL_87
 #  define MZ_TRY_EXTFLONUMS
 # endif
 # ifndef SCHEME_PLATFORM_LIBRARY_SUBPATH
-#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "unknown-" SPLS_LINUX
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "unknown-"SPLS_LINUX
 # endif
 
 # include "uconfig.h"
