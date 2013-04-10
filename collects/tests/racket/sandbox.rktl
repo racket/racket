@@ -591,10 +591,10 @@
    (syntax-original? #'x) => #t
 
    --eval--
-   (putenv "APPLE" "AnApple") => #t
-   (getenv "APPLE") => "AnApple"
+   (putenv "PEAR" "A Pear") => #t
+   (getenv "PEAR") => "A Pear"
    --top--
-   (getenv "APPLE") => #f
+   (getenv "PEAR") => #f
 
    ))
 
