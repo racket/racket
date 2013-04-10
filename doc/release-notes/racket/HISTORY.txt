@@ -1,3 +1,9 @@
+Version 5.3.4.2
+Added current-environment-variables, environment-variables-get,
+ environment-variables-set!, environment-variables-keys,
+ environment-variables-copy, bytes-environment-variables-name?,
+ string-environment-variables-name?, and environment-variables?
+
 Version 5.3.4.1
 Changed JIT to support ARM
 

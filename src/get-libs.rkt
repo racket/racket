@@ -104,7 +104,7 @@
          ["libpangocairo-1.0-0.dll" 94625]
          ["libpangowin32-1.0-0.dll" 143647]
          ["libpangoft2-1.0-0.dll" 679322]]
-       (if (getenv "PLT_WIN_GTK")
+       (if (environment-variables-get #"PLT_WIN_GTK")
            '(["libatk-1.0-0.dll" 153763]
              ["libgtk-win32-2.0-0.dll" 4740156]
              ["libgdk-win32-2.0-0.dll" 827670]
@@ -195,7 +195,7 @@
   (define-values (path-size/show)
     (lambda (path)
       (let-values ([(sz) (path-size path)])
-        (if (getenv "PLT_SHOW_PATH_SIZES")
+        (if (environment-variables-get #"PLT_SHOW_PATH_SIZES")
             (printf "~s ~s\n" path sz)
             (void))
         sz)))

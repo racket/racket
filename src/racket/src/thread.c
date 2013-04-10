@@ -4414,7 +4414,7 @@ void scheme_break_kind_thread(Scheme_Thread *p, int kind)
 
 void scheme_break_thread(Scheme_Thread *p)
 {
-  return scheme_break_kind_thread(p, MZEXN_BREAK);
+  scheme_break_kind_thread(p, MZEXN_BREAK);
 }
 
 static void call_on_atomic_timeout(int must)
@@ -7402,6 +7402,12 @@ static void make_initial_config(Scheme_Thread *p)
     s = scheme_path_to_directory_path(s);
     init_param(cells, paramz, MZCONFIG_CURRENT_DIRECTORY, s);
     scheme_set_original_dir(s);
+  }
+
+  {
+    Scheme_Object *ev;
+    ev = scheme_make_environment_variables(NULL);
+    init_param(cells, paramz, MZCONFIG_CURRENT_ENV_VARS, ev);
   }
 
   {

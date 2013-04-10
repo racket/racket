@@ -9011,7 +9011,8 @@ static char *cmdline_protect(char *s)
 
 static intptr_t mz_spawnv(char *command, const char * const *argv,
 			  int exact_cmdline, intptr_t sin, intptr_t sout, intptr_t serr, int *pid,
-			  int new_process_group)
+			  int new_process_group,
+                          void *env)
 {
   int i, l, len = 0;
   intptr_t cr_flag;
@@ -9056,10 +9057,11 @@ static intptr_t mz_spawnv(char *command, const char * const *argv,
     cr_flag = 0;
   if (new_process_group)
     cr_flag |= CREATE_NEW_PROCESS_GROUP;
+  cr_flag |= CREATE_UNICODE_ENVIRONMENT;
 
   if (CreateProcessW(WIDE_PATH_COPY(command), WIDE_PATH_COPY(cmdline), 
 		     NULL, NULL, 1 /*inherit*/,
-		     cr_flag, NULL, NULL,
+		     cr_flag, env, NULL,
 		     &startup, &info)) {
     CloseHandle(info.hThread);
     *pid = info.dwProcessId;
@@ -9129,6 +9131,8 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   System_Child *sc;
 # endif
   int fork_errno = 0;
+  char *env;
+  int need_free;
 #else
   void *sc = 0;
 #endif
@@ -9351,7 +9355,10 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   fflush(stderr);
 
   {
-    Scheme_Object *tcd;
+    Scheme_Object *tcd, *envvar;
+    Scheme_Config *config;
+    char *env;
+    int need_free;
 
     if (!exact_cmdline) {
       /* protect spaces, etc. in the arguments: */
@@ -9362,20 +9369,29 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       }
     }
 
+    config = scheme_current_config();
+        
     /* Set real CWD before spawn: */
-    tcd = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_DIRECTORY);
+    tcd = scheme_get_param(config, MZCONFIG_CURRENT_DIRECTORY);
     scheme_os_setcwd(SCHEME_BYTE_STR_VAL(tcd), 0);
 
+    envvar = scheme_get_param(config, MZCONFIG_CURRENT_ENV_VARS);
+
+    env = scheme_environment_variables_to_block(envvar, &need_free);
+    
     spawn_status = mz_spawnv(command, (const char * const *)argv,
 			     exact_cmdline,
 			     to_subprocess[0],
 			     from_subprocess[1],
 			     err_subprocess[1],
 			     &pid,
-                             new_process_group);
+                             new_process_group,
+                             env);
 
     if (spawn_status != -1)
       sc = (void *)spawn_status;
+
+    if (need_free) free(env);
   }
 
 #else
@@ -9539,10 +9555,17 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 #endif
       }
 
-      /* Set real CWD */
+      /* Set real CWD and get envrionment variables */
       {
-	Scheme_Object *dir;
-	dir = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_DIRECTORY);
+	Scheme_Object *dir, *envvar;
+        Scheme_Config *config;
+
+        config = scheme_current_config();
+        
+	envvar = scheme_get_param(config, MZCONFIG_CURRENT_ENV_VARS);
+        env = scheme_environment_variables_to_block(envvar, &need_free);
+
+	dir = scheme_get_param(config, MZCONFIG_CURRENT_DIRECTORY);
 	if (!scheme_os_setcwd(SCHEME_PATH_VAL(dir), 1)) {
           scheme_console_printf("racket: chdir failed to: %s\n", SCHEME_BYTE_STR_VAL(dir));
           _exit(1);
@@ -9564,9 +9587,12 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 #endif
 	END_XFORM_SKIP;
 
-	err = MSC_IZE(execv)(command, argv);
+	err = MSC_IZE(execve)(command, argv, (char **)env);
         if (err)
           err = errno;
+        
+        if (need_free)
+          free(env);
 
 	/* If we get here it failed; give up */
 

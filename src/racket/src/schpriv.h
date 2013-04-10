@@ -4000,6 +4000,10 @@ void scheme_unused_intptr(intptr_t);
 
 intptr_t scheme_check_overflow(intptr_t n, intptr_t m, intptr_t a);
 
+Scheme_Object *scheme_make_environment_variables(Scheme_Hash_Table *ht);
+# define SCHEME_ENVVARS_TABLE(ev) ((Scheme_Hash_Table *)SCHEME_PTR_VAL(ev))
+void *scheme_environment_variables_to_block(Scheme_Object *env, int *_need_free);
+
 /*========================================================================*/
 /*                           places                                       */
 /*========================================================================*/

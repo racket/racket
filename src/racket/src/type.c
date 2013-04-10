@@ -311,6 +311,8 @@ scheme_init_type ()
 
   set_name(scheme_phantom_bytes_type, "<phantom-bytes>");
 
+  set_name(scheme_environment_variables_type, "<environment-variables>");
+
 #ifdef MZ_GC_BACKTRACE
   set_name(scheme_rt_meta_cont, "<meta-continuation>");
 #endif
@@ -720,6 +722,8 @@ void scheme_register_traversers(void)
 
   GC_REG_TRAV(scheme_proc_shape_type, small_object);
   GC_REG_TRAV(scheme_struct_proc_shape_type, small_atomic_obj);
+
+  GC_REG_TRAV(scheme_environment_variables_type, small_object);
 }
 
 END_XFORM_SKIP;

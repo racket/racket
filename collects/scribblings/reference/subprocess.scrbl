@@ -24,8 +24,10 @@
                     (or/c (and/c input-port? file-stream-port?) #f))])]{
 
 Creates a new process in the underlying operating system to execute
-@racket[command] asynchronously. See also @racket[system] and
-@racket[process] from @racketmodname[racket/system].
+@racket[command] asynchronously, providing the new process with
+environment variables @racket[current-environment-variables]. See also
+@racket[system] and @racket[process] from
+@racketmodname[racket/system].
 
 The @racket[command] argument is a path to a program executable, and
 the @racket[arg]s are command-line arguments for the program. See
