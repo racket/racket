@@ -15,8 +15,9 @@
 (define-syntax-rule (is-false e)
   (test e #f))
 
+(define-language L0)
+
 (let ()
-  (define-language L0)
   
   (test (check-dq (dq '() (list `a `a)) (make-hash) L0 (hash))
               #f)
@@ -590,7 +591,6 @@
         (g)))))
 
 (let ()
-  (define-language L0)
   (define-relation L0
     [(a any)])
   (define-relation L0
@@ -628,9 +628,6 @@
         #rx".*generate-term:.*relation.*"))
 
 (let ()
-  
-  
-  (define-language L0)
   
   (define-relation L0
     [(R number)
@@ -677,7 +674,6 @@
   (is-not-false (generate-term L0 #:satisfying (J ((#t) (2))) 5)))
 
 (let ()
-  (define-language L0)
   
   (define-metafunction L0
     [(f (any_1 any_2))
@@ -713,7 +709,6 @@
        [else #t]))))
 
 (let ()
-  (define-language L0)
   
   (define-relation L0
     [(R (#f #f #f) 3)]
@@ -755,3 +750,25 @@
     (R #f any)
     +inf.0))
   )
+
+(let ()
+  
+  (define-relation L0
+    [(not-mem any_1 (any_2 any_3))
+     (not-mem any_1 any_3)
+     (where (any_!_4 any_!_4) (any_1 any_2))]
+    [(not-mem any_1 ())])
+  
+  (is-not-false
+   (generate-term
+    L0
+    #:satisfying
+    (not-mem d (a (b (c ()))))
+    +inf.0))
+  
+  (is-false
+   (generate-term
+    L0
+    #:satisfying
+    (not-mem b (a (b (c ()))))
+    +inf.0)))
