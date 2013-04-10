@@ -203,7 +203,8 @@
   (define (getenv s)
     (unless (string-environment-variable-name? s)
       (raise-argument-error 'getenv "string-environment-variable-name?" s))
-    (let ([v (environment-variables-get (string->bytes/locale s (char->integer #\?)))])
+    (let ([v (environment-variables-get (current-environment-variables)
+                                        (string->bytes/locale s (char->integer #\?)))])
       (and v
            (bytes->string/locale v #\?))))
 
@@ -213,9 +214,9 @@
     (unless (string-no-nuls? t)
       (raise-argument-error 'putenv "string-no-nuls?" 1 s t))
     (and
-     (environment-variables-set! (string->bytes/locale s (char->integer #\?))
+     (environment-variables-set! (current-environment-variables)
+                                 (string->bytes/locale s (char->integer #\?))
                                  (string->bytes/locale t (char->integer #\?))
-                                 (current-environment-variables)
                                  (lambda () #f))
      #t))
 

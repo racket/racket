@@ -9,6 +9,12 @@ from byte strings to bytes strings. A Racket process's initial
 environment variables: accesses or changes to the set read or change
 operating-system environment variables for the Racket process.
 
+Since Windows environment variables are case-insensitive, and
+@tech{environment variable set}'s key byte strings on Windows are
+case-folded. More precisely, key byte strings are coerced to a UTF-8
+encoding of characters that are converted to lowercase via
+@racket[string-locale-downcase].
+
 The current @tech{environment variable set}, which is determined by
 the @racket[current-environment-variables] parameter, is propagated to
 a @tech{subprocess} when the @tech{subprocess} is created.
@@ -24,8 +30,7 @@ set}, @racket[#f] otherwise.}
 
 A @tech{parameter} that determines the @tech{environment variable set}
 that is propagated to a @tech{subprocess} and that is used as the
-default set for functions such as @racket[environment-variables-get] or
-@racket[getenv].}
+default set for @racket[getenv] and @racket[putenv].}
 
 
 @defproc[(bytes-environment-variable-name? [v any/c]) boolean?]{
@@ -37,9 +42,17 @@ contain no bytes with the value @racket[0] or @racket[61], where
 environment variable name also must have a non-zero length.}
 
 
-@defproc[(environment-variables-get [name bytes-environment-variable-name?]
-                                    [env environment-variables?
-                                         (current-environment-variables)])
+@defproc[(make-environment-variables [name bytes-environment-variable-name?]
+                                     [val bytes-no-nuls?]
+                                     ... ...)
+         environment-variables?]{
+
+Creates a fresh @tech{environment variable set} that is initialized
+with the given @racket[name] to @racket[val] mappings.}
+
+
+@defproc[(environment-variables-get [env environment-variables?]
+                                    [name bytes-environment-variable-name?])
          (or/c #f (and/c bytes-no-nuls? immutable?))]{
 
 Returns the mapping for @racket[name] in @racket[env], returning
@@ -47,14 +60,12 @@ Returns the mapping for @racket[name] in @racket[env], returning
 
 Normally, @racket[name] should be a byte-string encoding of a string
 using the default encoding of the current @tech{locale}. On Windows,
-@racket[name] is coerced to a UTF-8 encoding if @racket[env] is the
-initial @tech{environment variable set} of the Racket process.}
+@racket[name] is coerced to a UTF-8 encoding and case-normalized.}
 
 
-@defproc[(environment-variables-set! [name bytes-environment-variable-name?]
+@defproc[(environment-variables-set! [env environment-variables?]
+                                     [name bytes-environment-variable-name?]
                                      [maybe-bstr (or/c bytes-no-nuls? #f)]
-                                     [env environment-variables?
-                                          (current-environment-variables)]
                                      [fail (-> any)
                                            (lambda ()
                                              (raise (make-exn:fail ....)))])
@@ -68,8 +79,9 @@ for @racket[name] is removed.
 
 Normally, @racket[name] and @racket[maybe-bstr] should be a
 byte-string encoding of a string using the default encoding of the
-current @tech{locale}. On Windows, @racket[name] and
-@racket[maybe-bstr] are coerced to a UTF-8 encoding if @racket[env] is
+current @tech{locale}. On Windows, @racket[name] is 
+coerced to a UTF-8 encoding and case-normalized, and
+@racket[maybe-bstr] is coerced to a UTF-8 encoding if @racket[env] is
 the initial @tech{environment variable set} of the Racket process.
 
 On success, the result of @racket[environment-variables-set!] is
