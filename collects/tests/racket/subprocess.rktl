@@ -470,7 +470,7 @@
                  [current-environment-variables
                   (environment-variables-copy
                    (current-environment-variables))])
-    (environment-variables-set! #"Hola" #"hi, there")
+    (environment-variables-set! (current-environment-variables) #"Hola" #"hi, there")
     (system* self "-e" "(getenv \"Hola\")"))
   (test "\"hi, there\"\n" get-output-string out))
 
