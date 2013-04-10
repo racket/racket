@@ -815,7 +815,8 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
+                                                            | SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_add_global_constant("->fl", p, env);
 
   p = scheme_make_folding_prim(fl_to_integer, "fl->exact-integer", 1, 1, 1);

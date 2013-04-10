@@ -138,6 +138,7 @@
 
 
 (define-vector-wraps "bit-vector"
+  "boolean?" boolean?
   bit-vector? bit-vector-length bit-vector-ref bit-vector-set! make-bit-vector
   unsafe-bit-vector-ref bit-vector-set! bit-vector-length
   in-bit-vector*

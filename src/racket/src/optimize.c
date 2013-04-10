@@ -2361,6 +2361,29 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
     info->single_result = -info->single_result;
   }
 
+  /* Check for things like (flonum? x) on an `x' known to have a flonum value. */
+  if (SCHEME_PRIMP(app->rator)
+      && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)
+      && SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)) {
+    int pos = SCHEME_LOCAL_POS(app->rand);
+
+    if (!optimize_is_mutated(info, pos)) {
+      int t;
+      t = optimize_is_local_type_valued(info, pos);
+
+      if (t == SCHEME_LOCAL_TYPE_FLONUM) {
+        if (IS_NAMED_PRIM(app->rator, "flonum?"))
+          return scheme_true;
+      } else if (t == SCHEME_LOCAL_TYPE_FIXNUM) {
+        if (IS_NAMED_PRIM(app->rator, "fixnum?"))
+          return scheme_true;
+      } else if (t == SCHEME_LOCAL_TYPE_EXTFLONUM) {
+        if (IS_NAMED_PRIM(app->rator, "extflonum?"))
+          return scheme_true;
+      }
+    }
+  }
+
   /* Check for things like (cXr (cons X Y)): */
   if (SCHEME_PRIMP(app->rator)
       && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
