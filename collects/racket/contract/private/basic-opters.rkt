@@ -8,35 +8,6 @@
                      "opt-guts.rkt"))
 
 ;;
-;; opt/pred helper
-;;
-(define-for-syntax (opt/pred opt/info pred #:name [name (syntax-e pred)])
-  (with-syntax ((pred pred))
-    (build-optres
-     #:exp
-     (with-syntax ((val (opt/info-val opt/info))
-                   (ctc (opt/info-contract opt/info))
-                   (blame (opt/info-blame opt/info)))
-       (syntax (if (pred val)
-                   val
-                   (raise-opt/pred-error blame val 'pred))))
-     #:lifts null
-     #:superlifts null
-     #:partials null
-     #:flat (syntax (pred val))
-     #:opt #f
-     #:stronger-ribs null
-     #:chaperone #t
-     #:name #`'#,name)))
-
-(define (raise-opt/pred-error blame val pred-name)
-  (raise-blame-error
-   blame
-   val
-   '(expected: "~a")
-   pred-name))
-
-;;
 ;; built-in predicate opters
 ;;
 (define/opter (null? opt/i opt/info stx) (opt/pred opt/info #'null?))

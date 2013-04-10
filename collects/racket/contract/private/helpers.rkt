@@ -164,6 +164,8 @@
 #|
 
 ;; the code below builds the known-good-syms-ht
+;; it should contain only predicates or else 
+;; opt/c will misbehave
 
 (define cm
   (parameterize ([read-accept-compiled #t])
@@ -366,5 +368,5 @@
 (define (known-good-contract? id)
   (define r-id (syntax-e id))
   (and (symbol? r-id)
-       (hash-ref known-good-syms-ht (syntax-e id) #t)
+       (hash-ref known-good-syms-ht r-id #f)
        (free-identifier=? id (datum->syntax #'here r-id))))
