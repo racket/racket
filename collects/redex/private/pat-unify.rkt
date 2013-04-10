@@ -26,7 +26,8 @@
          and/fail
          (struct-out unif-fail)
          not-failed?
-         dq)
+         dq
+         predef-pat?)
 
 
 ;;
