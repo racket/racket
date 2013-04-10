@@ -1656,7 +1656,7 @@ intptr_t GC_message_objects_size(void *param) {
   MsgMemory *msgm = (MsgMemory *) param;
   if (!msgm) { return sizeof(param); }
   if (msgm->big_pages && msgm->size < 1024) {
-    printf("Error: message allocators with big pages should be bigger than %" PRIdPTR "u!\n",
+    printf("Error: message allocators with big pages should be bigger than %" PRIdPTR "!\n",
 	   msgm->size);
     exit(1);
   }
@@ -2612,7 +2612,7 @@ static void master_collect_initiate(NewGC *gc) {
       }
     }
     if (count != (MASTERGCINFO->alive -1)) {
-      printf("GC2 count != MASTERGCINFO->alive %i %" PRIdPTR "i\n", count, MASTERGCINFO->alive);
+      printf("GC2 count != MASTERGCINFO->alive %i %" PRIdPTR "\n", count, MASTERGCINFO->alive);
       abort();
     }
 #if defined(GC_DEBUG_PAGES)
@@ -3654,13 +3654,13 @@ void GC_dump_with_traces(int flags,
         sprintf(buf, "unknown,%d", i);
         tn = buf;
       }
-      GCPRINT(GCOUTF, "  %20.20s: %10" PRIdPTR "d %10" PRIdPTR "d\n",
+      GCPRINT(GCOUTF, "  %20.20s: %10" PRIdPTR " %10" PRIdPTR "\n",
 	      tn, counts[i], gcWORDS_TO_BYTES(sizes[i]));
     }
   }
   GCPRINT(GCOUTF, "End Racket3m\n");
 
-  GCWARN((GCOUTF, "Generation 0: %" PRIdPTR "u of %" PRIdPTR "i bytes used\n",
+  GCWARN((GCOUTF, "Generation 0: %" PRIdPTR " of %" PRIdPTR " bytes used\n",
 	  (uintptr_t) gen0_size_in_use(gc), gc->gen0.max_size));
 
   for(i = 0; i < PAGE_TYPES; i++) {
@@ -3670,7 +3670,7 @@ void GC_dump_with_traces(int flags,
       total_use += page->size;
       count++;
     }
-    GCWARN((GCOUTF, "Generation 1 [%s]: %" PRIdPTR "i bytes used in %" PRIdPTR "i pages\n",
+    GCWARN((GCOUTF, "Generation 1 [%s]: %" PRIdPTR " bytes used in %" PRIdPTR " pages\n",
             type_name[i], total_use, count));
   }
 
@@ -3692,7 +3692,7 @@ void GC_dump_with_traces(int flags,
           start += info->size;
         }
       }
-      GCWARN((GCOUTF, " %" PRIdPTR "i [%" PRIdPTR "i/%" PRIdPTR "i]",
+      GCWARN((GCOUTF, " %" PRIdPTR " [%" PRIdPTR "/%" PRIdPTR "]",
 	      count, page_count, gc->med_pages[i]->size));
     }
   }
@@ -3700,13 +3700,13 @@ void GC_dump_with_traces(int flags,
 
 
   GCWARN((GCOUTF,"\n"));
-  GCWARN((GCOUTF,"Current memory use: %" PRIdPTR "i\n", GC_get_memory_use(NULL)));
-  GCWARN((GCOUTF,"Peak memory use after a collection: %" PRIdPTR "i\n", gc->peak_memory_use));
-  GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %" PRIdPTR "i (+%" PRIdPTR "i)\n",
+  GCWARN((GCOUTF,"Current memory use: %" PRIdPTR "\n", GC_get_memory_use(NULL)));
+  GCWARN((GCOUTF,"Peak memory use after a collection: %" PRIdPTR "\n", gc->peak_memory_use));
+  GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %" PRIdPTR " (+%" PRIdPTR ")\n",
           gc->used_pages * APAGE_SIZE, 
           mmu_memory_allocated(gc->mmu) - (gc->used_pages * APAGE_SIZE)));
-  GCWARN((GCOUTF,"# of major collections: %" PRIdPTR "i\n", gc->num_major_collects));
-  GCWARN((GCOUTF,"# of minor collections: %" PRIdPTR "i\n", gc->num_minor_collects));
+  GCWARN((GCOUTF,"# of major collections: %" PRIdPTR "\n", gc->num_major_collects));
+  GCWARN((GCOUTF,"# of minor collections: %" PRIdPTR "\n", gc->num_minor_collects));
   GCWARN((GCOUTF,"# of installed finalizers: %i\n", gc->num_fnls));
   GCWARN((GCOUTF,"# of traced ephemerons: %i\n", gc->num_last_seen_ephemerons));
   GCWARN((GCOUTF,"# of immobile boxes: %i\n", num_immobiles));
