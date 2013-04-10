@@ -1120,6 +1120,30 @@
                'pos
                'neg)
      1))
+  
+  (test/neg-blame
+   'contract-arrow-keyword17
+   '((contract (-> integer? integer?)
+               (λ (x #:y [y #f]) x)
+               'pos
+               'neg)
+     #f))
+  
+  (test/pos-blame
+   'contract-arrow-keyword18
+   '((contract (-> integer? integer?)
+               (λ (x #:y [y #f]) y)
+               'pos
+               'neg)
+     1))
+  
+  (test/neg-blame
+   'contract-arrow-keyword19
+   '((contract (-> boolean?)
+               (λ (#:x [x #f]) x)
+               'pos
+               'neg)
+     #:x 1))
 
   (test/spec-passed
    'contract-arrow1
