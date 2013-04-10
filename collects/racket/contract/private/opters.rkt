@@ -486,21 +486,27 @@
                      (dom-len (length dom-vars))
                      (rng-len (length rng-vars))
                      ((next-rng ...) next-rngs))
-         (syntax (begin
-                   (check-procedure val #f dom-len 0 '() '() #| keywords |# blame)
-                   (chaperone-procedure
-                    val
-                    (case-lambda
-                      [(dom-arg ...)
-                       (values 
-                        (case-lambda
-                          [(rng-arg ...)
-                           (values next-rng ...)]
-                          [args 
-                           (bad-number-of-results blame val rng-len args)])
-                        next-dom ...)]
-                      [args
-                       (bad-number-of-arguments blame val args dom-len)])))))
+         (define (values/maybe-one stx)
+           (syntax-case stx ()
+             [(x) #'x]
+             [(x ...) #'(values x ...)]))
+         #`(let ([exact-proc (case-lambda
+                               [(dom-arg ...)
+                                (values
+                                 (case-lambda
+                                   [(rng-arg ...)
+                                    #,(values/maybe-one #'(next-rng ...))]
+                                   [args 
+                                    (bad-number-of-results blame val rng-len args)])
+                                 next-dom ...)]
+                               [args
+                                (bad-number-of-arguments blame val args dom-len)])])
+             (if (and (procedure? val)
+                      (equal? dom-len (procedure-arity val))
+                      (let-values ([(a b) (procedure-keywords val)])
+                        (null? b)))
+                 (chaperone-procedure val exact-proc)
+                 (handle-non-exact-procedure val dom-len blame exact-proc))))
        (append lifts-doms lifts-rngs)
        (append superlifts-doms superlifts-rngs)
        (append partials-doms partials-rngs)
@@ -621,6 +627,14 @@
                              #:flat flat #:opt opt #:stronger-ribs stronger-ribs #:chaperone chaperone?
                              #:name name)
                (opt/unknown opt/i opt/info stx))))]))
+
+(define (handle-non-exact-procedure val dom-len blame exact-proc)
+  (check-procedure val #f dom-len 0 '() '() blame)
+  (chaperone-procedure
+   val
+   (make-keyword-procedure
+    (λ (kwds kwd-args . regular-args) (raise-blame-error '...))
+    exact-proc)))
 
 (define (raise-flat-arrow-err blame val n)
   (raise-blame-error blame val

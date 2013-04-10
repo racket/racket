@@ -1112,6 +1112,14 @@
                'pos
                'neg)
      1 #:y #t))
+  
+  (test/spec-passed
+   'contract-arrow-keyword16
+   '((contract (-> integer? integer?)
+               (λ (x #:y [y #f]) x)
+               'pos
+               'neg)
+     1))
 
   (test/spec-passed
    'contract-arrow1
