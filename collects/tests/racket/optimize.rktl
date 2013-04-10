@@ -1788,6 +1788,32 @@
                       (+ p (unsafe-fx- p 1) (- p p) t))
                     'ok))))
 
+;; eliminate unneeded tests:
+(test-comp '(lambda (n)
+              (let ([p (fl+ n n)])
+                (if (flonum? p)
+                    (fl+ p p)
+                    'bad)))
+           '(lambda (n)
+              (let ([p (fl+ n n)])
+                (fl+ p p))))
+(test-comp '(lambda (n)
+              (let ([p (fx+ n n)])
+                (if (fixnum? p)
+                    (fx+ p p)
+                    'bad)))
+           '(lambda (n)
+              (let ([p (fx+ n n)])
+                (fx+ p p))))
+(test-comp '(lambda (n)
+              (let ([p (extfl+ n n)])
+                (if (extflonum? p)
+                    (extfl+ p p)
+                    'bad)))
+           '(lambda (n)
+              (let ([p (extfl+ n n)])
+                (extfl+ p p))))
+
 ;; simple cross-module inlining
 (test-comp `(module m racket/base 
               (require racket/bool)

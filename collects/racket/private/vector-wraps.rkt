@@ -9,6 +9,7 @@
 
 (define-syntax-rule (define-vector-wraps
                       fXvector-str
+                      fX?-str fX?
                       fXvector? fXvector-length fXvector-ref fXvector-set! make-fXvector
                       unsafe-fXvector-ref unsafe-fXvector-set! unsafe-fXvector-length
                       in-fXvector*
@@ -50,6 +51,9 @@
        (unsafe-fXvector-copy! new-vec 0 vec 0 i)
        new-vec)
 
+     (define (not-an-fX who v)
+       (raise-argument-error who fX?-str v))
+
      (define-for-syntax (for_/fXvector stx orig-stx for_/fXvector-stx for_/fold/derived-stx wrap-all?)
        (syntax-case stx ()
          [(for*/fXvector (for-clause ...) body ...)
@@ -67,7 +71,10 @@
                              (let ([new-vec (if (eq? i (unsafe-fXvector-length vec))
                                                 (grow-fXvector vec)
                                                 vec)])
-                               (fXvector-set! new-vec i (let () last-body ...))
+                               (let ([elem (let () last-body ...)])
+                                 (if (fX? elem)
+                                     (unsafe-fXvector-set! new-vec i elem)
+                                     (not-an-fX 'for*/fXvector elem)))
                                (values new-vec (unsafe-fx+ i 1))))])
                 (shrink-fXvector vec i))))]
          [(for*/fXvector #:length length-expr #:fill fill-expr (for-clause ...) body ...)
@@ -114,8 +121,11 @@
                        ([i 0])
                        (limited-for-clause ...)
                        middle-body ...
-                       (fXvector-set! v i (let () last-body ...))
-                       (add1 i)))
+                       (let ([elem (let () last-body ...)])
+                         (if (fX? elem)
+                             (unsafe-fXvector-set! v i elem)
+                             (not-an-fX 'for*/vector elem)))
+                       (unsafe-fx+ 1 i)))
                     v)))))]
          [(_ #:length length-expr (for-clause ...) body ...)
           (for_/fXvector #'(fv #:length length-expr #:fill fXzero (for-clause ...) body ...) 

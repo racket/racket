@@ -1497,10 +1497,10 @@
                            [i 0])
                           (for-clause ...) 
                           middle-body ...
-                          (let ([new-vec (if (eq? i (unsafe-vector-length vec))
+                          (let ([new-vec (if (eq? i (unsafe-vector*-length vec))
                                              (grow-vector vec)
                                              vec)])
-                            (unsafe-vector-set! new-vec i (let () last-body ...))
+                            (unsafe-vector*-set! new-vec i (let () last-body ...))
                             (values new-vec (unsafe-fx+ i 1))))])
              (shrink-vector vec i))))]
       [(_ #:length length-expr #:fill fill-expr (for-clause ...) body ...)
@@ -1546,8 +1546,8 @@
                   ([i 0])
                   (limited-for-clause ...)
                   middle-body ...
-                  (vector-set! v i (let () last-body ...))
-                  (add1 i)))
+                  (unsafe-vector*-set! v i (let () last-body ...))
+                  (unsafe-fx+ 1 i)))
                v))))]
       [(_ #:length length-expr (for-clause ...) body ...)
        (for_/vector #'(fv #:length length-expr #:fill 0 (for-clause ...) body ...) 

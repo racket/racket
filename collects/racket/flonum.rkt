@@ -19,6 +19,7 @@
          in-flvector for/flvector for*/flvector)
 
 (define-vector-wraps "flvector"
+  "flonum?" flonum?
   flvector? flvector-length flvector-ref flvector-set! make-flvector
   unsafe-flvector-ref unsafe-flvector-set! unsafe-flvector-length
   in-flvector*

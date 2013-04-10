@@ -20,6 +20,7 @@
          in-fxvector for/fxvector for*/fxvector)
 
 (define-vector-wraps "fxvector"
+  "fixnum?" fixnum?
   fxvector? fxvector-length fxvector-ref fxvector-set! make-fxvector
   unsafe-fxvector-ref unsafe-fxvector-set! unsafe-fxvector-length
   in-fxvector*
