@@ -214,6 +214,11 @@
                                           timeout))
                             (lambda (v) (retry (* timeout 2)))))))
       (lambda () (udp-close udp))))
+
+  (parse-reply query reply))
+
+;; Parse a DNS query reply
+(define (parse-reply query reply)
   ;; First two bytes must match sent message id:
   (unless (and (= (car reply)  (car query))
                (= (cadr reply) (cadr query)))
@@ -361,24 +366,31 @@
   (or (try-forwarding
        (lambda (nameserver)
          (let-values ([(auth? qds ans nss ars reply) (dns-query/cache nameserver addr 'mx 'in)])
-           (values (let loop ([ans ans][best-pref +inf.0][exchanger #f])
-                     (cond
-                       [(null? ans)
-                        (or (and exchanger (bytes->string/latin-1 exchanger))
-                            ;; Does 'soa mean that the input address is fine?
-                            (and (ormap (lambda (ns) (eq? (rr-type ns) 'soa))
-                                        nss)
-                                 addr))]
-                       [else
-                        (define d (rr-data (car ans)))
-                        (define pref (octet-pair->number (car d) (cadr d)))
-                        (if (< pref best-pref)
-                            (let-values ([(name start) (parse-name (cddr d) reply)])
-                              (loop (cdr ans) pref name))
-                            (loop (cdr ans) best-pref exchanger))]))
-                   ars auth?)))
+           (values (parse-mx-response ans nss reply addr) ars auth?)))
        nameserver)
       (error 'dns-get-mail-exchanger "bad address")))
+
+;; helper that parses a response for MX queries
+(define (parse-mx-response ans nss reply addr)
+  (let loop ([ans ans] [best-pref +inf.0] [exchanger #f])
+    (cond
+     [(null? ans)
+      (or (and exchanger (bytes->string/latin-1 exchanger))
+          ;; FIXME: Does 'soa mean that the input address is fine?
+          (and (ormap (lambda (ns) (eq? (rr-type ns) 'soa))
+                      nss)
+               addr))]
+     [else
+      (define type (rr-type (car ans)))
+      (define d (rr-data (car ans)))
+      (cond [(not (eq? type 'mx)) ; not MX record, keep going
+             (loop (cdr ans) best-pref exchanger)]
+            [else
+             (define pref (octet-pair->number (car d) (cadr d)))
+             (if (< pref best-pref)
+                 (let-values ([(name start) (parse-name (cddr d) reply)])
+                   (loop (cdr ans) pref name))
+                 (loop (cdr ans) best-pref exchanger))])])))
 
 (define (dns-find-nameserver)
   (case (system-type)
