@@ -681,8 +681,11 @@ static int is_constant_super(Scheme_Object *arg,
       /* This is validate mode; conceptually, this code belongs in 
          define_values_validate() */
       v = scheme_hash_get(top_level_table, scheme_make_integer(pos));
-      if (v)
-        return SCHEME_INT_VAL(v) + 1;
+      if (v) {
+        int k = SCHEME_INT_VAL(v);
+        if ((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_STRUCT)
+          return (k >> STRUCT_PROC_SHAPE_SHIFT) + 1;
+      }
     }
   }
 

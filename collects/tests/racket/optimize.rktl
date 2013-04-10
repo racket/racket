@@ -3044,6 +3044,32 @@
     (test 'flonum cadr ts)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The validator should understand that a structure
+;; constructor always succeeds:
+
+(let ()
+  (define (go sub)
+    (let ([e `(module m racket/base
+                (provide bar)
+                (struct foo (x))
+                (define empty
+                  (let ((t ,sub))
+                    (lambda () t)))
+                (define (bar)
+                  (empty)))]
+          [o (open-output-bytes)])
+      (write (compile e) o)
+      (parameterize ([current-namespace (make-base-namespace)])
+        (eval
+         (parameterize ([read-accept-compiled #t])
+           (read (open-input-bytes (get-output-bytes o)))))
+        ((dynamic-require ''m 'bar)))))
+  (go '(foo 1))
+  (go '(foo? (list 1 2 3)))
+  ;; No optimization here for this one:
+  (go '(foo-x (foo 1))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (report-errs)
