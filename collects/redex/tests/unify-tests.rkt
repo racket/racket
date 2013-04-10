@@ -821,6 +821,12 @@
      x)
   (x variable-not-otherwise-mentioned))
 
+(define-language n-lang
+  (n number))
+
+(check-equal?
+ (pat->term n-lang 'hi (env (hash (lvar 'it) '(cstr (n) hi)) '()))
+ (unif-fail))
 
 
 (check-not-false (redex-match λn e_1 (pat->term λn `(nt e) (env (hash) '()))))

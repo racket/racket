@@ -13,6 +13,7 @@
          check-dq
          dq)
 
+(struct ok ())
 
 
 ;; term generation
@@ -26,6 +27,24 @@
               (λ () (let ([mtchr (do-test-match lang `(nt ,nt) '() 'pat->term #t)])
                       (hash-set! nt-matchers nt mtchr)
                       mtchr))))
+  (define (ground-or-ok p)
+    (let/ec okk
+      (let recur ([p p])
+        (match p
+          [(lvar id)
+           (recur (hash-ref eqs p))]
+          [`(name ,id ,(bound))
+           (recur (hash-ref eqs (lvar id)))]
+          [`(list ,ps ...)
+           `(,@(for/list ([p ps]) (recur p)))]
+          [`(cstr (,nts ...) ,p)
+           (recur p)]
+          [`(nt ,_)
+           (okk (ok))]
+          [(? predef-pat? _)
+           (okk (ok))]
+          [else p]))))
+  ;; do this first since the term environment (term-e) is needed for the dqs
   (define res-term
     (let recur ([p pat])
       (match p
@@ -66,17 +85,29 @@
                         (unless (not-failed? res) (fail (unif-fail)))
                         res))))]
         [else
-         (let-values ([(p bs) (gen-term p lang 2)])
-           p)])))
-  (and/fail (check-dqs (remove-empty-dqs (env-dqs full-env)) term-e lang eqs)
-            res-term))
+         (make-term p lang)])))
+  (and/fail 
+   (not-failed? res-term)
+   (for/and ([(k v) (in-hash eqs)])
+     (match v
+       [`(cstr (,nts ...) ,p)
+        (define grook (ground-or-ok p))
+        (or (ok? grook)
+            (for/and ([nt nts])
+              ((get-matcher nt) grook)))]
+       [else #t]))
+   (check-dqs (remove-empty-dqs (env-dqs full-env)) term-e lang eqs)
+   res-term))
 
 (define-syntax-rule (for/not-failed ((x xs)) b ...)
   (for/fold ([res (unif-fail)])
     ([x xs])
     #:break (not-failed? res)
     b ...))
-    
+
+(define (make-term p lang)
+  (let-values ([(p bs) (gen-term p lang 2)])
+    p))   
 
 (define (check-dqs dqs term-e lang eqs)
   (for/and ([dq dqs])
