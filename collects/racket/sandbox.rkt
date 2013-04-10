@@ -29,6 +29,7 @@
          sandbox-make-inspector
          sandbox-make-code-inspector
          sandbox-make-logger
+         sandbox-make-environment-variables
          sandbox-memory-limit
          sandbox-eval-limits
          sandbox-eval-handlers
@@ -89,6 +90,7 @@
                  [sandbox-make-inspector      current-inspector]
                  [sandbox-make-code-inspector current-code-inspector]
                  [sandbox-make-logger         current-logger]
+                 [sandbox-make-environment-variables current-environment-variables]
                  [sandbox-memory-limit        #f]
                  [sandbox-eval-limits         #f]
                  [sandbox-eval-handlers       '(#f #f)])
@@ -229,6 +231,11 @@
   (make-parameter (lambda () (make-inspector (current-code-inspector)))))
 
 (define sandbox-make-logger (make-parameter current-logger))
+
+(define sandbox-make-environment-variables (make-parameter
+                                            (lambda ()
+                                              (environment-variables-copy
+                                               (current-environment-variables)))))
 
 (define (compute-permissions for-require for-load)
   ;; `for-require' is a list of module paths and paths that will be `reqiure'd,
@@ -909,6 +916,7 @@
     [current-custodian user-cust]
     [current-thread-group (make-thread-group)]
     ;; paths
+    [current-environment-variables ((sandbox-make-environment-variables))]
     [current-library-collection-paths
      (filter directory-exists?
              (append (sandbox-override-collection-paths)
