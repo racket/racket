@@ -3175,7 +3175,7 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
     Scheme_UDP *udp;
     char *address = NULL;
     unsigned short port = 0;
-    GC_CAN_IGNORE struct mz_addrinfo *udp_bind_addr = NULL;
+    GC_CAN_IGNORE struct mz_addrinfo *udp_bind_addr = NULL, *addr;
 
     udp = (Scheme_UDP *)argv[0];
 
@@ -3219,8 +3219,8 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
       return NULL;
     }
 
-    /* DISCONNECT */
     if (SCHEME_FALSEP(argv[1]) && SCHEME_FALSEP(argv[2])) {
+      /* DISCONNECT */
       int errid = 0;
       if (udp->connected) {
         int ok;
@@ -3253,8 +3253,8 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
       return scheme_void;
     }
 
-    /* RESOLVE ADDRESS */
-    if (address || port) {
+    {
+      /* RESOLVE ADDRESS */
       int err;
       udp_bind_addr = scheme_get_host_address(address, port, &err, -1, do_bind, 0);
       if (!udp_bind_addr) {
@@ -3269,30 +3269,37 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
       }
     }
 
-    /* CONNECT CASE */
     if (!do_bind) {
-      int ok = !connect(udp->s, udp_bind_addr->ai_addr, udp_bind_addr->ai_addrlen);
+      /* CONNECT CASE */
+      int ok, errid = -1;
+
+      /* connect using first address that works: */
+      for (addr = udp_bind_addr; addr; addr = addr->ai_next) {
+        ok = !connect(udp->s, addr->ai_addr, addr->ai_addrlen);
+        if (ok) {
+          udp->connected = 1;
+          mz_freeaddrinfo(udp_bind_addr);
+          return scheme_void;
+        } else
+          errid = SOCK_ERRNO();
+      }
+
       mz_freeaddrinfo(udp_bind_addr);
-      if (ok) {
-        udp->connected = 1;
-        return scheme_void;
-      }
-      else {
-        scheme_raise_exn(MZEXN_FAIL_NETWORK, 
-                         "%s: can't connect\n"
-                         "  address: %s\n"
-                         "  port number: %d\n"
-                         "  system error: %E", 
-                         name, 
-                         address ? address : "#f", 
-                         port, 
-                         SOCK_ERRNO());
-        return NULL;
-      }
-    }
-    /* BIND CASE */
-    else {
-      int ok;
+
+      scheme_raise_exn(MZEXN_FAIL_NETWORK, 
+                       "%s: can't connect\n"
+                       "  address: %s\n"
+                       "  port number: %d\n"
+                       "  system error: %E", 
+                       name, 
+                       address ? address : "#f", 
+                       port, 
+                       errid);
+
+      return NULL;
+    } else {
+      /* BIND CASE */
+      int ok, errid = -1;
 
       if ((argc > 3) && SCHEME_TRUEP(argv[3])) {
 	int one = 1;
@@ -3306,35 +3313,29 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
 	}
       }
 
-      if (udp_bind_addr == NULL ) {
-        GC_CAN_IGNORE mz_unspec_address ua;
-        memset(&ua, 0, sizeof(mz_unspec_address));
-        ua.sin_family = AF_UNSPEC;
-        ua.sin_port = 0;
-        memset(&(ua.sin_addr), 0, sizeof(ua.sin_addr));
-        memset(&(ua.sin_zero), 0, sizeof(ua.sin_zero));
-        ok = !bind(udp->s, (struct sockaddr *)&ua, sizeof(ua));
+      /* bind using first address that works: */
+      for (addr = udp_bind_addr; addr; addr = addr->ai_next) {
+        ok = !bind(udp->s, addr->ai_addr, addr->ai_addrlen);
+        if (ok) {
+          udp->bound = 1;
+          mz_freeaddrinfo(udp_bind_addr);
+          return scheme_void;
+        } else
+          errid = SOCK_ERRNO();
       }
-      else {
-        ok = !bind(udp->s, udp_bind_addr->ai_addr, udp_bind_addr->ai_addrlen);
-        mz_freeaddrinfo(udp_bind_addr);
-      }
-      if (ok) {
-        udp->bound = 1;
-        return scheme_void;
-      }
-      else {
-        scheme_raise_exn(MZEXN_FAIL_NETWORK, 
-                         "%s: can't bind\n"
-                         "  address: %s\n"
-                         "  port number: %d\n"
-                         "  system error: %E",
-                         name, 
-                         address ? address : "#f", 
-                         port, 
-                         SOCK_ERRNO());
-        return NULL;
-      }
+
+      mz_freeaddrinfo(udp_bind_addr);
+
+      scheme_raise_exn(MZEXN_FAIL_NETWORK, 
+                       "%s: can't bind\n"
+                       "  address: %s\n"
+                       "  port number: %d\n"
+                       "  system error: %E",
+                       name, 
+                       address ? address : "#f", 
+                       port, 
+                       errid);
+      return NULL;
     }
   }
 #else
