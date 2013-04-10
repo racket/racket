@@ -2,15 +2,18 @@
 (require "prop.rkt"
          "misc.rkt"
          "blame.rkt"
+         "guts.rkt"
          racket/stxparam)
-(require (for-syntax racket/base)
-         (for-syntax "opt-guts.rkt")
-         (for-syntax racket/stxparam))
+(require (for-syntax racket/base 
+                     "helpers.rkt"
+                     "opt-guts.rkt"
+                     racket/stxparam))
 
 (provide opt/c define-opt/c define/opter
-         opt/direct
+         opt/direct 
          begin-lifted
          (for-syntax
+          opt/pred
           define-opt/recursive-fn?
           define-opt/recursive-fn-neg-blame?-id))
 
@@ -106,7 +109,8 @@
 
 ;; opt/i : id opt/info syntax ->
 ;;         syntax syntax-list syntax-list (union syntax #f) (union syntax #f)
-(define-for-syntax (opt/i opt/info stx)
+;;  if call-opt/unknown is #f, then this may just return #f instead of an optres
+(define-for-syntax (opt/i opt/info stx #:call-opt/unknown? [call-opt/unknown? #t])
   ;; the case dispatch here must match what top-level-unknown? is doing
   (syntax-case stx ()
     [(ctc arg ...)
@@ -115,6 +119,9 @@
     [argless-ctc
      (and (identifier? #'argless-ctc) (opter #'argless-ctc))
      ((opter #'argless-ctc) opt/i opt/info stx)]
+    [predicate?
+     (and (identifier? #'predicate?) (known-good-contract? #'predicate?))
+     (opt/pred opt/info #'predicate?)]
     [(f arg ...)
      (and (identifier? #'f) 
           (define-opt/recursive-fn? (syntax-local-value #'f (λ () #f))))
@@ -143,8 +150,13 @@
     [konst
      (coerecable-constant? #'konst)
      (opt-constant-contract (syntax->datum #'konst) opt/info)]
-    [else
-     (opt/unknown opt/i opt/info stx)]))
+    [_
+     (cond
+       [call-opt/unknown?
+        (opt/unknown opt/i opt/info stx)]
+       [else
+        (log-unknown-contract-warning stx)
+        #f])]))
 
 ;; top-level-unknown? : syntax -> boolean
 ;; this must match what opt/i is doing
@@ -156,6 +168,9 @@
     [argless-ctc
      (and (identifier? #'argless-ctc) (opter #'argless-ctc))
      #f]
+    [predicate?
+     (and (identifier? #'predicate?) (known-good-contract? #'predicate?))
+     #f]
     [konst
      (coerecable-constant? #'konst)
      #f]
@@ -165,6 +180,34 @@
      #f]
     [else
      #t]))
+
+(define-for-syntax (opt/pred opt/info pred #:name [name (syntax-e pred)])
+  (with-syntax ((pred pred))
+    (build-optres
+     #:exp
+     (with-syntax ((val (opt/info-val opt/info))
+                   (ctc (opt/info-contract opt/info))
+                   (blame (opt/info-blame opt/info)))
+       (syntax (if (pred val)
+                   val
+                   (raise-opt/pred-error blame val 'pred))))
+     #:lifts null
+     #:superlifts null
+     #:partials null
+     #:flat (syntax (pred val))
+     #:opt #f
+     #:stronger-ribs null
+     #:chaperone #t
+     #:name #`'#,name)))
+
+(define (raise-opt/pred-error blame val pred-name)
+  (raise-blame-error
+   blame
+   val
+   '(expected: "~a")
+   pred-name))
+
+
 
 ;; opt/c : syntax -> syntax
 ;; opt/c is an optimization routine that takes in an sexp containing
@@ -182,22 +225,24 @@
   
   (parameterize ([opt-error-name error-name-sym])
     (define info (make-opt/info #'ctc #'val #'blame #f '() #f #f #'this #'that))
-    (define an-optres (opt/i info exp))
-    (bind-superlifts
-     (optres-superlifts an-optres)
-     (bind-lifts
-      (optres-lifts an-optres)
-      #`(make-opt-contract
-         (λ (ctc)
-           (λ (blame)
-             #,(bind-superlifts
-                (optres-partials an-optres)
-                #`(λ (val) #,(optres-exp an-optres)))))
-         #,(optres-name an-optres)
-         (λ (this that) #f)
-         (vector)
-         (begin-lifted (box #f))
-         #,(optres-chaperone an-optres))))))
+    (define an-optres (opt/i info exp #:call-opt/unknown? #f))
+    (if an-optres
+        (bind-superlifts
+         (optres-superlifts an-optres)
+         (bind-lifts
+          (optres-lifts an-optres)
+          #`(make-opt-contract
+             (λ (ctc)
+               (λ (blame)
+                 #,(bind-superlifts
+                    (optres-partials an-optres)
+                    #`(λ (val) #,(optres-exp an-optres)))))
+             #,(optres-name an-optres)
+             (λ (this that) #f)
+             (vector)
+             (begin-lifted (box #f))
+             #,(optres-chaperone an-optres))))
+        #`(coerce-contract '#,error-name-sym #,exp))))
 
 ;; this macro optimizes 'e' as a contract,
 ;; using otherwise-id if it does not recognize 'e'.

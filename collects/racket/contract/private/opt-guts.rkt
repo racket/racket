@@ -38,7 +38,8 @@
          build-optres
          
          combine-two-chaperone?s
-         combine-two-no-negative-blame)
+         combine-two-no-negative-blame
+         log-unknown-contract-warning)
 
 ;; (define/opter (<contract-combinator> opt/i opt/info stx) body)
 ;;
@@ -248,13 +249,7 @@
 ;; opt/unknown : opt/i id id syntax
 ;;
 (define (opt/unknown opt/i opt/info uctc [extra-warning ""])
-  (log-warning (string-append (format "warning in ~a:~a: opt/c doesn't know the contract ~s" 
-                                      (syntax-source uctc)
-                                      (if (syntax-line uctc)
-                                          (format "~a:~a" (syntax-line uctc) (syntax-column uctc))
-                                          (format ":~a" (syntax-position uctc)))
-                                      (syntax->datum uctc))
-                              extra-warning))
+  (log-unknown-contract-warning uctc extra-warning)
   (with-syntax ([(lift-var partial-var partial-flat-var)
                  (generate-temporaries '(lift partial partial-flat))]
                 [val (opt/info-val opt/info)]
@@ -281,6 +276,15 @@
      #:stronger-ribs null
      #:chaperone #'(chaperone-contract? lift-var)
      #:name #'(contract-name lift-var))))
+
+(define (log-unknown-contract-warning exp [extra-warning ""])
+  (log-warning (string-append (format "warning in ~a:~a: opt/c doesn't know the contract ~s" 
+                                      (syntax-source exp)
+                                      (if (syntax-line exp)
+                                          (format "~a:~a" (syntax-line exp) (syntax-column exp))
+                                          (format ":~a" (syntax-position exp)))
+                                      (syntax->datum exp))
+                              extra-warning)))
 
 
 (define opt-error-name (make-parameter 'opt/c))
