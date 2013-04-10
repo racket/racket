@@ -194,6 +194,9 @@
 
 ;; UDP Multicast
 (let ((s (udp-open-socket)))
+  ;; On Windows XP, bind is required before multicast joins:
+  (when (eq? 'windows (system-type))
+    (test (void) udp-bind! s #f 0 #t))
 
   (test #t boolean? (udp-multicast-loopback? s))
   (test (void) udp-multicast-set-loopback! s #f)
@@ -259,7 +262,8 @@
   (test (void) udp-multicast-join-group! s "233.252.0.0" #f)
   (test (void) udp-multicast-leave-group! s "233.252.0.0" "0.0.0.0")
 
-  (test (void) udp-bind! s #f 0 #t)
+  (unless (eq? 'windows (system-type))
+    (test (void) udp-bind! s #f 0 #t))
   (test (void) udp-multicast-join-group! s "233.252.0.0" "localhost")
 
   (let*-values (((la lp ra rp) (udp-addresses s #t))
