@@ -633,7 +633,17 @@
   (chaperone-procedure
    val
    (make-keyword-procedure
-    (λ (kwds kwd-args . regular-args) (raise-blame-error '...))
+    (λ (kwds kwd-args . regular-args) 
+      (raise-blame-error (blame-swap blame)
+                         val
+                         '(expected: "no keyword arguments" given: "~a")
+                         (apply string-append
+                                (let loop ([kwds kwds])
+                                  (cons
+                                   (format "~a" (car kwds))
+                                   (cond
+                                     [(null? (cdr kwds)) '()]
+                                     [else (cons " " (loop (cdr kwds)))]))))))
     exact-proc)))
 
 (define (raise-flat-arrow-err blame val n)
