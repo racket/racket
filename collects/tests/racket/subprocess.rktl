@@ -460,6 +460,20 @@
   (parameterize ([current-input-port (open-input-string "")])
     (test 3 system/exit-code "exit 3")))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Environment variables:
+
+(let ([out (open-output-bytes)])
+  (parameterize ([current-input-port (open-input-string "Hi\n")]
+                 [current-output-port out]
+                 [current-environment-variables
+                  (environment-variables-copy
+                   (current-environment-variables))])
+    (environment-variables-set! #"Hola" #"hi, there")
+    (system* self "-e" "(getenv \"Hola\")"))
+  (test "\"hi, there\"\n" get-output-string out))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (for ([f (list tmpfile tmpfile2)] #:when (file-exists? f)) (delete-file f))

@@ -11,5 +11,6 @@
 @include-section["subprocess.scrbl"]
 @include-section["logging.scrbl"]
 @include-section["time.scrbl"]
+@include-section["envvars.scrbl"]
 @include-section["runtime.scrbl"]
 @include-section["cmdline.scrbl"]
