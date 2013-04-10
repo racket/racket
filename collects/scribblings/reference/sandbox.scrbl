@@ -321,8 +321,9 @@ function.
 
 Invokes the @racket[thunk] in a context where sandbox configuration
 parameters are set for minimal restrictions.  More specifically, there
-are no memory or time limits, and the existing existing inspectors,
-security guard, exit handler, and logger are used.  (Note that the I/O
+are no memory or time limits, and the existing existing @tech{inspectors},
+@tech{security guard}, @tech{exit handler}, @tech{logger}, and 
+@tech{environment variable set} are used.  (Note that the I/O
 ports settings are not included.)}
 
 
@@ -758,6 +759,16 @@ for sandboxed evaluation.  The procedure is called when initializing
 an evaluator, and the default parameter value is
 @racket[current-logger].  This means that it is not creating a new
 logger (this might change in the future).}
+
+
+@defparam[sandbox-make-environment-variables make (-> environment-variables?)]{
+
+A @tech{parameter} that determines the procedure used to create the
+@tech{environment variable set} for sandboxed evaluation.  The
+procedure is called when initializing an evaluator, and the default
+parameter value constructs a new @tech{environment variable set} using
+@racket[(environment-variables-copy
+(current-environment-variables))].}
 
 @; ----------------------------------------------------------------------
 

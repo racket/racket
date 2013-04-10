@@ -590,6 +590,12 @@
    --eval--
    (syntax-original? #'x) => #t
 
+   --eval--
+   (putenv "APPLE" "AnApple") => #t
+   (getenv "APPLE") => "AnApple"
+   --top--
+   (getenv "APPLE") => #f
+
    ))
 
 (parameterize ([current-module-declare-name (make-resolved-module-path 'junk)])
