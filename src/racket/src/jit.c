@@ -1132,7 +1132,8 @@ static int generate_flonum_local_boxing(mz_jit_state *jitter, int pos, int local
 int scheme_generate_flonum_local_unboxing(mz_jit_state *jitter, int push, int no_store, int extfl)
 /* Move FPR0 onto C stack */
 {
-  int sz, fpr0;
+  int sz;
+  int fpr0 USED_ONLY_SOMETIMES;
 
   sz = MZ_FPUSEL(extfl, 2 * sizeof(double), sizeof(double));
 

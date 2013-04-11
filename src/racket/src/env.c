@@ -544,6 +544,10 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
 
   scheme_starting_up = 1; /* in case it's not set already */
 
+#ifdef TIME_STARTUP_PROCESS
+  printf("pre-embedded @ %" PRIdPTR "\n", scheme_get_process_milliseconds());
+#endif
+
   scheme_add_embedded_builtins(env);
 
   boot_module_resolver();
@@ -1241,9 +1245,13 @@ Scheme_Env *scheme_get_bucket_home(Scheme_Bucket *b)
 void scheme_set_bucket_home(Scheme_Bucket *b, Scheme_Env *e)
 {
   if (!((Scheme_Bucket_With_Home *)b)->home_link) {
-    Scheme_Object *link;
-    link = scheme_get_home_weak_link(e);
-    ((Scheme_Bucket_With_Home *)b)->home_link = link;
+    if (((Scheme_Bucket_With_Flags *)b)->flags & GLOB_STRONG_HOME_LINK)
+      ((Scheme_Bucket_With_Home *)b)->home_link = (Scheme_Object *)e;
+    else {
+      Scheme_Object *link;
+      link = scheme_get_home_weak_link(e);
+      ((Scheme_Bucket_With_Home *)b)->home_link = link;
+    }
   }
 }
 
@@ -1302,11 +1310,11 @@ scheme_do_add_global_symbol(Scheme_Env *env, Scheme_Object *sym,
     b = scheme_bucket_from_table(env->toplevel, (const char *)sym);
     b->val = obj;
     ASSERT_IS_VARIABLE_BUCKET(b);
-    scheme_set_bucket_home(b, env);
     if (constant && scheme_defining_primitives) {
       ((Scheme_Bucket_With_Flags *)b)->id = builtin_ref_counter++;
-      ((Scheme_Bucket_With_Flags *)b)->flags |= (GLOB_HAS_REF_ID | GLOB_IS_CONST);
+      ((Scheme_Bucket_With_Flags *)b)->flags |= (GLOB_HAS_REF_ID | GLOB_IS_CONST | GLOB_STRONG_HOME_LINK);
     }
+    scheme_set_bucket_home(b, env);
   } else
     scheme_add_to_table(env->syntax, (const char *)sym, obj, constant);
 }
