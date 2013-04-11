@@ -18,8 +18,9 @@ Compares the values of the two pointers. Two different Racket
 pointer objects can contain the same pointer.
 
 If the values are both pointers that are not represented by
-@racket[#f], a byte string, a callback, or a pointer based on
-@racket[_fpointer], then the @racket[ptr-equal?] comparison is the
+@racket[#f], a byte string, a callback, a pointer based on
+@racket[_fpointer], or a structure with the @racket[prop:cpointer]
+property, then the @racket[ptr-equal?] comparison is the
 same as using @racket[equal?].}
 
 
