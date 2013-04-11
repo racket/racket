@@ -423,7 +423,7 @@ to the command sub-sub-commands.
 
 @; ----------------------------------------
 
-@section{Developing Packages}
+@section[#:tag "how-to-create"]{Developing Packages}
 
 To create a package, first make a directory for your package and
 select its name, @nonterm{package}:
