@@ -1,5 +1,5 @@
-; Derived from plai/web/server, which was based on an older version of this
-; Also derived from planet/untyped/instaservlet
+;; Derived from plai/web/server, which was based on an older version
+;; of this Also derived from planet/untyped/instaservlet
 #lang racket/base
 (require (prefix-in net: net/sendurl)
          racket/match
@@ -46,6 +46,7 @@
                                     #:banner? boolean?
                                     #:listen-ip (or/c false/c string?)
                                     #:port tcp-listen-port?
+                                    #:max-waiting exact-nonnegative-integer?
                                     #:ssl-cert (or/c false/c path-string?)
                                     #:ssl-key (or/c false/c path-string?))
                      . ->* .
@@ -104,6 +105,8 @@
          [listen-ip "127.0.0.1"]
          #:port
          [port-arg 8000]
+         #:max-waiting
+         [max-waiting 511]
          #:ssl-cert
          [ssl-cert #f]
          #:ssl-key
@@ -117,6 +120,7 @@
            #:dispatch (dispatcher sema)
            #:listen-ip listen-ip
            #:port port-arg
+           #:max-waiting max-waiting
            #:tcp@ (if ssl?
                       (let ()
                         (define-unit-binding ssl-tcp@
