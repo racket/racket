@@ -6,9 +6,10 @@
          "commands.rkt"
          (prefix-in setup: setup/setup))
 
-(define (setup no-setup? installation? setup-collects)
+(define (setup no-setup? setup-collects)
   (unless (or no-setup?
               (not (member (getenv "PLT_PKG_NOSETUP") '(#f ""))))
+    (define installation? (current-install-system-wide?))
     (setup:setup
      #:make-user? (not installation?)
      #:collections (and setup-collects
@@ -87,7 +88,7 @@
                      #:ignore-checksums? ignore-checksums
                      (for/list ([p (in-list pkg-source)])
                        (pkg-desc p (or (and link 'link) type) name #f))))
-      (setup no-setup installation setup-collects))))]
+      (setup no-setup setup-collects))))]
  [update
   "Update packages"
   #:once-each
@@ -126,7 +127,7 @@
                         #:dep-behavior deps
                         #:deps? update-deps))
      (when setup-collects
-       (setup no-setup installation setup-collects)))))]
+       (setup no-setup setup-collects)))))]
  [remove
   "Remove packages"
   #:once-each
@@ -152,7 +153,7 @@
       (remove-packages pkgs
                        #:auto? auto
                        #:force? force)
-      (setup no-setup installation #f))))]
+      (setup no-setup #f))))]
  [show
   "Show information about installed packages"
   #:once-each
