@@ -162,6 +162,7 @@
              #f)])
       (when headers?
         (gtk_tree_view_column_set_resizable column #t)
+        (gtk_tree_view_column_set_min_width column 1)
         (when click-headers?
           (gtk_tree_view_column_set_clickable column #t))
         (when reorder-headers?
