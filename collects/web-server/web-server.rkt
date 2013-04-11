@@ -21,7 +21,7 @@
                                #:tcp@ (unit/c (import) (export tcp^))
                                #:port tcp-listen-port?
                                #:listen-ip (or/c false/c string?)
-                               #:max-waiting number?
+                               #:max-waiting exact-nonnegative-integer?
                                #:initial-connection-timeout number?)
        (-> void))]
  [serve/ports
@@ -31,7 +31,7 @@
                                #:tcp@ (unit/c (import) (export tcp^))
                                #:ports (listof tcp-listen-port?)
                                #:listen-ip (or/c false/c string?)
-                               #:max-waiting number?
+                               #:max-waiting exact-nonnegative-integer?
                                #:initial-connection-timeout number?)
        (-> void))]
  [serve/ips+ports
@@ -40,7 +40,7 @@
                                #:connection-close? boolean?
                                #:tcp@ (unit/c (import) (export tcp^))
                                #:ips+ports (listof (cons/c (or/c false/c string?) (listof tcp-listen-port?)))
-                               #:max-waiting number?
+                               #:max-waiting exact-nonnegative-integer?
                                #:initial-connection-timeout number?)
        (-> void))]
  [do-not-return (-> void)]
