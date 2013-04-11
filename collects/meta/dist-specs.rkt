@@ -369,6 +369,7 @@ mz-manuals := (scribblings: "main/") ; generates main pages (next line)
                         "honu/")
               (doc: "*.{html|css|js|sxref}")
               (doc: "blueboxes.rktd")
+              (doc: "keep-dirs.rktd")
               (doc: "docindex.sqlite")
               (scribblings: "{{info|icons}.rkt|*.png}" "compiled")
 
