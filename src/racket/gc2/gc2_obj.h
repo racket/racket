@@ -9,7 +9,6 @@
 # define LOG_APAGE_SIZE 14
 #endif
 typedef struct objhead {
-  uintptr_t hash      : ((8 * sizeof(intptr_t)) - (4+3+LOG_APAGE_SIZE) );
   /* the type and size of the object */
   uintptr_t type      : 3;
   /* these are the various mark bits we use */
@@ -19,6 +18,8 @@ typedef struct objhead {
   uintptr_t moved     : 1;
   uintptr_t dead      : 1;
   uintptr_t size      : LOG_APAGE_SIZE;
+  /* leftover bits are used for hashing: */
+  uintptr_t hash      : ((8 * sizeof(intptr_t)) - (4+3+LOG_APAGE_SIZE) );
 } objhead;
 
 #define OBJHEAD_SIZE (sizeof(objhead))
