@@ -997,7 +997,7 @@ The resulting bindings are as follows:
   @racketidfont{list->}@racketvarfont{id}, but fields that are structs
   are recursively unpacked to lists or packed from lists.}
 
- @item{@racketidfont{struct:}@racketvarfont{id}@racketidfont{:cpointer}:
+ @item{@racketidfont{struct:cpointer:}@racketvarfont{id}:
   only when a @racket[#:property] is specified --- a structure type that 
   corresponds to a wrapper to reflect properties (see below).}
 
