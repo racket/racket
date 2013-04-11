@@ -15,7 +15,7 @@
   ((contracted
     [port tcp-listen-port?]
     [listen-ip (or/c string? false/c)]
-    [max-waiting integer?]
+    [max-waiting exact-nonnegative-integer?]
     [initial-connection-timeout integer?]
     [read-request
      (connection? 

@@ -22,7 +22,7 @@
 Provides contains the following identifiers.
 }
 
-@defthing[max-waiting integer?]{
+@defthing[max-waiting exact-nonnegative-integer?]{
  Passed to @racket[tcp-accept].
 }
 

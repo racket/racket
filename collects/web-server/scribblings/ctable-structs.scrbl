@@ -17,7 +17,7 @@ the configuration table S-expression file format described in
 
 @defstruct[configuration-table
            ([port port-number?]
-            [max-waiting natural-number/c]
+            [max-waiting exact-nonnegative-integer?]
             [initial-connection-timeout natural-number/c]
             [default-host host-table?]
             [virtual-hosts (listof (cons/c string? host-table?))])]
