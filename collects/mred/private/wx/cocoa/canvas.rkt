@@ -35,7 +35,7 @@
 
 (import-class NSView NSGraphicsContext NSScroller NSComboBox NSWindow 
               NSImageView NSTextFieldCell 
-              NSOpenGLView NSOpenGLPixelFormat)
+              NSOpenGLView NSOpenGLContext NSOpenGLPixelFormat)
 
 (import-protocol NSComboBoxDelegate)
 
@@ -354,11 +354,22 @@
               (tell (tell (if is-combo? RacketComboBox RacketView)
                           alloc)
                     initWithFrame: #:type _NSRect r)
-              (let ([pf (gl-config->pixel-format gl-config)])
+              (let* ([share-context (send gl-config get-share-context)]
+                     [context-handle (if share-context (send share-context get-handle) #f)]
+                     [pf (gl-config->pixel-format gl-config)]
+                     [new-context (tell NSOpenGLContext alloc)]
+                     [racket-gl-view (tell RacketGLView alloc)])
                 (begin0
-                 (tell (tell RacketGLView alloc) 
+                 (tell racket-gl-view
                        initWithFrame: #:type _NSRect r
                        pixelFormat: pf)
+                 (tell new-context
+                       initWithFormat: pf
+                       shareContext: context-handle)
+                 (tell racket-gl-view
+                       setOpenGLContext: new-context)
+                 (tell new-context
+                       setView: racket-gl-view)
                  (tellv pf release)))))))
      (tell #:type _void cocoa addSubview: content-cocoa)
      (set-ivar! content-cocoa wxb (->wxb this))
