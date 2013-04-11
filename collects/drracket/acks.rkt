@@ -28,6 +28,7 @@
    "Will Farr, "
    "Matthias Felleisen, "
    "Michael Filonenko, "
+   "Burke Fetscher, "
    "Robby Findler, "
    "Kathi Fisler, "
    "Cormac Flanagan, "
