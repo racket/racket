@@ -5,6 +5,15 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test (string->path "x.zo") path-replace-suffix "x.rkt" ".zo")
+(test (string->path "x.zo") path-replace-suffix "x.rkt" #".zo")
+(test (string->path "x.zo") path-replace-suffix "x" #".zo")
+(test (string->path "x.o.zo") path-replace-suffix "x.o.rkt" #".zo")
+(test (string->path "x_rkt.zo") path-add-suffix "x.rkt" ".zo")
+(test (string->path "x_rkt.zo") path-add-suffix "x.rkt" #".zo")
+(test (string->path "x.zo") path-add-suffix "x" #".zo")
+(test (string->path "x.o_rkt.zo") path-add-suffix "x.o.rkt" #".zo")
+
 (define (make-/tf p exn?)
   (lambda args
     (with-handlers ([exn? (lambda (x) #f)]

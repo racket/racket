@@ -316,7 +316,7 @@
 	(if (and (relative-path? program)
 		 (let-values ([(base name dir?) (split-path program)])
 		   (eq? base 'relative)))
-	    (let ([paths-str (environment-variables-get (current-environment-variables)
+	    (let ([paths-str (environment-variables-ref (current-environment-variables)
                                                         #"PATH")]
 		  [win-add (lambda (s) (if (eq? (system-type) 'windows) 
 					   (cons (bytes->path #".") s) 
@@ -684,41 +684,44 @@
         (when (not base)
           (raise-mismatch-error who "cannot add a suffix to a root path: " s))
         (values base name))))
-        
+
+  (define-values (path-adjust-suffix)
+    (lambda (name sep rest-bytes s sfx)
+      (let-values ([(base name) (check-suffix-call s sfx name)])
+        (define bs (path-element->bytes name))
+        (define finish
+          (lambda (i sep i2)
+            (bytes->path-element
+             (bytes-append
+              (subbytes bs 0 i)
+              sep
+              (rest-bytes bs i2)
+              (if (string? sfx)
+                  (string->bytes/locale sfx (char->integer #\?))
+                  sfx))
+             (if (path-for-some-system? s)
+                 (path-convention-type s)
+                 (system-path-convention-type)))))
+        (let ([new-name (letrec-values ([(loop)
+                                         (lambda (i)
+                                           (if (zero? i)
+                                               (finish (bytes-length bs) #"" (bytes-length bs))
+                                               (let-values ([(i) (sub1 i)])
+                                                 (if (eq? (char->integer #\.) (bytes-ref bs i))
+                                                     (finish i sep (add1 i))
+                                                     (loop i)))))])
+                          (loop (bytes-length bs)))])
+          (if (path? base)
+              (build-path base new-name)
+              new-name)))))
 
   (define-values (path-replace-suffix)
     (lambda (s sfx)
-      (let-values ([(base name) (check-suffix-call s sfx 'path-replace-suffix)])
-        (let ([new-name (bytes->path-element
-                         (regexp-replace #rx#"(?:[.][^.]*|)$"
-                                         (path-element->bytes name)
-                                         (if (string? sfx)
-                                             (string->bytes/locale sfx (char->integer #\?))
-                                             sfx))
-                         (if (path-for-some-system? s)
-                             (path-convention-type s)
-                             (system-path-convention-type)))])
-          (if (path? base)
-              (build-path base new-name)
-              new-name)))))
+      (path-adjust-suffix 'path-replace-suffix #"" (lambda (bs i) #"") s sfx)))
 
   (define-values (path-add-suffix)
     (lambda (s sfx)
-      (let-values ([(base name) (check-suffix-call s sfx 'path-add-suffix)])
-        (let ([new-name (bytes->path-element
-                         (bytes-append
-                          (regexp-replace* #rx#"[.]"
-                                           (path-element->bytes name)
-                                           "_")
-                          (if (string? sfx)
-                              (string->bytes/locale sfx (char->integer #\?))
-                              sfx))
-                         (if (path-for-some-system? s)
-                             (path-convention-type s)
-                             (system-path-convention-type)))])
-          (if (path? base)
-              (build-path base new-name)
-              new-name)))))
+      (path-adjust-suffix 'path-replace-suffix #"_" subbytes s sfx)))
 
   (define-values (load/use-compiled)
     (lambda (f) ((current-load/use-compiled) f #f)))
@@ -732,7 +735,7 @@
 	    [cons-if (lambda (f r) (if f (cons f r) r))])
 	(path-list-string->path-list
 	 (if user-too?
-             (let ([c (environment-variables-get (current-environment-variables)
+             (let ([c (environment-variables-ref (current-environment-variables)
                                                  #"PLTCOLLECTS")])
                (if c
                    (bytes->string/locale c #\?)
@@ -1001,12 +1004,14 @@
 
   (define (split-relative-string s coll-mode?)
     (let ([l (let loop ([s s])
-               (cond
-                [(regexp-match #rx"^(.*?)/(.*)$" s)
-                 => (lambda (m)
-                      (cons (cadr m)
-                            (loop (caddr m))))]
-                [else (list s)]))])
+               (let ([len (string-length s)])
+                 (let iloop ([i 0])
+                   (cond
+                    [(= i len) (list s)]
+                    [(char=? #\/ (string-ref s i))
+                     (cons (substring s 0 i)
+                           (loop (substring s (add1 i))))]
+                    [else (iloop (add1 i))]))))])
       (if coll-mode?
           l
           (let loop ([l l])

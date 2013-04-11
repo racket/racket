@@ -245,7 +245,7 @@ static jit_state 			_jit;
 # if defined(JIT_X86_64)
 #  define jit_extr_i_l(d, rs)		(jit_lshi_l((d), (rs), 32), jit_rshi_l((d), (d), 32))
 # else
-#  define jit_extr_i_l(d, rs)		0
+#  define jit_extr_i_l(d, rs)		/* empty */
 # endif
 #endif
 #ifndef jit_extr_c_ul
@@ -258,7 +258,7 @@ static jit_state 			_jit;
 # if defined(JIT_X86_64)
 #  define jit_extr_i_ul(d, rs)		jit_andi_l((d), (rs), 0xFFFFFFFFUL)
 # else
-#  define jit_extr_i_ul(d, rs)		0
+#  define jit_extr_i_ul(d, rs)		/* empty */
 # endif
 #endif
 #endif
