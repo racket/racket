@@ -1263,11 +1263,11 @@
 (test #t environment-variables? (environment-variables-copy (current-environment-variables)))
 (test #t environment-variables? (make-environment-variables))
 (test #t environment-variables? (make-environment-variables #"A" #"1"))
-(test #t list? (environment-variables-keys (current-environment-variables)))
-(test #t andmap bytes? (environment-variables-keys (current-environment-variables)))
+(test #t list? (environment-variables-names (current-environment-variables)))
+(test #t andmap bytes? (environment-variables-names (current-environment-variables)))
 (test #t = 
-      (length (environment-variables-keys (current-environment-variables)))
-      (length (environment-variables-keys (environment-variables-copy (current-environment-variables)))))
+      (length (environment-variables-names (current-environment-variables)))
+      (length (environment-variables-names (environment-variables-copy (current-environment-variables)))))
 (test #f bytes-environment-variable-name? #"x=")
 (test #f bytes-environment-variable-name? #"x\0")
 (test (not (eq? 'windows (system-type))) bytes-environment-variable-name? #"")
@@ -1276,10 +1276,10 @@
 (test #f string-environment-variable-name? "x\0")
 (test (not (eq? 'windows (system-type))) string-environment-variable-name? "")
 
-(test #"1" environment-variables-get (make-environment-variables #"a" #"1" #"b" #"two") #"a")
-(test #"two" environment-variables-get (make-environment-variables #"a" #"1" #"b" #"two") #"b")
-(test #f environment-variables-get (make-environment-variables #"a" #"1" #"b" #"two") #"c")
-(test #f environment-variables-get (make-environment-variables) #"a")
+(test #"1" environment-variables-ref (make-environment-variables #"a" #"1" #"b" #"two") #"a")
+(test #"two" environment-variables-ref (make-environment-variables #"a" #"1" #"b" #"two") #"b")
+(test #f environment-variables-ref (make-environment-variables #"a" #"1" #"b" #"two") #"c")
+(test #f environment-variables-ref (make-environment-variables) #"a")
 
 (define (env-var-tests)
   (define success-1? (putenv "APPLE" "AnApple"))
@@ -1298,21 +1298,21 @@
   (test #f getenv "AnUndefinedEnvironmentVariable")
 
   (define env (current-environment-variables))
-  (test #"AnApple" environment-variables-get env #"APPLE")
-  (err/rt-test (environment-variables-get env #"=AP=PLE="))
+  (test #"AnApple" environment-variables-ref env #"APPLE")
+  (err/rt-test (environment-variables-ref env #"=AP=PLE="))
   (test (void) environment-variables-set! env #"APPLE" #"=x=")
-  (test #"=x=" environment-variables-get env #"APPLE")
-  (test #"AnotherApple" environment-variables-get env #"BANANA")
+  (test #"=x=" environment-variables-ref env #"APPLE")
+  (test #"AnotherApple" environment-variables-ref env #"BANANA")
   (test (void) environment-variables-set! env #"BANANA" #f)
-  (test #f environment-variables-get env #"BANANA")
+  (test #f environment-variables-ref env #"BANANA")
   (test #f getenv "BANANA")
 
   (let ([apple (if (eq? 'windows (system-type))
                    #"apple"
                    #"APPLE")])
-    (test apple car (member apple (environment-variables-keys env))))
-  (test #f member #"BANANA" (environment-variables-keys env))
-  (test #f member #"banana" (environment-variables-keys env)))
+    (test apple car (member apple (environment-variables-names env))))
+  (test #f member #"BANANA" (environment-variables-names env))
+  (test #f member #"banana" (environment-variables-names env)))
 
 (parameterize ([current-environment-variables
                 (environment-variables-copy

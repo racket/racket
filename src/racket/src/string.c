@@ -868,9 +868,9 @@ scheme_init_string (Scheme_Env *env)
 						       MZCONFIG_CURRENT_ENV_VARS),
 			     env);  
 
-  scheme_add_global_constant("environment-variables-get",
+  scheme_add_global_constant("environment-variables-ref",
 			     scheme_make_immed_prim(sch_getenv,
-						    "environment-variables-get",
+						    "environment-variables-ref",
 						    2, 2),
 			     env);
 
@@ -880,9 +880,9 @@ scheme_init_string (Scheme_Env *env)
                                                       3, 4),
 			     env);
 
-  scheme_add_global_constant("environment-variables-keys",
+  scheme_add_global_constant("environment-variables-names",
 			     scheme_make_immed_prim(sch_getenv_names,
-						    "environment-variables-keys",
+						    "environment-variables-names",
 						    1, 1),
 			     env);
 
@@ -2265,12 +2265,12 @@ static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[])
   Scheme_Hash_Tree *ht;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_environment_variables_type))
-    scheme_wrong_contract("environment-variables-get", "environment-variables?", 0, argc, argv);
+    scheme_wrong_contract("environment-variables-ref", "environment-variables?", 0, argc, argv);
 
   bs = argv[1];
   if (!SCHEME_BYTE_STRINGP(bs)
       || !byte_string_ok_name(bs))
-    scheme_wrong_contract("environment-variables-get", "bytes-environment-variable-name?", 1, argc, argv);
+    scheme_wrong_contract("environment-variables-ref", "bytes-environment-variable-name?", 1, argc, argv);
 
   ev = argv[0];
   ht = SCHEME_ENVVARS_TABLE(ev);
@@ -2329,9 +2329,12 @@ static int sch_unix_putenv(const char *var, const char *val, const intptr_t varl
 
   if (buffer)
     return putenv(buffer);
-  else
-    return unsetenv(var);
-} 
+  else {
+    /* on some platforms, unsetenv() returns void */
+    unsetenv(var);
+    return 0;
+  }
+}
 #endif
 
 static Scheme_Object *sch_putenv(int argc, Scheme_Object *argv[])
@@ -2518,7 +2521,7 @@ static Scheme_Object *sch_getenv_names(int argc, Scheme_Object *argv[])
 
   ev = argv[0];
   if (!SAME_TYPE(SCHEME_TYPE(ev), scheme_environment_variables_type))
-    scheme_wrong_contract("environment-variables-keys", "environment-variables?", 0, argc, argv);
+    scheme_wrong_contract("environment-variables-names", "environment-variables?", 0, argc, argv);
 
   ht = SCHEME_ENVVARS_TABLE(ev);
   if (!ht) {
