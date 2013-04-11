@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require "getinfo.rkt"
          "dirs.rkt"
@@ -8,12 +8,13 @@
          "main-doc.rkt"
          "parallel-do.rkt"
          "doc-db.rkt"
-         scheme/class
-         scheme/list
-         scheme/file
-         scheme/fasl
-         scheme/match
-         scheme/serialize
+         racket/class
+         racket/list
+         racket/file
+         racket/fasl
+         racket/match
+         racket/serialize
+         racket/set
          compiler/cm
          scribble/base-render
          scribble/core
@@ -188,6 +189,30 @@
            [infos (map get-info/full (map directory-record-path recs))])
       (filter-user-docs (append-map (get-docs main-dirs) infos recs) make-user?)))
   (define-values (main-docs user-docs) (partition doc-under-main? docs))
+
+  (unless only-dirs
+    ;; Check for extra document directories that we should remove
+    ;; in the main installation:
+    (log-setup-info "checking installation document directories")
+    (define main-doc-dir (find-doc-dir))
+    (define extra-dirs (call-with-input-file*
+                        (build-path main-doc-dir "keep-dirs.rktd")
+                        (lambda (i) (read i))))
+    (define expected (set-union
+                      (for/set ([doc (in-list main-docs)])
+                        (doc-dest-dir doc))
+                      (for/set ([i (in-list extra-dirs)])
+                         (build-path main-doc-dir i))))
+    (for ([i (in-list (directory-list main-doc-dir))])
+      (define p (build-path main-doc-dir i))
+      (when (directory-exists? p)
+        (unless (set-member? expected (build-path p))
+          (setup-printf
+           "removing"
+           "~a (documentation directory)"
+           (path->relative-string/setup p))
+          (delete-directory/files p)))))
+
   (define (can-build*? docs) (can-build? only-dirs docs))
   (define auto-main? (and auto-start-doc? (ormap can-build*? main-docs)))
   (define auto-user? (and auto-start-doc? (ormap can-build*? user-docs)))
@@ -505,6 +530,7 @@
                           #:when (info-build? i))
                        (add1 count)))
           (make-loop #f (add1 iter))))))
+
   (when infos
     (make-loop #t 0)
     ;; cache info to disk
