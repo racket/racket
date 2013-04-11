@@ -73,9 +73,11 @@
 (syntax-test #'(define-cstruct #f ()))
 (syntax-test #'(define-cstruct _y (y)))
 (syntax-test #'(define-cstruct _y () #:alignment))
+(syntax-test #'(define-cstruct _y () #:alignment 2 #:alignment 2))
 (syntax-test #'(define-cstruct _y () #:property))
 (syntax-test #'(define-cstruct _y () #:property x))
 (syntax-test #'(define-cstruct _y () #:property x y . 10))
+(syntax-test #'(define-cstruct _y () #:no-equal #:no-equal))
 
 ;; ----------------------------------------
 ;; Check struct properties and subtypes:
@@ -99,6 +101,26 @@
   (test #t p? (ptr-ref (malloc _W) _W))
   (test #t p? struct:cpointer:W)
   (test #t Z? (ptr-ref (malloc _W) _W)))
+
+;; ----------------------------------------
+;; Check struct properties and equality:
+
+(let ()
+  (define-cstruct _B ([a _int]) 
+    #:property prop:procedure void)
+  
+  (define b (make-B 123))
+  
+  (test #t equal? b (cast b _B-pointer _B-pointer))) ; cast forces new wrapper
+
+(let ()
+  (define-cstruct _B ([a _int]) 
+    #:property prop:procedure void
+    #:no-equal)
+  
+  (define b (make-B 123))
+  
+  (test #f equal? b (cast b _B-pointer _B-pointer))) ; cast forces new wrapper
 
 ;; ----------------------------------------
 

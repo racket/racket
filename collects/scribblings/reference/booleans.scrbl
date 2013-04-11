@@ -238,7 +238,8 @@ non-@racket[#f] value when applied to the structure.
 
 A deprecated @tech{structure type property} (see @secref["structprops"])
 that supplies an equality predicate and hashing functions for a structure
-type. @racket[gen:equal+hash] should be used instead. Accepts a list of
+type. The @racket[gen:equal+hash] @tech{generic interface} should be used,
+instead. A @racket[prop:equal+hash] property value is a list of
 three procedures that correspond to the methods of @racket[gen:equal+hash].
 }
 
