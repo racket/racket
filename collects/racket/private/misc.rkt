@@ -203,7 +203,7 @@
   (define (getenv s)
     (unless (string-environment-variable-name? s)
       (raise-argument-error 'getenv "string-environment-variable-name?" s))
-    (let ([v (environment-variables-get (current-environment-variables)
+    (let ([v (environment-variables-ref (current-environment-variables)
                                         (string->bytes/locale s (char->integer #\?)))])
       (and v
            (bytes->string/locale v #\?))))

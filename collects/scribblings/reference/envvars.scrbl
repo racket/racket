@@ -51,7 +51,7 @@ Creates a fresh @tech{environment variable set} that is initialized
 with the given @racket[name] to @racket[val] mappings.}
 
 
-@defproc[(environment-variables-get [env environment-variables?]
+@defproc[(environment-variables-ref [env environment-variables?]
                                     [name bytes-environment-variable-name?])
          (or/c #f (and/c bytes-no-nuls? immutable?))]{
 
@@ -93,7 +93,7 @@ in which case @racket[fail] is called in tail position with respect to the
 an exception.}
 
 
-@defproc[(environment-variables-keys [env environment-variables?])
+@defproc[(environment-variables-names [env environment-variables?])
          (listof (and/c bytes-environment-variable-name? immutable?))]{
 
 Returns a list of byte strings that corresponds to names mapped by
@@ -114,7 +114,7 @@ the same mappings as @racket[env].}
                  [value string-no-nuls?]) boolean?]
 )]{
 
-Convenience wrappers for @racket[environment-variables-get] and
+Convenience wrappers for @racket[environment-variables-ref] and
 @racket[environment-variables-set!] that convert between strings and
 byte strings using the current @tech{locale}'s default encoding (using
 @racket[#\?] as the replacement character for encoding errors) and
