@@ -213,7 +213,7 @@ else
   libpltdir="${libdir}/racket"
   collectsdir="${libdir}/racket/collects"
   includepltdir="${includedir}/racket"
-  docdir="${datadir}/racket/doc"
+  docdir="${datadir}/doc/racket"
   MAKE_COPYTREE=copytree
   COLLECTS_PATH='${collectsdir}'
   INSTALL_ORIG_TREE=no
