@@ -1,5 +1,5 @@
 ((port 80)
- (max-waiting 40)
+ (max-waiting 511)
  (initial-connection-timeout 30)
  (default-host-table
    (host-table

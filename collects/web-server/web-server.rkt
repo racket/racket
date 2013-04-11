@@ -56,7 +56,7 @@
          #:tcp@ [tcp@ raw:tcp@]
          #:port [port 80]
          #:listen-ip [listen-ip #f]
-         #:max-waiting [max-waiting 40]
+         #:max-waiting [max-waiting 511]
          #:initial-connection-timeout [initial-connection-timeout 60])
   (define read-request 
     (http:make-read-request
@@ -81,7 +81,7 @@
          #:tcp@ [tcp@ raw:tcp@]
          #:ports [ports (list 80)]
          #:listen-ip [listen-ip #f]
-         #:max-waiting [max-waiting 40]
+         #:max-waiting [max-waiting 511]
          #:initial-connection-timeout [initial-connection-timeout 60])
   (define shutdowns
     (map (lambda (port)
@@ -104,7 +104,7 @@
          #:connection-close? [connection-close? #f]
          #:tcp@ [tcp@ raw:tcp@]
          #:ips+ports [ips+ports (list (cons #f (list 80)))]
-         #:max-waiting [max-waiting 40]
+         #:max-waiting [max-waiting 511]
          #:initial-connection-timeout [initial-connection-timeout 60])
   (define shutdowns
     (map (match-lambda
