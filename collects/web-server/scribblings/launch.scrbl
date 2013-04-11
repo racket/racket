@@ -27,7 +27,7 @@ This module provides functions for launching dispatching servers.
                 [#:tcp@ tcp@ (unit/c (import) (export tcp^)) raw:tcp@]
                 [#:port port tcp-listen-port? 80]
                 [#:listen-ip listen-ip (or/c string? false/c) #f]
-                [#:max-waiting max-waiting integer? 40]
+                [#:max-waiting max-waiting integer? 511]
                 [#:initial-connection-timeout initial-connection-timeout integer? 60])
          (-> void)]{
  Constructs an appropriate @racket[dispatch-server-config^], invokes the
@@ -60,7 +60,7 @@ from a given path:
                       [#:tcp@ tcp@ (unit/c (import) (export tcp^)) raw:tcp@]
                       [#:ports ports (listof tcp-listen-port?) (list 80)]
                       [#:listen-ip listen-ip (or/c string? false/c) #f]
-                      [#:max-waiting max-waiting integer? 40]
+                      [#:max-waiting max-waiting integer? 511]
                       [#:initial-connection-timeout initial-connection-timeout integer? 60])
          (-> void)]{
  Calls @racket[serve] multiple times, once for each @racket[port], and returns
@@ -72,7 +72,7 @@ from a given path:
                           [#:connection-close? connection-close? boolean? #f]
                           [#:tcp@ tcp@ (unit/c (import) (export tcp^)) raw:tcp@]
                           [#:ips+ports ips+ports (listof (cons/c (or/c string? false/c) (listof tcp-listen-port?))) (list (cons #f (list 80)))]
-                          [#:max-waiting max-waiting integer? 40]
+                          [#:max-waiting max-waiting integer? 511]
                           [#:initial-connection-timeout initial-connection-timeout integer? 60])
          (-> void)]{
  Calls @racket[serve/ports] multiple times, once for each @racket[ip], and returns

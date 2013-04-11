@@ -32,7 +32,7 @@
 ; parse-configuration-table : tst -> configuration-table
 (define (sexpr->configuration-table t)
   (define port (get-binding 'port t 80))
-  (define max-waiting (get-binding 'max-waiting t 40))
+  (define max-waiting (get-binding 'max-waiting t 511))
   (define initial-connection-timeout (get-binding 'initial-connection-timeout t 30))
   (define default-host-table (get-binding* 'default-host-table t `()))
   (define virtual-host-table (get-binding* 'virtual-host-table t `()))
