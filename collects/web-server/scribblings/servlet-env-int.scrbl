@@ -62,6 +62,7 @@ These functions optimize the construction of dispatchers and launching of server
           [#:banner? banner? boolean? #f]
           [#:listen-ip listen-ip (or/c false/c string?) "127.0.0.1"]
           [#:port port number? 8000]
+          [#:max-waiting exact-nonnegative-integer? 511]
           [#:ssl-cert ssl-cert (or/c false/c path-string?) #f]
           [#:ssl-key ssl-key (or/c false/c path-string?) #f])
          void]{
@@ -78,6 +79,8 @@ These functions optimize the construction of dispatchers and launching of server
  The server listens on @racket[listen-ip] and port @racket[port]. If @racket[listen-ip] is @racket[#f], then the server accepts 
  connections to all of the listening machine's addresses. Otherwise, the server accepts connections only at the interface(s) associated with the given string.
  For example, providing @racket["127.0.0.1"] (the default) as @racket[listen-ip] creates a server that accepts only connections to @racket["127.0.0.1"] (the loopback interface) from the local machine.
+
+@racket[max-waiting] is passed to @racket[serve] to control the TCP backlog.
  
  If @racket[ssl-key] and @racket[ssl-cert] are not false, then the server runs in HTTPS mode with @racket[ssl-cert]
  and @racket[ssl-key] as paths to the certificate and private key.    

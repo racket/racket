@@ -48,6 +48,7 @@
                   #:banner? boolean?
                   #:listen-ip (or/c false/c string?)
                   #:port tcp-listen-port?
+                  #:max-waiting exact-nonnegative-integer?
                   #:ssl? boolean?
                   #:ssl-cert (or/c false/c path-string?)
                   #:ssl-key (or/c false/c path-string?)
@@ -95,6 +96,8 @@
          [listen-ip "127.0.0.1"]
          #:port
          [the-port 8000]         
+         #:max-waiting
+         [max-waiting 511]
 
          #:manager
          [manager
@@ -197,5 +200,6 @@
    #:banner? banner?   
    #:listen-ip listen-ip
    #:port the-port
+   #:max-waiting max-waiting
    #:ssl-cert ssl-cert
    #:ssl-key ssl-key))
