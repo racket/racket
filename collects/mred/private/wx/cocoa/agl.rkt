@@ -69,6 +69,9 @@
     (define gl-context%
       (class orig-gl-context%
         (init-field agl)
+
+        (define/override (get-handle)
+          agl)
         
         (define/override (do-call-as-current t)
           (dynamic-wind
@@ -107,7 +110,9 @@
     bitmap%))
 
 (define (create-gl-bitmap w h conf)
-  (let ([fmt (aglChoosePixelFormat
+  (let* ([share-context (send conf get-share-context)]
+         [context-handle (if share-context (send share-context get-handle) #f)]
+         [fmt (aglChoosePixelFormat
               #f
               0
               (append
@@ -132,9 +137,9 @@
                            AGL_SAMPLES_ARB ms)))
                (list AGL_NONE)))])
     (and fmt
-         (let ([agl (aglCreateContext fmt #f)]
+         (let ([agl (aglCreateContext fmt context-handle)]
                [d-agl (or dummy-agl
-                          (let ([d (aglCreateContext fmt #f)])
+                          (let ([d (aglCreateContext fmt context-handle)])
                             (when d
                               (set! dummy-agl d)
                               d)))])

@@ -123,6 +123,8 @@
     (init-field [gl gl]
                 [drawable drawable])
 
+    (define/override (get-handle) gl)
+
     (define/override (draw:do-call-as-current t)
       (dynamic-wind
           (lambda ()
@@ -146,14 +148,17 @@
 
 (define (prepare-widget-gl-context gtk config)
   (init!)
-  (let ([config (config->GdkGLConfig #f ; (gtk_widget_get_screen gtk)
+  (let ([share-context (send config get-share-context)]
+        [config (config->GdkGLConfig #f ; (gtk_widget_get_screen gtk)
                                      (or config
                                          (new gl-config%))
                                      #t)])
     (when config
 	  (gtk_widget_set_gl_capability gtk
 					config
-					#f
+					(if share-context
+                                            (send share-context get-handle)
+                                            #f)
 					#t
 					0))))
 
@@ -172,7 +177,9 @@
 
 (define (create-and-install-gl-context bm config)
   (init!)
-  (let ([config (config->GdkGLConfig #f config #f)])
+  (let* ([share-context (send config get-share-context)]
+         [context-handle (if share-context (send share-context get-handle) #f)]
+         [config (config->GdkGLConfig #f config #f)])
     (when config
       (let ([gdkpx (send bm get-gdk-pixmap)])
         (let ([glpx (gdk_pixmap_set_gl_capability gdkpx config #f)])
@@ -180,7 +187,7 @@
                (let ([gl
 		      ;; currently uses "indirect" mode --- can we
 		      ;; reliably use direct in some environments?
-		      (gdk_gl_context_new glpx #f #f GDK_GL_RGBA_TYPE)])
+		      (gdk_gl_context_new glpx context-handle #f GDK_GL_RGBA_TYPE)])
                  (and gl
                       (send bm install-gl-context
 			    (new gl-context% 

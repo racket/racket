@@ -392,7 +392,8 @@
     (set-double-buffered (->m any/c void?))
     (set-multisample-size (->m (integer-in 0 256) void?))
     (set-stencil-size (->m (integer-in 0 256) void?))
-    (set-stereo (->m any/c void?))))
+    (set-stereo (->m any/c void?))
+    (set-share-context (->m (or/c (is-a?/c gl-context%) #f) void?))))
 
 (define bitmap%/c
   (class/c

@@ -33,4 +33,9 @@
   (define multisample-size 0)
   (define/public (get-multisample-size) multisample-size)
   (define/public (set-multisample-size s)
-    (set! multisample-size s)))
+    (set! multisample-size s))
+
+  (define share-context #f)
+  (define/public (get-share-context) share-context)
+  (define/public (set-share-context s)
+    (set! share-context s)))

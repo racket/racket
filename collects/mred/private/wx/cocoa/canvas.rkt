@@ -35,7 +35,7 @@
 
 (import-class NSView NSGraphicsContext NSScroller NSComboBox NSWindow 
               NSImageView NSTextFieldCell 
-              NSOpenGLView NSOpenGLPixelFormat)
+              NSOpenGLView NSOpenGLContext NSOpenGLPixelFormat)
 
 (import-protocol NSComboBoxDelegate)
 
@@ -354,12 +354,25 @@
               (tell (tell (if is-combo? RacketComboBox RacketView)
                           alloc)
                     initWithFrame: #:type _NSRect r)
-              (let ([pf (gl-config->pixel-format gl-config)])
-                (begin0
-                 (tell (tell RacketGLView alloc) 
-                       initWithFrame: #:type _NSRect r
-                       pixelFormat: pf)
-                 (tellv pf release)))))))
+              (let* ([share-context (send gl-config get-share-context)]
+                     [context-handle (and share-context (send share-context get-handle))]
+                     [pf (gl-config->pixel-format gl-config)]
+                     [new-context (and
+                                   context-handle
+                                   (tell (tell NSOpenGLContext alloc)
+                                         initWithFormat: pf
+                                         shareContext: context-handle))]
+                     [gl-view (tell (tell RacketGLView alloc)
+                                    initWithFrame: #:type _NSRect r
+                                    pixelFormat: pf)])
+                (when new-context
+                  (tellv gl-view setOpenGLContext: new-context)
+                  ;; We're supposed to sync via `setView:' but it fails,
+                  ;; perhaps because the view isn't yet visible:
+                  ;;   (tellv new-context setView: gl-view)
+                  (tellv new-context release))
+                (tellv pf release)
+                gl-view)))))
      (tell #:type _void cocoa addSubview: content-cocoa)
      (set-ivar! content-cocoa wxb (->wxb this))
 

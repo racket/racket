@@ -41,7 +41,8 @@
   (interface ()
     [call-as-current (->*m [(-> any)] [evt? any/c] any)]
     [ok? (->m boolean?)]
-    [swap-buffers (->m any)]))
+    [swap-buffers (->m any)]
+    [get-handle (->m any)]))
 
 ;; Implemented by subclasses:
 (define gl-context%
@@ -62,6 +63,9 @@
                                (lambda ()
                                  (channel-put ch #t))))))
            alternate-evt)))
+
+    (define/public (get-handle)
+      #f)
     
     (define/public (call-as-current t [alternate-evt never-evt] [enable-breaks? #f])
       (with-gl-lock

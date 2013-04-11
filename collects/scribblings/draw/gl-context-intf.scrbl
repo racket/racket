@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "common.rkt")
+@(require "common.rkt"
+          (for-label (only-in ffi/unsafe cpointer?)))
 
 @definterface/title[gl-context<%> ()]{
 
@@ -74,6 +75,22 @@ If @racket[enable-breaks?] is true, then the method uses
  @racket[sync/enable-break] while blocking for the context-setting
  lock instead of @racket[sync].
 
+}
+
+@defmethod[(get-handle) cpointer?]{
+
+Returns a handle to the platform's underlying context. The value that the
+pointer represents depends on the platform:
+
+@itemize[
+@item{Windows: @tt{HGLRC}}
+@item{Mac OS X: @tt{NSOpenGLContext}}
+@item{Unix: @tt{GdkGLContext}}
+]
+
+Note that these values are not necessary the most ``low-level'' context objects,
+but are instead the ones useful to Racket. A @tt{NSOpenGLContext} wraps a
+@tt{CGLContextObj}, and a @tt{GdkGLContext} contains a @tt{GLXcontext}.
 }
 
 @defmethod[(ok?)
