@@ -1816,10 +1816,10 @@ inline static void reset_nursery(NewGC *gc)
   resize_gen0(gc, new_gen0_size);
 }
 
-inline static mpage *pagemap_find_page_for_marking(NewGC *gc, const void *p) {
+inline static mpage *pagemap_find_page_for_marking(NewGC *gc, const void *p, int fixup) {
   mpage *page;
   page = pagemap_find_page(gc->page_maps, p);
-  if (page && !gc->gc_full && page->generation && !page->marked_on) return NULL;
+  if (page && !gc->gc_full && page->generation && (fixup || !page->marked_on)) return NULL;
   return page;
 }
 
@@ -1834,7 +1834,7 @@ inline static int marked(NewGC *gc, const void *p)
   mpage *page;
 
   if(!p) return 0;
-  if(!(page = pagemap_find_page_for_marking(gc, p))) return 1;
+  if(!(page = pagemap_find_page_for_marking(gc, p, 0))) return 1;
   switch(page->size_class) {
     case SIZE_CLASS_BIG_PAGE_MARKED:
       return 1;
@@ -3108,7 +3108,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
     return;
   }
 
-  if(!(page = pagemap_find_page_for_marking(gc, p))) {
+  if(!(page = pagemap_find_page_for_marking(gc, p, 0))) {
 #ifdef MZ_USE_PLACES
     if (MASTERGC && MASTERGC->major_places_gc && (page = pagemap_find_page(MASTERGC->page_maps, p))) {
       is_a_master_page = 1;
@@ -3327,7 +3327,7 @@ static inline void propagate_marks_worker(NewGC *gc, Mark2_Proc *mark_table, voi
   if (IS_BIG_PAGE_PTR(pp)) {
     mpage *page;
     p = REMOVE_BIG_PAGE_PTR_TAG(pp);
-    page = pagemap_find_page_for_marking(gc, p);
+    page = pagemap_find_page_for_marking(gc, p, 0);
 #ifdef MZ_USE_PLACES
     if (!page && MASTERGC && MASTERGC->major_places_gc) {
       page = pagemap_find_page(MASTERGC->page_maps, p);
@@ -3421,7 +3421,7 @@ static void promote_marked_gen0_big_pages(NewGC *gc) {
 
 void *GC_resolve2(void *p, NewGC *gc)
 {
-  mpage *page = pagemap_find_page_for_marking(gc, p);
+  mpage *page = pagemap_find_page_for_marking(gc, p, 1);
   objhead *info;
 
   if(!page || page->size_class)
@@ -3449,17 +3449,24 @@ void GC_fixup2(void *pp, struct NewGC *gc)
   mpage *page;
   void *p = *(void**)pp;
 
-  if(!p || (NUM(p) & 0x1))
+  if (!p || (NUM(p) & 0x1))
     return;
 
-  if((page = pagemap_find_page_for_marking(gc, p))) {
+  page = pagemap_find_page_for_marking(gc, p, 1);
+
+  if (page) {
     objhead *info;
 
-    if(page->size_class) return;
+    if (page->size_class) return;
+
     info = OBJPTR_TO_OBJHEAD(p);
-    if(info->mark && info->moved) 
+    /* assert: info->moved => info->mark */
+    /*         !gc->gc_full => info->moved */
+    if (info->moved)
       *(void**)pp = *(void**)p;
-    else GCDEBUG((DEBUGOUTF, "Not repairing %p from %p (not moved)\n",p,pp));
+    else {
+      GCDEBUG((DEBUGOUTF, "Not repairing %p from %p (not moved)\n",p,pp));
+    }
   } else {
 #ifdef POINTER_OWNERSHIP_CHECK
     check_page_owner(gc, p);
