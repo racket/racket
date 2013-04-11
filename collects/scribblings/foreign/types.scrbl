@@ -344,7 +344,9 @@ The reference is not traced or updated by the garbage collector.
 
 The @racket[equal?] predicate equates C pointers (including pointers
 for @racket[_gcpointer] and possibly containing an offset) when they
-refer to the same address.}
+refer to the same address---except for C pointers that are instances
+of structure types with the @racket[prop:cpointer] property, in which
+case the equality rules of the relevant structure types apply.}
 
 
 @defthing[_gcpointer ctype?]{
@@ -940,7 +942,8 @@ below for a more efficient approach.}
               [(id/sup _id
                        (_id super-id))
                (property (code:line #:alignment alignment-expr)
-                         (code:line #:property prop-expr val-expr))]]{
+                         (code:line #:property prop-expr val-expr)
+                         #:no-equal)]]{
 
 Defines a new C struct type, but unlike @racket[_list-struct], the
 resulting type deals with C structs in binary form, rather than
@@ -1023,7 +1026,11 @@ specified properties. The wrapper Racket structure also has a
 treated the same as unwrapped C pointers. If a @racket[super-id] is
 provided and it corresponds to a C struct type with a wrapper
 structure type, then the wrapper structure type is a subtype of
-@racket[super-id]'s wrapper structure type.
+@racket[super-id]'s wrapper structure type. If a @racket[#:property]
+modifier is specified, @racket[#:no-equal] is not specified,
+and if @racket[prop:equal+hash] is not specified as any @racket[#:property],
+then the @racket[prop:equal+hash] property is automatically implemented
+for the wrapper structure type to use @racket[ptr-equal?].
 
 If the first field is itself a C struct type, its tag will be used in
 addition to the new tag.  This feature supports common cases of object
