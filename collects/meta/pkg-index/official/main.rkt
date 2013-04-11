@@ -603,7 +603,7 @@
      (define the-table
        `(table
          (tr
-          (td "Package Name")
+          (td (a ([href "http://docs.racket-lang.org/planet2/Package_Concepts.html#%28tech._package._name%29"]) "Package Name"))
           (td ,(if edit-details
                  `(input ([name "name"]
                           [type "text"]
