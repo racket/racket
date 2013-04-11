@@ -594,7 +594,7 @@
 
 (define-syntax (*-listof stx)
   (syntax-case stx ()
-    [(_ predicate? type-name name generate)
+    [(_ predicate? name generate)
      (identifier? (syntax predicate?))
      (syntax
       (λ (input)
@@ -610,8 +610,8 @@
               (λ (val)
                 (unless (predicate? val)
                   (raise-blame-error blame val
-                                     '(expected: "~s" given "~e")
-                                     'type-name 
+                                     '(expected: "~s" given: "~e")
+                                     'predicate? 
                                      val))
                 (check-all p-app val))))
           (cond
@@ -633,11 +633,11 @@
               #:first-order fo-check
               #:projection (ho-check (λ (p v) (map p v))))]))))]))
 
-(define listof-func (*-listof list? list listof listof-generate))
+(define listof-func (*-listof list? listof listof-generate))
 (define/subexpression-pos-prop (listof x) (listof-func x))
 
 (define (non-empty-list? x) (and (pair? x) (list? (cdr x))))
-(define non-empty-listof-func (*-listof non-empty-list? non-empty-list non-empty-listof (λ (ctc) (make-generate-ctc-fail))))
+(define non-empty-listof-func (*-listof non-empty-list? non-empty-listof (λ (ctc) (make-generate-ctc-fail))))
 (define/subexpression-pos-prop (non-empty-listof a) (non-empty-listof-func a))
 
 (define cons/c-main-function
