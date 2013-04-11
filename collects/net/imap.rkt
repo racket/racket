@@ -14,12 +14,9 @@
 (provide/contract
  [imap-get-hierarchy-delimiter (imap-connection? . -> . bytes?)]
  [imap-list-child-mailboxes
-  (case->
-   (imap-connection? (or/c false/c bytes?)
-                     . -> . (listof (list/c (listof symbol?) bytes?)))
-   (imap-connection? (or/c false/c bytes?) (or/c false/c bytes?)
-                     . -> .
-                     (listof (list/c (listof symbol?) bytes?))))])
+  (->* (imap-connection? (or/c string? bytes? #f))
+       ((or/c string? bytes?))
+       (listof (list/c (listof symbol?) bytes?)))])
 
 (provide
  imap-connection?
@@ -584,7 +581,15 @@
     [(imap mailbox)
      (imap-list-child-mailboxes imap mailbox #f)]
     [(imap mailbox raw-delimiter)
-     (let* ([delimiter (or raw-delimiter (imap-get-hierarchy-delimiter imap))]
+     (let* ([delimiter (or (and raw-delimiter
+                                (if (bytes? raw-delimiter)
+                                    raw-delimiter
+                                    (string->bytes/utf-8 raw-delimiter)))
+                           (imap-get-hierarchy-delimiter imap))]
+            [mailbox (and mailbox
+                          (if (bytes? mailbox)
+                              mailbox
+                              (string->bytes/utf-8 mailbox)))]
             [mailbox-name (and mailbox (bytes-append mailbox delimiter))]
             [pattern (if mailbox
                        (bytes-append mailbox-name #"%")
