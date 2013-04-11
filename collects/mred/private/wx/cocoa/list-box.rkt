@@ -21,6 +21,8 @@
 (import-class NSScrollView NSTableView NSTableColumn NSCell NSIndexSet)
 (import-protocol NSTableViewDataSource)
 
+(define NSLineBreakByTruncatingTail 4)
+
 (define-objc-class RacketTableView NSTableView
   #:mixins (FocusResponder KeyMouseResponder CursorDisplayer)
   [wxb]
@@ -30,6 +32,7 @@
          (let ([c (tell (tell NSCell alloc) initTextCell: #:type _NSString 
                         (if wx (send wx get-cell column row) "???"))]
                [font (and wx (send wx get-cell-font))])
+           (tellv c setLineBreakMode: #:type _NSUInteger NSLineBreakByTruncatingTail)
            (when font
              (tellv c setFont: font))
            c)
