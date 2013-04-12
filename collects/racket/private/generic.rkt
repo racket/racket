@@ -4,7 +4,8 @@
                      racket/local
                      racket/syntax
                      syntax/stx)
-         (only-in "define-struct.rkt" define/generic))
+         (only-in "define-struct.rkt" define/generic)
+         (only-in racket/function arity-includes?))
 
 (define-for-syntax (keyword-stx? v)
   (keyword? (syntax->datum v)))
@@ -136,7 +137,20 @@
                (let*-values ([(p) (lambda fake-args #f)]
                              [(generic-arity-spec) (procedure-arity p)]
                              [(generic-required-kws generic-allowed-kws) (procedure-keywords p)])
-                 (lambda (f)
+                 (lambda (method-name f)
+                   (unless (procedure? f)
+                     (raise-arguments-error
+                      'name
+                      "generic method definition is not a function"
+                      "method" method-name
+                      "given" f))
+                   (unless (arity-includes? (procedure-arity f) generic-arity-spec)
+                     (raise-arguments-error
+                      'name
+                      "method definition has an incorrect arity"
+                      "method" method-name
+                      "given arity" (procedure-arity f)
+                      "expected arity" generic-arity-spec))
                    (procedure-reduce-keyword-arity f generic-arity-spec generic-required-kws generic-allowed-kws))))
              ...
              #,@(if prop-defined-already?
@@ -159,7 +173,7 @@
                                        (vector-length generic-vector)))
                               (vector (let ([mthd-generic (vector-ref generic-vector generic-idx)])
                                         (and mthd-generic
-                                             (generic-arity-coerce mthd-generic)))
+                                             (generic-arity-coerce 'generic mthd-generic)))
                                       ...))
                             null #t))
                          ;; overrides the interface predicate so that any of the default
@@ -185,6 +199,7 @@
              ;; Define generic functions
              (define generic
                (generic-arity-coerce
+                'generic
                 (make-keyword-procedure
                  (lambda (kws kws-args . given-args)
                    (define this (list-ref given-args generic-this-idx))
