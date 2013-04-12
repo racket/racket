@@ -71,12 +71,17 @@
 (define tried-multisample? #f)
 (define wglChoosePixelFormatARB #f)
 
+(define looked-for-createcontextattribs? #f)
+(define wglCreateContextAttribsARB #f)
+
 ;; ----------------------------------------
 
 (define gl-context% 
   (class draw:gl-context%
     (init-field [hglrc hglrc]
                 [hdc hdc])
+
+    (define/override (get-handle) hglrc)
 
     (define/override (draw:do-call-as-current t)
       (dynamic-wind
@@ -119,6 +124,7 @@
 (define (create-gl-context hdc config offscreen? 
                            #:try-ms? [try-ms? (not offscreen?)])
   (when try-ms? (unless tried-multisample? (init-multisample! config)))
+  (unless looked-for-createcontextattribs? (init-createcontextattribs! config))
   (let* ([config (or config (new gl-config%))]
          [accum (send config get-accum-size)]
          [pfd
@@ -156,7 +162,9 @@
 			    wglChoosePixelFormatARB 
 			    (or (choose-multisample hdc config offscreen? ms)
 				(choose-multisample hdc config offscreen? 2)))
-		       (ChoosePixelFormat hdc pfd))])
+		       (ChoosePixelFormat hdc pfd))]
+         [share-context (send config get-share-context)]
+         [context-handle (if share-context (send share-context get-handle) #f)])
     (and (not (zero? pixelFormat))
 	 (and (SetPixelFormat hdc pixelFormat pfd)
 	      (begin
@@ -164,20 +172,18 @@
 		(when (not (zero? (bitwise-and (PIXELFORMATDESCRIPTOR-dwFlags pfd)
 					       PFD_NEED_PALETTE)))
 		      (log-error "don't know how to create a GL palette, yet"))
-		(let ([hglrc (wglCreateContext hdc)])
+		(let ([hglrc (if wglCreateContextAttribsARB
+                                 (wglCreateContextAttribsARB hdc context-handle (vector 0))
+                                 (wglCreateContext hdc))])
 		  (and hglrc
 		       (new gl-context% [hglrc hglrc] [hdc hdc]))))))))
 
-(define (init-multisample! config)
-  ;; To create a multisampled context, we need
-  ;; wglChoosePixelFormatARB().
-  ;; To look up wglChoosePixelFormatARB(), we need
-  ;; an existing gl context.
+(define (with-dummy-context config thunk)
   ;; To create a gl context, we need a separate window 
   ;; (because you can't change a window's pixel format
   ;; after it is set).
   ;; So, create a dummy window to make a context to
-  ;; try to get wglChoosePixelFormatARB().
+  ;; try to do whatever needs doing.
   (let ([hwnd (CreateWindowExW 0
 			       "PLTFrame"
 			       ""
@@ -194,20 +200,43 @@
 	    (call-with-context
 	     (get-field hdc c)
 	     (get-field hglrc c)
-	     (lambda ()
-	       (set! wglChoosePixelFormatARB
-		     (let ([f (wglGetProcAddress "wglChoosePixelFormatARB")])
-		       (and f
-			    (function-ptr f (_wfun _HDC 
-						   (_vector i _int)
-						   (_vector i _float)
-						   (_UINT  = 1)
-						   (formats : (_ptr o _int))
-						   (num-formats : (_ptr o _UINT))
-						   -> (r : _BOOL)
-						   -> (and r formats))))))
-	       (set! tried-multisample? #t)))))
-	(ReleaseDC hwnd hdc)))))
+             thunk)))
+        (ReleaseDC hwnd hdc)))))
+
+(define (init-createcontextattribs! config)
+  ;; look for wglCreateContextAttribsARB which is a beefed
+  ;; up version of wglCreateContext
+  (set! looked-for-createcontextattribs? #t)
+  (with-dummy-context config
+    (lambda ()
+      (set! wglCreateContextAttribsARB
+            (let ([f (wglGetProcAddress "wglCreateContextAttribsARB")])
+              (and f
+                   ((allocator wglDeleteContext)
+                    (function-ptr f (_wfun _HDC
+                                           _HGLRC
+                                           (_vector i _int)
+                                           -> _HGLRC)))))))))
+
+(define (init-multisample! config)
+  ;; To create a multisampled context, we need
+  ;; wglChoosePixelFormatARB().
+  ;; To look up wglChoosePixelFormatARB(), we need
+  ;; an existing gl context.
+  (with-dummy-context config
+    (lambda ()
+      (set! wglChoosePixelFormatARB
+            (let ([f (wglGetProcAddress "wglChoosePixelFormatARB")])
+              (and f
+                   (function-ptr f (_wfun _HDC 
+                                          (_vector i _int)
+                                          (_vector i _float)
+                                          (_UINT  = 1)
+                                          (formats : (_ptr o _int))
+                                          (num-formats : (_ptr o _UINT))
+                                          -> (r : _BOOL)
+                                          -> (and r formats))))))
+      (set! tried-multisample? #t))))
 
 (define GL_TRUE 1)
 (define GL_FALSE 0)

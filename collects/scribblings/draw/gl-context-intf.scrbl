@@ -76,6 +76,21 @@ If @racket[enable-breaks?] is true, then the method uses
 
 }
 
+@defmonth[(get-handle) cpointer?]{
+Returns a handle to the underlying GUI's GL context. The value that the
+pointer represents depends on the platform:
+
+@itemize[
+@item{Windows: @tt{HGLRC}}
+@item{Mac OS X: @tt{NSOpenGLContext}}
+@item{Unix: @tt{GdkGLContext}}
+]
+
+Note that these are not necessary the most ``low-level'' context objects,
+instead they are the ones useful to Racket. @tt{NSOpenGLContext} wraps a
+@tt{CGLContextObj}, and @tt{GdkGLContext} contains a @tt{GLXcontext}.
+}
+
 @defmethod[(ok?)
            boolean?]{
 
