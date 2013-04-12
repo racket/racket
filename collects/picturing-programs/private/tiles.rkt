@@ -37,6 +37,7 @@
 ; Modified 8/??/2011: reworded a bunch of error messages in accordance
 ; with Guillaume & Kathi's research.
 ; Modified 10/??/2011: fixed error messages in crop functions.
+; Modified 10/20/2012: moved error-message tests into this file
 
   (require
    2htdp/image
@@ -161,3 +162,44 @@
   (define (rotate-180 picture)
     (check-image 'rotate-180 picture "first")
     (rotate 180 picture))
+
+  
+  (module+ test
+           (require picturing-programs)
+(require test-engine/racket-tests)
+(check-error (reflect-horiz 17)
+             "reflect-horiz: expected <image> as first argument, given 17")
+(check-error (reflect-horiz pic:hacker) "shouldn't actually error out")
+(check-expect 3 4)
+(check-error (reflect-vert "hello")
+             "reflect-vert: expected <image> as first argument, given \"hello\"")
+(check-error (reflect-main-diag #t)
+             "reflect-main-diag: expected <image> as first argument, given #t")
+(check-error (reflect-other-diag #f)
+             "reflect-other-diag: expected <image> as first argument, given #f")
+(check-error (flip-main 'blue)
+             "flip-main: expected <image> as first argument, given 'blue")
+(check-error (flip-other "snark")
+             "flip-other: expected <image> as first argument, given \"snark\"")
+(check-error (crop-left pic:hacker 50)
+             "crop-left: expected <natural number <= 48> as second argument, given 50")
+(check-error (crop-right pic:bloch 100)
+             "crop-right: expected <natural number <= 93> as second argument, given 100")
+(check-error (crop-top pic:book 56)
+             "crop-top: expected <natural number <= 39> as second argument, given 56")
+(check-error (crop-bottom pic:hacker 56)
+             "crop-bottom: expected <natural number <= 48> as second argument, given 56")
+(check-error (crop-left pic:hacker -3)
+             "crop-left: expected <natural number <= 48> as second argument, given -3")
+(check-error (crop-top pic:book 3.2)
+             "crop-top: expected <natural number <= 39> as second argument, given 3.2")
+(check-error (crop-bottom pic:book pic:book)
+             "crop-bottom: expected <natural number <= 39> as second argument, given (object:image% ...)") ; was "<image>" in *SL, but "(object:image% ...)" in racket/base
+(check-error (rotate-cw 17)
+             "rotate-cw: expected <image> as first argument, given 17")
+(check-error (rotate-ccw #t)
+             "rotate-ccw: expected <image> as first argument, given #t")
+(check-error (rotate-180 "goodbye")
+             "rotate-180: expected <image> as first argument, given \"goodbye\"")
+(test) ; need this if not using *SL testing
+)
