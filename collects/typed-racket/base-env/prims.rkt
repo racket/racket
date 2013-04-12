@@ -428,10 +428,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
                              #,(quasisyntax/loc stx
                                  (lambda (bs.ann-name ...) . #,(syntax/loc stx body)))])
                         #,(quasisyntax/loc stx nm)))]
-            [(: ret-ty (bs:optionally-annotated-binding ...) . body)
+            [(: ret-ty (bs:optionally-annotated-binding ...) body ... bod)
              (quasisyntax/loc stx
                (letrec ([nm #,(quasisyntax/loc stx
-                                (lambda (bs.ann-name ...) . (ann #,(syntax/loc stx body) ret-ty)))])
+                                (lambda (bs.ann-name ...) body ... (ann #,(syntax/loc stx bod) ret-ty)))])
                  #,(quasisyntax/loc stx nm)))]
             [((bs:optionally-annotated-binding ...) . body)
              (quasisyntax/loc stx
