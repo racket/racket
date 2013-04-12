@@ -625,9 +625,9 @@
   (define first-die  (get-dice-image 0))
   (define height-die (image-height first-die))
   (for/fold ([s first-die]) ([i (- n 1)])
-    (define die-image (get-dice-image (+ i 1)))
+    (define dice-image (get-dice-image (+ i 1)))
     (define y-offset  (* height-die (+ .5 (* i .25))))
-    (overlay/offset s 0 y-offset die-image)))
+    (overlay/offset s 0 y-offset dice-image)))
 
 ;; Player -> Color
 ;; Determines a color for each player
