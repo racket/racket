@@ -165,7 +165,7 @@
 
   
   (module+ test
-           (require picturing-programs)
+           (require "book-pictures.rkt")
 (require test-engine/racket-tests)
 (check-error (reflect-horiz 17)
              "reflect-horiz: expected <image> as first argument, given 17")
