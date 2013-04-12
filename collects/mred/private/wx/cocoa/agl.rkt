@@ -110,8 +110,9 @@
     bitmap%))
 
 (define (create-gl-bitmap w h conf)
-  (let ([share-context (send (send conf get-share-context) get-handle)]
-        [fmt (aglChoosePixelFormat
+  (let* ([share-context (send conf get-share-context)]
+         [context-handle (if share-context (send share-context get-handle) #f)]
+         [fmt (aglChoosePixelFormat
               #f
               0
               (append
@@ -136,9 +137,9 @@
                            AGL_SAMPLES_ARB ms)))
                (list AGL_NONE)))])
     (and fmt
-         (let ([agl (aglCreateContext fmt share-context)]
+         (let ([agl (aglCreateContext fmt context-handle)]
                [d-agl (or dummy-agl
-                          (let ([d (aglCreateContext fmt share-context)])
+                          (let ([d (aglCreateContext fmt context-handle)])
                             (when d
                               (set! dummy-agl d)
                               d)))])
