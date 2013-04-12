@@ -454,6 +454,7 @@
        (cancel-flush-delay req))
      (define/public (queue-canvas-refresh-event thunk)
        (queue-window-refresh-event this thunk))
+     (define/public (skip-pre-paint?) #f)
 
      (define/public (paint-or-queue-paint)
        ;; in atomic mode

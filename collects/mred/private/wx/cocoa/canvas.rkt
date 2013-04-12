@@ -69,6 +69,7 @@
       (when wxb
         (let ([wx (->wx wxb)])
           (when wx
+            (send wx drawing-requested)
             (unless (send wx paint-or-queue-paint)
               (clear-background wxb)
               ;; ensure that `nextEventMatchingMask:' returns
@@ -280,6 +281,22 @@
          (cancel-flush-delay req)))
      (define/public (queue-canvas-refresh-event thunk)
        (queue-window-refresh-event this  thunk))
+     (define/public (skip-pre-paint?) 
+       (cond
+        [is-gl?
+         ;; We can't use GL on the window until it is ready,
+         ;; as indicated by a request to draw.
+         (unless drawing-requested?
+           (sync/timeout 0.1 drawing-requested-sema))
+         (not drawing-requested?)]
+        [else #f]))
+
+     (define drawing-requested? #f)
+     (define drawing-requested-sema (make-semaphore))
+     (define/public (drawing-requested) 
+       (unless drawing-requested?
+         (set! drawing-requested? #t)
+         (semaphore-post drawing-requested-sema)))
 
      (define/public (paint-or-queue-paint)
        (cond

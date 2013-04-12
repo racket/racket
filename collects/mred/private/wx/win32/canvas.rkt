@@ -299,6 +299,7 @@
        (cancel-flush-delay req))
      (define/public (queue-canvas-refresh-event thunk)
        (queue-window-refresh-event this thunk))
+     (define/public (skip-pre-paint?) #f)
 
      (define/public (get-flush-window) canvas-hwnd)
 

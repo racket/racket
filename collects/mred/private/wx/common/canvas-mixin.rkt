@@ -125,7 +125,8 @@
              on-paint
              queue-backing-flush
              get-dc
-             get-canvas-background-for-backing)
+             get-canvas-background-for-backing
+             skip-pre-paint?)
     
     ;; Avoid multiple queued paints, and also allow cancel
     ;; of queued paint:
@@ -169,9 +170,10 @@
         (cancel-canvas-flush-delay req)))
 
     (define/override (paint-children)
-      (when (or paint-queued
-                (not (send (get-dc) can-backing-flush?)))
-        (do-on-paint #f #f)))
+      (unless (skip-pre-paint?)
+        (when (or paint-queued
+                  (not (send (get-dc) can-backing-flush?)))
+          (do-on-paint #f #f))))
 
 
     (define flush-box #f)
