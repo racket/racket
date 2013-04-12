@@ -24,3 +24,7 @@
     first-where
     (where any_d any_b)
     first-post-where]))
+
+(#rx"expected an identifier in the language position"
+ ([not-lang [(R a)]])
+ (define-relation not-lang))
