@@ -388,8 +388,11 @@
 (define-syntax (define-relation stx)
   (syntax-case stx ()
     [(def-form-id lang . body)
-     (let-values ([(contract-name dom-ctcs codom-contracts pats)
-                   (split-out-contract stx (syntax-e #'def-form-id) #'body #t)])
+     (begin
+       (unless (identifier? #'lang)
+         (raise-syntax-error #f "expected an identifier in the language position" stx #'lang))
+       (define-values (contract-name dom-ctcs codom-contracts pats)
+         (split-out-contract stx (syntax-e #'def-form-id) #'body #t))
        (with-syntax* ([((name trms ...) rest ...) (car pats)]
                       [(mode-stx ...) #`(#:mode (name I))]
                       [(ctc-stx ...) (if dom-ctcs 
