@@ -72,6 +72,7 @@
 
 (define-syntax (-recursive-contract stx)
   (define (do-recursive-contract arg type name)
+    (define local-name (syntax-local-infer-name stx))
     (with-syntax ([maker
                    (case (syntax-e type)
                      [(#:impersonator) #'impersonator-recursive-contract]
@@ -81,7 +82,7 @@
                                                "type must be one of #:impersonator, #:chaperone, or #:flat"
                                                stx
                                                type)])])
-      #`(maker '#,name (λ () #,arg) #f)))
+      #`(maker '#,name (λ () #,arg) '#,local-name)))
   (syntax-case stx ()
     [(_ arg type)
      (keyword? (syntax-e #'type))
@@ -92,9 +93,10 @@
 (define (force-recursive-contract ctc)
   (define current (recursive-contract-ctc ctc))
   (cond
-    [current current]
-    [else
+    [(or (symbol? current) (not current))
      (define thunk (recursive-contract-thunk ctc))
+     (define old-name (recursive-contract-name ctc))
+     (set-recursive-contract-name! ctc (or current '<recursive-contract>))
      (define forced-ctc
        (cond
          [(flat-recursive-contract? ctc)
@@ -104,7 +106,11 @@
          [(impersonator-recursive-contract? ctc)
           (coerce-contract 'recursive-contract (thunk))]))
      (set-recursive-contract-ctc! ctc forced-ctc)
-     forced-ctc]))
+     (set-recursive-contract-name! ctc (append `(recursive-contract ,(contract-name forced-ctc))
+                                               (cddr old-name)))
+     forced-ctc]
+    [else current]))
+
 (define ((recursive-contract-projection ctc) blame)
   (define r-ctc (force-recursive-contract ctc))
   (define f (contract-projection r-ctc))
@@ -121,7 +127,8 @@
   (contract-first-order-passes? (force-recursive-contract ctc)
                                 val))
 
-(struct recursive-contract (name thunk [ctc #:mutable]))
+(struct recursive-contract ([name #:mutable] thunk [ctc #:mutable]))
+
 (struct flat-recursive-contract recursive-contract ()
   #:property prop:flat-contract
   (build-flat-contract-property
