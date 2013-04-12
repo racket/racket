@@ -664,7 +664,7 @@
          [(set! _ val)
           (syntax/loc stx (set-ivar! self sym val))]
          [(_ arg ...)
-          (quasisyntax/loc stx (#,(quasisyntax/loc #'sym #'(get-ivar self sym)) 
+          (quasisyntax/loc stx (#,(quasisyntax/loc #'sym (get-ivar self sym)) 
                                 arg ...))]
          [_ (quasisyntax/loc #'sym (get-ivar self sym))])))))
 
