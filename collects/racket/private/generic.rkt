@@ -136,7 +136,24 @@
                (let*-values ([(p) (lambda fake-args #f)]
                              [(generic-arity-spec) (procedure-arity p)]
                              [(generic-required-kws generic-allowed-kws) (procedure-keywords p)])
-                 (lambda (f)
+                 (lambda (method-name f)
+                   (unless (procedure? f)
+                     (raise-arguments-error
+                      'name
+                      "generic method definition is not a function"
+                      "method" method-name
+                      "given" f))
+                   (unless 
+                     (cond
+                      [(list? generic-arity-spec)
+                       (ormap (lambda (a) (procedure-arity-includes? f a)) generic-arity-spec)]
+                      [else (procedure-arity-includes? f generic-arity-spec)])
+                     (raise-arguments-error 
+                      'name
+                      "generic method definition expects an incorrect number of arguments"
+                      "method" method-name
+                      "given arity" (procedure-arity f)
+                      "expected arity" generic-arity-spec))
                    (procedure-reduce-keyword-arity f generic-arity-spec generic-required-kws generic-allowed-kws))))
              ...
              #,@(if prop-defined-already?
@@ -159,7 +176,7 @@
                                        (vector-length generic-vector)))
                               (vector (let ([mthd-generic (vector-ref generic-vector generic-idx)])
                                         (and mthd-generic
-                                             (generic-arity-coerce mthd-generic)))
+                                             (generic-arity-coerce 'generic mthd-generic)))
                                       ...))
                             null #t))
                          ;; overrides the interface predicate so that any of the default
@@ -185,6 +202,7 @@
              ;; Define generic functions
              (define generic
                (generic-arity-coerce
+                'generic
                 (make-keyword-procedure
                  (lambda (kws kws-args . given-args)
                    (define this (list-ref given-args generic-this-idx))
