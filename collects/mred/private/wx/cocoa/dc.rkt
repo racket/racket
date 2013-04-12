@@ -36,6 +36,7 @@
            (let ([gl-ctx (tell (send canvas get-cocoa-content) openGLContext)])
              (or gl
                  (let ([g (new (class gl-context%
+                                 (define/override (get-handle) gl-ctx)
                                  (define/override (do-call-as-current t)
                                    (dynamic-wind
                                        (lambda () (tellv gl-ctx makeCurrentContext))

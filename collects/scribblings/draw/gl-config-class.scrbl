@@ -49,6 +49,16 @@ Reports the multisampling size that the configuration requests, where
 
 }
 
+@defmethod[(get-share-context)
+           (or/c #f (is-a?/c gl-context%))]{
+
+Returns the @racket[gl-context%] that newly created OpenGL drawing
+contexts should share certain objects (textures, display lists, etc)
+with, or @racket[#f] is none is set.
+
+}
+          
+
 @defmethod[(get-stencil-size)
            (integer-in 0 256)]{
 
@@ -94,6 +104,24 @@ Adjusts the configuration to request double buffering or not.
 Adjusts the configuration to request a particular multisample size,
  where zero means no multisampling is requested. If a multisampling
  context is not available, this request will be ignored.
+
+}
+
+@defmethod[(set-share-context [context (or/c #f (is-a?/c gl-context%)])]{
+
+Provides the @racket[gl-context%] that newly created OpenGL drawing
+contexts should share certain objects (textures, display lists, etc)
+with. If this is used with an OpenGL implementation that does not
+support it, it will have no effect. Passing @racket[#f] indicates
+that no sharing should occur.
+
+When a context ``B'' shares objects with context ``A'', it is also 
+shares objects with every other context sharing with ``A'', and vice versa.
+
+This functionality should be present in all versions of Mac OS X.
+On Windows and Linux it is provided by the presence of the
+@tt{WGL_ARB_create_context} and @tt{GLX_ARB_create_context} extensions,
+respectively. OpenGL 3.2 requires both.
 
 }
 
