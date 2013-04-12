@@ -202,7 +202,7 @@
                    (raise-syntax-error
                     what
                     (format "before underscore must be either a non-terminal or a built-in pattern, found ~a in ~s"
-                            suffix-sym (syntax-e term))
+                            prefix-sym (syntax-e term))
                     orig-stx 
                     term)])]
                [(eq? (syntax-e term) '...)
