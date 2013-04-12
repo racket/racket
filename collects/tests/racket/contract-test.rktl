@@ -12461,7 +12461,27 @@ so that propagation occurs.
                (struct/c st integer?)))
 
   (test-name '(recursive-contract (box/c boolean?)) (recursive-contract (box/c boolean?)))
+  (test-name '(recursive-contract boolean? #:flat) (let ([c (recursive-contract boolean? #:flat)])
+                                                     (contract c #f 'pos 'neg)
+                                                     c))
   (test-name '(recursive-contract x) (let ([x (box/c boolean?)]) (recursive-contract x)))
+  (test-name '(recursive-contract integeeer?) 
+             (let ([x (box/c boolean?)]) 
+               (let ([c (recursive-contract (flat-named-contract 'integeeer? integer?))])
+                 (contract c 1 'pos 'neg)
+                 c)))
+  (test-name '(recursive-contract (or/c (flat-named-contract 'integeeer? integer?)
+                                        (listof c)))
+             (letrec ([c (recursive-contract
+                          (or/c (flat-named-contract 'integeeer? integer?)
+                                (listof c)))])
+               c))
+  (test-name '(recursive-contract (or/c integeeer? (listof c)))
+             (letrec ([c (recursive-contract
+                          (or/c (flat-named-contract 'integeeer? integer?)
+                                (listof c)))])
+               (contract c 1 'pos 'neg)
+               c))
 
   (test-name '(couple/c any/c any/c)
              (couple/c any/c any/c))
