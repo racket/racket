@@ -319,7 +319,12 @@
             (raise-syntax-error #f
                                 "not a name for a generics group"
                                 gen:foo gen:foo))
-          (unless (and (identifier? gen:foo) (identifier-binding gen:foo))
+          (unless (and (identifier? gen:foo)
+                       ;; at the top-level, it's not possible to check
+                       ;; if this `gen:foo` is bound, so we give up on the
+                       ;; error message in that case
+                       (or (eq? (syntax-local-context) 'top-level)
+                           (identifier-binding gen:foo)))
             (bad-generics))
           (define gen:foo-val (syntax-local-value gen:foo))
           (unless (and (list? gen:foo-val)
