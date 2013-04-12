@@ -313,14 +313,16 @@
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-openbsd"
 # endif
 
-/* Same reason as for FreeBSD? */
-# define ASSUME_FIXED_STACK_SIZE
-# define FIXED_STACK_SIZE 1048576
-
 # include "uconfig.h"
 # undef HAS_STANDARD_IOB
-
 # define HAS_BSD_IOB
+
+/* Default UNIX_STACK_MAXIMUM is too big for a non-root user.
+   STACK_SAFETY_MARGIN increased for extra safety. */
+# undef UNIX_STACK_MAXIMUM
+# define UNIX_STACK_MAXIMUM 4194304
+# undef STACK_SAFETY_MARGIN
+# define STACK_SAFETY_MARGIN 100000
 
 #ifndef __ELF__
 # define UNDERSCORE_DYNLOAD_SYMBOL_PREFIX
