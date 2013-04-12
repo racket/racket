@@ -466,7 +466,7 @@ namespace.
   (unless (list? s) (err tag "expected a ~a, but received: ~e" 1-LETTER* s))
   (for-each 
    (lambda (c) 
-     (unless (string? c) (err tag "expected a ~a, but received: ~e" 1-LETTER* c)))
+     (unless (string? c) (err tag "expected a ~a, but received: ~e\n which contains the non-1-letter string: ~e" 1-LETTER* s c)))
    s)
   (andmap (compose (curry = 1) string-length) s))
 
@@ -484,6 +484,7 @@ namespace.
   (case-lambda
     [(tag check-result format-msg actual)
      (unless check-result
+       (displayln `(cerr ,actual))
        (err tag (string-append "expected " (a-or-an format-msg) " " format-msg ", but received ~e") actual))]
     [(tag check-result format-msg actual snd)
      (unless check-result
