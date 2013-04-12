@@ -79,7 +79,7 @@
     [_ (or (with-handlers ([exn:fail? (λ (_) #f)])
              (define r
                (resolved-module-path-name
-                ((current-module-name-resolver) mod #f #f)))
+                ((current-module-name-resolver) mod #f #f #f)))
              (if (not mode)
                (and r mod)
                ;; sanity check that path results exists
@@ -89,7 +89,7 @@
            ;; for symbols, try also 'mod
            (and (symbol? mod) (known-top `',mod)))]))
 (define (module->path module)
-  (resolved-module-path-name ((current-module-name-resolver) module #f #f)))
+  (resolved-module-path-name ((current-module-name-resolver) module #f #f #f)))
 
 (define (mpi->name mpi)
   (resolved-module-path-name (module-path-index-resolve mpi)))
