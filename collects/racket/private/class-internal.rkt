@@ -3196,8 +3196,6 @@ An example
                        [handled-args null])
               (cond
                 [(null? init-args)
-                 (unless (null? inits/c)
-                   (raise-blame-error bswap #f "initialization argument not provided\n  init-arg: ~a" (car (car inits/c))))
                  (reverse handled-args)]
                 [(null? inits/c)
                  (append (reverse handled-args) init-args)]

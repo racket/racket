@@ -8032,13 +8032,6 @@
            [d%/c/c (contract (class/c (init [a number?])) d%/c 'pos 'neg)])
       (new d%/c/c [a #t] [a "foo"])))
 
-  ;; Check that we catch not providing init args metioned in the contract
-  (test/neg-blame
-   'class/c-higher-order-init-9
-   '(let* ([c% (class object% (super-new) (init [a 3]))]
-           [c%/c (contract (class/c (init [a integer?])) c% 'pos 'neg)])
-      (new c%/c)))
-
   (test/spec-passed
    'class/c-higher-order-init-field-1
    '(let ([c% (contract (class/c (init-field [f (-> number? number?)]))
