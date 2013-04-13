@@ -57,10 +57,10 @@
 
   (define (contract-syntax-error-test name exp [reg #rx""])
     (test #t
-	  name
-	  (contract-eval `(with-handlers ((exn:fail:syntax?
-					   (lambda (x) (and (regexp-match ,reg (exn-message x)) #t))))
-					 (eval ',exp)))))
+          name
+          (contract-eval `(with-handlers ((exn:fail:syntax?
+                                           (lambda (x) (and (regexp-match ,reg (exn-message x)) #t))))
+                            (eval ',exp)))))
 
   ;; test/spec-passed : symbol sexp -> void
   ;; tests a passing specification
@@ -155,7 +155,7 @@
       (define (has-proper-blame? msg)
         (define reg
           (cond
-            [(eq? blame 'pos) #rx"broke its contract[\n:,].*blaming: pos"]
+            [(eq? blame 'pos) #rx"blaming: pos"]
             [(eq? blame 'neg) #rx"blaming: neg"]
             [(string? blame) (string-append "blaming: " (regexp-quote blame))]
             [else #f]))
@@ -8741,6 +8741,20 @@
                           'pos
                           'neg)])
       (send (new cls%) m 3 #t)))
+  
+  (contract-error-test
+   'class/c-tl-message
+   '((contract (-> (class/c (callback (->m boolean? any)))
+                   any)
+               (λ (c%) (send (new c%) callback 1))
+               'pos 'neg)
+     (class object%
+       (super-new)
+       (define/public (callback x) 3)))
+   (λ (exn) (and (regexp-match? #rx"callback: contract violation" (exn-message exn))
+                 (regexp-match? #rx"expected: boolean[?]" (exn-message exn))
+                 (regexp-match? #rx"given: 1" (exn-message exn)))))
+                 
 
 ;
 ;

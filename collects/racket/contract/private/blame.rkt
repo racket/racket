@@ -68,15 +68,18 @@
     make-blame))
 
 ;; s : (or/c string? #f)
-(define (blame-add-context b s #:important [important #f] #:swap? [swap? #f])
+(define (blame-add-context b s #:important [name #f] #:swap? [swap? #f])
+  (define new-original? (if swap? (not (blame-original? b)) (blame-original? b)))
   (struct-copy
    blame b
-   [original? (if swap? (not (blame-original? b)) (blame-original? b))]
+   [original? new-original?]
    [positive (if swap? (blame-negative b) (blame-positive b))]
    [negative (if swap? (blame-positive b) (blame-negative b))]
-   [important (or important (blame-important b))]
+   [important (if name (important name new-original?) (blame-important b))]
    [context (if s (cons s (blame-context b)) (blame-context b))]
    [top-known? #t]))
+
+(struct important (name sense-swapped?))
 
 (define (blame-add-unknown-context b)
   (define old (blame-context b))
@@ -157,17 +160,17 @@
           (define nxt
             (cond
               [(eq? 'given: fst) (add-indent
-                                  (if (blame-original? blame)
+                                  (if (blame/important-original? blame)
                                       "produced:"
                                       "given:"))]
-              [(eq? 'given fst) (if (blame-original? blame)
+              [(eq? 'given fst) (if (blame/important-original? blame)
                                     "produced"
                                     "given")]
               [(eq? 'expected: fst) (add-indent
-                                     (if (blame-original? blame)
+                                     (if (blame/important-original? blame)
                                          "promised:"
                                          "expected:"))]
-              [(eq? 'expected fst) (if (blame-original? blame)
+              [(eq? 'expected fst) (if (blame/important-original? blame)
                                        "promised"
                                        "expected")]
               [else fst]))
@@ -179,6 +182,12 @@
           (loop (cdr strs)
                 new-so-far
                 (regexp-match #rx" $" nxt))]))]))
+
+(define (blame/important-original? blame)
+  (define i (blame-important blame))
+  (cond
+    [i (important-sense-swapped? i)]
+    [else (blame-original? blame)]))
 
 (define (default-blame-format blme x custom-message)
   (define source-message (source-location->string (blame-source blme)))
@@ -198,18 +207,21 @@
                       #f
                       (format "  at: ~a" source-message)))
   
-  (define self-or-not (if (blame-original? blme)
-                          "broke its contract"
-                          "contract violation"))
+  (define (self-or-not which-way?) 
+    (if which-way?
+        "broke its contract"
+        "contract violation"))
   
   (define start-of-message
     (cond
       [(blame-important blme)
-       (format "~a: ~a" (blame-important blme) self-or-not)]
+       (format "~a: ~a" 
+               (important-name (blame-important blme))
+               (self-or-not (important-sense-swapped? (blame-important blme))))]
       [(blame-value blme)
-       (format "~a: ~a" (blame-value blme) self-or-not)]
+       (format "~a: ~a" (blame-value blme) (self-or-not (blame-original? blme)))]
       [else
-       (format "~a:" self-or-not)]))
+       (format "~a:" (self-or-not (blame-original? blme)))]))
   
   (define blame-parties (blame-positive blme))
   (define blaming-line
