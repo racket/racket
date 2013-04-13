@@ -66,7 +66,8 @@
                   (λ (pkg-name)
                     (define r (hash-ref index-ht pkg-name #f))
                     (printf "[>server ~a] ~a = ~a\n" port pkg-name r)
-                    r))
+                    r)
+                  (λ () index-ht))
                  #:command-line? #t
                  #:servlet-regexp #rx""
                  #:port port))

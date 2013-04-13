@@ -24,8 +24,10 @@
          setup/dirs
          racket/format
          version/utils
+         syntax/modcollapse
          "name.rkt"
-         "util.rkt")
+         "util.rkt"
+         (prefix-in db: "pnr-db.rkt"))
 
 (define current-install-system-wide?
   (make-parameter #f))
@@ -36,6 +38,8 @@
 (define current-pkg-error
   (make-parameter (lambda args (apply error 'pkg args))))
 (define current-no-pkg-db
+  (make-parameter #f))
+(define current-pkg-indexes
   (make-parameter #f))
 
 (define (pkg-error . rest)
@@ -223,30 +227,84 @@
                  (list "https://pkg.racket-lang.org"
                        "https://planet-compat.racket-lang.org")]))))
 
-(define (package-index-lookup pkg)
+(define (pkg-config-indexes)
+  (read-pkg-cfg/def "indexes"))
+
+(define (pkg-indexes)
+  (or (current-pkg-indexes)
+      (map string->url (read-pkg-cfg/def "indexes"))))
+
+(define (db-path? p)
+  (regexp-match? #rx"[.]sqlite$" (path->bytes p)))
+
+(define (pnr-dispatch i server db dir)
+  (cond
+   [(equal? "file" (url-scheme i))
+    (define path (url->path i))
+    (cond
+     [(db-path? path)
+      (parameterize ([db:current-pkg-index-file path])
+        (db))]
+     [(directory-exists? path) (dir path)])]
+   [else (server i)]))
+
+(define (add-version-query addr/no-query)
+  (struct-copy url addr/no-query
+               [query (append
+                       (url-query addr/no-query)
+                       (list
+                        (cons 'version (version))))]))
+
+(define (package-index-lookup pkg details?)
   (or
-   (for/or ([i (in-list (read-pkg-cfg/def "indexes"))])
-     (define addr/no-query (combine-url/relative (string->url i)
-                                                 (format "pkg/~a" pkg)))
-     (define addr (struct-copy url addr/no-query
-                               [query (append
-                                       (url-query addr/no-query)
-                                       (list
-                                        (cons 'version (version))))]))
-     (log-pkg-debug "resolving via ~a" (url->string addr))
-     (call/input-url+200
-      addr
-      read))
+   (for/or ([i (in-list (pkg-indexes))])
+     (pnr-dispatch
+      i
+      ;; Server:
+      (lambda (i)
+        (define addr (add-version-query
+                      (combine-url/relative i (format "pkg/~a" pkg))))
+        (log-pkg-debug "resolving via ~a" (url->string addr))
+        (read-from-server
+         'package-index-lookup
+         addr
+         (lambda (v) (and (hash? v)
+                          (for/and ([k (in-hash-keys v)])
+                            (symbol? k))))
+         (lambda (s) #f)))
+      ;; Local database:
+      (lambda ()
+        (define pkgs (db:get-pkgs #:name pkg))
+        (and (pair? pkgs)
+             (db-pkg-info (car pkgs) details?)))
+      ;; Local directory:
+      (lambda (path)
+         (define pkg-path (build-path path "pkg" pkg))
+         (and (file-exists? pkg-path)
+              (call-with-input-file* pkg-path read)))))
    (pkg-error (~a "cannot find package on indexes\n"
                   "  package: ~a")
               pkg)))
 
+(define (db-pkg-info pkg details?)
+  (if details?
+      (let ([tags (db:get-pkg-tags (db:pkg-name pkg)
+                                   (db:pkg-index pkg))])
+        (hash 'name (db:pkg-name pkg)
+              'author (db:pkg-author pkg)
+              'source (db:pkg-source pkg)
+              'checksum (db:pkg-checksum pkg)
+              'description (db:pkg-desc pkg)
+              'tags tags))
+      (hash 'source (db:pkg-source pkg)
+            'checksum (db:pkg-source pkg))))
+
 (define (remote-package-checksum pkg)
   (match pkg
     [`(pns ,pkg-name) ; compatibility, for now
-     (hash-ref (package-index-lookup pkg-name) 'checksum)]
+     (hash-ref (package-index-lookup pkg-name #f) 'checksum)]
     [`(pnr ,pkg-name)
-     (hash-ref (package-index-lookup pkg-name) 'checksum)]
+     (hash-ref (package-index-lookup pkg-name #f) 'checksum)]
     [`(url ,pkg-url-str)
      (package-url->checksum pkg-url-str)]))
 
@@ -448,6 +506,291 @@
                    (set->list deps-to-be-removed))))))
   (for-each remove-package pkgs))
 
+;; Downloads a package (if needed) and unpacks it (if needed) into a  
+;; temporary directory. 
+(define (stage-package/info pkg
+                            given-type
+                            given-pkg-name
+                            #:given-checksum [given-checksum #f]
+                            check-sums?)
+  (define-values (inferred-pkg-name type) 
+    (if (path? pkg)
+        (package-source->name+type (path->string pkg)
+                                   (or given-type
+                                       (if (directory-exists? pkg)
+                                           'dir
+                                           'file)))
+        (package-source->name+type pkg given-type)))
+  (define pkg-name (or given-pkg-name inferred-pkg-name))
+  (when (and type (not pkg-name))
+    (pkg-error (~a "could not infer package name from source\n"
+                   "  source: ~a")
+               pkg))
+  (cond
+   [(and (eq? type 'github)
+         (not (regexp-match? #rx"^github://" pkg)))
+    ;; Add "github://github.com/"
+    (stage-package/info (string-append "github://github.com/" pkg) type 
+                        pkg-name #:given-checksum given-checksum
+                        check-sums?)]
+   [(or (eq? type 'file-url) (eq? type 'dir-url) (eq? type 'github))
+    (define pkg-url (string->url pkg))
+    (define scheme (url-scheme pkg-url))
+
+    (define orig-pkg `(url ,pkg))
+    (define checksum (remote-package-checksum orig-pkg))
+    (define info
+      (update-install-info-orig-pkg
+       (match type
+         ['github
+          (when given-checksum
+            (set! checksum given-checksum))
+          (unless checksum
+            (pkg-error 
+             (~a "could not find checksum for github package source, which implies it doesn't exist\n"
+                 "  source: ~a")
+             pkg))
+          (match-define (list* user repo branch path)
+                        (map path/param-path (url-path/no-slash pkg-url)))
+          (define new-url
+            (url "https" #f "github.com" #f #t
+                 (map (λ (x) (path/param x empty))
+                      (list user repo "tarball" checksum))
+                 empty
+                 #f))
+          (define tmp.tgz
+            (make-temporary-file
+             (string-append
+              "~a-"
+              (format "~a.~a.tgz" repo branch))
+             #f))
+          (delete-file tmp.tgz)
+          (define tmp-dir
+            (make-temporary-file
+             (string-append
+              "~a-"
+              (format "~a.~a" repo branch))
+             'directory))
+          (define package-path
+            (apply build-path tmp-dir path))
+
+          (dynamic-wind
+              void
+              (λ ()
+                 (download-file! new-url tmp.tgz)
+                 (dynamic-wind
+                     void
+                     (λ ()
+                        (untar tmp.tgz tmp-dir #:strip-components 1)
+                        (stage-package/info (path->string package-path)
+                                            'dir
+                                            pkg-name
+                                            check-sums?))
+                     (λ ()
+                        (delete-directory/files tmp-dir))))
+              (λ ()
+                 (delete-directory/files tmp.tgz)))]
+         [_
+          (define url-last-component
+            (path/param-path (last (url-path pkg-url))))
+          (define url-looks-like-directory? (eq? type 'dir-url))
+          (define-values
+            (package-path download-type download-package!)
+            (cond
+             [url-looks-like-directory?
+              (define package-path
+                (make-temporary-file
+                 (string-append
+                  "~a-"
+                  pkg-name)
+                 'directory))
+              (define (path-like f)
+                (build-path package-path f))
+              (define (url-like f)
+                (if (and (pair? (url-path pkg-url))
+                         (equal? "" (path/param-path (last (url-path pkg-url)))))
+                    ;; normal relative path:
+                    (combine-url/relative pkg-url f)
+                    ;; we're assuming that the last path element is
+                    ;; a directory, so just add f:
+                    (struct-copy url pkg-url [path
+                                              (append
+                                               (url-path pkg-url)
+                                               (list (path/param f null)))])))
+              (values package-path
+                      'dir
+                      (λ ()
+                         (printf "\tCloning remote directory\n")
+                         (make-directory* package-path)
+                         (define manifest
+                           (call/input-url+200
+                            (url-like "MANIFEST")
+                            port->lines))
+                         (unless manifest
+                           (pkg-error (~a "could not find MANIFEST for package source\n"
+                                          "  source: ~a")
+                                      pkg))
+                         (for ([f (in-list manifest)])
+                           (download-file! (url-like f)
+                                           (path-like f)))))]
+             [else
+              (define package-path
+                (make-temporary-file
+                 (string-append
+                  "~a-"
+                  url-last-component)
+                 #f))
+              (delete-file package-path)
+              (values package-path
+                      'file
+                      (λ ()
+                         (log-pkg-debug "\tAssuming URL names a file")
+                         (download-file! pkg-url package-path)))]))
+          (dynamic-wind
+              void
+              (λ ()
+                 (download-package!)
+                 (log-pkg-debug "\tDownloading done, installing ~a as ~a"
+                                package-path pkg-name)
+                 (stage-package/info package-path
+                                     download-type
+                                     pkg-name
+                                     check-sums?))
+              (λ ()
+                 (when (or (file-exists? package-path)
+                           (directory-exists? package-path))
+                   (delete-directory/files package-path))))])
+       orig-pkg))
+    (when (and check-sums?
+               (install-info-checksum info)
+               (not checksum))
+      (pkg-error (~a "remote package had no checksum\n"
+                     "  package: ~a")
+                 pkg))
+    (when (and checksum
+               (install-info-checksum info)
+               check-sums?
+               (not (equal? (install-info-checksum info) checksum)))
+      (pkg-error (~a "incorrect checksum on package\n"
+                     "  package: ~a\n"
+                     "  expected ~e\n"
+                     "  got ~e")
+                 pkg
+                 (install-info-checksum info) checksum))
+    (update-install-info-checksum
+     info
+     checksum)]
+   [(eq? type 'file)
+    (unless (file-exists? pkg)
+      (pkg-error "no such file\n  path: ~a" pkg))
+    (define checksum-pth (format "~a.CHECKSUM" pkg))
+    (define expected-checksum
+      (and (file-exists? checksum-pth)
+           check-sums?
+           (file->string checksum-pth)))
+    (define actual-checksum
+      (with-input-from-file pkg
+        (λ ()
+           (sha1 (current-input-port)))))
+    (unless (or (not expected-checksum)
+                (string=? expected-checksum actual-checksum))
+      (pkg-error (~a "incorrect checksum on package\n"
+                     "  expected: ~e\n"
+                     "  got: ~e")
+                 expected-checksum actual-checksum))
+    (define checksum
+      actual-checksum)
+    (define pkg-format (filename-extension pkg))
+    (define pkg-dir
+      (make-temporary-file (string-append "~a-" pkg-name)
+                           'directory))
+    (dynamic-wind
+        void
+        (λ ()
+           (make-directory* pkg-dir)
+
+           (match pkg-format
+             [#"tgz"
+              (untar pkg pkg-dir)]
+             [#"tar"
+              (untar pkg pkg-dir)]
+             [#"gz" ; assuming .tar.gz
+              (untar pkg pkg-dir)]
+             [#"zip"
+              (unzip pkg (make-filesystem-entry-reader #:dest pkg-dir))]
+             [#"plt"
+              (make-directory* pkg-dir)
+              (unpack pkg pkg-dir
+                      (lambda (x) (log-pkg-debug "~a" x))
+                      (lambda () pkg-dir)
+                      #f
+                      (lambda (auto-dir main-dir file) pkg-dir))]
+             [x
+              (pkg-error "invalid package format\n  given: ~a" x)])
+
+           (update-install-info-checksum
+            (update-install-info-orig-pkg
+             (stage-package/info pkg-dir
+                                 'dir
+                                 pkg-name
+                                 check-sums?)
+             `(file ,(simple-form-path* pkg)))
+            checksum))
+        (λ ()
+           (delete-directory/files pkg-dir)))]
+   [(or (eq? type 'dir)
+        (eq? type 'link))
+    (unless (directory-exists? pkg)
+      (pkg-error "no such directory\n  path: ~a" pkg))
+    (let ([pkg (directory-path-no-slash pkg)])
+      (cond
+       [(eq? type 'link)
+        (install-info pkg-name
+                      `(link ,(simple-form-path* pkg))
+                      pkg
+                      #f #f)]
+       [else
+        (define pkg-dir
+          (make-temporary-file "pkg~a" 'directory))
+        (delete-directory pkg-dir)
+        (make-parent-directory* pkg-dir)
+        (copy-directory/files pkg pkg-dir)
+        (install-info pkg-name
+                      `(dir ,(simple-form-path* pkg))
+                      pkg-dir
+                      #t #f)]))]
+   [(eq? type 'name)
+    (define index-info (package-index-lookup pkg #f))
+    (define source (hash-ref index-info 'source))
+    (define checksum (hash-ref index-info 'checksum))
+    (define info (stage-package/info source
+                                     #f
+                                     pkg-name
+                                     #:given-checksum checksum
+                                     check-sums?))
+    (when (and (install-info-checksum info)
+               check-sums?
+               (not (equal? (install-info-checksum info) checksum)))
+      (pkg-error "incorrect checksum on package\n  package: ~a" pkg))
+    (update-install-info-orig-pkg
+     (update-install-info-checksum
+      info
+      checksum)
+     `(pnr ,pkg))]
+   [else
+    (pkg-error "cannot infer package source type\n  source: ~a" pkg)]))
+
+(define (stage-package desc
+                       #:checksum [checksum #f])
+  (define i (stage-package/info (pkg-desc-source desc)
+                                (pkg-desc-type desc)
+                                (pkg-desc-name desc)
+                                #:given-checksum checksum 
+                                #t))
+  (values (install-info-directory i)
+          (install-info-checksum i)
+          (install-info-clean? i)))
+
 (define (install-packages
          #:old-infos [old-infos empty]
          #:old-descs [old-descs empty]
@@ -458,271 +801,6 @@
          #:force? [force? #f]
          descs)
   (define check-sums? (not ignore-checksums?))
-  (define (install-package pkg 
-                           given-type
-                           given-pkg-name
-                           #:given-checksum [given-checksum #f])    
-    (define-values (inferred-pkg-name type) 
-      (if (path? pkg)
-          (package-source->name+type (path->string pkg)
-                                     (or given-type
-                                         (if (directory-exists? pkg)
-                                             'dir
-                                             'file)))
-          (package-source->name+type pkg given-type)))
-    (define pkg-name (or given-pkg-name inferred-pkg-name))
-    (when (and type (not pkg-name))
-      (pkg-error (~a "could not infer package name from source\n"
-                     "  source: ~a")
-                 pkg))
-    (cond
-     [(and (eq? type 'github)
-           (not (regexp-match? #rx"^github://" pkg)))
-      ;; Add "github://github.com/"
-      (install-package (string-append "github://github.com/" pkg) type 
-                       pkg-name #:given-checksum given-checksum)]
-     [(or (eq? type 'file-url) (eq? type 'dir-url) (eq? type 'github))
-      (define pkg-url (string->url pkg))
-      (define scheme (url-scheme pkg-url))
-
-      (define orig-pkg `(url ,pkg))
-      (define checksum (remote-package-checksum orig-pkg))
-      (define info
-        (update-install-info-orig-pkg
-         (match type
-           ['github
-            (when given-checksum
-              (set! checksum given-checksum))
-            (unless checksum
-              (pkg-error 
-               (~a "could not find checksum for github package source, which implies it doesn't exist\n"
-                   "  source: ~a")
-               pkg))
-            (match-define (list* user repo branch path)
-                          (map path/param-path (url-path/no-slash pkg-url)))
-            (define new-url
-              (url "https" #f "github.com" #f #t
-                   (map (λ (x) (path/param x empty))
-                        (list user repo "tarball" checksum))
-                   empty
-                   #f))
-            (define tmp.tgz
-              (make-temporary-file
-               (string-append
-                "~a-"
-                (format "~a.~a.tgz" repo branch))
-               #f))
-            (delete-file tmp.tgz)
-            (define tmp-dir
-              (make-temporary-file
-               (string-append
-                "~a-"
-                (format "~a.~a" repo branch))
-               'directory))
-            (define package-path
-              (apply build-path tmp-dir path))
-
-            (dynamic-wind
-             void
-             (λ ()
-                (download-file! new-url tmp.tgz)
-                (dynamic-wind
-                 void
-                 (λ ()
-                    (untar tmp.tgz tmp-dir #:strip-components 1)
-                    (install-package (path->string package-path)
-                                     'dir
-                                     pkg-name))
-                 (λ ()
-                    (delete-directory/files tmp-dir))))
-             (λ ()
-                (delete-directory/files tmp.tgz)))]
-           [_
-            (define url-last-component
-              (path/param-path (last (url-path pkg-url))))
-            (define url-looks-like-directory? (eq? type 'dir-url))
-            (define-values
-              (package-path download-type download-package!)
-              (cond
-               [url-looks-like-directory?
-                (define package-path
-                  (make-temporary-file
-                   (string-append
-                    "~a-"
-                    pkg-name)
-                   'directory))
-                (define (path-like f)
-                  (build-path package-path f))
-                (define (url-like f)
-                  (if (and (pair? (url-path pkg-url))
-                           (equal? "" (path/param-path (last (url-path pkg-url)))))
-                      ;; normal relative path:
-                      (combine-url/relative pkg-url f)
-                      ;; we're assuming that the last path element is
-                      ;; a directory, so just add f:
-                      (struct-copy url pkg-url [path
-                                                (append
-                                                 (url-path pkg-url)
-                                                 (list (path/param f null)))])))
-                (values package-path
-                        'dir
-                        (λ ()
-                           (printf "\tCloning remote directory\n")
-                           (make-directory* package-path)
-                           (define manifest
-                             (call/input-url+200
-                              (url-like "MANIFEST")
-                              port->lines))
-                           (unless manifest
-                             (pkg-error (~a "could not find MANIFEST for package source\n"
-                                            "  source: ~a")
-                                        pkg))
-                           (for ([f (in-list manifest)])
-                             (download-file! (url-like f)
-                                             (path-like f)))))]
-               [else
-                (define package-path
-                  (make-temporary-file
-                   (string-append
-                    "~a-"
-                    url-last-component)
-                   #f))
-                (delete-file package-path)
-                (values package-path
-                        'file
-                        (λ ()
-                           (log-pkg-debug "\tAssuming URL names a file")
-                           (download-file! pkg-url package-path)))]))
-            (dynamic-wind
-             void
-             (λ ()
-                (download-package!)
-                (log-pkg-debug "\tDownloading done, installing ~a as ~a"
-                         package-path pkg-name)
-                (install-package package-path
-                                 download-type
-                                 pkg-name))
-             (λ ()
-                (when (or (file-exists? package-path)
-                          (directory-exists? package-path))
-                  (delete-directory/files package-path))))])
-         orig-pkg))
-      (when (and check-sums?
-                 (install-info-checksum info)
-                 (not checksum))
-        (pkg-error (~a "remote package had no checksum\n"
-                       "  package: ~a")
-                   pkg))
-      (when (and checksum
-                 (install-info-checksum info)
-                 check-sums?
-                 (not (equal? (install-info-checksum info) checksum)))
-        (pkg-error (~a "incorrect checksum on package\n"
-                       "  package: ~a\n"
-                       "  expected ~e\n"
-                       "  got ~e")
-                   pkg
-                   (install-info-checksum info) checksum))
-      (update-install-info-checksum
-       info
-       checksum)]
-     [(eq? type 'file)
-      (unless (file-exists? pkg)
-        (pkg-error "no such file\n  path: ~a" pkg))
-      (define checksum-pth (format "~a.CHECKSUM" pkg))
-      (define expected-checksum
-        (and (file-exists? checksum-pth)
-             check-sums?
-             (file->string checksum-pth)))
-      (define actual-checksum
-        (with-input-from-file pkg
-          (λ ()
-             (sha1 (current-input-port)))))
-      (unless (or (not expected-checksum)
-                  (string=? expected-checksum actual-checksum))
-        (pkg-error (~a "incorrect checksum on package\n"
-                       "  expected: ~e\n"
-                       "  got: ~e")
-                   expected-checksum actual-checksum))
-      (define checksum
-        actual-checksum)
-      (define pkg-format (filename-extension pkg))
-      (define pkg-dir
-        (make-temporary-file (string-append "~a-" pkg-name)
-                             'directory))
-      (dynamic-wind
-       void
-       (λ ()
-          (make-directory* pkg-dir)
-
-          (match pkg-format
-            [#"tgz"
-             (untar pkg pkg-dir)]
-            [#"tar"
-             (untar pkg pkg-dir)]
-            [#"gz" ; assuming .tar.gz
-             (untar pkg pkg-dir)]
-            [#"zip"
-             (unzip pkg (make-filesystem-entry-reader #:dest pkg-dir))]
-            [#"plt"
-             (make-directory* pkg-dir)
-             (unpack pkg pkg-dir
-                     (lambda (x) (log-pkg-debug "~a" x))
-                     (lambda () pkg-dir)
-                     #f
-                     (lambda (auto-dir main-dir file) pkg-dir))]
-            [x
-             (pkg-error "invalid package format\n  given: ~a" x)])
-
-          (update-install-info-checksum
-           (update-install-info-orig-pkg
-            (install-package pkg-dir
-                             'dir
-                             pkg-name)
-            `(file ,(simple-form-path* pkg)))
-           checksum))
-       (λ ()
-          (delete-directory/files pkg-dir)))]
-     [(or (eq? type 'dir)
-          (eq? type 'link))
-      (unless (directory-exists? pkg)
-        (pkg-error "no such directory\n  path: ~a" pkg))
-      (let ([pkg (directory-path-no-slash pkg)])
-        (cond
-         [(eq? type 'link)
-          (install-info pkg-name
-                        `(link ,(simple-form-path* pkg))
-                        pkg
-                        #f #f)]
-         [else
-          (define pkg-dir
-            (make-temporary-file "pkg~a" 'directory))
-          (delete-directory pkg-dir)
-          (make-parent-directory* pkg-dir)
-          (copy-directory/files pkg pkg-dir)
-          (install-info pkg-name
-                        `(dir ,(simple-form-path* pkg))
-                        pkg-dir
-                        #t #f)]))]
-     [(eq? type 'name)
-      (define index-info (package-index-lookup pkg))
-      (define source (hash-ref index-info 'source))
-      (define checksum (hash-ref index-info 'checksum))
-      (define info (install-package source
-                                    #f
-                                    pkg-name
-                                    #:given-checksum checksum))
-      (when (and (install-info-checksum info)
-                 check-sums?
-                 (not (equal? (install-info-checksum info) checksum)))
-        (pkg-error "incorrect checksum on package\n  package: ~a" pkg))
-      (update-install-info-orig-pkg
-       (update-install-info-checksum
-        info
-        checksum)
-       `(pnr ,pkg))]
-     [else
-      (pkg-error "cannot infer package source type\n  source: ~a" pkg)]))
   (define db (read-pkg-db))
   (define db+with-dbs
     (let ([with-sys-wide (lambda (t)
@@ -981,7 +1059,7 @@
   (define metadata-ns (make-metadata-namespace))
   (define infos
     (for/list ([v (in-list descs)])
-      (install-package (pkg-desc-source v) (pkg-desc-type v) (pkg-desc-name v))))
+      (stage-package/info (pkg-desc-source v) (pkg-desc-type v) (pkg-desc-name v) check-sums?)))
   (define setup-collects
     (maybe-append
      (for/list ([info (in-list (append old-infos infos))])
@@ -1133,10 +1211,16 @@
                      (list (~a (package-directory pkg)))
                      empty))))))))
 
-(define (installed-pkg-names)
-  (with-package-lock/read-only
-    (define db (read-pkg-db))
-    (sort (hash-keys db) string-ci<=?)))
+(define (installed-pkg-table #:scope [given-scope #f])
+  (define scope (or given-scope (get-default-package-scope)))
+  (parameterize ([current-install-system-wide? (eq? scope 'i)]
+                 [current-install-version-specific? (not (eq? scope 's))])
+    (with-package-lock/read-only
+     (read-pkg-db))))
+
+(define (installed-pkg-names #:scope [given-scope #f])
+  (sort (installed-pkg-table #:scope given-scope) 
+        string-ci<=?))
   
 (define (config-cmd config:set key+vals)
   (cond
@@ -1249,13 +1333,285 @@
          #:exists 'replace
          (λ () (display (call-with-input-file pkg sha1))))])))
 
+(define (index-copy-cmd srcs dest
+                        #:from-config? [from-config? #f]
+                        #:merge? [merge? #f]
+                        #:force? [force? #f]
+                        #:override? [override? #f])
+  (define src-paths
+    (for/list ([src (in-list (append srcs
+                                     (if from-config?
+                                         (pkg-config-indexes)
+                                         null)))])
+      (define src-path
+        (cond
+         [(path? src) (path->complete-path src)]
+         [(regexp-match? #rx"^https?://" src)
+          (string->url src)]
+         [(regexp-match? #rx"^file://" src)
+          (url->path (string->url src))]
+         [(regexp-match? #rx"^[a-zA-Z]*://" src)
+          (pkg-error (~a "unrecognized URL scheme for an index\n"
+                         "  URL: ~a")
+                     src)]
+         [else (path->complete-path src)]))
+      (when (path? src-path)
+        (cond
+         [(db-path? src-path)
+          (void)]
+         [(directory-exists? src-path)
+          (void)]
+         [(let-values ([(base name dir?) (split-path src-path)]) dir?)
+          (void)]
+         [else
+          (pkg-error (~a "bad source index path\n"
+                         "  path: ~a\n"
+                         "  expected: directory or path with \".sqlite\" extension")
+                     src)]))
+      src-path))
+  (define dest-path
+    (cond
+     [(path? dest) (path->complete-path dest)]
+     [(regexp-match? #rx"^file://" dest)
+      (url->path (string->url dest))]
+     [(regexp-match? #rx"^[a-zA-Z]*://" dest)
+      (pkg-error (~a "cannot copy to a non-file destination index\n"
+                     "  given URL: ~a")
+                 dest)]
+     [else (path->complete-path dest)]))
+
+  (unless (or force? merge?)
+    (when (or (file-exists? dest-path)
+              (directory-exists? dest-path)
+              (link-exists? dest-path))
+      (pkg-error (~a "destination exists\n"
+                     "  path: ~a")
+                 dest-path)))
+
+  (define details
+    (let ([src-paths (if (and merge?
+                              (or (file-exists? dest-path)
+                                  (directory-exists? dest-path)))
+                         (if override?
+                             (append src-paths
+                                     (list dest-path))
+                             (cons dest-path
+                                   src-paths))
+                         src-paths)])
+      (parameterize ([current-pkg-indexes (for/list ([src-path src-paths])
+                                            (if (path? src-path)
+                                                (path->url src-path)
+                                                src-path))])
+        (get-all-pkg-details-from-indexes))))
+
+  (when (and force? (not merge?))
+    (cond
+     [(file-exists? dest-path)
+      (delete-file dest-path)]
+     [(directory-exists? dest-path)
+      (if (db-path? dest-path)
+          (delete-directory/files dest-path)
+          (for ([i (directory-list dest-path)])
+            (delete-directory/files (build-path dest-path i))))]
+     [(link-exists? dest-path)
+      (delete-file dest-path)]))
+
+  (cond
+   [(db-path? dest-path)
+    (parameterize ([db:current-pkg-index-file dest-path])
+      (db:set-indexes! '("local"))
+      (db:set-pkgs! "local"
+                    (for/list ([(k v) (in-hash details)])
+                      (db:pkg k "local"
+                              (hash-ref v 'author "")
+                              (hash-ref v 'source "")
+                              (hash-ref v 'checksum "")
+                              (hash-ref v 'description ""))))
+      (for ([(k v) (in-hash details)])
+        (define t (hash-ref v 'tags '()))
+        (unless (null? t)
+          (db:set-pkg-tags! k "local" t))))]
+   [else
+    (define pkg-path (build-path dest-path "pkg"))
+    (make-directory* pkg-path)
+    (for ([(k v) (in-hash details)])
+      (call-with-output-file*
+       #:exists 'truncate/replace
+       (build-path pkg-path k)
+       (lambda (o) (write v o))))
+    (call-with-output-file*
+     #:exists 'truncate/replace
+     (build-path dest-path "pkgs")
+     (lambda (o) (write (hash-keys details) o)))
+    (call-with-output-file*
+     #:exists 'truncate/replace
+     (build-path dest-path "pkgs-all")
+     (lambda (o) (write details o)))]))
+
+(define (index-show-cmd names 
+                        #:all? [all? #f]
+                        #:only-names? [only-names? #f])
+  (for ([name (in-list names)])
+    (define-values (parsed-name type)
+      (package-source->name+type name #f))
+    (unless (eq? type 'name)
+      (pkg-error (~a "incorrect syntax for a package name\n"
+                     "  given: ~a")
+                 name)))
+  
+  (cond
+   [only-names?
+    (define all-names (if all?
+                          (get-all-pkg-names-from-indexes)
+                          names))
+    (for ([name (in-list all-names)])
+      (unless all?
+        ;; Make sure it's available:
+        (get-pkg-details-from-indexes name))
+      (printf "~a\n" name))]
+   [else
+    (define all-details (and all?
+                             (get-all-pkg-details-from-indexes)))
+    (for ([name (in-list (if all?
+                             (hash-keys all-details)
+                             names))])
+      (define details (if all?
+                          (hash-ref all-details name)
+                          (get-pkg-details-from-indexes name)))
+      (printf "Package name: ~a\n" name)
+      (for ([key '(author source checksum tags description)])
+        (define v (hash-ref details key #f))
+        (when v
+          (printf " ~a: ~a\n"
+                  (string-titlecase (symbol->string key))
+                  (if (list? v)
+                      (apply ~a #:separator ", " v)
+                      v)))))]))
+
+(define (get-all-pkg-names-from-indexes)
+  (define ht
+    (for*/hash ([i (in-list (pkg-indexes))]
+                [name
+                 (pnr-dispatch
+                  i
+                  ;; Server:
+                  (lambda (i)
+                    (read-from-server 
+                     'get-all-pkg-names-from-indexes
+                     (add-version-query
+                      (combine-url/relative i "pkgs"))
+                     (lambda (l) (and (list? l) 
+                                      (andmap string? l)))))
+                  ;; Local database:
+                  (lambda ()
+                    (map db:pkg-name (db:get-pkgs)))
+                  ;; Local directory:
+                  (lambda (path)
+                    (define pkgs-path (build-path path "pkgs"))
+                    (cond
+                     [(file-exists? pkgs-path)
+                      (call-with-input-file* pkgs-path read)]
+                     [else
+                      (define pkg-path (build-path path "pkg"))
+                      (for/list ([i (directory-list pkg-path)]
+                                 #:when (file-exists? (build-path pkg-path i)))
+                        (path-element->string i))])))])
+      (values name #t)))
+  (sort (hash-keys ht) string<?))
+
+(define (get-pkg-details-from-indexes name)
+  (for/or ([i (in-list (pkg-indexes))])
+    (package-index-lookup name #t)))
+
+(define (get-all-pkg-details-from-indexes)
+  (for/fold ([ht (hash)]) ([i (in-list (pkg-indexes))])
+    (define one-ht
+      (pnr-dispatch
+       i
+       ;; Server:
+       (lambda (i)
+         (read-from-server
+          'get-all-pkg-details-from-indexes
+          (add-version-query
+           (combine-url/relative i "pkgs-all"))
+          (lambda (v)
+            (and (hash? v)
+                 (for/and ([(k v) (in-hash v)])
+                   (and (string? k)
+                        (hash? v)
+                        (for/and ([k (in-hash-keys v)])
+                          (symbol? k))))))))
+       ;; Local database:
+       (lambda ()
+         (define pkgs (db:get-pkgs))
+         (for/fold ([ht (hash)]) ([p (in-list pkgs)])
+           (if (hash-ref ht (db:pkg-name p) #f)
+               ht
+               (hash-set ht
+                         (db:pkg-name p)
+                         (db-pkg-info p #t)))))
+       ;; Local directory:
+       (lambda (path)
+         (define pkgs-all-path (build-path path "pkgs-all"))
+         (cond
+          [(file-exists? pkgs-all-path)
+           (call-with-input-file* pkgs-all-path read)]
+          [else
+           (define pkg-path (build-path path "pkg"))
+           (for/hash ([i (directory-list pkg-path)]
+                      #:when (file-exists? (build-path pkg-path i)))
+             (values (path-element->string i)
+                     (call-with-input-file* (build-path pkg-path i)
+                                            read)))]))))
+    (for/fold ([ht ht]) ([(k v) (in-hash one-ht)])
+      (if (hash-ref ht k #f)
+          ht
+          (hash-set ht k v)))))
+
+(define (extract-dependencies get-info)
+  (define v (if get-info
+                (get-info 'deps (lambda () empty))
+                empty))
+  (check-dependencies v)
+  v)
+
+(define (get-pkg-content desc 
+                         #:extract-info [extract-info extract-dependencies])
+  (define-values (dir cksum clean?) (stage-package desc))
+  (define get-info (with-handlers ([exn:fail? (λ (x)
+                                                 (log-exn x "getting info")
+                                                 #f)])
+                     (get-info/full dir #:namespace (make-base-namespace))))
+  (define module-paths
+    (let ([dummy (build-path (current-directory) "dummy.rkt")])
+      (parameterize ([current-directory dir])
+        (for/list ([f (in-directory)]
+                   #:when (file-exists? f)
+                   #:when (regexp-match? #rx#"[.](rkt|ss)$" (path->bytes f))
+                   #:when (let-values ([(base name dir?) (split-path f)])
+                            (not (eq? 'relative base))))
+          (define m (apply ~a
+                           #:separator "/" 
+                           (map path-element->string 
+                                (explode-path f))))
+          ;; normalize the path:
+          (collapse-module-path `(lib ,m) dummy)))))
+
+  (begin0
+   (values cksum
+           module-paths
+           (extract-info get-info))
+   (when clean?
+     (delete-directory/files dir))))
+
 (define dep-behavior/c
-  (or/c false/c
-        (symbols 'fail 'force 'search-ask 'search-auto)))
+  (or/c #f 'fail 'force 'search-ask 'search-auto))
 
 (provide
  with-package-lock
  with-package-lock/read-only
+ (struct-out pkg-info)
+  pkg-desc?
  (contract-out
   [current-install-system-wide?
    (parameter/c boolean?)]
@@ -1265,6 +1621,8 @@
    (parameter/c string?)]
   [current-pkg-error 
    (parameter/c procedure?)]
+  [current-pkg-indexes
+   (parameter/c (or/c #f (listof url?)))]
   [package-directory
    (-> string? path-string?)]
   [pkg-desc 
@@ -1289,18 +1647,58 @@
    (->* ((listof string?))
         (#:auto? boolean?
                  #:force? boolean?)
-        void)]
+        void?)]
   [show-cmd
    (->* (string?)
         (#:directory? boolean?)
-        void)]
+        void?)]
   [install-cmd
    (->* ((listof pkg-desc?))
         (#:dep-behavior dep-behavior/c
                         #:force? boolean?
                         #:ignore-checksums? boolean?)
         (or/c #f (listof (or/c path-string? (non-empty-listof path-string?)))))]
+  [index-show-cmd
+   (->* ((listof string?))
+        (#:all? boolean?
+                #:only-names? boolean?)
+        void?)]
+  [index-copy-cmd
+   (->* ((listof path-string?) path-string?)
+        (#:from-config? any/c
+                        #:merge? boolean?
+                        #:force? boolean?
+                        #:override? boolean?)
+        void?)]
   [get-default-package-scope
    (-> (or/c 'i 'u 's))]
   [installed-pkg-names
-   (-> (listof string?))]))
+   (->* ()
+        (#:scope (or/c #f 'i 'u 's))
+        (listof string?))]
+  [installed-pkg-table
+   (->* ()
+        (#:scope (or/c #f 'i 'u 's))
+        (hash/c string? pkg-info?))]
+  [stage-package (->* (pkg-desc?)
+                      (#:checksum (or/c #f string?))
+                      (values path?
+                              (or/c #f string?)
+                              boolean?))]
+  [pkg-config-indexes
+   (-> (listof string?))]
+  [get-all-pkg-names-from-indexes
+   (-> (listof string?))]
+  [get-all-pkg-details-from-indexes
+   (-> (hash/c string? (hash/c symbol? any/c)))]
+  [get-pkg-details-from-indexes
+   (-> string?
+       (or/c #f (hash/c symbol? any/c)))]
+  [get-pkg-content
+   (->* (pkg-desc?)
+        (#:extract-info (-> (or/c #f
+                                  ((symbol?) ((-> any)) . ->* . any))
+                            any/c))
+        (values (or/c #f string?)
+                (listof module-path?)
+                any/c))]))

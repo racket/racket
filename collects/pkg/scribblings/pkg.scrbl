@@ -1,6 +1,7 @@
 #lang scribble/manual
 @(require scribble/bnf
           scribble/core
+          "common.rkt"
           (for-label pkg
                      (except-in racket/base remove)
                      setup/dirs))
@@ -22,15 +23,6 @@
 @(define (gtech s)
    @tech[#:doc '(lib "scribblings/guide/guide.scrbl") s])
 
-@(define (command s)
-   @exec{raco pkg @|s|})
-
-@(define (command-ref s)
-   @(link-element "plainlink" @command[s] `(raco-pkg-cmd ,s)))
-
-@(define (command/toc s)
-   @(toc-target-element #f @command[s] `(raco-pkg-cmd ,s)))
-                        
 
 @; ----------------------------------------
 
@@ -183,28 +175,23 @@ means that it has only the characters @|package-name-chars|.}
 
 ]
 
-A @deftech{package name resolver} (@deftech{PNR}) is a server that
-converts package names to other package sources. A PNR is identified
-by a string representing a URL. This URL is combined with
-@exec{pkg/}@nonterm{package} path segments (where @nonterm{package} is a package name) plus a
-@exec{version=}@nonterm{version} query (where @nonterm{version} is the
-Racket version number) to form a URL that should refer to a
-@racket[read]-able hash table with the keys: @racket['source] mapped to
-the @tech{package source} string and @racket['checksum] mapped to the
-@tech{checksum} value. Typically, the @tech{package source} value for
-@racket['source] will be a remote URL.
+A @deftech{package name resolver} (@deftech{PNR},
+a.k.a. @deftech{index}) is a server or database that converts package
+names to other package sources. A PNR is identified by a string
+representing a URL, where a @litchar{http://} or @litchar{https://}
+URL indicates a remote server, and a @litchar{file://} URL indicates a
+local database in the form of an SQLite database or a directory tree.
 
 PLT supports two @tech{package name resolvers} that are enabled by
-default: @url{https://pkg.racket-lang.org} for new
-packages and @url{https://planet-compat.racket-lang.org} for
-automatically generated packages for old @|PLaneT|
-packages. Anyone may host their own @tech{package name resolver}. The
-source for the PLT-hosted resolvers is in the
-@racket[(collection-file-path "pkg-index" "meta")]
-directory.
+default: @url{https://pkg.racket-lang.org} for new packages and
+@url{https://planet-compat.racket-lang.org} for automatically
+generated packages for old @|PLaneT| packages. Anyone may host a
+@tech{package name resolver}, and any file-serving HTTP host can act
+as a basic @tech{package name resolver}. See @secref["pnr-protocol"]
+for information on how package information is extracted from a PNR.
 
 After a package is installed, the original source of its installation
-is recorded, as well as if it was an @tech{automatic installation}. An
+is recorded, as well as whether the instalation was an @tech{automatic installation}. An
 @deftech{automatic installation} is one that was installed because it
 was a dependency of a non-@tech{automatic installation} package.
 
@@ -244,9 +231,9 @@ user-specific, but for all versions and installations of Racket.
 
 @section{Managing Packages}
 
-
-The Racket package manager has two user interfaces: a command line @exec{raco}
-sub-command and a library. They have the exact same capabilities, as
+The Racket package manager has two main user interfaces: a command line @exec{raco}
+sub-command and a @racketmodname[pkg] library to run the same commands.
+They have the exact same capabilities, as
 the command line interface invokes the library functions and
 reprovides all their options.
 
@@ -329,7 +316,7 @@ the following @nonterm{option}s:
 @item{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
 --- Attempts to remove the given packages. If a package is the dependency
 of another package that is not listed, this command fails without 
-removing any of the @nonterm{pkg}s. It accepts the following @nonterm{option}s:
+removing any of the @nonterm{pkg}s. This command accepts the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{force} --- Ignore dependencies when removing packages.}
@@ -367,7 +354,7 @@ removing any of the @nonterm{pkg}s. It accepts the following @nonterm{option}s:
 }
 
 @item{@command/toc{config} @nonterm{option} ... @nonterm{key} @nonterm{val} ... --- 
-View and modify package configuration options. It accepts the following @nonterm{option}s:
+View and modify package configuration options. This command accepts the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{set} --- Sets an option, rather than printing it.}
@@ -387,7 +374,7 @@ View and modify package configuration options. It accepts the following @nonterm
 }
 
 @item{@command/toc{create} @nonterm{option} ... @nonterm{package-directory}
---- Bundles a package directory into a package archive. It accepts the following @nonterm{option}s:
+--- Bundles a package directory into a package archive. This command accepts the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{format} @nonterm{format} --- Specifies the archive format. 
@@ -396,9 +383,52 @@ View and modify package configuration options. It accepts the following @nonterm
  @item{@DFlag{manifest} --- Creates a manifest file for a directory, rather than an archive.}
  ]
 }
+
+@item{@command/toc{index-show} @nonterm{option} ... @nonterm{package-name} ...
+--- Consults @tech{package name resolvers} for a package (that is not necessarily installed)
+    and displays the resolver's information for the package, such as its source URL and
+    a checksum. This command accepts the following @nonterm{option}s:
+
+ @itemlist[
+ @item{@DFlag{all} --- Show information for all available packages. When using this flag,
+                      supply no @nonterm{packaee-name}s.}
+ @item{@DFlag{only-names} --- Show only package names. This option is mainly useful with 
+                              @DFlag{all}, but when a @nonterm{packaee-name} is provided,
+                              indexes are consulted to ensure that he package is available.}
+ @item{@DFlag{index} @nonterm{index} --- Query @nonterm{index} instead of the currently configured 
+       @tech{package name resolvers}.}
+ ]
+}
+
+@item{@command/toc{index-copy} @nonterm{option} ... @nonterm{src-index} ... @nonterm{dest-index}
+--- Copies information from @tech{package name resolvers} names by @nonterm{src-index}es 
+    to a local database or directory @nonterm{dest-index},
+    which can be used as a new @tech{package name resolver}.
+
+    The @nonterm{src-index}es can be remote or local, while @nonterm{dest-index} must be local
+    (i.e., a directory path or a SQLite database path, as inferred from the path).
+    If a @nonterm{src-index} or @nonterm{dest-index} does not start with a URL scheme, it is
+    treated as a filesystem path. Information from multiple @nonterm{src-index}es is merged,
+    with information from earlier @nonterm{src-index}es taking precedence over later 
+    @nonterm{src-index}es.
+
+    This command accepts the following @nonterm{option}s:
+
+ @itemlist[
+ @item{@DFlag{from-config} --- Adds the currently configured 
+       @tech{package name resolvers} to the end of the @nonterm{src-index}es list.}
+ @item{@DFlag{force} --- Replaces @nonterm{dest-index} if it exists already.}
+ @item{@DFlag{merge} --- Adds to @nonterm{dest-index} if it exists already. By default,
+                         information already in @nonterm{dest-index} takes precedence
+                         over new information.}
+ @item{@DFlag{override} --- Changes merging so that new information takes precedence
+                         over information already in @nonterm{dest-index}.}
+ ]
+}
+
 ]
 
-@subsection{Programmatic}
+@subsection{Programmatic Commands}
 
 @defmodule[pkg]
 
@@ -410,8 +440,10 @@ to the command sub-sub-commands.
   @defthing[update procedure?]             
   @defthing[remove procedure?]             
   @defthing[show procedure?]             
-  @defthing[config procedure?]             
-  @defthing[create procedure?])             
+  @defthing[config procedure?]
+  @defthing[create procedure?]
+  @defthing[index-show procedure?]
+  @defthing[index-copy procedure?])             
 ]{
  Duplicates the @seclink["cmdline"]{command line interface}. 
 
@@ -419,7 +451,9 @@ to the command sub-sub-commands.
  argument. An argument corresponding to @DFlag{type}, @DFlag{deps},
  @DFlag{format}, or @DFlag{scope} accepts its argument as a symbol. All other options
  accept booleans, where @racket[#t] is equivalent to the presence of
- the option.}
+ the option.
+
+ See also @racketmodname[pkg/lib].}
 
 @; ----------------------------------------
 
@@ -681,6 +715,12 @@ future.
 
 @; ----------------------------------------
 
+@include-section["apis.scrbl"]
+
+@include-section["pnr-protocol.scrbl"]
+
+@; ----------------------------------------
+
 @section[#:style 'quiet]{FAQ}
 
 This section answers anticipated frequently asked questions about
@@ -758,6 +798,32 @@ backwards incompatible changes to packages. Instead, they should
 release a new package with a new name. For example, package
 @pkgname{libgtk} might become @pkgname{libgtk2}. These packages
 should be designed to not conflict with each other, as well.
+
+@subsection{How can I fix my installation to a specific set of package
+implementations or @tech{checksums}?}
+
+Packages are updated only when you run a tool such as
+@command-ref{update}, so packages are never updated
+implicitly. Furthermore, you can snapshot a set of package archives
+and install from those archives, instead of relying on package name
+resolution through a @tech{package name resolver}.
+
+If you want to control the resolution of package names (including
+specific @tech{checksum}s) but not necessary keep a copy of all package
+code (assuming that old @tech{checksum}s remain available, such as
+through Github), you can create a snapshot of the @tech{package name}
+to @tech{package source} mapping by using @command-ref{index-copy}.
+For example,
+
+@commandline{raco pkg index-copy --from-config /home/joe/snapshot.sqlite}
+
+creates a snapshot @filepath{/home/joe/snapshot.sqlite} of the current
+package name resolution, and then
+
+@commandline{raco pkg config --set indexes file:///home/joe/snapshot.sqlite}
+
+directs all package-name resolution to the snapshot. You can configure
+resolution for specific package names by editing the snapshot.
 
 @subsection{Why is the package manager so different than @|Planet1|?}
 

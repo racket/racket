@@ -1,0 +1,266 @@
+#lang scribble/manual
+@(require (for-label (except-in racket/base
+                                remove)
+                     racket/contract/base
+                     pkg
+                     pkg/lib
+                     net/url
+                     syntax/modcollapse
+                     setup/getinfo))
+
+@title[#:tag "lib"]{Package Management Functions}
+
+@defmodule[pkg/lib]{The @racketmodname[pkg/lib] library provides
+building blocks on which the @racket[pkg] library and @exec{raco pkg}
+commands are built.}
+
+
+@deftogether[(
+@defform[(with-package-lock body ...+)]
+@defform[(with-package-lock/read-only body ...+)]
+)]{
+
+Evaluates the @racket[body]s while holding a lock to prevent
+concurrent modification to the package database. Use the
+@racket[with-package-lock/read-only] form for read-only access.
+
+Use these form to wrap uses of functions from @racketmodname[pkg/lib]
+that read or modify the package database.}
+
+
+@deftogether[(
+@defboolparam[current-install-system-wide? system-wide?]
+@defboolparam[current-install-version-specific? version-specific?]
+@defparam[current-show-version s string?]
+)]{
+
+Parameters that together determine @tech{package scope} for management
+operations and the version for version-specific scope.}
+
+
+@defparam[current-pkg-error err procedure?]{
+
+A parameter whose value is used to report errors that are normally
+intended for an end uses. The arguments to the procedure are the same
+as for @racket[error], except that an initial symbol argument is
+omitted.
+
+The default value uses @racket[error] with @racket['pkg] as the first
+argument. The @exec{raco pkg} command sets this parameter to use
+@racket[raise-user-error] with the sub-command name as its first
+argument.}
+
+
+@defparam[current-pkg-indexes indexes (or/c #f (listof url?))]{
+
+A parameter that determines the @tech{package name resolvers} that are
+consulted to resolve a @tech{package name}. If the parameter's value
+is @racket[#f], then the result of @racket[pkg-config-indexes] is
+used.}
+
+
+@defproc[(pkg-config-indexes) (listof string?)]{
+
+Returns a list of URL strings for the user's configured @tech{package
+name resolvers}.}
+
+
+@defstruct[pkg-info ([orig-pkg (or/c path-string?
+                                     (list/c 'link path-string?))]
+                     [checksum (or/c #f string?)]
+                     [auto? boolean?])
+                     #:prefab]{
+
+A structure type that is used to report installed-package information.}
+
+
+@defproc[(package-directory [name string?]) path-string?]{
+
+Returns the directory that holds the installation of the installed
+package @racket[name].}
+
+
+@defproc[(get-default-package-scope) (or/c 'i 'u 's)]{
+
+Returns the user's configured default @tech{package scope}:
+@racket['i] for installation, @racket['u] for user- and
+version-specific, and @racket['s] for user-specific but shared across
+versions.}
+
+
+@defproc[(installed-pkg-names [#:scope scope (or/c #f 'i 'u 's)])
+         (listof string?)]{
+
+Returns a list of installed package names for the given @tech{package
+scope}, where @racket[#f] indicates the user's default @tech{package
+scope}.}
+
+
+@defproc[(installed-pkg-table [#:scope scope (or/c #f 'i 'u 's)])
+         (hash/c string? pkg-info?)]{
+
+Returns a hash table of installed packages for the given @tech{package
+scope}, where @racket[#f] indicates the user's default @tech{package
+scope}.}
+
+
+@deftogether[(
+@defproc[(pkg-desc? [v any/c]) boolean?]
+@defproc[(pkg-desc [name string?]
+                   [type (or/c #f 'file 'dir 'link 'file-url 'dir-url 'github 'name)]
+                   [checksum (or/c string? #f)]
+                   [auto? boolean?])
+         pkg-desc?]
+)]{
+
+A @racket[pkg-desc] value describes a package source plus details of its
+intended interpretation, where the @racket[auto?] field indicates that
+the package is should be treated as installed automatically for a
+dependency.}
+
+
+@defproc[(stage-package [desc pkg-desc?]
+                        [#:checksum checksum (or/c #f string?) #f])
+         (values path? (or/c #f string?) boolean?)]{
+
+Locates the implementation of the package specified by @racket[desc] and
+downloads and unpacks it to a temporary directory (as needed).
+
+The result is the directory containing the unpacked package content,
+the checksum (if any) for the unpacked package, and whether the
+directory should be removed after the package content is no longer
+needed.}
+
+
+@defproc[(config-cmd [set? boolean?] [keys/vals list?])
+         void?]{
+
+Implements the @racket[config] command.}
+
+
+@defproc[(create-cmd [format (or/c 'zip 'tgz 'plt 'MANIFEST)]
+                     [dir path-string?])
+        void?]{
+
+Implements the @racket[create] command.}
+
+
+@defproc[(install-cmd      [names (listof string?)]
+                           [#:dep-behavior dep-behavior
+                                           (or/c #f 'fail 'force 'search-ask 'search-auto)
+                                           #f]
+                           [#:force? force? boolean? #f]
+                           [#:ignore-checksums? ignore-checksums? boolean? #f])
+         (or/c #f (listof (or/c path-string? (non-empty-listof path-string?))))]{
+
+Implements the @racket[install] command. The result indicates which
+collections should be setup via @exec{raco setup}: @racket[#f] means
+all, and a list means only the indicated collections.}
+
+
+@defproc[(update-packages [names (listof string?)]
+                          [#:dep-behavior dep-behavior
+                                          (or/c #f 'fail 'force 'search-ask 'search-auto)
+                                          #f]
+                          [#:all? all? boolean? #f]
+                          [#:deps? deps? boolean? #f])
+        (or/c #f (listof (or/c path-string? (non-empty-listof path-string?))))]{
+
+Implements the @racket[update] command. The result is the same as for
+@racket[install-packages].}
+
+
+@defproc[(remove-packages [names (listof string?)]
+                          [#:auto? auto? boolean? #f]
+                          [#:force? force? boolean? #f])
+         void?]{
+
+Implements the @racket[remove] command.}
+
+
+@defproc[(show-cmd [indent string?]
+                   [#:directory show-dir? boolean? #f])
+         void?]{
+
+Implements the @racket[show] command for a single package scope,
+printing to the current output port. See also
+@racket[installed-pkg-names] and @racket[installed-pkg-table].}
+
+
+@defproc[(index-show-cmd [names (listof string?)]
+                         [#:all? all? boolean? #f]
+                         [#:only-names? only-names? boolean? #f])
+         void?]{
+
+Implements the @racket[index-show] command. If @racket[all?] is true,
+then @racket[names] should be empty.}
+
+
+@defproc[(index-copy-cmd [sources (listof path-string?)]
+                         [dest path-string?]
+                         [#:from-config? from-config? boolean? #f]
+                         [#:merge? merge? boolean? #f]
+                         [#:force? force? boolean? #f]
+                         [#:override? override? boolean? #f])
+         void?]{
+
+Implements the @racket[index-copy] command.}
+
+
+@defproc[(get-all-pkg-names-from-indexes) (listof string?)]{
+
+Consults @tech{package name resolvers} to obtain a list of available
+@tech{package names}.}
+
+
+@defproc[(get-all-pkg-details-from-indexes)
+         (hash/c string? (hash/c symbol? any/c))]{
+
+Consults @tech{package name resolvers} to obtain a hash table of available
+@tech{package names} mapped to details about the package. Details for
+a particular package are provided by a hash table that maps symbols
+such as @racket['source], @racket['checksum], and @racket['author].}
+
+
+@defproc[(get-pkg-details-from-indexes [name string?])
+         (or/c #f (hash/c symbol? any/c))]{
+
+Consults @tech{package name resolvers} to obtain information for a
+single @tech{package name}, returning @racket[#f] if the @tech{package
+name} has no resolution. Details for the package are provided in the
+same form as from @racket[get-all-pkg-details-from-indexes].}
+
+
+@defproc[(get-pkg-content [desc pkg-desc?]
+                          [#:extract-info 
+                           extract-proc
+                           ((or/c #f
+                                  ((symbol?) ((-> any)) . ->* . any))
+                            . -> . any)
+                           (lambda (get-pkg-info) ...)])
+         (values (or/c #f string?) 
+                 (listof module-path?)
+                 any/c)]{
+
+Gets information about the content of the package specified by
+@racket[desc]. The information is determined inspecting the
+package---resolving a @tech{package name}, downloading, and unpacking
+into a temporary directory as necessary.
+
+The results are as follows:
+
+@itemize[
+
+ @item{The checksum, if any, for the downloaded package.}
+
+ @item{A list of module paths that are provided by the package.
+       Each module path is normalized in the sense of
+       @racket[collapse-module-path].}
+
+ @item{Information extracted from the package's metadata.  By default,
+       this information is the package's dependencies, but in general
+       it is the result of @racket[extract-proc], which receives an
+       information-getting function (or @racket[#f]) as returned by
+       @racket[get-info].}
+
+]}

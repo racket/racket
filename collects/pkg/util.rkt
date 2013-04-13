@@ -5,6 +5,7 @@
          racket/file
          racket/port
          racket/match
+         racket/format
          net/url
          json)
 
@@ -76,5 +77,41 @@
     [_
      (call/input-url+200 (string->url (string-append pkg-url-str ".CHECKSUM"))
                          port->string)]))
+
+;; uses a custodian to avoid leaks:
+(define (call-with-url url handler)
+  (define c (make-custodian))
+  (dynamic-wind
+      void
+      (lambda ()
+        (define-values (p hs)
+          (parameterize ([current-custodian c])
+            (get-pure-port/headers url #:redirections 25 #:status? #t)))
+        (begin0
+         (and (string=? "200" (substring hs 9 12))
+              (handler p))
+         (close-input-port p)))
+      (lambda ()
+        (custodian-shutdown-all c))))
+
+(define (read-from-server who url pred
+                          [failure 
+                           (lambda (s)
+                             (error who
+                                    (~a "bad response from server\n"
+                                        "  url: ~a\n"
+                                        "  response: ~v")
+                                    (url->string url)
+                                    s))])
+  (define bytes (call-with-url url port->bytes))
+  ((if bytes
+       (with-handlers ([exn:fail:read? (lambda (exn)
+                                         (lambda () (failure bytes)))])
+         (define v (read (open-input-bytes bytes)))
+         (lambda ()
+           (if (pred v)
+               v
+               (failure bytes))))
+       (lambda () (failure #f)))))
 
 (provide (all-defined-out))

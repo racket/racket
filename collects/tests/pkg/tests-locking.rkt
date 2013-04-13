@@ -19,7 +19,8 @@
                       (λ (pkg-name)
                         (semaphore-wait okay-to-respond?-sema)
                         (define r (hash-ref *index-ht-1* pkg-name #f))
-                        r))
+                        r)
+                      (λ () *index-ht-1*))
                      #:command-line? #t
                      #:servlet-regexp #rx""
                      #:port 9967)

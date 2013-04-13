@@ -1,7 +1,9 @@
 #lang racket/base
 (require (only-in racket/base [version r:version])
          racket/function
+         racket/list
          raco/command-name
+         net/url
          "lib.rkt"
          "commands.rkt"
          (prefix-in setup: setup/setup))
@@ -115,14 +117,14 @@
   [#:bool installation ("-i") "shorthand for `--scope installation'"]
   [#:bool user ("-u") "shorthand for `--scope user'"]
   [#:bool shared ("-s") "shorthand for `--scope shared'"]
-  #:args pkgs
+  #:args pkg
   (call-with-package-scope
    'update
    scope installation shared user
    (lambda ()
     (with-package-lock
      (define setup-collects
-       (update-packages pkgs
+       (update-packages pkg
                         #:all? all
                         #:dep-behavior deps
                         #:deps? update-deps))
@@ -144,13 +146,13 @@
   [#:bool installation ("-i") "shorthand for `--scope installation'"]
   [#:bool user ("-u") "shorthand for `--scope user'"]
   [#:bool shared ("-s") "shorthand for `--scope shared'"]
-  #:args pkgs
+  #:args pkg
   (call-with-package-scope
    'remove
    scope installation shared user
    (lambda ()
      (with-package-lock
-      (remove-packages pkgs
+      (remove-packages pkg
                        #:auto? auto
                        #:force? force)
       (setup no-setup #f))))]
@@ -225,4 +227,37 @@
   [#:bool manifest () "Creates a manifest file for a directory, rather than an archive"]
   #:args (package-directory)
   (parameterize ([current-pkg-error (pkg-error 'create)])
-    (create-cmd (if manifest 'MANIFEST (or format 'zip)) package-directory))])
+    (create-cmd (if manifest 'MANIFEST (or format 'zip)) package-directory))]
+ [index-show
+  "Show information about packages as reported by index"
+  #:once-any 
+  [(#:str index #f) index () "Use <index> instead of configured indexes"]
+  #:once-each
+  [#:bool all () "Show all packages"]
+  [#:bool only-names () "Show only package names"]
+  #:args pkg-name
+  (when (and all (pair? pkg-name))
+    ((pkg-error 'index-show) "both `--all' and package names provided"))
+  (parameterize ([current-pkg-indexes (and index
+                                           (list (string->url index)))]
+                 [current-pkg-error (pkg-error 'index-show)])
+    (index-show-cmd pkg-name 
+                    #:all? all
+                    #:only-names? only-names))]
+ [index-copy
+  "Copy/merge package name resolver information"
+  #:once-each
+  [#:bool from-config () "Include currently configured packages last"]
+  #:once-any
+  [#:bool force () "Force replacement fo existing file/directory"]
+  [#:bool merge () "Merge to existing database"]
+  #:once-each
+  [#:bool override () "While merging, override existing with new"]
+  #:args index
+  (parameterize ([current-pkg-error (pkg-error 'index-copy)])
+    (index-copy-cmd (drop-right index 1)
+                    (last index)
+                    #:from-config? from-config
+                    #:force? force
+                    #:merge? merge
+                    #:override? override))])
