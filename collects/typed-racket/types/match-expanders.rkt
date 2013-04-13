@@ -7,6 +7,7 @@
          racket/match
          (types resolve)
          (contract-req)
+         racket/set
          (for-syntax racket/base syntax/parse racket/list))
 
 (provide Listof: List: MListof:)
@@ -27,11 +28,13 @@
        #'(app untuple (? values elem-pats))])))
 
 (define (untuple t)
-  (match (resolve t)
-    [(Value: '()) null]
-    [(Pair: a b) (cond [(untuple b) => (lambda (l) (cons a l))]
-                       [else #f])]
-    [_ #f]))
+  (let loop ((t t) (seen (set)))
+    (and (not (set-member? seen (Type-seq t)))
+         (match (resolve t)
+           [(Value: '()) null]
+           [(Pair: a b) (cond [(loop b (set-add seen (Type-seq t))) => (lambda (l) (cons a l))]
+                              [else #f])]
+           [_ #f]))))
 
 (define-match-expander MListof:
   (lambda (stx)
