@@ -31,11 +31,16 @@
                (td (a ([href ,(get-url display-info n)]) ,n)))))))))
   (define (write-pkgs req)
     (response/sexpr (get-pkgs)))
+  (define (write-pkgs/all req)
+    (response/sexpr 
+     (for/hash ([n (in-list (get-pkgs))])
+       (values n (pkg-name->info n)))))
   (define-values (dispatch get-url)
     (dispatch-rules
      [() list-pkgs]
      [("") list-pkgs]
      [("pkgs") write-pkgs]
+     [("pkgs" "all") write-pkgs/all]
      [("pkg" (string-arg) "display") display-info]
      [("pkg" (string-arg)) write-info]))
   dispatch)
