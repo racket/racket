@@ -1663,4 +1663,10 @@
   (install-pkg-force? "Existierendes überschreiben?")
   (install-pkg-command-line "Äquivalente Kommandozeilen-Aufruf:")
   (install-pkg-error-installing-title "Fehler beim Installieren von Paket")
- )
+
+  (install-pkg-action-label "Maßnahme")
+  (install-pkg-install "Installieren")
+  (install-pkg-update "Aktualisieren")
+  (install-pkg-action-inferred-to-be-update "Maßnahme als Aktualisierung inferiert")
+  (install-pkg-action-inferred-to-be-install "Maßnahme als Installation inferiert"))
+
