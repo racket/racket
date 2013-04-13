@@ -371,7 +371,7 @@
               (tell (tell (if is-combo? RacketComboBox RacketView)
                           alloc)
                     initWithFrame: #:type _NSRect r)
-              (let* ([share-context (send gl-config get-share-context)]
+              (let* ([share-context (and gl-config (send gl-config get-share-context))]
                      [context-handle (and share-context (send share-context get-handle))]
                      [pf (gl-config->pixel-format gl-config)]
                      [new-context (and

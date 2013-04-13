@@ -148,7 +148,7 @@
 
 (define (prepare-widget-gl-context gtk config)
   (init!)
-  (let ([share-context (send config get-share-context)]
+  (let ([share-context (and config (send config get-share-context))]
         [config (config->GdkGLConfig #f ; (gtk_widget_get_screen gtk)
                                      (or config
                                          (new gl-config%))
