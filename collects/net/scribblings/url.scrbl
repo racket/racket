@@ -22,6 +22,9 @@ any other file.
 Currently the only supported protocols are @racket["http"],
 @racket["https"], and sometimes @racket["file"].
 
+The @racketmodname[net/url] logs information and background-thread
+errors to a logger named @racket['net/url].
+
 @section{URL Structure}
 
 @declare-exporting[net/url-structs net/url]
@@ -337,17 +340,44 @@ empty string, or it will be a string matching the following regexp:
           [url url?]
           [headers (listof string?) '()]
           [#:redirections redirections exact-nonnegative-integer? 0]
-          [#:status? status? boolean? #f])
+          [#:status? status? boolean? #f]
+          [#:connection connection (or/c #f http-connection?)])
          (values input-port? string?)]{
   This function is an alternative to calling @racket[get-impure-port] and
-  @racket[purify-port] when needing to follow redirections.
+  @racket[purify-port] when needing to follow redirections. It also
+  supports HTTP/1.1 connections, which are used when the @racket[connection]
+  argument is not @racket[#f].
   
-  That is, it does a GET request on @racket[url], follows up to
-  @racket[redirections] redirections and returns a port containing
-  the data as well as the headers for the final connection. If 
-  @racket[status?] is true, then the status line is included in the
-  result string.
+  The @racket[get-pure-port/headers] function performs a GET request
+  on @racket[url], follows up to @racket[redirections] redirections
+  and returns a port containing the data as well as the headers for
+  the final connection. If @racket[status?] is true, then the status
+  line is included in the result string.
+
+  A given @racket[connection] should be used for communication
+  with a particular HTTP/1.1 server, unless @racket[connection] is closed
+  (via @racket[http-connection-close]) between uses for different servers.
+  If @racket[connection] is provided, read all data from the result port
+  before making a new request with the same @racket[connection]. (Reusing
+  a @racket[connection] without reading all data may or may not work.)
 }
+
+@deftogether[(
+@defproc[(http-connection? [v any/c]) boolean?]
+@defproc[(make-http-connection) http-connection?]
+@defproc[(http-connection-close [connection http-connection?]) void?]
+)]{
+
+A HTTP connection value represents a potentially persistent connection
+with a HTTP/1.1 server for use with @racket[get-pure-port/headers].
+
+The @racket[make-http-connection] creates a ``connection'' that is
+initially unconnected. Each call to @racket[get-pure-port/headers]
+leaves a connection either connected or unconnected, depending on
+whether the server allows the connection to continue. The
+@racket[http-connection-close] function unconnects, but it does not
+prevent further use of the connection value.}
+
 
 @defproc*[([(call/input-url [URL url?]
                             [connect (url? . -> . input-port?)]

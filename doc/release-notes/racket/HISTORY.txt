@@ -1,5 +1,6 @@
 Version 5.3.4.3
 Added make-environment-variables
+net/url: add support for HTTP/1.1 connections
 
 Version 5.3.4.2
 Added current-environment-variables, environment-variables-ref,

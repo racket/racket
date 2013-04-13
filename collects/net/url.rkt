@@ -9,6 +9,8 @@
 ;;   Not throw away MIME headers.
 ;;     Determine file type.
 
+(define-logger net/url)
+
 ;; ----------------------------------------------------------------------
 
 ;; Input ports have two statuses:
@@ -106,8 +108,10 @@
     (parameterize ([current-connect-scheme (url-scheme url)])
       (tcp-connect host port-number))))
 
-;; http://getpost-impure-port : bool x url x union (str, #f) x list (str) -> in-port
-(define (http://getpost-impure-port get? url post-data strings)
+;; http://getpost-impure-port : bool x url x union (str, #f) x list (str)
+;                               -> (values in-port out-port)
+(define (http://getpost-impure-port get? url post-data strings
+                                    make-ports 1.1?)
   (define proxy (assoc (url-scheme url) (current-proxy-servers)))
   (define-values (server->client client->server) (make-ports url proxy))
   (define access-string
@@ -125,7 +129,7 @@
   (define (println . xs)
     (for-each (lambda (x) (display x client->server)) xs)
     (display "\r\n" client->server))
-  (println (if get? "GET " "POST ") access-string " HTTP/1.0")
+  (println (if get? "GET " "POST ") access-string " HTTP/1." (if 1.1? "1" "0"))
   (println "Host: " (url-host url)
            (let ([p (url-port url)]) (if p (format ":~a" p) "")))
   (when post-data (println "Content-Length: " (bytes-length post-data)))
@@ -133,8 +137,9 @@
   (println)
   (when post-data (display post-data client->server))
   (flush-output client->server)
-  (tcp-abandon-port client->server)
-  server->client)
+  (unless 1.1?
+    (tcp-abandon-port client->server))
+  (values server->client client->server))
 
 (define (file://->path url [kind (system-path-convention-type)])
   (let ([strs (map path/param-path (url-path url))]
@@ -181,7 +186,8 @@
     (cond [(not scheme)
            (schemeless-url url)]
           [(or (string=? scheme "http") (string=? scheme "https"))
-           (http://getpost-impure-port get? url post-data strings)]
+           (define-values (s->c c->s) (http://getpost-impure-port get? url post-data strings make-ports #f))
+           s->c]
           [(string=? scheme "file")
            (url-error "There are no impure file: ports")]
           [else (url-error "Scheme ~a unsupported" scheme)])))
@@ -205,9 +211,10 @@
              [(or (not get?) 
                   ;; do not follow redirections for POST
                   (zero? redirections))
-              (let ([port (http://getpost-impure-port
-                           get? url post-data strings)])
-                (purify-http-port port))]
+              (let-values ([(s->c c->s) (http://getpost-impure-port
+                                         get? url post-data strings
+                                         make-ports #f)])
+                (purify-http-port s->c))]
              [else
               (define-values (port header) 
                 (get-pure-port/headers url strings #:redirections redirections))
@@ -216,22 +223,44 @@
            (file://get-pure-port url)]
           [else (url-error "Scheme ~a unsupported" scheme)])))
 
+(struct http-connection (s->c c->s)
+  #:mutable)
+
+(define (make-http-connection) (http-connection #f #f))
+
+(define (http-connection-close conn)
+  (when (http-connection-c->s conn)
+    (tcp-abandon-port (http-connection-c->s conn))
+    (set-http-connection-c->s! conn #f)
+    (close-input-port (http-connection-s->c conn))
+    (set-http-connection-s->c! conn #f)))
+
 (define (get-pure-port/headers url [strings '()] 
                                #:redirections [redirections 0]
-                               #:status? [status? #f])
-  (let redirection-loop ([redirections redirections] [url url])
-    (define ip
-      (http://getpost-impure-port #t url #f strings))
+                               #:status? [status? #f]
+                               #:connection [conn #f])
+  (let redirection-loop ([redirections redirections] [url url] [use-conn conn])
+    (define-values (ip op)
+      (http://getpost-impure-port #t url #f strings 
+                                  (if (and use-conn
+                                           (http-connection-s->c use-conn))
+                                      (lambda (url proxy)
+                                        (log-net/url-debug "reusing connection")
+                                        (values (http-connection-s->c use-conn)
+                                                (http-connection-c->s use-conn)))
+                                      make-ports)
+                                  (and conn #t)))
     (define status (read-line ip 'return-linefeed))
-    (define-values (new-url chunked? headers)
-      (let loop ([new-url #f] [chunked? #f] [headers '()])
+    (define-values (new-url chunked? close? headers)
+      (let loop ([new-url #f] [chunked? #f] [close? #f] [headers '()])
         (define line (read-line ip 'return-linefeed))
         (when (eof-object? line)
           (error 'getpost-pure-port 
-                 "connection ended before headers ended (when trying to follow a redirection)"))
+                 "connection ended before headers ended"))
         (cond
-          [(equal? line "") (values new-url chunked? headers)]
-          [(equal? chunked-header-line line) (loop new-url #t (cons line headers))]
+          [(equal? line "") (values new-url chunked? close? headers)]
+          [(equal? chunked-header-line line) (loop new-url #t close? (cons line headers))]
+          [(equal? close-header-line line) (loop new-url chunked? #t (cons line headers))]
           [(regexp-match #rx"^Location: (.*)$" line)
            =>
            (λ (m) 
@@ -248,20 +277,34 @@
                   (url-path next-url)
                   (url-query next-url)
                   (url-fragment next-url))))
-             (loop (or next-url new-url) chunked? (cons line headers)))]
-          [else (loop new-url chunked? (cons line headers))])))
+             (loop (or next-url new-url) chunked? close? (cons line headers)))]
+          [else (loop new-url chunked? close? (cons line headers))])))
     (define redirection-status-line?
       (regexp-match #rx"^HTTP/[0-9]+[.][0-9]+ 3[0-9][0-9]" status))
+    (define (close-ip)
+      (unless (and use-conn (not close?))
+        (close-input-port ip)))
+    (when use-conn
+      (if close?
+          (begin
+            (log-net/url-info "connection closed by server")
+            (tcp-abandon-port op)
+            (set-http-connection-s->c! use-conn #f)
+            (set-http-connection-c->s! use-conn #f))
+          (begin
+            (set-http-connection-s->c! use-conn ip)
+            (set-http-connection-c->s! use-conn op))))
     (cond
       [(and redirection-status-line? new-url (not (zero? redirections))) 
-       (close-input-port ip)
-       (redirection-loop (- redirections 1) new-url)]
+       (close-ip)
+       (log-net/url-info "redirection: ~a" (url->string new-url))
+       (redirection-loop (- redirections 1) new-url #f)]
       [else
        (define-values (in-pipe out-pipe) (make-pipe))
        (thread
         (λ ()
           (http-pipe-data chunked? ip out-pipe)
-          (close-input-port ip)))
+          (close-ip)))
        (values in-pipe
                (apply string-append (map (λ (x) (string-append x "\r\n"))
                                          (if status?
@@ -411,14 +454,17 @@
           (http-read-headers ip))))
 
 (define chunked-header-line "Transfer-Encoding: chunked")
+(define close-header-line "Connection: close")
 
 (define (http-pipe-data chunked? ip op)
-  (if chunked?
-      (http-pipe-chunk ip op)
-      (begin
-        (copy-port ip op)
-        (flush-output op)
-        (close-output-port op))))
+  (with-handlers ([exn:fail? (lambda (exn)
+                               (log-net/url-error (exn-message exn)))])
+    (if chunked?
+        (http-pipe-chunk ip op)
+        (begin
+          (copy-port ip op)
+          (flush-output op)
+          (close-output-port op)))))
 
 (define (http-pipe-chunk ip op)
   (define crlf-bytes (make-bytes 2))
@@ -723,8 +769,15 @@
  (put-impure-port (->* (url? bytes?) ((listof string?)) input-port?))
  (display-pure-port (input-port? . -> . void?))
  (purify-port (input-port? . -> . string?))
- (get-pure-port/headers (->* (url?) ((listof string?) #:redirections exact-nonnegative-integer? #:status? boolean?) 
+ (get-pure-port/headers (->* (url?) 
+                             ((listof string?) 
+                              #:redirections exact-nonnegative-integer? 
+                              #:status? boolean?
+                              #:connection (or/c #f http-connection?))
                              (values input-port? string?)))
+ (http-connection? (any/c . -> . boolean?))
+ (make-http-connection (-> http-connection?))
+ (http-connection-close (http-connection? . -> . void?))
  (netscape/string->url (string? . -> . url?))
  (call/input-url (case-> (-> url?
                              (-> url? input-port?)
