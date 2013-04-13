@@ -13699,8 +13699,8 @@ so that propagation occurs.
   (let* ([blame-pos (contract-eval '(make-blame (srcloc #f #f #f #f #f) #f (λ () 'integer?) 'positive 'negative #t))]
          [blame-neg (contract-eval `(blame-swap ,blame-pos))])
     (ctest "something ~a" blame-fmt->-string ,blame-neg "something ~a")
-    (ctest "promised: ~s\n produced: ~e" blame-fmt->-string ,blame-pos '(expected: "~s" given: "~e"))
-    (ctest "expected: ~s\n given: ~e" blame-fmt->-string ,blame-neg '(expected: "~s" given: "~e"))
+    (ctest "promised: ~s\n  produced: ~e" blame-fmt->-string ,blame-pos '(expected: "~s" given: "~e"))
+    (ctest "expected: ~s\n  given: ~e" blame-fmt->-string ,blame-neg '(expected: "~s" given: "~e"))
     (ctest "promised ~s produced ~e" blame-fmt->-string ,blame-pos '(expected "~s" given "~e"))
     (ctest "expected ~s given ~e" blame-fmt->-string ,blame-neg '(expected "~s" given "~e")))
 

@@ -1819,7 +1819,7 @@ the @racket[b] argument has been swapped or not (see @racket[blame-swap]).
 
 If @racket[fmt] contains the symbols @racket['given:] or @racket['expected:],
 they are replaced like @racket['given:] and @racket['expected:] are, but
-the replacements are prefixed with the string @racket["\n "] to conform
+the replacements are prefixed with the string @racket["\n  "] to conform
 to the error message guidelines in @secref["err-msg-conventions"].
 
 }

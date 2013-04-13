@@ -153,7 +153,7 @@
           (define (add-indent s)
             (if (null? so-far)
                 s
-                (string-append "\n " s)))
+                (string-append "\n  " s)))
           (define nxt
             (cond
               [(eq? 'given: fst) (add-indent
@@ -190,13 +190,13 @@
                                    (for/list ([context (in-list context)]
                                               [n (in-naturals)])
                                      (format (if (zero? n)
-                                                 " in: ~a\n"
-                                                 "     ~a\n")
+                                                 "  in: ~a\n"
+                                                 "      ~a\n")
                                              context)))))
   (define contract-line (show/write (blame-contract blme) #:alone? #t))
   (define at-line (if (string=? source-message "")
                       #f
-                      (format " at: ~a" source-message)))
+                      (format "  at: ~a" source-message)))
   
   (define self-or-not (if (blame-original? blme)
                           "broke its contract"
@@ -215,11 +215,11 @@
   (define blaming-line
     (cond
       [(null? (cdr blame-parties))
-       (format " blaming: ~a" (convert-blame-singleton (car blame-parties)))]
+       (format "  blaming: ~a" (convert-blame-singleton (car blame-parties)))]
       [else
        (apply
         string-append 
-        " blaming multiple parties:"
+        "  blaming multiple parties:"
         (for/list ([party (in-list blame-parties)])
           (format "\n  ~a" (convert-blame-singleton party))))]))
   
@@ -228,11 +228,11 @@
         (let ([from-positive-message 
                (show/display
                 (from-info (blame-positive blme)))])
-          (format " contract from: ~a" from-positive-message))
+          (format "  contract from: ~a" from-positive-message))
         (let ([from-negative-message 
                (show/display
                 (from-info (blame-negative blme)))])
-          (format " contract from: ~a" from-negative-message))))
+          (format "  contract from: ~a" from-negative-message))))
   
   (combine-lines
    start-of-message
@@ -241,7 +241,7 @@
    (if context-lines
        contract-line
        (string-append
-        " in:" 
+        "  in:"
         (substring contract-line 5 (string-length contract-line))))
    from-line
    blaming-line
