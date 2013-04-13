@@ -235,6 +235,11 @@
         (for/list ([party (in-list blame-parties)])
           (format "\n  ~a" (convert-blame-singleton party))))]))
   
+  (define on-line
+    (and (blame-important blme)
+         (blame-value blme)
+         (format "  contract on: ~a" (blame-value blme))))
+  
   (define from-line 
     (if (blame-original? blme)
         (let ([from-positive-message 
@@ -256,6 +261,7 @@
         "  in:"
         (substring contract-line 5 (string-length contract-line))))
    from-line
+   on-line
    blaming-line
    at-line))
 
