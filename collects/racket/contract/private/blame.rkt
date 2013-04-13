@@ -253,7 +253,7 @@
   
   (combine-lines
    start-of-message
-   (format " ~a"  custom-message)
+   (format "  ~a"  custom-message)
    context-lines
    (if context-lines
        contract-line
