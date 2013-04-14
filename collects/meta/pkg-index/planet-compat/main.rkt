@@ -384,7 +384,7 @@
                          pkg-depo-dir pkg-name)
                  'url
                  (let ()
-                   (match-define (regexp #rx"^planet-([^-]+)-([^0-9]+)[0-9]+"
+                   (match-define (regexp #rx"^planet-([^-]+)-(.+)[0-9]+$"
                                          (list _ user pkg))
                                  pkg-name)
                    (format "http://planet.racket-lang.org/display.ss?package=~a.plt&owner=~a"

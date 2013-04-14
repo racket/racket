@@ -40,7 +40,7 @@
      [() list-pkgs]
      [("") list-pkgs]
      [("pkgs") write-pkgs]
-     [("pkgs" "all") write-pkgs/all]
+     [("pkgs-all") write-pkgs/all]
      [("pkg" (string-arg) "display") display-info]
      [("pkg" (string-arg)) write-info]))
   dispatch)
