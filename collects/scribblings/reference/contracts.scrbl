@@ -638,11 +638,11 @@ Represents a contract that is always satisfied. In particular, it can accept
 multiple values.  It can only be used in a result position of contracts like
 @racket[->]. Using @racket[any] elsewhere is a syntax error.}
 
-@defform[(promise/c expr)]{
+@defproc[(promise/c [c contract?]) contract?]{
 
 Constructs a contract on a promise. The contract does not force the
 promise, but when the promise is forced, the contract checks that the
-result value meets the contract produced by @racket[expr].}
+result value meets the contract @racket[c].}
 
 @defproc[(flat-contract [predicate (any/c . -> . any/c)]) flat-contract?]{
 
@@ -1665,7 +1665,7 @@ contracts.  The error messages assume that the function named by
 }
 
 @defproc[(coerce-chaperone-contracts [id symbol?] [x (listof any/c)])
-         (listof/c chaperone-contract?)]{
+         (listof chaperone-contract?)]{
   Like @racket[coerce-contracts], but requires the results
   to be chaperone contracts, not arbitrary contracts.
 }
@@ -1675,7 +1675,7 @@ contracts.  The error messages assume that the function named by
   to be a flat contract, not an arbitrary contract.
 }
 
-@defproc[(coerce-flat-contracts [id symbol?] [x (listof any/c)]) (listof/c flat-contract?)]{
+@defproc[(coerce-flat-contracts [id symbol?] [x (listof any/c)]) (listof flat-contract?)]{
   Like @racket[coerce-contracts], but requires the results
   to be flat contracts, not arbitrary contracts.
 }
