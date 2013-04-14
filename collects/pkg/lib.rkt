@@ -172,7 +172,28 @@
                      (and (list? dep)
                           (= 2 (length dep))
                           (package-source? (car dep))
-                          (version? (cadr dep))))))
+                          (version? (cadr dep)))
+                     (and (list? dep)
+                          ((length dep) . >= . 1)
+                          (odd? (length dep))
+                          (package-source? (car dep))
+                          (let loop ([saw (hash)] [dep (cdr dep)])
+                            (cond 
+                             [(null? dep) #t]
+                             [(hash-ref saw (car dep) #f) #f]
+                             [else
+                              (define kw (car dep))
+                              (define val (cadr dep))
+                              (and
+                               (cond
+                                [(eq? kw '#:version) (version? val)]
+                                [(eq? kw '#:platform)
+                                 (or (string? val)
+                                     (regexp? val)
+                                     (memq val '(unix windows macosx)))]
+                                [else #f])
+                               (loop (hash-set saw (car dep) #t)
+                                     (cddr dep)))]))))))
     (pkg-error (~a "invalid `deps' specification\n"
                    "  specification: ~e")
                deps)))
@@ -187,9 +208,30 @@
       (car dep)))
 
 (define (dependency->version dep)
-  (if (string? dep)
-      #f
-      (cadr dep)))
+  (cond
+   [(string? dep) #f]
+   [(keyword? (cadr dep))
+    (dependency-lookup '#:version dep)]
+   [else (cadr dep)]))
+
+(define (dependency-lookup kw dep)
+  (cond
+   [(string? dep) #f]
+   [(keyword? (cadr dep))
+    (define p (member kw (cdr dep)))
+    (and p (cadr p))]
+   [else #f]))
+
+(define (dependency-this-platform? dep)
+  (define p (dependency-lookup '#:platform dep))
+  (if p
+      (if (symbol? p)
+          (eq? p (system-type))
+          (let ([s (path->string (system-library-subpath #f))])
+            (if (regexp? p)
+                (regexp-match? p s)
+                (equal? p s))))
+      #t))
 
 (define (with-package-lock* read-only? t)
   (define d (pkg-dir))
@@ -892,6 +934,7 @@
                  (filter-not (λ (dep)
                                 (define name (dependency->name dep))
                                 (or (equal? name "racket")
+                                    (not (dependency-this-platform? dep))
                                     (hash-ref simultaneous-installs name #f)
                                     (hash-has-key? db name)))
                              deps)))
@@ -948,8 +991,11 @@
             (filter-map (λ (dep)
                           (define name (dependency->name dep))
                           (define req-vers (dependency->version dep))
+                          (define this-platform? (dependency-this-platform? dep))
                           (define-values (inst-vers* can-try-update?)
                             (cond
+                             [(not this-platform?)
+                              (values #f #f)]
                              [(not req-vers)
                               (values #f #f)]
                              [(equal? name "racket")
@@ -964,7 +1010,8 @@
                               (values (get-metadata metadata-ns (package-directory name)
                                                     'version (lambda () "0.0"))
                                       #t)]))
-                          (define inst-vers (if (and req-vers
+                          (define inst-vers (if (and this-platform?
+                                                     req-vers
                                                      (not (and (string? inst-vers*)
                                                                (valid-version? inst-vers*))))
                                                 (begin
@@ -974,7 +1021,8 @@
                                                    inst-vers*)
                                                   "0.0")
                                                 inst-vers*))
-                          (and req-vers
+                          (and this-platform?
+                               req-vers
                                ((version->integer req-vers) 
                                 . > .
                                 (version->integer inst-vers))

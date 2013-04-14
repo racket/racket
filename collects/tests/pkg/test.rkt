@@ -52,5 +52,6 @@
  "update-deps"
  "update-auto"
  "versions"
+ "platform"
  "raco"
  "indexes")

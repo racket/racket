@@ -140,6 +140,7 @@
                      (file->string "test-pkgs/pkg-test2.zip.CHECKSUM")
                      'source
                      "http://localhost:9999/pkg-test2.zip"))
+
   (hash-set! *index-ht-2* "pkg-test2-snd"
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-test2.zip.CHECKSUM")

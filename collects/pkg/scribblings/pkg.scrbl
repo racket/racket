@@ -632,7 +632,15 @@ Package metadata, including dependencies on other packages, is reported
 by an @filepath{info.rkt} module within the package. This module must be
 implemented in the @racketmodname[setup/infotab] language.
 
-The following fields are used by the package manager:
+For example, a basic @filepath{info.rkt} file might be
+
+@codeblock{
+#lang setup/infotab
+(define version "1.0")
+(define deps (list _package-source-string ...))
+}
+
+The following @filepath{info.rkt} fields are used by the package manager:
 
 @itemlist[
 
@@ -640,9 +648,42 @@ The following fields are used by the package manager:
        @tech{version} of a package is @racket["0.0"].}
 
  @item{@racketidfont{deps} --- a list of dependencies, where each
-       dependency is either a @tech{package source} strings or a list
-       containing a @tech{package source} string and a
-       @tech{version} string.
+       dependency has one of the following forms:
+
+       @itemlist[
+
+         @item{A string for a @tech{package source}.}
+
+         @item{A list of the form
+               @racketblock[(list _package-source-string
+                                  _keyword-and-spec ...)]
+               where each @racket[_keyword-and-spec] has a 
+               distinct keyword in the form
+               @racketgrammar*[#:literals (quote)
+                               [keyword-and-spec 
+                                (code:line '#:version version-string)
+                                (code:line '#:platform platform-spec)]
+                               [platform-spec string symbol regexp]]
+
+               A @racket[_version-string] specifies a lower bound
+               on an acceptable @tech{version} of the needed package.
+
+               A @racket[_platform-spec] indicates that the dependency
+               applies only for platforms with a matching result from
+               @racket[(system-type)] when @racket[_platforms-spec] is
+               a symbol or @racket[(path->string
+               (system-library-subpath #f))] when
+               @racket[_platform-spec] is a regular expression.  For
+               example, platform-specific binaries can be placed into
+               their own packages, with one separate package and one
+               dependency for each supported platform.}
+
+         @item{A list of the form
+               @racketblock[(list _package-source-string _version-string)]
+               which is deprecated and equivalent to
+               @racketblock[(list _package-source-string '#:version _version-string)]}
+        
+        ]
 
        Each elements of the @racketidfont{deps} list determines a
        dependency on the @tech{package} whose name is inferred from
@@ -650,9 +691,6 @@ The following fields are used by the package manager:
        names, not package sources), while the @tech{package source}
        indicates where to get the package if needed to satisfy the
        dependency.
-
-       When provided, a @tech{version} string specifies a lower bound
-       on an acceptable @tech{version} of the package.
 
        Use the package name @racket["racket"] to specify a dependency
        on the version of the Racket installation.}
@@ -666,14 +704,6 @@ The following fields are used by the package manager:
        links).}
 
 ]
-
-For example, a basic @filepath{info.rkt} file might be
-
-@codeblock{
-#lang setup/infotab
-(define version "1.0")
-(define deps (list _package-source-string ...))
-}
 
 @; ----------------------------------------
 
