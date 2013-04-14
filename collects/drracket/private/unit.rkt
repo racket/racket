@@ -3033,7 +3033,15 @@ module browser threading seems wrong.
             (set-color-status! (send definitions-text is-lexer-valid?))
             (send definitions-text end-edit-sequence)
             (send interactions-text end-edit-sequence)
-            (end-container-sequence))))
+            (end-container-sequence)
+            
+            (case (send current-tab get-focus-d/i)
+              [(defs) 
+               (send (car definitions-canvases) focus)
+               (set-text-to-search (send (car definitions-canvases) get-editor))]
+              [(ints)
+               (send (car interactions-canvases) focus)
+               (set-text-to-search (send (car interactions-canvases) get-editor))]))))
       
       (define/pubment (on-tab-change from-tab to-tab)
         (let ([old-enabled (send from-tab get-enabled)]
@@ -3160,14 +3168,7 @@ module browser threading seems wrong.
           (fix-up-canvas-numbers interactions-text vi #t)
           (reflow-container)
           (set-visible-regions definitions-text vd)
-          (set-visible-regions interactions-text vi))
-        (case (send current-tab get-focus-d/i)
-          [(defs) 
-           (send (car definitions-canvases) focus)
-           (set-text-to-search (send (car definitions-canvases) get-editor))]
-          [(ints)
-           (send (car interactions-canvases) focus)
-           (set-text-to-search (send (car interactions-canvases) get-editor))]))
+          (set-visible-regions interactions-text vi)))
       
       (define/private (pathname-equal? p1 p2)
         (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
