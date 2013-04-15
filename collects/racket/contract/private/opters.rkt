@@ -293,12 +293,6 @@
       #'high
       '</c)]))
 
-;; only used by the opters
-(define (flat-contract/predicate? pred)
-  (or (flat-contract? pred)
-      (and (procedure? pred)
-           (procedure-arity-includes? pred 1))))
-
 (define/opter (cons/c opt/i opt/info stx)
   (define (opt/cons-ctc hdp tlp)
     (define optres-hd (opt/i opt/info hdp))
