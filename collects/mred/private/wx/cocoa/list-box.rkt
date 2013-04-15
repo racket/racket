@@ -191,13 +191,32 @@
             [else (cons i (loop (tell #:type _NSInteger v 
                                       indexGreaterThanIndex: #:type _NSInteger i)))])))))))
     
+  (define/private (header-height)
+    (let ([hv (tell content-cocoa headerView)])
+      (if hv
+          (NSSize-height (NSRect-size (tell #:type _NSRect hv frame)))
+          0)))
+
   (define/public (number-of-visible-items)
     (define doc (tell #:type _NSRect cocoa documentVisibleRect))
-    (define h (tell #:type _CGFloat content-cocoa rowHeight))
-    (max 1 (inexact->exact (floor (/ (NSSize-height (NSRect-size doc)) h)))))
+    (define h (+ (tell #:type _CGFloat content-cocoa rowHeight)
+                 (NSSize-height (tell #:type _NSSize content-cocoa intercellSpacing))))
+    (define doc-h (- (NSSize-height (NSRect-size doc))
+                     (header-height)))
+    (define n (floor (/ doc-h h)))
+    (if (rational? n)
+        (max 1 (inexact->exact n))
+        1))
   (define/public (get-first-item)
     (define doc (tell #:type _NSRect cocoa documentVisibleRect))
-    (NSRange-location (tell #:type _NSRange content-cocoa rowsInRect: #:type _NSRect doc)))
+    (define h (header-height))
+    (NSRange-location (tell #:type _NSRange content-cocoa 
+                            rowsInRect: #:type _NSRect 
+                            (if (zero? h)
+                                doc
+                                (make-NSRect (NSRect-origin doc)
+                                             (make-NSSize (NSSize-width (NSRect-size doc))
+                                                          (- (NSSize-height (NSRect-size doc)) h)))))))
 
   (define/public (set-first-visible-item i)
     (define num-vis (number-of-visible-items))
