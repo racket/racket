@@ -15,6 +15,7 @@
          "search.rkt"
          "trace-layout.rkt"
          (only-in "pat-unify.rkt"
+                  dq
                   env-eqs
                   env-dqs))
 
@@ -63,10 +64,17 @@
     (when trace
       (show-trace-frame trace))))
 
+;(define-struct gen-trace (tr-loc clause input state bound env) #:prefab)
+#;
+(vector 'info 
+        "generation-log: yes" 
+        (gen-trace '() (clause '(list (list (list))) '() '()'yes) '(list (list (name l_0 (nt l)))) #t 5 (env '#hash() '())) 
+        'generation-log)
+
 (define (format-trace tr)
   (map (match-lambda
              [(vector 'info clause-name
-                      (gen-trace tr-loc clause input state bound env))
+                      (gen-trace tr-loc clause input state bound env) 'generation-log)
               (list (reverse tr-loc) clause-name state input (clause-head-pat clause) bound 0 env)])
            tr))
 
@@ -115,7 +123,7 @@
       [`((,loc ,name ,state ,term ,body ,bound ,depth ,env) ,remaining-traces ...)
        (define atts (attributes name (gensym) (positive? bound) term body (coords #f #f) #f env))
        (loop (insert-tree-atts loc atts tree) remaining-traces)]
-      [else
+      [_
        tree])))
 
 (define (trace-step-loc t-step)
@@ -154,7 +162,7 @@
        (insert-node is node (vector-ref (gen-tree-children tree) i))]
       ['() ;; initial tree (or replacement)
        (set! tree-root node)]
-      [else (error "tree didn't have expected generation pattern" loc tree)]))
+      [_ (error "tree didn't have expected generation pattern" loc tree)]))
   (insert-node full-loc node tree-root)
   tree-root)
 
@@ -170,7 +178,7 @@
       ['() t]
       [`(,i ,is ...)
        (recur (vector-ref (gen-tree-children t) i) is)]
-      [else #f])))
+      [_ #f])))
 
 (define (remove-tree-node loc tree-root)
   (let recur ([t tree-root]
@@ -191,7 +199,7 @@
   (match node
     [(gen-tree loc as cs)
      (set-attributes-focus! as #t)]
-    [else
+    [_
      (void)]))
 
 (define (all-trees trace)
@@ -224,7 +232,7 @@
        (when (> (add1 (length loc)) max-d)
          (set! max-d (add1 (length loc))))
        (loop remaining-traces)]
-      [else max-d])))
+      [_ max-d])))
 
 (define (raw-locs trace)
   (map (match-lambda
@@ -302,7 +310,7 @@
          (for/list ([s subterms]) (prettify-pat s))]
         [`(cstr (,nts ...) ,term)
          `(cstr (,@nts) ,(prettify-pat term))]
-        [else term]))
+        [_ term]))
     
     ;; TODO: "garbage collect" vars,
     ;; treating rule and input as roots
@@ -316,7 +324,7 @@
          (for/list ([s subterms]) (format-pattern s eqs))]
         [`(cstr (,nts ...) ,p)
          `(cstr (,@nts) ,(format-pattern p eqs))]
-        [else p]))
+        [_ p]))
     
     (define/public (update-focus x y-index)
       (defocus)
@@ -330,7 +338,7 @@
         (match t-node
           [(gen-tree loc (attributes p b-f b l l2 (coords x y) f e) cs)
            x]
-          [else +inf.0]))
+          [_ +inf.0]))
       (define closest-node
         (let recur ([t tree]
                     [d (sub1 y-index)])
@@ -352,7 +360,7 @@
         [(gen-tree loc as children)
          (set-attributes-focus! as #t)
          as]
-        [else #f]))
+        [_ #f]))
     
     (define/public (focus-coords)
       (let recur ([t tree])
@@ -382,15 +390,18 @@
                             (match (hash-ref eqs k)
                               [(lvar next) (symbol->string next)]
                               [`(name ,next ,_) (symbol->string next)]
-                              [else " - "]) "\t = "
+                              [_ " - "]) "\t = "
                             (string-replace (pretty-format (format-pattern (hash-ref eqs k) eqs)) "\n" "\n\t   \t   ")))
            "\n")
           "\n\n"
           (string-join
-           (for/list ([dq (in-list (env-dqs e))])
-             (string-append (format "~s" (first dq)) " ≠\n\t"
-                            (format "~s" (second dq))))
-           "\n"))]))
+           (for/list ([a-dq (in-list (env-dqs e))])
+             (match a-dq
+               [(dq ps dq-e)
+                    (string-append "∀ " (format "~s" ps)
+                                   (format "~s" (first dq-e)) " ≠\n\t"
+                                   (format "~s" (second dq-e)))])
+           "\n")))]))
     
     (define/private (defocus)
       (let recur ([t tree])
@@ -410,7 +421,7 @@
          (define atts (attributes name (gensym) (positive? bound) term body (coords #f #f) #t env))
          (set! last-atts atts)
          (set! tree (insert-tree-atts loc atts tree))]
-        [else (error "Trace had incorrect format, failed to update tree")])
+        [_ (error "Trace had incorrect format, failed to update tree")])
       (add-layout-info tree locs->coords))
     
     ))
@@ -482,7 +493,9 @@
       (update-scroll-y y-index))
     
     (define rescale-factor (/ w (t-width)))
-    (define scale-factor (expt rescale-factor (/ 1 (depth))))
+    (define scale-factor (if (= 0 (depth))
+                             1
+                             (expt rescale-factor (/ 1 (depth)))))
     
     (rescale rescale-factor)
     (define canvas (new tree-canvas% [parent this]
@@ -529,7 +542,7 @@
                  (send trace take-step)
                  (update/all-steps)
                  (values #f #f)]
-                [else
+                [_
                  (values #f #f)]))
             (when (and d-x d-y)
               (animate-transition d-x d-y))))
@@ -545,13 +558,13 @@
          (- pos (/ SCROLL-RANGE 20))]
         ['page-down
          (+ pos (/ SCROLL-RANGE 20))]
-        [else pos]))
+        [_ pos]))
     
     (define/private (update-scroll-x x)
       (send canvas set-scroll-pos 'horizontal (+ (* (- x) (/ SCROLL-RANGE (t-width))) 
                                                  (/ SCROLL-RANGE 2))))
     (define/private (update-scroll-y y-index)
-      (send canvas set-scroll-pos 'vertical (max 0 (* (/ y-index (- (depth))) SCROLL-RANGE))))
+      (send canvas set-scroll-pos 'vertical (max 0 (* (/ y-index (- (max 1 (depth)))) SCROLL-RANGE))))
                                           
     (define dc (send canvas get-dc))
     
@@ -663,7 +676,7 @@
     (define/private (animate-transition ∆x ∆y)
       (define scaling (expt scale-factor ∆y))
       (define trans-steps (inexact->exact (ceiling (max (abs (/ (* ∆x 40) (t-width)))
-                                                        (abs (/ (* ∆y 40) (depth)))
+                                                        (if (= 0 (depth)) 0 (abs (/ (* ∆y 40) (depth))))
                                                         1))))
       (define dx (/ ∆x trans-steps))
       (define dy (/ ∆y trans-steps))

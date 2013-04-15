@@ -115,14 +115,14 @@
                [`(cstr (,nts ...) ,p*)
                 (and (for/and ([n nts]) (n-t? n))
                      (loop p*))]
-               [else #f]))]))))
+               [_ #f]))]))))
 
 (define (pat? p) (pat-or-pat*? #f p))
 (define (pat*? p) (pat-or-pat*? #t p))
 (define pat*-clause-p?s (append (list
-                                 (let ([bound-name? (λ (p) (match p [`(name ,id ,(bound)) #t] [else #f]))])
+                                 (let ([bound-name? (λ (p) (match p [`(name ,id ,(bound)) #t] [_ #f]))])
                                    bound-name?)
-                                 (let ([cstr? (λ (p) (match p [`(cstr (,nts ...) ,pat) #t] [else #f]))])
+                                 (let ([cstr? (λ (p) (match p [`(cstr (,nts ...) ,pat) #t] [_ #f]))])
                                    cstr?))
                                 (extracted-clauses->fns)))
 
@@ -130,7 +130,7 @@
   (match b
     [`(name ,(? var? name) ,(bound))
      #t]
-    [else 
+    [_ 
      #f]))
 
 (define eqs/c
@@ -203,7 +203,7 @@
          [#t 
           (env (hash/mut->imm bn-eqs)
                (env-dqs e))]
-         [else
+         [_
           (env (hash/mut->imm bn-eqs)
                (cons new-dq 
                      (env-dqs e)))])])))
@@ -242,7 +242,7 @@
            `(list ,@(for/list ([p ps]) (recur p)))]
           [`(cstr (,cs ...) p)
            (recur p)]
-          [else
+          [_
            (unless (groundable? p)
              (error resolve-no-nts/pat 
                     "non-groundable pat at internal pattern position: ~s" p))
@@ -255,7 +255,7 @@
     [(? predef-pat? _) #f]
     [`(cstr ,_ ,p)
      (groundable? p)]
-    [else #t]))
+    [_ #t]))
            
                 
 (define (hash/mut->imm h0)
@@ -287,7 +287,7 @@
             (and new-dq
                  (match new-dq
                    [#t (loop ok rest)]
-                   [else (loop (cons new-dq ok) rest)])))])])))
+                   [_ (loop (cons new-dq ok) rest)])))])])))
 
 ;; disunfy* pat* pat* eqs lang -> dq or boolean (dq is a pat*)
 (define (disunify* params u* t* eqs L)
@@ -302,7 +302,7 @@
          (match new-dq
            [`((list) (list))
             #f]
-           [else
+           [_
             (dq new-ps new-dq)])]))))
 
 (define (param-elim params unquantified-dq)             
@@ -359,7 +359,7 @@
                          (hash-set! e (lvar id) (lvar id-new)))]
                       [_ (void)])
                     next]
-                   [else ;; some pat* (res is already bound)
+                   [_ ;; some pat* (res is already bound)
                     (and/fail (not-failed? (unify-update* id b-pat res e L))
                               `(name ,id ,(bound)))])))]
     [`(list ,pats ...)
@@ -413,7 +413,7 @@
                            ,p)]
                    [`(cstr ,nts2 ,new-p)
                     `(cstr ,(merge-ids/sorted nts nts2) ,new-p)]
-                   [else
+                   [_
                     `(cstr ,nts ,res)])))]
     [(_ `(cstr ,nts ,p))
      (unify* `(cstr ,nts ,p) t e L)]
@@ -502,7 +502,7 @@
        [`(name ,next-id ,(bound))
         (hash-set! env (lvar id) (lvar next-id))
         (resolve `(name ,next-id ,(bound)) env)]
-       [else
+       [_
         `(name ,id-rep ,(bound))])]
     [_ pat]))
 
@@ -530,7 +530,7 @@
     ;; or actual values for lvars
     [(? (λ (s) (predef-pat? s)))
      p*]
-    [else
+    [_
      #f]))
 
 ;; occurs* : name (pat* or lvar] -> bool
@@ -553,7 +553,7 @@
          (occurs?* name (hash-ref e (lvar id) (uninstantiated)) e L))]
     [`(cstr ,(lvar _))
      (error 'occurs?* "rogue lvar: ~s\n" p)]
-    [else #f]))
+    [_ #f]))
 
 
 (define (instantiate* id pat e L)
@@ -564,7 +564,7 @@
                (not (occurs?* id (lvar next-id) e L))
                (hash-set! e (lvar id) (lvar next-id))
                `(name ,next-id ,(bound)))]
-    [else
+    [_
      (match pat
        [`(name ,id-2 ,(bound))
         (cond
@@ -579,7 +579,7 @@
                      (unless (ground-pat-eq? id-pat id-2-pat)
                        (hash-set! (new-eqs) (lvar id-2) (lvar id)))
                      `(name ,id ,(bound)))])]
-       [else
+       [_
         (and/fail (not-failed? (unify-update* id id-pat pat e L))
                   `(name ,id ,(bound)))])]))
 
@@ -669,6 +669,6 @@
   (match res
     [(lvar new-id)
      (lookup new-id env)]
-    [else
+    [_
      (values (lvar id) res)]))
 

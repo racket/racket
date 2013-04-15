@@ -79,7 +79,7 @@
      (match rfs
        [(cons (fail-cont _1 _2 (? (λ (b) (< b 0)) bound)) rest)
         (loop rest)]
-       [else
+       [_
         rfs]))))
 
 (define (shuffle-fails fs)
@@ -93,7 +93,7 @@
   (match fs
     [(list (fail-cont e f b) rest ...)
      (choose-rule e f rest)]
-    [else (values #f fs)]))
+    [_ (values #f fs)]))
 
 (define (choose-rule env fringe fail)
   (cond

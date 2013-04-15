@@ -43,7 +43,7 @@
            (okk (ok))]
           [(? predef-pat? _)
            (okk (ok))]
-          [else p]))))
+          [_ p]))))
   ;; do this first since the term environment (term-e) is needed for the dqs
   (define res-term
     (let recur ([p pat])
@@ -71,7 +71,7 @@
               (and/fail (for/and ([nt (remove nt-pat nts)])
                           ((get-matcher nt) term))
                         term))]
-           [else
+           [_
             (define term (recur pat))
             (and/fail (for/and ([nt nts])
                         ((get-matcher nt) term))
@@ -84,7 +84,7 @@
                       (let ([res (recur p)])
                         (unless (not-failed? res) (fail (unif-fail)))
                         res))))]
-        [else
+        [_
          (make-term p lang)])))
   (and/fail 
    (not-failed? res-term)
@@ -95,7 +95,7 @@
         (or (ok? grook)
             (for/and ([nt nts])
               ((get-matcher nt) grook)))]
-       [else #t]))
+       [_ #t]))
    (check-dqs (remove-empty-dqs (env-dqs full-env)) term-e lang eqs)
    res-term))
 
@@ -145,7 +145,7 @@
           (fail (not-ground))]
          [`(,stuff ...) ;; here it's a fully instanatiated list
           `(,@stuff)]
-         [else
+         [_
           (let-values ([(p bs) (gen-term p lang 2)])
            p)])))))
 
@@ -197,6 +197,6 @@
   (match res
     [(lvar new-id)
      (lookup new-id env)]
-    [else
+    [_
      (values (lvar id) res)]))
 
