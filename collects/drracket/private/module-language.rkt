@@ -1072,9 +1072,17 @@
         (update-little-dot))
       
       (define dep-paths (set))
-      (define/public (set-dep-paths d) (set! dep-paths d))
-      (define/public (set-dirty-if-dep path) 
-        (when (set-member? dep-paths path)
+      (define error-dep-paths (set))
+      (define/public (set-dep-paths d error?)
+        (cond
+          [error?
+           (set! error-dep-paths d)]
+          [else
+           (set! dep-paths d)
+           (set! error-dep-paths (set))]))
+      (define/public (set-dirty-if-dep path)
+        (when (or (set-member? dep-paths path)
+                  (set-member? error-dep-paths path))
           (oc-set-dirty this)))
       
       (super-new)))
@@ -1951,7 +1959,7 @@
                 val))))
          
          (send running-tab set-oc-status (clean #f #f '()))
-         (send running-tab set-dep-paths (list->set (vector-ref res 2)))]
+         (send running-tab set-dep-paths (list->set (vector-ref res 2)) #f)]
         [else
          (line-of-interest)
          (send running-tab set-oc-status
@@ -1960,7 +1968,7 @@
                           sc-abnormal-termination
                           (vector-ref res 1))
                       (vector-ref res 2)))
-         (send running-tab set-dep-paths (list->set (vector-ref res 3)))])
+         (send running-tab set-dep-paths (list->set (vector-ref res 3)) #t)])
       (oc-maybe-start-something)))
   
   (define/oc-log (oc-status-message sym str)
