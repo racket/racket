@@ -13744,6 +13744,28 @@ so that propagation occurs.
                       +
                       'pos 'neg)
             1 "a")))
+  
+  (ctest '("the range of" "the 2nd case of")
+         extract-context-lines
+         (λ ()
+           ((contract (case-> (-> real? real? real?)
+                              (-> real? (values real? real?)))
+                      (case-lambda
+                        [(x y) 1]
+                        [(x) 1])
+                      'pos 'neg)
+            1)))
+  
+  (ctest '("the domain of" "the 2nd case of")
+         extract-context-lines
+         (λ ()
+           ((contract (case-> (-> real? real? real?)
+                              (-> real? (values real? real?)))
+                      (case-lambda
+                        [(x y) 1]
+                        [(x) 1])
+                      'pos 'neg)
+            #f)))
 
 
   (let* ([blame-pos (contract-eval '(make-blame (srcloc #f #f #f #f #f) #f (λ () 'integer?) 'positive 'negative #t))]

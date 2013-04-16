@@ -1540,7 +1540,7 @@ v4 todo:
     [_
      (raise-syntax-error #f "expected ->" stx case)]))
 
-(define-for-syntax (parse-out-case stx case)
+(define-for-syntax (parse-out-case stx case n)
   (let-values ([(doms rst rng) (separate-out-doms/rst/rng stx case)])
     (with-syntax ([(dom-proj-x  ...) (generate-temporaries doms)]
                   [(rst-proj-x) (generate-temporaries '(rest-proj-x))]
@@ -1566,7 +1566,8 @@ v4 todo:
                                               [args 
                                                (bad-number-of-results blame f 
                                                                       #,(length (syntax->list #'(rng-id ...)))
-                                                                      args)]))]
+                                                                      args
+                                                                      #,n)]))]
                       [rng-length (length (syntax->list rng))])
                   (if rst
                       (check-tail-contract #'(rng-proj-x ...) rng-checkers
@@ -1608,7 +1609,9 @@ v4 todo:
                         (rng-proj-x ...)
                         formals
                         body) ...)
-                      (map (λ (x) (parse-out-case stx x)) (syntax->list #'(cases ...)))]
+                      (for/list ([x (in-list (syntax->list #'(cases ...)))]
+                                 [n (in-naturals)])
+                        (parse-out-case stx x n))]
                      [mctc? (and (syntax-parameter-value #'method-contract?) #t)])
          #`(syntax-parameterize 
             ((making-a-method #f)) 
@@ -1657,7 +1660,7 @@ v4 todo:
 
 (define (case->-proj wrapper)
   (λ (ctc)
-    (define dom-ctcs (map contract-projection (get-case->-dom-ctcs ctc)))
+    (define dom-ctcs+case-nums (get-case->-dom-ctcs+case-nums ctc))
     (define rng-ctcs (let ([rngs (get-case->-rng-ctcs ctc)])
                        (and rngs (map contract-projection rngs))))
     (define rst-ctcs (base-case->-rst-ctcs ctc))
@@ -1665,7 +1668,14 @@ v4 todo:
     (λ (blame)
       (define dom-blame (blame-add-context blame "the domain of" #:swap? #t))
       (define rng-blame (blame-add-context blame "the range of"))
-      (define projs (append (map (λ (f) (f dom-blame)) dom-ctcs)
+      (define projs (append (map (λ (f) ((cdr f) 
+                                         (blame-add-context 
+                                          (blame-add-context 
+                                           blame 
+                                           (format "the ~a case of" (n->th (+ (car f) 1)))) 
+                                          "the domain of" 
+                                          #:swap? #t)))
+                                 dom-ctcs+case-nums)
                             (map (λ (f) (f rng-blame)) rng-ctcs)))
       (define (chk val mtd?) 
         (cond
@@ -1738,14 +1748,18 @@ v4 todo:
         (make-chaperone-case-> dom-ctcs rst-ctcs rng-ctcs specs mctc? wrapper)
         (make-impersonator-case-> dom-ctcs rst-ctcs rng-ctcs specs mctc? wrapper))))
 
-(define (get-case->-dom-ctcs ctc)
+(define (get-case->-dom-ctcs+case-nums ctc)
   (for/fold ([acc '()])
       ([doms (in-list (base-case->-dom-ctcs ctc))]
-       [rst  (in-list (base-case->-rst-ctcs ctc))])
+       [rst  (in-list (base-case->-rst-ctcs ctc))]
+       [i (in-naturals)])
+    (define dom+case-nums 
+      (map (λ (dom) (cons i (contract-projection dom))) doms))
     (append acc
             (if rst
-                (append doms (list rst))
-                doms))))
+                (append dom+case-nums
+                        (list (cons i (contract-projection rst))))
+                dom+case-nums))))
 
 (define (get-case->-rng-ctcs ctc)
   (for/fold ([acc '()])
@@ -1977,9 +1991,12 @@ v4 todo:
     [else
      passes?]))
 
-(define (bad-number-of-results blame val rng-len args)
+(define (bad-number-of-results blame val rng-len args [case-context #f])
   (define num-values (length args))
-  (raise-blame-error (blame-add-context blame "the range of")
+  (define blame-case (if case-context 
+                         (blame-add-context blame (format "the ~a case of" (n->th (+ case-context 1))))
+                         blame))
+    (raise-blame-error (blame-add-context blame-case "the range of")
                      val 
                      "expected ~a value~a, returned ~a value~a"
                      rng-len (if (= rng-len 1) "" "s")
