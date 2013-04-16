@@ -5,6 +5,7 @@
          compiler/cm
          setup/dirs
          planet/config
+         pkg/lib
          (prefix-in *** '#%foreign) ;; just to make sure it is here
          )
 
@@ -86,7 +87,10 @@
                         (list (CACHE-DIR) cd)
                         (list (CACHE-DIR)))])
       (manager-skip-file-handler
-       (λ (p) (file-stamp-in-paths p no-dirs))))))
+       (λ (p) (or (file-stamp-in-paths p no-dirs)
+                  (let ([pkg (path->pkg p)])
+                    (and pkg
+                         (file-stamp-in-paths p (list (pkg-directory pkg)))))))))))
 
 (define (transform-module filename stx raise-hopeless-syntax-error)
   (define-values (mod name lang body)
