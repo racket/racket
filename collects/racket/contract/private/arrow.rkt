@@ -1561,7 +1561,12 @@ v4 todo:
            (this-parameter ... dom-formals ... . #,(if rst #'rst-formal '()))
            #,(cond
                [rng
-                (let ([rng-checkers (list #'(λ (rng-id ...) (values/drop (rng-proj-x rng-id) ...)))]
+                (let ([rng-checkers (list #`(case-lambda
+                                              [(rng-id ...) (values/drop (rng-proj-x rng-id) ...)]
+                                              [args 
+                                               (bad-number-of-results blame f 
+                                                                      #,(length (syntax->list #'(rng-id ...)))
+                                                                      args)]))]
                       [rng-length (length (syntax->list rng))])
                   (if rst
                       (check-tail-contract #'(rng-proj-x ...) rng-checkers

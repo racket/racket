@@ -3577,6 +3577,16 @@
             (f 1)
             (f 'x (open-input-string (format "~s" "string")))))
    (list #\a #f "xstring"))
+  
+  (test/pos-blame
+   'contract-case->15
+   '((contract (case-> (-> real? real? real?)
+                       (-> real? (values real? real?)))
+               (case-lambda
+                 [(x y) 1]
+                 [(x) 1])
+               'pos 'neg)
+     1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                                                        ;;
