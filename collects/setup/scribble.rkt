@@ -149,8 +149,9 @@
                            infos)])
            (and (not (memq #f infos)) infos))))
   (define ((get-docs main-dirs) i rec)
-    (let ([s (validate-scribblings-infos (i 'scribblings))]
-          [dir (directory-record-path rec)])
+    (let* ([pre-s (and i (i 'scribblings))]
+           [s (validate-scribblings-infos pre-s)]
+           [dir (directory-record-path rec)])
       (if s
           (map (lambda (d)
                  (let* ([flags (cadr d)]
@@ -177,7 +178,7 @@
                s)
           (begin (setup-printf
                   "WARNING"
-                  "bad 'scribblings info: ~e from: ~e" (i 'scribblings) dir)
+                  "bad 'scribblings info: ~e from: ~e" pre-s dir)
                  null))))
   (log-setup-info "getting documents")
   (define docs
