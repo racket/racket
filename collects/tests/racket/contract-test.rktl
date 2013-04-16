@@ -8742,18 +8742,44 @@
                           'neg)])
       (send (new cls%) m 3 #t)))
   
-  (contract-error-test
-   'class/c-tl-message
-   '((contract (-> (class/c (callback (->m boolean? any)))
-                   any)
-               (λ (c%) (send (new c%) callback 1))
-               'pos 'neg)
-     (class object%
-       (super-new)
-       (define/public (callback x) 3)))
-   (λ (exn) (and (regexp-match? #rx"callback: contract violation" (exn-message exn))
-                 (regexp-match? #rx"expected: boolean[?]" (exn-message exn))
-                 (regexp-match? #rx"given: 1" (exn-message exn)))))
+  (let ([expected-given?
+         (λ (exn) (and (regexp-match? #rx"callback: contract violation" (exn-message exn))
+                       (regexp-match? #rx"expected: boolean[?]" (exn-message exn))
+                       (regexp-match? #rx"given: 1" (exn-message exn))))]
+        [promised-produced?
+         (λ (exn) (and (regexp-match? #rx"callback: broke its contract" (exn-message exn))
+                       (regexp-match? #rx"promised: boolean[?]" (exn-message exn))
+                       (regexp-match? #rx"produced: 1" (exn-message exn))))])
+    (contract-error-test
+     'blame-important1
+     '(send (new (contract (class/c [callback (->m boolean? void)])
+                           (class object%
+                             (super-new)
+                             (define/public (callback n) (void)))
+                           'pos
+                           'neg))
+            callback 1)
+     expected-given?)
+    (contract-error-test
+     'blame-important2
+     '((contract (-> (class/c (callback (->m boolean? any)))
+                     any)
+                 (λ (c%) (send (new c%) callback 1))
+                 'pos 'neg)
+       (class object%
+         (super-new)
+         (define/public (callback x) 3)))
+     expected-given?)
+    (contract-error-test
+     'blame-important3
+     '((contract (-> (class/c (callback (->m (-> boolean? void?) any)))
+                     any)
+                 (λ (c%) (send (new c%) callback void))
+                 'pos 'neg)
+       (class object%
+         (super-new)
+         (define/public (callback f) (f 1))))
+     promised-produced?))
                  
 
 ;

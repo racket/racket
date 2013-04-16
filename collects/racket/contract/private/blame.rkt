@@ -183,11 +183,11 @@
                 new-so-far
                 (regexp-match #rx" $" nxt))]))]))
 
-(define (blame/important-original? blame)
-  (define i (blame-important blame))
+(define (blame/important-original? blme)
+  (define i (blame-important blme))
   (cond
-    [i (important-sense-swapped? i)]
-    [else (blame-original? blame)]))
+    [i (equal? (important-sense-swapped? i) (blame-original? blme))]
+    [else (blame-original? blme)]))
 
 (define (default-blame-format blme x custom-message)
   (define source-message (source-location->string (blame-source blme)))
@@ -207,21 +207,19 @@
                       #f
                       (format "  at: ~a" source-message)))
   
-  (define (self-or-not which-way?) 
-    (if which-way?
+  (define self-or-not
+    (if (blame/important-original? blme)
         "broke its contract"
         "contract violation"))
   
   (define start-of-message
     (cond
       [(blame-important blme)
-       (format "~a: ~a" 
-               (important-name (blame-important blme))
-               (self-or-not (important-sense-swapped? (blame-important blme))))]
+       (format "~a: ~a" (important-name (blame-important blme)) self-or-not)]
       [(blame-value blme)
-       (format "~a: ~a" (blame-value blme) (self-or-not (blame-original? blme)))]
+       (format "~a: ~a" (blame-value blme) self-or-not)]
       [else
-       (format "~a:" (self-or-not (blame-original? blme)))]))
+       (format "~a:" self-or-not)]))
   
   (define blame-parties (blame-positive blme))
   (define blaming-line
