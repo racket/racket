@@ -21,12 +21,14 @@ commands are built.}
 )]{
 
 Evaluates the @racket[body]s while holding a lock to prevent
-concurrent modification to the package database. Use the
-@racket[with-pkg-lock/read-only] form for read-only access.
+concurrent modification to the package database for the current
+@tech{package scope}. Use the @racket[with-pkg-lock/read-only] form
+for read-only access.  The lock is reentrant but not upgradable from
+read-only.
 
 Use these form to wrap uses of functions from @racketmodname[pkg/lib]
-that read or modify the package database.}
-
+that are documented to require the lock. Other functions from
+@racketmodname[pkg/lib] take the lock as needed.}
 
 @deftogether[(
 @defparam[current-pkg-scope scope (or/c 'installation 'user 'shared)]
@@ -76,7 +78,12 @@ A structure type that is used to report installed-package information.}
 @defproc[(pkg-directory [name string?]) path-string?]{
 
 Returns the directory that holds the installation of the installed
-package @racket[name].}
+(in any scope) package @racket[name].}
+
+
+@defproc[(path->pkg [path path-string?]) (or/c string? #f)]{
+
+Returns the installed package containing @racket[path], if any.}
 
 
 @defproc[(default-pkg-scope) (or/c 'installation 'user 'shared)]{
@@ -131,7 +138,10 @@ needed.}
 @defproc[(pkg-config [set? boolean?] [keys/vals list?])
          void?]{
 
-Implements the @racket[config] command.}
+Implements the @racket[config] command.
+
+The package lock must be held (allowing writes if @racket[set?] is true); see
+@racket[with-pkg-lock].}
 
 
 @defproc[(pkg-create [format (or/c 'zip 'tgz 'plt 'MANIFEST)]
@@ -151,7 +161,9 @@ Implements the @racket[create] command.}
 
 Implements the @racket[install] command. The result indicates which
 collections should be setup via @exec{raco setup}: @racket[#f] means
-all, and a list means only the indicated collections.}
+all, and a list means only the indicated collections.
+
+The package lock must be held; see @racket[with-pkg-lock].}
 
 
 @defproc[(pkg-update      [names (listof string?)]
@@ -163,7 +175,9 @@ all, and a list means only the indicated collections.}
         (or/c #f (listof (or/c path-string? (non-empty-listof path-string?))))]{
 
 Implements the @racket[update] command. The result is the same as for
-@racket[install-pkgs].}
+@racket[install-pkgs].
+
+The package lock must be held; see @racket[with-pkg-lock].}
 
 
 @defproc[(pkg-remove      [names (listof string?)]
@@ -171,7 +185,9 @@ Implements the @racket[update] command. The result is the same as for
                           [#:force? force? boolean? #f])
          void?]{
 
-Implements the @racket[remove] command.}
+Implements the @racket[remove] command.
+
+The package lock must be held; see @racket[with-pkg-lock].}
 
 
 @defproc[(pkg-show [indent string?]
@@ -180,7 +196,10 @@ Implements the @racket[remove] command.}
 
 Implements the @racket[show] command for a single package scope,
 printing to the current output port. See also
-@racket[installed-pkg-names] and @racket[installed-pkg-table].}
+@racket[installed-pkg-names] and @racket[installed-pkg-table].
+
+The package lock must be held to allow reads; see
+@racket[with-pkg-lock/read-only].}
 
 
 @defproc[(pkg-index-show [names (listof string?)]

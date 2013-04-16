@@ -108,13 +108,10 @@
        [l
         (for-each do-test l)])]
     [packages?
-     (unless (for*/or ([scope (in-list '(installation user shared))])
-               (define pd
-                 (parameterize ([current-pkg-scope scope])
-                   (with-handlers ([exn:fail? (λ (x) #f)])
-                     (pkg-directory e))))
-               (and pd (do-test pd)))
-       (error 'test "Package ~e is not installed" e))]
+     (define pd (pkg-directory e))
+     (if pd
+         (do-test pd)
+         (error 'test "Package ~e is not installed" e))]
     [else
      (do-test e)]))
 

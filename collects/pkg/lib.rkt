@@ -232,24 +232,35 @@
                 (equal? p s))))
       #t))
 
+(define pkg-lock-held (make-parameter #f))
+
 (define (with-pkg-lock* read-only? t)
-  (define d (pkg-dir))
-  (unless read-only? (make-directory* d))
-  (if (directory-exists? d)
-      ;; If the directory exists, assume that a lock file is
-      ;; available or creatable:
-      (call-with-file-lock/timeout
-       #f (if read-only? 'shared 'exclusive)
-       t
-       (λ () (pkg-error  (~a "could not acquire package lock\n"
-                             "  lock file: ~a")
-                         (pkg-lock-file)))
-       #:lock-file (pkg-lock-file))
-      ;; Directory does not exist; we must be in read-only mode.
-      ;; Run `t' under the claim that no database is available
-      ;; (in case the database is created concurrently):
-      (parameterize ([current-no-pkg-db #t])
-        (t))))
+  (define mode (if read-only? 'shared 'exclusive))
+  (define held-mode (pkg-lock-held))
+  (if (or (eq? mode held-mode)
+          (eq? 'exclusive held-mode))
+      (t)
+      (let ([d (pkg-dir)])
+        (unless read-only? (make-directory* d))
+        (if (directory-exists? d)
+            ;; If the directory exists, assume that a lock file is
+            ;; available or creatable:
+            (call-with-file-lock/timeout
+             #f 
+             mode
+             (lambda ()
+               (parameterize ([pkg-lock-held mode])
+                 (t)))
+             (λ () (pkg-error  (~a "could not acquire package lock\n"
+                                   "  lock file: ~a")
+                               (pkg-lock-file)))
+             #:lock-file (pkg-lock-file))
+            ;; Directory does not exist; we must be in read-only mode.
+            ;; Run `t' under the claim that no database is available
+            ;; (in case the database is created concurrently):
+            (parameterize ([current-no-pkg-db #t])
+              (parameterize ([pkg-lock-held mode])
+                (t)))))))
 (define-syntax-rule (with-pkg-lock e ...)
   (with-pkg-lock* #f (λ () e ...)))
 (define-syntax-rule (with-pkg-lock/read-only e ...)
@@ -269,7 +280,8 @@
                        "https://planet-compat.racket-lang.org")]))))
 
 (define (pkg-config-indexes)
-  (read-pkg-cfg/def "indexes"))
+  (with-pkg-lock/read-only
+   (read-pkg-cfg/def "indexes")))
 
 (define (pkg-indexes)
   (or (current-pkg-indexes)
@@ -449,8 +461,9 @@
     [else 'user]))
 (define (default-pkg-scope-as-string)
   (parameterize ([current-pkg-scope 'installation])
-    (define cfg (read-pkg-cfg))
-    (hash-ref cfg "default-scope" "user")))
+    (with-pkg-lock/read-only
+     (define cfg (read-pkg-cfg))
+     (hash-ref cfg "default-scope" "user"))))
 
 (struct pkg-info (orig-pkg checksum auto?) #:prefab)
 (struct install-info (name orig-pkg directory clean? checksum))
@@ -463,13 +476,48 @@
                [checksum op]))
 
 (define (pkg-directory pkg-name)
-  (match-define (pkg-info orig-pkg checksum _)
-                (package-info pkg-name))
-  (match orig-pkg
-    [`(link ,orig-pkg-dir)
-     orig-pkg-dir]
-    [_
-     (build-path (pkg-installed-dir) pkg-name)]))
+  (for/or ([scope (in-list '(user shared installation))])
+    (parameterize ([current-pkg-scope scope])
+      (with-pkg-lock/read-only
+       (define info (package-info pkg-name #f))
+       (and info
+            (let ()
+              (match-define (pkg-info orig-pkg checksum _) info)
+              (match orig-pkg
+                [`(link ,orig-pkg-dir)
+                 orig-pkg-dir]
+                [_
+                 (build-path (pkg-installed-dir) pkg-name)])))))))
+
+(define (path->pkg given-p)
+  (define (explode p)
+    (explode-path
+     (normal-case-path
+      (simple-form-path p))))
+  (define (sub-path? < p d)
+    (and ((length d) . <= . (length p))
+         (for/and ([de (in-list d)]
+                   [pe (in-list p)])
+           (equal? de pe))))
+  (define p (explode given-p))
+  (for/or ([scope (in-list '(user shared installation))])
+    (parameterize ([current-pkg-scope scope])
+      (with-pkg-lock/read-only
+       (define d (explode (pkg-installed-dir)))
+       (cond
+        [(sub-path? < p d)
+         ;; Under the installation mode's package directory.
+         ;; We assume that no one else writes there, so the
+         ;; next path element is the package name.
+         (path-element->string (list-ref p (length d)))]
+        [else
+         ;; Maybe it's a linked package
+         (for/or ([(k v) (in-hash (read-pkg-db))])
+           (match (pkg-info-orig-pkg v)
+             [`(link ,orig-pkg-dir)
+              (and (sub-path? <= p (explode orig-pkg-dir))
+                   k)]
+             [else #f]))])))))
 
 (define (remove-package pkg-name)
   (printf "Removing ~a\n" pkg-name)
@@ -1666,6 +1714,8 @@
    (parameter/c (or/c #f (listof url?)))]
   [pkg-directory
    (-> string? path-string?)]
+  [path->pkg
+   (-> path-string? (or/c #f string?))]
   [pkg-desc 
    (-> string? 
        (or/c #f 'file 'dir 'link 'file-url 'dir-url 'github 'name) 

@@ -83,6 +83,9 @@
       $ "raco pkg install --link test-pkgs/pkg-test1-linking"
       $ "racket -e '(require pkg-test1)'"
       $ "racket -e '(require pkg-test1/a)'" =exit> 1
+      $ "racket -e '(require pkg/lib)' -e '(path->pkg \"test-pkgs/pkg-test1-linking\")'" =stdout> "\"pkg-test1-linking\"\n"
+      $ "racket -e '(require pkg/lib)' -e '(path->pkg \"test-pkgs/pkg-test1-linking/README\")'" =stdout> "\"pkg-test1-linking\"\n"
+      $ "racket -e '(require pkg/lib)' -e '(path->pkg \"test-pkgs\")'" =stdout> "#f\n"
       $ "cp test-pkgs/pkg-test1-staging/a.rkt test-pkgs/pkg-test1-linking/pkg-test1/a.rkt"
       $ "racket -e '(require pkg-test1/a)'"
       $ "rm -f test-pkgs/pkg-test1-linking/pkg-test1/a.rkt"
@@ -116,5 +119,8 @@
      $ "raco pkg install --deps search-auto pkg-test2-snd"
      $ "racket -e '(require pkg-test1)'"
      $ "racket -e '(require pkg-test2)'"
+     $ "racket -e '(require pkg/lib)' -e '(path->pkg (pkg-directory \"pkg-test1\"))'" =stdout> "\"pkg-test1\"\n"
+     $ "racket -e '(require pkg/lib)' -e '(path->pkg (build-path (pkg-directory \"pkg-test1\") \"pkg-test2\"))'"
+     =stdout> "\"pkg-test1\"\n"
      $ "raco pkg remove pkg-test2-snd pkg-test1"
      $ "racket -e '(require pkg-test1)'" =exit> 1)))))
