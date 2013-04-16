@@ -1,5 +1,7 @@
 #lang racket/base
 
+;; This module provides functions for parsing types written by the user
+
 (require "../utils/utils.rkt"
          (except-in (rep type-rep object-rep filter-rep) make-arr)
          (rename-in (types abbrev union utils printer filter-ops resolve)
@@ -19,7 +21,10 @@
 
 (define-struct poly (name vars) #:prefab)
 
-(provide/cond-contract [parse-type (syntax? . c:-> . Type/c)]
+(provide/cond-contract ;; Parse the given syntax as a type
+                       [parse-type (syntax? . c:-> . Type/c)]
+                       ;; Parse the given identifier using the lexical
+                       ;; context of the given syntax object
                        [parse-type/id (syntax? c:any/c . c:-> . Type/c)]
                        [parse-tc-results (syntax? . c:-> . tc-results/c)]
                        [parse-tc-results/id (syntax? c:any/c . c:-> . tc-results/c)])
@@ -28,12 +33,15 @@
 (define enable-mu-parsing (make-parameter #t))
 (print-complex-filters? #t)
 
+;; (Syntax -> Type) -> Syntax Any -> Syntax
+;; See `parse-type/id`. This is a curried generalization.
 (define ((parse/id p) loc datum)
   #;(printf "parse-type/id id : ~a\n ty: ~a\n" (syntax-object->datum loc) (syntax-object->datum stx))
   (let* ([stx* (datum->syntax loc datum loc loc)])
     (p stx*)))
 
-
+;; Syntax -> Type
+;; Parse the body under a Forall quantifier
 (define (parse-all-body s)
   (syntax-parse s
     [(ty)
@@ -47,6 +55,8 @@
      #f
      (parse-type s)]))
 
+;; Syntax (Syntax -> Type) -> Type
+;; Parse a Forall type
 (define (parse-all-type stx parse-type)
   ;(printf "parse-all-type: ~a \n" (syntax->datum stx))
   (syntax-parse stx #:literals (t:All)
@@ -397,6 +407,8 @@
          (-val val))]
       [_ (tc-error "not a valid type: ~a" (syntax->datum stx))])))
 
+;; Syntax -> Type
+;; Parse a (List ...) type
 (define (parse-list-type stx)
   (parameterize ([current-orig-stx stx])
     (syntax-parse stx #:literals (t:List)
@@ -424,6 +436,8 @@
        (add-disappeared-use #'kw)
        (-Tuple (map parse-type (syntax->list #'(tys ...))))])))
 
+;; Syntax -> Type
+;; Parse a (Values ...) type
 (define (parse-values-type stx)
   (parameterize ([current-orig-stx stx])
     (syntax-parse stx #:literals (values t:Values t:All)
