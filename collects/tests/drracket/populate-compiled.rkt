@@ -69,7 +69,8 @@
            racket/gui/base
            racket/class
            racket/path
-           racket/file)
+           racket/file
+           framework/test)
 
   (define (check-compiled compiled? path)
     (unless (equal? compiled? (file-exists? path))
@@ -88,10 +89,12 @@
 
         (define popcomp-main-zo
           (build-path dir "popcomp-pkg" "popcomp" "compiled" "drracket" "errortrace" "main_rkt.zo"))
+        (define popcomp2-main-zo
+          (build-path dir "popcomp2-pkg" "popcomp2" "compiled" "drracket" "errortrace" "main_rkt.zo"))
 
         (check-compiled #t (build-path dir "compiled" "drracket" "errortrace" "y_rkt.zo"))
         (check-compiled #f popcomp-main-zo)
-        (check-compiled #f (build-path dir "popcomp2-pkg" "popcomp2" "compiled" "drracket" "errortrace" "main_rkt.zo"))
+        (check-compiled #f popcomp2-main-zo)
 
         ;; Create a broken ".zo" file where it should not be used:
         (make-directory* (path-only popcomp-main-zo))
@@ -103,4 +106,34 @@
         (do-execute drs)
         (let* ([got (fetch-output drs)])
           (unless (string=? "" got)
-            (error 'check-output "wrong output: ~s" got)))))))
+            (error 'check-output "wrong output: ~s" got)))
+
+        (delete-file popcomp-main-zo)
+
+        ;; Open "main.rkt" in "popcomp-pkg", so now it should be compiled
+        ;; when we run "x.rkt":
+
+        (test:menu-select "File" "New Tab")
+        (use-get/put-dialog (λ () 
+                               (test:menu-select "File" "Open..."))
+                            (build-path dir "popcomp-pkg" "popcomp" "main.rkt"))
+
+        (queue-callback/res (λ () (send drs change-to-tab (car (send drs get-tabs)))))
+
+        (do-execute drs)
+
+        (check-compiled #t popcomp-main-zo)
+        (check-compiled #f popcomp2-main-zo)
+
+        ;; But if the "popcomp-pkg" directory is not writable, then
+        ;; don't compile after all:
+
+        (delete-file popcomp-main-zo)
+        (file-or-directory-permissions (build-path dir "popcomp-pkg") #o555)
+        
+        (do-execute drs)
+
+        (check-compiled #f popcomp-main-zo)
+        (check-compiled #f popcomp2-main-zo)
+
+        (file-or-directory-permissions (build-path dir "popcomp-pkg") #o777)))))

@@ -62,6 +62,7 @@
            (define response-pc (vector-ref message 2))
            (define settings (vector-ref message 3))
            (define pc-status-expanding-place (vector-ref message 4))
+           (define currently-open-files (vector-ref message 5))
            (loop (new-job program-as-string path response-pc settings pc-status-expanding-place)
                  old-registry)]))))))
 
@@ -120,6 +121,7 @@
          (ep-log-info "expanding-place.rkt: 03 setting module language parameters")
          (set-module-language-parameters settings
                                          module-language-parallel-lock-client
+                                         null
                                          #:use-use-current-security-guard? #t)
          (ep-log-info "expanding-place.rkt: 04 setting directories")
          (let ([init-dir (get-init-dir path)])

@@ -2,6 +2,7 @@
 (require racket/class
          racket/draw
          racket/list
+         racket/set
          compiler/cm
          setup/dirs
          planet/config
@@ -55,7 +56,9 @@
   #;(namespace-attach-module orig-namespace ''#%foreign))
   
 
-(define (set-module-language-parameters settings module-language-parallel-lock-client
+(define (set-module-language-parameters settings 
+                                        module-language-parallel-lock-client
+                                        currently-open-files
                                         #:use-use-current-security-guard? [use-current-security-guard? #f])
   (current-command-line-arguments (prefab-module-settings-command-line-args settings))
   (let* ([default (current-library-collection-paths)]
@@ -68,6 +71,16 @@
   (compile-context-preservation-enabled (prefab-module-settings-full-trace? settings))
   
   (when (prefab-module-settings-compilation-on? settings)
+    (define open-pkgs
+      (for/fold ([s (set)]) ([path (in-list currently-open-files)])
+        (define pkg (path->pkg path))
+        (if (and pkg
+                 (memq 'write
+                       (file-or-directory-permissions (pkg-directory pkg))))
+            (set-add s pkg)
+            s)))
+    (for ([pkg (in-set open-pkgs)])
+      (log-info "DrRacket: enabling bytecode-file compilation for package ~s" pkg))
     (define skip-path?
       (let* ([cd (find-collects-dir)]
              [no-dirs (if cd 
@@ -76,6 +89,7 @@
         (λ (p) (or (file-stamp-in-paths p no-dirs)
                    (let ([pkg (path->pkg p)])
                      (and pkg
+                          (not (set-member? open-pkgs pkg))
                           (file-stamp-in-paths p (list (pkg-directory pkg)))))))))
     (define extra-compiled-file-path
       (case (prefab-module-settings-annotations settings)

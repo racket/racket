@@ -331,10 +331,12 @@
         (set! language-info #f)
         (set! sandbox #f)
         
-        (run-in-user-thread
-         (λ ()
-           (set-module-language-parameters (module-language-settings->prefab-module-settings settings)
-                                           module-language-parallel-lock-client))))
+        (let ([currently-open-files (get-currently-open-files)])
+          (run-in-user-thread
+           (λ ()
+              (set-module-language-parameters (module-language-settings->prefab-module-settings settings)
+                                              module-language-parallel-lock-client
+                                              currently-open-files)))))
       
       (define/override (get-one-line-summary)
         (string-constant module-language-one-line-summary))
@@ -1931,7 +1933,8 @@
                         filename/loc
                         (module-language-settings->prefab-module-settings settings)
                         (λ (res) (oc-finished res))
-                        (λ (a b) (oc-status-message a b)))]
+                        (λ (a b) (oc-status-message a b))
+                        (get-currently-open-files))]
         [else
          (line-of-interest)
          (send dirty/pending-tab set-oc-status
@@ -2009,7 +2012,8 @@
                          filename 
                          prefab-module-settings 
                          show-results 
-                         tell-the-tab-show-bkg-running)
+                         tell-the-tab-show-bkg-running
+                         currently-open-files)
     (unless expanding-place
       (set! expanding-place (dynamic-place expanding-place.rkt 'start))
       (place-channel-put expanding-place module-language-compile-lock)
@@ -2028,7 +2032,8 @@
                                    filename
                                    pc-in 
                                    prefab-module-settings
-                                   pc-status-expanding-place))
+                                   pc-status-expanding-place
+                                   currently-open-files))
                (place-channel-put expanding-place to-send)
                (define us (current-thread))
                (thread (λ () 
@@ -2340,4 +2345,13 @@
        (connect-to-prefs other-choice 'drracket:online-expansion:other-errors)
        (for ([f (in-list (drracket:module-language-tools:get-online-expansion-pref-funcs))])
          (f vp))
-       parent-vp))))
+       parent-vp)))
+  
+  (define (get-currently-open-files)
+    (for*/list ([frame (in-list
+                        (send (group:get-the-frame-group) get-frames))]
+                #:when (frame . is-a? . drracket:unit:frame%)
+                [tab (in-list (send frame get-tabs))]
+                [v (in-value (send (send tab get-defs) get-filename))]
+                #:when v)
+      v)))
