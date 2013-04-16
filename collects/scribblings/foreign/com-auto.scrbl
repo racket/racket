@@ -269,14 +269,17 @@ argument.}
   information on the symbols.}
 
 
-@defproc[(com-set-property! [obj com-object?] 
-                            [string? property] ...+
+@defproc[(com-set-property! [obj com-object?]
+                            [property (or/c string?
+                                            (cons/c string? list?))] ...+
                             [v any/c])
          void?]{
 
    Sets the value of the final property in @racket[obj] to @racket[v]
    by following the @racket[property]s, where the value of each
-   intermediate property must be a COM object.
+   intermediate property must be a COM object. A @racket[property]
+   can be a list instead of a string to represent a parameterized property
+   and its arguments.
 
    The type of the property is determined via
    @racket[com-property-type], if possible, and

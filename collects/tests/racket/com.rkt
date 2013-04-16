@@ -167,4 +167,21 @@
 
   (void))
 
+;; The Excel interface provides many more opportunities for tests:
+(define excel (with-handlers ([exn:fail? (lambda (exn)
+					   (printf "Excel not available\n")
+					   #f)])
+			     (com-create-instance "Excel.Application")))
+(when excel
+  (com-set-property! excel "Visible" #t)
+  (define wb (com-get-property excel "Workbooks"))
+  (define workbook (com-invoke wb "Add"))
+  (define sheets (com-get-property workbook "Worksheets"))
+  (define sheet (com-get-property sheets '("Item" "Sheet1")))
+  (define range (com-get-property sheet "Cells"))
+  (define cell (com-get-property range '("Item" 1 1)))
+  (com-get-property cell '("Value" 10))
+  (com-set-property! cell '("Value" 10) (seconds->date (current-seconds)))
+  (test #t (date? (com-get-property cell '("Value" 10)))))
+
 (printf "~a passed\n" count)
