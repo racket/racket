@@ -1251,6 +1251,7 @@
    [(IUnknown? arg) 'iunknown]
    [(eq? com-omit arg) 'any]
    [(box? arg) `(box ,(arg-to-type (unbox arg)))]
+   [(date? arg) 'date]
    [else (error 'com "cannot infer marshal format for value: ~e" arg)]))
 
 (define (elem-desc-ref func-desc i)
@@ -1419,11 +1420,12 @@
                              [wSecond _WORD]
                              [wMilliseconds _WORD]))
 
-(define-ole VariantTimeToSystemTime (_wfun _DATE _SYSTEMTIME-pointer
+(define-oleaut VariantTimeToSystemTime (_wfun _DATE _SYSTEMTIME-pointer
                                            -> _INT))
-(define-ole SystemTimeToVariantTime (_wfun _SYSTEMTIME-pointer (d : (_ptr o _DATE))
-                                           -> (r : _int)
-                                           -> (and (zero? r) d)))
+(define-oleaut SystemTimeToVariantTime (_wfun #:save-errno 'windows
+					      _SYSTEMTIME-pointer (d : (_ptr o _DATE))
+					      -> (r : _int)
+					      -> (and (not (zero? r)) d)))
 
 (define _date
   (make-ctype _DATE
@@ -1438,12 +1440,12 @@
                                            (if (date*? d)
                                                (inexact->exact (floor (* (date*-nanosecond d) 1000)))
                                                0)))
-                (define d (SystemTimeToVariantTime s))
-                (or d
-                    (error 'date "error converting date to COM date")))
+		(or (SystemTimeToVariantTime s)
+		    (error 'date "error converting date to COM date (~a)"
+			   (saved-errno))))
               (lambda (d)
                 (define s (make-SYSTEMTIME 0 0 0 0 0 0 0 0))
-                (unless (zero? (VariantTimeToSystemTime d s))
+                (unless (not (zero? (VariantTimeToSystemTime d s)))
                   (error 'date "error converting date from COM date"))
                 (seconds->date
                  (find-seconds (SYSTEMTIME-wSecond s)
@@ -2072,7 +2074,18 @@
 (define com-set-property!
   (case-lambda
    [(obj name val)
-    (do-com-invoke 'com-set-property! obj name (list val) INVOKE_PROPERTYPUT)]
+    (cond
+     [(string? name)
+      (do-com-invoke 'com-set-property! obj name (list val) INVOKE_PROPERTYPUT)]
+     [(and (list? name)
+	   (pair? name)
+	   (string? (car name)))
+      (do-com-invoke 'com-set-property! obj
+		     (car name) (append (cdr name) (list val))
+		     INVOKE_PROPERTYPUT)]
+     [else
+      (raise-argument-error 'com-set-property! "(or/c string? (cons/c string? list))"
+			    name)])]
    [(obj name1 name2 . names+val)
     (check-com-obj 'com-set-property obj)
     (define names (list* name1 name2 names+val))
