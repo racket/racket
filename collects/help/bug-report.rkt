@@ -57,58 +57,59 @@
 
 (define (report-bug/new-frame this-bug-id frame-mixin)
   (define bug-frame%
-    (class (frame-mixin (frame:standard-menus-mixin frame:basic%))
-      (init title)
-      (init-field bug-id)
-      (define/public (get-bug-id) (and editing? bug-id))
-      
-      (define editing? #t)
-      (define/public (no-longer-editing) (set! editing? #f))
-      (define close-box-clicked? #t)
-      (define/public (set-close-box-not-clicked) (set! close-box-clicked? #f))
-      (define/augment (can-close?)
-        (cond
-          [close-box-clicked?
-           (cond
-             [(eq? (send single active-child) finished-panel)
-              #t]
-             [(empty-bug-report?)
-              (no-more-saving)
-              (unsave-bug-report bug-id)
-              (set! editing? #f)]
-             [else
-              (define user-choice
-                (message-box/custom (string-constant cancel-bug-report?)
-                                    (string-constant do-you-want-to-discard-or-save-this-bug-report)
-                                    (string-constant save)
-                                    (string-constant cancel)
-                                    (string-constant discard)
-                                    this
-                                    '(default=1)
-                                    1))
-              (case user-choice
-                [(1) #t] ;; saving happens automatically
-                [(2) #f]
-                [(3) 
-                 (no-more-saving)
-                 (unsave-bug-report bug-id)
-                 (set! editing? #f)
-                 #t])])]
-          [else #t]))
-      (define/augment (on-close)
-        (inner (void) on-close)
-        (set! open-frames (remq this open-frames)))
-      (super-make-object title)
-      (set! open-frames (cons this open-frames))
-      
-      ;; a bunch of stuff we don't want
-      (define/override (file-menu:between-print-and-close menu) (void))
-      (define/override (edit-menu:between-find-and-preferences menu) (void))
-      (define/override (file-menu:create-open?)        #f)
-      (define/override (file-menu:create-open-recent?) #f)
-      (define/override (file-menu:create-new?)         #f)
-      (define/override (file-menu:create-save?)        #f)
-      (define/override (file-menu:create-revert?)      #f)))
+    (frame-mixin
+     (class (frame:standard-menus-mixin frame:basic%)
+       (init title)
+       (init-field bug-id)
+       (define/public (get-bug-id) (and editing? bug-id))
+       
+       (define editing? #t)
+       (define/public (no-longer-editing) (set! editing? #f))
+       (define close-box-clicked? #t)
+       (define/public (set-close-box-not-clicked) (set! close-box-clicked? #f))
+       (define/augment (can-close?)
+         (cond
+           [close-box-clicked?
+            (cond
+              [(eq? (send single active-child) finished-panel)
+               #t]
+              [(empty-bug-report?)
+               (no-more-saving)
+               (unsave-bug-report bug-id)
+               (set! editing? #f)]
+              [else
+               (define user-choice
+                 (message-box/custom (string-constant cancel-bug-report?)
+                                     (string-constant do-you-want-to-discard-or-save-this-bug-report)
+                                     (string-constant save)
+                                     (string-constant cancel)
+                                     (string-constant discard)
+                                     this
+                                     '(default=1)
+                                     1))
+               (case user-choice
+                 [(1) #t] ;; saving happens automatically
+                 [(2) #f]
+                 [(3) 
+                  (no-more-saving)
+                  (unsave-bug-report bug-id)
+                  (set! editing? #f)
+                  #t])])]
+           [else #t]))
+       (define/augment (on-close)
+         (inner (void) on-close)
+         (set! open-frames (remq this open-frames)))
+       (super-make-object title)
+       (set! open-frames (cons this open-frames))
+       
+       ;; a bunch of stuff we don't want
+       (define/override (file-menu:between-print-and-close menu) (void))
+       (define/override (edit-menu:between-find-and-preferences menu) (void))
+       (define/override (file-menu:create-open?)        #f)
+       (define/override (file-menu:create-open-recent?) #f)
+       (define/override (file-menu:create-new?)         #f)
+       (define/override (file-menu:create-save?)        #f)
+       (define/override (file-menu:create-revert?)      #f))))
 
   (define init-bug-report (if this-bug-id
                               (lookup-bug-report this-bug-id)

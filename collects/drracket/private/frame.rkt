@@ -435,7 +435,10 @@
         (drracket-help-menu:after-about menu this))
       
       (define/override (file-menu:new-string) (string-constant new-menu-item))
+      (define/override (file-menu:create-new?) #t)
       (define/override (file-menu:open-string) (string-constant open-menu-item))
+      (define/override (file-menu:create-open?) #t)
+      (define/override (file-menu:create-open-recent?) #t)
       
       (define/override (file-menu:between-open-and-revert file-menu) 
         (new menu-item% 
