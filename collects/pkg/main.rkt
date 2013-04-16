@@ -149,10 +149,11 @@
    scope installation shared user
    (lambda ()
      (with-pkg-lock
-      (pkg-remove pkg
-                  #:auto? auto
-                  #:force? force)
-      (setup no-setup #f))))]
+      (define setup-collects
+        (pkg-remove pkg
+                    #:auto? auto
+                    #:force? force))
+      (setup no-setup setup-collects))))]
  [show
   "Show information about installed packages"
   #:once-each

@@ -157,7 +157,8 @@ Implements the @racket[create] command.}
                                            #f]
                            [#:force? force? boolean? #f]
                            [#:ignore-checksums? ignore-checksums? boolean? #f])
-         (or/c #f (listof (or/c path-string? (non-empty-listof path-string?))))]{
+         (or/c #f (listof (or/c path-string?
+                                (non-empty-listof path-string?))))]{
 
 Implements the @racket[install] command. The result indicates which
 collections should be setup via @exec{raco setup}: @racket[#f] means
@@ -172,7 +173,8 @@ The package lock must be held; see @racket[with-pkg-lock].}
                                           #f]
                           [#:all? all? boolean? #f]
                           [#:deps? deps? boolean? #f])
-        (or/c #f (listof (or/c path-string? (non-empty-listof path-string?))))]{
+        (or/c #f (listof (or/c path-string?
+                               (non-empty-listof path-string?))))]{
 
 Implements the @racket[update] command. The result is the same as for
 @racket[install-pkgs].
@@ -183,9 +185,12 @@ The package lock must be held; see @racket[with-pkg-lock].}
 @defproc[(pkg-remove      [names (listof string?)]
                           [#:auto? auto? boolean? #f]
                           [#:force? force? boolean? #f])
-         void?]{
+         (or/c #f (listof (or/c path-string? 
+                                (non-empty-listof path-string?))))]{
 
-Implements the @racket[remove] command.
+Implements the @racket[remove] command. The result is the same as for
+@racket[install-pkgs], indicating collects that should be setup
+via @exec{raco setup}.
 
 The package lock must be held; see @racket[with-pkg-lock].}
 
