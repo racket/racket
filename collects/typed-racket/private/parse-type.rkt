@@ -19,8 +19,6 @@
          (prefix-in t: "../base-env/base-types-extra.rkt")
          (for-template (prefix-in t: "../base-env/base-types-extra.rkt")))
 
-(define-struct poly (name vars) #:prefab)
-
 (provide/cond-contract ;; Parse the given syntax as a type
                        [parse-type (syntax? . c:-> . Type/c)]
                        ;; Parse the given identifier using the lexical
