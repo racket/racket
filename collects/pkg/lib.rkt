@@ -1106,7 +1106,6 @@
             (define update-pkgs (map car update-deps))
             (define (make-pre-succeed)
               (let ([to-update (filter-map update-package update-pkgs)])
-                (log-error "to update ~s" to-update)
                 (λ () (for-each (compose remove-package pkg-desc-name) to-update))))
             (match (or dep-behavior
                        (if name?
