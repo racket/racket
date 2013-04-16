@@ -91,4 +91,16 @@
 
         (check-compiled #t (build-path dir "compiled" "drracket" "errortrace" "y_rkt.zo"))
         (check-compiled #f popcomp-main-zo)
-        (check-compiled #f (build-path dir "popcomp2-pkg" "popcomp2" "compiled" "drracket" "errortrace" "main_rkt.zo"))))))
+        (check-compiled #f (build-path dir "popcomp2-pkg" "popcomp2" "compiled" "drracket" "errortrace" "main_rkt.zo"))
+
+        ;; Create a broken ".zo" file where it should not be used:
+        (make-directory* (path-only popcomp-main-zo))
+        (call-with-output-file* 
+         popcomp-main-zo
+         (lambda (o)
+           (fprintf o "broken\n")))
+
+        (do-execute drs)
+        (let* ([got (fetch-output drs)])
+          (unless (string=? "" got)
+            (error 'check-output "wrong output: ~s" got)))))))
