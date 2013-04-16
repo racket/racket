@@ -29,11 +29,9 @@
          "util.rkt"
          (prefix-in db: "pnr-db.rkt"))
 
-(define current-install-system-wide?
-  (make-parameter #f))
-(define current-install-version-specific?
-  (make-parameter #t))
-(define current-show-version
+(define current-pkg-scope
+  (make-parameter 'user))
+(define current-pkg-scope-version
   (make-parameter (version)))
 (define current-pkg-error
   (make-parameter (lambda args (apply error 'pkg args))))
@@ -106,12 +104,13 @@
          (λ (ip) (copy-port ip op)))))))
 
 (define (pkg-dir)
-  (build-path (cond
-               [(current-install-system-wide?) (find-lib-dir)]
-               [(current-install-version-specific?)
-                (build-path (find-system-path 'addon-dir) (current-show-version))]
-               [else
-                (find-system-path 'addon-dir)])
+  (build-path (case (current-pkg-scope)
+               [(installation) (find-lib-dir)]
+               [(user)
+                (build-path (find-system-path 'addon-dir) (current-pkg-scope-version))]
+               [(shared)
+                (find-system-path 'addon-dir)]
+               [else (error "unknown package scope")])
               "pkgs"))
 (define (pkg-config-file)
   (build-path (pkg-dir) "config.rktd"))
@@ -123,10 +122,10 @@
   (make-lock-file-name (pkg-db-file)))
 
 (define (link-version-regexp)
-  (cond
-   [(current-install-system-wide?) #f]
-   [(current-install-version-specific?) (regexp (regexp-quote (version)))]
-   [else #f]))
+  (case (current-pkg-scope)
+   [(installation shared) #f]
+   [(user) (regexp (regexp-quote (version)))]
+   [else (error "unknown package scope")]))
 
 (define (make-metadata-namespace)
   (make-base-empty-namespace))
@@ -233,7 +232,7 @@
                 (equal? p s))))
       #t))
 
-(define (with-package-lock* read-only? t)
+(define (with-pkg-lock* read-only? t)
   (define d (pkg-dir))
   (unless read-only? (make-directory* d))
   (if (directory-exists? d)
@@ -251,10 +250,10 @@
       ;; (in case the database is created concurrently):
       (parameterize ([current-no-pkg-db #t])
         (t))))
-(define-syntax-rule (with-package-lock e ...)
-  (with-package-lock* #f (λ () e ...)))
-(define-syntax-rule (with-package-lock/read-only e ...)
-  (with-package-lock* #t (λ () e ...)))
+(define-syntax-rule (with-pkg-lock e ...)
+  (with-pkg-lock* #f (λ () e ...)))
+(define-syntax-rule (with-pkg-lock/read-only e ...)
+  (with-pkg-lock* #t (λ () e ...)))
 
 (define (maybe-append lists)
   (and (for/and ([v (in-list lists)]) (not (eq? v 'all)))
@@ -384,26 +383,19 @@
 ;; return the current scope as a string
 ;; -> (or/c "user" "shared" "installation")
 (define (current-scope->string)
-  (cond [(current-install-system-wide?)
-         "installation"]
-        [(current-install-version-specific?)
-         "user"]
-        [else
-         "shared"]))
+  (symbol->string (current-pkg-scope)))
 
 ;; prints an error for packages that are not installed
 ;; pkg-name db -> void
 (define (pkg-not-installed pkg-name db)
   (define installation-db
-    (parameterize ([current-install-system-wide? #t])
+    (parameterize ([current-pkg-scope 'installation])
       (read-pkg-db)))
   (define user-db
-    (parameterize ([current-install-system-wide? #f]
-                   [current-install-version-specific? #t])
+    (parameterize ([current-pkg-scope 'user])
       (read-pkg-db)))
-  (define version-db
-    (parameterize ([current-install-system-wide? #f]
-                   [current-install-version-specific? #f])
+  (define shared-db
+    (parameterize ([current-pkg-scope 'shared])
       (read-pkg-db)))
 
   ;; see if the package is installed in any scope
@@ -413,7 +405,7 @@
          "--installation")
     (and (hash-ref user-db pkg-name #f)
          "--user")
-    (and (hash-ref version-db pkg-name #f)
+    (and (hash-ref shared-db pkg-name #f)
          "--shared")))
 
   (define not-installed-msg
@@ -450,13 +442,13 @@
    (pkg-config-file)
    (hash-set (read-pkg-cfg) key val)))
 
-(define (get-default-package-scope)
-  (match (get-default-package-scope-as-string)
-    ["installation" 'i]
-    ["shared" 's]
-    [else 'u]))
-(define (get-default-package-scope-as-string)
-  (parameterize ([current-install-system-wide? #t])
+(define (default-pkg-scope)
+  (match (default-pkg-scope-as-string)
+    ["installation" 'installation]
+    ["shared" 'shared]
+    [else 'user]))
+(define (default-pkg-scope-as-string)
+  (parameterize ([current-pkg-scope 'installation])
     (define cfg (read-pkg-cfg))
     (hash-ref cfg "default-scope" "user")))
 
@@ -470,7 +462,7 @@
   (struct-copy install-info if
                [checksum op]))
 
-(define (package-directory pkg-name)
+(define (pkg-directory pkg-name)
   (match-define (pkg-info orig-pkg checksum _)
                 (package-info pkg-name))
   (match orig-pkg
@@ -483,26 +475,26 @@
   (printf "Removing ~a\n" pkg-name)
   (match-define (pkg-info orig-pkg checksum _)
                 (package-info pkg-name))
-  (define pkg-dir (package-directory pkg-name))
+  (define pkg-dir (pkg-directory pkg-name))
   (remove-from-pkg-db! pkg-name)
   (match orig-pkg
     [`(link ,_)
      (links pkg-dir
             #:remove? #t
-            #:user? (not (current-install-system-wide?))
+            #:user? (not (eq? (current-pkg-scope) 'installation))
             #:version-regexp (link-version-regexp)
             #:root? #t)]
     [_
      (links pkg-dir
             #:remove? #t
-            #:user? (not (current-install-system-wide?))
+            #:user? (not (eq? (current-pkg-scope) 'installation))
             #:version-regexp (link-version-regexp)
             #:root? #t)
      (delete-directory/files pkg-dir)]))
 
-(define (remove-packages in-pkgs
-                         #:force? [force? #f]
-                         #:auto? [auto? #f])
+(define (pkg-remove in-pkgs
+                    #:force? [force? #f]
+                    #:auto? [auto? #f])
   (define db (read-pkg-db))
   (define all-pkgs
     (hash-keys db))
@@ -822,8 +814,8 @@
    [else
     (pkg-error "cannot infer package source type\n  source: ~a" pkg)]))
 
-(define (stage-package desc
-                       #:checksum [checksum #f])
+(define (pkg-stage desc
+                   #:checksum [checksum #f])
   (define i (stage-package/info (pkg-desc-source desc)
                                 (pkg-desc-type desc)
                                 (pkg-desc-name desc)
@@ -846,26 +838,27 @@
   (define db (read-pkg-db))
   (define db+with-dbs
     (let ([with-sys-wide (lambda (t)
-                           (parameterize ([current-install-system-wide? #t])
+                           (parameterize ([current-pkg-scope 'installation])
                              (t)))]
           [with-vers-spec (lambda (t)
-                            (parameterize ([current-install-version-specific? #t])
+                            (parameterize ([current-pkg-scope 'user])
                               (t)))]
           [with-vers-all (lambda (t)
-                            (parameterize ([current-install-version-specific? #f])
+                            (parameterize ([current-pkg-scope 'shared])
                               (t)))]
           [with-current (lambda (t) (t))])
-      (cond
-       [(current-install-system-wide?)
+      (case (current-pkg-scope)
+       [(installation)
         (list (cons db with-current))]
-       [(current-install-version-specific?)
+       [(user)
         (list (cons (with-sys-wide read-pkg-db) with-sys-wide)
               (cons db with-current)
               (cons (with-vers-all read-pkg-db) with-vers-all))]
-       [else
+       [(shared)
         (list (cons (with-sys-wide read-pkg-db) with-sys-wide)
               (cons (with-vers-spec read-pkg-db) with-vers-spec)
-              (cons db with-current))])))
+              (cons db with-current))]
+       [else (error "unknown package scope")])))
   (define (install-package/outer infos desc info)
     (match-define (pkg-desc pkg type orig-name auto?) desc)
     (match-define
@@ -907,7 +900,7 @@
                      [other-pkg (in-hash-keys (car db+with-db))]
                      #:unless (and updating? (equal? other-pkg pkg-name)))
              (and ((cdr db+with-db)
-                   (lambda () (has-collection-file? (package-directory other-pkg))))
+                   (lambda () (has-collection-file? (pkg-directory other-pkg))))
                   (cons other-pkg (build-path c f))))
            ;; Compare with simultaneous installs
            (for/or ([other-pkg-info (in-list infos)]
@@ -1007,7 +1000,7 @@
                                                   'version (lambda () "0.0"))
                                     #f))]
                              [else
-                              (values (get-metadata metadata-ns (package-directory name)
+                              (values (get-metadata metadata-ns (pkg-directory name)
                                                     'version (lambda () "0.0"))
                                       #t)]))
                           (define inst-vers (if (and this-platform?
@@ -1097,7 +1090,7 @@
               pkg-dir]))
          (log-pkg-debug "creating link to ~e" final-pkg-dir)
          (links final-pkg-dir
-                #:user? (not (current-install-system-wide?))
+                #:user? (not (eq? 'installation (current-pkg-scope)))
                 #:version-regexp (link-version-regexp)
                 #:root? #t)
          (define this-pkg-info
@@ -1134,7 +1127,7 @@
   (for-each (λ (t) (t)) do-its)
   setup-collects)
 
-(define (install-cmd descs
+(define (pkg-install descs
                      #:old-infos [old-infos empty]
                      #:old-auto+pkgs [old-descs empty]
                      #:force? [force #f]
@@ -1145,7 +1138,7 @@
   (with-handlers* ([vector?
                     (match-lambda
                      [(vector updating? new-infos deps more-pre-succeed)
-                      (install-cmd
+                      (pkg-install
                        #:old-infos new-infos
                        #:old-auto+pkgs (append old-descs descs)
                        #:force? force
@@ -1201,14 +1194,14 @@
           (pkg-desc orig-pkg-source #f pkg-name auto?))]))
 
 (define ((package-dependencies metadata-ns) pkg-name)  
-  (get-metadata metadata-ns (package-directory pkg-name) 
+  (get-metadata metadata-ns (pkg-directory pkg-name) 
                 'deps (lambda () empty)
                 #:checker check-dependencies))
 
-(define (update-packages in-pkgs
-                         #:all? [all? #f]
-                         #:dep-behavior [dep-behavior #f]
-                         #:deps? [deps? #f])
+(define (pkg-update in-pkgs
+                    #:all? [all? #f]
+                    #:dep-behavior [dep-behavior #f]
+                    #:deps? [deps? #f])
   (define metadata-ns (make-metadata-namespace))
   (define pkgs
     (cond
@@ -1227,13 +1220,13 @@
      #f]
     [else
      (printf "Updating: ~a\n" to-update)
-     (install-cmd
+     (pkg-install
       #:updating? #t
       #:pre-succeed (λ () (for-each (compose remove-package pkg-desc-name) to-update))
       #:dep-behavior dep-behavior
       to-update)]))
 
-(define (show-cmd indent #:directory? [dir? #f])
+(define (pkg-show indent #:directory? [dir? #f])
   (let ()
     (define db (read-pkg-db))
     (define pkgs (sort (hash-keys db) string-ci<=?))
@@ -1256,21 +1249,20 @@
                    (format "~a" checksum)
                    (format "~a" orig-pkg)
                    (if dir?
-                     (list (~a (package-directory pkg)))
+                     (list (~a (pkg-directory pkg)))
                      empty))))))))
 
 (define (installed-pkg-table #:scope [given-scope #f])
-  (define scope (or given-scope (get-default-package-scope)))
-  (parameterize ([current-install-system-wide? (eq? scope 'i)]
-                 [current-install-version-specific? (not (eq? scope 's))])
-    (with-package-lock/read-only
+  (parameterize ([current-pkg-scope 
+                  (or given-scope (default-pkg-scope))])
+    (with-pkg-lock/read-only
      (read-pkg-db))))
 
 (define (installed-pkg-names #:scope [given-scope #f])
   (sort (installed-pkg-table #:scope given-scope) 
         string-ci<=?))
   
-(define (config-cmd config:set key+vals)
+(define (pkg-config config:set key+vals)
   (cond
     [config:set
      (match key+vals
@@ -1284,7 +1276,7 @@
                          "  valid values: installation, user, or shared")
                      key
                      val))
-        (if (current-install-system-wide?)
+        (if (eq? 'installation (current-pkg-scope))
             (update-pkg-cfg! "default-scope" val)
             (pkg-error (~a "config key makes sense only with --installation/-i\n"
                            "  config key: ~a\n"
@@ -1303,8 +1295,8 @@
            (for ([s (in-list (read-pkg-cfg/def "indexes"))])
              (printf "~a\n" s))]
           ["default-scope"
-           (if (current-install-system-wide?)
-               (printf "~a\n" (get-default-package-scope-as-string))
+           (if (eq? 'installation (current-pkg-scope))
+               (printf "~a\n" (default-pkg-scope-as-string))
                (pkg-error (~a "config key makes sense only with --installation/-i\n"
                            "  config key: ~a")
                           key))]
@@ -1315,7 +1307,7 @@
        [_
         (pkg-error "multiple config keys provided")])]))
 
-(define (create-cmd create:format maybe-dir)
+(define (pkg-create create:format maybe-dir)
   (begin
     (define dir (regexp-replace* #rx"/$" maybe-dir ""))
     (unless (directory-exists? dir)
@@ -1381,7 +1373,7 @@
          #:exists 'replace
          (λ () (display (call-with-input-file pkg sha1))))])))
 
-(define (index-copy-cmd srcs dest
+(define (pkg-index-copy srcs dest
                         #:from-config? [from-config? #f]
                         #:merge? [merge? #f]
                         #:force? [force? #f]
@@ -1496,7 +1488,7 @@
      (build-path dest-path "pkgs-all")
      (lambda (o) (write details o)))]))
 
-(define (index-show-cmd names 
+(define (pkg-index-show names 
                         #:all? [all? #f]
                         #:only-names? [only-names? #f])
   (for ([name (in-list names)])
@@ -1625,7 +1617,7 @@
 
 (define (get-pkg-content desc 
                          #:extract-info [extract-info extract-dependencies])
-  (define-values (dir cksum clean?) (stage-package desc))
+  (define-values (dir cksum clean?) (pkg-stage desc))
   (define get-info (with-handlers ([exn:fail? (λ (x)
                                                  (log-exn x "getting info")
                                                  #f)])
@@ -1655,23 +1647,24 @@
 (define dep-behavior/c
   (or/c #f 'fail 'force 'search-ask 'search-auto))
 
+(define package-scope/c
+  (or/c 'installation 'user 'shared))
+
 (provide
- with-package-lock
- with-package-lock/read-only
+ with-pkg-lock
+ with-pkg-lock/read-only
  (struct-out pkg-info)
   pkg-desc?
  (contract-out
-  [current-install-system-wide?
-   (parameter/c boolean?)]
-  [current-install-version-specific?
-   (parameter/c boolean?)]
-  [current-show-version
+  [current-pkg-scope
+   (parameter/c package-scope/c)]
+  [current-pkg-scope-version
    (parameter/c string?)]
   [current-pkg-error 
    (parameter/c procedure?)]
   [current-pkg-indexes
    (parameter/c (or/c #f (listof url?)))]
-  [package-directory
+  [pkg-directory
    (-> string? path-string?)]
   [pkg-desc 
    (-> string? 
@@ -1679,60 +1672,60 @@
        (or/c string? #f) 
        boolean?
        pkg-desc?)]
-  [config-cmd
+  [pkg-config
    (-> boolean? list?
        void?)]
-  [create-cmd
+  [pkg-create
    (-> (or/c 'zip 'tgz 'plt 'MANIFEST) path-string?
        void?)]
-  [update-packages
+  [pkg-update
    (->* ((listof string?))
         (#:dep-behavior dep-behavior/c
                         #:all? boolean?
                         #:deps? boolean?)
         (or/c #f (listof (or/c path-string? (non-empty-listof path-string?)))))]
-  [remove-packages
+  [pkg-remove
    (->* ((listof string?))
         (#:auto? boolean?
                  #:force? boolean?)
         void?)]
-  [show-cmd
+  [pkg-show
    (->* (string?)
         (#:directory? boolean?)
         void?)]
-  [install-cmd
+  [pkg-install
    (->* ((listof pkg-desc?))
         (#:dep-behavior dep-behavior/c
                         #:force? boolean?
                         #:ignore-checksums? boolean?)
         (or/c #f (listof (or/c path-string? (non-empty-listof path-string?)))))]
-  [index-show-cmd
+  [pkg-index-show
    (->* ((listof string?))
         (#:all? boolean?
                 #:only-names? boolean?)
         void?)]
-  [index-copy-cmd
+  [pkg-index-copy
    (->* ((listof path-string?) path-string?)
         (#:from-config? any/c
                         #:merge? boolean?
                         #:force? boolean?
                         #:override? boolean?)
         void?)]
-  [get-default-package-scope
-   (-> (or/c 'i 'u 's))]
+  [default-pkg-scope
+   (-> package-scope/c)]
   [installed-pkg-names
    (->* ()
-        (#:scope (or/c #f 'i 'u 's))
+        (#:scope (or/c #f package-scope/c))
         (listof string?))]
   [installed-pkg-table
    (->* ()
-        (#:scope (or/c #f 'i 'u 's))
+        (#:scope (or/c #f package-scope/c))
         (hash/c string? pkg-info?))]
-  [stage-package (->* (pkg-desc?)
-                      (#:checksum (or/c #f string?))
-                      (values path?
-                              (or/c #f string?)
-                              boolean?))]
+  [pkg-stage (->* (pkg-desc?)
+                  (#:checksum (or/c #f string?))
+                  (values path?
+                          (or/c #f string?)
+                          boolean?))]
   [pkg-config-indexes
    (-> (listof string?))]
   [get-all-pkg-names-from-indexes

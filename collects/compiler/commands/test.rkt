@@ -108,15 +108,12 @@
        [l
         (for-each do-test l)])]
     [packages?
-     (unless
-         (for*/or ([civs (in-list '(#t #f))]
-                   [cisw (in-list '(#f #t))])
-           (define pd
-             (parameterize ([current-install-version-specific? civs]
-                            [current-install-system-wide? cisw])
-               (with-handlers ([exn:fail? (λ (x) #f)])
-                 (package-directory e))))
-           (and pd (do-test pd)))
+     (unless (for*/or ([scope (in-list '(installation user shared))])
+               (define pd
+                 (parameterize ([current-pkg-scope scope])
+                   (with-handlers ([exn:fail? (λ (x) #f)])
+                     (pkg-directory e))))
+               (and pd (do-test pd)))
        (error 'test "Package ~e is not installed" e))]
     [else
      (do-test e)]))

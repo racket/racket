@@ -11,7 +11,7 @@
 (define (setup no-setup? setup-collects)
   (unless (or no-setup?
               (not (member (getenv "PLT_PKG_NOSETUP") '(#f ""))))
-    (define installation? (current-install-system-wide?))
+    (define installation? (eq? 'installation (current-pkg-scope)))
     (setup:setup
      #:make-user? (not installation?)
      #:collections (and setup-collects
@@ -29,17 +29,14 @@
 (define (call-with-package-scope who given-scope installation shared user thunk)
   (define scope
     (case given-scope
-      [(installation) 'i]
-      [(user) 'u]
-      [(shared) 's]
+      [(installation use shared) given-scope]
       [else
        (cond
-        [installation 'i]
-        [user 'u]
-        [shared 's]
-        [else (get-default-package-scope)])]))
-  (parameterize ([current-install-system-wide? (eq? scope 'i)]
-                 [current-install-version-specific? (not (eq? scope 's))]
+        [installation 'installation]
+        [user 'user]
+        [shared 'shared]
+        [else (default-pkg-scope)])]))
+  (parameterize ([current-pkg-scope scope]
                  [current-pkg-error (pkg-error who)])
     (thunk)))
 
@@ -83,9 +80,9 @@
    'install
    scope installation shared user
    (lambda ()
-     (with-package-lock
+     (with-pkg-lock
       (define setup-collects
-        (install-cmd #:dep-behavior deps
+        (pkg-install #:dep-behavior deps
                      #:force? force
                      #:ignore-checksums? ignore-checksums
                      (for/list ([p (in-list pkg-source)])
@@ -122,12 +119,12 @@
    'update
    scope installation shared user
    (lambda ()
-    (with-package-lock
+    (with-pkg-lock
      (define setup-collects
-       (update-packages pkg
-                        #:all? all
-                        #:dep-behavior deps
-                        #:deps? update-deps))
+       (pkg-update pkg
+                   #:all? all
+                   #:dep-behavior deps
+                   #:deps? update-deps))
      (when setup-collects
        (setup no-setup setup-collects)))))]
  [remove
@@ -151,10 +148,10 @@
    'remove
    scope installation shared user
    (lambda ()
-     (with-package-lock
-      (remove-packages pkg
-                       #:auto? auto
-                       #:force? force)
+     (with-pkg-lock
+      (pkg-remove pkg
+                  #:auto? auto
+                  #:force? force)
       (setup no-setup #f))))]
  [show
   "Show information about installed packages"
@@ -172,29 +169,26 @@
   [#:bool shared ("-s") "shorthand for `--scope shared'"]
   #:args ()
   (define only-mode (case scope
-                      [(installation) 'i]
-                      [(user) 'u]
-                      [(shared) 's]
+                      [(installation user shared) scope]
                       [else
                        (cond
-                        [installation 'i]
-                        [shared 's]
-                        [user 'u]
-                        [else (if version 'u #f)])]))
-  (for ([mode '(i s u)])
+                        [installation 'installation]
+                        [shared 'shared]
+                        [user 'user]
+                        [else (if version 'user #f)])]))
+  (for ([mode '(installation shared user)])
     (when (or (eq? mode only-mode) (not only-mode))
       (unless only-mode
         (printf "~a\n" (case mode
-                         [(i) "Installation-wide:"]
-                         [(s) "User-specific, all-version:"]
-                         [(u) (format "User-specific, version-specific (~a):"
-                                      (or version (r:version)))])))
-      (parameterize ([current-install-system-wide? (eq? mode 'i)]
-                     [current-install-version-specific? (eq? mode 'u)]
+                         [(installation) "Installation-wide:"]
+                         [(shared) "User-specific, all-version:"]
+                         [(user) (format "User-specific, version-specific (~a):"
+                                         (or version (r:version)))])))
+      (parameterize ([current-pkg-scope mode]
                      [current-pkg-error (pkg-error 'show)]
-                     [current-show-version (or version (r:version))])
-        (with-package-lock/read-only
-         (show-cmd (if only-mode "" " ") #:directory? dir)))))]
+                     [current-pkg-scope-version (or version (r:version))])
+        (with-pkg-lock/read-only
+         (pkg-show (if only-mode "" " ") #:directory? dir)))))]
  [config
   "View and modify the package configuration"
   #:once-each
@@ -214,10 +208,10 @@
    scope installation shared user
    (lambda ()
      (if set
-         (with-package-lock
-          (config-cmd #t key/val))
-         (with-package-lock/read-only
-          (config-cmd #f key/val)))))]
+         (with-pkg-lock
+          (pkg-config #t key/val))
+         (with-pkg-lock/read-only
+          (pkg-config #f key/val)))))]
  [create
   "Bundle a new package"
   #:once-any
@@ -227,7 +221,7 @@
   [#:bool manifest () "Creates a manifest file for a directory, rather than an archive"]
   #:args (package-directory)
   (parameterize ([current-pkg-error (pkg-error 'create)])
-    (create-cmd (if manifest 'MANIFEST (or format 'zip)) package-directory))]
+    (pkg-create (if manifest 'MANIFEST (or format 'zip)) package-directory))]
  [index-show
   "Show information about packages as reported by index"
   #:once-any 
@@ -241,7 +235,7 @@
   (parameterize ([current-pkg-indexes (and index
                                            (list (string->url index)))]
                  [current-pkg-error (pkg-error 'index-show)])
-    (index-show-cmd pkg-name 
+    (pkg-index-show pkg-name 
                     #:all? all
                     #:only-names? only-names))]
  [index-copy
@@ -255,7 +249,7 @@
   [#:bool override () "While merging, override existing with new"]
   #:args index
   (parameterize ([current-pkg-error (pkg-error 'index-copy)])
-    (index-copy-cmd (drop-right index 1)
+    (pkg-index-copy (drop-right index 1)
                     (last index)
                     #:from-config? from-config
                     #:force? force

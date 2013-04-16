@@ -16,22 +16,21 @@ commands are built.}
 
 
 @deftogether[(
-@defform[(with-package-lock body ...+)]
-@defform[(with-package-lock/read-only body ...+)]
+@defform[(with-pkg-lock body ...+)]
+@defform[(with-pkg-lock/read-only body ...+)]
 )]{
 
 Evaluates the @racket[body]s while holding a lock to prevent
 concurrent modification to the package database. Use the
-@racket[with-package-lock/read-only] form for read-only access.
+@racket[with-pkg-lock/read-only] form for read-only access.
 
 Use these form to wrap uses of functions from @racketmodname[pkg/lib]
 that read or modify the package database.}
 
 
 @deftogether[(
-@defboolparam[current-install-system-wide? system-wide?]
-@defboolparam[current-install-version-specific? version-specific?]
-@defparam[current-show-version s string?]
+@defparam[current-pkg-scope scope (or/c 'installation 'user 'shared)]
+@defparam[current-pkg-scope-version s string?]
 )]{
 
 Parameters that together determine @tech{package scope} for management
@@ -74,21 +73,18 @@ name resolvers}.}
 A structure type that is used to report installed-package information.}
 
 
-@defproc[(package-directory [name string?]) path-string?]{
+@defproc[(pkg-directory [name string?]) path-string?]{
 
 Returns the directory that holds the installation of the installed
 package @racket[name].}
 
 
-@defproc[(get-default-package-scope) (or/c 'i 'u 's)]{
+@defproc[(default-pkg-scope) (or/c 'installation 'user 'shared)]{
 
-Returns the user's configured default @tech{package scope}:
-@racket['i] for installation, @racket['u] for user- and
-version-specific, and @racket['s] for user-specific but shared across
-versions.}
+Returns the user's configured default @tech{package scope}.}
 
 
-@defproc[(installed-pkg-names [#:scope scope (or/c #f 'i 'u 's)])
+@defproc[(installed-pkg-names [#:scope scope (or/c #f 'installation 'user 'shared)])
          (listof string?)]{
 
 Returns a list of installed package names for the given @tech{package
@@ -96,7 +92,7 @@ scope}, where @racket[#f] indicates the user's default @tech{package
 scope}.}
 
 
-@defproc[(installed-pkg-table [#:scope scope (or/c #f 'i 'u 's)])
+@defproc[(installed-pkg-table [#:scope scope (or/c #f 'installation 'user 'shared)])
          (hash/c string? pkg-info?)]{
 
 Returns a hash table of installed packages for the given @tech{package
@@ -119,7 +115,7 @@ the package is should be treated as installed automatically for a
 dependency.}
 
 
-@defproc[(stage-package [desc pkg-desc?]
+@defproc[(pkg-stage [desc pkg-desc?]
                         [#:checksum checksum (or/c #f string?) #f])
          (values path? (or/c #f string?) boolean?)]{
 
@@ -132,20 +128,20 @@ directory should be removed after the package content is no longer
 needed.}
 
 
-@defproc[(config-cmd [set? boolean?] [keys/vals list?])
+@defproc[(pkg-config [set? boolean?] [keys/vals list?])
          void?]{
 
 Implements the @racket[config] command.}
 
 
-@defproc[(create-cmd [format (or/c 'zip 'tgz 'plt 'MANIFEST)]
+@defproc[(pkg-create [format (or/c 'zip 'tgz 'plt 'MANIFEST)]
                      [dir path-string?])
         void?]{
 
 Implements the @racket[create] command.}
 
 
-@defproc[(install-cmd      [names (listof string?)]
+@defproc[(pkg-install      [names (listof string?)]
                            [#:dep-behavior dep-behavior
                                            (or/c #f 'fail 'force 'search-ask 'search-auto)
                                            #f]
@@ -158,7 +154,7 @@ collections should be setup via @exec{raco setup}: @racket[#f] means
 all, and a list means only the indicated collections.}
 
 
-@defproc[(update-packages [names (listof string?)]
+@defproc[(pkg-update      [names (listof string?)]
                           [#:dep-behavior dep-behavior
                                           (or/c #f 'fail 'force 'search-ask 'search-auto)
                                           #f]
@@ -167,10 +163,10 @@ all, and a list means only the indicated collections.}
         (or/c #f (listof (or/c path-string? (non-empty-listof path-string?))))]{
 
 Implements the @racket[update] command. The result is the same as for
-@racket[install-packages].}
+@racket[install-pkgs].}
 
 
-@defproc[(remove-packages [names (listof string?)]
+@defproc[(pkg-remove      [names (listof string?)]
                           [#:auto? auto? boolean? #f]
                           [#:force? force? boolean? #f])
          void?]{
@@ -178,7 +174,7 @@ Implements the @racket[update] command. The result is the same as for
 Implements the @racket[remove] command.}
 
 
-@defproc[(show-cmd [indent string?]
+@defproc[(pkg-show [indent string?]
                    [#:directory show-dir? boolean? #f])
          void?]{
 
@@ -187,7 +183,7 @@ printing to the current output port. See also
 @racket[installed-pkg-names] and @racket[installed-pkg-table].}
 
 
-@defproc[(index-show-cmd [names (listof string?)]
+@defproc[(pkg-index-show [names (listof string?)]
                          [#:all? all? boolean? #f]
                          [#:only-names? only-names? boolean? #f])
          void?]{
@@ -196,7 +192,7 @@ Implements the @racket[index-show] command. If @racket[all?] is true,
 then @racket[names] should be empty.}
 
 
-@defproc[(index-copy-cmd [sources (listof path-string?)]
+@defproc[(pkg-index-copy [sources (listof path-string?)]
                          [dest path-string?]
                          [#:from-config? from-config? boolean? #f]
                          [#:merge? merge? boolean? #f]
