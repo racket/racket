@@ -173,7 +173,7 @@ update this count during most any interaction.
 @just-report[]}
 
 
-@defproc[(imap-unseen [imap imap-connection?]) (or/c exact-nonnegative-integer? false/c)]{
+@defproc[(imap-unseen [imap imap-connection?]) (or/c exact-nonnegative-integer? #f)]{
 
 Returns the number of ``unseen'' messages in the currently selected
 mailbox, as most recently reported by the server. The server can
@@ -183,7 +183,7 @@ not report this value, in which case the result is @racket[#f].
 @just-report[]}
 
 
-@defproc[(imap-uidnext [imap imap-connection?]) (or/c exact-nonnegative-integer? false/c)]{
+@defproc[(imap-uidnext [imap imap-connection?]) (or/c exact-nonnegative-integer? #f)]{
 
 Returns the predicted next uid for a message in the currently selected
 mailbox, as most recently reported by the server. The server can
@@ -193,7 +193,7 @@ not report this value, in which case the result is @racket[#f].
 @just-report[]}
 
 
-@defproc[(imap-uidvalidity [imap imap-connection?]) (or/c exact-nonnegative-integer? false/c)]{
+@defproc[(imap-uidvalidity [imap imap-connection?]) (or/c exact-nonnegative-integer? #f)]{
 
 Returns an id number that changes when all uids become invalid. The
 server @emph{cannot} update this number during a session. Old IMAP
@@ -280,10 +280,10 @@ list, @racket[#t] otherwise.}
 
 @defproc[(imap-get-messages [imap imap-connection?]
                             [msg-nums (listof exact-nonnegative-integer?)]
-                            [fields (listof (one-of/c 'uid
-                                                      'header
-                                                      'body
-                                                      'flags))])
+                            [fields (listof (or/c 'uid
+                                                  'header
+                                                  'body
+                                                  'flags))])
          (listof list?)]{
 
 Downloads information for a set of messages. The @racket[msg-nums]
@@ -356,7 +356,7 @@ provided.}
 
 
 @defproc[(imap-store [imap imap-connection?]
-                     [mode (one-of/c '+ '- '!)]
+                     [mode (or/c '+ '- '!)]
                      [msg-nums (listof exact-nonnegative-integer?)]
                      [imap-flags (listof symbol?)])
          void?]{
@@ -467,7 +467,7 @@ Creates @racket[mailbox]. (It must not exist already.)}
 
 
 @defproc[(imap-list-child-mailboxes [imap imap-connection?]
-                                    [mailbox (or/c string? bytes? false/c)]
+                                    [mailbox (or/c string? bytes? #f)]
                                     [delimiter (or/c string? bytes?)
                                                (imap-get-hierarchy-delimiter)])
          (listof (list/c (listof symbol?) bytes?))]{
