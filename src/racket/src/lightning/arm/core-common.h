@@ -40,8 +40,8 @@
 #define	jit_get_label()			jit_get_ip()
 #define	jit_forward()			jit_get_ip()
 
-#define jit_adjust_ip(x) ((jit_insn *)(((char *)(x)) + jit_cpu.thumb))
-#define jit_unadjust_ip(x) ((jit_insn *)(((char *)(x)) - jit_cpu.thumb))
+#define jit_adjust_ip(x) ((jit_insn *)(((char *)(x)) + (jit_thumb_p() ? 1 : 0)))
+#define jit_unadjust_ip(x) ((jit_insn *)(((char *)(x)) - (jit_thumb_p() ? 1 : 0)))
 
 #define	jit_field(struc, f)		( ((long) (&((struc *) 8)->f) ) - 8)
 #define	jit_ptr_field(struc_p, f)	( ((long) (&((struc_p) 8)->f) ) - 8)

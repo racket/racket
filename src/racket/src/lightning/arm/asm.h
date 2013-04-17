@@ -103,9 +103,79 @@ typedef enum {
 /* match vfpv3 result */
 #define NAN_TO_INT_IS_ZERO		1
 
-#define jit_thumb_p()			jit_cpu.thumb
-#define jit_armv6_p()			(jit_cpu.version >= 6)
-#define jit_advsimd_p()			((jit_cpu.version >= 7) && jit_thumb_p())
+#if defined(__ARM_ARCH_4__)
+# define JIT_ARM_VERSION 4
+#elif defined(__ARM_ARCH_4T__)
+# define JIT_ARM_THUMB 1
+# define JIT_ARM_VERSION 4
+#elif (defined(__ARM_ARCH_5T__) || defined(__ARM_ARCH_5__))
+# define JIT_ARM_THUMB 1
+# define JIT_ARM_VERSION 5
+#elif (defined(__ARM_ARCH_5TE__) || defined(__ARM_ARCH_5TEJ__))
+# define JIT_ARM_THUMB 1
+# define JIT_ARM_VERSION 5
+# define JIT_ARM_EXTENDED 1
+#elif defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6K__)
+# define JIT_ARM_VERSION 6
+#elif defined(__ARM_ARCH_6T__) || defined(__ARM_ARCH_6T2__)
+# define JIT_ARM_THUMB 2
+# define JIT_ARM_VERSION 6
+#elif (defined(__ARM_ARCH_7A__) || defined(__ARM_ARCH_7R__) || defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7__))
+# define JIT_ARM_THUMB 2
+# define JIT_ARM_VERSION 7
+# if defined(__ARM_ARCH_7R__)
+#  define JIT_ARM_REALTIME 1
+# endif
+#else
+# define JIT_ARM_VERSION 4
+#endif
+
+#if defined(__ARM_PCS_VFP) || defined(__VFP_FP__)
+# define JIT_ARM_VFP 1
+#endif
+
+#if defined(__ARM_NEON__)
+# define JIT_ARM_NEON 1
+#endif
+
+#ifndef JIT_ARM_THUMB
+# define JIT_ARM_THUMB 0
+#endif
+
+#ifndef JIT_ARM_NEON
+# define JIT_ARM_NEON 0
+#endif
+
+#ifndef JIT_ARM_EXTENDED
+# define JIT_ARM_EXTENDED 0
+#endif
+
+#ifndef JIT_ARM_REALTIME 
+# define JIT_ARM_REALTIME 0
+#endif
+
+#ifndef JIT_ARM_VFP
+# define JIT_ARM_VFP 0
+#endif
+
+/* For now, thumb doesn't work with software float: */
+#if JIT_ARM_THUMB && !JIT_ARM_VFP
+# undef JIT_ARM_THUMB
+# define JIT_ARM_THUMB 0
+#endif
+
+# define jit_thumb_p() JIT_ARM_THUMB
+# define jit_neon_p()  JIT_ARM_NEON
+# define jit_hardfp_p() JIT_ARM_VFP
+# define jit_swf_p()    !JIT_ARM_VFP
+
+#define jit_armv5_p()   (JIT_ARM_VERSION >= 5)
+#define jit_armv5e_p()  ((JIT_ARM_VERSION > 5) || JIT_ARM_EXTENDED)
+#define jit_armv6_p()   (JIT_ARM_VERSION >= 6)
+#define jit_armv6t_p()  ((JIT_ARM_VERSION >= 6) && jit_thumb_p())
+#define jit_armv7r_p()	((JIT_ARM_VERSION >= 7) && JIT_ARM_REALTIME)
+
+
 typedef union _jit_thumb_t {
     int		i;
     short	s[2];
@@ -520,7 +590,7 @@ encode_vfp_double(int mov, int inv, unsigned lo, unsigned hi)
 {
     int		code, mode, imm, mask;
 
-    if (!jit_advsimd_p()) return -1;
+    if (!jit_neon_p()) return -1;
 
     if (hi != lo) {
 	if (mov && !inv) {

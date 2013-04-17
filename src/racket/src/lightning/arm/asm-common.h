@@ -65,6 +65,7 @@ struct jit_local_state {
     jit_insn	*thumb;
 };
 
+#ifdef JIT_ARM_DYNAMIC_CPU
 struct {
     _ui		version		: 4;
     _ui		extend		: 1;
@@ -74,6 +75,8 @@ struct {
     _ui		neon		: 1;
     _ui		abi		: 2;
 } jit_cpu;
+#endif
+
 struct {
     /* prevent using thumb instructions that set flags? */
     _ui		no_set_flags	: 1;

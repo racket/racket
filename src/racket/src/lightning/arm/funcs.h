@@ -67,6 +67,11 @@ jit_flush_code(void *start, void *end)
 __jit_constructor __jit_inline void
 jit_get_cpu(void)
 {
+#ifdef JIT_ARM_DYNAMIC_CPU
+  /* Dynamic tests may not be reliable ("/proc/cpuinfo" seems to give bad info
+     on Raspbian as of April 2013), and a static configuration has the advatange
+     of generating a more compact JIT. Some variant of this code may make sense
+     in the future, though. */
   static int	 initialized;
   
   if (initialized)
@@ -74,7 +79,7 @@ jit_get_cpu(void)
   
   initialized = 1;
   
-#if defined(__linux__)
+# if defined(__linux__)
   {
     FILE	*fp;
     char	*ptr;
@@ -110,18 +115,18 @@ jit_get_cpu(void)
     }
     fclose(fp);
   }
-#endif
-#if defined(__ARM_PCS_VFP)
+# endif
+# if defined(__ARM_PCS_VFP)
     if (!jit_cpu.vfp)
 	jit_cpu.vfp = 3;
     if (!jit_cpu.version)
 	jit_cpu.version = 7;
     jit_cpu.abi = 1;
-#endif
-#ifdef __VFP_FP__
+# endif
+# ifdef __VFP_FP__
     if (!jit_cpu.vfp)
 	jit_cpu.vfp = 1;
-#endif
+# endif
     /* armv6t2 todo (software float and thumb2) */
     if (!jit_cpu.vfp && jit_cpu.thumb)
 	jit_cpu.thumb = 0;
@@ -131,6 +136,7 @@ jit_get_cpu(void)
        whether or not a VFP ABI is in use (since we avoid passing
        floating-point arguments or receiving floating-point results in
        that mode). */
+#endif
 }
 
 #endif /* __lightning_funcs_h */

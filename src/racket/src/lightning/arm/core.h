@@ -52,12 +52,6 @@ jit_v_order[JIT_V_NUM] = {
 #define JIT_V2				_R6
 
 #define jit_no_set_flags()		jit_flags.no_set_flags
-#define jit_armv5_p()			(jit_cpu.version >= 5)
-#define jit_armv5e_p()			(jit_cpu.version >= 5 && jit_cpu.extend)
-#define jit_armv7r_p()			0
-#define jit_armv6t_p()			((jit_cpu.version >= 6) && (jit_cpu.thumb))
-#define jit_swf_p()			(jit_cpu.vfp == 0)
-#define jit_hardfp_p()			jit_cpu.abi
 
 extern int	__aeabi_idivmod(int, int);
 extern unsigned	__aeabi_uidivmod(unsigned, unsigned);
