@@ -46,85 +46,191 @@
 
 @title[#:tag "setup" #:style 'toc]{@exec{raco setup}: Installation Management}
 
-The @exec{raco setup} command finds, compiles, configures,
-and installs documentation for all collections in a Racket
-installation. It can also install single @filepath{.plt} files.
+The @exec{raco setup} command builds bytecode, documentation,
+executables, and metadata indexes for all installed collections.
+
+The collections that are built by @exec{raco setup} can be part of the
+original Racket distribution, installed via the package manager (see
+@other-manual['(lib "pkg/scribblings/pkg.scrbl")]), installed via
+@|PLaneT| (see @other-manual['(lib "planet/planet.scrbl")]), linked
+via @exec{raco link}, in a directory that is listed in the
+@envvar{PLTCOLLECTS} environment variable, or placed into one of the
+default collection directories.
+
+The @exec{raco setup} tool itself does not directly support the
+installation of collections, except through the now-discouraged
+@Flag{A} flag (see @secref["raco-setup-A"]). The @exec{raco setup} command is
+used by installation tools such as the package manager or @|PLaneT|.
+Programmers who modify installed collections may find it useful to run
+@exec{raco setup} as an alternative to un-installing and re-installing
+a set of collections.
 
 @local-table-of-contents[]
 
 @; ------------------------------------------------------------------------
-@; ------------------------------------------------------------------------
 
 @section[#:tag "running"]{Running @exec{raco setup}}
 
-The @exec{raco setup} command performs two main services:
+With no command-line arguments, @exec{raco setup} finds all of the
+current collections---see @secref[#:doc ref-src]{collects}---and
+compiles libraries in each collection.  (Directories that are named
+@filepath{.git} or @filepath{.svn} are not treated as collections.)
+
+To restrict @exec{raco setup} to a set of collections, provide the
+collection names as arguments. For example, @exec{raco setup
+scribblings/raco} would only compile and render the documentation for
+@exec{raco}, which is implemented in a @filepath{scribblings/raco}
+collection.
+
+An optional @filepath{info.rkt} within the collection can indicate
+specifically how the collection's files are to be compiled and other
+actions to take in setting up a collection, such as creating
+executables or building documentation. See @secref["setup-info"] for
+more information.
+
+The @exec{raco setup} command accepts the following command-line
+flags:
 
 @itemize[
 
- @item{@bold{Compiling and setting up all or some collections:} 
-   When @exec{raco setup} is run without any arguments, it
-   finds all of the current collections---see @secref[#:doc
-   ref-src]{collects}---and compiles libraries in each collection.
-   (Directories that are named @filepath{.git} or @filepath{.svn} are 
-   not treated as collections.)
+ @item{@DFlag{workers} @nonterm{n} or @Flag{j} @nonterm{n} --- use up
+   to @nonterm{n} parallel processes.  By default, @exec{raco setup}
+   uses @racket[(processor-count)] processors, which typically uses
+   all of the machine's processing cores.}
 
-   To restrict @exec{raco setup} to a set of collections, provide the
-   collection names as arguments. For example, @exec{raco setup
-   scribblings/raco} would only compile and render the documentation
-   for @exec{raco}, which is implemented in a
-   @filepath{scribblings/raco} collection.
+ @item{@DFlag{only} --- restrict setup to specified collections and
+   @|PLaneT| packages, even if none are specified. This mode is the
+   default if any collection is specified as a command-line argument,
+   through the @Flag{l} flag, or through the @Flag{P} flag.}
 
-   An optional @filepath{info.rkt} within the collection can indicate
-   specifically how the collection's files are to be compiled and
-   other actions to take in setting up a collection, such as creating
-   executables or building documentation. See @secref["setup-info"]
-   for more information.
+ @item{@Flag{P} @nonterm{owner} @nonterm{package-name} @nonterm{maj}
+  @nonterm{min} --- constrain setup actions to the specified @|PLaneT|
+  package, in addition to any other specified @|PLaneT| packages or
+  @nonterm{collections}.}
 
-   The @DFlag{clean} (or @Flag{c}) flag to @exec{raco setup} causes it to
-   delete existing @filepath{.zo} files, thus ensuring a clean build
-   from the source files. The exact set of deleted files can be
-   controlled by @filepath{info.rkt}; see
-   @elemref["clean"]{@racket[clean]} for more information.
+ @item{@DFlag{tidy} --- remove metadata cache information and
+  documentation for non-existent collections (to clean up after removal)
+  even when setup actions are otherwise confined to specified collections.}
 
-   The @DFlag{workers} (or @Flag{j}) flag to @exec{raco setup} takes
-   an argument @racket[_n] to make compilation use up to @racket[_n]
-   parallel processes.  The default value of @racket[_n] is
-   @racket[(processor-count)], which typically uses all the machine's
-   processing cores.
+ @item{@DFlag{clean} or @Flag{c} --- delete existing @filepath{.zo}
+   files, thus ensuring a clean build from the source files. The exact
+   set of deleted files can be controlled by @filepath{info.rkt}; see
+   @elemref["clean"]{@racket[clean]} for more information.}
 
-   The @DFlag{mode} @nonterm{mode} flag causes @exec{raco setup} to use a
-   @filepath{.zo} compiler other than the default compiler, and to put
-   the resulting @filepath{.zo} files in a subdirectory (of the usual
-   place) named by @nonterm{mode}. The compiler is obtained by using
-   @nonterm{mode} as a collection name, finding a
-   @filepath{zo-compile.rkt} module in that collection, and extracting
-   its @racket[zo-compile] export. The @racket[zo-compile] export
-   should be a function like @racket[compile]; see the
-   @filepath{errortrace} collection for an example.
+ @item{@DFlag{no-zo} or @Flag{n} --- refrain from compiling source
+   files to @filepath{.zo} files.}
 
-   When building @exec{racket}, flags can be provided to @exec{raco
-   setup} as run by @exec{make install} by setting the
-   @as-index{@envvar{PLT_SETUP_OPTIONS}} environment variable. For
-   example, the following command line uses a single process to build
-   collections during an install:
+ @item{@DFlag{trust-zos} --- fix timestamps on @filepath{.zo} files on
+   the assumption that they are already up-to-date.}
 
-   @commandline{env PLT_SETUP_OPTIONS="-j 1" make install}}
+ @item{@DFlag{no-launcher} or @Flag{x} --- refrain from creating
+   executables (as specified in @filepath{info.rkt} files; see
+   @secref["setup-info"]).}
 
- @item{@bold{Unpacking @filepath{.plt} files:} A
-   @filepath{.plt} file is a platform-independent distribution archive
-   for software based on Racket. When one or more file names are
-   provided as the command line arguments to @exec{raco setup} with the @Flag{A} flag, the files
-   contained in the @filepath{.plt} archive are unpacked (according to
-   specifications embedded in the @filepath{.plt} file) and only
-   collections specified by the @filepath{.plt} file are compiled and
-   setup.}]
+ @item{@DFlag{no-install} or @Flag{i} --- refrain from running
+   pre-install actions (as specified in @filepath{info.rkt} files; see
+   @secref["setup-info"]).}
 
-Run @exec{raco help setup} to see a list of all options accepted by
-the @exec{raco setup} command.
+ @item{@DFlag{no-post-install} or @Flag{I} --- refrain from running
+   post-install actions (as specified in @filepath{info.rkt} files; see
+   @secref["setup-info"]).}
+
+ @item{@DFlag{no-info-domain} or @Flag{d} --- refrain from building
+   a cache of metadata information from @filepath{info.rkt}
+   files. This cache is needed by other tools. For example,
+   @exec{raco} itself uses the cache to locate plug-in tools.}
+
+ @item{@DFlag{no-docs} or @Flag{D} --- refrain from building
+   documentation.}
+
+ @item{@DFlag{doc-pdf} @nonterm{dir} --- in addition to building HTML
+   documentation, render documentation to PDF and place files in
+   @nonterm{dir}.}
+
+ @item{@DFlag{no-user} or @Flag{U} --- refrain from any user-specific
+  (as opposed to installation-specific) setup actions.}
+
+ @item{@DFlag{no-planet} --- refrain from any setup actions for
+  @|PLaneT| actions; this flags is implied by @DFlag{no-user}.}
+
+ @item{@DFlag{avoid-main} --- refrain from any setup actions that
+  affect the installation, as opposed to user-specific actions.}
+
+ @item{@DFlag{mode} @nonterm{mode} --- use a @filepath{.zo} compiler
+   other than the default compiler, and put the resulting
+   @filepath{.zo} files in a subdirectory (of the usual place) named
+   by @nonterm{mode}. The compiler is obtained by using @nonterm{mode}
+   as a collection name, finding a @filepath{zo-compile.rkt} module in
+   that collection, and extracting its @racket[zo-compile] export. The
+   @racket[zo-compile] export should be a function like
+   @racket[compile]; see the @filepath{errortrace} collection for an
+   example.}
+
+ @item{@DFlag{verbose} or @Flag{v} --- More verboase output about
+   @exec{raco setup} actions.}
+
+ @item{@DFlag{make-verbose} or @Flag{m} --- More verboase output about
+   dependency checks.}
+
+ @item{@DFlag{compiler-verbose} or @Flag{r} --- Even more verbose
+   output about dependency checks and compilation.}
+
+ @item{@DFlag{pause} or @Flag{p} --- Pause for user input if any
+  errors are reported (so that a user has time to inspect output that
+  might otherwise disappear when the @exec{raco setup} process ends).}
+
+ @item{@Flag{l} @nonterm{collection} @racket[...] --- constrain setup
+  actions to the specified @nonterm{collection}s (i.e., the same as
+  providing @nonterm{collections}s without a flag, but with no
+  possibility that a @nonterm{collection} is interpreted as a flag.}
+
+ @item{@Flag{A} @nonterm{archive} @racket[...] --- Install each
+  @nonterm{archive}; see @secref["raco-setup-A"].}
+
+ @item{@DFlag{force} --- for use with @Flag{A}, treat version
+  mismatches for archives as mere warnings.}
+
+ @item{@DFlag{all-users} or @Flag{a} --- for use with @Flag{A},
+  install archive into the installation instead of a user-specific
+  location.}
+
+
+]
+
+When building @exec{racket}, flags can be provided to @exec{raco
+setup} as run by @exec{make install} by setting the
+@as-index{@envvar{PLT_SETUP_OPTIONS}} environment variable. For
+example, the following command line uses a single process to build
+collections during an install:
+
+   @commandline{env PLT_SETUP_OPTIONS="-j 1" make install}
 
 @; ------------------------------------------------------------------------
 
-@subsection[#:tag "setup-info"]{Controlling @exec{raco setup} with @filepath{info.rkt} Files}
+@section[#:tag "raco-setup-A"]{Installing @filepath{.plt} Archives}
+
+A @filepath{.plt} file is a platform-independent distribution archive
+for software based on Racket. A typical @filepath{.plt} file can be
+installed as a package using @exec{raco pkg} (see @other-manual['(lib
+"pkg/scribblings/pkg.scrbl")]), in which case @exec{raco pkg} supplies
+facilities for uninstalling the package and managing dependencies.
+
+An older approach is to supply a @filepath{.plt} file to @exec{raco
+setup} with the @Flag{A} flag, the files contained in the
+@filepath{.plt} archive are unpacked (according to specifications
+embedded in the @filepath{.plt} file) and only collections specified
+by the @filepath{.plt} file are compiled and setup. Archives processed
+in this way can include arbitrary code that is executed at install
+time, in addition to any actions triggered by the normal
+collection-setup part of @exec{raco setup}.
+
+Finally, the @exec{raco unpack} (see @secref["unpack"]) command can
+list the content of a @filepath{.plt} archive or unpack the archive
+without installing it as a package or collection.
+
+@; ------------------------------------------------------------------------
+
+@section[#:tag "setup-info"]{Controlling @exec{raco setup} with @filepath{info.rkt} Files}
 
 To compile a collection's files to bytecode, @exec{raco setup} uses the
 @racket[compile-collection-zos] procedure. That procedure, in turn,
@@ -410,7 +516,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "setup-plt-plt"]{API for Installation}
+@section[#:tag "setup-plt-plt"]{API for Setup}
 
 @defmodule[setup/setup]
 
@@ -425,6 +531,8 @@ Optional @filepath{info.rkt} fields trigger additional actions by
                 [#:make-user? make-user? any/c #t]
                 [#:make-docs? make-docs? any/c #t]
                 [#:clean? clean? any/c #f]
+                [#:tidy? tidy? any/c #f]
+                [#:avoid-main? avoid-main? any/c #f]
                 [#:jobs jobs exact-nonnegative-integer? #f]
                 [#:get-target-dir get-target-dir (or/c #f (-> path-string?)) #f])
           void?]{
@@ -448,6 +556,13 @@ Runs @exec{raco setup} with various options:
        user-specific setup actions}
 
  @item{@racket[clean?] --- if true, enables cleaning mode instead of setup mode}
+
+ @item{@racket[tidy?] --- if true, enables global tidying of
+       documentation and metadata indexes even when @racket[collections]
+       or @racket[planet-specs] is non-@racket[#f]}
+
+ @item{@racket[avoid-main?] --- if true, avoids setup actions that affect
+       the main installation, as opposed to user directories}
 
  @item{@racket[jobs] --- if not @racket[#f], determines the maximum number of parallel
        tasks used for setup}

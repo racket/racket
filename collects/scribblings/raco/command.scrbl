@@ -5,9 +5,11 @@
 @title[#:tag "command"]{Adding a @exec{raco} Command}
 
 The set of commands supported by @exec{raco} can be extended by
-installed collections and @|PLaneT| packages. A command is added by
-defining @indexed-racket[raco-commands] in the @filepath{info.rkt}
-library of a collection or package (see @secref["info.rkt"]).
+installed packages, @|PLaneT| packages, and other collections. A
+command is added by defining @indexed-racket[raco-commands] in the
+@filepath{info.rkt} library of a collection (see @secref["info.rkt"]),
+and then @exec{raco setup} (as called directly or as part of a package
+or @|PLaneT| installation) must index the @filepath{info.rkt} file.
 
 The value bound to @racket[raco-commands] must be a list of command
 specifications, where each specification is a list of four values:
@@ -34,7 +36,7 @@ the command name used to load the command. When @exec{raco help} is
 used on a command, the command is launched with an initial
 @DFlag{help} argument in @racket[current-command-line-arguments].
 
-The @racket[description-string] is a short string used to describe the
+The @racket[_description-string] is a short string used to describe the
 command in response to @exec{raco help}. The description should not be
 capitalized or end with a period.
 
@@ -47,7 +49,7 @@ more prominent. The @exec{pack} tool, which is currently ranked as the
 least-prominent of the frequently used commands, has a value of
 @racket[10].
 
-As an example, the @filepath{info.rkt} of the "compiler" collection
+As an example, the @filepath{info.rkt} of the @filepath{compiler} collection
 might contain the
 
 @racketblock[

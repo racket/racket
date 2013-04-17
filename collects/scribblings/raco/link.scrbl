@@ -12,6 +12,13 @@ The @exec{raco link} command inspects and modifies a @tech[#:doc
 reference-doc]{collection links file} to display, add, or remove
 mappings from collection names to filesystem directories.
 
+Managing links directly is somewhat discouraged. Instead, use the
+package manager (see @other-manual['(lib
+"pkg/scribblings/pkg.scrbl")]), which installs and manages links
+(i.e., it builds on @exec{raco link}) in a way that more gracefully
+leads to sharing collections with others. Nevertheless, @exec{raco
+link} is available for direct use.
+
 For example, the command
 
 @commandline{raco link maze}

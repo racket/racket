@@ -118,6 +118,8 @@
          auto-start-doc?    ; if #t, expands `only-dir' with [user-]start to
                                         ;  catch new docs
          make-user?         ; are we making user stuff?
+         tidy?              ; clean up, even beyond `only-dirs'
+         avoid-main?        ; avoid main collection, even for `tidy?'
          with-record-error  ; catch & record exceptions
          setup-printf)
   (unless (doc-db-available?)
@@ -191,7 +193,9 @@
       (filter-user-docs (append-map (get-docs main-dirs) infos recs) make-user?)))
   (define-values (main-docs user-docs) (partition doc-under-main? docs))
 
-  (unless only-dirs
+  (when (and (or (not only-dirs) tidy?)
+             (not avoid-main?)
+             (not latex-dest))
     ;; Check for extra document directories that we should remove
     ;; in the main installation:
     (log-setup-info "checking installation document directories")
@@ -300,28 +304,36 @@
                  (hash-set! out-path->info-cache path i)
                  i)))))
 
+  (define (tidy-database)
+    (when (and (or (not only-dirs) tidy?)
+               (not latex-dest))
+      (log-setup-info "tidying database")
+      (define files (make-hash))
+      (define tidy-docs (if tidy?
+                            docs
+                            (map info-doc infos)))
+      (define (get-files! main?)
+        (for ([doc (in-list tidy-docs)]
+              #:when (eq? main? (main-doc? doc)))
+          (hash-set! files (sxref-path latex-dest doc "in.sxref") #t)
+          (for ([c (in-range (add1 (doc-out-count doc)))])
+            (hash-set! files (sxref-path latex-dest doc (format "out~a.sxref" c)) #t))))
+      (unless avoid-main?
+        (get-files! #t)
+        (doc-db-clean-files main-db files))
+      (when (and (file-exists? user-db)
+                 (not (equal? main-db user-db)))
+        (get-files! #f)
+        (doc-db-clean-files user-db files))))
+
+  (define main-db (find-doc-db-path latex-dest #f))
+  (define user-db (find-doc-db-path latex-dest #t))
+
   (define (make-loop first? iter)
     (let ([infos (filter-not info-failed? infos)]
           [src->info (make-hash)]
-          [out-path->info-cache (make-hash)]
-          [main-db (find-doc-db-path latex-dest #f)]
-          [user-db (find-doc-db-path latex-dest #t)])
-      (unless only-dirs
-        (log-setup-info "cleaning database")
-        (define files (make-hash))
-        (define (get-files! main?)
-          (for ([i (in-list infos)]
-                #:when (eq? main? (main-doc? (info-doc i))))
-            (define doc (info-doc i))
-            (hash-set! files (sxref-path latex-dest doc "in.sxref") #t)
-            (for ([c (in-range (add1 (doc-out-count doc)))])
-              (hash-set! files (sxref-path latex-dest doc (format "out~a.sxref" c)) #t))))
-        (get-files! #t)
-        (doc-db-clean-files main-db files)
-        (when (and (file-exists? user-db)
-                   (not (equal? main-db user-db)))
-          (get-files! #f)
-          (doc-db-clean-files user-db files)))
+          [out-path->info-cache (make-hash)])
+      (tidy-database)
       ;; Check for duplicate definitions
       (when first?
         (log-setup-info "checking for duplicates")
@@ -531,6 +543,10 @@
                           #:when (info-build? i))
                        (add1 count)))
           (make-loop #f (add1 iter))))))
+
+  (unless infos
+    ;; since we won't use `make-loop':
+    (tidy-database))
 
   (when infos
     (make-loop #t 0)

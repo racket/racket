@@ -22,6 +22,8 @@
                #:make-docs? [make-docs? #t]
                #:make-user? [make-user? #t]
                #:clean? [clean? #f]
+               #:tidy? [tidy? #f]
+               #:avoid-main? [avoid-main? #f]
                #:jobs [parallel #f])
   (define-unit set-options@
     (import setup-option^ compiler^)
@@ -43,11 +45,20 @@
     (when collections
       (specific-collections collections))
 
+    (when (or planet-specs collections)
+      (make-only #t))
+
     (unless make-user?
       (make-user #f))
 
     (unless make-docs?
       (make-docs #f))
+
+    (when tidy?
+      (make-tidy #t))
+
+    (when avoid-main?
+      (avoid-main-installation #t))
     
     (when clean?
       (clean #t)

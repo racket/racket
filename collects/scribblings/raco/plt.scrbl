@@ -6,18 +6,22 @@
 
 @title[#:tag "plt"]{@exec{raco pack}: Packing Library Collections}
 
-@margin-note{Before creating a @filepath{.plt} archive to distribute,
-consider instead posting your package on
-@link["http://planet.racket-lang.org/"]{@|PLaneT|}.}
+The @exec{raco pack} command creates an archive of files and
+directories. Formerly, such archives were used directly to distribute
+library files to Racket users, but the package manager (see
+@other-manual['(lib "pkg/scribblings/pkg.scrbl")]) is now the
+preferred mechanism for distribution.
 
-The @exec{raco pack} command creates an archive for distributing
-library files to Racket users. A distribution archive usually has the
-suffix @as-index{@filepath{.plt}}, which DrRacket recognizes as an
-archive to provide automatic unpacking facilities. The @exec{raco
-setup} command (see @secref["setup"]) also supports @filepath{.plt}
-unpacking with installation, while the @exec{raco unpack} command (see
-@secref["unpack"]) unpacks an archive locally without attempting to
-install it.
+A packed archive usually has the suffix @as-index{@filepath{.plt}}.
+The @exec{raco pkg} command recognizes a @filepath{.plt} archive for
+installation as a package. The @exec{raco setup} command (see
+@secref["setup"]) also supports @filepath{.plt} unpacking and
+installation when using the @Flag{A} flag, but such installations do
+not benefit from the more general management facilities of @exec{raco
+pkg}, while the @exec{raco unpack} command (see @secref["unpack"])
+unpacks an archive locally without attempting to install it. DrRacket
+recognizes the @filepath{.plt} and currently treats such an archive in
+the same way as @exec{raco setup -A}.
 
 An archive contains the following elements:
 

@@ -9,7 +9,9 @@
 
 The @exec{raco unpack} command unpacks a @filepath{.plt} archive (see
 @secref["plt"]) to the current directory without attempting to install
-any collections. Use @exec{raco setup -A} (see @secref["setup"]) to
+any collections. Use @exec{raco pkg} (see @other-manual['(lib
+"pkg/scribblings/pkg.scrbl")]) to install a @filepath{.plt} archive as
+a package, or use @exec{raco setup -A} (see @secref["setup"]) to
 unpack and install collections from a @filepath{.plt} archive.
 
 Command-line flags:

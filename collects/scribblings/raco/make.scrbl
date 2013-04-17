@@ -4,6 +4,7 @@
                      racket/include
                      racket/contract
                      racket/future
+                     racket/promise
                      compiler/cm
                      compiler/cm-accomplice
                      setup/parallel-build))

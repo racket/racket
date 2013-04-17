@@ -130,7 +130,7 @@
                                                [len (bytes-length skip-path)])
                                            (and ((bytes-length b) . > . len)
                                                 (bytes=? (subbytes b 0 len) skip-path)))
-                                         (list -inf.0 "")))])
+                                         (cons -inf.0 "")))])
                     (let* ([sses (append
                                   ;; Find all .rkt/.ss/.scm files:
                                   (filter extract-base-filename/ss (directory-list))

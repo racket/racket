@@ -19,7 +19,9 @@
                                (if (list? s) s (list s)))
                              (append setup-collects
                                      (if installation? '("scribblings/main") null)
-                                     '("scribblings/main/user")))))))
+                                     '("scribblings/main/user"))))
+     #:tidy? #t
+     #:avoid-main? (not installation?))))
 
 (define ((pkg-error cmd) . args)
   (apply raise-user-error
