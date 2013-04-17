@@ -11,6 +11,7 @@
      compiler-verbose
      clean
      compile-mode
+     make-only
      make-zo
      make-info-domain
      make-launchers
@@ -18,6 +19,7 @@
      make-user
      make-planet
      avoid-main-installation
+     make-tidy
      call-install
      call-post-install
      pause-on-errors
