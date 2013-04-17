@@ -188,5 +188,18 @@
   json/main> «,sh echo $F»
   @|collects|/json/main.rkt
   json/main> «,top»
+  -> «(display-to-file "#lang racket\n(provide x)\n(define x 1)\n"
+                       "xrepl-test.rkt" #:exists 'truncate)»
+  -> «,rr "xrepl-test.rkt"»             ⇒ first load
+  ; requiring "xrepl-test.rkt"
+  -> «x»
+  1
+  -> «(display-to-file "#lang racket\n(provide x)\n(define x 2)\n"
+                       "xrepl-test.rkt" #:exists 'truncate)»
+  -> «,rr xrepl-test.rkt»
+  ; reloading "xrepl-test.rkt"
+  -> «,rm xrepl-test.rkt»
+  -> «x»
+  2
   -> «,ex»
   @||})
