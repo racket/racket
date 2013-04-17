@@ -55,6 +55,7 @@ jit_v_order[JIT_V_NUM] = {
 #define jit_armv5_p()			(jit_cpu.version >= 5)
 #define jit_armv5e_p()			(jit_cpu.version >= 5 && jit_cpu.extend)
 #define jit_armv7r_p()			0
+#define jit_armv6t_p()			((jit_cpu.version >= 6) && (jit_cpu.thumb))
 #define jit_swf_p()			(jit_cpu.vfp == 0)
 #define jit_hardfp_p()			jit_cpu.abi
 
@@ -107,13 +108,13 @@ arm_movi_i(jit_state_t _jitp, jit_gpr_t r0, int i0)
     }
   }
   else {
-    if (jit_armv6_p() && !(i0 & 0xffff0000))
+    if (jit_armv6t_p() && !(i0 & 0xffff0000))
       _MOVWI(r0, i0);
     else if ((i = encode_arm_immediate(i0)) != -1)
       _MOVI(r0, i);
     else if ((i = encode_arm_immediate(~i0)) != -1)
       _MVNI(r0, i);
-    else if (jit_armv6_p()) {
+    else if (jit_armv6t_p()) {
       _MOVWI(r0, _jit_US(i0));
       if ((i0 & 0xffff0000))
         _MOVTI(r0, _jit_US((unsigned)i0 >> 16));
@@ -178,7 +179,7 @@ arm_movi_p(jit_state_t _jitp, jit_gpr_t r0, void *i0)
   }
   else {
     l = _jitp->x.pc;
-    if (jit_armv6_p()) {
+    if (jit_armv6t_p()) {
       _MOVWI(r0, _jit_US((unsigned)i0));
       _MOVTI(r0, _jit_US((unsigned)i0 >> 16));
     }
@@ -232,7 +233,7 @@ arm_patch_movi(jit_insn *i0, void *i1)
   }
   else {
     u.v = i0;
-    if (jit_armv6_p()) {
+    if (jit_armv6t_p()) {
       q0 =  im &      0xfff;
       q1 = (im &     0xf000) <<  4;
       q2 = (im &  0xfff0000) >> 16;
@@ -315,8 +316,8 @@ arm_patch_at(jit_state_t _jitp, jit_insn *jump, jit_insn *label)
       jit_assert(_s24P(d));
       u.i[0] = (u.i[0] & 0xff000000) | (d & 0x00ffffff);
     }
-    else if (( jit_armv6_p() && (u.i[0] & 0x0ff00000) == ARM_MOVWI) ||
-             (!jit_armv6_p() && (u.i[0] & 0x0ff00000) == (ARM_MOV|ARM_I)))
+    else if (( jit_armv6t_p() && (u.i[0] & 0x0ff00000) == ARM_MOVWI) ||
+             (!jit_armv6t_p() && (u.i[0] & 0x0ff00000) == (ARM_MOV|ARM_I)))
       jit_patch_movi(jump, label);
     else
       jit_assert(!"handled branch opcode");
@@ -1309,7 +1310,7 @@ arm_branch(jit_state_t _jitp, int cc, jit_insn *i0)
     _CC_B(cc, d & 0x00ffffff);
   } else {
     int im = (int)i0;
-    if (jit_armv6_p()) {
+    if (jit_armv6t_p()) {
       _CC_MOVWI(cc, JIT_TMP, _jit_US(im));
       _CC_MOVTI(cc, JIT_TMP, _jit_US((unsigned)im >> 16));
     } else {

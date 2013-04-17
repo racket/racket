@@ -105,6 +105,7 @@ typedef enum {
 
 #define jit_thumb_p()			jit_cpu.thumb
 #define jit_armv6_p()			(jit_cpu.version >= 6)
+#define jit_advsimd_p()			((jit_cpu.version >= 7) && jit_thumb_p())
 typedef union _jit_thumb_t {
     int		i;
     short	s[2];
@@ -518,6 +519,8 @@ static int
 encode_vfp_double(int mov, int inv, unsigned lo, unsigned hi)
 {
     int		code, mode, imm, mask;
+
+    if (!jit_advsimd_p()) return -1;
 
     if (hi != lo) {
 	if (mov && !inv) {
