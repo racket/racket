@@ -565,6 +565,7 @@ extern unw_word_t unw_get_ip(unw_cursor_t *);
 extern unw_word_t unw_get_frame_pointer(unw_cursor_t *);
 extern const char *unw_strerror (int);
 
+#ifdef UNW_X86_64
 void unw_manual_step(unw_cursor_t *_c, 
 		     void *ip_addr,
 		     void *bp_addr,
@@ -572,7 +573,16 @@ void unw_manual_step(unw_cursor_t *_c,
 		     void *bx_addr,
 		     void *r12_addr,
 		     void *r13_addr);
-  
+#endif
+#ifdef UNW_ARM
+void unw_manual_step(unw_cursor_t *_c, 
+		     void *ip_addr,
+		     void *sp_addr,
+                     void *r0_addr, void *r1_addr, void *r2_addr, void *r3_addr, 
+                     void *r4_addr, void *r5_addr, void *r6_addr, void *r7_addr,
+                     void *fp_addr);
+#endif
+
 extern unw_addr_space_t unw_local_addr_space;
 
 extern int unw_reset_bad_ptr_flag();

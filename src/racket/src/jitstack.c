@@ -330,76 +330,77 @@ Scheme_Object *scheme_native_stack_trace(void)
 	    && STK_COMP(stack_start, (uintptr_t)p)))
 	break;
       q = ((void **)p)[RETURN_ADDRESS_OFFSET];
-      /* p is the frame pointer for the function called by q,
-	 not for q. */
+      /* Except on PPC, p is the frame pointer for the function called
+	 by q, not for q. */
     }
 
     name = find_symbol((uintptr_t)q);
 #ifdef MZ_USE_DWARF_LIBUNWIND
-    if (name && !manual_unw) {
+    if (name && !manual_unw)
       manual_unw = 1;
-# ifdef MZ_USE_JIT_ARM
-      use_unw = 0;
-      p = (void *)unw_get_frame_pointer(&c);
-      if (!(STK_COMP((uintptr_t)p, stack_end)
-	    && STK_COMP(stack_start, (uintptr_t)p)))
-	break;
-# endif
-    }
 #endif
 
     if (SCHEME_FALSEP(name) || SCHEME_VOIDP(name)) {
-      /* Code uses special calling convention */
-#if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_ARM)
-      /* JIT_LOCAL2 has the next return address */
-      q = ((void **)p)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
-#endif
-#ifdef MZ_USE_JIT_I386
-# ifdef MZ_USE_DWARF_LIBUNWIND
-      if (use_unw) {
-	q = (void *)unw_get_frame_pointer(&c);
-      } else
-# endif
-	q = ((void **)p)[NEXT_FRAME_OFFSET];
-
-      /* q is now the frame pointer for the former q,
-	 so we can find the actual q */
-      if (STK_COMP((uintptr_t)q, real_stack_end)
-	  && STK_COMP(stack_start, (uintptr_t)q)) {
-	if (SCHEME_VOIDP(name)) {
-	  /* JIT_LOCAL2 has the next return address */
-	  q = ((void **)q)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
-	} else {
-	  /* Push after local stack of return-address proc
-	     has the next return address */
-	  q = ((void **)q)[-(3 + LOCAL_FRAME_SIZE + 1)];
-	}
-      } else {
-	q = NULL;
-      }
-#endif
-      name = find_symbol((uintptr_t)q);
-    } else if (SCHEME_EOFP(name)) {
-      /* Stub (to mark start of running a module body, for example) */
-      /* JIT_LOCAL2 has the name to use */
-#if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_ARM)
-      name = *(Scheme_Object **)((void **)p)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
-#endif
-#ifdef MZ_USE_JIT_I386
+      /* The function `q' was reached through a lighter-weight
+         internal ABI; we want the name of the function that
+         called `q' */
       void *np;
+#ifdef MZ_USE_JIT_PPC
+      np = p;
+#else
+      /* Since `p' is the frame pointer for the function called
+         by `q', so we need to step one more frame to look
+         at the frame for `q': */
 # ifdef MZ_USE_DWARF_LIBUNWIND
       if (use_unw) {
 	np = (void *)unw_get_frame_pointer(&c);
       } else
 # endif
-	np = *(void **)p;
+	np = ((void **)p)[NEXT_FRAME_OFFSET];
+      /* `np' is now the frame pointer for `q',
+	 so we can find the actual `q' */
+#endif
+
+      if (STK_COMP((uintptr_t)np, real_stack_end)
+	  && STK_COMP(stack_start, (uintptr_t)np)) {
+	if (SCHEME_VOIDP(name)) {
+	  /* JIT_LOCAL2 has the next return address (always) */
+	  q = ((void **)np)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
+	} else {
+#ifdef MZ_USE_JIT_I386
+	  /* Push after local stack of return-address proc
+	     has the next return address */
+	  q = ((void **)np)[-(3 + LOCAL_FRAME_SIZE + 1)];
+#else
+          /* JIT_LOCAL2 has the next return address */
+          q = ((void **)np)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
+#endif
+	}
+      } else {
+	q = NULL;
+      }
+      name = find_symbol((uintptr_t)q);
+    } else if (SCHEME_EOFP(name)) {
+      /* Stub (to mark start of running a module body, for example);
+         JIT_LOCAL2 has the name to use. */
+      void *np;
+#ifdef MZ_USE_JIT_PPC
+      np = p;
+#else
+      /* Need to step a frame, as above. */
+# ifdef MZ_USE_DWARF_LIBUNWIND
+      if (use_unw) {
+	np = (void *)unw_get_frame_pointer(&c);
+      } else
+# endif
+	np = ((void **)p)[NEXT_FRAME_OFFSET];
+#endif
 
       if (STK_COMP((uintptr_t)np, real_stack_end)
 	  && STK_COMP(stack_start, (uintptr_t)np)) {
         name = *(Scheme_Object **)((void **)np)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
       } else
         name = NULL;
-#endif
     }
 
     if (name && !SCHEME_NULLP(name)) { /* null is used to help unwind without a true name */
@@ -438,7 +439,7 @@ Scheme_Object *scheme_native_stack_trace(void)
     }
 
     prev_had_name = !!name;
-
+    
 #ifdef MZ_USE_DWARF_LIBUNWIND
     if (use_unw) {
       if (manual_unw) {
@@ -448,9 +449,18 @@ Scheme_Object *scheme_native_stack_trace(void)
 	if (!(STK_COMP((uintptr_t)pp, stack_end)
 	      && STK_COMP(stack_start, (uintptr_t)pp)))
 	  break;
+# ifdef MZ_USE_JIT_ARM
+        stack_addr = (unw_word_t)&(pp[JIT_NEXT_FP_OFFSET+2]);
+	unw_manual_step(&c, 
+                        &pp[RETURN_ADDRESS_OFFSET], &stack_addr,
+                        &pp[0], &pp[1], &pp[2], &pp[3],
+                        &pp[4], &pp[5], &pp[6], &pp[7],
+                        &pp[NEXT_FRAME_OFFSET]);
+# else
 	stack_addr = (unw_word_t)&(pp[RETURN_ADDRESS_OFFSET+1]);
 	unw_manual_step(&c, &pp[RETURN_ADDRESS_OFFSET], &pp[0],
 			&stack_addr, &pp[-1], &pp[-2], &pp[-3]);
+# endif
 	manual_unw = 0;
       } else {
         void *prev_q = q;

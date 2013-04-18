@@ -3231,6 +3231,7 @@ unw_word_t unw_get_frame_pointer(unw_cursor_t *c)
   return *(unw_word_t *)safe_pointer(((struct cursor *)c)->dwarf.loc[JIT_FRAME_POINTER_ID].val);
 }
 
+#ifdef UNW_X86_64
 void unw_manual_step(unw_cursor_t *_c, 
 		     void *ip_addr,
 		     void *bp_addr,
@@ -3255,5 +3256,37 @@ void unw_manual_step(unw_cursor_t *_c,
   c->dwarf.hint = 0;
   c->dwarf.prev_rs = 0;
 }
+#endif
+#ifdef UNW_ARM
+void unw_manual_step(unw_cursor_t *_c, 
+		     void *ip_addr,
+		     void *sp_addr,
+                     void *r0_addr, void *r1_addr, void *r2_addr, void *r3_addr, 
+                     void *r4_addr, void *r5_addr, void *r6_addr, void *r7_addr,
+                     void *fp_addr)
+{
+  struct cursor *c = (struct cursor *)_c;
+
+  c->dwarf.loc[0].val = (unw_word_t)r0_addr;
+  c->dwarf.loc[1].val = (unw_word_t)r1_addr;
+  c->dwarf.loc[2].val = (unw_word_t)r2_addr;
+  c->dwarf.loc[3].val = (unw_word_t)r3_addr;
+  c->dwarf.loc[4].val = (unw_word_t)r4_addr;
+  c->dwarf.loc[5].val = (unw_word_t)r5_addr;
+  c->dwarf.loc[6].val = (unw_word_t)r6_addr;
+  c->dwarf.loc[7].val = (unw_word_t)r7_addr;
+
+  c->dwarf.loc[UNW_ARM_RIP].val = (unw_word_t)ip_addr;
+  c->dwarf.loc[UNW_ARM_RSP].val = (unw_word_t)sp_addr;
+  c->dwarf.loc[UNW_ARM_R11].val = (unw_word_t)fp_addr;
+
+  c->dwarf.ip = *(unw_word_t *)safe_pointer((unw_word_t)ip_addr);
+  c->dwarf.cfa = *(unw_word_t *)safe_pointer((unw_word_t)sp_addr);
+  c->dwarf.ret_addr_column = UNW_TDEP_IP;
+  c->dwarf.pi_valid = 0;
+  c->dwarf.hint = 0;
+  c->dwarf.prev_rs = 0;
+}
+#endif
 
 #endif
