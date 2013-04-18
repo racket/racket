@@ -7,6 +7,10 @@
 ;; convert : [Listof Keyword] [Listof Type] [Listof Type] [Option Type] [Option Type] -> (values Type Type)
 (define (convert kw-t plain-t opt-t rng rest drest split?)
   (define-values (mand-kw-t opt-kw-t) (partition (match-lambda [(Keyword: _ _ m) m]) kw-t))
+
+  (when drest
+    (int-err "drest passed to kw-convert"))
+
   (define arities
     (for/list ([i (length opt-t)])
       (make-arr* (append plain-t (take opt-t i))
@@ -25,7 +29,9 @@
           [(Keyword: _ t _) (list (-opt t) -Boolean)]))
       plain-t
       (for/list ([t (in-list opt-t)]) (-opt t))
-      (for/list ([t (in-list opt-t)]) -Boolean))))
+      (for/list ([t (in-list opt-t)]) -Boolean)
+      ;; the kw function protocol passes rest args as an explicit list
+      (if rest (-lst rest) empty))))
   (define ts/true
     (flatten
      (list
@@ -37,7 +43,9 @@
           [(Keyword: _ t _) (list t (-val #t))]))
       plain-t
       (for/list ([t (in-list opt-t)]) t)
-      (for/list ([t (in-list opt-t)]) (-val #t)))))
+      (for/list ([t (in-list opt-t)]) (-val #t))
+      ;; the kw function protocol passes rest args as an explicit list
+      (if rest (-lst rest) empty))))
   (define ts/false
     (flatten
      (list
@@ -49,11 +57,13 @@
           [(Keyword: _ t _) (list (-val #f) (-val #f))]))
       plain-t
       (for/list ([t (in-list opt-t)]) (-val #f))
-      (for/list ([t (in-list opt-t)]) (-val #f)))))
+      (for/list ([t (in-list opt-t)]) (-val #f))
+      ;; the kw function protocol passes rest args as an explicit list
+      (if rest (-lst rest) empty))))
   (if split?
-      (make-Function (list (make-arr* ts/true rng #:rest rest #:drest drest)
-                           (make-arr* ts/false rng #:rest rest #:drest drest)))
-      (make-Function (list (make-arr* ts rng #:rest rest #:drest drest)))))
+      (make-Function (list (make-arr* ts/true rng)
+                           (make-arr* ts/false rng)))
+      (make-Function (list (make-arr* ts rng)))))
 
 (define (prefix-of a b)
   (define (rest-equal? a b)

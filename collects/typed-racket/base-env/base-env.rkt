@@ -1655,31 +1655,34 @@
 
 
 ;Section 14.4.1 (racket/system)
-[system ((Un -String -Bytes) . -> . -Boolean)]
-[system* ((list -Pathlike) (Un -Path -String -Bytes) . ->* . -Boolean)]
-[system/exit-code ((Un -String -Bytes) . -> . -Byte)]
-[system*/exit-code ((list -Pathlike) (Un -Path -String -Bytes) . ->* . -Byte)]
+[system ((Un -String -Bytes) [] #:set-pwd? Univ #f . ->optkey . -Boolean)]
+[system* (-Pathlike [] #:rest (Un -Path -String -Bytes) #:set-pwd? Univ #f . ->optkey . -Boolean)]
+[system/exit-code ((Un -String -Bytes) [] #:set-pwd? Univ #f . ->optkey . -Byte)]
+[system*/exit-code (-Pathlike [] #:rest (Un -Path -String -Bytes) #:set-pwd? Univ #f . ->optkey . -Byte)]
 
-[process (-> -String
-             (-values (list -Input-Port -Output-Port -Nat -Input-Port
-                            (cl->* (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
-                                   (-> (-val 'exit-code) (-opt -Byte))
-                                   (-> (-val 'wait) ManyUniv)
-                                   (-> (-val 'interrupt) -Void)
-                                   (-> (-val 'kill) -Void)))))]
+[process (->key 
+	  -String
+	   #:set-pwd? Univ #f
+	  (-values (list -Input-Port -Output-Port -Nat -Input-Port
+			 (cl->* (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
+				(-> (-val 'exit-code) (-opt -Byte))
+				(-> (-val 'wait) ManyUniv)
+				(-> (-val 'interrupt) -Void)
+				(-> (-val 'kill) -Void)))))]
 
 
 [process*
  (cl->*
-   (->* (list -Pathlike) (Un -Path -String -Bytes)
+   (->optkey -Pathlike [] #:rest (Un -Path -String -Bytes) #:set-pwd? Univ #f
         (-values (list -Input-Port -Output-Port -Nat -Input-Port
                        (cl->* (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
                               (-> (-val 'exit-code) (-opt -Byte))
                               (-> (-val 'wait) ManyUniv)
                               (-> (-val 'interrupt) -Void)
                               (-> (-val 'kill) -Void)))))
-   (-> -Pathlike (-val 'exact) -String
-       (-values (list -Input-Port -Output-Port -Nat -Input-Port
+   (->key -Pathlike (-val 'exact) -String
+	  #:set-pwd? Univ #f
+	  (-values (list -Input-Port -Output-Port -Nat -Input-Port
                       (cl->* (-> (-val 'status) (one-of/c 'running 'done-ok 'done-error))
                              (-> (-val 'exit-code) (-opt -Byte))
                              (-> (-val 'wait) ManyUniv)
@@ -1702,17 +1705,18 @@
         ;; The return value is the function type that is one branch
         ;; of the case lambda.
         (make-specific-case (lambda (out in err)
-                              (-> (make-opt-out-port out)
-                                  (make-opt-in-port in)
-                                  (case err
-                                   ((stdout) (-val 'stdout))
-                                   (else (make-opt-out-port err)))
-                                  -String
-                                  (-lst* (make-opt-in-port (not out))
-                                         (make-opt-out-port (not in))
-                                         -Nat
-                                         (make-opt-in-port (not err))
-                                         fun-type))))
+                              (->key (make-opt-out-port out)
+				     (make-opt-in-port in)
+				     (case err
+				       ((stdout) (-val 'stdout))
+				       (else (make-opt-out-port err)))
+				     -String
+				     #:set-pwd? Univ #f
+				     (-lst* (make-opt-in-port (not out))
+					    (make-opt-out-port (not in))
+					    -Nat
+					    (make-opt-in-port (not err))
+					    fun-type))))
         (specific-cases
          (let ((bools '(#t #f))
                (err-vals '(#t #f stdout)))
@@ -1722,8 +1726,9 @@
     (append
       specific-cases
       (list
-       (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -String
-           (-lst* (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port) fun-type))))))]
+       (->key (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -String
+	      #:set-pwd? Univ #f
+	      (-lst* (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port) fun-type))))))]
 
 [process*/ports
  (let* ((fun-type
@@ -1754,10 +1759,11 @@
                                             (make-opt-in-port (not err))
                                             fun-type)))
                                 (if exact
-                                  (-> arg-out arg-in arg-err -Pathlike (-val 'exact) -String result)
-                                  (->* (list arg-out arg-in arg-err -Pathlike)
-                                       (Un -Path -String -Bytes)
-                                       result)))))
+                                  (->key arg-out arg-in arg-err -Pathlike (-val 'exact) -String  #:set-pwd? Univ #f result)
+                                  (->optkey arg-out arg-in arg-err -Pathlike []
+					    #:rest (Un -Path -String -Bytes)
+					    #:set-pwd? Univ #f
+					    result)))))
         (specific-cases
          (let ((bools '(#t #f))
                (err-vals '(#t #f stdout)))
@@ -1766,11 +1772,14 @@
    (apply cl->*
     (append specific-cases
      (list
-       (->* (list (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -Pathlike)
-            (Un -Path -String -Bytes)
-            (-lst* (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port) fun-type))
-       (-> (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -Pathlike (-val 'exact) -String
-           (-lst* (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port) fun-type))))))]
+       (->optkey (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -Pathlike
+		 []
+		 #:rest (Un -Path -String -Bytes)
+		 #:set-pwd? Univ #f
+		 (-lst* (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port) fun-type))
+       (->key (-opt -Output-Port) (-opt -Input-Port) (Un -Output-Port (one-of/c #f 'stdout)) -Pathlike (-val 'exact) -String
+	      #:set-pwd? Univ #f
+	      (-lst* (-opt -Input-Port) (-opt -Output-Port) -Nat (-opt -Input-Port) fun-type))))))]
 
 
 
