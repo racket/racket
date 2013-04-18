@@ -324,13 +324,19 @@ real process ID).}
 
 @note-lib[racket/system]
 
-@defproc[(system [command (or/c string-no-nuls? bytes-no-nuls?)]) boolean?]{
+@defproc[(system [command (or/c string-no-nuls? bytes-no-nuls?)]
+                 [#:set-pwd? set-pwd? any/c (member (system-type) '(unix macosx))])
+         boolean?]{
 
 Executes a Unix, Mac OS X, or Windows shell command synchronously
 (i.e., the call to @racket[system] does not return until the
 subprocess has ended). The @racket[command] argument is a string or
 byte string containing no nul characters. If the command succeeds, the
 return value is @racket[#t], @racket[#f] otherwise.
+
+If @racket[set-pwd?] is true, then the @envvar{PWD} environment
+variable is set to the value of @racket[(current-directory)] when
+starting the shell process.
 
 See also @racket[current-subprocess-custodian-mode] and
 @racket[subprocess-group-enabled], which affect the subprocess used to
@@ -349,9 +355,11 @@ function:
 
 
 @defproc*[([(system* [command path-string?]
-                     [arg (or/c path? string-no-nuls? bytes-no-nuls?)] ...)
+                     [arg (or/c path? string-no-nuls? bytes-no-nuls?)] ...
+                     [#:set-pwd? set-pwd? any/c (member (system-type) '(unix macosx))])
             boolean?]
-           [(system* [command path-string?] [exact 'exact] [arg string?])
+           [(system* [command path-string?] [exact 'exact] [arg string?]
+                     [#:set-pwd? set-pwd? any/c (member (system-type) '(unix macosx))])
             boolean?])]{
 
 Like @racket[system], except that @racket[command] is a filename that
@@ -367,7 +375,8 @@ On Windows, the first argument after @racket[command] can be
 line. See @racket[subprocess] for details.}
 
 
-@defproc[(system/exit-code [command (or/c string-no-nuls? bytes-no-nuls?)])
+@defproc[(system/exit-code [command (or/c string-no-nuls? bytes-no-nuls?)]
+                           [#:set-pwd? set-pwd? any/c (member (system-type) '(unix macosx))])
          byte?]{
 
 Like @racket[system], except that the result is the exit code returned
@@ -375,17 +384,20 @@ by the subprocess. A @racket[0] result normally indicates success.}
 
 
 @defproc*[([(system*/exit-code [command path-string?]
-                               [arg (or/c path? string-no-nuls? bytes-no-nuls?)] ...)
+                               [arg (or/c path? string-no-nuls? bytes-no-nuls?)] ...
+                               [#:set-pwd? set-pwd? any/c (member (system-type) '(unix macosx))])
             byte?]
            [(system*/exit-code [command path-string?]
-                               [exact 'exact] [arg string?])
+                               [exact 'exact] [arg string?]
+                               [#:set-pwd? set-pwd? any/c (member (system-type) '(unix macosx))])
             byte?])]{
 
 Like @racket[system*], but returns the exit code like
 @racket[system/exit-code].}
 
 
-@defproc[(process [command (or/c string-no-nuls? bytes-no-nuls?)])
+@defproc[(process [command (or/c string-no-nuls? bytes-no-nuls?)]
+                  [#:set-pwd? set-pwd? any/c (member (system-type) '(unix macosx))])
          (list input-port?
                output-port?
                exact-nonnegative-integer?
@@ -446,6 +458,9 @@ values:
 be explicitly closed with @racket[close-input-port] or
 @racket[close-output-port].
 
+If @racket[set-pwd?] is true, then @envvar{PWD} is set in the same way
+as @racket[system].
+
 See also @racket[current-subprocess-custodian-mode] and
 @racket[subprocess-group-enabled], which affect the subprocess used to
 implement @racket[process]. In particular, the @racket['interrupt] and
@@ -455,9 +470,11 @@ of a single process.}
 
 
 @defproc*[([(process* [command path-string?]
-                      [arg (or/c path? string-no-nuls? bytes-no-nuls?)] ...)
+                      [arg (or/c path? string-no-nuls? bytes-no-nuls?)] ...
+                      [#:set-pwd? set-pwd? any/c (member (system-type) '(unix macosx))])
             list?]
-           [(process* [command path-string?] [exact 'exact] [arg string?])
+           [(process* [command path-string?] [exact 'exact] [arg string?]
+                      [#:set-pwd? set-pwd? any/c (member (system-type) '(unix macosx))])
             list?])]{
 
 Like @racket[process], except that @racket[command] is a filename that
@@ -469,7 +486,8 @@ replaced with @racket['exact].}
 @defproc[(process/ports [out (or/c #f output-port?)]
                         [in (or/c #f input-port?)]
                         [error-out (or/c #f output-port? 'stdout)]
-                        [command (or/c path? string-no-nuls? bytes-no-nuls?)])
+                        [command (or/c path? string-no-nuls? bytes-no-nuls?)]
+                        [#:set-pwd? set-pwd? any/c (member (system-type) '(unix macosx))])
          list?]{
 
 Like @racket[process], except that @racket[out] is used for the
@@ -487,14 +505,16 @@ returned list is @racket[#f].}
                             [error-out (or/c #f output-port? 'stdout)]
                             [command path-string?]
                             [arg (or/c path? string-no-nuls? bytes-no-nuls?)]
-                            ...)
+                            ...
+                            [#:set-pwd? set-pwd? any/c (member (system-type) '(unix macosx))])
             list?]
            [(process*/ports [out (or/c #f output-port?)]
                             [in (or/c #f input-port?)]
                             [error-out (or/c #f output-port? 'stdout)]
                             [command path-string?]
                             [exact 'exact]
-                            [arg string?])
+                            [arg string?]
+                            [#:set-pwd? set-pwd? any/c (member (system-type) '(unix macosx))])
             list?])]{
 
 Like @racket[process*], but with the port handling of

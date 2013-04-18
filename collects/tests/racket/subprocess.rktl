@@ -1,7 +1,8 @@
 
 (load-relative "testing.rktl")
 
-(require mzlib/process)
+(require racket/system
+         racket/file)
 
 (Section 'subprocess)
 
@@ -473,6 +474,26 @@
     (environment-variables-set! (current-environment-variables) #"Hola" #"hi, there")
     (system* self "-e" "(getenv \"Hola\")"))
   (test "\"hi, there\"\n" get-output-string out))
+
+;; Check setting of PWD and initializing `current-directory' from
+;; PWD, when it involves a soft link:
+(when (member (system-type) '(unix macosx))
+  (let ([dir (make-temporary-file "sub~a" 'directory)])
+    (make-directory (build-path dir "a"))
+    (make-file-or-directory-link "a" (build-path dir "b"))
+    (current-directory (build-path dir "b"))
+    
+    (define o (open-output-bytes))
+    (parameterize ([current-output-port o])
+      (system* self "-e" "(current-directory)"))
+    (test (format "~s\n" (path->directory-path (build-path dir "b"))) get-output-string o)
+
+    (define o2 (open-output-bytes))
+    (parameterize ([current-output-port o2])
+      (system* self "-e" "(current-directory)" #:set-pwd? #f))
+    (test (format "~s\n" (path->directory-path (normalize-path (build-path dir "a")))) get-output-string o2)
+    
+    (delete-directory/files dir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

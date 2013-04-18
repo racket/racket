@@ -82,15 +82,28 @@
   (unless (or (string-no-nuls? str) (bytes-no-nuls? str))
     (raise-argument-error who "(or/c string-no-nuls? bytes-no-nuls?)" str)))
 
+(define (set-pwd-default?)
+  (or (eq? 'unix (system-type))
+      (eq? 'macosx (system-type))))
+
+(define (call-with-pwd f)
+  (parameterize ([current-environment-variables
+                  (environment-variables-copy
+                   (current-environment-variables))])
+    (putenv "PWD" (path->string (current-directory)))
+    (f)))
+
 ;; Old-style functions: ----------------------------------------
 
-(define (do-process*/ports who cout cin cerr exe . args)
-  (let-values ([(subp out in err) (apply subprocess
-                                         (if-stream-out who cout)
-                                         (if-stream-in who cin)
-                                         (if-stream-out who cerr #t)
-                                         (check-exe who exe)
-                                         (check-args who args))]
+(define (do-process*/ports who set-pwd? cout cin cerr exe . args)
+  (let-values ([(subp out in err) ((if set-pwd? call-with-pwd (lambda (f) (f)))
+                                   (lambda ()
+                                     (apply subprocess
+                                            (if-stream-out who cout)
+                                            (if-stream-in who cin)
+                                            (if-stream-out who cerr #t)
+                                            (check-exe who exe)
+                                            (check-args who args))))]
                [(it-ready) (make-semaphore)])
     (let ([so (streamify-out cout out)]
           [si (streamify-in cin in (lambda (ok?)
@@ -138,32 +151,40 @@
               (aport se)
               control)))))
 
-(define (process*/ports cout cin cerr exe . args)
-  (apply do-process*/ports 'process*/ports cout cin cerr exe args))
+(define (process*/ports cout cin cerr exe
+                        #:set-pwd? [set-pwd? (set-pwd-default?)]
+                        . args)
+  (apply do-process*/ports 'process*/ports set-pwd? cout cin cerr exe args))
 
-(define (process/ports out in err str)
-  (apply do-process*/ports 'process/ports out in err (shell-path/args 'process/ports str)))
+(define (process/ports out in err str
+                       #:set-pwd? [set-pwd? (set-pwd-default?)])
+  (apply do-process*/ports 'process/ports set-pwd? out in err (shell-path/args 'process/ports str)))
 
-(define (process* exe . args)
-  (apply do-process*/ports 'process* #f #f #f exe args))
+(define (process* exe
+                  #:set-pwd? [set-pwd? (set-pwd-default?)]
+                  . args)
+  (apply do-process*/ports 'process* set-pwd? #f #f #f exe args))
 
-(define (process str)
+(define (process str
+                 #:set-pwd? [set-pwd? (set-pwd-default?)])
   (check-command 'process str)
-  (apply do-process*/ports 'process #f #f #f (shell-path/args 'process str)))
+  (apply do-process*/ports 'process set-pwd? #f #f #f (shell-path/args 'process str)))
 
 ;; Note: these always use current ports
-(define (do-system*/exit-code who exe . args)
+(define (do-system*/exit-code who set-pwd? exe . args)
   (let ([cout (current-output-port)]
         [cin (current-input-port)]
         [cerr (current-error-port)]
         [it-ready (make-semaphore)])
     (let-values ([(subp out in err)
-                  (apply subprocess
-                         (if-stream-out who cout)
-                         (if-stream-in who cin)
-                         (if-stream-out who cerr #t)
-                         (check-exe who exe)
-                         (check-args who args))])
+                  ((if set-pwd? call-with-pwd (lambda (f) (f)))
+                   (lambda ()
+                     (apply subprocess
+                            (if-stream-out who cout)
+                            (if-stream-in who cin)
+                            (if-stream-out who cerr #t)
+                            (check-exe who exe)
+                            (check-args who args))))])
       (let ([ot (streamify-out cout out)]
             [it (streamify-in cin in (lambda (ok?)
                                        (if ok?
@@ -183,16 +204,16 @@
         (when in (close-output-port in)))
       (subprocess-status subp))))
 
-(define (system*/exit-code exe . args)
-  (apply do-system*/exit-code 'system*/exit-code exe args))
+(define (system*/exit-code exe #:set-pwd? [set-pwd? (set-pwd-default?)] . args)
+  (apply do-system*/exit-code 'system*/exit-code set-pwd? exe args))
 
-(define (system* exe . args)
-  (zero? (apply do-system*/exit-code 'system* exe args)))
+(define (system* exe #:set-pwd? [set-pwd? (set-pwd-default?)] . args)
+  (zero? (apply do-system*/exit-code 'system* set-pwd? exe args)))
 
-(define (system str)
+(define (system str #:set-pwd? [set-pwd? (set-pwd-default?)])
   (check-command 'system str)
-  (zero? (apply do-system*/exit-code 'system (shell-path/args 'system str))))
+  (zero? (apply do-system*/exit-code 'system set-pwd? (shell-path/args 'system str))))
 
-(define (system/exit-code str)
+(define (system/exit-code str #:set-pwd? [set-pwd? (set-pwd-default?)])
   (check-command 'system/exit-code str)
-  (apply do-system*/exit-code 'system/exit-code (shell-path/args 'system/exit-code str)))
+  (apply do-system*/exit-code 'system/exit-code set-pwd? (shell-path/args 'system/exit-code str)))
