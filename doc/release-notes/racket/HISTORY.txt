@@ -15,75 +15,54 @@ racket/sadnox: added sandbox-make-environment-variables
 Version 5.3.4.1
 Changed JIT to support ARM
 
-Version 5.3.3.9
-racket/udp: added multicast support: udp-multicast-join-group!,
- udp-multicast-leave-group!, udp-multicast-interface,
- udp-multicast-set-interface!, udp-multicast-set-loopback!,
- udp-multicast-loopback?, udp-multicast-set-ttl!,
- udp-multicast-ttl
-racket/udp: added reuse? argument to udp-bind!
-scribble/eval: extended make-base-eval to be more like
- make-evaluator
-
-Version 5.3.3.8
-slideshow/pict: added color% objects to text-style/c
-scriblib/figure: add #:continue? option
-
-Version 5.3.3.7
-Added module-compiled-cross-phase-persistent?
+Version 5.3.4, April 2013
+Added extflonums
+Added file-truncate
+Added impersonate-ephemeron
 Added 'so-mode mode for system-type
 Changed syntax-case, etc. to support box patterns
-ffi/unsafe: changed ffi-lib to use (system-type 'so-mode)
-slideshow/balloon: added balloon-enable-3d
-slideshow: added interactive
-scribble/manual: added #:id option to defthing
-scribble/srcdoc: added begin-for-doc
-syntax/datum: Changed datum-case to support box patterns
-syntax-color: added special support for dont-stop values;
- this change is backwards incompatible for code that calls
- lexers and may call unknown lexers
-racket/gui/base: moved warp-pointer from canvas<%> to
- window<%> and restored its functionality
-
-Version 5.3.3.6
-Added "phase-collapse" module inference and instantiation
-compiler/zo-structs: added flags field to mod
-racket/kernel: removed #%top-interaction
-racket/kernel/init: added
-
-Version 5.3.3.4
-Added impersonator-ephemeron
-
-Version 5.3.3.3
-ffi/unsafe: added _size, _ssize, _ptrdiff, _intmax, _uintmax
-ffi/vector: added f8vectors
-scribble: 'toc-hidden style on a part no longer hides ToC
- entries for sub-parts when rendering as HTML
-
-Version 5.3.3.2
-Added port-counts-lines?
-
-Version 5.3.3.1
 Change sync, wrap-evt, and handle-evt to support multiple
  evt results
-
-Version 5.3.2.3
-Added extflonums
+Added port-counts-lines?
+Added cross-phase persistent module inference and instantiation
+ and module-compiled-cross-phase-persistent?
+racket/kernel: removed #%top-interaction
+racket/kernel/init: added
 racket/extflonum: added
 racket/unsafe/ops: added extflonum operations
 racket/date: changed current-date to provide nanoseconds,
  added date*->seconds
+racket/udp: added multicast support: udp-multicast-join-group!,
+ udp-multicast-leave-group!, udp-multicast-interface,
+ udp-multicast-set-interface!, udp-multicast-set-loopback!,
+ udp-multicast-loopback?, udp-multicast-set-ttl!,
+ udp-multicast-ttl, and added reuse? argument to udp-bind!
+ffi/unsafe: changed ffi-lib to use (system-type 'so-mode)
+ffi/unsafe: added _size, _ssize, _ptrdiff, _intmax, _uintmax
+ffi/vector: added f80vectors
+compiler/zo-structs: added flags field to mod
+slideshow: added interactive
+slideshow/balloon: added balloon-enable-3d
+slideshow/pict: added color% objects to text-style/c
+scribble: 'toc-hidden style on a part no longer hides ToC
+ entries for sub-parts when rendering as HTML
+scribble/manual: added #:id option to defthing
+scribble/srcdoc: added begin-for-doc
+scribble/eval: extended make-base-eval to be more like
+ make-evaluator
+scribble/latex-properties: added command-extras
+scriblib/figure: add #:continue? option
+syntax/datum: Changed datum-case to support box patterns
+racket/gui/base: moved warp-pointer from canvas<%> to
+ window<%> and restored its functionality
 racket/gui/base: changed menu-bar% get-frame method to
  return 'root for root menu bar
+syntax-color: added special support for dont-stop values;
+ this change is backwards incompatible for code that calls
+ lexers and may call unknown lexers
 syntax-color/racket-lexer: added 'hash-colon-keyword 
  (which also affects syntax-color/scheme-lexer,
   syntax-color/module-lexer, and syntax-color/scribble-lexer)
-
-Version 5.3.2.2
-Added file-truncate
-scribble/latex-properties: added command-extras
-
-Version 5.3.2.1
 srfi/19: made compatible with date* structs, produces
  lax-date struct for backwards compatibility
 
