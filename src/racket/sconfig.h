@@ -330,9 +330,13 @@
 #if defined(__x86_64__)
 # define MZ_USE_JIT_X86_64
 # define MZ_JIT_USE_MPROTECT
-#else
+# define MZ_TRY_EXTFLONUMS
+#elif defined(__i386__)
 # define MZ_USE_JIT_I386
 # define MZ_JIT_USE_MPROTECT
+# define MZ_TRY_EXTFLONUMS
+#else
+# error Unported platform.
 #endif
 
 # define FLAGS_ALREADY_SET
