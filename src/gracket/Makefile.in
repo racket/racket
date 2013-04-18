@@ -196,6 +196,7 @@ install-lib-cgc-wx_xt:
 install-wx_xt-cgc:
 	$(MAKE) @MRLIBINSTALL@-cgc-wx_xt
 	cd ..; $(ICP) gracket/gracket@CGC@ "$(DESTDIR)@MZINSTALLBINDIR@/gracket@CGC_INSTALLED@"
+	cd ..; @STRIP_DEBUG@ "$(DESTDIR)@MZINSTALLBINDIR@/gracket@CGC_INSTALLED@"
 	@RUN_RACKET_CGC@ -cu "$(srcdir)/../racket/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/gracket@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @COLLECTS_PATH@
 
 install-wx_xt-cgc-final:
@@ -210,6 +211,7 @@ install-lib-3m-wx_xt:
 install-wx_xt-3m:
 	$(MAKE) @MRLIBINSTALL@-3m-wx_xt
 	cd ..; $(ICP) gracket/gracket@MMM@ "$(DESTDIR)@MZINSTALLBINDIR@/gracket@MMM_INSTALLED@"
+	cd ..; @STRIP_DEBUG@ "$(DESTDIR)@MZINSTALLBINDIR@/gracket@MMM_INSTALLED@"
 	@RUN_RACKET_MMM@ -cu "$(srcdir)/../racket/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/gracket@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @COLLECTS_PATH@
 
 install-wx_xt-3m-final:

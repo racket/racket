@@ -70,6 +70,7 @@ AC_ARG_ENABLE(bigendian, [  --enable-bigendian      assume "big" if endianness c
 AC_ARG_ENABLE(gprof,   [  --enable-gprof          compile for profiling with gprof (gcc only)])
 AC_ARG_ENABLE(gcov,    [  --enable-gcov           compile to gather gcov statistics (gcc3 only)])
 
+AC_ARG_ENABLE(noopt,   [  --enable-strip          strip debug on install (usually enabled by default)])
 AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags (useful for low-level debugging)])
 
 ###### Some flags imply other flags #######
@@ -288,6 +289,8 @@ show_explicitly_enabled "${enable_gprof}" "gprof"
 show_explicitly_enabled "${enable_gcov}" "gcov"
 
 show_explicitly_enabled "${enable_noopt}" "No-optimization" "Note that this mode is intended only for debugging purposes"
+show_explicitly_enabled "${enable_strip}" "Debug-symbol stripping"
+show_explicitly_disabled "${enable_strip}" "Debug-symbol stripping"
 
 show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS X"
 
@@ -373,6 +376,7 @@ MAIN_VARIANT=3m
 INSTALL_SETUP_FLAGS=
 
 STRIP_DEBUG=":"
+enable_strip_by_default=yes
 
 use_flag_pthread=yes
 skip_iconv_check=no
@@ -562,7 +566,6 @@ case "$host_os" in
   linux*)
     LIBS="$LIBS -ldl -lm -rdynamic"
     DYN_CFLAGS="-fPIC"
-    STRIP_DEBUG="strip -S"
     try_poll_syscall=yes
     try_epoll_syscall=yes
     case "$host_cpu" in
@@ -675,8 +678,6 @@ case "$host_os" in
     PREFLAGS="$PREFLAGS -DOS_X -D_DARWIN_UNLIMITED_SELECT"
     try_kqueue_syscall=yes
 
-    STRIP_DEBUG="/usr/bin/strip -S"
-
     SO_SUFFIX=.dylib
 
     # Force 32-bit build unless mac64 is enabled:
@@ -765,6 +766,19 @@ fi
 if test "${enable_sgc}" = "yes" ; then
   GCDIR=sgc
   OPTIONS="$OPTIONS -DUSE_SENORA_GC"
+fi
+
+############## Strip tool ################
+
+if test "${enable_strip}" = "" ; then
+  if test "${enable_strip_by_default}" = "yes" ; then
+    enable_strip=yes
+  fi
+fi
+
+if test "${enable_strip}" = "yes" ; then
+  AC_CHECK_TOOL([STRIP], [strip])
+  STRIP_DEBUG="$STRIP -S"
 fi
 
 ############## C flags ################
