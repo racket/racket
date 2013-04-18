@@ -16,12 +16,15 @@
               get-gdk-pixmap
               install-gl-context))
 
-(define gdkglext-lib
-  (with-handlers ([exn:fail? (lambda (exn) #f)])
-    (ffi-lib "libgdkglext-x11-1.0" '("0"))))
-(define gtkglext-lib
-  (with-handlers ([exn:fail? (lambda (exn) #f)])
-    (ffi-lib "libgtkglext-x11-1.0" '("0"))))
+(define (ffi-lib/complaint-on-failure name vers)
+  (ffi-lib name vers
+           #:fail (lambda ()
+                    (log-warning "could not load GL library ~a ~a"
+                                 name vers)
+                    #f)))
+
+(define gdkglext-lib (ffi-lib/complaint-on-failure "libgdkglext-x11-1.0" '("0")))
+(define gtkglext-lib (ffi-lib/complaint-on-failure "libgtkglext-x11-1.0" '("0")))
 
 (define-ffi-definer define-gdkglext gdkglext-lib
   #:default-make-fail make-not-available)
