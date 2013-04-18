@@ -1,3 +1,6 @@
+5.3.4
+- Moved Optimization Coach to the package system
+- Multiple fixes to polydots
 5.3.3
   No changes
 5.3.2
