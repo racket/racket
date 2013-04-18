@@ -2391,7 +2391,7 @@ static Scheme_Object *link_exists(int argc, Scheme_Object **argv)
 #endif
 }
 
-Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, intptr_t fd, char *path)
+Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, intptr_t fd, char *path, int noerr)
 /* If path is supplied, then fd is 0 for stat, 1 for lstat */
 {
   int errid = 0;
@@ -2476,18 +2476,20 @@ Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, intptr_t fd, char *pa
     return scheme_bin_plus(devn, inon);
   }
 
-  if (!path) {
-    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                     "port-file-identity: error obtaining identity\n"
-                     "  system error: %)",
-                     errid);
-  } else {
-    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                     "file-or-directory-identity: error obtaining identity for path\n"
-                     "  path: %q\n"
-                     "  system error: %E", 
-                     path, 
-                     errid);
+  if (!noerr) {
+    if (!path) {
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       "port-file-identity: error obtaining identity\n"
+                       "  system error: %)",
+                       errid);
+    } else {
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       "file-or-directory-identity: error obtaining identity for path\n"
+                       "  path: %q\n"
+                       "  system error: %E", 
+                       path, 
+                       errid);
+    }
   }
 
   return NULL;
@@ -5761,7 +5763,7 @@ static Scheme_Object *file_identity(int argc, Scheme_Object *argv[])
   if (argc > 1)
     as_link = SCHEME_TRUEP(argv[1]);
 
-  return scheme_get_fd_identity(NULL, as_link, filename);
+  return scheme_get_fd_identity(NULL, as_link, filename, 0);
 }
 
 static Scheme_Object *file_size(int argc, Scheme_Object *argv[])

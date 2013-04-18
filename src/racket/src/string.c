@@ -2257,6 +2257,15 @@ static Scheme_Object *normalize_env_case(Scheme_Object *bs)
   return bs;
 }
 
+char *scheme_getenv(char *name)
+{
+#ifdef DOS_FILE_SYSTEM
+  return dos_win_getenv(name);
+#else
+  return getenv(name);
+#endif
+}
+
 static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[])
 {
   char *name;
@@ -2278,11 +2287,7 @@ static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[])
   if (!ht) {
     name = SCHEME_BYTE_STR_VAL(bs);
 
-#ifdef DOS_FILE_SYSTEM
-    value = dos_win_getenv(name);
-#else
-    value = getenv(name);
-#endif
+    value = scheme_getenv(name);
 
     return value ? scheme_make_byte_string(value) : scheme_false;
   } else {

@@ -696,6 +696,8 @@ MZ_EXTERN mzchar *scheme_utf16_to_ucs4(const unsigned short *text, intptr_t star
 MZ_EXTERN Scheme_Object *scheme_open_converter(const char *from_e, const char *to_e);
 MZ_EXTERN void scheme_close_converter(Scheme_Object *conv);
 
+MZ_EXTERN char *scheme_getenv(char *name);
+
 /*========================================================================*/
 /*                               bignums                                  */
 /*========================================================================*/

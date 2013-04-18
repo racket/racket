@@ -4420,7 +4420,7 @@ Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[])
     return NULL;
   }
 
-  return scheme_get_fd_identity(p, fd, NULL);
+  return scheme_get_fd_identity(p, fd, NULL, 0);
 }
 
 static int is_fd_terminal(intptr_t fd)

@@ -7397,10 +7397,37 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_COLLECTION_PATHS,  scheme_null);
 
   {
+    Scheme_Security_Guard *sg;
+
+    sg = MALLOC_ONE_TAGGED(Scheme_Security_Guard);
+    sg->so.type = scheme_security_guard_type;
+    init_param(cells, paramz, MZCONFIG_SECURITY_GUARD, (Scheme_Object *)sg);
+  }
+
+  {
     Scheme_Object *s;
+    char *pwd;
     s = scheme_make_path(scheme_os_getcwd(NULL, 0, NULL, 1));
     s = scheme_path_to_directory_path(s);
     init_param(cells, paramz, MZCONFIG_CURRENT_DIRECTORY, s);
+#ifndef DOS_FILE_SYSTEM
+    pwd = scheme_getenv("PWD");
+    if (pwd) {
+      Scheme_Object *id1, *id2, *a[2];
+      id1 = scheme_get_fd_identity(NULL, 0, pwd, 1);
+      if (id1) {
+        id2 = scheme_get_fd_identity(NULL, 0, SCHEME_PATH_VAL(s), 1);
+        if (id2 && scheme_eqv(id1, id2)) {
+          s = scheme_make_path(pwd);
+          a[0] = s;
+          a[1] = scheme_true;
+          s = scheme_simplify_path(2, a);
+          s = scheme_path_to_directory_path(s);
+          init_param(cells, paramz, MZCONFIG_CURRENT_DIRECTORY, s);
+        }
+      }
+    }
+#endif
     scheme_set_original_dir(s);
   }
 
@@ -7482,14 +7509,6 @@ static void make_initial_config(Scheme_Thread *p)
     else
       zlv = scheme_make_vector(0, NULL);
     init_param(cells, paramz, MZCONFIG_CMDLINE_ARGS, zlv);
-  }
-
-  {
-    Scheme_Security_Guard *sg;
-
-    sg = MALLOC_ONE_TAGGED(Scheme_Security_Guard);
-    sg->so.type = scheme_security_guard_type;
-    init_param(cells, paramz, MZCONFIG_SECURITY_GUARD, (Scheme_Object *)sg);
   }
 
   {

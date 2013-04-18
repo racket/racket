@@ -363,6 +363,7 @@ scheme_ucs4_to_utf16
 scheme_utf16_to_ucs4
 scheme_open_converter
 scheme_close_converter
+scheme_getenv
 scheme_make_bignum
 scheme_make_bignum_from_unsigned
 scheme_make_bignum_from_long_long

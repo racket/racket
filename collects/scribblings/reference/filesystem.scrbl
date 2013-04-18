@@ -405,7 +405,13 @@ simplification raise an exception if the path is ill-formed. Thus, the
 current value of @racket[current-directory] is always a cleansed,
 simplified, complete, directory path.
 
-The path is not checked for existence when the parameter is set.}
+The path is not checked for existence when the parameter is set.
+
+On Unix and Mac OS X, the initial value of the parameter for a Racket
+process is taken from the @indexed-envvar{PWD} environment
+variable---if the value of the environment variable identifies the
+same directory as the operating system's report of the current
+directory.}
 
 
 @defproc[(current-drive) path?]{

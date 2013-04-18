@@ -406,6 +406,7 @@
   scheme_extension_table->scheme_utf16_to_ucs4 = scheme_utf16_to_ucs4;
   scheme_extension_table->scheme_open_converter = scheme_open_converter;
   scheme_extension_table->scheme_close_converter = scheme_close_converter;
+  scheme_extension_table->scheme_getenv = scheme_getenv;
   scheme_extension_table->scheme_make_bignum = scheme_make_bignum;
   scheme_extension_table->scheme_make_bignum_from_unsigned = scheme_make_bignum_from_unsigned;
   scheme_extension_table->scheme_make_bignum_from_long_long = scheme_make_bignum_from_long_long;
