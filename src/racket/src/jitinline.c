@@ -1846,6 +1846,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __END_TINY_JUMPS__(1);
       (void)jit_calli(sjc.bad_char_to_integer_code);
       __START_TINY_JUMPS__(1);
+      jit_movr_p(dest, JIT_R0);
       mz_patch_branch(ref);
       (void)mz_bnei_t(reffail, JIT_R0, scheme_char_type, JIT_R1);
       __END_TINY_JUMPS__(1);
@@ -1853,7 +1854,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       (void)jit_ldxi_i(JIT_R0, JIT_R0, &SCHEME_CHAR_VAL(0x0));
       CHECK_LIMIT();
 
-      jit_fixnum_l(JIT_R0, JIT_R0);
+      jit_fixnum_l(dest, JIT_R0);
       
       return 1;
     } else if (IS_NAMED_PRIM(rator, "integer->char")) { 
@@ -1873,6 +1874,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __END_TINY_JUMPS__(1);
       (void)jit_calli(sjc.slow_integer_to_char_code);
       __START_TINY_JUMPS__(1);
+      jit_movr_p(dest, JIT_R0);
       refdone = jit_jmpi(jit_forward());
       mz_patch_branch(ref);
       (void)jit_blti_l(refslow, JIT_R0, scheme_make_integer(0));
@@ -1881,7 +1883,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       jit_rshi_l(JIT_R0, JIT_R0, 1);
       jit_lshi_l(JIT_R2, JIT_R0, JIT_LOG_WORD_SIZE);
       (void)jit_movi_p(JIT_R0, scheme_char_constants);
-      jit_ldxr_p(JIT_R0, JIT_R0, JIT_R2);
+      jit_ldxr_p(dest, JIT_R0, JIT_R2);
       CHECK_LIMIT();
 
       mz_patch_ucbranch(refdone);
