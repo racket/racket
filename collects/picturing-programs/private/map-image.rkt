@@ -276,9 +276,9 @@
   (unless (natural? h)
     (error 'build3-image
 	(format "Expected a natural number as second argument, but received ~v" h)))
-  (check-procedure-arity rfunc 2 'build3-image "Expected a function with contract num(x) num(y) -> color as third argument")
-  (check-procedure-arity gfunc 2 'build3-image "Expected a function with contract num(x) num(y) -> color as fourth argument")
-  (check-procedure-arity bfunc 2 'build3-image "Expected a function with contract num(x) num(y) -> color as fifth argument")
+  (check-procedure-arity rfunc 2 'build3-image "Expected a function with contract num(x) num(y) -> [0-255] as third argument")
+  (check-procedure-arity gfunc 2 'build3-image "Expected a function with contract num(x) num(y) -> [0-255] as fourth argument")
+  (check-procedure-arity bfunc 2 'build3-image "Expected a function with contract num(x) num(y) -> [0-255] as fifth argument")
   (build-image-internal w h
                         (lambda (x y)
                           (make-color (rfunc x y) (gfunc x y) (bfunc x y)))))
@@ -292,10 +292,10 @@
   (unless (natural? h)
     (error 'build4-image
 	(format "Expected a natural number as second argument, but received ~v" h)))
-  (check-procedure-arity rfunc 2 'build-image "Expected a function with contract num(x) num(y) -> color as third argument")
-  (check-procedure-arity gfunc 2 'build-image "Expected a function with contract num(x) num(y) -> color as fourth argument")
-  (check-procedure-arity bfunc 2 'build-image "Expected a function with contract num(x) num(y) -> color as fifth argument")
-  (check-procedure-arity afunc 2 'build-image "Expected a function with contract num(x) num(y) -> color as sixth argument")
+  (check-procedure-arity rfunc 2 'build4-image "Expected a function with contract num(x) num(y) -> [0-255] as third argument")
+  (check-procedure-arity gfunc 2 'build4-image "Expected a function with contract num(x) num(y) -> [0-255] as fourth argument")
+  (check-procedure-arity bfunc 2 'build4-image "Expected a function with contract num(x) num(y) -> [0-255] as fifth argument")
+  (check-procedure-arity afunc 2 'build4-image "Expected a function with contract num(x) num(y) -> [0-255] as sixth argument")
   (build-image-internal w h
                         (lambda (x y)
                           (make-color (rfunc x y) (gfunc x y) (bfunc x y) (afunc x y)))))
@@ -327,7 +327,7 @@
          (map-image-internal (colorize-func f) img)]
         [(procedure-arity-includes? f 1)            ; allow f : color->color as a simple case
          (map-image-internal (colorize-func (lambda (x y c) (f c))) img)]
-        [else (error 'map-image "Expected a function of one or three parameters as first argument")]))
+        [else (error 'map-image "Expected a function of one or three parameters, returning a color, as first argument")]))
 
 ; map-image/extra : (nat nat color X -> broad-color) image X -> image
 ; Like map-image, but passes a fixed extra argument to every call of the function.
@@ -340,7 +340,7 @@
          (map-image-internal (colorize-func (lambda (x y c) (f x y c extra))) img)]
         [(procedure-arity-includes? f 2)
          (map-image-internal (colorize-func (lambda (x y c) (f c extra))) img)]
-        [else (error 'map-image/extra "Expected a function taking two or four parameters as first argument")]))
+        [else (error 'map-image/extra "Expected a function taking two or four parameters, returning a color, as first argument")]))
 
 
 
@@ -353,9 +353,9 @@
 ; image -> image
 ; Note: by default, preserves alpha values from old image.
 (define (map3-image rfunc gfunc bfunc pic)
-  (check-procedure-arity rfunc 5 'map3-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> num(r) as first argument")
-  (check-procedure-arity gfunc 5 'map3-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> num(g) as second argument")
-  (check-procedure-arity bfunc 5 'map3-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> num(b) as third argument")
+  (check-procedure-arity rfunc 5 'map3-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> [0-255] as first argument")
+  (check-procedure-arity gfunc 5 'map3-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> [0-255] as second argument")
+  (check-procedure-arity bfunc 5 'map3-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> [0-255] as third argument")
   (unless (image? pic)
     (error 'map3-image
 	(format "Expected an image as fourth argument, but received ~v" pic)))
@@ -374,10 +374,10 @@
 ;  (int(x) int(y) int(r) int(g) int(b) int(a) -> int(a))
 ;  image -> image
 (define (map4-image rfunc gfunc bfunc afunc pic)
-  (check-procedure-arity rfunc 6 'map4-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(r) as first argument")
-  (check-procedure-arity gfunc 6 'map4-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(g) as second argument")
-  (check-procedure-arity bfunc 6 'map4-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(b) as third argument")
-  (check-procedure-arity afunc 6 'map4-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(alpha) -> num(alpha) as fourth argument")
+  (check-procedure-arity rfunc 6 'map4-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(a) -> [0-255] as first argument")
+  (check-procedure-arity gfunc 6 'map4-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(a) -> [0-255] as second argument")
+  (check-procedure-arity bfunc 6 'map4-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(a) -> [0-255] as third argument")
+  (check-procedure-arity afunc 6 'map4-image "Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(a) -> [0-255] as fourth argument")
   (unless (image? pic)
     (error 'map4-image
 	"Expected an image as fifth argument, but received ~v" pic))
@@ -428,3 +428,43 @@
         [else (error 'fold-image/extra "Expected a function taking three or five parameters as first argument")]
         ))
 
+  (module+ test
+           (require "book-pictures.rkt")
+(require test-engine/racket-tests)
+(check-error (build-image 100 100 add1)
+"build-image: Expected a function with contract num(x) num(y) -> color as third argument")
+(check-error (build-image/extra 100 100 add1 4)
+"build-image/extra: Expected a function with contract num(x) num(y) any -> color as third argument")
+(check-error (build3-image 100 100 add1 + +)
+"build3-image: Expected a function with contract num(x) num(y) -> [0-255] as third argument")
+(check-error (build3-image 100 100 + add1 +)
+"build3-image: Expected a function with contract num(x) num(y) -> [0-255] as fourth argument")
+(check-error (build3-image 100 100 + + add1)
+"build3-image: Expected a function with contract num(x) num(y) -> [0-255] as fifth argument")
+(check-error (build4-image 100 100 add1 + + +)
+"build4-image: Expected a function with contract num(x) num(y) -> [0-255] as third argument")
+(check-error (build4-image 100 100 + add1 + +)
+"build4-image: Expected a function with contract num(x) num(y) -> [0-255] as fourth argument")
+(check-error (build4-image 100 100 + + add1 +)
+"build4-image: Expected a function with contract num(x) num(y) -> [0-255] as fifth argument")
+(check-error (build4-image 100 100 + + + add1)
+"build4-image: Expected a function with contract num(x) num(y) -> [0-255] as sixth argument")
+(check-error (map3-image add1 + + pic:bloch)
+"map3-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> [0-255] as first argument")
+(check-error (map3-image + add1 + pic:bloch)
+"map3-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> [0-255] as second argument")
+(check-error (map3-image + + add1 pic:bloch)
+"map3-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) -> [0-255] as third argument")
+(check-error (map4-image add1 + + + pic:bloch)
+"map4-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(a) -> [0-255] as first argument")
+(check-error (map4-image + add1 + + pic:bloch)
+"map4-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(a) -> [0-255] as second argument")
+(check-error (map4-image + + add1 + pic:bloch)
+"map4-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(a) -> [0-255] as third argument")
+(check-error (map4-image + + + add1 pic:bloch)
+"map4-image: Expected a function with contract num(x) num(y) num(r) num(g) num(b) num(a) -> [0-255] as fourth argument")
+; more checks
+;(check-error (map-image (lambda (c) c) pic:bloch)
+;             "No, this should NOT produce an error.")
+(test)
+) ; end of test module
