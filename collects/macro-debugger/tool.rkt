@@ -30,6 +30,9 @@
 
 (define (drracket-macro-stepper-frame-mixin %)
   (class %
+    (define/override (file-menu:create-new?) #t)
+    (define/override (file-menu:create-open?) #t)
+    (define/override (file-menu:create-open-recent?) #t)
     (define/override (get-macro-stepper-widget%)
       (macro-stepper-widget/process-mixin
        (super get-macro-stepper-widget%)))

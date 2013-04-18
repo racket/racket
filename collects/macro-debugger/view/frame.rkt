@@ -111,7 +111,9 @@
     (define stepper-menu
       (new (get-menu%) (parent (get-menu-bar)) (label "Stepper")))
 
-    (define/override (file-menu:between-new-and-open file-menu)
+    (define/override (file-menu:between-save-as-and-print file-menu)
+      (super file-menu:between-save-as-and-print file-menu)
+      (new separator-menu-item% (parent file-menu))
       (new (get-menu-item%)
            (label "Duplicate stepper")
            (parent file-menu)
@@ -119,7 +121,8 @@
       (new (get-menu-item%)
            (label "Duplicate stepper (current term only)")
            (parent file-menu)
-           (callback (lambda _ (send/i widget widget<%> show-in-new-frame)))))
+           (callback (lambda _ (send/i widget widget<%> show-in-new-frame))))
+      (new separator-menu-item% (parent file-menu)))
 
     (menu-option/notify-box stepper-menu
                             "View syntax properties"
