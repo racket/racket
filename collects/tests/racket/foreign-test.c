@@ -12,6 +12,8 @@ X int  add1_int_int   (int  x) { return x + 1; }
 X int  add1_byte_int  (byte x) { return x + 1; }
 X byte add1_int_byte  (int  x) { return x + 1; }
 X byte add1_byte_byte (byte x) { return x + 1; }
+X float add1_float_float (float  x) { return x + 1; }
+X double add1_double_double (double  x) { return x + 1; }
 X int  decimal_int_int_int    (int  x, int  y) { return 10*x + y; }
 X int  decimal_byte_int_int   (byte x, int  y) { return 10*x + y; }
 X int  decimal_int_byte_int   (int  x, byte y) { return 10*x + y; }
@@ -36,6 +38,8 @@ X byte  callback3_int_byte_byte   (byte(*f)(int))  { return f(3); }
 X short callback3_int_short_short (short(*f)(int))  { return f(3); }
 X byte  callback3_byte_byte_byte  (byte(*f)(byte)) { return f(3); }
 X short  callback3_short_short_short(short(*f)(short)) { return f(3); }
+X float  callback3_float_float_float(float(*f)(float)) { return f(3.0); }
+X double  callback3_double_double_double(double(*f)(double)) { return f(3.0); }
 
 X int g1;
 X int  curry_ret_int_int   (int  x) { return g1 + x; }

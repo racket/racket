@@ -146,6 +146,10 @@
   (t  2 'add1_byte_byte (_fun _byte -> _byte) 1)
   (t  -1 'add1_int_int   (_fun _int  -> _int ) -2)
   (t  -1 'add1_int_int   (_fun _int  -> _fixint ) -2)
+  (t 2.0 'add1_float_float (_fun _float -> _float) 1.0)
+  (t -1.0 'add1_float_float (_fun _float -> _float) -2.0)
+  (t 2.0 'add1_double_double (_fun _double -> _double) 1.0)
+  (t -1.0 'add1_double_double (_fun _double -> _double) -2.0)
   ;; ---
   (t 12 'decimal_int_int_int    (_fun _int  _int  -> _int ) 1 2)
   (t 12 'decimal_byte_int_int   (_fun _byte _int  -> _int ) 1 2)
@@ -173,6 +177,8 @@
   (t  9 'callback3_int_short_short (_fun (_fun _int  -> _short) -> _short) sqr)
   (t  9 'callback3_byte_byte_byte  (_fun (_fun _byte -> _byte) -> _byte) sqr)
   (t  9 'callback3_short_short_short (_fun (_fun _short -> _short) -> _short) sqr)
+  (t  9.0 'callback3_float_float_float (_fun (_fun _float -> _float) -> _float) sqr)
+  (t  9.0 'callback3_double_double_double (_fun (_fun _double -> _double) -> _double) sqr)
   ;; ---
   (tc 3 'curry_int_int_int    (_fun _int  -> (_fun _int  -> _int )) 1 2)
   (tc 3 'curry_byte_int_int   (_fun _byte -> (_fun _int  -> _int )) 1 2)
