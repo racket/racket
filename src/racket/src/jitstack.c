@@ -250,30 +250,30 @@ Scheme_Object *scheme_native_stack_trace(void)
 	       may have the next return address */
 	    ctx.Rip = fp[-(3 + LOCAL_FRAME_SIZE + 1)];
 	  }
-	  name = NULL;
+	  name = find_symbol((uintptr_t)ctx.Rip);
 	} else {
 	  /* normal JIT function convention */
-
-	  cache_sp = (void *)fp;
-
-	  if (SCHEME_EOFP(name)) {
-	    /* JIT_LOCAL2 has the name to use */
-	    name = *(Scheme_Object **)fp[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
-	  }
-
-	  ctx.Rsp = ctx.Rbp + (2 * sizeof(void*));
-# ifdef NEED_LOCAL4
-	  ctx.R14 = fp[-JIT_LOCAL4_OFFSET];
-# endif
-	  ctx.Rbp = fp[0];
-	  ctx.Rbx = fp[-1];
-	  ctx.Rsi = fp[-2];
-	  ctx.Rdi = fp[-3];
-	  ctx.Rip = fp[1];
-
-	  if (SCHEME_NULLP(name))
-	    name = NULL;
 	}
+
+	cache_sp = (void *)fp;
+
+	if (SCHEME_EOFP(name)) {
+	  /* JIT_LOCAL2 has the name to use */
+	  name = *(Scheme_Object **)fp[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
+	}
+
+	ctx.Rsp = ctx.Rbp + (2 * sizeof(void*));
+# ifdef NEED_LOCAL4
+	ctx.R14 = fp[-JIT_LOCAL4_OFFSET];
+# endif
+	ctx.Rbp = fp[0];
+	ctx.Rbx = fp[-1];
+	ctx.Rsi = fp[-2];
+	ctx.Rdi = fp[-3];
+	ctx.Rip = fp[1];
+
+	if (SCHEME_NULLP(name))
+	  name = NULL;
       } else {
 	unsuccess++;
 	rf = RtlLookupFunctionEntry(ctx.Rip, &base, NULL);
@@ -301,6 +301,12 @@ Scheme_Object *scheme_native_stack_trace(void)
 	  unsuccess = -100000; /* if we got halfway, no need to bail out later */
 	}
 	cache_sp = NULL;
+      }
+
+      if (!(STK_COMP((uintptr_t)ctx.Rsp, stack_end)
+	    && STK_COMP(stack_start, (uintptr_t)ctx.Rsp))) {
+	/* out of stack range */
+	break;
       }
     }
 
