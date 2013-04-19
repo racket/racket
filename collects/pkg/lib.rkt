@@ -1322,7 +1322,7 @@
      (read-pkg-db))))
 
 (define (installed-pkg-names #:scope [given-scope #f])
-  (sort (installed-pkg-table #:scope given-scope) 
+  (sort (hash-keys (installed-pkg-table #:scope given-scope))
         string-ci<=?))
   
 (define (pkg-config config:set key+vals)
