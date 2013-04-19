@@ -66,8 +66,9 @@ Returns a list of URL strings for the user's configured @tech{package
 name resolvers}.}
 
 
-@defstruct[pkg-info ([orig-pkg (or/c path-string?
-                                     (list/c 'link path-string?))]
+@defstruct[pkg-info ([orig-pkg (or/c (list/c 'pnr string?)
+                                     (list/c 'url string?)
+                                     (list/c 'link string?))]
                      [checksum (or/c #f string?)]
                      [auto? boolean?])
                      #:prefab]{
