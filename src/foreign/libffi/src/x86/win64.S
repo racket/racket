@@ -11,12 +11,6 @@
 #define RVALUE 64
 #define FN 72
 
-#ifdef _MSC_VER
-# define M_MSC_IZE(x) _ ## x
-#else
-# define M_MSC_IZE(x) x
-#endif
-
 /* ffi_call_win64 (void (*prep_args_fn)(char *, extended_cif *),
                    extended_cif *ecif, unsigned bytes, unsigned flags,
                    unsigned *rvalue, void (*fn)());
@@ -238,10 +232,18 @@ ret_void$:
 ffi_call_win64 ENDP
 _TEXT	ENDS
 END
-#else        
+
+#else
+
+#ifdef SYMBOL_UNDERSCORE
+#define SYMBOL_NAME(name) _##name
+#else
+#define SYMBOL_NAME(name) name
+#endif
+
 .text
 
-.extern M_MSC_IZE(ffi_closure_win64_inner)
+.extern SYMBOL_NAME(ffi_closure_win64_inner)
 
 # ffi_closure_win64 will be called with these registers set:
 #    rax points to 'closure'
@@ -252,8 +254,8 @@ END
 # call ffi_closure_win64_inner for the actual work, then return the result.
 # 
 	.balign 16
-        .globl M_MSC_IZE(ffi_closure_win64)
-M_MSC_IZE(ffi_closure_win64):
+        .globl SYMBOL_NAME(ffi_closure_win64)
+SYMBOL_NAME(ffi_closure_win64):
 	# copy register arguments onto stack
 	test	$1,%r11
 	jne	.Lfirst_is_float	
@@ -293,7 +295,7 @@ M_MSC_IZE(ffi_closure_win64):
 	mov	%rax, %rcx	# context is first parameter
 	mov	%rsp, %rdx	# stack is second parameter
 	add	$48, %rdx	# point to start of arguments
-	mov	$M_MSC_IZE(ffi_closure_win64_inner), %rax
+	mov	$SYMBOL_NAME(ffi_closure_win64_inner), %rax
 	callq	*%rax		# call the real closure function
 	add	$40, %rsp
 	movq	%rax, %xmm0	# If the closure returned a float,
@@ -302,8 +304,8 @@ M_MSC_IZE(ffi_closure_win64):
 .ffi_closure_win64_end:
 
 	.balign 16
-        .globl	M_MSC_IZE(ffi_call_win64)
-M_MSC_IZE(ffi_call_win64):
+        .globl	SYMBOL_NAME(ffi_call_win64)
+SYMBOL_NAME(ffi_call_win64):
         # copy registers onto stack
 	mov	%r9,32(%rsp)
 	mov	%r8,24(%rsp)

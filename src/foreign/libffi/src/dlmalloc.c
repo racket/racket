@@ -622,6 +622,9 @@ DEFAULT_MMAP_THRESHOLD       default: 256K
 #include "/usr/include/malloc.h"
 #else /* HAVE_USR_INCLUDE_MALLOC_H */
 
+/* HP-UX's stdlib.h redefines mallinfo unless _STRUCT_MALLINFO is defined */
+#define _STRUCT_MALLINFO
+
 struct mallinfo {
   MALLINFO_FIELD_TYPE arena;    /* non-mmapped space allocated from system */
   MALLINFO_FIELD_TYPE ordblks;  /* number of free chunks */
@@ -5088,7 +5091,7 @@ History:
         Wolfram Gloger (Gloger@lrz.uni-muenchen.de).
       * Use last_remainder in more cases.
       * Pack bins using idea from  colin@nyx10.cs.du.edu
-      * Use ordered bins instead of best-fit threshold
+      * Use ordered bins instead of best-fit threshhold
       * Eliminate block-local decls to simplify tracing and debugging.
       * Support another case of realloc via move into top
       * Fix error occuring when initial sbrk_base not word-aligned.

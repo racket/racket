@@ -1,4 +1,4 @@
-The "libffi" directory holds a copy of libffi (somwehere between version 3.0.9 and 3.0.10).
+The "libffi" directory holds a copy of libffi (just after version 3.0.13).
 Similarly, The "libffi_msvc" directory holds a copy of the libffi
 version from the CTypes project.
 
@@ -8,7 +8,7 @@ CTypes is under the MIT License.
 ========== libffi directory =============================================
 
 Our copy of libffi for Racket has been changed in a few small
-ways at git commit 3f5b1375ab1e2b8e3d59 from
+ways at git commit c3c40e0290377d7cf948b072eedd8317c4bf215e from
 
  http://github.com/atgreen/libffi
 
@@ -17,9 +17,7 @@ Local changes:
  * Test ftruncate() result in "closures.c" to avoid a compiler
    warning.
 
- * Added powerpc .S patches from 2d3fb36420e09304220e
-
- * In "darwin.S", added ".long 0" after ".LFE3:" to avoid
+ * In "x86/darwin.S", added ".long 0" after ".LFE3:" to avoid
    linker problems compiling with gcc-4.0 on Mac OS X 10.7.
 
 ========== libffi_msvc directory =====================================
