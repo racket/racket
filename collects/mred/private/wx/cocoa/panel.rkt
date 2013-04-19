@@ -22,7 +22,7 @@
 
 (define-objc-class FrameView NSView 
   []
-  (-a _void (drawRect: [_NSRect r])
+  (-A _void (drawRect: [_NSRect r])
       (let ([ctx (tell NSGraphicsContext currentContext)])
         (tellv ctx saveGraphicsState)
         (let ([cg (tell #:type _CGContextRef ctx graphicsPort)]

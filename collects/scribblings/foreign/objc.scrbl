@@ -138,7 +138,7 @@ Defines each @racket[protocol-id] to the protocol (a value with FFI type
 (eval:alts (import-protocol NSCoding) (void))
 ]}
 
-@defform/subs[#:literals (+ - +a -a)
+@defform/subs[#:literals (+ - +a -a +A -A)
               (define-objc-class class-id superclass-expr
                 maybe-mixins
                 maybe-protocols
@@ -150,7 +150,7 @@ Defines each @racket[protocol-id] to the protocol (a value with FFI type
                                 (code:line #:protocols (protocol-expr ...))]
                [method (mode result-ctype-expr (method-id) body ...+)
                        (mode result-ctype-expr (arg ...+) body ...+)]
-               [mode + - +a -a]
+               [mode + - +a -a +A -A]
                [arg (code:line method-id [ctype-expr arg-id])])]{
 
 Defines @racket[class-id] as a new, registered Objective-C class (of
@@ -167,12 +167,17 @@ directly when the method @racket[body]s. Outside the object, they can
 be referenced and set with @racket[get-ivar] and @racket[set-ivar!].
 
 Each @racket[method] adds or overrides a method to the class (when
-@racket[mode] is @racket[-] or @racket[-a]) to be called on instances,
+@racket[mode] is @racket[-], @racket[-a], or @racket[-A]) to be called on instances,
 or it adds a method to the meta-class (when @racket[mode] is
-@racket[+] or @racket[+a]) to be called on the class itself. All
+@racket[+], @racket[+a], or @racket[+A]) to be called on the class itself. All
 result and argument types must be declared using FFI C types
 (@seeCtype). When @racket[mode] is @racket[+a] or @racket[-a], the
 method is called in atomic mode (see @racket[_cprocedure]).
+When @racket[mode] is @racket[+A] or @racket[-A], the
+method is called in atomic mode, and it may also be triggered
+as a result of a foreign call in a foreign thread
+thread, in which case the foreign thread must wait until the
+call completes in a Racket thread.
 
 If a @racket[method] is declared with a single @racket[method-id] and
 no arguments, then @racket[method-id] must not end with

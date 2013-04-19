@@ -65,7 +65,7 @@
 (define-objc-mixin (RacketViewMixin Superclass)
   #:mixins (KeyMouseTextResponder CursorDisplayer FocusResponder) 
   [wxb]
-  (-a _void (drawRect: [_NSRect r])
+  (-A _void (drawRect: [_NSRect r])
       (when wxb
         (let ([wx (->wx wxb)])
           (when wx
@@ -98,7 +98,7 @@
 
 (define-objc-class CornerlessFrameView NSView 
   []
-  (-a _void (drawRect: [_NSRect r])
+  (-A _void (drawRect: [_NSRect r])
       (let ([ctx (tell NSGraphicsContext currentContext)])
         (tellv ctx saveGraphicsState)
         (let ([cg (tell #:type _CGContextRef ctx graphicsPort)]
@@ -129,7 +129,7 @@
   [on?]
   (-a _void (setFocusState: [_BOOL is-on?])
       (set! on? is-on?))
-  (-a _void (drawRect: [_NSRect r])
+  (-A _void (drawRect: [_NSRect r])
       (let ([f (tell #:type _NSRect self frame)])
         (tellv bezel-cell 
                drawWithFrame: #:type _NSRect (make-NSRect (make-NSPoint 2 2)
@@ -154,7 +154,7 @@
   #:mixins (FocusResponder KeyMouseTextResponder CursorDisplayer) 
   #:protocols (NSComboBoxDelegate)
   [wxb]
-  (-a _void (drawRect: [_NSRect r])
+  (-A _void (drawRect: [_NSRect r])
       (super-tell #:type _void drawRect: #:type _NSRect r)
       (let ([wx (->wx wxb)])
         (when wx

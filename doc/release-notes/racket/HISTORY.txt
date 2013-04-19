@@ -4,6 +4,7 @@ Changed initialization of current-directory to use PWD
 racket/system: add a #:set-pwd? argument to system, etc., which
  makes them set PWD by default
 net/url: add support for HTTP/1.1 connections
+ffi/unsafe/objc: add -A and +A method modes
 
 Version 5.3.4.2
 Added current-environment-variables, environment-variables-ref,

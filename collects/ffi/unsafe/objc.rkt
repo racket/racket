@@ -756,11 +756,14 @@
           (or (free-identifier=? #'kind #'+)
               (free-identifier=? #'kind #'-)
               (free-identifier=? #'kind #'+a)
-              (free-identifier=? #'kind #'-a))
+              (free-identifier=? #'kind #'-a)
+              (free-identifier=? #'kind #'+A)
+              (free-identifier=? #'kind #'-A))
           (let ([id #'id]
                 [args (syntax->list #'(arg ...))]
                 [in-class? (or (free-identifier=? #'kind #'+)
-                               (free-identifier=? #'kind #'+a))])
+                               (free-identifier=? #'kind #'+a)
+                               (free-identifier=? #'kind #'+A))])
             (when (null? args)
               (unless (identifier? id)
                 (raise-syntax-error #f
@@ -787,15 +790,19 @@
                                    [_ (error "oops")])
                                  '())]
                             [(async ...)
-                             (if (eq? (syntax-e id) 'dealloc)
-                                 ;; so that objects can be destroyed in foreign threads:
+                             (if (or (free-identifier=? #'kind #'+A)
+                                     (free-identifier=? #'kind #'-A)
+                                     ;; so that objects can be destroyed in foreign threads:
+                                     (eq? (syntax-e id) 'dealloc))
                                  #'(#:async-apply apply-directly)
                                  #'())]
                             [in-cls (if in-class?
                                         #'(object-get-class cls)
                                         #'cls)]
                             [atomic? (or (free-identifier=? #'kind #'+a)
-                                         (free-identifier=? #'kind #'-a))])
+                                         (free-identifier=? #'kind #'-a)
+                                         (free-identifier=? #'kind #'+A)
+                                         (free-identifier=? #'kind #'-A))])
                 (quasisyntax/loc stx
                   (let ([rt result-type]
                         [arg-id arg-type] ...)
