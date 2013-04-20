@@ -222,7 +222,7 @@
 ;; Check that local variables are cleared for space safety
 ;; before a tail `sync' or `thread-wait':
 
-(let ()
+(when (eq? '3m (system-type 'gc))
   (define weak-syms (make-weak-hash))
 
   (define thds
