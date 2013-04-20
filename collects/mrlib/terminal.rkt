@@ -94,6 +94,9 @@
               [callback
                (λ (item evt)
                   (send text set-position 0 (send text last-position)))]))
+       
+       (when container
+         (send container begin-container-sequence))
 
        (set! sub-container
              (or frame
@@ -136,6 +139,8 @@
        (send text lock #t)
        (send text hide-caret #t)
        (semaphore-post setup-sema)
+       (when container
+         (send container end-container-sequence))
        (when frame
          (send frame show #t)))))
   
