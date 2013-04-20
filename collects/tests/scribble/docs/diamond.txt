@@ -1,0 +1,5 @@
+This example checks that @ is not an escape character if we make a
+reader that uses a different escape character.
+
+It also makes sure that a non-ASCII character like diamond is ok as an
+escape character.

@@ -15,7 +15,7 @@
          [args (map (lambda (x)
                       (cond [(bytes? x) x]
                             [(string? x) (string->bytes/utf-8 x)]
-                            [(char? x) (regexp-quote (bytes (char->integer x)))]
+                            [(char? x) (regexp-quote (string->bytes/utf-8 (string x)))]
                             [(not x) #""]
                             [else (internal-error 'px)]))
                     args)])

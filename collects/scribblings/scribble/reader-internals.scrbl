@@ -198,7 +198,7 @@ Useful for implementing languages that are textual by default (see
 
 @defproc[(make-at-readtable
           [#:readtable readtable readtable? (current-readtable)]
-          [#:command-char command-char character? #\@]
+          [#:command-char command-char char? #\@]
           [#:datum-readtable datum-readtable
                              (or/c readtable? boolean?
                                               (readtable? . -> . readtable?))
