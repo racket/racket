@@ -122,13 +122,14 @@
   "Runs submodule <name>\n    (defaults to running just the `test' submodule)"
   (let ([n (string->symbol name)])
     (set! submodules (cons n submodules)))]
- #:once-each
+ #:once-any
  [("--run-if-absent" "-r")
   "Require module if submodule is absent (on by default)"
   (set! run-anyways? #t)]
  [("--no-run-if-absent" "-x")
   "Require nothing if submodule is absent"
   (set! run-anyways? #f)]
+ #:once-each
  [("--quiet" "-q")
   "Suppress `Running ...' message"
   (set! quiet? #t)]
