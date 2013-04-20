@@ -96,6 +96,7 @@
           (unless fail-okay?
             (raise x)))])
     (make-parent-directory* file)
+    (printf "Downloading ~a\n" (url->string url))
     (log-pkg-debug "\t\tDownloading ~a to ~a" (url->string url) file)
     (call-with-output-file file
       (λ (op)
