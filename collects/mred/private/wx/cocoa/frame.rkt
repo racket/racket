@@ -466,11 +466,11 @@
     (define/override (is-responder wx on?)
       (unless (and (not on?)
                    (not (eq? first-responder wx)))
-        (unless on?
-          (tellv cocoa makeFirstResponder: #f))
         (if on?
             (set! first-responder wx)
             (set! first-responder #f))
+        (unless on?
+          (tellv cocoa makeFirstResponder: #f))
         (when is-main?
           (do-notify-responder wx on?))))
 
