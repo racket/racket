@@ -2,6 +2,18 @@
        Version 5.3.3
 ------------------------------
 
+  . added the ability to dynamically add new mixins to the DrRacket
+    classes and to start up a REPL to evaluate expressions to change
+    DrRacket's behavior.
+
+  . added a simple "install package" tool via a menu
+
+  . more improvements to DrRacket's responsiveness
+
+------------------------------
+       Version 5.3.3
+------------------------------
+
   . added esc;h key binding (to the interactions window) that shows
     the history of expressions evaluated
 
