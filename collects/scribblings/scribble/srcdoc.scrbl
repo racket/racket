@@ -115,7 +115,7 @@ form.}
                [maybe-defs (code:line)
                            (default-expr default-expr ...)])]{
 
-Like @racket[proc-doc], but supporting contract forms that embed
+Like @racket[proc-doc/names], but supporting contract forms that embed
 argument identifiers. Only a subset of @racket[->i] and @racket[->d] forms are
 currently supported.
 
