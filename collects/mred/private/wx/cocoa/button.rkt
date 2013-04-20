@@ -150,8 +150,10 @@
              [no-show? (memq 'deleted style)]
              [callback cb])
 
-  (when (memq 'border style)
-    (tellv (get-cocoa-window) setDefaultButtonCell: (tell button-cocoa cell)))
+  (define default-button? (memq 'border style))
+  (define/override (show-children)
+    (when default-button?
+      (tellv (get-cocoa-window) setDefaultButtonCell: (tell button-cocoa cell))))
 
   (tellv button-cocoa setTarget: button-cocoa)
   (tellv button-cocoa setAction: #:type _SEL (selector clicked:))
