@@ -173,7 +173,7 @@ _racket_main() {
 
 ###############################################################################
 
-_racket_self_test 'raco:1468152918'
+_racket_self_test 'raco:3382393175'
 _raco() {
   if (( CURRENT > 2 )); then
     local subcmd="${words[2]}"
@@ -236,15 +236,16 @@ _raco_cmd_setup() {
   _racket_do_state
 }
 
-_racket_self_test 'raco scribble:4149265431'
+_racket_self_test 'raco scribble:611326287'
 _raco_cmd_scribble() {
   _arguments "$RACKET_COMMON[@]" \
-    '(--html --htmls --latex --pdf --latex-section --text)'--html'[Generate HTML-format output file (default)]' \
-    '(--html --htmls --latex --pdf --latex-section --text)'--htmls'[Generate HTML-format output directory]' \
-    '(--html --htmls --latex --pdf --latex-section --text)'--pdf'[Generate PDF-format output (with PDFLaTeX)]' \
-    '(--html --htmls --latex --pdf --latex-section --text)'--latex'[Generate LaTeX-format output]' \
-    '(--html --htmls --latex --pdf --latex-section --text)'--latex-section'+[Generate LaTeX-format output for section depth N]:section-depth: ' \
-    '(--html --htmls --latex --pdf --latex-section --text)'--text'[Generate text-format output]' \
+    '(--html --htmls --latex --pdf --latex-section --text --markdown)'--html'[Generate HTML-format output file (default)]' \
+    '(--html --htmls --latex --pdf --latex-section --text --markdown)'--htmls'[Generate HTML-format output directory]' \
+    '(--html --htmls --latex --pdf --latex-section --text --markdown)'--pdf'[Generate PDF-format output (with PDFLaTeX)]' \
+    '(--html --htmls --latex --pdf --latex-section --text --markdown)'--latex'[Generate LaTeX-format output]' \
+    '(--html --htmls --latex --pdf --latex-section --text --markdown)'--latex-section'+[Generate LaTeX-format output for section depth N]:section-depth: ' \
+    '(--html --htmls --latex --pdf --latex-section --text --markdown)'--text'[Generate text-format output]' \
+    '(--html --htmls --latex --pdf --latex-section --text --markdown)'--markdown'[Generate markdown-format output]' \
     '(--dest)'--dest'+[Write output in directory]:directory:_files -/' \
     '(--dest-name)'--dest-name'+[Write output as name]:name: ' \
     '(--dest-base)'--dest-base'+[Start support-file names with prefix]:prefix: ' \
@@ -254,6 +255,7 @@ _raco_cmd_scribble() {
     '*'++extra'+[Add given file]:file:_files' \
     '*'--redirect-main'+[Redirect main doc links to url]:url: ' \
     '*'--redirect'+[Redirect external links to tag search via url]:url: ' \
+    '(+m ++main-xref-in)'{+m,++main-xref-in}'[load format-speficic cross-ref info for all installed library collections]' \
     '*'++xref-in'+[Load format-specific cross-ref info by]:module-path:->libfile:proc-id: ' \
     '*'--info-out'+[Write format-specific cross-ref info to file]:file:_file' \
     '*'++info-in'+[Load format-specific cross-ref info from file]:file:_file' \
@@ -429,12 +431,15 @@ _raco_cmd_demodularize() {
   _racket_do_state
 }
 
-_racket_self_test 'raco test:4111632555'
+_racket_self_test 'raco test:2458495009'
 _raco_cmd_test() {
   _arguments "$RACKET_COMMON[@]" \
     '(-s --submodule)'{-s,--submodule}'+[Runs submodule name (defaults to `test'"'"')]:submodule: ' \
     '(-r --run-if-absent -x --no-run-if-absent)'{-r,--run-if-absent}'[Require module if submodule is absent (on by default)]' \
     '(-r --run-if-absent -x --no-run-if-absent)'{-x,--no-run-if-absent}'[Require nothing if submodule is absent]' \
+    '(-q --quiet)'{-q,--quiet}'+[Suppress `Running ...'"'"' message]' \
+    '(-c --collection)'{-c,--collection}'+[Interpret arguments as collections]' \
+    '(-p --package)'{-p,--package}'+[Interpret arguments as packages]' \
     '*:source-file-or-directory:_files' \
   && return 0
   _racket_do_state
