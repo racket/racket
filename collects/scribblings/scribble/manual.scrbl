@@ -76,8 +76,8 @@ and @racket[code] versus @racket[racketblock] and
                        (code:line #:line-number-sep line-number-sep-expr)])
               #:contracts ([keep-expr any/c]
                            [indent-expr exact-nonnegative-integer?]
-                           [expand-expr (or/c #f (syntax-object? . -> . syntax-object?))]
-                           [context-expr syntax-object?]
+                           [expand-expr (or/c #f (syntax? . -> . syntax?))]
+                           [context-expr syntax?]
                            [line-number-expr (or/c #f exact-nonnegative-integer?)]
                            [line-number-sep-expr exact-nonnegative-integer?])]{
 
@@ -151,8 +151,8 @@ Like @racket[codeblock], but without the @racket['code-inset]
                        (code:line #:expand expand-expr)
                        (code:line #:context context-expr)])
               #:contracts ([lang-line-expr (or/c #f string?)]
-                           [expand-expr (or/c #f (syntax-object? . -> . syntax-object?))]
-                           [context-expr syntax-object?])]{
+                           [expand-expr (or/c #f (syntax? . -> . syntax?))]
+                           [context-expr syntax?])]{
 
 Like @racket[codeblock], but produces @tech{content} instead of a
 @tech{block}. No @hash-lang[] line should appear in the string content;

@@ -854,7 +854,7 @@ Returns the last pair of a (possibly improper) list.
   (last-pair '(1 2 3 4))]}
 
 
-@defproc[(make-list [k exact-nonnegative-integer?] [v any?])
+@defproc[(make-list [k exact-nonnegative-integer?] [v any/c])
          list?]{
 
 Returns a newly constructed list of length @racket[k], holding
