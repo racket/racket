@@ -285,8 +285,10 @@ corresponding to @racket[define-struct].}
  The procdure @racket[e] is used as the value for @racket[prop:procedure], and must have type @racket[proc-t].}
 
 @section{Names for Types}
-@defform*[[(define-type name t)
-           (define-type (name v ...) t)]]{
+@defform*[[(define-type name t maybe-omit-def)
+           (define-type (name v ...) t maybe-omit-def)]
+          #:grammar
+          [(maybe-omit-def (code:line #:omit-define-syntaxes) (code:line))]]{
 The first form defines @racket[name] as type, with the same meaning as
 @racket[t].  The second form is equivalent to
 @racket[(define-type name (All (v ...) t))].  Type names may
@@ -294,7 +296,11 @@ refer to other types defined in the same module, but
 cycles among them are prohibited.
 
 @ex[(define-type IntStr (U Integer String))
-    (define-type (ListofPairs A) (Listof (Pair A A)))]}
+    (define-type (ListofPairs A) (Listof (Pair A A)))]
+
+If @racket[#:omit-define-syntaxes] is specified, no definition of
+@racket[name] is created. In this case, some other definition of @racket[name]
+is necessary.}
 
 @section{Generating Predicates Automatically}
 
