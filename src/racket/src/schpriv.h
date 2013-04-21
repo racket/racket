@@ -899,6 +899,7 @@ Scheme_Object *scheme_print_attribute_ref(Scheme_Object *s);
 #define SCHEME_STRUCT_INSPECTOR(obj) (((Scheme_Structure *)obj)->stype->inspector)
 
 extern Scheme_Object *scheme_source_property;
+extern Scheme_Object *scheme_module_path_property;
 
 Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_count);
 Scheme_Object *scheme_make_blank_prefab_struct_instance(Scheme_Struct_Type *stype);
@@ -3794,7 +3795,7 @@ void scheme_flush_orig_outputs(void);
 Scheme_Object *scheme_file_stream_port_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_terminal_port_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[], 
-                                         int internal, char **err, int *eerrno);
+                                         int internal, char **err, int *eerrno, int for_module);
 Scheme_Object *scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv[], int and_read, 
                                           int internal, char **err, int *eerrno);
 Scheme_Object *scheme_file_position(int argc, Scheme_Object *argv[]);

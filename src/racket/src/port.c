@@ -4491,11 +4491,12 @@ Scheme_Object *scheme_terminal_port_p(int argc, Scheme_Object *argv[])
   return is_fd_terminal(fd) ? scheme_true : scheme_false;
 }
 
-static void filename_exn(char *name, char *msg, char *filename, int err)
+static void filename_exn(char *name, char *msg, char *filename, int err, int maybe_module_errno)
 {
   char *dir, *drive;
   int len;
   char *pre, *rel, *post;
+  Scheme_Object *mod_path, *mp;
 
   len = strlen(filename);
 
@@ -4514,6 +4515,38 @@ static void filename_exn(char *name, char *msg, char *filename, int err)
   rel = dir ? dir : (drive ? drive : "");
   post = dir ? "" : "";
 
+  if (maybe_module_errno && (err == maybe_module_errno)) {
+    mod_path = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_MODULE_LOAD_PATH);
+    if (SCHEME_TRUEP(mod_path)) {
+      if (SCHEME_STXP(mod_path)) {
+        mp = scheme_syntax_to_datum(mod_path, 0, NULL);
+        scheme_raise_exn(MZEXN_FAIL_SYNTAX_MISSING_MODULE,
+                         scheme_make_pair(mod_path, scheme_null),
+                         mp,
+                         "%s: %s\n"
+                         "  module path: %W\n"
+                         "  path: %q%s%q%s\n"
+                         "  system error: " FILENAME_EXN_E,
+                         name, "cannot open module file", 
+                         mp, filename,
+                         pre, rel, post,
+                         err);
+      } else {
+        scheme_raise_exn(MZEXN_FAIL_FILESYSTEM_MISSING_MODULE,
+                         mod_path,
+                         "%s: %s\n"
+                         "  module path: %W\n"
+                         "  path: %q%s%q%s\n"
+                         "  system error: " FILENAME_EXN_E,
+                         name, "cannot open module file", 
+                         mod_path, filename,
+                         pre, rel, post,
+                         err);
+      }
+      return;
+    }
+  }
+
   scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
 		   "%s: %s\n"
                    "  path: %q%s%q%s\n"
@@ -4525,7 +4558,7 @@ static void filename_exn(char *name, char *msg, char *filename, int err)
 
 Scheme_Object *
 scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[], 
-                          int internal, char **err, int *eerrno)
+                          int internal, char **err, int *eerrno, int for_module)
 {
 #ifdef USE_FD_PORTS
   int fd;
@@ -4601,7 +4634,7 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
       *err = "cannot open source file";
       *eerrno = errno;
     } else
-      filename_exn(name, "cannot open input file", filename, errno);
+      filename_exn(name, "cannot open input file", filename, errno, (for_module ? ENOENT : 0));
     return NULL;
   } else {
     int ok;
@@ -4619,7 +4652,7 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
         *err = "source is a directory";
         *eerrno = 0;
       } else
-        filename_exn(name, "cannot open directory as a file", filename, 0);
+        filename_exn(name, "cannot open directory as a file", filename, 0, 0);
       return NULL;
     } else {
       regfile = S_ISREG(buf.st_mode);
@@ -4643,14 +4676,14 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
       *err = "cannot open source file";
       *eerrno = errv;
     } else
-      filename_exn(name, "cannot open input file", filename, GetLastError());
+      filename_exn(name, "cannot open input file", filename, GetLastError(), (for_module ? ERROR_FILE_NOT_FOUND : 0));
     return NULL;
   } else
     regfile = (GetFileType(fd) == FILE_TYPE_DISK);
 
   if ((mode[1] == 't') && !regfile) {
     CloseHandle(fd);
-    filename_exn(name, "cannot use text-mode on a non-file device", filename, 0);
+    filename_exn(name, "cannot use text-mode on a non-file device", filename, 0, 0);
     return NULL;
   }
 
@@ -4661,7 +4694,7 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
       *err = "source is a directory";
       *eerrno = 0;
     } else
-      filename_exn(name, err, filename, 0);
+      filename_exn(name, err, filename, 0, 0);
     return NULL;
   }
 
@@ -4673,7 +4706,7 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
       *err = "cannot open source file";
       *eerrno = errno;
     } else
-      filename_exn(name, "cannot open input file", filename, errno);
+      filename_exn(name, "cannot open input file", filename, errno, (for_module ? ENOENT : 0));
     return NULL;
   }
 
@@ -4877,7 +4910,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
         *err = "cannot open destination file";
         *eerrno = errno;
       } else
-        filename_exn(name, "cannot open output file", filename, errno);
+        filename_exn(name, "cannot open output file", filename, errno, 0);
       return NULL;
     }
   }
@@ -5077,7 +5110,7 @@ Scheme_Object *scheme_open_input_file(const char *name, const char *who)
   Scheme_Object *a[1];
 
   a[0]= scheme_make_path(name);
-  return scheme_do_open_input_file((char *)who, 0, 1, a, 0, NULL, NULL);
+  return scheme_do_open_input_file((char *)who, 0, 1, a, 0, NULL, NULL, 0);
 }
 
 Scheme_Object *scheme_open_output_file(const char *name, const char *who)

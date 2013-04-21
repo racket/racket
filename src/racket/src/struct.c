@@ -29,6 +29,7 @@ READ_ONLY Scheme_Object *scheme_arity_at_least;
 READ_ONLY Scheme_Object *scheme_date;
 READ_ONLY Scheme_Object *scheme_make_arity_at_least;
 READ_ONLY Scheme_Object *scheme_source_property;
+READ_ONLY Scheme_Object *scheme_module_path_property;
 READ_ONLY Scheme_Object *scheme_input_port_property;
 READ_ONLY Scheme_Object *scheme_output_port_property;
 READ_ONLY Scheme_Object *scheme_cpointer_property;
@@ -172,6 +173,10 @@ static Scheme_Object *check_location_fields(int argc, Scheme_Object **argv);
 static Scheme_Object *check_exn_source_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *exn_source_p(int argc, Scheme_Object **argv);
 static Scheme_Object *exn_source_get(int argc, Scheme_Object **argv);
+
+static Scheme_Object *check_exn_module_path_property_value_ok(int argc, Scheme_Object *argv[]);
+static Scheme_Object *exn_module_path_p(int argc, Scheme_Object **argv);
+static Scheme_Object *exn_module_path_get(int argc, Scheme_Object **argv);
 
 static Scheme_Object *procedure_extract_target(int argc, Scheme_Object **argv);
 static Scheme_Struct_Type *hash_prefab(Scheme_Struct_Type *type);
@@ -788,6 +793,26 @@ scheme_init_struct (Scheme_Env *env)
   scheme_add_global_constant("exn:srclocs-accessor", 
 			     scheme_make_folding_prim(exn_source_get,
 						      "exn:srclocs-accessor",
+						      1, 1, 1),
+			     env);
+
+  REGISTER_SO(scheme_module_path_property);
+  {
+    guard = scheme_make_prim_w_arity(check_exn_module_path_property_value_ok,
+				     "guard-for-prop:exn:srclocs",
+				     2, 2);
+    scheme_module_path_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("prop:exn:missing-module"),
+                                                                           guard);
+  }
+  scheme_add_global_constant("prop:exn:missing-module", scheme_module_path_property, env);
+  scheme_add_global_constant("exn:missing-module?",
+			     scheme_make_folding_prim(exn_module_path_p,
+						      "exn:missing-module?",
+						      1, 1, 1),
+			     env);
+  scheme_add_global_constant("exn:missing-module-accessor", 
+			     scheme_make_folding_prim(exn_module_path_get,
+						      "exn:missing-module-accessor",
 						      1, 1, 1),
 			     env);
 
@@ -5292,6 +5317,34 @@ static Scheme_Object *check_exn_source_property_value_ok(int argc, Scheme_Object
      /* This is the guard for prop:exn:srclocs */
 {
   scheme_check_proc_arity("guard-for-prop:exn:srclocs", 1, 0, argc, argv);
+
+  return argv[0];
+}
+
+/**********************************************************************/
+
+static Scheme_Object *exn_module_path_p(int argc, Scheme_Object **argv)
+{
+  return (scheme_struct_type_property_ref(scheme_module_path_property, argv[0])
+	  ? scheme_true
+	  : scheme_false);
+}
+
+static Scheme_Object *exn_module_path_get(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *v;
+
+  v = scheme_struct_type_property_ref(scheme_module_path_property, argv[0]);
+  if (!v)
+    scheme_wrong_contract("exn:missing-module-accessor", "exn:missing-module?", 0, argc, argv);
+  
+  return v;
+}
+
+static Scheme_Object *check_exn_module_path_property_value_ok(int argc, Scheme_Object *argv[])
+     /* This is the guard for prop:exn:srclocs */
+{
+  scheme_check_proc_arity("guard-for-prop:exn:missing-module", 1, 0, argc, argv);
 
   return argv[0];
 }

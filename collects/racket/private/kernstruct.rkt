@@ -212,6 +212,28 @@
           (quote-syntax exn:fail:syntax)))
        (λ () (quote-syntax kernel:exn:fail:syntax:unbound)))))
   (begin
+    (#%require
+     (rename '#%kernel
+             kernel:exn:fail:syntax:missing-module
+             exn:fail:syntax:missing-module))
+    (define make-exn:fail:syntax:missing-module
+      kernel:exn:fail:syntax:missing-module)
+    (define-syntax exn:fail:syntax:missing-module
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:syntax:missing-module)
+          (quote-syntax make-exn:fail:syntax:missing-module)
+          (quote-syntax exn:fail:syntax:missing-module?)
+          (list
+           (quote-syntax exn:fail:syntax:missing-module-path)
+           (quote-syntax exn:fail:syntax-exprs)
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f #f #f)
+          (quote-syntax exn:fail:syntax)))
+       (λ () (quote-syntax kernel:exn:fail:syntax:missing-module)))))
+  (begin
     (#%require (rename '#%kernel kernel:exn:fail:read exn:fail:read))
     (define make-exn:fail:read kernel:exn:fail:read)
     (define-syntax exn:fail:read
@@ -339,6 +361,27 @@
           '(#f #f #f)
           (quote-syntax exn:fail:filesystem)))
        (λ () (quote-syntax kernel:exn:fail:filesystem:errno)))))
+  (begin
+    (#%require
+     (rename '#%kernel
+             kernel:exn:fail:filesystem:missing-module
+             exn:fail:filesystem:missing-module))
+    (define make-exn:fail:filesystem:missing-module
+      kernel:exn:fail:filesystem:missing-module)
+    (define-syntax exn:fail:filesystem:missing-module
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:filesystem:missing-module)
+          (quote-syntax make-exn:fail:filesystem:missing-module)
+          (quote-syntax exn:fail:filesystem:missing-module?)
+          (list
+           (quote-syntax exn:fail:filesystem:missing-module--path)
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f #f)
+          (quote-syntax exn:fail:filesystem)))
+       (λ () (quote-syntax kernel:exn:fail:filesystem:missing-module)))))
   (begin
     (#%require (rename '#%kernel kernel:exn:fail:network exn:fail:network))
     (define make-exn:fail:network kernel:exn:fail:network)

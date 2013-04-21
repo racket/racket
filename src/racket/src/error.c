@@ -257,6 +257,7 @@ Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)
   %V = scheme_value
   %@ = list of scheme_value to write splice
   %D = scheme value to display
+  %W = scheme value to write
   %_ = skip pointer
   %- = skip int
 
@@ -336,6 +337,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
       case 'V':
       case '@':
       case 'D':
+      case 'W':
       case 'T':
       case 'Q':
       case '_':
@@ -575,6 +577,15 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
             intptr_t dlen;
 	    o = (Scheme_Object *)ptrs[pp++];
 	    t = scheme_display_to_string(o, &dlen);
+            tlen = dlen;
+	  }
+	  break;
+	case 'W':
+	  {
+	    Scheme_Object *o;
+            intptr_t dlen;
+	    o = (Scheme_Object *)ptrs[pp++];
+	    t = scheme_write_to_string(o, &dlen);
             tlen = dlen;
 	  }
 	  break;
@@ -4365,6 +4376,24 @@ static Scheme_Object *errno_field_check(int argc, Scheme_Object **argv)
   return scheme_values (3, argv);
 }
 
+static Scheme_Object *module_path_field_check(int pos, int argc, Scheme_Object **argv)
+{
+  if (!scheme_is_module_path(argv[pos]))
+    scheme_wrong_field_contract(argv[pos+1], "(or/c #f module-path?)", argv[pos]);
+
+  return scheme_values (pos+1, argv);
+}
+
+static Scheme_Object *module_path_field_check_2(int argc, Scheme_Object **argv)
+{
+  return module_path_field_check(2, argc, argv);
+}
+
+static Scheme_Object *module_path_field_check_3(int argc, Scheme_Object **argv)
+{
+  return module_path_field_check(3, argc, argv);
+}
+
 static Scheme_Object *extract_syntax_locations(int argc, Scheme_Object **argv)
 {
   if (scheme_is_struct_instance(exn_table[MZEXN_FAIL_SYNTAX].type, argv[0])) {
@@ -4399,6 +4428,32 @@ static Scheme_Object *extract_read_locations(int argc, Scheme_Object **argv)
     return scheme_struct_ref(argv[0], 2);
   scheme_wrong_contract("exn:fail:read-locations-accessor", "exn:fail:read?", 0, argc, argv);
   return NULL;
+}
+
+static Scheme_Object *extract_module_path(int pos, int argc, Scheme_Object **argv,
+                                          int exn_kind, const 
+                                          char *accessor_name, const char *contract)
+{
+  if (scheme_is_struct_instance(exn_table[exn_kind].type, argv[0]))
+    return scheme_struct_ref(argv[0], pos);
+  scheme_wrong_contract(accessor_name, contract, 0, argc, argv);
+  return NULL;
+}
+
+static Scheme_Object *extract_module_path_2(int argc, Scheme_Object **argv)
+{
+  return extract_module_path(2, argc, argv,
+                             MZEXN_FAIL_FILESYSTEM_MISSING_MODULE,
+                             "exn:fail:filesystem:missing-module:path-accessor", 
+                             "exn:fail:filesystem:missing-module?");
+}
+
+static Scheme_Object *extract_module_path_3(int argc, Scheme_Object **argv)
+{
+  return extract_module_path(3, argc, argv,
+                             MZEXN_FAIL_SYNTAX_MISSING_MODULE,
+                             "exn:fail:syntax:missing-module:path-accessor", 
+                             "exn:fail:syntax:missing-module?");
 }
 
 void scheme_init_exn(Scheme_Env *env)

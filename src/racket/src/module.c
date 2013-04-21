@@ -46,6 +46,7 @@ SHARED_OK static mzrt_mutex *modpath_table_mutex;
 static Scheme_Object *current_module_name_resolver(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_module_name_prefix(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_module_name_source(int argc, Scheme_Object *argv[]);
+static Scheme_Object *current_module_load_path(int argc, Scheme_Object *argv[]);
 static Scheme_Object *dynamic_require_for_syntax(int argc, Scheme_Object *argv[]);
 static Scheme_Object *namespace_require(int argc, Scheme_Object *argv[]);
 static Scheme_Object *namespace_require_copy(int argc, Scheme_Object *argv[]);
@@ -428,6 +429,7 @@ void scheme_init_module(Scheme_Env *env)
   GLOBAL_PARAMETER("current-module-name-resolver",  current_module_name_resolver, MZCONFIG_CURRENT_MODULE_RESOLVER, env);
   GLOBAL_PARAMETER("current-module-declare-name",   current_module_name_prefix,   MZCONFIG_CURRENT_MODULE_NAME,     env);
   GLOBAL_PARAMETER("current-module-declare-source", current_module_name_source,   MZCONFIG_CURRENT_MODULE_SRC,      env);
+  GLOBAL_PARAMETER("current-module-path-for-load",  current_module_load_path,     MZCONFIG_CURRENT_MODULE_LOAD_PATH, env);
 
   GLOBAL_PRIM_W_ARITY("dynamic-require",                  scheme_dynamic_require,     2, 3, env);
   GLOBAL_PRIM_W_ARITY("dynamic-require-for-syntax",       dynamic_require_for_syntax, 2, 3, env);
@@ -1034,6 +1036,28 @@ current_module_name_source(int argc, Scheme_Object *argv[])
 			     scheme_make_integer(MZCONFIG_CURRENT_MODULE_SRC),
 			     argc, argv,
 			     -1, source_p, "symbol, complete path, or #f", 1);
+}
+
+static Scheme_Object *load_path_p(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *o = argv[0];
+  
+  if (!SCHEME_FALSEP(o)
+      && !scheme_is_module_path(o)
+      && (!SCHEME_STXP(o)
+          || !scheme_is_module_path(scheme_syntax_to_datum(o, 0, NULL))))
+    return NULL;
+
+  return o;
+}
+
+static Scheme_Object *
+current_module_load_path(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("current-module-path-for-load",
+			     scheme_make_integer(MZCONFIG_CURRENT_MODULE_LOAD_PATH),
+			     argc, argv,
+			     -1, load_path_p, "module path, module path as syntax, or #f", 1);
 }
 
 /**********************************************************************/

@@ -171,6 +171,18 @@ is @racket[#f], the module's name (as determined by
 @racket[current-module-declare-name]) is used as the source name
 instead of the parameter value.}
 
+
+@defparam[current-module-path-for-load path (or/c #f module-path? 
+                                                  (and/c syntax? 
+                                                         (lambda (stx)
+                                                           (module-path? (syntax->datum s)))))]{
+
+A @tech{parameter} that determines a module path used for
+@racket[exn:fail:syntax:missing-module] and
+@racket[exn:fail:filesytem:missing-module] exceptions as raised by the
+default @tech{load handler}.  The parameter is normally set by a
+@tech{module name resolver}.}
+
 @;------------------------------------------------------------------------
 @section[#:tag "modpathidx"]{Compiled Modules and References}
 

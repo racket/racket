@@ -1144,14 +1144,24 @@
                                                      base))))))
                                  (current-load-relative-directory)
                                  (current-directory)))]
-                  [show-collection-err (lambda (s)
-                                         (let ([s (string-append "standard-module-name-resolver: " s)])
-                                           (if stx
-                                               (raise-syntax-error
-                                                #f
-                                                s
-                                                stx)
-                                               (error s))))]
+                  [show-collection-err (lambda (msg)
+                                         (let ([msg (string-append
+                                                     "standard-module-name-resolver: " 
+                                                     (regexp-replace #rx"\n" 
+                                                                     msg
+                                                                     (format "\n  for module path: ~s\n"
+                                                                             s)))])
+                                           (raise
+                                            (if stx
+                                                (exn:fail:syntax:missing-module
+                                                 msg
+                                                 (current-continuation-marks)
+                                                 (list stx)
+                                                 s)
+                                                (exn:fail:filesystem:missing-module
+                                                 msg
+                                                 (current-continuation-marks)
+                                                 s)))))]
                   [ss->rkt (lambda (s)
                              (let ([len (string-length s)])
                                (if (and (len . >= . 3)
@@ -1343,7 +1353,24 @@
                                                                                     (namespace-module-registry (current-namespace))
                                                                                     normal-filename)
                                                                                    loading)
-                                     (parameterize ([current-module-declare-name root-modname])
+                                     (parameterize ([current-module-declare-name root-modname]
+                                                    [current-module-path-for-load
+                                                     ;; If `s' is an absolute module path, then
+                                                     ;; keep it as-is, the better to let a tool
+                                                     ;; recommend how to get an unavailable module;
+                                                     ;; also, propagate the source location.
+                                                     ((if stx
+                                                          (lambda (p) (datum->syntax #f p stx))
+                                                          values)
+                                                      (cond
+                                                       [(symbol? s) s]
+                                                       [(and (pair? s) (eq? (car s) 'lib)) s]
+                                                       [else (if (resolved-module-path? root-modname)
+                                                                 (let ([src (resolved-module-path-name root-modname)])
+                                                                   (if (symbol? src)
+                                                                       (list 'quote src)
+                                                                       src))
+                                                                 root-modname)]))])
                                        ((current-load/use-compiled) 
                                         filename 
                                         (let ([sym (string->symbol (path->string no-sfx))])

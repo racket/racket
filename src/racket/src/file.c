@@ -3939,7 +3939,7 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
     Scheme_Object *a[2], * volatile in, * volatile out;
 
     reason = NULL;
-    in = scheme_do_open_input_file("copy-file", 0, 1, argv, 1, &reason, &err_val);
+    in = scheme_do_open_input_file("copy-file", 0, 1, argv, 1, &reason, &err_val, 0);
     if (!in) {
       has_err_val = !!err_val;
       goto failed;

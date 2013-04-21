@@ -12,6 +12,7 @@ enum {
   MZEXN_FAIL_CONTRACT_VARIABLE,
   MZEXN_FAIL_SYNTAX,
   MZEXN_FAIL_SYNTAX_UNBOUND,
+  MZEXN_FAIL_SYNTAX_MISSING_MODULE,
   MZEXN_FAIL_READ,
   MZEXN_FAIL_READ_EOF,
   MZEXN_FAIL_READ_NON_CHAR,
@@ -19,6 +20,7 @@ enum {
   MZEXN_FAIL_FILESYSTEM_EXISTS,
   MZEXN_FAIL_FILESYSTEM_VERSION,
   MZEXN_FAIL_FILESYSTEM_ERRNO,
+  MZEXN_FAIL_FILESYSTEM_MISSING_MODULE,
   MZEXN_FAIL_NETWORK,
   MZEXN_FAIL_NETWORK_ERRNO,
   MZEXN_FAIL_OUT_OF_MEMORY,
@@ -33,7 +35,7 @@ enum {
 
 #ifdef _MZEXN_TABLE
 
-#define MZEXN_MAXARGS 3
+#define MZEXN_MAXARGS 4
 
 #ifdef GLOBAL_EXN_ARRAY
 static exn_rec exn_table[] = {
@@ -47,21 +49,23 @@ static exn_rec exn_table[] = {
   { 3, NULL, NULL, 0, NULL, 2 },
   { 3, NULL, NULL, 0, NULL, 1 },
   { 3, NULL, NULL, 0, NULL, 8 },
+  { 4, NULL, NULL, 0, NULL, 8 },
   { 3, NULL, NULL, 0, NULL, 1 },
-  { 3, NULL, NULL, 0, NULL, 10 },
-  { 3, NULL, NULL, 0, NULL, 10 },
+  { 3, NULL, NULL, 0, NULL, 11 },
+  { 3, NULL, NULL, 0, NULL, 11 },
   { 2, NULL, NULL, 0, NULL, 1 },
-  { 2, NULL, NULL, 0, NULL, 13 },
-  { 2, NULL, NULL, 0, NULL, 13 },
-  { 3, NULL, NULL, 0, NULL, 13 },
+  { 2, NULL, NULL, 0, NULL, 14 },
+  { 2, NULL, NULL, 0, NULL, 14 },
+  { 3, NULL, NULL, 0, NULL, 14 },
+  { 3, NULL, NULL, 0, NULL, 14 },
   { 2, NULL, NULL, 0, NULL, 1 },
-  { 3, NULL, NULL, 0, NULL, 17 },
+  { 3, NULL, NULL, 0, NULL, 19 },
   { 2, NULL, NULL, 0, NULL, 1 },
   { 2, NULL, NULL, 0, NULL, 1 },
   { 2, NULL, NULL, 0, NULL, 1 },
   { 3, NULL, NULL, 0, NULL, 0 },
-  { 3, NULL, NULL, 0, NULL, 22 },
-  { 3, NULL, NULL, 0, NULL, 22 }
+  { 3, NULL, NULL, 0, NULL, 24 },
+  { 3, NULL, NULL, 0, NULL, 24 }
 };
 #else
 static exn_rec *exn_table;
@@ -83,6 +87,7 @@ static exn_rec *exn_table;
   exn_table[MZEXN_FAIL_CONTRACT_VARIABLE].args = 3;
   exn_table[MZEXN_FAIL_SYNTAX].args = 3;
   exn_table[MZEXN_FAIL_SYNTAX_UNBOUND].args = 3;
+  exn_table[MZEXN_FAIL_SYNTAX_MISSING_MODULE].args = 4;
   exn_table[MZEXN_FAIL_READ].args = 3;
   exn_table[MZEXN_FAIL_READ_EOF].args = 3;
   exn_table[MZEXN_FAIL_READ_NON_CHAR].args = 3;
@@ -90,6 +95,7 @@ static exn_rec *exn_table;
   exn_table[MZEXN_FAIL_FILESYSTEM_EXISTS].args = 2;
   exn_table[MZEXN_FAIL_FILESYSTEM_VERSION].args = 2;
   exn_table[MZEXN_FAIL_FILESYSTEM_ERRNO].args = 3;
+  exn_table[MZEXN_FAIL_FILESYSTEM_MISSING_MODULE].args = 3;
   exn_table[MZEXN_FAIL_NETWORK].args = 2;
   exn_table[MZEXN_FAIL_NETWORK_ERRNO].args = 3;
   exn_table[MZEXN_FAIL_OUT_OF_MEMORY].args = 2;
@@ -106,15 +112,19 @@ static exn_rec *exn_table;
   static const char *MZEXN_FIELDS[2] = { "message", "continuation-marks" };
   static const char *MZEXN_FAIL_CONTRACT_VARIABLE_FIELDS[1] = { "id" };
   static const char *MZEXN_FAIL_SYNTAX_FIELDS[1] = { "exprs" };
+  static const char *MZEXN_FAIL_SYNTAX_MISSING_MODULE_FIELDS[1] = { "path" };
   static const char *MZEXN_FAIL_READ_FIELDS[1] = { "srclocs" };
   static const char *MZEXN_FAIL_FILESYSTEM_ERRNO_FIELDS[1] = { "errno" };
+  static const char *MZEXN_FAIL_FILESYSTEM_MISSING_MODULE_FIELDS[1] = { "-path" };
   static const char *MZEXN_FAIL_NETWORK_ERRNO_FIELDS[1] = { "errno" };
   static const char *MZEXN_BREAK_FIELDS[1] = { "continuation" };
 #endif
 
 #ifdef _MZEXN_DECL_PROPS
 #  define MZEXN_FAIL_SYNTAX_PROPS scheme_make_pair(scheme_make_pair(scheme_source_property, scheme_make_prim(extract_syntax_locations)), scheme_null)
+#  define MZEXN_FAIL_SYNTAX_MISSING_MODULE_PROPS scheme_make_pair(scheme_make_pair(scheme_module_path_property, scheme_make_prim(extract_module_path_3)), scheme_null)
 #  define MZEXN_FAIL_READ_PROPS scheme_make_pair(scheme_make_pair(scheme_source_property, scheme_make_prim(extract_read_locations)), scheme_null)
+#  define MZEXN_FAIL_FILESYSTEM_MISSING_MODULE_PROPS scheme_make_pair(scheme_make_pair(scheme_module_path_property, scheme_make_prim(extract_module_path_2)), scheme_null)
 #endif
 
 #ifdef _MZEXN_SETUP
@@ -128,6 +138,7 @@ static exn_rec *exn_table;
   SETUP_STRUCT(MZEXN_FAIL_CONTRACT_VARIABLE, EXN_PARENT(MZEXN_FAIL_CONTRACT), "exn:fail:contract:variable", 1, MZEXN_FAIL_CONTRACT_VARIABLE_FIELDS, scheme_null, scheme_make_prim(variable_field_check))
   SETUP_STRUCT(MZEXN_FAIL_SYNTAX, EXN_PARENT(MZEXN_FAIL), "exn:fail:syntax", 1, MZEXN_FAIL_SYNTAX_FIELDS, MZEXN_FAIL_SYNTAX_PROPS, scheme_make_prim(syntax_field_check))
   SETUP_STRUCT(MZEXN_FAIL_SYNTAX_UNBOUND, EXN_PARENT(MZEXN_FAIL_SYNTAX), "exn:fail:syntax:unbound", 0, NULL, scheme_null, NULL)
+  SETUP_STRUCT(MZEXN_FAIL_SYNTAX_MISSING_MODULE, EXN_PARENT(MZEXN_FAIL_SYNTAX), "exn:fail:syntax:missing-module", 1, MZEXN_FAIL_SYNTAX_MISSING_MODULE_FIELDS, MZEXN_FAIL_SYNTAX_MISSING_MODULE_PROPS, scheme_make_prim(module_path_field_check_3))
   SETUP_STRUCT(MZEXN_FAIL_READ, EXN_PARENT(MZEXN_FAIL), "exn:fail:read", 1, MZEXN_FAIL_READ_FIELDS, MZEXN_FAIL_READ_PROPS, scheme_make_prim(read_field_check))
   SETUP_STRUCT(MZEXN_FAIL_READ_EOF, EXN_PARENT(MZEXN_FAIL_READ), "exn:fail:read:eof", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_READ_NON_CHAR, EXN_PARENT(MZEXN_FAIL_READ), "exn:fail:read:non-char", 0, NULL, scheme_null, NULL)
@@ -135,6 +146,7 @@ static exn_rec *exn_table;
   SETUP_STRUCT(MZEXN_FAIL_FILESYSTEM_EXISTS, EXN_PARENT(MZEXN_FAIL_FILESYSTEM), "exn:fail:filesystem:exists", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_FILESYSTEM_VERSION, EXN_PARENT(MZEXN_FAIL_FILESYSTEM), "exn:fail:filesystem:version", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_FILESYSTEM_ERRNO, EXN_PARENT(MZEXN_FAIL_FILESYSTEM), "exn:fail:filesystem:errno", 1, MZEXN_FAIL_FILESYSTEM_ERRNO_FIELDS, scheme_null, scheme_make_prim(errno_field_check))
+  SETUP_STRUCT(MZEXN_FAIL_FILESYSTEM_MISSING_MODULE, EXN_PARENT(MZEXN_FAIL_FILESYSTEM), "exn:fail:filesystem:missing-module", 1, MZEXN_FAIL_FILESYSTEM_MISSING_MODULE_FIELDS, MZEXN_FAIL_FILESYSTEM_MISSING_MODULE_PROPS, scheme_make_prim(module_path_field_check_2))
   SETUP_STRUCT(MZEXN_FAIL_NETWORK, EXN_PARENT(MZEXN_FAIL), "exn:fail:network", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_NETWORK_ERRNO, EXN_PARENT(MZEXN_FAIL_NETWORK), "exn:fail:network:errno", 1, MZEXN_FAIL_NETWORK_ERRNO_FIELDS, scheme_null, scheme_make_prim(errno_field_check))
   SETUP_STRUCT(MZEXN_FAIL_OUT_OF_MEMORY, EXN_PARENT(MZEXN_FAIL), "exn:fail:out-of-memory", 0, NULL, scheme_null, NULL)

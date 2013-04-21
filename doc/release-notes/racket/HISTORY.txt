@@ -1,3 +1,8 @@
+Version 5.3.4.4
+Added current-module-path-for-load, exn:fail:syntax:missing-module, 
+  exn:fail:filesystem:missing-module, prop:exn:missing-module,
+  exn:missing-module?, and exn:missing-module-accessor
+
 Version 5.3.4.3
 Added make-environment-variables
 Changed initialization of current-directory to use PWD

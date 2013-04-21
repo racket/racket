@@ -615,6 +615,7 @@ exn
       exn:fail:contract:variable
     exn:fail:syntax
       exn:fail:syntax:unbound
+      exn:fail:syntax:missing-module
     exn:fail:read
       exn:fail:read:eof
       exn:fail:read:non-char
@@ -622,6 +623,7 @@ exn
       exn:fail:filesystem:exists
       exn:fail:filesystem:version
       exn:fail:filesystem:errno
+      exn:fail:filesystem:missing-module
     exn:fail:network
       exn:fail:network:errno
     exn:fail:out-of-memory
@@ -677,7 +679,9 @@ or @tech{module-level variable}.}
 
 Raised for a syntax error that is not a @racket[read] error. The
 @racket[exprs] indicate the relevant source expressions,
-least-specific to most-specific.}
+least-specific to most-specific.
+
+This structure type implements the @racket[prop:exn:srclocs] property.}
 
 @defstruct[(exn:fail:syntax:unbound exn:fail:syntax) ()
            #:inspector #f]{
@@ -685,6 +689,22 @@ least-specific to most-specific.}
 Raised by @racket[#%top] or @racket[set!] for an
 unbound identifier within a module.}
 
+@defstruct[(exn:fail:syntax:missing-module exn:fail:syntax) ([path module-path?])
+           #:inspector #f]{
+
+Raised by the default @tech{module name resolver} or default
+@tech{load handler} to report a module path---a reported in the
+@racket[path] field---whose implementation file cannot be
+found.
+
+The default @tech{module name resolver} raises this exception only
+when it is given a syntax object as its second argument, and the
+default @tech{load handler} raises this exception only when the value
+of @racket[current-module-path-for-load] is a syntax object (in which
+case both the @racket[exprs] field and the @racket[path] field
+are determined by the syntax object.
+
+This structure type implements the @racket[prop:exn:missing-module] property.}
 
 @defstruct[(exn:fail:read exn:fail) ([srclocs (listof srcloc?)])
            #:inspector #f]{
@@ -734,6 +754,21 @@ code (under Windows, only), and @racket['gai] indicates a
 @racket[exn:fail:network:errno] exceptions for operations that resolve
 hostnames, but it allowed in @racket[exn:fail:filesystem:errno]
 instances for consistency).}
+
+@defstruct[(exn:fail:filesystem:missing-module exn:fail:filesystem) ([path module-path?])
+           #:inspector #f]{
+
+Raised by the default @tech{module name resolver} or default
+@tech{load handler} to report a module path---a reported in the
+@racket[path] field---whose implementation file cannot be
+found.
+
+The default @tech{module name resolver} raises this exception only
+when it is @emph{not} given a syntax object as its second argument, and the
+default @tech{load handler} raises this exception only when the value
+of @racket[current-module-path-for-load] is @emph{not} a syntax object.
+
+This structure type implements the @racket[prop:exn:missing-module] property.}
 
 @defstruct[(exn:fail:network exn:fail) ()
            #:inspector #f]{
@@ -892,3 +927,24 @@ The fields of a @racket[srcloc] instance are as follows:
  0) or @racket[#f] (unknown).}
 
 ]}
+
+
+@defthing[prop:exn:missing-module struct-type-property?]{
+
+A property that identifies structure types that provide a module path
+for a load that fails because a module is not found.
+
+The property value must be a procedure that accepts a single
+value---the structure type instance from which to extract source
+locations---and returns a @tech{module path}.}
+
+@defproc[(exn:missing-module? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] has the @racket[prop:exn:missing-module]
+property, @racket[#f] otherwise.}
+
+
+@defproc[(exn:missing-module-accessor [v exn:srclocs?])
+         (exn:missing-module? . -> . module-path?)]{
+
+Returns the @tech{module path}-getting procedure associated with @racket[v].}
