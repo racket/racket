@@ -184,6 +184,21 @@ See also
 
 }
 
+@defmethod[(on-highlighted-errors [loc/s (or/c srcloc? (listof srcloc?))]) void?]{
+  This method is called when an error is highlighted in a DrRacket window.
+  
+  If the input is a list of @racket[srcloc?] objects, then all of them
+  are highlighted, and they are all of the errors known to DrRacket at this
+  point.
+  
+  If a single one is passed, then user probably typed the @litchar{.} menu
+  shortcut to highlight a single error and there may be other errors
+  known to DrRacket.
+  
+  Errors are made known to DrRacket via
+  @method[drracket:rep:text% highlight-errors].
+}
+                 
 @defmethod[(initialize-console) void?]{
 
 This inserts the ``Welcome to DrRacket'' message into the interactions

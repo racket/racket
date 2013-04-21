@@ -84,6 +84,7 @@
 (define (new-job program-as-string path response-pc settings pc-status-expanding-place)
   (define cust (make-custodian))
   (define exn-chan (make-channel))
+  (define extra-exns-chan (make-channel))
   (define result-chan (make-channel))
   (define normal-termination (make-channel))
   (define abnormal-termination (make-channel))
@@ -132,6 +133,11 @@
          (ep-log-info "expanding-place.rkt: 05 installing security guard")
          (install-security-guard) ;; must come after the call to set-module-language-parameters
          (ep-log-info "expanding-place.rkt: 06 setting uncaught-exception-handler")
+         (error-display-handler
+          (let ([e-d-h (error-display-handler)])
+            (λ (msg exn)
+              (channel-put extra-exns-chan exn)
+              (e-d-h msg exn))))
          (uncaught-exception-handler
           (λ (exn)
             (parameterize ([current-custodian orig-cust])
@@ -211,64 +217,72 @@
   
   (thread
    (λ ()
-     (sync
-      (handle-evt
-       abnormal-termination
-       (λ (val) 
-         (place-channel-put pc-status-expanding-place
-                            'abnormal-termination)
-         (place-channel-put 
-          response-pc
-          (vector 'abnormal-termination 
-                  ;; note: this message is actually ignored: a string 
-                  ;; constant is used back in the drracket place
-                  "Expansion thread terminated unexpectedly"
-                  '()
-                  
-                  ;; give up on dep paths in this case:
-                  '()))))
-      (handle-evt
-       result-chan
-       (λ (val+loaded-paths)
-         (place-channel-put response-pc (vector 'handler-results 
-                                                (list-ref val+loaded-paths 0)
-                                                (list-ref val+loaded-paths 1)))))
-      (handle-evt
-       exn-chan
-       (λ (exn+loaded-paths)
-         (place-channel-put pc-status-expanding-place 'exn-raised)
-         (define exn (list-ref exn+loaded-paths 0))
-         (place-channel-put 
-          response-pc
-          (vector 
-           (cond
-             [(exn:access? exn)
-              'access-violation]
-             [(and (exn:fail:read? exn)
-                   (andmap (λ (srcloc) (equal? (srcloc-source srcloc) the-source))
-                           (exn:fail:read-srclocs exn)))
-              'reader-in-defs-error]
-             [(and (exn? exn)
-                   (regexp-match #rx"expand: unbound identifier" (exn-message exn)))
-              'exn:variable]
-             [else 'exn])
-           (trim-message 
-            (if (exn? exn) 
-                (regexp-replace* #rx"[ \t]*\n[ \t]*" (exn-message exn) " ") 
-                (format "uncaught exn: ~s" exn)))
-           (if (exn:srclocs? exn)
-               (sort
-                (for/list ([srcloc ((exn:srclocs-accessor exn) exn)]
-                           #:when (and (srcloc? srcloc)
-                                       (equal? the-source (srcloc-source srcloc))
-                                       (srcloc-position srcloc)
-                                       (srcloc-span srcloc)))
-                  (vector (srcloc-position srcloc)
-                          (srcloc-span srcloc)))
-                <
-                #:key (λ (x) (vector-ref x 0)))
-               '())
-           (list-ref exn+loaded-paths 1))))))))
+     (let loop ([extra-exns '()])
+       (sync
+        (handle-evt
+         abnormal-termination
+         (λ (val) 
+           (place-channel-put pc-status-expanding-place
+                              'abnormal-termination)
+           (place-channel-put 
+            response-pc
+            (vector 'abnormal-termination 
+                    ;; note: this message is actually ignored: a string 
+                    ;; constant is used back in the drracket place
+                    "Expansion thread terminated unexpectedly"
+                    '()
+                    
+                    ;; give up on dep paths in this case:
+                    '()))))
+        (handle-evt
+         result-chan
+         (λ (val+loaded-paths)
+           (place-channel-put response-pc (vector 'handler-results 
+                                                  (list-ref val+loaded-paths 0)
+                                                  (list-ref val+loaded-paths 1)))))
+        (handle-evt extra-exns-chan (λ (exn) (loop (cons exn extra-exns))))
+        (handle-evt
+         exn-chan
+         (λ (exn+loaded-paths)
+           (place-channel-put pc-status-expanding-place 'exn-raised)
+           (define main-exn (list-ref exn+loaded-paths 0))
+           (define exn-type
+             (cond
+               [(exn:access? main-exn)
+                'access-violation]
+               [(and (exn:fail:read? main-exn)
+                     (andmap (λ (srcloc) (equal? (srcloc-source srcloc) the-source))
+                             (exn:fail:read-srclocs main-exn)))
+                'reader-in-defs-error]
+               [(and (exn? main-exn)
+                     (regexp-match #rx"expand: unbound identifier" (exn-message main-exn)))
+                'exn:variable]
+               [else 'exn]))
+           (define exn-infos
+             (for/list ([an-exn (in-list (cons main-exn extra-exns))])
+               (vector 
+                (trim-message 
+                 (if (exn? an-exn) 
+                     (regexp-replace* #rx"[ \t]*\n[ \t]*" (exn-message an-exn) " ") 
+                     (format "uncaught exn: ~s" an-exn)))
+                (if (exn:srclocs? an-exn)
+                    (sort
+                     (for/list ([srcloc ((exn:srclocs-accessor an-exn) an-exn)]
+                                #:when (and (srcloc? srcloc)
+                                            (equal? the-source (srcloc-source srcloc))
+                                            (srcloc-position srcloc)
+                                            (srcloc-span srcloc)))
+                       (vector (srcloc-position srcloc)
+                               (srcloc-span srcloc)))
+                     <
+                     #:key (λ (x) (vector-ref x 0)))
+                    '()))))
+           (place-channel-put 
+            response-pc
+            (vector 
+             exn-type
+             exn-infos
+             (list-ref exn+loaded-paths 1)))))))))
   
   (job cust response-pc working-thd stop-watching-abnormal-termination))
 

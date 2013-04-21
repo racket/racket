@@ -109,9 +109,10 @@
   (make-extender get-base-unit-frame% 'drracket:unit:frame))
 
 (define (get-base-interactions-text%)
-  (drracket:module-language:module-language-big-defs/ints-interactions-text-mixin
-   (drracket:debug:test-coverage-interactions-text-mixin
-    drracket:rep:text%)))
+  (drracket:module-language:module-language-online-expand-rep-mixin
+   (drracket:module-language:module-language-big-defs/ints-interactions-text-mixin
+    (drracket:debug:test-coverage-interactions-text-mixin
+     drracket:rep:text%))))
 
 (define-values (extend-interactions-text get-interactions-text)
   (make-extender get-base-interactions-text% 'interactions-text%))

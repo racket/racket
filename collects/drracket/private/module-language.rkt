@@ -31,10 +31,14 @@
 (module oc-status-structs racket/base
   ;; the online compilation state for individual tabs
   ;; oc-state is either:
-  ;;   (clean symbol? string? (listof (vector number? number?)))
+  ;;   (clean (or/c symbol? #f)
+  ;;          (or/c (non-empty-listof 
+  ;;                 (vector/c string? 
+  ;;                           (listof (vector number? number?))))
+  ;;                #f))
   ;;   (dirty boolean?)
   ;;   (running symbol? string?)
-  (struct clean (error-type error-message error-locs) #:transparent)
+  (struct clean (error-type error-messages+locs) #:transparent)
   (struct dirty (timer-pending?) #:transparent)
   (struct running (sym str) #:transparent)
   
@@ -957,7 +961,7 @@
         (inner (void) on-close))
       
       ;; (or/c clean? dirty? running?)
-      (define running-status (clean #f #f '()))
+      (define running-status (clean #f #f))
       (define our-turn? #f)
       
       (define/public (set-oc-status s) 
@@ -975,8 +979,8 @@
         (send (get-defs) begin-edit-sequence #f #f)
         (send (get-defs) clear-old-error)
         (when (clean? running-status)
-          (match-define (clean error-type error-message error-locs) running-status)
-          (when error-message
+          (match-define (clean error-type error-messages+locs) running-status)
+          (when error-messages+locs
             (define pref-key
               (case error-type
                 [(exn access-violation abnormal-termination) 'drracket:online-expansion:other-errors]
@@ -986,17 +990,23 @@
             (case (preferences:get pref-key)
               [(margin) 
                (send (get-defs) set-margin-error-ranges
-                     (for/list ([range (in-list error-locs)])
-                       (define pos (vector-ref range 0))
-                       (define span (vector-ref range 1))
-                       (error-range (- pos 1) (+ pos span -1) #f)))]
+                     (set->list
+                      (for*/set ([error-message+loc (in-list error-messages+locs)]
+                                 [range (in-list (vector-ref error-message+loc 1))])
+                        (define pos (vector-ref range 0))
+                        (define span (vector-ref range 1))
+                        (error-range (- pos 1) (+ pos span -1) #f))))]
               [(gold) 
-               (send (get-defs) set-gold-highlighted-errors error-locs)])
+               (send (get-defs) set-gold-highlighted-errors 
+                     (remove-duplicates
+                      (apply append (map (λ (x) (vector-ref x 1)) error-messages+locs))))])
             (send (get-ints) set-error-ranges 
-                  (for/list ([range (in-list error-locs)])
-                    (define pos (vector-ref range 0))
-                    (define span (vector-ref range 1))
-                    (srcloc (get-defs) #f #f pos span)))))
+                  (set->list
+                   (for*/set ([error-message+loc (in-list error-messages+locs)]
+                              [range (in-list (vector-ref error-message+loc 1))])
+                     (define pos (vector-ref range 0))
+                     (define span (vector-ref range 1))
+                     (srcloc (get-defs) #f #f pos span))))))
         (send (get-defs) end-edit-sequence))
       
       (define/private (update-bottom-bar)
@@ -1006,23 +1016,22 @@
           [(and (dirty? running-status) our-turn?)
            (set-bottom-bar-status/pending)]
           [(and (dirty? running-status) (not our-turn?))
-           (send (get-defs) set-bottom-bar-status "" '() #f #f)]
+           (send (get-defs) set-bottom-bar-status (list (vector "" '())) #f #f)]
           [(clean? running-status)
-           (if (clean-error-message running-status)
+           (if (clean-error-messages+locs running-status)
                (send (get-defs) set-bottom-bar-status 
-                     (clean-error-message running-status)
-                     (clean-error-locs running-status)
+                     (clean-error-messages+locs running-status)
                      #t #t)
                (send (get-defs) set-bottom-bar-status
-                     (string-constant online-expansion-finished) 
-                     '() 
+                     (list (vector (string-constant online-expansion-finished) 
+                                   '()))
                      #f
                      #f))]))
       
       (define/private (set-bottom-bar-status/pending)
         (send (get-defs) set-bottom-bar-status
-              (string-constant online-expansion-pending) 
-              '() 
+              (list (vector (string-constant online-expansion-pending) 
+                            '()))
               #f
               #f))
       
@@ -1041,7 +1050,7 @@
                #f
                (map (λ (x) (list-ref x 1)) bkg-colors))]
           [(clean? running-status)
-           (if (clean-error-message running-status)
+           (if (clean-error-messages+locs running-status)
                (list "red")
                (if (null? bkg-colors)
                    (list "forestgreen")
@@ -1056,8 +1065,9 @@
                #f
                (map (λ (x) (list-ref x 2)) bkg-colors))]
           [(clean? running-status)
-           (if (clean-error-message running-status)
-               (list (clean-error-message running-status))
+           (if (clean-error-messages+locs running-status)
+               (for/list ([pr (clean-error-messages+locs running-status)])
+                 (vector-ref pr 0))
                (list sc-finished-successfully))]))
 
       (define bkg-colors '())
@@ -1123,21 +1133,34 @@
       ;; in the current tab)
       ; if the bar is hidden entirely 
       (define error/status-message-hidden? #t) 
-      ; the string message in the bar
-      (define error/status-message-str "")
+      ; a list of pairs (in a vector of size 2) of strings and srclocs
+      ; that show up in the bar and control the "jump to error" / next prev buttons
+      (define error/status-message-strs+srclocs '(#("" ())))
+      (define error/status-index 0)
+      
       ; if the string should be red/italic or just normal font
       (define error/status-message-err? #f)
-      ; the srclocs (controls the "jump to error" / next prev buttons)
-      (define error-message-srclocs '())
       
-      (define/public (set-bottom-bar-status new-error/status-message-str srclocs message-err? force-visible?)
-        (when (or (not (and (equal? error/status-message-str new-error/status-message-str)
-                            (equal? error-message-srclocs srclocs)
+      (define bottom-bar-most-recent-jumped-to-loc #f)
+      (define/public (set-bottom-bar-most-recent-jumped-to-loc loc)
+        (set! bottom-bar-most-recent-jumped-to-loc loc)
+        (update-frame-expand-error))
+      
+      (define/public (set-bottom-bar-status new-error/status-message-strs+srclocs message-err? force-visible?)
+        (define new-error/status-message-str (vector-ref (car new-error/status-message-strs+srclocs) 0))
+        (define srclocs (vector-ref (car new-error/status-message-strs+srclocs) 1))
+        (unless (string? new-error/status-message-str)
+          (error 'set-bottom-bar-status "expected a string, got ~s" new-error/status-message-str))
+        (when (or (not (and (equal? error/status-message-strs+srclocs new-error/status-message-strs+srclocs)
                             (equal? error/status-message-err? message-err?)))
                   (and force-visible?
                        error/status-message-hidden?))
-          (set! error/status-message-str new-error/status-message-str)
-          (set! error-message-srclocs srclocs)
+          (set! error/status-message-strs+srclocs new-error/status-message-strs+srclocs)
+          (unless (< error/status-index (length new-error/status-message-strs+srclocs))
+            ;; try to preserve the error/status-index in the case
+            ;; that the error messages didn't change much.
+            ;; not sure this is a good idea (or if the test above is the right test)
+            (set! error/status-index 0))
           (set! error/status-message-err? message-err?)
           (when force-visible? 
             (set! error/status-message-hidden? #f))
@@ -1146,45 +1169,74 @@
         (when (eq? (get-tab) (send (send (get-tab) get-frame) get-current-tab))
           (send (send (get-tab) get-frame) set-expand-error/status
                 error/status-message-hidden?
-                error/status-message-str 
+                (cond
+                  [bottom-bar-most-recent-jumped-to-loc
+                   (for/list ([error/status-message-str+srcloc (in-list error/status-message-strs+srclocs)]
+                              #:when (for/or ([pos+span-vec (vector-ref error/status-message-str+srcloc 1)])
+                                       (define pos (vector-ref pos+span-vec 0))
+                                       (define span (vector-ref pos+span-vec 1))
+                                       (and (equal? (send (get-tab) get-defs)
+                                                    (srcloc-source bottom-bar-most-recent-jumped-to-loc))
+                                            (equal? (srcloc-position bottom-bar-most-recent-jumped-to-loc)
+                                                    pos)
+                                            (equal? (srcloc-span bottom-bar-most-recent-jumped-to-loc)
+                                                    span))))
+                     (vector-ref error/status-message-str+srcloc 0))]
+                  [else
+                   (list (vector-ref (list-ref error/status-message-strs+srclocs error/status-index) 0))])
                 error/status-message-err?
-                (length error-message-srclocs))))
+                (cond
+                  [(null? error/status-message-strs+srclocs) 0]
+                  [(null? (cdr error/status-message-strs+srclocs))
+                   (length (vector-ref (car error/status-message-strs+srclocs) 1))]
+                  [else
+                   (for/sum ([error/status-message-str+srcloc (in-list error/status-message-strs+srclocs)])
+                     (max 1 (length (vector-ref error/status-message-str+srcloc 1))))]))))
       (define/public (hide-module-language-error-panel)
         (set! error/status-message-hidden? #t)
         (update-frame-expand-error))
 
       (define/public (expand-error-next) 
+        (define current-srclocs (vector-ref (list-ref error/status-message-strs+srclocs error/status-index) 1))
         (define candidates (filter (λ (error-message-srcloc) 
                                      (> (- (vector-ref error-message-srcloc 0) 1) 
                                         (get-end-position)))
-                                   error-message-srclocs))
+                                   current-srclocs))
         (cond
           [(null? candidates)
-           (unless (null? error-message-srclocs)
-             (jump-to (car error-message-srclocs)))]
+           (jump-to-new-index (modulo (+ error/status-index 1) 
+                                      (length error/status-message-strs+srclocs))
+                              first)]
           [else
            (jump-to (car candidates))]))
       
       (define/public (expand-error-prev) 
+        (define current-srclocs (vector-ref (list-ref error/status-message-strs+srclocs error/status-index) 1))
         (define candidates (filter (λ (error-message-srcloc) 
                                      (< (+ (vector-ref error-message-srcloc 0)
                                            (vector-ref error-message-srcloc 1)
                                            -1)
                                         (get-start-position)))
-                                   error-message-srclocs))
+                                   current-srclocs))
         (cond
           [(null? candidates)
-           (unless (null? error-message-srclocs)
-             (jump-to (last error-message-srclocs)))]
+           (jump-to-new-index (modulo (- error/status-index 1) 
+                                      (length error/status-message-strs+srclocs))
+                              last)]
           [else
            (jump-to (last candidates))]))
+      
+      (define/private (jump-to-new-index new-error/status-index which)
+        (set! error/status-index new-error/status-index)
+        (define current-srclocs (vector-ref (list-ref error/status-message-strs+srclocs error/status-index) 1))
+        (unless (null? current-srclocs) (jump-to (which current-srclocs)))
+        (update-frame-expand-error))
       
       (define/private (jump-to vec)
         (set-position (- (vector-ref vec 0) 1))
         (define cnvs (get-canvas))
         (when cnvs (send cnvs focus)))
       
-
       (define online-error-ranges '())
       (define online-highlighted-errors '())
       
@@ -1374,6 +1426,15 @@
       
       (super-new)))
   
+  (define module-language-online-expand-rep-mixin
+    (mixin (drracket:rep:text<%>) ()
+      (inherit get-definitions-text)
+      (define/override (on-highlighted-errors loc/s)
+        (send (get-definitions-text) set-bottom-bar-most-recent-jumped-to-loc
+              (and (not (list? loc/s)) loc/s))
+        (super on-highlighted-errors loc/s))
+      (super-new)))
+  
   (define module-language-online-expand-frame-mixin
     (mixin (frame:basic<%> frame:info<%> drracket:unit:frame<%>) ()
       (inherit get-info-panel get-current-tab)
@@ -1405,7 +1466,7 @@
         (set! expand-error-message (new error-message%
                                         [parent expand-error-panel]
                                         [stretchable-width #t]
-                                        [msg "hi"]
+                                        [msgs '("hi")]
                                         [err? #f]))
         (set! expand-error-button-parent-panel
               (new horizontal-panel%
@@ -1457,18 +1518,18 @@
         (send expand-error-parent-panel change-children (λ (l) (remq expand-error-panel l)))
         root)
       
-      (define expand-error-msg #f)
+      (define expand-error-msgs #f)
       (define expand-error-msg-is-err? #f)
       (define expand-error-srcloc-count 0)
       (define expand-error-hidden? #f)
       
-      (define/public (set-expand-error/status hidden? msg err? srcloc-count)
+      (define/public (set-expand-error/status hidden? msgs err? srcloc-count)
         (unless (and (equal? expand-error-hidden? hidden?)
-                     (equal? expand-error-msg msg)
+                     (equal? expand-error-msgs msgs)
                      (equal? expand-error-msg-is-err? err?)
                      (equal? expand-error-srcloc-count srcloc-count))
           (set! expand-error-hidden? hidden?)
-          (set! expand-error-msg msg)
+          (set! expand-error-msgs msgs)
           (set! expand-error-msg-is-err? err?)
           (set! expand-error-srcloc-count srcloc-count)
           (when expand-error-message
@@ -1480,7 +1541,7 @@
                              (if (memq expand-error-panel l)
                                  l
                                  (append l (list expand-error-panel))))))
-            (send expand-error-message set-msg expand-error-msg expand-error-msg-is-err?)
+            (send expand-error-message set-msgs expand-error-msgs expand-error-msg-is-err?)
             (send expand-error-button-parent-panel change-children
                   (λ (l)
                     (list (cond
@@ -1624,10 +1685,10 @@
   
   (define error-message%
     (class canvas%
-      (init-field msg err?)
+      (init-field msgs err?)
       (inherit refresh get-dc get-client-size popup-menu)
-      (define/public (set-msg _msg _err?) 
-        (set! msg _msg)
+      (define/public (set-msgs _msgs _err?) 
+        (set! msgs _msgs)
         (set! err? _err?)
         (set-the-height/dc-font (preferences:get 'framework:standard-style-list:font-size))
         (refresh))
@@ -1641,7 +1702,10 @@
                             [callback
                              (λ (itm evt)
                                (send the-clipboard set-clipboard-string 
-                                     msg
+                                     (apply
+                                      string-append
+                                      (for/list ([msg (in-list msgs)])
+                                        (format "~a\n" msg)))
                                      (send evt get-time-stamp)))]))
            (popup-menu m 
                        (+ (send evt get-x) 1)
@@ -1651,9 +1715,15 @@
       (define/override (on-paint)
         (define dc (get-dc))
         (define-values (cw ch) (get-client-size))
-        (define-values (tw th td ta) (send dc get-text-extent msg))
         (send dc set-text-foreground (if err? "firebrick" "black"))
-        (send dc draw-text msg 2 (- (/ ch 2) (/ th 2))))
+        (define tot-th
+          (for/sum ([msg (in-list msgs)])
+            (define-values (tw th td ta) (send dc get-text-extent msg))
+            th))
+        (for/fold ([y (- (/ ch 2) (/ tot-th 2))]) ([msg (in-list msgs)])
+          (define-values (tw th td ta) (send dc get-text-extent msg))
+          (send dc draw-text msg 2 y)
+          (+ y th)))
       (super-new [style '(transparent)])
       
       ;; need object to hold onto this function, so this is
@@ -1678,8 +1748,11 @@
                     (send normal-control-font get-weight)
                     (send normal-control-font get-underlined)
                     (send normal-control-font get-smoothing)))
-        (define-values (tw th td ta) (send dc get-text-extent msg))
-        (min-height (inexact->exact (ceiling th))))
+        (define tot-th
+          (for/sum ([msg (in-list msgs)])
+            (define-values (tw th td ta) (send dc get-text-extent msg))
+            th))
+        (min-height (inexact->exact (ceiling tot-th))))
       
       (inherit min-height)
       (set-the-height/dc-font
@@ -1836,11 +1909,11 @@
       [(eq? tab running-tab)
        (line-of-interest)
        (stop-place-running)
-       (send tab set-oc-status (clean #f #f '()))]
+       (send tab set-oc-status (clean #f #f))]
       [(eq? tab dirty/pending-tab)
        (line-of-interest)
        (send oc-timer stop)
-       (send tab set-oc-status (clean #f #f '()))]
+       (send tab set-oc-status (clean #f #f))]
       [else
        (line-of-interest)
        (void)])
@@ -1939,8 +2012,8 @@
          (line-of-interest)
          (send dirty/pending-tab set-oc-status
                (clean 'exn
-                      sc-only-raw-text-files-supported
-                      (list (vector (+ filename/loc 1) 1))))
+                      (list (vector sc-only-raw-text-files-supported
+                                    (list (vector (+ filename/loc 1) 1))))))
          (oc-maybe-start-something)])))
 
   (define/oc-log (oc-finished res)
@@ -1961,7 +2034,7 @@
                 (send running-tab get-defs)
                 val))))
          
-         (send running-tab set-oc-status (clean #f #f '()))
+         (send running-tab set-oc-status (clean #f #f))
          (send running-tab set-dep-paths (list->set (vector-ref res 2)) #f)]
         [else
          (line-of-interest)
@@ -1969,9 +2042,8 @@
                (clean (vector-ref res 0)
                       (if (eq? (vector-ref res 0) 'abnormal-termination)
                           sc-abnormal-termination
-                          (vector-ref res 1))
-                      (vector-ref res 2)))
-         (send running-tab set-dep-paths (list->set (vector-ref res 3)) #t)])
+                          (vector-ref res 1))))
+         (send running-tab set-dep-paths (list->set (vector-ref res 2)) #t)])
       (oc-maybe-start-something)))
   
   (define/oc-log (oc-status-message sym str)

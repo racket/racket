@@ -35,6 +35,7 @@
 ;; used by the module language  
 (define-local-member-name
   frame-show-bkg-running
+  set-bottom-bar-most-recent-jumped-to-loc
   set-expand-error/status
   update-frame-expand-error
   expand-error-next

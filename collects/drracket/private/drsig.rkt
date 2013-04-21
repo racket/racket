@@ -97,6 +97,7 @@
   (module-language-online-expand-text-mixin
    module-language-online-expand-frame-mixin
    module-language-online-expand-tab-mixin
+   module-language-online-expand-rep-mixin
    module-language-big-defs/ints-interactions-text-mixin
    module-language-big-defs/ints-definitions-text-mixin
    initialize-prefs-panel

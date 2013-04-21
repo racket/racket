@@ -4055,43 +4055,6 @@ module browser threading seems wrong.
                   (send item enable (or (send ints get-error-ranges)
                                         (send tab get-test-coverage-info-visible?)))))))
         
-        ;; find-before-and-after : nat -> (values (or/c srcloc #f) (or/c srcloc #f) (listof srcloc))
-        ;;
-        ;; returns the source locations from the error ranges that are before and
-        ;; after get-start-position, or #f if the insertion point is before 
-        ;; all of them or after all of them, respectively
-        ;; also returns the sorted list of all srclocs
-        ;;
-        ;; this doesn't work properly when the positions are in embedded editor
-        ;;  (but it doesn't crash; it just has a strange notion of before and after)
-        (define (find-before-and-after)
-          (define tab (get-current-tab))
-          (define pos (send (send tab get-defs) get-start-position))
-          (define ranges (send (send tab get-ints) get-error-ranges))
-          (define sorted (sort ranges < #:key srcloc-position))
-          (let loop ([before #f]
-                     [lst sorted])
-            (cond
-              [(null? lst)
-               (values before #f sorted)]
-              [else
-               (define fst (car lst))
-               (cond 
-                 [(= pos (- (srcloc-position fst) 1))
-                  (values before 
-                          (if (null? (cdr lst))
-                              #f
-                              (cadr lst))
-                          sorted)]
-                 [(< pos (- (srcloc-position fst) 1))
-                  (values before fst sorted)]
-                 [else (loop (car lst) (cdr lst))])])))
-        
-        (define (jump-to-source-loc srcloc)
-          (define ed (srcloc-source srcloc))
-          (send ed set-position (- (srcloc-position srcloc) 1))
-          (send ed set-caret-owner #f 'global))
-        
         (new menu:can-restore-menu-item%
              (label (string-constant jump-to-next-error-highlight-menu-item-label))
              (parent language-specific-menu)

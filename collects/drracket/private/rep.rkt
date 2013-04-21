@@ -72,6 +72,7 @@ TODO
       reset-highlighting
       highlight-errors
       highlight-errors/exn
+      on-highlighted-errors
       
       get-user-custodian
       get-user-eventspace
@@ -550,7 +551,8 @@ TODO
       (define/public (reset-error-ranges) 
         (set-error-ranges #f)
         (when definitions-text (send definitions-text set-error-arrows #f))
-        (clear-error-highlighting))
+        (clear-error-highlighting)
+        (on-highlighted-errors #f))
       
       ;; highlight-error : file number number -> void
       (define/public (highlight-error file start end)
@@ -605,6 +607,8 @@ TODO
                [first-start (and first-loc (- (srcloc-position first-loc) 1))]
                [first-span (and first-loc (srcloc-span first-loc))])
           
+          (on-highlighted-errors locs)
+          
           (when (and first-loc first-start first-span)
             (let ([first-finish (+ first-start first-span)])
               (when (eq? first-file definitions-text) ;; only move set the cursor in the defs window
@@ -653,6 +657,8 @@ TODO
                 (send source set-position start span))
               (send source scroll-to-position start #f finish)))
           
+          (on-highlighted-errors loc)
+          
           (send source end-edit-sequence)
           
           (when (eq? source definitions-text)
@@ -663,6 +669,9 @@ TODO
                 (send tlw ensure-defs-shown))))
           
           (send source set-caret-owner (get-focus-snip) 'global)))
+      
+      (define/public (on-highlighted-errors loc/s)
+        (void))
         
       (define/private (cleanup-locs locs)
         (let ([ht (make-hasheq)])
