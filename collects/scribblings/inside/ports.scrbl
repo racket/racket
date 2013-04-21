@@ -787,6 +787,46 @@ Creates Racket input and output ports for a TCP socket @var{s}. The
  is non-zero, then the ports assume responsibility for closing the
  socket. The resulting ports are written to @var{inp} and @var{outp}.}
 
+
+@function[(Scheme_Object* scheme_fd_to_semaphore
+           [intptr_t fd]
+           [int mode]
+           [int is_socket])]{
+
+Creates or finds a Racket semaphore that becomes ready when @var{fd}
+is ready. The semaphore reflects a registration with the operating
+system's underlying mechanisms for efficient polling. When a semaphore
+is created, it remains findable via @cpp{scheme_fd_to_semaphore} for a
+particular read/write mode as long as @var{fd} has not become ready in
+the read/write mode since the creation of the semaphore, or unless
+@cpp{MZFD_REMOVE} has been used to remove the registered semaphore.
+The @var{is_socket} argument indicates whether @var{fd} is a socket
+or a filesystem descriptor (and the difference matters only for Windows).
+
+The @var{mode} argument is one of the following:
+
+@itemlist[
+
+ @item{@cpp{MZFD_CREATE_READ} (= @cpp{1}) --- creates or finds
+       a semaphore to reflect whether @var{fd} is ready for reading.}
+
+ @item{@cpp{MZFD_CREATE_WRITE} (= @cpp{2}) --- creates or finds
+       a semaphore to reflect whether @var{fd} is ready for writing.}
+
+ @item{@cpp{MZFD_CHECK_READ} (= @cpp{3}) --- finds a semaphore to
+       reflect whether @var{fd} is ready for reading; the result is
+       @cpp{NULL} if no semaphore was previously created for @var{fd} in
+       read mode or if such a semaphore has been posted or removed.}
+
+ @item{@cpp{MZFD_CHECK_WRITE} (= @cpp{4}) --- like
+       @cpp{MZFD_CREATE_READ}, but for write mode.}
+
+ @item{@cpp{MZFD_REMOVE} (= @cpp{5}) --- removes all recorded
+       semaphores for @var{fd} (unregistering a poll with the
+       operating system) and returns @cpp{NULL}.}
+]}
+
+
 @function[(Scheme_Object* scheme_make_byte_string_input_port
            [char* str])]{
 
