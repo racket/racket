@@ -392,7 +392,7 @@ See also: @racket[rename-file-or-directory],
 @racket[file-or-directory-modify-seconds],
 @racket[file-or-directory-permissions].
 
-@defparam[current-directory path path-string?]{
+@defparam*[current-directory path path-string? (and/c path? complete-path?)]{
 
 A @tech{parameter} that determines the current directory for resolving
 relative paths.

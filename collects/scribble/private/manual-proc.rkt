@@ -123,6 +123,12 @@
    (pattern (~optional (~seq #:kind kind)
                        #:defaults ([kind #'#f]))))
 
+ (define-splicing-syntax-class link-target?-kw
+   #:description "#:link-target? keyword"
+   (pattern (~seq #:link-target? expr))
+   (pattern (~seq)
+            #:with expr #'#t))
+
  (define-syntax-class id-or-false
    (pattern i:id)
    (pattern #f #:with i #'#f))
@@ -146,19 +152,20 @@
 
 (define-syntax (defproc stx)
   (syntax-parse stx
-    [(_ kind:kind-kw i:id-kw (id arg ...) result desc ...)
+    [(_ kind:kind-kw lt:link-target?-kw i:id-kw (id arg ...) result desc ...)
      (syntax/loc stx
-       (defproc* #:kind kind.kind #:id [i.key i.expr] [[(id arg ...) result]] desc ...))]))
+       (defproc* #:kind kind.kind #:link-target? lt.expr #:id [i.key i.expr] [[(id arg ...) result]] desc ...))]))
 
 (define-syntax (defproc* stx)
   (syntax-parse stx
-    [(_ kind:kind-kw d:id-kw mode:mode-kw within:within-kw [[proto result] ...] desc ...)
+    [(_ kind:kind-kw lt:link-target?-kw d:id-kw mode:mode-kw within:within-kw [[proto result] ...] desc ...)
      (syntax/loc stx
        (with-togetherable-racket-variables
         ()
         ([proc proto] ...)
         (let ([alt-id d.expr])
           (*defproc kind.kind
+                    lt.expr
                     'mode.m (quote-syntax/loc within.cl)
                     (list (extract-proc-id d.key alt-id proto) ...)
                     'd.key
@@ -171,7 +178,7 @@
 (define-struct arg
   (special? kw id optional? starts-optional? ends-optional? num-closers))
 
-(define (*defproc kind mode within-id
+(define (*defproc kind link? mode within-id
                   stx-ids sym prototypes arg-contractss arg-valss result-contracts
                   content-thunk)
   (define max-proto-width (current-display-width))
@@ -290,7 +297,7 @@
                      (racket new)
                      (racket make-object))))
          (define new-elem
-           (if first?
+           (if (and first? link?)
                (let* ([target-maker (id-to-target-maker within-id #f)])
                  (if target-maker
                      (target-maker
@@ -322,7 +329,7 @@
           #f
           (list (racket send) spacer
                 (name-this-object (syntax-e within-id)) spacer
-                (if first?
+                (if (and first? link?)
                   (let* ([mname (extract-id prototype stx-id)]
                          [target-maker (id-to-target-maker within-id #f)]
                          [content (list (*method mname within-id))])
@@ -347,7 +354,7 @@
                             tag))))
                       (car content)))
                   (*method (extract-id prototype stx-id) within-id))))]
-        [first?
+        [(and first? link?)
          (define the-id (extract-id prototype stx-id))
          (let ([target-maker (id-to-target-maker stx-id #t)]
                [content (list (definition-site the-id stx-id #f))])
@@ -368,7 +375,7 @@
              (car content)))]
         [else
          (define the-id (extract-id prototype stx-id))
-         (annote-exporting-library
+         ((if link? annote-exporting-library values)
           (let ([sig (current-signature)])
             (if sig
               (*sig-elem (sig-id sig) the-id)
@@ -567,84 +574,96 @@
           (= i 0))))))
     (content-thunk))))
 
-(define-syntax-rule (defparam id arg contract desc ...)
-  (defproc* #:kind "parameter" ([(id) contract] [(id [arg contract]) void?]) desc ...))
-(define-syntax-rule (defparam* id arg in-contract out-contract desc ...)
-  (defproc* #:kind "parameter" ([(id) out-contract] [(id [arg in-contract]) void?]) desc ...))
-(define-syntax-rule (defboolparam id arg desc ...)
-  (defproc* #:kind "parameter" ([(id) boolean?] [(id [arg any/c]) void?]) desc ...))
+(define-syntax (defparam stx)
+  (syntax-parse stx
+    [(_ lt:link-target?-kw id arg contract desc ...)
+     #'(defproc* #:kind "parameter" #:link-target? lt.expr
+         ([(id) contract] [(id [arg contract]) void?]) 
+         desc ...)]))
+(define-syntax (defparam* stx)
+  (syntax-parse stx
+    [(_ lt:link-target?-kw id arg in-contract out-contract desc ...)
+     #'(defproc* #:kind "parameter" #:link-target? lt.expr
+         ([(id) out-contract] [(id [arg in-contract]) void?]) 
+         desc ...)]))
+(define-syntax (defboolparam stx)
+  (syntax-parse stx
+    [(_ lt:link-target?-kw id arg desc ...)
+     #'(defproc* #:kind "parameter" #:link-target? lt.expr
+         ([(id) boolean?] [(id [arg any/c]) void?]) 
+         desc ...)]))
 
 ;; ----------------------------------------
 
-(define-syntax-rule (define-defstruct defstruct default-cname)
+(begin-for-syntax
+  (define-splicing-syntax-class mutable-kw
+    #:description "#:mutable keyword"
+    (pattern (~seq #:mutable)
+             #:with immutable? #'#f)
+    (pattern (~seq)
+             #:with immutable? #'#t))
+  
+  (define-splicing-syntax-class opacity-kw
+    #:description "#:prefab, #:transparent, or #:inspector keyword"
+    (pattern (~seq #:prefab)
+             #:with opacity #''prefab)
+    (pattern (~seq #:transparent)
+             #:with opacity #''transparent)
+    (pattern (~seq #:inspector #f)
+             #:with opacity #''transparent)
+    (pattern (~seq)
+             #:with opacity #''opaque))
+  
+  (define-splicing-syntax-class constructor-kw
+    #:description "#:constructor-name or #:extra-constructor-name keyword"
+    (pattern (~seq #:constructor-name id)
+             #:with given? #'#t
+             #:with extra? #'#f)
+    (pattern (~seq #:extra-constructor-name id)
+             #:with given? #'#t
+             #:with extra? #'#t)
+    (pattern (~seq)
+             #:with id #'#f
+             #:with given? #'#f
+             #:with extra? #'#f)))
+
+(define-syntax-rule (define-defstruct defstruct default-extra?)
   (...
-   (define-syntax defstruct
-     (syntax-rules ()
-       [(_ name fields #:constructor-name cname #:mutable #:inspector #f desc ...)
-        (**defstruct name fields #f #t #f cname #f desc ...)]
-       [(_ name fields #:extra-constructor-name cname #:mutable #:inspector #f desc ...)
-        (**defstruct name fields #f #t #f cname #t desc ...)]
-       [(_ name fields #:mutable #:inspector #f desc ...)
-        (**defstruct name fields #f #t #f default-cname #t desc ...)]
-       [(_ name fields #:constructor-name cname #:mutable #:transparent desc ...)
-        (**defstruct name fields #f #t #f cname #f desc ...)]
-       [(_ name fields #:extra-constructor-name cname #:mutable #:transparent desc ...)
-        (**defstruct name fields #f #t #f cname #t desc ...)]
-       [(_ name fields #:mutable #:transparent desc ...)
-        (**defstruct name fields #f #t #f default-cname #t desc ...)]
-       [(_ name fields #:constructor-name cname #:mutable #:prefab desc ...)
-        (**defstruct name fields #f #t #t cname #f desc ...)]
-       [(_ name fields #:extra-constructor-name cname #:mutable #:prefab desc ...)
-        (**defstruct name fields #f #t #t cname #t desc ...)]
-       [(_ name fields #:mutable #:prefab desc ...)
-        (**defstruct name fields #f #t #t default-cname #t desc ...)]
-       [(_ name fields #:constructor-name cname #:mutable desc ...)
-        (**defstruct name fields #f #f #f cname #f desc ...)]
-       [(_ name fields #:extra-constructor-name cname #:mutable desc ...)
-        (**defstruct name fields #f #f #f cname #t desc ...)]
-       [(_ name fields #:mutable desc ...)
-        (**defstruct name fields #f #f #f default-cname #f desc ...)]
-       [(_ name fields #:constructor-name cname #:inspector #f desc ...)
-        (**defstruct name fields #t #t #f cname #f desc ...)]
-       [(_ name fields #:extra-constructor-name cname #:inspector #f desc ...)
-        (**defstruct name fields #t #t #f cname #t desc ...)]
-       [(_ name fields #:inspector #f desc ...)
-        (**defstruct name fields #t #t #f default-cname #t desc ...)]
-       [(_ name fields #:constructor-name cname #:transparent desc ...)
-        (**defstruct name fields #t #t #f cname #f desc ...)]
-       [(_ name fields #:extra-constructor-name cname #:transparent desc ...)
-        (**defstruct name fields #t #t #f cname #t desc ...)]
-       [(_ name fields #:transparent desc ...)
-        (**defstruct name fields #t #t #f default-cname #t desc ...)]
-       [(_ name fields #:constructor-name cname #:prefab desc ...)
-        (**defstruct name fields #t #t #t cname #f desc ...)]
-       [(_ name fields #:extra-constructor-name cname #:prefab desc ...)
-        (**defstruct name fields #t #t #t cname #t desc ...)]
-       [(_ name fields #:prefab desc ...)
-        (**defstruct name fields #t #t #t default-cname #t desc ...)]
-       [(_ name fields #:constructor-name cname desc ...)
-        (**defstruct name fields #t #f #f cname #f desc ...)]
-       [(_ name fields #:extra-constructor-name cname desc ...)
-        (**defstruct name fields #t #f #f cname #t desc ...)]
-       [(_ name fields desc ...)
-        (**defstruct name fields #t #f #f default-cname #t desc ...)]))))
+   (define-syntax (defstruct stx)
+     (syntax-parse stx
+       [(_ lt:link-target?-kw name fields 
+           m:mutable-kw o:opacity-kw c:constructor-kw 
+           desc ...)
+        #'(**defstruct lt.expr name fields 
+                       m.immutable? o.opacity
+                       c.id c.given? c.extra? default-extra?
+                       desc ...)]))))
 
 (define-defstruct defstruct #t)
 (define-defstruct defstruct* #f)
 
-(define-syntax-rule (**defstruct name ([field field-contract] ...) immutable?
-                                 transparent? prefab? cname extra-cname? desc ...)
+(define-syntax-rule (**defstruct link? name ([field field-contract] ...) 
+                                 immutable? opacity 
+                                 cname cname-given? extra-cname? default-extra?
+                                 desc ...)
   (with-togetherable-racket-variables
    ()
    ()
-   (*defstruct (quote-syntax/loc name) 'name (quote-syntax/loc cname) extra-cname?
+   (*defstruct link? (quote-syntax/loc name) 'name 
+               (quote-syntax/loc cname) cname-given? extra-cname? default-extra?
                '([field field-contract] ...)
                (list (lambda () (racketblock0 field-contract)) ...)
-               immutable? transparent? prefab? (lambda () (list desc ...)))))
+               immutable? opacity
+               (lambda () (list desc ...)))))
 
-(define (*defstruct stx-id name alt-cname-id extra-cname?
-                    fields field-contracts immutable? transparent? prefab?
+(define (*defstruct link? stx-id name 
+                    alt-cname-id cname-given? extra-cname? default-extra?
+                    fields field-contracts 
+                    immutable? opacity
                     content-thunk)
+  (define transparent? (or (eq? opacity 'transparent)
+                           (eq? opacity 'prefab)))
+  (define prefab? (eq? opacity 'prefab))
   (define max-proto-width (current-display-width))
   (define (field-name f) ((if (pair? (car f)) caar car) f))
   (define (field-view f)
@@ -652,7 +671,7 @@
   (define cname-id
     (cond
      [(identifier? alt-cname-id) alt-cname-id]
-     [(not (syntax-e alt-cname-id)) #f]
+     [(not default-extra?) #f]
      [else (let ([name-id (if (identifier? stx-id)
                               stx-id
                               (car (syntax-e stx-id)))])
@@ -670,39 +689,45 @@
          (list
           (let* ([the-name
                   (let ([just-name
-                         (make-target-element*
-                          make-toc-target-element
-                          (if (pair? name)
-                              (car (syntax-e stx-id))
-                              stx-id)
-                          (annote-exporting-library
-                           (to-element
-                            (if (pair? name)
-                                (make-just-context (car name)
-                                                   (car (syntax-e stx-id)))
-                                stx-id)))
-                          (let ([name (if (pair? name) (car name) name)])
-                            (list* (list 'info name)
-                                   (list 'type 'struct: name)
-                                   (list 'predicate name '?)
-                                   (append
-                                    (if cname-id
-                                        (list (list 'constructor (syntax-e cname-id)))
-                                        null)
-                                    (map (lambda (f)
-                                           (list 'accessor name '-
-                                                 (field-name f)))
-                                         fields)
-                                    (filter-map
-                                     (lambda (f)
-                                       (if (or (not immutable?)
-                                               (and (pair? (car f))
-                                                    (memq '#:mutable
-                                                          (car f))))
-                                           (list 'mutator 'set- name '-
-                                                 (field-name f) '!)
-                                           #f))
-                                     fields)))))])
+                         (if link?
+                             (make-target-element*
+                              make-toc-target-element
+                              (if (pair? name)
+                                  (car (syntax-e stx-id))
+                                  stx-id)
+                              (annote-exporting-library
+                               (to-element
+                                (if (pair? name)
+                                    (make-just-context (car name)
+                                                       (car (syntax-e stx-id)))
+                                    stx-id)))
+                              (let ([name (if (pair? name) (car name) name)])
+                                (list* (list 'info name)
+                                       (list 'type 'struct: name)
+                                       (list 'predicate name '?)
+                                       (append
+                                        (if cname-id
+                                            (list (list 'constructor (syntax-e cname-id)))
+                                            null)
+                                        (map (lambda (f)
+                                               (list 'accessor name '-
+                                                     (field-name f)))
+                                             fields)
+                                        (filter-map
+                                         (lambda (f)
+                                           (if (or (not immutable?)
+                                                   (and (pair? (car f))
+                                                        (memq '#:mutable
+                                                              (car f))))
+                                               (list 'mutator 'set- name '-
+                                                     (field-name f) '!)
+                                               #f))
+                                         fields)))))
+                             (to-element
+                              (if (pair? name)
+                                  (make-just-context (car name)
+                                                     (car (syntax-e stx-id)))
+                                  stx-id)))])
                     (if (pair? name)
                         (make-element
                          #f
@@ -834,7 +859,9 @@
                                               e)))))
                                (loop (cdr fields))))))
                     (if cname-id
-                        (let ([kw (to-element (if extra-cname?
+                        (let ([kw (to-element (if (if cname-given?
+                                                      extra-cname?
+                                                      default-extra?)
                                                   '#:extra-constructor-name
                                                   '#:constructor-name))]
                               [nm (to-element cname-id)]
@@ -916,6 +943,7 @@
 (define-syntax (defthing stx)
   (syntax-parse stx
     [(_ kind:kind-kw 
+        lt:link-target?-kw 
         (~optional (~seq #:id id-expr)
                    #:defaults ([id-expr #'#f]))
         id 
@@ -925,24 +953,24 @@
         ()
         ()
         (*defthing kind.kind
+                   lt.expr
                    (list (or id-expr (quote-syntax/loc id))) (list 'id) #f
                    (list (racketblock0 result))
                    (lambda () (list desc ...))))]))
 
-(define-syntax defthing* 
-  (syntax-rules ()
-    [(_ #:kind kind ([id result] ...) desc ...)
-     (with-togetherable-racket-variables
-      ()
-      ()
-      (*defthing kind
-                 (list (quote-syntax/loc id) ...) (list 'id ...) #f
-                 (list (racketblock0 result) ...)
-                 (lambda () (list desc ...))))]
-    [(_ ([id result] ...) desc ...)
-     (defthing* #:kind #f ([id result] ...) desc ...)]))
+(define-syntax (defthing* stx)
+  (syntax-parse stx
+    [(_ kind:kind-kw lt:link-target?-kw ([id result] ...) desc ...)
+     #'(with-togetherable-racket-variables
+        ()
+        ()
+        (*defthing kind.kind
+                   lt.expr
+                   (list (quote-syntax/loc id) ...) (list 'id ...) #f
+                   (list (racketblock0 result) ...)
+                   (lambda () (list desc ...))))]))
 
-(define (*defthing kind stx-ids names form? result-contracts content-thunk
+(define (*defthing kind link? stx-ids names form? result-contracts content-thunk
                    [result-values (map (lambda (x) #f) result-contracts)])
   (make-box-splice
    (cons
@@ -985,9 +1013,12 @@
                      (make-omitable-paragraph
                       (list
                        (let ([target-maker
-                              ((if form? id-to-form-target-maker id-to-target-maker)
-                               stx-id #t)]
-                             [content (list (definition-site name stx-id form?))])
+                              (and link?
+                                   ((if form? id-to-form-target-maker id-to-target-maker)
+                                    stx-id #t))]
+                             [content (list (if link?
+                                                (definition-site name stx-id form?)
+                                                (to-element (make-just-context name stx-id))))])
                          (if target-maker
                              (target-maker
                               content
@@ -1032,7 +1063,7 @@
     (content-thunk))))
 
 (define (defthing/proc kind id contract descs)
-  (*defthing kind (list id) (list (syntax-e id)) #f (list contract)
+  (*defthing kind #t (list id) (list (syntax-e id)) #f (list contract)
              (lambda () descs)))
 
 (define (make-target-element* inner-make-target-element stx-id content wrappers)

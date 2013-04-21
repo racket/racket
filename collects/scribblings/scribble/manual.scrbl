@@ -674,7 +674,7 @@ sub-sections.}
 @; ------------------------------------------------------------------------
 @section[#:tag "doc-forms"]{Documenting Forms, Functions, Structure Types, and Values}
 
-@defform/subs[(defproc maybe-kind maybe-id prototype
+@defform/subs[(defproc options prototype
                        result-contract-expr-datum
                        pre-flow ...)
               ([prototype (id arg-spec ...)
@@ -685,8 +685,11 @@ sub-sections.}
                          (keyword arg-id contract-expr-datum default-expr)
                          ellipses
                          ellipses+]
+               [options (code:line maybe-kind maybe-link maybe-id)]
                [maybe-kind code:blank
                            (code:line #:kind kind-string-expr)]
+               [maybe-link code:blank
+                           (code:line #:link-target? link-target?-expr)]
                [maybe-id code:blank
                          (code:line #:id [src-id dest-id-expr])]
                [ellipses @#,lit-ellipses]
@@ -695,11 +698,13 @@ sub-sections.}
 Produces a sequence of flow elements (encapsulated in a
 @racket[splice]) to document a procedure named @racket[id]. Nesting
 @racket[prototype]s corresponds to a curried function, as in
-@racket[define]. The @racket[id] is indexed, and it also registered so
+@racket[define]. Unless @racket[link-target?-expr] is specified
+and produces @racket[#f], the @racket[id] is indexed, and it also registered so
 that @racket[racket]-typeset uses of the identifier (with the same
 for-label binding) are hyperlinked to this documentation.
 
-A @racket[defmodule] or @racket[declare-exporting] form (or one of the
+When @racket[id] is indexed and registered, 
+a @racket[defmodule] or @racket[declare-exporting] form (or one of the
 variants) in an enclosing section determines the @racket[id] binding
 that is being defined. The @racket[id] should also have a for-label
 binding (as introduced by @racket[(require (for-label ....))]) that
@@ -783,19 +788,21 @@ Examples:
 }|
 }
 
-@defform[(defproc* maybe-kind maybe-id
+@defform[(defproc* options
                    ([prototype
                      result-contract-expr-datum] ...)
                    pre-flow ...)]{
 
 Like @racket[defproc], but for multiple cases with the same
-@racket[id].
+@racket[id]. Multiple distinct @racket[id]s can also be defined by a
+single @racket[defproc*], for the case that it's best to document a
+related group of procedures at once (but multiple @racket[defproc]s
+grouped by @racket[deftogether] also works for that case).
 
-When an @racket[id] has multiple calling cases, they must be defined
-with a single @racket[defproc*], so that a single definition point
-exists for the @racket[id]. However, multiple distinct @racket[id]s
-can also be defined by a single @racket[defproc*], for the case that
-it's best to document a related group of procedures at once.
+When an @racket[id] has multiple calling cases, either they must be
+defined with a single @racket[defproc*], so that a single definition
+point exists for the @racket[id], or else all but one definition
+should use @racket[#:link-target? #f].
 
 Examples:
 @codeblock[#:keep-lang-line? #f]|{
@@ -811,11 +818,14 @@ Examples:
 }
 
 
-@defform/subs[(defform maybe-kind maybe-id maybe-literals form-datum
+@defform/subs[(defform options form-datum
                 maybe-grammar maybe-contracts
                 pre-flow ...)
-              ([maybe-kind code:blank
+              ([options (code:line maybe-kind maybe-link maybe-id maybe-literals)]
+               [maybe-kind code:blank
                            (code:line #:kind kind-string-expr)]
+               [maybe-link code:blank
+                           (code:line #:link-target? link-target?-expr)]
                [maybe-id code:blank
                          (code:line #:id id)
                          (code:line #:id [id id-expr])]
@@ -844,7 +854,9 @@ a defining instance), and @racket[id-expr] produces the identifier to
 be documented. This split between @racket[id] and @racket[id-expr]
 roles is useful for functional abstraction of @racket[defform].
 
-The @racket[id] (or result of @racket[id-expr]) is indexed, and it is
+Unless @racket[link-target?-expr] is specified
+and produces @racket[#f], 
+the @racket[id] (or result of @racket[id-expr]) is indexed, and it is
 also registered so that @racket[racket]-typeset uses of the identifier
 (with the same for-label binding) are hyperlinked to this
 documentation. The @racket[defmodule] or @racket[declare-exporting]
@@ -910,7 +922,7 @@ Examples:
 }|
 }
 
-@defform[(defform* maybe-kind maybe-id maybe-literals [form-datum ...+]
+@defform[(defform* options [form-datum ...+]
            maybe-grammar maybe-contracts
            pre-flow ...)]{
 
@@ -934,10 +946,10 @@ Examples:
            maybe-grammar maybe-contracts
            pre-flow ...)]{
 
-Like @racket[defform], but without registering a definition.}
+Like @racket[defform] with @racket[#:link-target? #f].}
 
 
-@defform[(defidform maybe-kind id pre-flow ...)]{
+@defform[(defidform maybe-kind maybe-link id pre-flow ...)]{
 
 Like @racket[defform], but with a plain @racket[id] as the form.}
 
@@ -954,16 +966,17 @@ not stand out to the reader as a specification of @racket[id].}
 @defform[(specform maybe-literals datum maybe-grammar maybe-contracts
            pre-flow ...)]{
 
-Like @racket[defform], but without indexing or registering a
-definition, and with indenting on the left for both the specification
-and the @racket[pre-flow]s.}
+Like @racket[defform] with @racket[#:link-target? #f], but with
+indenting on the left for both the specification and the
+@racket[pre-flow]s.}
 
 
 @defform[(specsubform maybe-literals datum maybe-grammar maybe-contracts
            pre-flow ...)]{
 
-Similar to @racket[defform], but without any specific identifier being
-defined, and the table and flow are typeset indented. This form is
+Similar to @racket[defform] with @racket[#:link-target? #f],
+but without the initial identifier as an implicit literal,
+and the table and flow are typeset indented. This form is
 intended for use when refining the syntax of a non-terminal used in a
 @racket[defform] or other @racket[specsubform]. For example, it is
 used in the documentation for @racket[defproc] in the itemization of
@@ -984,11 +997,11 @@ without nesting a description.}
 
 
 @deftogether[[
-@defform[(defform/subs maybe-kind maybe-id maybe-literals form-datum
+@defform[(defform/subs options form-datum
            ([nonterm-id clause-datum ...+] ...)
            maybe-contracts
            pre-flow ...)]
-@defform[(defform*/subs maybe-kind maybe-id maybe-literals [form-datum ...+]
+@defform[(defform*/subs options [form-datum ...+]
            ([nonterm-id clause-datum ...+] ...)
            maybe-contracts
            pre-flow ...)]
@@ -1026,7 +1039,7 @@ Examples:
 }
 
 
-@defform[(defparam id arg-id contract-expr-datum pre-flow ...)]{
+@defform[(defparam maybe-link id arg-id contract-expr-datum pre-flow ...)]{
 
 Like @racket[defproc], but for a parameter. The
 @racket[contract-expr-datum] serves as both the result contract on the
@@ -1043,17 +1056,31 @@ Examples:
 }|
 }
 
-@defform[(defboolparam id arg-id pre-flow ...)]{
+
+@defform[(defparam* maybe-link id arg-id 
+           in-contract-expr-datum out-contract-expr-datum
+           pre-flow ...)]{
+
+Like @racket[defparam], but with separate contracts for when the parameter is being
+set versus when it is being retrieved (for the case that a parameter guard
+coerces values matching a more flexible contract to a more restrictive one;
+@racket[current-directory] is an example).}
+
+
+@defform[(defboolparam maybe-link id arg-id pre-flow ...)]{
 
 Like @racket[defparam], but the contract on a parameter argument is
 @racket[any/c], and the contract on the parameter result is
 @racket[boolean?].}
 
 
-@defform/subs[(defthing maybe-kind maybe-id id contract-expr-datum
+@defform/subs[(defthing options id contract-expr-datum
                 pre-flow ...)
-              ([maybe-kind code:blank
+              ([options (code:line maybe-kind maybe-link maybe-id)]
+               [maybe-kind code:blank
                            (code:line #:kind kind-string-expr)]
+               [maybe-link code:blank
+                           (code:line #:link-target? link-target?-expr)]
                [maybe-id code:blank
                          (code:line #:id id-expr)])]{
 
@@ -1077,19 +1104,22 @@ Examples:
 
 
 @deftogether[(
-@defform[       (defstruct* struct-name ([field-name contract-expr-datum] ...)
+@defform[       (defstruct* maybe-link struct-name ([field-name contract-expr-datum] ...)
                   maybe-mutable maybe-non-opaque maybe-constructor
                   pre-flow ...)]
-@defform/subs[  (defstruct struct-name ([field-name contract-expr-datum] ...)
+@defform/subs[  (defstruct maybe-link struct-name ([field-name contract-expr-datum] ...)
                   maybe-mutable maybe-non-opaque maybe-constructor
                   pre-flow ...)
-               ([struct-name id
+               ([maybe-link code:blank
+                            (code:line #:link-target? link-target?-expr)]
+                [struct-name id
                              (id super-id)]
                 [maybe-mutable code:blank
                                #:mutable]
                 [maybe-non-opaque code:blank
                                   #:prefab
-                                  #:transparent]
+                                  #:transparent
+                                  (code:line #:inspector #f)]
                 [maybe-constructor code:blank
                                    (code:line #:constructor-name constructor-id)
                                    (code:line #:extra-constructor-name constructor-id)])]

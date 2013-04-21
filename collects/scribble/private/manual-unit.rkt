@@ -41,6 +41,7 @@
 (define (*defsignature stx-id supers body-thunk indent?)
   (*defthing
    "signature"
+   #t
    (list stx-id)
    (list (syntax-e stx-id))
    #t

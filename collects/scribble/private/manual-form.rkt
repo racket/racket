@@ -45,6 +45,12 @@
             #:with defined-id #'#f
             #:with defined-id-expr #'#f))
 
+ (define-splicing-syntax-class link-target?-kw
+   #:description "#:link-target? keyword"
+   (pattern (~seq #:link-target? expr))
+   (pattern (~seq)
+            #:with expr #'#t))
+
  (define-splicing-syntax-class literals-kw
    #:description "#:literals keyword"
    (pattern (~seq #:literals (lit:id ...)))
@@ -70,7 +76,7 @@
 
 (define-syntax (defform*/subs stx)
   (syntax-parse stx
-    [(_ k:kind-kw d:id-kw l:literals-kw [spec spec1 ...]
+    [(_ k:kind-kw lt:link-target?-kw d:id-kw l:literals-kw [spec spec1 ...]
         g:grammar
         c:contracts-kw
         desc ...)
@@ -97,7 +103,7 @@
             (l.lit ...)
             ([form [defined-id spec]] [form [defined-id spec1]] ...
              [non-term (g.non-term-id g.non-term-form ...)] ...)
-            (*defforms k.kind defined-id-expr
+            (*defforms k.kind lt.expr defined-id-expr
                        '(spec spec1 ...)
                        (list (lambda (x) (racketblock0/form new-spec))
                              (lambda (ignored) (racketblock0/form spec1)) ...)
@@ -113,42 +119,45 @@
 
 (define-syntax (defform* stx)
   (syntax-parse stx
-    [(_ k:kind-kw d:id-kw l:literals-kw [spec ...]
+    [(_ k:kind-kw lt:link-target?-kw d:id-kw l:literals-kw [spec ...]
         subs:subs-kw c:contracts-kw desc ...)
      (syntax/loc stx
        (defform*/subs #:kind k.kind 
+         #:link-target? lt.expr
          #:id [d.defined-id d.defined-id-expr] 
          #:literals (l.lit ...)
          [spec ...] subs.g #:contracts c.cs desc ...))]))
 
 (define-syntax (defform stx)
   (syntax-parse stx
-    [(_ k:kind-kw d:id-kw l:literals-kw spec
+    [(_ k:kind-kw lt:link-target?-kw d:id-kw l:literals-kw spec
         subs:subs-kw c:contracts-kw desc ...)
      (syntax/loc stx
-       (defform*/subs #:kind k.kind 
+       (defform*/subs #:kind k.kind
+         #:link-target? lt.expr
          #:id [d.defined-id d.defined-id-expr] 
          #:literals (l.lit ...)
          [spec] subs.g #:contracts c.cs desc ...))]))
 
 (define-syntax (defform/subs stx)
   (syntax-parse stx
-    [(_ k:kind-kw d:id-kw l:literals-kw spec subs desc ...)
+    [(_ k:kind-kw lt:link-target?-kw d:id-kw l:literals-kw spec subs desc ...)
      (syntax/loc stx
        (defform*/subs #:kind k.kind 
+         #:link-target? lt.expr
          #:id [d.defined-id d.defined-id-expr] 
          #:literals (l.lit ...)
          [spec] subs desc ...))]))
 
 (define-syntax (defform/none stx)
   (syntax-parse stx
-    [(_ k:kind-kw l:literals-kw spec subs:subs-kw c:contracts-kw desc ...)
+    [(_ k:kind-kw lt:link-target?-kw l:literals-kw spec subs:subs-kw c:contracts-kw desc ...)
      (syntax/loc stx
        (with-togetherable-racket-variables
         (l.lit ...)
         ([form/none spec]
          [non-term (subs.g.non-term-id subs.g.non-term-form ...)] ...)
-        (*defforms k.kind #f
+        (*defforms k.kind lt.expr #f
                    '(spec)
                    (list (lambda (ignored) (racketblock0/form spec)))
                    '((subs.g.non-term-id subs.g.non-term-form ...) ...)
@@ -171,11 +180,11 @@
 
 (define-syntax (defidform stx)
   (syntax-parse stx
-    [(_ k:kind-kw spec-id desc ...)
+    [(_ k:kind-kw lt:link-target?-kw spec-id desc ...)
      #'(with-togetherable-racket-variables
         ()
         ()
-        (*defforms k.kind (quote-syntax/loc spec-id)
+        (*defforms k.kind lt.expr (quote-syntax/loc spec-id)
                    '(spec-id)
                    (list (lambda (x) (make-omitable-paragraph (list x))))
                    null
@@ -311,7 +320,7 @@
             tag)))
         (car content))))
 
-(define (*defforms kind kw-id forms form-procs subs sub-procs contract-procs content-thunk)
+(define (*defforms kind link? kw-id forms form-procs subs sub-procs contract-procs content-thunk)
   (parameterize ([current-meta-list '(... ...+)])
     (make-box-splice
      (cons
@@ -333,7 +342,9 @@
                        (list (to-element `(,x . ,(cdr form)))))))
                 (and kw-id
                      (eq? form (car forms))
-                     (defform-site kw-id)))))))
+                     (if link?
+                         (defform-site kw-id)
+                         (to-element kw-id))))))))
           (if (null? sub-procs)
               null
               (list (list flow-empty-line)

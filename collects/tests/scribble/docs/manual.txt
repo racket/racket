@@ -1,0 +1,167 @@
+ (require "manual-ex.rkt")
+
+(f) -> integer?
+
+A function.
+
+(g x y) -> integer?
+  x : void?        
+  y : void?        
+
+A function with two arguments.
+
+(h x #:y y) -> integer?
+  x : void?            
+  y : void?            
+
+A “function” with a keyword argument.
+
+(i x [#:y y]) -> integer?
+  x : void?              
+  y : void? = (void)     
+
+A function with an optional keyword argument.
+
+(f) -> integer?
+
+A function, again, not a link target.
+
+(g x) -> integer?
+  x : void?      
+
+A “function,” again, not a link target.
+
+(j) -> void?
+
+Source is i, documents j.
+
+(f) -> integer? 
+(g x y) -> void?
+  x : void?     
+  y : void?     
+
+Functions, yet again.
+
+(m datum)
+
+A syntactic form.
+
+(m datum)
+
+A syntactic form, again.
+
+(m datum)
+
+A “macro,” again.
+
+(m datum)     
+(m same-datum)
+
+A “macro,” yet again.
+
+(m datum)
+
+Yet again.
+
+n
+
+An identifier form.
+
+n
+
+An identifier form, again.
+
+(m datum)
+Specification of m.
+
+(p) -> integer?
+(p k) -> void? 
+  k : integer? 
+
+A parameter
+
+(p) -> integer?
+(p k) -> void? 
+  k : integer? 
+
+A parameter, again.
+
+(p) -> integer?
+(p k) -> void? 
+  k : real?    
+
+A parameter, yet again.
+
+(q) -> boolean? 
+(q on?) -> void?
+  on? : any/c   
+
+A boolean parameter.
+
+(q) -> boolean?       
+(q still-on?) -> void?
+  still-on? : any/c   
+
+A boolean parameter, again.
+
+(struct pt (x y)                         
+        #:extra-constructor-name make-pt)
+  x : real?                              
+  y : real?                              
+
+A structure type with extra name.
+
+(struct pn (x y))
+  x : real?      
+  y : real?      
+
+A structure type.
+
+(struct pn (x y))
+  x : real?      
+  y : real?      
+
+A structure type, again.
+
+(struct pn (x y)      
+        #:transparent)
+  x : real?           
+  y : real?           
+
+A transparent structure type, again.
+
+(struct pn (x y)      
+        #:transparent)
+  x : real?           
+  y : real?           
+
+A transparent structure type, again.
+
+(struct pn (x y) 
+        #:prefab)
+  x : real?      
+  y : real?      
+
+A prefab structure type, again.
+
+(struct pn (x y)              
+        #:constructor-name pt)
+  x : real?                   
+  y : real?                   
+
+A structure type with name, again.
+
+(struct pn (x y)                    
+        #:extra-constructor-name pt)
+  x : real?                         
+  y : real?                         
+
+A structure type with extra name, again.
+
+(struct pt (x y)                        
+        #:extra-constructor-name make-pt
+        #:mutable)                      
+  x : real?                             
+  y : real?                             
+
+A mutable structure type with extra name, again.
