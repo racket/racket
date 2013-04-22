@@ -1729,6 +1729,68 @@
    (when clean?
      (delete-directory/files dir))))
 
+
+(define (pkg-index-update-local #:index-file [index-file (db:current-pkg-index-file)]
+                                #:quiet? [quiet? #f])
+  (parameterize ([db:current-pkg-index-file index-file])
+    (define indexes (pkg-config-indexes))
+    (db:set-indexes! indexes)
+
+    (for ([index (in-list indexes)])
+      (parameterize ([current-pkg-indexes (list (string->url index))])
+        (define details (get-all-pkg-details-from-indexes))
+        (db:set-pkgs! index (for/list ([(name ht) (in-hash details)])
+                              (db:pkg name
+                                      index
+                                      (hash-ref ht 'author "")
+                                      (hash-ref ht 'source "")
+                                      (hash-ref ht 'checksum "")
+                                      (hash-ref ht 'description ""))))
+
+        (define need-modules (db:get-pkgs-without-modules #:index index))
+        (for ([(pkg) (in-list need-modules)])
+          (define name (db:pkg-name pkg))
+          (define ht (hash-ref details name))
+          (define source (hash-ref ht 'source))
+          (unless quiet?
+            (printf "Downloading ~s\n" source))
+          (define-values (checksum modules deps)
+            (get-pkg-content (pkg-desc source
+                                       #f 
+                                       (hash-ref ht 'checksum #f) 
+                                       #f)))
+          (db:set-pkg-modules! name index checksum modules))))))
+
+
+(define (choose-index-file)
+  (define default (db:current-pkg-index-file))
+  (if (file-exists? default)
+      default
+      (let ([installation (build-path (find-lib-dir) "pkgs" (file-name-from-path default))])
+        (if (file-exists? installation)
+            installation
+            default))))
+
+(define (pkg-index-suggestions-for-module module-path
+                                          #:index-file [index-file (choose-index-file)])
+  (if (file-exists? index-file)
+      (parameterize ([db:current-pkg-index-file index-file])
+        (let* ([mod (collapse-module-path 
+                     module-path
+                     (lambda () (build-path (current-directory) "dummy.rkt")))]
+               [pkgs (db:get-module-pkgs mod)]
+               [more-pkgs (let ([rx:reader #rx"/lang/reader[.]rkt$"])
+                            (if (and (pair? mod)
+                                     (eq? (car mod) 'lib)
+                                     (regexp-match rx:reader (cadr mod)))
+                                (db:get-module-pkgs `(lib ,(regexp-replace rx:reader (cadr mod) "/main.rkt")))
+                                null))])
+          (sort (set->list
+                 (list->set
+                  (map db:pkg-name (append pkgs more-pkgs)))) 
+                string<?)))
+      null))
+  
 (define dep-behavior/c
   (or/c #f 'fail 'force 'search-ask 'search-auto))
 
@@ -1820,6 +1882,15 @@
                           boolean?))]
   [pkg-config-indexes
    (-> (listof string?))]
+  [pkg-index-update-local
+   (->* ()
+        (#:index-file path-string?
+         #:quiet? boolean?)
+        void?)]
+  [pkg-index-suggestions-for-module
+   (->* (module-path?)
+        (#:index-file path-string?)
+        (listof string?))]
   [get-all-pkg-names-from-indexes
    (-> (listof string?))]
   [get-all-pkg-details-from-indexes

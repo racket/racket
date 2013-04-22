@@ -4,6 +4,7 @@
                      racket/contract/base
                      pkg
                      pkg/lib
+                     (only-in pkg/pnr-db current-pkg-index-file)
                      net/url
                      syntax/modcollapse
                      setup/getinfo))
@@ -237,6 +238,29 @@ then @racket[names] should be empty.}
          void?]{
 
 Implements the @racket[index-copy] command.}
+
+
+@defproc[(pkg-index-update-local [#:index-file index-file path-string? (current-pkg-index-file)]
+                                 [#:quiet? quiet? boolean? #f])
+         void?]{
+
+Consults the user's configured @tech{package name resolvers} (like
+@racket[pkg-index-copy]) and package servers to populate the database
+@racket[index-file] with information about available packages and the
+modules that they implement.}
+
+
+@defproc[(pkg-index-suggestions-for-module 
+          [module-path module-path?]
+          [#:index-file index-file path-string? ....])
+         (listof string?)]{
+
+Consults @racket[index-file] and returns a list of available packages
+that provide the module specified by @racket[module-path].
+
+The default @racket[index-file] is @racket[(current-pkg-index-file)]
+if that file exists, otherwise a file in the racket installation is
+tried.}
 
 
 @defproc[(get-all-pkg-names-from-indexes) (listof string?)]{

@@ -2,6 +2,8 @@
 (require racket/contract/base
          racket/format
          racket/set
+         racket/path
+         racket/file
          db)
 
 (provide 
@@ -85,13 +87,18 @@
   (make-parameter (build-path
                    (find-system-path 'addon-dir)
                    (version)
+                   "pkgs"
                    "pnr.sqlite")))
 
 (define (call-with-pnr-db proc)
   (define db #f)
   (dynamic-wind
       (lambda ()
-        (set! db (sqlite3-connect #:database (current-pkg-index-file)
+        (define file (current-pkg-index-file))
+        (define dir (path-only file))
+        (unless (directory-exists? dir)
+          (make-directory* dir))
+        (set! db (sqlite3-connect #:database file
                                   #:mode 'create
                                   #:busy-retry-limit +inf.0)))
       (lambda () (proc db))
