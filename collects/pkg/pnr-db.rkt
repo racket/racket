@@ -13,16 +13,20 @@
   [get-indexes (-> (listof string?))]
   [set-indexes! ((listof string?) . -> . void?)]
 
-  [set-pkgs! (string? (listof (or/c pkg? string?)) . -> . void?)]
+  [set-pkgs! ((string? (listof (or/c pkg? string?)))
+              (#:clear-other-checksums? boolean?)
+              . ->* . 
+              void?)]
 
   [get-pkgs (()
              (#:name (or/c #f string?)
                      #:index (or/c #f string?))
              . ->* .
              (listof pkg?))]
-  [set-pkg! (string? string? string? string? string? string?
-                     . -> .
-                     void?)]
+  [set-pkg! ((string? string? string? string? string? string?)
+             (#:clear-other-checksums? boolean?)
+             . ->* .
+             void?)]
 
   [get-pkg-modules (string? string? string?
                             . -> . (listof module-path?))]
@@ -35,7 +39,12 @@
   [set-pkg-tags! (string? string? (listof string?)
                           . -> . void?)]
 
-  [get-module-pkgs (module-path? . -> . pkg?)]))
+  [get-module-pkgs (module-path? . -> . pkg?)]
+
+  [get-pkgs-without-modules (()
+                             (#:index string?)
+                             . ->* .
+                             (listof pkg?))]))
 
 (struct pkg (name index author source checksum desc)
   #:transparent)
@@ -124,7 +133,8 @@
             (vector-ref row 4)
             (vector-ref row 5))))))
 
-(define (set-pkg! name index author source checksum desc)
+(define (set-pkg! name index author source checksum desc
+                  #:clear-other-checksums? [clear-other-checksums? (not (equal? checksum ""))])
   (call-with-pnr-db
    (lambda (db)
      (prepare-pnr-table db)
@@ -140,6 +150,13 @@
                    " AND   pnr=$6")
                author source checksum desc
                name pnr)
+        (when clear-other-checksums?
+          (query-exec db
+                      (~a "DELETE FROM modules"
+                          " WHERE pnr=$1 AND pkg=$2 AND checksum<>$3")
+                      pnr
+                      name
+                      checksum))
         (void))))))
 
 (define (get-pkg-tags name index)
@@ -241,6 +258,40 @@
 (define (mod->string mp) (~s mp))
 (define (string->mod str) (read (open-input-string str)))
 
+(define (get-pkgs-without-modules #:index [index #f])
+  (call-with-pnr-db
+   (lambda (db)
+     (prepare-pnr-table db)
+     (prepare-pkg-table db)
+     (prepare-modules-table db)
+     (define rows
+       (apply
+        query-rows
+        db
+        (~a "SELECT K.name, N.url, K.checksum"
+            " FROM pkg K, pnr N"
+            " WHERE N.id = K.pnr"
+            (if index
+                " AND  N.url = $1"
+                "")
+            " AND NOT EXISTS"
+            " (SELECT M.name"
+            "  FROM modules M"
+            "  WHERE M.pkg = K.name"
+            "   AND  M.pnr = K.pnr"
+            "   AND  M.checksum = K.checksum)")
+        (append
+         (if index
+             (list index)
+             null))))
+     (for/list ([row (in-list rows)])
+       (pkg (vector-ref row 0)
+            (vector-ref row 1)
+            ""
+            ""
+            (vector-ref row 2)
+            "")))))
+
 (define (get-indexes)
   (call-with-pnr-db
    (lambda (db)
@@ -301,7 +352,8 @@
                "SELECT id FROM pnr WHERE url=$1"
                url))
 
-(define (set-pkgs! url pkgs)
+(define (set-pkgs! url pkgs
+                   #:clear-other-checksums? [clear-other-checksums? #t])
   (call-with-pnr-db
    (lambda (db)
      (prepare-pnr-table db)
@@ -323,21 +375,29 @@
         (for ([old (in-list current-pkgs)])
           (unless (set-member? new-pkgs old)
             (query-exec db
-                        "DELETE FROM pkg WHERE pnr=$1, name=$2"
+                        "DELETE FROM pkg WHERE pnr=$1 AND name=$2"
                         pnr
                         old)
             (query-exec db
-                        "DELETE FROM tags WHERE pnr=$1, pkg=$2"
+                        "DELETE FROM tags WHERE pnr=$1 AND pkg=$2"
                         pnr
                         old)
             (query-exec db
-                        "DELETE FROM modules WHERE pnr=$1, pkg=$2"
+                        "DELETE FROM modules WHERE pnr=$1 AND pkg=$2"
                         pnr
                         old)))
         (for ([new0 (in-list pkgs)])
           (define new (if (pkg? new0) 
                           new0
                           (pkg new0 "" "" "" "" "")))
+          (when (and clear-other-checksums?
+                     (not (equal? "" (pkg-checksum new))))
+            (query-exec db
+                        (~a "DELETE FROM modules"
+                            " WHERE pnr=$1 AND pkg=$2 AND checksum<>$3")
+                        pnr
+                        (pkg-name new)
+                        (pkg-checksum new)))
           (unless (and (string? new0)
                        (set-member? old-pkgs new0))
             (if (set-member? old-pkgs (pkg-name new))

@@ -69,7 +69,8 @@ The result list is ordered by precedence of the @tech{package name
 resolver}.}
 
 
-@defproc[(set-pkgs! [index string?] [pkgs (listof (or/c string? pkg?))])
+@defproc[(set-pkgs! [index string?] [pkgs (listof (or/c string? pkg?))]
+                    [#:clear-other-checksums? clear-other-checksums? #t])
          void?]{
 
 Sets the list of all packages that are recognized by the
@@ -79,7 +80,12 @@ Information about any other package for @racket[index] is removed from
 the database.  If a string is provided for @racket[pkgs], it is
 treated as a package name; if additional information is already
 recorded in the database for the package name, then the additional
-information is preserved.}
+information is preserved.
+
+If @racket[clear-other-checksums?] is true, then for each element of
+@racket[pkgs] that has a given checksum other than @racket[""], any
+information in the database specific to another checksum (such as a
+list of module paths) is removed from the database.}
 
 
 @defproc[(set-pkg! [name string?]
@@ -87,11 +93,16 @@ information is preserved.}
                    [author string?]
                    [source string?]
                    [checksum string?]
-                   [desc string?])
+                   [desc string?]
+                   [#:clear-other-checksums? clear-other-checksums? (not (equal? checksum ""))])
            void?]{
 
 Sets the information for a specific package @racket[name] as
-recognized by the @tech{package name resolver} @racket[index].}
+recognized by the @tech{package name resolver} @racket[index].
+
+If @racket[clear-other-checksums?] is true, then information (such as
+a list of module paths) is removed from the database when it is
+specific to a checksum other than @racket[checksum].}
 
 
 @deftogether[(
@@ -118,3 +129,13 @@ Gets or sets a list of tags for the package
 Gets or sets a list of module paths that are provided for the package
 @racket[name] as recognized by the @tech{package name resolver}
 @racket[index] and for a specific @tech{checksum}.}
+
+
+@defproc[(get-pkgs-without-modules [#:index index (or/c #f string?) #f])
+         (listof pkg?)]{
+
+Returns a list of packages (optionally constrained to @racket[index])
+for which the database has no modules recorded.
+
+Each resulting @racket[pkg] has its @racket[name], @racketidfont{index}, and
+@racket[checksum] field set, but other fields may be @racket[""].}
