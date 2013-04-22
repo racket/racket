@@ -108,6 +108,5 @@
              (kill-connection! conn)
              (connection-loop))])))))
   (define (connection-loop)
-    (dump-memory-stats)
     (sync the-evt))
   (connection-loop))
