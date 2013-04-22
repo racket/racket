@@ -1712,11 +1712,13 @@
                    #:when (file-exists? f)
                    #:when (regexp-match? #rx#"[.](rkt|ss)$" (path->bytes f))
                    #:when (let-values ([(base name dir?) (split-path f)])
-                            (not (eq? 'relative base))))
-          (define m (apply ~a
-                           #:separator "/" 
-                           (map path-element->string 
-                                (explode-path f))))
+                            (not (eq? 'relative base)))
+                   [m (in-value
+                       (apply ~a
+                              #:separator "/" 
+                              (map path-element->string 
+                                   (explode-path f))))]
+                   #:when (module-path? `(lib ,m)))
           ;; normalize the path:
           (collapse-module-path `(lib ,m) dummy)))))
 
