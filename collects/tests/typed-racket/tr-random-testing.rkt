@@ -216,6 +216,7 @@
 (define tr-eval     (mk-eval 'typed/racket))
 
 (define (check-all-reals sexp)
+  (when verbose? (displayln sexp))
   (or (with-handlers
           ;; something went wrong, almost certainly typechecking failed
           ;; in which case we ignore the expression
@@ -248,9 +249,16 @@
                           (equal? racket-result tr-result))))))))
 
 (define n-attempts 1000)
+(define seed       (+ 1 (random (expt 2 30))))
+(define verbose?   #f)
 (command-line
  #:once-each
- [("-n") n "Number of attempts" (set! n-attempts (string->number n))])
+ [("-n") n "Number of attempts" (set! n-attempts (string->number n))]
+ [("-s") s "RNG seed"           (set! seed (string->number s))]
+ [("-v")   "Print test cases"   (set! verbose? #t)])
+
+(random-seed seed)
+(printf "seed: ~s~n" seed)
 
 (call-with-limits
  #f 1000
@@ -259,4 +267,4 @@
                 #:attempts n-attempts
                 #:prepare exp->real-exp)))
 
-;(printf "bad tests (usually typechecking failed): ~v~n" num-exceptions)
+(printf "bad tests (usually typechecking failed): ~v~n" num-exceptions)
