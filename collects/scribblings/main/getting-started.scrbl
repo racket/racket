@@ -4,7 +4,7 @@
 @title{Getting Started with Racket}
 
 To get started with Racket,
-@link["http://www.racket-lang.org/download/"]{download it} from the web page and
+@link["http://racket-lang.org/download/"]{download it} from the web page and
 install it. If you are a beginner or would like to use a graphical environment
 to run programs, run the @exec{DrRacket} executable. Otherwise, the @exec{racket}
 executable will run a command-line Read-Eval-Print-Loop

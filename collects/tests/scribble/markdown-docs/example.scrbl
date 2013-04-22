@@ -26,7 +26,7 @@ Here is an itemize:
 
 Here is a hyperlink:
 
-@hyperlink["http://www.racket-lang.org/" "I am a hyperlink to Racket."]
+@hyperlink["http://racket-lang.org/" "I am a hyperlink to Racket."]
 
 @italic{Italic}.
 _Just underlines_.

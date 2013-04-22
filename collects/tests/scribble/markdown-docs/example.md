@@ -18,7 +18,7 @@ Here is an itemize:
 
 Here is a hyperlink:
 
-[I am a hyperlink to Racket.](http://www.racket-lang.org/)
+[I am a hyperlink to Racket.](http://racket-lang.org/)
 
 _Italic_. \_Just underlines\_.
 

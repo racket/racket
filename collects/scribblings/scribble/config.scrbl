@@ -140,13 +140,13 @@ attributes.} For example, this Scribble document:
     (style #f
            (list (alt-tag "img")
                  (attributes
-                  '((src . "http://www.racket-lang.org/icon.png")))))))
+                  '((src . "http://racket-lang.org/icon.png")))))))
 
 @external-image
 }|
 
 renders as the the Racket logo at the url
-@url{http://www.racket-lang.org/logo.png}
+@url{http://racket-lang.org/logo.png}
 when producing html.
 
 @; ------------------------------------------------------------
