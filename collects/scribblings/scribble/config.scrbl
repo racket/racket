@@ -92,10 +92,10 @@ For example, a Scribble document
            scribble/html-properties
            scribble/latex-properties)
 
- (define inbox-style
-   (make-style "InBox"
-               (list (make-css-addition "inbox.css")
-                     (make-tex-addition "inbox.tex"))))
+ @(define inbox-style
+    (make-style "InBox"
+                (list (make-css-addition "inbox.css")
+                      (make-tex-addition "inbox.tex"))))
 
  @title{Quantum Pet}
 
@@ -124,6 +124,30 @@ generates
 
  Do not open: @elem[#:style "InBox"]{Cat}
 }
+
+@index["HTML Tags and Attributes"]{
+Scribble documents can also embed specific html tags and
+attributes.} For example, this Scribble document:
+@codeblock|{
+#lang scribble/base
+
+@(require scribble/core
+          scribble/html-properties)
+
+@(define external-image 
+   (elem
+    #:style
+    (style #f
+           (list (alt-tag "img")
+                 (attributes
+                  '((src . "http://www.racket-lang.org/icon.png")))))))
+
+@external-image
+}|
+
+renders as the the Racket logo at the url
+@url{http://www.racket-lang.org/logo.png}
+when producing html.
 
 @; ------------------------------------------------------------
 
