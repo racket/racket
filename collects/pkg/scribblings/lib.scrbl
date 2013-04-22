@@ -146,10 +146,13 @@ The package lock must be held (allowing writes if @racket[set?] is true); see
 
 
 @defproc[(pkg-create [format (or/c 'zip 'tgz 'plt 'MANIFEST)]
-                     [dir path-string?])
+                     [dir path-string?]
+                     [#:quiet? quiet? boolean? #f])
         void?]{
 
-Implements the @racket[create] command.}
+Implements the @racket[create] command.
+
+Unless @racket[quiet?] is true, information about the output is repotred to the current output port.}
 
 
 @defproc[(pkg-install      [names (listof string?)]
@@ -157,13 +160,19 @@ Implements the @racket[create] command.}
                                            (or/c #f 'fail 'force 'search-ask 'search-auto)
                                            #f]
                            [#:force? force? boolean? #f]
-                           [#:ignore-checksums? ignore-checksums? boolean? #f])
+                           [#:ignore-checksums? ignore-checksums? boolean? #f]
+                           [#:quiet? boolean? quiet? #f])
          (or/c #f (listof (or/c path-string?
                                 (non-empty-listof path-string?))))]{
 
 Implements the @racket[install] command. The result indicates which
 collections should be setup via @exec{raco setup}: @racket[#f] means
 all, and a list means only the indicated collections.
+
+Status information and debugging details are mostly reported to a logger
+named @racket['pkg], but information that is especially relevant to a
+user (such as a download action) is reported to the current output
+port, unless @racket[quiet?] is true.
 
 The package lock must be held; see @racket[with-pkg-lock].}
 
@@ -173,7 +182,8 @@ The package lock must be held; see @racket[with-pkg-lock].}
                                           (or/c #f 'fail 'force 'search-ask 'search-auto)
                                           #f]
                           [#:all? all? boolean? #f]
-                          [#:deps? deps? boolean? #f])
+                          [#:deps? deps? boolean? #f]
+                          [#:quiet? boolean? quiet? #f])
         (or/c #f (listof (or/c path-string?
                                (non-empty-listof path-string?))))]{
 
@@ -185,7 +195,8 @@ The package lock must be held; see @racket[with-pkg-lock].}
 
 @defproc[(pkg-remove      [names (listof string?)]
                           [#:auto? auto? boolean? #f]
-                          [#:force? force? boolean? #f])
+                          [#:force? force? boolean? #f]
+                          [#:quiet? boolean? quiet? #f])
          (or/c #f (listof (or/c path-string? 
                                 (non-empty-listof path-string?))))]{
 

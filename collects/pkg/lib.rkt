@@ -96,7 +96,6 @@
           (unless fail-okay?
             (raise x)))])
     (make-parent-directory* file)
-    (printf "Downloading ~a\n" (url->string url))
     (log-pkg-debug "\t\tDownloading ~a to ~a" (url->string url) file)
     (call-with-output-file file
       (λ (op)
@@ -523,8 +522,9 @@
                    k)]
              [else #f]))])))))
 
-(define (remove-package pkg-name)
-  (printf "Removing ~a\n" pkg-name)
+(define ((remove-package quiet?) pkg-name)
+  (unless quiet?
+    (printf "Removing ~a\n" pkg-name))
   (match-define (pkg-info orig-pkg checksum _)
                 (package-info pkg-name))
   (define pkg-dir (pkg-directory* pkg-name))
@@ -546,7 +546,8 @@
 
 (define (pkg-remove in-pkgs
                     #:force? [force? #f]
-                    #:auto? [auto? #f])
+                    #:auto? [auto? #f]
+                    #:quiet? [quiet? #f])
   (define db (read-pkg-db))
   (define all-pkgs
     (hash-keys db))
@@ -593,7 +594,7 @@
                                 remaining-pkg-db-set)))
                      (~a p " (required by: " ds ")"))
                    (set->list deps-to-be-removed))))))
-  (for-each remove-package pkgs)
+  (for-each (remove-package quiet?) pkgs)
   ;; setup only collections that still exist:
   (and setup-collects
        (for/list ([c (in-list setup-collects)]
@@ -608,7 +609,8 @@
                             given-type
                             given-pkg-name
                             #:given-checksum [given-checksum #f]
-                            check-sums?)
+                            check-sums?
+                            download-printf)
   (define-values (inferred-pkg-name type) 
     (if (path? pkg)
         (package-source->name+type (path->string pkg)
@@ -628,7 +630,7 @@
     ;; Add "github://github.com/"
     (stage-package/info (string-append "github://github.com/" pkg) type 
                         pkg-name #:given-checksum given-checksum
-                        check-sums?)]
+                        check-sums? download-printf)]
    [(or (eq? type 'file-url) (eq? type 'dir-url) (eq? type 'github))
     (define pkg-url (string->url pkg))
     (define scheme (url-scheme pkg-url))
@@ -673,6 +675,7 @@
           (dynamic-wind
               void
               (λ ()
+                 (download-printf "Downloading ~a\n" (url->string new-url))
                  (download-file! new-url tmp.tgz)
                  (dynamic-wind
                      void
@@ -681,7 +684,8 @@
                         (stage-package/info (path->string package-path)
                                             'dir
                                             pkg-name
-                                            check-sums?))
+                                            check-sums?
+                                            download-printf))
                      (λ ()
                         (delete-directory/files tmp-dir))))
               (λ ()
@@ -716,7 +720,8 @@
               (values package-path
                       'dir
                       (λ ()
-                         (printf "\tCloning remote directory\n")
+                         (download-printf "\tCloning remote directory ~a\n"
+                                          (url->string pkg-url))
                          (make-directory* package-path)
                          (define manifest
                            (call/input-url+200
@@ -751,7 +756,8 @@
                  (stage-package/info package-path
                                      download-type
                                      pkg-name
-                                     check-sums?))
+                                     check-sums?
+                                     download-printf))
               (λ ()
                  (when (or (file-exists? package-path)
                            (directory-exists? package-path))
@@ -829,7 +835,8 @@
              (stage-package/info pkg-dir
                                  'dir
                                  pkg-name
-                                 check-sums?)
+                                 check-sums?
+                                 download-printf)
              `(file ,(simple-form-path* pkg)))
             checksum))
         (λ ()
@@ -863,7 +870,8 @@
                                      #f
                                      pkg-name
                                      #:given-checksum checksum
-                                     check-sums?))
+                                     check-sums?
+                                     download-printf))
     (when (and (install-info-checksum info)
                check-sums?
                (not (equal? (install-info-checksum info) checksum)))
@@ -882,7 +890,8 @@
                                 (pkg-desc-type desc)
                                 (pkg-desc-name desc)
                                 #:given-checksum checksum 
-                                #t))
+                                #t
+                                void))
   (values (install-info-directory i)
           (install-info-checksum i)
           (install-info-clean? i)))
@@ -895,6 +904,7 @@
          #:updating? [updating? #f]
          #:ignore-checksums? [ignore-checksums? #f]
          #:force? [force? #f]
+         #:quiet? [quiet? #f]
          descs)
   (define check-sums? (not ignore-checksums?))
   (define db (read-pkg-db))
@@ -1107,7 +1117,7 @@
             (define update-pkgs (map car update-deps))
             (define (make-pre-succeed)
               (let ([to-update (filter-map update-package update-pkgs)])
-                (λ () (for-each (compose remove-package pkg-desc-name) to-update))))
+                (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))))
             (match (or dep-behavior
                        (if name?
                            'search-ask
@@ -1161,7 +1171,8 @@
   (define metadata-ns (make-metadata-namespace))
   (define infos
     (for/list ([v (in-list descs)])
-      (stage-package/info (pkg-desc-source v) (pkg-desc-type v) (pkg-desc-name v) check-sums?)))
+      (stage-package/info (pkg-desc-source v) (pkg-desc-type v) (pkg-desc-name v) 
+                          check-sums? (if quiet? void printf))))
   (define setup-collects (get-setup-collects (map install-info-directory
                                                   (append old-infos infos))
                                              metadata-ns))
@@ -1198,7 +1209,8 @@
                      #:ignore-checksums? [ignore-checksums #f]
                      #:pre-succeed [pre-succeed void]
                      #:dep-behavior [dep-behavior #f]
-                     #:updating? [updating? #f])
+                     #:updating? [updating? #f]
+                     #:quiet? [quiet? #f])
   (with-handlers* ([vector?
                     (match-lambda
                      [(vector updating? new-infos deps more-pre-succeed)
@@ -1220,6 +1232,7 @@
      #:dep-behavior dep-behavior
      #:pre-succeed pre-succeed
      #:updating? updating?
+     #:quiet? quiet?
      descs)))
 
 (define (update-is-possible? pkg-name)
@@ -1265,7 +1278,8 @@
 (define (pkg-update in-pkgs
                     #:all? [all? #f]
                     #:dep-behavior [dep-behavior #f]
-                    #:deps? [deps? #f])
+                    #:deps? [deps? #f]
+                    #:quiet? [quiet? #f])
   (define metadata-ns (make-metadata-namespace))
   (define pkgs
     (cond
@@ -1286,8 +1300,9 @@
      (printf "Updating: ~a\n" to-update)
      (pkg-install
       #:updating? #t
-      #:pre-succeed (λ () (for-each (compose remove-package pkg-desc-name) to-update))
+      #:pre-succeed (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))
       #:dep-behavior dep-behavior
+      #:quiet? quiet?
       to-update)]))
 
 (define (pkg-show indent #:directory? [dir? #f])
@@ -1371,15 +1386,17 @@
        [_
         (pkg-error "multiple config keys provided")])]))
 
-(define (pkg-create create:format maybe-dir)
+(define (pkg-create create:format maybe-dir
+                    #:quiet? [quiet? #f])
   (begin
     (define dir (regexp-replace* #rx"/$" maybe-dir ""))
     (unless (directory-exists? dir)
       (pkg-error "directory does not exist\n  path: ~a" dir))
     (match create:format
       ['MANIFEST
-       (printf "creating manifest for ~a\n"
-               dir)
+       (unless quiet?
+         (printf "creating manifest for ~a\n"
+                 dir))
        (with-output-to-file
            (build-path dir "MANIFEST")
          #:exists 'replace
@@ -1390,8 +1407,9 @@
              (newline))))]
       [else      
        (define pkg (format "~a.~a" dir create:format))
-       (printf "packing ~a into ~a\n"
-               dir pkg)
+       (unless quiet?
+         (printf "packing ~a into ~a\n"
+                 dir pkg))
        (define pkg-name
          (regexp-replace
           (regexp (format "~a$" (regexp-quote (format ".~a" create:format))))
@@ -1431,8 +1449,9 @@
          [x
           (pkg-error "invalid package format\n  format: ~a" x)])
        (define chk (format "~a.CHECKSUM" pkg))
-       (printf "writing package checksum to ~a\n"
-               chk)
+       (unless quiet?
+         (printf "writing package checksum to ~a\n"
+                 chk))
        (with-output-to-file chk
          #:exists 'replace
          (λ () (display (call-with-input-file pkg sha1))))])))
@@ -1742,18 +1761,22 @@
    (-> boolean? list?
        void?)]
   [pkg-create
-   (-> (or/c 'zip 'tgz 'plt 'MANIFEST) path-string?
-       void?)]
+   (->* ((or/c 'zip 'tgz 'plt 'MANIFEST)
+         path-string?)
+        (#:quiet? boolean?)
+        void?)]
   [pkg-update
    (->* ((listof string?))
         (#:dep-behavior dep-behavior/c
                         #:all? boolean?
-                        #:deps? boolean?)
+                        #:deps? boolean?
+                        #:quiet? boolean?)
         (or/c #f (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-remove
    (->* ((listof string?))
         (#:auto? boolean?
-                 #:force? boolean?)
+                 #:force? boolean?
+                 #:quiet? boolean?)
         (or/c #f (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-show
    (->* (string?)
@@ -1763,7 +1786,8 @@
    (->* ((listof pkg-desc?))
         (#:dep-behavior dep-behavior/c
                         #:force? boolean?
-                        #:ignore-checksums? boolean?)
+                        #:ignore-checksums? boolean?
+                        #:quiet? boolean?)
         (or/c #f (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-index-show
    (->* ((listof string?))
