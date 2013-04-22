@@ -73,21 +73,21 @@
   (define conn
     (new-connection config:initial-connection-timeout
                     ip op (current-custodian) #f))
-  (let connection-loop ()
-    ;; HTTP/1.1 allows any number of requests to come from this input
-    ;; port. However, there is no explicit cancellation of a
-    ;; connection---the browser will just close the port. This leaves
-    ;; the Web server in the unfortunate state of config:read-request
-    ;; trying to read an HTTP and failing---with an ugly error
-    ;; message. This call to peek here will block until at least one
-    ;; character is available and then transfer to read-request. At
-    ;; that point, an error message would be reasonable because the
-    ;; request would be badly formatted or ended early. However, if
-    ;; the connection is closed, then peek will get the EOF and the
-    ;; connection will be closed. This shouldn't change any other
-    ;; behavior: read-request is already blocking, peeking doesn't
-    ;; consume a byte, etc.
-    (sync
+  ;; HTTP/1.1 allows any number of requests to come from this input
+  ;; port. However, there is no explicit cancellation of a
+  ;; connection---the browser will just close the port. This leaves
+  ;; the Web server in the unfortunate state of config:read-request
+  ;; trying to read an HTTP and failing---with an ugly error
+  ;; message. This call to peek here will block until at least one
+  ;; character is available and then transfer to read-request. At
+  ;; that point, an error message would be reasonable because the
+  ;; request would be badly formatted or ended early. However, if
+  ;; the connection is closed, then peek will get the EOF and the
+  ;; connection will be closed. This shouldn't change any other
+  ;; behavior: read-request is already blocking, peeking doesn't
+  ;; consume a byte, etc.
+  (define the-evt
+    (choice-evt
      (handle-evt
       (port-closed-evt ip)
       (λ (res)
@@ -106,4 +106,8 @@
            (config:dispatch conn req)
            (if (connection-close? conn)
              (kill-connection! conn)
-             (connection-loop))]))))))
+             (connection-loop))])))))
+  (define (connection-loop)
+    (dump-memory-stats)
+    (sync the-evt))
+  (connection-loop))
