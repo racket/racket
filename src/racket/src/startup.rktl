@@ -1073,13 +1073,21 @@
          [(s relto stx load?)
           ;; If stx is not #f, raise syntax error for ill-formed paths
           (unless (module-path? s)
-            (if stx
+            (if (syntax? stx)
                 (raise-syntax-error #f
                                     "bad module path"
                                     stx)
                 (raise-argument-error 'standard-module-name-resolver
                                       "module-path?"
                                       s)))
+          (unless (or (not relto) (resolved-module-path? relto))
+            (raise-argument-error 'standard-module-name-resolver
+                                  "(or/c #f resolved-module-path?)"
+                                  relto))
+          (unless (or (not stx) (syntax? stx))
+            (raise-argument-error 'standard-module-name-resolver
+                                  "(or/c #f syntax?)"
+                                  stx))
           (define (flatten-sub-path base orig-l)
             (let loop ([a null] [l orig-l])
               (cond

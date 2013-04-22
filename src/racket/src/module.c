@@ -3912,6 +3912,9 @@ static Scheme_Object *_module_resolve(Scheme_Object *modidx, Scheme_Object *stx,
     if (SCHEME_SYMBOLP(base))
       base = scheme_false;
 
+    if (stx && !SCHEME_FALSEP(stx) && !SCHEME_STXP(stx))
+      stx = NULL;
+
     a[0] = ((Scheme_Modidx *)modidx)->path;
     a[1] = base;
     a[2] = (stx ? stx : scheme_false);
