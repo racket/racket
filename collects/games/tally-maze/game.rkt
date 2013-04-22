@@ -13,7 +13,7 @@
 
 (provide game@)
 
-(define-runtime-path bmps "bmps")
+(define-runtime-path bmps "images")
 (define big-pumpkin (read-bitmap (build-path bmps "pumpkin" "pumpkin-64x64.png")))
 (define two-pumpkins (make-bitmap (send big-pumpkin get-width) (send big-pumpkin get-height)))
 (let ([small-pumpkin (read-bitmap (build-path bmps "pumpkin" "pumpkin-48x48.png"))]
@@ -116,14 +116,10 @@
                          (length args))))
 
 (define players (make-hash))
-(for ([file (in-directory (build-path bmps "very-emotional"))])
-  (when (regexp-match #rx"png$" (path->string file))
-    (define name (path->string (last (explode-path file))))
-    (define m-num (regexp-match #rx"[(]([0-9]+)[)]" name))
-    (define num (if m-num
-                    (string->number (list-ref m-num 1))
-                    0))
-    (hash-set! players num (read-bitmap file))))
+(for ([file (directory-list (build-path bmps "very-emotional") #:build? #t)])
+  (define m (regexp-match #rx"([0-9]+)[.]png$" file))
+  (when m
+    (hash-set! players (string->number (cadr m)) (read-bitmap file))))
 
 (define (move dx dy)
   (unless (game-over?)
