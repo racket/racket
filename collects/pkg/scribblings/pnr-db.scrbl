@@ -1,7 +1,8 @@
 #lang scribble/manual
 @(require (for-label racket/base
                      racket/contract/base
-                     pkg/pnr-db))
+                     pkg/pnr-db
+                     syntax/modcollapse))
 
 @title[#:tag "pnr-db"]{Package Name Database}
 
@@ -128,7 +129,16 @@ Gets or sets a list of tags for the package
 
 Gets or sets a list of module paths that are provided for the package
 @racket[name] as recognized by the @tech{package name resolver}
-@racket[index] and for a specific @tech{checksum}.}
+@racket[index] and for a specific @tech{checksum}. The module paths
+should be normalized in the sense of @racket[collapse-module-path].}
+
+
+@defproc[(get-module-pkgs [module-path module-path?])
+         (listof pkg?)]{
+
+Reports a list of packages that implement the given
+@racket[module-path], which should be normalized in the sense of
+@racket[collapse-module-path].}
 
 
 @defproc[(get-pkgs-without-modules [#:index index (or/c #f string?) #f])

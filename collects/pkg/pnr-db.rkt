@@ -39,7 +39,7 @@
   [set-pkg-tags! (string? string? (listof string?)
                           . -> . void?)]
 
-  [get-module-pkgs (module-path? . -> . pkg?)]
+  [get-module-pkgs (module-path? . -> . (listof pkg?))]
 
   [get-pkgs-without-modules (()
                              (#:index string?)
