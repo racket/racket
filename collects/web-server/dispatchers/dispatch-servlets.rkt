@@ -56,7 +56,6 @@
           #:responders-servlet-loading [responders-servlet-loading servlet-loading-responder]
           #:responders-servlet [responders-servlet servlet-error-responder])
   (lambda (conn req)
-    (define uri (request-uri req))    
     (define instance-custodian (make-servlet-custodian))      
     (parameterize ([current-custodian instance-custodian]
                    [current-execution-context (make-execution-context req)]
@@ -64,13 +63,21 @@
                     (lambda (r)
                       (kill-connection! conn)
                       (custodian-shutdown-all instance-custodian))])
+      (define uri (request-uri req))
       (define maybe-response
         (with-handlers ([exn:fail:filesystem:exists?
                          (lambda (the-exn) (next-dispatcher))]
                         [exn:dispatcher? raise]
                         [(lambda (x) #t)
-                         (lambda (the-exn) (responders-servlet-loading uri the-exn))])
+                         (lambda (the-exn) 
+                           (responders-servlet-loading uri the-exn))])
+          ;; This could cause the servlet to be initialized, so we
+          ;; need to make sure that if it errors, the right kind of
+          ;; error will happen.
           (define the-servlet (url->servlet uri))
+          ;; If it didn't cause initialization, then we need to switch
+          ;; to the custodian that it started with, among other
+          ;; things, including throwing a different kind of error
           (parameterize ([current-servlet the-servlet]
                          [current-custodian (servlet-custodian the-servlet)]
                          [current-directory (servlet-directory the-servlet)]

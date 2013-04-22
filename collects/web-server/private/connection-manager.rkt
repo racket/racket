@@ -29,7 +29,8 @@
 (define (new-connection time-to-live i-port o-port cust close?)
   (define conn
     (make-connection
-     (begin0 (unbox i) (set-box! i (add1 (unbox i))))
+     ;; The id is just for debugging and isn't normally useful
+     0 ;; (begin0 (unbox i) (set-box! i (add1 (unbox i))))
      #f i-port o-port cust close?))
   (define conn-wb (make-weak-box conn))
   (set-connection-timer! 

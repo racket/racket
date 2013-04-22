@@ -3,6 +3,7 @@
          racket/async-channel
          racket/port
          mzlib/thread)
+(require racket/format)
 (require "web-server-structs.rkt"
          "connection-manager.rkt"
          "dispatch-server-sig.rkt")
