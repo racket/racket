@@ -2630,6 +2630,10 @@ static void thread_is_dead(Scheme_Thread *r)
     o = SCHEME_PTR_VAL(r->dead_box);
     scheme_post_sema_all(o);
   }
+  if (r->sync_box) {
+    scheme_post_sema_all(r->sync_box);
+    r->sync_box = NULL;
+  }
   if (r->running_box) {
     SCHEME_PTR_VAL(r->running_box) = NULL;
     r->running_box = NULL;
@@ -5854,6 +5858,23 @@ static int dead_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
   return 0;
 }
 
+Scheme_Object *scheme_get_thread_sync(Scheme_Thread *p)
+{
+  if (!p->sync_box) {
+    Scheme_Object *sema;
+    sema = scheme_make_sema(0);
+    p->sync_box = sema;
+  }
+  
+  return p->sync_box;
+}
+
+void scheme_clear_thread_sync(Scheme_Thread *p)
+{
+  if (p->sync_box)
+    p->sync_box = NULL;
+}
+
 /*========================================================================*/
 /*                              syncing                                   */
 /*========================================================================*/
@@ -6483,6 +6504,9 @@ void scheme_post_syncing_nacks(Syncing *syncing)
   int i, c;
   Scheme_Object *l;
 
+  if (syncing->thread && syncing->thread->sync_box)
+    syncing->thread->sync_box = NULL;
+
   if (syncing->set) {
     c = syncing->set->argc;
     
@@ -6504,19 +6528,21 @@ void scheme_post_syncing_nacks(Syncing *syncing)
   }
 }
 
-static void escape_during_sync(Syncing *syncing) {
-#ifdef MZ_PRECISE_GC
+static void escape_during_sync(Syncing *syncing)
+{
   Scheme_Thread *p = syncing->thread;
-#endif
 
-scheme_post_syncing_nacks(syncing);
+  syncing->thread = NULL;
+
+  if (p->sync_box)
+    scheme_post_sema_all(p->sync_box);
+  scheme_post_syncing_nacks(syncing);
 
 #ifdef MZ_PRECISE_GC
   if (p && p->place_channel_msg_in_flight) {
     GC_destroy_orphan_msg_memory(p->place_channel_msg_in_flight);
     p->place_channel_msg_in_flight = NULL;
   }
-  syncing->thread = NULL;
 #endif
 }
 

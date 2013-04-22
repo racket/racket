@@ -478,6 +478,20 @@
     (test 10 channel-get ch)
     (test (void) sync/timeout 0 n)))
 	       
+(let ()
+  (define ok? 'not-ready)
+  (thread-wait
+   (thread
+    (lambda ()
+      (sync (nack-guard-evt 
+             (lambda (nack)
+               (thread (lambda () 
+                         (sync nack) 
+                         (set! ok? #f)))
+               (sync (system-idle-evt))
+               always-evt))))))
+  (sync (system-idle-evt))
+  (test 'not-ready values ok?))
 
 ;; ----------------------------------------
 ;; Poll waitables

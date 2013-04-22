@@ -1116,6 +1116,7 @@ typedef struct Scheme_Thread {
   Scheme_Object *resumed_box;   /* contains pointer to thread when it's resumed */
   Scheme_Object *dead_box;      /* contains non-zero when the thread is dead */
   Scheme_Object *running_box;   /* contains pointer to thread when it's running */
+  Scheme_Object *sync_box;      /* semaphore used for NACK events */
 
   struct Scheme_Thread *gc_prep_chain;
 

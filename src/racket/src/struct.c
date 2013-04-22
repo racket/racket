@@ -3601,7 +3601,7 @@ static int nack_guard_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo
   nack = scheme_alloc_object();
   nack->type = scheme_nack_evt_type;
   SCHEME_PTR1_VAL(nack) = sema;
-  result = scheme_get_thread_dead(scheme_current_thread);
+  result = scheme_get_thread_sync(scheme_current_thread);
   SCHEME_PTR2_VAL(nack) = result;
 
   a[0] = nack;

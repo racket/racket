@@ -1872,6 +1872,7 @@ static int thread_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(pr->resumed_box, gc);
   gcMARK2(pr->dead_box, gc);
   gcMARK2(pr->running_box, gc);
+  gcMARK2(pr->sync_box, gc);
 
   gcMARK2(pr->mbox_first, gc);
   gcMARK2(pr->mbox_last, gc);
@@ -1986,6 +1987,7 @@ static int thread_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(pr->resumed_box, gc);
   gcFIXUP2(pr->dead_box, gc);
   gcFIXUP2(pr->running_box, gc);
+  gcFIXUP2(pr->sync_box, gc);
 
   gcFIXUP2(pr->mbox_first, gc);
   gcFIXUP2(pr->mbox_last, gc);

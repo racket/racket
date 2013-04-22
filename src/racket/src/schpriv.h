@@ -636,6 +636,8 @@ void *scheme_win32_get_break_semaphore(void *th);
 
 Scheme_Object *scheme_get_thread_dead(Scheme_Thread *p);
 Scheme_Object *scheme_get_thread_suspend(Scheme_Thread *p);
+Scheme_Object *scheme_get_thread_sync(Scheme_Thread *p);
+void scheme_clear_thread_sync(Scheme_Thread *p);
 
 void scheme_zero_unneeded_rands(Scheme_Thread *p);
 
