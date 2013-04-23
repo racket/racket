@@ -87,22 +87,6 @@
              (place-channel-put saved-ch 'done)
              (set! saved-ch #f)])))
       void))
-(define lock-ch #f)
-(define lock-ch-in #f)
-(define (init-lock-ch!)
-  (unless lock-ch
-    ;; If places are not available, then tasks will be run
-    ;; in separate OS processes, and we can do without an
-    ;; extra lock.
-    (when (place-enabled?)
-      (set!-values (lock-ch lock-ch-in) (place-channel))
-      (thread (lambda ()
-                (define-values (ch ch-in) (place-channel))
-                (let loop ()
-                  (place-channel-put lock-ch-in ch)
-                  (place-channel-get ch-in)
-                  (place-channel-get ch-in)
-                  (loop)))))))
 (define (call-with-lock lock thunk)
   (lock 'lock)
   (dynamic-wind
@@ -222,6 +206,25 @@
   (define auto-main? (and auto-start-doc? (ormap can-build*? main-docs)))
   (define auto-user? (and auto-start-doc? (ormap can-build*? user-docs)))
   (define force-out-of-date? (not (file-exists? (find-doc-db-path latex-dest #f))))
+
+
+  (define lock-ch #f)
+  (define lock-ch-in #f)
+  (define (init-lock-ch!)
+    (unless lock-ch
+      ;; If places are not available, then tasks will be run
+      ;; in separate OS processes, and we can do without an
+      ;; extra lock.
+      (when (place-enabled?)
+        (set!-values (lock-ch lock-ch-in) (place-channel))
+        (thread (lambda ()
+                  (define-values (ch ch-in) (place-channel))
+                  (let loop ()
+                    (place-channel-put lock-ch-in ch)
+                    (place-channel-get ch-in)
+                    (place-channel-get ch-in)
+                    (loop)))))))
+
   (log-setup-info "getting document information")
   (define infos
     (and (ormap can-build*? docs)
