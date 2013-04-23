@@ -416,7 +416,8 @@ Pending expunges must be handled before calling this function; see
 
 @defproc[(imap-append [imap imap-connection?]
                       [mailbox string?]
-                      [message (or/c string? bytes?)])
+                      [message (or/c string? bytes?)]
+                      [flags (listof (or/c 'seen 'answered 'flagged 'deleted 'draft 'recent)) '(seen)])
          void?]{
 
 Adds a new message (containing @racket[message]) to the given
