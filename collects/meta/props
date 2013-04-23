@@ -859,6 +859,8 @@ path/s is either such a string or a list of them.
 "collects/parser-tools/private-lex/error-tests.rkt" drdr:command-line #f
 "collects/picturing-programs" responsible (sbloch)
 "collects/pkg" responsible (jay)
+"collects/pkg/gui" responsible (mflatt)
+"collects/pkg/gui/main.rkt" drdr:command-line (mzc *)
 "collects/plai" responsible (jay)
 "collects/planet" responsible (robby)
 "collects/plot" responsible (ntoronto)

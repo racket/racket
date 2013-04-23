@@ -1773,6 +1773,9 @@ please adhere to these guidelines:
   (spell-program-wrote-to-stderr-on-startup "The spell program (~a) printed an error message:")
   
   ;; GUI for installing a pkg package; available via File|Install Package...
+  (install-pkg-install-by-source "Install by Source") ; tab label
+  (install-pkg-install-from-list "Install from List") ; tab label
+  (install-pkg-install-installed "Installed")         ; tab label
   (install-pkg-menu-item... "Install Package...")
   (install-pkg-dialog-title "Install Package")
   (install-pkg-source-label "Package Source")
@@ -1786,10 +1789,35 @@ please adhere to these guidelines:
   (install-pkg-name "Name (consulting resolver)")
   (install-pkg-inferred-as "Type inferred to be ~a")
   (install-pkg-force? "Overwrite Existing?")
-  (install-pkg-command-line "Equivalent Command Line Invocation:")
+  (install-pkg-command-line "Equivalent command line invocation:")
   (install-pkg-error-installing-title "Error Installing Package")
   (install-pkg-action-label "Action to Take")
   (install-pkg-install "Install")
   (install-pkg-update "Update")
-  (install-pkg-action-inferred-to-be-update "Action Inferred to be Update")
-  (install-pkg-action-inferred-to-be-install "Action Inferred to be Install"))
+  (install-pkg-remove "Remove")
+  (install-pkg-action-inferred-to-be-update "Action inferred to be Update")
+  (install-pkg-action-inferred-to-be-install "Action inferred to be Install")
+  (install-pkg-default "Default")
+  (install-pkg-scope-label "Package Scope")
+  (install-pkg-installation "Specific Racket Installation")
+  (install-pkg-user "Specific User and Racket Version")
+  (install-pkg-shared "Specific User and All Racket Versions")
+  (install-pkg-set-as-default "Set as Default")
+  (install-pkg-scope-is "Package scope is ~a") ; ~a gets install-pkg-{installation,user,shared}
+  (install-pkg-select-package-directory "Select Package Directory")
+  (install-pkg-select-package-file "Select Package File")
+  (install-pkg-update-package-list "Update Package List")
+  (install-pkg-stop-update "Stop Update")
+  (install-pkg-filter "Filter")
+  (install-pkg-update-catalogs? "Update database to match the configured set of catalogs?")
+  (install-pkg-currently-configured-are "The currently configured catalogs are")
+  (install-pkg-database-recorded-are "The database-recorded catalogs are")
+  (install-pkg-update-catalogs "Update")
+  (install-pkg-do-not-update-catalogs "Don't Update")
+  (install-pkg-really-remove? "Are you sure you want to remove the following selected packages?")
+  (install-pkg-abort-install "Abort Install")
+  (install-pkg-abort-update "Abort Update")
+  (install-pkg-abort-remove "Abort Remove")
+  (install-pkg-abort-generic-action "Abort Action")
+  
+  )
