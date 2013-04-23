@@ -750,20 +750,17 @@
 (define-syntax (add-method stx)
   (syntax-case stx ()
     [(_ whole-stx cls superclass-id m)
-     (let ([stx #'whole-stx])
-       (syntax-case #'m ()
-         [(kind result-type (id arg ...) body0 body ...)
+     (let loop ([stx #'whole-stx] [m #'m])
+       (syntax-case m ()
+         [(kind #:async-apply async result-type (id arg ...) body0 body ...)
           (or (free-identifier=? #'kind #'+)
               (free-identifier=? #'kind #'-)
               (free-identifier=? #'kind #'+a)
-              (free-identifier=? #'kind #'-a)
-              (free-identifier=? #'kind #'+A)
-              (free-identifier=? #'kind #'-A))
+              (free-identifier=? #'kind #'-a))
           (let ([id #'id]
                 [args (syntax->list #'(arg ...))]
                 [in-class? (or (free-identifier=? #'kind #'+)
-                               (free-identifier=? #'kind #'+a)
-                               (free-identifier=? #'kind #'+A))])
+                               (free-identifier=? #'kind #'+a))])
             (when (null? args)
               (unless (identifier? id)
                 (raise-syntax-error #f
@@ -789,35 +786,37 @@
                                          (super-tell #:type _void dealloc)))]
                                    [_ (error "oops")])
                                  '())]
-                            [(async ...)
-                             (if (or (free-identifier=? #'kind #'+A)
-                                     (free-identifier=? #'kind #'-A)
-                                     ;; so that objects can be destroyed in foreign threads:
-                                     (eq? (syntax-e id) 'dealloc))
-                                 #'(#:async-apply apply-directly)
-                                 #'())]
                             [in-cls (if in-class?
                                         #'(object-get-class cls)
                                         #'cls)]
                             [atomic? (or (free-identifier=? #'kind #'+a)
-                                         (free-identifier=? #'kind #'-a)
-                                         (free-identifier=? #'kind #'+A)
-                                         (free-identifier=? #'kind #'-A))])
+                                         (free-identifier=? #'kind #'-a))])
                 (quasisyntax/loc stx
                   (let ([rt result-type]
                         [arg-id arg-type] ...)
                     (void (class_addMethod in-cls
                                            (sel_registerName id-str)
-                                           #,(syntax/loc #'m
+                                           #,(syntax/loc m
                                                (lambda (self-id cmd arg-id ...)
                                                  (syntax-parameterize ([self (make-id-stx #'self-id)]
                                                                        [super-class (make-id-stx #'superclass-id)]
                                                                        [super-tell do-super-tell])
                                                    body0 body ...
                                                    dealloc-body ...)))
-                                           (_fun #:atomic? atomic? #:keep save-method! async ...
+                                           (_fun #:atomic? atomic? 
+                                                 #:keep save-method! 
+                                                 #:async-apply async
                                                  _id _id arg-type ... -> rt)
                                            (generate-layout rt (list arg-id ...)))))))))]
+         [(kind result-type (id arg ...) body0 body ...)
+          (loop stx 
+                (with-syntax ([async
+                               (if (eq? (syntax-e #'id) 'dealloc)
+                                   ;; so that objects can be destroyed in foreign threads:
+                                   #'apply-directly
+                                   #'#f)])
+                  (syntax/loc m 
+                    (kind #:async-apply async result-type (id arg ...) body0 body ...))))]
          [else (raise-syntax-error #f
                                    "bad method form"
                                    stx
