@@ -1,8 +1,9 @@
 #lang racket/base
 
-(require racket/contract/base 
-         racket/tcp 
-         openssl 
+(require racket/contract/base
+         racket/tcp
+         openssl
+         racket/format
          "private/rbtree.rkt")
 
 ;; define the imap struct and its predicate here, for use in the contract, below
@@ -16,7 +17,12 @@
  [imap-list-child-mailboxes
   (->* (imap-connection? (or/c string? bytes? #f))
        ((or/c string? bytes?))
-       (listof (list/c (listof symbol?) bytes?)))])
+       (listof (list/c (listof symbol?) bytes?)))]
+ [imap-append ((imap? string? (or/c string? bytes?))
+               ((listof
+                 (or/c 'seen 'answered 'flagged 'deleted 'draft 'recent)))
+              . ->* .
+              void?)])
 
 (provide
  imap-connection?
@@ -45,7 +51,7 @@
  imap-pending-updates?
 
  imap-get-messages
- imap-copy imap-append
+ imap-copy
  imap-store imap-flag->symbol symbol->imap-flag
  imap-expunge
 
@@ -539,13 +545,13 @@
   (check-ok
    (imap-send imap (list "COPY" (box (msg-set msgs)) dest-mailbox) void)))
 
-(define (imap-append imap dest-mailbox msg)
+(define (imap-append imap dest-mailbox msg [flags '(seen)])
   (no-expunges 'imap-append imap)
   (let ([msg (if (bytes? msg) msg (string->bytes/utf-8 msg))])
     (check-ok
      (imap-send imap (list "APPEND"
                            dest-mailbox
-                           (box "(\\Seen)")
+                           (box (~a (map symbol->imap-flag flags)))
                            (box (format "{~a}" (bytes-length msg))))
                 void
                 (lambda (loop contin)
