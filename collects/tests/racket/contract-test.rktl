@@ -199,20 +199,22 @@
        '(begin ,sexp (void)))))
 
   (define (test-flat-contract contract pass fail)
-    (define (run-three-tests contract)
+    (contract-eval `(,test #t flat-contract? ,contract))
+    (define (run-two-tests maybe-rewrite)
       (let ([name (if (pair? contract)
                       (car contract)
                       contract)])
-        (contract-eval `(,test #t flat-contract? ,contract))
-        (test/spec-failed (format "~a fail" name)
-                          `(contract ,contract ',fail 'pos 'neg)
-                          'pos)
-        (test/spec-passed/result
-         (format "~a pass" name)
-         `(contract ,contract ',pass 'pos 'neg)
-         pass)))
-    (run-three-tests contract)
-    (let/ec k (run-three-tests (rewrite contract k))))
+        (let/ec k
+          (test/spec-failed (format "~a fail" name)
+                            (maybe-rewrite `(contract ,contract ',fail 'pos 'neg) k)
+                            'pos))
+        (let/ec k
+          (test/spec-passed/result
+           (format "~a pass" name)
+           (maybe-rewrite `(contract ,contract ',pass 'pos 'neg) k)
+           pass))))
+    (run-two-tests (λ (x k) x))
+    (run-two-tests rewrite))
 
   (define-syntax (test-name stx)
     (syntax-case stx ()
@@ -1204,6 +1206,10 @@
               (make-keyword-procedure void)
               'pos 'neg))
 
+  (test/pos-blame
+   'contract-arrow-non-function
+   '(contract (-> any/c any) 1 'pos 'neg))
+  
   (test/spec-passed
    'contract-arrow-all-kwds2
    '((contract (-> #:a string? void?)
@@ -11562,27 +11568,25 @@
   ;; evaluates the exp and returns the number of opt/c warnings found
   (contract-eval
    '(define (eval-and-count-log-messages exp)
-      (define my-logger (make-logger))
-      (parameterize ([current-logger my-logger])
-        (define ans (make-channel))
-        (define recv (make-log-receiver my-logger 'warning))
-        (thread
-         (λ ()
-           (let loop ([opt/c-msgs 0])
-             (define res (sync recv))
-             (cond
-               [(equal? "done" (vector-ref res 1))
-                (channel-put ans opt/c-msgs)]
-               [else
-                (define opt/c-msg? (regexp-match? #rx"opt/c" (vector-ref res 1)))
-                (loop (if opt/c-msg?
-                          (+ opt/c-msgs 1)
-                          opt/c-msgs))]))))
-        (let/ec k
-          (parameterize ([error-escape-handler k])
-            (eval exp)))
-        (log-warning "done")
-        (channel-get ans))))
+      (define ans (make-channel))
+      (define recv (make-log-receiver (current-logger) 'warning))
+      (thread
+       (λ ()
+         (let loop ([opt/c-msgs 0])
+           (define res (sync recv))
+           (cond
+             [(equal? "done" (vector-ref res 1))
+              (channel-put ans opt/c-msgs)]
+             [else
+              (define opt/c-msg? (regexp-match? #rx"opt/c" (vector-ref res 1)))
+              (loop (if opt/c-msg?
+                        (+ opt/c-msgs 1)
+                        opt/c-msgs))]))))
+      (let/ec k
+        (parameterize ([error-escape-handler k])
+          (eval exp)))
+      (log-warning "done")
+      (channel-get ans)))
 
   (ctest 1 eval-and-count-log-messages
          '(let ()
@@ -12085,7 +12089,8 @@ so that propagation occurs.
   (test-flat-contract 'natural-number/c #e3 #i3.0)
   (test-flat-contract 'natural-number/c 0 -1)
   (test-flat-contract 'false/c #f #t)
-
+  (test-flat-contract 'contract? #f (λ (x y) 'whatever))
+  
   (test-flat-contract #t #t "x")
   (test-flat-contract #f #f "x")
   (test-flat-contract #\a #\a #\b)
@@ -12184,7 +12189,14 @@ so that propagation occurs.
                       (let ([ht (make-hash)])
                         (hash-set! ht 'x 1)
                         ht))
-
+  
+  (test-flat-contract '(between/c 1 10) 3 11)
+  (test-flat-contract '(between/c 1 10) 4 1+1i)
+  (test-flat-contract '(<=/c 1) 0 1+1i)
+  (test-flat-contract '(</c 1) 0 1+1i)
+  (test-flat-contract '(>/c 1) 4 1+1i)
+  (test-flat-contract '(>=/c 1) 4 1+1i)
+  
   (test #t 'malformed-binder
         (with-handlers ((exn? exn:fail:syntax?))
           (contract-eval '(flat-murec-contract ([(x) y]) x))

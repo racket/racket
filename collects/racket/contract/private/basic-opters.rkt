@@ -29,6 +29,7 @@
 ;;
 (define/opter (false/c opt/i opt/info stx) (opt/pred opt/info #'not #:name '#f))
 (define/opter (not opt/i opt/info stx) (opt/pred opt/info #'not))
+(define/opter (contract? opt/i opt/info stx) (opt/pred opt/info #'contract?))
 
 ;;
 ;; flat-contract helper

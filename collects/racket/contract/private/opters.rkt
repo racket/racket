@@ -162,14 +162,14 @@
                          (that (opt/info-that opt/info)))
              (build-optres
               #:exp
-              (syntax (if (and (number? val) (<= n val m)) 
+              (syntax (if (and (real? val) (<= n val m)) 
                           val
                           (raise-opt-between/c-error
                            blame val n m)))
               #:lifts lifts3
               #:superlifts null
               #:partials null
-              #:flat (syntax (and (number? val) (<= n val m)))
+              #:flat (syntax (and (real? val) (<= n val m)))
               #:opt #f
               #:stronger-ribs
               (list (new-stronger-var
@@ -185,7 +185,8 @@
                                      [that that])
                          (syntax (<= this that))))))
               #:chaperone #t
-              #:name #''(between/c n m))))))]))
+              #:name #''(between/c n m))))))]
+    [_ (opt/unknown opt/i opt/info stx)]))
 
 (define (raise-opt-between/c-error blame val lo hi)
   (raise-blame-error
@@ -194,8 +195,9 @@
    '(expected: "a number between ~a and ~a" given: "~e")
    lo hi val))
 
-(define-for-syntax (single-comparison-opter opt/info stx check-arg comparison arg name)
-  (with-syntax ([comparison comparison])
+(define-for-syntax (single-comparison-opter opt/info stx check-arg comparison arg name predicate?)
+  (with-syntax ([comparison comparison]
+                [predicate? predicate?])
     (let*-values ([(lift-low lifts2) (lift/binding arg 'single-comparison-val empty-lifts)])
       (with-syntax ([m lift-low])
         (let ([lifts3 (lift/effect (check-arg #'m) lifts2)])
@@ -207,13 +209,13 @@
             (build-optres
              #:exp
              (syntax 
-              (if (and (real? val) (comparison val m)) 
+              (if (and (predicate? val) (comparison val m)) 
                   val
-                  (raise-opt-single-comparison-opter-error blame val comparison m)))
+                  (raise-opt-single-comparison-opter-error blame val comparison m predicate?)))
              #:lifts lifts3
              #:superlifts null
              #:partials null
-             #:flat (syntax (and (number? val) (comparison val m)))
+             #:flat (syntax (and (predicate? val) (comparison val m)))
              #:opt #f
              #:stronger-ribs
              (list (new-stronger-var
@@ -225,11 +227,14 @@
              #:chaperone #t
              #:name #`'(#,name m))))))))
 
-(define (raise-opt-single-comparison-opter-error blame val comparison m)
+(define (raise-opt-single-comparison-opter-error blame val comparison m predicate?)
   (raise-blame-error
    blame
    val
-   '(expected: "a number ~a ~a" given: "~e")
+   '(expected: "a ~anumber ~a ~a" given: "~e")
+   (if (equal? predicate? real?)
+       "real "
+       "")
    (object-name comparison) m val))
 
 
@@ -243,7 +248,8 @@
                #'(check-unary-between/c '=/c m)))
       #'=
       #'x
-      '=/c)]))
+      '=/c
+      #'number?)]))
 
 (define/opter (>=/c opt/i opt/info stx)
   (syntax-case stx (>=/c)
@@ -255,7 +261,8 @@
                #'(check-unary-between/c '>=/c m)))
       #'>=
       #'low
-      '>=/c)]))
+      '>=/c
+      #'real?)]))
 
 (define/opter (<=/c opt/i opt/info stx)
   (syntax-case stx (<=/c)
@@ -267,7 +274,8 @@
                #'(check-unary-between/c '<=/c m)))
       #'<=
       #'high
-      '<=/c)]))
+      '<=/c
+      #'real?)]))
 
 (define/opter (>/c opt/i opt/info stx)
   (syntax-case stx (>/c)
@@ -279,7 +287,8 @@
                #'(check-unary-between/c '>/c m)))
       #'>
       #'low
-      '>/c)]))
+      '>/c
+      #'real?)]))
 
 (define/opter (</c opt/i opt/info stx)
   (syntax-case stx (</c)
@@ -291,7 +300,8 @@
                #'(check-unary-between/c '</c m)))
       #'<
       #'high
-      '</c)]))
+      '</c
+      #'real?)]))
 
 (define/opter (cons/c opt/i opt/info stx)
   (define (opt/cons-ctc hdp tlp)
@@ -397,6 +407,46 @@
   (syntax-case stx ()
     [(_ content) (opt/listof-ctc #'content #t opt/i opt/info)]))
 
+
+(define-for-syntax (predicate/c-optres opt/info)
+  (build-optres
+   #:exp
+   (with-syntax ((val (opt/info-val opt/info))
+                 (ctc (opt/info-contract opt/info))
+                 (blame (opt/info-blame opt/info)))
+     (syntax (if (struct-predicate-procedure? val)
+                 val
+                 (if (procedure? val)
+                     (let ([exact-proc
+                            (case-lambda
+                              [(dom-arg)
+                               (values
+                                (case-lambda
+                                  [(rng-arg)
+                                   (if (boolean? rng-arg)
+                                       rng-arg
+                                       (raise-opt/pred-error blame val 'boolean?))]
+                                  [args 
+                                   (bad-number-of-results blame val 1 args)])
+                                dom-arg)]
+                              [args
+                               (bad-number-of-arguments blame val args 1)])])
+                       (if (and (equal? (procedure-arity val) 1)
+                                (let-values ([(a b) (procedure-keywords val)])
+                                  (null? b)))
+                           (chaperone-procedure val exact-proc)
+                           (if (procedure-arity-includes? val 1)
+                               (handle-non-exact-procedure val 1 blame exact-proc)
+                               (raise-flat-arrow-err blame val 1))))
+                     (raise-flat-arrow-err blame val 1)))))
+   #:lifts null
+   #:superlifts null
+   #:partials null
+   #:flat #'(or (struct-predicate-procedure? val) (and (procedure? val) (procedure-arity-includes? val 1)))
+   #:opt #f
+   #:stronger-ribs null
+   #:chaperone #t
+   #:name #''predicate/c))
 
 ;;
 ;; arrow opter
@@ -570,7 +620,7 @@
                #,@names
                'any))))
   
-  (syntax-case* stx (-> values any any/c) module-or-top-identifier=?
+  (syntax-case* stx (-> values any any/c boolean?) module-or-top-identifier=?
     [(-> any/c ... any)
      (with-syntax ([n (- (length (syntax->list stx)) 2)])
        (build-optres
@@ -578,17 +628,20 @@
         (with-syntax ((val (opt/info-val opt/info))
                       (ctc (opt/info-contract opt/info))
                       (blame (opt/info-blame opt/info)))
-          (syntax (if (procedure-arity-includes? val n)
+          (syntax (if (and (procedure? val) 
+                           (procedure-arity-includes? val n))
                       val
                       (raise-flat-arrow-err blame val n))))
         #:lifts null
         #:superlifts null
         #:partials null
-        #:flat #'(procedure-arity-includes? val n)
+        #:flat #'(and (procedure? val) (procedure-arity-includes? val n))
         #:opt #f
         #:stronger-ribs null
         #:chaperone #t
         #:name #`'(-> #,@(build-list (syntax-e #'n) (λ (x) 'any/c)) any)))]
+    [(-> any/c boolean?)
+     (predicate/c-optres opt/info)]
     [(-> dom ... (values rng ...))
      (if (ormap (λ (x) (keyword? (syntax-e x))) (syntax->list #'(dom ...)))
          (opt/unknown opt/i opt/info stx) ;; give up if there is a mandatory keyword 
@@ -621,6 +674,8 @@
                              #:flat flat #:opt opt #:stronger-ribs stronger-ribs #:chaperone chaperone?
                              #:name name)
                (opt/unknown opt/i opt/info stx))))]))
+
+(define/opter (predicate/c opt/i opt/info stx) (predicate/c-optres opt/info))
 
 (define (handle-non-exact-procedure val dom-len blame exact-proc)
   (check-procedure val #f dom-len 0 '() '() blame)

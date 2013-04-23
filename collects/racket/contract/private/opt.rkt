@@ -12,23 +12,28 @@
 (provide opt/c define-opt/c define/opter
          opt/direct 
          begin-lifted
+         raise-opt/pred-error
          (for-syntax
           opt/pred
           define-opt/recursive-fn?
           define-opt/recursive-fn-neg-blame?-id))
 
-(define-syntax (define/opter stx)
-  (syntax-case stx ()
+(define-syntax (define/opter orig-stx)
+  (syntax-case orig-stx ()
     [(_ (for opt/i opt/info stx) expr ...)
      (if (identifier? #'for)
-         #'(begin
-             (begin-for-syntax
-               (reg-opter!
-                #'for
-                (λ (opt/i opt/info stx)
-                  expr ...)))
-             (void))
-         (error 'define/opter "expected opter name to be an identifier, got ~.s" (syntax-e #'for)))]))
+         (with-syntax ([for/name (datum->syntax #'for
+                                                (string->symbol (format "~a/opter" (syntax-e #'for))))])
+           #'(begin
+               (begin-for-syntax
+                 (reg-opter!
+                  #'for
+                  (let ([for/name (λ (opt/i opt/info stx) expr ...)])
+                    for/name)))
+               (void)))
+         (raise-syntax-error 'define/opter "expected opter name to be an identifier"
+                             orig-stx
+                             #'for))]))
 
 ;;
 ;; opt/recursive-call

@@ -277,14 +277,20 @@
      #:chaperone #'(chaperone-contract? lift-var)
      #:name #'(contract-name lift-var))))
 
+(define unknown-contract-logger (make-logger 'racket/contract (current-logger)))
 (define (log-unknown-contract-warning exp [extra-warning ""])
-  (log-warning (string-append (format "warning in ~a:~a: opt/c doesn't know the contract ~s" 
-                                      (syntax-source exp)
-                                      (if (syntax-line exp)
-                                          (format "~a:~a" (syntax-line exp) (syntax-column exp))
-                                          (format ":~a" (syntax-position exp)))
-                                      (syntax->datum exp))
-                              extra-warning)))
+  (when (log-level? unknown-contract-logger 'warning)
+    (define datum (syntax->datum exp))
+    (log-message unknown-contract-logger
+                 'warning 
+                 (string-append (format "warning in ~a:~a: opt/c doesn't know the contract ~s" 
+                                        (syntax-source exp)
+                                        (if (syntax-line exp)
+                                            (format "~a:~a" (syntax-line exp) (syntax-column exp))
+                                            (format ":~a" (syntax-position exp)))
+                                        datum)
+                                extra-warning)
+                 datum)))
 
 
 (define opt-error-name (make-parameter 'opt/c))
