@@ -5,6 +5,7 @@
          racket/pretty
          "syntax-property.rkt"
          images/compile-time
+         string-constants
          (for-syntax images/icons/control images/icons/style))
 
 (provide
@@ -419,7 +420,7 @@
                  (super-instantiate ())
                  
                  (inherit insert lock)
-                 (insert "All of the definitions have been successfully evaluated.")
+                 (insert (string-constant stepper-complete))
                  (lock #t)) 
     ()))
 

@@ -1463,6 +1463,7 @@ please adhere to these guidelines:
  
  (stepper-no-earlier-application-step "No earlier application steps.")
  (stepper-no-later-application-step "No more application steps.")
+ (stepper-complete "All of the definitions have been successfully evaluated.")
  
  (stepper-no-earlier-step "No earlier steps.")
  (stepper-no-later-step "No more steps.")
