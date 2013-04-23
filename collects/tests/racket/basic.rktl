@@ -2554,6 +2554,36 @@
   (set-a-y! an-a 8)
   (test v equal-hash-code an-a))
 
+
+;; Try to build a hash table whose indexes fonr't fit in 32 bits:
+(let ()
+  (struct a (x)
+    #:property 
+    prop:equal+hash
+    (list
+     (lambda (a b eql?) (eql? (a-x a) (a-x b)))
+     (lambda (a hash) (expt 2 15))
+     (lambda (b hash) 1)))
+  
+
+  (define (same-ish i) (a i))
+
+  ;; No collisions: min depth 17, tree might be as
+  ;; deep as 1.44 * 17 = 24
+  (define ht (for/hash ([i (in-range (expt 2 17))])
+               (values i i)))
+
+  ;; All collissions: subtree min depth is 11, might
+  ;; be as deep as 1.44*11 = 15
+  (define ht2 (for/fold ([ht ht]) ([i (in-range (expt 2 11))])
+                (hash-set ht (same-ish i) i)))
+
+  ;; `ht2' depth is between 28 and 39
+
+  ;; If the indexes go bad, this loop fails:
+  (for ([(k v) (in-hash ht2)])
+    v))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Misc
 

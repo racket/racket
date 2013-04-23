@@ -2522,7 +2522,7 @@ static Scheme_Object *sch_getenv_names(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *ev, *r = scheme_null, *key, *val;
   Scheme_Hash_Tree *ht;
-  int i;
+  mzlonglong i;
 
   ev = argv[0];
   if (!SAME_TYPE(SCHEME_TYPE(ev), scheme_environment_variables_type))
@@ -2570,7 +2570,7 @@ void *scheme_environment_variables_to_block(Scheme_Object *ev, int *_need_free)
 
 #ifdef DOS_FILE_SYSTEM
   {
-    int i;
+    mzlonglong i;
     int len = 0, slen;
     GC_CAN_IGNORE wchar_t *r, *s;
 
@@ -2605,7 +2605,8 @@ void *scheme_environment_variables_to_block(Scheme_Object *ev, int *_need_free)
 #else
   {
     GC_CAN_IGNORE char **r, *s;
-    intptr_t i, len = 0, slen, c;
+    mzlonglong i;
+    intptr_t len = 0, slen, c;
 
     for (i = scheme_hash_tree_next(ht, -1); i != -1; i = scheme_hash_tree_next(ht, i)) {
       scheme_hash_tree_index(ht, i, &key, &val);
