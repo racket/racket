@@ -51,45 +51,44 @@
   (define mapping (make-free-id-table))
 
 
-  (define (mk-untyped-syntax b defn-id internal-id)
-    (match b
-      [(def-struct-stx-binding _ (? struct-info? si) constr-type)
-       (define type-is-constructor? #t) ;Conservative estimate (provide/contract does the same)
-       (match-define (list type-desc constr pred (list accs ...) muts super) (extract-struct-info si))
-       (define-values (defns new-ids aliases)
-         (map/values 3
-                     (lambda (e) (if (identifier? e)
-                                     (mk e)
-                                     (values #'(begin) #f null)))
-                     (list* type-desc pred super accs)))
-       (define-values (constr-defn constr-new-id constr-aliases)
-         (cond
-          ((not (identifier? constr))
-           (values #'(begin) #f null))
-          ((free-identifier=? constr internal-id)
-           (mk-value-binding constr (new-id-introducer constr) constr-type))
-          (else
-           (mk constr))))
+  (define (mk-struct-stx-binding defn-id internal-id si constr-type)
+    (define type-is-constructor? #t) ;Conservative estimate (provide/contract does the same)
+    (match-define (list type-desc constr pred (list accs ...) muts super) (extract-struct-info si))
+    (define-values (defns new-ids aliases)
+      (map/values 3
+                  (lambda (e) (if (identifier? e)
+                                  (mk e)
+                                  (values #'(begin) #f null)))
+                  (list* type-desc pred super accs)))
+    (define-values (constr-defn constr-new-id constr-aliases)
+      (cond
+       ((not (identifier? constr))
+        (values #'(begin) #f null))
+       ((free-identifier=? constr internal-id)
+        (mk-value-binding constr (new-id-introducer constr) constr-type))
+       (else
+        (mk constr))))
 
-       (define/with-syntax (constr* type-desc* pred* super* accs* ...)
-         (for/list ([i (cons constr-new-id new-ids)])
-            (if (identifier? i) #`(syntax #,i) i)))
+    (define/with-syntax (constr* type-desc* pred* super* accs* ...)
+      (for/list ([i (cons constr-new-id new-ids)])
+         (if (identifier? i) #`(syntax #,i) i)))
 
-       (values
-        #`(begin
-            #,@(cons constr-defn defns)
-            (define-syntax #,defn-id
-              (let ((info (list type-desc* constr* pred* (list accs* ...) (list #,@(map (lambda x #'#f) accs)) super*)))
-                #,(if type-is-constructor?
-                      #'(make-struct-info-self-ctor constr* info)
-                      #'info))))
-        (apply append (cons constr-aliases aliases)))]
-      [_
-       (values
-        #`(define-syntax #,defn-id
-            (lambda (stx)
-              (tc-error/stx stx "Macro ~a from typed module used in untyped code" (syntax-e #'#,internal-id))))
-        null)]))
+    (values
+     #`(begin
+         #,@(cons constr-defn defns)
+         (define-syntax #,defn-id
+           (let ((info (list type-desc* constr* pred* (list accs* ...) (list #,@(map (lambda x #'#f) accs)) super*)))
+             #,(if type-is-constructor?
+                   #'(make-struct-info-self-ctor constr* info)
+                   #'info))))
+     (apply append (cons constr-aliases aliases))))
+
+  (define (mk-untyped-syntax defn-id internal-id)
+    (values
+     #`(define-syntax #,defn-id
+         (lambda (stx)
+           (tc-error/stx stx "Macro ~a from typed module used in untyped code" (syntax-e #'#,internal-id))))
+     null))
 
   (define (mk-value-binding internal-id new-id ty)
     (define contract (type->contract ty (λ () #f) #:out #t))
@@ -187,12 +186,16 @@
                    (def-export export-id id error-id)))
            new-id
            null)]
+         [(def-struct-stx-binding _ si constr-type)
+          (define-values (defs aliases)
+            (mk-struct-stx-binding new-id internal-id si constr-type))
+          (values defs new-id aliases)]
          [(and b (def-stx-binding _))
           (with-syntax* ([id internal-id]
                          [export-id new-id]
                          [untyped-id (untyped-id-introducer #'id)])
             (define-values (d aliases)
-              (mk-untyped-syntax b #'untyped-id internal-id))
+              (mk-untyped-syntax #'untyped-id internal-id))
             (define/with-syntax def d)
             (values
              #`(begin def (def-export export-id id untyped-id))
