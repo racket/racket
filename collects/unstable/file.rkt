@@ -16,4 +16,4 @@
         (make-directory dir)))))
 
 (provide/contract
- [make-directory*/ignore-exists-exn (path-string? . -> . void)])
+ [make-directory*/ignore-exists-exn (path-string? . -> . void?)])
