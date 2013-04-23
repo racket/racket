@@ -3644,36 +3644,44 @@ void ffi_queue_callback(ffi_cif* cif, void* resultp, void** args, void *userdata
      temporarily, because a GC may occur concurrent to this
      function if it's in another thread. */
   FFI_Sync_Queue *queue;
+  void **data = (void **)userdata;
 
-  queue = (FFI_Sync_Queue *)((void **)userdata)[1];
-  userdata = ((void **)userdata)[0];
+  queue = (FFI_Sync_Queue *)(data)[1];
+  userdata = (data)[0];
 
   if (queue->orig_thread != mz_proc_thread_self()) {
-    Queued_Callback *qc;
-    mzrt_sema *sema;
+    if (data[2]) {
+      /* constant result */
+      memcpy(resultp, data[2], (intptr_t)data[3]);
+      return;
+    } else {
+      /* queue  a callback and wait: */
+      Queued_Callback *qc;
+      mzrt_sema *sema;
 
-    mzrt_sema_create(&sema, 0);
+      mzrt_sema_create(&sema, 0);
 
-    qc = (Queued_Callback *)malloc(sizeof(Queued_Callback));
-    qc->cif = cif;
-    qc->resultp = resultp;
-    qc->args = args;
-    qc->userdata = userdata;
-    qc->sema = sema;
-    qc->called = 0;
+      qc = (Queued_Callback *)malloc(sizeof(Queued_Callback));
+      qc->cif = cif;
+      qc->resultp = resultp;
+      qc->args = args;
+      qc->userdata = userdata;
+      qc->sema = sema;
+      qc->called = 0;
 
-    mzrt_mutex_lock(queue->lock);
-    qc->next = queue->callbacks;
-    queue->callbacks = qc;
-    mzrt_mutex_unlock(queue->lock);
-    scheme_signal_received_at(queue->sig_hand);
+      mzrt_mutex_lock(queue->lock);
+      qc->next = queue->callbacks;
+      queue->callbacks = qc;
+      mzrt_mutex_unlock(queue->lock);
+      scheme_signal_received_at(queue->sig_hand);
 
-    /* wait for the callback to be invoked in the main thread */
-    mzrt_sema_wait(sema);
+      /* wait for the callback to be invoked in the main thread */
+      mzrt_sema_wait(sema);
 
-    mzrt_sema_destroy(sema);
-    free(qc);
-    return;
+      mzrt_sema_destroy(sema);
+      free(qc);
+      return;
+    }
   }
 #endif
 
@@ -3709,10 +3717,12 @@ void free_cl_cif_args(void *ignored, void *p)
 #ifdef MZ_USE_MZRT
 void free_cl_cif_queue_args(void *ignored, void *p)
 {
-  void *data = ((closure_and_cif*)p)->data;
+  void *data = ((closure_and_cif*)p)->data, *constant_result;
   void **q = (void **)data;
   data = q[0];
+  constant_result = q[3];
   free(q);
+  if (constant_result) free(constant_result);
 #ifdef MZ_PRECISE_GC
   GC_free_immobile_box((void**)data);
 #endif
@@ -3771,6 +3781,8 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
   GC_CAN_IGNORE void *callback_data;
 # ifdef MZ_USE_MZRT
   int keep_queue = 0;
+  void *constant_reply;
+  int constant_reply_size;
 # endif /* MZ_USE_MZRT */
 
   if (!SCHEME_PROCP(argv[0]))
@@ -3784,8 +3796,10 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
   abi = GET_ABI(MYNAME,3);
   is_atomic = ((argc > 4) && SCHEME_TRUEP(argv[4]));
   sync = (is_atomic ? scheme_true : NULL);
-  if (argc > 5)
-    (void)scheme_check_proc_arity2(MYNAME, 1, 5, argc, argv, 1);
+  if ((argc > 5)
+      && !SCHEME_BOXP(argv[5])
+      && !scheme_check_proc_arity2(NULL, 1, 5, argc, argv, 1))
+    scheme_wrong_contract(MYNAME, "(or/c #f (procedure-arity-includes/c 0) box?)", 5, argc, argv);
   if (((argc > 5) && SCHEME_TRUEP(argv[5]))) {
 #   ifdef MZ_USE_MZRT
     if (!ffi_sync_queue) {
@@ -3800,8 +3814,24 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
       ffi_sync_queue->sig_hand = sig_hand;
       ffi_sync_queue->callbacks = NULL;
     }
-    sync = argv[5];
-    if (is_atomic) sync = scheme_box(sync);
+    if (SCHEME_BOXP(argv[5])) {
+      /* when called in a foreign thread, return a constant */
+      constant_reply_size = ctype_sizeof(otype);
+      if (!constant_reply_size && SCHEME_VOIDP(SCHEME_BOX_VAL(argv[5]))) {
+        /* void result */
+        constant_reply = scheme_malloc_atomic(1);
+      } else {
+        /* non-void result */
+        constant_reply = scheme_malloc_atomic(constant_reply_size);
+        SCHEME2C(MYNAME, otype, constant_reply, 0, SCHEME_BOX_VAL(argv[5]), NULL, NULL, 0);
+      }
+    } else {
+      /* when called in a foreign thread, queue a reply back here */
+      sync = argv[5];
+      if (is_atomic) sync = scheme_box(sync);
+      constant_reply = NULL;
+      constant_reply_size = 0;
+    }
     keep_queue = 1;
 #   endif /* MZ_USE_MZRT */
     do_callback = ffi_queue_callback;
@@ -3844,10 +3874,17 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
     /* For ffi_queue_callback(), add a level of indirection in `data' to
        hold the place-specific `ffi_sync_queue'.  Use
        `free_cl_cif_data_args' to clean up this extra level. */
-    GC_CAN_IGNORE void **tmp;
-    tmp = (void **)malloc(sizeof(void*) * 2);
+    GC_CAN_IGNORE void **tmp, *cr;
+    if (constant_reply) {
+      cr = malloc(constant_reply_size);
+      memcpy(cr, constant_reply, constant_reply_size);
+      constant_reply = cr;
+    }
+    tmp = (void **)malloc(sizeof(void*) * 4);
     tmp[0] = callback_data;
     tmp[1] = ffi_sync_queue;
+    tmp[2] = constant_reply;
+    tmp[3] = (void *)(intptr_t)constant_reply_size;
     callback_data = (void *)tmp;
   }
 # endif /* MZ_USE_MZRT */

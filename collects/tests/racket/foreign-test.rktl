@@ -6,7 +6,10 @@
 (require ffi/unsafe
          ffi/unsafe/cvector
          ffi/vector
-         racket/extflonum)
+         racket/extflonum
+         racket/place)
+
+(define test-async? (and (place-enabled?) (not (eq? 'windows (system-type)))))
 
 (test #f malloc 0)
 (test #f malloc 0 _int)
@@ -101,7 +104,15 @@
                                                    (system-type 'so-suffix))))])
     (when (file-exists? o) (delete-file o))
     (when (file-exists? so) (delete-file so))
-    (parameterize ([current-standard-link-libraries '()])
+    (parameterize ([current-standard-link-libraries '()]
+                   [current-extension-compiler-flags
+                    (if test-async?
+                        (append '("-pthread" "-DUSE_THREAD_TEST") (current-extension-compiler-flags))
+                        (current-extension-compiler-flags))]
+                   [current-extension-linker-flags
+                    (if test-async?
+                        (append '("-pthread") (current-extension-linker-flags))
+                        (current-extension-linker-flags))])
       (compile-extension #t c o '())
       (link-extension #t (list o) so))
     (lambda ()
@@ -502,6 +513,21 @@
 
 ;; Check a corner of UTF-16 conversion:
 (test "\U171D3" cast (cast "\U171D3" _string/utf-16 _pointer) _pointer _string/utf-16)
+
+;; check async:
+(when test-async?
+  (define (check async like)
+    (define foreign_thread_callback (get-ffi-obj 'foreign_thread_callback test-lib 
+                                                 (_fun (_fun #:async-apply async
+                                                             _intptr -> _intptr)
+                                                       _intptr
+                                                       (_fun -> _void)
+                                                       -> _intptr)))
+    (test (like 16) foreign_thread_callback (lambda (v) (add1 v)) 16 sleep))
+  (check (lambda (f) (f)) add1)
+  (check (box 20) (lambda (x) 20)))
+
+;; ----------------------------------------
 
 (report-errs)
 

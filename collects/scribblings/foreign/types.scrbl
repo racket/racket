@@ -426,7 +426,7 @@ the later case, the result is the @racket[ctype]).}
                       [output-type ctype?]
                       [#:abi abi (or/c #f 'default 'stdcall 'sysv) #f]
                       [#:atomic? atomic? any/c #f]
-                      [#:async-apply async-apply (or/c #f ((-> any) . -> . any)) #f]
+                      [#:async-apply async-apply (or/c #f ((-> any/c) . -> . any/c) box?) #f]
                       [#:in-original-place? in-original-place? any/c #f]
                       [#:save-errno save-errno (or/c #f 'posix 'windows) #f]
                       [#:wrapper wrapper (or/c #f (procedure? . -> . procedure?))
@@ -597,10 +597,12 @@ For @tech{callbacks} to Racket functions with the generated type:
        to avoid C-level stack overflow; otherwise, the process may
        crash or misbehave.}
 
- @item{If an @racket[async-apply] procedure is provided, then a Racket
+ @item{If a @racket[async-apply] is provided as a procedure or box, then a Racket
        @tech{callback} procedure with the generated procedure type can
        be applied in a foreign thread (i.e., an OS-level thread other
-       than the one used to run Racket). The call in the foreign
+       than the one used to run Racket).
+
+       If @racket[async-apply] is a procedure, the call in the foreign
        thread is transferred to the OS-level thread that runs Racket,
        but the Racket-level thread (in the sense of @racket[thread])
        is unspecified; the job of the provided @racket[async-apply]
@@ -626,13 +628,22 @@ For @tech{callbacks} to Racket functions with the generated type:
        synchronizes within an unsuitable Racket-level thread, it can
        deadlock or otherwise damage the Racket process.
 
+       If @racket[async-apply] is a box, then the value contained in
+       the box is used as the result of the callback when it is called
+       in a foreign thread; the @racket[async-apply] value is
+       converted to a foreign value at the time that
+       @racket[_cprocedure] is called. Using a boxed constant value
+       for @racket[async-apply] avoids the need to synchronize with
+       the OS-level thread that runs Racket, but it effectively ignores
+       the Racket procedure that is wrapped as @tech{callback} when
+       the @tech{callback} is applied in a foreign thread.
 
        Foreign-thread detection to trigger @racket[async-apply] works
        only when Racket is compiled with OS-level thread support,
        which is the default for many platforms. If a callback with an
        @racket[async-apply] is called from foreign code in the same
-       OS-level thread that runs Racket, then the @racket[async-apply]
-       wrapper is not used.}
+       OS-level thread that runs Racket, then @racket[async-apply]
+       is not used.}
 
 ]
 }

@@ -1,4 +1,7 @@
 #include <stdlib.h>
+#ifdef USE_THREAD_TEST
+#include <pthread.h>
+#endif
 
 typedef unsigned char byte;
 
@@ -211,3 +214,45 @@ X union ic7iorl increment_ic7iorl(int which, union ic7iorl v)
 
   return v;
 }
+
+#ifdef USE_THREAD_TEST
+typedef void* (*test_callback_t)(void*);
+typedef void (*sleep_callback_t)();
+
+void *do_f(void *_data)
+{
+  test_callback_t f = ((void **)_data)[0];
+  void *data = ((void **)_data)[1];
+
+  data = f(data);
+  
+  ((void **)_data)[2] = (void *)1;
+  
+  return data;
+}
+
+X void* foreign_thread_callback(test_callback_t f, 
+                                void *data,
+                                sleep_callback_t s)
+{
+  pthread_t th;
+  void *r, **d;
+
+  d = malloc(3 * sizeof(void*));
+  d[0] = f;
+  d[1] = data;
+  d[2] = NULL;
+
+  if (pthread_create(&th, NULL, do_f, d))
+    return NULL;
+
+  while (!d[2]) {
+    s();
+  }
+  
+  if (pthread_join(th, &r))
+    return NULL;
+
+  return r;
+}
+#endif
