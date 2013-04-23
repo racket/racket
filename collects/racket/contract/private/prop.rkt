@@ -274,6 +274,11 @@
 
 (define-struct make-contract [ name first-order projection stronger generate exercise ]
   #:omit-define-syntaxes
+  #:property prop:custom-write
+  (λ (stct port display?)
+    (write-string "#<contract: " port)
+    (write-string (format "~.s" (make-contract-name stct)) port)
+    (write-string ">" port))
   #:property prop:contract
   (build-contract-property
    #:name (lambda (c) (make-contract-name c))
@@ -285,6 +290,11 @@
 
 (define-struct make-chaperone-contract [ name first-order projection stronger generate exercise ]
   #:omit-define-syntaxes
+  #:property prop:custom-write
+  (λ (stct port display?)
+    (write-string "#<chaperone-contract: " port)
+    (write-string (format "~.s" (make-chaperone-contract-name stct)) port)
+    (write-string ">" port))
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:name (lambda (c) (make-chaperone-contract-name c))
@@ -296,6 +306,11 @@
 
 (define-struct make-flat-contract [ name first-order projection stronger generate exercise ]
   #:omit-define-syntaxes
+  #:property prop:custom-write
+  (λ (stct port display?)
+    (write-string "#<flat-contract: " port)
+    (write-string (format "~.s" (make-flat-contract-name stct)) port)
+    (write-string ">" port))
   #:property prop:flat-contract
   (build-flat-contract-property
    #:name (lambda (c) (make-flat-contract-name c))
