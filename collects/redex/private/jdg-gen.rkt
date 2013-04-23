@@ -32,9 +32,12 @@
       (let recur ([p p])
         (match p
           [(lvar id)
-           (recur (hash-ref eqs p))]
+           ;; careful! term-e has terms, eqs has pats!
+           (hash-ref term-e p
+              (λ () (recur (hash-ref eqs p))))]
           [`(name ,id ,(bound))
-           (recur (hash-ref eqs (lvar id)))]
+           (hash-ref term-e (lvar id)
+              (λ () (recur (hash-ref eqs (lvar id)))))]
           [`(list ,ps ...)
            `(,@(for/list ([p ps]) (recur p)))]
           [`(cstr (,nts ...) ,p)
@@ -61,16 +64,16 @@
            [`(nt ,p-nt)
             (define all-nts (cons p-nt nts))
             (for/not-failed ([nt-pat all-nts])
-              (define term (recur `(nt ,nt-pat)))
-              (and/fail (for/and ([nt (remove nt-pat all-nts)])
-                          ((get-matcher nt) term))
-                        term))]
+                            (define term (recur `(nt ,nt-pat)))
+                            (and/fail (for/and ([nt (remove nt-pat all-nts)])
+                                        ((get-matcher nt) term))
+                                      term))]
            [`any
             (for/not-failed ([nt-pat nts])
-              (define term (recur `(nt ,nt-pat)))
-              (and/fail (for/and ([nt (remove nt-pat nts)])
-                          ((get-matcher nt) term))
-                        term))]
+                            (define term (recur `(nt ,nt-pat)))
+                            (and/fail (for/and ([nt (remove nt-pat nts)])
+                                        ((get-matcher nt) term))
+                                      term))]
            [_
             (define term (recur pat))
             (and/fail (for/and ([nt nts])

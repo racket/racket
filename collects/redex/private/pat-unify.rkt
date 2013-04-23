@@ -151,6 +151,7 @@
 ;; disqequations generated (by mismatch-pattern) during a given unification pass
 (define dqs-found (make-parameter (make-hash)))
 
+
 ;; pat pat env -> (or/c p*e #f)
 (define (unify t u e L)
   (parameterize ([dqs-found (make-hash)])
@@ -161,20 +162,22 @@
                           (not-failed? u*)
                           (unify* t* u* eqs L)))
     (and/fail (not-failed? res)
-         (let* ([static-eqs (hash/mut->imm eqs)]
-                [found-pre-dqs 
-                 (apply set-union (set) 
-                        (for/list ([dq-sides/id (hash-values (dqs-found))])
-                          (list->dq-pairs dq-sides/id)))]
-                [found-dqs
-                 (for/list ([pdq found-pre-dqs])
-                   (disunify* '() (first pdq) (second pdq) (hash-copy static-eqs) L))])
-           (and/fail (for/and ([d found-dqs]) d)
-                     (let* ([real-dqs (filter (λ (dq) (not (boolean? dq))) found-dqs)]
-                            [new-dqs (check-and-resimplify static-eqs (append real-dqs (env-dqs e)) L)])
-                       (and/fail new-dqs
-                                 (p*e res
-                                      (env static-eqs new-dqs)))))))))
+              (let* ([static-eqs (hash/mut->imm (let ([ans eqs])
+                                                  ;(printf "1.1\n")
+                                                  ans))]
+                     [found-pre-dqs 
+                      (apply set-union (set) 
+                             (for/list ([dq-sides/id (hash-values (dqs-found))])
+                               (list->dq-pairs dq-sides/id)))]
+                     [found-dqs
+                      (for/list ([pdq found-pre-dqs])
+                        (disunify* '() (first pdq) (second pdq) (hash-copy static-eqs) L))])
+                (and/fail (for/and ([d found-dqs]) d)
+                          (let* ([real-dqs (filter (λ (dq) (not (boolean? dq))) found-dqs)]
+                                 [new-dqs (check-and-resimplify static-eqs (append real-dqs (env-dqs e)) L)])
+                            (and/fail new-dqs
+                                      (p*e res
+                                           (env static-eqs new-dqs)))))))))
 
 (define (list->dq-pairs dq-sides)
   (cond
@@ -185,6 +188,7 @@
      (set-union (for/set ([rhs (cdr dq-sides)])
                          (list (car dq-sides) rhs))
                 (list->dq-pairs (cdr dq-sides)))]))
+
 
 ;; pat pat env lang -> (or/c env #f)
 (define (disunify params t u e L)
@@ -259,7 +263,7 @@
            
                 
 (define (hash/mut->imm h0)
-  (for/fold ([h (hash)])
+  (for/fold ([h (hash)]) 
     ([(k v) (in-hash h0)])
     (hash-set h k v)))                                    
                                            
@@ -397,11 +401,13 @@
      (unify* u t e L)]
     ;; cstrs
     [(`(cstr (,nts1 ...) ,p1) `(cstr (,nts2 ...) ,p2))
-     (let ([res (unify* p1 p2 e L)])
+     (let ([res (unify* p1 p2 e L)]
+           [new-nts (merge-ids/sorted nts1 nts2 L)])
        (and/fail (not-failed? res)
+                 new-nts
                  (when (lvar? res)
                    (error 'unify* "unify* returned lvar as result: ~s\n~s\n~s\n" p1 p2 e))
-                 `(cstr ,(merge-ids/sorted nts1 nts2) ,res)))]
+                 `(cstr ,new-nts ,res)))]
     [(`(cstr ,nts ,p) _)
      (let ([res (unify* p u e L)])
        (and/fail (not-failed? res)
@@ -409,12 +415,16 @@
                    [(lvar id)
                     (error 'unify* "unify* returned lvar as result: ~s\n~s\n~s\n" p u e)]
                    [`(nt ,nt)
-                    `(cstr ,(merge-ids/sorted (list nt) nts)
-                           ,p)]
+                    (define new-nts (merge-ids/sorted (list nt) nts L))
+                    (and/fail new-nts
+                              `(cstr ,new-nts ,p))]
                    [`(cstr ,nts2 ,new-p)
-                    `(cstr ,(merge-ids/sorted nts nts2) ,new-p)]
+                    (define new-nts (merge-ids/sorted nts nts2 L))
+                    (and/fail new-nts
+                              `(cstr ,new-nts ,new-p))]
                    [_
-                    `(cstr ,nts ,res)])))]
+                    (and/fail (for/and ([n nts]) (check-nt n L res))
+                              `(cstr ,nts ,res))])))]
     [(_ `(cstr ,nts ,p))
      (unify* `(cstr ,nts ,p) t e L)]
     ;; nts
@@ -423,13 +433,15 @@
          (hash-ref (compiled-lang-collapsible-nts L) n)
          `(nt ,n))]
     [(`(nt ,p) u)
-     (if (hash-has-key? (compiled-lang-collapsible-nts L) p)
-         (unify* (hash-ref (compiled-lang-collapsible-nts L) p) u e L)
-         (let ([res (unify* u u e L)])
-           (and/fail (not-failed? res)
-                     (when (lvar? res)
-                       (error 'unify* "unify* returned lvar as result: ~s\n~s\n~s\n" u u e))
-                     `(cstr (,p) ,res))))]
+     (and/fail
+      (check-nt p L u)
+      (if (hash-has-key? (compiled-lang-collapsible-nts L) p)
+          (unify* (hash-ref (compiled-lang-collapsible-nts L) p) u e L)
+          (let ([res (unify* u u e L)]) ;; look at structure of nt here?
+            (and/fail (not-failed? res)
+                      (when (lvar? res)
+                        (error 'unify* "unify* returned lvar as result: ~s\n~s\n~s\n" u u e))
+                      `(cstr (,p) ,res)))))]
     [(_ `(nt ,p))
      (unify* `(nt ,p) t e L)]
     ;; other pat stuff
@@ -610,8 +622,10 @@
     [(_ _)
      (equal? p* u*)]))
 
-(define (merge-ids/sorted l1 l2)
-  (de-dupe/sorted (merge/sorted l1 l2)))
+(define (merge-ids/sorted l1 l2 lang)
+  (and (for*/and ([nt1 l1] [nt2 l2])
+         (check-nt nt1 lang `(nt ,l2)))
+       (de-dupe/sorted (merge/sorted l1 l2))))
 
 (define (symbol<? s1 s2)
   (string<? (symbol->string s1) (symbol->string s2)))
@@ -672,3 +686,72 @@
     [_
      (values (lvar id) res)]))
 
+(provide check-nt)
+
+(define check-nt
+  (let ([memo (hash)])
+    (λ (nt clang pat)
+      (define npat (normalize-pat pat))
+      (hash-ref memo (list nt clang npat)
+                (λ ()
+                  (define pat-ok? 
+                    (for/or ([ntp (in-list (map normalize-pat (nt-pats nt clang)))])
+                      (not-failed? (unify* npat ntp #f empty-lang))))
+                  (set! memo
+                        (hash-set memo (list nt clang npat) pat-ok?)))))))
+
+(define (normalize-pat pat)
+  (let loop ([pat pat])
+    (match-a-pattern pat
+                     [`any pat]
+                     [`number pat]
+                     [`string pat]
+                     [`natural pat]
+                     [`integer pat]
+                     [`real pat]
+                     [`boolean pat]
+                     [`variable pat]
+                     [`(variable-except ,s ...) `variable]
+                     [`(variable-prefix ,s) `variable]
+                     [`variable-not-otherwise-mentioned pat]
+                     [`hole (error "can't normalize pattern: ~s" pat)]
+                     [`(nt ,id) `any]
+                     [`(name ,name ,npat)
+                      (if (bound? npat)
+                          `any
+                          `(name ,name ,(loop npat)))]
+                     [`(mismatch-name ,name ,pat) (loop pat)]
+                     [`(in-hole ,p1 ,p2) (error "can't normalize pattern: ~s" pat)]
+                     [`(hide-hole ,p) (loop p)]
+                     [`(side-condition ,p ,g ,e)
+                      (error "can't normalize pattern: ~s" pat)]
+                     [`(cross ,s) (error "can't normalize pattern: ~s" pat)]
+                     [`(list ,sub-pats ...)
+                      `(list ,@(for/list ([sub-pat (in-list sub-pats)])
+                                 (match sub-pat
+                                   [`(repeat ,pat ,name ,mismatch)
+                                    (error "can't normalize pattern: ~s" pat)]
+                                   [else
+                                    (loop sub-pat)])))]
+                     [(? (compose not pair?)) 
+                      pat])))
+
+(define (nt-pats nt lang)
+  (define this-rhs
+    (nt-rhs
+     (let ([the-nt (findf (λ (lang-nt)
+                        (equal? nt (nt-name lang-nt)))
+                      (compiled-lang-lang lang))])
+       (unless the-nt
+         (error 'unify "nonterminal ~s not found for provided language... nts found: ~s" 
+                nt (hash-keys (compiled-lang-nt-map lang))))
+       the-nt)))
+  (match this-rhs
+    [(list (rhs `(nt ,alias)))
+     (nt-pats alias lang)]
+    [_
+     (map rhs-pattern this-rhs)]))
+       
+(define empty-lang
+  (compiled-lang
+   #f #f #f #f #f #f #f #f #f #f '() #f (hash)))

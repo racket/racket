@@ -45,6 +45,12 @@
 
 (define-struct gen-trace (tr-loc clause input state bound env) #:prefab)
 
+
+(define bt-count (make-parameter 0))
+(define BT-LIMIT 40)
+(define (inc-bt-count) 
+  (bt-count (add1 (bt-count))))
+
 (define (search/next clauses input bound lang)
   (define name-nums 0)
   (define fresh-pat (parameterize ([unique-name-nums 0])
@@ -57,7 +63,7 @@
   (define v-locs (make-hash))
   (λ ()
     (parameterize ([unique-name-nums name-nums]
-                   [visited-locs v-locs])
+                   [bt-count 0])
       (define-values (ans fails)
         (with-handlers ([exn:fail:redex:search-failure? (λ (e) 
                                                           (define f-conts (exn:fail:redex:search-failure-fails e))
@@ -69,7 +75,6 @@
       (set-last-gen-trace! (generation-trace))
       (set! fs (shuffle-fails fails))  ;; how to test if we're randomizing here?
       (set! name-nums (unique-name-nums))
-      (set! v-locs (visited-locs))
       ans)))
   
 (define (trim-fails fs)
@@ -90,6 +95,7 @@
     [else fs]))
 
 (define (fail-back fs)
+  (inc-bt-count)
   (match fs
     [(list (fail-cont e f b) rest ...)
      (choose-rule e f rest)]
@@ -100,10 +106,7 @@
     [(empty? fringe)
      (values env fail)]
     [else
-     (define new-f fringe)
-     (if new-f
-         (push-down (car new-f) env (cdr new-f) fail)
-         (fail-back fail))]))
+     (push-down (car fringe) env (cdr fringe) fail)]))
 
 (define (push-down a-partial-rule env fringe fail)
   (match a-partial-rule
@@ -184,7 +187,6 @@
             ['() 
              (p*e (p*e-p head-p*e) e)]
             [(cons (eqn lhs rhs) rest)
-             (eqn lhs rhs)
              (define u-res (unify lhs rhs e lang))
              (and (not-failed? u-res)
                   (loop (p*e-e u-res) rest))]))]
@@ -236,37 +238,17 @@
                           [(prem mk-clauses pat)
                            (prem mk-clauses (fresh-pat-vars pat instantiations))]))]))
 
-(define visited-locs (make-parameter (make-hash)))
-
 (define-struct (exn:fail:redex:search-failure exn:fail:redex) (fails))
 
 (define (check-depth-limits bound tr-loc fails)
+  (when (> (bt-count) BT-LIMIT)
+    (define str (format "backtrack count of ~s exceeded at ~s" BT-LIMIT tr-loc))
+    (raise (make-exn:fail:redex:search-failure str (current-continuation-marks) fails)))
   (when (> (length tr-loc) (* 3 (+ (length tr-loc) bound)))
     (define str (format "depth bound exceeded at depth: ~s" (length tr-loc)))
     (raise (make-exn:fail:redex:search-failure str (current-continuation-marks) fails))))
 
-(define (check-backtrack-limits tr-loc)
-  (define v-locs (visited-locs))
-  (when (< 5 (hash-ref v-locs tr-loc 0))
-    (define str (format "backtracking limit exceeded at location: ~s" tr-loc))
-    (raise (make-exn:fail:redex:search-failure str (current-continuation-marks))))
-  (define loc-count (hash-ref v-locs tr-loc 0))
-  (for ([(k v) (in-hash v-locs)])
-    (let loop ([l1 tr-loc]
-               [l2 k])
-      (cond
-        [(null? l1)
-         (void)]
-        [(null? l2)
-         (hash-set! v-locs k 0)]
-        [(= (car l1) (car l2))
-         (loop (cdr l1) (cdr l2))]
-        [else
-         (void)])))
-  (hash-set! v-locs tr-loc (add1 (hash-ref v-locs tr-loc 0))))
-
 (define unique-name-nums (make-parameter 0))
-
 
 (define generation-logger (make-logger 'generation-log (current-logger)))
 

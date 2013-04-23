@@ -254,7 +254,22 @@
            res-p
            res-p-bkwd)]))
 
-(define-language L0)
+;; This looks really strange but it is for backwards compatability
+;; with tests that didn't take nonterminal productions into account.
+;; There nts will all (except n) accept anything, but since they
+;; have two productions they don't get collapsed (and so will create
+;; cstr's).
+(define-language L0
+  (e any any)
+  (q any any)
+  (v any any)
+  (b any any)
+  (x any any)
+  (Γ any any)
+  (s any any)
+  (a any any)
+  (Q any any)
+  (n number any))
 
 
 (check-equal? (unify/format `number `number (hash) L0)
@@ -540,7 +555,7 @@
   ['boolean `(name x ,(bound)) (make-hash `((,(lvar 'x) . boolean)))]
   ['variable `(name x ,(bound)) (make-hash `((,(lvar 'x) . variable)))]
   ['variable-not-otherwise-mentioned `(name x ,(bound)) (make-hash `((,(lvar 'x) . variable-not-otherwise-mentioned)))]
-  ['(cstr (number) any) `(name x ,(bound)) (make-hash `((,(lvar 'x) . (cstr (number) any))))]
+  ['(cstr (n) any) `(name x ,(bound)) (make-hash `((,(lvar 'x) . (cstr (n) any))))]
   ['(list 1 2) `(name x ,(bound)) (make-hash `((,(lvar 'x) . (list 1 2))))]
   ['(mismatch-name z any) `(name x ,(bound)) (make-hash `((,(lvar 'x) . any)))]
   ['(nt q) `(name x ,(bound)) (make-hash `((,(lvar 'x) . (cstr (q) any))))]))
@@ -555,7 +570,8 @@
   
   (define-language ntl
     (n number)
-    ((x y) variable))
+    ((x y) variable)
+    (Q any any))
   
   (check-equal? (unify/format `(nt n) `any (hash) ntl)
                 (p*e `number (hash)))
