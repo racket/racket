@@ -1530,7 +1530,7 @@ all of the names in the tools library, for use defining keybindings
   drracket:language:put-executable
   ((is-a?/c top-level-window<%>) 
    path? 
-   (or/c boolean? (symbols 'launcher 'standalone 'distribution)) 
+   (or/c boolean? 'launcher 'standalone 'distribution)
    boolean? 
    string? 
    . -> . (or/c false/c path?))
@@ -1557,12 +1557,12 @@ all of the names in the tools library, for use defining keybindings
   drracket:language:create-executable-gui
   ((or/c false/c (is-a?/c top-level-window<%>))
    (or/c false/c string?)
-   (or/c (λ (x) (eq? x #t)) (symbols 'launcher 'standalone 'distribution))
-   (or/c (λ (x) (eq? x #t)) (symbols 'mzscheme 'mred))
+   (or/c #t 'launcher 'standalone 'distribution)
+   (or/c #t 'mzscheme 'mred)
    . -> .
    (or/c false/c
-         (list/c (symbols 'no-show 'launcher 'stand-alone 'distribution)
-                 (symbols 'no-show 'mred 'mzscheme)
+         (list/c (or/c 'no-show 'launcher 'stand-alone 'distribution)
+                 (or/c 'no-show 'mred 'mzscheme)
                  string?)))
   (parent program-name show-type show-base)
   @{Opens a dialog to prompt the user about their choice of executable.
@@ -1778,7 +1778,7 @@ all of the names in the tools library, for use defining keybindings
   drracket:language:simple-settings-printing-style
   (drracket:language:simple-settings?
    . -> .
-   (symbols 'constructor 'quasiquote 'write 'trad-write 'print))
+   (or/c 'constructor 'quasiquote 'write 'trad-write 'print))
   (simple-settings)
   
   @{Extracts the printing-style setting from a simple-settings.})
@@ -1787,7 +1787,7 @@ all of the names in the tools library, for use defining keybindings
   drracket:language:simple-settings-fraction-style
   (drracket:language:simple-settings?
    . -> .
-   (symbols 'mixed-fraction
+   (or/c 'mixed-fraction
             'mixed-fraction-e
             'repeating-decimal
             'repeating-decimal-e))
@@ -1817,7 +1817,7 @@ all of the names in the tools library, for use defining keybindings
   drracket:language:simple-settings-annotations
   (drracket:language:simple-settings?
    . -> .
-   (symbols 'none 'debug 'debug/profile 'test-coverage))
+   (or/c 'none 'debug 'debug/profile 'test-coverage))
   (simple-settings)
   
   @{Extracts the debugging setting from a simple-settings.})
@@ -1832,11 +1832,11 @@ all of the names in the tools library, for use defining keybindings
  (proc-doc/names
   drracket:language:simple-settings
   (-> boolean?
-      (symbols 'constructor 'quasiquote 'write 'trad-write 'print)
-      (symbols 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e)
+      (or/c 'constructor 'quasiquote 'write 'trad-write 'print)
+      (or/c 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e)
       boolean?
       boolean?
-      (symbols 'none 'debug 'debug/profile 'test-coverage)
+      (or/c 'none 'debug 'debug/profile 'test-coverage)
       drracket:language:simple-settings?)
   (case-sensitive
    printing-style
@@ -1850,11 +1850,11 @@ all of the names in the tools library, for use defining keybindings
  (proc-doc/names
   drracket:language:make-simple-settings
   (-> boolean?
-      (symbols 'constructor 'quasiquote 'write 'trad-write 'print)
-      (symbols 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e)
+      (or/c 'constructor 'quasiquote 'write 'trad-write 'print)
+      (or/c 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e)
       boolean?
       boolean?
-      (symbols 'none 'debug 'debug/profile 'test-coverage)
+      (or/c 'none 'debug 'debug/profile 'test-coverage)
       drracket:language:simple-settings?)
   (case-sensitive
    printing-style

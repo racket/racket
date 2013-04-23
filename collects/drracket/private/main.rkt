@@ -1,12 +1,12 @@
 #lang racket/unit
 
 (require string-constants
-         mzlib/contract
+         racket/contract
+         racket/class
          "drsig.rkt"
          "frame-icon.rkt"
          mred
          framework
-         mzlib/class
          racket/list
          racket/path
          racket/file
