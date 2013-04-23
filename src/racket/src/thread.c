@@ -6534,7 +6534,7 @@ static void escape_during_sync(Syncing *syncing)
 
   syncing->thread = NULL;
 
-  if (p->sync_box)
+  if (p && p->sync_box)
     scheme_post_sema_all(p->sync_box);
   scheme_post_syncing_nacks(syncing);
 
