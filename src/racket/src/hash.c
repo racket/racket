@@ -2451,7 +2451,7 @@ Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key)
   return NULL;
 }
 
-XFORM_NONGCING intptr_t path_next(AVLNode *avl, intptr_t path)
+XFORM_NONGCING mzlonglong path_next(AVLNode *avl, mzlonglong path)
 {
   if (!avl)
     return -1;
@@ -2500,7 +2500,7 @@ XFORM_NONGCING intptr_t path_next(AVLNode *avl, intptr_t path)
   }
 }
 
-XFORM_NONGCING int path_find(AVLNode *avl, intptr_t path, Scheme_Object **_key, Scheme_Object **_val)
+XFORM_NONGCING int path_find(AVLNode *avl, mzlonglong path, Scheme_Object **_key, Scheme_Object **_val)
 {
   if (!avl) return 0;
 
@@ -2531,13 +2531,13 @@ XFORM_NONGCING int path_find(AVLNode *avl, intptr_t path, Scheme_Object **_key, 
     return path_find(avl->left, path >> 1, _key, _val);
 }
 
-intptr_t scheme_hash_tree_next(Scheme_Hash_Tree *tree, intptr_t pos)
+mzlonglong scheme_hash_tree_next(Scheme_Hash_Tree *tree, mzlonglong pos)
 {
   /* Iteration uses a key where the bits say when to turn right */
   return path_next(tree->root, ((pos == -1) ? 0 : pos));
 }
 
-int scheme_hash_tree_index(Scheme_Hash_Tree *tree, intptr_t pos, Scheme_Object **_key, Scheme_Object **_val)
+int scheme_hash_tree_index(Scheme_Hash_Tree *tree, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val)
 {
   return path_find(tree->root, pos, _key, _val);
 }

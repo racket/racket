@@ -2879,7 +2879,7 @@ static Scheme_Object *stx_content(Scheme_Object *o, int add_taint, int keep)
     } else if (SCHEME_HASHTRP(v)) {
       Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)v, *ht2;
       Scheme_Object *key, *val;
-      int i;
+      mzlonglong i;
 
       ht2 = scheme_make_hash_tree(SCHEME_HASHTR_FLAGS(ht) & 0x3);
 
@@ -6753,7 +6753,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
   } else if (SCHEME_HASHTRP(v)) {
     Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)v, *ht2;
     Scheme_Object *key, *val;
-    int i;
+    mzlonglong i;
     
     ht2 = scheme_make_hash_tree(SCHEME_HASHTR_FLAGS(ht) & 0x3);
     
@@ -7636,7 +7636,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
   } else if (SCHEME_CHAPERONE_HASHTRP(o)) {
     Scheme_Hash_Tree *ht1, *ht2;
     Scheme_Object *key, *val;
-    int i;
+    mzlonglong i;
 
     if (SCHEME_NP_CHAPERONEP(o))
       ht1 = (Scheme_Hash_Tree *)SCHEME_CHAPERONE_VAL(o);
@@ -7889,7 +7889,7 @@ static void simplify_syntax_inner(Scheme_Object *o,
   } else if (SCHEME_HASHTRP(v)) {
     Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)v;
     Scheme_Object *key, *val;
-    int i;
+    mzlonglong i;
     
     i = scheme_hash_tree_next(ht, -1);
     while (i != -1) {

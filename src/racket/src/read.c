@@ -2173,7 +2173,7 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
       obj = scheme_chaperone_hash_table_copy(obj);
 
     if (SCHEME_HASHTRP(obj)) {
-      int i;
+      mzlonglong i;
       if (scheme_is_hash_tree_equal(obj))
         kind = 1;
       else if (scheme_is_hash_tree_eqv(obj))

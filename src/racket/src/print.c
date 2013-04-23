@@ -679,7 +679,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
     /* got here => printable */
     Scheme_Hash_Tree *t;
     Scheme_Object *key, *val;
-    int i;
+    mzlonglong i;
 
     if (SCHEME_NP_CHAPERONEP(obj))
       t = (Scheme_Hash_Tree *)SCHEME_CHAPERONE_VAL(obj);
@@ -949,7 +949,7 @@ static void setup_graph_table(Scheme_Object *obj, int for_write, Scheme_Hash_Tab
     /* got here => printable */
     Scheme_Hash_Tree *t;
     Scheme_Object *key, *val;
-    int i;
+    mzlonglong i;
 
     if (SCHEME_NP_CHAPERONEP(obj))
       t = (Scheme_Hash_Tree *)SCHEME_CHAPERONE_VAL(obj);
@@ -2301,7 +2301,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       Scheme_Hash_Table *t;
       Scheme_Hash_Tree *tr;
       Scheme_Object **keys, **vals, *val, *key, *orig;
-      int i, size, did_one = 0, pos;
+      intptr_t i, size;
+      int did_one = 0;
+      mzlonglong pos;
 
       orig = obj;
       if (SCHEME_NP_CHAPERONEP(obj))

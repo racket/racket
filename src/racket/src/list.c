@@ -2145,7 +2145,7 @@ static Scheme_Object *hash_table_copy(int argc, Scheme_Object *argv[])
   } else if (SCHEME_HASHTRP(v)) {
     Scheme_Hash_Tree *t;
     Scheme_Hash_Table *naya;
-    int i;
+    mzlonglong i;
     Scheme_Object *k, *val;
 
     if (SCHEME_NP_CHAPERONEP(v))
@@ -2576,7 +2576,7 @@ static Scheme_Object *do_map_hash_table(int argc,
   } else {
     Scheme_Object *ik, *iv;
     Scheme_Hash_Tree *hash;
-    intptr_t pos;
+    mzlonglong pos;
 
     hash = (Scheme_Hash_Tree *)obj;
 
@@ -2620,7 +2620,7 @@ static Scheme_Object *hash_table_for_each(int argc, Scheme_Object *argv[])
   return do_map_hash_table(argc, argv, "hash-for-each", 0);
 }
 
-static Scheme_Object *hash_table_next(const char *name, int start, int argc, Scheme_Object *argv[])
+static Scheme_Object *hash_table_next(const char *name, mzlonglong start, int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o = argv[0];
 
@@ -2645,14 +2645,14 @@ static Scheme_Object *hash_table_next(const char *name, int start, int argc, Sch
 
     return scheme_false;
   } else if (SCHEME_HASHTRP(o)) {
-    int v;
+    mzlonglong v;
     v = scheme_hash_tree_next((Scheme_Hash_Tree *)o, start);
     if (v == -1)
       return scheme_false;
     else if (v == -2)
       return NULL;
     else
-      return scheme_make_integer(v);
+      return scheme_make_integer_value_from_long_long(v);
   } else if (SCHEME_BUCKTP(o)) {
     Scheme_Bucket_Table *hash;
     Scheme_Bucket *bucket;
@@ -2686,18 +2686,17 @@ Scheme_Object *scheme_hash_table_iterate_start(int argc, Scheme_Object *argv[])
   return hash_table_next("hash-iterate-first", -1, argc, argv);
 }
 
+#define HASH_POS_TOO_BIG ((mzlonglong)1) << 62
+
 Scheme_Object *scheme_hash_table_iterate_next(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *p = argv[1], *v;
-  int pos;
+  mzlonglong pos;
 
-  if (SCHEME_INTP(p)) {
-    pos = SCHEME_INT_VAL(p);
-    if (pos < 0)
-      pos = 0x7FFFFFFE;
-  } else {
-    pos = 0x7FFFFFFE;
-  }
+  if (!scheme_get_long_long_val(p, &pos))
+    pos = HASH_POS_TOO_BIG;
+  else if (pos < 0)
+    pos = HASH_POS_TOO_BIG;
 
   v = hash_table_next("hash-iterate-next", pos, argc, argv);
 
@@ -2725,7 +2724,8 @@ Scheme_Object *scheme_hash_table_iterate_next(int argc, Scheme_Object *argv[])
 static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object *argv[], int get_val)
 {
   Scheme_Object *p = argv[1], *obj, *chaperone, *key;
-  int pos, sz;
+  mzlonglong pos;
+  intptr_t sz;
 
   obj = argv[0];
   if (SCHEME_NP_CHAPERONEP(obj)) {
@@ -2734,13 +2734,10 @@ static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object
   } else
     chaperone = NULL;
 
-  if (SCHEME_INTP(p)) {
-    pos = SCHEME_INT_VAL(p);
-    if (pos < 0)
-      pos = 0x7FFFFFFF;
-  } else {
-    pos = 0x7FFFFFFF;
-  }
+  if (!scheme_get_long_long_val(p, &pos))
+    pos = HASH_POS_TOO_BIG;
+  else if (pos < 0)
+    pos = HASH_POS_TOO_BIG;
 
   if (SCHEME_HASHTP(obj)) {
     Scheme_Hash_Table *hash;
@@ -2782,7 +2779,6 @@ static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object
     }
   } else if (SCHEME_BUCKTP(obj)) {
     Scheme_Bucket_Table *hash;
-    int sz;
     Scheme_Bucket *bucket;
 
     hash = (Scheme_Bucket_Table *)obj;
