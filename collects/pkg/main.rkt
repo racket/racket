@@ -31,7 +31,7 @@
 (define (call-with-package-scope who given-scope installation shared user thunk)
   (define scope
     (case given-scope
-      [(installation use shared) given-scope]
+      [(installation user shared) given-scope]
       [else
        (cond
         [installation 'installation]
