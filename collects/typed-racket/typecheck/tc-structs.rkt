@@ -39,6 +39,7 @@
 ;; sty : Struct?
 ;; names : Listof[Identifier]
 ;; desc : struct-desc
+;; struct-info : struct-info?
 ;; type-only : Boolean
 (struct parsed-struct (sty names desc struct-info type-only) #:transparent)
 
@@ -90,7 +91,6 @@
                                  ((or (Poly? parent) (Mu? parent) (Struct? parent))
                                   parent)
                                  (else
-                                  (displayln parent0)
                                   (tc-error/stx #'v.par "parent type not a valid structure name: ~a"
                                                 (syntax->datum #'v.par)))))])
                 (values #'v.name parent0 parent))
