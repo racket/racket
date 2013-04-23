@@ -576,7 +576,8 @@
     (define/public (enable on?)
       (atomically
        (set! enabled? on?)
-       (enable-window on?)))
+       (when (is-parent-enabled-to-root?)
+         (enable-window on?))))
     (define/public (enable-window on?)
       ;; in atomic mode
       (void))
