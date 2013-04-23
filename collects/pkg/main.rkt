@@ -62,7 +62,7 @@
     "        (default for most packages)"
     "  force: installs the package despite missing dependencies"
     "  search-ask: looks for the dependencies on your package naming services"
-    "              (default if package is an indexed name) and asks if you would"
+    "              (default if package is a package name) and asks if you would"
     "              like it installed"
     "  search-auto: like 'search-ask' but does not ask for permission to install")]
   [#:bool force () "Ignores conflicts"]
@@ -103,7 +103,7 @@
     "        (default for most packages)"
     "  force: installs the package despite missing dependencies"
     "  search-ask: looks for the dependencies on your package naming services"
-    "              (default if package is an indexed name) and asks if you would"
+    "              (default if package is an package name) and asks if you would"
     "              like it installed"
     "  search-auto: like 'search-ask' but does not ask for permission to install")]
   [#:bool update-deps () "Check named packages' dependencies for updates"]
@@ -121,14 +121,14 @@
    'update
    scope installation shared user
    (lambda ()
-    (with-pkg-lock
-     (define setup-collects
-       (pkg-update pkg
-                   #:all? all
-                   #:dep-behavior deps
-                   #:deps? update-deps))
-     (when setup-collects
-       (setup no-setup setup-collects)))))]
+     (with-pkg-lock
+      (define setup-collects
+        (pkg-update pkg
+                    #:all? all
+                    #:dep-behavior deps
+                    #:deps? update-deps))
+      (when setup-collects
+        (setup no-setup setup-collects)))))]
  [remove
   "Remove packages"
   #:once-each
@@ -225,36 +225,38 @@
   #:args (package-directory)
   (parameterize ([current-pkg-error (pkg-error 'create)])
     (pkg-create (if manifest 'MANIFEST (or format 'zip)) package-directory))]
- [index-show
-  "Show information about packages as reported by index"
+ [catalog-show
+  "Show information about packages as reported by catalog"
   #:once-any 
-  [(#:str index #f) index () "Use <index> instead of configured indexes"]
+  [(#:str catalog #f) catalog () "Use <catalog> instead of configured catalogs"]
   #:once-each
   [#:bool all () "Show all packages"]
   [#:bool only-names () "Show only package names"]
   #:args pkg-name
   (when (and all (pair? pkg-name))
-    ((pkg-error 'index-show) "both `--all' and package names provided"))
-  (parameterize ([current-pkg-indexes (and index
-                                           (list (string->url index)))]
-                 [current-pkg-error (pkg-error 'index-show)])
-    (pkg-index-show pkg-name 
-                    #:all? all
-                    #:only-names? only-names))]
- [index-copy
-  "Copy/merge package name resolver information"
+    ((pkg-error 'catalog-show) "both `--all' and package names provided"))
+  (parameterize ([current-pkg-catalogs (and catalog
+                                            (list (string->url catalog)))]
+                 [current-pkg-error (pkg-error 'catalog-show)])
+    (pkg-catalog-show pkg-name 
+                      #:all? all
+                      #:only-names? only-names))]
+ [catalog-copy
+  "Copy/merge package name catalogs"
   #:once-each
-  [#:bool from-config () "Include currently configured packages last"]
+  [#:bool from-config () "Include currently configured catalogs last"]
   #:once-any
   [#:bool force () "Force replacement fo existing file/directory"]
   [#:bool merge () "Merge to existing database"]
   #:once-each
   [#:bool override () "While merging, override existing with new"]
-  #:args index
-  (parameterize ([current-pkg-error (pkg-error 'index-copy)])
-    (pkg-index-copy (drop-right index 1)
-                    (last index)
-                    #:from-config? from-config
-                    #:force? force
-                    #:merge? merge
-                    #:override? override))])
+  #:args catalog
+  (parameterize ([current-pkg-error (pkg-error 'catalog-copy)])
+    (when (null? catalog)
+      ((current-pkg-error) "need a destination catalog"))
+    (pkg-catalog-copy (drop-right catalog 1)
+                      (last catalog)
+                      #:from-config? from-config
+                      #:force? force
+                      #:merge? merge
+                      #:override? override))])

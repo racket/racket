@@ -15,7 +15,7 @@
 
 (pkg-tests
  (shelly-begin
-  (initialize-indexes)
+  (initialize-catalogs)
 
   (shelly-case
    "dependencies"
@@ -63,7 +63,7 @@
    (with-fake-root
     (shelly-case
      "local - search-ask [y]"
-     $ "raco pkg config --set indexes http://localhost:9990"
+     $ "raco pkg config --set catalogs http://localhost:9990"
      $ "racket -e '(require pkg-test2)'" =exit> 1
      $ "raco pkg install --deps search-ask test-pkgs/pkg-test2.zip" =exit> 0 <input= "y\n"
      $ "racket -e '(require pkg-test2)'" =exit> 0
@@ -74,7 +74,7 @@
    (with-fake-root
     (shelly-case
      "local - search-ask []"
-     $ "raco pkg config --set indexes http://localhost:9990"
+     $ "raco pkg config --set catalogs http://localhost:9990"
      $ "racket -e '(require pkg-test2)'" =exit> 1
      $ "raco pkg install --deps search-ask test-pkgs/pkg-test2.zip" =exit> 0 <input= "\n"
      $ "racket -e '(require pkg-test2)'" =exit> 0
@@ -92,7 +92,7 @@
    (with-fake-root
     (shelly-case
      "local - search-auto"
-     $ "raco pkg config --set indexes http://localhost:9990"
+     $ "raco pkg config --set catalogs http://localhost:9990"
      $ "racket -e '(require pkg-test2)'" =exit> 1
      $ "raco pkg install --deps search-auto test-pkgs/pkg-test2.zip" =exit> 0
      $ "racket -e '(require pkg-test2)'" =exit> 0
@@ -103,7 +103,7 @@
    (with-fake-root
     (shelly-case
      "remote - search-ask (default) [y]"
-     $ "raco pkg config --set indexes http://localhost:9990"
+     $ "raco pkg config --set catalogs http://localhost:9990"
      $ "racket -e '(require pkg-test2)'" =exit> 1
      $ "raco pkg install pkg-test2" =exit> 0 <input= "y\n"
      $ "racket -e '(require pkg-test2)'" =exit> 0

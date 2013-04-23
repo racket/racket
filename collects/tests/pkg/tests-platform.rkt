@@ -3,14 +3,14 @@
          racket/file
          racket/format
          pkg/util
-         (prefix-in db: pkg/pnr-db)
+         (prefix-in db: pkg/db)
          "shelly.rkt"
          "util.rkt")
 
 (pkg-tests
  (shelly-begin
   (define pkgs-dir (make-temporary-file "~a-pkgs" 'directory))
-  (define db (build-path pkgs-dir "pnr.sqlite"))
+  (define db (build-path pkgs-dir "catalog.sqlite"))
   (define pkg-x-dir (build-path pkgs-dir "pkg-x"))
 
   (make-directory* pkg-x-dir)
@@ -28,8 +28,8 @@
                             ("pkg-x-platform-no" #:platform #rx"no such platform")))
             o)))
 
-  (parameterize ([db:current-pkg-index-file db])
-    (db:set-indexes! '("local"))
+  (parameterize ([db:current-pkg-catalog-file db])
+    (db:set-catalogs! '("local"))
     (db:set-pkgs! "local"
                   '("pkg-x" "pkg-x-windows" "pkg-x-unix" "pkg-x-macosx"
                     "pkg-x-platform1" "pkg-x-platform2")))
@@ -44,7 +44,7 @@
      (build-path coll-dir "main.rkt")
      (lambda (o) 
        (displayln "#lang racket/base" o)))
-    (parameterize ([db:current-pkg-index-file db])
+    (parameterize ([db:current-pkg-catalog-file db])
       (db:set-pkg! pkg-name "local" "author@place" (path->string dir) "123456" "")))
 
   (create-package "pkg-x")
@@ -56,7 +56,7 @@
 
   (with-fake-root
    (shelly-begin
-    $ (~a "raco pkg config --set indexes file://" (path->string db))
+    $ (~a "raco pkg config --set catalogs file://" (path->string db))
     $ "racket -e '(require pkg-x)'" =exit> 1
     $ "raco pkg install --deps search-auto pkg-x" =exit> 0
     $ "racket -e '(require pkg-x)'" =exit> 0

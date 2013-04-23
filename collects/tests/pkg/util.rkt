@@ -128,7 +128,7 @@
 (define-syntax-rule (shelly-install message pkg more ...)
   (shelly-install* message pkg "pkg-test1" more ...))
 
-(define (initialize-indexes)
+(define (initialize-catalogs)
   (hash-set! *index-ht-1* "pkg-test1"
              (hasheq 'checksum
                      (file->string "test-pkgs/pkg-test1.zip.CHECKSUM")

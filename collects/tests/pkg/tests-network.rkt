@@ -31,7 +31,7 @@
   (with-fake-root
     (shelly-case
      "remote/name package"
-     $ "raco pkg config --set indexes http://localhost:9990"
+     $ "raco pkg config --set catalogs http://localhost:9990"
      $ "racket -e '(require planet2-test1)'" =exit> 1
      $ "raco pkg install planet2-test1-github-different-checksum"
      $ "racket -e '(require planet2-test1)'"

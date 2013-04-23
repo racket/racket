@@ -10,7 +10,7 @@
                       (file->string "test-pkgs/pkg-b-first.plt.CHECKSUM")
                       'source
                       "http://localhost:9999/pkg-b-first.plt"))
-   $ "raco pkg config --set indexes http://localhost:9990"
+   $ "raco pkg config --set catalogs http://localhost:9990"
    $ "raco pkg install pkg-b"
    $ "racket -e '(require pkg-b)'" =exit> 42
    (hash-set! *index-ht-1* "pkg-b"

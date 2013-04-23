@@ -164,7 +164,7 @@ specified as a GitHub reference is automatically prefixed with
 is the last element of @nonterm{optional-subpath} if it is
 non-empty, otherwise the inferred name is @nonterm{repository}.}
 
-@item{a @tech{package name} -- A @tech{package name resolver} is
+@item{a @tech{package name} -- A @tech{package catalog} is
 consulted to determine the source and @tech{checksum} for the package. For
 example, @exec{tic-tac-toe} is a package name that can be used as a
 package source.
@@ -175,20 +175,19 @@ means that it has only the characters @|package-name-chars|.}
 
 ]
 
-A @deftech{package name resolver} (@deftech{PNR},
-a.k.a. @deftech{index}) is a server or database that converts package
-names to other package sources. A PNR is identified by a string
+A @deftech{package catalog} is a server or database that converts package
+names to other package sources. A @tech{package catalog} is identified by a string
 representing a URL, where a @litchar{http://} or @litchar{https://}
 URL indicates a remote server, and a @litchar{file://} URL indicates a
-local database in the form of an SQLite database or a directory tree.
+local catalog in the form of an SQLite database or a directory tree.
 
-PLT supports two @tech{package name resolvers} that are enabled by
+PLT supports two @tech{package catalog} servers that are enabled by
 default: @url{https://pkg.racket-lang.org} for new packages and
 @url{https://planet-compat.racket-lang.org} for automatically
 generated packages for old @|PLaneT| packages. Anyone may host a
-@tech{package name resolver}, and any file-serving HTTP host can act
-as a basic @tech{package name resolver}. See @secref["pnr-protocol"]
-for information on how package information is extracted from a PNR.
+@tech{package catalog}, and any file-serving HTTP host can act
+as a basic @tech{package catalog} server. See @secref["catalog-protocol"]
+for information on how package information is extracted from a catalog.
 
 After a package is installed, the original source of its installation
 is recorded, as well as whether the instalation was an @tech{automatic installation}. An
@@ -262,8 +261,8 @@ sub-sub-commands:
   @itemlist[
    @item{@exec{fail} --- Cancels the installation if dependencies are version requirements are unmet (default for most packages)}
    @item{@exec{force} --- Installs the package(s) despite missing dependencies or version requirements (unsafe)}
-   @item{@exec{search-ask} --- Looks for the dependencies or updates via the configured @tech{package name resolvers} 
-         (default if the dependency is an indexed name) but asks if you would like it installed or updated.}
+   @item{@exec{search-ask} --- Looks for the dependencies or updates via the configured @tech{package catalogs} 
+         (default if the dependency is a @tech{package name}) but asks if you would like it installed or updated.}
    @item{@exec{search-auto} --- Like @exec{search-ask}, but does not ask for permission to install or update.}
   ]}
 
@@ -366,7 +365,7 @@ View and modify package configuration options. This command accepts the followin
 
  The valid keys are:
  @itemlist[
-  @item{@exec{indexes} --- A list of URLs for @tech{package name resolvers}.}
+  @item{@exec{catalogs} --- A list of URLs for @tech{package catalogs}.}
   @item{@exec{default-scope} --- Either @exec{installation}, @exec{user}, or @exec{shared}.
         This configuration option exists only with the @exec{installation} scope
         (i.e., it's an installation-wide configuration of the default @tech{package scope} for @exec{raco pkg} commands).}
@@ -384,9 +383,9 @@ View and modify package configuration options. This command accepts the followin
  ]
 }
 
-@item{@command/toc{index-show} @nonterm{option} ... @nonterm{package-name} ...
---- Consults @tech{package name resolvers} for a package (that is not necessarily installed)
-    and displays the resolver's information for the package, such as its source URL and
+@item{@command/toc{catalog-show} @nonterm{option} ... @nonterm{package-name} ...
+--- Consults @tech{package catalogs} for a package (that is not necessarily installed)
+    and displays the catalog's information for the package, such as its source URL and
     a checksum. This command accepts the following @nonterm{option}s:
 
  @itemlist[
@@ -394,35 +393,35 @@ View and modify package configuration options. This command accepts the followin
                       supply no @nonterm{packaee-name}s.}
  @item{@DFlag{only-names} --- Show only package names. This option is mainly useful with 
                               @DFlag{all}, but when a @nonterm{packaee-name} is provided,
-                              indexes are consulted to ensure that he package is available.}
- @item{@DFlag{index} @nonterm{index} --- Query @nonterm{index} instead of the currently configured 
-       @tech{package name resolvers}.}
+                              catalogs are consulted to ensure that he package is available.}
+ @item{@DFlag{catalog} @nonterm{catalog} --- Query @nonterm{catalog} instead of the currently configured 
+       @tech{package catalogs}.}
  ]
 }
 
-@item{@command/toc{index-copy} @nonterm{option} ... @nonterm{src-index} ... @nonterm{dest-index}
---- Copies information from @tech{package name resolvers} names by @nonterm{src-index}es 
-    to a local database or directory @nonterm{dest-index},
-    which can be used as a new @tech{package name resolver}.
+@item{@command/toc{catalog-copy} @nonterm{option} ... @nonterm{src-catalog} ... @nonterm{dest-catalog}
+--- Copies information from @tech{package catalog} names by @nonterm{src-catalog}s 
+    to a local database or directory @nonterm{dest-catalog},
+    which can be used as a new @tech{package catalog}.
 
-    The @nonterm{src-index}es can be remote or local, while @nonterm{dest-index} must be local
+    The @nonterm{src-catalog}s can be remote or local, while @nonterm{dest-catalog} must be local
     (i.e., a directory path or a SQLite database path, as inferred from the path).
-    If a @nonterm{src-index} or @nonterm{dest-index} does not start with a URL scheme, it is
-    treated as a filesystem path. Information from multiple @nonterm{src-index}es is merged,
-    with information from earlier @nonterm{src-index}es taking precedence over later 
-    @nonterm{src-index}es.
+    If a @nonterm{src-catalog} or @nonterm{dest-catalog} does not start with a URL scheme, it is
+    treated as a filesystem path. Information from multiple @nonterm{src-catalog}s is merged,
+    with information from earlier @nonterm{src-catalog}s taking precedence over later 
+    @nonterm{src-catalog}s.
 
     This command accepts the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{from-config} --- Adds the currently configured 
-       @tech{package name resolvers} to the end of the @nonterm{src-index}es list.}
- @item{@DFlag{force} --- Replaces @nonterm{dest-index} if it exists already.}
- @item{@DFlag{merge} --- Adds to @nonterm{dest-index} if it exists already. By default,
-                         information already in @nonterm{dest-index} takes precedence
+       @tech{package catalogs} to the end of the @nonterm{src-catalog}s list.}
+ @item{@DFlag{force} --- Replaces @nonterm{dest-catalog} if it exists already.}
+ @item{@DFlag{merge} --- Adds to @nonterm{dest-catalog} if it exists already. By default,
+                         information already in @nonterm{dest-catalog} takes precedence
                          over new information.}
  @item{@DFlag{override} --- Changes merging so that new information takes precedence
-                         over information already in @nonterm{dest-index}.}
+                         over information already in @nonterm{dest-catalog}.}
  ]
 }
 
@@ -442,8 +441,8 @@ to the command sub-sub-commands.
   @defthing[show procedure?]             
   @defthing[config procedure?]
   @defthing[create procedure?]
-  @defthing[index-show procedure?]
-  @defthing[index-copy procedure?])             
+  @defthing[catalog-show procedure?]
+  @defthing[catalog-copy procedure?])             
 ]{
  Duplicates the @seclink["cmdline"]{command line interface}. 
 
@@ -549,9 +548,9 @@ discovered by those who used your package source when they use
 By using either of the above deployment techniques, anyone will be
 able to use your package by referring to your @tech{package source}.
 However, they will not be able to refer to
-it by a simple name until it is listed on a @tech{package name resolver}.
+it by a simple name until it is listed on a @tech{package catalog}.
 
-If you'd like to use the official @tech{package name resolver}, browse
+If you'd like to use the official @tech{package catalog}, browse
 to
 @link["https://pkg.racket-lang.org/manage/upload"]{https://pkg.racket-lang.org/manage/upload}
 and upload a new package. You will need to create an account and log
@@ -564,7 +563,7 @@ updates.
 If you use this server, and use GitHub for deployment, then you will
 never need to open a web browser to update your package for end
 users. You just need to push to your GitHub repository, then within 24
-hours, the official @tech{package name resolver} will notice, and
+hours, the official @tech{package catalog} will notice, and
 @exec{raco pkg update} will work on your user's machines.
 
 @subsection{Naming and Designing Packages}
@@ -596,7 +595,7 @@ present interfaces to external, versioned things, such as
 package implementors to effectively declare dependencies on provided
 features. Such declarations allow @exec{raco pkg install} and
 @exec{raco pkg update} to help check dependencies.  Declaring and
-changing a version is optional, and @tech{package name resolvers}
+changing a version is optional, and @tech{package catalog}
 ignore version declarations; in particular, a package is a candidate
 for updating when its @tech{checksum} changes, independent of whether
 the package's version changes or in which direction the version
@@ -700,7 +699,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
        set up via @exec{raco setup} after the package is installed, or
        @racket['all] to indicate that all collections need to be
        setup. By default, only collections included in the package are
-       set up (plus collections for global documentation indexes and
+       set up (plus collections for global documentation catalogs and
        links).}
 
 ]
@@ -709,10 +708,10 @@ The following @filepath{info.rkt} fields are used by the package manager:
 
 @section{@|Planet1| Compatibility}
 
-PLT maintains a @tech{package name resolver} to serve packages that
+PLT maintains a @tech{package catalog} to serve packages that
 were developed using the original @seclink[#:doc '(lib
 "planet/planet.scrbl") "top"]{@|Planet1|} package system.  This
-compatibility resolver is at
+compatibility catalog is at
 @link["https://planet-compat.racket-lang.org/"]{https://planet-compat.racket-lang.org/},
 which is included by default in the package-server search path.
 
@@ -747,7 +746,7 @@ future.
 
 @include-section["apis.scrbl"]
 
-@include-section["pnr-protocol.scrbl"]
+@include-section["catalog-protocol.scrbl"]
 
 @; ----------------------------------------
 
@@ -836,21 +835,21 @@ Packages are updated only when you run a tool such as
 @command-ref{update}, so packages are never updated
 implicitly. Furthermore, you can snapshot a set of package archives
 and install from those archives, instead of relying on package name
-resolution through a @tech{package name resolver}.
+resolution through a @tech{package catalog}.
 
 If you want to control the resolution of package names (including
 specific @tech{checksum}s) but not necessary keep a copy of all package
 code (assuming that old @tech{checksum}s remain available, such as
 through Github), you can create a snapshot of the @tech{package name}
-to @tech{package source} mapping by using @command-ref{index-copy}.
+to @tech{package source} mapping by using @command-ref{catalog-copy}.
 For example,
 
-@commandline{raco pkg index-copy --from-config /home/joe/snapshot.sqlite}
+@commandline{raco pkg catalog-copy --from-config /home/joe/snapshot.sqlite}
 
 creates a snapshot @filepath{/home/joe/snapshot.sqlite} of the current
 package name resolution, and then
 
-@commandline{raco pkg config --set indexes file:///home/joe/snapshot.sqlite}
+@commandline{raco pkg config --set catalogs file:///home/joe/snapshot.sqlite}
 
 directs all package-name resolution to the snapshot. You can configure
 resolution for specific package names by editing the snapshot.
@@ -917,7 +916,7 @@ out of beta when these are completed.
 
 @itemlist[
 
-@item{The official PNR will divide packages into three
+@item{The official catalog server will divide packages into three
 categories: @reponame{planet}, @reponame{solar-system}, and @reponame{galaxy}. The definitions
 for these categories are:
 
@@ -966,10 +965,10 @@ the @reponame{solar-system} category, automatically.
 }
 
 @item{In order to mitigate the costs of external linking vis a vis the
-inability to understand code in isolation, we will create a module
-resolver that searches for providers of modules on the configured
-@tech{package name resolvers}. For example, if a module requires
-@filepath{data/matrix.rkt}, and it is not available, then the PNR will
+inability to understand code in isolation, we will create exception
+printers that search for providers of modules on the configured
+@tech{package catalogs}. For example, if a module requires
+@filepath{data/matrix.rkt}, and it is not available, then the catalog will
 be consulted to discover what packages provide it. @emph{Only packages
 in @reponame{solar-system} or @reponame{planet} will be
 returned.} (This category restriction ensures that the package to
@@ -981,8 +980,8 @@ wish to automatically install @reponame{planet} packages but not
 @reponame{solar-system} packages, while others may not want to install
 any.)
 
-This feature will be generalized across all @tech{package name
-resolvers}, so users could maintain their own category definitions with
+This feature will be generalized across all @tech{package catalogs}, 
+so users could maintain their own category definitions with
 different policies.}
 
 ]
@@ -994,15 +993,15 @@ require a lot of cross-Racket integration.
 
 @itemlist[
 
-@item{The official PNR is bare bones. It could conceivably do a lot
+@item{The official catalog server is bare bones. It could conceivably do a lot
 more: keep track of more statistics, enable "social" interactions
 about packages, link to documentation, problem reports, licenses,
 etc. Some of this is easy and obvious, but the community's needs are
 unclear.}
 
 @item{It would be nice to encrypt information from the official
-@tech{package name resolver} with a public key shipped with Racket, and
-allow other resolvers to implement a similar security scheme.}
+@tech{package catalog} with a public key shipped with Racket, and
+allow other catalogs to implement a similar security scheme.}
 
 @item{Packages in the @reponame{planet} category should be tested on
 DrDr. This would require a way to communicate information about how
@@ -1029,12 +1028,12 @@ these included are painful to maintain and unreliable given users with
 different versions of Racket installed.
 
 One solution is to have a separate place where such "binary" packages
-are available. For example, PLT could run a PNR for every Racket
+are available. For example, PLT could run a catalog server for every Racket
 version, i.e., @filepath{https://binaries.racket-lang.org/5.3.1.4},
 that would contain the binaries for all the packages in the
 @reponame{planet} category. Thus, when you install package
 @pkgname{tic-tac-toe} you could also install the binary version from
-the appropriate PNR.
+the appropriate catalog.
 
 There are obvious problems with this... it could be expensive for PLT
 in terms of space and time... Racket compilation is not necessarily

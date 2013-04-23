@@ -2,9 +2,9 @@
 @(require scribble/bnf
           "common.rkt")
 
-@title[#:tag "pnr-protocol"]{Package Name Resolver Protocol}
+@title[#:tag "catalog-protocol"]{Package Catalog Protocol}
 
-A @tech{package name resolver} is specified by a URL in one of three
+A @tech{package catalog} is specified by a URL in one of three
 forms:
 
 @itemlist[
@@ -19,10 +19,10 @@ forms:
 
 ]
 
-@section{Remote and Directory Indexes}
+@section{Remote and Directory Catalogs}
 
-In the case of a remote URL or a local directory naming an
-@tech{index}, the URL/path is extended as follows to obtain
+In the case of a remote URL or a local directory naming a
+@tech{package catalog}, the URL/path is extended as follows to obtain
 information about packages:
 
 @itemlist[
@@ -64,14 +64,14 @@ information about packages:
        ]}
 
  @item{@litchar{pkgs} path element: Obtains a list of package names
-       that are mapped by the @tech{index}.  An HTTP request for a remote URL
+       that are mapped by the @tech{package catalog}.  An HTTP request for a remote URL
        should respond with a @racket[read]-able list of strings. A
        path in a local directory formed by adding @filepath{pkg} and
        @nonterm{package} should refer to a file that similarly
        contains a @racket[read]-able list of strings.
 
-       This URL/path form is used by @command-ref{index-copy} and
-       tools that allow a user to browse an index.
+       This URL/path form is used by @command-ref{catalog-copy} and
+       tools that allow a user to browse an catalog.
 
        In the case of a local directory, if no @filepath{pkgs} file is
        available, a list is created by listing all files in the
@@ -98,21 +98,21 @@ Note that a local directory served as files through an HTTP server
 works as a remote URL, as long as the @filepath{pkgs} and
 @filepath{pkgs-all} files are present.
 
-The source for the PLT-hosted @tech{package name resolvers} is in the
-@racket[(collection-file-path "pkg-index" "meta")]
+The source for the PLT-hosted @tech{package catalog} is in the
+@racket[(collection-file-path "pkg-catalog" "meta")]
 directory of the full Racket distribution.
 
 @; ----------------------------------------
 
-@section{SQLite Indexes}
+@section{SQLite Catalogs}
 
-A SQLite database @tech{index} is meant to be constructed and queries
-using the @racketmodname[pkg/pnr-db] library, but the database can be
+A SQLite database @tech{package catalog} is meant to be constructed and queries
+using the @racketmodname[pkg/db] library, but the database can be
 constructed in any way as long as it contains the following tables:
 
 @itemlist[
 
- @item{A @tt{pnr} table with the format
+ @item{A @tt{catalog} table with the format
 
         @verbatim[#:indent 2]{(id SMALLINT, 
                                url TEXT,
@@ -120,45 +120,45 @@ constructed in any way as long as it contains the following tables:
 
        Normally, the only row in this table is @tt{(0, "local", 0)},
        but a database that records the content of a set of other
-       indexes can also be used as an index, in which case each row
-       represents an index; the @tt{id} field is a unique identifier
-       for each index, the @tt{url} field is the index's URL, and the
-       @tt{pos} column orders the index relative to others (where a
+       catalogs can also be used as an catalog, in which case each row
+       represents an catalog; the @tt{id} field is a unique identifier
+       for each catalog, the @tt{url} field is the catalog's URL, and the
+       @tt{pos} column orders the catalog relative to others (where a
        lower @tt{pos} takes precedence).}
 
  @item{A @tt{pkg} table with the format
 
        @verbatim[#:indent 2]{(name TEXT,
-                              pnr SMALLINT,
+                              catalog SMALLINT,
                               author TEXT,
                               source TEXT,
                               checksum TEXT,
                               desc TEXT)}
 
-        The @tt{pnr} field is normally @tt{0}; in the case that the
-        database reflects multiple other indexes, the @tt{pnr} field
-        indicates the package entry's source index.
+        The @tt{catalog} field is normally @tt{0}; in the case that the
+        database reflects multiple other catalogs, the @tt{catalog} field
+        indicates the package entry's source catalog.
 
-        The @tt{pkg} and @tt{pnr} fields together determine a unique
+        The @tt{pkg} and @tt{catalog} fields together determine a unique
         row in the table.}
 
  @item{A @tt{tags} table with the form
 
              @verbatim[#:indent 2]{(pkg TEXT,
-                                    pnr TEXT,
+                                    catalog TEXT,
                                     tag TEXT)}
 
-       where the @tt{pkg} and @tt{pnr} combination identifies a unique
+       where the @tt{pkg} and @tt{catalog} combination identifies a unique
        row in @tt{pkg}.}
 
  @item{A @tt{modules} table with the form
 
             @verbatim[#:indent 2]{(name TEXT,
                                    pkg TEXT,
-                                   pnr SMALLINT,
+                                   catalog SMALLINT,
                                    checksum TEXT)}
 
-       where the @tt{pkg} and @tt{pnr} combination identifies a unique
+       where the @tt{pkg} and @tt{catalog} combination identifies a unique
        row in @tt{pkg}, and @racket[name] is a printed module path.
 
        This table is not currently used by any @exec{raco pkg}

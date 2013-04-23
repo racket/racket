@@ -27,7 +27,7 @@
          syntax/modcollapse
          "name.rkt"
          "util.rkt"
-         (prefix-in db: "pnr-db.rkt"))
+         (prefix-in db: "db.rkt"))
 
 (define current-pkg-scope
   (make-parameter 'user))
@@ -37,7 +37,7 @@
   (make-parameter (lambda args (apply error 'pkg args))))
 (define current-no-pkg-db
   (make-parameter #f))
-(define current-pkg-indexes
+(define current-pkg-catalogs
   (make-parameter #f))
 
 (define (pkg-error . rest)
@@ -275,28 +275,28 @@
   (hash-ref c k
             (λ ()
               (match k
-                ["indexes"
+                ["catalogs"
                  (list "https://pkg.racket-lang.org"
                        "https://planet-compat.racket-lang.org")]))))
 
-(define (pkg-config-indexes)
+(define (pkg-config-catalogs)
   (with-pkg-lock/read-only
-   (read-pkg-cfg/def "indexes")))
+   (read-pkg-cfg/def "catalogs")))
 
-(define (pkg-indexes)
-  (or (current-pkg-indexes)
-      (map string->url (read-pkg-cfg/def "indexes"))))
+(define (pkg-catalogs)
+  (or (current-pkg-catalogs)
+      (map string->url (read-pkg-cfg/def "catalogs"))))
 
 (define (db-path? p)
   (regexp-match? #rx"[.]sqlite$" (path->bytes p)))
 
-(define (pnr-dispatch i server db dir)
+(define (catalog-dispatch i server db dir)
   (cond
    [(equal? "file" (url-scheme i))
     (define path (url->path i))
     (cond
      [(db-path? path)
-      (parameterize ([db:current-pkg-index-file path])
+      (parameterize ([db:current-pkg-catalog-file path])
         (db))]
      [(directory-exists? path) (dir path)])]
    [else (server i)]))
@@ -308,10 +308,10 @@
                        (list
                         (cons 'version (version))))]))
 
-(define (package-index-lookup pkg details?)
+(define (package-catalog-lookup pkg details?)
   (or
-   (for/or ([i (in-list (pkg-indexes))])
-     (pnr-dispatch
+   (for/or ([i (in-list (pkg-catalogs))])
+     (catalog-dispatch
       i
       ;; Server:
       (lambda (i)
@@ -319,7 +319,7 @@
                       (combine-url/relative i (format "pkg/~a" pkg))))
         (log-pkg-debug "resolving via ~a" (url->string addr))
         (read-from-server
-         'package-index-lookup
+         'package-catalog-lookup
          addr
          (lambda (v) (and (hash? v)
                           (for/and ([k (in-hash-keys v)])
@@ -335,14 +335,14 @@
          (define pkg-path (build-path path "pkg" pkg))
          (and (file-exists? pkg-path)
               (call-with-input-file* pkg-path read)))))
-   (pkg-error (~a "cannot find package on indexes\n"
+   (pkg-error (~a "cannot find package on catalogs\n"
                   "  package: ~a")
               pkg)))
 
 (define (db-pkg-info pkg details?)
   (if details?
       (let ([tags (db:get-pkg-tags (db:pkg-name pkg)
-                                   (db:pkg-index pkg))])
+                                   (db:pkg-catalog pkg))])
         (hash 'name (db:pkg-name pkg)
               'author (db:pkg-author pkg)
               'source (db:pkg-source pkg)
@@ -354,10 +354,8 @@
 
 (define (remote-package-checksum pkg)
   (match pkg
-    [`(pns ,pkg-name) ; compatibility, for now
-     (hash-ref (package-index-lookup pkg-name #f) 'checksum)]
-    [`(pnr ,pkg-name)
-     (hash-ref (package-index-lookup pkg-name #f) 'checksum)]
+    [`(catalog ,pkg-name)
+     (hash-ref (package-catalog-lookup pkg-name #f) 'checksum)]
     [`(url ,pkg-url-str)
      (package-url->checksum pkg-url-str)]))
 
@@ -370,6 +368,7 @@
           (file->value file)
           (hash))))
   the-db)
+             
 (define (write-file-hash! file new-db)
   (make-parent-directory* file)
   (with-output-to-file file
@@ -379,7 +378,14 @@
 (define (read-pkg-db)
   (if (current-no-pkg-db)
       #hash()
-      (read-file-hash (pkg-db-file))))
+      (let ([the-db (read-file-hash (pkg-db-file))])
+        ;; compatibility: map 'pnr to 'catalog:
+        (for/hash ([(k v) (in-hash the-db)])
+          (values k
+                  (if (eq? 'pnr (car (pkg-info-orig-pkg v)))
+                      (struct-copy pkg-info v
+                                   [orig-pkg `(catalog ,(cadr (pkg-info-orig-pkg v)))])
+                      v))))))
 
 (define (package-info pkg-name [fail? #t])
   (define db (read-pkg-db))
@@ -863,9 +869,9 @@
                       pkg-dir
                       #t #f)]))]
    [(eq? type 'name)
-    (define index-info (package-index-lookup pkg #f))
-    (define source (hash-ref index-info 'source))
-    (define checksum (hash-ref index-info 'checksum))
+    (define catalog-info (package-catalog-lookup pkg #f))
+    (define source (hash-ref catalog-info 'source))
+    (define checksum (hash-ref catalog-info 'checksum))
     (define info (stage-package/info source
                                      #f
                                      pkg-name
@@ -880,7 +886,7 @@
      (update-install-info-checksum
       info
       checksum)
-     `(pnr ,pkg))]
+     `(catalog ,pkg))]
    [else
     (pkg-error "cannot infer package source type\n  source: ~a" pkg)]))
 
@@ -936,8 +942,7 @@
     (match-define
      (install-info pkg-name orig-pkg pkg-dir clean? checksum)
      info)
-    (define name? (or (eq? 'pns (first orig-pkg)) ; compatibility, for now
-                      (eq? 'pnr (first orig-pkg))))
+    (define name? (eq? 'catalog (first orig-pkg)))
     (define (clean!)
       (when clean?
         (delete-directory/files pkg-dir)))
@@ -1345,8 +1350,8 @@
   (cond
     [config:set
      (match key+vals
-       [(list* (and key "indexes") val)
-        (update-pkg-cfg! "indexes" val)]
+       [(list* (and key "catalogs") val)
+        (update-pkg-cfg! "catalogs" val)]
        [(list (and key "default-scope") val)
         (unless (member val '("installation" "user" "shared"))
           (pkg-error (~a "invliad value for config key\n"
@@ -1370,8 +1375,8 @@
      (match key+vals
        [(list key)
         (match key
-          ["indexes"
-           (for ([s (in-list (read-pkg-cfg/def "indexes"))])
+          ["catalogs"
+           (for ([s (in-list (read-pkg-cfg/def "catalogs"))])
              (printf "~a\n" s))]
           ["default-scope"
            (if (eq? 'installation (current-pkg-scope))
@@ -1456,7 +1461,7 @@
          #:exists 'replace
          (λ () (display (call-with-input-file pkg sha1))))])))
 
-(define (pkg-index-copy srcs dest
+(define (pkg-catalog-copy srcs dest
                         #:from-config? [from-config? #f]
                         #:merge? [merge? #f]
                         #:force? [force? #f]
@@ -1464,7 +1469,7 @@
   (define src-paths
     (for/list ([src (in-list (append srcs
                                      (if from-config?
-                                         (pkg-config-indexes)
+                                         (pkg-config-catalogs)
                                          null)))])
       (define src-path
         (cond
@@ -1474,7 +1479,7 @@
          [(regexp-match? #rx"^file://" src)
           (url->path (string->url src))]
          [(regexp-match? #rx"^[a-zA-Z]*://" src)
-          (pkg-error (~a "unrecognized URL scheme for an index\n"
+          (pkg-error (~a "unrecognized URL scheme for an catalog\n"
                          "  URL: ~a")
                      src)]
          [else (path->complete-path src)]))
@@ -1487,7 +1492,7 @@
          [(let-values ([(base name dir?) (split-path src-path)]) dir?)
           (void)]
          [else
-          (pkg-error (~a "bad source index path\n"
+          (pkg-error (~a "bad source catalog path\n"
                          "  path: ~a\n"
                          "  expected: directory or path with \".sqlite\" extension")
                      src)]))
@@ -1498,7 +1503,7 @@
      [(regexp-match? #rx"^file://" dest)
       (url->path (string->url dest))]
      [(regexp-match? #rx"^[a-zA-Z]*://" dest)
-      (pkg-error (~a "cannot copy to a non-file destination index\n"
+      (pkg-error (~a "cannot copy to a non-file destination catalog\n"
                      "  given URL: ~a")
                  dest)]
      [else (path->complete-path dest)]))
@@ -1521,11 +1526,11 @@
                              (cons dest-path
                                    src-paths))
                          src-paths)])
-      (parameterize ([current-pkg-indexes (for/list ([src-path src-paths])
+      (parameterize ([current-pkg-catalogs (for/list ([src-path src-paths])
                                             (if (path? src-path)
                                                 (path->url src-path)
                                                 src-path))])
-        (get-all-pkg-details-from-indexes))))
+        (get-all-pkg-details-from-catalogs))))
 
   (when (and force? (not merge?))
     (cond
@@ -1541,8 +1546,8 @@
 
   (cond
    [(db-path? dest-path)
-    (parameterize ([db:current-pkg-index-file dest-path])
-      (db:set-indexes! '("local"))
+    (parameterize ([db:current-pkg-catalog-file dest-path])
+      (db:set-catalogs! '("local"))
       (db:set-pkgs! "local"
                     (for/list ([(k v) (in-hash details)])
                       (db:pkg k "local"
@@ -1571,7 +1576,7 @@
      (build-path dest-path "pkgs-all")
      (lambda (o) (write details o)))]))
 
-(define (pkg-index-show names 
+(define (pkg-catalog-show names 
                         #:all? [all? #f]
                         #:only-names? [only-names? #f])
   (for ([name (in-list names)])
@@ -1585,22 +1590,22 @@
   (cond
    [only-names?
     (define all-names (if all?
-                          (get-all-pkg-names-from-indexes)
+                          (get-all-pkg-names-from-catalogs)
                           names))
     (for ([name (in-list all-names)])
       (unless all?
         ;; Make sure it's available:
-        (get-pkg-details-from-indexes name))
+        (get-pkg-details-from-catalogs name))
       (printf "~a\n" name))]
    [else
     (define all-details (and all?
-                             (get-all-pkg-details-from-indexes)))
+                             (get-all-pkg-details-from-catalogs)))
     (for ([name (in-list (if all?
                              (hash-keys all-details)
                              names))])
       (define details (if all?
                           (hash-ref all-details name)
-                          (get-pkg-details-from-indexes name)))
+                          (get-pkg-details-from-catalogs name)))
       (printf "Package name: ~a\n" name)
       (for ([key '(author source checksum tags description)])
         (define v (hash-ref details key #f))
@@ -1611,16 +1616,16 @@
                       (apply ~a #:separator ", " v)
                       v)))))]))
 
-(define (get-all-pkg-names-from-indexes)
+(define (get-all-pkg-names-from-catalogs)
   (define ht
-    (for*/hash ([i (in-list (pkg-indexes))]
+    (for*/hash ([i (in-list (pkg-catalogs))]
                 [name
-                 (pnr-dispatch
+                 (catalog-dispatch
                   i
                   ;; Server:
                   (lambda (i)
                     (read-from-server 
-                     'get-all-pkg-names-from-indexes
+                     'get-all-pkg-names-from-catalogs
                      (add-version-query
                       (combine-url/relative i "pkgs"))
                      (lambda (l) (and (list? l) 
@@ -1642,19 +1647,19 @@
       (values name #t)))
   (sort (hash-keys ht) string<?))
 
-(define (get-pkg-details-from-indexes name)
-  (for/or ([i (in-list (pkg-indexes))])
-    (package-index-lookup name #t)))
+(define (get-pkg-details-from-catalogs name)
+  (for/or ([i (in-list (pkg-catalogs))])
+    (package-catalog-lookup name #t)))
 
-(define (get-all-pkg-details-from-indexes)
-  (for/fold ([ht (hash)]) ([i (in-list (pkg-indexes))])
+(define (get-all-pkg-details-from-catalogs)
+  (for/fold ([ht (hash)]) ([i (in-list (pkg-catalogs))])
     (define one-ht
-      (pnr-dispatch
+      (catalog-dispatch
        i
        ;; Server:
        (lambda (i)
          (read-from-server
-          'get-all-pkg-details-from-indexes
+          'get-all-pkg-details-from-catalogs
           (add-version-query
            (combine-url/relative i "pkgs-all"))
           (lambda (v)
@@ -1730,24 +1735,24 @@
      (delete-directory/files dir))))
 
 
-(define (pkg-index-update-local #:index-file [index-file (db:current-pkg-index-file)]
-                                #:quiet? [quiet? #f])
-  (parameterize ([db:current-pkg-index-file index-file])
-    (define indexes (pkg-config-indexes))
-    (db:set-indexes! indexes)
+(define (pkg-catalog-update-local #:catalog-file [catalog-file (db:current-pkg-catalog-file)]
+                                  #:quiet? [quiet? #f])
+  (parameterize ([db:current-pkg-catalog-file catalog-file])
+    (define catalogs (pkg-config-catalogs))
+    (db:set-catalogs! catalogs)
 
-    (for ([index (in-list indexes)])
-      (parameterize ([current-pkg-indexes (list (string->url index))])
-        (define details (get-all-pkg-details-from-indexes))
-        (db:set-pkgs! index (for/list ([(name ht) (in-hash details)])
+    (for ([catalog (in-list catalogs)])
+      (parameterize ([current-pkg-catalogs (list (string->url catalog))])
+        (define details (get-all-pkg-details-from-catalogs))
+        (db:set-pkgs! catalog (for/list ([(name ht) (in-hash details)])
                               (db:pkg name
-                                      index
+                                      catalog
                                       (hash-ref ht 'author "")
                                       (hash-ref ht 'source "")
                                       (hash-ref ht 'checksum "")
                                       (hash-ref ht 'description ""))))
 
-        (define need-modules (db:get-pkgs-without-modules #:index index))
+        (define need-modules (db:get-pkgs-without-modules #:catalog catalog))
         (for ([(pkg) (in-list need-modules)])
           (define name (db:pkg-name pkg))
           (define ht (hash-ref details name))
@@ -1759,11 +1764,11 @@
                                        #f 
                                        (hash-ref ht 'checksum #f) 
                                        #f)))
-          (db:set-pkg-modules! name index checksum modules))))))
+          (db:set-pkg-modules! name catalog checksum modules))))))
 
 
-(define (choose-index-file)
-  (define default (db:current-pkg-index-file))
+(define (choose-catalog-file)
+  (define default (db:current-pkg-catalog-file))
   (if (file-exists? default)
       default
       (let ([installation (build-path (find-lib-dir) "pkgs" (file-name-from-path default))])
@@ -1771,10 +1776,10 @@
             installation
             default))))
 
-(define (pkg-index-suggestions-for-module module-path
-                                          #:index-file [index-file (choose-index-file)])
-  (if (file-exists? index-file)
-      (parameterize ([db:current-pkg-index-file index-file])
+(define (pkg-catalog-suggestions-for-module module-path
+                                            #:catalog-file [catalog-file (choose-catalog-file)])
+  (if (file-exists? catalog-file)
+      (parameterize ([db:current-pkg-catalog-file catalog-file])
         (let* ([mod (collapse-module-path 
                      module-path
                      (lambda () (build-path (current-directory) "dummy.rkt")))]
@@ -1809,7 +1814,7 @@
    (parameter/c string?)]
   [current-pkg-error 
    (parameter/c procedure?)]
-  [current-pkg-indexes
+  [current-pkg-catalogs
    (parameter/c (or/c #f (listof url?)))]
   [pkg-directory
    (-> string? path-string?)]
@@ -1853,12 +1858,12 @@
                         #:ignore-checksums? boolean?
                         #:quiet? boolean?)
         (or/c #f (listof (or/c path-string? (non-empty-listof path-string?)))))]
-  [pkg-index-show
+  [pkg-catalog-show
    (->* ((listof string?))
         (#:all? boolean?
                 #:only-names? boolean?)
         void?)]
-  [pkg-index-copy
+  [pkg-catalog-copy
    (->* ((listof path-string?) path-string?)
         (#:from-config? any/c
                         #:merge? boolean?
@@ -1880,22 +1885,22 @@
                   (values path?
                           (or/c #f string?)
                           boolean?))]
-  [pkg-config-indexes
+  [pkg-config-catalogs
    (-> (listof string?))]
-  [pkg-index-update-local
+  [pkg-catalog-update-local
    (->* ()
-        (#:index-file path-string?
+        (#:catalog-file path-string?
          #:quiet? boolean?)
         void?)]
-  [pkg-index-suggestions-for-module
+  [pkg-catalog-suggestions-for-module
    (->* (module-path?)
-        (#:index-file path-string?)
+        (#:catalog-file path-string?)
         (listof string?))]
-  [get-all-pkg-names-from-indexes
+  [get-all-pkg-names-from-catalogs
    (-> (listof string?))]
-  [get-all-pkg-details-from-indexes
+  [get-all-pkg-details-from-catalogs
    (-> (hash/c string? (hash/c symbol? any/c)))]
-  [get-pkg-details-from-indexes
+  [get-pkg-details-from-catalogs
    (-> string?
        (or/c #f (hash/c symbol? any/c)))]
   [get-pkg-content

@@ -14,4 +14,4 @@ building blocks and local-database support.
 @local-table-of-contents[]
 
 @include-section["lib.scrbl"]
-@include-section["pnr-db.scrbl"]
+@include-section["db.scrbl"]

@@ -11,7 +11,7 @@
    "A lock is used to guarantee serial access to the package database"
 
    ;; Step 1: Start a special server that waits for our signal to respond
-   (initialize-indexes)
+   (initialize-catalogs)
    (define okay-to-respond?-sema (make-semaphore))
    (thread
     (λ ()
@@ -27,7 +27,7 @@
       (sleep 1)))
 
    ;; Step 2: Assign it as our server
-   $ "raco pkg config --set indexes http://localhost:9967"
+   $ "raco pkg config --set catalogs http://localhost:9967"
 
    ;; Step 3: Start an installation request in the background
    (thread

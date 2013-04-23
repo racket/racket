@@ -4,7 +4,7 @@
                      racket/contract/base
                      pkg
                      pkg/lib
-                     (only-in pkg/pnr-db current-pkg-index-file)
+                     (only-in pkg/db current-pkg-catalog-file)
                      net/url
                      syntax/modcollapse
                      setup/getinfo))
@@ -53,21 +53,21 @@ argument. The @exec{raco pkg} command sets this parameter to use
 argument.}
 
 
-@defparam[current-pkg-indexes indexes (or/c #f (listof url?))]{
+@defparam[current-pkg-catalogs catalogs (or/c #f (listof url?))]{
 
-A parameter that determines the @tech{package name resolvers} that are
+A parameter that determines the @tech{package catalogs} that are
 consulted to resolve a @tech{package name}. If the parameter's value
-is @racket[#f], then the result of @racket[pkg-config-indexes] is
+is @racket[#f], then the result of @racket[pkg-config-catalogs] is
 used.}
 
 
-@defproc[(pkg-config-indexes) (listof string?)]{
+@defproc[(pkg-config-catalogs) (listof string?)]{
 
 Returns a list of URL strings for the user's configured @tech{package
-name resolvers}.}
+catalogs}.}
 
 
-@defstruct[pkg-info ([orig-pkg (or/c (list/c 'pnr string?)
+@defstruct[pkg-info ([orig-pkg (or/c (list/c 'catalog string?)
                                      (list/c 'url string?)
                                      (list/c 'link string?))]
                      [checksum (or/c #f string?)]
@@ -220,71 +220,71 @@ The package lock must be held to allow reads; see
 @racket[with-pkg-lock/read-only].}
 
 
-@defproc[(pkg-index-show [names (listof string?)]
-                         [#:all? all? boolean? #f]
-                         [#:only-names? only-names? boolean? #f])
+@defproc[(pkg-catalog-show [names (listof string?)]
+                           [#:all? all? boolean? #f]
+                           [#:only-names? only-names? boolean? #f])
          void?]{
 
-Implements the @racket[index-show] command. If @racket[all?] is true,
+Implements the @racket[catalog-show] command. If @racket[all?] is true,
 then @racket[names] should be empty.}
 
 
-@defproc[(pkg-index-copy [sources (listof path-string?)]
-                         [dest path-string?]
-                         [#:from-config? from-config? boolean? #f]
-                         [#:merge? merge? boolean? #f]
-                         [#:force? force? boolean? #f]
-                         [#:override? override? boolean? #f])
+@defproc[(pkg-catalog-copy [sources (listof path-string?)]
+                           [dest path-string?]
+                           [#:from-config? from-config? boolean? #f]
+                           [#:merge? merge? boolean? #f]
+                           [#:force? force? boolean? #f]
+                           [#:override? override? boolean? #f])
          void?]{
 
-Implements the @racket[index-copy] command.}
+Implements the @racket[catalog-copy] command.}
 
 
-@defproc[(pkg-index-update-local [#:index-file index-file path-string? (current-pkg-index-file)]
-                                 [#:quiet? quiet? boolean? #f])
+@defproc[(pkg-catalog-update-local [#:catalog-file catalog-file path-string? (current-pkg-catalog-file)]
+                                   [#:quiet? quiet? boolean? #f])
          void?]{
 
-Consults the user's configured @tech{package name resolvers} (like
-@racket[pkg-index-copy]) and package servers to populate the database
-@racket[index-file] with information about available packages and the
+Consults the user's configured @tech{package catalogs} (like
+@racket[pkg-catalog-copy]) and package servers to populate the database
+@racket[catalog-file] with information about available packages and the
 modules that they implement.}
 
 
-@defproc[(pkg-index-suggestions-for-module 
+@defproc[(pkg-catalog-suggestions-for-module 
           [module-path module-path?]
-          [#:index-file index-file path-string? ....])
+          [#:catalog-file catalog-file path-string? ....])
          (listof string?)]{
 
-Consults @racket[index-file] and returns a list of available packages
+Consults @racket[catalog-file] and returns a list of available packages
 that provide the module specified by @racket[module-path].
 
-The default @racket[index-file] is @racket[(current-pkg-index-file)]
+The default @racket[catalog-file] is @racket[(current-pkg-catalog-file)]
 if that file exists, otherwise a file in the racket installation is
 tried.}
 
 
-@defproc[(get-all-pkg-names-from-indexes) (listof string?)]{
+@defproc[(get-all-pkg-names-from-catalogs) (listof string?)]{
 
-Consults @tech{package name resolvers} to obtain a list of available
+Consults @tech{package catalogs} to obtain a list of available
 @tech{package names}.}
 
 
-@defproc[(get-all-pkg-details-from-indexes)
+@defproc[(get-all-pkg-details-from-catalogs)
          (hash/c string? (hash/c symbol? any/c))]{
 
-Consults @tech{package name resolvers} to obtain a hash table of available
+Consults @tech{package catalogs} to obtain a hash table of available
 @tech{package names} mapped to details about the package. Details for
 a particular package are provided by a hash table that maps symbols
 such as @racket['source], @racket['checksum], and @racket['author].}
 
 
-@defproc[(get-pkg-details-from-indexes [name string?])
+@defproc[(get-pkg-details-from-catalogs [name string?])
          (or/c #f (hash/c symbol? any/c))]{
 
-Consults @tech{package name resolvers} to obtain information for a
+Consults @tech{package catalogs} to obtain information for a
 single @tech{package name}, returning @racket[#f] if the @tech{package
 name} has no resolution. Details for the package are provided in the
-same form as from @racket[get-all-pkg-details-from-indexes].}
+same form as from @racket[get-all-pkg-details-from-catalogs].}
 
 
 @defproc[(get-pkg-content [desc pkg-desc?]

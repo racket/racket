@@ -9,11 +9,11 @@
 (provide 
  (struct-out pkg)
  (contract-out
-  [current-pkg-index-file
+  [current-pkg-catalog-file
    (parameter/c path-string?)]
 
-  [get-indexes (-> (listof string?))]
-  [set-indexes! ((listof string?) . -> . void?)]
+  [get-catalogs (-> (listof string?))]
+  [set-catalogs! ((listof string?) . -> . void?)]
 
   [set-pkgs! ((string? (listof (or/c pkg? string?)))
               (#:clear-other-checksums? boolean?)
@@ -22,7 +22,7 @@
 
   [get-pkgs (()
              (#:name (or/c #f string?)
-                     #:index (or/c #f string?))
+                     #:catalog (or/c #f string?))
              . ->* .
              (listof pkg?))]
   [set-pkg! ((string? string? string? string? string? string?)
@@ -44,16 +44,16 @@
   [get-module-pkgs (module-path? . -> . (listof pkg?))]
 
   [get-pkgs-without-modules (()
-                             (#:index string?)
+                             (#:catalog string?)
                              . ->* .
                              (listof pkg?))]))
 
-(struct pkg (name index author source checksum desc)
+(struct pkg (name catalog author source checksum desc)
   #:transparent)
 
-(define (prepare-pnr-table db)
+(define (prepare-catalog-table db)
   (prepare-table db
-                 "pnr"
+                 "catalog"
                  (~a "(id SMALLINT,"
                      " url TEXT,"
                      " pos SMALLINT)")))
@@ -62,7 +62,7 @@
   (prepare-table db
                  "pkg"
                  (~a "(name TEXT,"
-                     " pnr SMALLINT,"
+                     " catalog SMALLINT,"
                      " author TEXT,"
                      " source TEXT,"
                      " checksum TEXT,"
@@ -72,7 +72,7 @@
   (prepare-table db
                  "tags"
                  (~a "(pkg TEXT,"
-                     " pnr TEXT,"
+                     " catalog TEXT,"
                      " tag TEXT)")))
 
 (define (prepare-modules-table db)
@@ -80,21 +80,21 @@
                  "modules"
                  (~a "(name TEXT,"
                      " pkg TEXT,"
-                     " pnr SMALLINT,"
+                     " catalog SMALLINT,"
                      " checksum TEXT)")))
 
-(define current-pkg-index-file
+(define current-pkg-catalog-file
   (make-parameter (build-path
                    (find-system-path 'addon-dir)
                    (version)
                    "pkgs"
-                   "pnr.sqlite")))
+                   "catalog.sqlite")))
 
-(define (call-with-pnr-db proc)
+(define (call-with-catalog-db proc)
   (define db #f)
   (dynamic-wind
       (lambda ()
-        (define file (current-pkg-index-file))
+        (define file (current-pkg-catalog-file))
         (define dir (path-only file))
         (unless (directory-exists? dir)
           (make-directory* dir))
@@ -106,29 +106,29 @@
         (disconnect db))))
 
 (define (get-pkgs #:name [name #f]
-                  #:index [index #f])
-  (call-with-pnr-db
+                  #:catalog [catalog #f])
+  (call-with-catalog-db
    (lambda (db)
-     (prepare-pnr-table db)
+     (prepare-catalog-table db)
      (prepare-pkg-table db)
      (for/list ([row (in-list
                       (apply
                        query-rows
                        db
                        (~a "SELECT K.name, N.url, K.author, K.source, K.checksum, K.desc"
-                           " FROM pkg K, pnr N"
-                           " WHERE N.id = K.pnr"
-                           (if index
+                           " FROM pkg K, catalog N"
+                           " WHERE N.id = K.catalog"
+                           (if catalog
                                " AND  N.url = $1"
                                "")
                            (if name
                                (~a " AND  K.name = "
-                                   (if index "$2" "$1"))
+                                   (if catalog "$2" "$1"))
                                "")
                            " ORDER BY N.pos")
                        (append
-                        (if index
-                            (list index)
+                        (if catalog
+                            (list catalog)
                             null)
                         (if name
                             (list name)
@@ -140,119 +140,119 @@
             (vector-ref row 4)
             (vector-ref row 5))))))
 
-(define (set-pkg! name index author source checksum desc
+(define (set-pkg! name catalog author source checksum desc
                   #:clear-other-checksums? [clear-other-checksums? (not (equal? checksum ""))])
-  (call-with-pnr-db
+  (call-with-catalog-db
    (lambda (db)
-     (prepare-pnr-table db)
+     (prepare-catalog-table db)
      (prepare-pkg-table db)
      (call-with-transaction
       db
       (lambda ()
-        (define pnr (url->pnr db index))
+        (define catalog-id (url->catalog db catalog))
         (query db
                (~a "UPDATE pkg"
                    " SET author=$1, source=$2, checksum=$3, desc=$4"
                    " WHERE name=$5"
-                   " AND   pnr=$6")
+                   " AND   catalog=$6")
                author source checksum desc
-               name pnr)
+               name catalog-id)
         (when clear-other-checksums?
           (query-exec db
                       (~a "DELETE FROM modules"
-                          " WHERE pnr=$1 AND pkg=$2 AND checksum<>$3")
-                      pnr
+                          " WHERE catalog=$1 AND pkg=$2 AND checksum<>$3")
+                      catalog-id
                       name
                       checksum))
         (void))))))
 
-(define (get-pkg-tags name index)
-  (call-with-pnr-db
+(define (get-pkg-tags name catalog)
+  (call-with-catalog-db
    (lambda (db)
-     (prepare-pnr-table db)
+     (prepare-catalog-table db)
      (prepare-pkg-table db)
      (prepare-tags-table db)
-     (define pnr (url->pnr db index))
+     (define catalog-id (url->catalog db catalog))
      (query-list db
                  (~a "SELECT tag FROM tags"
-                     " WHERE pnr=$1"
+                     " WHERE catalog=$1"
                      "   AND pkg=$2")
-                 pnr
+                 catalog-id
                  name))))
 
-(define (set-pkg-tags! name index tags)
-  (call-with-pnr-db
+(define (set-pkg-tags! name catalog tags)
+  (call-with-catalog-db
    (lambda (db)
-     (prepare-pnr-table db)
+     (prepare-catalog-table db)
      (prepare-pkg-table db)
      (prepare-tags-table db)
      (call-with-transaction
       db
       (lambda ()
-        (define pnr (url->pnr db index))
+        (define catalog-id (url->catalog db catalog))
         (query-exec db
                     (~a "DELETE FROM tags"
-                        " WHERE pnr=$1"
+                        " WHERE catalog=$1"
                         "   AND pkg=$2")
-                    pnr
+                    catalog-id
                     name)
         (for ([tag (in-list tags)])
          (query db
                 (~a "INSERT INTO tags"
                     " VALUES ($1, $2, $3)")
-                name pnr tag)))))))
+                name catalog-id tag)))))))
 
-(define (get-pkg-modules name index checksum)
-  (call-with-pnr-db
+(define (get-pkg-modules name catalog checksum)
+  (call-with-catalog-db
    (lambda (db)
-     (prepare-pnr-table db)
+     (prepare-catalog-table db)
      (prepare-pkg-table db)
      (prepare-modules-table db)
-     (define pnr (url->pnr db index))
+     (define catalog-id (url->catalog db catalog))
      (map
       string->mod
       (query-list db
                   (~a "SELECT name FROM modules"
-                      " WHERE pnr=$1"
+                      " WHERE catalog=$1"
                       "  AND pkg=$2"
                       "  AND checksum=$3")
-                  pnr
+                  catalog-id
                   name
                   checksum)))))
 
-(define (set-pkg-modules! name index checksum modules)
-  (call-with-pnr-db
+(define (set-pkg-modules! name catalog checksum modules)
+  (call-with-catalog-db
    (lambda (db)
-     (prepare-pnr-table db)
+     (prepare-catalog-table db)
      (prepare-pkg-table db)
      (prepare-modules-table db)
      (call-with-transaction
       db
       (lambda ()
-        (define pnr (url->pnr db index))
+        (define catalog-id (url->catalog db catalog))
         (query-exec db
                     (~a "DELETE FROM modules"
-                        " WHERE pnr=$1"
+                        " WHERE catalog=$1"
                         "  AND pkg=$2"
                         "  AND checksum=$3")
-                    pnr
+                    catalog-id
                     name
                     checksum)
         (for ([mod (in-list modules)])
          (query db
                 (~a "INSERT INTO modules"
                     " VALUES ($1, $2, $3, $4)")
-                (mod->string mod) name pnr checksum)))))))
+                (mod->string mod) name catalog-id checksum)))))))
 
 (define (get-module-pkgs mod)
-  (call-with-pnr-db
+  (call-with-catalog-db
    (lambda (db)
      (define rows
        (query-rows db
                    (~a "SELECT M.pkg, P.url, M.checksum"
-                       " FROM modules M, pnr P"
+                       " FROM modules M, catalog P"
                        " WHERE M.name = $1"
-                       "  AND  M.pnr = P.id")
+                       "  AND  M.catalog = P.id")
                    (mod->string mod)))
      (for/list ([row (in-list rows)])
        (pkg (vector-ref row 0)
@@ -265,10 +265,10 @@
 (define (mod->string mp) (~s mp))
 (define (string->mod str) (read (open-input-string str)))
 
-(define (get-pkgs-without-modules #:index [index #f])
-  (call-with-pnr-db
+(define (get-pkgs-without-modules #:catalog [catalog #f])
+  (call-with-catalog-db
    (lambda (db)
-     (prepare-pnr-table db)
+     (prepare-catalog-table db)
      (prepare-pkg-table db)
      (prepare-modules-table db)
      (define rows
@@ -276,20 +276,20 @@
         query-rows
         db
         (~a "SELECT K.name, N.url, K.checksum"
-            " FROM pkg K, pnr N"
-            " WHERE N.id = K.pnr"
-            (if index
+            " FROM pkg K, catalog N"
+            " WHERE N.id = K.catalog"
+            (if catalog
                 " AND  N.url = $1"
                 "")
             " AND NOT EXISTS"
             " (SELECT M.name"
             "  FROM modules M"
             "  WHERE M.pkg = K.name"
-            "   AND  M.pnr = K.pnr"
+            "   AND  M.catalog = K.catalog"
             "   AND  M.checksum = K.checksum)")
         (append
-         (if index
-             (list index)
+         (if catalog
+             (list catalog)
              null))))
      (for/list ([row (in-list rows)])
        (pkg (vector-ref row 0)
@@ -299,17 +299,17 @@
             (vector-ref row 2)
             "")))))
 
-(define (get-indexes)
-  (call-with-pnr-db
+(define (get-catalogs)
+  (call-with-catalog-db
    (lambda (db)
-     (prepare-pnr-table db)
-     (query-list db (~a "SELECT url FROM pnr"
+     (prepare-catalog-table db)
+     (query-list db (~a "SELECT url FROM catalog"
                         " ORDER BY pos")))))
 
-(define (set-indexes! urls)
-  (call-with-pnr-db
+(define (set-catalogs! urls)
+  (call-with-catalog-db
    (lambda (db)
-     (prepare-pnr-table db)
+     (prepare-catalog-table db)
      (prepare-pkg-table db)
      (prepare-tags-table db)
      (prepare-modules-table db)
@@ -317,7 +317,7 @@
       db
       (lambda ()
         (define current-url+ids
-          (query-rows db "SELECT url, id FROM pnr"))
+          (query-rows db "SELECT url, id FROM catalog"))
         (define old-urls (for/list ([old (in-list current-url+ids)])
                            (vector-ref old 0)))
         (for ([old (in-list current-url+ids)])
@@ -325,73 +325,73 @@
           (define old-id (vector-ref old 1))
           (unless (member old-url urls)
             (query-exec db
-                        "DELETE FROM pnr WHERE id=$1"
+                        "DELETE FROM catalog WHERE id=$1"
                         old-id)
             (query-exec db
-                        "DELETE FROM pkg WHERE pnr=$1"
+                        "DELETE FROM pkg WHERE catalog=$1"
                         old-id)
             (query-exec db
-                        "DELETE FROM tags WHERE pnr=$1"
+                        "DELETE FROM tags WHERE catalog=$1"
                         old-id)
             (query-exec db
-                        "DELETE FROM modules WHERE pnr=$1"
+                        "DELETE FROM modules WHERE catalog=$1"
                         old-id)))
         (for ([new-url (in-list urls)])
           (unless (member new-url old-urls)
             (let loop ([id 0])
               (if (query-maybe-row db
-                                   "SELECT url FROM pnr WHERE id=$1"
+                                   "SELECT url FROM catalog WHERE id=$1"
                                    id)
                   (loop (add1 id))
-                  (query-exec db "INSERT INTO pnr VALUES ($1, $2, 0)"
+                  (query-exec db "INSERT INTO catalog VALUES ($1, $2, 0)"
                               id
                               new-url)))))
         (for ([new-url (in-list urls)]
               [pos (in-naturals)])
-          (query-exec db (~a "UPDATE pnr"
+          (query-exec db (~a "UPDATE catalog"
                              " SET pos = $1"
                              " WHERE url = $2")
                       pos
                       new-url)))))))
 
-(define (url->pnr db url)
+(define (url->catalog db url)
   (query-value db
-               "SELECT id FROM pnr WHERE url=$1"
+               "SELECT id FROM catalog WHERE url=$1"
                url))
 
 (define (set-pkgs! url pkgs
                    #:clear-other-checksums? [clear-other-checksums? #t])
-  (call-with-pnr-db
+  (call-with-catalog-db
    (lambda (db)
-     (prepare-pnr-table db)
+     (prepare-catalog-table db)
      (prepare-pkg-table db)
      (prepare-modules-table db)
      (call-with-transaction
       db
       (lambda ()
-        (define pnr (url->pnr db url))
+        (define catalog (url->catalog db url))
         (define pkg-names (for/list ([p (in-list pkgs)])
                             (if (pkg? p)
                                 (pkg-name p)
                                 p)))
         (define current-pkgs
-          (query-list db "SELECT name FROM pkg WHERE pnr=$1"
-                      pnr))
+          (query-list db "SELECT name FROM pkg WHERE catalog=$1"
+                      catalog))
         (define new-pkgs (list->set pkg-names))
         (define old-pkgs (list->set current-pkgs))
         (for ([old (in-list current-pkgs)])
           (unless (set-member? new-pkgs old)
             (query-exec db
-                        "DELETE FROM pkg WHERE pnr=$1 AND name=$2"
-                        pnr
+                        "DELETE FROM pkg WHERE catalog=$1 AND name=$2"
+                        catalog
                         old)
             (query-exec db
-                        "DELETE FROM tags WHERE pnr=$1 AND pkg=$2"
-                        pnr
+                        "DELETE FROM tags WHERE catalog=$1 AND pkg=$2"
+                        catalog
                         old)
             (query-exec db
-                        "DELETE FROM modules WHERE pnr=$1 AND pkg=$2"
-                        pnr
+                        "DELETE FROM modules WHERE catalog=$1 AND pkg=$2"
+                        catalog
                         old)))
         (for ([new0 (in-list pkgs)])
           (define new (if (pkg? new0) 
@@ -401,8 +401,8 @@
                      (not (equal? "" (pkg-checksum new))))
             (query-exec db
                         (~a "DELETE FROM modules"
-                            " WHERE pnr=$1 AND pkg=$2 AND checksum<>$3")
-                        pnr
+                            " WHERE catalog=$1 AND pkg=$2 AND checksum<>$3")
+                        catalog
                         (pkg-name new)
                         (pkg-checksum new)))
           (unless (and (string? new0)
@@ -412,17 +412,17 @@
                             (~a "UPDATE pkg"
                                 " SET author=$1, source=$2, checksum=$3, desc=$4"
                                 " WHERE name=$5"
-                                " AND   pnr=$6")
+                                " AND   catalog=$6")
                             (pkg-author new)
                             (pkg-source new)
                             (pkg-checksum new)
                             (pkg-desc new)
                             (pkg-name new)
-                            pnr)
+                            catalog)
                 (query-exec db
                             "INSERT INTO pkg VALUES ($1, $2, $3, $4, $5, $6)"
                             (pkg-name new)
-                            pnr
+                            catalog
                             (pkg-author new)
                             (pkg-source new)
                             (pkg-checksum new)
@@ -443,15 +443,15 @@
 
   (define (pkg<? a b)
     (if (string=? (pkg-name a) (pkg-name b))
-        (string<? (pkg-index a) (pkg-index b))
+        (string<? (pkg-catalog a) (pkg-catalog b))
         (string<? (pkg-name a) (pkg-name b))))
 
-  (parameterize ([current-pkg-index-file (make-temporary-file
+  (parameterize ([current-pkg-catalog-file (make-temporary-file
                                           "~a.sqlite")])
-    (check-equal? (get-indexes) '())
+    (check-equal? (get-catalogs) '())
 
-    (set-indexes! '("http://a" "http://b"))
-    (check-equal? (get-indexes)
+    (set-catalogs! '("http://a" "http://b"))
+    (check-equal? (get-catalogs)
                   '("http://a" "http://b"))
     
     (check-equal? (get-pkgs) '())
@@ -467,7 +467,7 @@
                   (list
                    (pkg "p1" "http://a" "" "" "" "")
                    (pkg "p2" "http://b" "" "" "" "")))
-    (check-equal? (get-pkgs #:index "http://a") 
+    (check-equal? (get-pkgs #:catalog "http://a") 
                   (list
                    (pkg "p1" "http://a" "" "" "" "")))
     (check-equal? (get-pkgs #:name "p1")
@@ -480,9 +480,9 @@
                    (pkg "p1" "http://a" "github:a" "adam" "123" "the first package")
                    (pkg "p2" "http://b" "" "" "" "")))
 
-    ;; reverse order of indexes:
-    (set-indexes! '("http://b" "http://a"))
-    (check-equal? (get-indexes)
+    ;; reverse order of catalogs:
+    (set-catalogs! '("http://b" "http://a"))
+    (check-equal? (get-catalogs)
                   '("http://b" "http://a"))
     (check-equal? (get-pkgs)
                   (list
@@ -508,14 +508,14 @@
                   (list
                    (pkg "p1" "http://a" "" "" "123" "")))
 
-    (set-indexes! '("http://a" "http://c"))
-    (check-equal? (sort (get-indexes) string<?) 
+    (set-catalogs! '("http://a" "http://c"))
+    (check-equal? (sort (get-catalogs) string<?) 
                   '("http://a" "http://c"))
 
     (check-equal? (get-pkgs) 
                   (list
                    (pkg "p1" "http://a" "github:a" "adam" "123" "the first package")))
 
-    (delete-file (current-pkg-index-file))
+    (delete-file (current-pkg-catalog-file))
 
     (void)))

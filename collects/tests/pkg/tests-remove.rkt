@@ -15,7 +15,7 @@
 
 (pkg-tests
  (shelly-begin
-  (initialize-indexes)
+  (initialize-catalogs)
   
   (shelly-case
    "remove and show"
@@ -55,16 +55,16 @@
    (with-fake-root
     (shelly-case
      "autoremove"
-     $ "raco pkg config --set indexes http://localhost:9990"
+     $ "raco pkg config --set catalogs http://localhost:9990"
      $ "racket -e '(require pkg-test1)'" =exit> 1
      $ "racket -e '(require pkg-test2)'" =exit> 1
      $ "raco pkg install --deps search-auto test-pkgs/pkg-test2.zip" =exit> 0
-     $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9]+ +\\(pnr pkg-test1\\)\npkg-test2 +[a-f0-9]+ +\\(file .+tests/pkg/test-pkgs/pkg-test2.zip\\)\n"
+     $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9]+ +\\(catalog pkg-test1\\)\npkg-test2 +[a-f0-9]+ +\\(file .+tests/pkg/test-pkgs/pkg-test2.zip\\)\n"
      $ "racket -e '(require pkg-test1)'" =exit> 0
      $ "racket -e '(require pkg-test2)'" =exit> 0
      $ "racket -e '(require pkg-test2/contains-dep)'" =exit> 0
      $ "raco pkg remove pkg-test2"
-     $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9]+ +\\(pnr pkg-test1\\)\n"
+     $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9]+ +\\(catalog pkg-test1\\)\n"
      $ "racket -e '(require pkg-test1)'" =exit> 0
      $ "raco pkg remove --auto"
      $ "raco pkg show -u" =stdout> " [none]\n"

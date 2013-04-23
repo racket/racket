@@ -2,17 +2,17 @@
 (require pkg/lib
          rackunit)
 
-;; The `test-api' function is meant to be called via "test-indexes.rkt"
+;; The `test-api' function is meant to be called via "test-catalogs.rkt"
 (provide test-api)
 
 (define (test-api)
-  (check-true (andmap string? (pkg-config-indexes)))
+  (check-true (andmap string? (pkg-config-catalogs)))
 
-  (define pkg-names (get-all-pkg-names-from-indexes))
+  (define pkg-names (get-all-pkg-names-from-catalogs))
   (check-not-false (member "pkg-test1" pkg-names))
   (check-not-false (member "pkg-test2" pkg-names))
   
-  (define details (get-all-pkg-details-from-indexes))
+  (define details (get-all-pkg-details-from-catalogs))
   (check-not-false (hash-ref details "pkg-test1" #f))
   (check-not-false (hash-ref details "pkg-test2" #f))
 
@@ -23,7 +23,7 @@
                           'source)
                 "http://localhost:9999/pkg-test2.zip")
   
-  (define test1-details (get-pkg-details-from-indexes "pkg-test1"))
+  (define test1-details (get-pkg-details-from-catalogs "pkg-test1"))
   (check-equal? test1-details
                 (hash-ref details "pkg-test1"))
 

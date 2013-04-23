@@ -54,4 +54,4 @@
  "versions"
  "platform"
  "raco"
- "indexes")
+ "catalogs")

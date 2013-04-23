@@ -15,7 +15,7 @@
 
 (pkg-tests
  (shelly-begin
-  (initialize-indexes)
+  (initialize-catalogs)
 
   (shelly-case
    "checksums"
@@ -44,7 +44,7 @@
               (file->string "test-pkgs/pkg-test1-bad-checksum.zip.CHECKSUM")
               'source
               "http://localhost:9999/pkg-test1-bad-checksum.zip"))
-     $ "raco pkg config --set indexes http://localhost:9990 http://localhost:9991"
+     $ "raco pkg config --set catalogs http://localhost:9990 http://localhost:9991"
      $ "racket -e '(require pkg-test1)'" =exit> 1
      $ "raco pkg install pkg-test1" =exit> 1
      $ "racket -e '(require pkg-test1)'" =exit> 1))

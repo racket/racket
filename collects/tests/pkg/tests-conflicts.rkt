@@ -15,7 +15,7 @@
 
 (pkg-tests
  (shelly-begin
-  (initialize-indexes)
+  (initialize-catalogs)
 
   $ "raco pkg create --format plt test-pkgs/pkg-test1/"
   $ "raco pkg create --format plt test-pkgs/pkg-test1-not-conflict/"

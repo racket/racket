@@ -15,7 +15,7 @@
 
 (pkg-tests
  (shelly-begin
-  (initialize-indexes)
+  (initialize-catalogs)
 
   (shelly-case
    "raco pkg install tests"
@@ -98,13 +98,13 @@
    (with-fake-root
     (shelly-case
      "remote/name package, doesn't work when no package there"
-     $ "raco pkg config --set indexes http://localhost:9990"
+     $ "raco pkg config --set catalogs http://localhost:9990"
      $ "raco pkg install pkg-test1-not-there" =exit> 1))
 
    (with-fake-root
     (shelly-case
      "remote/name package"
-     $ "raco pkg config --set indexes http://localhost:9990"
+     $ "raco pkg config --set catalogs http://localhost:9990"
      $ "racket -e '(require pkg-test1)'" =exit> 1
      $ "raco pkg install pkg-test1"
      $ "racket -e '(require pkg-test1)'"
@@ -114,7 +114,7 @@
    (with-fake-root
     (shelly-case
      "remote/name package (multi)"
-     $ "raco pkg config --set indexes http://localhost:9990 http://localhost:9991"
+     $ "raco pkg config --set catalogs http://localhost:9990 http://localhost:9991"
      $ "racket -e '(require pkg-test1)'" =exit> 1
      $ "raco pkg install --deps search-auto pkg-test2-snd"
      $ "racket -e '(require pkg-test1)'"

@@ -15,7 +15,7 @@
 
 (pkg-tests
  (shelly-begin
-  (initialize-indexes)
+  (initialize-catalogs)
 
   (shelly-case
    "create packages"
@@ -35,7 +35,7 @@
                      'source
                      "http://localhost:9999/pkg-w-one.zip"))
   
-  $ "raco pkg config --set indexes http://localhost:9990"
+  $ "raco pkg config --set catalogs http://localhost:9990"
 
   (shelly-case
    "update"
@@ -61,5 +61,5 @@
    (shelly-begin "auto-update now succeeds (installs and version matches)"
                  $ "raco pkg install --deps search-auto pkg-w"))
 
-  (initialize-indexes)))
+  (initialize-catalogs)))
 

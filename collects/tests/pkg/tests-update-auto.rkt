@@ -10,7 +10,7 @@
                       (file->string "test-pkgs/pkg-b-first.plt.CHECKSUM")
                       'source
                       "http://localhost:9999/pkg-b-first.plt"))
-   $ "raco pkg config --set indexes http://localhost:9990"
+   $ "raco pkg config --set catalogs http://localhost:9990"
    $ "raco pkg install pkg-b"
    $ "racket -e '(require pkg-b)'" =exit> 42
    (hash-set! *index-ht-1* "pkg-b"
@@ -34,7 +34,7 @@
  (with-fake-root
   (shelly-case
    "update and then remove an auto"
-   $ "raco pkg config --set indexes http://localhost:9990"
+   $ "raco pkg config --set catalogs http://localhost:9990"
    (hash-set! *index-ht-1* "pkg-b"
               (hasheq 'checksum
                       (file->string "test-pkgs/pkg-b-second.plt.CHECKSUM")
@@ -46,12 +46,12 @@
                       'source
                       "http://localhost:9999/pkg-a-first.plt"))
    $ "raco pkg install --deps search-auto pkg-b" =exit> 0 <input= "y\n"
-   $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9]+    \\(pnr pkg-a\\)\npkg-b +[a-f0-9]+ +\\(pnr pkg-b\\)\n"
+   $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9]+    \\(catalog pkg-a\\)\npkg-b +[a-f0-9]+ +\\(catalog pkg-b\\)\n"
    $ "racket -e '(require pkg-b)'" =exit> 43
    $ "racket -e '(require pkg-a)'" =exit> 0
    ;; remove auto doesn't do anything because everything is needed
    $ "raco pkg remove --auto"
-   $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9]+    \\(pnr pkg-a\\)\npkg-b +[a-f0-9]+ +\\(pnr pkg-b\\)\n"
+   $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9]+    \\(catalog pkg-a\\)\npkg-b +[a-f0-9]+ +\\(catalog pkg-b\\)\n"
    $ "racket -e '(require pkg-b)'" =exit> 43
    $ "racket -e '(require pkg-a)'" =exit> 0
    ;; pkg-a is now an auto
@@ -63,7 +63,7 @@
    $ "raco pkg update -a" =exit> 0
    $ "racket -e '(require pkg-a)'" =exit> 43
    $ "raco pkg remove pkg-b"
-   $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9]+ +\\(pnr pkg-a\\)\n"
+   $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9]+ +\\(catalog pkg-a\\)\n"
    $ "racket -e '(require pkg-b)'" =exit> 1
    ;; pkg-a is now not needed
    $ "raco pkg remove --auto"
