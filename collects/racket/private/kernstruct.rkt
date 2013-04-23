@@ -376,7 +376,7 @@
           (quote-syntax make-exn:fail:filesystem:missing-module)
           (quote-syntax exn:fail:filesystem:missing-module?)
           (list
-           (quote-syntax exn:fail:filesystem:missing-module--path)
+           (quote-syntax exn:fail:filesystem:missing-module-path)
            (quote-syntax exn-continuation-marks)
            (quote-syntax exn-message))
           '(#f #f #f)

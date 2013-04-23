@@ -115,7 +115,7 @@ static exn_rec *exn_table;
   static const char *MZEXN_FAIL_SYNTAX_MISSING_MODULE_FIELDS[1] = { "path" };
   static const char *MZEXN_FAIL_READ_FIELDS[1] = { "srclocs" };
   static const char *MZEXN_FAIL_FILESYSTEM_ERRNO_FIELDS[1] = { "errno" };
-  static const char *MZEXN_FAIL_FILESYSTEM_MISSING_MODULE_FIELDS[1] = { "-path" };
+  static const char *MZEXN_FAIL_FILESYSTEM_MISSING_MODULE_FIELDS[1] = { "path" };
   static const char *MZEXN_FAIL_NETWORK_ERRNO_FIELDS[1] = { "errno" };
   static const char *MZEXN_BREAK_FIELDS[1] = { "continuation" };
 #endif

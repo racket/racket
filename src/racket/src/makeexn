@@ -66,7 +66,7 @@ propeties (the latter in curly braces), strings are contracts/comments.
                                (errno "pair of symbol and number" "system error code")]
                               "error with system error code")
                        (missing-module [module_path_field_check_2
-                                        (-path "module path" "module path")
+                                        (path "module path" "module path")
                                         {exn:module-path scheme_module_path_property |scheme_make_prim(extract_module_path_2)|}]
                                        "error resolving a module path"))
            (network [] "TCP and UDP errors"
