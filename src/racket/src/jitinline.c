@@ -756,7 +756,8 @@ int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args,
   mz_patch_branch(ref);
   (void)mz_bnei_t(refslow, JIT_R0, scheme_prim_type, JIT_R2);
   jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Primitive_Proc *)0x0)->pp.flags);
-  (void)jit_bmci_i(refslow, JIT_R2, SCHEME_PRIM_STRUCT_TYPE_SIMPLE_CONSTR);
+  jit_andi_i(JIT_R2, JIT_R2, SCHEME_PRIM_OTHER_TYPE_MASK);
+  (void)jit_bnei_i(refslow, JIT_R2, SCHEME_PRIM_STRUCT_TYPE_SIMPLE_CONSTR);
   CHECK_LIMIT();
 
   jit_ldxi_p(JIT_R2, JIT_R0, &(SCHEME_PRIM_CLOSURE_ELS(0x0)[0]));

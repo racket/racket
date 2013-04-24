@@ -3096,6 +3096,17 @@
   (go '(foo-x (foo 1))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The JIT should check an inlined-constructor guess
+;; to make sure that it's "simple" (e.g., no guards)
+
+(let ([f #f])
+  (set! f (lambda (f x) (f x)))
+  (struct a (x))
+  (struct b (y) #:property prop:procedure 0)
+  (test 1 a-x (f a 1))
+  (test 2 (f b (lambda () 2))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (report-errs)
