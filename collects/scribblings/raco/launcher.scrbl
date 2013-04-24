@@ -175,10 +175,14 @@ arguments.}
 
 @section{Launcher Path and Platform Conventions}
 
-@defproc[(gracket-program-launcher-path [name string?]) path?]{
+@defproc[(gracket-program-launcher-path [name string?]
+                                        [#:user? user? any/c #f]) 
+         path?]{
 
-Returns a pathname for an executable in the Racket installation
-called something like @racket[name].  For Windows, the @filepath{.exe}
+Returns a pathname for an executable called something like @racket[name]
+in the Racket installation (if @racket[user?] is @racket[#f]) or the
+user's Racket executable directory (if @racket[user?] is @racket[#t]).
+For Windows, the @filepath{.exe}
 suffix is automatically appended to @racket[name]. For Unix,
 @racket[name] is changed to lowercase, whitespace is changed to
 @litchar{-}, and the path includes the @filepath{bin} subdirectory of
@@ -186,9 +190,11 @@ the Racket installation. For Mac OS X, the @filepath{.app} suffix
 is appended to @racket[name].}
 
 
-@defproc[(racket-program-launcher-path [name string?]) path?]{
+@defproc[(racket-program-launcher-path [name string?]
+                                       [#:user? user? any/c #f])
+         path?]{
 
-Returns the same path as @racket[(gracket-program-launcher-path name)]
+Returns the same path as @racket[(gracket-program-launcher-path name #:user? user?)]
 for Unix and Windows. For Mac OS X, the result is the same as for
 Unix.}
 
@@ -254,7 +260,7 @@ Like @racket[gracket-launcher-get-file-extension+style+filters], but for
 Racket launchers.}
 
 @deftogether[(
-@defproc[(mred-program-launcher-path [name string?]) path?]
+@defproc[(mred-program-launcher-path [name string?] [#:user? user? any/c #f]) path?]
 @defproc[(mred-launcher-is-directory?) boolean?]
 @defproc[(mred-launcher-is-actually-directory?) boolean?]
 @defproc[(mred-launcher-add-suffix [path-string? path]) path?]
@@ -268,7 +274,7 @@ Backward-compatible aliases for
 @racket[gracket-program-launcher-path], etc.}
 
 @deftogether[(
-@defproc[(mzscheme-program-launcher-path [name string?]) path?]
+@defproc[(mzscheme-program-launcher-path [name string?] [#:user? user? any/c #f]) path?]
 @defproc[(mzscheme-launcher-is-directory?) boolean?]
 @defproc[(mzscheme-launcher-is-actually-directory?) boolean?]
 @defproc[(mzscheme-launcher-add-suffix [path-string? path]) path?]

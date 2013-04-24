@@ -1073,6 +1073,18 @@
       (unless (list-of (list-of string?) l)
         (error "result is not a list of strings:" l)))
     (define ((or-f f) x) (when x (f x)))
+    (when (or no-specific-collections?
+              (make-tidy))
+      (unless (avoid-main-installation)
+        (tidy-launchers #f
+                        (find-console-bin-dir)
+                        (find-gui-bin-dir)
+                        (find-lib-dir)))
+      (when (make-user)
+        (tidy-launchers #t
+                        (find-user-console-bin-dir)
+                        (find-user-gui-bin-dir)
+                        (find-user-lib-dir))))
     (for ([cc ccs-to-compile])
       (begin-record-error cc "Launcher Setup"
         (define info (cc-info cc))
@@ -1102,7 +1114,19 @@
              (for ([mzln (in-list mzlns)]
                    [mzll (in-list (or mzlls (map (lambda (_) #f) mzlns)))]
                    [mzlf (in-list (or mzlfs (map (lambda (_) #f) mzlns)))])
-               (define p (program-launcher-path mzln))
+               (define p (program-launcher-path mzln #:user? (not (cc-main? cc))))
+               (define receipt-path
+                 (build-path (if (cc-main? cc)
+                                 (find-lib-dir)
+                                 (find-user-lib-dir))
+                             "launchers.rktd"))
+               (define (prep-dir p)
+                 (define dir (path-only p))
+                 (make-directory* dir))
+               (prep-dir p)
+               (prep-dir receipt-path)
+               (record-launcher receipt-path mzln kind (current-launcher-variant) 
+                                (cc-collection cc) (cc-path cc))
                (define aux
                  `((exe-name . ,mzln)
                    (framework-root . #f)
@@ -1173,6 +1197,90 @@
                            mzscheme-program-launcher-path
                            make-mzscheme-launcher
                            mzscheme-launcher-up-to-date?))))))
+
+  (define (read-launchers receipt-path)
+    (if (file-exists? receipt-path)
+        (with-handlers ([exn:fail?
+                         (lambda (exn)
+                           (setup-printf
+                            "WARNING"
+                            "error reading launcher list ~s: ~a"
+                            receipt-path
+                            (exn-message exn))
+                           #hash())])
+          (call-with-input-file* 
+           receipt-path 
+           (lambda (i)
+             (define ht (read i))
+             (if (hash? ht)
+                 ht
+                 (error "content is not a hash table")))))
+        #hash()))
+
+  (define (write-launchers receipt-path ht)
+    (call-with-output-file*
+     #:exists 'truncate/replace
+     receipt-path
+     (lambda (o) (write ht o))))
+
+  (define (record-launcher receipt-path name kind variant coll coll-path)
+    (let ([ht (read-launchers receipt-path)])
+      (define coll-rel (let ([p (path->main-collects-relative coll-path)])
+                         (if (path? p)
+                             (path->bytes p)
+                             p)))
+      (define exe-key (vector kind
+                              variant
+                              name))
+      (define exe-val (cons (map path->string coll) coll-rel))
+      (unless (equal? (hash-ref ht exe-key #f)
+                      exe-val)
+        (let ([ht (hash-set ht exe-key exe-val)]) 
+          (write-launchers receipt-path ht)))))
+
+  (define (tidy-launchers user? bin-dir gui-bin-dir lib-dir)
+    (define receipt-path (build-path lib-dir "launchers.rktd"))
+    (define ht (read-launchers receipt-path))
+    (define ht2 (for/fold ([ht (hash)]) ([(k v) (in-hash ht)])
+                  (define coll-path (main-collects-relative->path (cdr v)))
+                  (cond
+                   [(and (directory-exists? coll-path)
+                         ;; Collection path must match collection resolution:
+                         (with-handlers ([exn:fail? (lambda (exn) #f)])
+                           (equal? coll-path (apply collection-path (car v)))))
+                    ;; keep the launcher
+                    (hash-set ht k v)]
+                   [else
+                    ;; remove the launcher
+                    (define kind (vector-ref k 0))
+                    (define variant (vector-ref k 1))
+                    (define name (vector-ref k 2))
+                    (parameterize ([current-launcher-variant variant])
+                      (define exe-path ((if (eq? kind 'gui)
+                                            gracket-program-launcher-path
+                                            racket-program-launcher-path)
+                                        name
+                                        #:user? user?))
+                      (define is-dir?
+                        (if (eq? kind 'gui)
+                            (gracket-launcher-is-actually-directory?)
+                            (racket-launcher-is-actually-directory?)))
+                      (define rel-exe-path
+                        ((if (eq? kind 'gui)
+                             path->relative-string/gui-bin 
+                             path->relative-string/console-bin)
+                         exe-path))
+                      (cond
+                       [(and (not is-dir?) (file-exists? exe-path))
+                        (setup-printf "deleting" "launcher ~a" rel-exe-path)
+                        (delete-file exe-path)]
+                       [(and is-dir? (directory-exists? exe-path))
+                        (setup-printf "deleting" "launcher ~a" rel-exe-path)
+                        (delete-directory/files exe-path)]))
+                    ht])))
+    (unless (equal? ht ht2)
+      (setup-printf "updating" "launcher list")
+      (write-launchers receipt-path ht2)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; setup-unit Body                ;;

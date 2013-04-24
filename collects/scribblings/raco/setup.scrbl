@@ -961,6 +961,15 @@ Imports @racket[mred^] and exports @racket[setup:plt-installer^]. }
   stand-alone GRacket executable resides. The result is @racket[#f] if no such
   directory is available.}
 
+@defproc[(find-user-console-bin-dir) path?]{
+  Returns a path to the user's executable directory; the directory
+  indicated by the returned path may or may not exist.}
+
+@defproc[(find-user-gui-bin-dir) path?]{
+  Returns a path to the user's executable directory for graphical
+  programs; the directory indicated by the returned path may or may
+  not exist.}
+
 @defthing[absolute-installation? boolean?]{
   A binary boolean flag that is true if this installation is using
   absolute path names.}

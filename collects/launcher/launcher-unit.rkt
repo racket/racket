@@ -622,15 +622,19 @@
      (string-append (if mred? file (unix-sfx file mred?)) ".exe")]
     [else file]))
 
-(define (program-launcher-path name mred?)
+(define (program-launcher-path name mred? user?)
   (let* ([variant (current-launcher-variant)]
          [mac-script? (and (eq? (system-type) 'macosx)
                            (script-variant? variant))])
     (let ([p (add-file-suffix
               (build-path
                (if (or mac-script? (not mred?))
-                   (find-console-bin-dir)
-                   (find-gui-bin-dir))
+                   (if user?
+                       (find-user-console-bin-dir)
+                       (find-console-bin-dir))
+                   (if user?
+                       (find-user-gui-bin-dir)
+                       (find-gui-bin-dir)))
                ((if mac-script? unix-sfx sfx) name mred?))
               variant
               mred?)])
@@ -639,20 +643,23 @@
           (path-replace-suffix p #".app")
           p))))
 
-(define (gracket-program-launcher-path name)
-  (program-launcher-path name #t))
-(define (mred-program-launcher-path name)
-  (gracket-program-launcher-path name))
+(define (gracket-program-launcher-path name #:user? [user? #f])
+  (program-launcher-path name #t user?))
+(define (mred-program-launcher-path name #:user? [user? #f])
+  (gracket-program-launcher-path name #:user? user?))
 
-(define (racket-program-launcher-path name)
+(define (racket-program-launcher-path name #:user? [user? #f])
   (case (system-type)
     [(macosx)
-     (add-file-suffix (build-path (find-console-bin-dir) (unix-sfx name #f))
+     (add-file-suffix (build-path (if user?
+                                      (find-user-console-bin-dir)
+                                      (find-console-bin-dir))
+                                  (unix-sfx name #f))
                       (current-launcher-variant)
                       #f)]
-    [else (program-launcher-path name #f)]))
-(define (mzscheme-program-launcher-path name)
-  (racket-program-launcher-path name))
+    [else (program-launcher-path name #f user?)]))
+(define (mzscheme-program-launcher-path name #:user? [user? #f])
+  (racket-program-launcher-path name #:user? user?))
 
 (define (gracket-launcher-is-directory?)
   #f)
