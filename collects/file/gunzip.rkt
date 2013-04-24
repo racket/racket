@@ -255,9 +255,9 @@
 |#
 
   ;; We can't read the bytes outright, because we may
-  ;; look ahead. Assume that we need no more than 32 bytes
+  ;; look ahead. Assume that we need no more than 8 bytes
   ;; look ahead, and peek in 4096-byte blocks.
-  (define MAX-LOOKAHEAD 32)
+  (define MAX-LOOKAHEAD 8)
   (define BUFFER-SIZE 4096)
   (define buffer (make-bytes BUFFER-SIZE))
   (define buf-max 0) ; number of bytes in buffer
@@ -273,13 +273,21 @@
     (if (= buf-pos buf-max)
         (begin
           (when (positive? buf-max)
-            (read-bytes! buffer input-port 0 (- buf-max MAX-LOOKAHEAD))
-            ; (bytes-copy! buffer 0 buffer (- buf-max MAX-LOOKAHEAD) buf-max) 
-            (set! buf-pos MAX-LOOKAHEAD))
+            ;; Read consumed bytes, except for the last MAX-LOOKAHEAD bytes,
+            ;; which we might unwind:
+            (read-bytes! buffer input-port 0 (max 0 (- buf-max MAX-LOOKAHEAD)))
+            ;; Even though we won't actually use bytes that we "unwind",
+            ;; setting `buf-pos' to the number of unwound bytes lets us
+            ;; keep track of how much to not actually read at the end.
+            (set! buf-pos (min MAX-LOOKAHEAD buf-max)))
+          ;; Peek (not read) some available bytes:
           (let ([got (peek-bytes-avail! buffer buf-pos #f input-port buf-pos BUFFER-SIZE)])
             (if (eof-object? got)
-                (begin (bytes-set! buffer buf-pos 255)
-                       (set! buf-max (add1 buf-pos)))
+                ;; Treat an EOF as a -1 "byte":
+                (begin
+                  (bytes-set! buffer buf-pos 255)
+                  (set! buf-max (add1 buf-pos)))
+                ;; Got normal bytes:
                 (set! buf-max (+ buf-pos got))))
           (READBITS n))
         (let ([v (bytes-ref buffer buf-pos)])
@@ -842,7 +850,7 @@
 		    (set! bk (- bk 8))
 		    (set! buf-pos (sub1 buf-pos))
 		    (loop)))
-                (read-bytes! buffer input-port 0 buf-pos)
+                (read-bytes! buffer input-port 0 buf-pos) ; read consumed bytes
 		(flush-output wp)
 		#t = (void)))
 	  #f))))
