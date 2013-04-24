@@ -3720,7 +3720,7 @@ void free_cl_cif_queue_args(void *ignored, void *p)
   void *data = ((closure_and_cif*)p)->data, *constant_result;
   void **q = (void **)data;
   data = q[0];
-  constant_result = q[3];
+  constant_result = q[2];
   free(q);
   if (constant_result) free(constant_result);
 #ifdef MZ_PRECISE_GC
@@ -3781,8 +3781,8 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
   GC_CAN_IGNORE void *callback_data;
 # ifdef MZ_USE_MZRT
   int keep_queue = 0;
-  void *constant_reply;
-  int constant_reply_size;
+  void *constant_reply = NULL;
+  int constant_reply_size = 0;
 # endif /* MZ_USE_MZRT */
 
   if (!SCHEME_PROCP(argv[0]))
@@ -3873,7 +3873,7 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
   if (keep_queue) {
     /* For ffi_queue_callback(), add a level of indirection in `data' to
        hold the place-specific `ffi_sync_queue'.  Use
-       `free_cl_cif_data_args' to clean up this extra level. */
+       `free_cl_cif_queue_args' to clean up this extra level. */
     GC_CAN_IGNORE void **tmp, *cr;
     if (constant_reply) {
       cr = malloc(constant_reply_size);
