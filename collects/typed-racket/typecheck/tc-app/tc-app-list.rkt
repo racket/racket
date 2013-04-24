@@ -42,6 +42,7 @@
               ...))
        (=> fail)
        (unless (for/and ([b bound]) (or (not b) (eq? bound0 b))) (fail))
+       ;; Do not check this in an environment where bound0 is a type variable.
        (define f-type (tc-expr #'f))
        ;; Check that the function applies successfully to the element type
        ;; We need the bound to be considered a type var here so that inference works
