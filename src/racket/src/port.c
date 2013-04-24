@@ -4987,7 +4987,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
         *err = "cannot open destination";
         *eerrno = errv;
       } else
-        filename_exn(name, "cannot open output file", filename, errv);
+        filename_exn(name, "cannot open output file", filename, errv, 0);
       return NULL;
     }
   }
@@ -5007,7 +5007,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
 
   if ((mode[1] == 't') && !regfile) {
     CloseHandle(fd);
-    filename_exn(name, "cannot use text-mode on a non-file device", filename, 0);
+    filename_exn(name, "cannot use text-mode on a non-file device", filename, 0, 0);
     return NULL;
   }
 
@@ -5031,7 +5031,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
                        "  path: %q",
 		       name, filename);
     else
-      filename_exn(name, "cannot open directory as a file", filename, errno);
+      filename_exn(name, "cannot open directory as a file", filename, errno, 0);
     return NULL;
   }
 
