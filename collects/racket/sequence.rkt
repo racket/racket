@@ -41,16 +41,19 @@
   (unless (sequence? s) (raise-argument-error 'sequence-ref "sequence?" s))
   (unless (exact-nonnegative-integer? i)
     (raise-argument-error 'sequence-ref "exact-nonnegative-integer?" i))
-  (let ([v (for/fold ([c #f]) ([v (in-values-sequence s)]
-                               [i (in-range (add1 i))])
-             v)])
-    (if (list? v)
-        (apply values v)
-        (raise-arguments-error 
-         'sequence-ref
-         "sequence ended before index"
-         "index" (add1 i)
-         "sequence" s))))
+  (let ([v (for/fold ([c #f]) ([v (in-values*-sequence s)]
+                               [j (in-range (add1 i))]
+                               #:unless (j . < . i))
+             (or v '(#f)))])
+    (cond
+     [(not v)
+      (raise-arguments-error 
+       'sequence-ref
+       "sequence ended before index"
+       "index" i
+       "sequence" s)]
+     [(list? v) (apply values v)]
+     [else v])))
 
 (define (sequence-tail seq i)
   (unless (sequence? seq) (raise-argument-error 'sequence-tail "sequence?" seq))

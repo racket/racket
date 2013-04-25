@@ -43,8 +43,12 @@
   (test 0 'sequence-ref (sequence-ref (in-naturals) 0))
   (test 1 'sequence-ref (sequence-ref (in-naturals) 1))
   (test 25 'sequence-ref (sequence-ref (in-naturals) 25))
+  (test #f 'sequence-ref (sequence-ref '(#t #t #f) 2))
   (when (sequence? 10)
     (test 3 sequence-ref 10 3))
+  (when (sequence? #hash())
+    (test-values '(a "a") (lambda () (sequence-ref (in-hash #hash((a . "a"))) 0))))
+  (err/rt-test (sequence-ref (in-string "a") 2) exn:fail?)
 
   (arity-test sequence-tail 2 2)
   (err/rt-test (sequence-tail (in-naturals) -1) exn:fail?)
