@@ -16,7 +16,10 @@
 (define sc-pkg-update-package-list (string-constant install-pkg-update-package-list))
 (define sc-pkg-stop-update (string-constant install-pkg-stop-update))
 
-(define check-mark "✓")
+(define check-mark
+  (for/or ([c '(#\u2713 #\u2714 #\u221A #\x)])
+    (and (send normal-control-font screen-glyph-exists? c #t)
+	 (string c))))
 
 (define default-status
   (~a check-mark ": installed"
