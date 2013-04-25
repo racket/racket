@@ -9,7 +9,8 @@
          pkg
          racket/list
          framework
-         net/url)
+         net/url
+	 "common.rkt")
 
 (provide by-source-panel%)
 
@@ -105,7 +106,9 @@
 
     (define ok-button
       (new button%
-           [label sc-install-pkg-install]
+           [label (pick-wider normal-control-font
+			      sc-install-pkg-install
+			      sc-install-pkg-update)]
            [parent button-panel]
            [style '(border)]
            [callback (lambda (b e)

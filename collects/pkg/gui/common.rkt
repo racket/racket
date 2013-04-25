@@ -5,7 +5,8 @@
          racket/format)
 
 (provide really-remove?
-         sc-install-pkg-remove)
+         sc-install-pkg-remove
+	 pick-wider)
 
 (define sc-install-pkg-remove (string-constant install-pkg-remove))
 (define really-uninstall?-msg (string-constant install-pkg-really-remove?))
@@ -23,3 +24,9 @@
                               parent
                               '(caution default=1))))
 
+(define (pick-wider font a b)
+  (define-values (wa ha) (get-window-text-extent a font))
+  (define-values (wb hb) (get-window-text-extent b font))
+  (if (wa . > . wb)
+      a
+      b))

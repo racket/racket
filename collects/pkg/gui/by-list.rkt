@@ -160,7 +160,9 @@
 
     (define install-button
       (new button%
-           [label (string-constant install-pkg-install)]
+           [label (pick-wider normal-control-font
+			      (string-constant install-pkg-install)
+			      (string-constant install-pkg-update))]
            [parent button-line]
            [style '(border)]
            [callback (lambda (b e)
@@ -379,7 +381,8 @@
          (send status-text set-label default-status))))
 
     (define/private (->label-string s)
-      (substring s 0 (min 200 (string-length s))))
+      (let ([s (regexp-replace* #rx"[\r\n]+" s " ")])
+	(substring s 0 (min 200 (string-length s)))))
 
     (define pkgs '#())
     (define tagss #(hash))
