@@ -2240,23 +2240,23 @@ intptr_t scheme_port_closed_p (Scheme_Object *port) {
 
 static Scheme_Object *current_input_port(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-input-port", scheme_make_integer(MZCONFIG_INPUT_PORT),
-			     argc, argv,
-			     -1, input_port_p, "input-port", 0);
+  return scheme_param_config2("current-input-port", scheme_make_integer(MZCONFIG_INPUT_PORT),
+                              argc, argv,
+                              -1, input_port_p, "input-port?", 0);
 }
 
 static Scheme_Object *current_output_port(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-output-port", scheme_make_integer(MZCONFIG_OUTPUT_PORT),
-			     argc, argv,
-			     -1, output_port_p, "output-port", 0);
+  return scheme_param_config2("current-output-port", scheme_make_integer(MZCONFIG_OUTPUT_PORT),
+                              argc, argv,
+                              -1, output_port_p, "output-port?", 0);
 }
 
 static Scheme_Object *current_error_port(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-error-port", scheme_make_integer(MZCONFIG_ERROR_PORT),
-			     argc, argv,
-			     -1, output_port_p, "output-port", 0);
+  return scheme_param_config2("current-error-port", scheme_make_integer(MZCONFIG_ERROR_PORT),
+                              argc, argv,
+                              -1, output_port_p, "output-port?", 0);
 }
 
 static Scheme_Object *
@@ -4257,10 +4257,10 @@ static Scheme_Object *filter_print_handler(int argc, Scheme_Object **argv)
 
 static Scheme_Object *global_port_print_handler(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("global-port-print-handler",
-			     scheme_make_integer(MZCONFIG_PORT_PRINT_HANDLER),
-			     argc, argv,
-			     -1, filter_print_handler, "procedure (arity 2)", 1);
+  return scheme_param_config2("global-port-print-handler",
+                              scheme_make_integer(MZCONFIG_PORT_PRINT_HANDLER),
+                              argc, argv,
+                              -1, filter_print_handler, "(procedure-arity-includes/c 2)", 1);
 }
 
 static Scheme_Object *port_count_lines(int argc, Scheme_Object *argv[])
@@ -4901,10 +4901,12 @@ static Scheme_Object *lr_abs_directory_p(int argc, Scheme_Object **argv)
 static Scheme_Object *
 current_load_directory(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-load-relative-directory",
-			     scheme_make_integer(MZCONFIG_LOAD_DIRECTORY),
-			     argc, argv,
-			     -1, lr_abs_directory_p, "path, string, or #f", 1);
+  return scheme_param_config2("current-load-relative-directory",
+                              scheme_make_integer(MZCONFIG_LOAD_DIRECTORY),
+                              argc, argv,
+                              -1, lr_abs_directory_p, 
+                              "(or/c (and/c path-string? complete-path?) #f)",
+                              1);
 }
 
 static Scheme_Object *wr_abs_directory_p(int argc, Scheme_Object **argv)
@@ -4929,10 +4931,15 @@ static Scheme_Object *wr_abs_directory_p(int argc, Scheme_Object **argv)
 static Scheme_Object *
 current_write_directory(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-write-relative-directory",
-			     scheme_make_integer(MZCONFIG_WRITE_DIRECTORY),
-			     argc, argv,
-			     -1, wr_abs_directory_p, "path, string, or #f", 1);
+  return scheme_param_config2("current-write-relative-directory",
+                              scheme_make_integer(MZCONFIG_WRITE_DIRECTORY),
+                              argc, argv,
+                              -1, wr_abs_directory_p, 
+                              "(or/c (and/c path-string? complete-path?)"
+                              /**/ " (cons/c (and/c path-string? complete-path?)"
+                              /*        */ " (and/c path-string? complete-path?))"
+                              /**/ " #f)",
+                              1);
 }
 
 #ifdef LOAD_ON_DEMAND

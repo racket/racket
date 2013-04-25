@@ -1963,8 +1963,13 @@ MZ_EXTERN int scheme_new_param(void);
 MZ_EXTERN Scheme_Object *scheme_param_config(char *name, Scheme_Object *pos,
 					     int argc, Scheme_Object **argv,
 					     int arity,
-					     Scheme_Prim *check, char *expected,
+					     Scheme_Prim *check, char *expected_type,
 					     int isbool);
+MZ_EXTERN Scheme_Object *scheme_param_config2(char *name, Scheme_Object *pos,
+                                              int argc, Scheme_Object **argv,
+                                              int arity,
+                                              Scheme_Prim *check, char *expected_contract,
+                                              int isbool);
 MZ_EXTERN Scheme_Object *scheme_register_parameter(Scheme_Prim *function, char *name, int which);
 
 #endif /* SCHEME_DIRECT_EMBEDDED */

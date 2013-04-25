@@ -164,7 +164,9 @@ be used, instead, to support splicing of library-collection trees at
 the file level.}
 
 
-@defparam[current-library-collection-paths paths (listof (and/c path? complete-path?))]{
+@defparam*[current-library-collection-paths paths
+                                            (listof (and/c path-string? complete-path?))
+                                            (listof (and/c path? complete-path?))]{
 
 Parameter that determines a list of complete directory paths for
 library collections used by @racket[require]. See

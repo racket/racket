@@ -195,7 +195,7 @@ Call this procedure in a primitive parameter procedure to implement
  always @cpp{1} and an array that contains the potential parameter
  value. If @var{isbool} is @cpp{0} and @var{check} returns
  @cpp{scheme_false}, then a type error is reported using @var{name}
- and @var{expected}. If @var{isbool} is @cpp{1}, then a type error is
+ and @var{expected} as a type description. If @var{isbool} is @cpp{1}, then a type error is
  reported only when @var{check} returns @cpp{NULL} and any
  non-@cpp{NULL} return value is used as the actual value to be stored
  for the parameter.}
@@ -207,3 +207,16 @@ Call this procedure in a primitive parameter procedure to implement
 
  This function is only available to embedding applications (i.e., not
  extensions).}
+
+@function[(Scheme_Object* scheme_param_config2
+           [char* name]
+           [Scheme_Object* param]
+           [int argc]
+           [Scheme_Object** argv]
+           [int arity]
+           [Scheme_Prim* check]
+           [char* expected_contract]
+           [int isbool])]{
+
+The same as @cpp{scheme_param_config}, but with
+@var{expected_contract} as a contract instead of type description.}

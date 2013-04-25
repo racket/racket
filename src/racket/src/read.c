@@ -787,26 +787,34 @@ static Scheme_Object *good_syntax_width(int c, Scheme_Object **argv)
 static Scheme_Object *
 print_syntax_width(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("print-syntax-width",
-			     scheme_make_integer(MZCONFIG_PRINT_SYNTAX_WIDTH),
-			     argc, argv,
-			     -1, good_syntax_width, "+inf.0, 0, or exact integer greater than three", 0);
+  return scheme_param_config2("print-syntax-width",
+                              scheme_make_integer(MZCONFIG_PRINT_SYNTAX_WIDTH),
+                              argc, argv,
+                              -1, good_syntax_width, 
+                              "(or/c +inf.0 0 (and/c exact-integer? (>=/c 3)))", 0);
 }
 
 #ifdef LOAD_ON_DEMAND
 static Scheme_Object *rdl_check(int argc, Scheme_Object **argv)
 {
-  return argv[0];
+  Scheme_Object *s = argv[0];
+
+  return (SCHEME_FALSEP(s)
+          || (SCHEME_PATHP(s)
+              && scheme_is_complete_path(SCHEME_PATH_VAL(s),
+                                         SCHEME_PATH_LEN(s),
+                                         SCHEME_PLATFORM_PATH_KIND)));
 }
 
 static Scheme_Object *
 read_delay_load(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("read-on-demand-source",
-			     scheme_make_integer(MZCONFIG_DELAY_LOAD_INFO),
-			     argc, argv,
-			     -1, rdl_check, 
-			     "complete path or string, optionally paired with an exact integer", 1);
+  return scheme_param_config2("read-on-demand-source",
+                              scheme_make_integer(MZCONFIG_DELAY_LOAD_INFO),
+                              argc, argv,
+                              -1, rdl_check, 
+                              "(or/c #f (and/c path-string? complete-path?))",
+                              1);
 
 }
 #endif
@@ -6286,18 +6294,18 @@ static Scheme_Object *readtable_or_false_p(int argc, Scheme_Object **argv)
 
 static Scheme_Object *current_readtable(int argc, Scheme_Object **argv)
 {
-  return scheme_param_config("current-readtable", 
-			     scheme_make_integer(MZCONFIG_READTABLE),
-			     argc, argv,
-			     -1, readtable_or_false_p, "readtable", 0);
+  return scheme_param_config2("current-readtable", 
+                              scheme_make_integer(MZCONFIG_READTABLE),
+                              argc, argv,
+                              -1, readtable_or_false_p, "readtable?", 0);
 }
 
 static Scheme_Object *current_reader_guard(int argc, Scheme_Object **argv)
 {
-  return scheme_param_config("current-reader-guard", 
-			     scheme_make_integer(MZCONFIG_READER_GUARD),
-			     argc, argv,
-			     1, NULL, NULL, 0);
+  return scheme_param_config2("current-reader-guard", 
+                              scheme_make_integer(MZCONFIG_READER_GUARD),
+                              argc, argv,
+                              1, NULL, NULL, 0);
 }
 
 static Scheme_Object *no_val_thunk(void *d, int argc, Scheme_Object **argv)

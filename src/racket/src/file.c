@@ -5844,11 +5844,11 @@ static Scheme_Object *current_directory(int argc, Scheme_Object **argv)
   if (!argc)
     scheme_security_check_file("current-directory", NULL, SCHEME_GUARD_FILE_EXISTS);
 
-  return scheme_param_config("current-directory",
-			     scheme_make_integer(MZCONFIG_CURRENT_DIRECTORY),
-			     argc, argv,
-			     -1, cwd_check, 
-			     "complete path or string", 1);
+  return scheme_param_config2("current-directory",
+                              scheme_make_integer(MZCONFIG_CURRENT_DIRECTORY),
+                              argc, argv,
+                              -1, cwd_check, 
+                              "path-string?", 1);
 }
 
 #endif
@@ -5923,10 +5923,10 @@ Scheme_Object *scheme_current_library_collection_paths(int argc, Scheme_Object *
 
 static Scheme_Object *current_library_collection_paths(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-library-collection-paths", 
-			     scheme_make_integer(MZCONFIG_COLLECTION_PATHS),
-			     argc, argv,
-			     -1, collpaths_p, "list of complete paths and strings", 1);
+  return scheme_param_config2("current-library-collection-paths", 
+                              scheme_make_integer(MZCONFIG_COLLECTION_PATHS),
+                              argc, argv,
+                              -1, collpaths_p, "(listof (and/c path-string? complete-path?))", 1);
 }
 
 #endif
@@ -5938,10 +5938,10 @@ static Scheme_Object *compiled_kind_p(int argc, Scheme_Object **argv)
 
 static Scheme_Object *use_compiled_kind(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("use-compiled-file-paths",
-			     scheme_make_integer(MZCONFIG_USE_COMPILED_KIND),
-			     argc, argv,
-			     -1, compiled_kind_p, "list of relative paths and strings", 1);
+  return scheme_param_config2("use-compiled-file-paths",
+                              scheme_make_integer(MZCONFIG_USE_COMPILED_KIND),
+                              argc, argv,
+                              -1, compiled_kind_p, "(listof (and/c path-string? relative-path?))", 1);
 }
 
 static Scheme_Object *compiled_roots_p(int argc, Scheme_Object **argv)
@@ -5956,10 +5956,10 @@ Scheme_Object *scheme_compiled_file_roots(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *compiled_file_roots(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-compiled-file-roots",
-			     scheme_make_integer(MZCONFIG_USE_COMPILED_ROOTS),
-			     argc, argv,
-			     -1, compiled_roots_p, "list of paths, string, and 'same", 1);
+  return scheme_param_config2("current-compiled-file-roots",
+                              scheme_make_integer(MZCONFIG_USE_COMPILED_ROOTS),
+                              argc, argv,
+                              -1, compiled_roots_p, "(listof (or/c path-string? 'same))", 1);
 }
 
 static Scheme_Object *use_user_paths(int argc, Scheme_Object *argv[])

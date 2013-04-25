@@ -2124,10 +2124,10 @@ static Scheme_Object *current_environment_variables(int argc, Scheme_Object *arg
 {
   Scheme_Object *v;
 
-  v = scheme_param_config("current-environment-variables",
-			  scheme_make_integer(MZCONFIG_CURRENT_ENV_VARS),
-			  argc, argv,
-			  -1, env_p, "environment-variables?", 0);
+  v = scheme_param_config2("current-environment-variables",
+                           scheme_make_integer(MZCONFIG_CURRENT_ENV_VARS),
+                           argc, argv,
+                           -1, env_p, "environment-variables?", 0);
 
   return v;
 }
@@ -2800,10 +2800,10 @@ static Scheme_Object *ok_cmdline(int argc, Scheme_Object **argv)
 
 static Scheme_Object *cmdline_args(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-command-line-arguments",
-			     scheme_make_integer(MZCONFIG_CMDLINE_ARGS),
-			     argc, argv,
-			     -1, ok_cmdline, "vector of strings", 1);
+  return scheme_param_config2("current-command-line-arguments",
+                              scheme_make_integer(MZCONFIG_CMDLINE_ARGS),
+                              argc, argv,
+                              -1, ok_cmdline, "(vectorof string?)", 1);
 }
 
 /**********************************************************************/
@@ -2831,10 +2831,10 @@ static Scheme_Object *current_locale(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v;
 
-  v = scheme_param_config("current-locale",
-			  scheme_make_integer(MZCONFIG_LOCALE),
-			  argc, argv,
-			  -1, ok_locale, "#f or string", 1);
+  v = scheme_param_config2("current-locale",
+                           scheme_make_integer(MZCONFIG_LOCALE),
+                           argc, argv,
+                           -1, ok_locale, "(or/c #f string?)", 1);
 
   return v;
 }

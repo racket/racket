@@ -989,10 +989,13 @@ static Scheme_Object *check_resolver(int argc, Scheme_Object **argv)
 static Scheme_Object *
 current_module_name_resolver(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-module-name-resolver",
-			     scheme_make_integer(MZCONFIG_CURRENT_MODULE_RESOLVER),
-			     argc, argv,
-			     -1, check_resolver, "procedure of arity 1 and 4", 1);
+  return scheme_param_config2("current-module-name-resolver",
+                              scheme_make_integer(MZCONFIG_CURRENT_MODULE_RESOLVER),
+                              argc, argv,
+                              -1, check_resolver, 
+                              "(and/c (procedure-arity-includes/c 1)"
+                              /* */ " (procedure-arity-includes/c 4))", 
+                              1);
 }
 
 static Scheme_Object *prefix_p(int argc, Scheme_Object **argv)
@@ -1008,10 +1011,10 @@ static Scheme_Object *prefix_p(int argc, Scheme_Object **argv)
 static Scheme_Object *
 current_module_name_prefix(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-module-declared-name",
-			     scheme_make_integer(MZCONFIG_CURRENT_MODULE_NAME),
-			     argc, argv,
-			     -1, prefix_p, "resolved-module-path or #f", 1);
+  return scheme_param_config2("current-module-declared-name",
+                              scheme_make_integer(MZCONFIG_CURRENT_MODULE_NAME),
+                              argc, argv,
+                              -1, prefix_p, "(or/c resolved-module-path? #f)", 1);
 }
 
 static Scheme_Object *source_p(int argc, Scheme_Object **argv)
@@ -1032,10 +1035,12 @@ static Scheme_Object *source_p(int argc, Scheme_Object **argv)
 static Scheme_Object *
 current_module_name_source(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-module-declared-name",
-			     scheme_make_integer(MZCONFIG_CURRENT_MODULE_SRC),
-			     argc, argv,
-			     -1, source_p, "symbol, complete path, or #f", 1);
+  return scheme_param_config2("current-module-declared-name",
+                              scheme_make_integer(MZCONFIG_CURRENT_MODULE_SRC),
+                              argc, argv,
+                              -1, source_p, 
+                              "(or/c symbol? (and/c path-string? complete-path?) #f)", 
+                              1);
 }
 
 static Scheme_Object *load_path_p(int argc, Scheme_Object **argv)
@@ -1054,10 +1059,14 @@ static Scheme_Object *load_path_p(int argc, Scheme_Object **argv)
 static Scheme_Object *
 current_module_load_path(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-module-path-for-load",
-			     scheme_make_integer(MZCONFIG_CURRENT_MODULE_LOAD_PATH),
-			     argc, argv,
-			     -1, load_path_p, "module path, module path as syntax, or #f", 1);
+  return scheme_param_config2("current-module-path-for-load",
+                              scheme_make_integer(MZCONFIG_CURRENT_MODULE_LOAD_PATH),
+                              argc, argv,
+                              -1, load_path_p, 
+                              "(or/c module-path?"
+                              /**/ " (and/c syntax? (lambda (stx) (module-path? (syntax->datum stx))))"
+                              /**/ " #f)",
+                              1);
 }
 
 /**********************************************************************/

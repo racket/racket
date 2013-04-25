@@ -1588,10 +1588,10 @@ static Scheme_Object *custodian_to_list(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *current_custodian(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-custodian", 
-			     scheme_make_integer(MZCONFIG_CUSTODIAN),
-			     argc, argv,
-			     -1, custodian_p, "custodian", 0);
+  return scheme_param_config2("current-custodian", 
+                              scheme_make_integer(MZCONFIG_CUSTODIAN),
+                              argc, argv,
+                              -1, custodian_p, "custodian?", 0);
 }
 
 Scheme_Custodian *scheme_get_current_custodian()
@@ -1917,10 +1917,10 @@ static Scheme_Object *thread_set_p(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *current_thread_set(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-thread-group", 
-			     scheme_make_integer(MZCONFIG_THREAD_SET),
-			     argc, argv,
-			     -1, thread_set_p, "thread-group", 0);
+  return scheme_param_config2("current-thread-group", 
+                              scheme_make_integer(MZCONFIG_THREAD_SET),
+                              argc, argv,
+                              -1, thread_set_p, "thread-group?", 0);
 }
 
 static TSET_IL void set_t_set_next(Scheme_Object *o, Scheme_Object *n)
@@ -7588,19 +7588,20 @@ Scheme_Object *scheme_register_parameter(Scheme_Prim *function, char *name, int 
 
 typedef Scheme_Object *(*PCheck_Proc)(int, Scheme_Object **, Scheme_Config *);
 
-Scheme_Object *scheme_param_config(char *name, Scheme_Object *pos,
-				   int argc, Scheme_Object **argv,
-				   int arity,
-				   /* -3 => like -1, plus use check to unmarshall the value
-                                      -2 => user parameter; pos is array [key, defcell]
-				      -1 => use check; if isboolorfilter, check is a filter
-                                            (and expected is ignored), and if check is NULL,
-                                            parameter is boolean-valued
-				      0+ => check argument for this arity */
-				   Scheme_Object *(*check)(int, Scheme_Object **), 
-				   /* Actually called with (int, S_O **, Scheme_Config *) */
-				   char *expected,
-				   int isboolorfilter)
+static Scheme_Object *do_param_config(char *name, Scheme_Object *pos,
+                                      int argc, Scheme_Object **argv,
+                                      int arity,
+                                      /* -3 => like -1, plus use check to unmarshall the value
+                                         -2 => user parameter; pos is array [key, defcell]
+                                         -1 => use check; if isboolorfilter, check is a filter
+                                         (and expected is ignored), and if check is NULL,
+                                         parameter is boolean-valued
+                                         0+ => check argument for this arity */
+                                      Scheme_Object *(*check)(int, Scheme_Object **), 
+                                      /* Actually called with (int, S_O **, Scheme_Config *) */
+                                      char *expected,
+                                      int isboolorfilter,
+                                      int expected_is_contract)
 {
   Scheme_Config *config;
 
@@ -7644,7 +7645,10 @@ Scheme_Object *scheme_param_config(char *name, Scheme_Object *pos,
 	    r = NULL;
 	  
 	  if (!r) {
-	    scheme_wrong_type(name, expected, 0, 1, argv);
+            if (expected_is_contract)
+              scheme_wrong_contract(name, expected, 0, 1, argv);
+            else
+              scheme_wrong_type(name, expected, 0, 1, argv);
 	    return NULL;
 	  }
 	  
@@ -7677,6 +7681,28 @@ Scheme_Object *scheme_param_config(char *name, Scheme_Object *pos,
   }
 }
 
+Scheme_Object *scheme_param_config(char *name, Scheme_Object *pos,
+				   int argc, Scheme_Object **argv,
+				   int arity,
+				   Scheme_Object *(*check)(int, Scheme_Object **), 
+				   char *expected_type,
+				   int isboolorfilter)
+{
+  return do_param_config(name, pos, argc, argv, arity, check, 
+                         expected_type, isboolorfilter, 0);
+}
+
+Scheme_Object *scheme_param_config2(char *name, Scheme_Object *pos,
+                                    int argc, Scheme_Object **argv,
+                                    int arity,
+                                    Scheme_Object *(*check)(int, Scheme_Object **), 
+                                    char *expected_contract,
+                                    int isboolorfilter)
+{
+  return do_param_config(name, pos, argc, argv, arity, check, 
+                         expected_contract, isboolorfilter, 1);
+}
+
 static Scheme_Object *
 exact_positive_integer_p (int argc, Scheme_Object *argv[])
 {
@@ -7691,10 +7717,10 @@ exact_positive_integer_p (int argc, Scheme_Object *argv[])
 
 static Scheme_Object *current_thread_initial_stack_size(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-thread-initial-stack-size", 
-			     scheme_make_integer(MZCONFIG_THREAD_INIT_STACK_SIZE),
-			     argc, argv,
-			     -1, exact_positive_integer_p, "exact positive integer", 0);
+  return scheme_param_config2("current-thread-initial-stack-size", 
+                              scheme_make_integer(MZCONFIG_THREAD_INIT_STACK_SIZE),
+                              argc, argv,
+                              -1, exact_positive_integer_p, "exact-positive-integer?", 0);
 }
 
 static Scheme_Object *phantom_bytes_p(int argc, Scheme_Object *argv[])
@@ -7790,10 +7816,10 @@ static Scheme_Object *namespace_p(int argc, Scheme_Object **argv)
 
 static Scheme_Object *current_namespace(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-namespace", 
-			     scheme_make_integer(MZCONFIG_ENV),
-			     argc, argv,
-			     -1, namespace_p, "namespace", 0);
+  return scheme_param_config2("current-namespace", 
+                              scheme_make_integer(MZCONFIG_ENV),
+                              argc, argv,
+                              -1, namespace_p, "namespace?", 0);
 }
 
 /*========================================================================*/
@@ -7831,10 +7857,10 @@ static Scheme_Object *security_guard_p(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *current_security_guard(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-security-guard", 
-			     scheme_make_integer(MZCONFIG_SECURITY_GUARD),
-			     argc, argv,
-			     -1, security_guard_p, "security-guard", 0);
+  return scheme_param_config2("current-security-guard", 
+                              scheme_make_integer(MZCONFIG_SECURITY_GUARD),
+                              argc, argv,
+                              -1, security_guard_p, "security-guard?", 0);
 }
 
 

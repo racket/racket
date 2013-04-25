@@ -274,7 +274,7 @@ adjusts the parsing of S-expression input, where @racket[#f] implies the
 default behavior. See @secref["readtables"] for more information.}
 
 
-@defparam[read-on-demand-source path (and/c path? complete-path?)]{
+@defparam[read-on-demand-source path (or/c #f (and/c path? complete-path?))]{
 
 A @tech{parameter} that enables lazy parsing of compiled code, so that
 closure bodies and syntax objects are extracted (and validated) from

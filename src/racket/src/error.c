@@ -3017,10 +3017,10 @@ static Scheme_Object *good_print_width(int c, Scheme_Object **argv)
 
 static Scheme_Object *error_print_width(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("error-print-width",
-			     scheme_make_integer(MZCONFIG_ERROR_PRINT_WIDTH),
-			     argc, argv,
-			     -1, good_print_width, "exact integer greater than three", 0);
+  return scheme_param_config2("error-print-width",
+                              scheme_make_integer(MZCONFIG_ERROR_PRINT_WIDTH),
+                              argc, argv,
+                              -1, good_print_width, "(and/c exact-integer? (>=/c 3))", 0);
 }
 
 static Scheme_Object *good_print_context_length(int c, Scheme_Object **argv)
@@ -3038,10 +3038,10 @@ static Scheme_Object *good_print_context_length(int c, Scheme_Object **argv)
 
 static Scheme_Object *error_print_context_length(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("error-print-context-length",
-			     scheme_make_integer(MZCONFIG_ERROR_PRINT_CONTEXT_LENGTH),
-			     argc, argv,
-			     -1, good_print_context_length, "non-negative integer", 0);
+  return scheme_param_config2("error-print-context-length",
+                              scheme_make_integer(MZCONFIG_ERROR_PRINT_CONTEXT_LENGTH),
+                              argc, argv,
+                              -1, good_print_context_length, "exact-nonnegative-integer?", 0);
 }
 
 static Scheme_Object *error_print_srcloc(int argc, Scheme_Object *argv[])
@@ -3902,10 +3902,10 @@ logger_p(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 current_logger(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("current-logger",
-			     scheme_make_integer(MZCONFIG_LOGGER),
-			     argc, argv,
-			     -1, logger_p, "logger", 0);
+  return scheme_param_config2("current-logger",
+                              scheme_make_integer(MZCONFIG_LOGGER),
+                              argc, argv,
+                              -1, logger_p, "logger?", 0);
 }
 
 static Scheme_Object *

@@ -331,7 +331,8 @@ immediately expanded (see @secref["pathutils"]) and converted to a
 path. (The directory need not exist.)}
 
 
-@defparam*[use-compiled-file-paths paths (listof path-string?) (listof path?)]{
+@defparam*[use-compiled-file-paths paths (listof (and/c path-string? relative-path?))
+                                         (listof (and/c path? relative-path?))]{
 
 A list of relative paths, which defaults to @racket[(list
 (string->path "compiled"))]. It is used by the @tech{compiled-load
