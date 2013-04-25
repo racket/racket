@@ -36,7 +36,12 @@
        (test-bad
          (for ([(x y) (with/c (sequence/c integer?)
                               (in-dict (list (cons 1 'one) (cons 2 'two))))])
-           (void)))))
+           (void)))
+       (let ([s (sequence->stream (contract (sequence/c #:min-count 2 any/c) "x" 'pos 'neg))])
+         (check-equal? (stream-first s) #\x)
+         (check-exn (λ (x) (and (exn:fail? x)
+                                (regexp-match #rx"blaming: pos" (exn-message x))))
+                    (lambda () (stream-first (stream-rest s)))))))
    (test-suite "Data structure contracts"
      (test-suite "maybe/c"
        (test-true "flat" (flat-contract? (maybe/c number?)))

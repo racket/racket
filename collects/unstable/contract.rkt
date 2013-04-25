@@ -133,48 +133,65 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (sequence/c . elem/cs)
-  (let* ([elem/cs (for/list ([elem/c (in-list elem/cs)])
-                    (coerce-contract 'sequence/c elem/c))]
-         [n-cs (length elem/cs)])
-    (make-contract
-     #:name (apply build-compound-type-name 'sequence/c elem/cs)
-     #:first-order sequence?
-     #:projection
-     (λ (blame)       
-       (λ (seq)
-         (define pos (blame-positive blame))
-         (define neg (blame-negative blame))
-         (define src (list (blame-source blame) (blame-value blame)))
-         (define name (blame-contract blame))
-         (unless (sequence? seq)
-           (raise-blame-error
-            blame seq
-            '(expected: "a sequence" given: "~e")
-            seq))
-         (make-do-sequence
-          (lambda ()
-            (let*-values ([(more? next) (sequence-generate seq)])
-              (values
-               (lambda (idx)
-                 (call-with-values next
-                                   (lambda elems
-                                     (define n-elems (length elems))
-                                     (unless (= n-elems n-cs)
-                                       (raise-blame-error
-                                        blame seq
-                                        '(expected: "a sequence of ~a values" given: "~a values\n values: ~e")
-                                        n-cs n-elems elems))
-                                     (apply
-                                      values
-                                      (for/list ([elem (in-list elems)]
-                                                 [elem/c (in-list elem/cs)])
-                                        (((contract-projection elem/c) blame) elem))))))
-               (lambda (idx) idx)
-               #f
-               (lambda (idx) (more?))
-               (lambda elems #t)
-               (lambda (idx . elems) #t))))))))))
+(define (sequence/c #:min-count [min-count #f] . elem/cs)
+  (define ctcs (for/list ([elem/c (in-list elem/cs)])
+                 (coerce-contract 'sequence/c elem/c)))
+  (define elem/mk-projs 
+    (for/list ([ctc (in-list ctcs)])
+      (contract-projection ctc)))
+  (define n-cs (length elem/cs))
+  (make-contract
+   #:name (apply build-compound-type-name 'sequence/c 
+                 (append
+                  (if min-count
+                      (list '#:min-count min-count)
+                      '())
+                  ctcs))
+   #:first-order sequence?
+   #:projection
+   (λ (orig-blame)
+     (define blame (blame-add-context orig-blame "an element of"))
+     (define ps (for/list ([mk-proj (in-list elem/mk-projs)])
+                  (mk-proj blame)))
+     (λ (seq)
+       (unless (sequence? seq)
+         (raise-blame-error
+          orig-blame seq
+          '(expected: "a sequence" given: "~e")
+          seq))
+       (make-do-sequence
+        (lambda ()
+          (let*-values ([(more? next) (sequence-generate seq)])
+            (values
+             (lambda (idx)
+               (call-with-values next
+                                 (lambda elems
+                                   (define n-elems (length elems))
+                                   (unless (= n-elems n-cs)
+                                     (raise-blame-error
+                                      blame seq
+                                      '(expected: "a sequence of ~a values" given: "~a values\n values: ~e")
+                                      n-cs n-elems elems))
+                                   (apply
+                                    values
+                                    (for/list ([elem (in-list elems)]
+                                               [p (in-list ps)])
+                                      (p elem))))))
+             add1
+             0
+             (lambda (idx) 
+               (define ans (more?))
+               (when (and min-count (idx . < . min-count))
+                 (unless ans
+                   (raise-blame-error 
+                    orig-blame
+                    seq
+                    '(expected: "a sequence that contains at least ~a values" given: "~e")
+                    min-count
+                    seq)))
+               ans)
+             (lambda elems #t)
+             (lambda (idx . elems) #t)))))))))
 
 ;; Added by ntoronto
 
@@ -202,8 +219,10 @@
 
  [truth/c flat-contract?]
 
- [sequence/c (->* [] [] #:rest (listof contract?) contract?)]
+ [sequence/c (->* () 
+                  (#:min-count (or/c #f exact-nonnegative-integer?))
+                  #:rest (listof contract?) 
+                  contract?)]
  
- [treeof (contract? . -> . contract?)]
- )
+ [treeof (contract? . -> . contract?)])
 

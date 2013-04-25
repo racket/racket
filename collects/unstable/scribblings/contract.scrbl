@@ -89,13 +89,17 @@ that accept arbitrary truth values that may not be booleans.
 
 }
 
-@defproc[(sequence/c [elem/c contract?] ...) contract?]{
+@defproc[(sequence/c [#:min-count min-count (or/c #f exact-nonnegative-integer?) #f]
+                     [elem/c contract?] ...)
+         contract?]{
 
 Wraps a @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{sequence},
 obligating it to produce as many values as there are @racket[elem/c] contracts,
 and obligating each value to satisfy the corresponding @racket[elem/c].  The
 result is not guaranteed to be the same kind of sequence as the original value;
 for instance, a wrapped list is not guaranteed to satisfy @racket[list?].
+
+If @racket[min-count] is a number, the stream is required to have at least that many elements in it.
 
 @defexamples[
 #:eval the-eval
@@ -112,6 +116,12 @@ for instance, a wrapped list is not guaranteed to satisfy @racket[list?].
                  (cons 3 'three))))
 (for ([(N S) numbers&strings])
   (printf "~s: ~a\n" N S))
+(define/contract a-sequence
+  (sequence/c #:min-count 2 char?)
+  "x")
+(for ([x a-sequence]
+      [i (in-naturals)])
+  (printf "~a is ~a\n" i x))
 ]
 
 }
