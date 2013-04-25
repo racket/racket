@@ -118,10 +118,12 @@
   (define/override (get-label-gtk)
     (gtk_bin_get_child (get-client-gtk)))
 
+  (define the-font font)
   (define/override (set-label s)
     (cond
      [(string? s)
-      (gtk_button_set_label gtk (mnemonic-string s))]
+      (gtk_button_set_label gtk (mnemonic-string s))
+      (when the-font (install-control-font (get-label-gtk) the-font))]
      [else
       (let ([pixbuf (bitmap->pixbuf s)])
         (atomically
