@@ -1555,7 +1555,8 @@ If the namespace does not, they are colored the unbound color.
               (match-define (def-link id filename submods) a-def-link)
               (define tab
                 (for/or ([frame (in-list (send (group:get-the-frame-group) get-frames))])
-                  (send frame find-matching-tab filename)))
+                  (and (is-a? frame drracket:unit:frame<%>)
+                       (send frame find-matching-tab filename))))
               (define dt 
                 (and tab
                      (send (send tab get-defs) syncheck:find-definition-target id submods)))
