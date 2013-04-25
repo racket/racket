@@ -23,9 +23,13 @@
          "guts.rkt"
          "misc.rkt"
          "exists.rkt"
-         "opt.rkt"
          syntax/location
          syntax/srcloc)
+
+(define-syntax (verify-contract stx)
+  (syntax-case stx ()
+    [(_ name x) (a:known-good-contract? #'x) #'x]
+    [(_ name x) #'(coerce-contract name x)]))
 
 (define-for-syntax (self-ctor-transformer orig stx)
   (with-syntax ([orig orig])
@@ -358,10 +362,12 @@
                        #t))]
                 [mutator-ids (reverse (list-ref the-struct-info 4))] ;; (listof (union #f identifier))
                 [field-contract-ids (map (λ (field-name field-contract)
-                                           (a:mangle-id provide-stx
-                                                        "provide/contract-field-contract"
-                                                        field-name
-                                                        struct-name))
+                                           (if (a:known-good-contract? field-contract)
+                                               field-contract
+                                               (a:mangle-id provide-stx
+                                                            "provide/contract-field-contract"
+                                                            field-name
+                                                            struct-name)))
                                          field-names
                                          field-contracts)]
                 [struct:struct-name
@@ -513,9 +519,11 @@
 
                          [(field-contract-id-definitions ...)
                           (filter values (map (λ (field-contract-id field-contract)
-                                                (with-syntax ([field-contract-id field-contract-id]
-                                                              [field-contract field-contract])
-                                                  #'(define field-contract-id (opt/c field-contract #:error-name provide/contract))))
+                                                (if (a:known-good-contract? field-contract)
+                                                    #f
+                                                    (with-syntax ([field-contract-id field-contract-id]
+                                                                  [field-contract field-contract])
+                                                      #'(define field-contract-id (verify-contract 'provide/contract field-contract)))))
                                               field-contract-ids
                                               field-contracts))]
                          [(field-contracts ...) field-contracts]
@@ -715,14 +723,17 @@
        (define (code-for-one-id/new-name stx id reflect-id ctrct/no-prop user-rename-id
                                          [mangle-for-maker? #f]
                                          [provide? #t])
-         (let ([ex-id (or reflect-id id)]
+         (let ([no-need-to-check-ctrct? (a:known-good-contract? ctrct/no-prop)]
+               [ex-id (or reflect-id id)]
                [ctrct (syntax-property ctrct/no-prop
                                        'racket/contract:contract-on-boundary
                                        (gensym 'provide/contract-boundary))])
            (with-syntax ([id-rename (id-for-one-id user-rename-id reflect-id id mangle-for-maker?)]
-                         [contract-id (a:mangle-id provide-stx
-                                                   "provide/contract-contract-id"
-                                                   (or user-rename-id ex-id))]
+                         [contract-id (if no-need-to-check-ctrct?
+                                          ctrct
+                                          (a:mangle-id provide-stx
+                                                       "provide/contract-contract-id"
+                                                       (or user-rename-id ex-id)))]
                          [pos-stx (datum->syntax id 'here)]
                          [id id]
                          [ex-id ex-id]
@@ -740,10 +751,11 @@
                                (quasisyntax/loc stx
                                  (begin
 
-                                   (define contract-id
-                                     ;; let is here to give the right name.
-                                     (let ([ex-id (opt/c ctrct #:error-name provide/contract)])
-                                       ex-id))
+                                   #,@(if no-need-to-check-ctrct?
+                                          (list)
+                                          (list #'(define contract-id
+                                                    (let ([ex-id ctrct]) ;; let is here to give the right name.
+                                                      (verify-contract 'provide/contract ex-id)))))
                                    (define-syntax id-rename
                                      (make-provide/contract-transformer (quote-syntax contract-id)
                                                                         (a:update-loc
