@@ -7,6 +7,7 @@
            dynext/filename-version
            "private/macfw.rkt"
            "private/windlldir.rkt"
+           "private/elf.rkt"
            "private/collects-path.rkt")
 
   (provide assemble-distribution)
@@ -305,7 +306,7 @@
 
   (define (patch-stub-exe-paths b exe shared-lib-dir)
     ;; Adjust paths to executable and DLL that is embedded in the executable
-    (let-values ([(config-pos start end prog-len dll-len rest)
+    (let-values ([(config-pos all-start start end prog-len dll-len rest)
 		  (with-input-from-file b
 		    (lambda ()
 		      (let* ([i (current-input-port)]
@@ -314,7 +315,7 @@
 			  (error 'patch-stub-exe-paths
 				 "cannot find config info"))
 			(read-byte i)
-			(read-one-int i) ; start of decls
+			(define all-start (read-one-int i)) ; start of decls
 			(read-one-int i) ; start of program
 			(let ([start (read-one-int i)] ; start of data
 			      [end (read-one-int i)]) ; end of data
@@ -322,6 +323,7 @@
 			  (let ([prog-len (next-bytes-length i)]
 				[dll-len (next-bytes-length i)])
 			    (values (+ (cdar m) 1) ; position after "cOnFiG:[" tag
+				    all-start
 				    start
 				    end
 				    prog-len
@@ -335,19 +337,24 @@
 			(add1 (bytes-length exe-bytes))
 			(add1 (bytes-length shared-lib-bytes)))])
 	  (with-output-to-file b
-	    #:exists 'update
-	    (lambda ()
-	      (let ([o (current-output-port)])
-		(file-position o (+ config-pos 12)) ; update the end of the program data
-		(write-one-int (- end delta) o)
-		(flush-output o)
-		(file-position o start)
-		(write-bytes exe-bytes o)
-		(write-bytes #"\0" o)
-		(write-bytes shared-lib-bytes o)
-		(write-bytes #"\0" o)
-		(write-bytes rest o)
-		(flush-output o))))))))
+            #:exists 'update
+            (lambda ()
+              (let ([o (current-output-port)])
+                (file-position o (+ config-pos 12)) ; update the end of the program data
+                (write-one-int (- end delta) o)
+                (flush-output o)
+                (file-position o start)
+                (write-bytes exe-bytes o)
+                (write-bytes #"\0" o)
+                (write-bytes shared-lib-bytes o)
+                (write-bytes #"\0" o)
+                (write-bytes rest o)
+                (flush-output o))))
+          ;; May need to fix the size of the ELF section:
+          (adjust-racket-section-size
+           b
+           #rx#"^[.]rack(?:cmdl|prog)\0"
+           (- (- end all-start) delta))))))
 
   (define (copy-and-patch-binaries copy? magic
                                    extract-src construct-dest transform-entry
