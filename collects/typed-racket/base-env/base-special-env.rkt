@@ -92,7 +92,9 @@
    (-poly (a) (-> (-lst a) (-seq a)))]
   ;; in-vector
   [(make-template-identifier 'in-vector 'racket/private/for)
-   (-poly (a) (->opt (-vec a) [-Int (-opt -Int) -Int] (-seq a)))]
+   (-poly (a)
+          (cl->* (->opt (-vec a) [-Int (-opt -Int) -Int] (-seq a))
+                 (->opt -VectorTop [-Int (-opt -Int) -Int] (-seq Univ))))]
   ;; in-string
   [(make-template-identifier 'in-string 'racket/private/for)
    (->opt -String [-Int (-opt -Int) -Int] (-seq -Char))]
@@ -101,11 +103,17 @@
    (->opt -Bytes [-Int (-opt -Int) -Int] (-seq -Byte))]
   ;; in-hash and friends
   [(make-template-identifier 'in-hash 'racket/private/for)
-   (-poly (a b) (-> (-HT a b) (-seq a b)))]
+   (-poly (a b)
+          (cl-> [((-HT a b)) (-seq a b)]
+                [(-HashTop) (-seq Univ Univ)]))]
   [(make-template-identifier 'in-hash-keys 'racket/private/for)
-   (-poly (a b) (-> (-HT a b) (-seq a)))]
+   (-poly (a b)
+          (cl-> [((-HT a b)) (-seq a)]
+                [(-HashTop) (-seq Univ)]))]
   [(make-template-identifier 'in-hash-values 'racket/private/for)
-   (-poly (a b) (-> (-HT a b) (-seq b)))]
+   (-poly (a b)
+          (cl-> [((-HT a b)) (-seq b)]
+                [(-HashTop) (-seq Univ)]))]
   ;; in-port
   [(make-template-identifier 'in-port 'racket/private/for)
    (->opt [(-> -Input-Port Univ) -Input-Port] (-seq Univ))]
