@@ -19,7 +19,7 @@
 (provide tc-app-combined@)
 
 (define-compound-unit/infer tc-app-combined@
-  (import tc-expr^ tc-lambda^ tc-let^ tc-apply^)
+  (import tc-expr^ tc-lambda^ tc-let^ tc-apply^ tc-literal^)
   (export tc-app^)
 
   (link tc-app-main@
