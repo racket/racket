@@ -111,6 +111,8 @@
 [Sexp -Sexp]         ;; (Sexpof (U)), syntax->datum of "2D" syntax
 [Identifier Ident]
 [Procedure top-func]
+[VectorTop -VectorTop]
+[HashTableTop -HashTop]
 [Keyword -Keyword]
 [Thread -Thread]
 [Resolved-Module-Path -Resolved-Module-Path]
