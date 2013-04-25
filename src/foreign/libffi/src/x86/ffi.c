@@ -315,7 +315,12 @@ ffi_status ffi_prep_cif_machdep(ffi_cif *cif)
   cif->bytes += 4 * sizeof(ffi_arg);
 #endif
 
-  cif->bytes = (cif->bytes + 15) & ~0xF;
+#ifdef X86_WIN32
+  if ((cif->abi != FFI_STDCALL)
+      && (cif->abi != FFI_FASTCALL)
+      && (cif->abi != FFI_THISCALL))
+#endif
+    cif->bytes = (cif->bytes + 15) & ~0xF;
 
   return FFI_OK;
 }
