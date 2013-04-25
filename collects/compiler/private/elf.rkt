@@ -1,6 +1,7 @@
 #lang racket/base
 
-(provide add-racket-section)
+(provide add-racket-section
+         adjust-racket-section-size)
 
 (define 32BIT 1)
 (define 64BIT 2)
@@ -314,3 +315,46 @@
                    (write-bytes data out)
                    
                    (values dest (+ dest (bytes-length data)) decl-len mid))))))))))))
+
+(define (adjust-racket-section-size src-file name-regexp new-size)
+  (define fixup
+    (call-with-input-file*
+     src-file
+     (lambda (in)
+       (read-elf
+        in
+        (lambda () (values #f #f #f #f))
+        (lambda (elf sections programs str-section strs)
+          (and elf
+               (for/or ([s (in-list sections)]
+                        [i (in-naturals)])
+                 (and (regexp-match? name-regexp
+                                     strs
+                                     (min (section-name-offset s)
+                                          (bytes-length strs)))
+                      (lambda (out)
+                        (let ([class (elf-class elf)]
+                              [format (elf-format elf)])
+                          (define-values (word-size xoff-size xword-size addr-size)
+                            (if (= class 32BIT)
+                                (values 4 4 4 4)
+                                (values 4 8 8 8)))
+                          ;; Go to section record, and specifically to
+                          ;; the size field:
+                          (file-position out (+ (elf-sh-offset elf)
+                                                (* i (elf-sh-esize elf))
+                                                (* 2 word-size)
+                                                xword-size
+                                                addr-size
+                                                xoff-size))
+                          ;; Write the new size:
+                          (display (integer->integer-bytes new-size
+                                                           xword-size
+                                                           #f
+                                                           (= format BIGEND)) 
+                                   out)))))))))))
+  (when fixup
+    (call-with-output-file*
+     src-file
+     #:exists 'update
+     fixup)))
