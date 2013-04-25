@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual scribble/bnf "utils.rkt"
           slideshow/pict
-          (for-label scriblib/figure scribble/base scribble/sigplan))
+          (for-label scriblib/figure scribble/base scribble/sigplan
+                     (except-in slideshow/pict table)))
 
 @(define-syntax-rule (samplemod . text) (codeblock . text))
 @(define-syntax-rule (sample a . text)
