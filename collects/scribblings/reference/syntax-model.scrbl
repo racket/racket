@@ -653,7 +653,7 @@ of the following cases:
 
 After all body forms are partially expanded, if no definitions were
 encountered, then the expressions are collected into a @racket[begin]
-form as he internal-definition context's expansion.  Otherwise, at
+form as the internal-definition context's expansion.  Otherwise, at
 least one expression must appear after the last definition, and any
 @racket[_expr] that appears between definitions is converted to
 @racket[(define-values () (begin _expr (values)))]; the definitions
