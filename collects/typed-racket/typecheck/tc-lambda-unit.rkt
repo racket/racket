@@ -277,7 +277,7 @@
       [(Function: (and fs (list (arr: argss rets rests drests '()) ...)))
        (for/list ([a argss] [f fs]  [r rests] [dr drests]
                   #:when (if (formals-rest fml)
-                             (and (or r dr) (= (length a) (length (formals-positional fml))))
+                             (>= (length a) (length (formals-positional fml)))
                              (and (not r) (not dr) (= (length a) (length (formals-positional fml))))))
                 f)]
       [_ null]))
