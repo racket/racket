@@ -116,13 +116,13 @@ _complete_collects() {
   local cur="$1"
   if [[ "${#_racket_collects_dirs[@]}" -eq 0 ]]; then
     _racket_collects_dirs=(
-      $( $_racket_cmd -e
+      $( $_racket_cmd -e \
            '(for-each displayln (current-library-collection-paths))' )
     )
   fi
   local wordlist=""
   for dir in "${_racket_collects_dirs[@]}"; do
-    wordlist="$wordlist $(for x in $(compgen -d "$dir"); do basename "$x"; done)"
+    wordlist="$wordlist $(for x in $(compgen -d "$dir/"); do basename "$x"; done)"
   done
   COMPREPLY=( $(compgen -W "$wordlist" -- "$cur") )
 }
