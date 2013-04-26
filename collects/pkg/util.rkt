@@ -8,6 +8,8 @@
          net/url
          json)
 
+(define-logger pkg)
+
 (define (make-parent-directory* p)
   (define parent (path-only p))
   (make-directory* parent))
@@ -28,9 +30,11 @@
                 (make-string (+ (- width (string-length col)) 4) #\space))))
     (printf "\n")))
 
-(define (call/input-url+200 u fun)
+(define (call/input-url+200 u fun #:headers [headers '()])
   #;(printf "\t\tReading ~a\n" (url->string u))
-  (define-values (ip hs) (get-pure-port/headers u #:redirections 25 #:status? #t))
+  (define-values (ip hs) (get-pure-port/headers u headers
+                                                #:redirections 25
+                                                #:status? #t))
   (and (string=? "200" (substring hs 9 12))
        (fun ip)))
 
@@ -56,10 +60,12 @@
                  (list "repos" user repo "branches"))
             query
             #f))
+     (log-pkg-debug "Querying GitHub at ~a" (url->string api-u))
      (define api-bs
-       (call/input-url+200 api-u port->bytes))
+       (call/input-url+200 api-u port->bytes
+                           #:headers (list (format "User-Agent: raco-pkg/~a" (version)))))
      (unless api-bs
-       (error 'package-url->checksum 
+       (error 'package-url->checksum
               "Could not connect to GitHub"))
      (define branches
        (read-json (open-input-bytes api-bs)))
