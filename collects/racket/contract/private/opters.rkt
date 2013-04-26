@@ -109,7 +109,8 @@
                  val
                  (raise-blame-error blame
                                     val
-                                    "none of the branches of the or/c matched"))))]
+                                    '("none of the branches of the or/c matched" given: "~e")
+                                    val))))]
          [(= (length hos) 1)
           (with-syntax ([ho-ctc ho-ctc]
                         [val (opt/info-val opt/info)])

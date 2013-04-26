@@ -152,7 +152,7 @@
             #:lifts lifts2
             #:superlifts null
             #:partials null
-            #:flat #'(is-a? cls-x val)
+            #:flat #'(is-a? val cls-x)
             #:opt #f
             #:stronger-ribs '()
             #:chaperone #t

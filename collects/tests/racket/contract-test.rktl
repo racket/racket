@@ -12128,13 +12128,20 @@ so that propagation occurs.
                         (contract-eval `(class* object% (,i<%>) (super-new)))
                         #f))
 
-  (let ([i<%> (contract-eval '(interface ()))]
-        [c% (contract-eval '(class object% (super-new)))])
-    (test-flat-contract `(is-a?/c ,i<%>)
-                        (contract-eval `(new (class* object% (,i<%>) (super-new))))
+  (begin
+    (contract-eval '(define flat-is-a-test<%> (interface ())))
+    (contract-eval '(define flat-is-a-test% (class object% (super-new))))
+    (test-flat-contract `(is-a?/c flat-is-a-test<%>)
+                        (contract-eval `(new (class* object% (flat-is-a-test<%>) (super-new))))
                         (contract-eval '(new object%)))
-    (test-flat-contract `(is-a?/c ,c%)
-                        (contract-eval `(new ,c%))
+    (test-flat-contract `(is-a?/c flat-is-a-test%)
+                        (contract-eval `(new flat-is-a-test%))
+                        (contract-eval '(new object%)))
+    (test-flat-contract `(or/c #f (is-a?/c flat-is-a-test<%>))
+                        (contract-eval `(new (class* object% (flat-is-a-test<%>) (super-new))))
+                        (contract-eval '(new object%)))
+    (test-flat-contract `(or/c #f (is-a?/c flat-is-a-test%))
+                        (contract-eval `(new flat-is-a-test%))
                         (contract-eval '(new object%))))
 
   (test-flat-contract '(listof boolean?) (list #t #f) (list #f 3 #t))
