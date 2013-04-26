@@ -90,9 +90,15 @@ the same.
 @defform/subs[(2dcond cond-content)
               ([cond-content (code:line question-row
                                         body-row
-                                        ⋮)]
-               [question-row (code:line empty-cell question-cell ⋯)]
+                                        ⋮)
+                             (code:line question-row
+                                        body-row
+                                        ⋮
+                                        else-row)]
+               [question-row (code:line empty-cell question-cell ⋯)
+                             (code:line empty-cell question-cell ⋯ else-cell)]
                [body-row (code:line question-cell exprs-cell ⋯)]
+               [else-row (code:line question-cell exprs-cell ⋯ else-cell)]
                [question-cell (code:line ╔═════════════╗
                                          ║question-expr║
                                          ╚═════════════╝)]
@@ -103,7 +109,10 @@ the same.
                
                [exprs-cell (code:line ╔═════════════╗
                                       ║expr expr ...║
-                                      ╚═════════════╝)])]{
+                                      ╚═════════════╝)]
+               [else-cell (code:line ╔══════╗
+                                     ║ else ║
+                                     ╚══════╝)])]{
   Evaluates the first row of question expressions until 
   one of them returns a true value (signaling an error if none do),
   then evaluates the first column of question expressions until

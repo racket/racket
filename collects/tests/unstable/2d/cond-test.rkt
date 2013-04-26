@@ -81,3 +81,24 @@
                 "1\n2\n3\n4\n"))
 
 
+(define (try-else a b c)
+  #2dcond
+  ╔════╦════╦════╗
+  ║    ║ a  ║else║
+  ╠════╬════╬════╣
+  ║ b  ║ 1  ║  2 ║
+  ╠════╬════╬════╣
+  ║ c  ║ 3  ║  4 ║
+  ╠════╬════╬════╣
+  ║else║ 5  ║  6 ║
+  ╚════╩════╩════╝)
+
+(require rackunit)
+(check-equal? (try-else #t #t #f) 1)
+(check-equal? (try-else #f #t #f) 2)
+(check-equal? (try-else #t #f #f) 5)
+(check-equal? (try-else #f #f #f) 6)
+
+
+
+

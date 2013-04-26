@@ -1,4 +1,5 @@
-#lang racket
+#lang racket/base
+(require (for-syntax racket/base))
 
 (provide 2dcond)
 (define-syntax (2dcond stx)
@@ -6,6 +7,9 @@
     [(_ widths heights 
         [(cell ...) rhs ...] ...)
      (let ()
+       
+       (define last-col (- (length (syntax->list #'widths)) 1))
+       (define last-row (- (length (syntax->list #'heights)) 1))
        
        ;; coord-to-content : hash[(list num num) -o> (listof syntax)]
        (define coord-to-content (make-hash))
@@ -35,6 +39,16 @@
          
          (cond
            [(member (list 0 0) cells) (void)]
+           [(and (or (member (list 0 last-row) cells)
+                     (member (list last-col 0) cells))
+                 (syntax-case rhses (else)
+                   [(else) #t]
+                   [_ #f]))
+            ;; found an 'else' (in a reasonable place)
+            ;; => treat it like a #t in that cell
+            (hash-set! coord-to-content 
+                       (car cells)
+                       (list #'#t))]
            [(and 
              ;; only one cell:
              (null? (cdr cells))
