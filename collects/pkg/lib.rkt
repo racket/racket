@@ -50,8 +50,6 @@
              (for/list ([v (in-list l)])
                (format "\n   ~a" v)))))
 
-(define-logger pkg)
-
 (define (log-exn x what)
   (log-pkg-error (~a "failure ~a\n"
                          "  error: ~s")
