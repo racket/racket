@@ -350,12 +350,13 @@
       (hash 'source (db:pkg-source pkg)
             'checksum (db:pkg-source pkg))))
 
-(define (remote-package-checksum pkg)
+(define (remote-package-checksum pkg download-printf)
   (match pkg
     [`(catalog ,pkg-name)
      (hash-ref (package-catalog-lookup pkg-name #f) 'checksum)]
     [`(url ,pkg-url-str)
-     (package-url->checksum pkg-url-str)]))
+     (package-url->checksum pkg-url-str 
+                            #:download-printf download-printf)]))
 
 (define (read-file-hash file)
   (define the-db
@@ -633,20 +634,20 @@
          (not (regexp-match? #rx"^github://" pkg)))
     ;; Add "github://github.com/"
     (stage-package/info (string-append "github://github.com/" pkg) type 
-                        pkg-name #:given-checksum given-checksum
+                        pkg-name 
+                        #:given-checksum given-checksum
                         check-sums? download-printf)]
    [(or (eq? type 'file-url) (eq? type 'dir-url) (eq? type 'github))
     (define pkg-url (string->url pkg))
     (define scheme (url-scheme pkg-url))
 
     (define orig-pkg `(url ,pkg))
-    (define checksum (remote-package-checksum orig-pkg))
+    (define checksum (or given-checksum
+                         (remote-package-checksum orig-pkg download-printf)))
     (define info
       (update-install-info-orig-pkg
        (match type
          ['github
-          (when given-checksum
-            (set! checksum given-checksum))
           (unless checksum
             (pkg-error 
              (~a "could not find checksum for github package source, which implies it doesn't exist\n"
@@ -688,6 +689,7 @@
                         (stage-package/info (path->string package-path)
                                             'dir
                                             pkg-name
+                                            #:given-checksum checksum
                                             check-sums?
                                             download-printf))
                      (λ ()
@@ -760,6 +762,7 @@
                  (stage-package/info package-path
                                      download-type
                                      pkg-name
+                                     #:given-checksum checksum
                                      check-sums?
                                      download-printf))
               (λ ()
@@ -839,6 +842,7 @@
              (stage-package/info pkg-dir
                                  'dir
                                  pkg-name
+                                 #:given-checksum checksum
                                  check-sums?
                                  download-printf)
              `(file ,(simple-form-path* pkg)))
@@ -910,6 +914,7 @@
          #:force? [force? #f]
          #:quiet? [quiet? #f]
          descs)
+  (define download-printf (if quiet? void printf))
   (define check-sums? (not ignore-checksums?))
   (define db (read-pkg-db))
   (define db+with-dbs
@@ -1119,7 +1124,7 @@
             ;; Try updates:
             (define update-pkgs (map car update-deps))
             (define (make-pre-succeed)
-              (let ([to-update (filter-map update-package update-pkgs)])
+              (let ([to-update (filter-map (update-package download-printf) update-pkgs)])
                 (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))))
             (match (or dep-behavior
                        (if name?
@@ -1175,7 +1180,7 @@
   (define infos
     (for/list ([v (in-list descs)])
       (stage-package/info (pkg-desc-source v) (pkg-desc-type v) (pkg-desc-name v) 
-                          check-sums? (if quiet? void printf))))
+                          check-sums? download-printf)))
   (define setup-collects (get-setup-collects (map install-info-directory
                                                   (append old-infos infos))
                                              metadata-ns))
@@ -1244,7 +1249,7 @@
   (define ty (first orig-pkg))
   (not (member ty '(link dir file))))
 
-(define (update-package pkg-name)
+(define ((update-package download-printf) pkg-name)
   (match-define (pkg-info orig-pkg checksum auto?)
                 (package-info pkg-name))
   (match orig-pkg
@@ -1266,7 +1271,7 @@
                 pkg-name)]
     [`(,_ ,orig-pkg-source)
      (define new-checksum
-       (remote-package-checksum orig-pkg))
+       (remote-package-checksum orig-pkg download-printf))
      (and new-checksum
           (not (equal? checksum new-checksum))
           ;; FIXME: the type shouldn't be #f here; it should be
@@ -1283,6 +1288,7 @@
                     #:dep-behavior [dep-behavior #f]
                     #:deps? [deps? #f]
                     #:quiet? [quiet? #f])
+  (define download-printf (if quiet? void printf))
   (define metadata-ns (make-metadata-namespace))
   (define pkgs
     (cond
@@ -1294,7 +1300,7 @@
         in-pkgs)]
       [else
        in-pkgs]))
-  (define to-update (filter-map update-package pkgs))
+  (define to-update (filter-map (update-package download-printf) pkgs))
   (cond
     [(empty? to-update)
      (printf "No updates available\n")

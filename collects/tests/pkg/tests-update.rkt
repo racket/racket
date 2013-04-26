@@ -32,7 +32,7 @@
     (shelly-install* "remote packages can be updated"
                      "http://localhost:9999/update-test/pkg-test1.zip"
                      "pkg-test1"
-                     $ "raco pkg update pkg-test1" =exit> 0 =stdout> "No updates available\n"
+                     $ "raco pkg update pkg-test1" =exit> 0 =stdout> "Downloading checksum\nNo updates available\n"
                      $ "racket -e '(require pkg-test1/update)'" =exit> 42
                      $ "cp -f test-pkgs/pkg-test1-v2.zip test-pkgs/update-test/pkg-test1.zip"
                      $ "cp -f test-pkgs/pkg-test1-v2.zip.CHECKSUM test-pkgs/update-test/pkg-test1.zip.CHECKSUM"
@@ -50,7 +50,7 @@
                      "http://localhost:9999/update-test/pkg-test1.zip"
                      "pkg-test1"
                      $ "raco pkg install test-pkgs/pkg-test2.zip"
-                     $ "raco pkg update --update-deps pkg-test2" =exit> 0 =stdout> "No updates available\n"
+                     $ "raco pkg update --update-deps pkg-test2" =exit> 0 =stdout> "Downloading checksum\nNo updates available\n"
                      $ "racket -e '(require pkg-test1/update)'" =exit> 42
                      $ "cp -f test-pkgs/pkg-test1-v2.zip test-pkgs/update-test/pkg-test1.zip"
                      $ "cp -f test-pkgs/pkg-test1-v2.zip.CHECKSUM test-pkgs/update-test/pkg-test1.zip.CHECKSUM"
@@ -69,7 +69,7 @@
                      "http://localhost:9999/update-test/pkg-test1.zip"
                      "pkg-test1"
                      $ "raco pkg install test-pkgs/pkg-test2.zip"
-                     $ "raco pkg update -a" =exit> 0 =stdout> "No updates available\n"
+                     $ "raco pkg update -a" =exit> 0 =stdout> "Downloading checksum\nNo updates available\n"
                      $ "racket -e '(require pkg-test1/update)'" =exit> 42
                      $ "cp -f test-pkgs/pkg-test1-v2.zip test-pkgs/update-test/pkg-test1.zip"
                      $ "cp -f test-pkgs/pkg-test1-v2.zip.CHECKSUM test-pkgs/update-test/pkg-test1.zip.CHECKSUM"

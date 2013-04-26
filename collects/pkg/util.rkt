@@ -48,7 +48,8 @@
       rest]
      [_ rp])))
 
-(define (package-url->checksum pkg-url-str [query empty])
+(define (package-url->checksum pkg-url-str [query empty]
+                               #:download-printf [download-printf void])
   (define pkg-url
     (string->url pkg-url-str))
   (match (url-scheme pkg-url)
@@ -61,6 +62,7 @@
                  (list "repos" user repo "branches"))
             query
             #f))
+     (download-printf "Querying GitHub\n")
      (log-pkg-debug "Querying GitHub at ~a" (url->string api-u))
      (define api-bs
        (call/input-url+200 api-u port->bytes
@@ -81,7 +83,10 @@
        (and (equal? (hash-ref b 'name) branch)
             (hash-ref (hash-ref b 'commit) 'sha)))]
     [_
-     (call/input-url+200 (string->url (string-append pkg-url-str ".CHECKSUM"))
+     (define u (string-append pkg-url-str ".CHECKSUM"))
+     (download-printf "Downloading checksum\n")
+     (log-pkg-debug "Downloading checksum as ~a" u)
+     (call/input-url+200 (string->url u)
                          port->string)]))
 
 ;; uses a custodian to avoid leaks:
