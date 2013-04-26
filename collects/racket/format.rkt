@@ -90,11 +90,10 @@
                 [to-pad-length (max 0 (- pad-to s-length))])
            (let-values ([(left-pad-length right-pad-length)
                          (case align-mode
-                           ((left) (values 0 to-pad-length))
-                           ((right) (values to-pad-length 0))
-                           ((center)
-                            (values (floor (/ to-pad-length 2))
-                                    (ceiling (/ to-pad-length 2)))))])
+                           [(left) (values 0 to-pad-length)]
+                           [(right) (values to-pad-length 0)]
+                           [(center) (values (floor (/ to-pad-length 2))
+                                             (ceiling (/ to-pad-length 2)))])])
              (string-append
               (build-padding 'left left-padding left-pad-length)
               s
@@ -108,21 +107,22 @@
         [(and (string? padding) (= (string-length padding) 1))
          (make-string pad-length (string-ref padding 0))]
         [(string? padding)
-         (let* ([pattern padding]
-                [pattern-length (string-length pattern)]
-                [whole-copies (quotient pad-length pattern-length)]
-                [part-length (remainder pad-length pattern-length)]
-                [pattern-copies (for/list ([i (in-range whole-copies)]) pattern)])
-           (apply string-append
-                  ;; For left, start at start of string
-                  ;; For right, end at end of string.
-                  (case side
-                    ((left)
-                     (append pattern-copies
-                             (list (substring pattern 0 part-length))))
-                    ((right)
-                     (cons (substring pattern (- pattern-length part-length) pattern-length)
-                           pattern-copies)))))]))
+         (define pattern padding)
+         (define pattern-length (string-length pattern))
+         (define-values [whole-copies part-length]
+           (quotient/remainder pad-length pattern-length))
+         (define pattern-copies
+           (for/list ([i (in-range whole-copies)]) pattern))
+         (apply string-append
+                ;; For left, start at start of string
+                ;; For right, end at end of string.
+                (case side
+                  [(left)
+                   (append pattern-copies
+                           (list (substring pattern 0 part-length)))]
+                  [(right)
+                   (cons (substring pattern (- pattern-length part-length) pattern-length)
+                         pattern-copies)]))]))
 
 (define (do-checks who limit limit-marker width)
   (when (> width limit)
@@ -188,7 +188,7 @@
             #:pad-string [digits-padding " "])
   (let ([notation (if (procedure? notation) (notation N) notation)])
     (case notation
-      ((exponential)
+      [(exponential)
        (catne N
               #:who 'catn
               #:sign sign-mode
@@ -196,15 +196,15 @@
               #:precision precision
               #:format-exponent exp-format-exponent
               #:pad-digits-to pad-digits-to
-              #:digits-padding digits-padding))
-      ((positional)
+              #:digits-padding digits-padding)]
+      [(positional)
        (catnp N
               #:who 'catn
               #:sign sign-mode
               #:base base
               #:precision precision
               #:pad-digits-to pad-digits-to
-              #:digits-padding digits-padding)))))
+              #:digits-padding digits-padding)])))
 
 (define (catnp N
                #:who [who 'catnp]
@@ -372,11 +372,11 @@
         (values (car indicator) (cadr indicator))))
   (let ([indicator-table
          (case sign-mode
-           ((#f) '(""  ""  "-"))
-           ((+)  '("+" ""  "-"))
-           ((++) '("+" "+" "-"))
-           ((parens) '("" "" ("(" ")")))
-           (else sign-mode))])
+           [(#f) '(""  ""  "-")]
+           [(+)  '("+" ""  "-")]
+           [(++) '("+" "+" "-")]
+           [(parens) '("" "" ("(" ")"))]
+           [else sign-mode])])
     (cond [(or (negative? N) (eqv? -0.0 N))
            (get (caddr indicator-table))]
           [(zero? N)
