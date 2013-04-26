@@ -377,10 +377,11 @@
                        [else
                         (handle-phaseless-spec spec level)])))
                  (define (handle-phaseless-spec stx level)
-                   (define require-ht (hash-ref! phase-to-requires (+ level level-of-enclosing-module)
+                   (define adjusted-level (and level (+ level level-of-enclosing-module)))
+                   (define require-ht (hash-ref! phase-to-requires 
                                                  (λ ()
                                                    (define h (make-hash))
-                                                   (hash-set! phase-to-requires (+ level level-of-enclosing-module) h)
+                                                   (hash-set! phase-to-requires adjusted-level h)
                                                    h)))
                    (define raw-module-path (phaseless-spec->raw-module-path stx))
                    (annotate-require-open user-namespace user-directory raw-module-path)
