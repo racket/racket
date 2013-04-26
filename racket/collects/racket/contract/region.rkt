@@ -19,14 +19,14 @@
          "private/arrow.rkt"
          "private/base.rkt"
          "private/guts.rkt"
-         "private/misc.rkt")
+         "private/misc.rkt"
+         "private/opt.rkt")
 
 ;; These are useful for all below.
 
-(define-syntax (verify-contract stx)
+(define-syntax (add-opt-contract stx)
   (syntax-case stx ()
-    [(_ name x) (a:known-good-contract? #'x) #'x]
-    [(_ name x) #'(coerce-contract name x)]))
+    [(_ x) #'(opt/c x #:error-name with-contract)]))
 
 
 
@@ -688,14 +688,14 @@
              (with-syntax ([new-stx (add-context #'(syntax-parameterize 
                                                     ([current-contract-region (λ (stx) #'blame-stx)])
                                                     (let-values ([(res ...) (let () . body)])
-                                                      (values (contract (verify-contract 'with-contract rc.ctc)
+                                                      (values (contract (add-opt-contract rc.ctc)
                                                                         res
                                                                         blame-stx
                                                                         blame-id) ...))))])
                (syntax/loc stx
                  (let ()
                    (define-values (free-ctc-id ...)
-                     (values (verify-contract 'with-contract free-ctc) ...))
+                     (values (add-opt-contract free-ctc) ...))
                    (define blame-id
                      (current-contract-region))
                    (define-values ()
@@ -757,7 +757,7 @@
                (syntax/loc stx
                  (begin
                    (define-values (free-ctc-id ...)
-                     (values (verify-contract 'with-contract free-ctc) ...))
+                     (values (add-opt-contract free-ctc) ...))
                    (define blame-id
                      (current-contract-region))
                    (define-values ()
@@ -787,7 +787,7 @@
                                            ext-id
                                            (contract ctc-id true-p blame-stx blame-id (quote ext-id) (quote-srcloc ext-id))
                                            ctc-id
-                                           (verify-contract 'with-contract ctc))
+                                           (add-opt-contract ctc))
                                           ...)
                                          blame-stx
                                          .
