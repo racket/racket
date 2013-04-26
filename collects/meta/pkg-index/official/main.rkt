@@ -8,6 +8,7 @@
          racket/runtime-path
          web-server/dispatch
          pkg/util
+         (prefix-in pkg: pkg/lib)
          racket/match
          racket/package
          racket/system
@@ -718,10 +719,23 @@
      (define* i
        (hash-set i 'last-checked now))
      (define* i
-       (if (and new-checksum (equal? new-checksum old-checksum))
+       (if (and new-checksum (equal? new-checksum old-checksum)
+                ;; update if 'modules was not present:
+                (hash-ref i 'modules #f))
          i
-         (hash-set i 'last-updated now)))
+         (hash-set (update-from-content i) 'last-updated now)))
      (package-info-set! pkg-name i))))
+
+(define (update-from-content i)
+  (define-values (checksum module-paths dependencies)
+    (pkg:get-pkg-content (pkg:pkg-desc (hash-ref i 'source)
+                                       #f
+                                       (hash-ref i 'checksum)
+                                       #f)))
+  (package-begin
+   (define* i (hash-set i 'modules module-paths))
+   (define* i (hash-set i 'dependencies dependencies))
+   i))
 
 (define basic-start
   (pkg-index/basic package-list package-info))
