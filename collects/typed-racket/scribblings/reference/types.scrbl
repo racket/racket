@@ -313,10 +313,25 @@ corresponding to @racket[trest], where @racket[bound]
 @ex[(vector 1 2 3)
 #(a b c)]
 
+@defidform[VectorTop]{is the type of a @rtech{vector} with unknown length and
+  element types. Only read-only vector operations (e.g. @racket[vector-ref])
+  are allowed on values of this type. This type typically appears in programs
+  via the combination of occurrence typing and @racket[vector?].
+@ex[(lambda: ([x : Any]) (if (vector? x) x (error "not a vector!")))]
+}
+
+
 @defform[(HashTable k v)]{is the type of a @rtech{hash table} with key type
    @racket[k] and value type @racket[v].
 
 @ex[#hash((a . 1) (b . 2))]
+}
+@defidform[HashTableTop]{is the type of a @rtech{hash table} with unknown key
+  and value types. Only read-only hash table operations (e.g.
+  @racket[hash-ref]) are allowed on values of this type. This type typically
+  appears in programs via the combination of occurrence typing and
+  @racket[hash?].
+@ex[(lambda: ([x : Any]) (if (hash? x) x (error "not a hash table!")))]
 }
 
 @defform[(Setof t)]{is the type of a @rtech{set} of @racket[t].
