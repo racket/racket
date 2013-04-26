@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/place
          racket/port
+         racket/list
          "eval-helpers.rkt"
          compiler/cm
          syntax/readerr)
@@ -258,10 +259,24 @@
                      (regexp-match #rx"expand: unbound identifier" (exn-message main-exn)))
                 'exn:variable]
                [else 'exn]))
+           
+           (define (format-srcloc srcloc)
+             (define pos
+               (cond
+                 [(and (srcloc-line srcloc)
+                       (srcloc-column srcloc))
+                  (format ":~a:~a" (srcloc-line srcloc) (srcloc-column srcloc))]
+                 [(srcloc-line srcloc)
+                  (format ":~a" (srcloc-line srcloc))]
+                 [(srcloc-position srcloc)
+                  (format "::~a" (srcloc-position srcloc))]
+                 [else ""]))
+             (format "~a~a" (srcloc-source srcloc) pos))
+             
            (define exn-infos
              (for/list ([an-exn (in-list (cons main-exn extra-exns))])
                (vector 
-                (trim-message 
+                (trim-message
                  (if (exn? an-exn) 
                      (regexp-replace* #rx"[ \t]*\n[ \t]*" (exn-message an-exn) " ") 
                      (format "uncaught exn: ~s" an-exn)))
@@ -276,6 +291,20 @@
                                (srcloc-span srcloc)))
                      <
                      #:key (λ (x) (vector-ref x 0)))
+                    '())
+                (if (exn? an-exn)
+                    (let ([ctxt 
+                           (continuation-mark-set->context
+                            (exn-continuation-marks an-exn))])
+                      (for/list ([ctxt-elem (if (< (length ctxt) 100)
+                                                ctxt
+                                                (take ctxt 100))])
+                        (define name (car ctxt-elem))
+                        (define loc (cdr ctxt-elem))
+                        (cond
+                          [(not name) (format-srcloc loc)]
+                          [(not loc) (format "~a" name)]
+                          [else (format "~a:~a" (format-srcloc loc) name)])))
                     '()))))
            (place-channel-put 
             response-pc

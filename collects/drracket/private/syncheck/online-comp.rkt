@@ -75,6 +75,7 @@
 (define (go expanded path the-source orig-cust)
   (parameterize ([current-max-to-send-at-once 50])
     (with-handlers ((exn:fail? (λ (x) 
+                                 (printf "exception noticed in online-comp.rkt\n")
                                  (printf "~a\n" (exn-message x))
                                  (printf "---\n")
                                  (for ([x (in-list 
