@@ -665,5 +665,46 @@
   (test #f 'no-alpha (send bm3 has-alpha-channel?)))
 
 ;; ----------------------------------------
+;; Check `in-region?'
+
+(let ()
+  (define r (new region%))
+  (send r set-rectangle 0 0 100 100)
+  (test #t 'yes/r (send r in-region? 10 10))
+  (test #f 'no/r (send r in-region? 110 110))
+  (test #f 'no/r (send r in-region? 10 110))
+
+  (define r2 (new region%))
+  (send r2 set-rectangle 120 120 10 10)
+  (send r2 union r)
+  
+  (test #t 'yes/r (send r in-region? 10 10))
+  (test #t 'yes/r2 (send r2 in-region? 10 10))
+  (test #f 'no/r (send r in-region? 125 125))
+  (test #t 'yes/r2 (send r2 in-region? 125 125))
+  (test #f 'no/r2 (send r2 in-region? 110 110)))
+
+(let ()
+  (define bm (make-bitmap 50 50))
+  (define dc (send bm make-dc))
+  (send dc translate 10 10)
+  (define r (make-object region% dc))
+  (send r set-rectangle 0 0 100 100)
+  (test #t 'yes (send r in-region? 5 5))
+  (test #f 'no (send r in-region? 110 110)))
+
+(let ()
+  (define bm (make-bitmap 50 50))
+  (define dc (send bm make-dc))
+  (send dc translate 10 10)
+  ;; dc's translation at creation of region sticks:
+  (define r (make-object region% dc))
+  (send r set-rectangle 0 0 100 100)
+  (send dc translate -10 -10)
+  (test #f 'no (send r in-region? 5 5))
+  (test #t 'yes (send r in-region? 105 105)))
+
+
+;; ----------------------------------------
 
 (report-errs)
