@@ -125,20 +125,21 @@
           (cairo_identity_matrix cr)
           (init-matrix cr)
           (cairo_transform cr (make-cairo_matrix_t 1 0 0 1 scroll-dx scroll-dy)))
-        (if (null? paths)
-            (begin
-              (cairo_new_path cr)
-              (install cr init))
-            (for/fold ([v init]) ([pr (in-list paths)])
-              (cairo_new_path cr)
-              (send (car pr) do-path cr values values)
-              (cairo_set_fill_rule cr
-                                   (case (cdr pr)
-                                     [(odd-even) CAIRO_FILL_RULE_EVEN_ODD]
-                                     [(winding) CAIRO_FILL_RULE_WINDING]
-                                     [else default-fill-rule]))
-              (install cr v)))
-        (when old-matrix (cairo_set_matrix cr old-matrix))))
+        (begin0
+         (if (null? paths)
+             (begin
+               (cairo_new_path cr)
+               (install cr init))
+             (for/fold ([v init]) ([pr (in-list paths)])
+               (cairo_new_path cr)
+               (send (car pr) do-path cr values values)
+               (cairo_set_fill_rule cr
+                                    (case (cdr pr)
+                                      [(odd-even) CAIRO_FILL_RULE_EVEN_ODD]
+                                      [(winding) CAIRO_FILL_RULE_WINDING]
+                                      [else default-fill-rule]))
+               (install cr v)))
+         (when old-matrix (cairo_set_matrix cr old-matrix)))))
 
     (def/public (is-empty?)
       (really-is-empty?))
@@ -203,7 +204,9 @@
                                        (vector-ref m 5))))
                           ;; no transformation needed
                           (values x y))])
-          (install-region cr #t values values (lambda (cr v) (and v (cairo_in_fill cr x y))))))))
+          (install-region cr 0 0 values values
+                          #t
+                          (lambda (cr v) (and v (cairo_in_fill cr x y))))))))
 
     (define/public (set-arc x y width height start-radians end-radians)
       (modifying 'set-arc)
