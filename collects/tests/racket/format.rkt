@@ -154,12 +154,16 @@
 
 (tc (~r 100 #:base 7)
     "202")
+(tc (~r 102 #:base 7)
+    "204")
 (tc (~r 4.5 #:base 2)
     "100.1")
 (tc (~r 3735928559 #:base 16)
     "deadbeef")
 (tc (~r 3735928559 #:base '(up 16))
     "DEADBEEF")
+(tc (~r (+ 102 1/7 2/49 3/343) #:base 7)
+    "204.123")
 
 (tc (~r 999 #:precision 3)
     "999")
@@ -218,8 +222,8 @@
       (for/list ([x '(17 0 -42)]) (~r #:notation 'positional x #:sign sign-table)))
     '("17 up" "an even 0" "42 down"))
 
-(tc (~r #:notation 'positional 100 #:base 7)
-    "202")
+(tc (~r #:notation 'positional 102 #:base 7)
+    "204")
 (tc (~r #:notation 'positional 4.5 #:base 2)
     "100.1")
 (tc (~r #:notation 'positional 3735928559 #:base 16)

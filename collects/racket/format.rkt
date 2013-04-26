@@ -393,11 +393,10 @@
         [(zero? N)
          (string #\0)]
         [else
-         (apply string
-                (let loop ([N N] [digits null])
-                  (cond [(zero? N) (reverse digits)]
-                        [else (let-values ([(q r) (quotient/remainder N base)])
-                                (loop q (cons (get-digit r upper?) digits)))])))]))
+         (let loop ([N N] [digits null])
+           (cond [(zero? N) (apply string digits)]
+                 [else (let-values ([(q r) (quotient/remainder N base)])
+                         (loop q (cons (get-digit r upper?) digits)))]))]))
 
 (define (number->fraction-string N base upper? precision)
   (let ([s (number->string* N base upper?)])
