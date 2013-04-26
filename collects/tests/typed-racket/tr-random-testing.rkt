@@ -259,6 +259,7 @@
 
 (random-seed seed)
 (printf "seed: ~s~n" seed)
+(flush-output) ; DrDr doesn't print the above if the testing segfaults.
 
 (call-with-limits
  #f 1000
