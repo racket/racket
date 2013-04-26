@@ -16,8 +16,8 @@
 another language that is specified immediately after
 @racketmodname[unstable/2d].}
 
-The @litchar{#2d} syntax extension adds the ability use 
-a two-dimensional grid syntax. That is, you can drawn an ASCII-art
+The @litchar{#2d} syntax extension adds the ability use
+a two-dimensional grid syntax. That is, you can draw an ASCII-art
 grid and then treat that as an expression. For example,
 here is a simple equality function that operates on pairs and
 numbers, written using a @litchar{#2d} conditional expression:
