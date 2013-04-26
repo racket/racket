@@ -379,6 +379,7 @@
                  (define (handle-phaseless-spec stx level)
                    (define adjusted-level (and level (+ level level-of-enclosing-module)))
                    (define require-ht (hash-ref! phase-to-requires 
+                                                 adjusted-level
                                                  (λ ()
                                                    (define h (make-hash))
                                                    (hash-set! phase-to-requires adjusted-level h)
