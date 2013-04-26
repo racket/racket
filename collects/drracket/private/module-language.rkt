@@ -1135,9 +1135,9 @@
       ;; in the current tab)
       ; if the bar is hidden entirely 
       (define error/status-message-hidden? #t) 
-      ; a list of pairs (in a vector of size 2) of strings and srclocs
+      ; a list of triples (in a vector of size 3) of strings, srclocs, and stackframes (as strings)
       ; that show up in the bar and control the "jump to error" / next prev buttons
-      (define error/status-message-strs+srclocs '(#("" ())))
+      (define error/status-message-strs+srclocs '(#("" () ())))
       (define error/status-index 0)
       
       ; if the string should be red/italic or just normal font
