@@ -23,6 +23,7 @@ here is a simple equality function that operates on pairs and
 numbers, written using a @litchar{#2d} conditional expression:
 @codeblock{
   #lang unstable/2d racket
+  (require unstable/2d/cond)
 
   (define (same? a b)
     #2dcond
@@ -64,7 +65,8 @@ Typed Racket numeric types, this time using a @litchar{#2d} match
 expression:
 @codeblock{
   #lang unstable/2d racket
-
+  (require unstable/2d/match)
+  
   (define (subtype? a b)
     #2dmatch
     ╔══════════╦══════════╦═══════╦══════════╗
