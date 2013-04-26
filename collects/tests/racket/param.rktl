@@ -528,4 +528,13 @@
 
 (when (file-exists? temp-compiled-file) (delete-file temp-compiled-file))
 
+(err/rt-test (read-on-demand-source 5))
+(err/rt-test (read-on-demand-source "x"))
+(test (find-system-path 'temp-dir) 'rods (parameterize ([read-on-demand-source (find-system-path 'temp-dir)])
+                                           (read-on-demand-source)))
+(test #f 'rods (parameterize ([read-on-demand-source #f])
+                 (read-on-demand-source)))
+
+;; ----------------------------------------
+
 (report-errs)

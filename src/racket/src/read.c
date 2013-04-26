@@ -799,11 +799,12 @@ static Scheme_Object *rdl_check(int argc, Scheme_Object **argv)
 {
   Scheme_Object *s = argv[0];
 
-  return (SCHEME_FALSEP(s)
-          || (SCHEME_PATHP(s)
-              && scheme_is_complete_path(SCHEME_PATH_VAL(s),
-                                         SCHEME_PATH_LEN(s),
-                                         SCHEME_PLATFORM_PATH_KIND)));
+  return ((SCHEME_FALSEP(s)
+           || (SCHEME_PATHP(s)
+               && scheme_is_complete_path(SCHEME_PATH_VAL(s),
+                                          SCHEME_PATH_LEN(s),
+                                          SCHEME_PLATFORM_PATH_KIND)))
+          ? scheme_true : scheme_false);
 }
 
 static Scheme_Object *
@@ -813,8 +814,8 @@ read_delay_load(int argc, Scheme_Object *argv[])
                               scheme_make_integer(MZCONFIG_DELAY_LOAD_INFO),
                               argc, argv,
                               -1, rdl_check, 
-                              "(or/c #f (and/c path-string? complete-path?))",
-                              1);
+                              "(or/c #f (and/c path? complete-path?))",
+                              0);
 
 }
 #endif
