@@ -63,38 +63,45 @@
       [(dict-ref defs internal-id #f)
        =>
        (match-lambda
-         [(def-binding _ (app (λ (ty) (type->contract ty (λ () #f))) cnt))
-          (mk-value-triple internal-id new-id cnt)]
-         [(def-struct-stx-binding _ (? struct-info? si))
-          (mk-struct-syntax-triple internal-id new-id si)]
+         [(def-binding _ ty)
+          (mk-value-triple internal-id new-id ty)]
+         [(def-struct-stx-binding _ (? struct-info? si) constructor-type)
+          (mk-struct-syntax-triple internal-id new-id si constructor-type)]
          [(def-stx-binding _)
           (mk-syntax-triple internal-id new-id)])]
       ;; otherwise, not defined in this module, not our problem
       [else (values #'(begin) internal-id null)]))
 
-  ;; mk-struct-syntax-triple : identifier? identifier? struct-info? -> triple?
-  (define (mk-struct-syntax-triple internal-id new-id si)
+  ;; mk-struct-syntax-triple : identifier? identifier? struct-info? Type/c? -> triple?
+  (define (mk-struct-syntax-triple internal-id new-id si constructor-type)
     (define type-is-constructor? #t) ;Conservative estimate (provide/contract does the same)
     (match-define (list type-desc constr pred (list accs ...) muts super) (extract-struct-info si))
-    (define-values (defns new-ids aliases) 
-      (map/values 3 
-                  (lambda (e) (if (identifier? e)
-                                  (mk e)
-                                  (values #'(begin) e null)))
+    (define-values (defns new-ids aliases)
+      (map/values 3
+                  (lambda (id)
+                    (if (identifier? id)
+                        (mk id)
+                        (values #'(begin) #f null)))
                   (list* type-desc constr pred super accs)))
-    (define/with-syntax (type-desc* constr* pred* super* accs* ...) 
-      (for/list ([i new-ids]) (if (identifier? i) #`(syntax #,i) i)))
+    (define/with-syntax inner-constr* (freshen-id constr))
+
+    (define/with-syntax (type-desc* constr* pred* super* accs* ...)
+      (for/list ([i new-ids])
+         (if (identifier? i) #`(syntax #,i) i)))
+
+
     (with-syntax* ([id internal-id]
                    [export-id new-id]
                    [untyped-id (freshen-id #'id)])
       (values
         #`(begin
+            #,(mk-protected-value-definitions constr #'inner-constr* #'constr* constructor-type)
             #,@defns
             (define-syntax untyped-id
               (let ((info (list type-desc* constr* pred* (list accs* ...)
                                 (list #,@(map (lambda x #'#f) accs)) super*)))
                 #,(if type-is-constructor?
-                      #'(make-struct-info-self-ctor constr* info)
+                      #'(make-struct-info-self-ctor #'inner-constr* info)
                       #'info)))
             (def-export export-id id untyped-id))
         new-id
@@ -115,39 +122,42 @@
        new-id
        (list (list #'export-id #'id)))))
 
-  ;; mk-value-triple : identifier? identifier? syntax? -> triple?
-  (define (mk-value-triple internal-id new-id cnt)
-    (with-syntax* ([id internal-id]
-                   [untyped-id (freshen-id #'id)]
-                   [export-id new-id])
-      (define/with-syntax definitions
-        (if cnt
-            (with-syntax* ([module-source pos-blame-id]
-                           [the-contract (generate-temporary 'generated-contract)])
-              #`(begin
-                  (define the-contract #,cnt)
-                  (define-syntax untyped-id
-                    (make-provide/contract-transformer
-                     (quote-syntax the-contract)
-                     (datum->syntax ; preserve source location in expanded code
-                      (quote-syntax id)
-                      (syntax->datum (quote-syntax id))
-                      (list (quote-source-file id)
-                            (quote-line-number id)
-                            (quote-column-number id)
-                            (quote-character-position id)
-                            (quote-character-span id))
-                      (quote-syntax id))
-                     (quote-syntax export-id)
-                     (quote-syntax module-source)))))
-            #'(define-syntax (untyped-id stx)
-                (tc-error/stx stx "The type of ~a cannot be converted to a contract" (syntax-e #'id)))))
-      (values
-        #'(begin
-            definitions
-            (def-export export-id id untyped-id))
-        new-id
-        null)))
+  ;; mk-value-triple : identifier? identifier? Type/c? -> triple?
+  (define (mk-value-triple internal-id new-id type)
+    (define untyped-id (freshen-id internal-id))
+    (values
+      #`(begin
+          #,(mk-protected-value-definitions internal-id new-id untyped-id type)
+          (def-export #,new-id #,internal-id #,untyped-id))
+      new-id
+      null))
+
+  (define (mk-protected-value-definitions internal-id new-id untyped-id type)
+    (define cnt (type->contract type (λ () #f)))
+    (with-syntax ([id internal-id]
+                  [export-id new-id]
+                  [untyped-id untyped-id])
+      (if cnt
+          (with-syntax* ([module-source pos-blame-id]
+                         [the-contract (generate-temporary 'generated-contract)])
+            #`(begin
+                (define the-contract #,cnt)
+                (define-syntax untyped-id
+                  (make-provide/contract-transformer
+                   (quote-syntax the-contract)
+                   (datum->syntax ; preserve source location in expanded code
+                    (quote-syntax id)
+                    (syntax->datum (quote-syntax id))
+                    (list (quote-source-file id)
+                          (quote-line-number id)
+                          (quote-column-number id)
+                          (quote-character-position id)
+                          (quote-character-span id))
+                    (quote-syntax id))
+                   (quote-syntax export-id)
+                   (quote-syntax module-source)))))
+          #'(define-syntax (untyped-id stx)
+              (tc-error/stx stx "The type of ~a cannot be converted to a contract" 'id)))))
 
 
   ;; Build the final provide with auxilliary definitions

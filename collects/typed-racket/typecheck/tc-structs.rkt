@@ -174,11 +174,14 @@
             (and (not mutable) (eq? variance Covariant))))))
 
   (define (poly-wrapper t) (make-Poly tvars t))
+
+  (define constructor-type (poly-wrapper (->* all-fields poly-base)))
+  (define constructor-binding (cons (struct-names-constructor names) constructor-type))
+
   (define bindings
     (list*
      ;; the list of names w/ types
      (cons (struct-names-struct-type names) (make-StructType sty))
-     (cons (struct-names-constructor names) (poly-wrapper (->* all-fields poly-base)))
      (cons (struct-names-predicate names)
            (make-pred-ty (if (not covariant?)
                              (make-StructTop sty)
@@ -205,17 +208,23 @@
 
   (add-struct-constructor! (struct-names-constructor names))
 
-  (define def-bindings
-    (for/list ([b bindings])
-        (define id (car b))
-        (define t (cdr b))
-        (register-type id t)
-        (make-def-binding id t)))
-  (if si
-    (cons
-      (make-def-struct-stx-binding (struct-names-type-name names) si)
-      def-bindings)
-    def-bindings))
+  (define (convert-binding b)
+    (make-def-binding (car b) (cdr b)))
+
+  (for ([b (cons constructor-binding bindings)])
+    (register-type (car b) (cdr b)))
+
+  (define def-bindings (map convert-binding bindings))
+
+  (define constructor-bindings
+    (if (free-identifier=? (struct-names-type-name names)
+                           (struct-names-constructor names))
+        null
+        (list (convert-binding constructor-binding))))
+
+  (cons
+    (make-def-struct-stx-binding (struct-names-type-name names) si constructor-type)
+    (append constructor-bindings def-bindings)))
 
 (define (register-parsed-struct-sty! ps)
   (match ps
