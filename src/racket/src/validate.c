@@ -1457,7 +1457,9 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       }
 
       if (SCHEME_GET_LOCAL_FLAGS(expr) == SCHEME_LOCAL_CLEAR_ON_READ) {
-        if ((stack[p] == VALID_VAL_NOCLEAR) || (stack[p] == VALID_BOX_NOCLEAR))
+        if ((stack[p] == VALID_VAL_NOCLEAR)
+            || (stack[p] == VALID_BOX_NOCLEAR)
+            || (stack[p] >= VALID_TYPED))
           scheme_ill_formed_code(port);
         if (p >= letlimit)
           clearing_stack_push(vc, p, stack[p]);
@@ -2003,12 +2005,15 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
                       NULL, 0, 0, vc, 0, 0, procs, 1, NULL);
       }
     } else if (need_local_type) {
-      if (!SCHEME_FLOATP(expr)
+      if (SCHEME_DBLP(expr) && (need_local_type == SCHEME_LOCAL_TYPE_FLONUM))
+        need_local_type = 0;
 #ifdef MZ_LONG_DOUBLE
-          && !SCHEME_LONG_DBLP(expr)
+      if (SCHEME_LONG_DBLP(expr) && (need_local_type == SCHEME_LOCAL_TYPE_EXTFLONUM))
+        need_local_type = 0;
 #endif
-          )
-        no_typed(need_local_type, port);
+      if (SCHEME_INTP(expr) && (need_local_type == SCHEME_LOCAL_TYPE_FIXNUM))
+        need_local_type = 0;
+      no_typed(need_local_type, port);
     }
     break;
   }
