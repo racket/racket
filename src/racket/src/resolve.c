@@ -201,6 +201,7 @@ static Scheme_Object *resolve_application(Scheme_Object *o, Resolve_Info *orig_i
       n += m;
       app = app2;
       already_resolved_arg_count = m + 1 + rdelta;
+      SCHEME_APPN_FLAGS(app) |= APPN_FLAG_SFS_TAIL;
     }
   }
 
@@ -285,6 +286,7 @@ static Scheme_Object *resolve_application2(Scheme_Object *o, Resolve_Info *orig_
         }
         app2->args[0] = rator;
         app2->args[m+1] = app->rand;
+        SCHEME_APPN_FLAGS(app2) |= APPN_FLAG_SFS_TAIL;
         return resolve_application((Scheme_Object *)app2, orig_info, m + 1 + rdelta);
       } else {
         Scheme_App3_Rec *app2;
@@ -299,6 +301,7 @@ static Scheme_Object *resolve_application2(Scheme_Object *o, Resolve_Info *orig_
           loc = SCHEME_VEC_ELS(loc)[0];
         app2->rand1 = loc;
         app2->rand2 = app->rand;
+        SCHEME_APPN_FLAGS(app2) |= APPN_FLAG_SFS_TAIL;
         return resolve_application3((Scheme_Object *)app2, orig_info, 2 + rdelta);
       }
     }
@@ -404,6 +407,7 @@ static Scheme_Object *resolve_application3(Scheme_Object *o, Resolve_Info *orig_
         app2->args[0] = rator;
         app2->args[m+1] = app->rand1;
         app2->args[m+2] = app->rand2;
+        SCHEME_APPN_FLAGS(app2) |= APPN_FLAG_SFS_TAIL;
         return resolve_application((Scheme_Object *)app2, orig_info, m + 1 + rdelta);
       } else {
         app->rator = rator;

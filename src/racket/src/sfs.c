@@ -35,6 +35,8 @@
 static void register_traversers(void);
 #endif
 
+#define FAR_VALUE_FOR_MAX_USED 0x3FFFFFFe
+
 void scheme_init_sfs()
 {
 #ifdef MZ_PRECISE_GC
@@ -172,6 +174,11 @@ void scheme_sfs_used(SFS_Info *info, int pos)
     scheme_signal_error("internal error: misuse of toplevel pointer");
 
   SFS_LOG(printf("touch %d %d\n", pos, info->ip));
+
+  if (info->max_used[pos] >= FAR_VALUE_FOR_MAX_USED) {
+    info->max_used[pos] = (FAR_VALUE_FOR_MAX_USED + 1);
+    return;
+  }
   
   if ((info->min_touch == -1)
       || (pos < info->min_touch))
@@ -230,17 +237,16 @@ static void sfs_note_app(SFS_Info *info, Scheme_Object *rator, int flags)
     } else {
       int tail_ok = (flags & APPN_FLAG_SFS_TAIL);      
       if (!MAX_SFS_CLEARING && (info->selfpos >= 0)) {
-        if (SAME_TYPE(SCHEME_TYPE(rator), scheme_local_type)) {
-          if ((SCHEME_LOCAL_POS(rator) + info->stackpos) == info->selfpos) {
-            /* No point in clearing out any of the closure before the
-               tail call. */
-            int i;
-            for (i = info->selflen; i--; ) {
-              if ((info->selfstart + i) != info->tlpos)
-                scheme_sfs_used(info, (info->selfstart - info->stackpos) + i);
-            }
-            tail_ok = 1;
+        if (SAME_TYPE(SCHEME_TYPE(rator), scheme_local_type)
+            && (SCHEME_LOCAL_POS(rator) + info->stackpos) == info->selfpos) {
+          /* No point in clearing out any of the closure before the
+             tail call. */
+          int i;
+          for (i = info->selflen; i--; ) {
+            if ((info->selfstart + i) != info->tlpos)
+              scheme_sfs_used(info, (info->selfstart - info->stackpos) + i);
           }
+          tail_ok = 1;
         }
       }
       if (!tail_ok)
@@ -498,7 +504,7 @@ static Scheme_Object *sfs_one_branch(SFS_Info *info, int ip,
         n = info->max_used[i + t_min_t];
         SFS_LOG(printf("%d %s %d %d -> %d/%d\n", info->pass, (delta ? "else" : "then"), ip, 
                        i + t_min_t, n, info->max_calls[i+ t_min_t]));
-        if (n > ip) {
+        if ((n > ip) && (n < FAR_VALUE_FOR_MAX_USED)) {
           SCHEME_VEC_ELS(t_vec)[i] = scheme_make_integer(n);
           info->max_used[i + t_min_t] = ip;
         } else {
@@ -641,6 +647,10 @@ static Scheme_Object *sfs_let_one(Scheme_Object *o, SFS_Info *info)
   save_mnt = info->max_nontail;
 
   if (!info->pass) {
+    if (SCHEME_LET_ONE_TYPE(lo)) {
+      /* never clear a typed slot */
+      info->max_used[pos] = FAR_VALUE_FOR_MAX_USED;
+    }
     vec = scheme_make_vector(3, NULL);
     scheme_sfs_save(info, vec);
   } else {
@@ -659,7 +669,7 @@ static Scheme_Object *sfs_let_one(Scheme_Object *o, SFS_Info *info)
   if (!info->pass)
     info->max_nontail = info->ip;
 # endif
-  
+
   if (!info->pass) {
     int n;
     info->max_calls[pos] = info->max_nontail;
@@ -671,7 +681,8 @@ static Scheme_Object *sfs_let_one(Scheme_Object *o, SFS_Info *info)
   } else {
     info->max_nontail = save_mnt;
 
-    if (info->max_used[pos] <= ip) {
+    if ((info->max_used[pos] <= ip) 
+        || (info->max_used[pos] == FAR_VALUE_FOR_MAX_USED)) {
       /* No one is using it, so don't actually push the value at run time
          (but keep the check that the result is single-valued).
          The optimizer normally would have converted away the binding, but
@@ -1076,6 +1087,25 @@ static Scheme_Object *sfs_closure(Scheme_Object *expr, SFS_Info *info, int self_
           info->selfstart = info->stackpos;
           info->selflen = data->closure_size;
           break;
+        }
+      }
+    }
+
+    /* Never clear typed arguments or typed closure elements: */
+    if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
+      int delta, size, ct, j, pos;
+      mzshort *map;
+      delta = data->closure_size;
+      size = data->closure_size + data->num_params;
+      map = data->closure_map;
+      for (j = 0; j < size; j++) {
+        ct = scheme_boxmap_get(map, j, delta);
+        if (ct > CLOS_TYPE_TYPE_OFFSET) {
+          if (j < data->num_params)
+            pos = info->stackpos + delta + j;
+          else
+            pos = info->stackpos + (j - data->num_params);
+          info->max_used[pos] = FAR_VALUE_FOR_MAX_USED;
         }
       }
     }

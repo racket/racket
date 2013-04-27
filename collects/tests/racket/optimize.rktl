@@ -3107,6 +3107,23 @@
   (test 2 (f b (lambda () 2))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure an already-in-place loop argument
+;; isn't cleared for space safety:
+
+(test '((1 2 3 4 5 6)
+        (- 4 6 8 10 12)
+        (- - 9 12 15 18)
+        (- - - 16 20 24)
+        (- - - - 25 30)
+        (- - - - - 36))
+      values
+      (for/list ([y (in-range 1 7)])
+        ;; `y' is the already in place argument for the
+        ;; following loop:
+        (for/list ([x (in-range 1 7)])
+          (if (<= y x) (* x y) '-))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (report-errs)
