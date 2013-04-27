@@ -1330,7 +1330,8 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
       ref4 = NULL;
     } else {
       if (!unsafe_fl
-          && ((arith == ARITH_MIN)
+          && ((!arith && (cmp != CMP_BIT))
+              || (arith == ARITH_MIN)
               || (arith == ARITH_MAX)
               || (arith == ARITH_AND)
               || (arith == ARITH_IOR)
