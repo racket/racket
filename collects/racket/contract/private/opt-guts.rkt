@@ -20,6 +20,7 @@
          opt/info-that
          
          opt/info-swap-blame
+         opt/info-add-blame-context
          opt/info-change-val
          
          opt/unknown
@@ -147,12 +148,12 @@
 
 ;; struct for color-keeping across opters
 (define-struct opt/info
-  (contract val blame-id swap-blame? free-vars recf base-pred this that))
+  (contract val blame-stx swap-blame? free-vars recf base-pred this that))
 
 (define (opt/info-blame oi)
   (if (opt/info-swap-blame? oi)
-    #`(blame-swap #,(opt/info-blame-id oi))
-    (opt/info-blame-id oi)))
+    #`(blame-swap #,(opt/info-blame-stx oi))
+    (opt/info-blame-stx oi)))
 
 ;; opt/info-swap-blame : opt/info -> opt/info
 ;; swaps pos and neg
@@ -164,6 +165,14 @@
 (define (opt/info-change-val val info)
   (struct-copy opt/info info [val val]))
 
+
+;; opt/info-add-blame-context : opt/info (stx -> stx) -> opt/info
+;; calls 'f' on the current blame syntax to build a new one
+;; (presumably wrapping it with a call to (blame-add-context ...),
+;;  possibly via a helper function) and returns an adjusted opt/info record
+(define (opt/info-add-blame-context info f)
+  (struct-copy opt/info info
+               [blame-stx (f (opt/info-blame-stx info))]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

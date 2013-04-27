@@ -50,7 +50,12 @@
          
          contract-projection
          contract-name
-         n->th)
+         n->th
+         
+         blame-add-or-context
+         blame-add-car-context
+         blame-add-cdr-context
+         raise-not-cons-blame-error)
 
 (define-syntax (flat-rec-contract stx)
   (syntax-case stx  ()
@@ -152,11 +157,14 @@
         [pred (single-or/c-pred ctc)])
     (λ (blame)
       (define partial-contract
-        (c-proc (blame-add-context blame "a disjunct of")))
+        (c-proc (blame-add-or-context blame)))
       (λ (val)
         (cond
           [(pred val) val]
           [else (partial-contract val)])))))
+
+(define (blame-add-or-context blame)
+  (blame-add-context blame "a disjunct of"))
 
 (define (single-or/c-first-order ctc)
   (let ([pred (single-or/c-pred ctc)]
@@ -629,6 +637,9 @@
 (define non-empty-listof-func (*-listof non-empty-list? non-empty-listof (λ (ctc) (make-generate-ctc-fail))))
 (define/subexpression-pos-prop (non-empty-listof a) (non-empty-listof-func a))
 
+(define (blame-add-car-context blame) (blame-add-context blame "the car of"))
+(define (blame-add-cdr-context blame) (blame-add-context blame "the cdr of"))
+
 (define cons/c-main-function
   (λ (car-c cdr-c)
     (let* ([ctc-car (coerce-contract 'cons/c car-c)]
@@ -641,13 +652,11 @@
              (contract-first-order-passes? ctc-car (car v))
              (contract-first-order-passes? ctc-cdr (cdr v))))
       (define ((ho-check combine) blame)
-        (let ([car-p (car-proj (blame-add-context blame "the car of"))]
-              [cdr-p (cdr-proj (blame-add-context blame "the cdr of"))])
+        (let ([car-p (car-proj (blame-add-car-context blame))]
+              [cdr-p (cdr-proj (blame-add-cdr-context blame))])
           (λ (v)
             (unless (pair? v)
-              (raise-blame-error blame v 
-                                 '(expected "<pair?>" given: "~e")
-                                 v))
+              (raise-not-cons-blame-error blame v))
             (combine v (car-p (car v)) (cdr-p (cdr v))))))
       (cond
         [(and (flat-contract? ctc-car) (flat-contract? ctc-cdr))
@@ -665,6 +674,13 @@
            #:name ctc-name
            #:first-order fo-check
            #:projection (ho-check (λ (v a d) (cons a d))))]))))
+
+(define (raise-not-cons-blame-error blame val)
+  (raise-blame-error
+   blame
+   val
+   '(expected: "pair?" given: "~e")
+   val))
 
 (define/subexpression-pos-prop (cons/c a b) (cons/c-main-function a b))
 
