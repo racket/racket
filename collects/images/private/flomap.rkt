@@ -20,6 +20,8 @@
           [get-height (-> Integer)]
           [get-argb-pixels
            (case-> 
+            (Integer Integer Integer Integer Bytes
+                     -> Void)
             (Integer Integer Integer Integer Bytes Boolean
                      -> Void)
             (Integer Integer Integer Integer Bytes Boolean Boolean
