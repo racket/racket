@@ -25,60 +25,34 @@
              #:unless (provide? e))
     e))
 
-(define (mem? i vd)
-  (cond [(s:member i vd (lambda (i j) (free-identifier=? i (binding-name j)))) => car]
-        [else #f]))
+(define (freshen-id id)
+  ((make-syntax-introducer) id))
 
-(define new-id-introducer (make-syntax-introducer))
-(define cnt-id-introducer (make-syntax-introducer))
-(define error-id-introducer (make-syntax-introducer))
-(define untyped-id-introducer (make-syntax-introducer))
-
-;; generate-contract-defs : dict[id -> def-binding] dict[id -> list[id]] id -> syntax
+;; generate-prov : dict[id -> def-binding] dict[id -> list[id]] id
+;;                 -> (values listof[syntax] listof[listof[list[id id]]])
 ;; defs: defines in this module
 ;; provs: provides in this module
 ;; pos-blame-id: a #%variable-reference for the module
-
-;; internal-id : the id being provided
-;; if `internal-id' is defined in this module, we will produce a (begin def ... provide) block
-;;    and a name to provide instead of internal-id
-
-;; anything already recorded in the mapping is given an empty (begin) and the already-recorded id
-;; otherwise, we will map internal-id to the fresh id in `mapping'
 (define (generate-prov defs provs pos-blame-id)
   ;; maps ids defined in this module to an identifier which is the possibly-contracted version of the key
   (define mapping (make-free-id-table))
 
-  ;; mk : id [id] -> (values syntax id aliases)
-  (define (mk internal-id [new-id (new-id-introducer internal-id)])
-    (define (mk-untyped-syntax b defn-id internal-id)
-      (match b
-        [(def-struct-stx-binding _ (? struct-info? si))
-         (define type-is-constructor? #t) ;Conservative estimate (provide/contract does the same)
-         (match-define (list type-desc constr pred (list accs ...) muts super) (extract-struct-info si))
-         (define-values (defns new-ids aliases) 
-           (map/values 3 
-                       (lambda (e) (if (identifier? e)
-                                       (mk e)
-                                       (values #'(begin) e null)))
-                       (list* type-desc constr pred super accs)))
-         (define/with-syntax (type-desc* constr* pred* super* accs* ...) 
-           (for/list ([i (in-list new-ids)]) (if (identifier? i) #`(syntax #,i) i)))
-         (values 
-          #`(begin
-              #,@defns
-              (define-syntax #,defn-id
-                (let ((info (list type-desc* constr* pred* (list accs* ...) (list #,@(map (lambda x #'#f) accs)) super*)))
-                  #,(if type-is-constructor?
-                        #'(make-struct-info-self-ctor constr* info)
-                        #'info))))
-          (apply append aliases))]
-        [_
-         (values 
-          #`(define-syntax #,defn-id
-              (lambda (stx)
-                (tc-error/stx stx "Macro ~a from typed module used in untyped code" (syntax-e #'#,internal-id))))
-          null)]))
+  ;; triple/c in the signatures corresponds to three values:
+  ;; (values syntax? identfier? (listof (list/c identifier? identifier?))
+  ;; First return value is a syntax object of definitions
+  ;; Second is the id to export
+  ;; Third is a list of two element lists representing type aliases
+
+  ;; mk : id -> triple/c
+  ;;
+  ;; internal-id : the id being provided
+  ;; if `internal-id' is defined in this module, we will produce a (begin def ... provide) block
+  ;; and a name to provide instead of internal-id.
+  ;;
+  ;; Anything already recorded in the mapping is given an empty (begin) and the already-recorded id
+  ;; otherwise, we will map internal-id to the fresh id in `mapping'
+  (define (mk internal-id)
+    (define new-id (freshen-id internal-id))
     (cond
       ;; if it's already done, do nothing
       [(dict-ref mapping internal-id
@@ -88,56 +62,93 @@
       [(dict-ref defs internal-id #f)
        =>
        (match-lambda
-         [(def-binding _ (app (λ (ty) (type->contract ty (λ () #f))) (? values cnt)))
-          (values
-           (with-syntax* ([id internal-id]
-                          [cnt-id (cnt-id-introducer #'id)]
-                          [export-id new-id]
-                          [module-source pos-blame-id]
-                          [the-contract (generate-temporary 'generated-contract)])
-             #`(begin
-                 (define the-contract #,cnt)
-                 (define-syntax cnt-id
-                   (make-provide/contract-transformer
-                    (quote-syntax the-contract)
-                    (datum->syntax ; preserve source location in expanded code
-                     (quote-syntax id)
-                     (syntax->datum (quote-syntax id))
-                     (list (quote-source-file id)
-                           (quote-line-number id)
-                           (quote-column-number id)
-                           (quote-character-position id)
-                           (quote-character-span id))
-                     (quote-syntax id))
-                    (quote-syntax export-id)
-                    (quote-syntax module-source)))
-                 (def-export export-id id cnt-id)))
-           new-id
-           null)]
-         [(def-binding id ty)
-          (values
-           (with-syntax* ([id internal-id]
-                          [error-id (error-id-introducer #'id)]
-                          [export-id new-id])
-               #'(begin
-                   (define-syntax (error-id stx)
-                     (tc-error/stx stx "The type of ~a cannot be converted to a contract" (syntax-e #'id)))
-                   (def-export export-id id error-id)))
-           new-id
-           null)]
-         [(and b (def-stx-binding _))
-          (with-syntax* ([id internal-id]
-                         [export-id new-id]
-                         [untyped-id (untyped-id-introducer #'id)])
-            (define-values (d aliases)
-              (mk-untyped-syntax b #'untyped-id internal-id))
-            (define/with-syntax def d)
-            (values
-             #`(begin def (def-export export-id id untyped-id))
-             new-id
-             (cons (list #'export-id #'id) aliases)))])]
+         [(def-binding _ (app (λ (ty) (type->contract ty (λ () #f))) cnt))
+          (mk-value-triple internal-id new-id cnt)]
+         [(def-struct-stx-binding _ (? struct-info? si))
+          (mk-struct-syntax-triple internal-id new-id si)]
+         [(def-stx-binding _)
+          (mk-syntax-triple internal-id new-id)])]
       ;; otherwise, not defined in this module, not our problem
       [else (values #'(begin) internal-id null)]))
+
+  ;; mk-struct-syntax-triple : identifier? identifier? struct-info? -> triple/c
+  (define (mk-struct-syntax-triple internal-id new-id si)
+    (define type-is-constructor? #t) ;Conservative estimate (provide/contract does the same)
+    (match-define (list type-desc constr pred (list accs ...) muts super) (extract-struct-info si))
+    (define-values (defns new-ids aliases) 
+      (map/values 3 
+                  (lambda (e) (if (identifier? e)
+                                  (mk e)
+                                  (values #'(begin) e null)))
+                  (list* type-desc constr pred super accs)))
+    (define/with-syntax (type-desc* constr* pred* super* accs* ...) 
+      (for/list ([i (in-list new-ids)]) (if (identifier? i) #`(syntax #,i) i)))
+    (with-syntax* ([id internal-id]
+                   [export-id new-id]
+                   [untyped-id (freshen-id #'id)])
+      (values
+        #`(begin
+            #,@defns
+            (define-syntax untyped-id
+              (let ((info (list type-desc* constr* pred* (list accs* ...)
+                                (list #,@(map (lambda (x) #'#f) accs)) super*)))
+                #,(if type-is-constructor?
+                      #'(make-struct-info-self-ctor constr* info)
+                      #'info)))
+            (def-export export-id id untyped-id))
+        new-id
+        (cons (list #'export-id internal-id) (apply append aliases)))))
+
+
+  ;; mk-syntax-triple : identifier? identifier? -> triple/c
+  (define (mk-syntax-triple internal-id new-id)
+    (with-syntax* ([id internal-id]
+                   [export-id new-id]
+                   [untyped-id (freshen-id #'id)])
+      (define/with-syntax def
+        #`(define-syntax untyped-id
+            (lambda (stx)
+              (tc-error/stx stx "Macro ~a from typed module used in untyped code" 'untyped-id))))
+      (values
+       #`(begin def (def-export export-id id untyped-id))
+       new-id
+       (list (list #'export-id #'id)))))
+
+  ;; mk-value-triple : identifier? identifier? (or/c syntax? #f) -> triple/c
+  (define (mk-value-triple internal-id new-id cnt)
+    (with-syntax* ([id internal-id]
+                   [untyped-id (freshen-id #'id)]
+                   [export-id new-id])
+      (define/with-syntax definitions
+        (if cnt
+            (with-syntax* ([module-source pos-blame-id]
+                           [the-contract (generate-temporary 'generated-contract)])
+              #`(begin
+                  (define the-contract #,cnt)
+                  (define-syntax untyped-id
+                    (make-provide/contract-transformer
+                     (quote-syntax the-contract)
+                     (datum->syntax ; preserve source location in expanded code
+                      (quote-syntax id)
+                      (syntax->datum (quote-syntax id))
+                      (list (quote-source-file id)
+                            (quote-line-number id)
+                            (quote-column-number id)
+                            (quote-character-position id)
+                            (quote-character-span id))
+                      (quote-syntax id))
+                     (quote-syntax export-id)
+                     (quote-syntax module-source)))))
+            #'(define-syntax (untyped-id stx)
+                (tc-error/stx stx "The type of ~a cannot be converted to a contract" (syntax-e #'id)))))
+      (values
+        #'(begin
+            definitions
+            (def-export export-id id untyped-id))
+        new-id
+        null)))
+
+
   ;; Build the final provide with auxilliary definitions
   (for/lists (l l*) ([(internal-id external-ids) (in-dict provs)])
     (define-values (defs id alias) (mk internal-id))
