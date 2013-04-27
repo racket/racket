@@ -2038,7 +2038,8 @@
          (send dirty/pending-tab set-oc-status
                (clean 'exn
                       (list (vector sc-only-raw-text-files-supported
-                                    (list (vector (+ filename/loc 1) 1))))))
+                                    (list (vector (+ filename/loc 1) 1))
+                                    '()))))
          (oc-maybe-start-something)])))
 
   (define/oc-log (oc-finished res)
@@ -2066,7 +2067,7 @@
          (send running-tab set-oc-status
                (clean (vector-ref res 0)
                       (if (eq? (vector-ref res 0) 'abnormal-termination)
-                          sc-abnormal-termination
+                          (list (vector sc-abnormal-termination '() '()))
                           (vector-ref res 1))))
          (send running-tab set-dep-paths (list->set (vector-ref res 2)) #t)])
       (oc-maybe-start-something)))
