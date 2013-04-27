@@ -106,10 +106,10 @@
       (if (null? l)
           (values (reverse getters) (reverse setters))
           (loop (cddr l) (cons (car l) getters) (cons (cadr l) setters)))))
-  (match (build-struct-names nm flds #f #f nm)
+  (match (build-struct-names nm flds #f #f nm #:constructor-name maker*)
     [(list sty maker pred getters/setters ...)
      (let-values ([(getters setters) (split getters/setters)])
-       (struct-names nm sty (or maker* maker) pred getters setters))]))
+       (struct-names nm sty maker pred getters setters))]))
 
 ;; gets the fields of the parent type, if they exist
 ;; Option[Struct-Ty] -> Listof[Type]
@@ -178,7 +178,6 @@
     (list*
      ;; the list of names w/ types
      (cons (struct-names-struct-type names) (make-StructType sty))
-     (cons (struct-names-constructor names) (poly-wrapper (->* all-fields poly-base)))
      (cons (struct-names-predicate names)
            (make-pred-ty (if (not covariant?)
                              (make-StructTop sty)
@@ -203,19 +202,23 @@
             (cons s (poly-wrapper (->* (list poly-base t) -Void))))
           null))))
 
-  (add-struct-constructor! (struct-names-constructor names))
+  (define constructor-binding
+     (cons (struct-names-constructor names) (poly-wrapper (->* all-fields poly-base))))
 
-  (define def-bindings
-    (for/list ([b bindings])
-        (define id (car b))
-        (define t (cdr b))
-        (register-type id t)
-        (make-def-binding id t)))
-  (if si
-    (cons
-      (make-def-struct-stx-binding (struct-names-type-name names) si)
-      def-bindings)
-    def-bindings))
+  (define (convert-binding b)
+    (make-def-binding (car b) (cdr b)))
+
+  (for ([b (cons constructor-binding bindings)])
+    (register-type (car b) (cdr b)))
+
+  (append
+    (if (free-identifier=? (struct-names-type-name names)
+                           (struct-names-constructor names))
+      null
+      (list (convert-binding constructor-binding)))
+   (cons
+     (make-def-struct-stx-binding (struct-names-type-name names) si (cdr constructor-binding))
+     (map convert-binding bindings))))
 
 (define (register-parsed-struct-sty! ps)
   (match ps
