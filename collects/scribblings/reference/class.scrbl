@@ -71,7 +71,7 @@
 
 )
 
-@(interaction-eval #:eval class-eval (require racket/class))
+@(interaction-eval #:eval class-eval (require racket/class racket/contract))
 @(interaction-eval
   #:eval class-ctc-eval
   (require racket/class racket/contract))
@@ -1788,46 +1788,143 @@ not specified.
 The external contracts are as follows:
 
 @itemize[
- @item{A method contract without a tag describes the behavior
+ @item{An external method contract without a tag describes the behavior
    of the implementation of @racket[method-id] on method sends to an
    object of the contracted class.  This contract will continue to be
    checked in subclasses until the contracted class's implementation is
-   no longer the entry point for dynamic dispatch.}
- @item{A field contract, tagged with @racket[field], describes the
+   no longer the entry point for dynamic dispatch.
+   
+   @defexamples[#:eval 
+                class-eval
+                (define woody%
+                  (class object%
+                    (define/public (draw who)
+                      (format "reach for the sky, ~a" who))
+                    (super-new)))
+                
+                (define/contract woody+c%
+                  (class/c [draw (->m symbol? string?)])
+                  woody%)
+                
+                (send (new woody%) draw #f)
+                (send (new woody+c%) draw 'zurg)
+                (send (new woody+c%) draw #f)]
+   }
+ @item{An external field contract, tagged with @racket[field], describes the
    behavior of the value contained in that field when accessed via an
    object of that class.  Since fields may be mutated, these contracts
-   are checked on any external access and/or mutation of the field.}
+   are checked on any external access and/or mutation of the field.
+   
+   @defexamples[#:eval
+                class-eval
+                (define woody/hat%
+                  (class woody%
+                    (field [hat-location 'uninitialized])
+                    (define/public (lose-hat) (set! hat-location 'lost))
+                    (define/public (find-hat) (set! hat-location 'on-head))
+                    (super-new)))
+                (define/contract woody/hat+c%
+                  (class/c [draw (->m symbol? string?)]
+                           [lose-hat (->m void?)]
+                           [find-hat (->m void?)]
+                           (field [hat-location (or/c 'on-head 'lost)]))
+                  woody/hat%)
+                
+                (get-field hat-location (new woody/hat%))
+                (let ([woody (new woody/hat+c%)])
+                  (send woody lose-hat)
+                  (get-field hat-location woody))
+                (get-field hat-location (new woody/hat+c%))]
+   
+   }
  @item{An initialization argument contract, tagged with @racket[init],
    describes the expected behavior of the value paired with that name
    during class instantiation.  The same name can be provided more than
    once, in which case the first such contract in the @racket[class/c]
    form is applied to the first value tagged with that name in the list
-   of initialization arguments, and so on.}
+   of initialization arguments, and so on.
+   
+   @defexamples[#:eval
+                class-eval
+                (define woody/init-hat%
+                  (class woody%
+                    (init init-hat-location)
+                    (field [hat-location init-hat-location])
+                    (define/public (lose-hat) (set! hat-location 'lost))
+                    (define/public (find-hat) (set! hat-location 'on-head))
+                    (super-new)))
+                (define/contract woody/init-hat+c%
+                  (class/c [draw (->m symbol? string?)]
+                           [lose-hat (->m void?)]
+                           [find-hat (->m void?)]
+                           (init [init-hat-location (or/c 'on-head 'lost)])
+                           (field [hat-location (or/c 'on-head 'lost)]))
+                  woody/init-hat%)
+                (get-field hat-location (new woody/init-hat+c% [init-hat-location 'lost]))
+                (get-field hat-location (new woody/init-hat+c% [init-hat-location 'slinkys-mouth]))]
+   
+   }
  @item{The contracts listed in an @racket[init-field] section are
    treated as if each contract appeared in an @racket[init] section and
    a @racket[field] section.}
 ]
 
-The internal contracts are as follows:
+The internal contracts restrict the behavior of method calls
+made between classes and their subclasses; such calls are not
+controlled by the class contracts described above.
 @itemize[
- @item{A method contract, tagged with @racket[inherit], describes the
+ @item{A method contract tagged with @racket[inherit] describes the
    behavior of the method when invoked directly (i.e., via
    @racket[inherit]) in any subclass of the contracted class.  This
    contract, like external method contracts, applies until the
    contracted class's method implementation is no longer the entry point
-   for dynamic dispatch.}
- @item{A field contract, tagged with @racket[inherit-field], describes
-   the behavior of the value contained in that field when accessed
-   directly (i.e., via @racket[inherit-field]) in any subclass of the
-   contracted class.  Since fields may be mutated, these contracts are
-   checked on any access and/or mutation of the field that occurs in
-   such subclasses.}
- @item{A method contract, tagged with @racket[super], describes the behavior of
+   for dynamic dispatch.
+   
+   @defexamples[#:eval
+                class-eval
+                (new (class woody+c%
+                       (inherit draw)
+                       (super-new)
+                       (printf "woody sez: “~a”\n" (draw "evil dr porkchop"))))
+                (define/contract woody+c-inherit%
+                  (class/c (inherit [draw (->m symbol? string?)]))
+                  woody+c%)
+                (new (class woody+c-inherit%
+                       (inherit draw)
+                       (printf "woody sez: ~a\n" (draw "evil dr porkchop"))))]
+   
+   }
+  @item{A method contract tagged with @racket[super] describes the behavior of
    @racket[method-id] when called by the @racket[super] form in a
    subclass.  This contract only affects @racket[super] calls in
    subclasses which call the contract class's implementation of
-   @racket[method-id].}
- @item{A method contract, tagged with @racket[inner], describes the
+   @racket[method-id].
+   
+   This example shows how to extend the @racket[draw] method
+   so that if it is passed two arguments, it combines two
+   calls to the original @racket[draw] method, but with a 
+   contract the controls how the @racket[super] methods must
+   be invoked.
+   
+   @defexamples[#:eval
+                class-eval
+                (define/contract woody2+c%
+                  (class/c (super [draw (->m symbol? string?)]))
+                  (class woody%
+                    (define/override draw
+                      (case-lambda
+                        [(a) (super draw a)]
+                        [(a b) (string-append (super draw a)
+                                              " and "
+                                              (super draw b))]))
+                    (super-new)))
+                (send (new woody2+c%) draw 'evil-dr-porkchop  'zurg)
+                (send (new woody2+c%) draw "evil dr porkchop" "zurg")]
+   
+   The last call signals an error blaming @racket[woody2%] because
+   there is no contract checking the initial @racket[draw] call.
+   }
+ @item{A method contract tagged with @racket[inner] describes the
    behavior the class expects of an augmenting method in a subclass.
    This contract affects any implementations of @racket[method-id] in
    subclasses which can be called via @racket[inner] from the contracted
@@ -1835,14 +1932,45 @@ The internal contracts are as follows:
    @racket[augment] or @racket[overment] stop future subclasses from
    being affected by the contract, since further extension cannot be
    reached via the contracted class.}
- @item{A method contract, tagged with @racket[override], describes the
+ @item{A method contract tagged with @racket[override] describes the
    behavior expected by the contracted class for @racket[method-id] when
    called directly (i.e. by the application @racket[(method-id ...)]).
    This form can only be used if overriding the method in subclasses
    will change the entry point to the dynamic dispatch chain (i.e., the
-   method has never been augmentable).}
- @item{A method contract, tagged with either @racket[augment] or
-   @racket[augride], describes the behavior provided by the contracted
+   method has never been augmentable).
+   
+   This time, instead of overriding @racket[draw] to support
+   two arguments, we can make a new method, @racket[draw2] that
+   takes the two arguments and calls @racket[draw]. We also
+   add a contract to make sure that overriding @racket[draw]
+   doesn't break @racket[draw2].   
+   
+   @defexamples[#:eval
+                class-eval
+                (define/contract woody2+override/c%
+                  (class/c (override [draw (->m symbol? string?)]))
+                  (class woody+c%
+                    (inherit draw)
+                    (define/public (draw2 a b)
+                      (string-append (draw a)
+                                     " and "
+                                     (draw b)))
+                    (super-new)))
+                
+                (define woody2+broken-draw
+                  (class woody2+override/c%
+                    (define/override (draw x)
+                      'not-a-string)
+                    (super-new)))
+                
+                (send (new woody2+broken-draw) draw2 
+                      'evil-dr-porkchop
+                      'zurg)]
+   
+   
+   }
+ @item{A method contract tagged with either @racket[augment] or
+   @racket[augride] describes the behavior provided by the contracted
    class for @racket[method-id] when called directly from subclasses.
    These forms can only be used if the method has previously been
    augmentable, which means that no augmenting or overriding
@@ -1850,6 +1978,13 @@ The internal contracts are as follows:
    chain.  @racket[augment] is used when subclasses can augment the
    method, and @racket[augride] is used when subclasses can override the
    current augmentation.}
+ @item{A field contract tagged with @racket[inherit-field] describes
+   the behavior of the value contained in that field when accessed
+   directly (i.e., via @racket[inherit-field]) in any subclass of the
+   contracted class.  Since fields may be mutated, these contracts are
+   checked on any access and/or mutation of the field that occurs in
+   such subclasses.}
+
 ]}
 
 @defform[(absent method-id ...)]{
