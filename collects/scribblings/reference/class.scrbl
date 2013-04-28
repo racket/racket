@@ -1811,10 +1811,11 @@ The external contracts are as follows:
                 (send (new woody+c%) draw #f)]
    }
  @item{An external field contract, tagged with @racket[field], describes the
-   behavior of the value contained in that field when accessed via an
-   object of that class.  Since fields may be mutated, these contracts
-   are checked on any external access and/or mutation of the field.
-   
+   behavior of the value contained in that field when accessed from outside
+   the class.  Since fields may be mutated, these contracts
+   are checked on any external access (via @racket[get-field])
+   and external mutations (via @racket[set-field!]) of the field.
+
    @defexamples[#:eval
                 class-eval
                 (define woody/hat%
@@ -1834,7 +1835,9 @@ The external contracts are as follows:
                 (let ([woody (new woody/hat+c%)])
                   (send woody lose-hat)
                   (get-field hat-location woody))
-                (get-field hat-location (new woody/hat+c%))]
+                (get-field hat-location (new woody/hat+c%))
+                (let ([woody (new woody/hat+c%)])
+                  (set-field! hat-location woody 'under-the-dresser))]
    
    }
  @item{An initialization argument contract, tagged with @racket[init],
