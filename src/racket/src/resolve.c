@@ -26,9 +26,9 @@
 /* This file implements the bytecode "resolve" pass, which converts
    the optimization IR to the evaluation IR --- where the main
    difference between the IRs is a change in stack addresses. This
-   pass is also reponsible for closure conversion (in the sense of
-   lifting closures that are used only in application positions were
-   all variabes captured by the closure can be converted to arguments
+   pass is also responsible for closure conversion (in the sense of
+   lifting closures that are used only in application positions where
+   all variables captured by the closure can be converted to arguments
    at all call sites).
 
    See "eval.c" for an overview of compilation passes. */
