@@ -8,9 +8,7 @@
                     array-indexes-set!))
 
 (require/untyped-contract
- (begin (require "array-struct.rkt"
-                 "utils.rkt"
-                 "typed-array-indexing.rkt"))
+ (begin (require (only-in "array-struct.rkt" Array Settable-Array)))
  "typed-array-indexing.rkt"
  [array-ref   (All (A) ((Array A) (Vectorof Integer) -> A))]
  [array-set!  (All (A) ((Settable-Array A) (Vectorof Integer) A -> Void))]

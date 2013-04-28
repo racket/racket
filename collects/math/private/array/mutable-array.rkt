@@ -8,7 +8,7 @@
                     vector->array))
 
 (require/untyped-contract
- (begin (require "typed-mutable-array.rkt"))
+ (begin (require (only-in "typed-mutable-array.rkt" Mutable-Array)))
  "typed-mutable-array.rkt"
  [vector->array  (All (A) (case-> ((Vectorof A) -> (Mutable-Array A))
                                   ((Vectorof Integer) (Vectorof A) -> (Mutable-Array A))))])

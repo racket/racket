@@ -3,6 +3,7 @@
 (require (for-syntax racket/base
                      syntax/parse
                      racket/syntax
+                     unstable/syntax
                      typed-racket/utils/tc-utils)
          typed-racket/utils/tc-utils)
 
@@ -30,12 +31,16 @@
        (define-syntax name
          (typed/untyped-renamer #'typed-name #'untyped-name)))]))
 
+(define-for-syntax (freshen ids)
+  (syntax-map (lambda (id) ((make-syntax-introducer) id)) ids))
+
 (define-syntax (require/untyped-contract stx)
   (syntax-parse stx #:literals (begin)
     [(_ (begin form ...) from-module-spec:expr [name:id T:expr] ...)
      (with-syntax* ([(typed-name ...)  (generate-temporaries #'(name ...))]
-                    [(untyped-name ...)  (generate-temporaries #'(name ...))]
+                    [(untyped-name ...)  (freshen #'(name ...))]
                     [(untyped2-name ...)  (generate-temporaries #'(name ...))]
+                    [(untyped3-name ...)  (generate-temporaries #'(name ...))]
                     [(macro-name ...)  (generate-temporaries #'(name ...))]
                     [typed-module  (generate-temporary #'typed-module)]
                     [untyped-module  (generate-temporary #'untyped-module)])
@@ -43,19 +48,20 @@
          (begin
            (module typed-module typed/racket/base
              (begin form ...)
-             (require (only-in from-module-spec name ...))
+             (require (rename-in (only-in from-module-spec name ...)
+                                 [name untyped2-name] ...))
              (provide untyped-name ...)
              (: untyped-name T) ...
-             (define untyped-name name) ...)
+             (define untyped-name untyped2-name) ...)
            
            (module untyped-module racket/base
              (require typed/untyped-utils
                       (rename-in (only-in from-module-spec name ...)
                                  [name typed-name] ...)
                       (rename-in (only-in (submod ".." typed-module) untyped-name ...)
-                                 [untyped-name untyped2-name] ...))
+                                 [untyped-name untyped3-name] ...))
              (provide macro-name ...)
-             (define-typed/untyped-identifier macro-name typed-name untyped2-name) ...)
+             (define-typed/untyped-identifier macro-name typed-name untyped3-name) ...)
            
            (require (rename-in (submod "." untyped-module) [macro-name name] ...)))))]
     [(_ from-module-spec:expr [name:id T:expr] ...)
