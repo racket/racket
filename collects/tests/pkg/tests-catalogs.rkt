@@ -33,20 +33,31 @@
                   (append (db:get-pkgs)
                           (list
                            (db:pkg "fish" "local" "nemo@sub" "http://localhost:9999/fish.zip" "123" 
-                                   "Not a whale")))))
+                                   "Not a whale"))))
+    (db:set-pkg-modules! "fish" "local" "123" '((lib "fish/main.rkt") (lib "fish/food.rkt")))
+    (db:set-pkg-dependencies! "fish" "local" "123"
+                              '("ocean" ("water" "1.0") ("crash-helmet" #:platform windows))))
   $ "raco pkg catalog-show fish" =stdout> #rx"Checksum: 123"
+  $ "raco pkg catalog-show fish" =stdout> #rx"ocean"
+  $ "raco pkg catalog-show fish" =stdout> #rx"water version 1.0"
+  $ "raco pkg catalog-show fish" =stdout> #rx"crash-helmet on platform 'windows"
+  $ "raco pkg catalog-show --modules fish" =stdout> #rx"fish/food"
 
   $ (~a "raco pkg catalog-copy " (path->string db) " " (path->string dir))
   $ (~a "raco pkg config --set catalogs file://" (path->string dir))
   $ "raco pkg catalog-show fish" =stdout> #rx"Checksum: 123"
   $ "raco pkg catalog-show --only-names fish" =stdout> #rx"fish"
   $ "raco pkg catalog-show --only-names --all" =stdout> #rx"fish"
+  $ "raco pkg catalog-show --modules fish" =stdout> #rx"fish/food"
+  $ "raco pkg catalog-show fish" =stdout> #rx"water version 1.0"
   
   (delete-file (build-path dir "pkgs"))
   (delete-file (build-path dir "pkgs-all"))
   $ "raco pkg catalog-show fish" =stdout> #rx"Checksum: 123"
   $ "raco pkg catalog-show --only-names fish" =stdout> #rx"^fish"
   $ "raco pkg catalog-show --only-names --all" =stdout> #rx"^fish"
+  $ "raco pkg catalog-show --modules fish" =stdout> #rx"fish/food"
+  $ "raco pkg catalog-show fish" =stdout> #rx"water version 1.0"
 
   (delete-file (build-path dir "pkg/fish"))
   $ "raco pkg catalog-show fish" =exit> 1

@@ -119,6 +119,27 @@ Gets or sets a list of tags for the package
 
 
 @deftogether[(
+@defproc[(get-pkg-dependencies [name string?] [catalog string?] [checksum string?])
+         (listof list?)]
+@defproc[(set-pkg-dependencies! [name string?] [catalog string?] [checksum string?]
+                                [dependencies (listof any/c)])
+         void?]
+)]{
+
+Gets or sets a list of dependencies for the package
+@racket[name] as recognized by the @tech{package catalog}
+@racket[catalog] and for a specific @tech{checksum}. 
+
+The list of dependencies must have the shape described for a
+@racket[deps] @filepath{info.rkt} field as described in
+@secref["metadata"]. The result from @racket[get-pkg-dependencies] is
+normalized: each dependency is represented by a list, a version in a
+dependency is always preceded by @racket['#:version], and if both
+version and platform specification are included, @racket['#:version]
+appears before @racket['#:platform].}
+
+
+@deftogether[(
 @defproc[(get-pkg-modules [name string?] [catalog string?] [checksum string?])
          (listof module-path?)]
 @defproc[(set-pkg-modules! [name string?] [catalog string?] [checksum string?]

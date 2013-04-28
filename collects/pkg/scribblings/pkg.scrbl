@@ -394,6 +394,7 @@ View and modify package configuration options. This command accepts the followin
  @item{@DFlag{only-names} --- Show only package names. This option is mainly useful with 
                               @DFlag{all}, but when a @nonterm{packaee-name} is provided,
                               catalogs are consulted to ensure that he package is available.}
+ @item{@DFlag{modules} --- Show the modules that are implemented by a package.}
  @item{@DFlag{catalog} @nonterm{catalog} --- Query @nonterm{catalog} instead of the currently configured 
        @tech{package catalogs}.}
  ]

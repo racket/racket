@@ -232,6 +232,7 @@
   #:once-each
   [#:bool all () "Show all packages"]
   [#:bool only-names () "Show only package names"]
+  [#:bool modules () "Show implemented modules"]
   #:args pkg-name
   (when (and all (pair? pkg-name))
     ((pkg-error 'catalog-show) "both `--all' and package names provided"))
@@ -240,7 +241,8 @@
                  [current-pkg-error (pkg-error 'catalog-show)])
     (pkg-catalog-show pkg-name 
                       #:all? all
-                      #:only-names? only-names))]
+                      #:only-names? only-names
+                      #:modules? modules))]
  [catalog-copy
   "Copy/merge package name catalogs"
   #:once-each

@@ -4,6 +4,7 @@
          racket/set
          racket/path
          racket/file
+         version/utils
          db)
 
 (provide 
@@ -36,6 +37,12 @@
                              (listof module-path?)
                              . -> . void?)]
 
+  [get-pkg-dependencies (string? string? string?
+                            . -> . (listof dep/c))]
+  [set-pkg-dependencies! (string? string? string?
+                                  (listof dep/c)
+                                  . -> . void?)]
+
   [get-pkg-tags (string? string?
                             . -> . (listof string?))]
   [set-pkg-tags! (string? string? (listof string?)
@@ -47,6 +54,15 @@
                              (#:catalog string?)
                              . ->* .
                              (listof pkg?))]))
+
+(define platform/c (or/c string? symbol? regexp?))
+(define dep/c (or/c string?
+                    (list/c string?)
+                    (list/c string? string?)
+                    (list/c string? '#:version valid-version?)
+                    (list/c string? '#:platform platform/c)
+                    (list/c string? '#:version valid-version? '#:platform platform/c)
+                    (list/c string? '#:platform platform/c '#:version valid-version?)))
 
 (struct pkg (name catalog author source checksum desc)
   #:transparent)
@@ -79,6 +95,16 @@
   (prepare-table db
                  "modules"
                  (~a "(name TEXT,"
+                     " pkg TEXT,"
+                     " catalog SMALLINT,"
+                     " checksum TEXT)")))
+
+(define (prepare-dependencies-table db)
+  (prepare-table db
+                 "dependencies"
+                 (~a "(onpkg TEXT,"
+                     " onversion TEXT,"
+                     " onplatform TEXT,"
                      " pkg TEXT,"
                      " catalog SMALLINT,"
                      " checksum TEXT)")))
@@ -160,6 +186,12 @@
         (when clear-other-checksums?
           (query-exec db
                       (~a "DELETE FROM modules"
+                          " WHERE catalog=$1 AND pkg=$2 AND checksum<>$3")
+                      catalog-id
+                      name
+                      checksum)
+          (query-exec db
+                      (~a "DELETE FROM dependencies"
                           " WHERE catalog=$1 AND pkg=$2 AND checksum<>$3")
                       catalog-id
                       name
@@ -299,6 +331,79 @@
             (vector-ref row 2)
             "")))))
 
+(define (get-pkg-dependencies name catalog checksum)
+  (call-with-catalog-db
+   (lambda (db)
+     (prepare-catalog-table db)
+     (prepare-pkg-table db)
+     (prepare-dependencies-table db)
+     (define catalog-id (url->catalog db catalog))
+     (define rows
+       (query-rows db
+                   (~a "SELECT onpkg, onversion, onplatform"
+                       " FROM dependencies"
+                       " WHERE catalog=$1"
+                       "  AND pkg=$2"
+                       "  AND checksum=$3")
+                   catalog-id
+                   name
+                   checksum))
+     (for/list ([row (in-list rows)])
+       (define on-pkg (vector-ref row 0))
+       (define on-version (vector-ref row 1))
+       (define on-platform (vector-ref row 2))
+       (cons on-pkg
+             (append
+              (if (equal? on-version "")
+                  null
+                  (list '#:version on-version))
+              (if (equal? on-platform "")
+                  null
+                  (list '#:platform (string->platform on-platform)))))))))
+
+(define (set-pkg-dependencies! name catalog checksum dependencies)
+  (define (get-keyed l k wrap)
+    (define a (memq k l))
+    (if a (wrap (cadr a)) ""))
+  (call-with-catalog-db
+   (lambda (db)
+     (prepare-catalog-table db)
+     (prepare-pkg-table db)
+     (prepare-dependencies-table db)
+     (call-with-transaction
+      db
+      (lambda ()
+        (define catalog-id (url->catalog db catalog))
+        (query-exec db
+                    (~a "DELETE FROM dependencies"
+                        " WHERE catalog=$1"
+                        "  AND pkg=$2"
+                        "  AND checksum=$3")
+                    catalog-id
+                    name
+                    checksum)
+        (for ([dep (in-list dependencies)])
+         (query db
+                (~a "INSERT INTO dependencies"
+                    " VALUES ($1, $2, $3, $4, $5, $6)")
+                (cond
+                 [(string? dep) dep]
+                 [else (car dep)])
+                (cond
+                 [(string? dep) ""]
+                 [(and (list? dep) (= 2 (length dep)))
+                  (cadr dep)]
+                 [else (get-keyed (cdr dep) '#:version values)])
+                (cond
+                 [(string? dep) ""]
+                 [(and (list? dep) (= 2 (length dep)))
+                  ""]
+                 [else (get-keyed (cdr dep) '#:platform platform->string)])
+                name catalog-id checksum)))))))
+
+(define (platform->string dep) (~s dep))
+(define (string->platform str) (read (open-input-string str)))
+
 (define (get-catalogs)
   (call-with-catalog-db
    (lambda (db)
@@ -313,6 +418,7 @@
      (prepare-pkg-table db)
      (prepare-tags-table db)
      (prepare-modules-table db)
+     (prepare-dependencies-table db)
      (call-with-transaction
       db
       (lambda ()
@@ -335,6 +441,9 @@
                         old-id)
             (query-exec db
                         "DELETE FROM modules WHERE catalog=$1"
+                        old-id)
+            (query-exec db
+                        "DELETE FROM dependencies WHERE catalog=$1"
                         old-id)))
         (for ([new-url (in-list urls)])
           (unless (member new-url old-urls)
@@ -366,6 +475,7 @@
      (prepare-catalog-table db)
      (prepare-pkg-table db)
      (prepare-modules-table db)
+     (prepare-dependencies-table db)
      (call-with-transaction
       db
       (lambda ()
@@ -392,6 +502,10 @@
             (query-exec db
                         "DELETE FROM modules WHERE catalog=$1 AND pkg=$2"
                         catalog
+                        old)
+            (query-exec db
+                        "DELETE FROM dependencies WHERE catalog=$1 AND pkg=$2"
+                        catalog
                         old)))
         (for ([new0 (in-list pkgs)])
           (define new (if (pkg? new0) 
@@ -401,6 +515,12 @@
                      (not (equal? "" (pkg-checksum new))))
             (query-exec db
                         (~a "DELETE FROM modules"
+                            " WHERE catalog=$1 AND pkg=$2 AND checksum<>$3")
+                        catalog
+                        (pkg-name new)
+                        (pkg-checksum new))
+            (query-exec db
+                        (~a "DELETE FROM dependencies"
                             " WHERE catalog=$1 AND pkg=$2 AND checksum<>$3")
                         catalog
                         (pkg-name new)
@@ -507,6 +627,26 @@
     (check-equal? (get-module-pkgs '(lib "lib1/main.rkt"))
                   (list
                    (pkg "p1" "http://a" "" "" "123" "")))
+
+    (set-pkg-dependencies! "p1" "http://a" "123" (list "p7"
+                                                       '("p8" "8.0")
+                                                       '("p9" #:version "9.0")
+                                                       '("p10" #:platform #rx"linux")
+                                                       '("p11" #:platform 'windows)
+                                                       '("p12" #:version "1.2" #:platform 'macosx)
+                                                       '("p13" #:platform 'unix #:version "1.3.2")
+                                                       '("p14" #:platform "")))
+    (check-equal? (sort (get-pkg-dependencies "p1" "http://a" "123")
+                        string<?
+                        #:key car)
+                  '(("p10" #:platform #rx"linux")
+                    ("p11" #:platform 'windows)
+                    ("p12" #:version "1.2" #:platform 'macosx)
+                    ("p13" #:version "1.3.2" #:platform 'unix)
+                    ("p14" #:platform "")
+                    ("p7")
+                    ("p8" #:version "8.0")
+                    ("p9" #:version "9.0")))
 
     (set-catalogs! '("http://a" "http://c"))
     (check-equal? (sort (get-catalogs) string<?) 

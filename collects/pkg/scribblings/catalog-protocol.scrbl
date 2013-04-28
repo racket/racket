@@ -1,6 +1,7 @@
 #lang scribble/manual
 @(require scribble/bnf
-          "common.rkt")
+          "common.rkt"
+          (for-label syntax/modcollapse))
 
 @title[#:tag "catalog-protocol"]{Package Catalog Protocol}
 
@@ -60,6 +61,16 @@ information about packages:
 
         @item{@racket['tags] --- a list of strings that describe the
               package's categorization.}
+
+        @item{@racket['dependencies] --- a list of dependencies for
+              the package, in the same shape as a @racket[deps]
+              @filepath{info.rkt} field as described in
+              @secref["metadata"].}
+
+        @item{@racket['modules] --- a list of module paths for modules
+              that are provided by th package; each module path should
+              be normalized in the sense of
+              @racket[collapse-module-path].}
 
        ]}
 
@@ -159,10 +170,27 @@ constructed in any way as long as it contains the following tables:
                                    checksum TEXT)}
 
        where the @tt{pkg} and @tt{catalog} combination identifies a unique
-       row in @tt{pkg}, and @racket[name] is a printed module path.
+       row in @tt{pkg}, and @tt{name} is a printed module path.
 
        This table is not currently used by any @exec{raco pkg}
        command, but it can be used to suggest package installations to
        provide a particular library.}
+
+ @item{A @tt{dependencies} table with the form
+
+            @verbatim[#:indent 2]{(onpkg TEXT,
+                                   onversion TEXT,
+                                   onplatform TEXT,
+                                   pkg TEXT,
+                                   catalog SMALLINT,
+                                   checksum TEXT)}
+
+       where the @tt{pkg} and @tt{catalog} combination identifies a unique
+       row in @tt{pkg}, and @tt{onpkg}, @tt{onversion}, and @tt{onplatform}
+       represent the dependency; @tt{onversion} or @tt{onplatform} is an
+       empty string if the dependency has no version or platform specification.
+
+       This table is not currently used by any @exec{raco pkg}
+       command.}
 
 ]

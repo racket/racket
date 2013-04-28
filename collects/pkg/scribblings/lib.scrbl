@@ -222,7 +222,8 @@ The package lock must be held to allow reads; see
 
 @defproc[(pkg-catalog-show [names (listof string?)]
                            [#:all? all? boolean? #f]
-                           [#:only-names? only-names? boolean? #f])
+                           [#:only-names? only-names? boolean? #f]
+                           [#:modules? modules? boolean? #f])
          void?]{
 
 Implements the @racket[catalog-show] command. If @racket[all?] is true,
@@ -241,11 +242,13 @@ Implements the @racket[catalog-copy] command.}
 
 
 @defproc[(pkg-catalog-update-local [#:catalog-file catalog-file path-string? (current-pkg-catalog-file)]
-                                   [#:quiet? quiet? boolean? #f])
+                                   [#:quiet? quiet? boolean? #f]
+                                   [#:consult-packages? consult-packages? boolean? #f])
          void?]{
 
 Consults the user's configured @tech{package catalogs} (like
-@racket[pkg-catalog-copy]) and package servers to populate the database
+@racket[pkg-catalog-copy]) and package servers (if
+@racket[consult-packages?] is true) to populate the database
 @racket[catalog-file] with information about available packages and the
 modules that they implement.}
 
