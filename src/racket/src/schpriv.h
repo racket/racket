@@ -2801,12 +2801,15 @@ int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env);
 typedef struct SFS_Info {
   MZTAG_IF_REQUIRED  
   int for_mod, pass;
-  int tail_pos;
-  int depth, stackpos, tlpos;
-  int selfpos, selfstart, selflen;
-  int ip, seqn, max_nontail;
-  int min_touch, max_touch;
-  int *max_used, *max_calls;
+  int tail_pos; /* in tail position? */
+  int depth, stackpos, tlpos; /* stack shape */
+  int selfpos, selfstart, selflen; /* tracks self calls */
+  int ip; /* "instruction pointer" --- counts up during traversal of expressions */
+  int seqn; /* tracks nesting */
+  int max_nontail; /* ip of last non-tail call in the body */
+  int min_touch, max_touch; /* tracks range of `macx_used' values changed */
+  int *max_used; /* maps stack position (i.e., variable) to ip of the variable's last use */
+  int *max_calls; /* maps stack position to ip of last non-tail call in variable's scope */
   Scheme_Object *saved;
 } SFS_Info;
 
