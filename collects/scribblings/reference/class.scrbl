@@ -1860,8 +1860,12 @@ The external contracts are as follows:
                            (init [init-hat-location (or/c 'on-head 'lost)])
                            (field [hat-location (or/c 'on-head 'lost)]))
                   woody/init-hat%)
-                (get-field hat-location (new woody/init-hat+c% [init-hat-location 'lost]))
-                (get-field hat-location (new woody/init-hat+c% [init-hat-location 'slinkys-mouth]))]
+                (get-field hat-location
+                           (new woody/init-hat+c%
+                                [init-hat-location 'lost]))
+                (get-field hat-location
+                           (new woody/init-hat+c%
+                                [init-hat-location 'slinkys-mouth]))]
    
    }
  @item{The contracts listed in an @racket[init-field] section are
