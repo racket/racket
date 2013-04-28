@@ -517,7 +517,7 @@ access the same @tech{location}.
 
 @margin-note/ref{See @secref["module"] for the syntax of modules.}
 
-Most definitions in Racket are in modules. In terms of evaluation,
+Most definitions in Racket are in @deftech{modules}. In terms of evaluation,
 a module is essentially a prefix on a defined name, so that different
 modules can define the name. That is, a @deftech{module-level
 variable} is like a @tech{top-level variable} from the perspective of

@@ -68,7 +68,11 @@ failed, and anything else to indicate it passed.}
 
 ]
 
+@deftech{Contract combinators} are functions such as @racket[->] and
+@racket[listof] that take contarcts and produce other contracts.
+
 Contracts in Racket are subdivided into three different categories:
+@;
 @itemlist[@item{@deftech{Flat contract}s can be fully checked immediately for
                  a given value. These kinds of contracts are essentially
                  predicate functions. Using @racket[flat-contract-predicate],
@@ -95,8 +99,7 @@ Contracts in Racket are subdivided into three different categories:
 
 For more about this hierarchy, see @tech{chaperones} and
 a research paper on chaperones, impersonators, and how they can be used to 
-implement contracts @cite{Strickland12}.
-
+implement contracts~@cite{Strickland12}.
 
 @local-table-of-contents[]
 

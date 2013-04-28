@@ -1,27 +1,18 @@
 #lang scribble/doc
 @(require scribble/struct scribble/racket "mz.rkt")
 
-@title[#:tag "intro"]{Introduction}
+@title[#:tag "notation"]{Notation}
 
 This chapter introduces essential terminology and notation that is
 used throughout the rest of the document and other Racket reference
 manuals.
 
-@section{Notation}
 
-The following sections explain how to read the notation used in Racket
-manuals to describe syntactic forms and values that are provided by
-the base language and by additional libraries.
+@section{Notation for Module Declarations}
 
-Syntactic forms, whether provided from the base language or via
-syntactic extensions, are specified using the same format that is
-described in the @guidesecref{syntax-notation} chapter of @|Guide|.
-
-@section{How to Read Module Declarations}
-
-Racket programs are usually organized into @tech{module}s. The Reference
+Racket programs are usually organized into @tech{module}s. Documentation
 reflects this organization with a notation for module declarations.
-A module declaration often prefaces the beginning of a Reference section
+A module declaration often prefaces the beginning of a section
 or subsection:
 
 @; TODO: change `defmodule` to support this
@@ -33,13 +24,52 @@ or subsection:
       (make-omitable-paragraph
        (list (hspace 1) (racket (require racket/list)))))))))
 
-The preceding @racket[require] statement indicates that the bindings that would be
-documented below are available in the @racketmodname[racket/list] module. When
-a module name is not explicitly mentioned, it usually indicates that the
-documented bindings are contained in @racketmodname[racket/base].
+The preceding @racket[require] statement in a section indicates that the bindings that are
+documented in the section are available from the @racketmodname[racket/list] module.
+
+Instead of @racket[require], some module declarations are written with
+@hash-lang[]:
+
+@; TODO: change `defmodule` to support this
+@(make-table "defmodule"
+  (list
+   (list
+    (make-flow
+     (list
+      (make-omitable-paragraph
+       (list (hspace 1) @hash-lang[]  (hspace 1) (racket racket/base))))))))
+
+Using @hash-lang[] means that the module is normally used as a
+language, instead of imported with @racket[require]. Unless otherwise
+specified, however, a module name documented with @hash-lang[] can
+also be used with @racket[require] to obtain the same bindings.
+
+Sometimes, a module specification appears at the beginning of a
+document or at the start of a section that contains many subsections.
+The document's section or section's subsections are meant to
+``inherit'' the module declaration of the enclosing document or
+section. Thus, bindings documented in @other-doc['(lib
+"scribblings/reference/reference.scrbl")] are available from
+@racketmodname[racket] and @racket[base/base] unless otherwise
+specified in a section or subsection.
 
 
-@section{How to Read Contracts for Functions}
+@section{Notation for Syntactic Forms}
+
+Syntactic forms, whether provided from the base language or via
+syntactic extensions, are specified using the same format that is
+described in the @guidesecref{syntax-notation} chapter of @|Guide|.
+
+Note that @racket[_number] in a grammar specification means that a
+literal number must appear in the syntactic form, while
+@racket[_number-expr] would allow any expression that produces a
+number. Similarly, @racket[_module-path] in a grammar corresponds to
+the non-terminal described for @racket[require], while
+@racket[_module-path-expr] would allow an arbitrary expression that
+produces a value for which @racket[module-path?] returns true.
+
+
+@section{Notation for Contracts for Functions}
 
 Procedures and other values are described using a notation based on
 @tech{contract}s. In essence, these contracts describe the interfaces of
@@ -114,7 +144,7 @@ The brackets around the @racket[_extract-key] and
 before. The contract section of the header shows the default values
 that are provided for these keyword arguments.
 
-@section{How to Read Parameter Contracts}
+@section{Notation for Parameter Contracts}
 
 Parameters are used in Racket for dynamically customizable arguments
 to code. They are documented with a notation similar to function
@@ -132,7 +162,7 @@ pass both @racket[string?] and @racket[immutable?]. Similarly, the
 single argument case takes a vector with the same specification and
 returns an object satisfying @racket[void?].
 
-@section{How to Read Contracts on Other Values}
+@section{Notation for Contracts on Other Values}
 
 Some libraries provide bindings to constant values. These values are
 documented with a separate header:
