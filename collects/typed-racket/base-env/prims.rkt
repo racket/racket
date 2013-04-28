@@ -557,10 +557,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
                 [cname (datum->syntax #f (format-symbol "make-~a" (syntax-e #'nm.name)))])
             (with-syntax ([d-s (syntax-property (quasisyntax/loc stx
                                                   (struct #,@(attribute nm.new-spec) (fs.fld ...)
-                                                          #:extra-constructor-name #,cname
                                                           . opts))
                                                 'typechecker:ignore #t)]
-                          [dtsi (quasisyntax/loc stx (dtsi* (vars.vars ...) nm.old-spec (fs ...) #:maker #,cname #,@mutable))])
+                          [dtsi (quasisyntax/loc stx (dtsi* (vars.vars ...) nm.old-spec (fs ...) #:maker nm.name #,@mutable))])
               #'(begin d-s dtsi)))])))))
 
 
