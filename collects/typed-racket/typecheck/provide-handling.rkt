@@ -87,23 +87,23 @@
 
     (define/with-syntax (type-desc* constr* pred* super* accs* ...)
       (for/list ([i new-ids])
-         (if (identifier? i) #`(syntax #,i) i)))
+         (and (identifier? i) #`(quote-syntax #,i))))
 
 
     (with-syntax* ([id internal-id]
                    [export-id new-id]
-                   [untyped-id (freshen-id #'id)])
+                   [protected-id (freshen-id #'id)])
       (values
         #`(begin
             #,(mk-protected-value-definitions constr #'inner-constr* #'constr* constructor-type)
             #,@defns
-            (define-syntax untyped-id
+            (define-syntax protected-id
               (let ((info (list type-desc* constr* pred* (list accs* ...)
                                 (list #,@(map (lambda x #'#f) accs)) super*)))
                 #,(if type-is-constructor?
                       #'(make-struct-info-self-ctor #'inner-constr* info)
                       #'info)))
-            (def-export export-id id untyped-id))
+            (def-export export-id protected-id protected-id))
         new-id
         (cons (list #'export-id internal-id) (apply append aliases)))))
 
