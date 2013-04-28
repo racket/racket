@@ -10,7 +10,7 @@
                     list->array))
 
 (require/untyped-contract
- (begin (require "typed-array-struct.rkt"))
+ (begin (require (only-in "typed-array-struct.rkt" Array)))
  "typed-array-struct.rkt"
  [build-array  (All (A) ((Vectorof Integer) ((Vectorof Index) -> A) -> (Array A)))]
  [build-simple-array  (All (A) ((Vectorof Integer) ((Vectorof Index) -> A) -> (Array A)))]

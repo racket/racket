@@ -50,7 +50,7 @@
 
 (require/untyped-contract
  (begin (require "private/matrix/matrix-types.rkt"
-                 "private/matrix/matrix-gauss-elim.rkt"))
+                 (only-in "private/matrix/matrix-gauss-elim.rkt" Pivoting)))
  "private/matrix/matrix-gauss-elim.rkt"
  [matrix-gauss-elim
   (case-> ((Matrix Number) -> (Values (Matrix Number) (Listof Index)))
