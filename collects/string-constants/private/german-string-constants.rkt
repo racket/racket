@@ -1648,6 +1648,9 @@
   (spell-program-wrote-to-stderr-on-startup "Der Rechtschreibchecker (~a) hat eine Fehlermeldung ausgegeben:")
   
   ;; GUI for installing a pkg package; available via File|Install Package...
+  (install-pkg-install-by-source "Nach Quelle installieren") ; tab label
+  (install-pkg-install-from-list "Von Liste installieren") ; tab label
+  (install-pkg-install-installed "Installiert")         ; tab label
   (install-pkg-menu-item... "Paket installieren...")
   (install-pkg-dialog-title "Paket installieren")
   (install-pkg-source-label "Packet-Quelltext")
@@ -1661,12 +1664,37 @@
   (install-pkg-name "Name (frage Auflöser)")
   (install-pkg-inferred-as "Typ inferiert als ~a")
   (install-pkg-force? "Existierendes überschreiben?")
-  (install-pkg-command-line "Äquivalente Kommandozeilen-Aufruf:")
+  (install-pkg-command-line "Äquivalenter Kommandozeilen-Aufruf:")
   (install-pkg-error-installing-title "Fehler beim Installieren von Paket")
 
   (install-pkg-action-label "Maßnahme")
   (install-pkg-install "Installieren")
   (install-pkg-update "Aktualisieren")
+  (install-pkg-remove "Entfernen")
   (install-pkg-action-inferred-to-be-update "Maßnahme als Aktualisierung inferiert")
-  (install-pkg-action-inferred-to-be-install "Maßnahme als Installation inferiert"))
+  (install-pkg-action-inferred-to-be-install "Maßnahme als Installation inferiert")
+  (install-pkg-default "Standard")
+  (install-pkg-scope-label "Paket-Einzugsbereich")
+  (install-pkg-installation "Bestimmte Racket-Installation")
+  (install-pkg-user "Bestimmter Benutzer und Racket-Version")
+  (install-pkg-shared "Bestimmter Benutzer und alle Racket-Versionem")
+  (install-pkg-set-as-default "Als Standard setzen")
+  (install-pkg-scope-is "Paket-Einzugsbereich ist ~a") ; ~a gets install-pkg-{installation,user,shared}
+  (install-pkg-select-package-directory "Paket-Verzeichnis auswählen")
+  (install-pkg-select-package-file "Paket-Datei auswählen")
+  (install-pkg-update-package-list "Paket-Liste aktualisieren")
+  (install-pkg-stop-update "Aktualisierung anhalten")
+  (install-pkg-filter "Filter")
+  (install-pkg-update-catalogs? "Datenbank aktualisieren um mit dem konfigurierten Satz Kataloge übereinzustimmen?")
+  (install-pkg-currently-configured-are "Die aktuell konfigurierten Kataloge sind")
+  (install-pkg-database-recorded-are "Die Kataloge in der Datenbank sind")
+  (install-pkg-update-catalogs "Aktualisieren")
+  (install-pkg-do-not-update-catalogs "Nicht aktualisieren")
+  (install-pkg-really-remove? "Sind Sie sicher, dass Sie die folgenden selektierten Pakete entfernen wollen?")
+  (install-pkg-abort-install "Installation abbrechen")
+  (install-pkg-abort-update "Aktualisierung abbrechen")
+  (install-pkg-abort-remove "Entfernung abbrechen")
+  (install-pkg-abort-generic-action "Aktion abbrechen")
+  
+  )
 
