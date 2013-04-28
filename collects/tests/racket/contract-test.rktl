@@ -9921,6 +9921,18 @@
             ((flat-contract-predicate (struct/c doll 'center)) (doll 'not-center-center))))
    '(#t #f))
   
+  (contract-error-test
+   'struct/c17
+   #'(let ()
+       (struct foo (v))
+       (contract (struct/c foo number?)
+                 #f
+                 'pos
+                 'neg))
+   (λ (x)
+     (and (exn:fail:contract:blame? x)
+          (regexp-match #rx"promised: foo?" (exn-message x)))))
+  
 
 ;
 ;

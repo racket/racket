@@ -209,7 +209,7 @@
          v]
         [else
          (unless (pred? v)
-           (raise-blame-error blame v '(expected: "~a" given: "~e")
+           (raise-blame-error blame v '(expected: "~a?" given: "~e")
                               (base-struct/dc-struct-name ctc)
                               v))
          (let loop ([subcontracts (base-struct/dc-subcontracts ctc)]
@@ -815,7 +815,7 @@
   
   #`(build-struct/dc (list #,@structs)
                      #,(list-ref info 2)
-                     'struct-id
+                     '#,struct-id
                      (quote-module-name)
                      '#,struct-id
                      #,struct/c?))
