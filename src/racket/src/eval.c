@@ -3390,7 +3390,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
 	  arg = app->rand2;
 
-	  switch ((SCHEME_APPN_FLAGS(app) >> 6) & 0x7) {
+	  switch ((flags >> 6) & 0x7) {
 	  case SCHEME_EVAL_CONSTANT:
 	    break;
 	  case SCHEME_EVAL_GLOBAL:
