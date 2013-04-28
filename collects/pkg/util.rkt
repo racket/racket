@@ -48,6 +48,9 @@
       rest]
      [_ rp])))
 
+(define github-client_id (make-parameter #f))
+(define github-client_secret (make-parameter #f))
+
 (define (package-url->checksum pkg-url-str [query empty]
                                #:download-printf [download-printf void])
   (define pkg-url
@@ -60,23 +63,30 @@
        (url "https" #f "api.github.com" #f #t
             (map (λ (x) (path/param x empty))
                  (list "repos" user repo "branches"))
-            query
+            (append query
+                    (if (and (github-client_id)
+                             (github-client_secret))
+                      (list (cons 'client_id (github-client_id))
+                            (cons 'client_secret (github-client_secret)))
+                      empty))
             #f))
      (download-printf "Querying GitHub\n")
      (log-pkg-debug "Querying GitHub at ~a" (url->string api-u))
      (define api-bs
-       (call/input-url+200 api-u port->bytes
-                           #:headers (list (format "User-Agent: raco-pkg/~a" (version)))))
+       (call/input-url+200
+        api-u port->bytes
+        #:headers (list (format "User-Agent: raco-pkg/~a" (version)))))
      (unless api-bs
        (error 'package-url->checksum
-              "Could not connect to GitHub"))
+              "Could not connect to GitHub"
+              (url->string api-u)))
      (define branches
        (read-json (open-input-bytes api-bs)))
      (unless (and (list? branches)
                   (andmap hash? branches)
                   (andmap (λ (b) (hash-has-key? b 'name)) branches)
                   (andmap (λ (b) (hash-has-key? b 'commit)) branches))
-       (error 'package-url->checksum 
+       (error 'package-url->checksum
               "Invalid response from Github: ~e"
               api-bs))
      (for/or ([b (in-list branches)])
@@ -99,14 +109,14 @@
           (parameterize ([current-custodian c])
             (get-pure-port/headers url #:redirections 25 #:status? #t)))
         (begin0
-         (and (string=? "200" (substring hs 9 12))
-              (handler p))
-         (close-input-port p)))
+          (and (string=? "200" (substring hs 9 12))
+               (handler p))
+          (close-input-port p)))
       (lambda ()
         (custodian-shutdown-all c))))
 
 (define (read-from-server who url pred
-                          [failure 
+                          [failure
                            (lambda (s)
                              (error who
                                     (~a "bad response from server\n"
@@ -116,13 +126,13 @@
                                     s))])
   (define bytes (call-with-url url port->bytes))
   ((if bytes
-       (with-handlers ([exn:fail:read? (lambda (exn)
-                                         (lambda () (failure bytes)))])
-         (define v (read (open-input-bytes bytes)))
-         (lambda ()
-           (if (pred v)
-               v
-               (failure bytes))))
-       (lambda () (failure #f)))))
+     (with-handlers ([exn:fail:read? (lambda (exn)
+                                       (lambda () (failure bytes)))])
+       (define v (read (open-input-bytes bytes)))
+       (lambda ()
+         (if (pred v)
+           v
+           (failure bytes))))
+     (lambda () (failure #f)))))
 
 (provide (all-defined-out))

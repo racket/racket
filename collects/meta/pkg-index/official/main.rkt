@@ -48,10 +48,8 @@
 (define users.new-path (build-path root "users.new"))
 (make-directory* users.new-path)
 
-(define (client_id)
-  (file->string (build-path root "client_id")))
-(define (client_secret)
-  (file->string (build-path root "client_secret")))
+(github-client_id (file->string (build-path root "client_id")))
+(github-client_secret (file->string (build-path root "client_secret")))
 
 (define pkgs-path (build-path root "pkgs"))
 (make-directory* pkgs-path)
@@ -708,9 +706,7 @@
     (printf "\tupdating ~a\n" pkg-name)
     (define new-checksum
       (package-url->checksum
-       (package-ref i 'source)
-       (list (cons 'client_id (client_id))
-             (cons 'client_secret (client_secret)))))
+       (package-ref i 'source)))
     (package-begin
      (define* i
        (hash-set i 'checksum
@@ -763,7 +759,7 @@
   (and
    (with-handlers ([exn:fail? (λ (x) #f)])
      (begin
-       (download-package-source! 
+       (download-package-source!
         (package-ref (package-info pkg) 'source)
         pd)
        #t))
@@ -852,10 +848,27 @@
    (λ ()
      (while true
        (printf "updating checksums\n")
-       (with-handlers ([exn:fail? void])
-         (update-checksums #f (package-list)))
-       ;; update once per day based on whenever the server started
-       (sleep (* 24 60 60)))))
+       (let loop ([pkg*ts
+                   (for/list ([pkg (in-list (package-list))])
+                     (cons pkg (thread (λ () (update-checksum #f pkg)))))]
+                  [the-alarm
+                   (alarm-evt (+ (current-inexact-milliseconds)
+                                 (* 1000 (* 24 60 60))))])
+         (apply
+          sync
+          (handle-evt the-alarm
+                      (λ _
+                        (for ([pkg*t (in-list pkg*ts)])
+                          (match-define (cons pkg t) pkg*t)
+                          (when (thread-running? t)
+                            (printf "~a checksum thread stalled\n" pkg)
+                            (kill-thread t)))))
+          (for/list ([pkg*t (in-list pkg*ts)])
+            (match-define (cons pkg t) pkg*t)
+            (handle-evt t
+                        (λ _
+                          (printf "~a thread finished\n" pkg)
+                          (loop (remove pkg*t pkg*ts) the-alarm)))))))))
   (serve/servlet
    main-dispatch
    #:command-line? #t
