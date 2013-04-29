@@ -262,7 +262,7 @@
   ;; zip : output-file paths ->
   (provide zip)
   (define (zip zip-file . paths)
-    (when (null? paths) (error 'zip "no paths specified"))
+    ;; (when (null? paths) (error 'zip "no paths specified"))
     (with-output-to-file zip-file
       (lambda () (zip->output (pathlist-closure paths)))))
 
