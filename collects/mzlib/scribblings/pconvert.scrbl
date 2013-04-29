@@ -7,17 +7,17 @@
 @mzlib[#:mode title pconvert]
 
 The @racketmodname[mzlib/pconvert] library defines routines for
-printing Scheme values as @racket[eval]uable S-expressions. Racket's
+printing Racket values as @racket[eval]uable S-expressions. Racket's
 default printing mode also prints values as expressions (in contrast
-to the Lisp and Scheme tradition of printing @racket[read]able
+to the Lisp and Racket tradition of printing @racket[read]able
 S-expressions), but @racketmodname[mzlib/pconvert] is more
 configurable and approximates expressions for a wider range of
 values. For example, procedures print using @racketresultfont{lambda}
 instead of @racketresultfont{#<procedure>}.
 
 The @racket[print-convert] procedure does not print values; rather, it
-converts a Scheme value into another Scheme value such that the new
-value @racket[pretty-write]s as a Scheme expression that evaluates to
+converts a Racket value into another Racket value such that the new
+value @racket[pretty-write]s as a Racket expression that evaluates to
 the original value. For example, @racket[(pretty-write (print-convert
 `(9 ,(box 5) #(6 7))))] prints the literal expression
 @racketresult[(list 9 (box 5) (vector 6 7))] to the current output

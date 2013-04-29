@@ -22,7 +22,7 @@ Applies @racket[f] to every element of the dllist.}
 @defmethod[(map-to-list [f ((is-a?/c dllist<%>) . -> . any/c)]) 
            (listof any/c)]{
 
-Creates a Scheme list by applying @racket[f] to every element
+Creates a Racket list by applying @racket[f] to every element
 of @this-obj[].}
 
 }

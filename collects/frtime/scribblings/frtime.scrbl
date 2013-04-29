@@ -140,7 +140,7 @@ carries an occurrence each time @racket[val] changes from @racket[#f] to
 anything else.}
   
 @defproc[(lift-strict [proc (-> [arg any/c] ... any)] [val any/c] ...)
-any]{provides a mechanism for applying ordinary Scheme primitives to
+any]{provides a mechanism for applying ordinary Racket primitives to
 behaviors.  If any of the @racket[val]s are behaviors, returns a
 behavior whose current value is always equal to @racket[(proc
 (value-now arg) ...)].  In FrTime, many Racket primitives are

@@ -33,6 +33,6 @@ pressing @onscreen{0}, @onscreen{1}, @onscreen{2}, @onscreen{3}, or
 @onscreen{P} to pause the game.
 
 The code is released under the LGPL.  The code is a conversion of Dave
-Ashley's C program to Scheme with some modifications and enhancements.
+Ashley's C program to Racket with some modifications and enhancements.
 
 Enjoy.

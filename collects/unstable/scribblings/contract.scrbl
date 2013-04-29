@@ -83,7 +83,7 @@ or default value may be used.
 
 @defthing[truth/c flat-contract?]{
 
-This contract recognizes Scheme truth values, i.e., any value, but with a more
+This contract recognizes Racket truth values, i.e., any value, but with a more
 informative name and description.  Use it in negative positions for arguments
 that accept arbitrary truth values that may not be booleans.
 

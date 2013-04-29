@@ -75,7 +75,7 @@ The @racket[filters] argument is one of:
 @itemize[
 
    @item{@racket[(list (list _filter-name _filter-glob) ...)] --- a
-     list of pattern names (e.g., @racket["Scheme Files"]) and glob
+     list of pattern names (e.g., @racket["Racket Files"]) and glob
      patterns (e.g., @racket["*.rkt;*.scrbl"]).  Any list, including an
      empty list, enables a filter box for the user to enter glob
      patterns, and the given list of choices is available in a
