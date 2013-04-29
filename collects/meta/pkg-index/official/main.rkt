@@ -4,6 +4,7 @@
 (require web-server/http
          web-server/servlet-env
          racket/file
+         xml
          racket/function
          racket/runtime-path
          web-server/dispatch
@@ -65,7 +66,7 @@
 (define (package-remove! pkg-name)
   (delete-file (build-path pkgs-path pkg-name)))
 (define (package-info pkg-name)
-  (file->value (build-path pkgs-path pkg-name)))
+  (hash-set (file->value (build-path pkgs-path pkg-name)) 'name pkg-name))
 (define (package-info-set! pkg-name i)
   (write-to-file i (build-path pkgs-path pkg-name)
                  #:exists 'replace))
@@ -99,7 +100,51 @@
    [("manage" "upload") page/manage/upload]
    [("curate") page/curate]
    [("curate" "edit" (string-arg) (number-arg)) page/curate/edit]
+   [("rss") page/rss]
    [else basic-start]))
+
+(define (page/rss req)
+  (define ps 
+    (sort (map package-info (package-list))
+          >
+          #:key (λ (i) (package-ref i 'last-updated))))
+  (define top (package-ref (first ps) 'last-updated))
+  (define (atom-format-time t)
+    (format "~aZ" (format-time t)))
+  (response/xexpr
+   #:mime-type #"application/atom+xml"
+   `(feed 
+     ([xmlns "http://www.w3.org/2005/Atom"])
+     (title ,(cdata #f #f (format "<![CDATA[~a]]>" 
+                                  "Racket Package Updates")))
+     (link ([href "https://pkg.racket-lang.org/rss"]
+            [rel "self"]))
+     (link ([href "https://pkg.racket-lang.org/"]))
+     (updated ,(atom-format-time top))
+     (id "https://pkg.racket-lang.org/")
+     ,@(for/list ([i (in-list ps)])
+         (define p (hash-ref i 'name))
+         (define this-url 
+           (format "https://pkg.racket-lang.org~a"
+                   (main-url page/info p)))
+         (define lu (atom-format-time (package-ref i 'last-updated)))
+         (define a (package-ref i 'author))
+         (match-define (regexp #rx"^([^@]+)" (list _ n)) a)
+         `(entry
+           (title ([type "html"])
+                  ,(cdata #f #f (format "<![CDATA[~a]]>" p)))
+           (link ([href ,this-url]))
+           (updated ,lu)
+           (author (name ,n) (email ,a))
+           (id ,this-url)
+           (content 
+            ([type "html"])
+            ,(cdata #f #f
+                    (format "<![CDATA[~a]]>"
+                            (xexpr->string
+                             `(p 
+                               ,(format "~a package updated on ~a."
+                                        p lu)))))))))))
 
 (define (page/main req)
   (redirect-to (main-url page/search empty)))
@@ -180,8 +225,12 @@
                             ,user
                             ,@(if (curation-administrator? user)
                                 `(" | "
-                                  (a ([href ,(main-url page/curate)]) "curate"))
+                                  (a ([href ,(main-url page/curate)])
+                                     "curate"))
                                 empty)
+                            " | "
+                            (a ([href ,(main-url page/rss)]) "rss")
+                            
                             ;;" | "
                             ;;(a ([href ,(main-url page/logout)]) "logout")
                             ))]
