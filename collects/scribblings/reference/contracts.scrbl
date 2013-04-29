@@ -69,7 +69,7 @@ failed, and anything else to indicate it passed.}
 ]
 
 @deftech{Contract combinators} are functions such as @racket[->] and
-@racket[listof] that take contarcts and produce other contracts.
+@racket[listof] that take contracts and produce other contracts.
 
 Contracts in Racket are subdivided into three different categories:
 @;

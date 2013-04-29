@@ -50,7 +50,7 @@ The document's section or section's subsections are meant to
 ``inherit'' the module declaration of the enclosing document or
 section. Thus, bindings documented in @other-doc['(lib
 "scribblings/reference/reference.scrbl")] are available from
-@racketmodname[racket] and @racket[base/base] unless otherwise
+@racketmodname[racket] and @racket[racket/base] unless otherwise
 specified in a section or subsection.
 
 
