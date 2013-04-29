@@ -557,27 +557,39 @@
                      ((next-dom ...) next-doms)
                      (dom-len (length dom-vars))
                      (rng-len (length rng-vars))
-                     ((next-rng ...) next-rngs))
+                     ((next-rng ...) next-rngs)
+                     [(dom-vars ...) (generate-temporaries dom-vars)]
+                     [(cont-mark-value) (generate-temporaries '(cont-mark-value))])
          (define (values/maybe-one stx)
            (syntax-case stx ()
              [(x) #'x]
              [(x ...) #'(values x ...)]))
-         #`(let ([exact-proc (case-lambda
-                               [(dom-arg ...)
-                                (values
-                                 (case-lambda
-                                   [(rng-arg ...)
-                                    #,(values/maybe-one #'(next-rng ...))]
-                                   [args 
-                                    (bad-number-of-results blame val rng-len args)])
-                                 next-dom ...)]
-                               [args
-                                (bad-number-of-arguments blame val args dom-len)])])
+         #`(let* ([cont-mark-value (cons #,(opt/info-positive-blame opt/info) '#,rngs)]
+                  [exact-proc (case-lambda
+                                [(dom-arg ...)
+                                 (let-values ([(rng-checker dom-vars ...)
+                                               (values (case-lambda
+                                                         [(rng-arg ...)
+                                                          #,(values/maybe-one #'(next-rng ...))]
+                                                         [args 
+                                                          (bad-number-of-results blame val rng-len args)])
+                                                       next-dom ...)])
+                                   (call-with-immediate-continuation-mark
+                                    opt->/c-cm-key 
+                                    (λ (mark-value)
+                                      (if (equal? mark-value cont-mark-value)
+                                          (values dom-vars ...)
+                                          (values rng-checker
+                                                  dom-vars ...)))))]
+                                [args
+                                 (bad-number-of-arguments blame val args dom-len)])])
              (if (and (procedure? val)
                       (equal? dom-len (procedure-arity val))
                       (let-values ([(a b) (procedure-keywords val)])
                         (null? b)))
-                 (chaperone-procedure val exact-proc)
+                 (chaperone-procedure val exact-proc
+                                      impersonator-prop:application-mark 
+                                      (cons opt->/c-cm-key cont-mark-value))
                  (handle-non-exact-procedure val dom-len blame exact-proc))))
        (append lifts-doms lifts-rngs)
        (append superlifts-doms superlifts-rngs)
@@ -708,6 +720,8 @@
                              #:flat flat #:opt opt #:stronger-ribs stronger-ribs #:chaperone chaperone?
                              #:name name)
                (opt/unknown opt/i opt/info stx))))]))
+
+(define opt->/c-cm-key (gensym 'opt->/c-cm-key))
 
 (define (blame-add-nth-arg-context blame n)
   (blame-add-context blame

@@ -9,7 +9,7 @@
 (provide get-opter reg-opter! opter
          interleave-lifts
          
-         make-opt/info
+         build-opt/info
          opt/info-contract
          opt/info-val
          opt/info-blame
@@ -22,6 +22,7 @@
          opt/info-swap-blame
          opt/info-add-blame-context
          opt/info-change-val
+         opt/info-positive-blame
          
          opt/unknown
          opt-error-name
@@ -148,12 +149,21 @@
 
 ;; struct for color-keeping across opters
 (define-struct opt/info
-  (contract val blame-stx swap-blame? free-vars recf base-pred this that))
+  (contract val blame-original-id blame-stx swap-blame? free-vars recf base-pred this that))
+(define (build-opt/info contract val blame-id free-vars this that)
+  (make-opt/info contract val blame-id blame-id #f free-vars #f #f this that))
 
 (define (opt/info-blame oi)
   (if (opt/info-swap-blame? oi)
     #`(blame-swap #,(opt/info-blame-stx oi))
     (opt/info-blame-stx oi)))
+
+;; returns syntax that, when evaluated, computes
+;; the name of the positive blame party
+(define (opt/info-positive-blame oi)
+  (if (opt/info-swap-blame? oi)
+      #`(blame-positive #,(opt/info-blame-original-id oi))
+      #`(blame-negative #,(opt/info-blame-original-id oi))))
 
 ;; opt/info-swap-blame : opt/info -> opt/info
 ;; swaps pos and neg

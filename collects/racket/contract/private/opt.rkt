@@ -229,7 +229,7 @@
          (values #'e (syntax-e #'x)))]))
   
   (parameterize ([opt-error-name error-name-sym])
-    (define info (make-opt/info #'ctc #'val #'blame #f '() #f #f #'this #'that))
+    (define info (build-opt/info #'ctc #'val #'blame '() #'this #'that))
     (define an-optres (opt/i info exp #:call-opt/unknown? #f))
     (if an-optres
         (bind-superlifts
@@ -258,7 +258,7 @@
      (cond
        [(top-level-unknown? #'e) #'(otherwise-id e val-e blame-e)]
        [else
-        (define info (make-opt/info #'ctc #'val #'blame #f '() #f #f #'this #'that))
+        (define info (build-opt/info #'ctc #'val #'blame '() #'this #'that))
         (define an-optres (opt/i info #'e))
         #`(let ([val val-e]
                 [blame blame-e])
@@ -302,9 +302,9 @@
   (syntax-case stx ()
     [(_ f1 f2 no-neg-blame? (id args ...) e)
      (let ()
-       (define info (make-opt/info #'ctc #'val #'blame #f 
+       (define info (build-opt/info #'ctc #'val #'blame 
                                    (syntax->list #'(args ...)) 
-                                   #f #f #'this #'that))
+                                   #'this #'that))
        ;; it seems like this syntax-local-value can fail when expand-once
        ;; is called, but otherwise I think it shouldn't fail
        (define bx (syntax-local-value #'no-neg-blame? (λ () #f)))

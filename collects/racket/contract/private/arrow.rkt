@@ -1768,64 +1768,6 @@ v4 todo:
     (append acc x)))
 
 
-
-;                       
-;                       
-;                       
-;                       
-;    ;          ;;; ;;; 
-;  ;;;              ;;; 
-;  ;;;;  ;;;;;  ;;; ;;; 
-;  ;;;; ;;;;;;; ;;; ;;; 
-;  ;;;  ;;  ;;; ;;; ;;; 
-;  ;;;    ;;;;; ;;; ;;; 
-;  ;;;  ;;; ;;; ;;; ;;; 
-;  ;;;; ;;; ;;; ;;; ;;; 
-;   ;;;  ;;;;;; ;;; ;;; 
-;                       
-;                       
-;                       
-;                       
-
-(define-syntax (apply-projections stx)
-  (syntax-case stx ()
-    [(_ ((x f) ...) e) 
-     (with-syntax ([count (length (syntax->list #'(x ...)))])
-       #'(let ([fs (list f ...)]
-               [thunk (λ () e)])
-           (call-with-immediate-continuation-mark
-            multiple-contract-key
-            (λ (first-mark)
-              (if (and first-mark
-                       (= (length first-mark) count)
-                       (andmap procedure-closure-contents-eq? fs first-mark))
-                  (thunk)
-                  (let-values ([(x ...) (with-continuation-mark multiple-contract-key fs
-                                          (thunk))])
-                    (values/drop (f x) ...)))))))]))
-
-
-(define multiple-contract-key (gensym 'multiple-contract-key))
-
-(define-syntax (apply-projection stx)
-  (syntax-case stx ()
-    [(_ ctc arg)
-     #'(apply-projection/proc ctc (λ () arg))]))
-
-(define single-contract-key (gensym 'single-contract-key))
-
-(define (apply-projection/proc ctc thnk)
-  (call-with-immediate-continuation-mark
-   single-contract-key
-   (λ (first-mark)  ;; note this is #f if there is no mark (so if #f can be a contract, something must change)
-     (if (and first-mark (procedure-closure-contents-eq? first-mark ctc))
-         (thnk)
-         (ctc
-          (with-continuation-mark single-contract-key ctc
-            (thnk)))))))
-
-
-
 ;                                                                                 
 ;                                                                                 
 ;                                                                                 
