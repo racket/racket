@@ -121,7 +121,7 @@ div.delete {
 }
 
 #footer {
-    width: 95%;
+    width: 90%;
     text-align: right;
     background: #F5F5DC;
     padding-right: 3em;
@@ -135,3 +135,11 @@ div.install {
     background: #F5F5DC;
     text-align: left;
 }
+
+.packages tr.proposal, .packages tr.proposal:nth-child(2n) {
+   background: rgb(90%, 70%, 90%);
+}
+.packages tr.problem, .packages tr.problem:nth-child(2n) {
+   background: rgb(90%, 70%, 70%);
+}
+

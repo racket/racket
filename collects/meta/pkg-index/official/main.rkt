@@ -98,6 +98,7 @@
    [("manage" "edit" (string-arg)) page/manage/edit]
    [("manage" "upload") page/manage/upload]
    [("curate") page/curate]
+   [("curate" "edit" (string-arg) (number-arg)) page/curate/edit]
    [else basic-start]))
 
 (define (page/main req)
@@ -105,7 +106,7 @@
 
 (define (format-time s)
   (if s
-    (parameterize ([date-display-format 'rfc2822])
+    (parameterize ([date-display-format 'iso-8601])
       (date->string (seconds->date s #f) #t))
     ""))
 
@@ -744,63 +745,37 @@
 (define (ring-format i)
   (format "~a" i))
 
-(define page/curate/edit
-  ;; XXX this should allow us to change the ring
-  page/manage/edit)
+(define (page/curate/edit req pkg dir)
+  (define u (current-user req #t))
+  (when (curation-administrator? u)
+    (define i (package-info pkg))
+    (package-info-set! 
+     pkg
+     (hash-set i 'ring (+ dir (package-ref i 'ring)))))
+  (redirect-to (main-url page/curate)))
 
-(define pkg-dirs-path (build-path root "pkg-dirs"))
-(make-directory* pkg-dirs-path)
-
-(define (download-package-source! src dest)
-  ;; XXX this should be provided by pkg/lib
-  (error 'download-package-source! "Not implemented"))
-
-(define (download-package! pkg pd)
-  (and
-   (with-handlers ([exn:fail? (λ (x) #f)])
-     (begin
-       (download-package-source!
-        (package-ref (package-info pkg) 'source)
-        pd)
-       #t))
-   (write-to-file (current-seconds)
-                  (path-add-suffix pd ".dl-time")
-                  #:exists 'replace)))
-
-(define (package-dir-up-to-date? pkg pd)
-  (define pd-dl-time-path (path-add-suffix pd ".dl-time"))
-  (and (file-exists? pd-dl-time-path)
-       (>= (file->value pd-dl-time-path)
-           (package-ref (package-info pkg) 'last-updated))))
-
-(define (package-dir pkg)
-  (define pd (build-path pkg-dirs-path pkg))
-  (and
-   (cond
-     [(not (directory-exists? pd))
-      (download-package! pkg pd)]
-     [(not (package-dir-up-to-date? pkg pd))
-      (download-package! pkg pd)])
-   pd))
-
-(define (package-dirs-conflict? left-d right right-d)
-  ;; XXX this should be provided by pkg/lib
-  #f)
+(define (module-lists-conflict? left right)
+  (define seen? (make-hash))
+  (for ([l (in-list left)])
+    (hash-set! seen? l #t))
+  (for/or ([r (in-list right)])
+    (hash-ref seen? r #f)))
 
 (define (page/curate req)
   (define u (current-user req #t))
   (define (packages-conflict? left right)
-    (define left-pd (package-dir left))
-    (define right-pd (package-dir right))
-    (and left-pd right-pd
-         (package-dirs-conflict? left-pd right right-pd)))
+    (define left-i (package-info left))
+    (define right-i (package-info right))
+    (define left-m (and left-i (hash-ref left-i 'modules #f)))
+    (define right-m (and right-i (hash-ref right-i 'modules #f)))
+    (if (and left-m right-m)
+      (module-lists-conflict? left-m right-m)
+      ;; We have to say #t here because otherwise things with no
+      ;; information won't be conflicting.
+      #t))
   (define (package-conflicts? pkg)
     (define other-pkgs (remove pkg (append (ring 0) (ring 1))))
-    (define conflicting-pkgs
-      (filter (curry packages-conflict? pkg) other-pkgs))
-    (if (empty? conflicting-pkgs)
-      #f
-      conflicting-pkgs))
+    (filter (curry packages-conflict? pkg) other-pkgs))
   (define (ring i)
     (package-list/search (list (format "ring:~a" i))))
   (cond
@@ -810,30 +785,49 @@
       #:breadcrumb
       (list "Packages"
             "Curation")
-      `(h1 "Ring 0 (conflicts)")
       ;; XXX maybe I should change these so that it
       ;;  1. displays a distinct link to change it to each ring
       ;;  2. displays the conflicts (if any)
       ;;  3. displays the update time
       ;;  4. doesn't display other stuff
-      ;;  5. highlights 'problems' (conflicts)
-      ;;  6. highlights 'proposals' (non-conflicting ring 2 stuff)
+      ;;  5. conflicts
+      ;;  6. proposals (ring 2 with no conflicts)
       ;; Then I think I will just need one table
-      (package-table page/curate/edit
-                     (filter package-conflicts? (ring 0)))
-      `(h1 "Ring 1 (conflicts)")
-      (package-table page/curate/edit
-                     (filter package-conflicts? (ring 1)))
-      `(h1 "Ring 2 (no conflicts)")
-      (package-table page/curate/edit
-                     (filter (negate package-conflicts?) (ring 2)))
-      `(h1 "Ring 0")
-      (package-table page/curate/edit (ring 0))
-      `(h1 "Ring 1")
-      (package-table page/curate/edit (ring 1))
-
-      `(h1 "Ring 2")
-      (package-table page/curate/edit (ring 2)))]
+      `(table
+        ([class "packages sortable"])
+        (thead
+         (tr (th "Ring") (th "Package") (th "Author") (th "Last Update") (th "Conflicts")))
+        (tbody
+         ,@(for/list ([p (in-list (package-list))])
+             (define i (package-info p))
+             (define author (package-ref i 'author))
+             (define r (package-ref i 'ring))
+             (define conflicts (package-conflicts? p))
+             (define lu (package-ref i 'last-updated))
+             `(tr
+               ([class
+                    ,(cond
+                       [(and (= r 2) (empty? conflicts))
+                        "proposal"]
+                       [(and (< r 2) (cons? conflicts))
+                        "problem"]
+                       [else ""])])
+               (td ,(if (< 0 r)
+                      `(a ([href ,(main-url page/curate/edit p -1)])
+                          blacktriangledown)
+                      `blacktriangledown)
+                   ,(number->string r)
+                   ,(if (< r 2)
+                      `(a ([href ,(main-url page/curate/edit p +1)])
+                          blacktriangle)
+                      `blacktriangle))
+               (td ,p)
+               (td ,author)               
+               (td ([sorttable_customkey ,(number->string lu)])
+                   ,(format-time lu))
+               (td 
+                ,@(for/list ([c (in-list conflicts)])
+                    `(span ,c " "))))))))]
     [else
      (template
       req
