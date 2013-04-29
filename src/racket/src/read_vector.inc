@@ -60,7 +60,7 @@ FUNC_NAME   (Scheme_Object *port,
     else {
       elm = ELM_MAKE_ZERO;
       if (stxsrc)
-	obj = scheme_make_stx_w_offset(obj, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG);
+	elm = ELM_STX(elm);
     }
 
     els = ELMS_SELECTOR(vec);
@@ -88,6 +88,7 @@ FUNC_NAME   (Scheme_Object *port,
 #undef ELMS_SELECTOR
 #undef ELM_SELECTOR
 #undef ELM_MAKE_ZERO
+#undef ELM_STX
 #undef VEC_SIZE
 
 /* vim: ft=c 

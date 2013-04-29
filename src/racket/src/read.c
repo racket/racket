@@ -3445,6 +3445,7 @@ char *scheme_extract_indentation_suggestions(Scheme_Object *indentation)
 #define ELMS_SELECTOR SCHEME_VEC_ELS
 #define ELM_SELECTOR
 #define ELM_MAKE_ZERO scheme_make_integer(0)
+#define ELM_STX(elm) scheme_make_stx_w_offset(elm, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG);
 #define VEC_SIZE SCHEME_VEC_SIZE
 #include "read_vector.inc"
 
@@ -3458,6 +3459,7 @@ char *scheme_extract_indentation_suggestions(Scheme_Object *indentation)
 #define ELMS_SELECTOR SCHEME_FXVEC_ELS
 #define ELM_SELECTOR
 #define ELM_MAKE_ZERO scheme_make_integer(0)
+#define ELM_STX(elm) elm
 #define VEC_SIZE SCHEME_FXVEC_SIZE
 #include "read_vector.inc"
 
@@ -3471,6 +3473,7 @@ char *scheme_extract_indentation_suggestions(Scheme_Object *indentation)
 #define ELMS_SELECTOR SCHEME_FLVEC_ELS
 #define ELM_SELECTOR SCHEME_DBL_VAL
 #define ELM_MAKE_ZERO 0.0
+#define ELM_STX(elm) elm
 #define VEC_SIZE SCHEME_FLVEC_SIZE
 #include "read_vector.inc"
 

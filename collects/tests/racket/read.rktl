@@ -438,6 +438,8 @@
 (test 0 vector-ref (readstr "#2()") 1)
 (test 2 vector-length (readstr "#000000000000000000000000000000002()"))
 
+(test 0 syntax->datum (vector-ref (syntax-e (read-syntax #f (open-input-string "#2()"))) 1))
+
 (err/rt-test (readstr "#2(1 2 3)") exn:fail:read?)
 (err/rt-test (readstr "#200000000000(1 2 3)") (readerrtype exn:fail:out-of-memory?))
 (err/rt-test (readstr "#111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111x1(1 2 3)") exn:fail:read?)
