@@ -300,8 +300,8 @@ Specializes a @racket[render<%>] class for generating Markdown text.
 
 Code blocks are marked using the
 @hyperlink["http://github.github.com/github-flavored-markdown/"
-"Github convention"] @verbatim{```scheme} so that they are lexed and
-formatted as Scheme code.}}
+"Github convention"] @verbatim{```racket} so that they are lexed and
+formatted as Racket code.}}
 
 @; ----------------------------------------
 
