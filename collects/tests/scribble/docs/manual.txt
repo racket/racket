@@ -165,3 +165,63 @@ A structure type with extra name, again.
   y : real?                             
 
 A mutable structure type with extra name, again.
+
+ (require "manual-ex0.rkt")
+
+ #lang "manual-ex0.rkt"
+
+ #reader "manual-ex0.rkt"
+
+1. Sub2
+
+ (require "manual-ex2.rkt")
+
+2. Sub2a
+
+ (require "manual-ex2a.rkt")
+
+3. Sub3
+
+ #lang "manual-ex3.rkt"
+
+4. Sub3a
+
+ #lang "manual-ex3a.rkt"
+
+5. Sub4-5
+
+ (require "manual-ex4.rkt")
+ (require "manual-ex5.rkt")
+
+6. Sub4a-5a
+
+ (require "manual-ex4a.rkt")
+ (require "manual-ex5a.rkt")
+
+7. Sub6
+
+ (load "manual-ex6.rkt")
+
+8. Sub6a
+
+ (load "manual-ex6a.rkt")
+
+9. Sub7
+
+ (require "manual-ex7.rkt")
+
+10. Sub7a
+
+ (require "manual-ex7a.rkt")
+
+11. Sub8
+
+ #reader "manual-ex8.rkt"
+
+12. Sub8a
+
+ #reader "manual-ex8a.rkt"
+
+13. Sub8b
+
+ #reader "manual-ex8b.rkt"

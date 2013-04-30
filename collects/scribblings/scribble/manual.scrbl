@@ -518,87 +518,90 @@ corresponding @racketidfont{racket...} binding.}
 @; ------------------------------------------------------------------------
 @section[#:tag "doc-modules"]{Documenting Modules}
 
-@defform/subs[(defmodule maybe-req id maybe-sources pre-flow ...)
+@defform/subs[(defmodule maybe-req one-or-multi option ... pre-flow ...)
               ([maybe-req code:blank
-                          (code:line #:require-form expr)]
-               [maybe-sources code:blank
-                              (code:line #:use-sources (mod-path ...))])]{
+                          (code:line #:require-form content-expr)]
+               [one-or-multi module-spec
+                             (code:line #:multi (module-spec ...+))]
+               [module-spec module-path
+                            content-expr]
+               [option (code:line #:module-paths (module-path ...))
+                       #:no-declare
+                       (code:line #:use-sources (src-module-path ...))
+                       (code:line #:link-target? link-target?-expr)
+                       #:lang
+                       #:reader])]{
 
-Produces a sequence of flow elements (encaptured in a @racket[splice])
-to start the documentation for a module that can be @racket[require]d
-using the path @racket[id]. The @tech{decode}d @racket[pre-flow]s
-introduce the module, but need not include all of the module content.
+Produces a sequence of flow elements (in a @racket[splice])
+to start the documentation for a module---or for multiple modules, if
+the @racket[#:multi] form is used.
 
-Besides generating text, this form expands to a use of
-@racket[declare-exporting] with @racket[id]; the
-@racket[#:use-sources] clause, if provided, is propagated to
-@racket[declare-exporting]. Consequently, @racket[defmodule] should be
-used at most once in a section, though it can be shadowed with
-@racket[defmodule]s in sub-sections.
+Each documented module specified as either a @racket[module-path] (in
+the sense of @racket[require]), in which case the module path is
+typeset using @racket[racketmodname], or by a
+@racket[content-expr]. The latter case is triggered by the presence of
+a @racket[#:module-paths] clause, which provides a plain
+@racket[module-path] for each @racket[module-spec], and the plain
+@racket[module-path] is used for cross-referencing.
 
-If a @racket[#:require-form] clause is provided, the given expression
-produces an element to use instead of @racket[require] for
-the declaration of the module. This is useful to suggest a different
-way of accessing the module instead of through @racket[require].
+If a @racket[#:require-form] clause is provided and if @racket[#:lang]
+and @racket[#:reader] are not provided, the given expression produces
+content to use instead of @racket[require] for the declaration of the
+module. The @racket[#:require-form] clause is useful to suggest a
+different way of accessing the module instead of through
+@racket[require].
 
-Hyperlinks created by @racket[racketmodname] are associated with the
-enclosing section, rather than the local @racket[id] text.}
+Besides generating text, unless @racket[#:no-declare] appears as an
+option, this form expands to a use of @racket[declare-exporting] with
+@racket[module-path]s; the @racket[#:use-sources] clause, if provided,
+is propagated to @racket[declare-exporting]. Consequently,
+@racket[defmodule] should be used at most once in a section without
+@racket[#:no-declare], though it can be shadowed with
+@racket[defmodule]s in sub-sections.  Use @racket[#:no-declare] form
+when you want to provide a more specific list of modules (e.g., to
+name both a specific module and one that combines several modules) via
+your own @racket[declare-exporting] declaration
+
+Unless @racket[#:link-target?] is specified with an expression that
+produces a true value, then the @racket[module-path]s are also
+declared as link targets though a @racket[part-tag-decl] (which means
+that the @racket[defmodule] form must appear before any
+sub-parts). These link targets are referenced via
+@racket[racketmodname], which thus points to the enclosing section,
+rather than the individual @racket[module-path]s.
+
+If @racket[#:lang] is provided as an option, then the module name is
+shown after @hash-lang[] (instead of in a @racket[require] form) to
+indicate that the @racket[module-path]s are suitable for use by either
+@racket[require] or @hash-lang[].  If the module path for
+@racket[require] is syntactically different from the @hash-lang[]
+form, use @racket[#:module-paths] to provide the @racket[require]
+variant (and make each @racket[module-spec] a @racket[content-expr]).
+
+If @racket[#:reader] is provided, then the module name is shown after
+@racketmetafont{#reader} to indicate that the module path is intended
+for use as a reader module.
+
+Each @racket[option] form can appear at most once, and @racket[#:lang]
+and @racket[#:reader] are mutually exclusive.
+
+The @tech{decode}d @racket[pre-flow]s introduce the module, but need
+not include all of the module content.}
 
 
-@defform*[[(defmodulelang id maybe-sources pre-flow ...)
-           (defmodulelang content-expr #:module-paths (mod-path ...) 
-                          maybe-sources pre-flow ...)]]{
-
-Like @racket[defmodule], but documents @racket[id] as a module path
-suitable for use by either @racket[require] or @hash-lang[].  If the
-module path for @racket[require] is syntactically different from the
-@hash-lang[] form, use the @racket[#:module-paths] to provide them
-separately.}
-
-@defform[(defmodulereader id maybe-sources pre-flow ...)]{
-
-Like @racket[defmodule], but documents @racket[id] as a module path
-suitable for use with @racketmetafont{#reader}.}
-
-
-@deftogether[(
-@defform[(defmodule* maybe-req  (id ...+) maybe-sources pre-flow ...)]
-@defform*[[(defmodulelang* (id ...+) maybe-sources pre-flow ...)
-           (defmodulelang* (content-expr ...+) #:module-paths (mod-path ...+) 
-                           maybe-sources pre-flow ...)]]
-@defform[(defmodulereader* (id ...+) maybe-sources pre-flow ...)]
-)]{
-
-Like @racket[defmodule], etc., but introduces multiple module paths instead
-of just one.}
-
-@deftogether[(
-@defform[(defmodule*/no-declare maybe-req (id ...) pre-flow ...)]
-@defform*[[(defmodulelang*/no-declare (id ...) pre-flow ...)
-           (defmodulelang*/no-declare (content-expr ...) 
-                                      #:module-paths (mod-path ...+) pre-flow ...)]]
-@defform[(defmodulereader*/no-declare (id ...) pre-flow ...)]
-)]{
-
-Like @racket[defmodule*], etc., but without expanding to
-@racket[declare-exporting]. Use this form when you want to provide a
-more specific list of modules (e.g., to name both a specific module
-and one that combines several modules) via your own
-@racket[declare-exporting] declaration.}
-
-@defform/subs[(declare-exporting mod-path ... maybe-sources)
+@defform/subs[(declare-exporting module-path ... maybe-sources)
               ([maybe-sources code:blank
-                              (code:line #:use-sources (mod-path ...))])]{
+                              (code:line #:use-sources (module-path ...))])]{
 
-Associates the @racket[mod-path]s to all bindings defined within the
+Associates the @racket[module-path]s to all bindings defined within the
 enclosing section, except as overridden by other
 @racket[declare-exporting] declarations in nested sub-sections.  The
-list of @racket[mod-path]s before @racket[#:use-sources] is shown, for
+list of @racket[module-path]s before @racket[#:use-sources] is shown, for
 example, when the user hovers the mouse over one of the bindings
 defined within the section.
 
-More significantly, the first @racket[mod-path] before
-@racket[#:use-sources] plus the @racket[mod-path]s after
+More significantly, the first @racket[module-path] before
+@racket[#:use-sources] plus the @racket[module-path]s after
 @racket[#:use-sources] determine the binding that is documented by
 each @racket[defform], @racket[defproc], or similar form within the
 section that contains the @racket[declare-exporting] declaration:
@@ -607,15 +610,15 @@ section that contains the @racket[declare-exporting] declaration:
 
  @item{If no @racket[#:use-sources] clause is supplied, then the
        documentation applies to the given name as exported by the first
-       @racket[mod-path].}
+       @racket[module-path].}
 
- @item{If @racket[#:use-sources] @racket[mod-path]s are supplied, then
-       they are tried in order before the first @racket[mod-path]. The
-       @racket[mod-path] that provides an export with the same
+ @item{If @racket[#:use-sources] @racket[module-path]s are supplied, then
+       they are tried in order before the first @racket[module-path]. The
+       @racket[module-path] that provides an export with the same
        symbolic name and @racket[free-label-identifier=?] to the given
        name is used as the documented binding. This binding is assumed
        to be the same as the identifier as exported by the first
-       @racket[mod-path] in the @racket[declare-exporting]
+       @racket[module-path] in the @racket[declare-exporting]
        declaration.}
 
 ]
@@ -651,11 +654,11 @@ documentation for @racketmodname[racket/base] (unless a re-export has
 its own documentation, which would override the automatic connection
 when searching for documentation).
 
-The initial @racket[mod-path]s sequence can be empty if
-@racket[mod-path]s are given with @racket[#:use-sources]. In that
+The initial @racket[module-path]s sequence can be empty if
+@racket[module-path]s are given with @racket[#:use-sources]. In that
 case, the rendered documentation never reports an exporting module for
 identifiers that are documented within the section, but the
-@racket[mod-path]s in @racket[#:use-sources] provide a binding context
+@racket[module-path]s in @racket[#:use-sources] provide a binding context
 for connecting (via hyperlinks) definitions and uses of identifiers.
 
 The @racket[declare-exporting] form should be used no more than once
@@ -670,6 +673,31 @@ sub-sections.}
  additional notes are welcome. 
 }
 
+
+@defform*[[(defmodulelang one-or-multi maybe-sources option ... pre-flow ...)
+           (defmodulelang one-or-multi #:module-path module-path
+                          option ... pre-flow ...)]]{
+Equivalent to @racket[defmodule] with @racket[#:lang]. The
+@racket[#:module-path module-path] is provided, it is converted to
+@racket[#:module-paths (module-path)].}
+
+@defform[(defmodulereader one-or-multi option ... pre-flow ...)]{
+Equivalent to @racket[defmodule] with @racket[#:reader].}
+
+
+@deftogether[(
+@defform[(defmodule* maybe-req (module-spec ...+) option ... pre-flow ...)]
+@defform[(defmodulelang* (module-spec ...+) option ... pre-flow ...)]
+@defform[(defmodulereader* (module-spec ...+) option ... pre-flow ...)]
+)]{
+Equivalent to @racket[defmodule] variants with @racket[#:multi].}
+
+@deftogether[(
+@defform[(defmodule*/no-declare maybe-req (module-spec ...) option ... pre-flow ...)]
+@defform[(defmodulelang*/no-declare (module-spec ...) option ... pre-flow ...)]
+@defform[(defmodulereader*/no-declare (module-spec ...) option ... pre-flow ...)]
+)]{
+Equivalent to @racket[defmodule] variants @racket[#:no-declare].}
 
 @; ------------------------------------------------------------------------
 @section[#:tag "doc-forms"]{Documenting Forms, Functions, Structure Types, and Values}

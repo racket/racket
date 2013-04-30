@@ -6,7 +6,8 @@
          "manual-ex.rkt"
          "manual-style.rkt"
          "manual-scheme.rkt"
-         (for-syntax scheme/base)
+         (for-syntax scheme/base
+                     syntax/parse)
          (for-label scheme/base))
 
 (provide defmodule defmodule* 
@@ -39,91 +40,134 @@
 
 (define spacer (hspace 1))
 
+(begin-for-syntax
+ (define-splicing-syntax-class link-target?-kw
+   #:description "#:link-target? keyword"
+   (pattern (~seq #:link-target? expr))
+   (pattern (~seq)
+            #:with expr #'#t)))
+
+(define-syntax (defmodule stx)
+  (syntax-parse stx
+    [(_ (~or (~seq #:require-form req)
+             (~seq))
+        (~or (~seq #:multi (name2 ...))
+             name)
+        (~or (~optional (~seq #:link-target? link-target-expr)
+                        #:defaults ([link-target-expr #'#t]))
+             (~optional (~seq #:use-sources (pname ...)))
+             (~optional (~seq #:module-paths (modpath ...)))
+             (~optional (~and #:no-declare no-declare))
+             (~optional (~or (~and #:lang language)
+                             (~and #:reader readr))))
+        ...
+        . content)
+     (with-syntax ([(name2 ...) (if (attribute name)
+                                    #'(name)
+                                    #'(name2 ...))]
+                   [(pname ...) (if (attribute pname)
+                                    #'(pname ...)
+                                    #'())])
+       (with-syntax ([(decl-exp ...)
+                      (if (attribute no-declare)
+                          #'()
+                          (if (attribute modpath)
+                              #'((declare-exporting modpath ... #:use-sources (pname ...)))
+                              #'((declare-exporting name2 ... #:use-sources (pname ...)))))]
+                     [kind (cond
+                            [(attribute language) #'#t]
+                            [(attribute readr) #''reader]
+                            [else #'#f])]
+                     [modpaths (if (attribute modpath)
+                                   #'(list (racketmodname modpath) ...)
+                                   #'#f)]
+                     [req (if (attribute req)
+                              #'req
+                              #'(racket require))]
+                     [(show-name ...)
+                      (if (attribute modpath)
+                          #'(name2 ...)
+                          #'((racketmodname name2) ...))])
+         #'(begin
+             decl-exp ...
+             (*defmodule (list show-name ...)
+                         modpaths
+                         link-target-expr
+                         kind
+                         (list . content)
+                         req))))]))
+
+;; ----------------------------------------
+;; old forms for backward compatibility:
+
 (define-syntax defmodule*/no-declare
   (syntax-rules ()
     [(_ #:require-form req (name ...) . content)
-     (*defmodule (list (racketmodname name) ...)
-                 #f
-                 #f
-                 (list . content)
-                 req)]
+     (defmodule #:require-form req
+       #:names (name ...)
+       #:no-declare
+       . content)]
     [(_ (name ...) . content)
-     (defmodule*/no-declare #:require-form (racket require) (name ...)
+     (defmodule #:multi (name ...)
+       #:no-declare
        . content)]))
 
 (define-syntax defmodule*
   (syntax-rules ()
-    [(_ #:require-form req (name ...) #:use-sources (pname ...) . content)
-     (begin (declare-exporting name ... #:use-sources (pname ...))
-            (defmodule*/no-declare #:require-form req (name ...) . content))]
-    [(_ #:require-form req (name ...) . content)
-     (defmodule* #:require-form req (name ...) #:use-sources () . content)]
-    [(_ (name ...) #:use-sources (pname ...) . content)
-     (defmodule* #:require-form (racket require) (name ...) #:use-sources (pname ...)
-       . content)]
-    [(_ (name ...) . content)
-     (defmodule* (name ...) #:use-sources () . content)]))
-
-(define-syntax defmodule
-  (syntax-rules ()
-    [(_ #:require-form req name . content)
-     (defmodule* #:require-form req (name) . content)]
-    [(_ name . content)
-     (defmodule* (name) . content)]))
+    [(_ #:require-form req (name ...) . options+content)
+     (defmodule #:require-form req #:multi (name ...)
+       . options+content)]
+    [(_ (name ...) . options+content)
+     (defmodule #:multi (name ...) . options+content)]))
 
 (define-syntax defmodulelang*/no-declare
   (syntax-rules ()
-    [(_ (lang ...) #:module-paths (modpath ...) . content)
-     (*defmodule (list lang ...)
-                 (list (racketmodname modpath) ...)
-                 #t (list . content) #f)]
-    [(_ (lang ...) . content)
-     (*defmodule (list (racketmodname lang) ...)
-                 #f #t (list . content) #f)]))
+    [(_ (lang ...) . options+content)
+     (defmodule #:multi (lang ...)
+       #:lang
+       #:no-declare
+       . options+content)]))
 
 (define-syntax defmodulelang*
   (syntax-rules ()
-    [(_ (name ...) #:module-paths (modpath ...)
-        #:use-sources (pname ...)
-        . content)
-     (begin (declare-exporting modpath ... #:use-sources (pname ...))
-            (defmodulelang*/no-declare (name ...)
-              #:module-paths (modpath ...)
-              . content))]
-    [(_ (name ...) #:module-paths (modpath ...) . content)
-     (defmodulelang* (name ...)
-       #:module-paths (modpath ...)
-       #:use-sources () . content)]
-    [(_ (name ...) #:use-sources (pname ...) . content)
-     (defmodulelang* ((racketmodname name) ...)
-       #:module-paths (name ...)
-       #:use-sources (pname ...) . content)]
-    [(_ (name ...) . content)
-     (defmodulelang* (name ...) #:use-sources () . content)]))
+    [(_ (name ...) . options+content)
+     (defmodule #:multi (name ...)
+       #:lang
+       . options+content)]))
 
 (define-syntax defmodulelang
   (syntax-rules ()
-    [(_ lang #:module-path modpath . content)
-     (defmodulelang* (lang) #:module-paths (modpath) . content)]
-    [(_ lang . content)
-     (defmodulelang* (lang) . content)]))
+    [(_ lang #:module-path modpath . options+content)
+     (defmodule lang
+       #:module-paths (modpath)
+       #:lang
+       . options+content)]
+    [(_ lang . options+content)
+     (defmodule lang
+       #:lang
+       . options+content)]))
 
-(define-syntax-rule (defmodulereader*/no-declare (lang ...) . content)
-  (*defmodule (list (racketmodname lang) ...)
-              #f 'reader (list . content) #f))
+(define-syntax-rule (defmodulereader*/no-declare (lang ...) . options+content)
+  (defmodule #:multi (lang ...)
+    #:reader
+    #:no-declare
+    . options+content))
 
 (define-syntax defmodulereader*
   (syntax-rules ()
-    [(_ (name ...) #:use-sources (pname ...) . content)
-     (begin (declare-exporting name ... #:use-sources (pname ...))
-            (defmodulereader*/no-declare (name ...) . content))]
-    [(_ (name ...) . content)
-     (defmodulereader* (name ...) #:use-sources () . content)]))
+    [(_ (name ...) . options+content)
+     (defmodule #:multi (name ...)
+       #:reader
+       . options+content)]))
 
-(define-syntax-rule (defmodulereader lang . content)
-  (defmodulereader* (lang) . content))
+(define-syntax-rule (defmodulereader lang . options+content)
+  (defmodule lang
+    #:reader
+    . options+content))
 
-(define (*defmodule names modpaths lang content req)
+;; ----------------------------------------
+
+(define (*defmodule names modpaths link-target? lang content req)
   (let ([modpaths (or modpaths names)])
     (make-splice
      (cons
@@ -131,6 +175,9 @@
        "defmodule"
        (map
         (lambda (name modpath)
+          (define modname (if link-target?
+                              (make-defracketmodname name modpath)
+                              name))
           (list
            (make-flow
             (list
@@ -139,21 +186,24 @@
                spacer
                (case lang
                  [(#f)
-                  (list (racket (#,req #,(make-defracketmodname name modpath))))]
+                  (list (racket (#,req #,modname)))]
                  [(#t)
-                  (list (hash-lang) spacer (make-defracketmodname name modpath))]
+                  (list (hash-lang) spacer modname)]
                  [(reader)
-                  (list (racketmetafont "#reader") spacer (make-defracketmodname name modpath))]
+                  (list (racketmetafont "#reader") spacer modname)]
                  [(just-lang)
-                  (list (hash-lang) spacer (make-defracketmodname name modpath))])))))))
+                  (list (hash-lang) spacer modname)]
+                 [else (error 'defmodule "unknown mode: ~e" lang)])))))))
         names
         modpaths))
-      (append (map (lambda (modpath)
-                     (make-part-tag-decl 
-                      (intern-taglet
-                       `(mod-path ,(datum-intern-literal
-                                    (element->string modpath))))))
-                   modpaths)
+      (append (if link-target?
+                  (map (lambda (modpath)
+                         (make-part-tag-decl 
+                          (intern-taglet
+                           `(mod-path ,(datum-intern-literal
+                                        (element->string modpath))))))
+                       modpaths)
+                  null)
               (flow-paragraphs (decode-flow content)))))))
 
 (define the-module-path-index-desc (make-module-path-index-desc))
