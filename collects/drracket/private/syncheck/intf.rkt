@@ -26,7 +26,8 @@
     syncheck:get-bindings-table
     syncheck:jump-to-next-bound-occurrence
     syncheck:jump-to-binding-occurrence
-    syncheck:jump-to-definition))
+    syncheck:jump-to-definition
+    syncheck:rename-identifier))
 
 ;; use this to communicate the frame being
 ;; syntax checked w/out having to add new

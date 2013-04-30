@@ -674,6 +674,34 @@ If the namespace does not, they are colored the unbound color.
                         (rename-menu-callback frame-parent
                                               name-to-offer
                                               an-identifier-location-set)))]))
+            
+            (define/public (syncheck:rename-identifier text)
+              (when arrow-records                
+                (define arrow-record (hash-ref arrow-records text #f))
+                (define (find-ils pos)
+                  (define vec-ents (interval-map-ref arrow-record pos null))
+                  (for/or ([x (in-list vec-ents)])
+                    (and (identifier-location-set? x)
+                         x)))
+                (define an-identifier-location-set 
+                  (or (find-ils (send text get-start-position))
+                      (and (= (send text get-start-position) 
+                              (send text get-end-position))
+                           (find-ils (- (send text get-start-position) 1)))))
+                (when an-identifier-location-set
+                  (define example-lst (set-first (uf-find (identifier-location-set-set an-identifier-location-set))))
+                  (define name-to-offer (send (list-ref example-lst 0) get-text
+                                              (list-ref example-lst 1)
+                                              (list-ref example-lst 2)))
+                  (define frame-parent
+                    (let ([canvas (send text get-canvas)])
+                      (and canvas
+                           (send canvas get-top-level-window))))
+                  (rename-menu-callback frame-parent
+                                        name-to-offer
+                                        an-identifier-location-set))))
+            
+            
               
             ;; rename-callback : string 
             ;;                   (and/c syncheck-text<%> definitions-text<%>)
@@ -2137,7 +2165,7 @@ If the namespace does not, they are colored the unbound color.
                       (when (is-a? frame syncheck-frame<%>)
                         (send frame syncheck:button-callback))))))))
       
-      (let ([jump-callback
+      (let ([cs-callback
              (λ (send-msg)
                (λ (obj evt)
                  (when (is-a? obj text%)
@@ -2150,16 +2178,20 @@ If the namespace does not, they are colored the unbound color.
                                (send-msg defs obj))))))))))])
         (send keymap add-function
               "jump to binding occurrence"
-              (jump-callback (λ (defs obj) (send defs syncheck:jump-to-binding-occurrence obj))))
+              (cs-callback (λ (defs obj) (send defs syncheck:jump-to-binding-occurrence obj))))
         (send keymap add-function
               "jump to next bound occurrence"
-              (jump-callback (λ (defs obj) (send defs syncheck:jump-to-next-bound-occurrence obj))))
+              (cs-callback (λ (defs obj) (send defs syncheck:jump-to-next-bound-occurrence obj))))
         (send keymap add-function
               "jump to previous bound occurrence"
-              (jump-callback (λ (defs obj) (send defs syncheck:jump-to-next-bound-occurrence obj #t))))
+              (cs-callback (λ (defs obj) (send defs syncheck:jump-to-next-bound-occurrence obj #t))))
         (send keymap add-function
               "jump to definition (in other file)"
-              (jump-callback (λ (defs obj) (send defs syncheck:jump-to-definition obj)))))
+              (cs-callback (λ (defs obj) (send defs syncheck:jump-to-definition obj))))
+        (send keymap add-function
+              "rename identifier"
+              (cs-callback (λ (defs obj) 
+                             (send defs syncheck:rename-identifier obj)))))
       
       (send keymap map-function "f6" "check syntax")
       (send keymap map-function "c:c;c:c" "check syntax")
@@ -2167,6 +2199,7 @@ If the namespace does not, they are colored the unbound color.
       (send keymap map-function "c:x;n" "jump to next bound occurrence")
       (send keymap map-function "c:x;p" "jump to previous bound occurrence")
       (send keymap map-function "c:x;d" "jump to definition (in other file)")
+      (send keymap map-function "c:x;m" "rename identifier")
       
       (send keymap add-function "show/hide blue boxes in upper-right corner"
             (λ (txt evt)

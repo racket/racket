@@ -23,6 +23,7 @@
   syncheck:jump-to-next-bound-occurrence
   syncheck:jump-to-binding-occurrence
   syncheck:jump-to-definition
+  syncheck:rename-identifier
   
   syncheck:clear-highlighting
   syncheck:apply-style/remember
