@@ -5,7 +5,8 @@
           (only-in scribble/core link-element)
           "../quick/keep.rkt"
           (only-in xrepl/doc-utils [cmd xreplcmd])
-          (for-label scheme
+          (for-label racket/base
+                     racket/tcp
                      racket/enter
                      xrepl
                      readline
