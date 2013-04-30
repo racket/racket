@@ -15,14 +15,7 @@ reflects this organization with a notation for module declarations.
 A module declaration often prefaces the beginning of a section
 or subsection:
 
-@; TODO: change `defmodule` to support this
-@(make-table "defmodule"
-  (list
-   (list
-    (make-flow
-     (list
-      (make-omitable-paragraph
-       (list (hspace 1) (racket (require racket/list)))))))))
+@(defmodule racket/list #:no-declare #:link-target? #f)
 
 The preceding @racket[require] statement in a section indicates that the bindings that are
 documented in the section are available from the @racketmodname[racket/list] module.
@@ -30,14 +23,7 @@ documented in the section are available from the @racketmodname[racket/list] mod
 Instead of @racket[require], some module declarations are written with
 @hash-lang[]:
 
-@; TODO: change `defmodule` to support this
-@(make-table "defmodule"
-  (list
-   (list
-    (make-flow
-     (list
-      (make-omitable-paragraph
-       (list (hspace 1) @hash-lang[]  (hspace 1) (racket racket/base))))))))
+@(defmodule racket/base #:lang #:no-declare #:link-target? #f)
 
 Using @hash-lang[] means that the module is normally used as a
 language, instead of imported with @racket[require]. Unless otherwise
