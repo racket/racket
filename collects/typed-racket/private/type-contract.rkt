@@ -142,9 +142,9 @@
     (let loop ([ty ty] [typed-side (if typed-side 'typed 'untyped)] [structs-seen null] [kind kind])
       (define (t->c t #:seen [structs-seen structs-seen] #:kind [kind kind])
         (loop t typed-side structs-seen kind))
-      (define (t->c/neg t #:seen [structs-seen structs-seen] #:flat [kind kind])
+      (define (t->c/neg t #:seen [structs-seen structs-seen] #:kind [kind kind])
         (loop t (flip-side typed-side) structs-seen kind))
-      (define (t->c/both t #:seen [structs-seen structs-seen] #:flat [kind kind])
+      (define (t->c/both t #:seen [structs-seen structs-seen] #:kind [kind kind])
         (loop t 'both structs-seen kind))
       (define (t->c/fun f #:method [method? #f])
         (match f
