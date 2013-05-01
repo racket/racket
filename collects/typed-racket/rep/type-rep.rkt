@@ -1,4 +1,8 @@
 #lang racket/base
+
+;; This module provides type representations and utility functions
+;; and pattern matchers on types
+
 (require "../utils/utils.rkt")
 
 (require (utils tc-utils)
@@ -7,6 +11,34 @@
          racket/contract
          racket/lazy-require
          (for-syntax racket/base syntax/parse))
+
+(provide Mu-name:
+         Poly-names: Poly-fresh:
+         PolyDots-names:
+         Type-seq
+         Mu-unsafe: Poly-unsafe:
+         PolyDots-unsafe:
+         Mu? Poly? PolyDots?
+         Filter? Object?
+         Type/c Type/c?
+         Values/c SomeValues/c
+         Poly-n
+         PolyDots-n
+         free-vars*
+         type-compare type<?
+         remove-dups
+         sub-f sub-o sub-pe
+         (rename-out [Mu:* Mu:]
+                     [Poly:* Poly:]
+                     [PolyDots:* PolyDots:]
+                     [Mu* make-Mu]
+                     [Poly* make-Poly]
+                     [PolyDots* make-PolyDots]
+                     [Mu-body* Mu-body]
+                     [Poly-body* Poly-body]
+                     [PolyDots-body* PolyDots-body]))
+
+(provide/cond-contract [type-equal? (Rep? Rep? . -> . boolean?)])
 
 ;; Ugly hack - should use units
 (lazy-require
@@ -769,35 +801,5 @@
                  (list nps bp)))])))
 
 ;(trace subst subst-all)
-
-
-(provide
- Mu-name:
- Poly-names: Poly-fresh:
- PolyDots-names:
- Type-seq
- Mu-unsafe: Poly-unsafe:
- PolyDots-unsafe:
- Mu? Poly? PolyDots?
- Filter? Object?
- Type/c Type/c?
- Values/c SomeValues/c
- Poly-n
- PolyDots-n
- free-vars*
- type-compare type<?
- remove-dups
- sub-f sub-o sub-pe
- (rename-out [Mu:* Mu:]
-             [Poly:* Poly:]
-             [PolyDots:* PolyDots:]
-             [Mu* make-Mu]
-             [Poly* make-Poly]
-             [PolyDots* make-PolyDots]
-             [Mu-body* Mu-body]
-             [Poly-body* Poly-body]
-             [PolyDots-body* PolyDots-body]))
-
-(provide/cond-contract [type-equal? (Rep? Rep? . -> . boolean?)])
-
 ;(trace unfold)
+
