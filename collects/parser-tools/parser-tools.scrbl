@@ -51,8 +51,10 @@ style lexer and parser generators.
                    (id datum ...)])]{
 
      Produces a function that takes an input-port, matches the
-     @racket[re]'s against the buffer, and returns the result of
-     executing the corresponding @racket[action-expr].
+     @racket[re] patterns against the buffer, and returns the result of
+     executing the corresponding @racket[action-expr]. When multiple
+     patterns match, a lexer will choose the longest match, breaking
+     ties in favor of the rule appearing first.
 
      @margin-note{The implementation of @racketmodname[syntax-color/racket-lexer]
                  contains a lexer for the @racketmodname[racket] language.
