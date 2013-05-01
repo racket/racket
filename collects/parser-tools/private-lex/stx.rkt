@@ -1,37 +1,38 @@
-(module stx mzscheme
-  (require "util.rkt"
-           syntax/id-table)
-  
-  (provide parse)
+#lang racket
 
-  (define (bad-args stx num)
-    (raise-syntax-error
-     #f
-     (format "incorrect number of arguments (should have ~a)" num)
-     stx))
+(require "util.rkt"
+         syntax/id-table)
+
+(provide parse)
   
-  ;; char-range-arg: syntax-object syntax-object -> nat
-  ;; If c contains is a character or length 1 string, returns the integer
-  ;; for the character.  Otherwise raises a syntax error.
-  (define (char-range-arg stx containing-stx)
-    (let ((c (syntax-e stx)))
-      (cond
-        ((char? c) (char->integer c))
-        ((and (string? c) (= (string-length c) 1))
-         (char->integer (string-ref c 0)))
-        (else
-         (raise-syntax-error
-          #f
-          "not a char or single-char string"
-          containing-stx stx)))))
-  (test-block ()
-              ((char-range-arg #'#\1 #'here) (char->integer #\1))
-              ((char-range-arg #'"1" #'here) (char->integer #\1)))
-  
-  (define orig-insp (variable-reference->module-declaration-inspector
-                     (#%variable-reference)))
-  (define (disarm stx)
-    (syntax-disarm stx orig-insp))
+(define (bad-args stx num)
+  (raise-syntax-error
+   #f
+   (format "incorrect number of arguments (should have ~a)" num)
+   stx))
+
+;; char-range-arg: syntax-object syntax-object -> nat
+;; If c contains is a character or length 1 string, returns the integer
+;; for the character.  Otherwise raises a syntax error.
+(define (char-range-arg stx containing-stx)
+  (let ((c (syntax-e stx)))
+    (cond
+      ((char? c) (char->integer c))
+      ((and (string? c) (= (string-length c) 1))
+       (char->integer (string-ref c 0)))
+      (else
+       (raise-syntax-error
+        #f
+        "not a char or single-char string"
+        containing-stx stx)))))
+(module+ test
+  (check-equal? (char-range-arg #'#\1 #'here) (char->integer #\1))
+  (check-equal? (char-range-arg #'"1" #'here) (char->integer #\1)))
+
+(define orig-insp (variable-reference->module-declaration-inspector
+                   (#%variable-reference)))
+(define (disarm stx)
+  (syntax-disarm stx orig-insp))
 
   ;; parse : syntax-object (box (list-of syntax-object)) -> s-re (see re.rkt)
   ;; checks for errors and generates the plain s-exp form for s
@@ -170,41 +171,50 @@
             (and (= 2 (length s-re)) (char-set? (cadr s-re))))
            (else #f))))
       (else #f)))
-  (test-block ()
-              ((char-set? #\a) #t)
-              ((char-set? "12") #f)
-              ((char-set? "1") #t)
-              ((char-set? '(repetition 1 2 #\1)) #f)
-              ((char-set? '(repetition 1 1 "12")) #f)
-              ((char-set? '(repetition 1 1 "1")) #t)
-              ((char-set? '(union "1" "2" "3")) #t)
-              ((char-set? '(union "1" "" "3")) #f)
-              ((char-set? '(intersection "1" "2" (union "3" "4"))) #t)
-              ((char-set? '(intersection "1" "")) #f)
-              ((char-set? '(complement "1")) #f)
-              ((char-set? '(concatenation "1" "2")) #f)
-              ((char-set? '(concatenation "" "2")) #f)
-              ((char-set? '(concatenation "1")) #t)
-              ((char-set? '(concatenation "12")) #f)
-              ((char-set? '(char-range #\1 #\2)) #t)
-              ((char-set? '(char-complement #\1)) #t))
+  
+  (module+ test
+    (require rackunit))
+  (module+ test
+    (check-equal? (char-set? #\a) #t)
+    (check-equal? (char-set? "12") #f)
+    (check-equal? (char-set? "1") #t)
+    (check-equal? (char-set? '(repetition 1 2 #\1)) #f)
+    (check-equal? (char-set? '(repetition 1 1 "12")) #f)
+    (check-equal? (char-set? '(repetition 1 1 "1")) #t)
+    (check-equal? (char-set? '(union "1" "2" "3")) #t)
+    (check-equal? (char-set? '(union "1" "" "3")) #f)
+    (check-equal? (char-set? '(intersection "1" "2" (union "3" "4"))) #t)
+    (check-equal? (char-set? '(intersection "1" "")) #f)
+    (check-equal? (char-set? '(complement "1")) #f)
+    (check-equal? (char-set? '(concatenation "1" "2")) #f)
+    (check-equal? (char-set? '(concatenation "" "2")) #f)
+    (check-equal? (char-set? '(concatenation "1")) #t)
+    (check-equal? (char-set? '(concatenation "12")) #f)
+    (check-equal? (char-set? '(char-range #\1 #\2)) #t)
+    (check-equal? (char-set? '(char-complement #\1)) #t))
 
-  (test-block ()
-              ((parse #'#\a) #\a)
-              ((parse #'"1") "1")
-              ((parse #'(repetition 1 1 #\1)) '(repetition 1 1 #\1))
-              ((parse #'(repetition 0 +inf.0 #\1)) '(repetition 0 +inf.0 #\1))
-              ((parse #'(union #\1 (union "2") (union)))
-               '(union #\1 (union "2") (union)))
-              ((parse #'(intersection #\1 (intersection "2") (intersection)))
-               '(intersection #\1 (intersection "2") (intersection)))
-              ((parse #'(complement (union #\1 #\2)))
-               '(complement (union #\1 #\2)))
-              ((parse #'(concatenation "1" "2" (concatenation)))
-               '(concatenation "1" "2" (concatenation)))
-              ((parse #'(char-range "1" #\1)) '(char-range #\1 #\1))
-              ((parse #'(char-range #\1 "1")) '(char-range #\1 #\1))
-              ((parse #'(char-range "1" "3")) '(char-range #\1 #\3))
-              ((parse #'(char-complement (union "1" "2")))
-               '(char-complement (union "1" "2"))))
-  )
+  ;; yikes... these test cases all have the wrong arity, now.
+  ;; and by "now", I mean it's been broken since before we 
+  ;; moved to git. 
+  (module+ test
+    (check-equal? (parse #'#\a null) #\a)
+    (check-equal? (parse #'"1" null) "1")
+    (check-equal? (parse #'(repetition 1 1 #\1) null)
+     '(repetition 1 1 #\1))
+    (check-equal? (parse #'(repetition 0 +inf.0 #\1) null) '(repetition 0 +inf.0 #\1))
+    (check-equal? (parse #'(union #\1 (union "2") (union)) null)
+     '(union #\1 (union "2") (union)))
+    (check-equal? (parse #'(intersection #\1 (intersection "2") (intersection))
+            null)
+     '(intersection #\1 (intersection "2") (intersection)))
+    (check-equal? (parse #'(complement (union #\1 #\2))
+            null)
+     '(complement (union #\1 #\2)))
+    (check-equal? (parse #'(concatenation "1" "2" (concatenation)) null)
+     '(concatenation "1" "2" (concatenation)))
+    (check-equal? (parse #'(char-range "1" #\1) null) '(char-range #\1 #\1))
+    (check-equal? (parse #'(char-range #\1 "1") null) '(char-range #\1 #\1))
+    (check-equal? (parse #'(char-range "1" "3") null) '(char-range #\1 #\3))
+    (check-equal? (parse #'(char-complement (union "1" "2")) null)
+                  '(char-complement (union "1" "2"))))
+;  )
