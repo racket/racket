@@ -1693,9 +1693,10 @@ metafunctions or unnamed reduction-relation cases) to application counts.}
            (values (covered-cases equals-coverage)
                    (covered-cases plus-coverage))))]
 
-@defform*/subs[[(generate-term term-spec size-expr kw-args ...)
+@defform*/subs[[(generate-term term-spec size-or-index-expr kw-args ...)
                 (generate-term term-spec)]
               ([term-spec (code:line language @#,ttpattern)
+                          (code:line language @#,ttpattern #:i-th)
                           (code:line language #:satisfying (judgment-form-id @#,ttpattern ...))
                           (code:line language #:satisfying (metafunction-id @#,ttpattern ...) = @#,ttpattern)
                           (code:line #:source metafunction)
@@ -1706,15 +1707,22 @@ metafunctions or unnamed reduction-relation cases) to application counts.}
                            [attempt-num-expr natural-number/c]
                            [retries-expr natural-number/c])]{
 
-In its first form, @racket[generate-term] produces a random term according
+In its first form, @racket[generate-term] produces a term according
 to @racket[term-spec]:
 @itemlist[@item{In the first @racket[term-spec] case, the produced 
-                term matches the given pattern (interpreted 
-                according to the definition of the given language).}
-           @item{In the second case,
-                 the expression produced is the quoted form of a use of the judgment-form or
-                 @racket[#f], if Redex cannot find one.}
-           @item{The third cases generates a random term that satsifies 
+                term is generated randomly and matches the given pattern (interpreted 
+                according to the definition of the given language). The 
+                @racket[size-or-index-expr] is treated as a size bound
+                on the generated term, as it is for all of the cases when
+                @racket[generate-term] generates a random term.}
+           @item{In the second case, the produced 
+                term is selected from an enumeration of terms matching the given pattern
+                (also interpreted according to the definition of the given language), using
+                the value of @racket[size-or-index-expr] to choose which element of the
+                enumeration.}
+           @item{In the third case, the term generated is a random instance of the quoted
+                 form of a use of the judgment-form or @racket[#f], if Redex cannot find one.}
+           @item{The fourth case generates a random term that satisfies 
                  the call to the metafunction with the given result 
                  or @racket[#f], if Redex cannot find one.}
            @item{In the last two cases, 
@@ -1723,7 +1731,7 @@ to @racket[term-spec]:
 
 In @racket[generate-term]'s second form, it produces a procedure for constructing 
 terms according to @racket[term-spec].
-This procedure expects @racket[size-expr] (below) as its sole positional
+This procedure expects @racket[size-or-index-expr] (below) as its sole positional
 argument and allows the same optional keyword arguments as the first form.
 The second form may be more efficient when generating many terms.
 

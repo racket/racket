@@ -6,7 +6,9 @@
          racket/match
          "match-a-pattern.rkt"
          "matcher.rkt"
+         "lang-struct.rkt"
          "extract-conditions.rkt"
+         "enum.rkt"
          (for-syntax "rewrite-side-conditions.rkt"
                      racket/base))
 
@@ -754,4 +756,5 @@
        
 (define empty-lang
   (compiled-lang
-   #f #f #f #f #f #f #f #f #f #f '() #f (hash)))
+   #f #f #f #f #f #f #f #f #f #f '() #f (hash)
+   (lang-enumerators '())))

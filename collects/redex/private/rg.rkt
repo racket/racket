@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require "matcher.rkt"
+         "lang-struct.rkt"
          "reduction-semantics.rkt"
          "underscore-allowed.rkt"
          "error.rkt"

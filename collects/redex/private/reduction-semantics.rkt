@@ -9,6 +9,7 @@
          "judgment-form.rkt"
          "term-fn.rkt"
          "search.rkt"
+         "lang-struct.rkt"
          (for-syntax "cycle-check.rkt"
                      setup/path-to-relative)
          racket/trace

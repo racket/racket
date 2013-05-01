@@ -772,3 +772,10 @@
     #:satisfying
     (not-mem b (a (b (c ()))))
     +inf.0)))
+
+(let ()
+  (test (generate-term L0 natural #:i-th 0) 0)
+  (let ([gen-ith (generate-term L0 natural #:i-th)])
+    (test (gen-ith 0) 0)
+    (test (gen-ith 1) 1)))
+

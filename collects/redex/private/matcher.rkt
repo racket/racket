@@ -47,18 +47,13 @@ See match-a-pattern.rkt for more details
          racket/performance-hint
          (for-syntax racket/base)
          "underscore-allowed.rkt"
-         "match-a-pattern.rkt")
+         "match-a-pattern.rkt"
+         "lang-struct.rkt"
+         "enum.rkt")
 
 (define-struct compiled-pattern (cp binds-names? skip-dup-check?) #:transparent)
 
 (define caching-enabled? (make-parameter #t))
-
-;; lang = (listof nt)
-;; nt = (make-nt sym (listof rhs))
-;; rhs = (make-rhs single-pattern)
-;; single-pattern = sexp
-(define-struct nt (name rhs) #:transparent)
-(define-struct rhs (pattern) #:transparent)
 
 ;; var = (make-var sym sexp)
 ;; patterns are sexps with `var's embedded
@@ -117,12 +112,14 @@ See match-a-pattern.rkt for more details
 ;;                                     hash[sexp[pattern] -o> (cons compiled-pattern boolean)]
 ;;                                     pict-builder
 ;;                                     (listof symbol)
-;;                                     (listof (listof symbol))) -- keeps track of `primary' non-terminals
+;;                                     (listof (listof symbol)) -- keeps track of `primary' non-terminals
 ;;                                     hash[sym -o> pattern]
+;;                                     (hash/c symbol? enum?)) ;; see enum.rkt
 
 (define-struct compiled-lang (lang delayed-cclang ht list-ht raw-across-ht raw-across-list-ht
                                    has-hole-or-hide-hole-ht cache bind-names-cache pict-builder
-                                   literals nt-map collapsible-nts))
+                                   literals nt-map collapsible-nts
+                                   enum-table))
 (define (compiled-lang-cclang x) (force (compiled-lang-delayed-cclang x)))
 (define (compiled-lang-across-ht x)
   (compiled-lang-cclang x) ;; ensure this is computed
@@ -164,7 +161,8 @@ See match-a-pattern.rkt for more details
                                     pict-info
                                     literals
                                     nt-map
-                                    collapsible-nts)]
+                                    collapsible-nts
+                                    (lang-enumerators lang))]
          [non-list-nt-table (build-non-list-nt-label lang)]
          [list-nt-table (build-list-nt-label lang)]
          [do-compilation
@@ -2034,9 +2032,7 @@ See match-a-pattern.rkt for more details
          (struct-out mismatch-bind)
          (struct-out compiled-pattern))
 
-(provide (struct-out nt)
-         (struct-out rhs)
-         (struct-out compiled-lang)
+(provide (struct-out compiled-lang)
          compiled-lang-cclang
          
          lookup-binding

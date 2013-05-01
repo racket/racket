@@ -2,6 +2,7 @@
 (require "rg.rkt" 
          "jdg-gen.rkt"
          "error.rkt"
+         "enum.rkt"
          "reduction-semantics.rkt"
          "struct.rkt"
          "term.rkt"
@@ -326,9 +327,20 @@
       (for ([x (in-list l)])
         (define k (syntax-e x))
         (when (keyword? k)
-          (unless (member k '(#:satisfying #:source #:attempt-num #:retries))
+          (unless (member k '(#:satisfying #:source #:attempt-num #:retries #:i-th))
             (raise-syntax-error 'generate-term "unknown keyword" stx x))))))
+  (define form-name (syntax-e #'orig-name))
   (syntax-case stx ()
+    [(_ orig-name lang pat #:i-th . rest)
+     (with-syntax ([(pattern (vars ...) (vars/ellipses ...)) 
+                    (rewrite-side-conditions/check-errs 
+                     (language-id-nts #'lang form-name)
+                     form-name #t #'pat)])
+       (syntax-case #'rest ()
+         [()
+          #'(generate-ith/proc lang `pattern)]
+         [(i-expr)
+          #'((generate-ith/proc lang `pattern) i-expr)]))]
     [(_ orig-name language #:satisfying (jf/mf-id . args) . rest)
      (cond
        [(metafunc #'jf/mf-id)
@@ -379,7 +391,6 @@
                             #'jf/mf-id)])]
     [(_ orig-name actual-stx ...)
      (let ()
-       (define form-name (syntax-e #'orig-name))
        (define-values (raw-generators args)
          (syntax-case #'(actual-stx ...) ()
            [(#:source src . rest)
@@ -415,6 +426,16 @@
          [(size . kw-args)
           (quasisyntax/loc stx
             (#,generator-syntax size . kw-args))]))]))
+
+(define (generate-ith/proc lang pat)
+  (define enum-lang (compiled-lang-enum-table lang))
+  (define enum (pat-enumerator enum-lang pat))
+  (λ (i)
+    (unless (exact-nonnegative-integer? i)
+      (raise-argument-error 'generate-term
+                            "exact-nonnegative-integer?"
+                            i))
+    (enum-ith enum  i)))
 
 (define (check-cases name cases)
   (when (null? cases)
