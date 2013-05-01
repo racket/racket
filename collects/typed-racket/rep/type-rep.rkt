@@ -139,7 +139,6 @@
   [#:frees (λ (f) (make-invariant (combine-frees (list (f left) (f right)))))]
   [#:key 'mpair])
 
-
 ;; elem is a Type
 (def-type Vector ([elem Type/c])
   [#:frees (λ (f) (make-invariant (f elem)))]
@@ -178,14 +177,9 @@
 (def-type CustodianBox ([elem Type/c])
   [#:key 'custodian-box])
 
-
-
 ;; elem is a Type
 (def-type Set ([elem Type/c])
   [#:key 'set])
-
-
-
 
 ;; name is a Symbol (not a Name)
 ;; contract is used when generating contracts from types
@@ -583,9 +577,6 @@
                 (cdr names)
                 (sub1 count))))))
 
-;(trace abstract-many)
-
-
 ;; instantiate-many : List[Type] Scope^n -> Type
 ;; where n is the length of types
 ;; all of the types MUST be Fs
@@ -639,8 +630,6 @@
 
 (define (instantiate type sc)
   (instantiate-many (list type) sc))
-
-#;(trace instantiate-many abstract-many)
 
 ;; the 'smart' constructor
 (define (Mu* name body)
@@ -799,7 +788,4 @@
                           [syms (hash-ref name-table t (lambda _ (build-list n (lambda _ (gensym)))))])
                      (list syms (PolyDots-body* syms t))))
                  (list nps bp)))])))
-
-;(trace subst subst-all)
-;(trace unfold)
 
