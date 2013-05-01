@@ -24,6 +24,7 @@
   syncheck:jump-to-binding-occurrence
   syncheck:jump-to-definition
   syncheck:rename-identifier
+  syncheck:tack/untack-arrows
   
   syncheck:clear-highlighting
   syncheck:apply-style/remember

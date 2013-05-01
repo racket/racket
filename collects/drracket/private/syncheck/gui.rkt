@@ -702,7 +702,21 @@ If the namespace does not, they are colored the unbound color.
                                         an-identifier-location-set))))
             
             
-              
+            (define/public (syncheck:tack/untack-arrows text)
+              (when arrow-records
+                (define arrow-record (hash-ref arrow-records text #f))
+                (define (find-arrows pos)
+                  (define vec-ents (interval-map-ref arrow-record pos null))
+                  (define arrs (filter arrow? vec-ents))
+                  (and (not (null? arrs)) arrs))
+                (define arrows
+                  (or (find-arrows (send text get-start-position))
+                      (and (= (send text get-start-position) 
+                              (send text get-end-position))
+                           (find-arrows (- (send text get-start-position) 1)))))
+                (when arrows
+                  (tack/untack-callback arrows))))
+            
             ;; rename-callback : string 
             ;;                   (and/c syncheck-text<%> definitions-text<%>)
             ;;                   (list source number number)
@@ -2177,29 +2191,34 @@ If the namespace does not, they are colored the unbound color.
                              (when (is-a? defs syncheck-text<%>)
                                (send-msg defs obj))))))))))])
         (send keymap add-function
-              "jump to binding occurrence"
+              (string-constant cs-jump-to-binding)
               (cs-callback (λ (defs obj) (send defs syncheck:jump-to-binding-occurrence obj))))
         (send keymap add-function
-              "jump to next bound occurrence"
+              (string-constant cs-jump-to-next-bound-occurrence)
               (cs-callback (λ (defs obj) (send defs syncheck:jump-to-next-bound-occurrence obj))))
         (send keymap add-function
-              "jump to previous bound occurrence"
+              (string-constant cs-jump-to-previous-bound-occurrence)
               (cs-callback (λ (defs obj) (send defs syncheck:jump-to-next-bound-occurrence obj #t))))
         (send keymap add-function
-              "jump to definition (in other file)"
+              (string-constant cs-jump-to-definition)
               (cs-callback (λ (defs obj) (send defs syncheck:jump-to-definition obj))))
         (send keymap add-function
-              "rename identifier"
+              (string-constant cs-rename-id)
               (cs-callback (λ (defs obj) 
-                             (send defs syncheck:rename-identifier obj)))))
+                             (send defs syncheck:rename-identifier obj))))
+        (send keymap add-function
+              (string-constant cs-tack/untack-arrow)
+              (cs-callback (λ (defs obj) 
+                             (send defs syncheck:tack/untack-arrows obj)))))
       
       (send keymap map-function "f6" "check syntax")
       (send keymap map-function "c:c;c:c" "check syntax")
-      (send keymap map-function "c:x;b" "jump to binding occurrence")
-      (send keymap map-function "c:x;n" "jump to next bound occurrence")
-      (send keymap map-function "c:x;p" "jump to previous bound occurrence")
-      (send keymap map-function "c:x;d" "jump to definition (in other file)")
-      (send keymap map-function "c:x;m" "rename identifier")
+      (send keymap map-function "c:x;b" (string-constant cs-jump-to-binding))
+      (send keymap map-function "c:x;n" (string-constant cs-jump-to-next-bound-occurrence))
+      (send keymap map-function "c:x;p" (string-constant cs-jump-to-previous-bound-occurrence))
+      (send keymap map-function "c:x;d" (string-constant cs-jump-to-definition))
+      (send keymap map-function "c:x;m" (string-constant cs-rename-id))
+      (send keymap map-function "c:x;a" (string-constant cs-tack/untack-arrow))
       
       (send keymap add-function "show/hide blue boxes in upper-right corner"
             (λ (txt evt)
