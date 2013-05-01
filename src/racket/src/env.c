@@ -466,6 +466,8 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   printf("pre-process @ %" PRIdPTR "\n", scheme_get_process_milliseconds());
 #endif
 
+  scheme_init_file_places();
+
   scheme_make_thread(stack_base);
 
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
@@ -503,7 +505,6 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_gmp_places();
   scheme_init_kqueue();
   scheme_alloc_global_fdset();
-  scheme_init_file_places();
 #ifndef DONT_USE_FOREIGN
   scheme_init_foreign_places();
 #endif
@@ -672,13 +673,16 @@ static void make_kernel_env(void)
   MZTIMEIT(bool, scheme_init_bool(env));
   MZTIMEIT(syntax, scheme_init_compile(env));
   MZTIMEIT(eval, scheme_init_eval(env));
-  MZTIMEIT(error, scheme_init_error(env));
   MZTIMEIT(struct, scheme_init_struct(env));
+  MZTIMEIT(error, scheme_init_error(env));
 #ifndef NO_SCHEME_EXNS
   MZTIMEIT(exn, scheme_init_exn(env));
 #endif
   MZTIMEIT(process, scheme_init_thread(env));
+  scheme_init_port_wait();
   scheme_init_inspector();
+  scheme_init_logger_wait();
+  scheme_init_struct_wait();
   MZTIMEIT(reduced, scheme_init_reduced_proc_struct(env));
 #ifndef NO_SCHEME_THREADS
   MZTIMEIT(sema, scheme_init_sema(env));

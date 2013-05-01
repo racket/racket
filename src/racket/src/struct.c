@@ -376,15 +376,6 @@ scheme_init_struct (Scheme_Env *env)
     evt_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("evt"),
                                                             guard);
     scheme_add_global_constant("prop:evt", evt_property, env);
-
-    scheme_add_evt(scheme_structure_type,
-		   (Scheme_Ready_Fun)evt_struct_is_ready,
-		   NULL,
-		   is_evt_struct, 1);
-    scheme_add_evt(scheme_proc_struct_type,
-		   (Scheme_Ready_Fun)evt_struct_is_ready,
-		   NULL,
-		   is_evt_struct, 1);
   }
 
   {
@@ -520,30 +511,6 @@ scheme_init_struct (Scheme_Env *env)
   scheme_recur_symbol = scheme_intern_symbol("recur");
   scheme_display_symbol = scheme_intern_symbol("display");
   scheme_write_special_symbol = scheme_intern_symbol("write-special");
-
-  scheme_add_evt(scheme_wrap_evt_type,
-		 (Scheme_Ready_Fun)wrapped_evt_is_ready,
-		 NULL, NULL, 1);
-  scheme_add_evt(scheme_handle_evt_type,
-		 (Scheme_Ready_Fun)wrapped_evt_is_ready,
-		 NULL, NULL, 1);
-  scheme_add_evt(scheme_chaperone_type,
-		 (Scheme_Ready_Fun)chaperone_evt_is_ready,
-		 NULL, 
-                 is_chaperone_evt, 1);
-  scheme_add_evt(scheme_proc_chaperone_type,
-		 (Scheme_Ready_Fun)chaperone_evt_is_ready,
-		 NULL, 
-                 is_chaperone_evt, 1);
-  scheme_add_evt(scheme_nack_guard_evt_type,
-		 (Scheme_Ready_Fun)nack_guard_evt_is_ready,
-		 NULL, NULL, 1);
-  scheme_add_evt(scheme_nack_evt_type,
-		 (Scheme_Ready_Fun)nack_evt_is_ready,
-		 NULL, NULL, 1);
-  scheme_add_evt(scheme_poll_evt_type,
-		 (Scheme_Ready_Fun)poll_evt_is_ready,
-		 NULL, NULL, 1);
 
   /*** basic interface ****/
 
@@ -859,6 +826,42 @@ scheme_init_struct (Scheme_Env *env)
                                scheme_app_mark_impersonator_property,
                                env);
   }
+}
+
+void scheme_init_struct_wait()
+{
+  scheme_add_evt(scheme_structure_type,
+                 (Scheme_Ready_Fun)evt_struct_is_ready,
+                 NULL,
+                 is_evt_struct, 1);
+  scheme_add_evt(scheme_proc_struct_type,
+                 (Scheme_Ready_Fun)evt_struct_is_ready,
+                 NULL,
+                 is_evt_struct, 1);
+
+  scheme_add_evt(scheme_wrap_evt_type,
+		 (Scheme_Ready_Fun)wrapped_evt_is_ready,
+		 NULL, NULL, 1);
+  scheme_add_evt(scheme_handle_evt_type,
+		 (Scheme_Ready_Fun)wrapped_evt_is_ready,
+		 NULL, NULL, 1);
+  scheme_add_evt(scheme_chaperone_type,
+		 (Scheme_Ready_Fun)chaperone_evt_is_ready,
+		 NULL, 
+                 is_chaperone_evt, 1);
+  scheme_add_evt(scheme_proc_chaperone_type,
+		 (Scheme_Ready_Fun)chaperone_evt_is_ready,
+		 NULL, 
+                 is_chaperone_evt, 1);
+  scheme_add_evt(scheme_nack_guard_evt_type,
+		 (Scheme_Ready_Fun)nack_guard_evt_is_ready,
+		 NULL, NULL, 1);
+  scheme_add_evt(scheme_nack_evt_type,
+		 (Scheme_Ready_Fun)nack_evt_is_ready,
+		 NULL, NULL, 1);
+  scheme_add_evt(scheme_poll_evt_type,
+		 (Scheme_Ready_Fun)poll_evt_is_ready,
+		 NULL, NULL, 1);
 }
 
 /*========================================================================*/

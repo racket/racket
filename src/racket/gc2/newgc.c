@@ -1212,6 +1212,19 @@ inline static void gen0_free_mpage(NewGC *gc, mpage *page) {
 }
 
 #define OVERFLOWS_GEN0(ptr) ((ptr) > GC_gen0_alloc_page_end)
+#ifdef MZ_GC_STRESS_TESTING
+# define GC_TRIGGER_COUNT 100
+static int stress_counter = 0;
+static int TAKE_SLOW_PATH()
+{
+  stress_counter++;
+  if (stress_counter > GC_TRIGGER_COUNT)
+    return 1;
+  return 0;
+}
+#else
+# define TAKE_SLOW_PATH() 0
+#endif
 
 inline static size_t gen0_size_in_use(NewGC *gc) {
   return (gc->gen0.current_size + ((GC_gen0_alloc_page_ptr - NUM(gc->gen0.curr_alloc_page->addr)) - PREFIX_SIZE));
@@ -1246,7 +1259,7 @@ inline static void gen0_allocate_and_setup_new_page(NewGC *gc) {
 inline static uintptr_t allocate_slowpath(NewGC *gc, size_t allocate_size, uintptr_t newptr)
 {
   do {
-  /* master always overflows and uses allocate_medium because master allocations can't move */
+    /* master always overflows and uses allocate_medium(), because master allocations can't move */
     /* bring page size used up to date */
     gen0_sync_page_size_from_globals(gc);
 
@@ -1257,12 +1270,12 @@ inline static uintptr_t allocate_slowpath(NewGC *gc, size_t allocate_size, uintp
       ASSERT_VALID_INFOPTR(GC_gen0_alloc_page_ptr);
       GC_gen0_alloc_page_end    = NUM(gc->gen0.curr_alloc_page->addr) + GEN0_ALLOC_SIZE(gc->gen0.curr_alloc_page);
     }
-    /* WARNING: tries to avoid a collection but
-     * gen0_create_new_mpage can cause a collection via malloc_pages due to check_used_against_max */
+    /* WARNING: tries to avoid a collection, but
+       gen0_create_new_mpage() can cause a collection via
+       malloc_pages(), due to check_used_against_max() */
     else if (gc->dumping_avoid_collection) {
       gen0_allocate_and_setup_new_page(gc);
-    }
-    else {
+    } else {
 #ifdef INSTRUMENT_PRIMITIVES 
       LOG_PRIM_START(((void*)garbage_collect));
 #endif
@@ -1301,6 +1314,17 @@ inline static void *allocate(const size_t request_size, const int type)
   size_t allocate_size;
   uintptr_t newptr;
 
+#ifdef MZ_GC_STRESS_TESTING
+  stress_counter++;
+  if (stress_counter > GC_TRIGGER_COUNT) {
+    NewGC *gc = GC_get_GC();
+    if (!gc->dumping_avoid_collection) {
+      stress_counter = 0;
+      garbage_collect(gc, 0, 0, NULL);
+    }
+  }
+#endif
+
   if(request_size == 0) return (void *) zero_sized;
 
   check_allocation_time_invariants();
@@ -1312,7 +1336,7 @@ inline static void *allocate(const size_t request_size, const int type)
   newptr = GC_gen0_alloc_page_ptr + allocate_size;
 
   /* SLOW PATH: allocate_size overflows current gen0 page */
-  if(OVERFLOWS_GEN0(newptr)) {
+  if(TAKE_SLOW_PATH() || OVERFLOWS_GEN0(newptr)) {
     NewGC *gc = GC_get_GC();
 
     if (GC_gen0_alloc_only) return NULL;
@@ -1360,7 +1384,7 @@ inline static void *fast_malloc_one_small_tagged(size_t request_size, int dirty)
 
   newptr = GC_gen0_alloc_page_ptr + allocate_size;
 
-  if(OVERFLOWS_GEN0(newptr)) {
+  if (TAKE_SLOW_PATH() || OVERFLOWS_GEN0(newptr)) {
     return GC_malloc_one_tagged(request_size);
   } else {
     objhead *info = (objhead *)PTR(GC_gen0_alloc_page_ptr);
@@ -1395,7 +1419,7 @@ void *GC_malloc_pair(void *car, void *cdr)
 
   newptr = GC_gen0_alloc_page_ptr + allocate_size;
 
-  if(OVERFLOWS_GEN0(newptr)) {
+  if (TAKE_SLOW_PATH() || OVERFLOWS_GEN0(newptr)) {
     NewGC *gc = GC_get_GC();
     gc->park[0] = car;
     gc->park[1] = cdr;
@@ -1407,8 +1431,7 @@ void *GC_malloc_pair(void *car, void *cdr)
 
     /* Future-local allocation can fail: */
     if (!pair) return NULL;
-  }
-  else {
+  } else {
     objhead *info = (objhead *) PTR(GC_gen0_alloc_page_ptr);
     GC_gen0_alloc_page_ptr = newptr;
     ASSERT_VALID_INFOPTR(GC_gen0_alloc_page_ptr);
@@ -2888,8 +2911,6 @@ void GC_destruct_child_gc() {
     }
     GC_LOCK_DEBUG("UNMGCLOCK GC_destruct_child_gc\n");
     mzrt_rwlock_unlock(MASTERGCINFO->cangc);
-
-
 
     if (waiting) {
       garbage_collect(gc, 1, 0, NULL);
@@ -4798,10 +4819,12 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
 #ifdef MZ_USE_PLACES
     is_master = (gc == MASTERGC);
 #endif
+    gc->dumping_avoid_collection++;
     gc->GC_collect_inform_callback(is_master, gc->gc_full, 
                                    old_mem_use + old_gen0, gc->memory_in_use, 
                                    old_mem_allocated, mmu_memory_allocated(gc->mmu),
                                    gc->child_gc_total);
+    --gc->dumping_avoid_collection;
   }
 #ifdef MZ_USE_PLACES
   if (lmi) {

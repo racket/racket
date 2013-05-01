@@ -126,17 +126,26 @@ int scheme_inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int flags
    Save FP0 when FP ops are enabled. */
 {
   GC_CAN_IGNORE jit_insn *ref, *reffail;
+#ifdef MZ_GC_STRESS_TESTING
+  GC_CAN_IGNORE jit_insn *refstress;
+#endif
   intptr_t a_word, sz, algn;
 
   sz = GC_compute_alloc_size(amt);
   algn = GC_alloc_alignment();
 
   __START_TINY_JUMPS__(1);
+#ifdef MZ_GC_STRESS_TESTING
+  refstress = jit_jmpi(jit_forward());
+#endif
   reffail = jit_get_ip();
   mz_tl_ldi_p(JIT_V1, tl_GC_gen0_alloc_page_ptr);
   jit_subi_l(JIT_R2, JIT_V1, 1);
   jit_andi_l(JIT_R2, JIT_R2, (algn - 1));
   ref = jit_blti_l(jit_forward(), JIT_R2, (algn - sz));
+#ifdef MZ_GC_STRESS_TESTING
+  mz_patch_ucbranch(refstress);
+#endif
   CHECK_LIMIT();
   __END_TINY_JUMPS__(1);
 

@@ -728,8 +728,6 @@ void scheme_init_error(Scheme_Env *env)
 
   GLOBAL_PARAMETER("current-logger",    current_logger, MZCONFIG_LOGGER, env);
 
-  scheme_add_evt(scheme_log_reader_type, (Scheme_Ready_Fun)log_reader_get, NULL, NULL, 1);
-
   REGISTER_SO(scheme_def_exit_proc);
   REGISTER_SO(default_display_handler);
   REGISTER_SO(emergency_display_handler);
@@ -775,6 +773,11 @@ void scheme_init_error(Scheme_Env *env)
   def_exe_yield_proc = scheme_make_prim_w_arity(default_yield_handler,
                                                 "default-executable-yield-handler",
                                                 1, 1);
+}
+
+void scheme_init_logger_wait()
+{
+  scheme_add_evt(scheme_log_reader_type, (Scheme_Ready_Fun)log_reader_get, NULL, NULL, 1);
 }
 
 void scheme_init_logger()

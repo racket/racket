@@ -2471,7 +2471,7 @@
   (define ht2 (make-hash))
   (define wht (make-weak-hash))
   (define wht2 (make-weak-hash))
-  (define keys (make-hash))
+  (define keys (make-hasheq))
 
   (struct a (x) #:transparent)
   
@@ -2519,7 +2519,11 @@
         [ht2 (for/hash ([i (in-list l2)])
                (values (a i) (a (a i))))])
     (test (equal-hash-code ht) values (equal-hash-code ht2))
-    (test (equal-secondary-hash-code ht) values (equal-secondary-hash-code ht2))))
+    (test (equal-secondary-hash-code ht) values (equal-secondary-hash-code ht2)))
+
+  ;; make sure `key's is retained until here:
+  (when (positive? (random 1))
+    (display keys)))
 
 ;; Check that immutable hash trees aren't confused by an
 ;; "is a list" bit set in a key:
