@@ -234,33 +234,37 @@
              (rule-pict-rhs rp)
              (rp->side-condition-pict rp +inf.0)))]
          [multi-line-spacer
-          (ghost
-           (launder
-            (ctl-superimpose 
-             (apply ctl-superimpose (map mk-top-line-spacer rps))
-             (apply ctl-superimpose (map mk-bot-line-spacer rps)))))]
+          (if (null? rps)
+              (blank)
+              (ghost
+               (launder
+                (ctl-superimpose 
+                 (apply ctl-superimpose (map mk-top-line-spacer rps))
+                 (apply ctl-superimpose (map mk-bot-line-spacer rps))))))]
          [spacer (dc void 
                      (pict-width multi-line-spacer)
                      (pict-descent multi-line-spacer) ;; probably could be zero ...
                      0
                      (pict-descent multi-line-spacer))])
-    (apply
-     vl-append
-     (add-between
-      (blank 0 (reduction-relation-rule-separation))
-      (map (λ (rp)
-             (side-condition-combiner
-              (vl-append
-               (ltl-superimpose 
-                (htl-append (rule-pict-lhs rp)
-                            (basic-text " " (default-style))
-                            (arrow->pict (rule-pict-arrow rp)))
-                (rtl-superimpose 
-                 spacer
-                 (rp->pict-label rp)))
-               (rule-pict-rhs rp))
-              (rp->side-condition-pict rp +inf.0)))
-           rps)))))
+    (if (null? rps)
+        (blank)
+        (apply
+         vl-append
+         (add-between
+          (blank 0 (reduction-relation-rule-separation))
+          (map (λ (rp)
+                 (side-condition-combiner
+                  (vl-append
+                   (ltl-superimpose 
+                    (htl-append (rule-pict-lhs rp)
+                                (basic-text " " (default-style))
+                                (arrow->pict (rule-pict-arrow rp)))
+                    (rtl-superimpose 
+                     spacer
+                     (rp->pict-label rp)))
+                   (rule-pict-rhs rp))
+                  (rp->side-condition-pict rp +inf.0)))
+               rps))))))
 
 (define compact-vertical-min-width (make-parameter 0))
 
