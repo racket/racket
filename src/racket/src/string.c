@@ -27,6 +27,11 @@
 #include "schvers.h"
 #include <string.h>
 #include <ctype.h>
+#ifdef NO_ERRNO_GLOBAL
+# define errno -1
+#else
+# include <errno.h>
+#endif
 #ifndef DONT_USE_LOCALE
 # include <locale.h>
 # ifdef MZ_NO_ICONV
@@ -38,7 +43,6 @@
 # endif
 # include <wchar.h>
 # include <wctype.h>
-# include <errno.h>
 # ifdef MACOS_UNICODE_SUPPORT
 #  include <CoreFoundation/CFString.h>
 #  include <CoreFoundation/CFLocale.h>
@@ -3847,7 +3851,7 @@ char *scheme_push_c_numeric_locale()
 #ifndef DONT_USE_LOCALE
   GC_CAN_IGNORE char *prev;
   prev = setlocale(LC_NUMERIC, NULL);
-  if (!strcmp(prev, "C"))
+  if (!prev || !strcmp(prev, "C"))
     return NULL;
   else
     return setlocale(LC_NUMERIC, "C");
