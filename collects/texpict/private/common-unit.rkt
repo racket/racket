@@ -628,6 +628,8 @@
 	(let ([make-superimpose 
 	       (lambda (get-h get-v get-th name)
 		 (lambda boxes
+                   (when (null? boxes)
+                     (error name "expected at least one argument, got none"))
                    (unless (andmap pict? boxes)
                      (error name "expected all picts as arguments, got ~a"
                             (apply string-append (add-between (map (λ (x) (format "~e" x)) boxes) " "))))
