@@ -440,7 +440,7 @@ if test "${enable_oskit}" = "no" ; then
   AC_PROG_CC
   AC_PROG_CPP
   if test "$AS" = '' ; then 
-    AS=as
+    AS="${ac_tool_prefix}as"
     as_was_set=no
   else
     as_was_set=yes
@@ -448,7 +448,7 @@ if test "${enable_oskit}" = "no" ; then
 fi
 AC_PROG_RANLIB
 if test "$AR" = '' ; then 
-  AR=ar
+  AR="${ac_tool_prefix}ar"
 fi
 if test "$ARFLAGS" = '' ; then 
   ARFLAGS=ruv

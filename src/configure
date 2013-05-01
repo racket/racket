@@ -3697,7 +3697,7 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
   if test "$AS" = '' ; then
-    AS=as
+    AS="${ac_tool_prefix}as"
     as_was_set=no
   else
     as_was_set=yes
@@ -3800,7 +3800,7 @@ else
 fi
 
 if test "$AR" = '' ; then
-  AR=ar
+  AR="${ac_tool_prefix}ar"
 fi
 if test "$ARFLAGS" = '' ; then
   ARFLAGS=ruv
