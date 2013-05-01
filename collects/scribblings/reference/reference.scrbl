@@ -57,8 +57,8 @@ The @racketmodname[racket] library combines
 
 @table-of-contents[]
 
-@include-section["notation.scrbl"]
 @include-section["model.scrbl"]
+@include-section["notation.scrbl"]
 @include-section["syntax.scrbl"]
 @include-section["data.scrbl"]
 @include-section["struct.scrbl"]

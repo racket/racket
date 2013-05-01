@@ -1,34 +1,37 @@
 #lang scribble/doc
 @(require scribble/struct scribble/racket "mz.rkt")
 
-@title[#:tag "notation"]{Notation}
+@title[#:tag "notation"]{Notation for Documentation}
 
 This chapter introduces essential terminology and notation that is
-used throughout the rest of the document and other Racket reference
-manuals.
+used throughout Racket documentation.
 
+@; ----------------------------------------
+@section{Notation for Module Documentation}
 
-@section{Notation for Module Declarations}
+Since Racket programs are organized into @tech{module}s, documentation
+reflects that organization with an annotation that the beginning of a
+section or subsection that describes the bindings that a particular
+module provides.
 
-Racket programs are usually organized into @tech{module}s. Documentation
-reflects this organization with a notation for module declarations.
-A module declaration often prefaces the beginning of a section
-or subsection:
+For example, the section that describes the functionality provided by
+@racketmodname[racket/list] starts
 
-@(defmodule racket/list #:no-declare #:link-target? #f)
+@nested[#:style 'inset
+        (defmodule racket/list #:no-declare #:link-target? #f)]
 
-The preceding @racket[require] statement in a section indicates that the bindings that are
-documented in the section are available from the @racketmodname[racket/list] module.
-
-Instead of @racket[require], some module declarations are written with
+Instead of @racket[require], some modules are introduced with
 @hash-lang[]:
 
-@(defmodule racket/base #:lang #:no-declare #:link-target? #f)
+@nested[#:style 'inset
+        (defmodule racket/base #:lang #:no-declare #:link-target? #f)]
 
-Using @hash-lang[] means that the module is normally used as a
-language, instead of imported with @racket[require]. Unless otherwise
-specified, however, a module name documented with @hash-lang[] can
-also be used with @racket[require] to obtain the same bindings.
+Using @hash-lang[] means that the module is normally used as the
+language of a whole module---that is, by a module that starts
+@hash-lang[] followed by the language---instead of imported with
+@racket[require]. Unless otherwise specified, however, a module name
+documented with @hash-lang[] can also be used with @racket[require] to
+obtain the language's bindings.
 
 Sometimes, a module specification appears at the beginning of a
 document or at the start of a section that contains many subsections.
@@ -39,23 +42,115 @@ section. Thus, bindings documented in @other-doc['(lib
 @racketmodname[racket] and @racket[racket/base] unless otherwise
 specified in a section or subsection.
 
+@; ----------------------------------------
+@section{Notation for Syntactic Form Documentation}
 
-@section{Notation for Syntactic Forms}
+@guideintro["syntax-notation"]{this notation for syntactic forms}
 
-Syntactic forms, whether provided from the base language or via
-syntactic extensions, are specified using the same format that is
-described in the @guidesecref{syntax-notation} chapter of @|Guide|.
+Syntactic forms are specified with a grammar. Typically, the grammar
+starts with an open parenthesis followed by the syntactic form's name,
+as in the grammar for @racket[if]:
 
-Note that @racket[_number] in a grammar specification means that a
-literal number must appear in the syntactic form, while
-@racket[_number-expr] would allow any expression that produces a
-number. Similarly, @racket[_module-path] in a grammar corresponds to
-the non-terminal described for @racket[require], while
-@racket[_module-path-expr] would allow an arbitrary expression that
-produces a value for which @racket[module-path?] returns true.
+@nested[#:style 'inset
+@defform[#:link-target? #f
+         (if test-expr then-expr else-expr)]
+]
+
+Since every @deftech{form} is expressed in terms of @tech{syntax
+objects}, parentheses in a grammar specification indicate a @tech{syntax
+object} wrapping a list, and the leading @racket[if] is an identifier
+that starts the list whose @tech{binding} is the @racket[if] binding
+of the module being documented---in this case,
+@racketmodname[racket/base].  Square brackets in the grammar indicate
+a @tech{syntax-object} list in the same way as parentheses, but in
+places square brackets are normally used by convention in a program's
+source.
+
+Italic @tech{identifiers} in the grammar are @deftech{metavariables}
+that in correspond to other grammar productions. Certain metavariable
+names have implicit grammar productions:
+
+@itemize[
+
+ @item{A metavariable that ends in @racket[_id] stands for an
+       @tech{identifier}.}
+
+ @item{A metavariable that ends in @racket[_keyword] stands
+       for a @tech{syntax-object} @tech{keyword}.}
+
+ @item{A metavariable that ends with @racket[_expr] stands for any
+       form, and the form will be parsed as an expression.}
+
+ @item{A metavariable that ends with @racket[_body] stands for any
+       @tech{form}; the form will be parsed as either a local definition or
+       an expression. A @racket[_body] can parse as a definition only
+       if it is not preceded by any expression, and the last
+       @racket[_body] must be an expression; see also
+       @secref["intdef-body"].}
+
+ @item{A metavariable that ends with @racket[_datum] stands for any
+       @tech{form}, and the form is normally uninterpreted (e.g.,
+       @racket[quote]d).}
+
+ @item{A metavariable that ends with @racket[_number] or
+       @racket[_boolean] stands for any @tech{syntax-object} (i.e.,
+       literal) @tech{number} or @tech{boolean}, respectively.}
+
+]
+
+In a grammar, @racket[_form ...] stands for any number of forms
+(possibly zero) matching @racket[_form], while @racket[_form ...+]
+stands for one or more forms matching @racket[_form].
+
+Metavariables without an implicit grammar are defined by productions
+alongside the syntactic form's overall grammar. For example, in
+
+@nested[#:style 'inset
+@defform[#:link-target? #f
+         (lambda formals body ...+)
+         #:grammar ([formals id
+                             (id ...)
+                             (id ...+ . rest-id)])]
+]
+
+the @racket[_formals] metavariable starts for either an
+@tech{identifier}, a zero or more @tech{identifiers} in a
+@tech{syntax-object} list, or a @tech{syntax object} corresponding to
+a chain of one or more pairs where the chain ends in an
+@tech{identifier} instead of an empty list.
+
+Some syntactic forms have multiple top-level grammars, in which case
+the documentation of the syntactic forms shows multiple grammars. For
+example,
+
+@nested[#:style 'inset
+@defform*[#:link-target? #f
+          ((init-rest id)
+           (init-rest))]
+]
+
+indicates that @racket[init-rest] can either be alone in its
+@tech{syntax-object} list or followed by a single @tech{identifier}.
+
+Finally, a grammar specification that includes @racket[_expr]
+metavariables may be augmented with run-time @tech{contract}s on some
+of the metavariables, which indicate a predicates that the result of
+the expression must satisfy at run time. For example,
+
+@nested[#:style 'inset
+@defform[#:link-target? #f
+         (parameterize ([parameter-expr value-expr] ...)
+           body ...+)
+         #:contracts
+         ([parameter-expr parameter?])]
+]
+
+indicates that the result of each @racket[_parameter-expr] must be a
+value @racket[_v] for which @racket[(parameter? _v)] returns true.
 
 
-@section{Notation for Contracts for Functions}
+@; ----------------------------------------
+@section{Notation for Function Documentation}
 
 Procedures and other values are described using a notation based on
 @tech{contract}s. In essence, these contracts describe the interfaces of
@@ -64,8 +159,10 @@ the documented library using Racket predicates and expressions.
 For example, the following is the header of the definition of a
 typical procedure:
 
+@nested[#:style 'inset
 @defproc[#:link-target? #f
-         (char->integer [char char?]) exact-integer?]{}
+         (char->integer [char char?]) exact-integer?]
+]
 
 The function being defined, @racket[char->integer], is typeset as if it
 were being applied. The metavariables that come after the function name
@@ -85,10 +182,12 @@ specifies the expected result that is produced by the function.
 Contract specifications can be more expressive than just names of
 predicates. Consider the following header for @racket[argmax]:
 
+@nested[#:style 'inset
 @defproc[#:link-target? #f
          (argmax [proc (-> any/c real?)]
                  [lst (and/c pair? list?)])
-         any]{}
+         any]
+]
 
 The contract @racket[(-> any/c real?)] denotes a function contract specifying
 that @racket[proc]'s argument can be any single value and the result should be
@@ -104,9 +203,11 @@ combinator name will provide more information on its meaning.
 A Racket function may be documented as having one or more optional arguments.
 The @racket[read] function is an example of such a function:
 
+@nested[#:style 'inset
 @defproc[#:link-target? #f
          (read [in input-port? (current-input-port)])
-         any]{}
+         any]
+]
 
 The brackets surrounding the @racket[_in] argument in the application
 syntax indicates that it is an optional argument.
@@ -120,40 +221,49 @@ Functions may also be documented as accepting mandatory or optional
 keyword-based arguments.  For example, the @racket[sort] function has
 two optional, keyword-based arguments:
 
+@nested[#:style 'inset
 @defproc[#:link-target? #f
          (sort [lst list?] [less-than? (any/c any/c . -> . any/c)]
                [#:key extract-key (any/c . -> . any/c) (lambda (x) x)]
-               [#:cache-keys? cache-keys? boolean? #f]) list?]{}
+               [#:cache-keys? cache-keys? boolean? #f]) list?]
+]
 
 The brackets around the @racket[_extract-key] and
 @racket[_cache-keys?]  arguments indicate that they are optional as
 before. The contract section of the header shows the default values
 that are provided for these keyword arguments.
 
-@section{Notation for Parameter Contracts}
+@; ----------------------------------------
+@section{Notation for Parameter Documentation}
 
-Parameters are used in Racket for dynamically customizable arguments
-to code. They are documented with a notation similar to function
-contracts:
+A @tech{parameter} is documented the same way as a function:
 
-@defparam[#:link-target? #f
-          current-command-line-arguments
-          argv
-          (vectorof (and/c string? immutable?))]{}
+@nested[#:style 'inset
+@defparam*[#:link-target? #f
+           current-command-line-arguments
+           argv
+           (vectorof (and/c string? immutable?))
+           (vectorof string?)]
+]
 
-Since parameters can be read or written, there are two entries in the
+Since @tech{parameters} can be referenced or set, there are two entries in the
 header above. Calling @racket[current-command-line-arguments] with no
-arguments is documented to return a vector that contains objects that
-pass both @racket[string?] and @racket[immutable?]. Similarly, the
-single argument case takes a vector with the same specification and
-returns an object satisfying @racket[void?].
+arguments accesses the parameter's value, which must be a vector whose elements
+pass both @racket[string?] and @racket[immutable?]. Calling
+@racket[current-command-line-arguments] with a single argument
+sets the parameter's value, where the value must be a vector whose
+elements pass @racket[string?] (and a guard on the @tech{parameter}
+coerces the strings to immutable form, if necessary).
 
-@section{Notation for Contracts on Other Values}
+@; ----------------------------------------
+@section{Notation for Other Documentation}
 
 Some libraries provide bindings to constant values. These values are
 documented with a separate header:
 
-@defthing[#:link-target? #f object% class?]{}
+@nested[#:style 'inset
+@defthing[#:link-target? #f object% class?]
+]
 
 The @racketmodname[racket/class] library provides the @racket[object%]
 value, which is the root of the class hierarchy in Racket. Its
