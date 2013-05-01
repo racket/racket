@@ -42,7 +42,7 @@ variables} that can match anything in a use of the macro. Thus, this
 macro matches the form @racket[(swap _form1 _form2)] for any
 @racket[_form_1] and @racket[_form_2].
 
-@margin-note{Macro pattern variables similar to pattern variables for
+@margin-note{Macro pattern variables are similar to pattern variables for
  @racket[match]. See @secref["match"].}
 
 After the pattern in @racket[define-syntax-rule] is the
