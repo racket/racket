@@ -146,9 +146,24 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;               Archive Unpacking               ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+  
+  (define make-docs?
+    (and (make-docs)
+         ;; Double-check that "setup/scribble" is present.
+         (file-exists? (collection-file-path "scribble.rkt" "setup"))))
+    
   (define x-specific-collections
     (append* (specific-collections)
+             (if (and (make-doc-index)
+                      make-docs?)
+                 (append
+                  (if (not (avoid-main-installation))
+                      '(("scribblings/main"))
+                      null)
+                  (if (make-user)
+                      '(("scribblings/main/user"))
+                      null))
+                 null)
              (for/list ([x (in-list (archives))])
                (unpack x
                        (build-path main-collects-dir 'up)
@@ -407,7 +422,7 @@
       (define srcs
         (append
          (filter extract-base-filename/ss files)
-         (if (make-docs)
+         (if make-docs?
            (filter (lambda (p) (not (member p omit)))
                    (map (lambda (s) (if (string? s) (string->path s) s))
                         (map car (call-info info 'scribblings
@@ -790,7 +805,7 @@
                                   #:omit-root (cc-omit-root cc)
                                   #:managed-compile-zo caching-managed-compile-zo
                                   #:skip-path (and (avoid-main-installation) (find-collects-dir))
-                                  #:skip-doc-sources? (not (make-docs)))))))
+                                  #:skip-doc-sources? (not make-docs?))))))
     (if (eq? 0 gcs)
         0
         (begin (collect-garbage) (sub1 gcs))))
@@ -1308,10 +1323,8 @@
 
   (when (make-launchers) (make-launchers-step))
 
-  (when (make-docs)
-    ;; Double-check that "setup/scribble" is present.
-    (when (file-exists? (collection-file-path "scribble.rkt" "setup"))
-      (make-docs-step)))
+  (when make-docs?
+    (make-docs-step))
   (when (doc-pdf-dest) (doc-pdf-dest-step))
   
   (do-install-part 'general)

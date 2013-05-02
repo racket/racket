@@ -45,6 +45,7 @@
   (define-flag-param make-planet #t)
   (define-flag-param avoid-main-installation #f)
   (define-flag-param make-tidy #f)
+  (define-flag-param make-doc-index #f)
   (define-flag-param call-install #t)
   (define-flag-param call-post-install #t)
   (define-flag-param pause-on-errors #f)

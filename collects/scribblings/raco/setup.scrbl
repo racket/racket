@@ -112,6 +112,10 @@ flags:
   documentation for non-existent collections (to clean up after removal)
   even when setup actions are otherwise confined to specified collections.}
 
+ @item{@DFlag{doc-index} --- builds collections that implement
+  documentation indexes (when documentation building is enabled), in
+  addition to specified collections.}
+
  @item{@DFlag{clean} or @Flag{c} --- delete existing @filepath{.zo}
    files, thus ensuring a clean build from the source files. The exact
    set of deleted files can be controlled by @filepath{info.rkt}; see
@@ -529,10 +533,11 @@ Optional @filepath{info.rkt} fields trigger additional actions by
                                                                    exact-nonnegative-integer?)))
                                              #f]
                 [#:make-user? make-user? any/c #t]
+                [#:avoid-main? avoid-main? any/c #f]
                 [#:make-docs? make-docs? any/c #t]
+                [#:make-doc-index? make-doc-index? any/c #f]
                 [#:clean? clean? any/c #f]
                 [#:tidy? tidy? any/c #f]
-                [#:avoid-main? avoid-main? any/c #f]
                 [#:jobs jobs exact-nonnegative-integer? #f]
                 [#:get-target-dir get-target-dir (or/c #f (-> path-string?)) #f])
           void?]{
@@ -549,20 +554,24 @@ Runs @exec{raco setup} with various options:
  @item{@racket[planet-spec] --- if not @racket[#f], constrains setup to
        the named @|PLaneT| packages, along with @racket[collections], if any}
 
+ @item{@racket[make-user?] --- if @racket[#f], disables any
+       user-specific setup actions}
+
+ @item{@racket[avoid-main?] --- if true, avoids setup actions that affect
+       the main installation, as opposed to user directories}
+
  @item{@racket[make-docs?] --- if @racket[#f], disables any
        documentation-specific setup actions}
 
- @item{@racket[make-user?] --- if @racket[#f], disables any
-       user-specific setup actions}
+ @item{@racket[make-doc-index?] --- if @racket[#t], builds
+       documentation index collections in addition to @racket[collections],
+       assuming that documentation is built}
 
  @item{@racket[clean?] --- if true, enables cleaning mode instead of setup mode}
 
  @item{@racket[tidy?] --- if true, enables global tidying of
        documentation and metadata indexes even when @racket[collections]
        or @racket[planet-specs] is non-@racket[#f]}
-
- @item{@racket[avoid-main?] --- if true, avoids setup actions that affect
-       the main installation, as opposed to user directories}
 
  @item{@racket[jobs] --- if not @racket[#f], determines the maximum number of parallel
        tasks used for setup}

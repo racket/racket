@@ -14,14 +14,13 @@
     (define installation? (eq? 'installation (current-pkg-scope)))
     (setup:setup
      #:make-user? (not installation?)
+     #:avoid-main? (not installation?)
      #:collections (and setup-collects
                         (map (lambda (s)
                                (if (list? s) s (list s)))
-                             (append setup-collects
-                                     (if installation? '("scribblings/main") null)
-                                     '("scribblings/main/user"))))
+                             setup-collects))
      #:tidy? #t
-     #:avoid-main? (not installation?))))
+     #:make-doc-index? #t)))
 
 (define ((pkg-error cmd) . args)
   (apply raise-user-error

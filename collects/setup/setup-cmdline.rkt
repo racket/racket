@@ -45,6 +45,8 @@
      #:once-each
      [("--tidy") "Clear references to removed, even if not a specified <collection>"
       (add-flags '((make-tidy #t)))]
+     [("--doc-index") "Rebuild documentation indexes, along with specified <collection>s"
+      (add-flags '((make-doc-index #t)))]
      [("-c" "--clean") "Delete existing compiled files; implies -nxi"
       (add-flags '((clean #t)
                    (make-zo #f)

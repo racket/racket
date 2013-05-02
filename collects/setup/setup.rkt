@@ -20,6 +20,7 @@
                #:planet-specs [planet-specs #f]
                #:collections [collections #f]
                #:make-docs? [make-docs? #t]
+               #:make-doc-index? [make-doc-index? #t]
                #:make-user? [make-user? #t]
                #:clean? [clean? #f]
                #:tidy? [tidy? #f]
@@ -53,6 +54,8 @@
 
     (unless make-docs?
       (make-docs #f))
+    (when make-doc-index?
+      (make-doc-index #t))
 
     (when tidy?
       (make-tidy #t))
