@@ -302,6 +302,27 @@ Some less commonly needed `configure' flags:
  * `--enable-bigendian', if target platform is big-endian.
 
 ========================================================================
+ Cross-compiling for Android
+========================================================================
+
+As an example of cross-compiling, to compile for Andriod on ARM using
+the NDK, use (all on one line)
+
+  configure --host=arm-linux-androideabi 
+            CPPFLAGS=-I[ndk]/platforms/android-[N]/arch-arm/usr/include 
+            LDFLAGS=-L[ndk]/platforms/android-[N]/arch-arm/usr/lib
+            --enable-sgc
+            --enable-racket=racket
+
+where [ndk] is the path to the installed NDK, [N] is a target version
+of Android (such as 14), and
+
+ [ndk]/toolchains/arm-linux-androideabi-[comp]/prebuilt/[platform]/bin
+
+is in your PATH (so that a suitable `gcc', `ar', etc., are found) for
+the [comp] of your choice and the [platform] used to compile.
+
+========================================================================
  CGC versus 3m
 ========================================================================
 
