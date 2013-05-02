@@ -20,6 +20,7 @@
      make-planet
      avoid-main-installation
      make-tidy
+     make-doc-index
      call-install
      call-post-install
      pause-on-errors
