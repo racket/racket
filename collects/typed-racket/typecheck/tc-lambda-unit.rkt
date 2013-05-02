@@ -347,7 +347,7 @@
   (define tvarss (get-poly-layer tvarss-list))
 
   (match expected
-    [(tc-result1: (and t (Poly-fresh: _ fresh-ns expected*)))
+    [(tc-result1: (and t (Poly-fresh: ns fresh-ns expected*)))
      ;; make sure the declared and annotated type variable arities match up
      ;; with the expected type variable arity
      (for ((tvars tvarss))
@@ -357,7 +357,7 @@
        (unless (= (length tvars) (length fresh-ns))
          (tc-error "Expected ~a type variables, but given ~a"
                    (length fresh-ns) (length tvars))))
-     (make-Poly fresh-ns (extend-and-loop form fresh-ns formals bodies (ret expected*)))]
+     (make-Poly #:original-names ns fresh-ns (extend-and-loop form fresh-ns formals bodies (ret expected*)))]
     [(tc-result1: (and t (PolyDots-names: (list ns ... dvar) expected*)))
      ;; make sure the declared and annotated type variable arities match up
      ;; with the expected type variable arity
@@ -393,7 +393,7 @@
      (define results (extend-and-loop form ns formals bodies expected))
      (if dotted
          (make-PolyDots (append ns (list dotted)) results)
-         (make-Poly ns results))]))
+         (make-Poly #:original-names (first tvarss) ns results))]))
 
 ;; typecheck a sequence of case-lambda clauses, which is possibly polymorphic
 ;; tc/lambda/internal syntax syntax-list syntax-list option[type] -> tc-result

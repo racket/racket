@@ -13,9 +13,11 @@
 (: f3 (All (A ...) (All (B ...) (A ... A -> (B ... B -> Natural)))))
 (define f3 (lambda: (x : A ... A) (lambda: (y : B ... B) (+ (length x) (length y)))))
 
+;; PR 13622
 (: f4 (All (x) (All (y z) (x x x -> Any))))
 (define f4 (plambda: (x) ((x : x) (y : x) (z : x)) (or x y z)))
 
+;; PR 13539
 (: f5 (All (A) (All (B) (A B -> Integer))))
 (define (f5 x y)
   (: z B)
