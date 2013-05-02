@@ -26,11 +26,14 @@
                   FAILED TOTAL)])))
   (when exit?
     (unless (zero? FAILED)
-      (exit 1))))
+      (exit 1)))
+  (cons FAILED TOTAL))
 
 (provide
  (contract-out
   [test-log!
    (-> any/c void?)]
   [test-log
-   (->* () (#:display? boolean? #:exit? boolean?) void?)]))
+   (->* () (#:display? boolean? #:exit? boolean?)
+        (cons/c exact-nonnegative-integer?
+                exact-nonnegative-integer?))]))
