@@ -257,6 +257,9 @@ static Scheme_Object *foreign_ffi_lib(int argc, Scheme_Object *argv[])
     } else
       handle = LoadLibraryW(WIDE_PATH(name));
 #   else /* WINDOWS_DYNAMIC_LOAD undefined */
+#   ifdef __ANDROID__
+    if (!name) handle = RTLD_DEFAULT; else
+#   endif /* __ANDROID__ */
     handle = dlopen(name, RTLD_NOW | (as_global ? RTLD_GLOBAL : RTLD_LOCAL));
 #   endif /* WINDOWS_DYNAMIC_LOAD */
     if (handle == NULL && !null_ok) {
@@ -335,6 +338,11 @@ int ffi_obj_FIXUP(void *p) {
 END_XFORM_SKIP;
 #endif
 
+#ifdef __ANDROID__
+static int adjustment_set;
+static uintptr_t adjustment;
+#endif /* __ANDROID__ */
+
 /* (ffi-obj objname ffi-lib-or-libname) -> ffi-obj */
 #define MYNAME "ffi-obj"
 static Scheme_Object *foreign_ffi_obj(int argc, Scheme_Object *argv[])
@@ -393,6 +401,18 @@ static Scheme_Object *foreign_ffi_obj(int argc, Scheme_Object *argv[])
     }
 #   else /* WINDOWS_DYNAMIC_LOAD undefined */
     dlobj = dlsym(lib->handle, dlname);
+#   ifdef __ANDROID__
+    if (dlobj && (lib->handle == RTLD_DEFAULT)) {
+      /* Compensate for a bug in dlsym() that gets the address wrong by
+         an offset (incorrect use of `link_bias'?): */
+      if (!adjustment_set) {
+        adjustment = ((uintptr_t)scheme_start_atomic_no_break
+                      - (uintptr_t)dlsym(RTLD_DEFAULT, "scheme_start_atomic_no_break"));
+        adjustment_set = 1;
+      }
+      dlobj = (char *)dlobj XFORM_OK_PLUS adjustment;
+    }
+#   endif /* __ANDROID__ */
     if (!dlobj && lib->is_global) {
       /* Try every handle in the table of opened libraries. */
       int i;

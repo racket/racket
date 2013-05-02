@@ -227,6 +227,7 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
       } else
         handle = LoadLibraryW(WIDE_PATH(name));
     }{
+      @@IFDEF{__ANDROID__}{if (!name) handle = RTLD_DEFAULT; else}
       handle = dlopen(name, RTLD_NOW | (as_global ? RTLD_GLOBAL : RTLD_LOCAL));
     }
     if (handle == NULL && !null_ok) {
@@ -266,6 +267,11 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
   [obj  "NON_GCBALE_PTR(void)"]
   [name "char*"]
   [lib  "NON_GCBALE_PTR(ffi_lib_struct)"]]
+
+@@IFDEF{__ANDROID__}{
+static int adjustment_set;
+static uintptr_t adjustment;
+}
 
 /* (ffi-obj objname ffi-lib-or-libname) -> ffi-obj */
 @cdefine[ffi-obj 2]{
@@ -323,6 +329,18 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
     }
     }{
     dlobj = dlsym(lib->handle, dlname);
+    @@IFDEF{__ANDROID__}{
+      if (dlobj && (lib->handle == RTLD_DEFAULT)) {
+        /* Compensate for a bug in dlsym() that gets the address wrong by
+           an offset (incorrect use of `link_bias'?): */
+        if (!adjustment_set) {
+          adjustment = ((uintptr_t)scheme_start_atomic_no_break
+                        - (uintptr_t)dlsym(RTLD_DEFAULT, "scheme_start_atomic_no_break"));
+          adjustment_set = 1;
+        }
+        dlobj = (char *)dlobj XFORM_OK_PLUS adjustment;
+      }
+    }
     if (!dlobj && lib->is_global) {
       /* Try every handle in the table of opened libraries. */
       int i;
