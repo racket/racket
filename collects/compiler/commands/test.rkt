@@ -1,6 +1,10 @@
 #lang racket/base
 (require racket/cmdline
          racket/match
+         racket/format
+         racket/list
+         racket/function
+         racket/port
          racket/path
          raco/command-name
          rackunit/log
@@ -9,6 +13,76 @@
 (define submodules '())
 (define run-anyways? #t)
 (define quiet? #f)
+(define quiet-program? #f)
+(define table? #f)
+
+(define (dynamic-require* p d)
+  (parameterize
+      ([current-output-port
+        (if quiet-program?
+          (open-output-nowhere)
+          (current-output-port))]
+       [current-error-port
+        (if quiet-program?
+          (open-output-nowhere)
+          (current-error-port))])
+    (dynamic-require p d)))
+
+(struct summary (failed total label body-res))
+(define-syntax-rule (with-summary label . body)
+  (let ()
+    (match-define (cons before-failed before-total)
+                  (test-log #:display? #f #:exit? #f))
+    (define res (begin . body))
+    (match-define (cons after-failed after-total)
+                  (test-log #:display? #f #:exit? #f))
+    (summary (- after-failed before-failed)
+             (- after-total before-total)
+             label
+             res)))
+
+(define (iprintf i fmt . more)
+  (for ([j (in-range i)])
+    (display #\space))
+  (apply printf fmt more))
+(define (display-summary top)
+  (define files
+    (let flatten ([sum top])
+      (match sum
+        [(list sum ...)
+         (append-map flatten sum)]
+        [(summary failed total `(file ,p) body)
+         (list sum)]
+        [(summary failed total label body)
+         (flatten body)]
+        [(? void?)
+         empty])))
+  (define sfiles
+    (sort files
+          (λ (x y)
+            (cond
+              [(= (summary-failed x) (summary-failed y))
+               (> (summary-total x) (summary-total y))]
+              [else
+               (< (summary-failed x) (summary-failed y))]))))
+  (define (max-width f)
+    (string-length
+     (number->string
+      (apply max (map f sfiles)))))
+  (define failed-wid (max-width summary-failed))
+  (define total-wid (max-width summary-total))
+  (for ([f (in-list sfiles)])
+    (match-define (summary failed total `(file ,p) _) f)
+    (displayln (~a (~a #:min-width failed-wid
+                       #:align 'right
+                       (if (zero? failed)
+                         ""
+                         failed))
+                   " "
+                   (~a #:min-width total-wid
+                       #:align 'right
+                       total)
+                   " " p))))
 
 (define (do-test e [check-suffix? #f])
   (match e
@@ -17,35 +91,39 @@
     [(? path? p)
      (cond
        [(directory-exists? p)
-        (for-each
-         (λ (dp)
-           (do-test (build-path p dp) #t))
-         (directory-list p))]
+        (with-summary
+         `(directory ,p)
+         (map
+          (λ (dp)
+            (do-test (build-path p dp) #t))
+          (directory-list p)))]
        [(and (file-exists? p)
              (or (not check-suffix?)
                  (regexp-match #rx#"\\.rkt$" (path->bytes p))))
-        (parameterize ([current-command-line-arguments '#()])
-          (define something-wasnt-declared? #f)
-          (for ([submodule (in-list (if (null? submodules)
-                                        '(test)
-                                        (reverse submodules)))])
-            (define mod `(submod ,p ,submodule))
-            (cond
-              [(module-declared? mod #t)
-               (unless quiet?
-                 (printf "raco test: ~s\n" `(submod ,(if (absolute-path? p)
-                                                         `(file ,(path->string p))
-                                                         (path->string p))
-                                                    ,submodule)))
-               (dynamic-require mod 0)]
-              [else
-               (set! something-wasnt-declared? #t)]))
-          (when (and run-anyways? something-wasnt-declared?)
-            (unless quiet?
-              (printf "raco test: ~s\n" (if (absolute-path? p)
-                                            `(file ,(path->string p))
-                                            (path->string p))))
-            (dynamic-require p 0)))]
+        (with-summary
+         `(file ,p)
+         (parameterize ([current-command-line-arguments '#()])
+           (define something-wasnt-declared? #f)
+           (for ([submodule (in-list (if (null? submodules)
+                                       '(test)
+                                       (reverse submodules)))])
+             (define mod `(submod ,p ,submodule))
+             (cond
+               [(module-declared? mod #t)
+                (unless quiet?
+                  (printf "raco test: ~s\n" `(submod ,(if (absolute-path? p)
+                                                        `(file ,(path->string p))
+                                                        (path->string p))
+                                                     ,submodule)))
+                (dynamic-require* mod 0)]
+               [else
+                (set! something-wasnt-declared? #t)]))
+           (when (and run-anyways? something-wasnt-declared?)
+             (unless quiet?
+               (printf "raco test: ~s\n" (if (absolute-path? p)
+                                           `(file ,(path->string p))
+                                           (path->string p))))
+             (dynamic-require* p 0))))]
        [(not (file-exists? p))
         (error 'test "given path ~e does not exist" p)])]))
 
@@ -106,12 +184,16 @@
        [(list)
         (error 'test "Collection ~e is not installed" e)]
        [l
-        (for-each do-test l)])]
+        (with-summary
+         `(collection ,e)
+         (map do-test l))])]
     [packages?
      (define pd (pkg-directory e))
      (if pd
-         (do-test pd)
-         (error 'test "Package ~e is not installed" e))]
+       (with-summary
+        `(package ,e)
+        (do-test pd))
+       (error 'test "Package ~e is not installed" e))]
     [else
      (do-test e)]))
 
@@ -131,8 +213,14 @@
   (set! run-anyways? #f)]
  #:once-each
  [("--quiet" "-q")
-  "Suppress `Running ...' message"
+  "Suppress `raco test: ...' message"
   (set! quiet? #t)]
+ [("--table" "-t")
+  "Print a summary table"
+  (set! table? #t)]
+ [("--quiet-program" "-Q")
+  "Quiet the program"
+  (set! quiet-program? #t)]
  #:once-any
  [("--collection" "-c")
   "Interpret arguments as collections"
@@ -141,5 +229,7 @@
   "Interpret arguments as packages"
   (set! packages? #t)]
  #:args file-or-directory
- (begin (for-each do-test-wrap file-or-directory)
-        (test-log #:display? #t #:exit? #t)))
+ (begin (define sum (map do-test-wrap file-or-directory))
+        (when table?
+          (display-summary sum))
+        (void (test-log #:display? #t #:exit? #t))))
