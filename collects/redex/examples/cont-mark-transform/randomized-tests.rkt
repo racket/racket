@@ -4,7 +4,7 @@
          "TL-syntax.rkt" "TL-semantics.rkt"
          "CMT.rkt"
          "common.rkt"
-         redex)
+         redex/reduction-semantics)
 (provide main same-result?)
 
 (define (main . args)

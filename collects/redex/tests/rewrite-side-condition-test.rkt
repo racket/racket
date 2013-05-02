@@ -7,7 +7,7 @@
 (define-syntax (rsc stx)
   (syntax-case stx ()
     [(_ pat (nts ...) bind-names?)
-     (with-syntax ([(pat (vars ...) (vars/ellipses ...))
+     (with-syntax ([(ignore pat (vars ...) (vars/ellipses ...))
                     (rewrite-side-conditions/check-errs 
                      (syntax->datum #'(nts ...))
                      'rsc

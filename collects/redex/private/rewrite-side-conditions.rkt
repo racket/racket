@@ -19,7 +19,19 @@
   
   (provide (struct-out id/depth))
   
-  (define (rewrite-side-conditions/check-errs all-nts what bind-names? orig-stx)
+  ;; the result is a four-tuple (as a list) syntax object
+  ;; - the first is an ordinary expression that evaluates
+  ;;   to (void), but tells check syntax about binding information
+  ;; - the second is an expression that, when prefixed with a
+  ;;   quasiquote, evaluates to a pattern that can be used with
+  ;;   match-a-pattern (at runtime).
+  (define (rewrite-side-conditions/check-errs all-nts/lang-id what bind-names? orig-stx)
+    (define all-nts (if (identifier? all-nts/lang-id)
+                        (language-id-nts all-nts/lang-id what)
+                        all-nts/lang-id))
+    (define id-stx-table (if (identifier? all-nts/lang-id)
+                             (language-id-nt-identifiers all-nts/lang-id #f)
+                             (hash)))
     (define (expected-exact name n stx)
       (raise-syntax-error what (format "~a expected to have ~a arguments" 
                                        name
@@ -38,6 +50,8 @@
     (define (find e sets)
       (let recur ([chd e] [par (hash-ref sets e #f)])
         (if (and par (not (eq? chd par))) (recur par (hash-ref sets par #f)) chd)))
+    
+    (define void-stx #'(void))
     
     (define last-contexts (make-hasheq))
     (define last-stx (make-hasheq)) ;; used for syntax error reporting
@@ -67,6 +81,15 @@
                     [else
                      (hash-set! last-contexts pat-sym under)
                      assignments])))))
+    
+    (define (record-syncheck-use stx nt)
+      (define the-use (build-disappeared-use id-stx-table nt stx))
+      (when the-use
+        (define old (syntax-property void-stx 'disappeared-use))
+        (set! void-stx
+              (syntax-property void-stx
+                               'disappeared-use
+                               (if old (cons the-use old) the-use)))))
 
     (define ellipsis-number 0)
     
@@ -188,6 +211,7 @@
                     term)]
                   [(memq prefix-sym all-nts)
                    (record-binder term under)
+                   (record-syncheck-use term prefix-sym)
                    (values (if mismatch?
                                `(mismatch-name ,term (nt ,prefix-stx))
                                `(name ,term (nt ,prefix-stx)))
@@ -212,6 +236,7 @@
                  orig-stx
                  term)]
                [(memq (syntax-e term) all-nts)
+                (record-syncheck-use term (syntax-e term))
                 (cond
                   [bind-names?
                    (record-binder term under)
@@ -357,8 +382,9 @@
     (let ([without-mismatch-names (filter (λ (x) (not (id/depth-mismatch? x))) names)])
       (with-syntax ([(name/ellipses ...) (map build-dots without-mismatch-names)]
                     [(name ...) (map id/depth-id without-mismatch-names)]
-                    [term ellipsis-normalized/simplified])
-        #'(term (name ...) (name/ellipses ...)))))
+                    [term ellipsis-normalized/simplified]
+                    [void-stx void-stx])
+        #'(void-stx term (name ...) (name/ellipses ...)))))
   
   (define-struct id/depth (id depth mismatch?))
   

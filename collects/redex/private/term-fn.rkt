@@ -28,7 +28,10 @@
          
          make-language-id
          language-id-nts
-         pattern-symbols)
+         language-id-nt-identifiers
+         pattern-symbols
+         
+         build-disappeared-use)
 
 (define-values (struct-type make-term-fn term-fn? term-fn-get term-fn-set!) 
   (make-struct-type 'term-fn #f 1 0))
@@ -57,7 +60,8 @@
   (when (eq? (syntax-local-context) 'expression)
     (raise-syntax-error #f "not allowed in an expression context" stx)))
 
-(define-values (language-id make-language-id language-id? language-id-get language-id-set) (make-struct-type 'language-id #f 2 0 #f '() #f 0))
+(define-values (language-id make-language-id language-id? language-id-get language-id-set) 
+  (make-struct-type 'language-id #f 3 0 #f '() #f 0))
 
 (define (language-id-nts stx id) (language-id-getter stx id 1))
 (define (language-id-getter stx id n)
@@ -68,6 +72,7 @@
                  (language-id? (set!-transformer-procedure val)))
       (raise-syntax-error id "expected an identifier defined by define-language" stx))
     (language-id-get (set!-transformer-procedure val) n)))
+(define (language-id-nt-identifiers stx id) (language-id-getter stx id 2))
 
 (define pattern-symbols '(any number natural integer real string variable 
                               variable-not-otherwise-mentioned hole symbol))
@@ -84,3 +89,24 @@
 (define metafunc-proc-cases (make-struct-field-accessor metafunc-proc-ref 8))
 (define metafunc-proc-gen-clauses (make-struct-field-accessor metafunc-proc-ref 9))
 (define metafunc-proc-lhs-pats (make-struct-field-accessor metafunc-proc-ref 10))
+
+
+(define (build-disappeared-use id-stx-table nt id-stx)
+  (cond
+    [id-stx-table
+     (define table-entry (hash-ref id-stx-table nt #f))
+     (cond
+       [table-entry
+        (define the-srcloc (vector
+                            (syntax-source id-stx)
+                            (syntax-line id-stx)
+                            (syntax-column id-stx)
+                            (syntax-position id-stx)
+                            ;; shorten the span so it covers only up to the underscore
+                            (string-length (symbol->string nt))))
+        (define the-id (datum->syntax table-entry nt the-srcloc id-stx))
+        (syntax-property the-id 'syncheck-original #t)]
+       [else
+        #f])]
+    [else
+     #f]))

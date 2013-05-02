@@ -85,9 +85,9 @@
 (define-syntax (redex-check stx)
   (syntax-case stx ()
     [(form lang pat property . kw-args)
-     (with-syntax ([(pattern (name ...) (name/ellipses ...))
+     (with-syntax ([(syncheck-exp pattern (name ...) (name/ellipses ...))
                     (rewrite-side-conditions/check-errs 
-                     (language-id-nts #'lang 'redex-check)
+                     #'lang
                      'redex-check #t #'pat)]
                    [show (show-message stx)])
      (let-values ([(attempts-stx source-stx retries-stx print?-stx size-stx fix-stx)
@@ -114,6 +114,7 @@
                    [term-match (λ (generated)
                                  (cond [(test-match lang pat generated) => values]
                                        [else (redex-error 'redex-check "~s does not match ~s" generated 'pat)]))])
+               syncheck-exp
                (parameterize ([attempt->size #,size-stx])
                #,(if source-stx
                      #`(let-values ([(metafunc/red-rel num-cases) 
@@ -329,19 +330,17 @@
         (when (keyword? k)
           (unless (member k '(#:satisfying #:source #:attempt-num #:retries #:i-th))
             (raise-syntax-error 'generate-term "unknown keyword" stx x))))))
-  (define form-name (with-syntax ([(_ orig-name . args) stx])
-                      (syntax-e #'orig-name)))
   (syntax-case stx ()
     [(_ orig-name lang pat #:i-th . rest)
-     (with-syntax ([(pattern (vars ...) (vars/ellipses ...)) 
+     (with-syntax ([(syncheck-exp pattern (vars ...) (vars/ellipses ...)) 
                     (rewrite-side-conditions/check-errs 
-                     (language-id-nts #'lang form-name)
-                     form-name #t #'pat)])
+                     #'lang
+                     (syntax-e #'orig-name) #t #'pat)])
        (syntax-case #'rest ()
          [()
-          #'(generate-ith/proc lang `pattern)]
+          #'(begin syncheck-exp (generate-ith/proc lang `pattern))]
          [(i-expr)
-          #'((generate-ith/proc lang `pattern) i-expr)]))]
+          #'(begin syncheck-exp ((generate-ith/proc lang `pattern) i-expr))]))]
     [(_ orig-name language #:satisfying (jf/mf-id . args) . rest)
      (cond
        [(metafunc #'jf/mf-id)
@@ -400,27 +399,27 @@
                     => (λ (f)
                          #`(let* ([f #,f]
                                   [L (metafunc-proc-lang f)]
-                                  [compile-pat (compile L '#,form-name)]
+                                  [compile-pat (compile L 'orig-name)]
                                   [cases (metafunc-proc-cases f)])
                              (check-cases 'src cases)
                              (map (λ (c) (compile-pat ((metafunc-case-lhs+ c) L))) 
                                   cases)))]
                    [else
-                    #`(let* ([r #,(apply-contract #'reduction-relation?  #'src "#:source argument" form-name)]
+                    #`(let* ([r #,(apply-contract #'reduction-relation?  #'src "#:source argument" (syntax-e #'orig-name))]
                              [L (reduction-relation-lang r)]
-                             [compile-pat (compile L '#,form-name)])
+                             [compile-pat (compile L 'orig-name)])
                         (map (λ (p) (compile-pat ((rewrite-proc-lhs p) L)))
                              (reduction-relation-make-procs r)))])
              #'rest)]
            [(lang pat . rest)
-            (with-syntax ([(pattern (vars ...) (vars/ellipses ...)) 
+            (with-syntax ([(syncheck-exp pattern (vars ...) (vars/ellipses ...)) 
                            (rewrite-side-conditions/check-errs 
-                            (language-id-nts #'lang form-name)
-                            form-name #t #'pat)])
-              (values #`(list #,(term-generator #'lang #'pattern form-name))
+                            #'lang
+                            (syntax-e #'orig-name) #t #'pat)])
+              (values #`(begin syncheck-exp (list #,(term-generator #'lang #'pattern (syntax-e #'orig-name))))
                       #'rest))]))
        (define generator-syntax
-         #`(make-generator #,raw-generators '#,form-name))
+         #`(make-generator #,raw-generators 'orig-name))
        (syntax-case args ()
          [()
           generator-syntax]
@@ -473,16 +472,18 @@
                   [args-stx (if relation?
                                 (syntax/loc #'args (args))
                                 #'args)]) 
-             (with-syntax ([(pat (names ...) (names/ellipses ...))
-                            (rewrite-side-conditions/check-errs nts 'redex-generator #t args-stx)])
-               (if relation?
-                   #`(let ([gen-proc (make-jf-gen/proc 'jf/mf-id #,clauses lang-id 'pat size)])
-                       (λ ()
-                         (match (gen-proc)
-                           [`(,jf-name (,trms (... ...)))
-                            `(,jf-name ,@trms)]
-                           [#f #f])))
-                   #`(make-jf-gen/proc 'jf/mf-id #,clauses lang-id 'pat size))))]
+             (with-syntax ([(syncheck-exp pat (names ...) (names/ellipses ...))
+                            (rewrite-side-conditions/check-errs #'lang-id 'redex-generator #t args-stx)])
+               #`(begin
+                   syncheck-exp
+                   #,(if relation?
+                         #`(let ([gen-proc (make-jf-gen/proc 'jf/mf-id #,clauses lang-id 'pat size)])
+                             (λ ()
+                               (match (gen-proc)
+                                 [`(,jf-name (,trms (... ...)))
+                                  `(,jf-name ,@trms)]
+                                 [#f #f])))
+                         #`(make-jf-gen/proc 'jf/mf-id #,clauses lang-id 'pat size)))))]
           [_
            (raise-syntax-error 'redex-generator 
                                "expected an integer depth bound"
@@ -496,12 +497,12 @@
            (let ()
              (define mf (syntax-local-value #'jf/mf-id (λ () #f)))
              (define nts (definition-nts #'lang-id stx 'redex-generator))
-             (with-syntax ([(lhs-pat (lhs-names ...) (lhs-names/ellipses ...))
-                            (rewrite-side-conditions/check-errs nts (syntax-e #'g-m-p) #t #'args)]
-                           [(rhs-pat (rhs-names ...) (rhs-names/ellipses ...))
-                            (rewrite-side-conditions/check-errs nts (syntax-e #'g-m-p) #t #'res)]
+             (with-syntax ([(lhs-syncheck-exp lhs-pat (lhs-names ...) (lhs-names/ellipses ...))
+                            (rewrite-side-conditions/check-errs #'lang-id (syntax-e #'g-m-p) #t #'args)]
+                           [(rhs-syncheck-exp rhs-pat (rhs-names ...) (rhs-names/ellipses ...))
+                            (rewrite-side-conditions/check-errs #'lang-id (syntax-e #'g-m-p) #t #'res)]
                            [mf-id (term-fn-get-id mf)])
-               #`(make-mf-gen/proc 'mf-id mf-id lang-id 'lhs-pat 'rhs-pat size)))]
+               #`(begin lhs-syncheck-exp rhs-syncheck-exp (make-mf-gen/proc 'mf-id mf-id lang-id 'lhs-pat 'rhs-pat size))))]
           [_
            (raise-syntax-error 'redex-generator 
                                "expected \"=\" followed by a result pattern and an integer depth bound"

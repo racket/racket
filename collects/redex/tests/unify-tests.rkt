@@ -728,10 +728,10 @@
   (λ (stx)
     (syntax-case stx ()
       [(f-name lang t-1 t-2 env)
-       (with-syntax ([(pat-1 (names-1 ...) (names/ellipses-1 ...))
+       (with-syntax ([(ignore-1 pat-1 (names-1 ...) (names/ellipses-1 ...))
                       (rewrite-side-conditions/check-errs
                        (language-id-nts #'lang 'f-name) 'f-name stx #'t-1)]
-                     [(pat-2 (names-2 ...) (names/ellipses-2 ...))
+                     [(ignore-2 pat-2 (names-2 ...) (names/ellipses-2 ...))
                       (rewrite-side-conditions/check-errs
                        (language-id-nts #'lang 'f-name) 'f-name stx #'t-2)])
          #'(unify/format 'pat-1 'pat-2 env lang))])))

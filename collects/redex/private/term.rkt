@@ -15,7 +15,6 @@
 (provide term term-let define-term
          hole in-hole
          term-let/error-name term-let-fn term-define-fn
-         term/nts
          (for-syntax term-rewrite
                      term-temp->pat
                      currently-expanding-term-fn
@@ -39,30 +38,39 @@
 (define-syntax (term stx)
   (syntax-case stx ()
     [(term t . kw-args)
-     (with-syntax ([(lang-stx) (parse-kw-args (list lang-keyword)
-                                                 (syntax kw-args)
-                                                 stx
-                                                 (syntax-e #'form))])
-       (if (syntax->datum #'lang-stx)
-           (let ([lang-nts (let loop ([ls #'lang-stx])
-                             (define slv (syntax-local-value ls (λ () #'lang-stx)))
-                             (if (term-id? slv)
-                                 (loop (term-id-prev-id slv))
-                                 (language-id-nts ls 'term)))])
-             #`(term/nts t #,lang-nts))
-           #'(term/nts t #f)))]))
+     (let ()
+       (define lang-stx (car
+                         (parse-kw-args (list lang-keyword)
+                                        (syntax kw-args)
+                                        stx
+                                        (syntax-e #'form))))
+       (cond
+         [lang-stx
+          (define-values (lang-nts lang-nt-ids)
+            (let loop ([ls lang-stx])
+              (define slv (syntax-local-value ls (λ () lang-stx)))
+              (if (term-id? slv)
+                  (loop (term-id-prev-id slv))
+                  (values (language-id-nts ls 'term)
+                          (language-id-nt-identifiers ls 'term)))))
+          #`(term/nts t #,lang-nts #,lang-nt-ids)]
+         [else
+          #'(term/nts t #f #f)]))]))
 
 (define-syntax (term/nts stx)
   (syntax-case stx ()
-    [(_ arg nts)
-     #'(#%expression (term/private arg nts))]))
+    [(_ arg nts nt-ids)
+     #'(#%expression (term/private arg nts nt-ids))]))
+
+(define-for-syntax current-id-stx-table (make-parameter #f))
 
 (define-syntax (term/private stx)
   (syntax-case stx ()
-    [(_ arg-stx nts-stx)
-     (with-disappeared-uses
-      (let-values ([(t a-mfs) (term-rewrite/private #'arg-stx #'nts-stx #f)])
-        (term-temp->unexpanded-term t a-mfs)))]))
+    [(_ arg-stx nts-stx id-stx-table)
+     (parameterize ([current-id-stx-table (syntax-e #'id-stx-table)])
+       (with-disappeared-uses
+        (let-values ([(t a-mfs) (term-rewrite/private #'arg-stx #'nts-stx #f)])
+          (term-temp->unexpanded-term t a-mfs))))]))
 
 (define-for-syntax (term-rewrite t names)
   (let*-values ([(t-t a-mfs) (term-rewrite/private t #`#f names)]
@@ -169,11 +177,25 @@
             (term-fn? (syntax-local-value (syntax f) (λ () #f))))
        (raise-syntax-error 'term "metafunction must be in an application" arg-stx stx)]
       [x
-       (and (identifier? (syntax x))
-            (term-id? (syntax-local-value (syntax x) (λ () #f))))
-       (let ([id (syntax-local-value/record (syntax x) (λ (x) #t))])
+       (and (identifier? #'x)
+            (term-id? (syntax-local-value #'x (λ () #f))))
+       (let ([id (syntax-local-value/record #'x (λ (x) #t))])
+         (define stx-result (datum->syntax (term-id-id id) (syntax-e (term-id-id id)) #'x))
+         
+         (define raw-sym (syntax-e #'x))
+         (define raw-str (symbol->string raw-sym))
+         (define m (regexp-match #rx"^([^_]*)_" raw-str))
+         (define prefix-sym (if m
+                                (string->symbol (list-ref m 1))
+                                raw-sym))
          (check-id (syntax->datum (term-id-id id)) stx)
-         (values (datum->syntax (term-id-id id) (syntax-e (term-id-id id)) (syntax x))
+         
+         (define new-id
+           (build-disappeared-use (current-id-stx-table) 
+                                  prefix-sym
+                                  (syntax-local-introduce #'x)))
+         (when new-id (record-disappeared-uses (list new-id)))
+         (values stx-result
                  (term-id-depth id)))]
       [x
        (defined-term-id? #'x)
@@ -223,7 +245,7 @@
                                           (i-loop (cdr xs))])
                               (values (cons fst rst)
                                       (max fst-max-depth rst-max-depth))))]))])
-         (values (datum->syntax stx x-rewrite stx) max-depth))]
+         (values (datum->syntax stx x-rewrite stx stx) max-depth))]
       
       [_ (values stx 0)]))
   
@@ -341,7 +363,7 @@
 (define-syntax (term-define-fn stx)
   (syntax-case stx ()
     [(_ id exp)
-     (with-syntax ([id2 (datum->syntax #'here (syntax-e #'id))])
+     (with-syntax ([id2 (datum->syntax #'here (syntax-e #'id) #'id #'id)])
        (syntax
         (begin
           (define id2 exp)
@@ -363,7 +385,7 @@
                        [x 
                         (and (identifier? #'x)
                              (not (free-identifier=? (quote-syntax ...) #'x)))
-                        (let ([new-name (datum->syntax #'here (syntax-e #'x))])
+                        (let ([new-name (datum->syntax #'here (syntax-e #'x) #'x #'x)])
                           (values (list #'x)
                                   (list new-name)
                                   (list depth)
