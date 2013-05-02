@@ -474,7 +474,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                         #t))]))
 
 (begin-for-syntax
-  (define-syntax-class struct-name
+  (define-syntax-class dtsi-struct-name
     #:description "struct name (with optional super-struct name)"
     #:attributes (name super value)
     (pattern ((~var name (static struct-info? "struct name")) super:id)
@@ -499,69 +499,90 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (define (mk internal-id)
       (lambda (stx)
         (syntax-parse stx
-          [(_ () nm:struct-name . rest)
+          [(_ () nm:dtsi-struct-name . rest)
            (internal (quasisyntax/loc stx
                        (#,internal-id
                         #,(syntax-property #'nm 'struct-info (attribute nm.value)) . rest)))]
-          [(_ (vars:id ...) nm:struct-name . rest)
+          [(_ (vars:id ...) nm:dtsi-struct-name . rest)
            (internal (quasisyntax/loc stx
                        (#,internal-id (vars ...)
                                       #,(syntax-property #'nm 'struct-info (attribute nm.value)) . rest)))])))
     (values (mk #'define-typed-struct-internal)
             (mk #'define-typed-struct/exec-internal))))
-              
+
+;; Syntax classes and helpers for `struct:`
+(begin-for-syntax
+  (define-syntax-class fld-spec
+    #:literals (:)
+    #:description "[field-name : type]"
+    (pattern [fld:id : ty]))
+
+  (define-syntax-class struct-name
+    #:description "struct name (with optional super-struct name)"
+    #:attributes (name super)
+    (pattern (name:id super:id))
+    (pattern name:id
+             #:with super #f))
   
+  (define-splicing-syntax-class struct-name/new
+    #:description "struct name (with optional super-struct name)"
+    (pattern (~seq name:id super:id)
+             #:attr old-spec #'(name super)
+             #:with new-spec #'(name super))
+    (pattern name:id
+             #:with super #f
+             #:attr old-spec #'name
+             #:with new-spec #'(name)))
+
+  (define-splicing-syntax-class maybe-type-vars
+   #:description "optional list of type variables"
+   #:attributes ((vars 1))
+   (pattern (vars:id ...))
+   (pattern (~seq) #:attr (vars 1) null))
+
+  (define-splicing-syntax-class struct-options
+    #:description "typed structure type options"
+    #:attributes (guard mutable? transparent? [prop 1] [prop-val 1])
+    (pattern (~seq (~or (~optional (~seq (~and #:mutable mutable?)))
+                        (~optional (~seq (~and #:transparent transparent?)))
+                        ;; FIXME: unsound, but relied on in core libraries
+                        ;; #:guard ought to be supportable with some work
+                        ;; #:property is harder
+                        (~optional (~seq #:guard guard:expr))
+                        (~seq #:property prop:expr prop-val:expr))
+                   ...))))
+
+;; User-facing macros for defining typed structure types
 (define-syntaxes (define-typed-struct struct:)
-  (let ()
-    (define-syntax-class fld-spec
-      #:literals (:)
-      #:description "[field-name : type]"
-      (pattern [fld:id : ty]))
-    (define-syntax-class struct-name
-      #:description "struct name (with optional super-struct name)"
-      #:attributes (name super)
-      (pattern (name:id super:id))
-      (pattern name:id
-               #:with super #f))
-    (define-splicing-syntax-class struct-name/new
-      #:description "struct name (with optional super-struct name)"
-      (pattern (~seq name:id super:id)
-               #:attr old-spec #'(name super)
-               #:with new-spec #'(name super))
-      (pattern name:id
-               #:with super #f
-               #:attr old-spec #'name
-               #:with new-spec #'(name)))
-    (define-splicing-syntax-class maybe-type-vars
-     #:description "optional list of type variables"
-     #:attributes ((vars 1))
-     (pattern (vars:id ...))
-     (pattern (~seq) #:attr (vars 1) null))
-
-
-    (define (mutable? opts)
-      (if (memq '#:mutable (syntax->datum opts)) '(#:mutable) '()))
-    (values
-     (lambda (stx)
-       (syntax-parse stx
-         [(_ vars:maybe-type-vars nm:struct-name (fs:fld-spec ...) . opts)
-          (let ([mutable (mutable? #'opts)])
-            (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fs.fld ...) . opts))
-                                                'typechecker:ignore #t)]
-                          [dtsi (quasisyntax/loc stx (dtsi* (vars.vars ...) nm (fs ...) #,@mutable))])
-              #'(begin d-s dtsi)))]))
-     (lambda (stx)
-       (syntax-parse stx
-         [(_ vars:maybe-type-vars nm:struct-name/new (fs:fld-spec ...) . opts)
-          (let ([mutable (mutable? #'opts)]
-                [cname (datum->syntax #f (format-symbol "make-~a" (syntax-e #'nm.name)))])
-            (with-syntax ([d-s (syntax-property (quasisyntax/loc stx
-                                                  (struct #,@(attribute nm.new-spec) (fs.fld ...)
-                                                          #:extra-constructor-name #,cname
-                                                          . opts))
-                                                'typechecker:ignore #t)]
-                          [dtsi (quasisyntax/loc stx (dtsi* (vars.vars ...) nm.old-spec (fs ...) #:maker #,cname #,@mutable))])
-              #'(begin d-s dtsi)))])))))
+  (values
+   (lambda (stx)
+     (syntax-parse stx
+       [(_ vars:maybe-type-vars nm:struct-name (fs:fld-spec ...)
+           opts:struct-options)
+        (let ([mutable? (if (attribute opts.mutable?) #'(#:mutable) #'())])
+          (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fs.fld ...) . opts))
+                                              'typechecker:ignore #t)]
+                        [dtsi (quasisyntax/loc stx
+                                (dtsi* (vars.vars ...) nm (fs ...)
+                                       #,@mutable?))])
+            #'(begin d-s dtsi)))]))
+   (lambda (stx)
+     (syntax-parse stx
+       [(_ vars:maybe-type-vars nm:struct-name/new (fs:fld-spec ...)
+           opts:struct-options)
+        (let ([mutable? (if (attribute opts.mutable?) #'(#:mutable) #'())]
+              [cname (datum->syntax #f (format-symbol "make-~a" (syntax-e #'nm.name)))])
+          (with-syntax ([d-s (syntax-property (quasisyntax/loc stx
+                                                (struct #,@(attribute nm.new-spec) (fs.fld ...)
+                                                        #:extra-constructor-name #,cname
+                                                        . opts))
+                                              'typechecker:ignore #t)]
+                        [dtsi (quasisyntax/loc stx
+                                (dtsi* (vars.vars ...)
+                                       nm.old-spec (fs ...)
+                                       #:maker #,cname
+                                       #,@mutable?))])
+            #'(begin d-s dtsi)))]))))
 
 
 ;Copied from racket/private/define-struct
