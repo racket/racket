@@ -116,8 +116,9 @@
   (unless (or (not group)
               (thread-group? group))
     (raise-argument-error 'delay/thread "(or/c thread-group? #f)" group))
-  (let ()
+  (let ([starter (make-semaphore)])
     (define (run)
+      (semaphore-wait starter) ; wait until p is properly defined
       (call-with-exception-handler
        (lambda (e) (pset! p (make-reraise e)) (kill-thread (current-thread)))
        (lambda () (pset! p (call-with-values thunk list)))))
@@ -128,6 +129,13 @@
         (if group
             (parameterize ([current-thread-group group]) (thread run))
             (thread run)))))
+    ;; The promise thread needs to wait until `p' is properly defined.
+    ;; Otherwise, if the thread starts after `(thread run)' is evaluated, but
+    ;; before `p' is defined, we end up doing `unsafe-struct-set!' on
+    ;; `#<undefined>', which is bad.
+    ;; This was the cause of an intermittent failure in the Typed Racket test
+    ;; suite.
+    (semaphore-post starter)
     p))
 (define-syntax delay/thread*
   (let ([kwds (list (cons '#:group #'(make-thread-group)))])
