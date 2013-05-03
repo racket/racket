@@ -74,6 +74,7 @@
   (match t
     [(tc-result1: t) t]
     [(tc-results: ts) (-values ts)]
+    [(tc-any-results:) ManyUniv]
     [_ t]))
 
 (define (stringify-domain dom rst drst [rng #f])
