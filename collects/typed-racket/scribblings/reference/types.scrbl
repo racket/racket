@@ -516,6 +516,7 @@ argument.}
 @section{Other Types}
 
 @defform[(Option t)]{Either @racket[t] or @racket[#f]}
-@defform[(Opaque t)]{A type constructed using @racket[require-opaque-type].}
+@defform[(Opaque t)]{A type constructed using the @racket[#:opaque]
+clause of @racket[require/typed].}
 
 @(close-eval the-eval)
