@@ -101,6 +101,10 @@
     (make-path->relative-string
      (list (cons find-gui-bin-dir "<gui-bin>/"))))
 
+  (define path->relative-string/lib
+    (make-path->relative-string
+     (list (cons find-lib-dir "<lib>/"))))
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                   Errors                      ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1213,13 +1217,13 @@
                            make-mzscheme-launcher
                            mzscheme-launcher-up-to-date?))))))
 
-  (define (read-launchers receipt-path)
+  (define (read-receipt-hash receipt-path)
     (if (file-exists? receipt-path)
         (with-handlers ([exn:fail?
                          (lambda (exn)
                            (setup-printf
                             "WARNING"
-                            "error reading launcher list ~s: ~a"
+                            "error reading receipts ~s: ~a"
                             receipt-path
                             (exn-message exn))
                            #hash())])
@@ -1232,14 +1236,14 @@
                  (error "content is not a hash table")))))
         #hash()))
 
-  (define (write-launchers receipt-path ht)
+  (define (write-receipt-hash receipt-path ht)
     (call-with-output-file*
      #:exists 'truncate/replace
      receipt-path
-     (lambda (o) (write ht o))))
+     (lambda (o) (write ht o) (newline o))))
 
   (define (record-launcher receipt-path name kind variant coll coll-path)
-    (let ([ht (read-launchers receipt-path)])
+    (let ([ht (read-receipt-hash receipt-path)])
       (define coll-rel (let ([p (path->main-collects-relative coll-path)])
                          (if (path? p)
                              (path->bytes p)
@@ -1251,11 +1255,11 @@
       (unless (equal? (hash-ref ht exe-key #f)
                       exe-val)
         (let ([ht (hash-set ht exe-key exe-val)]) 
-          (write-launchers receipt-path ht)))))
+          (write-receipt-hash receipt-path ht)))))
 
   (define (tidy-launchers user? bin-dir gui-bin-dir lib-dir)
     (define receipt-path (build-path lib-dir "launchers.rktd"))
-    (define ht (read-launchers receipt-path))
+    (define ht (read-receipt-hash receipt-path))
     (define ht2 (for/fold ([ht (hash)]) ([(k v) (in-hash ht)])
                   (define coll-path (main-collects-relative->path (cdr v)))
                   (cond
@@ -1295,7 +1299,171 @@
                     ht])))
     (unless (equal? ht ht2)
       (setup-printf "updating" "launcher list")
-      (write-launchers receipt-path ht2)))
+      (write-receipt-hash receipt-path ht2)))
+
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;       Foriegn Libraries and Man Pages         ;;
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define (make-copy/move-step what
+                               whats
+                               what/title
+                               copy-tag
+                               move-tag
+                               find-target-dir
+                               find-user-target-dir
+                               receipt-file
+                               check-entry
+                               build-dest-path)
+    (define (make-libs-step)
+      (setup-printf #f (format "--- installing ~a ---" whats))
+      (when (or no-specific-collections?
+                (make-tidy))
+        (unless (avoid-main-installation)
+          (tidy-libs #f
+                     (find-target-dir)
+                     (find-lib-dir)))
+        (when (make-user)
+          (tidy-libs #t
+                     (find-user-target-dir)
+                     (find-user-lib-dir))))
+      (for ([cc ccs-to-compile])
+        (begin-record-error cc what/title
+                            (define info (cc-info cc))
+                            (define copy-libs
+                              (call-info info copy-tag (lambda () null) check-entry))
+                            (define move-libs
+                              (call-info info move-tag (lambda () null) check-entry))
+
+                            (unless (and (null? copy-libs)
+                                         (null? move-libs))
+                              (define dir (if (cc-main? cc)
+                                              (find-target-dir)
+                                              (find-user-target-dir)))
+                              (define r-dir (if (cc-main? cc)
+                                                (find-lib-dir)
+                                                (find-user-lib-dir)))
+                              (define receipt-path (build-path r-dir receipt-file))
+                              (make-directory* dir)
+                              (make-directory* r-dir)
+
+                              (define (copy-lib lib [check (lambda (s d) #t)])
+                                (define src (path->complete-path lib (cc-path cc)))
+                                (define lib-name (file-name-from-path lib))
+                                (define dest (build-dest-path dir lib-name))
+                                (when (check src dest)
+                                  (unless (and (file-exists? dest)
+                                               (same-content? src dest))
+                                    (setup-printf "installing" (string-append what " ~a")
+                                                  (path->relative-string/lib dest))
+                                    (record-lib receipt-path lib-name (cc-collection cc) (cc-path cc))
+                                    (when (file-exists? dest) (delete-file dest))
+                                    (copy-file src dest)))
+                                src)
+                              
+                              (for ([lib (in-list copy-libs)])
+                                (copy-lib lib))
+                              
+                              (for ([lib (in-list move-libs)])
+                                (define src
+                                  (copy-lib lib 
+                                            (lambda (src dest)
+                                              (or (not (file-exists? dest))
+                                                  (file-exists? src)))))
+                                (when (file-exists? src)
+                                  (delete-file src)))))))
+
+    (define (same-content? a b)
+      (call-with-input-file* 
+       a
+       (lambda (a)
+         (call-with-input-file* 
+          b
+          (lambda (b)
+            (define as (make-bytes 4096))
+            (define bs (make-bytes 4096))
+            (let loop ()
+              (define an (read-bytes! as a))
+              (define bn (read-bytes! bs a))
+              (and (equal? an bn)
+                   (equal? as bs)
+                   (or (eof-object? an)
+                       (loop)))))))))
+
+    (define (record-lib receipt-path name coll coll-path)
+      (let ([ht (read-receipt-hash receipt-path)])
+        (define coll-rel (let ([p (path->main-collects-relative coll-path)])
+                           (if (path? p)
+                               (path->bytes p)
+                               p)))
+        (define lib-key (path-element->bytes name))
+        (define lib-val (cons (map path->string coll) coll-rel))
+        (unless (equal? (hash-ref ht lib-key #f)
+                        lib-val)
+          (let ([ht (hash-set ht lib-key lib-val)]) 
+            (write-receipt-hash receipt-path ht)))))
+
+    (define (tidy-libs user? target-dir lib-dir)
+      (define receipt-path (build-path lib-dir receipt-file))
+      (define ht (read-receipt-hash receipt-path))
+      (define ht2 (for/fold ([ht (hash)]) ([(k v) (in-hash ht)])
+                    (define coll-path (main-collects-relative->path (cdr v)))
+                    (cond
+                     [(and (directory-exists? coll-path)
+                           ;; Collection path must match collection resolution:
+                           (with-handlers ([exn:fail? (lambda (exn) #f)])
+                             (equal? coll-path (apply collection-path (car v)))))
+                      ;; keep the lib
+                      (hash-set ht k v)]
+                     [else
+                      ;; remove the lib
+                      (define lib-path (build-dest-path target-dir (bytes->path-element k)))
+                      (when (file-exists? lib-path)
+                        (setup-printf "deleting" (string-append what " ~a")
+                                      (path->relative-string/lib lib-path))
+                        (delete-file lib-path))
+                      ht])))
+      (unless (equal? ht ht2)
+        (setup-printf "updating" (format "~a list" what))
+        (write-receipt-hash receipt-path ht2)))
+    
+    make-libs-step)
+
+  (define make-foreign-libs-step
+    (make-copy/move-step "foreign library"
+                         "foreign libraries"
+                         "Foreign Library Setup"
+                         'copy-foreign-libs
+                         'move-foreign-libs
+                         find-lib-dir
+                         find-user-lib-dir
+                         "libs.rktd"
+                         (lambda (l)
+                           (unless (list-of relative-path-string? l)
+                             (error "entry is not a list of relative path strings:" l)))
+                         build-path))
+
+  (define make-mans-step
+    (make-copy/move-step "man page"
+                         "man pages"
+                         "Man Page Setup"
+                         'copy-man-pages
+                         'move-man-pages
+                         find-man-dir
+                         find-user-man-dir
+                         "mans.rktd"
+                         (lambda (l)
+                           (unless (list-of (lambda (p)
+                                              (and (relative-path-string? p)
+                                                   (filename-extension p)))
+                                            l)
+                             (error 
+                              "entry is not a list of relative path strings,each with a non-empty extension:" 
+                              l)))
+                         (lambda (d n)
+                           (build-path d 
+                                       (bytes->path-element (bytes-append #"man" (filename-extension n)))
+                                       n))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; setup-unit Body                ;;
@@ -1318,10 +1486,15 @@
 
   (do-install-part 'pre)
 
+  (when (make-foreign-libs) (make-foreign-libs-step))
+
   (when (make-zo) (make-zo-step))
   (when (make-info-domain) (make-info-domain-step))
 
   (when (make-launchers) (make-launchers-step))
+  (when (make-launchers) 
+    (unless (eq? 'windows (system-type))
+      (make-mans-step)))
 
   (when make-docs?
     (make-docs-step))

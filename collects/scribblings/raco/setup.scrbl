@@ -26,7 +26,9 @@
                     dynext/file-sig
                     racket/gui/base
                     racket/future
-                    mrlib/terminal))
+                    mrlib/terminal
+                    (only-in ffi/unsafe ffi-lib)
+                    racket/path))
 
 @(define-syntax-rule (local-module mod . body)
    (begin
@@ -128,7 +130,11 @@ flags:
    the assumption that they are already up-to-date.}
 
  @item{@DFlag{no-launcher} or @Flag{x} --- refrain from creating
-   executables (as specified in @filepath{info.rkt} files; see
+   executables or installing @tt{man} pages (as specified in
+   @filepath{info.rkt}; see @secref["setup-info"].}
+
+ @item{@DFlag{no-foreign-libs} --- refrain from installing foreign
+   libraries (as specified in @filepath{info.rkt}; see
    @secref["setup-info"]).}
 
  @item{@DFlag{no-install} or @Flag{i} --- refrain from running
@@ -459,6 +465,26 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    @racket[mred-launcher-flags] --- Backward-compatible variant of
    @racket[gracket-launcher-names], etc.}
 
+ @item{@indexed-racket[copy-foreign-libs] : @racket[(listof (and/c
+   path-string? relative-path?))] --- Files to copy into a
+   directory where foreign libraries are found by @racket[ffi-lib].}
+
+ @item{@indexed-racket[move-foreign-libs] : @racket[(listof (and/c
+   path-string? relative-path?))] --- Like @racket[copy-foreign-libs],
+   but the original file is removed after it is copied (which makes sense
+   for precompiled packages).}
+
+ @item{@indexed-racket[copy-man-pages] : @racket[(listof (and/c
+   path-string? relative-path? filename-extension))] --- Files to copy
+   into a @tt{man} directory. The file suffix determines its category;
+   for example, @litchar{.1} should be used for a @tt{man} page
+   describing an executable.}
+
+ @item{@indexed-racket[move-man-pages] : @racket[(listof (and/c
+   path-string? relative-path? filename-extension))] --- Like
+   @racket[copy-man-pages], but the original file is removed after it
+   is copied (which makes sense for precompiled packages).}
+
  @item{@indexed-racket[install-collection] : @racket[path-string?]  --- A
    library module relative to the collection that provides
    @racket[installer]. The @racket[installer] procedure accepts either
@@ -663,7 +689,7 @@ form.}
  @filepath{.so}/@filepath{.dll}/@filepath{.dylib} files in the
  specified collections. @defaults[@racket[#f]]}
 
-@defparam[compile-mode path (or/c path? false/c)]{
+@defparam[compile-mode path (or/c path? #f)]{
   If a @racket[path] is given, use a @filepath{.zo} compiler other than plain
   @exec{compile}, and build to @racket[(build-path "compiled" (compile-mode))].
   @defaults[@racket[#f]]}
@@ -676,7 +702,10 @@ form.}
   collection path. @defaults[@racket[#t]]}
 
 @defboolparam[make-launchers on?]{
-  If on, make collection @filepath{info.rkt}-specified launchers. @defaults[@racket[#t]]}
+  If on, make collection @filepath{info.rkt}-specified launchers and @tt{man} pages. @defaults[@racket[#t]]}
+
+@defboolparam[make-foreign-lib on?]{
+  If on, install collection @filepath{info.rkt}-specified libraries. @defaults[@racket[#t]]}
 
   @defboolparam[make-docs on?]{
     If on, build documentation.
@@ -696,6 +725,12 @@ form.}
 @defboolparam[avoid-main-installation on?]{
  If on, avoid building bytecode in the main installation tree when building
  other bytecode (e.g., in a user-specific collection). @defaults[@racket[#f]]}
+
+@defboolparam[make-tidy on?]{
+ If on, remove metadata cache information and
+  documentation for non-existent collections (to clean up after removal)
+  even when @racket[specific-collections] or @racket[specific-planet-dirs]
+  is non-@racket['()] or @racket[make-only] is true. @defaults[@racket[#f]]}
 
 @defboolparam[call-install on?]{
   If on, call collection @filepath{info.rkt}-specified setup code.
@@ -732,6 +767,10 @@ form.}
     set-up all planet collections if the archives list and @racket[specific-collections]
     is also @racket['()]. @defaults[@racket['()]]
   }
+
+@defboolparam[make-only on?]{
+ If true, set up no collections if @racket[specific-collections]
+ and @racket[specific-planet-dirs] are both @racket['()].}
   
 @defparam[archives arch (listof path-string?)]{
   A list of @filepath{.plt} archives to unpack; any collections specified
@@ -779,7 +818,7 @@ interface.
 
 @defproc[(run-single-installer
           (file path-string?)
-          (get-dir-proc (-> (or/c path-string? false/c)))) void?]{
+          (get-dir-proc (-> (or/c path-string? #f)))) void?]{
    Creates a separate thread and namespace, runs the installer in that
    thread with the new namespace, and returns when the thread
    completes or dies. It also creates a custodian
@@ -860,7 +899,7 @@ v
   }
 
 @defproc[(run-single-installer (file path-string?)
-                               (get-dir-proc (-> (or/c path-string? false/c))))
+                               (get-dir-proc (-> (or/c path-string? #f))))
          void?]{
   The same as the export from @racketmodname[setup/plt-single-installer], 
   but with a GUI.}
@@ -890,7 +929,7 @@ Imports @racket[mred^] and exports @racket[setup:plt-installer^]. }
   The @racketmodname[setup/dirs] library provides several procedures for locating
   installation directories:}
 
-@defproc[(find-collects-dir) (or/c path? false/c)]{
+@defproc[(find-collects-dir) (or/c path? #f)]{
   Returns a path to the installation's main @filepath{collects} directory, or
   @racket[#f] if none can be found. A @racket[#f] result is likely only
   in a stand-alone executable that is distributed without libraries.}
@@ -904,7 +943,7 @@ Imports @racket[mred^] and exports @racket[setup:plt-installer^]. }
   which means that this result is not sensitive to the value of the 
   @racket[use-user-specific-search-paths] parameter.}
 
-@defproc[(find-doc-dir) (or/c path? false/c)]{
+@defproc[(find-doc-dir) (or/c path? #f)]{
   Returns a path to the installation's @filepath{doc} directory.
   The result is @racket[#f] if no such directory is available.}
 
@@ -920,12 +959,12 @@ Imports @racket[mred^] and exports @racket[setup:plt-installer^]. }
   included only if the value of the @racket[use-user-specific-search-paths]
   parameter is @racket[#t].}
 
-@defproc[(find-lib-dir) (or/c path? false/c)]{
+@defproc[(find-lib-dir) (or/c path? #f)]{
   Returns a path to the installation's @filepath{lib} directory, which contains
   libraries and other build information. The result is @racket[#f] if no such
   directory is available.}
 
-@defproc[(find-dll-dir) (or/c path? false/c)]{
+@defproc[(find-dll-dir) (or/c path? #f)]{
   Returns a path to the directory that contains DLLs for use with the
   current executable (e.g., @filepath{libmzsch.dll} on Windows).
   The result is @racket[#f] if no such directory is available, or if no
@@ -944,7 +983,7 @@ Imports @racket[mred^] and exports @racket[setup:plt-installer^]. }
   value of the @racket[use-user-specific-search-paths] parameter
   is @racket[#t].}
 
-@defproc[(find-include-dir) (or/c path? false/c)]{
+@defproc[(find-include-dir) (or/c path? #f)]{
   Returns a path to the installation's @filepath{include} directory, which
   contains @filepath{.h} files for building Racket extensions and embedding
   programs. The result is @racket[#f] if no such directory is available.}
@@ -960,12 +999,12 @@ Imports @racket[mred^] and exports @racket[setup:plt-installer^]. }
   latter is included only if the value of the
   @racket[use-user-specific-search-paths] parameter is @racket[#t].}
 
-@defproc[(find-console-bin-dir) (or/c path? false/c)]{
+@defproc[(find-console-bin-dir) (or/c path? #f)]{
   Returns a path to the installation's executable directory, where the
   stand-alone Racket executable resides. The result is @racket[#f] if no
   such directory is available.}
 
-@defproc[(find-gui-bin-dir) (or/c path? false/c)]{
+@defproc[(find-gui-bin-dir) (or/c path? #f)]{
   Returns a path to the installation's executable directory, where the
   stand-alone GRacket executable resides. The result is @racket[#f] if no such
   directory is available.}
@@ -978,6 +1017,14 @@ Imports @racket[mred^] and exports @racket[setup:plt-installer^]. }
   Returns a path to the user's executable directory for graphical
   programs; the directory indicated by the returned path may or may
   not exist.}
+
+@defproc[(find-man-dir) (or/c path? #f)]{
+  Returns a path to the installation's man-page directory. The result is
+  @racket[#f] if no such directory exists.}
+
+@defproc[(find-user-man-dir) path?]{
+  Returns a path to the user's man-page directory; the directory
+  indicated by the returned path may or may not exist.}
 
 @defthing[absolute-installation? boolean?]{
   A binary boolean flag that is true if this installation is using
@@ -995,7 +1042,7 @@ Imports @racket[mred^] and exports @racket[setup:plt-installer^]. }
                    [#:namespace namespace (or/c namespace? #f) #f])
          (or/c
           (symbol? [(-> any)] . -> . any)
-          false/c)]{
+          #f)]{
    Accepts a list of strings naming a collection or sub-collection,
    and calls @racket[get-info/full] with the full path corresponding to the
    named collection and the @racket[namespace] argument.}
@@ -1004,7 +1051,7 @@ Imports @racket[mred^] and exports @racket[setup:plt-installer^]. }
                         [#:namespace namespace (or/c namespace? #f) #f])
          (or/c
           (symbol? [(-> any)] . -> . any)
-          false/c)]{
+          #f)]{
 
    Accepts a path to a directory. If it finds either a well-formed
    an @filepath{info.rkt} file or an @filepath{info.ss} file (with

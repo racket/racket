@@ -297,6 +297,7 @@
              (printf "  (define lib-dir ~s)\n" (dir: 'librkt))
              (printf "  (define include-dir ~s)\n" (dir: 'includerkt))
              (printf "  (define bin-dir ~s)\n" (dir: 'bin))
+             (printf "  (define man-dir ~s)\n" (dir: 'man))
              (printf "  (define absolute-installation? #t))\n")))
          ;; recompile & set times as if nothing happened (don't remove .dep)
          ;; this requires the file to look the same on all compilations, and

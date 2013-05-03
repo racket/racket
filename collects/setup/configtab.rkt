@@ -18,7 +18,8 @@
     lib-search-dirs
     include-dir
     include-search-dirs
-    bin-dir))
+    bin-dir
+    man-dir))
 (define-for-syntax string-exports
   '(cgc-suffix
     3m-suffix))

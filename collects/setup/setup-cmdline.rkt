@@ -60,6 +60,8 @@
       (add-flags '((trust-existing-zos #t)))]
      [("-x" "--no-launcher") "Do not produce launcher programs"
       (add-flags '((make-launchers #f)))]
+     [("--no-foreign-libs") "Do not install foreign libraries"
+      (add-flags '((make-foreign-libs #f)))]
      [("-i" "--no-install") "Do not call collection-specific pre-installers"
       (add-flags '((call-install #f)))]
      [("-I" "--no-post-install") "Do not call collection-specific post-installers"

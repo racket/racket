@@ -123,6 +123,15 @@
   "lib")
 
 ;; ----------------------------------------
+;; "man"
+
+(define-finder provide
+  config:man-dir
+  find-man-dir
+  find-user-man-dir
+  "man")
+
+;; ----------------------------------------
 ;; Executables
 
 (define-finder provide

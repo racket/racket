@@ -39,6 +39,7 @@
   (define-flag-param make-only #f)
   (define-flag-param make-zo #t)
   (define-flag-param make-launchers #t)
+  (define-flag-param make-foreign-libs #t)
   (define-flag-param make-info-domain #t)
   (define-flag-param make-docs #t)
   (define-flag-param make-user #t)
