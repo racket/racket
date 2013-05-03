@@ -1,5 +1,8 @@
 #lang racket/base
 
+;; This module provides functions for printing types and related
+;; data structures such as filters and objects
+
 (require racket/require racket/match unstable/sequence racket/string racket/promise
          (prefix-in s: srfi/1)
          (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
@@ -47,9 +50,11 @@
 	(car (sort candidates string>? #:key symbol->string)))]
    [else #f]))
 
-(define (print-filter c port write?)
+;; print-filter : Filter Port Boolean
+;; Print a Filter (see filter-rep.rkt) to the given port
+(define (print-filter filt port write?)
   (define (fp . args) (apply fprintf port args))
-  (match c
+  (match filt
     [(FilterSet: thn els) (fp "(~a | ~a)" thn els)]
     [(NoFilter:) (fp "-")]
     [(NotTypeFilter: type (list) (? syntax? id))
@@ -76,24 +81,28 @@
      (fp "(AndFilter") (for ([a0 a]) (fp " ~a" a0))  (fp ")")]
     [(OrFilter: a)
      (fp "(OrFilter") (for ([a0 a]) (fp " ~a" a0)) (fp ")")]
-    [else (fp "(Unknown Filter: ~a)" (struct->vector c))]))
+    [else (fp "(Unknown Filter: ~a)" (struct->vector filt))]))
 
-(define (print-pathelem c port write?)
+;; print-pathelem : PathElem Port Boolean
+;; Print a PathElem (see object-rep.rkt) to the given port
+(define (print-pathelem pathelem port write?)
   (define (fp . args) (apply fprintf port args))
-  (match c
+  (match pathelem
     [(CarPE:) (fp "car")]
     [(CdrPE:) (fp "cdr")]
     [(ForcePE:) (fp "force")]
     [(StructPE: t i) (fp "(~a ~a)" t i)]
-    [else (fp "(Unknown Path Element: ~a)" (struct->vector c))]))
+    [else (fp "(Unknown Path Element: ~a)" (struct->vector pathelem))]))
 
-(define (print-object c port write?)
+;; print-object : Object Port Boolean
+;; Print an Object (see object-rep.rkt) to the given port
+(define (print-object object port write?)
   (define (fp . args) (apply fprintf port args))
-  (match c
+  (match object
     [(NoObject:) (fp "-")]
     [(Empty:) (fp "-")]
     [(Path: pes i) (fp "~a" (append pes (list i)))]
-    [else (fp "(Unknown Object: ~a)" (struct->vector c))]))
+    [else (fp "(Unknown Object: ~a)" (struct->vector object))]))
 
 ;; Unions are represented as a flat list of branches. In some cases, it would
 ;; be nicer to print them using higher-level descriptions instead.
@@ -141,8 +150,10 @@
                  (remove next candidates)
                  (cons next coverage))])))
 
-(define (format-arr a)
-  (match a
+;; format-arr : arr -> String
+;; Convert an arr (see type-rep.rkt) to its printable form
+(define (format-arr arr)
+  (match arr
     [(top-arr:) "Procedure"]
     [(arr: dom rng rest drest kws)
      (define out (open-output-string))
@@ -185,10 +196,12 @@
         (fp "-> ~a" rng)])
      (fp ")")
      (get-output-string out)]
-    [else (format "(Unknown Function Type: ~a)" (struct->vector a))]))
+    [else (format "(Unknown Function Type: ~a)" (struct->vector arr))]))
 
-(define (print-case-lambda t)
-  (match t
+;; print-case-lambda : Type -> String
+;; Convert a case-> type to a string
+(define (print-case-lambda type)
+  (match type
     [(Function: arities)
      (let ()
        (match arities
@@ -202,7 +215,7 @@
 
 ;; print out a type
 ;; print-type : Type Port Boolean -> Void
-(define (print-type c port write?)
+(define (print-type type port write?)
   (define (fp . args) (apply fprintf port args))
   (define (tuple? t)
     (match t
@@ -213,7 +226,7 @@
     (match t
       [(Pair: a e) (cons a (tuple-elems e))]
       [(Value: '()) null]))
-  (match c
+  (match type
     ;; if we know how it was written, print that
     [(? Rep-stx a)
      (fp "~a" (syntax->datum (Rep-stx a)))]
@@ -254,8 +267,8 @@
      (when proc
        (fp " ~a" proc))
      (fp ")")]
-    [(Function: arities) (fp "~a" (print-case-lambda c))]
-    [(arr: _ _ _ _ _) (fp "(arr ~a)" (format-arr c))]
+    [(Function: arities) (fp "~a" (print-case-lambda type))]
+    [(arr: _ _ _ _ _) (fp "(arr ~a)" (format-arr type))]
     [(Vector: e) (fp "(Vectorof ~a)" e)]
     [(HeterogeneousVector: e) (fp "(Vector")
                               (for ([i (in-list e)])
@@ -269,7 +282,7 @@
     [(Ephemeron: e) (fp "(Ephemeronof ~a)" e)]
     [(CustodianBox: e) (fp "(CustodianBoxof ~a)" e)]
     [(Set: e) (fp "(Setof ~a)" e)]
-    [(Union: elems) (fp "~a" (cons 'U (print-union c)))]
+    [(Union: elems) (fp "~a" (cons 'U (print-union type)))]
     [(Pair: l r) (fp "(Pairof ~a ~a)" l r)]
     [(ListDots: dty dbound)
      (fp "(List ~a ...~a~a)" dty (if (special-dots-printing?) "" " ") dbound)]
@@ -332,7 +345,7 @@
      (fp ")")]
     [(Error:) (fp "Error")]
     [(fld: t a m) (fp "(fld ~a)" t)]
-    [else (fp "(Unknown Type: ~a)" (struct->vector c))]
+    [else (fp "(Unknown Type: ~a)" (struct->vector type))]
     ))
 
 
