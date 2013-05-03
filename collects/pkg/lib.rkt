@@ -83,6 +83,14 @@
 (define (simple-form-path* p)
   (path->string (simple-form-path p)))
 
+(define (pretty-module-path mod)
+  (if (and (list? mod)
+           (= 2 (length mod))
+           (eq? (car mod) 'lib)
+           (regexp-match #rx"[.]rkt$" (cadr mod)))
+      (string->symbol (regexp-replace #rx"[.]rkt$" (cadr mod) ""))
+      mod))
+
 (define (untar pkg pkg-dir #:strip-components [strip-components 0])
   (make-directory* pkg-dir)
   (untgz pkg #:dest pkg-dir #:strip-count strip-components))
@@ -481,7 +489,7 @@
      (hash-ref cfg "default-scope" "user"))))
 
 (struct pkg-info (orig-pkg checksum auto?) #:prefab)
-(struct install-info (name orig-pkg directory clean? checksum))
+(struct install-info (name orig-pkg directory clean? checksum module-paths))
 
 (define (update-install-info-orig-pkg if op)
   (struct-copy install-info if
@@ -869,7 +877,8 @@
         (install-info pkg-name
                       `(link ,(simple-form-path* pkg))
                       pkg
-                      #f #f)]
+                      #f #f
+                      (directory->module-paths pkg))]
        [else
         (define pkg-dir
           (make-temporary-file "pkg~a" 'directory))
@@ -879,7 +888,8 @@
         (install-info pkg-name
                       `(dir ,(simple-form-path* pkg))
                       pkg-dir
-                      #t #f)]))]
+                      #t #f
+                      (directory->module-paths pkg-dir))]))]
    [(eq? type 'name)
     (define catalog-info (package-catalog-lookup pkg #f))
     (define source (hash-ref catalog-info 'source))
@@ -953,7 +963,7 @@
   (define (install-package/outer infos desc info)
     (match-define (pkg-desc pkg type orig-name auto?) desc)
     (match-define
-     (install-info pkg-name orig-pkg pkg-dir clean? checksum)
+     (install-info pkg-name orig-pkg pkg-dir clean? checksum module-paths)
      info)
     (define name? (eq? 'catalog (first orig-pkg)))
     (define (clean!)
@@ -968,44 +978,47 @@
        (pkg-error "package is already installed\n  package: ~a" pkg-name)]
       [(and
         (not force?)
-        (for/or ([c (in-list (package-collections pkg-dir metadata-ns))]
-                 [d (in-list (package-collection-directories pkg-dir metadata-ns))]
-                 #:when #t
-                 [f (in-list (directory-list* d))]
-                 #:when (member (filename-extension f)
-                                (list #"rkt" #"ss")))
-          (define (has-collection-file? other-pkg-dir)
-            (for/or ([other-c (in-list (package-collections other-pkg-dir metadata-ns))]
-                     [other-d (in-list (package-collection-directories other-pkg-dir metadata-ns))])
-              (and (collection-equal? c other-c)
-                   (file-exists? (build-path other-d f)))))
-          (or
-           ;; Compare with main installation's collections
-           ;;  FIXME: this should check all collection paths that aren't
-           ;;  from the package system.
-           (and (file-exists? (build-path (find-collects-dir) c f))
-                (cons "racket" (build-path c f)))
-           ;; Compare with installed packages
-           (for*/or ([db+with-db (in-list db+with-dbs)]
-                     [other-pkg (in-hash-keys (car db+with-db))]
-                     #:unless (and updating? (equal? other-pkg pkg-name)))
-             (and ((cdr db+with-db)
-                   (lambda () (has-collection-file? (pkg-directory* other-pkg))))
-                  (cons other-pkg (build-path c f))))
-           ;; Compare with simultaneous installs
-           (for/or ([other-pkg-info (in-list infos)]
-                    #:unless (eq? other-pkg-info info))
-             (and (has-collection-file? (install-info-directory other-pkg-info))
-                  (cons (install-info-name other-pkg-info) (build-path c f)))))))
+        (for/or ([mp (in-set module-paths)])
+          ;; In an installed collection? Try resolving the path:
+          (define r (with-handlers ([exn:fail:filesystem:missing-module? (lambda (x) #f)])
+                      ((current-module-name-resolver) mp #f #f #f)))
+          (define f (and r (resolved-module-path-name r)))
+          (when f
+            (unless (path? f)
+              (pkg-error "expected a filesystem path for a resolved module path: ~a" mp)))
+          ;; Check for source or compiled:
+          (cond
+           [(and f
+                 (or (file-exists? f)
+                     (file-exists? (path-replace-suffix f #".ss"))
+                     (let-values ([(base name dir?) (split-path f)])
+                       (or (file-exists? (build-path base "compiled" (path-add-suffix f #".zo")))
+                           (file-exists? (build-path base "compiled" (path-add-suffix
+                                                                      (path-replace-suffix f #".ss") 
+                                                                      #".zo")))))))
+            ;; This module is already installed
+            (cons (path->pkg f) mp)]
+           [else
+            ;; Compare with simultaneous installs
+            (for/or ([other-pkg-info (in-list infos)]
+                     #:unless (eq? other-pkg-info info))
+              (and (set-member? (install-info-module-paths other-pkg-info) mp)
+                   (cons (install-info-name other-pkg-info) 
+                         mp)))])))
        =>
-       (λ (conflicting-pkg*file)
+       (λ (conflicting-pkg*mp)
          (clean!)
-         (match-define (cons conflicting-pkg file) conflicting-pkg*file)
-         (pkg-error (~a "packages conflict\n"
-                        "  package: ~a\n"
-                        "  package: ~a\n"
-                        "  file: ~a")
-                    pkg conflicting-pkg file))]
+         (match-define (cons conflicting-pkg mp) conflicting-pkg*mp)
+         (if conflicting-pkg
+             (pkg-error (~a "packages conflict\n"
+                            "  package: ~a\n"
+                            "  package: ~a\n"
+                            "  module path: ~s")
+                        pkg conflicting-pkg (pretty-module-path mp))
+             (pkg-error (~a "package conflicts with existing installed\n"
+                            "  package: ~a\n"
+                            "  module path: ~s")
+                        pkg (pretty-module-path mp))))]
       [(and
         (not (eq? dep-behavior 'force))
         (let ()
@@ -1658,12 +1671,7 @@
       (when modules?
         (printf "Modules:")
         (for/fold ([col 72]) ([mod (in-list (hash-ref details 'modules null))])
-          (define pretty-mod (if (and (list? mod)
-                                      (= 2 (length mod))
-                                      (eq? (car mod) 'lib)
-                                      (regexp-match #rx"[.]rkt$" (cadr mod)))
-                                 (string->symbol (regexp-replace #rx"[.]rkt$" (cadr mod) ""))
-                                 mod))
+          (define pretty-mod (pretty-module-path mod))
           (define mod-str (~a " " pretty-mod))
           (define new-col (if ((+ col (string-length mod-str)) . > . 72)
                               (begin
@@ -1769,22 +1777,7 @@
                                                  #f)])
                      (get-info/full dir #:namespace (make-base-namespace))))
   (define module-paths
-    (let ([dummy (build-path (current-directory) "dummy.rkt")])
-      (parameterize ([current-directory dir])
-        (for/list ([f (in-directory)]
-                   #:when (file-exists? f)
-                   #:when (regexp-match? #rx#"[.](rkt|ss)$" (path->bytes f))
-                   #:when (let-values ([(base name dir?) (split-path f)])
-                            (not (eq? 'relative base)))
-                   [m (in-value
-                       (apply ~a
-                              #:separator "/" 
-                              (map path-element->string 
-                                   (explode-path f))))]
-                   #:when (module-path? `(lib ,m)))
-          ;; normalize the path:
-          (collapse-module-path `(lib ,m) dummy)))))
-
+    (set->list (directory->module-paths dir)))
   (begin0
    (values cksum
            module-paths
@@ -1792,6 +1785,41 @@
    (when clean?
      (delete-directory/files dir))))
 
+(define (directory->module-paths dir)
+  (define dummy (build-path dir "dummy.rkt"))
+  (define compiled (string->path-element "compiled"))
+  (define (try-path s f)
+    (define mp
+      `(lib ,(apply ~a
+                    #:separator "/" 
+                    (map path-element->string 
+                         (explode-path f)))))
+    (if (module-path? mp)
+        (set-add s (collapse-module-path mp dummy))
+        s))
+  (parameterize ([current-directory dir])
+    (for/fold ([s (set)]) ([f (in-directory)])
+      (cond
+       [(not (file-exists? f)) s]
+       [else
+        (define-values (base name dir?) (split-path f))
+        (cond
+         [(eq? 'relative base) s]
+         [(regexp-match? #rx#"[.](?:rkt|ss)$" (path-element->bytes name))
+          (try-path s f)]
+         [(regexp-match? #rx#"_(?:rkt|ss)[.]zo$" (path-element->bytes name))
+          (define-values (dir-base dir-name dir?) (split-path base))
+          (cond
+           [(eq? 'relative dir-base) s]
+           [(equal? dir-name compiled)
+            (try-path s (build-path dir-base
+                                    (bytes->path-element
+                                     (regexp-replace
+                                      #rx#"_(?:rkt|ss)[.]zo$"
+                                      (path-element->bytes name)
+                                      #".rkt"))))]
+           [else s])]
+         [else s])]))))
 
 (define (pkg-catalog-update-local #:catalog-file [catalog-file (db:current-pkg-catalog-file)]
                                   #:quiet? [quiet? #f]

@@ -42,6 +42,10 @@
                    $ "test -f test-pkgs/pkg-test1-conflict.zip"
                    $ "raco pkg install -s test-pkgs/pkg-test1-conflict.zip" =exit> 1)
 
+   (shelly-install "conflicts are caught for compiled files" "test-pkgs/pkg-test1.zip"
+                   $ "test -f test-pkgs/pkg-test1b.zip"
+                   $ "raco pkg install test-pkgs/pkg-test1b.zip" =exit> 1)
+
    (shelly-wind
     $ "cp -r test-pkgs/pkg-test1 test-pkgs/pkg-test1-linking"
     (shelly-install* "conflicts are caught, even with a link" 

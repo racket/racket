@@ -22,6 +22,7 @@
    (shelly-install "local package (tgz)" "test-pkgs/pkg-test1.tgz")
    (shelly-install "local package (zip)" "test-pkgs/pkg-test1.zip")
    (shelly-install "local package (plt)" "test-pkgs/pkg-test1.plt")
+   (shelly-install* "local package (zip, compiled)" "test-pkgs/pkg-test1b.zip" "pkg-test1b")
 
    (shelly-case
     "invalid package format is an error"

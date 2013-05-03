@@ -45,6 +45,15 @@
 
    $ "raco pkg create --format txt test-pkgs/pkg-test1" =exit> 1
 
+   (when (directory-exists? "test-pkgs/pkg-test1b")
+     (delete-directory/files "test-pkgs/pkg-test1b"))
+   (copy-directory/files "test-pkgs/pkg-test1" "test-pkgs/pkg-test1b")
+   (parameterize ([current-directory "test-pkgs/pkg-test1b/pkg-test1"])
+     (shelly-begin
+      $ "raco make conflict.rkt main.rkt update.rkt"
+      $ "rm conflict.rkt main.rkt update.rkt"))
+   (shelly-create "pkg-test1b" "zip")
+
    (shelly-create "pkg-test2" "zip")
 
    (shelly-case
