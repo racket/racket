@@ -3124,6 +3124,27 @@
           (if (<= y x) (* x y) '-))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that a procedure used in a first-order
+;; way bound by `letrec' can have a typed closure element:
+
+(let ([e `(module m racket/base
+            (provide f)
+            (define (f v)
+              (let ([y (vector-length v)])
+                (letrec ([foo (lambda (r)
+                                (if (zero? r)
+                                    y
+                                    (foo (sub1 r))))])
+                  foo))))]
+      [o (open-output-bytes)])
+  (write (compile e) o)
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval
+     (parameterize ([read-accept-compiled #t])
+       (read (open-input-bytes (get-output-bytes o)))))
+    (((dynamic-require ''m 'f) (vector 1)) 0)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (report-errs)

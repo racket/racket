@@ -1812,6 +1812,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
   case scheme_letrec_type:
     {
       Scheme_Letrec *l = (Scheme_Letrec *)expr;
+      Scheme_Closure_Data *data;
       int i, c;
 
       c = l->count;
@@ -1830,10 +1831,20 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
           scheme_ill_formed_code(port);
 #endif
 	stack[delta + i] = VALID_VAL;
-        if (SCHEME_CLOSURE_DATA_FLAGS(((Scheme_Closure_Data *)l->procs[i])) & CLOS_HAS_TYPED_ARGS) {
-          procs = scheme_hash_tree_set(as_nonempty_procs(procs),
-                                       scheme_make_integer(delta + i),
-                                       l->procs[i]);
+        data = (Scheme_Closure_Data *)l->procs[i];
+        if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
+          /* If any arguments (as opposed to closure slots) are typed, then
+             add the procedure to `procs': */
+          int j;
+          for (j = data->num_params; j--; ) {
+            if (scheme_boxmap_get(data->closure_map, j, data->closure_size))
+              break;
+          }
+          if (j >= 0) {
+            procs = scheme_hash_tree_set(as_nonempty_procs(procs),
+                                         scheme_make_integer(delta + i),
+                                         l->procs[i]);
+          }
         }
       }
 
