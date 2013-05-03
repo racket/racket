@@ -14,6 +14,7 @@
      make-only
      make-zo
      make-info-domain
+     make-foreign-libs
      make-launchers
      make-docs
      make-user
