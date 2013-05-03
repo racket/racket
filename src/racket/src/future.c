@@ -2164,7 +2164,7 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
   }
 }
 
-#if defined(linux)
+#if defined(linux) || defined(__QNX__)
 # include <unistd.h>
 #elif defined(OS_X)
 # include <sys/param.h>
@@ -2176,7 +2176,7 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
 static void init_cpucount(void)
 /* Called in runtime thread */
 {
-#if defined(linux)
+#if defined(linux) || defined(__QNX__)
   cpucount = sysconf(_SC_NPROCESSORS_ONLN);
 #elif defined(OS_X)
   size_t size = sizeof(cpucount);
