@@ -313,6 +313,14 @@ A @tech{lexer macro} that matches any character in @racket[string].}
 
 @tech{Lexer abbreviations} that match @racket[char-alphabetic?]
 characters, @racket[char-lower-case?] characters, etc.}
+  
+@deftogether[(
+@defidform[xid-start]
+@defidform[xid-continue]
+)]{
+@tech{Lexer abbreviations} extracted from Unicode TR#44 and TR#31,
+ specifying standardized sets of characters that can start or 
+ continue an identifier, respectively.}
 
 @defform[(define-lex-abbrev id re)]{
 
