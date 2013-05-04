@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/cmdline
          racket/match
+         raco/command-name
          syntax/modresolve
          "private/util.rkt")
 (provide get-dependencies
@@ -112,6 +113,7 @@
   (define excludes null)
   (define exclude-deps null)
   (command-line
+   #:program (short-program+command-name)
    #:argv argv
    #:once-each
    [("-c" "--context") "Show who directly requires each module"
@@ -144,6 +146,9 @@
             #:exclude-deps (map ->modpath exclude-deps)
             #:show-context? context?
             (map ->modpath module-path)))))
+
+(module* main #f
+  (apply main (vector->list (current-command-line-arguments))))
 
 #|
 

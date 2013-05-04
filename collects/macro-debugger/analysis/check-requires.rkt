@@ -227,7 +227,8 @@ and simplifies the replacements lists.
 
 ;; ========================================
 
-(require racket/cmdline)
+(require racket/cmdline
+         raco/command-name)
 (provide main)
 
 #|
@@ -271,6 +272,7 @@ Example (from racket root directory):
   ;; Command-line args are interpreted as files if the file exists,
   ;; module names otherwise.
   (command-line
+   #:program (short-program+command-name)
    #:argv args
    #:once-each
    [("-k" "--show-keep")
@@ -292,3 +294,6 @@ Example (from racket root directory):
               (unless (eof-object? (peek-char inport))
                 (error "bad module name:" arg))
               (go mod))]))))
+
+(module* main #f
+  (apply main (vector->list (current-command-line-arguments))))
