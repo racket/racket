@@ -111,7 +111,7 @@
         (for/and ([p ps]) (loop p))]
        [(? (compose not pair?))
         (or (symbol? p) (number? p) (string? p) (boolean? p))]
-       [else 
+       [_ 
         (and is-pat*?
              (match p
                [`(cstr (,nts ...) ,p*)
@@ -733,7 +733,7 @@
                                  (match sub-pat
                                    [`(repeat ,pat ,name ,mismatch)
                                     (error "can't normalize pattern: ~s" pat)]
-                                   [else
+                                   [_
                                     (loop sub-pat)])))]
                      [(? (compose not pair?)) 
                       pat])))

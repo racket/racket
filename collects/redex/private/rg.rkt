@@ -660,7 +660,7 @@
        (list* (unparse-pattern sub-pat) ellipsis (unparse-pattern rest)))]
     [(cons first rest) 
      (cons (unparse-pattern first) (unparse-pattern rest))]
-    [else else]))
+    [other other]))
 
 ;; class-reassignments : parsed-pattern -> hash[sym -o> sym]
 (define (class-reassignments pattern)
@@ -718,7 +718,7 @@
                             [`(repeat ,p ,name ,mismatch?)
                              (record-binder name under)
                              (recur p (cons (or name (gensym)) under))]
-                            [else (recur lpat under)]))
+                            [_ (recur lpat under)]))
                         assignments]
                        [(? (compose not pair?)) assignments]))
     (make-immutable-hasheq (hash-map assignments (λ (cls _) (cons cls (find cls assignments)))))))
