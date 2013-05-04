@@ -8,6 +8,7 @@
 (provide define-syntax-class/specialize)
 
 (define-syntax (define-syntax-class/specialize stx)
+  (parameterize ((current-syntax-context stx))
   (syntax-case stx ()
     [(dscs header sc-expr)
      (let-values ([(name formals arity)
@@ -36,4 +37,4 @@
                                 #f))
                     (define-values (parser)
                       (lambda (x cx pr es fh0 cp0 rl success . formals)
-                        (app-argu target-parser x cx pr es fh0 cp0 rl success argu)))))))]))
+                        (app-argu target-parser x cx pr es fh0 cp0 rl success argu)))))))])))
