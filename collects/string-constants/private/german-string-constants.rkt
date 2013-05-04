@@ -93,8 +93,9 @@
  (cs-background-color "Hintergrundfarbe")
  (cs-tack/untack-arrow "Pfeil befestigen/lösen")
  (cs-jump-to-next-bound-occurrence "Zum nächsten gebundenen Vorkommen springen")
+ (cs-jump-to-previous-bound-occurrence "Zum vorigen gebundenen Vorkommen springen")
  (cs-jump-to-binding "Zu bindendem Vorkommen springen")
- (cs-jump-to-definition "Zu Definition springen")
+ (cs-jump-to-definition "Zu Definition (in anderer Datei) springen")
  (cs-open-defining-file "Datei mit Definition öffnen")
  (cs-error-message "Fehlermeldung")
  (cs-open-file "~a öffnen")
@@ -1341,6 +1342,7 @@
  
  (stepper-no-earlier-application-step "Keine vorherigen Applikationsschritte.")
  (stepper-no-later-application-step "Keine weiteren Applikationsschritte..")
+ (stepper-complete "Alle Definitionen wurden erfolgreich ausgewertet.")
  
  (stepper-no-earlier-step "Keine vorherigen Schritte.")
  (stepper-no-later-step "Keine weiteren Schritte.")
