@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require "../private/matcher.rkt"
+         "../private/lang-struct.rkt"
          (only-in "test-util.rkt" equal/bindings?)
          (for-syntax racket/base)
          racket/list)
