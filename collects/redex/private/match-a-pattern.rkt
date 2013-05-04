@@ -98,7 +98,7 @@ turns into this:
                   `(list ,lpat ...)
                   (? (compose not pair?))) ;; pattern for literals (numbers, strings, prefabs, etc etc etc)
                 (if allow-else?
-                    (list 'else)
+                    (list '_)
                     (list))))
       (for ([pat (in-list pats)])
         (when (null? should-be-pats)
