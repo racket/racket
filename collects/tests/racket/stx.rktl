@@ -1718,6 +1718,25 @@
   (test #"1\n2\n" get-output-bytes o))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `quasisyntax' finds `unsyntax'
+
+(with-syntax ([a #'1] [(c ...) #'(3 4 5)])
+  (let ([b #'2] [ds (list #'3 #'4 #'5)])
+    (test '(1 2) syntax->datum (quasisyntax (a (unsyntax b))))
+    (test '(2 1) syntax->datum (quasisyntax ((unsyntax b) a)))
+    (test '(1 . 2) syntax->datum (quasisyntax (a unsyntax b)))
+    (test '((1) (2)) syntax->datum (quasisyntax ((a) ((unsyntax b)))))
+    (test '#(1 2) syntax->datum (quasisyntax #(a (unsyntax b))))
+    (test '#(1 2 3 4 5) syntax->datum (quasisyntax #(a (unsyntax b) c ...)))
+    (test '#s(PS 1 2) syntax->datum (quasisyntax #s(PS a (unsyntax b))))
+    (test '#s(PS 1 2 3 4 5) syntax->datum (quasisyntax #s(PS a (unsyntax b) c ...)))
+    #|
+    (test '#(1 2 3 4 5) syntax->datum (quasisyntax #(a (unsyntax b) (unsyntax-splicing ds))))
+    (test '#s(PS 1 2 3 4 5) syntax->datum
+          (quasisyntax #s(PS a (unsyntax b) (unsyntax-splicing ds))))
+    |#))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check preservation of properties by `quasisyntax'
 
 (test #\[ syntax-property #'[x] 'paren-shape)

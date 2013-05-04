@@ -241,6 +241,16 @@
                                            stx
                                            stx)
                                           bindings)))]
+                      [(prefab-struct-key (syntax-e stx))
+                       (let* ([d (syntax-e stx)]
+                              [key (prefab-struct-key d)]
+                              [fields (cdr (vector->list (struct->vector d)))])
+                         (loop (datum->syntax stx fields stx)
+                               depth
+                               same-k
+                               (lambda (v bindings)
+                                 (let ([p (apply make-prefab-struct key (syntax->list v))])
+                                   (convert-k (datum->syntax stx p stx stx) bindings)))))]
                       [else
                        (same-k)])]))))]
            [qq (lambda (orig-stx body mk-final)
