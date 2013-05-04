@@ -1082,23 +1082,26 @@ Conventions:
                        [(alt-expr ...)
                         (for/list ([alt (in-list eh-alts)])
                           (with-syntax ([repc-expr
-                                         (match (eh-alternative-repc alt)
-                                           ['#f
-                                            #'(quote #f)]
-                                           [(rep:once n u o)
-                                            #`(rep:once (quote-syntax #,n)
-                                                        (quote-syntax #,u)
-                                                        (quote-syntax #,o))]
-                                           [(rep:optional n o d)
-                                            #`(rep:optional (quote-syntax #,n)
-                                                            (quote-syntax #,o)
-                                                            (quote-syntax #,d))]
-                                           [(rep:bounds min max n u o)
-                                            #`(rep:bounds (quote #,min)
-                                                          (quote #,max)
-                                                          (quote-syntax #,n)
-                                                          (quote-syntax #,u)
-                                                          (quote-syntax #,o))])]
+                                         ;; repc structs are prefab; recreate using prefab
+                                         ;; quasiquote exprs to avoid moving constructors
+                                         ;; to residual module
+                                         (syntax-case (eh-alternative-repc alt) ()
+                                           [#f
+                                            #''#f]
+                                           [#s(rep:once n u o)
+                                            #'`#s(rep:once ,(quote-syntax n)
+                                                           ,(quote-syntax u)
+                                                           ,(quote-syntax o))]
+                                           [#s(rep:optional n o d)
+                                            #'`#s(rep:optional ,(quote-syntax n)
+                                                               ,(quote-syntax o)
+                                                               ,(quote-syntax d))]
+                                           [#s(rep:bounds min max n u o)
+                                            #'`#s(rep:bounds ,(quote min)
+                                                             ,(quote max)
+                                                             ,(quote-syntax n)
+                                                             ,(quote-syntax u)
+                                                             ,(quote-syntax o))])]
                                         [attrs-expr
                                          #`(quote #,(eh-alternative-attrs alt))]
                                         [parser-expr
