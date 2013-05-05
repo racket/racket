@@ -51,9 +51,16 @@ flag to specify a destination directory (for any number of source
 files). Use @DFlag{dest-base} to add a prefix to the name of each
 support file that is generated or copied to the destination.
 
-After all flags, provide one or more document sources. When multiple
-documents are rendered at the same time, cross-reference information
-in one document is visible to the other documents. See
+After all flags, provide one or more document sources, where each
+source declares a module. The module should either have a @racket[doc]
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{submodule}
+that exports @racket[doc] as a @racket[part], or it should directly
+export @racket[doc] as a @racket[part]. (The submodule is tried first,
+and the main module is not directly loaded or evaluated if the
+submodule can be loaded on its own.)
+
+When multiple documents are rendered at the same time, cross-reference
+information in one document is visible to the other documents. See
 @secref["xref-flags"] for information on references that cross
 documents that are built separately.
 

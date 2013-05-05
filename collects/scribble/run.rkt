@@ -105,7 +105,11 @@
     (current-quiet #t)]
    #:args (file . another-file)
    (let ([files (cons file another-file)])
-     (build-docs (map (lambda (file) (dynamic-require `(file ,file) 'doc))
+     (build-docs (map (lambda (file) 
+                        ;; Try `doc' submodule, first:
+                        (if (module-declared? `(submod (file ,file) doc) #t)
+                            (dynamic-require `(submod (file ,file) doc) 'doc)
+                            (dynamic-require `(file ,file) 'doc)))
                       files)
                  files))))
 

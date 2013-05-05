@@ -1072,7 +1072,15 @@
       ;;  hard-wiring the "manual.rkt" library:
       (namespace-attach-module ns 'scribble/manual p)
       (parameterize ([current-namespace p])
-        (call-in-nested-thread (lambda () (dynamic-require mod-path 'doc)))))))
+        (call-in-nested-thread (lambda ()
+                                 (define sub
+                                   (if (and (pair? mod-path)
+                                            (eq? (car mod-path) 'submod))
+                                       (append mod-path '(doc))
+                                       `(submod ,mod-path doc)))
+                                 (if (module-declared? sub #t)
+                                     (dynamic-require sub 'doc)
+                                     (dynamic-require mod-path 'doc))))))))
 
 (define (write- latex-dest vers doc name datas prep!)
   (let* ([filename (sxref-path latex-dest doc name)])
