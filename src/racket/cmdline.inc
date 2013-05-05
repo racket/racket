@@ -224,6 +224,44 @@ typedef void (*Repl_Proc)(Scheme_Env *, FinishArgs *f);
 static void configure_environment(Scheme_Object *mod)
 {
   Scheme_Object *mli, *dyreq, *a[3], *gi, *v, *vs;
+  Scheme_Object *submod, *cr, *mdp, *mpij;
+
+  cr = scheme_intern_symbol("configure-runtime");
+
+  /* Modern style: look for `runtime-configure' submodule to initialize
+     the configuration: */
+
+  submod = scheme_intern_symbol("submod");
+  cr = scheme_intern_symbol("configure-runtime");
+
+  if (SAME_TYPE(SCHEME_TYPE(mod), scheme_module_index_type)) {
+    mpij = scheme_builtin_value("module-path-index-join");
+    a[0] = scheme_make_pair(submod, 
+                            scheme_make_pair(scheme_make_utf8_string("."),
+                                             scheme_make_pair(cr, scheme_make_null())));
+    a[1] = mod;
+    submod = scheme_apply(mpij, 2, a);
+  } else if (SCHEME_PAIRP(mod) && SAME_OBJ(SCHEME_CAR(mod), submod))
+    submod = scheme_append(mod, scheme_make_pair(cr, scheme_make_null()));
+  else
+    submod = scheme_make_pair(submod, 
+                              scheme_make_pair(mod,
+                                               scheme_make_pair(cr, scheme_make_null())));
+  mdp = scheme_builtin_value("module-declared?");
+
+  a[0] = submod;
+  a[1] = scheme_make_true();
+  v = scheme_apply(mdp, 2, a);
+  if (SCHEME_TRUEP(v)) {
+    dyreq = scheme_builtin_value("dynamic-require");
+
+    a[0] = submod;
+    a[1] = scheme_make_false();
+    (void)scheme_apply(dyreq, 2, a);
+  }
+
+  /* Old style: use `module->language-info' (after new style, for 
+     compatibility): */
 
   mli = scheme_builtin_value("module->language-info");
 
@@ -240,7 +278,7 @@ static void configure_environment(Scheme_Object *mod)
     a[0] = SCHEME_VEC_ELS(v)[2];
     gi = scheme_apply(gi, 1, a);
 
-    a[0] = scheme_intern_symbol("configure-runtime");
+    a[0] = cr;
     a[1] = scheme_make_null();
     vs = scheme_apply(gi, 2, a);
     a[0] = vs;

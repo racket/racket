@@ -63,6 +63,7 @@ command line does not specify a @racket[require] flag
 @Flag{f}/@DFlag{load}, @Flag{r}/@DFlag{script}, @Flag{m}/@DFlag{main},
 or @Flag{i}/@DFlag{repl}). The initialization library can be changed
 with the @Flag{I} @tech{configuration option}. The
+@racket[configure-runtime] submodule of the initialization library or the
 @racket['configure-runtime] property of the initialization library's
 language is used before the library is instantiated; see
 @secref["configure-runtime"].
@@ -73,7 +74,8 @@ executed in the order that they are provided on the command line. If
 any raises an uncaught exception, then the remaining @racket[eval]s,
 @racket[load]s, and @racket[require]s are skipped. If the first
 @racket[require] precedes any @racket[eval] or @racket[load] so that
-the initialization library is skipped, then the
+the initialization library is skipped, then the @racket[configure-runtime]
+submodule of the required module or the
 @racket['configure-runtime] property of the required module's library
 language is used before the module is instantiated; see
 @secref["configure-runtime"].
@@ -422,6 +424,14 @@ Extra arguments following the last option are available from the
 
 @guidealso["module-runtime-config"]
 
+A module can have a @racket[configure-runtime] submodule that is
+@racket[dynamic-require]d before the module itself when a module is
+the main module of a program. Normally, a @racket[configure-runtime]
+submodule is added to a module by the module's language (i.e., by the
+@racket[#%module-begin] form among a @racket[module]'s initial
+bindings).
+
+Alternatively or in addition, an older protocol is in place.
 When a module is implemented using @hash-lang{}, the language after
 @hash-lang{} can specify configuration actions to perform when a
 module using the language is the main module of a program. The

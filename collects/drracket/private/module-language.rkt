@@ -465,7 +465,10 @@
                   (for ([config (in-list configs)])
                     ((dynamic-require (vector-ref config 0)
                                       (vector-ref config 1))
-                     (vector-ref config 2))))))))
+                     (vector-ref config 2)))))))
+          (let ([cr-submod `(submod ,modspec configure-runtime)])
+            (when (module-declared? cr-submod)
+              (dynamic-require cr-submod #f))))
         ;; here's where they're all combined with the module expression
         (expr-getter *pre module-expr *post))
       

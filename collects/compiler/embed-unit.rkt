@@ -935,7 +935,9 @@
     
     ;; Write a module bundle that can be loaded with 'load' (do not embed it
     ;; into an executable). The bundle is written to the current output port.
-    (define (do-write-module-bundle outp verbose? modules config? literal-files literal-expressions collects-dest
+    (define (do-write-module-bundle outp verbose? modules 
+                                    early-literal-expressions config? literal-files literal-expressions 
+                                    collects-dest
                                     on-extension program-name compiler expand-namespace 
                                     src-filter get-extra-imports on-decls-done)
       (let* ([program-name-bytes (if program-name
@@ -1143,6 +1145,7 @@
         (write (compile-using-kernel '(namespace-undefine-variable! 'module)) outp)
         (on-decls-done outp)
         (newline outp)
+        (for-each (lambda (v) (write v outp)) early-literal-expressions)
         (when config-infos
           (for ([config-info (in-list config-infos)])
             (let ([a (assoc (resolve-one-path (vector-ref config-info 0)) (unbox codes))])            
@@ -1163,6 +1166,7 @@
                                  #:modules [modules null]
                                  #:configure-via-first-module? [config? #f]
                                  #:literal-files [literal-files null]
+                                 #:early-literal-expressions [early-literal-expressions null]
                                  #:literal-expressions [literal-expressions null]
                                  #:on-extension [on-extension #f]
                                  #:expand-namespace [expand-namespace (current-namespace)]
@@ -1171,7 +1175,8 @@
                                                           (compile expr)))]
                                  #:src-filter [src-filter (lambda (filename) #f)]
                                  #:get-extra-imports [get-extra-imports (lambda (filename code) null)])
-      (do-write-module-bundle (current-output-port) verbose? modules config? literal-files literal-expressions
+      (do-write-module-bundle (current-output-port) verbose? modules 
+                              early-literal-expressions config? literal-files literal-expressions
                               #f ; collects-dest
                               on-extension
                               #f ; program-name 
@@ -1210,6 +1215,7 @@
                                          #:modules [modules null]
                                          #:configure-via-first-module? [config? #f]
                                          #:literal-files [literal-files null]
+                                         #:early-literal-expressions [early-literal-expressions null]
                                          #:literal-expression [literal-expression #f]
                                          #:literal-expressions [literal-expressions
                                                                 (if literal-expression
@@ -1324,7 +1330,9 @@
                    (lambda (s)
                      (define pos #f)
                      (do-write-module-bundle s
-                                             verbose? modules config? literal-files literal-expressions collects-dest
+                                             verbose? modules 
+                                             early-literal-expressions config? 
+                                             literal-files literal-expressions collects-dest
                                              on-extension
                                              (file-name-from-path dest)
                                              compiler

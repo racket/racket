@@ -49,6 +49,9 @@ parameter is true.
                                                        (list/c (or/c symbol? (one-of/c #t #f)) 
                                                                (or/c module-path? path?)
                                                                (listof symbol?))))]
+                               [#:early-literal-expressions early-literal-sexps
+                                                            list?
+                                                            null]
                                [#:configure-via-first-module? config-via-first? 
                                                               any/c 
                                                               #f]
@@ -114,26 +117,27 @@ namespace except as specified in @racket[mod-list], other modules
 generated prefix, so that they are not directly accessible.
 
 The @racket[#:modules] argument @racket[mod-list] designates modules
-to be embedded, as described below. The @racket[#:literal-files] and
+to be embedded, as described below. The @racket[#:early-literal-expressions], @racket[#:literal-files], and
 @racket[#:literal-expressions] arguments specify literal code to be
-copied into the executable: the content of each file in
-@racket[literal-files] is copied in order (with no intervening space),
-followed by each element of @racket[literal-sexps]. The
-@racket[literal-files] files or @racket[literal-sexps] list can
+copied into the executable: each element of @racket[early-literal-sexps]
+is copied in order, then
+the content of each file in
+@racket[literal-files] in order (with no intervening spaces),
+and then each element of @racket[literal-sexps]. The
+@racket[literal-files] files or @racket[early-literal-sexps] or @racket[literal-sexps] lists can
 contain compiled bytecode, and it's possible that the content of the
 @racket[literal-files] files only parse when concatenated; the files
 and expression are not compiled or inspected in any way during the
 embedding process. Beware that the initial namespace contains no
-bindings; use compiled expressions to bootstrap the namespace. If
-@racket[literal-sexp] is @racket[#f], no literal expression is
-included in the executable. The @racket[#:literal-expression]
+bindings; use compiled expressions to bootstrap the namespace.
+The @racket[#:literal-expression]
 (singular) argument is for backward compatibility.
 
 If the @racket[#:configure-via-first-module?] argument is specified as
 true, then the language of the first module in @racket[mod-list] is
 used to configure the run-time environment before the expressions
 added by @racket[#:literal-files] and @racket[#:literal-expressions]
-are evaluated. See also @secref[#:doc '(lib
+are evaluated, but after the expressions of @racket[#:early-literal-expressions]. See also @secref[#:doc '(lib
 "scribblings/reference/reference.scrbl") "configure-runtime"].
 
 The @racket[#:cmdline] argument @racket[cmdline] contains command-line

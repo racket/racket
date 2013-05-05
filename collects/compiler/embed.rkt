@@ -37,6 +37,7 @@
                                                (or/c path? module-path?)
                                                (listof symbol?))))
                          #:configure-via-first-module? any/c
+                         #:early-literal-expressions (listof any/c)
                          #:literal-files (listof path-string?)
                          #:literal-expression any/c
                          #:literal-expressions (listof any/c)
