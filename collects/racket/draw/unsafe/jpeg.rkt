@@ -7,7 +7,7 @@
          "../private/libs.rkt")
 
 (define-runtime-lib jpeg-lib
-  [(unix) (ffi-lib "libjpeg" '("62" "8" ""))]
+  [(unix) (ffi-lib "libjpeg" '("62" "8" "9" ""))]
   [(macosx) 
    ;; for PPC, it's actually version 8!
    (ffi-lib "libjpeg.62.dylib")]
@@ -24,6 +24,7 @@
 (define _J_COLOR_SPACE _int)
 (define _J_DCT_METHOD _int)
 (define _J_DITHER_MODE _int)
+(define _J_COLOR_TRANSFORM _int)
 
 (define _jbool (if win64? 
                    (make-ctype _byte
@@ -96,7 +97,7 @@
               (string->number (cadr m))
               "unknown"))))))
 
-(unless (member JPEG_LIB_VERSION '(62 64 70 80))
+(unless (member JPEG_LIB_VERSION '(62 64 70 80 90))
   (error 'jpeg "unsupported library version: ~e" JPEG_LIB_VERSION))
 
 (define-syntax-rule (cstruct-type/version elem ...)
@@ -260,6 +261,9 @@
                                            [Y_density _uint16]
                                            [saw_Adobe_marker _jbool]
                                            [Adobe_transform _uint8]
+
+                                           ,([(90) ([color_transform _J_COLOR_TRANSFORM])]
+                                             [else ()])
 
                                            [CCIR601_sampling _jbool]
 
@@ -469,6 +473,9 @@
                                          [X_density _uint16]
                                          [Y_density _uint16]
                                          [write_Adobe_marker _jbool]
+                                         
+                                         ,([(90) ([color_transform _J_COLOR_TRANSFORM])]
+                                           [else ()])
                                          
                                          [next_scanline _JDIMENSION]
                                          
