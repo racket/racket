@@ -77,8 +77,8 @@
     (raise-argument-error 'syntax-local-value/record
                           "identifier?"
                           0 id pred))
-  (unless (and (procedure? id)
-               (procedure-arity-includes? id 1))
+  (unless (and (procedure? pred)
+               (procedure-arity-includes? pred 1))
     (raise-argument-error 'syntax-local-value/record
                           "(-> any/c boolean?)"
                           1 id pred))
