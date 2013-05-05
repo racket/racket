@@ -72,7 +72,8 @@ constructor:
 ]
 
 Unquoted, non-constructor identifiers in a pattern are @tech{pattern
-variables} that are bound in the result expressions:
+variables} that are bound in the result expressions, except @racket[_],
+which does not bind (and thus is usually used as a catch-all):
 
 @interaction[
 #:eval match-eval
@@ -85,7 +86,12 @@ variables} that are bound in the result expressions:
 (match (hat 23 'bowler)
   [(shoe sz col) sz] 
   [(hat sz stl) sz])
+(match (hat 11 'cowboy)
+  [(shoe sz 'black) 'a-good-shoe] 
+  [(hat sz 'bowler) 'a-good-hat]
+  [_ 'something-else])
 ]
+
 
 An ellipsis, written @litchar{...}, acts like a Kleene star within a
 list or vector pattern: the preceding sub-pattern can be used to match
@@ -98,10 +104,10 @@ result expression to a list of matches:
 #:eval match-eval
 (match '(1 1 1)
   [(list 1 ...) 'ones]
-  [else 'other])
+  [_ 'other])
 (match '(1 1 2)
   [(list 1 ...) 'ones]
-  [else 'other])
+  [_ 'other])
 (match '(1 2 3 4)
   [(list 1 x ... 4) x])
 (match (list (hat 23 'bowler) (hat 22 'pork-pie))
