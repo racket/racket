@@ -18,12 +18,12 @@
                     values
                     (map
                      (λ (clause)
-                       (syntax-case clause (else)
+                       (syntax-case clause (_)
                          [[cond #f] #f]
                          [[`(name id pat) if-part]
                           [eq? 'name (syntax-e #'name)]
                           #f] ;; skip this here, want bound variant for pat* - added in pat-unify
-                         [[else exp ...] #f] ;; skip the cstr test; that's added elsewhere
+                         [[_ exp ...] #f] ;; skip the cstr test; that's added elsewhere
                          [[cond not-false ...] #'cond]))
                      (syntax->list #'(clauses ...))))))
        (stx-car (stx-cdr stx)))]))
