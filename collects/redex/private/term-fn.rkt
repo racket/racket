@@ -105,7 +105,9 @@
                             ;; shorten the span so it covers only up to the underscore
                             (string-length (symbol->string nt))))
         (define the-id (datum->syntax table-entry nt the-srcloc id-stx))
-        (syntax-property the-id 'syncheck-original #t)]
+        (syntax-property the-id 'syncheck-original #t)
+        ;; disable this for now
+        #f]
        [else
         #f])]
     [else

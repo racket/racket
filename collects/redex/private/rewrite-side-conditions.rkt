@@ -87,6 +87,8 @@
       (when the-use
         (define old (syntax-property void-stx 'disappeared-use))
         (set! void-stx
+              void-stx ;; disable this for now.
+              #;
               (syntax-property void-stx
                                'disappeared-use
                                (if old (cons the-use old) the-use)))))
