@@ -942,6 +942,10 @@ are treated as a binding/bound pair by Check Syntax.
 
 See also @racket[current-recorded-disappeared-uses].
 
+Check Syntax only draws arrows between identifiers that are @racket[syntax-original?]
+or that have the @racket[syntax-property] @racket['original-for-check-syntax]
+set to @racket[#t].
+
 @section{Teaching Languages}
 
 The teaching language are implemented via the tools interface and thus

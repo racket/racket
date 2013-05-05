@@ -1248,18 +1248,22 @@
     
     ;; add-init-exp : id-set identifier stx -> void
     (define (add-init-exp mapping id init-exp)
-      (when (syntax-original? id)
+      (when (original-enough? id)
         (let* ([old (free-identifier-mapping-get mapping id (λ () '()))]
                [new (cons init-exp old)])
           (free-identifier-mapping-put! mapping id new))))
     
     ;; add-id : id-set identifier -> void
     (define (add-id mapping id level-of-enclosing-module)
-      (when (syntax-original? id)
+      (when (original-enough? id)
         (let* ([id (syntax-shift-phase-level id level-of-enclosing-module)]
                [old (free-identifier-mapping-get mapping id (λ () '()))]
                [new (cons id old)])
           (free-identifier-mapping-put! mapping id new))))
+    
+    (define (original-enough? x)
+      (or (syntax-original? x)
+          (syntax-property x 'original-for-check-syntax)))
     
     ;; get-idss : id-set -> (listof (listof identifier))
     (define (get-idss mapping)
