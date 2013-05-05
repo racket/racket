@@ -173,10 +173,12 @@
 (define-struct (composable-promise promise) ()
   #:property prop:force force/composable)
 
+  ;; !!!HACK!!!
   ;; stepper-syntax-property : like syntax property, but adds properties to an
   ;; association list associated with the syntax property 'stepper-properties
   ;; Had to re-define this because of circular dependencies
-  ;; (also defined in stepper/private/syntax-property.rkt)
+  ;; (also defined in stepper/private/syntax-property.rkt), it should
+  ;; either be defined as a generic tool, or removed.
   (define-for-syntax stepper-syntax-property
     (case-lambda 
       [(stx tag) 
@@ -192,7 +194,7 @@
          (syntax-property stx 'stepper-properties
                           (cons (list tag new-val)
                                 (if stepper-props stepper-props '()))))]))
-  
+
 ;; template for all delay-like constructs
 ;; (with simple keyword matching: keywords is an alist with default exprs)
 (define-for-syntax (make-delayer stx maker keywords)
@@ -271,11 +273,16 @@
 (define-struct reraise (val)
   #:property prop:procedure (lambda (this) (raise (reraise-val this))))
 (define-struct running (name)
-  #:property prop:procedure (lambda (this)
-                              (let ([name (running-name this)])
-                                (if name
-                                  (error 'force "reentrant promise ~.s" name)
-                                  (error 'force "reentrant promise")))))
+  #:property prop:procedure
+  (lambda (this)
+    (let ([name (running-name this)])
+      (if name
+        (error 'force "reentrant promise ~.s" name)
+        (error 'force "reentrant promise"))))
+  #:property prop:custom-write
+  (lambda (this port write?)
+    (fprintf port (if write? "#<running:~s>" "#<running:~a>")
+             (running-name this))))
 
 ;; ----------------------------------------------------------------------------
 ;; Utilities

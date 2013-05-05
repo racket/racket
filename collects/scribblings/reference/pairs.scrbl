@@ -1104,6 +1104,25 @@ but @racket[pred] is applied to each item in @racket[lst] only once.
   (partition even? '(1 2 3 4 5 6))]}
 
 
+@defproc*[([(range [end real?]) list?]
+           [(range [start real?] [end real?] [step real? 1]) list?])]{
+
+Similar to @racket[in-range], but returns lists.
+
+The resulting list holds numbers starting at @racket[start] and whose
+successive elements are computed by adding @racket[step] to their
+predecessor until @racket[end] (excluded) is reached.  If no starting
+point is provided, @racket[0] is used. If no @racket[step] argument is
+provided, @racket[1] is used.
+
+@mz-examples[#:eval list-eval
+  (range 10)
+  (range 10 20)
+  (range 20 40 2)
+  (range 20 10 -1)
+  (range 10 15 1.5)]}
+
+
 @defproc[(append-map [proc procedure?] [lst list?] ...+)
          list?]{
 
@@ -1143,6 +1162,7 @@ result of @racket[proc].  Signals an error on an empty list.
   (argmin car '((3 pears) (1 banana) (2 apples)))
   (argmin car '((1 banana) (1 orange)))]}
 
+
 @defproc[(argmax [proc (-> any/c real?)] [lst (and/c pair? list?)])
          any/c]{
 
@@ -1152,25 +1172,6 @@ result of @racket[proc].  Signals an error on an empty list.
 @mz-examples[#:eval list-eval
   (argmax car '((3 pears) (1 banana) (2 apples)))
   (argmax car '((3 pears) (3 oranges)))]}
-
-
-@defproc*[([(range [end real?]) list?]
-           [(range [start real?] [end real?] [step real? 1]) list?])]{
-
-Similar to @racket[in-range], but returns lists.
-
-The resulting list holds numbers starting at @racket[start] and whose
-successive elements are computed by adding @racket[step] to their
-predecessor until @racket[end] (excluded) is reached.  If no starting
-point is provided, @racket[0] is used. If no @racket[step] argument is
-provided, @racket[1] is used.
-
-@mz-examples[#:eval list-eval
-  (range 10)
-  (range 10 20)
-  (range 20 40 2)
-  (range 20 10 -1)
-  (range 10 15 1.5)]}
 
 
 @close-eval[list-eval]
