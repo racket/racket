@@ -101,22 +101,29 @@
        dest
        (exe-aux)))]
    [else
+    (define mod-sym (string->symbol
+                     (format "#%mzc:~a"
+                             (let-values ([(base name dir?)
+                                           (split-path source-file)])
+                               (path->bytes (path-replace-suffix name #""))))))
     (mzc:create-embedding-executable
      dest
      #:mred? (gui)
      #:variant (if (3m) '3m 'cgc)
      #:verbose? (very-verbose)
-     #:modules (cons `(#%mzc: (file ,source-file) (main))
+     #:modules (cons `(#%mzc: (file ,source-file) (main configure-runtime))
                      (map (lambda (l) `(#t (lib ,l)))
                           (exe-embedded-libraries)))
      #:configure-via-first-module? #t
+     #:early-literal-expressions
+     (parameterize ([current-namespace (make-base-namespace)])
+       (define cr-sym (string->symbol (format "~a(configure-runtime)" mod-sym)))
+       (list
+        (compile
+         `(when (module-declared? '',cr-sym)
+            (dynamic-require '',cr-sym #f)))))
      #:literal-expression
      (parameterize ([current-namespace (make-base-namespace)])
-       (define mod-sym (string->symbol
-                        (format "#%mzc:~a"
-                                (let-values ([(base name dir?)
-                                              (split-path source-file)])
-                                  (path->bytes (path-replace-suffix name #""))))))
        (define main-sym (string->symbol (format "~a(main)" mod-sym)))
        (compile
         `(begin
