@@ -73,12 +73,25 @@
                              disappeared-uses))))
 
 (define (syntax-local-value/record id pred)
+  (unless (identifier? id)
+    (raise-argument-error 'syntax-local-value/record
+                          "identifier?"
+                          0 id pred))
+  (unless (and (procedure? id)
+               (procedure-arity-includes? id 1))
+    (raise-argument-error 'syntax-local-value/record
+                          "(-> any/c boolean?)"
+                          1 id pred))
   (let ([value (syntax-local-value id (lambda () #f))])
     (and (pred value)
          (begin (record-disappeared-uses (list id))
                 value))))
 
 (define (record-disappeared-uses ids)
+  (unless (and (list? ids) (andmap identifier? ids))
+    (raise-argument-error 'record-disappeared-uses
+                          "(listof identifier?)"
+                          ids))
   (let ([uses (current-recorded-disappeared-uses)])
     (when uses
       (current-recorded-disappeared-uses 
