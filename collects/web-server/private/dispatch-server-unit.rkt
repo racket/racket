@@ -62,12 +62,12 @@
       (thread
        (lambda ()
          (handle-connection ip op
+                            #:port-addresses
                             (lambda (ip)
                               (values "127.0.0.1"
                                       "127.0.0.1"))))))))
 
 ;; handle-connection : input-port output-port (input-port -> string string) -> void
-;; returns immediately, spawning a thread to handle
 (define (handle-connection ip op
                            #:port-addresses [port-addresses tcp-addresses])
   (define conn
