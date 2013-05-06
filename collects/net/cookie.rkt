@@ -130,7 +130,7 @@
                  (format-if "Max-Age=~a" (cookie-max-age cookie))
                  (format-if "Path=~a" (cookie-path cookie))
                  (and (cookie-secure cookie) "Secure")
-                 (format "Version=~a" (or (cookie-version cookie) 1))
+                 (format-if "Version=~a" (cookie-version cookie))
                  (format-if "expires=~a" (cookie-expires cookie))))
    "; "))
 
@@ -166,7 +166,7 @@
   cookie)
 
 (define (cookie:add-path cookie pre-path)
-  (let ([path (to-rfc2109:value pre-path)])
+  (let ([path pre-path])
     (unless (cookie? cookie)
       (error* "cookie expected, received: ~a" cookie))
     (set-cookie-path! cookie path)
