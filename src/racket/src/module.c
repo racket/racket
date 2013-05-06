@@ -8831,7 +8831,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	  m = scheme_optimize_expr(m, oi, 0);
 	  
 	  /* Simplify only in compile mode; it is too slow in expand mode. */
-	  rp = scheme_resolve_prefix(1, eenv->prefix, rec[drec].comp);
+	  rp = scheme_resolve_prefix(1, eenv->prefix, !erec);
 	  ri = scheme_resolve_info_create(rp);
           scheme_enable_expression_resolve_lifts(ri);
 	  m = scheme_resolve_expr(m, ri);
