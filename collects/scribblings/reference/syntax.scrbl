@@ -1495,7 +1495,7 @@ used in the expression match those given in the earlier definition:
 
 If the definition follows the use like this, then
 the @racket[define-sym-case] macro does not have
-a chance to bind @racket[S] and the @racket[sym-case]
+a chance to bind @racket[id] and the @racket[sym-case]
 macro signals an error:
 @interaction[#:eval meta-in-eval
 (let () 
