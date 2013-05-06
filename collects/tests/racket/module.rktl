@@ -731,7 +731,7 @@
                 '(module m racket/base
                    (define-syntax-rule (m x) 1)
                    (m x)))) ()
-  [(_ name lang (mb ds (app cwv (lam () (qt one)) pnt)))
+  [(_ name lang (mb rc ds (app cwv (lam () (qt one)) pnt)))
    (begin
      (test 1 syntax-e #'one)
      (test #t identifier? (car (syntax-property #'one 'origin)))
@@ -825,17 +825,19 @@
 (let ()
   (define (a-expr mut?)
     `(module a racket/base
-       ,(if mut?
-            `(define a 5)
-            `(define (a x)
-               ;; long enough to not be inlined:
-               (list x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x)))
-       (provide a)))
+       (#%printing-module-begin
+        ,(if mut?
+             `(define a 5)
+             `(define (a x)
+                ;; long enough to not be inlined:
+                (list x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x)))
+        (provide a))))
   (define b-expr
     `(module b racket/base
-       (require 'a)
-       (define (b q) (a q))
-       (provide b)))
+       (#%printing-module-begin
+        (require 'a)
+        (define (b q) (a q))
+        (provide b))))
 
   (define (compile-m e strs)
     (parameterize ([current-namespace (make-base-namespace)])

@@ -1,4 +1,4 @@
-#lang s-exp syntax/module-reader
-scheme/base
-
-#:language-info '#(scheme/language-info get-info #f)
+;; This module is preserved only for backward compatiblity
+(module reader '#%kernel
+  (#%require (submod scheme/base reader))
+  (#%provide (all-from (submod scheme/base reader))))

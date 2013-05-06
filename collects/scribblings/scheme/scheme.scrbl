@@ -1,6 +1,6 @@
 #lang scribble/manual
 @(require (for-label (only-in scheme/foreign unsafe! provide* define-unsafer)
-                     (only-in scheme/base make-base-namespace make-base-empty-namespace)
+                     (only-in scheme/base make-base-namespace make-base-empty-namespace #%module-begin)
                      (only-in scheme/pretty pretty-print)
                      (only-in racket/pretty pretty-write)
                      (only-in scheme/class printable<%>)
@@ -20,13 +20,15 @@
                                  sandbox-namespace-specs-id
                                  make-evaluator-id
                                  make-module-evaluator-id
+                                 module-begin-id
                                  pretty-print-id
                                  printable<%>-id
                                  gui-dynamic-require-id)
   (begin
     (require (for-label (only-in scheme struct struct/ctc)
                         (only-in racket/base make-base-namespace
-                                             make-base-empty-namespace)
+                                             make-base-empty-namespace
+                                             #%module-begin)
                         (only-in racket/pretty pretty-print)
                         (only-in racket/gui/dynamic gui-dynamic-require)
                         racket/sandbox))
@@ -37,6 +39,7 @@
     (define sandbox-namespace-specs-id (racket sandbox-namespace-specs))
     (define make-evaluator-id (racket make-evaluator))
     (define make-module-evaluator-id (racket make-module-evaluator))
+    (define module-begin-id (racket #%module-begin))
     (define pretty-print-id (racket pretty-print))
     (define printable<%>-id (racket printable<%>))
     (define gui-dynamic-require-id (racket gui-dynamic-require))))
@@ -47,6 +50,7 @@
              sandbox-namespace-specs-id
              make-evaluator-id
              make-module-evaluator-id
+             module-begin-id
              pretty-print-id
              printable<%>-id
              gui-dynamic-require-id)
@@ -82,7 +86,8 @@ re-exported}
 @racketmodname[racket]'s @racket[struct], @racket[hash],
 @racket[hasheq], @racket[hasheqv], @racket[in-directory], and
 @racket[local-require] are not exported, and
-@racket[make-base-namespace] and @racket[make-base-empty-namespace]
+@racket[make-base-namespace], @racket[make-base-empty-namespace]
+@racket[#%module-begin]
 are different}
 
 @defproc[(make-base-empty-namespace) namespace?]{
@@ -94,6 +99,14 @@ but with @racketmodname[scheme/base] attached.}
 
 Like @|make-base-namespace-id| from @racketmodname[racket/base], but
 with @racketmodname[scheme/base] attached.}
+
+@defform[(#%module-begin form ...)]{
+
+Like @|module-begin-id| from @racketmodname[racket/base], but declares
+a @racket[configure-runtime] submodule that uses
+@racketmodname[scheme/runtime-config] instead of
+@racketmodname[racket/runtime-config], and it does not check for an
+immediate declaration of @racket[configure-runtime] among the @racket[form]s.}
 
 
 @compat[scheme/async-channel racket/async-channel]
@@ -302,8 +315,8 @@ An alias for @racket[pretty-write].}
 
 @defmodule[scheme/runtime-config]{
 The @racketmodname[scheme/runtime-config] library is like
-@racketmodname[racket/runtime-config], except that the result of its
-@racketidfont{configure} function is a procedure that sets
+@racketmodname[racket/runtime-config], except that its
+@racketidfont{configure} sets
 @racket[print-as-expression] to @racket[#f].}
 
 @; ----------------------------------------

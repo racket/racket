@@ -31,8 +31,8 @@ language information as the @racket[racket/base] language.
 
 @defmodule*/no-declare[(racket/runtime-config)]{The
 @racketmodname[racket/runtime-config] library provides a
-@racketidfont{configure} function that returns another function; the
-returned function takes an value ans set @racket[print-as-expression]
+@racketidfont{configure} function that takes any value
+and sets @racket[print-as-expression]
 to @racket[#t].}
 
 The vector @racket[#(racket/runtime-config configure #f)] is suitable

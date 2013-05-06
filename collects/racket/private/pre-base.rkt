@@ -1,7 +1,9 @@
 ;; A sane "core" for finishing up the "racket/base" library
 
 (module pre-base '#%kernel
-  (#%require (for-syntax '#%kernel))
+  (#%require (for-syntax '#%kernel
+                         "stx.rkt"
+                         "qq-and-or.rkt"))
   (#%require "more-scheme.rkt"
              "misc.rkt"
              (all-except "define.rkt" define define-syntax define-for-syntax)
@@ -9,7 +11,7 @@
              "kw.rkt"
              "define-struct.rkt"
              "reqprov.rkt"
-             "modbeg.rkt"
+             (prefix printing: "modbeg.rkt")
              "for.rkt"
              "map.rkt" ; shadows #%kernel bindings
              "kernstruct.rkt"
@@ -118,6 +120,32 @@
                                   (apply collection-file-path fail file-name collection collections))])
       collection-file-path))
 
+  (define-syntaxes (module-begin)
+    (lambda (stx)
+      (let-values ([(l) (syntax->list stx)])
+        (if l
+            (datum->syntax
+             stx
+             (if (ormap (lambda (e)
+                          (and (stx-pair? e)
+                               (let ([i (stx-car e)])
+                                 (and (identifier? (stx-car e))
+                                      (or (free-identifier=? i (quote-syntax module))
+                                          (free-identifier=? i (quote-syntax module*)))))
+                               (let ([p (stx-cdr e)])
+                                 (and (stx-pair? p)
+                                      (eq? (syntax-e (stx-car p)) 'configure-runtime)))))
+                        (cdr l))
+                 ;; There's a `configure-runtime' declaration already:
+                 (cons (quote-syntax printing:module-begin) (cdr l))
+                 (list* (quote-syntax printing:module-begin)
+                        (quote-syntax (module configure-runtime '#%kernel
+                                        (#%require racket/runtime-config)
+                                        (configure #f)))
+                        (cdr l)))
+             stx)
+            (raise-syntax-error #f "bad syntax" stx)))))
+
   (#%provide (all-from-except "more-scheme.rkt" old-case fluid-let)
              (all-from-except "misc.rkt" collection-path collection-file-path)
              (all-from "define.rkt")
@@ -134,6 +162,7 @@
              (rename #%app #%plain-app)
              (rename lambda #%plain-lambda)
              (rename #%module-begin #%plain-module-begin)
+             (rename printing:module-begin #%printing-module-begin)
              (rename module-begin #%module-begin)
              (rename norm:procedure-arity procedure-arity)
              (rename norm:raise-arity-error raise-arity-error)

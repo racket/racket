@@ -50,3 +50,6 @@
                        scheme/local
                        scheme/nest)
          (for-syntax (all-from-out scheme/base)))
+
+(module reader syntax/module-reader
+  scheme)

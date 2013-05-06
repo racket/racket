@@ -13,6 +13,7 @@
    (define-mb scheme-#%module-begin))
 
 @(define guide-doc '(lib "scribblings/guide/guide.scrbl"))
+@(define ref-doc '(lib "scribblings/reference/reference.scrbl"))
 
 @title[#:tag "module-reader"]{Module Reader}
 
@@ -194,6 +195,14 @@ identifiers used by the @racket[reader-option]s.
        (as opposed to source). For example, when Racket starts a
        program, it uses information attached to the main module to
        initialize the run-time environment.
+
+       @tech[#:doc ref-doc]{Submodules} are normally a better way to
+       implement reflective information, instead of
+       @racket[#:language-info]. For example, when Racket starts a
+       program, it also checks for a @racket[configure-runtime]
+       submodule of the main module to initialize the run-time
+       environment. The @racket[#:language-info] mechanism pre-dates
+       submodules.
 
        Since the expanded/compiled/declared form exists at a different time
        than when the source is read, a @racket[#:language-info]

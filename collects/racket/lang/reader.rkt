@@ -1,4 +1,4 @@
-#lang s-exp syntax/module-reader
-racket
-
-#:language-info '#(racket/language-info get-info #f)
+;; This module is preserved only for backward compatiblity
+(module reader '#%kernel
+  (#%require (submod racket reader))
+  (#%provide (all-from (submod racket reader))))

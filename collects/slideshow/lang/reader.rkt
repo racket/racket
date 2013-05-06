@@ -1,4 +1,4 @@
-#lang s-exp syntax/module-reader
-slideshow
-
-#:language-info '#(racket/language-info get-info #f)
+;; This module is preserved only for backward compatiblity
+(module reader '#%kernel
+  (#%require (submod slideshow reader))
+  (#%provide (all-from (submod slideshow reader))))

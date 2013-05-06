@@ -106,19 +106,20 @@
 
 (let ([o (open-output-bytes)])
   (write (compile '(module subm-example-0 racket/base
-                     (define x 1)
-                     (provide x)
-                     (module z racket/base
-                       (define z 26))
-                     (module* a racket/base
-                       (define x '1a)
-                       (provide x)
-                       (module* i racket/base
-                         (define x '1ai)
-                         (provide x)))
-                     (module* b racket/base
-                       (define x '1b)
-                       (provide x))))
+                     (#%printing-module-begin
+                      (define x 1)
+                      (provide x)
+                      (module z racket/base
+                        (define z 26))
+                      (module* a racket/base
+                        (define x '1a)
+                        (provide x)
+                        (module* i racket/base
+                          (define x '1ai)
+                          (provide x)))
+                      (module* b racket/base
+                        (define x '1b)
+                        (provide x)))))
          o)
   (define c (parameterize ([read-accept-compiled #t])
               (read (open-input-bytes (get-output-bytes o)))))
@@ -142,19 +143,20 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (let ([decl '(module m racket/base
-               (module z racket/base
-                 (provide z)
-                 (define z 26))
-               (require (submod "." z))
-               (provide !)
-               (define ! (add1 z))
-               (module* a racket/base
-                 (provide a)
-                 (define a 1))
-               (module* b racket/base
-                 (require (submod "." ".." a))
-                 (provide b)
-                 (define b (+ a 1))))])
+               (#%printing-module-begin
+                (module z racket/base
+                  (provide z)
+                  (define z 26))
+                (require (submod "." z))
+                (provide !)
+                (define ! (add1 z))
+                (module* a racket/base
+                  (provide a)
+                  (define a 1))
+                (module* b racket/base
+                  (require (submod "." ".." a))
+                  (provide b)
+                  (define b (+ a 1)))))])
   ;; write a module as part of a top-level sequence:
   (parameterize ([current-namespace (make-base-namespace)])
     (define o (open-output-bytes))
@@ -331,9 +333,9 @@
                    (define x 0)
                    (module* sub #f
                      (+ x 1))))) ()
-  [(_ name lang (mb (def (x1) _) (mod sub #f
-                                      (mb_ (app cwv (lam () (app_ + x2 _))
-                                                _)))))
+  [(_ name lang (mb cr (def (x1) _) (mod sub #f
+                                         (mb_ cr_ (app cwv (lam () (app_ + x2 _))
+                                                       _)))))
    (begin
      (test #t free-identifier=? #'x1 #'x2)
      (let ([mpi (car (identifier-binding #'x2))])
@@ -366,7 +368,7 @@
                     (syntax-case stx ()
                       [() 10]))))))
   (eval (syntax-case m ()
-          [(md m r/b (m-b mod))
+          [(md m r/b (m-b cr mod))
            #`(md m r/b (m-b (begin 10 mod)))])))
 
 (parameterize ([current-namespace (make-base-namespace)])
@@ -573,13 +575,14 @@
         (m)))
                                                   
 (module check-submodule-list racket/base
-  (require (for-syntax racket/base))
-  (provide x)
-  (define-syntax (m stx) #`(quote #,(syntax-local-submodules)))
-  (module m1 racket/base)
-  (module m2 racket/base)
-  (module* m3 racket/base)
-  (define x (m)))
+  (#%printing-module-begin
+   (require (for-syntax racket/base))
+   (provide x)
+   (define-syntax (m stx) #`(quote #,(syntax-local-submodules)))
+   (module m1 racket/base)
+   (module m2 racket/base)
+   (module* m3 racket/base)
+   (define x (m))))
 
 (test '(m1 m2) dynamic-require ''check-submodule-list 'x)
 
@@ -802,17 +805,18 @@
 ;; for submodules) in compile and expand modes
 
 (let ([e '(module x racket/base
-            (require (for-syntax racket/base))
-            
-            (module m racket/base)
-            
-            (define-syntax (m stx)
-              (syntax-local-module-exports ''m) ; should succeed
-              #`(quote #,(syntax-local-submodules)))
-            
-            (define x (m))
-            x
-            (provide x))])
+            (#%printing-module-begin
+             (require (for-syntax racket/base))
+             
+             (module m racket/base)
+             
+             (define-syntax (m stx)
+               (syntax-local-module-exports ''m) ; should succeed
+               #`(quote #,(syntax-local-submodules)))
+             
+             (define x (m))
+             x
+             (provide x)))])
   (parameterize ([current-namespace (make-base-namespace)])
     (eval e)
     (test '(m) dynamic-require ''x 'x))

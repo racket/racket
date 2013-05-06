@@ -1,7 +1,6 @@
-#lang racket/private
+#lang racket/base
 
-(require racket/base
-         racket/contract
+(require racket/contract
          racket/class
          racket/unit
          racket/dict
@@ -65,3 +64,6 @@
                        racket/system
                        racket/format)
          (for-syntax (all-from-out racket/base)))
+
+(module reader syntax/module-reader
+  racket)

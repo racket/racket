@@ -37,7 +37,10 @@
     (unless (symbol? path)
       ;; Copy file to here. The filename is from the resolved module
       ;; path, so it is ".rkt" even if the source is ".ss".
-      (let* ([path (if (file-exists? path)
+      (let* ([path (if (pair? path)
+                       (cadr path) ; extra from submodule
+                       path)]
+             [path (if (file-exists? path)
                        path
                        (if (regexp-match? #rx#"[.]rkt$" (if (path? path)
                                                             (path->bytes path)
@@ -84,11 +87,11 @@
        mzscheme/lang/reader
        scheme/base/lang/reader
        scheme/lang/reader
-       scheme/private/lang/reader
        scheme/private/provider/lang/reader
        racket/base/lang/reader
-       racket/private/lang/reader
-       racket/lang/reader))
+       racket/lang/reader
+       scheme/runtime-config
+       racket/runtime-config))
 
 (current-library-collection-paths 
  (list (build-path (current-directory) "xform-collects")))

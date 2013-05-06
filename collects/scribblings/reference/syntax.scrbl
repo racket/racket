@@ -343,7 +343,24 @@ Legal only in a @tech{module begin context}, and handled by the
 
 The @racket[#%module-begin] form of @racketmodname[racket/base] wraps
 every top-level expression to print non-@|void-const| results using
-@racket[current-print].}
+@racket[current-print].
+
+The @racket[#%module-begin] form of @racketmodname[racket/base] also
+declares a @racket[configure-runtime] submodule (before any other
+@racket[form]), unless some @racket[form] is either an immediate
+@racket[module] or @racket[module*] form with the name
+@racket[configure-runtime]. If a @racket[configure-runtime] submodule
+is added, the submodule calls the @racket[configure] function of
+@racketmodname[racket/runtime-config].}
+
+
+@defform[(#%printing-module-begin form ...)]{
+
+Legal only in a @tech{module begin context}.
+
+Like @racket[#%module-begin], but without adding a
+@racket[configure-runtime] submodule.}
+
 
 @defform[(#%plain-module-begin form ...)]{
 

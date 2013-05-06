@@ -497,7 +497,7 @@
           (syntax-case (expand #'(module m scheme/base
                                    (require (only-in (lib "lang/htdp-intermediate.rkt") [cons bcons]))
                                    bcons)) ()
-            [(mod m mz (#%mod-beg req (app call-with-values (lambda () cons) print)))
+            [(mod m mz (#%mod-beg run-conf req (app call-with-values (lambda () cons) print)))
              (let ([s (syntax cons)])
                (test 'bcons syntax-e s)
                s)]))])
