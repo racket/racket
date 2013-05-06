@@ -441,7 +441,7 @@ contract is not a flat contract).
 If this is not the case, and the contract is
 always flat then the field must be annotated with
 the @racket[#:flat], or the field must be annotated with
-@racket[#:chaperone] (in which case, it must be a mutable field).
+@racket[#:impersonator] (in which case, it must be a mutable field).
 
 A @racket[field-name] is either an identifier naming a field in the first
 case, an identifier naming a selector in the second case indicated
