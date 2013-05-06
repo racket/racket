@@ -318,114 +318,100 @@
               fix)))))]))
 
 (define-syntax (generate-term stx)
-  (syntax-case stx ()
-    [(form-name args ...)
-     #`(#%expression (generate-term/real form-name args ...))]))
-
-(define-syntax (generate-term/real stx)
   (let ([l (cdr (syntax->list stx))])
-    (when (list? l)
-      (for ([x (in-list l)])
-        (define k (syntax-e x))
-        (when (keyword? k)
-          (unless (member k '(#:satisfying #:source #:attempt-num #:retries #:i-th))
-            (raise-syntax-error 'generate-term "unknown keyword" stx x))))))
+    (for ([x (in-list l)])
+      (define k (syntax-e x))
+      (when (keyword? k)
+        (unless (member k '(#:satisfying #:source #:attempt-num #:retries #:i-th))
+          (raise-syntax-error 'generate-term "unknown keyword" stx x)))))
+  
+  (define (parse-keyword-args args)
+    (define attempt-num #f)
+    (define retries #f)
+
+    (let loop ([args args])
+      (syntax-case args ()
+        [() 
+         (values (or attempt-num #'1)
+                 (or retries #'100))]
+        [(#:attempt-num attempt-num-expr . rest)
+         (let ()
+           (when attempt-num
+             (raise-syntax-error 'generate-term 
+                                 "found multiple #:attempt-num keywords"
+                                 stx
+                                 (stx-car args)))
+           (set! attempt-num #'(check-keyword-arg attempt-num-expr))
+           (loop #'rest))]
+        [(#:retries retries-expr . rest)
+         (let ()
+           (when retries
+             (raise-syntax-error 'generate-term 
+                                 "found multiple #:retries keywords"
+                                 stx
+                                 (stx-car args)))
+           (set! retries #'(check-keyword-arg retries-expr))
+           (loop #'rest))]
+        [(x . y)
+         (raise-syntax-error 'generate-term
+                             "illegal syntax; expected #:attempt-num and #:retries keywords arguments"
+                             #'x
+                             stx)])))
+  
+  (define (check-size exp)
+    (when (keyword? (syntax-e exp))
+      (raise-syntax-error 'generate-term 
+                          "expected a size expression"
+                          stx
+                          exp)))
+  
+  #`(#%expression
+     #,(syntax-case stx (=)
+         [(_ lang pat #:i-th i-expr)
+          #'(generate-term/ith lang pat i-expr)]
+         [(_ lang pat #:i-th)
+          #'(generate-term/ith lang pat)]
+         [(_ language #:satisfying (mf-id . args) = res)
+          #'(generate-term/mf language (mf-id . args) res)]
+         [(_ language #:satisfying (mf-id . mf-args) = res size)
+          #'(generate-term/mf language (mf-id . mf-args) res size)]
+         [(_ language #:satisfying (jf-id . jf-args))
+          #`(generate-term/jf language (jf-id . jf-args))]
+         [(_ language #:satisfying (jf-id . jf-args) size)
+          #`(generate-term/jf language (jf-id . jf-args) size)]
+         [(_ #:source metafunction/relation size . args)
+          (let ()
+            (check-size #'size)
+            (define-values (attempt-num retries-expr) (parse-keyword-args #'args))
+            #`(generate-term/source metafunction/relation size #,attempt-num #,retries-expr))]
+         [(_ #:source metafunction/relation)
+          #`(generate-term/source metafunction/relation)]
+         [(_ lang pat size . args)
+          (let ()
+            (check-size #'size)
+            (define-values (attempt-num retries-expr) (parse-keyword-args #'args))
+            #`(generate-term/lang-pat lang pat size #,attempt-num #,retries-expr))]
+         [(_ lang pat)
+          #`(generate-term/lang-pat lang pat)])))
+
+(define (check-keyword-arg expr)
+  (unless (exact-nonnegative-integer? expr)
+    (raise-argument-error 'generate-term
+                          "natural number"
+                          expr))
+  expr)
+
+(define-syntax (generate-term/ith stx)
   (syntax-case stx ()
-    [(_ orig-name lang pat #:i-th . rest)
+    [(_ lang pat . rest)
      (with-syntax ([(syncheck-exp pattern (vars ...) (vars/ellipses ...)) 
                     (rewrite-side-conditions/check-errs 
                      #'lang
-                     (syntax-e #'orig-name) #t #'pat)])
+                     'generate-term #t #'pat)])
+       (define fn-stx #'(begin syncheck-exp (generate-ith/proc lang `pattern)))
        (syntax-case #'rest ()
-         [()
-          #'(begin syncheck-exp (generate-ith/proc lang `pattern))]
-         [(i-expr)
-          #'(begin syncheck-exp ((generate-ith/proc lang `pattern) i-expr))]))]
-    [(_ orig-name language #:satisfying (jf/mf-id . args) . rest)
-     (cond
-       [(metafunc #'jf/mf-id)
-        (let ()
-          (define (signal-error whatever)
-            (when (stx-pair? whatever)
-              (define cr (syntax-e (stx-car whatever)))
-              (when (keyword? cr)
-                (raise-syntax-error 'generate-term 
-                                    "#:satisfying does not yet support additional keyword arguments"
-                                    stx 
-                                    (stx-car whatever))))
-            (raise-syntax-error 'generate-term
-                                "expected a metafunction result and a size"
-                                stx))
-          (let ([body-code 
-                 (λ (res size)
-                   #`(generate-mf-pat language (jf/mf-id . args) #,res #,size))])
-            (syntax-case #'rest (=)
-              [(= res) 
-               #`(λ (size) 
-                   #,(body-code #'res #'size))]
-              [(= res size)
-               (body-code #'res #'size)]
-              [(x . y)
-               (or (not (identifier? #'x))
-                   (not (free-identifier=? #'= #'x)))
-               (raise-syntax-error 'generate-term
-                                   "expected to find ="
-                                   stx
-                                   #'x)]
-              [whatever
-               (signal-error #'whatever)])))]
-       [(judgment-form-id? #'jf/mf-id)
-        (syntax-case #'rest ()
-          [() 
-           #`(λ (size) 
-               (generate-jf-pat language (jf/mf-id . args) size))]
-          [(size)
-           #'(generate-jf-pat language (jf/mf-id . args) size)]
-          [(x . y) (raise-syntax-error 'generate-term 
-                                       "#:satisfying does not yet support additional keyword arguments"
-                                       stx #'x)])]
-       [else
-        (raise-syntax-error 'generate-term 
-                            "expected either a metafunction or a judgment-form identifier"
-                            stx
-                            #'jf/mf-id)])]
-    [(_ orig-name actual-stx ...)
-     (let ()
-       (define-values (raw-generators args)
-         (syntax-case #'(actual-stx ...) ()
-           [(#:source src . rest)
-            (values 
-             (cond [(metafunc #'src) 
-                    => (λ (f)
-                         #`(let* ([f #,f]
-                                  [L (metafunc-proc-lang f)]
-                                  [compile-pat (compile L 'orig-name)]
-                                  [cases (metafunc-proc-cases f)])
-                             (check-cases 'src cases)
-                             (map (λ (c) (compile-pat ((metafunc-case-lhs+ c) L))) 
-                                  cases)))]
-                   [else
-                    #`(let* ([r #,(apply-contract #'reduction-relation?  #'src "#:source argument" (syntax-e #'orig-name))]
-                             [L (reduction-relation-lang r)]
-                             [compile-pat (compile L 'orig-name)])
-                        (map (λ (p) (compile-pat ((rewrite-proc-lhs p) L)))
-                             (reduction-relation-make-procs r)))])
-             #'rest)]
-           [(lang pat . rest)
-            (with-syntax ([(syncheck-exp pattern (vars ...) (vars/ellipses ...)) 
-                           (rewrite-side-conditions/check-errs 
-                            #'lang
-                            (syntax-e #'orig-name) #t #'pat)])
-              (values #`(begin syncheck-exp (list #,(term-generator #'lang #'pattern (syntax-e #'orig-name))))
-                      #'rest))]))
-       (define generator-syntax
-         #`(make-generator #,raw-generators 'orig-name))
-       (syntax-case args ()
-         [()
-          generator-syntax]
-         [(size . kw-args)
-          (quasisyntax/loc stx
-            (#,generator-syntax size . kw-args))]))]))
+         [() fn-stx]
+         [(i-expr) #`(#,fn-stx i-expr)]))]))
 
 (define (generate-ith/proc lang pat)
   (define enum-lang (compiled-lang-enum-table lang))
@@ -436,6 +422,87 @@
                             "exact-nonnegative-integer?"
                             i))
     (enum-ith enum  i)))
+
+(define-syntax (generate-term/mf stx)
+  (syntax-case stx ()
+    [(_ language (mf-id . args) res . size-maybe)
+     (let ()
+       (language-id-nts #'language 'generate-term) ;; for the error side-effect
+       (define m (metafunc #'mf-id))
+       (unless m (raise-syntax-error 'generate-term "expected a metafuction" #'mf-id))
+       (define (body-code size)
+         #`(generate-mf-pat language (mf-id . args) res #,size))
+       (syntax-case #'size-maybe ()
+         [() #`(λ (size) #,(body-code #'size))]
+         [(size) (body-code #'size)]))]))
+
+(define-syntax (generate-term/jf stx)
+  (syntax-case stx ()
+    [(_ language (jf-id . args) . size-maybe)
+     (let ()
+       (language-id-nts #'language 'generate-term) ;; for the error side-effect
+       (unless (judgment-form-id? #'jf-id)
+         (raise-syntax-error 'generate-term "expected a judgment-form" #'jf-id))
+        (syntax-case #'size-maybe ()
+          [() #`(λ (size) (generate-jf-pat language (jf-id . args) size))]
+          [(size) #'(generate-jf-pat language (jf-id . args) size)]))]))
+
+(define-syntax (generate-term/source stx)
+  (syntax-case stx ()
+    [(_ mf/rel . size+args-maybe)
+     (let ()
+       (define generator-stx
+         (cond
+           [(metafunc #'mf/rel)
+            => (λ (f)
+                 #`(make-generate-term/source/mf-generator 'mf/rel #,f))]
+           [else
+            #`(make-generate-term/source/rr-generator
+               #,(apply-contract #'reduction-relation? #'mf/rel
+                                 "#:source argument" 'generate-term))]))
+       (syntax-case #'size+args-maybe ()
+         [() generator-stx]
+         [(size attempt-num retries-expr)
+          #`(#,generator-stx size #:attempt-num attempt-num #:retries retries-expr)]))]))
+
+(define (make-generate-term/source/mf-generator name f)
+  (make-generator
+   (let* ([L (metafunc-proc-lang f)]
+          [compile-pat (compile L 'generate-term)]
+          [cases (metafunc-proc-cases f)])
+     (check-cases name cases)
+     (map (λ (c) (compile-pat ((metafunc-case-lhs+ c) L))) 
+          cases))
+   'generate-term))
+
+(define (make-generate-term/source/rr-generator r)
+  (unless (reduction-relation? r)
+    (raise-argument-error 'generate-term "reduction-relation?" r))
+  (make-generator
+   (let* ([L (reduction-relation-lang r)]
+          [compile-pat (compile L 'orig-name)])
+     (map (λ (p) (compile-pat ((rewrite-proc-lhs p) L)))
+          (reduction-relation-make-procs r)))
+   'generate-term))
+
+(define-syntax (generate-term/lang-pat stx)
+  (syntax-case stx ()
+    [(_ lang pat . rest)
+     (with-syntax ([(syncheck-exp pattern (vars ...) (vars/ellipses ...)) 
+                    (rewrite-side-conditions/check-errs 
+                     #'lang
+                     'generate-term
+                     #t #'pat)])
+       (define generator-exp
+         #`(begin syncheck-exp 
+                  (generate-term/lang-pat/proc 
+                   #,(term-generator #'lang #'pattern 'generate-term))))
+       (syntax-case #'rest ()
+         [() generator-exp]
+         [(size attempt-num retries-expr)
+          #`(#,generator-exp size #:attempt-num attempt-num #:retries retries-expr)]))]))
+
+(define (generate-term/lang-pat/proc tg) (make-generator (list tg) 'generate-term))
 
 (define (check-cases name cases)
   (when (null? cases)

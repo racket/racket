@@ -1693,50 +1693,81 @@ metafunctions or unnamed reduction-relation cases) to application counts.}
            (values (covered-cases equals-coverage)
                    (covered-cases plus-coverage))))]
 
-@defform*/subs[[(generate-term term-spec size-or-index-expr kw-args ...)
-                (generate-term term-spec)]
-              ([term-spec (code:line language @#,ttpattern)
-                          (code:line language @#,ttpattern #:i-th)
-                          (code:line language #:satisfying (judgment-form-id @#,ttpattern ...))
-                          (code:line language #:satisfying (metafunction-id @#,ttpattern ...) = @#,ttpattern)
-                          (code:line #:source metafunction)
-                          (code:line #:source relation-expr)]
-               [kw-args (code:line #:attempt-num attempts-expr)
-                        (code:line #:retries retries-expr)])
+@defform*/subs[((generate-term from-pattern)
+                (generate-term from-judgment-form)
+                (generate-term from-metafunction)
+                (generate-term from-reduction-relation))
+               ([from-pattern
+                 (code:line language @#,ttpattern size-expr kw-args ...)
+                 (code:line language @#,ttpattern)
+                 (code:line language @#,ttpattern #:i-th index-expr)
+                 (code:line language @#,ttpattern #:i-th)]
+                [from-judgment-form
+                 (code:line language #:satisfying
+                            (judgment-form-id @#,ttpattern ...))]
+                [from-metafunction
+                 (code:line language #:satisfying 
+                            (metafunction-id @#,ttpattern ...) = @#,ttpattern)
+                 (code:line #:source metafunction size-expr kw-args)
+                 (code:line #:source metafunction)]
+                [from-reduction-relation
+                 (code:line #:source reduction-relation-expr
+                            size-expr kw-args ...)
+                 (code:line #:source reduction-relation-expr)]
+                [kw-args (code:line #:attempt-num attempts-expr)
+                         (code:line #:retries retries-expr)])
               #:contracts ([size-expr natural-number/c]
                            [attempt-num-expr natural-number/c]
                            [retries-expr natural-number/c])]{
 
-In its first form, @racket[generate-term] produces a term according
-to @racket[term-spec]:
-@itemlist[@item{In the first @racket[term-spec] case, the produced 
-                term is generated randomly and matches the given pattern (interpreted 
-                according to the definition of the given language). The 
-                @racket[size-or-index-expr] is treated as a size bound
-                on the generated term, as it is for all of the cases when
-                @racket[generate-term] generates a random term.}
-           @item{In the second case, the produced 
-                term is selected from an enumeration of terms matching the given pattern
-                (also interpreted according to the definition of the given language), using
-                the value of @racket[size-or-index-expr] to choose which element of the
-                enumeration.}
-           @item{In the third case, the term generated is a random instance of the quoted
-                 form of a use of the judgment-form or @racket[#f], if Redex cannot find one.}
-           @item{The fourth case generates a random term that satisfies 
-                 the call to the metafunction with the given result 
-                 or @racket[#f], if Redex cannot find one.}
-           @item{In the last two cases, 
-                 the produced term matches one of the clauses of the specified metafunction or
-                 reduction relation.}]
-
-In @racket[generate-term]'s second form, it produces a procedure for constructing 
-terms according to @racket[term-spec].
-This procedure expects @racket[size-or-index-expr] (below) as its sole positional
-argument and allows the same optional keyword arguments as the first form.
-The second form may be more efficient when generating many terms.
+Generates terms in a number of different ways:
+@itemlist[@item{@racket[from-pattern]:
+                 In the first case, randomly makes an expression matching the given pattern
+                 whose size is bounded by @racket[size-expr]; the second returns a function
+                 that accepts a size bound and returns a random term. Calling this function 
+                 (even with the same size bound) may be more efficient than using the first case.
+                 
+                 In the third case, picks a term from an enumeration of the terms, returning the
+                 term whose index matches the value of @racket[index-expr]. The fourth case 
+                 returns a function that accepts an index and returns that term.}
+           @item{@racket[from-judgment-form]: Randomly picks a term that satisfies
+                  the given use of the judgment form.}
+           @item{@racket[from-metafunction]: The first form randomly picks a term
+                  that satisfies the given invocation of the metafunction, using
+                  techniques similar to how the @racket[from-judgment-form] case works.
+                  The second form uses a more naive approach; it simply generates terms
+                  that match the patterns of the cases of the metafunction; it does not
+                  consider the results of the metafunctions, nor does it consider
+                  patterns from earlier cases when generating terms based on a particular case.
+                  The third case is like the second, except it returns a function that accepts
+                  the size and keywords arguments that may be more efficient if multiple 
+                  random terms are generated.}
+           @item{@racket[from-reduction-relation]: In the first case, @racket[generate-term]
+                  randomly picks a rule from the reduction relation and tries to pick a term
+                  that satisfies its domain pattern, returning that. The second case returns
+                  a function that accepts the size and keyword arguments that may be more
+                  efficient if multiple random terms are generated.}]
 
 The argument @racket[size-expr] bounds the height of the generated term
 (measured as the height of its parse tree). 
+
+The optional keyword argument @racket[attempt-num-expr] 
+(default @racket[1]) provides coarse grained control over the random
+decisions made during generation; increasing @racket[attempt-num-expr]
+tends to increase the complexity of the result. For example, the absolute
+values of numbers chosen for @pattech[integer] patterns increase with
+@racket[attempt-num-expr].
+
+The random generation process does not actively consider the constraints
+imposed by @pattech[side-condition] or @tt{_!_} @|pattern|s; instead, 
+it uses a ``guess and check'' strategy in which it freely generates 
+candidate terms then tests whether they happen to satisfy the constraints,
+repeating as necessary. The optional keyword argument @racket[retries-expr]
+(default @racket[100]) bounds the number of times that 
+@racket[generate-term] retries the generation of any pattern. If 
+@racket[generate-term] is unable to produce a satisfying term after 
+@racket[retries-expr] attempts, it raises an exception recognized by
+@racket[exn:fail:redex:generation-failure?].
 
 @examples[
 #:eval redex-eval
@@ -1765,24 +1796,7 @@ The argument @racket[size-expr] bounds the height of the generated term
          [(F another-clause n) ()])
 
        (generate-term #:source F 5)]
-
-The optional keyword argument @racket[attempt-num-expr] 
-(default @racket[1]) provides coarse grained control over the random
-decisions made during generation; increasing @racket[attempt-num-expr]
-tends to increase the complexity of the result. For example, the absolute
-values of numbers chosen for @pattech[integer] patterns increase with
-@racket[attempt-num-expr].
-
-The random generation process does not actively consider the constraints
-imposed by @pattech[side-condition] or @tt{_!_} @|pattern|s; instead, 
-it uses a ``guess and check'' strategy in which it freely generates 
-candidate terms then tests whether they happen to satisfy the constraints,
-repeating as necessary. The optional keyword argument @racket[retries-expr]
-(default @racket[100]) bounds the number of times that 
-@racket[generate-term] retries the generation of any pattern. If 
-@racket[generate-term] is unable to produce a satisfying term after 
-@racket[retries-expr] attempts, it raises an exception recognized by
-@racket[exn:fail:redex:generation-failure?].}
+}
 
 @defform/subs[(redex-check language @#,ttpattern property-expr kw-arg ...)
               ([kw-arg (code:line #:attempts attempts-expr)
