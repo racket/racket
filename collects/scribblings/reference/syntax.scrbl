@@ -1448,14 +1448,80 @@ introduces @racketidfont{#%datum} identifiers.
 
 @defform[(#%expression expr)]{
 
-Produces the same result as @racket[expr]. The only use of
-@racket[#%expression] is to force the parsing of a form as an
+Produces the same result as @racket[expr]. Using
+@racket[#%expression] forces the parsing of a form as an
 expression.
 
 @mz-examples[
 (#%expression (+ 1 2))
 (#%expression (define x 10))
-]}
+]
+
+The @racket[#%expression] form is helpful in recursive definition contexts
+where expanding a subsequent definition can provide compile-time information
+for the current expression. For example, consider a @racket[define-sym-case]
+macro that simply records some symbols at compile-time in a given identifier.
+@interaction/no-prompt[#:eval meta-in-eval
+(define-syntax (define-sym-case stx)
+  (syntax-case stx ()
+    [(_ id sym ...)
+     (andmap identifier? (syntax->list #'(sym ...)))
+     #'(define-syntax id
+         '(sym ...))]))]
+and then a variant of @racket[case] that checks to make sure the symbols
+used in the expression match those given in the earlier definition:
+@interaction/no-prompt[#:eval meta-in-eval
+(define-syntax (sym-case stx)
+  (syntax-case stx ()
+    [(_ id val-expr [(sym) expr] ...)
+     (let ()
+       (define expected-ids 
+         (syntax-local-value 
+          #'id
+          (λ () 
+            (raise-syntax-error 
+             'sym-case
+             "expected an identifier bound via def-sym-case"
+             stx
+             #'id))))
+       (define actual-ids (syntax->datum #'(sym ...)))
+       (unless (equal? expected-ids actual-ids)
+         (raise-syntax-error 
+          'sym-case
+          (format "expected the symbols ~s"
+                  expected-ids)
+          stx))
+       #'(case val-expr [(sym) expr] ...))]))]
+
+If the definition follows the use like this, then
+the @racket[define-sym-case] macro does not have
+a chance to bind @racket[S] and the @racket[sym-case]
+macro signals an error:
+@interaction[#:eval meta-in-eval
+(let () 
+  (sym-case land-creatures 'bear
+            [(bear) 1]
+            [(fox) 2])
+  (define-sym-case land-creatures bear fox))
+]
+But if the @racket[sym-case] is wrapped in an @racket[#%expression],
+then the expander does not need to expand it to know it is
+an expression and it moves on to the @racket[define-sym-case]
+expression.
+@interaction[#:eval meta-in-eval
+(let ()
+  (#%expression (sym-case sea-creatures 'whale 
+                          [(whale) 1]
+                          [(squid) 2]))
+  (define-sym-case sea-creatures whale squid)
+  'more...)
+]
+Of course, a macro like @racket[sym-case] should not require its
+clients to add @racket[#%expression]; instead it should check
+the basic shape of its arguments and then expand to @racket[#%expression]
+wrapped around a helper macro that calls @racket[syntax-local-value]
+and finishes the expansion.
+}
 
 @;------------------------------------------------------------------------
 @section[#:tag "#%top"]{Variable References and @racket[#%top]}
