@@ -254,7 +254,7 @@ Detailed instructions:
     "add-ons" directory, which you can most easily find by evaluating
       (find-system-path 'addon-dir)
     in Racket.  In addition, if you configure with `--enabled-shared',
-    you may accumlate many unused versions of the dynamic libraries in
+    you may accumulate many unused versions of the dynamic libraries in
     your installation target.
 
 After an "in-place" install without git, the "racket/src" directory is
@@ -287,11 +287,11 @@ Cross-compilation requires at least two flags to `configure':
 A third `configure' flag is typical:
 
  * `--enable-sgc', which uses a simpler garbage collector for the
-   inermediate variant of Racket that is normally used only to build
+   intermediate variant of Racket that is normally used only to build
    the final variant (see CGC vs 3m below).
 
    Otherwise, you may need to set CC_FOR_BUILD to a compiler for the
-   build platform, so that helper excutables can be created in the
+   build platform, so that helper executables can be created in the
    process of building the intermediate Racket that is used to build
    the final Racket.
 
@@ -305,7 +305,7 @@ Some less commonly needed `configure' flags:
  Cross-compiling for Android
 ========================================================================
 
-As an example of cross-compiling, to compile for Andriod on ARM using
+As an example of cross-compiling, to compile for Android on ARM using
 the NDK, use (all on one line)
 
   configure --host=arm-linux-androideabi 
@@ -360,7 +360,7 @@ The paths are embedded in the binary immediately after a special
 list of paths must end with an additional NUL terminator, and the
 overall list must be less than 1024 bytes long.
 
-As an alternative to editing an exeuctable directly, the
+As an alternative to editing an executable directly, the
 `create-embedding-executable' procedure from `compiler/embed' can be
 used to change the embedded path.  For example, the following program
 clones the Racket executable to "/tmp/mz" and changes the embedded path
@@ -383,7 +383,7 @@ documentation for "config search paths" for more information.
  Porting to New Platforms
 ========================================================================
 
-At a mininum, to port Racket to a new platform, edit "racket/sconfig.h"
+At a minimum, to port Racket to a new platform, edit "racket/sconfig.h"
 to provide a platform-specific compilation information.  As distributed,
 "racket/sconfig.h" contains configurations for the following platforms:
 
@@ -396,7 +396,7 @@ to provide a platform-specific compilation information.  As distributed,
               OpenBSD (x86)
               NetBSD (x86)
 
-If your platfrom is not supported by the Boehm garbage collector
+If your platform is not supported by the Boehm garbage collector
 (distributed with Racket source), provide the `--enable-sgc' flag to
 `configure'.
 
@@ -434,7 +434,7 @@ double' as extended-precision floating point.
 Configuration Options
 ---------------------
 
-Athough `configure' flags control most options, some configrations
+Although `configure' flags control most options, some configurations
 options can be modified by setting flags in "racket/sconfig.h".
 
 Some CPP flags control default settings in "racket/sconfig.h":
