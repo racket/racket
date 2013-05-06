@@ -9973,11 +9973,22 @@
    '(let ()
       (struct s (a b))
       (contract (struct/dc s
-                         [a () number?]
-                         [b (a) boolean?])
-              (s 1 #f)
-              'pos
-              'neg)))
+                           [a () number?]
+                           [b (a) boolean?])
+                (s 1 #f)
+                'pos
+                'neg)))
+  
+  (test/spec-passed
+   'struct/dc-1a
+   '(let ()
+      (struct s (a b))
+      (contract (struct/dc s
+                           [a () number?]
+                           [b (a) #:chaperone boolean?])
+                (s 1 #f)
+                'pos
+                'neg)))
 
   (test/spec-passed
    'struct/dc-2

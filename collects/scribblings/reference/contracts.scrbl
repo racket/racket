@@ -417,14 +417,14 @@ produced.  Otherwise, an impersonator contract is produced.
               ([field-spec [field-name maybe-lazy contract-expr]
                            [field-name (dep-field-name ...)
                                        maybe-lazy
-                                       maybe-flat-or-impersonator
+                                       maybe-contract-type
                                        maybe-dep-state
                                        contract-expr]]
                [field-name field-id
                            (#:selector selector-id)
                            (field-id #:parent struct-id)]
                [maybe-lazy (code:line) #:lazy]
-               [maybe-flat-or-impersonator (code:line) #:flat #:impersonator]
+               [maybe-contract-type (code:line) #:flat #:chaperone #:impersonator]
                [maybe-dep-state (code:line) #:depends-on-state])]{
 Produces a contract that recognizes instances of the structure
 type named by @racket[struct-id], and whose field values match the
@@ -435,7 +435,8 @@ then the contract depends on values in those fields, and the @racket[contract-ex
 expression is evaluated each time a selector is applied, building a new contract
 for the fields based on the values of the @racket[dep-field-name] fields (the
 @racket[dep-field-name] syntax is the same as the @racket[field-name] syntax).
-If the field is a dependent field, then it is assumed that the contract is
+If the field is a dependent field and no @racket[contract-type] annotation
+appears, then it is assumed that the contract is
 a chaperone, but not always a flat contract (and thus the entire @racket[struct/dc]
 contract is not a flat contract).
 If this is not the case, and the contract is

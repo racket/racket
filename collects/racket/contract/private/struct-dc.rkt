@@ -562,7 +562,7 @@
                     (syntax-case stuff ()
                       [(exp) (values #'exp lazy? type depends-on-state?)]
                       [(flat/impersonator-kwd . more-stuff) 
-                       (memq (syntax-e #'flat/impersonator-kwd) '(#:flat #:impersonator))
+                       (memq (syntax-e #'flat/impersonator-kwd) '(#:flat #:chaperone #:impersonator))
                        (begin
                          (check-not-both type (stx-car stuff))
                          (loop #'more-stuff lazy? (stx-car stuff) depends-on-state?))]
