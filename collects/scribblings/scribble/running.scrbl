@@ -129,15 +129,16 @@ information for all installed documentation, and @PFlag{m} or
 @DPFlag{main-xref-in} is just a shorthand for @exec{++xref-in
 setup/xref load-collections-xref}.
 
-The @DFlag{redirect-main} flag redirects links to the local
+The @DFlag{redirect-main} flag for HTML output redirects links to the local
 installation's documentation to a given URL, such as
 @tt{http://docs.racket-lang.org/}. Beware that documentation links
 sometimes change (although Scribble generates HTML paths and anchors
 in a relatively stable way), so
 @tt{http://download.racket-lang.org/docs/@italic{version}/html/} may be
 more reliable when building with an installation for @italic{version}.
+The @DFlag{redirect-main} flag is ignored for non-HTML output.
 
-The @DFlag{redirect} flag is similar to @DFlag{redirect-main}, except
+The @DFlag{redirect} flag is like @DFlag{redirect-main}, except
 that it builds on the given URL to indicate a cross-reference tag that
 is more stable than an HTML path and anchor (in case the documentation
 for a function changes sections, for example). No server currently

@@ -14,6 +14,7 @@
   (lambda (%) (html:render-multi-mixin (html:render-mixin %))))
 
 (define current-render-mixin       (make-parameter text:render-mixin))
+(define current-html               (make-parameter #f))
 (define current-dest-directory     (make-parameter #f))
 (define current-dest-name          (make-parameter #f))
 (define current-info-output-file   (make-parameter #f))
@@ -41,8 +42,10 @@
    #:program (short-program+command-name)
    #:once-any
    [("--html") "generate HTML-format output file (the default)"
+    (current-html #t)
     (current-render-mixin html:render-mixin)]
    [("--htmls") "generate HTML-format output directory"
+    (current-html #t)
     (current-render-mixin multi-html:render-mixin)]
    [("--latex") "generate LaTeX-format output"
     (current-render-mixin latex:render-mixin)]
@@ -129,8 +132,8 @@
           #:style-extra-files (reverse (current-style-extra-files))
           #:extra-files (reverse (current-extra-files))
           #:helper-file-prefix (helper-file-prefix)
-          #:redirect (current-redirect)
-          #:redirect-main (current-redirect-main)
+          #:redirect (and (current-html) (current-redirect))
+          #:redirect-main (and (current-html) (current-redirect-main))
           #:quiet? (current-quiet)
           #:info-in-files (reverse (current-info-input-files))
           #:xrefs (for/list ([mod+id (in-list (reverse (current-xref-input-modules)))])
