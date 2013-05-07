@@ -1267,7 +1267,7 @@
                            ;; Format arguments:
                            (apply
                             string-append
-                            "\n  given arguments:"
+                            "\n  arguments...:"
                             (append
                              (map (lambda (v)
                                     (format "\n   ~e" v))
@@ -1290,12 +1290,20 @@
                               "  given keyword: ~a"
                               "~a")
                              (proc-name p) extra-kw args-str)
-                            (format
-                             (string-append
-                              "application: procedure does not accept keyword arguments\n"
-                              "  procedure: ~a"
-                              "~a")
-                             (proc-name p) args-str))
+                            (if (procedure? p)
+                                (format
+                                 (string-append
+                                  "application: procedure does not accept keyword arguments\n"
+                                  "  procedure: ~a"
+                                  "~a")
+                                 (proc-name p) args-str)
+                                (format
+                                 (string-append
+                                  "application: not a procedure;\n"
+                                  " expected a procedure that can be applied to arguments\n"
+                                  "  given: ~e"
+                                  "~a")
+                                 p args-str)))
                         (if missing-kw
                             (format
                              (string-append

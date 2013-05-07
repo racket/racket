@@ -283,6 +283,11 @@
     (try-combos (map add-chaperone procs) add-chaperone)))
 
 ;; ----------------------------------------
+;; Check error for non-procedures
+(err/rt-test (1 2 3) (lambda (x) (regexp-match? "not a procedure" (exn-message))))
+(err/rt-test (1 #:x 2 #:y 3) (lambda (x) (regexp-match? "not a procedure" (exn-message))))
+
+;; ----------------------------------------
 ;; Check error reporting of `procedure-reduce-keyword-arity'
 
 (err/rt-test (procedure-reduce-keyword-arity void 1 '(#:b #:a) null)
