@@ -7,13 +7,12 @@
 		      syntax/name
 		      syntax/context
                       racket/syntax
+                      racket/undefined
 		      (only racket/base filter)
 		      "private/unitidmap.rkt")
 
   ;; ----------------------------------------------------------------------
   ;; Structures and helpers
-
-  (define undefined (letrec ([x x]) x)) ; initial value
 
   (define insp (current-inspector)) ; for named structures
 

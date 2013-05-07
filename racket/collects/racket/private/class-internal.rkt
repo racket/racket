@@ -9,6 +9,7 @@
          (only-in "../contract/region.rkt" current-contract-region)
          "../contract/base.rkt"
          "../contract/combinator.rkt"
+         racket/undefined
          (for-syntax racket/stxparam
                      syntax/kerncase
                      syntax/stx
@@ -4374,8 +4375,6 @@ An example
 ;;--------------------------------------------------------------------
 ;;  misc utils
 ;;--------------------------------------------------------------------
-
-(define undefined (letrec ([x x]) x))
 
 (define-struct (exn:fail:object exn:fail) () #:inspector insp)
 

@@ -1,8 +1,8 @@
 #lang racket/base
+(require '#%kernel)
 
-(provide undefined)
+(provide check-not-undefined
+         undefined
+         undefined?)
 
-;; In a future version of Racket, this `letrec` pattern
-;; will not work, but the `racket/undefined` library will
-;; still export an `undefined`:
-(define undefined (letrec ([x x]) x))
+(define (undefined? v) (eq? v undefined))

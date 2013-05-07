@@ -17,6 +17,7 @@
                      "private/unit-syntax.rkt"))
 
 (require racket/block
+         racket/undefined
          racket/contract/base
          racket/contract/region
          racket/stxparam
@@ -1186,7 +1187,8 @@
         (lambda (int/ext-name index ctc)
           (bound-identifier-mapping-put! def-table
                                          (car int/ext-name)
-                                         #`(vector-ref #,v #,index))
+                                         #`(check-not-undefined (vector-ref #,v #,index)
+                                                                '#,(car int/ext-name)))
           (bound-identifier-mapping-put! ctc-table
                                          (car int/ext-name)
                                          ctc)

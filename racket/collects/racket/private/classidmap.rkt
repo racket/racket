@@ -3,6 +3,7 @@
 (require syntax/stx
          (for-syntax racket/base)
          (for-template racket/base
+                       racket/undefined
                        "class-wrapped.rkt"))
 
 (define insp (variable-reference->module-declaration-inspector
@@ -83,12 +84,12 @@
             [(id . args)
              (with-syntax ([bindings (syntax/loc stx ([obj obj-expr]))]
                            [call (quasisyntax/loc stx
-                                   (((unsyntax field-accessor) obj) . args))])
+                                   ((check-not-undefined ((unsyntax field-accessor) obj) 'id) . args))])
                (syntax/loc stx (let* bindings call)))]
             [id
              (with-syntax ([bindings (syntax/loc stx ([obj obj-expr]))]
                            [get (quasisyntax/loc stx
-                                  ((unsyntax field-accessor) obj))])
+                                  (check-not-undefined ((unsyntax field-accessor) obj) 'id))])
                (syntax/loc stx (let* bindings get)))])))))))
 
 (define (make-method-map the-finder the-obj the-binder the-binder-localized method-accessor)

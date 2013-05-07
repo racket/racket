@@ -4,7 +4,8 @@
   (require (only racket/base sort)
            compatibility/mlist
 	   "pconvert-prop.rkt"
-           racket/class)
+           racket/class
+           racket/undefined)
   
   (provide show-sharing
            constructor-style-printing
@@ -26,8 +27,6 @@
            current-build-share-name-hook
            current-build-share-hook
            current-print-convert-hook)
-  
-  (define undefined-val (letrec ([x x]) x))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; the value stored in the hash table.  Contains the name
@@ -123,7 +122,9 @@
                         (boolean? expr)
                         (char? expr) (void? expr)
                         (null? expr)
-                        (eq? expr undefined-val) ; #<undefined> test - yuck
+                        ;; #<undefined> test - yuck, and maybe not worth checking
+                        ;; anymore, since undefined generally shouldn't escape
+                        (undefined? expr) 
                         )
                     'atomic]
                    [(and (not (struct? expr))  ;; struct names are the wrong thing, here

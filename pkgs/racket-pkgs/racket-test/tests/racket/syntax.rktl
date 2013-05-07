@@ -87,8 +87,8 @@
   (let ((x 4))
     (lambda (y) (+ x y))))
 (test 10 add4 6)
-(test (letrec([x x]) x) 'lambda (let ([x (lambda () (define d d) d)]) (x)))
-(test (letrec([x x]) x) 'lambda ((lambda () (define d d) d)))
+(err/rt-test (let ([x (lambda () (define d d) d)]) (x)) exn:fail:contract:variable?)
+(err/rt-test ((lambda () (define d d) d)) exn:fail:contract:variable?)
 (test '(3 4 5 6) (lambda x x) 3 4 5 6)
 (test '(5 6) (lambda (x y . z) z) 3 4 5 6)
 (test 'second (lambda () (cons 'first 2) 'second))
@@ -643,8 +643,8 @@
 (test 'twox 'let*-values (let*-values ([() (values)][() (values)]) 'twox))
 (test 'threex 'letrec-values (letrec-values ([() (values)][() (values)]) 'threex))
 
-(letrec ([undef undef])
-  (test (list 1 undef undef) 'no-split-letrec (letrec-values ([(a b c) (values 1 a b)]) (list a b c))))
+(err/rt-test (letrec-values ([(a b c) (values 1 a b)]) (list a b c))
+              exn:fail:contract:variable?)
 
 (test '(10 11) 'letrec-values (letrec-values ([(names kps)
 					       (letrec ([oloop 10])
@@ -1642,13 +1642,15 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; check that the compiler is not too agressive with `letrec' -> `let*'
 
-(test "#<undefined>\nready\n"
+(test "<undefined>\nready\n"
       get-output-string
       (let ([p (open-output-string)])
         (parameterize ([current-output-port p])
           (let ([restart void])
             (letrec ([dummy1 (let/cc k (set! restart k))]
-                     [dummy2 (displayln maybe-ready)]
+                     [dummy2 (displayln (with-handlers ([exn:fail:contract:variable?
+                                                         (lambda (exn) '<undefined>)])
+                                          maybe-ready))]
                      [maybe-ready 'ready])
               (let ([rs restart])
                 (set! restart void)

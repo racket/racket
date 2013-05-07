@@ -557,26 +557,23 @@
   (apply or/c ss))
 
 (define atomic-value? 
-  (let ([undefined (letrec ([x x]) x)])
-    (λ (x)
-      (or (char? x) (symbol? x) (boolean? x)
-          (null? x) (keyword? x) (number? x)
-          (void? x) (eq? x undefined)))))
+  (λ (x)
+     (or (char? x) (symbol? x) (boolean? x)
+         (null? x) (keyword? x) (number? x)
+         (void? x))))
 
 (define/final-prop (one-of/c . elems)
   (for ([arg (in-list elems)]
         [i (in-naturals)])
     (unless (atomic-value? arg)
       (raise-argument-error 'one-of/c
-                            "char, symbol, boolean, null, keyword, number, void, or undefined"
+                            "char, symbol, boolean, null, keyword, number, or void"
                             i
                             elems)))
-  (define (undefined? x) (eq? x (letrec ([x x]) x)))
   (define or/c-args
     (map (λ (x)
            (cond
              [(void? x) void?]
-             [(undefined? x) undefined?]
              [else x]))
          elems))
   (apply or/c or/c-args))

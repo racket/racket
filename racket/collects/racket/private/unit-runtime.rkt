@@ -2,7 +2,7 @@
 
 (require (for-syntax "unit-syntax.rkt" racket/base))
 (provide define-syntax/err-param
-         undefined (rename-out [make-a-unit make-unit]) unit-import-sigs unit-export-sigs unit-go unit? unit-deps
+         (rename-out [make-a-unit make-unit]) unit-import-sigs unit-export-sigs unit-go unit? unit-deps
          check-unit check-no-imports check-sigs check-deps check-helper)
   
 (define-syntax define-syntax/err-param
@@ -11,9 +11,6 @@
      (define-syntax (name arg)
        (parameterize ((error-syntax arg))
          body)))))
-
-;; initial value
-(define undefined (letrec ([x x]) x))
 
 ;; for named structures
 (define insp (current-inspector))

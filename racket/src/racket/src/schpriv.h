@@ -18,6 +18,8 @@
 #ifndef __mzscheme_private__
 #define __mzscheme_private__
 
+// #define MZ_GC_STRESS_TESTING 1
+
 #include "scheme.h"
 #include "longdouble/longdouble.h"
 
@@ -263,6 +265,7 @@ void scheme_init_type();
 void scheme_init_custodian_extractors();
 void scheme_init_bignum();
 void scheme_init_compenv();
+void scheme_init_letrec_check();
 void scheme_init_optimize();
 void scheme_init_resolve();
 void scheme_init_sfs();
@@ -432,6 +435,7 @@ extern Scheme_Object *scheme_values_func;
 extern Scheme_Object *scheme_procedure_p_proc;
 extern Scheme_Object *scheme_procedure_arity_includes_proc;
 extern Scheme_Object *scheme_void_proc;
+extern Scheme_Object *scheme_check_not_undefined;
 extern Scheme_Object *scheme_pair_p_proc;
 extern Scheme_Object *scheme_mpair_p_proc;
 extern Scheme_Object *scheme_unsafe_cons_list_proc;
@@ -1346,6 +1350,7 @@ typedef struct Scheme_Compiled_Let_Value {
   int *flags;
   Scheme_Object *value;
   Scheme_Object *body;
+  Scheme_Object **names; /* NULL after letrec_check phase */
 } Scheme_Compiled_Let_Value;
 
 #define SCHEME_CLV_FLAGS(clv) MZ_OPT_HASH_KEY(&(clv)->iso)
@@ -2855,6 +2860,8 @@ typedef struct Scheme_Set_Bang {
 } Scheme_Set_Bang;
 
 Scheme_Object *scheme_protect_quote(Scheme_Object *expr);
+
+Scheme_Object *scheme_letrec_check_expr(Scheme_Object *);
 
 Scheme_Object *scheme_optimize_expr(Scheme_Object *, Optimize_Info *, int context);
 Scheme_Object *scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, int context);

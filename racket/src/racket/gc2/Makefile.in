@@ -76,6 +76,7 @@ OBJS =  salloc.@LTO@ \
 	jitprep.@LTO@ \
 	jitstack.@LTO@ \
 	jitstate.@LTO@ \
+	letrec_check.@LTO@ \
 	list.@LTO@ \
 	marshal.@LTO@ \
 	module.@LTO@ \
@@ -135,6 +136,7 @@ XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/jitprep.c \
 	$(XSRCDIR)/jitstack.c \
 	$(XSRCDIR)/jitstate.c \
+	$(XSRCDIR)/letrec_check.c \
 	$(XSRCDIR)/list.c \
 	$(XSRCDIR)/marshal.c \
 	$(XSRCDIR)/module.c \
@@ -253,6 +255,8 @@ $(XSRCDIR)/marshal.c: ../src/marshal.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
 	$(XFORM) $(XSRCDIR)/marshal.c $(SRCDIR)/marshal.c
 $(XSRCDIR)/module.c: ../src/module.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
 	$(XFORM) $(XSRCDIR)/module.c $(SRCDIR)/module.c
+$(XSRCDIR)/letrec_check.c: ../src/letrec_check.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/letrec_check.c $(SRCDIR)/letrec_check.c
 $(XSRCDIR)/list.c: ../src/list.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/list.c $(SRCDIR)/list.c
 $(XSRCDIR)/network.c: ../src/network.@LTO@ $(XFORMDEP)
@@ -360,6 +364,8 @@ jitstack.@LTO@: $(XSRCDIR)/jitstack.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/jitstack.c -o jitstack.@LTO@
 jitstate.@LTO@: $(XSRCDIR)/jitstate.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/jitstate.c -o jitstate.@LTO@
+letrec_check.@LTO@: $(XSRCDIR)/letrec_check.c
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/letrec_check.c -o letrec_check.@LTO@
 list.@LTO@: $(XSRCDIR)/list.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/list.c -o list.@LTO@
 marshal.@LTO@: $(XSRCDIR)/marshal.c

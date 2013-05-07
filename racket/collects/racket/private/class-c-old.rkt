@@ -3,6 +3,7 @@
                      racket/stxparam
                      syntax/parse)
          racket/stxparam
+         racket/undefined
          "class-wrapped.rkt"
          "class-internal.rkt"
          "../contract/base.rkt"
@@ -19,8 +20,6 @@
          just-check-existence just-check-existence?
          build-internal-class/c internal-class/c-proj
          class/c-internal-name-clauses)
-
-(define undefined (letrec ([x x]) x))
 
 ;; Shorthand contracts that treat the implicit object argument as if it were
 ;; contracted with any/c.

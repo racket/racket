@@ -1,4 +1,5 @@
 (module runtime mzscheme
+  (require racket/undefined)
   
   (provide (struct a60:array (vec dimens))
            (struct a60:switch (choices))
@@ -17,7 +18,6 @@
   (define-struct a60:array (vec dimens))
   (define-struct a60:switch (choices))
   
-  (define undefined (letrec ([x x]) x))
   (define (check-boolean b) b)
   (define (goto f) (f))
   (define (get-value v) (v))

@@ -1,5 +1,6 @@
 (module toplevel racket/base
-  (require "kerncase.rkt")
+  (require "kerncase.rkt"
+           racket/undefined)
   
   (provide eval-compile-time-part-of-top-level
            eval-compile-time-part-of-top-level/compile
@@ -74,8 +75,7 @@
 	 (begin0
 	  (when compile? (compile-syntax stx))
 	  (for-each (lambda (id)
-		      (with-syntax ([id id]
-				    [undefined (letrec ([x x]) x)])
+		      (with-syntax ([id id])
 			(eval-syntax (syntax (define-values (id) undefined)))))
 		    (syntax->list (syntax (id ...)))))]
         [_else 

@@ -39,6 +39,7 @@ OBJS =  salloc.@LTO@ \
 	jitprep.@LTO@ \
 	jitstack.@LTO@ \
 	jitstate.@LTO@ \
+	letrec_check.@LTO@ \
 	list.@LTO@ \
 	marshal.@LTO@ \
 	module.@LTO@ \
@@ -96,6 +97,7 @@ SRCS =  $(srcdir)/salloc.c \
 	$(srcdir)/jitprep.c \
 	$(srcdir)/jitstack.c \
 	$(srcdir)/jitstate.c \
+	$(srcdir)/letrec_check.c \
 	$(srcdir)/list.c \
 	$(srcdir)/marshal.c \
 	$(srcdir)/module.c \
@@ -226,6 +228,8 @@ jitstack.@LTO@: $(srcdir)/jitstack.c
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/jitstack.c -o jitstack.@LTO@
 jitstate.@LTO@: $(srcdir)/jitstate.c
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/jitstate.c -o jitstate.@LTO@
+letrec_check.@LTO@: $(srcdir)/letrec_check.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/letrec_check.c -o letrec_check.@LTO@
 list.@LTO@: $(srcdir)/list.c
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/list.c -o list.@LTO@
 marshal.@LTO@: $(srcdir)/marshal.c
@@ -362,6 +366,8 @@ jitprep.@LTO@: $(COMMON_HEADERS) \
 jitstack.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS) $(srcdir)/codetab.inc \
         $(srcdir)/unwind/libunwind.h
 jitstate.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
+letrec_check.@LTO@: $(COMMON_HEADERS) \
+        $(srcdir)/stypes.h  
 list.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/stypes.h  
 marshal.@LTO@: $(COMMON_HEADERS) \

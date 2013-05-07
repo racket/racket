@@ -918,6 +918,9 @@
 (test-comp '(let ([x 8][y 9]) (lambda () (+ x y)))
 	   '(let ([x 8][y 9]) (lambda () (if #f y (+ x y)))))
 
+;; Don't optimize away use before definition:
+(test-comp '(letrec ([x (begin x 5)]) x) '5 #f)
+
 (test-comp '(let ([x 5]) (set! x 2)) '(let ([x 5]) (set! x x) (set! x 2)))
 
 (test-comp '(let* () (f 5))

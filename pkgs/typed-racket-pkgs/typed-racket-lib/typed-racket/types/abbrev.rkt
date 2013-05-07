@@ -8,6 +8,7 @@
          racket/list
          racket/match
          racket/function
+         racket/undefined
          unstable/function
 
          (prefix-in c: (contract-req))
@@ -91,8 +92,8 @@
 (define/decl -Boolean (Un -False -True))
 (define/decl -Undefined
   (make-Base 'Undefined
-             #'(lambda (x) (equal? (letrec ([y y]) y) x)) ; initial value of letrec bindings
-             (lambda (x) (equal? (letrec ([y y]) y) x))))
+             #'undefined? ; initial value of letrec bindings
+             undefined?))
 (define/decl -Bytes (make-Base 'Bytes #'bytes? bytes?))
 (define/decl -Base-Regexp (make-Base 'Base-Regexp
                            #'(and/c regexp? (not/c pregexp?))

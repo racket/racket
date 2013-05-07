@@ -249,6 +249,7 @@ Scheme_Env *scheme_engine_instance_init()
 
   scheme_init_portable_case();
   scheme_init_compenv();
+  scheme_init_letrec_check();
   scheme_init_optimize();
   scheme_init_resolve();
   scheme_init_sfs();

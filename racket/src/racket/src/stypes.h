@@ -288,7 +288,9 @@ enum {
   scheme_rt_lightweight_cont,           /* 260 */
   scheme_rt_export_info,                /* 261 */
   scheme_rt_cont_jmp,                   /* 262 */
+  scheme_rt_letrec_check_frame,         /* 263 */
 #endif
+  scheme_deferred_expr_type,            /* 264 */
 
   _scheme_last_type_
 };

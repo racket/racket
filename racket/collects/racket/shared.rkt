@@ -3,14 +3,14 @@
                      syntax/kerncase
                      syntax/struct
                      racket/struct-info
-                     racket/include))
+                     racket/include)
+         racket/undefined)
 
 (provide shared)
 
 (define-for-syntax code-insp (variable-reference->module-declaration-inspector
                               (#%variable-reference)))
 
-(define undefined (letrec ([x x]) x))
 (require (only-in racket/base [cons the-cons]))
 
 (define-syntax shared

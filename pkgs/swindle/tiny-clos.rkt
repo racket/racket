@@ -116,7 +116,8 @@
 ;;; OK, now let's get going.  But, as usual, before we can do anything
 ;;; interesting, we have to muck around for a bit first.  First, we need to
 ;;; load the support library.  [-- replaced with a module.]
-(require swindle/misc)
+(require swindle/misc
+         racket/undefined)
 
 ;; This is a convenient function for raising exceptions
 (define (raise* exn-maker fmt . args)
@@ -219,7 +220,7 @@
 ;;>   This is Racket's `unspecified' value which is used as the default
 ;;>   value for unbound slots.  It is provided so you can check if a slot is
 ;;>   unbound.
-(define* ??? (letrec ([x x]) x)) ; this is Racket's #<undefined> value
+(define* ??? undefined)
 (define unspecified-initializer (lambda args ???))
 (define false-func (lambda args #f))
 

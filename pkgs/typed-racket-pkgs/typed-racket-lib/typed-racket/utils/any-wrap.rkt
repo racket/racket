@@ -3,15 +3,14 @@
 (require racket/match racket/contract/combinator
          racket/fixnum racket/flonum
          racket/set
+         racket/undefined
          (only-in (combine-in racket/private/promise)
                   promise?
                   prop:force promise-forcer))
 
-(define undef (letrec ([x x]) x))
-
 (define (base-val? e)
   (or (number? e) (string? e) (char? e) (symbol? e)
-      (null? e) (regexp? e) (eq? undef e) (path? e)
+      (null? e) (regexp? e) (undefined? e) (path? e)
       (regexp? e) (keyword? e) (bytes? e) (boolean? e) (void? e)
       ;; Base values because you can only store flonums/fixnums in these
       ;; and not any higher-order values. This isn't sound if we ever

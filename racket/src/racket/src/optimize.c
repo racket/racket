@@ -250,7 +250,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
         If warn_info is supplied, complain when a mismatch is detected.
         If no_id is 1, then an identifier doesn't count as omittable,
         unless the identifier is a consistent top-level; currently, this
-        is used to imply the absece of a continuation-mark impersonator. */
+        is used to imply the absence of a continuation-mark impersonator. */
 {
   Scheme_Type vtype;
 
@@ -437,6 +437,15 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
       }
     }
     return 0;
+  }
+
+  /* check for (set! x x) */
+  if (vtype == scheme_set_bang_type) {
+    Scheme_Set_Bang *sb = (Scheme_Set_Bang *)o;
+    if (SAME_TYPE(scheme_local_type, SCHEME_TYPE(sb->var))
+        && SAME_TYPE(scheme_local_type, SCHEME_TYPE(sb->val))
+        && (SCHEME_LOCAL_POS(sb->var) == SCHEME_LOCAL_POS(sb->val)))
+      return 1;
   }
 
   /* check for struct-type declaration: */
@@ -2567,6 +2576,16 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
   int rator_flags = 0, sub_context = 0, ty, flags;
 
   app = (Scheme_App3_Rec *)o;
+
+  if (SAME_OBJ(app->rator, scheme_check_not_undefined)
+      && SCHEME_SYMBOLP(app->rand2)) {
+    scheme_log(info->logger,
+               SCHEME_LOG_WARNING,
+               0,
+               "warning%s: use-before-definition check inserted on variable: %S",
+               scheme_optimize_context_to_string(info->context),
+               app->rand2);
+  }
 
   /* Check for (apply ... (list ...)) early: */
   le = direct_apply((Scheme_Object *)app, app->rator, app->rand2, info);

@@ -2,7 +2,8 @@
 (require (for-syntax racket/base
                      racket/list)
          racket/list
-         racket/contract)
+         racket/contract
+         racket/undefined)
 
 (provide define-type type-case)
 
@@ -85,11 +86,6 @@
                 stx
                 stx)]
               [_ (transfer-srcloc orig stx)]))))
-
-(define the-undefined
-  (letrec ([x x]) x))
-(define (undefined? x)
-  (eq? the-undefined x))
 
 (define-syntax (define-type stx)
   (syntax-parse

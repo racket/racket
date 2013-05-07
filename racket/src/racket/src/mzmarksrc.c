@@ -235,6 +235,7 @@ comp_let_value {
   gcMARK2(c->flags, gc);
   gcMARK2(c->value, gc);
   gcMARK2(c->body, gc);
+  gcMARK2(c->names, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Compiled_Let_Value));
@@ -1324,6 +1325,43 @@ mark_sfs_info {
 }
 
 END sfs;
+
+/**********************************************************************/
+
+START letrec_check;
+
+mark_letrec_check_frame {
+ mark:
+  Letrec_Check_Frame *frame = (Letrec_Check_Frame *)p;
+  
+  gcMARK2(frame->def, gc);
+  gcMARK2(frame->next, gc);
+  gcMARK2(frame->ref, gc);
+  gcMARK2(frame->checked, gc);
+  gcMARK2(frame->head, gc);
+  gcMARK2(frame->deferred_with_rhs_ref, gc);
+  gcMARK2(frame->deferred_with_body_ref, gc);
+  gcMARK2(frame->deferred_with_no_ref, gc);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Letrec_Check_Frame));
+}
+
+mark_scheme_deferred_expr {
+ mark:
+  Scheme_Deferred_Expr *clos = (Scheme_Deferred_Expr *)p;
+  
+  gcMARK2(clos->expr, gc);
+  gcMARK2(clos->frame, gc);
+  gcMARK2(clos->uvars, gc);
+  gcMARK2(clos->pvars, gc);
+  gcMARK2(clos->subexpr_ls, gc);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Deferred_Expr));
+}
+
+END letrec_check;
 
 /**********************************************************************/
 

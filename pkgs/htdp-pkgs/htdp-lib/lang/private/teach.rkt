@@ -38,6 +38,7 @@
            mzlib/math
            mzlib/pconvert-prop
            scheme/match
+           racket/undefined
            "set-result.rkt"
            (only racket/base define-struct)
 	   racket/struct-info
@@ -87,15 +88,14 @@
         (current-continuation-marks)))))
 
   ;; Wrapped around uses of local-bound variables:
-  (define (check-not-undefined name val)
-    (if (eq? val undefined)
+  (define (teach-check-not-undefined name val)
+    (if (undefined? val)
       (raise
        (make-exn:fail:contract:variable
         (format "local variable used before its definition: ~a" name)
         (current-continuation-marks)
         name))
       val))
-  (define undefined (letrec ([x x]) x))
 
   (define (identifier-is-bound? id)
     (or (identifier-binding id)
@@ -1147,11 +1147,11 @@
     ;; For intermediate:
 
     ;; This application form disallows rator expressions that aren't
-    ;; top-level identifiers or of the form `(check-not-undefined ...)'.
+    ;; top-level identifiers or of the form `(teach-check-not-undefined ...)'.
 
     ;; The latter is probably surprising. It turns out that every use of
     ;; a `local'-bound identifier gets converted to an undefined check,
-    ;; and the call to `check-not-undefined' can't be forged by the
+    ;; and the call to `teach-check-not-undefined' can't be forged by the
     ;; programmer. So the pattern-match effectively recognizes uses of
     ;; `local'-bound identifiers, which are legal as rator
     ;; expressions. (`let' and `letrec' get converted to `local'.)
@@ -1163,8 +1163,8 @@
 		 (syntax-case stx ()
 		   [(_ rator rand ...)
 		    (let* ([fun (syntax rator)]
-			   [undef-check? (syntax-case fun (check-not-undefined)
-					   [(check-not-undefined id)
+			   [undef-check? (syntax-case fun (teach-check-not-undefined)
+					   [(teach-check-not-undefined id)
 					    #t]
 					   [_else #f])]
 			   [binding (and (identifier? fun)
@@ -1749,7 +1749,7 @@
 					      ((define-syntaxes (def-id/prop ...)
 						 (values
 						  (make-undefined-check
-						   (quote-syntax check-not-undefined)
+						   (quote-syntax teach-check-not-undefined)
 						   (quote-syntax tmp-id))
 						  ...))
 					       ...)))])
@@ -1818,7 +1818,7 @@
 	      (quasisyntax/loc stx
                 (#%stratified-body
                   (define-syntaxes (name) (make-undefined-check
-                                           (quote-syntax check-not-undefined)
+                                           (quote-syntax teach-check-not-undefined)
                                            (quote-syntax tmp-id)))
                   ...
                   (define-values (tmp-id) rhs-expr)
@@ -1853,7 +1853,7 @@
                 (let-values ([(tmp-id) rhs-expr] ...)
                   #,(stepper-syntax-property
                      #`(let-syntaxes ([(name) (make-undefined-check
-                                               (quote-syntax check-not-undefined)
+                                               (quote-syntax teach-check-not-undefined)
                                                (quote-syntax tmp-id))]
                                       ...)
                                      expr)

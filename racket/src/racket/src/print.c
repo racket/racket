@@ -2028,6 +2028,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
   if (compact && (SCHEME_PROCP(obj) 
 		  || SCHEME_STRUCT_TYPEP(obj) 
 		  || SCHEME_EOFP(obj)
+                  || SAME_OBJ(scheme_undefined, obj)
 		  || SAME_TYPE(scheme_always_evt_type, SCHEME_TYPE(obj))
 		  || SAME_TYPE(scheme_never_evt_type, SCHEME_TYPE(obj))
 		  || SAME_TYPE(scheme_struct_property_type, SCHEME_TYPE(obj))

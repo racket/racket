@@ -1,7 +1,7 @@
 #lang racket/base
 
-(define re:start "^START ([a-z]+);")
-(define re:end "^END ([a-z]+);")
+(define re:start "^START ([a-z_]+);")
+(define re:end "^END ([a-z_]+);")
 
 (define re:form "^([a-zA-Z0-9_]+) [{]")
 
@@ -39,7 +39,7 @@
                            (loop (cdr l) (not skip?))]
                           [skip?
                            (loop (cdr l) #t)]
-                          [(regexp-match? #rx"(START|END)_[A-Z]+_ONLY;" (car l))
+                          [(regexp-match? #rx"(START|END)_[A-Z_]+_ONLY;" (car l))
                            (loop (cdr l) skip?)]
                           [else
                            (printf "~a\n" (car l))

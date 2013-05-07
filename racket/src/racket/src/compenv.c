@@ -28,6 +28,10 @@
 
 #define TABLE_CACHE_MAX_SIZE 2048
 
+/* Pre-allocate local variable reference objects.
+   first dimension: position in the current stack frame
+   second dimension: 0 for local variables, 1 for unboxed local variables
+   third dimension: flags. TODO has to do with whether something is an unboxed fixnum, flonum, or extnum */
 READ_ONLY static Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][MAX_CONST_LOCAL_TYPES][MAX_CONST_LOCAL_FLAG_VAL + 1];
 READ_ONLY static Scheme_Object *toplevels[MAX_CONST_TOPLEVEL_DEPTH][MAX_CONST_TOPLEVEL_POS][SCHEME_TOPLEVEL_FLAGS_MASK + 1];
 
@@ -853,11 +857,14 @@ static Scheme_Object *alloc_local(short type, int pos)
   return (Scheme_Object *)v;
 }
 
+/* type should be either scheme_local_type or scheme_local_unbox_type
+   TODO: double check that */
 Scheme_Object *scheme_make_local(Scheme_Type type, int pos, int flags)
 {
   int k;
   Scheme_Object *v, *key;
 
+  /* k is 0 if type is scheme_local_type and 1 if type is scheme_local_unbox_type */
   k = type - scheme_local_type;
   
   /* Helper for reading bytecode: make sure flags is a valid value */
@@ -899,7 +906,9 @@ static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
   int cnt, u;
 
   u = COMPILE_DATA(frame)->use[i];
-  
+
+  // flags -= (flags & SCHEME_APP_POS);
+
   u |= (((flags & (SCHEME_APP_POS | SCHEME_SETTING))
 	 ? CONSTRAINED_USE
 	 : ((u & (ARBITRARY_USE | ONE_ARBITRARY_USE)) ? ARBITRARY_USE : ONE_ARBITRARY_USE))

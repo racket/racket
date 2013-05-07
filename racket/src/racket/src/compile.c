@@ -1210,18 +1210,6 @@ set_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
   rec[drec].value_name = SCHEME_STX_SYM(name);
 
   val = scheme_compile_expr(body, scheme_no_defines(env), rec, drec);
-
-  /* check for (set! x x) */
-  if (SAME_TYPE(SCHEME_TYPE(var), SCHEME_TYPE(val))) {
-    if (SAME_TYPE(SCHEME_TYPE(var), scheme_local_type)
-	|| SAME_TYPE(SCHEME_TYPE(var), scheme_local_unbox_type)) {
-      /* local */
-      if (SCHEME_LOCAL_POS(var) == SCHEME_LOCAL_POS(val))
-	return scheme_compiled_void();
-    } else {
-      /* global; can't do anything b/c var might be undefined or constant */
-    }
-  }
   
   set_undef = (rec[drec].comp_flags & COMP_ALLOW_SET_UNDEFINED);
  
@@ -2073,7 +2061,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
 		int star, int recursive, int multi, Scheme_Compile_Info *rec, int drec,
 		Scheme_Comp_Env *frame_already)
 {
-  Scheme_Object *bindings, *l, *binding, *name, **names, *forms, *defname;
+  Scheme_Object *bindings, *l, *binding, *name, **names, **clv_names, *forms, *defname;
   int num_clauses, num_bindings, i, j, k, m, pre_k;
   Scheme_Comp_Env *frame, *env, *rhs_env;
   Scheme_Compile_Info *recs;
@@ -2110,6 +2098,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   post_bind = !recursive && !star;
   rev_bind_order = recursive;
 
+  /* forms ends up being the let body */
   forms = SCHEME_STX_CDR(form);
   forms = SCHEME_STX_CDR(forms);
   forms = scheme_datum_to_syntax(forms, form, form, 0, 0);
@@ -2265,6 +2254,16 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
     last = lv;
     lv->count = (k - pre_k);
     lv->position = pre_k;
+
+    if (recursive) {
+      /* The names are only used for recursive bindings (in letrec_check),
+         currently. It would be ok if we record extra names, though. */
+      clv_names = MALLOC_N(Scheme_Object*, lv->count);
+      for (m = pre_k; m < k; m++) {
+        clv_names[m - pre_k] = SCHEME_STX_SYM(names[m]);
+      }
+      lv->names = clv_names;
+    }
 
     if (lv->count == 1)
       recs[i].value_name = SCHEME_STX_SYM(names[pre_k]);
@@ -2827,6 +2826,8 @@ do_begin_syntax(char *name,
   if (zero)
     env = scheme_no_defines(env);
 
+  /* if the begin has only one expression inside, drop the begin 
+     TODO: is this right */
   if (SCHEME_STX_NULLP(SCHEME_STX_CDR(forms))) {
     forms = SCHEME_STX_CAR(forms);
     return scheme_compile_expr(forms, env, rec, drec);
@@ -2924,9 +2925,9 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
       /* "Inline" nested begins */
       count += ((Scheme_Sequence *)v)->count;
       total++;
-    } else if (opt 
-	       && (((opt > 0) && !last) || ((opt < 0) && !first))
-	       && scheme_omittable_expr(v, -1, -1, 0, NULL, NULL, -1, 0)) {
+    } else if (opt
+               && (((opt > 0) && !last) || ((opt < 0) && !first))
+               && scheme_omittable_expr(v, -1, -1, 0, NULL, NULL, -1, 1)) {
       /* A value that is not the result. We'll drop it. */
       total++;
     } else {
@@ -2954,7 +2955,7 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
       /* can't optimize away a begin0 at read time; it's too late, since the
          return is combined with EXPD_BEGIN0 */
       addconst = 1;
-    } else if ((opt < 0) && !scheme_omittable_expr(SCHEME_CAR(seq), 1, -1, 0, NULL, NULL, -1, 0)) {
+    } else if ((opt < 0) && !scheme_omittable_expr(SCHEME_CAR(seq), 1, -1, 0, NULL, NULL, -1, 1)) {
       /* We can't optimize (begin0 expr cont) to expr because
 	 exp is not in tail position in the original (so we'd mess
 	 up continuation marks). */
@@ -2986,7 +2987,7 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
     } else if (opt 
 	       && (((opt > 0) && (k < total))
 		   || ((opt < 0) && k))
-	       && scheme_omittable_expr(v, -1, -1, 0, NULL, NULL, -1, 0)) {
+	       && scheme_omittable_expr(v, -1, -1, 0, NULL, NULL, -1, 1)) {
       /* Value not the result. Do nothing. */
     } else
       o->array[i++] = v;
@@ -3573,6 +3574,8 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
   mrec.comp_flags = rec[drec].comp_flags;
 
   a = scheme_compile_expr_lift_to_let(a, eenv, &mrec, 0);
+
+  a = scheme_letrec_check_expr(a);
 
   oi = scheme_optimize_info_create(eenv->prefix, 1);
   if (!(rec[drec].comp_flags & COMP_CAN_INLINE))

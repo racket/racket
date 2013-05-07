@@ -1,5 +1,6 @@
 (module main scheme/base
   (require scheme/mpair
+           racket/undefined
            (for-syntax scheme/base syntax/kerncase
                        "private/r5rs-trans.rkt")
            (only-in mzscheme transcript-on transcript-off))
@@ -243,7 +244,6 @@
 
   ;; Copied from R5rS, but with an added `let' around body,
   ;; and with optimization for precedure letrecs
-  (define undefined (letrec ([u u]) u))
   (define-for-syntax (immediate-value? stx)
     (let ([v (syntax-e stx)])
       (or (number? v)
