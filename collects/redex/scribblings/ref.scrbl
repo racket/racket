@@ -5,10 +5,11 @@
           scribble/eval
           (for-syntax racket/base)
           (for-label racket/base
-                     racket/gui
+                     (except-in racket/gui make-color)
                      racket/pretty
                      racket/contract
                      mrlib/graph
+                     (except-in 2htdp/image make-pen text)
                      (only-in slideshow/pict pict? text dc-for-text-size text-style/c
                               vc-append)
                      redex))
@@ -2118,6 +2119,11 @@ its first argument into the port (its second argument) with
 width at most given by the number (its third argument). The
 final argument is the text where the port is connected --
 characters written to the port go to the end of the editor.
+Use @racket[write-special] to send @racket[snip%] objects or 
+@racketmodname[2htdp/image] images 
+(or other things that subscribe to @racketmodname[file/convertible]
+or @racketmodname[slideshow/pict-convert])
+directly to the editor.
 
 The @racket[colors] argument, if provided, specifies a list of
 reduction-name/color-list pairs. The traces gui will color arrows
@@ -2170,6 +2176,61 @@ before it is instantiated. Also note that all of the snips
 inserted into the editor by this library have a
 @tt{get-term-node} method which returns the snip's
 @racket[term-node].
+
+For a more serious example of @racket[traces], please see @secref["tutorial"],
+but for a silly one that demonstates how the @racket[pp] argument
+lets us use images, we can take the pairing functions discussed in
+Matthew Szudzik's @italic{An Elegant Pairing Function} presentation:
+@racketblock[(define/contract (unpair z)
+               (-> exact-nonnegative-integer? 
+                   (list/c exact-nonnegative-integer? exact-nonnegative-integer?))
+               (define i (integer-sqrt z))
+               (define i2 (* i i))
+               (cond
+                 [(< (- z i2) i)
+                  (list (- z i2) i)]
+                 [else 
+                  (list i (- z i2 i))]))
+             
+             (define/contract (pair x y)
+               (-> exact-nonnegative-integer? exact-nonnegative-integer?
+                   exact-nonnegative-integer?)
+               (if (= x (max x y))
+                   (+ (* x x) x y)
+                   (+ (* y y) x)))]
+and build a reduction relation out of them:
+@racketblock[(define-language L (n ::= natural))
+             (define red
+               (reduction-relation
+                L
+                (--> (n_1 n_2)
+                     ,(unpair (+ 1 (pair (term n_1) 
+                                         (term n_2)))))))
+             (traces red (term (0 0)))]
+We can then turn those two numbers into two stars, where the
+number indicates the number of points in the star:
+@racketblock[(require 2htdp/image)
+             (define/contract (two-stars point-count1 point-count2)
+               (-> (>=/c 2) (>=/c 2) image?)
+               (overlay
+                (radial-star (+ 2 point-count1)
+                             10 60
+                             "solid"
+                             (make-color 255 0 255 150))
+                (radial-star (+ 2 point-count2)
+                             10 60
+                             "solid"
+                             "cornflowerblue")))]
+and then use the @racket[pp] function to show those in the
+traces window instead of just the numbers.
+@racketblock[(traces red 
+                     (term (0 0))
+                     #:pp
+                     (λ (term port w txt)
+                       (write-special 
+                        (two-stars (+ 2 (list-ref term 0))
+                                   (+ 2 (list-ref term 1)))
+                        port)))]
 
 }
 
