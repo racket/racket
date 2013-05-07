@@ -28,7 +28,7 @@
                      (typecheck typechecker)
                      (env global-env)
                      (base-env base-env-indexing))
-         racket/file racket/port racket/flonum
+         racket/file racket/port racket/flonum racket/math
          (env global-env)
          (for-meta 2 (env global-env))
          (for-template
@@ -225,6 +225,7 @@
         (tc-e (flexpt 0.5 0.3) -NonNegFlonum)
         (tc-e (flexpt 0.00000000001 100000000000.0) -NonNegFlonum)
         (tc-e (flexpt -2.0 -0.5) -Flonum) ; NaN
+        (tc-e (tanh (ann 0 Nonnegative-Integer)) -NonNegReal)
         (tc-e (angle -1) -Real)
         (tc-e (angle 2.3) -Zero)
         (tc-e (magnitude 3/4) -PosRat)
