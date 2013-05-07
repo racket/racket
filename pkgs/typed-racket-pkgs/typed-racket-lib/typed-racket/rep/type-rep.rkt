@@ -434,28 +434,39 @@
 ;; t : Type
 (def-type Syntax ([t Type/c]) [#:key 'syntax])
 
-;; pos-flds  : (Listof Type)
-;; name-flds : (Listof (Tuple Symbol Type Boolean))
-;; methods   : (Listof (Tuple Symbol Function))
-(def-type Class ([pos-flds (listof Type/c)]
-                 [name-flds (listof (list/c symbol? Type/c boolean?))]
+;; extended-tvar : RowVar
+;; name-inits    : (Listof (Tuple Symbol Type Boolean))
+;; fields        : (Listof (Tuple Symbol Type))
+;; methods       : (Listof (Tuple Symbol Function))
+;;
+;; interp. The first field represents a row variable.
+;;         The second field represents the named
+;;         initialization argument types.
+;;         The remainder are the types for public fields and
+;;         public methods, respectively.
+;;
+(def-type Class ([extended-tvar (listof Type/c)]
+                 [inits (listof (list/c symbol? Type/c boolean?))]
+                 [fields (listof (list/c symbol? Type/c))]
                  [methods (listof (list/c symbol? Function?))])
   [#:frees (λ (f) (combine-frees
-                   (map f (append pos-flds
-                                  (map cadr name-flds)
+                   (map f (append (map cadr inits)
+                                  (map cadr fields)
                                   (map cadr methods)))))]
   [#:key 'class]
-  [#:fold-rhs (match (list pos-flds name-flds methods)
+  [#:fold-rhs (match (list extended-tvar inits fields methods)
                 [(list
-                  pos-tys
+                  tvar
                   (list (list init-names init-tys reqd) ___)
+                  (list (list fname fty) ___)
                   (list (list mname mty) ___))
                  (*Class
-                  (map type-rec-id pos-tys)
+                  tvar ;; FIXME: is this correct?
                   (map list
                        init-names
                        (map type-rec-id init-tys)
                        reqd)
+                  (map list fname (map type-rec-id fty))
                   (map list mname (map type-rec-id mty)))])])
 
 ;; cls : Class
