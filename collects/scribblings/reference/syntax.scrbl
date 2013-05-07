@@ -2498,12 +2498,21 @@ procedure that accepts and returns a syntax object representing a
 @racket[require] sub-form.
 
 This form expands to @racket[define-syntax] with a use of
-@racket[make-require-transformer]; see @secref["require-trans"] for
-more information.
+@racket[make-require-transformer] (see @secref["require-trans"] for
+more information), and the @tech{syntax object} passed to and from the
+macro transformer is marked via @racket[syntax-local-require-introduce].
 
 The second form is a shorthand the same as for @racket[define-syntax]; it
-expands to a definition of the first form where the @racket[expr] is a
+expands to a definition of the first form where the @racket[proc-expr] is a
 @racket[lambda] form.}
+
+@defproc[(syntax-local-require-introduce [stx syntax?])
+         syntax?]{
+
+Provided @racket[for-syntax] for use only during the application of a
+@racket[require] sub-form macro transformer: like
+@racket[syntax-local-introduce], but for @racket[require] sub-form
+expansion.}
 
 @; ----------------------------------------------------------------------
 
@@ -2520,12 +2529,21 @@ procedure that accepts and returns a syntax object representing a
 @racket[provide] sub-form.
 
 This form expands to @racket[define-syntax] with a use of
-@racket[make-provide-transformer]; see @secref["provide-trans"] for
-more information.
+@racket[make-provide-transformer] (see @secref["provide-trans"] for
+more information), and the @tech{syntax object} passed to and from the
+macro transformer is marked via @racket[syntax-local-provide-introduce].
 
 The second form is a shorthand the same as for @racket[define-syntax]; it
 expands to a definition of the first form where the @racket[expr] is a
 @racket[lambda] form.}
+
+@defproc[(syntax-local-provide-introduce [stx syntax?])
+         syntax?]{
+
+Provided @racket[for-syntax] for use only during the application of a
+@racket[provide] sub-form macro transformer: like
+@racket[syntax-local-introduce], but for @racket[provide] sub-form
+expansion.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "begin"]{Sequencing: @racket[begin], @racket[begin0], and @racket[begin-for-syntax]}
