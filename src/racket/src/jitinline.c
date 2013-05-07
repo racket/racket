@@ -1848,7 +1848,6 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __END_TINY_JUMPS__(1);
       (void)jit_calli(sjc.bad_char_to_integer_code);
       __START_TINY_JUMPS__(1);
-      jit_movr_p(dest, JIT_R0);
       mz_patch_branch(ref);
       (void)mz_bnei_t(reffail, JIT_R0, scheme_char_type, JIT_R1);
       __END_TINY_JUMPS__(1);
