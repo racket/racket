@@ -706,12 +706,12 @@
                           [(_ e) (datum->syntax stx (syntax->datum #'e) #f)]))])
     (test (output (λ () (noloc (redex-check lang d #t)))) 
           "redex-check: no counterexamples in 1000 attempts\n"))
-  (test (output (λ () (redex-check lang (d e) (and (eq? (term d) 5) (eq? (term e) 4)) #:attempts 2)))
+  (test (output (λ () (redex-check lang (d e) (and (= (term d) 5) (or (= (term e) 4) (= (term e) 17))) #:attempts 200)))
         #rx"no counterexamples")
   (test (output (λ () (redex-check lang (d ...) (zero? (modulo (foldl + 0 (term (d ...))) 5)) #:attempts 2)))
         #rx"no counterexamples")
   (test (output (λ () (redex-check lang (d e) #f)))
-        #rx"counterexample found after 1 attempt:\n\\(5 4\\)\n")
+        #rx"counterexample found after 1 attempt:\n\\(5 (4|17)\\)\n")
   (let* ([p (open-output-string)]
          [m (parameterize ([current-output-port p])
               (with-handlers ([exn:fail? exn-message])
@@ -793,8 +793,9 @@
            (λ ()
              (redex-check lang (number_1 number_2) 
                           (and (= (term number_1) 5)
-                               (= (term number_2) 4)) 
-                          #:attempts 1
+                               (or (= (term number_2) 4)
+                                   (= (term number_2) 17)))
+                          #:attempts 10
                           #:source mf)))
           #rx"no counterexamples"))
   
