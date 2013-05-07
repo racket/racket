@@ -1,3 +1,9 @@
+Version 5.3.4.8
+Add `configure-runtime' submodule support
+
+Version 5.3.4.7
+scribble: use `doc' submodule when available
+
 Version 5.3.4.4
 Added current-module-path-for-load, exn:fail:syntax:missing-module, 
   exn:fail:filesystem:missing-module, prop:exn:missing-module,
