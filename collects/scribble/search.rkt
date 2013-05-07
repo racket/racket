@@ -158,9 +158,9 @@
                                                                            (list-ref m 3))
                                                                      (list (module-path-index-rejoin m mod)
                                                                            id
-                                                                           0
-                                                                           0
-                                                                           0)))
+                                                                           defn-phase
+                                                                           import-phase
+                                                                           export-phase)))
                                                                (reverse (cadr a)))
                                                           rqueue)
                                                   need-result?)
