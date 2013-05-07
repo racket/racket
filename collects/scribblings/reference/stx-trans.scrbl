@@ -103,7 +103,12 @@ precedence for the purposes of macro expansion.}
 Returns @racket[#t] if @racket[v] is a value created by
 @racket[make-rename-transformer] or an instance of a structure type
 with the @racket[prop:rename-transformer] property, @racket[#f]
-otherwise.}
+otherwise.
+
+@examples[#:eval stx-eval
+  (rename-transformer? (make-rename-transformer #'values))
+  (rename-transformer? 'not-a-rename-transformer)
+]}
 
 
 @defproc[(make-rename-transformer [id-stx syntax?]
@@ -150,6 +155,12 @@ rename transformer:
        @racket[syntax-local-make-delta-introducer] functions recognize
        rename-transformer bindings and consult their targets.}
 
+]
+
+@examples[#:eval stx-eval
+  (define-syntax my-or (make-rename-transformer #'or))
+  (my-or #f #t)
+  (free-identifier=? #'my-or #'or)
 ]}
 
 
@@ -158,7 +169,11 @@ rename transformer:
 
 Returns the identifier passed to @racket[make-rename-transformer] to
 create @racket[transformer] or as indicated by a
-@racket[prop:rename-transformer] property on @racket[transformer].}
+@racket[prop:rename-transformer] property on @racket[transformer].
+
+@examples[#:eval stx-eval
+  (rename-transformer-target (make-rename-transformer #'or))
+]}
 
 
 @defthing[prop:rename-transformer struct-type-property?]{
@@ -445,7 +460,28 @@ environment, the result is obtained by applying @racket[failure-thunk]
 if not @racket[#f]. If @racket[failure-thunk] is @racket[false], the
 @exnraise[exn:fail:contract].
 
-@transform-time[]}
+@transform-time[]
+
+@examples[#:eval stx-eval
+  (define-syntax swiss-cheeses? #t)
+  (define-syntax (transformer stx)
+    (if (syntax-local-value #'swiss-cheeses?)
+        #''(gruyère emmental raclette)
+        #''(roquefort camembert boursin)))
+  (transformer)
+]
+@examples[#:eval stx-eval
+  (define-syntax (transformer-2 stx)
+    (syntax-local-value #'something-else (λ () (error "no binding"))))
+  (transformer-2)
+]
+@examples[#:eval stx-eval
+  (define-syntax nachos #'(printf "nachos~n"))
+  (define-syntax chips (make-rename-transformer #'nachos))
+  (define-syntax (transformer-3 stx)
+    (syntax-local-value #'chips))
+  (transformer-3)
+]}
 
 
 @defproc[(syntax-local-value/immediate [id-stx syntax?]
