@@ -22,7 +22,6 @@
          metafunc-proc-dom-pat
          metafunc-proc-cases
          metafunc-proc-gen-clauses
-         metafunc-proc-lhs-pats
          metafunc-proc?
          make-metafunc-proc
          
@@ -78,7 +77,7 @@
                               variable-not-otherwise-mentioned hole symbol))
 
 (define-values (struct:metafunc-proc make-metafunc-proc metafunc-proc? metafunc-proc-ref metafunc-proc-set!)
-  (make-struct-type 'metafunc-proc #f 11 0 #f null (current-inspector) 0))
+  (make-struct-type 'metafunc-proc #f 10 0 #f null (current-inspector) 0))
 (define metafunc-proc-clause-names (make-struct-field-accessor metafunc-proc-ref 1))
 (define metafunc-proc-pict-info (make-struct-field-accessor metafunc-proc-ref 2))
 (define metafunc-proc-lang (make-struct-field-accessor metafunc-proc-ref 3))
@@ -88,7 +87,6 @@
 (define metafunc-proc-dom-pat (make-struct-field-accessor metafunc-proc-ref 7))
 (define metafunc-proc-cases (make-struct-field-accessor metafunc-proc-ref 8))
 (define metafunc-proc-gen-clauses (make-struct-field-accessor metafunc-proc-ref 9))
-(define metafunc-proc-lhs-pats (make-struct-field-accessor metafunc-proc-ref 10))
 
 
 (define (build-disappeared-use id-stx-table nt id-stx)
