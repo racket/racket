@@ -1,3 +1,6 @@
+Version 5.3.4.9
+racket/place: allow keywords as place messages
+
 Version 5.3.4.8
 Add `configure-runtime' submodule support
 racket/rerequire: added

@@ -73,6 +73,7 @@
       (not x)
       (not x)
       (void)
+      '#:b
       null
       1/3
       (/ 1 5)
@@ -100,6 +101,7 @@
   (test-place-channel-put-receive sender ch
     (#t #f)
     (#f #t)
+    ('#:a '#:b)
     (null (void))
     ((void) null)
     ((/ 1 2) 1/3)

@@ -318,7 +318,7 @@ messages:
 
 @itemlist[
 
- @item{@tech{numbers}, @tech{characters}, @tech{booleans}, and
+ @item{@tech{numbers}, @tech{characters}, @tech{booleans}, @tech{keywords}, and
        @|void-const|;}
 
  @item{@tech{symbols}, where the @racket[eq?]ness of @tech{uninterned}

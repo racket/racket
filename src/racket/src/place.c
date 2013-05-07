@@ -1424,6 +1424,33 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
         abort();
       }
       break;
+    case scheme_keyword_type:
+      if (mode == mzPDC_COPY) {
+        new_so = scheme_make_sized_offset_byte_string((char *)so, SCHEME_SYMSTR_OFFSET(so), SCHEME_SYM_LEN(so), 1);
+        new_so->type = scheme_serialized_keyword_type;
+      } else if (mode == mzPDC_DIRECT_UNCOPY) {
+        char *str, buf[64];
+        intptr_t len;
+        len = SCHEME_SYM_LEN(so);
+        if (len < 64)
+          str = buf;
+        else
+          str = (char *)scheme_malloc_atomic(len);
+        memcpy(str, SCHEME_SYM_VAL(so), len);
+        new_so = scheme_intern_exact_keyword(str, len);
+      } else if (mode != mzPDC_CHECK) {
+        scheme_log_abort("encountered keyword in bad mode");
+        abort();
+      }
+      break;
+    case scheme_serialized_keyword_type:
+      if ((mode == mzPDC_UNCOPY) || (mode == mzPDC_DESER)) {
+        new_so = scheme_intern_exact_keyword(SCHEME_BYTE_STR_VAL(so), SCHEME_BYTE_STRLEN_VAL(so));
+      } else if (mode != mzPDC_CLEAN) {
+        scheme_log_abort("encountered serialized keyword in bad mode");
+        abort();
+      }
+      break;
     case scheme_fxvector_type:
       /* not allocated as shared, since that's covered above */
       if (copy_mode) {
