@@ -33,9 +33,11 @@
     (get-pkg-content (pkg-desc "http://localhost:9999/pkg-test1.zip" #f #f #f)))
 
   (check-equal? cksum cksum1)
-  (check-equal? mods '((lib "pkg-test1/conflict.rkt")
-                       (lib "pkg-test1/main.rkt") 
-                       (lib "pkg-test1/update.rkt")))
+  (check-equal? (sort mods string<? #:key cadr)
+                '((lib "data/empty-set.rkt")
+                  (lib "pkg-test1/conflict.rkt")
+                  (lib "pkg-test1/main.rkt")
+                  (lib "pkg-test1/update.rkt")))
   (check-equal? deps '())
 
   (define-values (cksum2 mods2 deps2) 

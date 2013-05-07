@@ -992,10 +992,12 @@
                  (or (file-exists? f)
                      (file-exists? (path-replace-suffix f #".ss"))
                      (let-values ([(base name dir?) (split-path f)])
-                       (or (file-exists? (build-path base "compiled" (path-add-suffix f #".zo")))
+                       (or (file-exists? (build-path base "compiled" (path-add-suffix name #".zo")))
                            (file-exists? (build-path base "compiled" (path-add-suffix
-                                                                      (path-replace-suffix f #".ss") 
-                                                                      #".zo")))))))
+                                                                      (path-replace-suffix name #".ss")
+                                                                      #".zo"))))))
+                 (or (not updating?)
+                     (not (equal? pkg-name (path->pkg f)))))
             ;; This module is already installed
             (cons (path->pkg f) mp)]
            [else
