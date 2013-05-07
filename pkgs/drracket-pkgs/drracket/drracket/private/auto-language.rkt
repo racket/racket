@@ -1,4 +1,4 @@
-#lang typed/racket/base
+#lang typed/racket
 
 (require typed/framework/framework 
 	 typed/mred/mred
@@ -6,13 +6,13 @@
 
 (provide pick-new-language looks-like-module?)
 
-(define-type-alias (Language:Language% Settings)
-  (Class () () ([get-reader-module (-> Sexp)]
-                [get-metadata-lines (-> Number)]
-                [metadata->settings (String -> Settings)])))
+(define-type (Language:Language% Settings)
+  (Class [get-reader-module (-> Sexp)]
+         [get-metadata-lines (-> Number)]
+         [metadata->settings (String -> Settings)]))
 
-(define-type-alias (Language:Object Settings)
-  (Instance (Class () () ())))
+(define-type (Language:Object Settings)
+  (Instance (Class)))
 
 (: pick-new-language (All (S)
                           ((Instance Text%) 

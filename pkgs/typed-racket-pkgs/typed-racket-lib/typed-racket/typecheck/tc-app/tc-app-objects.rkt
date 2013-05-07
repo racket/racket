@@ -37,7 +37,8 @@
          [name-assoc (stx-map cons names named-args)])
     (match (resolve (tc-expr/t cl))
       [(Union: '()) (ret (Un))]
-      [(and c (Class: pos-tys (list (and tnflds (list tnames _ _)) ...) _))
+      [(and c (Class: pos-tys (list (and tnflds (list tnames _ _)) ...)
+                      fields _))
        (unless (= (length pos-tys)
                   (syntax-length pos-args))
          (tc-error/delayed "expected ~a positional arguments, but got ~a"

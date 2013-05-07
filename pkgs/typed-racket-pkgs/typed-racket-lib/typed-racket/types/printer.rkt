@@ -327,6 +327,34 @@
             `(case-> ,@cover)
             (car cover))])]))
 
+;; class->sexp : Class -> S-expression
+;; Convert a class type to an s-expression
+(define (class->sexp cls)
+  (match-define (Class: _ inits fields methods) cls)
+  (define inits*
+    (if (null? inits)
+        null
+        (list
+         (cons 'init
+               (for/list ([init inits])
+                 (match-define (list name type opt?) init)
+                 (if opt?
+                     (list name (type->sexp type) '#:optional)
+                     (list name (type->sexp type))))))))
+  (define fields*
+    (if (null? fields)
+        null
+        (list
+         (cons 'field
+               (for/list ([name+type (in-list fields)])
+                 (match-define (list name type) name+type)
+                 `(,name ,(type->sexp type)))))))
+  (define methods*
+    (for/list ([name+type (in-list methods)])
+      (match-define (list name type) name+type)
+      `(,name ,(type->sexp type))))
+  `(Class ,@inits* ,@fields* ,@methods*))
+
 ;; type->sexp : Type -> S-expression
 ;; convert a type to an s-expression that can be printed
 (define (type->sexp type [ignored-names '()])
@@ -461,7 +489,7 @@
     [(B: idx) `(B ,idx)]
     [(Syntax: t) `(Syntaxof ,(t->s t))]
     [(Instance: t) `(Instance ,(t->s t))]
-    [(Class: pf nf ms) '(Class)]
+    [(? Class?) (class->sexp type)]
     [(Result: t (FilterSet: (Top:) (Top:)) (Empty:)) (type->sexp t)]
     [(Result: t fs (Empty:)) `(,(type->sexp t) : ,(filter->sexp fs))]
     [(Result: t fs lo) `(,(type->sexp t) : ,(filter->sexp fs) : ,(object->sexp lo))]

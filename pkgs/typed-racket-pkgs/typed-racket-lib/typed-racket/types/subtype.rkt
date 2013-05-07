@@ -579,12 +579,12 @@
           (subtype* A0 (cl->* (-> out) (-> in -Void)) t)]
          [((Instance: t) (Instance: t*))
           (subtype* A0 t t*)]
-         [((Class: '() '() (list (and s  (list names  meths )) ...))
-           (Class: '() '() (list (and s* (list names* meths*)) ...)))
+         [((Class: _ '() fields (list (and s  (list names  meths )) ...))
+           (Class: _ '() fields (list (and s* (list names* meths*)) ...)))
           (for/fold ([A A0])
-            ([n (in-list names*)] [m (in-list meths*)] #:break (not A))
-            (and A (cond [(assq n s) => (lambda (spec) (subtype* A (cadr spec) m))]
-                         [else #f])))]
+                    ([n (in-list names*)] [m (in-list meths*)] #:break (not A))
+                    (and A (cond [(assq n s) => (lambda (spec) (subtype* A (cadr spec) m))]
+                                 [else #f])))]
          ;; otherwise, not a subtype
          [(_ _) #f])))
      (when (null? A)
