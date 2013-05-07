@@ -1,5 +1,6 @@
 Version 5.3.4.8
 Add `configure-runtime' submodule support
+racket/rerequire: added
 
 Version 5.3.4.7
 scribble: use `doc' submodule when available
