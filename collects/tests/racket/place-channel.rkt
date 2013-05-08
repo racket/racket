@@ -72,8 +72,8 @@
     (test-place-channel-get/put-* x
       (not x)
       (not x)
-      (void)
       '#:b
+      (void)
       null
       1/3
       (/ 1 5)
