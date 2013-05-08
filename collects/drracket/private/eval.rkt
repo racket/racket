@@ -185,7 +185,12 @@
     (define to-be-copied-module-specs
       (list ''#%foreign
             '(lib "mzlib/pconvert-prop.rkt")
-            '(lib "planet/terse-info.rkt")))
+            '(lib "planet/terse-info.rkt")
+            ;; preserve the invariant that:
+            ;;   if a module is shared, so 
+            ;;   are all of its submodules
+            '(submod racket/base reader)
+            '(submod scheme/base reader)))
     
     ;; ensure that they are all here.
     (for-each (λ (x) (dynamic-require x #f)) to-be-copied-module-specs)
