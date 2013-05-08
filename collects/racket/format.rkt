@@ -303,6 +303,15 @@
                 [else (values np N*)])))))
 
 (define (%exponential N-abs base upper? format-exponent significand-precision exactly?)
+  (cond [(zero? N-abs)
+         (string-append "0"
+                        (if exactly? "." "")
+                        (if exactly? (make-string significand-precision #\0) "")
+                        (exponent-part 0 format-exponent base))]
+        [else
+         (%exponential-nz N-abs base upper? format-exponent significand-precision exactly?)]))
+
+(define (%exponential-nz N-abs base upper? format-exponent significand-precision exactly?)
   (define-values (N* e-adjust actual-precision)
     (scale N-abs base significand-precision exactly?))
   ;; hack: from 1234 want "1.234"; convert to "1234", mutate to ".234" after saving "1"
@@ -312,19 +321,22 @@
     (string-set! digits 0 #\.)
     (string-append leading-digit
                    (if (or exactly? (positive? actual-precision)) digits "")
-                   (cond [(procedure? format-exponent)
-                          (format-exponent exponent)]
-                         [else
-                          (string-append
-                           (cond [(string? format-exponent) format-exponent]
-                                 [(= base 10) "e"]
-                                 [else (format "*~s^" base)])
-                           (if (negative? exponent) "-" "+")
-                           (%pad (number->string (abs exponent))
-                                 #:pad-to 2
-                                 #:align 'right
-                                 #:left-padding "0"
-                                 #:right-padding #f))]))))
+                   (exponent-part exponent format-exponent base))))
+
+(define (exponent-part exponent format-exponent base)
+  (cond [(procedure? format-exponent)
+         (format-exponent exponent)]
+        [else
+         (string-append
+          (cond [(string? format-exponent) format-exponent]
+                [(= base 10) "e"]
+                [else (format "*~s^" base)])
+          (if (negative? exponent) "-" "+")
+          (%pad (number->string (abs exponent))
+                #:pad-to 2
+                #:align 'right
+                #:left-padding "0"
+                #:right-padding #f))]))
 
 (define (scale N-abs base significand-precision exactly?)
   (if (zero? N-abs)

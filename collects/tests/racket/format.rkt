@@ -231,6 +231,13 @@
 (tc (~r #:notation 'positional 3735928559 #:base '(up 16))
     "DEADBEEF")
 
+(tc (~r #:notation 'positional 0)
+    "0")
+(tc (~r #:notation 'positional 0 #:precision 4)
+    "0")
+(tc (~r #:notation 'positional 0 #:precision '(= 4))
+    "0.0000")
+
 ;; ~r #:notation 'exponential
 
 (tc (~r 12345 #:precision 3 #:notation 'exponential)
@@ -295,3 +302,10 @@
     "-34.00")
 (tc (~r -33.99508664763296 #:precision '(= 3))
     "-33.995")
+
+(tc (~r #:notation 'exponential 0)
+    "0e+00")
+(tc (~r #:notation 'exponential 0 #:precision 4)
+    "0e+00")
+(tc (~r #:notation 'exponential 0 #:precision '(= 4))
+    "0.0000e+00")
