@@ -645,5 +645,8 @@
 (provide read-inside read-syntax-inside)
 (define (read-inside [inp (current-input-port)])
   (syntax->datum ((make-default-at-reader/inside) default-src inp)))
-(define (read-syntax-inside [src default-src] [inp (current-input-port)])
-  ((make-default-at-reader/inside) src inp))
+(define (read-syntax-inside [src default-src] [inp (current-input-port)] 
+                            #:command-char [command-char ch:command])
+  (((readtable-cached
+     (lambda (rt) (make-at-reader #:inside? #t #:command-char command-char #:readtable rt))))
+   src inp))

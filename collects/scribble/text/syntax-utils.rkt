@@ -172,22 +172,32 @@
      #'(process-begin/text begin/collect begin expr ...)]))
 
 ;; include for templates
-(require (for-syntax scheme/base (prefix-in scribble: "../reader.rkt"))
+(require (for-syntax scheme/base (prefix-in scribble: "../reader.rkt") syntax/parse)
          scheme/include)
-(define-syntax-rule (include/text path-spec)
-  (begin/text
-   (include-at/relative-to/reader path-spec path-spec path-spec
-     (let ([xs #f])
-       (λ (src inp)
-         (unless xs
-           (set! xs (scribble:read-syntax-inside src inp))
-           (when (syntax? xs) (set! xs (or (syntax->list xs) (list xs)))))
-         (if (null? xs)
-           eof
-           (let ([x (car xs)])
-             (set! xs (cdr xs))
-             (if (and (null? xs)
-                      (let ([p (syntax-property x 'scribble)])
-                        (and (pair? p) (eq? (car p) 'newline))))
-               eof ; throw away the last newline from the included file
-               x))))))))
+(define-syntax (include/text stx)
+  (syntax-case stx ()
+    [(_ path-spec)
+     (syntax/loc stx
+       (include/text #:command-char #f path-spec))]
+    [(_ #:command-char command-char path-spec)
+     (syntax/loc stx
+       (begin/text
+        (include-at/relative-to/reader 
+         path-spec path-spec path-spec
+         (let ([xs #f]
+               [command-char-v command-char])
+           (λ (src inp)
+             (unless xs
+               (set! xs (if command-char-v
+                          (scribble:read-syntax-inside #:command-char command-char-v src inp)
+                          (scribble:read-syntax-inside src inp)))
+               (when (syntax? xs) (set! xs (or (syntax->list xs) (list xs)))))
+             (if (null? xs)
+               eof
+               (let ([x (car xs)])
+                 (set! xs (cdr xs))
+                 (if (and (null? xs)
+                          (let ([p (syntax-property x 'scribble)])
+                            (and (pair? p) (eq? (car p) 'newline))))
+                   eof ; throw away the last newline from the included file
+                   x))))))))]))

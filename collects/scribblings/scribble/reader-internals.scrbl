@@ -188,10 +188,12 @@ for reading.
 
 @defproc[(read-inside [in input-port? (current-input-port)]) any]{}
 @defproc[(read-syntax-inside [source-name any/c (object-name in)]
-                             [in input-port? (current-input-port)])
+                             [in input-port? (current-input-port)]
+                             [#:command-char command-char char? #\@])
          (or/c syntax? eof-object?)]{
 These @racketid[-inside] variants parse as if starting inside a
 @litchar["@{"]...@litchar["}"], and they return a (syntactic) list.
+The @racket[command-char] is used to customize the readtable.
 Useful for implementing languages that are textual by default (see
 @filepath{docreader.rkt} for example).
 }

@@ -1,5 +1,6 @@
 #lang racket
-(require web-server/templates)
+(require web-server/templates
+         rackunit)
 
 (include-template "static.html")
 
@@ -36,3 +37,6 @@
 (if-template #:monkeys 1
              #:monkey-limit 10
              #:monkey-minimum 2)
+
+(check-equal? (include-template #:command-char #\$ "diff.html")
+              "This is the number: 42\nThis is not the number: @(+ 2 40)")

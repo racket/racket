@@ -359,12 +359,14 @@ the template to be unescaped, then create a @racket[cdata] structure:
 
 @section{API Details}
 
-@defform[(include-template path-spec)]{
- Compiles the template at @racket[path-spec] using the @at-reader-ref syntax within the enclosing lexical context. The @racket[path-spec] is the same format used by @racket[include].
+@defform*[((include-template path-spec)
+           (include-template #:command-char command-char path-spec))]{
+ Compiles the template at @racket[path-spec] using the @at-reader-ref syntax within the enclosing lexical context. The @racket[path-spec] is the same format used by @racket[include]. Use the @racket[command-char] keyword to customize the escape character.
 
- Example:
+ Examples:
  @racketblock[
   (include-template "static.html")
+  (include-template #:command-char #\$ "dollar-static.html")
  ]
 }
 
