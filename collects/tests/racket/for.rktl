@@ -99,6 +99,14 @@
 
 (test-sequence [(a b c) (0 1 2)] (in-indexed '(a b c)))
 
+(let ()
+  (define (counter) (define n 0) (lambda ([d 1]) (set! n (+ d n)) n))
+  (test-sequence [(1 2 3 4)] (for/list ([x (in-producer (counter))] [y (in-range 4)]) x))
+  (test-sequence [(1 2 3 4)] (for/list ([x (in-producer (counter))] #:break (= x 5)) x))
+  (test-sequence [(1 2 3 4)] (for/list ([x (in-producer (counter) 5)]) x))
+  (test-sequence [(1/2 1 3/2 2 5/2 3 7/2 4 9/2)]
+    (for/list ([x (in-producer (counter) 5 1/2)]) x)))
+
 (test-sequence [(1 2 3 4 5)]
   (parameterize ([current-input-port (open-input-string "1 2 3\n4 5")])
     (for/list ([i (in-producer read eof)]) i)))
@@ -177,7 +185,7 @@
       'producer
       (let ([c 0])
         (cons
-         (for/list ([i (in-producer (lambda () (set! c (add1 c)) c) #f)]) 
+         (for/list ([i (in-producer (lambda () (set! c (add1 c)) c))])
            #:break (= i 10)
            (number->string i))
          c)))
@@ -186,7 +194,7 @@
       (let ([c 0])
         (cons
          (for*/list ([j '(0)]
-                     [i (in-producer (lambda () (set! c (add1 c)) c) #f)])
+                     [i (in-producer (lambda () (set! c (add1 c)) c))])
            #:break (= i 10)
            (number->string i))
          c)))
@@ -257,7 +265,7 @@
       'producer
       (let ([c 0])
         (cons
-         (for/vector #:length 10 ([i (in-producer (lambda () (set! c (add1 c)) c) #f)]) 
+         (for/vector #:length 10 ([i (in-producer (lambda () (set! c (add1 c)) c))]) 
                      (number->string i))
          c)))
 (test '(#("1" "2" "3" "4" "5" "6" "7" "8" "9" "10") . 10)
@@ -265,7 +273,7 @@
       (let ([c 0])
         (cons
          (for*/vector #:length 10 ([j '(0)]
-                                   [i (in-producer (lambda () (set! c (add1 c)) c) #f)])
+                                   [i (in-producer (lambda () (set! c (add1 c)) c))])
                       (number->string i))
          c)))
 

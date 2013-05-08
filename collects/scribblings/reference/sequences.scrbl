@@ -374,18 +374,36 @@ each element in the sequence.
   a sequence.
 }
 
-@defproc[(in-producer [producer procedure?] [stop any/c] [arg any/c] ...)
-         sequence?]{
+@defproc*[([(in-producer [producer procedure?])
+            sequence?]
+           [(in-producer [producer procedure?] [stop any/c] [arg any/c] ...)
+            sequence?])]{
   Returns a sequence that contains values from sequential calls to
-  @racket[producer], providing all @racket[arg]s to every call to
-  @racket[producer].  A @racket[stop] value returned by
-  @racket[producer] marks the end of the sequence (and the
-  @racket[stop] value is not included in the sequence); @racket[stop]
-  can be a predicate that is applied to the results of
+  @racket[producer], which would usually use some state to do its work.
+
+  If a @racket[stop] value is not given, the sequence goes on
+  infinitely, and therefore it common to use it with a finite sequence
+  or using @racket[#:break] etc.  If a @racket[stop] value is given, it
+  is used to identify a value that marks the end of the sequence (and
+  the @racket[stop] value is not included in the sequence);
+  @racket[stop] can be a predicate that is applied to the results of
   @racket[producer], or it can be a value that is tested against the
   result of with @racket[eq?].  (The @racket[stop] argument must be a
   predicate if the stop value is itself a function or if
   @racket[producer] returns multiple values.)
+
+  If additional @racket[arg]s are specified, they are passed to every
+  call to @racket[producer].
+
+  @examples[
+    (define (counter)
+      (define n 0)
+      (lambda ([d 1]) (set! n (+ d n)) n))
+    (for/list ([x (in-producer (counter))] [y (in-range 4)]) x)
+    (for/list ([x (in-producer (counter))] #:break (= x 5)) x)
+    (for/list ([x (in-producer (counter) 5)]) x)
+    (for/list ([x (in-producer (counter) 5 1/2)]) x)
+    (for/list ([x (in-producer read eof (open-input-string "1 2 3"))]) x)]
 }
 
 @defproc[(in-value [v any/c]) sequence?]{

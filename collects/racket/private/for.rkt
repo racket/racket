@@ -1032,21 +1032,26 @@
                                                   poses
                                                   vals)))))))))
 
-  (define (in-producer producer stop . more)
-    (make-do-sequence
-     (lambda ()
-       (values (if (null? more)
-                 (lambda (_) (producer))
-                 (lambda (_) (apply producer more)))
-               void
-               (void)
-               #f
-               (if (procedure? stop)
-                 (if (equal? 1 (procedure-arity stop))
-                   (lambda (x) (not (stop x)))
-                   (lambda xs (not (apply stop xs))))
-                 (lambda (x) (not (eq? x stop))))
-               #f))))
+  (define in-producer
+    (case-lambda
+      [(producer)
+       ;; simple stop-less version
+       (make-do-sequence (lambda () (values producer void (void) #f #f #f)))]
+      [(producer stop . more)
+       (define produce!
+         (if (null? more)
+           (lambda (_) (producer))
+           (lambda (_) (apply producer more))))
+       (define stop?
+         (cond [(not (procedure? stop))
+                (lambda (x) (not (eq? x stop)))]
+               [(equal? 1 (procedure-arity stop))
+                (lambda (x) (not (stop x)))]
+               [else
+                (lambda xs (not (apply stop xs)))]))
+       (make-do-sequence
+        (lambda ()
+          (values produce! void (void) #f stop? #f)))]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  running sequences outside of a loop:
@@ -1597,7 +1602,7 @@
     (lambda (x) x))
 
   (define-for-variants (for/first for*/first)
-    ([val #f][stop? #f])
+    ([val #f] [stop? #f])
     (lambda (x) #`(let-values ([(val _) #,x]) val))
     (lambda (rhs) #`(stop-after #,rhs (lambda x stop?)))
     (lambda (x) #`(values #,x #t)))
@@ -1849,11 +1854,11 @@
               (:do-in
                 ([(producer*) producer] [(more*) more] ...
                  [(stop?) (let ([s stop])
-                           (if (procedure? s)
-                             s
-                             (lambda (args)
-                               (and (not (null? args))
-                                    (eq? (car args) s)))))])
+                            (if (procedure? s)
+                              s
+                              (lambda (args)
+                                (and (not (null? args))
+                                     (eq? (car args) s)))))])
                ;; outer check
                #t
                ;; loop bindings
@@ -1874,7 +1879,7 @@
          (with-syntax ([(more* ...) (generate-temporaries #'(more ...))])
            #'[(id ...)
               (:do-in
-               ;;outer bindings
+               ;; outer bindings
                ([(producer*) producer] [(more*) more] ...
                 [(stop?) (let ([s stop])
                            (if (procedure? s)
@@ -1895,7 +1900,21 @@
                ;; post guard
                #t
                ;; loop args
-               ())])])))
+               ())])]
+        ;; stop-less versions
+        [[(id) (_ producer)]
+         #'[(id)
+            (:do-in ([(producer*) producer]) #t () #t ([(id) (producer*)])
+                    #t #t ())]]
+        [[() (_ producer)]
+         #'[()
+            (:do-in ([(producer*) producer]) #t () #t
+                    ([(check) (call-with-values producer* (lambda vs vs))])
+                    #t #t ())]]
+        [[(id ...) (_ producer stop more ...)]
+         #'[(id ...)
+            (:do-in ([(producer*) producer]) #t () #t ([(id ...) (producer*)])
+                    #t #t ())]])))
 
   ;; Some iterators that are implemented using `*in-producer' (note: do not use
   ;; `in-producer', since in this module it is the procedure version).
