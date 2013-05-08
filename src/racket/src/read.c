@@ -800,6 +800,7 @@ static Scheme_Object *rdl_check(int argc, Scheme_Object **argv)
   Scheme_Object *s = argv[0];
 
   return ((SCHEME_FALSEP(s)
+           || SAME_OBJ(scheme_true, s)
            || (SCHEME_PATHP(s)
                && scheme_is_complete_path(SCHEME_PATH_VAL(s),
                                           SCHEME_PATH_LEN(s),
@@ -814,7 +815,7 @@ read_delay_load(int argc, Scheme_Object *argv[])
                               scheme_make_integer(MZCONFIG_DELAY_LOAD_INFO),
                               argc, argv,
                               -1, rdl_check, 
-                              "(or/c #f (and/c path? complete-path?))",
+                              "(or/c #f #t (and/c path? complete-path?))",
                               0);
 
 }
@@ -5542,6 +5543,9 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
         delay_info->symtab = rp->symtab;
         delay_info->shared_offsets = rp->shared_offsets;
         delay_info->relto = rp->relto;
+
+        if (SAME_OBJ(delay_info->path, scheme_true))
+          perma_cache = 1;
 
         if (perma_cache) {
           unsigned char *cache;

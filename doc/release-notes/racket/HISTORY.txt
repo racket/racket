@@ -1,5 +1,6 @@
 Version 5.3.4.10
 Move explode-path from racket/path to racket/base
+Changed read-on-demand-source to support #t
 
 Version 5.3.4.9
 racket/place: allow keywords as place messages

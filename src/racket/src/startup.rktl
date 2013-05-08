@@ -782,7 +782,8 @@
       (let loop ()
         (let ([e (parameterize ([read-accept-compiled #t]
                                 [read-accept-reader #t]
-                                [read-accept-lang #t])
+                                [read-accept-lang #t]
+                                [read-on-demand-source #t])
                    (read p))])
           (unless (eof-object? e)
             (eval e)
