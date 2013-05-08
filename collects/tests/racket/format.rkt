@@ -1,5 +1,6 @@
 #lang racket/base
 (require rackunit
+         racket/list
          racket/math
          racket/format)
 
@@ -309,3 +310,66 @@
     "0e+00")
 (tc (~r #:notation 'exponential 0 #:precision '(= 4))
     "0.0000e+00")
+
+;; some random testing for exponential notation
+;;  - only positive numbers
+;;  - limited number of digits, exponent range
+
+(define (random-in low hi) ;; closed
+  (+ low (random (- hi low -1))))
+
+(define (digits->int digits base)
+  (for/fold ([acc 0]) ([digit (in-list digits)])
+    (+ (* base acc) digit)))
+
+(define (random-exponential-check #:base [base0 #f] #:precision [precision0 #f])
+  (define base (or base0 (random-in 2 36)))
+  (define precision (or precision0 (random-in 0 5)))
+  (define digit0 (random-in 1 (sub1 base)))
+  (define digits (for/list ([i (in-range precision)])
+                   (random-in 0 (sub1 base))))
+  (define exponent (random-in -50 50))
+  (define exact-num
+    (* (digits->int (cons digit0 digits) base)
+       (expt base (- exponent precision))))
+  (define inexact-num (exact->inexact exact-num))
+  (define check-exp (make-exp-checker base precision digit0 digits exponent))
+  (define (fmt n exactly?)
+    (~r n #:notation 'exponential #:base base #:format-exponent ";"
+        #:precision (if exactly? `(= ,precision) precision)))
+  (check-exp (fmt exact-num #t) #f)
+  (check-exp (fmt exact-num #f) #f)
+  (check-exp (fmt inexact-num #t) #t)
+  (check-exp (fmt inexact-num #f) #f))
+
+(define (make-exp-checker base precision digit0 digits exponent)
+  (lambda (s exactly?)
+    (with-handlers ([void
+                     (lambda (e)
+                       (eprintf "failed on base=~s, prec=~s, digits=~s,~s, exp=~s; got ~s\n"
+                                base precision digit0 digits exponent s)
+                       (raise e))])
+      (cond [(regexp-match #rx"^([a-z0-9])(?:\\.([a-z0-9]*))?;([+-][0-9]+)$" s)
+             => (lambda (m)
+                  (check-pred pair? m)
+                  ;; Check leading digit is good.
+                  (check-equal? (second m) (~r digit0 #:base base))
+                  (define got-digits (map string (string->list (or (third m) ""))))
+                  (define want-digits (for/list ([d digits]) (~r d #:base base)))
+                  (check (if exactly? = <=) (length got-digits) (length want-digits))
+                  ;; Check digits we got are good
+                  (for ([got got-digits]
+                        [want want-digits])
+                    (check-equal? got want))
+                  ;; If we didn't get as many digits as wanted, check rest are 0
+                  (for ([want-more (drop want-digits (length got-digits))])
+                    (check-equal? "0" want-more))
+                  ;; Check exponent
+                  (check-equal? (string->number (fourth m)) exponent))]
+            [else (error 'exp-checker "bad: ~s" s)]))))
+
+(for ([i (in-range 100)])
+  (random-exponential-check #:base 10 #:precision 10))
+
+(for ([i (in-range 1000)])
+  (random-exponential-check))
