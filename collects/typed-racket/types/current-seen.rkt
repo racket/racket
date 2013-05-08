@@ -1,8 +1,9 @@
 #lang racket/base
 (require "../utils/utils.rkt")
-(require (rep type-rep))
+(require (rep type-rep) (contract-req))
 
-(provide (all-defined-out))
+(provide (except-out (all-defined-out) current-seen))
+(provide/cond-contract [current-seen (parameter/c list?)])
 
 (define current-seen (make-parameter null))
 (define (currently-subtyping?) (not (null? (current-seen))))
