@@ -32,8 +32,12 @@ Returns the depth of the main display (a value of 1 denotes a monochrome display
 
 @defproc[(get-display-left-top-inset [avoid-bars? any/c #f]
                                      [#:monitor monitor exact-nonnegative-integer? 0])
-         (values (or/c exact-nonnegative-integer? #f)
-                 (or/c exact-nonnegative-integer? #f))]{
+         (values (if (= monitor 0)
+                     exact-nonnegative-integer?
+                     (or/c exact-nonnegative-integer? #f))
+                 (if (= monitor 0)
+                     exact-nonnegative-integer?
+                     (or/c exact-nonnegative-integer? #f)))]{
 
 When the optional argument is @racket[#f] (the default), this function
  returns the offset of @racket[monitor]'s origin from the
@@ -58,8 +62,12 @@ If @racket[monitor] is not less than the current number of available
 
 @defproc[(get-display-size [full-screen? any/c #f]
                            [#:monitor monitor exact-nonnegative-integer? 0])
-         (values (or/c exact-nonnegative-integer? #f)
-                 (or/c exact-nonnegative-integer? #f))]{
+         (values (if (= monitor 0)
+                     exact-nonnegative-integer?
+                     (or/c exact-nonnegative-integer? #f))
+                 (if (= monitor 0)
+                     exact-nonnegative-integer?
+                     (or/c exact-nonnegative-integer? #f)))]{
 
 @index["screen resolution"]{Gets} the physical size of the specified @racket[monitor] in
  pixels.  On Windows, this size does not include the task bar by
