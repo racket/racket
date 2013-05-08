@@ -187,6 +187,7 @@ static Scheme_Object *make_directory(int argc, Scheme_Object *argv[]);
 static Scheme_Object *delete_directory(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_link(int argc, Scheme_Object *argv[]);
 static Scheme_Object *split_path(int argc, Scheme_Object **argv);
+static Scheme_Object *explode_path(int argc, Scheme_Object **argv);
 static Scheme_Object *relative_path_p(int argc, Scheme_Object **argv);
 static Scheme_Object *absolute_path_p(int argc, Scheme_Object **argv);
 static Scheme_Object *complete_path_p(int argc, Scheme_Object **argv);
@@ -428,6 +429,11 @@ void scheme_init_file(Scheme_Env *env)
 						       "split-path",
 						       1, 1,
 						       3, 3), 
+			     env);
+  scheme_add_global_constant("explode-path", 
+			     scheme_make_prim_w_arity(explode_path,
+                                                      "explode-path",
+                                                      1, 1), 
 			     env);
   scheme_add_global_constant("relative-path?", 
 			     scheme_make_prim_w_arity(relative_path_p,
@@ -677,7 +683,7 @@ static Scheme_Object *make_protected_path(char *chars)
 }
 #endif
 
-Scheme_Object *make_exposed_sized_offset_path(int already_protected, 
+Scheme_Object *make_exposed_sized_offset_path(int *optional, int already_protected, 
 					      char *chars, intptr_t d, intptr_t len, int copy,
                                               int kind)
   /* Called to make a directory path where the end has been removed.
@@ -714,7 +720,7 @@ Scheme_Object *make_exposed_sized_offset_path(int already_protected,
         memcpy(s2+9, chars + i + 1, l);
         s2[l + 9] = 0;
         last = scheme_make_sized_offset_kind_path(s2, 0, l+9, 0, SCHEME_WINDOWS_PATH_KIND);
-        first = make_exposed_sized_offset_path(0, chars, d, i-d+1, 1, SCHEME_WINDOWS_PATH_KIND);
+        first = make_exposed_sized_offset_path(NULL, 0, chars, d, i-d+1, 1, SCHEME_WINDOWS_PATH_KIND);
         a[0] = first;
         a[1] = last;
         return scheme_build_path(2, a);
@@ -732,6 +738,11 @@ Scheme_Object *make_exposed_sized_offset_path(int already_protected,
       len--;
       copy = 1;
     }
+  }
+
+  if (optional) {
+    *optional = len;
+    return NULL;
   }
 
   return scheme_make_sized_offset_kind_path(chars, d, len, copy, kind);
@@ -3263,15 +3274,18 @@ static Scheme_Object *path_to_directory_path(int argc, Scheme_Object **argv)
   return scheme_path_to_directory_path(inpath);
 }
 
-static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **base_out, int *id_out,
-                                    int *cleaned_slashes, int kind)
+static Scheme_Object *do_split_path(const char *path, int len, 
+                                    Scheme_Object **base_out, char **base_str_out, int *base_len_out,
+                                    int *id_out,
+                                    int *cleaned_slashes, int kind,
+                                    int check_repeats)
 {
   char *s;
   int p, last_was_sep = 0, is_dir, no_up = 0, not_same;
   Scheme_Object *file;
   int allow_double_before = 0, drive_end, no_slash_sep = 0;
 
-#define MAKE_SPLIT(x, y, z) (*base_out = x, *id_out = z, y)
+#define MAKE_SPLIT(x, x_str, x_len, y, z) (*base_out = x, *base_str_out = x_str, *base_len_out = x_len, *id_out = z, y)
 
   s = (char *)path;
 
@@ -3297,7 +3311,6 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
                 {
                   int len2, nsep;
                   char *s2;
-                  Scheme_Object *dir;
                   len2 = len - p - 1 + 9;
                   s2 = scheme_malloc_atomic(len2 + 1);
                   memcpy(s2, "\\\\?\\REL\\\\", 9);
@@ -3318,9 +3331,8 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
                         nsep = 1;
                     }
                   }
-                  dir = scheme_make_sized_offset_kind_path(s, 0, p + nsep, 1, SCHEME_WINDOWS_PATH_KIND);
                   file = scheme_make_sized_offset_kind_path(s2, 0, len2, 0, SCHEME_WINDOWS_PATH_KIND);
-                  return MAKE_SPLIT(dir, file, is_dir);
+                  return MAKE_SPLIT(NULL, s, p + nsep, file, is_dir);
                 }
               }
             }
@@ -3329,15 +3341,14 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
           if (dots_end > 0) {
             /* There are dots (so no literals) */
             if (dots_end - 3 > 8) {
-              file = scheme_make_sized_offset_kind_path(s, 0, dots_end - 3, 1, SCHEME_WINDOWS_PATH_KIND);
-              return MAKE_SPLIT(file, up_symbol, 1);
+              return MAKE_SPLIT(NULL, s, dots_end - 3, up_symbol, 1);
             } else
-              return MAKE_SPLIT(relative_symbol, up_symbol, 1);
+              return MAKE_SPLIT(relative_symbol, NULL, 0, up_symbol, 1);
           } else {
             /* No dots, so there must be one element. */
             if (s[6] == 'L') {
               /* keep \\?\REL\ on path, and report 'relative as base */
-              return MAKE_SPLIT(relative_symbol, 
+              return MAKE_SPLIT(relative_symbol, NULL, 0,
                                 scheme_make_sized_offset_kind_path(s, 0, len, 1,
                                                                    SCHEME_WINDOWS_PATH_KIND), 
                                 is_dir);
@@ -3357,7 +3368,7 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
               }
               dir = scheme_make_sized_offset_kind_path("\\", 0, 1, 0,
                                                        SCHEME_WINDOWS_PATH_KIND);
-              return MAKE_SPLIT(dir, 
+              return MAKE_SPLIT(dir, NULL, 0,
                                 scheme_make_sized_offset_kind_path(naya, 0, len, 0,
                                                                    SCHEME_WINDOWS_PATH_KIND), 
                                 is_dir);
@@ -3387,30 +3398,32 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
   }
 
   /* Look for confusing repeated separators (e.g. "x//y") */
-  for (p = len; p--; ) {
-    if (p > allow_double_before) {
-      if (IS_A_SEP(kind, s[p]) && IS_A_SEP(kind, s[p - 1])) {
-	/* Found it; copy without repeats */
-	int q;
-	char *old = s;
+  if (check_repeats) {
+    for (p = len; p--; ) {
+      if (p > allow_double_before) {
+        if (IS_A_SEP(kind, s[p]) && IS_A_SEP(kind, s[p - 1])) {
+          /* Found it; copy without repeats */
+          int q;
+          char *old = s;
 
-        if (cleaned_slashes)
-          *cleaned_slashes = 1;
+          if (cleaned_slashes)
+            *cleaned_slashes = 1;
 
-	s = (char *)scheme_malloc_atomic(len);
-	--len;
+          s = (char *)scheme_malloc_atomic(len);
+          --len;
 
-	for (p = 0, q = 0; p < allow_double_before; p++) {
-	  s[q++] = old[p];
-	}
+          for (p = 0, q = 0; p < allow_double_before; p++) {
+            s[q++] = old[p];
+          }
 
-	for (; p < len; p++) {
-	  if (!IS_A_SEP(kind, old[p]) || !IS_A_SEP(kind, old[p + 1]))
-	    s[q++] = old[p];
-	}
-	s[q++] = old[len];
-	len = q;
-	break;
+          for (; p < len; p++) {
+            if (!IS_A_SEP(kind, old[p]) || !IS_A_SEP(kind, old[p + 1]))
+              s[q++] = old[p];
+          }
+          s[q++] = old[len];
+          len = q;
+          break;
+        }
       }
     }
   }
@@ -3456,19 +3469,22 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
        For Mac, it is relative or root with trailing sep. */
     if (kind == SCHEME_UNIX_PATH_KIND) {
       if (s[0] == '/')
-        return MAKE_SPLIT(scheme_false, scheme_make_sized_offset_kind_path(s, 0, len, 1, kind), 1);
+        return MAKE_SPLIT(scheme_false, NULL, 0,
+                          scheme_make_sized_offset_kind_path(s, 0, len, 1, kind), 1);
 #ifdef TILDE_IS_ABSOLUTE
       if (s[0] == '~') {
         /* Strip ending slashes, if any. */
         while (IS_A_UNIX_SEP(s[len - 1])) {
           --len;
         }
-        return MAKE_SPLIT(scheme_false, scheme_make_sized_offset_kind_path(s, 0, len, 1, kind), 1);
+        return MAKE_SPLIT(scheme_false, NULL, 0,
+                          scheme_make_sized_offset_kind_path(s, 0, len, 1, kind), 1);
       }
 #endif
     } else {
       if (IS_A_DOS_SEP(s[0]) || drive_end)
-        return MAKE_SPLIT(scheme_false, scheme_make_sized_offset_kind_path(s, 0, len, 1, kind), 1);
+        return MAKE_SPLIT(scheme_false, NULL, 0,
+                          scheme_make_sized_offset_kind_path(s, 0, len, 1, kind), 1);
     }
 
     dir = relative_symbol;
@@ -3490,7 +3506,7 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
                                               kind);
     }
     
-    return MAKE_SPLIT(dir, file, is_dir);
+    return MAKE_SPLIT(dir, NULL, 0, file, is_dir);
   }
   
   /* Check for 'up and 'same: */
@@ -3519,27 +3535,52 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
   /* Check directory */
   if (p > 0) {
     Scheme_Object *ss;
-    ss = make_exposed_sized_offset_path(no_up, s, 0, p + 1, 1, kind);
-    return MAKE_SPLIT(ss, 
-		      file, 
-		      is_dir);
+    int new_len;
+    ss = make_exposed_sized_offset_path(&new_len, no_up, s, 0, p + 1, 1, kind);
+    if (ss) {
+      s = SCHEME_PATH_VAL(ss);
+      new_len = SCHEME_PATH_LEN(ss);
+    }
+    return MAKE_SPLIT(NULL, s, new_len, file, is_dir);
   }
 	
   /* p = 0; this means root dir. */
   {
     Scheme_Object *ss;
-    ss = scheme_make_sized_offset_kind_path(s, 0, 1, 1, kind);
-    return MAKE_SPLIT(ss, file, is_dir);
+    if (s[0] == '/')
+      ss = scheme_make_sized_offset_kind_path("/", 0, 1, 0, kind);
+    else
+      ss = scheme_make_sized_offset_kind_path(s, 0, 1, 1, kind);
+    return MAKE_SPLIT(ss, NULL, 0, file, is_dir);
   }
+}
+
+static Scheme_Object *do_split_path_once(const char *path, int len, 
+                                         Scheme_Object **base_out,
+                                         int *id_out,
+                                         int *cleaned_slashes, int kind)
+{
+  Scheme_Object *name, *base;
+  char *base_str;
+  int base_len;
+
+  name = do_split_path(path, len, base_out, &base_str, &base_len, id_out, cleaned_slashes, kind, 1);
+
+  if (!*base_out) {
+    base = scheme_make_sized_offset_kind_path(base_str, 0, base_len, 1, kind);
+    *base_out = base;
+  }
+
+  return name;
 }
 
 Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base_out, int *id_out, int kind)
 {
-  return do_split_path(path, len, base_out, id_out, NULL, kind);
+  return do_split_path_once(path, len, base_out, id_out, NULL, kind);
 }
 
 #ifndef NO_FILE_SYSTEM_UTILS
-static Scheme_Object *split_path(int argc, Scheme_Object **argv)
+static Scheme_Object *_split_path(const char *who, int argc, Scheme_Object **argv, int multi)
 {
   char *s;
   int is_dir, len;
@@ -3548,7 +3589,7 @@ static Scheme_Object *split_path(int argc, Scheme_Object **argv)
   inpath = argv[0];
 
   if (!SCHEME_GENERAL_PATH_STRINGP(inpath))
-    scheme_wrong_contract("split-path", "(or/c path-for-some-system? path-string?)", 0, argc, argv);
+    scheme_wrong_contract(who, "(or/c path-for-some-system? path-string?)", 0, argc, argv);
 
   inpath = TO_PATH(inpath);
 
@@ -3556,19 +3597,50 @@ static Scheme_Object *split_path(int argc, Scheme_Object **argv)
   len = SCHEME_PATH_LEN(inpath);
 
   if (!len) {
-    scheme_contract_error("split-path",
+    scheme_contract_error(who,
                           "path is an empty string",
                           NULL);
   }
 
   if (has_null(s, len))
-    raise_null_error("split-path", inpath, "");
+    raise_null_error(who, inpath, "");
 
-  three[1] = scheme_split_path(s, len, &three[0], &is_dir, SCHEME_PATH_KIND(inpath));
+  if (multi) {
+    Scheme_Object *l = scheme_null, *name, *base;
+    char *next_s;
+    int next_len;
+    int kind = SCHEME_PATH_KIND(inpath), check = 1;
 
-  three[2] = is_dir ? scheme_true : scheme_false;
+    while (1) {
+      name = do_split_path(s, len, &base, &next_s, &next_len, &is_dir, NULL, kind, check);
+      l = scheme_make_pair(name, l);
+      if (base) {
+        if (SCHEME_FALSEP(base) || SAME_OBJ(base, relative_symbol)) return l;
+        return scheme_make_pair(base, l);
+      } else {
+        s = next_s;
+        len = next_len;
+      }
+      check = 0;
+      SCHEME_USE_FUEL(1);
+    }
+  } else {
+    three[1] = scheme_split_path(s, len, &three[0], &is_dir, SCHEME_PATH_KIND(inpath));
+    
+    three[2] = is_dir ? scheme_true : scheme_false;
+    
+    return scheme_values(3, three);
+  }
+}
 
-  return scheme_values(3, three);
+static Scheme_Object *split_path(int argc, Scheme_Object **argv)
+{
+  return _split_path("split-path", argc, argv, 0);
+}
+
+static Scheme_Object *explode_path(int argc, Scheme_Object **argv)
+{
+  return _split_path("explode-path", argc, argv, 1);
 }
 #endif
 
@@ -4513,7 +4585,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
       len = SCHEME_PATH_LEN(base);
       if (len <= skip)
         break;
-      file = do_split_path(s, len, &base, &isdir, &cleaned_slashes, kind);
+      file = do_split_path_once(s, len, &base, &isdir, &cleaned_slashes, kind);
       if (kind == SCHEME_WINDOWS_PATH_KIND) {
         if (force_rel_up) {
           file = convert_literal_relative(file);
@@ -5130,21 +5202,9 @@ char *scheme_find_completion(char *fn)
   return SCHEME_PATH_VAL(f);
 }
 
-static Scheme_Object *explode_path(Scheme_Object *p)
+static Scheme_Object *do_explode_path(Scheme_Object *p)
 {
-  Scheme_Object *l = scheme_null, *base, *name;
-  int isdir;
-
-  while (1) {
-    name = scheme_split_path(SCHEME_PATH_VAL(p), SCHEME_PATH_LEN(p), &base, &isdir, SCHEME_PATH_KIND(p));
-    l = scheme_make_pair(name, l);
-
-    if (!SCHEME_PATHP(base)) {
-      l = scheme_make_pair(base, l);
-      return l;
-    }
-    p = base;
-  }
+  return explode_path(1, &p);
 }
 
 Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir)
@@ -5152,13 +5212,13 @@ Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir
   Scheme_Object *de, *be, *oe;
 
   if (SCHEME_PAIRP(dir)) {
-    be = explode_path(SCHEME_CAR(dir));
-    de = explode_path(SCHEME_CDR(dir));
+    be = do_explode_path(SCHEME_CAR(dir));
+    de = do_explode_path(SCHEME_CDR(dir));
   } else {
-    be = explode_path(dir);
+    be = do_explode_path(dir);
     de = be;
   }
-  oe = explode_path(obj);
+  oe = do_explode_path(obj);
 
   while (SCHEME_PAIRP(de)
 	 && SCHEME_PAIRP(oe)) {

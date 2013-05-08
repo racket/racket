@@ -477,6 +477,19 @@ See @secref["unixpaths"] for more information on splitting
 information on splitting Windows paths.}
 
 
+@defproc[(explode-path [path (or/c path-string? path-for-some-system?)])
+         (listof (or/c path-for-some-system? 'up 'same))]{
+
+Returns the list of @tech{path elements} that constitute @racket[path].  If
+@racket[path] is simplified in the sense of @racket[simple-form-path],
+then the result is always a list of paths, and the first element of
+the list is a root.
+
+The @racket[explode-path] function computes its result in time
+proportional to the length of @racket[path] (unlike a loop in that
+uses @racket[split-path], which must allocate intermediate paths).}
+
+
 @defproc[(path-replace-suffix [path (or/c path-string? path-for-some-system?)]
                               [suffix (or/c string? bytes?)])
          path-for-some-system?]{
@@ -530,14 +543,6 @@ machine and volume names become path elements.
 @section{More Path Utilities}
 
 @note-lib[racket/path]
-
-@defproc[(explode-path [path (or/c path-string? path-for-some-system?)]) 
-         (listof (or/c path-for-some-system? 'up 'same))]{
-
-Returns the list of @tech{path elements} that constitute @racket[path].  If
-@racket[path] is simplified in the sense of @racket[simple-form-path],
-then the result is always a list of paths, and the first element of
-the list is a root.}
 
 @defproc[(file-name-from-path [path (or/c path-string? path-for-some-system?)])
          (or/c path-for-some-system? #f)]{
