@@ -349,7 +349,7 @@
          [normalized-max (* base normalized-min)])
     (let*-values ([(N*0 e-adjust0)
                    (let ([e-est (- significand-precision
-                                   (inexact->exact (floor (/ (log N-abs) (log base)))))])
+                                   (estimate-order-of-magnitude N base))])
                      (values (* N (expt base e-est)) e-est))]
                   [(N* e-adjust)
                    (let loop ([N N*0] [e e-adjust0] [r #f])
@@ -374,6 +374,16 @@
                            (cond [(zero? r) (loop q (sub1 p))]
                                  [else (values N p)]))))])
       (values N* e-adjust actual-precision))))
+
+;; estimate-order-of-magnitude : exact-positive-real integer>1 -> exact-integer
+(define (estimate-order-of-magnitude N base)
+  (inexact->exact
+   (floor
+    ;; log gives -inf.0 on exact numbers smaller than smallest positive flonum;
+    ;; so use difference of numerator/denominator logs, since log ok even on bignums
+    (/ (- (log (numerator N))
+          (log (denominator N)))
+       (log base)))))
 
 ;; ----
 
