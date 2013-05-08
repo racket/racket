@@ -1,4 +1,4 @@
-#lang racket/base
+#lang errortrace racket/base
 (require (except-in "../utils/utils.rkt" infer)
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
@@ -11,21 +11,10 @@
          racket/lazy-require
          (prefix-in c: racket/contract)
          (for-syntax racket/base syntax/parse))
-
+(require racket/trace)
 (lazy-require
   ("union.rkt" (Un))
   ("../infer/infer.rkt" (infer)))
-
-
-;; exn representing failure of subtyping
-;; s,t both types
-(define-struct (exn:subtype exn:fail) (s t))
-
-;; subtyping failure - masked before it gets to the user program
-(define-syntax fail!
-  (syntax-rules ()
-    [(_ s t) (raise (make-exn:subtype "subtyping failed" (current-continuation-marks) s t))]))
-
 
 (define subtype-cache (make-hash))
 (define (cache-types s t)
@@ -36,43 +25,44 @@
   (hash-ref subtype-cache (cons (Type-seq s) (Type-seq t)) #f))
 
 (define-syntax-rule (handle-failure e)
-  (with-handlers ([exn:subtype? (λ (_) #f)])
-    e))
+  e)
 
 ;; is s a subtype of t?
 ;; type type -> boolean
 (define/cond-contract (subtype s t)
   (c:-> (c:or/c Type/c SomeValues/c) (c:or/c Type/c SomeValues/c) boolean?)
   (define k (cons (Type-seq s) (Type-seq t)))
-  (define (new-val) 
-    (define result (handle-failure (and (subtype* (current-seen) s t) #t)))
-    ;(printf "subtype cache miss ~a ~a\n" s t)
-    result)
   ((if (currently-subtyping?) hash-ref hash-ref!)
-   subtype-cache k new-val))
+   subtype-cache k 
+   (lambda () (and (subtype* (current-seen) s t) #t))))
 
 ;; are all the s's subtypes of all the t's?
 ;; [type] [type] -> boolean
-(define (subtypes s t) (handle-failure (and (subtypes* (current-seen) s t) #t)))
-
-;; subtyping under constraint set, but produces boolean result instead of raising exn
-;; List[(cons Number Number)] type type -> maybe[List[(cons Number Number)]]
-(define (subtype*/no-fail A s t) (handle-failure (subtype* A s t)))
+(define (subtypes s t) (and (subtypes* (current-seen) s t) #t))
 
 ;; check subtyping for two lists of types
-;; List[(cons Number Number)] listof[type] listof[type] -> List[(cons Number Number)]
+;; List[(cons Number Number)] listof[type] listof[type] -> Opt[List[(cons Number Number)]]
 (define (subtypes* A ss ts)
   (cond [(and (null? ss) (null? ts) A)]
-        [(or (null? ss) (null? ts)) (fail! ss ts)]
+        [(or (null? ss) (null? ts)) #f]
         [(subtype* A (car ss) (car ts))
          =>
          (lambda (A*) (subtypes* A* (cdr ss) (cdr ts)))]
-        [else (fail! (car ss) (car ts))]))
+        [else #f]))
 
 ;; check if s is a supertype of any element of ts
 (define (supertype-of-one/arr A s ts)
   (ormap (lambda (e) (arr-subtype*/no-fail A e s)) ts))
 
+(define-syntax (let*/and stx)
+  (syntax-parse stx
+    [(_ () . e) (syntax/loc stx (let () . e))]
+    [(_ ([id expr] . rest) . body)
+     (syntax/loc stx
+       (let ([id expr])
+         (and id (let*/and rest . body))))]))
+
+;; do notation for the subtyping monad
 (define-syntax (subtype-seq stx)
   (define-syntax-class sub*
     (pattern e:expr))
@@ -85,33 +75,31 @@
                                  [A (syntax->list #'(init A* ...))]
                                  [A-next (syntax->list #'(A* ... A-last))])
                          #`[#,A-next (#,s #,A . #,args)])])
-        #'(let* (clauses ...)
-            A-last)))]))
+        (syntax/loc stx (let*/and (clauses ...)
+			   A-last))))]))
 
 (define (kw-subtypes* A0 t-kws s-kws)
   (let loop ([A A0] [t t-kws] [s s-kws])
-    (match* (t s)
-      [((list (Keyword: kt tt rt) rest-t) (list (Keyword: ks ts rs) rest-s))
-       (cond [(eq? kt ks)
-              (if
-               ;; if s is optional, t must be as well
-               (or rs (not rt))
-               (loop (subtype* A tt ts) rest-t rest-s)
-               (fail! t s))]
-             ;; extra keywords in t are ok
-             ;; we just ignore them
-             [(keyword<? kt ks) (loop A rest-t s)]
-             ;; extra keywords in s are a problem
-             [else (fail! t s)])]
-      ;; no more keywords to satisfy
-      [(_ '()) A]
-      ;; we failed to satisfy all the keyword
-      [(_ _) (fail! s t)])))
+    (and
+     A
+     (match* (t s)
+       [((list (Keyword: kt tt rt) rest-t) (list (Keyword: ks ts rs) rest-s))
+	(cond [(eq? kt ks)
+	       (and ;; if s is optional, t must be as well
+		(or rs (not rt))
+		(loop (subtype* A tt ts) rest-t rest-s))]
+	      ;; extra keywords in t are ok
+	      ;; we just ignore them
+	      [(keyword<? kt ks) (loop A rest-t s)]
+	      ;; extra keywords in s are a problem
+	      [else #f])]
+       ;; no more keywords to satisfy
+       [(_ '()) A]
+       ;; we failed to satisfy all the keyword
+       [(_ _) #f]))))
 
 ;; simple co/contra-variance for ->
 (define (arr-subtype*/no-fail A0 s t)
-  (with-handlers
-      ([exn:subtype? (lambda _ #f)])
     (match* (s t)
       ;; top for functions is above everything
       [(_ (top-arr:)) A0]
@@ -135,7 +123,7 @@
                     (subtype* s-rng t-rng))]
       [((arr: s-dom s-rng #f #f s-kws)
         (arr: t-dom t-rng t-rest #f t-kws))
-       (fail! s t)]
+       #f]
       [((arr: s-dom s-rng s-rest #f s-kws)
         (arr: t-dom t-rng t-rest #f t-kws))
        (subtype-seq A0
@@ -151,8 +139,7 @@
                     (subtypes* t-dom s-dom)
                     (kw-subtypes* t-kws s-kws)
                     (subtype* s-rng t-rng))]
-      [(_ _)
-       (fail! s t)])))
+      [(_ _) #f]))
 
 ;; check subtyping of filters, so that predicates subtype correctly
 (define (filter-subtype* A0 s t)
@@ -160,7 +147,7 @@
    [(f f) A0]
    [((Bot:) t) A0]
    [(s (Top:)) A0]
-   [(_ _) (fail! s t)]))
+   [(_ _) #f]))
 
 (define (subtypes/varargs args dom rst)
   (handle-failure (and (subtypes*/varargs null args dom rst) #t)))
@@ -168,14 +155,15 @@
 (define (subtypes*/varargs A0 argtys dom rst)
   (let loop-varargs ([dom dom] [argtys argtys] [A A0])
     (cond
+      [(not A) #f]
       [(and (null? dom) (null? argtys)) A]
-      [(null? argtys) (fail! argtys dom)]
+      [(null? argtys) #f]
       [(and (null? dom) rst)
        (cond [(subtype* A (car argtys) rst) => (lambda (A) (loop-varargs dom (cdr argtys) A))]
-             [else (fail! (car argtys) rst)])]
-      [(null? dom) (fail! argtys dom)]
+             [else #f])]
+      [(null? dom) #f]
       [(subtype* A (car argtys) (car dom)) => (lambda (A) (loop-varargs (cdr dom) (cdr argtys) A))]
-      [else (fail! (car argtys) (car dom))])))
+      [else #f])))
 
 ;(trace subtypes*/varargs)
 
@@ -199,12 +187,17 @@
              (App: (and (Name: _) (app resolve-once (Poly: _ (? Struct? i)))) _ _))])))
 
 (define (subtype/flds* A flds flds*)
-  (for/fold ([A A]) ([f (in-list flds)] [f* (in-list flds*)])
-    (match* (f f*)
-      [((fld: t _ #t) (fld: t* _ #t))
-       (subtype* (subtype* A t* t) t t*)]
-      [((fld: t _ #f) (fld: t* _ #f))
-       (subtype* A t t*)])))
+  (for/fold ([A A]) ([f (in-list flds)] [f* (in-list flds*)] #:break (not A))
+    (and
+     A
+     (match* (f f*)
+       [((fld: t _ #t) (fld: t* _ #t))
+	(subtype-seq A
+		     (subtype* t* t)
+		     (subtype* t t*))]
+       [((fld: t _ #f) (fld: t* _ #f))
+	(subtype* A t t*)]
+       [(_ _) #f]))))
 
 (define (unrelated-structs s1 s2)
   (define (in-hierarchy? s par)
@@ -226,25 +219,29 @@
           [_ (int-err "wtf is this? ~a" s)])))
   (not (or (in-hierarchy? s1 s2) (in-hierarchy? s2 s1))))
 
-(define (type-equiv? A0 s t)
-  (subtype* (subtype* A0 s t) t s))
+(define/cond-contract (type-equiv? A0 s t)
+  (c:-> list? Type? Type? c:any/c)
+  (subtype-seq A0
+	       (subtype* s t)
+	       (subtype* t s)))
 
 ;; the algorithm for recursive types transcribed directly from TAPL, pg 305
 ;; List[(cons Number Number)] type type -> List[(cons Number Number)]
 ;; potentially raises exn:subtype, when the algorithm fails
 ;; is s a subtype of t, taking into account constraints A
-(define (subtype* A s t)
+(define/cond-contract (subtype* A s t)
+  (c:-> list? Type? Type? c:any/c)
   (define =t (lambda (a b) (if (and (Rep? a) (Rep? b)) (type-equal? a b) (equal? a b))))
   (parameterize ([match-equality-test =t]
                  [current-seen A])
     (let ([ks (Type-key s)] [kt (Type-key t)])
       (cond
        [(or (seen? s t) (type-equal? s t)) A]
-       [(and (symbol? ks) (symbol? kt) (not (eq? ks kt))) (fail! s t)]
-       [(and (symbol? ks) (pair? kt) (not (memq ks kt))) (fail! s t)]
+       [(and (symbol? ks) (symbol? kt) (not (eq? ks kt))) #f]
+       [(and (symbol? ks) (pair? kt) (not (memq ks kt))) #f]
        [(and (pair? ks) (pair? kt)
              (for/and ([i (in-list ks)]) (not (memq i kt))))
-        (fail! s t)]
+        #f]
        [else
         (let* ([A0 (remember s t A)])
           (parameterize ([current-seen A0])
@@ -255,14 +252,14 @@
               [(_ (Error:)) A0]
               [((Error:) _) A0]
               ;; (Un) is bot
-              [(_ (Union: (list))) (fail! s t)]
+              [(_ (Union: (list))) #f]
               [((Union: (list)) _) A0]
               ;; value types
               [((Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
               ;; values are subtypes of their "type"
-              [((Value: v) (Base: _ _ pred _ _)) (if (pred v) A0 (fail! s t))]
+              [((Value: v) (Base: _ _ pred _ _)) (if (pred v) A0 #f)]
               ;; tvars are equal if they are the same variable
-              [((F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]
+              [((F: t) (F: t*)) (if (eq? t t*) A0 #f)]
               ;; Avoid needing to resolve things that refer to different structs.
               ;; Saves us from non-termination
               ;; Must happen *before* the sequence cases, which sometimes call `resolve' in match expanders
@@ -270,41 +267,41 @@
                (=> unmatch)
                (cond [(unrelated-structs s1 s2)
                       ;(dprintf "found unrelated structs: ~a ~a\n" s1 s2)
-                      (fail! s t)]
+                      #f]
                      [else (unmatch)])]
               ;; similar case for structs and base types, which are obviously unrelated
               [((Base: _ _ _ _ _) (or (? Struct? s1) (NameStruct: s1)))
-               (fail! s t)]
+               #f]
               [((or (? Struct? s1) (NameStruct: s1)) (Base: _ _ _ _ _))
-               (fail! s t)]
+               #f]
               ;; same for all values.
               [((Value: (? (negate struct?) _)) (or (? Struct? s1) (NameStruct: s1)))
-               (fail! s t)]
+               #f]
               [((or (? Struct? s1) (NameStruct: s1)) (Value: (? (negate struct?) _)))
-               (fail! s t)]
+               #f]
               ;; just checking if s/t is a struct misses recursive/union/etc cases
-              [((? (lambda (_) (eq? ks 'struct))) (Base: _ _ _ _ _)) (fail! s t)]
-              [((Base: _ _ _ _ _) (? (lambda (_) (eq? kt 'struct)))) (fail! s t)]
+              [((? (lambda (_) (eq? ks 'struct))) (Base: _ _ _ _ _)) #f]
+              [((Base: _ _ _ _ _) (? (lambda (_) (eq? kt 'struct)))) #f]
               ;; sequences are covariant
               [((Sequence: ts) (Sequence: ts*))
                (subtypes* A0 ts ts*)]
               [((Listof: t) (Sequence: (list t*)))
                (subtype* A0 t t*)]
               [((Pair: t1 t2) (Sequence: (list t*)))
-               (let ([A1 (subtype* A0 t1 t*)])
-                 (subtype* A1 t2 (-lst t*)))]
+               (subtype-seq A0 (subtype* t1 t*) (subtype* t2 (-lst t*)))]
               [((MListof: t) (Sequence: (list t*)))
                (subtype* A0 t t*)]
               ;; To check that mutable pair is a sequence we check that the cdr
               ;; is both an mutable list and a sequence
               [((MPair: t1 t2) (Sequence: (list t*)))
-               (let* ([A1 (subtype* A0 t1 t*)]
-                      [A2 (subtype* A1 t2 (simple-Un (-val null) (make-MPairTop)))])
-                 (subtype* A2 t2 t))]
+               (subtype-seq A0
+                            (subtype* t1 t*)
+                            (subtype* t2 (simple-Un (-val null) (make-MPairTop)))
+                            (subtype* t2 t))]
               [((List: ts) (Sequence: (list t*)))
-               (subtypes* A0 ts (map (λ _ t*) ts))]
+               (subtypes* A0 ts (map (λ (_) t*) ts))]
               [((HeterogeneousVector: ts) (Sequence: (list t*)))
-               (subtypes* A0 ts (map (λ _ t*) ts))]
+               (subtypes* A0 ts (map (λ (_) t*) ts))]
               [((Vector: t) (Sequence: (list t*)))
                (subtype* A0 t t*)]
               [((Base: 'String _ _ _ _) (Sequence: (list t*)))
@@ -321,38 +318,39 @@
                    (list portable-fixnum? -NonNegFixnum)
                    (list values -Nat)))
                (define type
-                 (for/or ((pred-type possibilities))
+                 (for/or ((pred-type (in-list possibilities)))
                    (match pred-type
                      ((list pred? type)
                       (and (pred? n) type)))))
                (subtype* A0 type t*)]
               [((Base: _ _ _ _ #t) (Sequence: (list t*)))
                (define type
+                 ;; FIXME: thread the store through here
                  (for/or ((t (list -Byte -Index -NonNegFixnum -Nat)))
-                   (and (subtype s t) t)))
+                   (or (and (subtype* A0 s t) t))))
                (if type
                    (subtype* A0 type t*)
-                   (fail! s t))]
+                   #f)]
               [((Hashtable: k v) (Sequence: (list k* v*)))
                (subtypes* A0 (list k v) (list k* v*))]
               [((Set: t) (Sequence: (list t*)))
                (subtype* A0 t t*)]
               ;; special-case for case-lambda/union with only one argument              
               [((Function: arr1) (Function: (list arr2)))
-               (when (null? arr1) (fail! s t))
-               (define comb (combine-arrs arr1))
-               (or (and comb (arr-subtype*/no-fail A0 comb arr2))
-                   (supertype-of-one/arr A0 arr2 arr1)
-                   (fail! s t))]
+               (cond [(null? arr1) #f]
+                     [else
+                      (define comb (combine-arrs arr1))
+                      (or (and comb (arr-subtype*/no-fail A0 comb arr2))
+                          (supertype-of-one/arr A0 arr2 arr1))])]
               ;; case-lambda
               [((Function: arr1) (Function: arr2))
-               (when (null? arr1) (fail! s t))
+               (when (null? arr1) #f)
                (let loop-arities ([A* A0]
                                   [arr2 arr2])
                  (cond
                   [(null? arr2) A*]
                   [(supertype-of-one/arr A* (car arr2) arr1) => (lambda (A) (loop-arities A (cdr arr2)))]
-                  [else (fail! s t)]))]
+                  [else #f]))]
               ;; recur structurally on pairs
               [((Pair: a d) (Pair: a* d*))
                (subtypes* A0 (list a d) (list a* d*))]
@@ -417,12 +415,12 @@
                (let ([s* (resolve-once s)])
                  (if (Type/c? s*) ;; needed in case this was a name that hasn't been resolved yet
                      (subtype* A0 s* other)
-                     (fail! s t)))]
+                     #f))]
               [(other (? needs-resolving? t))
                (let ([t* (resolve-once t)])
                  (if (Type/c? t*) ;; needed in case this was a name that hasn't been resolved yet
                      (subtype* A0 other t*)
-                     (fail! s t)))]
+                     #f))]
               ;; for unions, we check the cross-product
               ;; some special cases for better performance
               ;; first, if both types are numeric, they will be built from the same base types
@@ -430,7 +428,7 @@
               [((Base: _ _ _ _ _) (Union: l2))
                (=> unmatch)
                (if (and (eq? ks 'number) (eq? kt 'number))
-                   (if (memq s l2) A0 (fail! s t))
+                   (if (memq s l2) A0 #f)
                    (unmatch))]
               [((Union: l1) (Union: l2))
                (=> unmatch)
@@ -441,40 +439,37 @@
                      (cond [(null? l1)
                             A0]
                            [(null? l2)
-                            (fail! s t)]
+                            #f]
                            [(eq? (car l1) (car l2))
                             (loop (cdr l1) (cdr l2))]
                            [else
                             (loop l1 (cdr l2))]))
                    (unmatch))]
               [((Union: (list e1 e2)) t)
-               (if (and (subtype* A0 e1 t) (subtype* A0 e2 t))
-                   A0
-                   (fail! s t))]
+               (and (and (subtype* A0 e1 t) (subtype* A0 e2 t))
+                    A0)]
               [((Union: (list e1 e2 e3)) t)
-               (if (and (subtype* A0 e1 t) (subtype* A0 e2 t) (subtype* A0 e3 t))
-                   A0
-                   (fail! s t))]
+               (and (and (subtype* A0 e1 t) (subtype* A0 e2 t) (subtype* A0 e3 t))
+                    A0)]
               [((Union: es) t)
-               (if (for/and ([elem (in-list es)])
+               (and (for/and ([elem (in-list es)])
                      (subtype* A0 elem t))
-                   A0
-                   (fail! s t))]
+                    A0)]
               [(s (Union: es))
-               (if (for/or ([elem (in-list es)])
-                     (with-handlers ([exn:subtype? (lambda _ #f)])
-                       (subtype* A0 s elem)))
-                   A0
-                   (fail! s t))]
+               (and (for/or ([elem (in-list es)])
+                       (subtype* A0 s elem))
+                    A0)]
               ;; subtyping on immutable structs is covariant
-              [((Struct: nm _ flds proc _ _) (Struct: nm* _ flds* proc* _ _)) (=> nevermind)
-               (unless (free-identifier=? nm nm*) (nevermind))
-               (let ([A (cond [(and proc proc*) (subtype* proc proc*)]
-                              [proc* (fail! proc proc*)]
+              [((Struct: nm _ flds proc _ _) (Struct: nm* _ flds* proc* _ _))
+	       (=> unmatch)
+               (unless (free-identifier=? nm nm*) (unmatch))
+               (let ([A (cond [(and proc proc*) (subtype* A0 proc proc*)]
+                              [proc* #f]
                               [else A0])])
-                 (subtype/flds* A flds flds*))]
-              [((Struct: nm _ _ _ _ _) (StructTop: (Struct: nm* _ _ _ _ _))) (=> nevermind)
-               (unless (free-identifier=? nm nm*) (nevermind))
+		 (and A (subtype/flds* A flds flds*)))]
+              [((Struct: nm _ _ _ _ _) (StructTop: (Struct: nm* _ _ _ _ _)))
+	       (=> unmatch)
+               (unless (free-identifier=? nm nm*) (unmatch))
                A0]
               ;; Promises are covariant
               [((Promise: s) (Promise: t))
@@ -496,21 +491,27 @@
               [((Vector: _) (VectorTop:)) A0]
               [((HeterogeneousVector: _) (VectorTop:)) A0]
               [((HeterogeneousVector: (list e ...)) (Vector: e*))
-               (for/fold ((A A0)) ((e e))
-                 (type-equiv? A e e*))]
+               (for/fold ((A A0)) ((e e) #:break (not A))
+                 (and A (type-equiv? A e e*)))]
               [((HeterogeneousVector: (list s* ...)) (HeterogeneousVector: (list t* ...)))
                (if (= (length s*) (length t*))
-                   (for/fold ((A A0)) ((s s*) (t t*))
+                   (for/fold ((A A0)) ((s s*) (t t*) #:break (not A))
                      (type-equiv? A s t))
-                   (fail! s* t*))]
+                   #f)]
               [((MPair: s1 s2) (MPair: t1 t2))
-               (type-equiv? (type-equiv? A0 s1 t1) s2 t2)]
+	       (subtype-seq A0
+			    (type-equiv? s1 t1)
+			    (type-equiv? s2 t2))]
               [((MPair: _ _) (MPairTop:)) A0]
               [((Hashtable: s1 s2) (Hashtable: t1 t2))
-               (type-equiv? (type-equiv? A0 s1 t1) s2 t2)]
+	       (subtype-seq A0
+			    (type-equiv? s1 t1)
+			    (type-equiv? s2 t2))]
               [((Hashtable: _ _) (HashtableTop:)) A0]
               [((Prompt-Tagof: s1 s2) (Prompt-Tagof: t1 t2))
-               (type-equiv? (type-equiv? A0 s1 t1) s2 t2)]
+	       (subtype-seq A0
+			    (type-equiv? s1 t1)
+			    (type-equiv? s2 t2))]
               [((Prompt-Tagof: _ _) (Prompt-TagTop:)) A0]
               [((Continuation-Mark-Keyof: s) (Continuation-Mark-Keyof: t))
                (type-equiv? A0 s t)]
@@ -539,7 +540,9 @@
               [((Future: t) (Future: t*))
                (subtype* A0 t t*)]
               [((Param: s-in s-out) (Param: t-in t-out))
-               (subtype* (subtype* A0 t-in s-in) s-out t-out)]
+	       (subtype-seq A0
+			    (subtype* t-in s-in)
+			    (subtype* s-out t-out))]
               [((Param: in out) t)
                (subtype* A0 (cl->* (-> out) (-> in -Void)) t)]
               [((Instance: t) (Instance: t*))
@@ -547,15 +550,17 @@
               [((Class: '() '() (list (and s  (list names  meths )) ...))
                 (Class: '() '() (list (and s* (list names* meths*)) ...)))
                (for/fold ([A A0])
-                         ([n names*] [m meths*])
-                         (cond [(assq n s) => (lambda (spec) (subtype* A (cadr spec) m))]
-                               [else (fail! s t)]))]
+                         ([n names*] [m meths*] #:break (not A))
+                         (and A (cond [(assq n s) => (lambda (spec) (subtype* A (cadr spec) m))]
+                                      [else #f])))]
               ;; otherwise, not a subtype
-              [(_ _) (fail! s t) #;(dprintf "failed")])))]))))
+              [(_ _) #f #;(dprintf "failed")])))]))))
 
 (define (type-compare? a b)
   (and (subtype a b) (subtype b a)))
 
+;; List[(cons Number Number)] type type -> maybe[List[(cons Number Number)]]
+(define subtype*/no-fail subtype*)
 
 (provide/cond-contract
  [subtype (c:-> (c:or/c Type/c SomeValues/c) (c:or/c Type/c SomeValues/c) boolean?)]
