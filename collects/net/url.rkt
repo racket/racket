@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/port racket/string racket/contract/base
+         racket/list
          "url-connect.rkt"
          "url-structs.rkt"
          "uri-codec.rkt")
@@ -68,28 +69,37 @@
         [path   (url-path url)]
         [query  (url-query url)]
         [fragment (url-fragment url)]
-        [sa string-append])
+        [sa list]
+        [sa* (lambda (l)
+               (apply string-append
+                      (let loop ([l l])
+                        (cond
+                         [(null? l) l]
+                         [(pair? (car l))
+                          (append (loop (car l))
+                                  (loop (cdr l)))]
+                         [(null? (car l)) (loop (cdr l))]
+                         [else (cons (car l) (loop (cdr l)))]))))])
     (when (and (equal? scheme "file")
                (not (url-path-absolute? url)))
       (raise-mismatch-error 'url->string
                             "cannot convert relative file URL to a string: "
                             url))
-    (sa (if scheme (sa scheme ":") "")
-        (if (or user host port)
+    (sa*
+     (append
+      (if scheme (sa scheme ":") null)
+      (if (or user host port)
           (sa "//"
-              (if user (sa (uri-userinfo-encode user) "@") "")
-              (if host host "")
-              (if port (sa ":" (number->string port)) "")
-              ;; There used to be a "/" here, but that causes an
-              ;; extra leading slash -- wonder why it ever worked!
-              )
+              (if user (sa (uri-userinfo-encode user) "@") null)
+              (if host host null)
+              (if port (sa ":" (number->string port)) null))
           (if (equal? "file" scheme) ; always need "//" for "file" URLs
-            "//"
-            ""))
-        (combine-path-strings (url-path-absolute? url) path)
-        ;; (if query (sa "?" (uri-encode query)) "")
-        (if (null? query) "" (sa "?" (alist->form-urlencoded query)))
-        (if fragment (sa "#" (uri-encode* fragment)) ""))))
+              '("//")
+              null))
+      (combine-path-strings (url-path-absolute? url) path)
+      ;; (if query (sa "?" (uri-encode query)) "")
+      (if (null? query) null (sa "?" (alist->form-urlencoded query)))
+      (if fragment (sa "#" (uri-encode* fragment)) null)))))
 
 ;; url->default-port : url -> num
 (define (url->default-port url)
@@ -594,14 +604,16 @@
         [else (uri-path-segment-encode* p)]))
 
 (define (combine-path-strings absolute? path/params)
-  (cond [(null? path/params) ""]
-        [else (let ([p (string-join (map join-params path/params) "/")])
-                (if absolute? (string-append "/" p) p))]))
+  (cond [(null? path/params) null]
+        [else (let ([p (add-between (map join-params path/params) "/")])
+                (if absolute? (cons "/" p) p))]))
 
 (define (join-params s)
-  (string-join (map path-segment-encode
-                    (cons (path/param-path s) (path/param-param s)))
-               ";"))
+  (if (null? (path/param-param s))
+      (path-segment-encode (path/param-path s))
+      (string-join (map path-segment-encode
+                        (cons (path/param-path s) (path/param-param s)))
+                   ";")))
 
 (define (path->url path)
   (let* ([spath (simplify-path path #f)]
@@ -614,30 +626,30 @@
             (let-values ([(base name dir?) (split-path path)])
               (cond
                 [(not base)
-                 (append (map
-                          (lambda (s)
-                            (make-path/param s null))
-                          (if (eq? (path-convention-type path) 'windows)
-                              ;; For Windows, massage the root:
+                 (if (eq? (path-convention-type path) 'windows)
+                     ;; For Windows, massage the root:
+                     (append (map
+                              (lambda (s)
+                                (make-path/param s null))
                               (let ([s (regexp-replace
                                         #rx"[/\\\\]$"
                                         (bytes->string/utf-8 (path->bytes name))
                                         "")])
                                 (cond
-                                  [(regexp-match? #rx"^\\\\\\\\[?]\\\\[a-zA-Z]:" s)
-                                   ;; \\?\<drive>: path:
-                                   (regexp-split #rx"[/\\]+" (substring s 4))]
-                                  [(regexp-match? #rx"^\\\\\\\\[?]\\\\UNC" s)
-                                   ;; \\?\ UNC path:
-                                   (regexp-split #rx"[/\\]+" (substring s 7))]
-                                  [(regexp-match? #rx"^[/\\]" s)
-                                   ;; UNC path:
-                                   (regexp-split #rx"[/\\]+" s)]
-                                  [else
-                                   (list s)]))
-                              ;; On other platforms, we drop the root:
-                              null))
-                         accum)]
+                                 [(regexp-match? #rx"^\\\\\\\\[?]\\\\[a-zA-Z]:" s)
+                                  ;; \\?\<drive>: path:
+                                  (regexp-split #rx"[/\\]+" (substring s 4))]
+                                 [(regexp-match? #rx"^\\\\\\\\[?]\\\\UNC" s)
+                                  ;; \\?\ UNC path:
+                                  (regexp-split #rx"[/\\]+" (substring s 7))]
+                                 [(regexp-match? #rx"^[/\\]" s)
+                                  ;; UNC path:
+                                  (regexp-split #rx"[/\\]+" s)]
+                                 [else
+                                  (list s)])))
+                             accum)
+                     ;; On other platforms, we drop the root:
+                     accum)]
                 [else
                  (let ([accum (cons (make-path/param
                                      (if (symbol? name)
@@ -649,7 +661,9 @@
                    (if (eq? base 'relative)
                        accum
                        (loop base accum)))])))])
-    (make-url "file" #f "" #f (absolute-path? path) (append url-path url-tail) '() #f)))
+    (make-url "file" #f "" #f (absolute-path? path) 
+              (if (null? url-tail) url-path (append url-path url-tail))
+              '() #f)))
 
 
 (define (url->path url [kind (system-path-convention-type)])

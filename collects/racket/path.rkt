@@ -1,7 +1,6 @@
 #lang racket/base
 
 (provide find-relative-path
-         explode-path
          simple-form-path
          normalize-path
          filename-extension
@@ -111,30 +110,19 @@
                        [else (path->complete-path resolved base)]))]))))])
     normalize-path))
 
-;; Argument must be in simple form
-(define (do-explode-path who orig-path simple?)
-  (let loop ([path orig-path] [rest '()])
-    (let-values ([(base name dir?) (split-path path)])
-      (when simple?
-        (when (or (and base (not (path-for-some-system? base)))
-                  (not (path-for-some-system? name)))
-          (raise-argument-error who 
-                                "(and/c path-for-some-system? simple-form?)"
-                                orig-path)))
-      (if (path-for-some-system? base)
-          (loop base (cons name rest))
-          (cons name rest)))))
-
-(define (explode-path orig-path)
-  (unless (or (path-string? orig-path)
-              (path-for-some-system? orig-path))
-    (raise-argument-error 'explode-path "(or/c path-string? path-for-some-system?)" orig-path))
-  (do-explode-path 'explode-path orig-path #f))
+(define (do-explode-path who orig-path)
+  (define l (explode-path orig-path))
+  (for ([p (in-list l)])
+    (when (not (path-for-some-system? p))
+      (raise-argument-error who 
+                            "(and/c path-for-some-system? simple-form?)"
+                            orig-path)))
+  l)
 
 ;; Arguments must be in simple form
 (define (find-relative-path directory filename #:more-than-root? [more-than-root? #f])
-  (let ([dir (do-explode-path 'find-relative-path directory #t)]
-        [file (do-explode-path 'find-relative-path filename #t)])
+  (let ([dir (do-explode-path 'find-relative-path directory)]
+        [file (do-explode-path 'find-relative-path filename)])
     (if (and (equal? (car dir) (car file))
              (or (not more-than-root?)
                  (not (eq? 'unix (path-convention-type directory)))

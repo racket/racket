@@ -193,11 +193,19 @@ See more in PR8831.
 
 ;; vector string -> string
 (define (encode table str)
-  (apply string-append (map (lambda (byte)
-                              (if (< byte ascii-size)
-                                (vector-ref table byte)
-                                (number->hex-string byte)))
-                            (bytes->list (string->bytes/utf-8 str)))))
+  ;; First, check for an ASCII string with no conversion needed:
+  (if (for/and ([char (in-string str)])
+        (define v (char->integer char))
+        (and (byte? v)
+             (let ([s (vector-ref table v)])
+               (and (= 1 (string-length s))
+                    (eq? char (string-ref s 0))))))
+      str
+      (apply string-append
+             (for/list ([byte (in-bytes (string->bytes/utf-8 str))])
+               (if (< byte ascii-size)
+                   (vector-ref table byte)
+                   (number->hex-string byte))))))
 
 ;; vector string -> string
 (define (decode table str)

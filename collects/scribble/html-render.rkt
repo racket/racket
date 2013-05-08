@@ -131,9 +131,10 @@
                 (if (< v 16) (string-append "0" s) s)))
             c))))
 
-(define (style->attribs style)
+(define (style->attribs style [extras null])
   (let ([a (apply
             append
+            extras
             (map (lambda (v)
                    (cond
                     [(attributes? v)
@@ -350,6 +351,10 @@
     (define/public (set-external-root-url p)
       (set! external-root-url p))
 
+    (define extra-script-files null)
+    (define/public (add-extra-script-file s)
+      (set! extra-script-files (cons s extra-script-files)))
+
     (define (try-relative-to-external-root dest)
       (cond
        [(let ([rel (find-relative-path
@@ -385,6 +390,22 @@
                             (and (not (dest-page? dest))
                                  (anchor-name (dest-anchor dest))))])))
 
+    (define/public (tag->url-string ri tag #:absolute? [abs? #f])
+      ;; Called externally; not used internally
+      (let-values ([(dest ext?) (resolve-get/ext? #f ri tag)])
+        (cond [(not dest) ""]
+              [else (dest->url dest abs?)])))
+
+    (define/public (tag->query-string tag)
+      (define (simple? s)
+        (or (symbol? s)
+            (string? s)
+            (number? s)
+            (and (list? s) (andmap simple? s))))
+      (anchor-name (format "~s" (if (simple? tag)
+                                    tag
+                                    (serialize tag)))))
+
     ;; ----------------------------------------
 
     (define/private (reveal-subparts? p) ;!!! need to use this
@@ -393,13 +414,15 @@
     (define/public (toc-wrap table)
       null)
 
-    (define/private (dest->url dest)
+    (define/private (dest->url dest [abs? #f])
       (if dest
           (format "~a~a~a"
                   (let ([p (relative->path (dest-path dest))])
-                    (if (equal? p (current-output-file))
-                        ""
-                        (from-root p (get-dest-directory))))
+                    (if abs?
+                        (path->url-string (path->complete-path p))
+                        (if (equal? p (current-output-file))
+                            ""
+                            (from-root p (get-dest-directory)))))
                   (if (dest-page? dest) "" "#")
                   (if (dest-page? dest)
                       ""
@@ -711,12 +734,14 @@
                                 (let ([p (lookup-path script-file alt-paths)])
                                   (unless p (install-file script-file))
                                   (scribble-js-contents script-file p))))
-                          (extract-part-style-files
-                           d
-                           ri
-                           (lambda (p) (part-whole-page? p ri))
-                           js-addition?
-                           js-addition-path))
+                          (append
+                           (extract-part-style-files
+                            d
+                            ri
+                            (lambda (p) (part-whole-page? p ri))
+                            js-addition?
+                            js-addition-path)
+                           (reverse extra-script-files)))
                    ,(xml:comment "[if IE 6]><style type=\"text/css\">.SIEHidden { overflow: hidden; }</style><![endif]")
                    ,@(for/list ([p (style-properties (part-style d))]
                                 #:when (head-extra? p))
@@ -1017,14 +1042,14 @@
        [(multiarg-element? e) (multiarg-element-style e)]
        [else #f]))
 
-    (define/private (content-attribs e)
+    (define/private (content-attribs e [extras null])
       (let ([s (content-style e)])
           (if (style? s)
-              (element-style->attribs (style-name s) s)
-              (element-style->attribs s #f))))
+              (element-style->attribs (style-name s) s extras)
+              (element-style->attribs s #f extras))))
 
     (define/override (render-content e part ri)
-      (define (attribs) (content-attribs e))
+      (define (attribs [extras null]) (content-attribs e extras))
       (cond
         [(string? e) (super render-content e part ri)] ; short-cut for common case
         [(list? e) (super render-content e part ri)] ; also a short-cut
@@ -1157,17 +1182,14 @@
                              url
                              u
                              [query
-                              (cons (cons 'tag
-                                          (bytes->string/utf-8
-                                           (base64-encode
-                                            (string->bytes/utf-8
-                                             (format "~s" (serialize
-                                                           (link-element-tag e)))))))
+                              (cons (cons 'tag (tag->query-string (link-element-tag e)))
                                     (url-query u))])))]
                         [else
                          ;; Normal link:
                          (dest->url dest)]))
-                     ,@(attribs)
+                     ,@(attribs (if (and ext? external-tag-path)
+                                    '((class "Sq"))
+                                    null))
                      [data-pltdoc "x"]]
                     ,@(if (empty-content? (element-content e))
                           (render-content (strip-aux (dest-title dest)) part ri)
@@ -1253,7 +1275,7 @@
                  ,attribs
                  ,@content))))))
 
-    (define/private (element-style->attribs name style)
+    (define/private (element-style->attribs name style [extras null])
       (combine-class
        (cond
         [(symbol? name)
@@ -1274,8 +1296,10 @@
         [(string? name) (if style null `([class ,name]))]
         [else null])
        (if style
-           (style->attribs style)
-           null)))
+           (style->attribs style extras)
+           (if (pair? extras)
+               (style->attribs (make-style #f null) extras)
+               null))))
 
     (define/override (render-table t part ri starting-item?)
       (define (make-row flows column-styles)
@@ -1627,39 +1651,22 @@
 ;; ----------------------------------------
 ;; utils
 
-(define (explode p)
-  (reverse (let loop ([p p])
-             (let-values ([(base name dir?) (split-path p)])
-               (let ([name (if base
-                             (if (path? name)
-                               (path-element->string name)
-                               name)
-                             name)])
-                 (if (path? base)
-                   (cons name (loop base))
-                   (list name)))))))
+(define (explode p) (explode-path p))
 
 (define in-plt?
   (let ([roots (map explode (filter values (list (find-doc-dir) (find-collects-dir))))])
     (lambda (path)
-      (ormap (lambda (root)
-               (let loop ([path  path] [root root])
-                 (or (null? root)
-                     (and (pair? path)
-                          (equal? (car path) (car root))
-                          (loop (cdr path) (cdr root))))))
-             roots))))
-
-(define exploded (make-weak-hash))
-(define (explode/cache p)
-  (or (hash-ref exploded p #f)
-      (let ([v (explode p)])
-        (hash-set! exploded p v)
-        v)))
+      (for/or ([root (in-list roots)])
+        (let loop ([path  path] [root root])
+          (or (null? root)
+              (and (pair? path)
+                   (equal? (car path) (car root))
+                   (loop (cdr path) (cdr root)))))))))
 
 (define (from-root p d)
-  (define e-p (explode/cache (path->complete-path p (current-directory))))
-  (define e-d (and d (explode/cache (path->complete-path d (current-directory)))))
+  (define c-p (path->complete-path p))
+  (define e-p (explode c-p))
+  (define e-d (and d (explode (path->complete-path d))))
   (define p-in? (in-plt? e-p))
   (define d-in? (and d (in-plt? e-d)))
   ;; use an absolute link if the link is from outside the plt tree
@@ -1670,19 +1677,27 @@
                                   "got a link from the PLT tree going out; ~e"
                                   p)]
                     [else #f])))
-    (url->string (path->url (path->complete-path p)))
+    (path->url-string c-p)
     (let loop ([e-d e-d] [e-p e-p])
       (cond
         [(null? e-d)
          (string-append*
           (let loop ([e-p e-p])
             (cond [(null? e-p) '("/")]
-                  [(null? (cdr e-p)) (list (car e-p))]
+                  [(null? (cdr e-p)) (list (path->string (car e-p)))]
                   [(eq? 'same (car e-p)) (loop (cdr e-p))]
                   [(eq? 'up (car e-p)) (cons "../" (loop (cdr e-p)))]
-                  [else (cons (car e-p) (cons "/" (loop (cdr e-p))))])))]
+                  [else (cons (path->string (car e-p)) (cons "/" (loop (cdr e-p))))])))]
         [(equal? (car e-d) (car e-p)) (loop (cdr e-d) (cdr e-p))]
         [(eq? 'same (car e-d)) (loop (cdr e-d) e-p)]
         [(eq? 'same (car e-p)) (loop e-d (cdr e-p))]
         [else (string-append (string-append* (map (lambda (x) "../") e-d))
                              (loop null e-p))]))))
+
+(define (path->url-string p)
+  (if (eq? 'unix (path-convention-type p))
+      (let ([p (simplify-path p #f)])
+        (if (regexp-match? #rx#"^[-a-zA-Z0-9_/.]*$" (path->bytes p))
+            (string-append "file://" (path->string p))
+            (url->string (path->url p))))
+      (url->string (path->url p))))

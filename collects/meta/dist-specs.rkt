@@ -359,12 +359,12 @@ mz-base := "/racket/README"
                  => (- (collects: "repo-time-stamp/")
                        (cond (not dr) => (srcfile: "time-stamp.rkt"))))
 mz-manuals := (scribblings: "main/") ; generates main pages (next line)
-              (doc: "license/" "release/" "acks/" "search/"
+              (doc: "license/" "release/" "acks/" "search/" "local-redirect/"
                     "getting-started/")
               (notes: "COPYING*.txt")
               (doc: "doc-license.txt") ; needed (when docs are included)
               (doc+src: "reference/" "guide/" "quick/" "more/"
-                        "foreign/" "inside/" ;; "places/" <- not ready yet
+                        "foreign/" "inside/"
                         "scheme/"
                         "honu/")
               (doc: "*.{html|css|js|sxref}")

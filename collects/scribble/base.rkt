@@ -726,8 +726,9 @@
 
 (provide/contract
  [table-of-contents (-> delayed-block?)]
- ; XXX Should have a style/c contract
- [local-table-of-contents (() (#:style any/c) . ->* . delayed-block?)])
+ [local-table-of-contents (() 
+                           (#:style (or/c style? string? symbol? (listof symbol?) #f))
+                           . ->* . delayed-block?)])
 
 (define (table-of-contents)
   (make-delayed-block

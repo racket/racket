@@ -25,6 +25,8 @@
          scribble/xref
          unstable/file
          racket/place
+         pkg/lib
+         (only-in net/url url->string path->url)
          (prefix-in html: scribble/html-render)
          (prefix-in latex: scribble/latex-render)
          (prefix-in contract: scribble/contract-render))
@@ -37,7 +39,7 @@
 
 (define-logger setup)
 
-(define-serializable-struct doc (src-dir src-spec src-file dest-dir flags under-main? category out-count)
+(define-serializable-struct doc (src-dir src-spec src-file dest-dir flags under-main? pkg? category out-count)
   #:transparent)
 (define-serializable-struct info (doc       ; doc structure above
                                   undef     ; unresolved requires
@@ -68,7 +70,8 @@
 
 (define (parallel-do-error-handler setup-printf doc errmsg outstr errstr)
   (setup-printf "error running" (module-path-prefix->string (doc-src-spec doc)))
-  (eprintf errstr))
+  (eprintf "~a" errmsg)
+  (eprintf "~a" errstr))
 
 ;; We use a lock to control writing to the database. It's not
 ;; strictly necessary, but place channels can deal with blocking
@@ -148,6 +151,7 @@
                               (or (memq 'main-doc flags)
                                   (hash-ref main-dirs dir #f)
                                   (pair? (path->main-collects-relative dir))))])
+                   (define src (doc-path dir (cadddr d) flags under-main?))
                    (make-doc dir
                              (let ([spec (directory-record-spec rec)])
                                (list* (car spec)
@@ -158,8 +162,9 @@
                                                               (list '= (directory-record-min rec)))))
                                           (cdr spec))))
                              (simplify-path (build-path dir (car d)) #f)
-                             (doc-path dir (cadddr d) flags under-main?)
-                             flags under-main? (caddr d)
+                             src
+                             flags under-main? (and (path->pkg src) #t)
+                             (caddr d)
                              (list-ref d 4))))
                s)
           (begin (setup-printf
@@ -577,30 +582,43 @@
              [contract-override-mixin
               (if multi?
                   contract:override-render-mixin-multi 
-                  contract:override-render-mixin-single)])
-        (new (contract-override-mixin
-              ((if multi? html:render-multi-mixin values)
-               (html:render-mixin render%)))
-             [dest-dir (if multi?
-                           (let-values ([(base name dir?) (split-path ddir)]) base)
-                           ddir)]
-             [alt-paths   (if main?
-                              (let ([std-path (lambda (s)
-                                                (cons (collection-file-path s "scribble")
-                                                      (format "../~a" s)))])
-                                (list (std-path "scribble.css")
-                                      (std-path "scribble-style.css")
-                                      (std-path "racket.css")
-                                      (std-path "scribble-common.js")))
-                              null)]
-             ;; For main-directory, non-start files, up-path is #t, which makes the
-             ;; "up" link go to the (user's) start page using cookies. For other files,
-             ;; 
-             [up-path     (and (not root?)
-                               (if main?
-                                   #t
-                                   (build-path (find-user-doc-dir) "index.html")))]
-             [search-box? #t]))))
+                  contract:override-render-mixin-single)]
+             [local-redirect-file (build-path (if main?
+                                                  (find-doc-dir)
+                                                  (find-user-doc-dir))
+                                              "local-redirect"
+                                              "local-redirect.js")])
+        (define r
+          (new (contract-override-mixin
+                ((if multi? html:render-multi-mixin values)
+                 (html:render-mixin render%)))
+               [dest-dir (if multi?
+                             (let-values ([(base name dir?) (split-path ddir)]) base)
+                             ddir)]
+               [alt-paths   (if main?
+                                (let ([std-path (lambda (s)
+                                                  (cons (collection-file-path s "scribble")
+                                                        (format "../~a" s)))])
+                                  (list (std-path "scribble.css")
+                                        (std-path "scribble-style.css")
+                                        (std-path "racket.css")
+                                        (std-path "scribble-common.js")
+                                        (cons local-redirect-file "../local-redirect/local-redirect.js")))
+                                (list (cons local-redirect-file 
+                                            (url->string (path->url local-redirect-file)))))]
+               ;; For main-directory, non-start files, up-path is #t, which makes the
+               ;; "up" link go to the (user's) start page using cookies. For other files,
+               ;; 
+               [up-path     (and (not root?)
+                                 (if main?
+                                     #t
+                                     (build-path (find-user-doc-dir) "index.html")))]
+               [search-box? #t]))
+        (when (and (not main?) (doc-pkg? doc))
+          (send r set-external-tag-path 
+                (format "http://pkg-docs.racket-lang.org?version=~a" (version)))
+          (send r add-extra-script-file local-redirect-file))
+        r)))
 
 (define (pick-dest latex-dest doc)
   (cond [(path? latex-dest)
@@ -817,7 +835,10 @@
               null ; known deps (none at this point)
               can-run?
               my-time info-out-time
-              (and can-run? (memq 'always-run (doc-flags doc)))
+              (and can-run?
+                   (or (memq 'always-run (doc-flags doc))
+                       ;; maybe info is up-to-date but not rendered doc:
+                       (not (my-time . >= . src-time))))
               #f 
               #f
               vers

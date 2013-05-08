@@ -177,7 +177,7 @@
          (extract-style-style-files (compound-paragraph-style p) ht pred extract)
          (extract-flow-style-files (compound-paragraph-blocks p) d ri ht pred extract)]
         [(delayed-block? p)
-         (let ([v ((delayed-block-resolve p) this d ri)])
+         (let ([v (delayed-block-blocks p ri)])
            (extract-block-style-files v d ri ht pred extract))]
         [(traverse-block? p)
          (extract-block-style-files (traverse-block-block p ri) d ri ht pred extract)]
