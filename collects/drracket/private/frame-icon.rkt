@@ -35,5 +35,6 @@
                   (send bdc set-bitmap #f)
                   bm)))
          
-         (send todays-icon set-loaded-mask todays-icon-bw-mask)
+         (when todays-icon-bw-mask
+           (send todays-icon set-loaded-mask todays-icon-bw-mask))
          todays-icon)))
