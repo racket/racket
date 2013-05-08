@@ -404,6 +404,7 @@
     (define (build-collection-tree cc)
       (define (make-child-cc parent-cc name)
         (collection-cc! (append (cc-collection parent-cc) (list name))
+                        #:path (build-path (cc-path parent-cc) name)
                         #:info-root (cc-info-root cc)
                         #:info-path (cc-info-path cc)
                         #:info-path-mode (cc-info-path-mode cc)
