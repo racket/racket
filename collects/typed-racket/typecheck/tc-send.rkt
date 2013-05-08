@@ -11,8 +11,7 @@
 (import tc-expr^)
 (export tc-send^)
 
-(define/cond-contract (tc/send form rcvr method args [expected #f])
-  (-->* (syntax? syntax? syntax? syntax?) ((-or/c tc-results/c #f)) tc-results/c)
+(define (tc/send form rcvr method args [expected #f])
   (match (tc-expr rcvr)
     [(tc-result1: (Instance: (and c (Class: _ _ methods))))
      (match (tc-expr method)
