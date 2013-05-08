@@ -78,7 +78,10 @@
                                       (define end-time 
                                         (current-inexact-milliseconds))
                                       (subprocess-kill the-process #f)
-                                      (sleep)
+                                      ;; Sleep for 10% of the timeout
+                                      ;; before sending the death
+                                      ;; signal
+                                      (sleep (* timeout 0.1))
                                       (subprocess-kill the-process #t)
                                       (loop open-ports end-time status log)))
                         (handle-evt the-process
