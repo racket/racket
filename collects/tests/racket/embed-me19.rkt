@@ -3,6 +3,7 @@
 
 (define-runtime-module-path plai plai)
 (define-runtime-module-path plai-reader plai/lang/reader)
+(define-runtime-module-path runtime racket/runtime-config)
 
 (parameterize ([read-accept-reader #t])
   (namespace-require 'racket/base)
