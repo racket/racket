@@ -1152,6 +1152,26 @@ Returns a list with all elements from @racket[lst], randomly shuffled.
   (shuffle '(1 2 3 4 5 6))]}
 
 
+@defproc[(permutations [lst list?])
+         list?]{
+
+Returns a list of all permutations of the input list.  Note that this
+function works without inspecting the elements, and therefore it ignores
+repeated elements (which will result in repeated permutations).
+
+@mz-examples[#:eval list-eval
+  (permutations '(1 2 3))
+  (permutations '(x x))]}
+
+
+@defproc[(in-permutations [lst list?])
+         sequence?]{
+
+Returns a sequence of all permutations of the input list.  It is
+equivalent to @racket[(in-list (permutations l))] but much faster since
+it builds the permutations one-by-one on each iteration}
+
+
 @defproc[(argmin [proc (-> any/c real?)] [lst (and/c pair? list?)])
          any/c]{
 

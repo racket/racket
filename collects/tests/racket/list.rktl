@@ -410,6 +410,53 @@
     (test expected length+sum (shuffle l)))
   (when (pair? l) (loop (cdr l))))
 
+;; ---------- permutations ----------
+(let ()
+  (define (perm<? l1 l2) ; (works only on tests with numeric lists)
+    (let loop ([l1 l1] [l2 l2])
+      (and (pair? l1) (or (< (car l1) (car l2))
+                          (and (= (car l1) (car l2))
+                               (loop (cdr l1) (cdr l2)))))))
+  (define (sorted-perms l)
+    (define l1 (sort (permutations l) perm<?))
+    (define l2 (sort (for/list ([p (in-permutations l)]) p) perm<?))
+    (test #t equal? l1 l2)
+    l1)
+  (test '(())  sorted-perms '())
+  (test '((1)) sorted-perms '(1))
+  (test '((1 2) (2 1)) sorted-perms '(1 2))
+  (test '((1 2 3) (1 3 2) (2 1 3) (2 3 1) (3 1 2) (3 2 1))
+        sorted-perms '(1 2 3))
+  (define ll (range 7))
+  (define pl (permutations ll))
+  (test (* 1 2 3 4 5 6 7) length pl)
+  (test (* 1 2 3 4 5 6 7) length (remove-duplicates pl))
+  ;; check maximal sharing, and reverse-lexicographic order; these properties
+  ;; are not documented guarantees (see comment in the implementation), but
+  ;; it's worth testing for them to avoid losing them if they're needed in the
+  ;; future.  (The above tests don't rely on this, it explicitly sorts the
+  ;; result.)
+  (test #t equal? (reverse (map reverse pl)) (sort pl perm<?))
+  (test '((x y) (y x)) permutations '(x y))
+  (test '((x x) (x x)) permutations '(x x))
+  (test '((x y z) (y x z) (x z y) (z x y) (y z x) (z y x))
+        permutations '(x y z))
+  (test '((x y x) (y x x) (x x y) (x x y) (y x x) (x y x))
+        permutations '(x y x))
+  (define (count-cons x)
+    (define t (make-hasheq))
+    (let loop ([x x])
+      (when (and (pair? x) (not (hash-ref t x #f)))
+        (hash-set! t x #t) (loop (car x)) (loop (cdr x))))
+    (hash-count t))
+  (define (minimize-cons l)
+    (let ([t (make-hash)])
+      (let loop ([x l])
+        (if (pair? x)
+          (hash-ref! t x (λ() (cons (loop (car x)) (loop (cdr x)))))
+          x))))
+  (test #t = (count-cons pl) (count-cons (minimize-cons pl))))
+
 ;; ---------- argmin & argmax ----------
 
 (let ()
