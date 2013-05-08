@@ -29,7 +29,7 @@
                     (if sep? (cons (mk-sep lbl) l) l))]))))
 
 (define (make-start-page all?)
-  (let* ([recs (find-relevant-directory-records '(scribblings))]
+  (let* ([recs (find-relevant-directory-records '(scribblings) 'all-available)]
          [infos (map get-info/full (map directory-record-path recs))]
          [main-dirs (parameterize ([current-library-collection-paths
                                     (list (find-collects-dir))])

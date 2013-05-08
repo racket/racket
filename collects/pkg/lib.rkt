@@ -1807,21 +1807,30 @@
         (define-values (base name dir?) (split-path f))
         (cond
          [(eq? 'relative base) s]
-         [(regexp-match? #rx#"[.](?:rkt|ss)$" (path-element->bytes name))
-          (try-path s f)]
-         [(regexp-match? #rx#"_(?:rkt|ss)[.]zo$" (path-element->bytes name))
-          (define-values (dir-base dir-name dir?) (split-path base))
+         [else
+          (define bstr (path-element->bytes name))
           (cond
-           [(eq? 'relative dir-base) s]
-           [(equal? dir-name compiled)
-            (try-path s (build-path dir-base
-                                    (bytes->path-element
-                                     (regexp-replace
-                                      #rx#"_(?:rkt|ss)[.]zo$"
-                                      (path-element->bytes name)
-                                      #".rkt"))))]
-           [else s])]
-         [else s])]))))
+           [(or (equal? #"info.rkt" bstr)
+                (equal? #"info.ss" bstr))
+            ;; don't count "info.rkt" as a conflict, because
+            ;; splices may need their own "info.rkt"s, and
+            ;; `raco setup' can handle that
+            s]
+           [(regexp-match? #rx#"[.](?:rkt|ss)$" bstr)
+            (try-path s f)]
+           [(regexp-match? #rx#"_(?:rkt|ss)[.]zo$" (path-element->bytes name))
+            (define-values (dir-base dir-name dir?) (split-path base))
+            (cond
+             [(eq? 'relative dir-base) s]
+             [(equal? dir-name compiled)
+              (try-path s (build-path dir-base
+                                      (bytes->path-element
+                                       (regexp-replace
+                                        #rx#"_(?:rkt|ss)[.]zo$"
+                                        (path-element->bytes name)
+                                        #".rkt"))))]
+             [else s])]
+           [else s])])]))))
 
 (define (pkg-catalog-update-local #:catalog-file [catalog-file (db:current-pkg-catalog-file)]
                                   #:quiet? [quiet? #f]
