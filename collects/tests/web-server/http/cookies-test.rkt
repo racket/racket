@@ -27,31 +27,31 @@
      "cookie->header and make-cookie"
      (test-check "Simple" header-equal?
                  (cookie->header (make-cookie "name" "value"))
-                 (make-header #"Set-Cookie" #"name=value; Version=1"))
+                 (make-header #"Set-Cookie" #"name=value"))
      
      (test-equal? "Comment"
                   (header-value (cookie->header (make-cookie "name" "value" #:comment "comment")))
-                  #"name=value; Comment=comment; Version=1")
+                  #"name=value; Comment=comment")
      
      (test-equal? "Domain"
                   (header-value (cookie->header (make-cookie "name" "value" #:domain ".domain")))
-                  #"name=value; Domain=.domain; Version=1")
+                  #"name=value; Domain=.domain")
      
      (test-equal? "max-age"
                   (header-value (cookie->header (make-cookie "name" "value" #:max-age 24)))
-                  #"name=value; Max-Age=24; Version=1")
+                  #"name=value; Max-Age=24")
      
      (test-equal? "path"
                   (header-value (cookie->header (make-cookie "name" "value" #:path "path")))
-                  #"name=value; Path=path; Version=1")
+                  #"name=value; Path=path")
      
      (test-equal? "secure? #t"
                   (header-value (cookie->header (make-cookie "name" "value" #:secure? #t)))
-                  #"name=value; Secure; Version=1")
+                  #"name=value; Secure")
      
      (test-equal? "secure? #f"
                   (header-value (cookie->header (make-cookie "name" "value" #:secure? #f)))
-                  #"name=value; Version=1")))
+                  #"name=value")))
    
    (test-suite
     "cookie-parse.rkt"

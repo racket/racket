@@ -72,7 +72,7 @@
                                       #:cookies (list (make-cookie "head" "value"))))
  =>
  (bytes-sort
-  #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nSet-Cookie: head=value; Version=1\r\n\r\n<a href=\"#\">link</a>")
+  #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: Racket\r\nContent-Type: text/html; charset=utf-8\r\nSet-Cookie: head=value\r\n\r\n<a href=\"#\">link</a>")
  
  (write-response (response/xexpr '(a ([href "#"]) "link")
                                       #:preamble #"<<!something XMLy>>"))
