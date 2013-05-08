@@ -3145,6 +3145,23 @@
     (((dynamic-require ''m 'f) (vector 1)) 0)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that constant folding doesn't try to
+;; use too much memory, where a run-time limit would
+;; catch the problem:
+
+(module uses-too-much-memory-for-shift racket/base
+  (define c (make-custodian))
+  (custodian-limit-memory c (* 1024 1024 10))
+  (parameterize ([current-custodian c])
+    (sync
+     (thread
+      (lambda ()
+        (with-handlers ([exn:fail:out-of-memory? void])
+          (arithmetic-shift 1 30070458541082)))))))
+(when (eq? '3m (system-type 'gc))
+  (void (dynamic-require ''uses-too-much-memory-for-shift #f)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (report-errs)

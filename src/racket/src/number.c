@@ -4138,6 +4138,9 @@ scheme_bitwise_shift(int argc, Scheme_Object *argv[])
     v = scheme_make_bignum(i);
   }
 
+  if (scheme_current_thread->constant_folding)
+    scheme_signal_error("too big");
+
   return scheme_bignum_shift(v, shift);
 }
 
