@@ -49,13 +49,14 @@ macosx (64):
   (_fun #:save-errno 'posix
         _int _int _int -> _int))
 (define-libc connect
-  (case platform
-    ((linux86)
-     (_fun #:save-errno 'posix
-           _int _linux_sockaddr_un-pointer _int -> _int))
-    ((macosx)
-     (_fun #:save-errno 'posix
-           _int _macosx_sockaddr_un-pointer _int -> _int))))
+  (_fun #:save-errno 'posix
+        _int
+        (case platform
+          ((linux86) _linux_sockaddr_un-pointer)
+          ((macosx)  _macosx_sockaddr_un-pointer)
+          (else _pointer)) ;; dummy type to avoid error
+        _int
+        -> _int))
 (define-libc close
   (_fun #:save-errno 'posix
         _int -> _int))
@@ -68,7 +69,8 @@ macosx (64):
     ((linux86)
      (make-linux_sockaddr_un AF_UNIX path))
     ((macosx)
-     (make-macosx_sockaddr_un (bytes-length path) AF_UNIX path))))
+     (make-macosx_sockaddr_un (bytes-length path) AF_UNIX path))
+    (else (error 'make-sockaddr "not available"))))
 
 (define strerror_r
   (get-ffi-obj (case platform
