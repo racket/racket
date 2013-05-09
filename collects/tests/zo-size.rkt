@@ -1,29 +1,40 @@
 #lang racket/base
-(require racket/path
-         racket/match)
 
-(define (indent i)
-  (for ([t (in-range i)])
-    (printf "|")))
+(require racket/match setup/dirs)
 
-(define (dir-zo-size i p)
-  (parameterize ([current-directory p])
-    (define subdir? #f)
-    (define (has-sub-dir!)
-      (unless subdir?
-        (indent i) (printf "~a:\n" p)
-        (set! subdir? #t)))
-    (define tot
-      (for/fold ([size 0])
-        ([p (in-list (directory-list))])
-        (+
-         (match p
-           [(? directory-exists?) (has-sub-dir!) (dir-zo-size (add1 i) p)]
-           [(app filename-extension #"zo") (file-size p)]
-           [else 0])
-         size)))
-    (unless (zero? tot)
-      (indent i) (printf "~a: ~a\n" p tot))
-    tot))
+(define (show-tree t0 [format values])
+  (let loop ([t t0] [last? #t] [indent '()])
+    (define (I mid last) (cond [(eq? t t0) ""] [last? mid] [else last]))
+    (for-each display (reverse indent))
+    (unless (eq? t t0) (printf "|\n"))
+    (for-each display (reverse indent))
+    (printf "~a~a\n" (I "\\-" "+-") (format (car t)))
+    (for ([s (cdr t)] [n (in-range (- (length t) 2) -1 -1)])
+      (loop s (zero? n) (cons (I "  " "| ") indent)))))
 
-(void (dir-zo-size 0 (simplify-path (build-path (collection-path "racket") 'up))))
+(define (zo-size-tree dir)
+  (parameterize ([current-directory dir])
+    (define subs
+      (filter values
+        (for/list ([p (in-list (sort (map path->string (directory-list))
+                                     string<?))])
+          (cond [(directory-exists? p) (zo-size-tree p)]
+                [(regexp-match? #rx"\\.zo$" p) (file-size p)]
+                [else #f]))))
+    (match subs
+      ;; fold a single-directory up
+      [`(((,name . ,size) . ,rest))
+       `((,(format "~a/~a" dir name) . ,size) . ,rest)]
+      [_ (define total
+           (for/sum ([x (in-list subs)]) (cond [(pair? x) (cdar x)] [else x])))
+         (and (< 0 total) (cons (cons dir total) (filter pair? subs)))])))
+
+(define tree (zo-size-tree (find-collects-dir)))
+
+(show-tree tree (λ(x) (format "~a: ~a" (car x) (cdr x))))
+
+(module+ test ; (do this hack only as a test)
+  (printf "\n\nThe following \"time\" line is to trick drdr into graphing\n")
+  (printf "the size of all of the .zo files, in bytes\n")
+  (printf "cpu time: ~a real time: ~a gc time: ~a\n"
+          (cdar tree) (cdar tree) (cdar tree)))
