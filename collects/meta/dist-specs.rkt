@@ -171,8 +171,8 @@ gui-filter      := (- (+ (collects: "**/gui/") (srcfile: "gui.rkt"))
 tools-filter    := (+ (collects: "**/tools/") (srcfile: "tools.rkt"))
 
 ;; these are in the doc directory, but are committed in git and should be
-;; considered like sources
-std-docs        := (doc: "doc-license.txt" "*-std/")
+;; considered as sources
+std-docs        := (doc: "doc-license.txt" "keep-dirs.rktd" "*-std/")
 
 ;; ============================================================================
 ;; Junk
