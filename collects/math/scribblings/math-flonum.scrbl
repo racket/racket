@@ -5,7 +5,8 @@
           scribble/html-properties
           racket/sandbox
           unstable/2d/tabular
-          (for-label racket/base racket/vector racket/list
+          (for-label racket/base racket/vector
+                     (except-in racket/list permutations)
                      math plot
                      (only-in typed/racket/base
                               ->
