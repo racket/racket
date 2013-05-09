@@ -264,7 +264,8 @@
 
     (define/public (root-relative->path p)
       (if (root-relative? p)
-          (apply build-path (mobile-root-path (car p))
+          (apply build-path (or (mobile-root-path (car p))
+                                (current-directory))
                  (map bytes->path-element (cdr p)))
           p))
 
@@ -336,7 +337,13 @@
 
     (define/public (serialize-one-ht ri ht)
       (parameterize ([current-serialize-resolve-info ri])
-        (serialize (cons root ht))))
+        (let ([rp (mobile-root-path root)])
+          (when rp
+            (set-mobile-root-path! root #f))
+          (begin0
+           (serialize (cons root ht))
+           (when rp
+             (set-mobile-root-path! root rp))))))
 
     (define/public (deserialize-info v ci #:root [root-path #f])
       (let ([root+ht (deserialize v)]

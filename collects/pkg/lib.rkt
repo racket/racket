@@ -27,6 +27,7 @@
          syntax/modcollapse
          "name.rkt"
          "util.rkt"
+         "strip.rkt"
          (prefix-in db: "db.rkt"))
 
 (define current-pkg-scope
@@ -164,7 +165,7 @@
   (equal? (if (path? a) a (string->path a))
           (if (path? b) b (string->path b))))
 
-(define (check-dependencies deps)
+(define ((check-dependencies which) deps)
   (unless (and (list? deps)
                (for/and ([dep (in-list deps)])
                  (define (package-source? dep)
@@ -199,9 +200,18 @@
                                 [else #f])
                                (loop (hash-set saw (car dep) #t)
                                      (cddr dep)))]))))))
-    (pkg-error (~a "invalid `deps' specification\n"
+    (pkg-error (~a "invalid `" which "' specification\n"
                    "  specification: ~e")
                deps)))
+
+(define (get-all-deps metadata-ns pkg-dir)
+  (append
+   (get-metadata metadata-ns pkg-dir 
+                 'deps (lambda () empty)
+                 #:checker (check-dependencies 'deps))
+   (get-metadata metadata-ns pkg-dir 
+                 'build-deps (lambda () empty)
+                 #:checker (check-dependencies 'build-deps))))
 
 (define (dependency->name dep)
   (package-source->name
@@ -1024,9 +1034,7 @@
       [(and
         (not (eq? dep-behavior 'force))
         (let ()
-          (define deps (get-metadata metadata-ns pkg-dir 
-                                     'deps (lambda () empty)
-                                     #:checker check-dependencies))
+          (define deps (get-all-deps metadata-ns pkg-dir ))
           (define unsatisfied-deps
             (map dependency->source
                  (filter-not (λ (dep)
@@ -1082,9 +1090,7 @@
       [(and
         (not (eq? dep-behavior 'force))
         (let ()
-          (define deps (get-metadata metadata-ns pkg-dir 
-                                     'deps (lambda () empty)
-                                     #:checker check-dependencies))
+          (define deps (get-all-deps metadata-ns pkg-dir))
           (define update-deps
             (filter-map (λ (dep)
                           (define name (dependency->name dep))
@@ -1304,9 +1310,7 @@
           (pkg-desc orig-pkg-source #f pkg-name auto?))]))
 
 (define ((package-dependencies metadata-ns) pkg-name)  
-  (get-metadata metadata-ns (pkg-directory* pkg-name) 
-                'deps (lambda () empty)
-                #:checker check-dependencies))
+  (get-all-deps metadata-ns (pkg-directory* pkg-name)))
 
 (define (pkg-update in-pkgs
                     #:all? [all? #f]
@@ -1420,38 +1424,41 @@
        [_
         (pkg-error "multiple config keys provided")])]))
 
-(define (pkg-create create:format maybe-dir
-                    #:quiet? [quiet? #f])
+(define (create-as-is create:format pkg-name dir orig-dir
+                      #:quiet? [quiet? #f]
+                      #:hide-src? [hide-src? #f]
+                      #:dest [dest-dir #f])
   (begin
-    (define dir (regexp-replace* #rx"/$" maybe-dir ""))
     (unless (directory-exists? dir)
       (pkg-error "directory does not exist\n  path: ~a" dir))
     (match create:format
       ['MANIFEST
        (unless quiet?
          (printf "creating manifest for ~a\n"
-                 dir))
-       (with-output-to-file
-           (build-path dir "MANIFEST")
+                 orig-dir))
+       (with-output-to-file (build-path (or dest-dir dir) "MANIFEST")
          #:exists 'replace
          (λ ()
            (for ([f (in-list (parameterize ([current-directory dir])
                                (find-files file-exists?)))])
              (display f)
              (newline))))]
-      [else      
-       (define pkg (format "~a.~a" dir create:format))
+      [else
+       (define pkg (format "~a.~a" pkg-name create:format))
+       (define actual-dest-dir (or dest-dir 
+                                   (let-values ([(base name dir?) (split-path dir)])
+                                     (cond
+                                      [(path? base) (path->complete-path base)]
+                                      [else (current-directory)]))))
+       (define pkg/complete (path->complete-path pkg actual-dest-dir))
        (unless quiet?
-         (printf "packing ~a into ~a\n"
-                 dir pkg))
-       (define pkg-name
-         (regexp-replace
-          (regexp (format "~a$" (regexp-quote (format ".~a" create:format))))
-          (path->string (file-name-from-path pkg))
-          ""))
+         (printf "packing~a into ~a\n"
+                 (if hide-src? "" (format " ~a" dir))
+                 (if dest-dir
+                     pkg/complete
+                     pkg)))
        (match create:format
          ['tgz
-          (define pkg/complete (path->complete-path pkg))
           (when (file-exists? pkg/complete)
             (delete-file pkg/complete))
           (parameterize ([current-directory dir])
@@ -1461,7 +1468,6 @@
                                     (raise exn))])
               (apply tar-gzip pkg/complete (directory-list))))]
          ['zip
-          (define pkg/complete (path->complete-path pkg))
           (when (file-exists? pkg/complete)
             (delete-file pkg/complete))
           (parameterize ([current-directory dir])
@@ -1471,7 +1477,7 @@
                                     (raise exn))])
               (apply zip pkg/complete (directory-list))))]
          ['plt
-          (define dest (path->complete-path pkg))
+          (define dest pkg/complete)
           (parameterize ([current-directory dir])
             (define names (filter std-filter (directory-list)))
             (define dirs (filter directory-exists? names))
@@ -1483,12 +1489,71 @@
          [x
           (pkg-error "invalid package format\n  format: ~a" x)])
        (define chk (format "~a.CHECKSUM" pkg))
+       (define chk/complete (path->complete-path chk actual-dest-dir))
        (unless quiet?
          (printf "writing package checksum to ~a\n"
-                 chk))
-       (with-output-to-file chk
+                 (if dest-dir
+                     chk/complete
+                     chk)))
+       (with-output-to-file chk/complete
          #:exists 'replace
-         (λ () (display (call-with-input-file pkg sha1))))])))
+         (λ () (display (call-with-input-file pkg/complete sha1))))])))
+
+(define (stripped-create mode name dir
+                        #:format [create:format 'zip]
+                        #:quiet? [quiet? #f]
+                        #:dest [archive-dest-dir #f])
+  (define tmp-dir (make-temporary-file "create-binary-~a" 'directory))
+  (dynamic-wind
+      void
+      (lambda ()
+        (define dest-dir (build-path tmp-dir name))
+        (make-directory dest-dir)
+        (generate-stripped-directory (eq? mode 'binary) dir dest-dir)
+        (create-as-is create:format name dest-dir dir 
+                      #:hide-src? #t 
+                      #:quiet? quiet?
+                      #:dest archive-dest-dir))
+      (lambda ()
+        (delete-directory/files tmp-dir))))
+
+(define (pkg-create create:format dir-or-name
+                    #:dest [dest-dir #f]
+                    #:source [source 'dir]
+                    #:mode [mode 'as-is]
+                    #:quiet? [quiet? #f])
+  (define pkg-name
+    (if (eq? source 'dir)
+        (path->string (let-values ([(base name dir?) (split-path dir-or-name)])
+                        name))
+        dir-or-name))
+  (define dir
+    (if (eq? source 'dir)
+        dir-or-name
+        (let ()
+          (define (get-dir scope)
+            (parameterize ([current-pkg-scope scope])
+              (with-pkg-lock/read-only
+               (pkg-directory* dir-or-name))))
+          (define dir (or (get-dir 'user)
+                          (get-dir 'shared)))
+          (unless dir
+            (pkg-error (~a "package not installed in user or shared scope\n"
+                           "  package name: ~a"
+                           (if (get-dir 'installation)
+                               "\n  installed in scope: installation"
+                               ""))
+                       dir-or-name))
+          dir)))
+  (case mode
+    [(as-is) (create-as-is create:format pkg-name dir dir
+                           #:dest dest-dir
+                           #:quiet? quiet?)]
+    [(source binary) (stripped-create mode pkg-name dir
+                                      #:dest dest-dir
+                                      #:format create:format
+                                      #:quiet? quiet?)]))
+  
 
 (define (pkg-catalog-copy srcs dest
                         #:from-config? [from-config? #f]
@@ -1683,7 +1748,7 @@
           (display mod-str)
           (+ new-col (string-length mod-str)))
         (newline)))]))
-
+  
 (define (get-all-pkg-names-from-catalogs)
   (define ht
     (for*/hash ([i (in-list (pkg-catalogs))]
@@ -1768,8 +1833,12 @@
   (define v (if get-info
                 (get-info 'deps (lambda () empty))
                 empty))
-  (check-dependencies v)
-  v)
+  ((check-dependencies 'deps) v)
+  (define v2 (if get-info
+                (get-info 'build-deps (lambda () empty))
+                empty))
+  ((check-dependencies 'build-deps) v2)
+  (append v v2))
 
 (define (get-pkg-content desc 
                          #:extract-info [extract-info extract-dependencies])
@@ -1942,7 +2011,10 @@
   [pkg-create
    (->* ((or/c 'zip 'tgz 'plt 'MANIFEST)
          path-string?)
-        (#:quiet? boolean?)
+        (#:source (or/c 'dir 'name)
+                  #:mode (or/c 'as-is 'source 'binary)
+                  #:quiet? boolean?
+                  #:dest (or/c (and/c path-string? complete-path?) #f))
         void?)]
   [pkg-update
    (->* ((listof string?))

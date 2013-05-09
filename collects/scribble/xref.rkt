@@ -15,13 +15,17 @@
          xref-tag->path+anchor
          xref-tag->index-entry
          xref-transfer-info
-         (struct-out entry))
+         (struct-out entry)
+         make-data+root
+         data+root?)
 
 (define-struct entry
   (words    ; list of strings: main term, sub-term, etc.
    content  ; Scribble content to the index label
    tag      ; for generating a Scribble link
    desc))   ; further info that depends on the kind of index entry
+
+(define-struct data+root (data root))
 
 ;; Private:
 (define-struct xrefs (renderer ri))
@@ -44,7 +48,10 @@
                                         (namespace-anchor->empty-namespace here)])
                           (let ([vs (src)])
                             (for ([v (in-list (if (procedure? vs) (vs) (list vs)))])
-                              (when v (send renderer deserialize-info v ci #:root root-path))))))]
+                              (when v
+                                (define data (if (data+root? v) (data+root-data v) v))
+                                (define root (if (data+root? v) (data+root-root v) root-path))
+                                (send renderer deserialize-info data ci #:root root))))))]
          [ci (send renderer collect null null fp
                    (lambda (key ci)
                      (define src (demand-source key))

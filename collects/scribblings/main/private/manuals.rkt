@@ -28,19 +28,19 @@
                                       (truncate (/ (caar l) 10))))])
                     (if sep? (cons (mk-sep lbl) l) l))]))))
 
-(define (make-start-page all?)
-  (let* ([recs (find-relevant-directory-records '(scribblings) 'all-available)]
+(define (get-docs all? tag)
+  (let* ([recs (find-relevant-directory-records (list tag) 'all-available)]
          [infos (map get-info/full (map directory-record-path recs))]
          [main-dirs (parameterize ([current-library-collection-paths
                                     (list (find-collects-dir))])
-                      (for/hash ([k (in-list (find-relevant-directories '(scribblings) 'no-planet))])
+                      (for/hash ([k (in-list (find-relevant-directories (list tag) 'no-planet))])
                         (values k #t)))]
          [docs (append-map
                 (lambda (i rec)
                   (define dir (directory-record-path rec))
                   (define s (and (or all? (hash-ref main-dirs dir #f))
                                  i
-                                 (i 'scribblings)))
+                                 (i tag)))
                   (if (not s)
                     null
                     (filter-map
@@ -83,7 +83,12 @@
                                          (cdr spec))))))))
                      s)))
                 infos
-                recs)]
+                recs)])
+    docs))
+
+(define (make-start-page all?)
+  (let* ([docs (append (get-docs all? 'scribblings)
+                       (get-docs all? 'rendered-scribblings))]
          [docs (cons
                 ;; Add HtDP
                 (list

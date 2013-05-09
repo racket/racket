@@ -19,7 +19,7 @@ Returns @racket[#t] if @racket[v] is a cross-reference record created
 by @racket[load-xref], @racket[#f] otherwise.}
 
 
-@defproc[(load-xref [sources (listof (-> any/c))]
+@defproc[(load-xref [sources (listof (-> (or/c any/c (-> list?))))]
                     [#:demand-source demand-source 
                                      (tag? -> (or/c (-> any/c) #f)) 
                                      (lambda (_tag) #f)]
@@ -28,10 +28,19 @@ by @racket[load-xref], @racket[#f] otherwise.}
                     [#:root root-path (or/c path-string? false/c) #f])
          xref?]{
 
-Creates a cross-reference record given a list of functions that each
-produce a serialized information obtained from @xmethod[render<%>
-serialize-info]. If a @racket[sources] element produces @racket[#f],
-its result is ignored.
+Creates a cross-reference record given a list of functions,
+@racket[sources]. 
+
+Let @racket[_source] be a function in @racket[sources]. The
+@racket[_source] function normally returns serialized information,
+@racket[_info], which was formerly obtained from @xmethod[render<%>
+serialize-info]. The result of @racket[_source] can optionally be
+another function, which is in turn responsible for returning a list of
+@racket[_info]s. Finally, each @racket[_info] can be either serialized
+information, a @racket[#f] to be ignored, or a value produced by
+@racket[make-data+root] from which @racket[_data] part is used as
+serialized information and the @racket[_root] part overrides
+@racket[root-path] for deserialization.
 
 The @racket[demand-source] function can effectively add a new source
 to @racket[sources] in response to a search for information on the
@@ -46,7 +55,10 @@ Latex/PDF and text).
 
 If @racket[root-path] is not @racket[#f], then file paths that are
 serialized as relative to an instantiation-supplied @racket[root-path]
-are deserialized as relative instead to the given @racket[root-path].
+are deserialized as relative instead to the given @racket[root-path],
+but a @racket[make-data+root] result for any @racket[_info] supplies
+an alternate path for deserialization of the @racket[_info]'s
+@racket[_data].
 
 Use @racket[load-collections-xref] from @racketmodname[setup/xref] to
 get all cross-reference information for installed documentation.}
@@ -191,3 +203,13 @@ The @racket[words] list corresponds to
 corresponds to @racket[index-element-entry-seq]. The @racket[desc]
 value corresponds to @racket[index-element-desc]. The @racket[tag] is
 the destination for the index link into the main document.}
+
+
+@deftogether[(
+@defproc[(data+root? [v any/c]) boolean?]
+@defproc[(make-data+root [data any/c] [root (or/c #f path-string?)]) data+root?]
+)]{
+
+A value constructed by @racket[make-data+root] can be returned by a
+source procedure for @racket[load-xref] to specify a path used for
+deserialization.}

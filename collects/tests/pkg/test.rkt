@@ -54,4 +54,5 @@
  "versions"
  "platform"
  "raco"
+ "binary"
  "catalogs")

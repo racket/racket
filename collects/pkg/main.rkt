@@ -191,8 +191,37 @@
                      [current-pkg-scope-version (or version (r:version))])
         (with-pkg-lock/read-only
          (pkg-show (if only-mode "" " ") #:directory? dir)))))]
+ [create
+  "Bundle a package from a directory or installed package"
+  #:once-any
+  [#:bool from-dir () "Treat <directory-or-package> as a directory (the default)"]
+  [#:bool from-install () "Treat <directory-or-package> as a package name"]
+  #:once-any
+  [(#:sym fmt [zip tgz plt] #f) format ()
+   ("Select the format of the package to be created;"
+    "valid <fmt>s are: zip (the default), tgz, plt")]
+  [#:bool manifest () "Creates a manifest file for a directory, rather than an archive"]
+  #:once-any
+  [#:bool as-is () "Bundle the directory/package as-is (the default)"]
+  [#:bool source () "Bundle sources only"]
+  [#:bool binary () "Bundle bytecode and rendered documentation without sources"]
+  #:once-each
+  [(#:str dest-dir #f) dest () "Create output files in <dest-dir>"]
+  #:args (directory-or-package)
+  (parameterize ([current-pkg-error (pkg-error 'create)])
+    (pkg-create (if manifest 'MANIFEST (or format 'zip)) 
+                directory-or-package
+                #:dest (and dest 
+                            (path->complete-path dest))
+                #:source (cond
+                          [from-install 'name]
+                          [else 'dir])
+                #:mode (cond
+                        [source 'source]
+                        [binary 'binary]
+                        [else 'as-is])))]
  [config
-  "View and modify the package configuration"
+  "View and modify the package manager's configuration"
   #:once-each
   [#:bool set () "Completely replace the value"]
   #:once-any
@@ -214,16 +243,6 @@
           (pkg-config #t key/val))
          (with-pkg-lock/read-only
           (pkg-config #f key/val)))))]
- [create
-  "Bundle a new package"
-  #:once-any
-  [(#:sym fmt [zip tgz plt] #f) format ()
-   ("Select the format of the package to be created;"
-    "valid <fmt>s are: zip (the default), tgz, plt")]
-  [#:bool manifest () "Creates a manifest file for a directory, rather than an archive"]
-  #:args (package-directory)
-  (parameterize ([current-pkg-error (pkg-error 'create)])
-    (pkg-create (if manifest 'MANIFEST (or format 'zip)) package-directory))]
  [catalog-show
   "Show information about packages as reported by catalog"
   #:once-any 

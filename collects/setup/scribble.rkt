@@ -26,6 +26,7 @@
          unstable/file
          racket/place
          pkg/lib
+         pkg/strip
          (only-in net/url url->string path->url)
          (prefix-in html: scribble/html-render)
          (prefix-in latex: scribble/latex-render)
@@ -39,7 +40,16 @@
 
 (define-logger setup)
 
-(define-serializable-struct doc (src-dir src-spec src-file dest-dir flags under-main? pkg? category out-count)
+(define-serializable-struct doc (src-dir 
+                                 src-spec
+                                 src-file
+                                 dest-dir
+                                 flags
+                                 under-main?
+                                 pkg?
+                                 category
+                                 out-count
+                                 pre-rendered?)
   #:transparent)
 (define-serializable-struct info (doc       ; doc structure above
                                   undef     ; unresolved requires
@@ -137,8 +147,10 @@
                                   (apply validate i)))
                            infos)])
            (and (not (memq #f infos)) infos))))
-  (define ((get-docs main-dirs) i rec)
-    (let* ([pre-s (and i (i 'scribblings))]
+  (define ((get-docs main-dirs pre-rendered?) i rec)
+    (let* ([pre-s (and i (i (if pre-rendered?
+                                'rendered-scribblings
+                                'scribblings)))]
            [s (validate-scribblings-infos pre-s)]
            [dir (directory-record-path rec)])
       (if s
@@ -151,7 +163,8 @@
                               (or (memq 'main-doc flags)
                                   (hash-ref main-dirs dir #f)
                                   (pair? (path->main-collects-relative dir))))])
-                   (define src (doc-path dir (cadddr d) flags under-main?))
+                   (define src (simplify-path (build-path dir (car d)) #f))
+                   (define dest (doc-path dir (cadddr d) flags under-main?))
                    (make-doc dir
                              (let ([spec (directory-record-spec rec)])
                                (list* (car spec)
@@ -161,25 +174,35 @@
                                                         (list (directory-record-maj rec)
                                                               (list '= (directory-record-min rec)))))
                                           (cdr spec))))
-                             (simplify-path (build-path dir (car d)) #f)
                              src
+                             dest
                              flags under-main? (and (path->pkg src) #t)
                              (caddr d)
-                             (list-ref d 4))))
+                             (list-ref d 4)
+                             pre-rendered?)))
                s)
           (begin (setup-printf
                   "WARNING"
-                  "bad 'scribblings info: ~e from: ~e" pre-s dir)
+                  "bad '~ascribblings info: ~e from: ~e" 
+                  (if pre-rendered? "rendered-" "")
+                  pre-s dir)
                  null))))
   (log-setup-info "getting documents")
   (define docs
     (let* ([recs (find-relevant-directory-records '(scribblings) 'all-available)]
+           [r-recs (find-relevant-directory-records '(rendered-scribblings) 'all-available)]
            [main-dirs (parameterize ([current-library-collection-paths
                                       (list (find-collects-dir))])
-                        (for/hash ([k (in-list (find-relevant-directories '(scribblings) 'no-planet))])
+                        (for/hash ([k (in-list
+                                       (append
+                                        (find-relevant-directories '(rendered-scribblings) 'no-planet)
+                                        (find-relevant-directories '(scribblings) 'no-planet)))])
                           (values k #t)))]
-           [infos (map get-info/full (map directory-record-path recs))])
-      (filter-user-docs (append-map (get-docs main-dirs) infos recs) make-user?)))
+           [infos (map get-info/full (map directory-record-path recs))]
+           [r-infos (map get-info/full (map directory-record-path r-recs))])
+      (filter-user-docs (append (append-map (get-docs main-dirs #f) infos recs) 
+                                (append-map (get-docs main-dirs #t) r-infos r-recs))
+                        make-user?)))
   (define-values (main-docs user-docs) (partition doc-under-main? docs))
 
   (when (and (or (not only-dirs) tidy?)
@@ -583,6 +606,7 @@
               (if multi?
                   contract:override-render-mixin-multi 
                   contract:override-render-mixin-single)]
+             [bundleable? (and (not main?) (doc-pkg? doc))]
              [local-redirect-file (build-path (if main?
                                                   (find-doc-dir)
                                                   (find-user-doc-dir))
@@ -613,11 +637,21 @@
                                  (if main?
                                      #t
                                      (build-path (find-user-doc-dir) "index.html")))]
+
+               ;; In cross-reference information, use paths that are relative
+               ;; to the target rendering directory for documentation that might
+               ;; be moved into a binary package:
+               [root-path (and bundleable? ddir)]
+
                [search-box? #t]))
-        (when (and (not main?) (doc-pkg? doc))
+        (when bundleable?
+          ;; For documentation that might be moved into a binary package,
+          ;; use a server indirection for all links external to the
+          ;; document, but also install the "local-redirect.js" hook:
           (send r set-external-tag-path 
                 (format "http://pkg-docs.racket-lang.org?version=~a" (version)))
           (send r add-extra-script-file local-redirect-file))
+        ;; Result is the renderer:
         r)))
 
 (define (pick-dest latex-dest doc)
@@ -724,18 +758,29 @@
                        with-record-error setup-printf workerid 
                        only-fast? force-out-of-date? lock)
          doc)
+
+  ;; First, move pre-rendered documentation into place
+  (when (and (doc-pre-rendered? doc)
+             (can-build? only-dirs doc)
+             (or (not (directory-exists? (doc-dest-dir doc)))
+                 force-out-of-date?
+                 (not (file-exists? (build-path (doc-dest-dir doc) "synced.rktd")))))
+    (move-documentation-into-place doc setup-printf workerid lock))
+
   (let* ([info-out-files (for/list ([i (add1 (doc-out-count doc))])
                            (sxref-path latex-dest doc (format "out~a.sxref" i)))]
          [info-in-file  (sxref-path latex-dest doc "in.sxref")]
          [db-file (find-db-file doc latex-dest)]
          [stamp-file  (sxref-path latex-dest doc "stamp.sxref")]
          [out-file (build-path (doc-dest-dir doc) "index.html")]
-         [src-zo (let-values ([(base name dir?) (split-path (doc-src-file doc))])
-                   (define path (build-path base "compiled" (path-add-suffix name ".zo")))
-                   (or (for/or ([root (in-list (current-compiled-file-roots))])
-                         (define p (reroot-path* path root))
-                         (and (file-exists? p) p))
-                       path))]
+         [src-zo (and 
+                  (not (doc-pre-rendered? doc))
+                  (let-values ([(base name dir?) (split-path (doc-src-file doc))])
+                    (define path (build-path base "compiled" (path-add-suffix name ".zo")))
+                    (or (for/or ([root (in-list (current-compiled-file-roots))])
+                          (define p (reroot-path* path root))
+                          (and (file-exists? p) p))
+                        path)))]
          [renderer (make-renderer latex-dest doc)]
          [can-run? (can-build? only-dirs doc)]
          [stamp-time (file-or-directory-modify-seconds stamp-file #f (lambda () -inf.0))]
@@ -770,22 +815,25 @@
          [info-in-time (file-or-directory-modify-seconds info-in-file #f (lambda () #f))]
          [info-time (min (or info-out-time -inf.0) (or info-in-time -inf.0))]
          [vers (send renderer get-serialize-version)]
-         [src-time (file-or-directory-modify-seconds/stamp
-                    src-zo
-                    stamp-time stamp-data 0
-                    get-compiled-file-sha1)]
+         [src-time (and (not (doc-pre-rendered? doc))
+                        (file-or-directory-modify-seconds/stamp
+                         src-zo
+                         stamp-time stamp-data 0
+                         get-compiled-file-sha1))]
          [up-to-date?
-          (and (not force-out-of-date?)
-               info-out-time
-               info-in-time
-               (or (not can-run?)
-                   ;; Need to rebuild if output file is older than input:
-                   (my-time . >= . src-time)
-                   ;; But we can use in/out information if they're already built;
-                   ;; this is mostly useful if we interrupt setup-plt after
-                   ;; it runs some documents without rendering them:
-                   (info-time . >= . src-time)))]
-         [can-run? (and (or (not latex-dest)
+          (or (doc-pre-rendered? doc)
+              (and (not force-out-of-date?)
+                   info-out-time
+                   info-in-time
+                   (or (not can-run?)
+                       ;; Need to rebuild if output file is older than input:
+                       (my-time . >= . src-time)
+                       ;; But we can use in/out information if they're already built;
+                       ;; this is mostly useful if we interrupt setup-plt after
+                       ;; it runs some documents without rendering them:
+                       (info-time . >= . src-time))))]
+         [can-run? (and (not (doc-pre-rendered? doc))
+                        (or (not latex-dest)
                             (not (omit? (doc-category doc))))
                         (or can-run?
                             (and auto-main?
@@ -907,7 +955,7 @@
 
                      (when (or (stamp-time . < . aux-time)
                                (stamp-time . < . src-time))
-                       (let ([data (list (get-compiled-file-sha1 src-zo)
+                       (let ([data (list (and src-zo (get-compiled-file-sha1 src-zo))
                                          (get-compiled-file-sha1 renderer-path)
                                          (get-file-sha1 css-path))])
                          (with-compile-output stamp-file (lambda (out tmp-filename) (write data out)))
@@ -917,6 +965,56 @@
                      info))))
              (lambda () #f))
             #f))))
+
+(define (move-documentation-into-place doc setup-printf workerid lock)
+  (define src-dir (let-values ([(base name dir?) (split-path (doc-src-file doc))])
+                    (build-path base "doc" (path-replace-suffix name #""))))
+  (define dest-dir (doc-dest-dir doc))
+  (define move? (not (equal? (file-or-directory-identity src-dir)
+                             (and (directory-exists? dest-dir)
+                                  (file-or-directory-identity dest-dir)))))
+  (setup-printf (string-append
+                 (if workerid (format "~a " workerid) "")
+                 (if move? "moving" "syncing"))
+                "~a"
+                (path->relative-string/setup src-dir))
+
+  (when move?
+    (when (directory-exists? dest-dir)
+      (delete-directory/files dest-dir)
+    (copy-directory/files src-dir dest-dir)
+    (delete-directory/files src-dir)))
+  ;; Register provided-tag information with the database:
+  (let ([provides-path (build-path dest-dir "provides.sxref")])
+    (when (file-exists? provides-path)
+      ;; register keys provided in "out<n>.sxref" with
+      ;; the database
+      (define providess (call-with-input-file*
+                         provides-path
+                         (lambda (in) (fasl->s-exp in))))
+      (define db-file (find-db-file doc #f))
+      (for ([provides (in-list providess)]
+            [n (in-naturals)])
+        (define filename (sxref-path #f doc (format "out~a.sxref" n)))
+        (call-with-lock
+         lock
+         (lambda ()
+           (doc-db-clear-provides db-file filename)
+           (doc-db-add-provides db-file provides filename))))))
+  ;; For each ".html" file, check for a reference to "local-redirect.js",
+  ;; and fix up the path if there is a reference:
+  (define js-path (if (doc-under-main? doc)
+                      "../local-redirect"
+                      (url->string (path->url (build-path (find-user-doc-dir)
+                                                          "local-redirect")))))
+  (for ([p (in-directory dest-dir)])
+    (when (regexp-match? #rx#"[.]html$" (path->bytes p))
+      (fixup-local-redirect-reference p js-path)))
+  ;; The existence of "synced.rktd" means that the db is in sync
+  ;; with "provides.sxref" and ".html" files have been updated.
+  (let ([provided-path (build-path dest-dir "synced.rktd")])
+    (unless (file-exists? provided-path)
+      (call-with-output-file provided-path (lambda (o) (write '#t o))))))
 
 (define (read-delayed-in! info latex-dest)
   (let* ([doc (info-doc info)]
@@ -1127,7 +1225,15 @@
                lock
                (lambda ()
                  (doc-db-clear-provides db-file filename)
-                 (doc-db-add-provides db-file provides filename)))))))
+                 (doc-db-add-provides db-file provides filename))))))
+  ;; Used for a package is converted to "binary" form:
+  (when (and (doc-pkg? doc)
+             (not (doc-under-main? doc))
+             (not latex-dest))
+    (with-compile-output
+     (sxref-path latex-dest doc "provides.sxref")
+     (lambda (out tmp-filename)
+       (s-exp->fasl providess out)))))
 
 (define (write-out/info latex-dest info scis providess db-file lock)
   (write-out latex-dest (info-vers info) (info-doc info) scis providess db-file lock))

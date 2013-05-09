@@ -597,9 +597,11 @@
          info
          'clean
          (lambda ()
-           (list mode-dir
-                 (build-path mode-dir "native")
-                 (build-path mode-dir "native" (system-library-subpath))))
+           (if (info 'assume-virtual-sources (lambda () #f))
+               null
+               (list mode-dir
+                     (build-path mode-dir "native")
+                     (build-path mode-dir "native" (system-library-subpath)))))
          (lambda (x)
            (unless (list-of path-string? x)
              (error name-sym

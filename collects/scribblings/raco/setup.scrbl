@@ -513,6 +513,12 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    case, so it can be provided by the same file that provides the
    previous two.}
 
+ @item{@indexed-racket[assume-virtual-sources] : @racket[any/c] ---
+   A true value indicates that bytecode files without a corresponding
+   source file should not be removed from @filepath{compiled} directories,
+   and no files should not be removed when the
+   @DFlag{clean} or @Flag{c} flag is passed to @exec{raco setup}.}
+
  @item{@indexed-racket[clean] : @racket[(listof path-string?)] ---
    @elemtag["clean"] A list of pathnames to be deleted when the
    @DFlag{clean} or @Flag{c} flag is passed to @exec{raco setup}. The

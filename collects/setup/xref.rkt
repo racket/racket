@@ -14,19 +14,19 @@
 
 (define cached-xref #f)
 
-(define (get-dests no-user?)
+(define (get-dests tag no-user?)
   (define main-dirs
     (parameterize ([current-library-collection-paths
                     (let ([d (find-collects-dir)]) 
                       (if d (list d) null))])
-      (for/hash ([k (in-list (find-relevant-directories '(scribblings) 'no-planet))])
+      (for/hash ([k (in-list (find-relevant-directories (list tag) 'no-planet))])
         (values k #t))))
   (apply
    append
-   (for*/list ([dir (find-relevant-directories '(scribblings) 'all-available)]
+   (for*/list ([dir (find-relevant-directories (list tag) 'all-available)]
                [d (let ([info-proc (get-info/full dir)])
                     (if info-proc
-                        (info-proc 'scribblings)
+                        (info-proc tag)
                         '()))])
      (unless (and (list? d) (pair? d))
        (error 'xref "bad scribblings entry: ~e" d))
@@ -63,7 +63,11 @@
                                           (exn-message exn)
                                           (format "~e" exn)))
                                      #f)])
-          (cadr (call-with-input-file* dest fasl->s-exp))))))
+          (make-data+root
+           ;; data to deserialize:
+           (cadr (call-with-input-file* dest fasl->s-exp))
+           ;; provide a root for deserialization:
+           (path-only dest))))))
 
 (define (make-key->source db-path no-user?)
   (define main-db (cons (or db-path
@@ -119,7 +123,8 @@
 
 (define (get-reader-thunks no-user? done-ht)
   (map (dest->source done-ht)
-       (filter values (get-dests no-user?))))
+       (filter values (append (get-dests 'scribblings no-user?)
+                              (get-dests 'rendered-scribblings no-user?)))))
 
 (define (load-collections-xref [report-loading void])
   (or cached-xref

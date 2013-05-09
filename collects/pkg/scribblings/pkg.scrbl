@@ -297,8 +297,9 @@ sub-sub-commands:
 installed (e.g. it conflicts with another installed package), then
 this command fails without installing any of the @nonterm{pkg}s 
 (or their dependencies).
-The @exec{update} sub-command accepts 
-the following @nonterm{option}s:
+
+ The @exec{update} sub-command accepts 
+ the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{deps} @nonterm{behavior} --- Same as for @command-ref{install}.}
@@ -315,7 +316,10 @@ the following @nonterm{option}s:
 @item{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
 --- Attempts to remove the given packages. If a package is the dependency
 of another package that is not listed, this command fails without 
-removing any of the @nonterm{pkg}s. This command accepts the following @nonterm{option}s:
+removing any of the @nonterm{pkg}s.
+
+ The @exec{remove} sub-command accepts 
+ the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{force} --- Ignore dependencies when removing packages.}
@@ -332,7 +336,9 @@ removing any of the @nonterm{pkg}s. This command accepts the following @nonterm{
 @item{@command/toc{show} @nonterm{option} ... --- Print information about currently installed packages. 
  By default, packages are shown for all installation modes (installation-wide,
  user- and Racket-version-specific, and user-specific all-version).
- The command accepts the following @nonterm{option}s:
+
+ The @exec{show} sub-command accepts 
+ the following @nonterm{option}s:
 
  @itemlist[
 
@@ -352,8 +358,60 @@ removing any of the @nonterm{pkg}s. This command accepts the following @nonterm{
  ]
 }
 
+@item{@command/toc{create} @nonterm{option} ... @nonterm{directory-or-package}
+--- Bundles a package into an archive. Bundling
+    is not needed for a package that is provided directly from a
+    GitHub repository or other non-archive formats. The @exec{create}
+    sub-command can create an archive from a directory (the default) or
+    from an installed package. It can also adjust the archive's content
+    to include only sources (which is the recommended mode, although not
+    the default) or as a ``binary'' package (but packages are
+    normally provided as source and converted to binary form by an
+    automatic service, instead of by a package author).
+
+ The @exec{create} sub-command accepts 
+ the following @nonterm{option}s:
+
+ @itemlist[
+ @item{@DFlag{from-dir} --- Treat @nonterm{directory-or-package} as a directory path; this is the default mode.}
+ @item{@DFlag{from-install} --- Treat @nonterm{directory-or-package} as the name of an installed package 
+       (instead of a directory).}
+ @item{@DFlag{format} @nonterm{format} --- Specifies the archive format. 
+      The allowed @nonterm{format}s are: @exec{zip} (the default), @exec{tgz}, and @exec{plt}. 
+      This option must be specified if @DFlag{manifest} is not present.}
+ @item{@DFlag{manifest} --- Creates a manifest file for a directory, rather than an archive.}
+ @item{@DFlag{as-is} --- Bundle all content of the package directory as is, with no filtering
+       of sources, compiled files, or repository elements.}
+ @item{@DFlag{source} --- Bundle only sources in the package directory, pruning (by default) 
+       @filepath{compiled} directories (that normally hold compiled
+       bytecode), @filepath{doc} directories (that normally hold rendered documentation),
+       directories named @filepath{.svn}, and directories and files whose names start with @filepath{.git}.
+       Override the default pruning rules with @racket[source-omit-files] and/or
+       @racket[source-keep-files] definitions in @filepath{info.rkt} files within the
+       package directory.}
+ @item{@DFlag{binary} --- Bundle compiled bytecode and rendered
+       documentation in the package directory. Normally, this option is sensible for
+       a package that is installed from source in a user-specific scope. Bundling prunes (by default)
+       @filepath{.rkt} and @filepath{.ss} files for which compiled bytecode is present, files with
+       a @filepath{.scrbl} suffix, @filepath{tests} directories, @filepath{scribblings}
+       directories, @filepath{.svn} directories, and directories and files whose names 
+       start with @filepath{.git}. For each @filepath{.html} file that
+       refers to a @filepath{local-redirect.js} script, the path to the script is removed.
+       In addition, bundling updates any @filepath{info.rkt} as follows: it
+       adds a @racket[assume-virtual-sources] entry,
+       converts a @racket[scribblings] entry to a @racket[rendered-scribblings] entry,
+       changes a @racket[copy-foreign-libs] entry to a @racket[move-foreign-libs] entry,
+       changes a @racket[copy-man-pages] entry to a @racket[move-man-pages] entry,
+       and removes any @racket[build-deps] entry. Override
+       the default pruning rules with @racket[binary-omit-files]
+       and/or @racket[binary-keep-files] definitions in
+       @filepath{info.rkt} files within the package directory.}
+  @item{@DFlag{dest} @nonterm{dest-dir} --- Writes generated bundles to @nonterm{dest-dir}.}
+  ]
+}
+
 @item{@command/toc{config} @nonterm{option} ... @nonterm{key} @nonterm{val} ... --- 
-View and modify package configuration options. This command accepts the following @nonterm{option}s:
+View and modify configuration of the package manager itself, with the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{set} --- Sets an option, rather than printing it.}
@@ -372,21 +430,13 @@ View and modify package configuration options. This command accepts the followin
  ]
 }
 
-@item{@command/toc{create} @nonterm{option} ... @nonterm{package-directory}
---- Bundles a package directory into a package archive. This command accepts the following @nonterm{option}s:
-
- @itemlist[
- @item{@DFlag{format} @nonterm{format} --- Specifies the archive format. 
-      The allowed @nonterm{format}s are: @exec{zip} (the default), @exec{tgz}, and @exec{plt}. 
-      This option must be specified if @DFlag{manifest} is not present.}
- @item{@DFlag{manifest} --- Creates a manifest file for a directory, rather than an archive.}
- ]
-}
-
 @item{@command/toc{catalog-show} @nonterm{option} ... @nonterm{package-name} ...
 --- Consults @tech{package catalogs} for a package (that is not necessarily installed)
     and displays the catalog's information for the package, such as its source URL and
-    a checksum. This command accepts the following @nonterm{option}s:
+    a checksum.
+
+ The @exec{catalog-show} sub-command accepts 
+ the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{all} --- Show information for all available packages. When using this flag,
@@ -412,7 +462,8 @@ View and modify package configuration options. This command accepts the followin
     with information from earlier @nonterm{src-catalog}s taking precedence over later 
     @nonterm{src-catalog}s.
 
-    This command accepts the following @nonterm{option}s:
+    The @exec{catalog-copy} sub-command accepts 
+    the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{from-config} --- Adds the currently configured 
@@ -694,6 +745,13 @@ The following @filepath{info.rkt} fields are used by the package manager:
 
        Use the package name @racket["racket"] to specify a dependency
        on the version of the Racket installation.}
+
+ @item{@racketidfont{build-deps} --- like @racketidfont{deps}, but for
+       dependencies that can be dropped in a ``binary'' variant of the
+       package that does not include sources. The
+       @racketidfont{build-deps} and @racketidfont{deps} lists are appended,
+       while @command-ref["create"] strips away @racketidfont{build-deps}
+       when converting a package for @DFlag{binary} mode.}
 
  @item{@racketidfont{setup-collects} --- a list of path strings and/or
        lists of path strings, which are used as collection names to
