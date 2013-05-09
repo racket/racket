@@ -31,7 +31,10 @@
 
 	 nats
 	 range/enum
-	 nats+/enum)
+	 nats+/enum
+         
+         error/enum
+         unsupported/enum)
 
 ;; an enum a is a struct of < Nat or +Inf, Nat -> a, a -> Nat >
 (struct enum
@@ -564,6 +567,14 @@
     (enum 1
 	  t
 	  t)))
+
+(define (error/enum . args)
+  (define (fail n) (apply error args))
+  (enum +inf.0 fail fail))
+
+(define (unsupported/enum pat)
+  (error/enum 'generate-term "#:i-th does not support ~s patterns" pat))
+        
 
 (module+
  test

@@ -89,9 +89,9 @@
 		       (rec p2))]
 		  [`(hide-hole ,p) (rec p)]
 		  [`(side-condition ,p ,g ,e) ;; error
-		   (error 'unsupported "side-condition")]
+		   (unsupported/enum pat)]
 		  [`(cross ,s)
-		   (error 'unsupported "cross")] ;; error
+		   (unsupported/enum pat)] ;; error
 		  [`(list ,sub-pats ...)
 		   (ormap (λ (sub-pat)
 			     (match sub-pat
@@ -128,9 +128,9 @@
 	    (rec p2))]
        [`(hide-hole ,p) (rec p)]
        [`(side-condition ,p ,g ,e) ;; error
-	(error 'no-enum "side-condition")]
+	(rec p)]
        [`(cross ,s)
-	(error 'no-enum "cross")] ;; error
+	(unsupported/enum pat)] ;; error
        [`(list ,sub-pats ...)
 	(ormap (λ (sub-pat)
 		  (match sub-pat
@@ -201,9 +201,9 @@
 	    (loop p1 named-pats))]
      [`(hide-hole ,p) (loop p named-pats)]
      [`(side-condition ,p ,g ,e) ;; error
-      (error 'no-enum "side condition")]
+      (unsupported/enum pat)]
      [`(cross ,s)
-      (error 'no-enum "cross")] ;; error
+      (unsupported/enum pat)] ;; error
      [`(list ,sub-pats ...)
       (foldl (λ (sub-pat named-pats)
 		(match sub-pat
@@ -251,12 +251,12 @@
 	     (car named-pats)
 	     ;; named repeat
 	     [`(,name name-r)
-	      (error 'unimplemented "named-repeat")]
+	      (error/enum 'unimplemented "named-repeat")]
 	     ;; mismatch repeat
 	     [`(,name mismatch-r)
-	      (error 'unimplemented "mismatch-repeat")]
+	      (error/enum 'unimplemented "mismatch-repeat")]
 	     [`(,name ,pat mismatch)
-	      (error 'unimplemented "mismatch")]
+	      (error/enum 'unimplemented "mismatch")]
 	     ;; named
 	     [`(,name ,pat)
 	      (map/enum ;; loses bijection
@@ -290,12 +290,12 @@
 	[`variable var/enum]
 	[`(variable-except ,s ...)
 	 ;; todo
-	 (error 'unimplemented "var-except")]
+	 (error/enum 'unimplemented "var-except")]
 	[`(variable-prefix ,s)
 	 ;; todo
-	 (error 'unimplemented "var-prefix")]
+	 (error/enum 'unimplemented "var-prefix")]
 	[`variable-not-otherwise-mentioned
-	 (error 'unimplemented "var-not-mentioned")] ;; error
+	 (error/enum 'unimplemented "var-not-mentioned")] ;; error
 	[`hole
 	 (const/enum 'hole)]
 	[`(nt ,id)
@@ -303,7 +303,7 @@
 	[`(name ,name ,pat)
 	 (const/enum (hash-ref named-terms name))]
 	[`(mismatch-name ,name ,pat)
-	 (error 'unimplemented "mismatch-name")]
+	 (error/enum 'unimplemented "mismatch-name")]
 	[`(in-hole ,p1 ,p2) ;; untested
 	 (map/enum
 	  (λ (t1-t2) ;; loses bijection
@@ -317,9 +317,9 @@
 	[`(hide-hole ,p)
 	 (loop p)]
 	[`(side-condition ,p ,g ,e)
-	 (error 'no-enum "side condition")]
+	 (unsupported/enum pat)]
 	[`(cross ,s)
-	 (error 'no-enum "cross")]
+	 (unsupported/enum pat)]
 	[`(list ,sub-pats ...)
 	 ;; enum-list
 	 (map/enum
@@ -341,9 +341,9 @@
 		       (list/enum
 			(build-list n (const (loop pat)))))))]
 		 [`(repeat ,pat ,name #f)
-		  (error 'unimplemented "named-repeat")]
+		  (error/enum 'unimplemented "named-repeat")]
 		 [`(repeat ,pat #f ,mismatch)
-		  (error 'unimplemented "mismatch-repeat")]
+		  (error/enum 'unimplemented "mismatch-repeat")]
 		 [else (loop sub-pat)]))
 	    sub-pats)))]
 	[(? (compose not pair?)) 
@@ -365,12 +365,12 @@
 	[`variable var/enum]
 	[`(variable-except ,s ...)
 	 ;; todo
-	 (error 'unimplemented "var except")]
+	 (error/enum 'unimplemented "var except")]
 	[`(variable-prefix ,s)
 	 ;; todo
-	 (error 'unimplemented "var prefix")]
+	 (error/enum 'unimplemented "var prefix")]
 	[`variable-not-otherwise-mentioned
-	 (error 'unimplemented "var not otherwise mentioned")]
+	 (error/enum 'unimplemented "var not otherwise mentioned")]
 	[`hole
 	 (const/enum 'hole)]
 	[`(nt ,id)
@@ -393,7 +393,7 @@
 	[`(name ,name ,pat)
 	 (const/enum (hash-ref named-terms name))]
 	[`(mismatch-name ,name ,pat)
-	 (error 'unimplemented "mismatch-name")]
+	 (error/enum 'unimplemented "mismatch-name")]
 	[`(in-hole ,p1 ,p2) ;; untested
 	 (map/enum
 	  (λ (t1-t2)
@@ -409,9 +409,9 @@
 	 ;; todo
 	 (loop p)]
 	[`(side-condition ,p ,g ,e)
-	 (error 'no-enum "side-condition")]
+	 (unsupported/enum pat)]
 	[`(cross ,s)
-	 (error 'no-enum "cross")]
+	 (unsupported/enum pat)]
 	[`(list ,sub-pats ...)
 	 ;; enum-list
 	 (map/enum
@@ -433,9 +433,9 @@
 		       (list/enum
 			(build-list n (const (loop pat)))))))]
 		 [`(repeat ,pat ,name #f)
-		  (error 'unimplemented "named-repeat")]
+		  (error/enum 'unimplemented "named-repeat")]
 		 [`(repeat ,pat #f ,mismatch)
-		  (error 'unimplemented "mismatch-repeat")]
+		  (error/enum 'unimplemented "mismatch-repeat")]
 		 [else (loop sub-pat)]))
 	    sub-pats)))]
 	[(? (compose not pair?)) 
