@@ -305,9 +305,9 @@
 81863215	5.3.4/racket/racket-5.3.4-bin-x86_64-linux-f14.sh
 78954459	5.3.4/racket/racket-5.3.4-bin-x86_64-osx-mac.dmg
 54968330	5.3.4/racket/racket-5.3.4-bin-x86_64-win32.exe
-17819358	5.3.4/racket/racket-5.3.4-src-mac.dmg
-19318187	5.3.4/racket/racket-5.3.4-src-unix.tgz
-22929743	5.3.4/racket/racket-5.3.4-src-win.zip
+17824228	5.3.4/racket/racket-5.3.4-src-mac.dmg
+19314579	5.3.4/racket/racket-5.3.4-src-unix.tgz
+22930176	5.3.4/racket/racket-5.3.4-src-win.zip
 11235593	5.3/racket-textual/racket-textual-5.3-bin-i386-linux-f12.sh
 11248024	5.3/racket-textual/racket-textual-5.3-bin-i386-linux-ubuntu-karmic.sh
 11806657	5.3/racket-textual/racket-textual-5.3-bin-i386-osx-mac.dmg
