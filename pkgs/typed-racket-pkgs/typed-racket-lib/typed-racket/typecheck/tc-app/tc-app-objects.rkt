@@ -19,53 +19,78 @@
 (define-literal-set object-literals #:for-label (list cons))
 
 
+;; type-check object initialization and field operations
 (define-tc/app-syntax-class (tc/app-objects expected)
   #:literal-sets (kernel-literals object-literals)
   (pattern (dmo b cl
             (#%plain-app list . pos-args)
             (#%plain-app list (#%plain-app cons (quote names) named-args) ...))
      #:declare dmo (id-from 'do-make-object 'racket/private/class-internal)
-     (check-do-make-object #'b #'cl #'pos-args #'(names ...) #'(named-args ...)))
+     (check-do-make-object #'b #'cl #'(names ...) #'(named-args ...)))
   (pattern (dmo . args)
      #:declare dmo (id-from 'do-make-object 'racket/private/class-internal)
-     (int-err "unexpected arguments to do-make-object")))
+     (int-err "unexpected arguments to do-make-object"))
+  (pattern (gf meth obj)
+     #:declare gf (id-from 'get-field/proc 'racket/private/class-internal)
+     (check-get-field #'meth #'obj))
+  (pattern (gf . args)
+     #:declare gf (id-from 'get-field/proc 'racket/private/class-internal)
+     (int-err "unexpected arguments to get-field/proc")))
 
+;; check-do-make-object : Syntax Syntax Listof<Syntax> Listof<Syntax> -> TCResult
 ;; do-make-object now takes blame as its first argument, which isn't checked
 ;; (it's just an s-expression)
-(define (check-do-make-object b cl pos-args names named-args)
-  (let* ([names (stx-map syntax-e names)]
-         [name-assoc (stx-map cons names named-args)])
-    (match (resolve (tc-expr/t cl))
-      [(Union: '()) (ret (Un))]
-      [(and c (Class: pos-tys (list (and tnflds (list tnames _ _)) ...)
-                      fields _))
-       (unless (= (length pos-tys)
-                  (syntax-length pos-args))
-         (tc-error/delayed "expected ~a positional arguments, but got ~a"
-                           (length pos-tys) (syntax-length pos-args)))
-       ;; use for, since they might be different lengths in error case
-       (for ([pa (in-syntax pos-args)]
-             [pt (in-list pos-tys)])
-         (tc-expr/check pa (ret pt)))
-       (for ([n (in-list names)]
-             #:unless (memq n tnames))
-         (tc-error/delayed
-          "unknown named argument ~a for class\nlegal named arguments are ~a"
-          n (stringify tnames)))
-       (for-each (match-lambda
-                   [(list tname tfty opt?)
-                    (define s
-                      (dict-ref name-assoc tname
-                        (lambda ()
-                          (unless opt?
-                            (tc-error/delayed "value not provided for named init arg ~a"
-                                              tname))
-                          #f)))
-                    ;; Only check the argument if it is provided
-                    (when s
-                      (tc-expr/check s (ret tfty)))])
-                 tnflds)
-       (ret (make-Instance c))]
-      [t
-       (tc-error/expr #:return (ret (Un))
-                      "expected a class value for object creation, got: ~a" t)])))
+(define (check-do-make-object b cl names named-args)
+  (define given-names (stx-map syntax-e names))
+  (define name-assoc (for/list ([name (in-syntax names)]
+                                [arg (in-syntax named-args)])
+                       (list (syntax-e name) arg)))
+  (match (resolve (tc-expr/t cl))
+    [(Union: '()) (ret (Un))]
+    [(and c (Class: _ inits fields _))
+     (define init-names (map car inits))
+     (for ([given-name given-names]
+           #:unless (memq given-name init-names))
+       (tc-error/delayed
+        "unknown named argument ~a for class\nlegal named arguments are ~a"
+        given-name (stringify init-names)))
+     (for ([init inits])
+       (match-define (list init-name init-type opt?) init)
+       ;; stx if argument was provided, #f if it was
+       ;; not provided (and if mandatory, it errors)
+       (define maybe-stx
+         (cond [(assq init-name name-assoc) => cadr]
+               [(not opt?)
+                (tc-error/delayed "value not provided for named init arg ~a"
+                                  init-name)
+                #f]
+               [else #f]))
+       (when maybe-stx
+         (tc-expr/check maybe-stx (ret init-type))))
+     (ret (make-Instance c))]
+    [t
+     (tc-error/expr #:return (ret (Un))
+                    "expected a class value for object creation, got: ~a" t)]))
+
+;; check-get-field : Syntax Syntax -> TCResult
+;; type-check the `get-field` operation on objects
+(define (check-get-field meth obj)
+  (define maybe-meth-sym
+    (syntax-parse meth [(quote m:id) (syntax-e #'m)] [_ #f]))
+  (define obj-type (tc-expr obj))
+  (unless maybe-meth-sym
+    (tc-error/expr #:return (ret (Un))
+                   "expected a symbolic method name, but got ~a" meth))
+  (match obj-type
+    ;; FIXME: handle unions and mu?
+    [(tc-result1: (and ty (Instance: (Class: _ _ (list fields ...) _))))
+     (cond [(assq maybe-meth-sym fields) =>
+            (λ (field-entry) (ret (cadr field-entry)))]
+           [else
+            (tc-error/expr #:return (ret (Un))
+                           "expected an object with field ~a, but got ~a"
+                           maybe-meth-sym ty)])]
+    [(tc-result1: t)
+     (tc-error/expr #:return (ret (Un))
+                    "expected an object value for get-field, got ~a" t)]))
+
