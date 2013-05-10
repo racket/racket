@@ -12150,6 +12150,9 @@ so that propagation occurs.
   (let ()
     (define-struct s (a b) #:prefab)
     (test-flat-contract 'printable/c (make-s 1 2) (λ (x) x)))
+  (test-flat-contract 'printable/c (hash 'x 1) (make-hash (list (cons 'x 1))))
+  (test-flat-contract 'printable/c 1 (hash (λ (x) x) 1))
+  
   (test-flat-contract '(symbols 'a 'b 'c) 'a 'd)
   (test-flat-contract '(one-of/c (expt 2 65)) (expt 2 65) 12)
   (test-flat-contract '(one-of/c '#:x '#:z) '#:x '#:y)

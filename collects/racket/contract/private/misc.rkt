@@ -1160,7 +1160,12 @@
            (and (vector? x)
                 (andmap printable? (vector->list x)))
            (and (box? x)
-                (printable? (unbox x))))))))
+                (printable? (unbox x)))
+           (and (hash? x)
+                (immutable? x)
+                (for/and ([(k v) (in-hash x)])
+                  (and (printable? k)
+                       (printable? v)))))))))
 
 
 (define natural-number/c
