@@ -1,4 +1,4 @@
-#lang errortrace racket/base
+#lang racket/base
 (require (except-in "../utils/utils.rkt" infer)
          racket/match unstable/match racket/function racket/lazy-require racket/list
          (prefix-in c: (contract-req))
@@ -7,7 +7,7 @@
          (types utils resolve base-abbrev match-expanders
                 numeric-tower substitute current-seen)
          (for-syntax racket/base syntax/parse))
-(require racket/trace)
+
 (lazy-require
   ("union.rkt" (Un))
   ("../infer/infer.rkt" (infer)))
