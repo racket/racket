@@ -2,7 +2,8 @@
 
 @(require scribble/eval
           racket/sandbox
-          (for-label racket/base racket/promise racket/list
+          (for-label racket/base racket/promise
+                     (except-in racket/list permutations) ; FIXME
                      math plot
                      (only-in typed/racket/base
                               Flonum Real Boolean Any Listof Integer case-> -> Promise U

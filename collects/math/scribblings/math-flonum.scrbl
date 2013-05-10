@@ -6,7 +6,7 @@
           racket/sandbox
           unstable/2d/tabular
           (for-label racket/base racket/vector
-                     (except-in racket/list permutations)
+                     (except-in racket/list permutations) ; FIXME
                      math plot
                      (only-in typed/racket/base
                               ->

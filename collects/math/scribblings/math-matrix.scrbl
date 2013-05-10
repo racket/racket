@@ -3,7 +3,7 @@
 @(require scribble/eval
           racket/sandbox
           (for-label racket/base racket/vector racket/match racket/unsafe/ops racket/string
-                     racket/list
+                     (except-in racket/list permutations) ; FIXME
                      math plot
                      (only-in typed/racket/base
                               ann inst : λ: define: make-predicate -> case-> Nothing
