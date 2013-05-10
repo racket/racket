@@ -30,12 +30,12 @@ of break exceptions is not suspended. To ensure that a call to
 @racket[start-atomic] is reliably paired with a call to
 @racket[end-atomic], use @racket[dynamic-wind] pre- and post thunks or
 some other context where breaks are disabled. These variants are not
-faster than plan @racket[start-atomic] and @racket[end-atomic].}
+faster than plain @racket[start-atomic] and @racket[end-atomic].}
 
 
 @defproc[(call-as-atomic [thunk (-> any)]) any]{
 
-Calls @racket[thunk] in atomic mode. If @racket[thunk] raises and
+Calls @racket[thunk] in atomic mode. If @racket[thunk] raises an
 exception, the exception is caught and re-raised after exiting atomic
 mode.
 
@@ -48,8 +48,8 @@ When @racket[call-as-atomic] is used in the dynamic extent of
 
 Within the dynamic extent of a @racket[call-as-atomic], calls
 @racket[thunk] in non-atomic mode. Beware that the current thread
-maybe suspended or terminated by other threads during @racket[thunk],
-in which case the call never returns.
+may be suspended or terminated by other threads during the
+execution of @racket[thunk], in which case the call never returns.
 
 When used not in the dynamic extent of @racket[call-as-atomic],
 @racket[call-as-nonatomic] raises @racket[exn:fail:contract].}
@@ -57,5 +57,5 @@ When used not in the dynamic extent of @racket[call-as-atomic],
 
 @defproc[(in-atomic-mode?) boolean?]{
 
-Returns @racket[#t] if Racket context switches are disables,
+Returns @racket[#t] if Racket context switches are disabled,
 @racket[#f] otherwise.}
