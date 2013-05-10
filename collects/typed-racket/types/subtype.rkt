@@ -1,4 +1,4 @@
-#lang errortrace racket/base
+#lang racket/base
 (require (except-in "../utils/utils.rkt" infer)
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
@@ -11,7 +11,7 @@
          racket/lazy-require
          (prefix-in c: racket/contract)
          (for-syntax racket/base syntax/parse))
-(require racket/trace)
+
 (lazy-require
   ("union.rkt" (Un))
   ("../infer/infer.rkt" (infer)))
