@@ -30,10 +30,8 @@
                                (parent options-panel)
                                (label (string-constant font-size))))
        (define (adjust-font-size f)
-         (preferences:set
-          'framework:standard-style-list:font-size
-          (f (preferences:get
-              'framework:standard-style-list:font-size))))
+         (editor:set-current-preferred-font-size
+          (f (editor:get-current-preferred-font-size))))
        (define size-slider
          (new slider%
               (label #f)
@@ -46,7 +44,7 @@
                   (λ (old-size)
                     (send size get-value)))))
               (init-value
-               (preferences:get 'framework:standard-style-list:font-size))))
+               (editor:get-current-preferred-font-size))))
        (define size-hp (new horizontal-pane% (parent size-panel)))
        (define (mk-size-button label chng)
          (new button%
@@ -196,7 +194,9 @@
          (send text end-edit-sequence))
        (preferences:add-callback
         'framework:standard-style-list:font-size
-        (λ (p v) (send size-slider set-value v)))
+        (λ (p v) (send size-slider set-value 
+                       (editor:font-size-pref->current-font-size
+                        v))))
        (preferences:add-callback
         drracket:language-configuration:settings-preferences-symbol
         (λ (p v)

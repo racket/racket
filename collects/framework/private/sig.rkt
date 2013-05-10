@@ -162,7 +162,12 @@
      set-standard-style-list-delta
      set-default-font-color
      get-default-color-style-name
-     add-after-user-keymap))
+     add-after-user-keymap
+     get-current-preferred-font-size
+     set-current-preferred-font-size
+     font-size-pref->current-font-size
+     set-change-font-size-when-monitors-change?
+     get-change-font-size-when-monitors-change?))
   
   (define-signature pasteboard-class^
     (basic%

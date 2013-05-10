@@ -3744,14 +3744,14 @@ designates the character that triggers autocompletion
     
     (define/private (get-mt-font)
       (send the-font-list find-or-create-font
-            (preferences:get 'framework:standard-style-list:font-size)
+            (editor:get-current-preferred-font-size)
             'default
             'italic
             'normal))
     
     (define/private (get-reg-font)
       (send the-font-list find-or-create-font
-            (preferences:get 'framework:standard-style-list:font-size)
+            (editor:get-current-preferred-font-size)
             'default
             'normal
             'normal))

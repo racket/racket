@@ -649,6 +649,8 @@
 
 (drracket:module-language:initialize-prefs-panel)
 
+(editor:set-change-font-size-when-monitors-change? #t)
+
 (let* ([find-frame
         (λ (item)
           (let loop ([item item])
@@ -751,6 +753,11 @@
 ;;   that is uninitialized (phase level 0); 
 ;;   reference appears in module: ...)
 
+;; we also do this as a low-priority callback since work above
+;; (specifically the call to editor:set-change-font-size-when-monitors-change?)
+;; may have triggered other low-priority callbacks that we
+;; want to complete before we open up that first DrRacket window.
+
 (queue-callback
  (λ ()
    
@@ -786,4 +793,5 @@
        (make-basic))
      (when (and (preferences:get 'drracket:open-in-tabs)
                 (not (null? no-dups)))
-       (handler:edit-file (car no-dups))))))
+       (handler:edit-file (car no-dups)))))
+ #f)

@@ -480,6 +480,9 @@
                 (set! latest-monitor-information new-monitor-information)
                 (queue-callback
                  (λ ()
+                   (when (editor:get-change-font-size-when-monitors-change?)
+                     (editor:set-current-preferred-font-size
+                      (editor:get-current-preferred-font-size)))
                    (for ([frame (in-list (get-top-level-windows))])
                      (when (is-a? frame size-pref<%>)
                        (send frame monitor-setup-changed)))

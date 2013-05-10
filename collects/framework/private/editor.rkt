@@ -1,4 +1,4 @@
-#lang scheme/unit
+#lang racket/unit
 
   (require mzlib/class
            string-constants
@@ -360,35 +360,35 @@
                     delta))))
   
   (define (set-default-font-color color)
-    (let* ([scheme-standard (send standard-style-list find-named-style default-color-style-name)]
-           [scheme-delta (make-object style-delta%)])
-      (send scheme-standard get-delta scheme-delta)
-      (send scheme-delta set-delta-foreground color)
-      (send scheme-standard set-delta scheme-delta)))
+    (let* ([the-standard (send standard-style-list find-named-style default-color-style-name)]
+           [the-delta (make-object style-delta%)])
+      (send the-standard get-delta the-delta)
+      (send the-delta set-delta-foreground color)
+      (send the-standard set-delta the-delta)))
   
   (define (set-font-size size)
     (update-standard-style
-     (λ (scheme-delta)
-       (send scheme-delta set-size-mult 0)
-       (send scheme-delta set-size-add size))))
+     (λ (the-delta)
+       (send the-delta set-size-mult 0)
+       (send the-delta set-size-add size))))
   
   (define (set-font-name name)
     (update-standard-style
-     (λ (scheme-delta)
-       (send scheme-delta set-delta-face name)
-       (send scheme-delta set-family 'modern))))
+     (λ (the-delta)
+       (send the-delta set-delta-face name)
+       (send the-delta set-family 'modern))))
   
   (define (set-font-smoothing sym)
     (update-standard-style
-     (λ (scheme-delta)
-       (send scheme-delta set-smoothing-on sym))))
+     (λ (the-delta)
+       (send the-delta set-smoothing-on sym))))
   
   (define (update-standard-style cng-delta)
-    (let* ([scheme-standard (send standard-style-list find-named-style "Standard")]
-           [scheme-delta (make-object style-delta%)])
-      (send scheme-standard get-delta scheme-delta)
-      (cng-delta scheme-delta)
-      (send scheme-standard set-delta scheme-delta)))
+    (let* ([the-standard (send standard-style-list find-named-style "Standard")]
+           [the-delta (make-object style-delta%)])
+      (send the-standard get-delta the-delta)
+      (cng-delta the-delta)
+      (send the-standard set-delta the-delta)))
   
   (define standard-style-list<%>
     (interface (editor<%>)
@@ -396,7 +396,7 @@
   
   (define standard-style-list-mixin
     (mixin (editor<%>) (standard-style-list<%>)
-      (super-instantiate ())
+      (super-new)
       (inherit set-style-list set-load-overwrites-styles)
       (set-style-list standard-style-list)
       (set-load-overwrites-styles #f)))
@@ -421,15 +421,61 @@
   (define set-font-size-callback-size #f)
 
   (define (set-standard-style-list-pref-callbacks)
-    (set-font-size (preferences:get 'framework:standard-style-list:font-size))
+    (set-font-size (get-current-preferred-font-size))
     (set-font-name (preferences:get 'framework:standard-style-list:font-name))
     (set-font-smoothing (preferences:get 'framework:standard-style-list:smoothing))
-    (preferences:add-callback 'framework:standard-style-list:font-size (λ (p v) (set-font-size/callback v)))
+    (preferences:add-callback 'framework:standard-style-list:font-size 
+                              (λ (p v)
+                                (set-font-size/callback (font-size-pref->current-font-size v))))
     (preferences:add-callback 'framework:standard-style-list:font-name (λ (p v) (set-font-name v)))
     (preferences:add-callback 'framework:standard-style-list:smoothing (λ (p v) (set-font-smoothing v)))
     
     (unless (member (preferences:get 'framework:standard-style-list:font-name) (get-face-list))
       (preferences:set 'framework:standard-style-list:font-name (get-family-builtin-face 'modern))))
+  
+  (define (get-current-preferred-font-size)
+    (font-size-pref->current-font-size (preferences:get 'framework:standard-style-list:font-size)))
+  
+  (define (font-size-pref->current-font-size v)
+    (define default-size (vector-ref v 1))
+    (cond
+      [change-font-size-when-monitors-change?
+       (define monitor-sizes (get-current-monitor-sizes))
+       (hash-ref (vector-ref v 0) monitor-sizes default-size)]
+      [else
+       default-size]))
+  
+  (define change-font-size-when-monitors-change? #f)
+  (define (get-change-font-size-when-monitors-change?)
+    change-font-size-when-monitors-change?)
+  (define (set-change-font-size-when-monitors-change? b?)
+    (unless (equal? change-font-size-when-monitors-change? b?)
+      (set! change-font-size-when-monitors-change? b?)
+      (set-current-preferred-font-size
+       (get-current-preferred-font-size))))
+  
+  
+  (define (set-current-preferred-font-size new-size)
+    (define old-pref (preferences:get 'framework:standard-style-list:font-size))
+    (define current-mons (get-current-monitor-sizes))
+    (define new-monitor-sizes
+      (hash-set (vector-ref old-pref 0)
+                current-mons
+                new-size))
+    (preferences:set 'framework:standard-style-list:font-size
+                     (vector new-monitor-sizes new-size)))
+  
+  (define (get-current-monitor-sizes)
+    (let loop ([m (get-display-count)]
+               [sizes '()])
+      (cond
+        [(zero? m) sizes]
+        [else
+         (define-values (w h) (get-display-size #:monitor (- m 1)))
+         (loop (- m 1)
+               (if (and w h)
+                   (cons (list w h) sizes)
+                   sizes))])))
   
   ;; set-standard-style-list-delta : string (is-a?/c style-delta<%>) -> void
   (define (set-standard-style-list-delta name delta)

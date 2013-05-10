@@ -1,5 +1,6 @@
 #lang racket/unit
 (require racket/class
+         racket/contract
          "sig.rkt"
          "../preferences.rkt"
          mred/mred-sig)
@@ -143,11 +144,32 @@
 
 (preferences:set-default
  'framework:standard-style-list:font-size
- (let* ([txt (make-object text%)]
-        [stl (send txt get-style-list)]
-        [bcs (send stl basic-style)])
-   (send bcs get-size))
- (λ (x) (and (number? x) (exact? x) (integer? x) (positive? x))))
+ (vector (hash)
+         (let* ([txt (make-object text%)]
+                [stl (send txt get-style-list)]
+                [bcs (send stl basic-style)])
+           (send bcs get-size)))
+ (vector/c 
+  ;; font sizes for specific monitor configurations
+  (hash/c 
+   ;; a particular monitor configuration: the widths and heights
+   (non-empty-listof (list/c exact-nonnegative-integer? 
+                             exact-nonnegative-integer?))
+   ;; the font size for that configuration
+   exact-nonnegative-integer?
+   #:flat? #t)
+  ;; default font size, when none of the configs above apply
+  exact-nonnegative-integer?
+  #:flat? #t))
+
+(preferences:set-un/marshall
+ 'framework:standard-style-list:font-size
+ values
+ (λ (x)
+   (if (exact-nonnegative-integer? x)
+       ;; coerce old pref settings to new
+       (vector (hash) x)
+       x)))
 
 (preferences:set-default
  'framework:standard-style-list:smoothing

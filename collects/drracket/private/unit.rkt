@@ -3417,17 +3417,15 @@ module browser threading seems wrong.
         (let ()
           (define (font-adjust adj label key shortcut)
             (define (adj-font _1 _2)
-              (preferences:set
-               'framework:standard-style-list:font-size
-               (adj (preferences:get
-                     'framework:standard-style-list:font-size))))
+              (editor:set-current-preferred-font-size
+               (adj 
+                (editor:get-current-preferred-font-size))))
             (define (on-demand item)
               (define lab 
                 (format 
                  label 
                  (adj 
-                  (preferences:get
-                   'framework:standard-style-list:font-size))))
+                  (editor:get-current-preferred-font-size))))
               (send item set-label lab))
             (define item
              (new menu:can-restore-menu-item%

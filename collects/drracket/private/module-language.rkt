@@ -1721,7 +1721,7 @@
         (set! msgs _msgs)
         (set! err? _err?)
         (set! copy-msg _copy-msg)
-        (set-the-height/dc-font (preferences:get 'framework:standard-style-list:font-size))
+        (set-the-height/dc-font (editor:get-current-preferred-font-size))
         (refresh))
       (define/override (on-event evt)
         (cond
@@ -1756,7 +1756,8 @@
       
       ;; need object to hold onto this function, so this is
       ;; intentionally a private field, not a method
-      (define (font-size-changed-callback _ new-size)
+      (define (font-size-changed-callback _ new-prefs)
+        (define new-size (editor:font-size-pref->current-font-size new-prefs))
         (set-the-height/dc-font new-size)
         (refresh))
       (preferences:add-callback
@@ -1784,7 +1785,7 @@
       
       (inherit min-height)
       (set-the-height/dc-font
-       (preferences:get 'framework:standard-style-list:font-size))))
+       (editor:get-current-preferred-font-size))))
   
   (define yellow-message%
     (class canvas%

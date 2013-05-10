@@ -1511,6 +1511,85 @@
   @{Initializes @racket[keymap] with Racket-mode keybindings.})
 
  (proc-doc/names
+  editor:set-current-preferred-font-size
+  (-> exact-nonnegative-integer? void?)
+  (new-size)
+  @{Sets the font preference for the current monitor configuration to
+    @racket[new-size]. 
+    
+    See also @racket[editor:get-current-preferred-font-size]
+    and @racket[editor:font-size-pref->current-font-size].})
+ 
+ (proc-doc
+  editor:get-current-preferred-font-size
+  (-> exact-nonnegative-integer?)
+  @{Gets the current setting for the font size preference. Calls
+    @racket[editor:font-size-pref->current-font-size] with the
+    current preference setting.
+    
+    See also @racket[editor:set-current-preferred-font-size] and
+    @racket[editor:get-change-font-size-when-monitors-change?].
+    })
+ 
+ (proc-doc/names
+  editor:font-size-pref->current-font-size
+  (-> (vector/c 
+       ;; font sizes for specific monitor configurations
+       (hash/c 
+        ;; a particular monitor configuration: the widths and heights
+        (non-empty-listof (list/c exact-nonnegative-integer? 
+                                  exact-nonnegative-integer?))
+        ;; the font size for that configuration
+        exact-nonnegative-integer?
+        #:flat? #t)
+       
+       ;; default font size, when none of the configs above apply
+       exact-nonnegative-integer?
+       #:flat? #t)
+      exact-nonnegative-integer?)
+  (font-preference)
+  @{Determines the current monitor configuration and uses that to pick
+    one of the sizes from its argument. The argument is expected
+    to come from the preference value of @racket['framework:standard-style-list:font-size].
+    
+    Except if @racket[editor:get-change-font-size-when-monitors-change?] returns
+    @racket[#f], in which case the current monitor configuration is not considered
+    and the last-set size (the second position in the vector) is always returned.
+    
+    As background, the font size
+    preference is actually saved on a per-monitor configuration basis; specifically
+    the preference value (using the same contract as the argument of this function)
+    contains a table mapping a list of monitor sizes (but not their
+    positions) obtained by @racket[get-display-size] to the preferred font size
+    (plus a default size used for new configurations). 
+    
+    See also @racket[editor:get-current-preferred-font-size], 
+    @racket[editor:get-current-preferred-font-size], and
+    @racket[editor:get-change-font-size-when-monitors-change?].})
+ 
+ (proc-doc/names
+  editor:get-change-font-size-when-monitors-change?
+  (-> boolean?)
+  ()
+  @{Returns @racket[#t] when the framework will automatically
+            adjust the current font size in the @racket["Standard"]
+            style of the result of @racket[editor:get-standard-style-list]
+            based on the monitor configuration.
+            
+            Defaults to @racket[#f]
+            
+            See also @racket[editor:set-change-font-size-when-monitors-change?];
+            @racket[editor:font-size-pref->current-font-size].})
+ 
+ (proc-doc/names
+  editor:set-change-font-size-when-monitors-change?
+  (-> boolean? void?)
+  (b?)
+  @{Controls the result of @racket[editor:get-change-font-size-when-monitors-change?].
+                           
+                           See also @racket[editor:get-change-font-size-when-monitors-change?].})
+ 
+ (proc-doc/names
   editor:set-default-font-color
   (-> (is-a?/c color%) void?)
   (color)
