@@ -78,7 +78,7 @@
           ;; This error is "Connection reset by peer" and doesn't
           ;; really indicate a problem with the server.
           (and (exn:fail:network:errno? x)
-               (= 54 (exn:fail:network:errno-errno x))))
+               (equal? (cons 54 'posix) (exn:fail:network:errno-errno x))))
         (λ (x)
           (kill-connection! conn))])
     ;; HTTP/1.1 allows any number of requests to come from this input
