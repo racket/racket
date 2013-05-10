@@ -1826,67 +1826,27 @@
     (lambda () #'in-producer)
     (lambda (stx)
       (syntax-case stx ()
-        [[(id) (_ producer stop more ...)]
-         (with-syntax ([(more* ...) (generate-temporaries #'(more ...))])
-           #'[(id)
-              (:do-in
-               ;;outer bindings
-               ([(producer*) producer] [(more*) more] ...
-                [(stop?) (let ([s stop])
-                           (if (procedure? s) s (lambda (x) (eq? x s))))])
-               ;; outer check
-               #t
-               ;; loop bindings
-               ()
-               ;; pos check
-               #t
-               ;; inner bindings
-               ([(id) (producer* more* ...)])
-               ;; pre guard
-               (not (stop? id))
-               ;; post guard
-               #t
-               ;; loop args
-               ())])]
-        [[() (_ producer stop more ...)]
-         (with-syntax ([(more* ...) (generate-temporaries #'(more ...))])
-           #'[()
-              (:do-in
-                ([(producer*) producer] [(more*) more] ...
-                 [(stop?) (let ([s stop])
-                            (if (procedure? s)
-                              s
-                              (lambda (args)
-                                (and (not (null? args))
-                                     (eq? (car args) s)))))])
-               ;; outer check
-               #t
-               ;; loop bindings
-               ()
-               ;; pos check
-               #t
-               ;; inner bindings
-               ([(check) (call-with-values (lambda () (producer* more* ...))
-                                           (lambda vs vs))])
-               ;; pre guard
-               (not (stop? check))
-               ;; post guard
-               #t
-               ;; loop args
-               ())])]
-        ;; multiple-values version
+        ;; cheap & simple stop-less and arg-less version
+        [[(id ...) (_ producer)]
+         #'[(id ...)
+            (:do-in ([(producer*) producer]) #t () #t ([(id ...) (producer*)])
+                    #t #t ())]]
+        ;; full version
         [[(id ...) (_ producer stop more ...)]
-         (with-syntax ([(more* ...) (generate-temporaries #'(more ...))])
+         (with-syntax ([(more* ...) (generate-temporaries #'(more ...))]
+                       [single? (= 1 (length (syntax->list #'(id ...))))])
            #'[(id ...)
               (:do-in
                ;; outer bindings
-               ([(producer*) producer] [(more*) more] ...
-                [(stop?) (let ([s stop])
-                           (if (procedure? s)
-                             s
-                             (error 'in-producer
-                                    "stop condition for ~a, got: ~e"
-                                    "multiple values must be a predicate" s)))])
+               ([(producer*) producer]
+                [(more*) more] ...
+                [(stop?)
+                 (let ([s stop])
+                   (cond [(procedure? s) s]
+                         ['single? (lambda (x) (eq? x s))]
+                         [else (error 'in-producer
+                                      "stop condition for ~a, got: ~e"
+                                      "multiple values must be a predicate" s)]))])
                ;; outer check
                #t
                ;; loop bindings
@@ -1900,21 +1860,7 @@
                ;; post guard
                #t
                ;; loop args
-               ())])]
-        ;; stop-less versions
-        [[(id) (_ producer)]
-         #'[(id)
-            (:do-in ([(producer*) producer]) #t () #t ([(id) (producer*)])
-                    #t #t ())]]
-        [[() (_ producer)]
-         #'[()
-            (:do-in ([(producer*) producer]) #t () #t
-                    ([(check) (call-with-values producer* (lambda vs vs))])
-                    #t #t ())]]
-        [[(id ...) (_ producer stop more ...)]
-         #'[(id ...)
-            (:do-in ([(producer*) producer]) #t () #t ([(id ...) (producer*)])
-                    #t #t ())]])))
+               ())])])))
 
   ;; Some iterators that are implemented using `*in-producer' (note: do not use
   ;; `in-producer', since in this module it is the procedure version).
