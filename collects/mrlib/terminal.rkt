@@ -10,10 +10,13 @@
   [on-terminal-run (parameter/c (-> void?))]
   [in-terminal (->* ((-> eventspace? (or/c #f (is-a?/c top-level-window<%>)) void?))
                     (#:container (is-a?/c area-container<%>)
-                                 #:title string?
-                                 #:abort-label string?
-                                 #:aborted-message string?
-                                 #:cleanup-thunk (-> void?))
+                     #:title string?
+                     #:abort-label string?
+                     #:aborted-message string?
+                     #:cleanup-thunk (-> void?)
+                     #:canvas-min-width (or/c #f exact-nonnegative-integer?)
+                     #:canvas-min-height (or/c #f exact-nonnegative-integer?)
+                     #:close-button? boolean?)
                     (is-a?/c terminal<%>))])
  terminal<%>)
 
@@ -35,7 +38,10 @@
                      #:title [title "mrlib/terminal"]
                      #:abort-label [abort-label (string-constant plt-installer-abort-installation)]
                      #:aborted-message [aborted-message (string-constant plt-installer-aborted)]
-                     #:cleanup-thunk [cleanup-thunk void])
+                     #:cleanup-thunk [cleanup-thunk void]
+                     #:canvas-min-width [canvas-min-width #f]
+                     #:canvas-min-height [canvas-min-height #f]
+                     #:close-button? [close-button? #t])
   (define orig-eventspace (current-eventspace))
   (define orig-custodian (current-custodian))
   (define inst-eventspace (make-eventspace))
@@ -49,7 +55,8 @@
   (define kill-button #f)
   (define setup-sema (make-semaphore 0))
   (define can-close-sema (make-semaphore))
-
+  (define currently-can-close? #t)
+  
   (define (close)
     (if frame
         (send frame show #f)
@@ -64,7 +71,7 @@
        (unless container
          (set! frame
                (new (class frame%
-                      (define/augment (can-close?) (send close-button is-enabled?))
+                      (define/augment (can-close?) currently-can-close?)
                       (define/augment (on-close) (close-callback))
                       (super-new [label title]
                                  [width 600]
@@ -109,7 +116,9 @@
        (set! text (new (text:hide-caret/selection-mixin text:standard-style-list%)))
        (define canvas (new editor-canvas%
                            [parent sub-container]
-                           [editor text]))
+                           [editor text]
+                           [min-width canvas-min-width]
+                           [min-height canvas-min-height]))
        (define button-panel (new horizontal-panel%
                                  [parent sub-container]
                                  [stretchable-height #f]
@@ -118,10 +127,11 @@
                               [label abort-label]
                               [parent button-panel]
                               [callback (λ (b e) (kill-callback))]))
-       (set! close-button (new button% 
-                              [label (string-constant close)]
-                              [parent button-panel]
-                              [callback (λ (b e) (close))]))
+       (when close-button?
+         (set! close-button (new button% 
+                                 [label (string-constant close)]
+                                 [parent button-panel]
+                                 [callback (λ (b e) (close))])))
 
        (define (close)
          (if frame
@@ -132,7 +142,8 @@
        (define (kill-callback)
          (custodian-shutdown-all installer-cust)
          (fprintf output-port "\n~a\n" aborted-message))
-       (send close-button enable #f)
+       (set! currently-can-close? #f)
+       (when close-button (send close-button enable #f))
        (send canvas allow-tab-exit #t)
        ((current-text-keymap-initializer) (send text get-keymap))
        (send text set-styles-sticky #f)
@@ -198,7 +209,8 @@
                   (queue-callback
                    (λ () 
                      (send kill-button enable #f)
-                     (send close-button enable #t)
+                     (when close-button (send close-button enable #t))
+                     (set! currently-can-close? #t)
                      (semaphore-post can-close-sema))))
                 (unless completed-successfully? 
                   (parameterize ([current-eventspace orig-eventspace])
@@ -233,7 +245,7 @@
          (define/public (is-closed?)
            (not (send sub-container is-shown?)))
          (define/public (can-close?) 
-           (send close-button is-enabled?))
+           currently-can-close?)
          (define/public (close)
            (unless (is-closed?)
              (if frame
