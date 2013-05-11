@@ -119,14 +119,18 @@
       (internal-get-bitmap))
     
     (define/public (set-pixel x y c)
-      (let ([s (bytes 255 (color-red c) (color-green c) (color-blue c))])
+      (let ([s (bytes (inexact->exact (round (* 255 (color-alpha c))))
+                      (color-red c)
+                      (color-green c)
+                      (color-blue c))])
         (set-argb-pixels x y 1 1 s)))
 
     (define/public (get-pixel x y c)
       (let-values ([(w h) (get-size)])
         (let ([b (make-bytes 4)])
           (get-argb-pixels x y 1 1 b)
-          (send c set (bytes-ref b 1) (bytes-ref b 2) (bytes-ref b 3))
+          (send c set (bytes-ref b 1) (bytes-ref b 2) (bytes-ref b 3)
+                (/ (bytes-ref b 0) 255))
           (and (<= 0 x w) (<= 0 y h)))))
 
     (define/public (set-argb-pixels x y w h bstr
