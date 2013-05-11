@@ -623,7 +623,8 @@
                                                 #:mode 'connect
                                                 #:context ssl-context
                                                 #:close-original? #t)])
-                  (super attach-to-ports sin sout)))
+                  ;; See comments below re buffering-output-port
+                  (super attach-to-ports sin (buffering-output-port sout))))
                ((#\N)
                 ;; Backend gracefully declined
                 (void (read-byte in))
@@ -637,6 +638,42 @@
                 (error/comm 'postgresql-connect "after SSL request")))))
           ((no)
            (super attach-to-ports in out)))))))
+
+;; SSL output ports currently seem to create one SSL record per port write.
+;; This causes an explosion in the amount of data sent, due to padding, HMAC,
+;; and other record overhead. So add an ad hoc buffering port around it.
+;; FIXME: This code is probably wrong in various ways related to concurrency,
+;; evts, and breaks.
+(define (buffering-output-port out)
+  (define-syntax-rule (DEBUG expr ...) (when #f expr ...))
+  (DEBUG (eprintf "** making buffered output port\n"))
+  (define tmp (open-output-bytes))
+  (define (write-out buf start end flush? eb?)
+    ;; This code just ignores the eb? (enable-break) argument.
+    ;; The 'flush-output' operation seems to trigger a zero-byte write; I haven't
+    ;; seen the flush? argument being used.
+    (DEBUG (eprintf "** write ~s bytes, flush?=~s, eb?=~s\n" (- end start) flush? eb?))
+    (begin0 (if (> end start) (write-bytes buf tmp start end) 0)
+      (when (or flush? (= end start)) (flush))))
+  (define (flush)
+    (define buf (get-output-bytes tmp #t))
+    (define end (bytes-length buf))
+    (DEBUG (eprintf "** flushing ~s bytes\n" end))
+    ;; SSL seems to have trouble accepting too much data at once, but breaking
+    ;; it up into 10MB chunks seems to work.
+    (for ([start (in-range 0 end #e1e7)])
+      (DEBUG (eprintf "-- flushing range [~s,~s)\n" start (min end (+ start #e1e7))))
+      (write-bytes buf out start (min end (+ start #e1e7)))
+      (flush-output out))
+    (when (zero? end) (flush-output out)))
+  (define (close)
+    (DEBUG (eprintf "** closing\n"))
+    (flush)
+    (close-output-port out))
+  (make-output-port (object-name out)
+                    always-evt
+                    write-out
+                    close))
 
 ;; ========================================
 
