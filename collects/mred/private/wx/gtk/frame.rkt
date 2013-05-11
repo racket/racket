@@ -179,6 +179,15 @@
     (gtk_widget_show panel-gtk)
     (connect-enter-and-leave gtk)
 
+    ;; Enable key events on the panel to catch events
+    ;; that would otherwise go undelivered:
+    (set-gtk-object-flags! panel-gtk
+			   (bitwise-ior (get-gtk-object-flags panel-gtk)
+					GTK_CAN_FOCUS))
+    (gtk_widget_add_events panel-gtk (bitwise-ior GDK_KEY_PRESS_MASK
+						  GDK_KEY_RELEASE_MASK))
+    (connect-key panel-gtk)
+
     (unless is-dialog?
       (gtk_window_set_icon_list gtk (cdr (force icon-pixbufs+glist))))
 

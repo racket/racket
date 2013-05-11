@@ -34,6 +34,7 @@
               gtk_widget_set_sensitive
 
               connect-focus
+              connect-key
               connect-key-and-mouse
               connect-enter-and-leave
               do-button-event
@@ -302,9 +303,12 @@
   (connect-enter gtk)
   (connect-leave gtk))
 
-(define (connect-key-and-mouse gtk [skip-press? #f])
+(define (connect-key gtk)
   (connect-key-press gtk)
-  (connect-key-release gtk)
+  (connect-key-release gtk))
+
+(define (connect-key-and-mouse gtk [skip-press? #f])
+  (connect-key gtk)
   (connect-scroll gtk)
   (connect-button-press gtk)
   (unless skip-press? (connect-button-release gtk))
