@@ -22,8 +22,8 @@ A frame is a top-level container window. It has a title bar (which
                  [alignment (list/c (or/c 'left 'center 'right)
                                     (or/c 'top 'center 'bottom))
                             '(center top)]
-                 [min-width (integer-in 0 10000) _graphical-minimum-width]
-                 [min-height (integer-in 0 10000) _graphical-minimum-height]
+                 [min-width (or/c (integer-in 0 10000) #f) #f]
+                 [min-height (or/c (integer-in 0 10000) #f) #f]
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t])]{
 

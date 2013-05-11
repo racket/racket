@@ -53,8 +53,8 @@ The keymap for the text field's editor is initialized by calling the
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
-                 [min-width (integer-in 0 10000) _graphical-minimum-width]
-                 [min-height (integer-in 0 10000) _graphical-minimum-height]
+                 [min-width (or/c (integer-in 0 10000) #f) #f]
+                 [min-height (or/c (integer-in 0 10000) #f) #f]
                  [stretchable-width any/c #t]
                  [stretchable-height any/c (memq 'multiple style)])]{
 

@@ -41,8 +41,8 @@
             [stretchable-width no-val]
             [stretchable-height no-val])
       (let ([cwho '(iconstructor area)])
-        (unless (eq? min-width no-val) (check-non#f-dimension cwho min-width))
-        (unless (eq? min-height no-val) (check-non#f-dimension cwho min-height)))
+        (unless (eq? min-width no-val) (check-dimension cwho min-width))
+        (unless (eq? min-height no-val) (check-dimension cwho min-height)))
       (mismatches)
       (define get-wx-outer-panel get-outer-wx-pan)
       (define parent prnt)
@@ -64,8 +64,8 @@
                                                   (send wx get-hard-minimum-size))))])
       (define wx (mk-wx))
       (super-make-object wx)
-      (unless (eq? min-width no-val) (minw min-width))
-      (unless (eq? min-height no-val) (minh min-height))
+      (unless (eq? min-width no-val) (when min-width (minw min-width)))
+      (unless (eq? min-height no-val) (when min-height (minh min-height)))
       (unless (eq? stretchable-width no-val) (sw stretchable-width))
       (unless (eq? stretchable-height no-val) (sh stretchable-height))))
 

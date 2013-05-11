@@ -26,8 +26,8 @@ Whenever a check box is clicked by the user, the check box's value is
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
-                 [min-width (integer-in 0 10000) _graphical-minimum-width]
-                 [min-height (integer-in 0 10000) _graphical-minimum-height]
+                 [min-width (or/c (integer-in 0 10000) #f) #f]
+                 [min-height (or/c (integer-in 0 10000) #f) #f]
                  [stretchable-width any/c #f]
                  [stretchable-height any/c #f])]{
 
