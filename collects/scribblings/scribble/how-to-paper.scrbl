@@ -1,8 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual scribble/bnf "utils.rkt"
-          slideshow/pict
+          pict
           (for-label scriblib/figure scribble/base scribble/sigplan
-                     (except-in slideshow/pict table)))
+                     (except-in pict table)))
 
 @(define-syntax-rule (samplemod . text) (codeblock . text))
 @(define-syntax-rule (sample a . text)
@@ -645,12 +645,12 @@ renders as
 @section[#:tag "pictures"]{Pictures}
 
 Any value that is convertable to an image can be used directly within
-a Scribble document. Functions from the @racketmodname[slideshow/pict]
+a Scribble document. Functions from the @racketmodname[pict]
 and @racketmodname[2htdp/image] libraries, for example, generate
 images. For example,
 
 @sample|{
-  @(require slideshow/pict)
+  @(require pict)
 
   This cookie has lost its chocolate chips: 
   @(colorize (filled-ellipse 40 40) "beige").

@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require (prefix-in s: (combine-in scribble/manual scribble/core))
-         (prefix-in slideshow: (combine-in slideshow/base slideshow/pict))
+         (prefix-in slideshow: (combine-in slideshow/base pict))
          racket/draw
          racket/class ;; only for make-object
          racket/match)

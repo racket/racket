@@ -10,4 +10,4 @@
     (error "not in f?")))
 
 ;; Make sure that `enter!' can work on lots of modules:
-(enter! slideshow/pict)
+(enter! pict)

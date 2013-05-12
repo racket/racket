@@ -14,7 +14,7 @@
                      racket/gui
                      racket/pretty
                      racket/contract
-                     slideshow/pict
+                     pict
                      mrlib/graph
                      redex))
 
@@ -22,7 +22,7 @@
 @(interaction-eval #:eval amb-eval (require racket
                                             redex/reduction-semantics 
                                             redex/pict
-                                            slideshow/pict
+                                            pict
                                             racket/pretty))
 @(interaction-eval #:eval amb-eval (begin (pretty-print-columns 40) (random-seed 0)))
 
@@ -1046,10 +1046,10 @@ The result of @racket[render-reduction-relation] is rendered directly in DrRacke
 interactions window, and also can be saved as a @filepath{.ps} file by passing
 the name of the file as the second argument to @racket[render-reduction-relation].
 
-Redex's typesetting also interoperates with the @racketmodname[slideshow/pict] library.
+Redex's typesetting also interoperates with the @racketmodname[pict] library.
 If we pull it in with a @racket[require]:
 
-@racketblock[(require #,(racketmodname slideshow/pict))]
+@racketblock[(require #,(racketmodname pict))]
 
 then we can use the pict primitives to combine typeset fragments into a larger whole.
 

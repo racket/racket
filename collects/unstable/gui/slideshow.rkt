@@ -1,5 +1,5 @@
 #lang racket/base
-(require slideshow/base slideshow/pict
+(require slideshow/base pict
          racket/contract/base racket/list racket/match
          racket/stxparam
          (for-syntax racket/base racket/list racket/set syntax/parse)

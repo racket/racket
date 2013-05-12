@@ -11,7 +11,7 @@
                      [gui-interaction-eval-show mr-interaction-eval-show]))
 
 (define ss-eval (make-base-eval))
-(void (interaction-eval #:eval ss-eval (require slideshow/pict)))
+(void (interaction-eval #:eval ss-eval (require pict)))
 
 (define-syntax-rule (ss-interaction e ...)
   (interaction #:eval ss-eval e ...))

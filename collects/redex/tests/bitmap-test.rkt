@@ -1,7 +1,7 @@
 #lang racket
 (require "bitmap-test-util.rkt"
          "../main.rkt"
-         slideshow/pict)
+         pict)
 
 ;; tests: 
 ;;  - language,

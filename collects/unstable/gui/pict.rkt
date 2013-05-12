@@ -1,5 +1,5 @@
 #lang racket/base
-(require slideshow/pict
+(require pict
          racket/contract/base racket/match
          racket/splicing racket/stxparam racket/draw
          racket/block racket/class

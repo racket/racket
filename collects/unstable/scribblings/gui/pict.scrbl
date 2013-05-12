@@ -6,12 +6,12 @@
                      racket/class
                      racket/draw
                      racket/future
-                     slideshow/pict
+                     pict
                      unstable/contract
                      unstable/gui/pict))
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require racket/math slideshow/pict unstable/gui/pict))
+@(the-eval '(require racket/math pict unstable/gui/pict))
 
 @title[#:tag "pict"]{Pict Utilities}
 @unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]

@@ -23,7 +23,7 @@ interfaces (GUIs):
        See @other-doc['(lib "scribblings/gui/gui.scrbl")]
        for more information.}
 
- @item{The @racketmodname[slideshow/pict] library provides a more
+ @item{The @racketmodname[pict] library provides a more
        functional abstraction layer over @racketmodname[racket/draw].
        This layer is especially useful for creating slide
        presentations with @seclink[#:doc '(lib
@@ -31,14 +31,14 @@ interfaces (GUIs):
        it is also useful for creating images for @seclink[#:doc '(lib
        "scribblings/scribble/scribble.scrbl") "top"]{Scribble}
        documents or other drawing tasks. Pictures created with the
-       @racketmodname[slideshow/pict] library can be rendered to any
+       @racketmodname[pict] library can be rendered to any
        drawing context.
 
        See @other-doc['(lib "scribblings/slideshow/slideshow.scrbl")]
        for more information.}
 
  @item{The @racketmodname[2htdp/image] library is similar to
-       @racketmodname[slideshow/pict]. It is more streamlined for
+       @racketmodname[pict]. It is more streamlined for
        pedagogical use, but also slightly more specific to screen and
        bitmap drawing.
 

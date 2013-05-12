@@ -4,7 +4,7 @@
 ;;  we can use scheme/base and import slideshow/base, etc.
 
 (require slideshow/base
-         slideshow/pict
+         pict
          slideshow/code
          racket/class
          racket/list

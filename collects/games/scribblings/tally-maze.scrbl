@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.rkt" racket/class racket/draw (only-in slideshow/pict dc))
+@(require "common.rkt" racket/class racket/draw (only-in pict dc))
 
 @(define (add-commas n)
    (define s (number->string n))

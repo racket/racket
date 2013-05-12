@@ -371,18 +371,18 @@
     (define-syntax-rule 
       (dyn name)
       (define name (if gave-up?
-                       (symbol->string (format "~a-gave-up" 'name))
-                       (dynamic-require 'slideshow/pict 'name))))
+                       (string->symbol (format "~a-gave-up" 'name))
+                       (dynamic-require 'pict 'name))))
     (define gave-up? #f)
     (define pict:convertible?
       (with-handlers ((exn:fail? (λ (exn)
                                    (set! gave-up? #t)
                                    (log-error (exn-message exn))
                                    (λ (val) #f))))
-        (dynamic-require 'slideshow/pict-convert 'pict-convertible?)))
+        (dynamic-require 'pict/convert 'pict-convertible?)))
     (define pict-convert (if gave-up?
                              'pict-convert-gave-up
-                             (dynamic-require 'slideshow/pict-convert 'pict-convert)))
+                             (dynamic-require 'pict/convert 'pict-convert)))
     (dyn pict-width)
     (dyn pict-height)
     (dyn pict-ascent)

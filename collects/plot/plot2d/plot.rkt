@@ -4,7 +4,7 @@
 
 (require racket/draw racket/snip racket/contract racket/list racket/class racket/match
          unstable/contract
-         slideshow/pict
+         pict
          unstable/parameter-group
          racket/lazy-require
          unstable/latent-contract/defthing

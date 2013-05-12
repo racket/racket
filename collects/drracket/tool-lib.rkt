@@ -1715,7 +1715,7 @@ all of the names in the tools library, for use defining keybindings
     and then invokes @racket[thunk], returning what it returns.
     
     When @racket[drracket:language:make-setup-printing-parameters] is invoked,
-    it @racket[dynamic-require]s @racketmodname[slideshow/pict-convert] and
+    it @racket[dynamic-require]s @racketmodname[pict/convert] and
     closes over the results, using them to convert values when the resulting
     procedure is invoked.
     })

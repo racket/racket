@@ -16,9 +16,9 @@
           (for-label racket/base
                      racket/gui/base
                      racket/class
-                     slideshow
+                     slideshow pict
                      slideshow/code
-                     slideshow/flash)
+                     pict/flash)
 
           (for-syntax racket/base))
 
@@ -375,11 +375,11 @@ picture-making functions as well as more commonly used functions
 such as @racket[list] and @racket[map].
 
 To import additional libraries, use the @racket[require] form. For
-example, the library @racketmodname[slideshow/flash] provides a
+example, the library @racketmodname[pict/flash] provides a
 @racket[filled-flash] function:
 
 @ss-def+int[
-(require slideshow/flash)
+(require pict/flash)
 (filled-flash 40 30)
 ]
 
@@ -390,9 +390,9 @@ Modules are named and distributed in various ways:
  @item{Some modules are packaged in the Racket distribution or
        otherwise installed into a hierarchy of
        @defterm{collections}. For example, the module name
-       @racketmodname[slideshow/flash] means ``the module implemented
+       @racketmodname[pict/flash] means ``the module implemented
        in the file @filepath{flash.rkt} that is located in the
-       @filepath{slideshow} collection.'' When a module name includes
+       @filepath{pict} collection.'' When a module name includes
        no slash, then it refers to a @filepath{main.rkt} file.}
 
  @item{Some modules are distributed through the
@@ -548,7 +548,7 @@ exposes a picture's drawing function. We can use
 @racket[make-pict-drawer] in a canvas-painting callback to draw a
 picture into a canvas:
 
-@(mr-interaction-eval (require slideshow/flash))
+@(mr-interaction-eval (require pict/flash))
 
 @mr-def+int[
 (define (add-drawing p)

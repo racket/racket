@@ -2,7 +2,7 @@
 (require racket/math
          racket/class
          racket/draw
-         slideshow/pict
+         pict
          "blur.rkt")
 (provide shadow-frame
          arch)

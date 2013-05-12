@@ -32,8 +32,8 @@ has been moved out).
                     make-pen make-color)
          (for-syntax racket/base)
          file/convertible
-         slideshow/pict-convert
-         (prefix-in pict: (only-in slideshow/pict dc))
+         pict/convert
+         (prefix-in pict: (only-in pict dc))
          racket/math
          racket/contract
          "private/image-core-bitmap.rkt"

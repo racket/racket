@@ -1,7 +1,5 @@
 #lang slideshow
 
-(require slideshow/pict) 
-
 (define DELTA 80)
 (define FT 12)
 

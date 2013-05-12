@@ -1,8 +1,8 @@
 #lang scribble/doc
-@(require "common.rkt" scribble/eval (for-label slideshow/pict))
+@(require "common.rkt" scribble/eval (for-label pict))
 
 @(define class-eval (make-base-eval))
-@(interaction-eval #:eval class-eval (require racket/class racket/draw slideshow/pict))
+@(interaction-eval #:eval class-eval (require racket/class racket/draw pict))
 
 @defclass/title[radial-gradient% object% ()]{
 

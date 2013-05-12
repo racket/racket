@@ -1,6 +1,6 @@
 #lang racket/gui
 (require framework 
-         slideshow/pict
+         pict
          "display.rkt" 
          "constants.rkt" 
          "pict-canvas.rkt") 

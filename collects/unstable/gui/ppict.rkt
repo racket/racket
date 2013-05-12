@@ -4,7 +4,7 @@
                      syntax/parse/experimental/contract
                      "private/ppict-syntax.rkt")
          racket/contract/base
-         slideshow/pict
+         pict
          "private/ppict.rkt"
          "private/tag-pict.rkt")
 

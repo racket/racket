@@ -20,7 +20,7 @@ The @racketmodname[slideshow] module acts as a language that includes:
 
  @item{all of @racketmodname[racket];}
 
- @item{pict-creating functions from @racketmodname[slideshow/pict]; and}
+ @item{pict-creating functions from @racketmodname[pict]; and}
 
  @item{slide-composing functions from @racketmodname[slideshow/base].}
 

@@ -1,3 +1,3 @@
-(module face scheme/base
-  (require texpict/face)
-  (provide (all-from-out texpict/face)))
+#lang racket/base
+(require pict/face)
+(provide (all-from-out pict/face))

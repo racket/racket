@@ -1,6 +1,6 @@
 #lang racket/base 
 (require racket/contract 
-         slideshow/pict
+         pict
          racket/bool 
          future-visualizer/trace
          "private/visualizer-gui.rkt"  

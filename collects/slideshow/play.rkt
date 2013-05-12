@@ -1,6 +1,6 @@
 #lang scheme/base
 (require slideshow/base
-         slideshow/pict
+         pict
          scheme/list
          scheme/math)
 

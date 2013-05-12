@@ -28,7 +28,7 @@
                      images/icons/style
                      images/icons/symbol
                      images/icons/tool
-                     slideshow/pict))
+                     pict))
 
 (provide tool@)
 

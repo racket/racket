@@ -417,10 +417,10 @@
 (show-arrows (code arrow) (t "arrow") arrow)
 (show-arrows (code arrowhead) (t "arrowhead") arrowhead)
 
-(require slideshow/face)
+(require pict/face)
 (slide
  #:title "Faces"
- (para "The" (code slideshow/face)
+ (para "The" (code pict/face)
             "library makes faces")
  (blank)
  (hc-append
@@ -540,10 +540,10 @@
                  plain-file lt-find
                  #:color "orange"))
 
-(require slideshow/balloon)
+(require pict/balloon)
 (slide
  #:title "Balloons"
- (para "The" (code slideshow/balloon)
+ (para "The" (code pict/balloon)
             "library provides cartoon balloons ---"
             "another reason to use" (code -find) "functions")
  (let* ([orig fish-file-scene]

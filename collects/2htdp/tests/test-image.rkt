@@ -55,8 +55,8 @@
          wxme
          rackunit
          file/convertible
-         slideshow/pict-convert
-         (only-in slideshow/pict pict?)
+         pict/convert
+         (only-in pict pict?)
          (only-in lang/imageeq image=?)
          (prefix-in 1: htdp/image)
          (only-in lang/htdp-advanced equal~?)

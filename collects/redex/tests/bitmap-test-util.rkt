@@ -1,6 +1,6 @@
 #lang racket/base
 (require framework
-         slideshow/pict
+         pict
          racket/runtime-path
          racket/gui/base
          (for-syntax racket/base)

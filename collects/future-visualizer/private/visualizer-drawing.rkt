@@ -2,7 +2,7 @@
 (require racket/list
          racket/class
          racket/draw
-         slideshow/pict
+         pict
          data/interval-map
          "visualizer-data.rkt"
          "graph-drawing.rkt"

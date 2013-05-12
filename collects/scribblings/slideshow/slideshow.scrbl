@@ -15,7 +15,7 @@ program.
 To get started, run the @exec{slideshow} executable, and click the
 @onscreen{Run Tutorial} link.
 
-To learn more about why Slideshow is cool, see also ``Slideshow:
+To learn more about Slideshow, see also ``Slideshow:
 Functional Presentations'' @cite["Findler06"].
 
 @defmodulelang*/no-declare[(slideshow)]{Most of the bindings defined
@@ -28,7 +28,6 @@ which also re-exports all of @racketmodname[racket] except for
 @; ------------------------------------------------------------------------
 
 @include-section["guide.scrbl"]
-@include-section["picts.scrbl"]
 @include-section["slides.scrbl"]
 @include-section["code.scrbl"]
 @include-section["play.scrbl"]

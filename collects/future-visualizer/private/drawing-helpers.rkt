@@ -1,5 +1,5 @@
 #lang racket/base
-(require slideshow/pict
+(require pict
          "display.rkt"
          "constants.rkt")
 (provide opacity-layer

@@ -1,6 +1,6 @@
 #lang slideshow
 
-(require slideshow/pict mred/mred)
+(require racket/draw)
 
 (define DELTA 80)
 (define FT 12)

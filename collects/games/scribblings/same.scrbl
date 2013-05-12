@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.rkt" racket/class racket/draw (only-in slideshow/pict dc)
+@(require "common.rkt" racket/class racket/draw (only-in pict dc)
           "../same/same-lib.rkt")
 
 @(define board-width 6)

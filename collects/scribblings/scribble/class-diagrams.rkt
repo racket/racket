@@ -1,7 +1,7 @@
 #lang racket/base
 (require (prefix-in etc: mzlib/etc)
          texpict/mrpict
-         (only-in slideshow/pict pin-line pin-arrow-line)
+         (only-in pict pin-line pin-arrow-line)
          (except-in texpict/utils pin-line pin-arrow-line)
          racket/class
          racket/runtime-path

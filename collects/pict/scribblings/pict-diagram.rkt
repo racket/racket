@@ -1,5 +1,5 @@
 #lang racket/base
-(require slideshow/pict
+(require pict
          racket/class
          racket/draw)
 

@@ -4,7 +4,7 @@
          racket/class
          racket/stxparam
          racket/contract/base
-         slideshow/pict
+         pict
          "tag-pict.rkt")
 
 #|

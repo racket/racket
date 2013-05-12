@@ -1,11 +1,11 @@
 #lang scribble/doc
 @(require "common.rkt"
-          (for-label slideshow/pict))
+          (for-label pict))
 
 @(define pen-eval (make-base-eval))
 @(interaction-eval 
   #:eval pen-eval 
-  (require racket/draw slideshow/pict racket/class))
+  (require racket/draw pict racket/class))
 
 @defclass/title[pen% object% ()]{
 

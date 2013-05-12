@@ -570,7 +570,8 @@ mr-extras :+= (+ (- (package: "mrlib/")
                  (tests: "aligned-pasteboard/"))
 
 ;; -------------------- pict library
-mr-extras :+= (- (+ (collects: "texpict/")
+mr-extras :+= (- (+ (package: "pict/")
+                    (collects: "texpict/")
                     (srcfile: "slideshow/pict.rkt")
                     (srcfile: "slideshow/pict-convert.rkt"))
                  (srcfile: "texpict/slideshow-run.rkt")

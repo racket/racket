@@ -3,7 +3,7 @@
 (require scribble/eval
          (for-label racket
                     racket/gui/base
-                    slideshow/pict
+                    pict
                     db
                     plot
                     plot/utils
@@ -17,7 +17,7 @@
          (all-from-out scribble/eval)
          (for-label (all-from-out racket
                                   racket/gui/base
-                                  slideshow/pict
+                                  pict
                                   db
                                   plot
                                   plot/utils

@@ -10,7 +10,7 @@
                      racket/contract
                      mrlib/graph
                      (except-in 2htdp/image make-pen text)
-                     (only-in slideshow/pict pict? text dc-for-text-size text-style/c
+                     (only-in pict pict? text dc-for-text-size text-style/c
                               vc-append)
                      redex))
 
@@ -2122,7 +2122,7 @@ characters written to the port go to the end of the editor.
 Use @racket[write-special] to send @racket[snip%] objects or 
 @racketmodname[2htdp/image] images 
 (or other things that subscribe to @racketmodname[file/convertible]
-or @racketmodname[slideshow/pict-convert])
+or @racketmodname[pict/convert])
 directly to the editor.
 
 The @racket[colors] argument, if provided, specifies a list of
@@ -2493,8 +2493,7 @@ relations, and metafunction written with plt redex.
 Each grammar, reduction relation, and metafunction can be
 saved in a .ps file (as encapsulated postscript), or can be
 turned into a pict for viewing in the REPL or using with
-Slideshow (see 
-@other-manual['(lib "scribblings/slideshow/slideshow.scrbl")]).
+Slideshow (see the @racketmodname[pict] library).
 
 @subsection{Picts, PDF, & PostScript}
 

@@ -55,7 +55,7 @@
                 [#:legend-anchor Anchor])
                ->* Void)]
  
- #;; Picts are from slideshow/pict, which isn't typed yet
+ #;; Picts are from the pict collection, which isn't typed yet
  [plot3d-pict ((Treeof (U renderer3d nonrenderer))
                [#:x-min (Option Real)]
                [#:x-max (Option Real)]

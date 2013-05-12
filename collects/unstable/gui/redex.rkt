@@ -2,7 +2,7 @@
 (require racket/contract
          redex/reduction-semantics
          redex/pict
-         slideshow/pict
+         pict
          racket/list)
 
 ;; TO DO:

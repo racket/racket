@@ -13,7 +13,7 @@
                      images/icons/style
                      images/logos
                      mrlib/switchable-button
-                     slideshow/pict)
+                     pict)
           racket/class racket/draw
           images/icons/arrow
           images/icons/control
@@ -70,7 +70,7 @@ The icons in this collection are designed to be composed to create new ones: the
 Further, slideshow's @racket[pict] combiners offer a way to compose them almost arbitrarily.
 For example, a media player application might create a large ``step'' button by superimposing a @racket[record-icon] and a @racket[step-icon]:
 @interaction[#:eval icons-eval
-                    (require slideshow/pict images/icons/control images/icons/style)
+                    (require pict images/icons/control images/icons/style)
                     (pict->bitmap
                      (cc-superimpose
                       (bitmap (record-icon #:color "forestgreen" #:height 96
@@ -195,7 +195,7 @@ Still, most of the simple icons (such as those in @racketmodname[images/icons/ar
 @doc-apply[icon-color->outline-color]{
 For a given icon color, returns the proper outline @racket[color%].
 
-As an example, here is how to duplicate the @racket[record-icon] using @racketmodname[slideshow/pict]:
+As an example, here is how to duplicate the @racket[record-icon] using @racketmodname[pict]:
 @interaction[#:eval icons-eval
                     (define outline-color (icon-color->outline-color "forestgreen"))
                     (define brush-pict (colorize (filled-ellipse 62 62) "forestgreen"))

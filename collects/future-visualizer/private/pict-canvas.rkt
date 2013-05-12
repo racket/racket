@@ -1,6 +1,6 @@
 #lang racket/gui
 (require framework 
-         slideshow/pict 
+         pict 
          "display.rkt") 
 (provide pict-canvas%) 
 

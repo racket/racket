@@ -3,7 +3,7 @@
          (for-template racket/base
                        racket/contract/base
                        racket/stxparam
-                       slideshow/pict
+                       pict
                        "ppict.rkt"))
 (provide fragment-sequence)
 

@@ -13,7 +13,7 @@
 @unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require slideshow/pict unstable/gui/ppict unstable/gui/private/tag-pict))
+@(the-eval '(require pict unstable/gui/ppict unstable/gui/private/tag-pict))
 
 @section[#:tag "ppicts"]{Progressive Picts}
 

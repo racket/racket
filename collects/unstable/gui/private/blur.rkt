@@ -5,7 +5,7 @@
          racket/class
          racket/draw
          unstable/future
-         slideshow/pict)
+         pict)
 
 (define nneg-real/c (and/c real? (not/c negative?)))
 

@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "class-diagrams.rkt"
-         (only-in slideshow/pict pin-arrow-line)
+         (only-in pict pin-arrow-line)
          texpict/mrpict
          (except-in texpict/utils pin-arrow-line)
          racket/system

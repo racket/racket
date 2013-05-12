@@ -1,4 +1,3 @@
-#lang scheme/base
-
-(require texpict/flash)
-(provide (all-from-out texpict/flash))
+#lang racket/base
+(require pict/flash)
+(provide (all-from-out pict/flash))

@@ -7,7 +7,7 @@
                      racket/flonum
                      slideshow)
           images/flomap
-          slideshow/pict)
+          pict)
 
 @(require (for-label (only-in typed/racket
                               Integer Float Nonnegative-Fixnum Real Boolean
@@ -917,7 +917,7 @@ Contents:
 Some standard image transforms.
 These are lossless, in that repeated applications do not degrade (blur or alias) the image.
 @examples[#:eval flomap-eval
-                 (require slideshow/pict)
+                 (require pict)
                  (define text-fm
                    (flomap-trim
                     (bitmap->flomap

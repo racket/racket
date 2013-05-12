@@ -4,7 +4,7 @@
                      "private/ppict-syntax.rkt")
          racket/contract/base
          slideshow/base
-         slideshow/pict
+         pict
          "private/ppict.rkt")
 
 ;; ============================================================

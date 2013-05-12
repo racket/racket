@@ -1,5 +1,5 @@
 #lang racket/base
-(require slideshow/pict)
+(require pict)
 (provide tag-pict
          find-tag
          find-tag*
