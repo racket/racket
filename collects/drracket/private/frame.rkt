@@ -3,18 +3,19 @@
 (module install-pkg racket/base
   (require racket/class
            pkg/gui/main)
-  (provide install-pkg)
+  (provide install-pkg
+           pkg-manager)
 
   (define pkg-gui #f)
   
-  (define (install-pkg parent wrap-terminal-action)
+  (define (pkg-manager wrap-terminal-action)
     (if pkg-gui
         (send pkg-gui show #t)
-        (set! pkg-gui (make-pkg-gui #:wrap-terminal-action wrap-terminal-action)))))
-
-(module main racket
-  (require (submod ".." install-pkg))
-  (install-pkg #f))
+        (set! pkg-gui (make-pkg-gui #:wrap-terminal-action wrap-terminal-action))))
+  
+  (define (install-pkg parent wrap-terminal-action)
+    (make-pkg-installer #:parent parent 
+                        #:wrap-terminal-action wrap-terminal-action)))
 
 (require string-constants
          racket/match
@@ -209,6 +210,15 @@
                               (lambda (thunk)
                                 (parameterize ([error-display-handler drracket:init:original-error-display-handler])
                                   (thunk)))))])
+        (new separator-menu-item% [parent file-menu])
+        (new menu-item% 
+             [label (string-constant pkg-manager-menu-item)]
+             [parent file-menu]
+             [callback
+              (λ (item evt) 
+                (pkg-manager (lambda (thunk)
+                               (parameterize ([error-display-handler drracket:init:original-error-display-handler])
+                                 (thunk)))))])
         (super file-menu:between-open-and-revert file-menu))
       
       (define/override (file-menu:between-print-and-close menu)

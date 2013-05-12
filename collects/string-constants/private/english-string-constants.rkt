@@ -1821,5 +1821,7 @@ please adhere to these guidelines:
   (install-pkg-abort-update "Abort Update")
   (install-pkg-abort-remove "Abort Remove")
   (install-pkg-abort-generic-action "Abort Action")
+  (install-pkg-show-all-options "Show All Options")
+  (pkg-manager-menu-item "Package Manager...")
   
   )

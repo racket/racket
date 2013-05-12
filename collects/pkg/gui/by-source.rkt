@@ -49,7 +49,7 @@
 (define by-source-panel%
   (class vertical-panel%
     (init-field [in-terminal in-terminal])
-
+    
     (super-new)
     
     (inherit get-top-level-window)
@@ -94,6 +94,7 @@
                                                                                f))))
                                              (adjust-all)))]))
     
+    (define/public (get-button-panel) button-panel)
     (define button-panel (new horizontal-panel% 
                               [parent this] 
                               [stretchable-height #f]))
@@ -135,8 +136,8 @@
                                 [parent button-panel]
                                 [callback
                                  (λ (a b)
-                                    (set! details-shown? (not details-shown?))
-                                    (adjust-all))]))
+                                   (set! details-shown? (not details-shown?))
+                                   (adjust-all))]))
 
     (send details-parent change-children (λ (l) '()))
     (define choice (new choice%
@@ -219,12 +220,13 @@
     (new horizontal-panel% [parent cmdline-panel] [min-width 12] [stretchable-width #f])
     (define cmdline-msg (new message% 
                              [parent cmdline-panel]
-                             [stretchable-width #t]
+                             [auto-resize #t]
                              [label ""]
                              [font (send (send (editor:get-standard-style-list)
                                                find-named-style
                                                "Standard")
                                          get-font)]))
+    (new horizontal-panel% [parent cmdline-panel] [stretchable-width #t])
     
     (define/private (selected-type)
       (case (send choice get-selection)
