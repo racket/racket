@@ -200,17 +200,14 @@
              (define generic
                (generic-arity-coerce
                 'generic
+                ;; We could put `generic-args` here for the method header, but
+                ;; since we need to keyword-apply the method in the method table,
+                ;; it doesn't help. Thus we use `make-keyword-procedure`.
+                ;;
+                ;; If keyword-apply ends up being a bottleneck, consider
+                ;; adding the second argument to `make-keyword-procedure` again.
                 (make-keyword-procedure
                  (lambda (kws kws-args . given-args)
-                   (define this (list-ref given-args generic-this-idx))
-                   (if (name? this)
-                       (let ([m (vector-ref (get-generics this) generic-idx)])
-                         (if m
-                             (keyword-apply m kws kws-args given-args)
-                             (error 'generic "not implemented for ~e" this)))
-                       (raise-argument-error 'generic name-str this)))
-                 ; XXX (non-this ... this . rst)
-                 (lambda given-args
                    (define this (list-ref given-args generic-this-idx))
                    (cond
                     [#,(if prop-defined-already?
@@ -218,10 +215,10 @@
                            #'(-name? this))
                      (let ([m (vector-ref (get-generics this) generic-idx)])
                        (if m
-                           (apply m given-args)
+                           (keyword-apply m kws kws-args given-args)
                            (error 'generic "not implemented for ~e" this)))]
                     ;; default cases
-                    [(pred? this) (apply cond-impl given-args)]
+                    [(pred? this) (keyword-apply cond-impl kws kws-args given-args)]
                     ...
                     [else (raise-argument-error 'generic name-str this)])))))
              ...)))]))
