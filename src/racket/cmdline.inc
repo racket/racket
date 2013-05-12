@@ -252,7 +252,7 @@ static void configure_environment(Scheme_Object *mod)
   a[0] = submod;
   a[1] = scheme_make_true();
   v = scheme_apply(mdp, 2, a);
-  if (SCHEME_TRUEP(v)) {
+  if (!SAME_OBJ(scheme_make_false(), v)) {
     dyreq = scheme_builtin_value("dynamic-require");
 
     a[0] = submod;
