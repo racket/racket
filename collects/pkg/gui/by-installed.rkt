@@ -163,6 +163,7 @@
                       (case (car s)
                         [(catalog) "Catalog"]
                         [(url) "URL"]
-                        [(link) "Link"])
+                        [(link) "Link"]
+                        [(file) "File"])
                       (cadr s))))
       (adjust-buttons!))))
