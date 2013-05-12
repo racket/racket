@@ -234,12 +234,14 @@
 				       dc
 				       (lambda ()
 					 (send dc get-text-extent string s-font combine?)))])
-                (define (make-draw adj-x adj-y)
+                (define (make-draw adj-x adj-y angle)
                   (define p 
                     (and outline?
                          (let ([p (new dc-path%)])
                            (send p text-outline
-                                 font string 0 0 combine?)
+                                 s-font string 0 0 combine?)
+			   (unless (zero? angle)
+			     (send p rotate angle))
                            p)))
                   (lambda (dc x y)
                     (let ([f (send dc get-font)])
@@ -257,7 +259,7 @@
                         (send dc set-font s-font)
                         (send dc draw-text string
                               dest-x dest-y
-                              combine?)
+                              combine? 0 angle)
                         (when fg (send dc set-text-foreground fg))
                         (send dc set-font f)]))))
                  (if (or sub? sup?)
@@ -269,12 +271,14 @@
                                       (lambda (x) x)
                                       (lambda (y) (if sub?
                                                       (+ y (- wh h))
-                                                      y)))
+                                                      y))
+				      0)
                                      w wh (- wh wd) wd))
                      (if (zero? angle)
                          ;; Normal case: no rotation
                          (prog-picture (make-draw (lambda (x) x)
-                                                  (lambda (y) y))
+                                                  (lambda (y) y)
+						  0)
                                        w h (- h d) d)
                          ;; Rotation case. Need to find the bounding box.
                          ;; Calculate the four corners, relative to top left as origin:
@@ -305,7 +309,8 @@
                                       [(negative? sa) (- (* h ca))]
                                       [else (+ (- (* h ca)) (* w sa))])])
                              (prog-picture (make-draw (lambda (x) (+ x dx))
-                                                      (lambda (y) (+ y dy)))
+                                                      (lambda (y) (+ y dy))
+						      angle)
                                            pw ph ph 0)))))))))
 
       (define caps-text
