@@ -216,6 +216,11 @@ The @racket[style] argument must be one of the following:
  @item{@racket[(cons 'superscript style)]}
  @item{@racket[(cons 'caps style)]}
 
+ @item{@racket[(cons 'outline style)] --- draws an outline of the text
+       instead of solid glyphs; if a @racket[color%] object is
+       provided, it determines the outline color, while the current
+       color (or white if there is none) is used to fill the glyphs}
+
  @item{@racket[(cons 'combine style)] --- allows kerning and ligatures
       (the default, unless the @racket['modern] family is specified)}
 

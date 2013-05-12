@@ -196,7 +196,7 @@
                                       style)]
 			[else font]))]
 		    [(and (pair? style)
-			  (memq (car style) '(combine no-combine)))
+			  (memq (car style) '(combine no-combine outline)))
 		     (loop (cdr style))]
 		    [(and (pair? style)
 			  (is-a? (car style) color%))
@@ -213,13 +213,13 @@
 			     [else (loop (cdr style))]))]
 		[sub? (memq* 'subscript orig-style)]
 		[sup? (memq* 'superscript orig-style)]
-                [add-color (let loop ([style orig-style])
-                             (cond
-                              [(not (pair? style)) values]
-                              [(is-a? (car style) color%) 
-                               (define c (car style))
-                               (lambda (p) (colorize p c))]
-                              [else (loop (cdr style))]))])
+		[outline? (memq* 'outline orig-style)]
+                [color (let loop ([style orig-style])
+                         (cond
+                          [(not (pair? style)) #f]
+                          [(is-a? (car style) color%) 
+                           (resolve-color (car style))]
+                          [else (loop (cdr style))]))])
 	    (let ([s-font (if (or sub? sup?)
 			      (extend-font font
 					   (floor (* 6/10 (send font get-point-size)))
@@ -234,29 +234,47 @@
 				       dc
 				       (lambda ()
 					 (send dc get-text-extent string s-font combine?)))])
-                (add-color
+                (define (make-draw adj-x adj-y)
+                  (define p 
+                    (and outline?
+                         (let ([p (new dc-path%)])
+                           (send p text-outline
+                                 font string 0 0 combine?)
+                           p)))
+                  (lambda (dc x y)
+                    (let ([f (send dc get-font)])
+                      (define dest-x (adj-x x))
+                      (define dest-y (adj-y y))
+                      (cond
+                       [outline?
+                        (define pn (and color (send dc get-pen)))
+                        (when color (send dc set-pen color (send pn get-width) (send pn get-style)))
+                        (send dc draw-path p dest-x dest-y)
+                        (when color (send dc set-pen pn))]
+                       [else
+                        (define fg (and color (send dc get-text-foreground)))
+                        (when color (send dc set-text-foreground color))
+                        (send dc set-font s-font)
+                        (send dc draw-text string
+                              dest-x dest-y
+                              combine?)
+                        (when fg (send dc set-text-foreground fg))
+                        (send dc set-font f)]))))
                  (if (or sub? sup?)
                      (let-values ([(ww wh wd ws) (with-text-scale
                                                   dc
                                                   (lambda ()
                                                     (send dc get-text-extent "Wy" font)))])
-                       (prog-picture (lambda (dc x y)
-                                       (let ([f (send dc get-font)])
-                                         (send dc set-font s-font)
-                                         (send dc draw-text string
-                                               x (if sub?
-                                                     (+ y (- wh h))
-                                                     y)
-                                               combine?)
-                                         (send dc set-font f)))
+                       (prog-picture (make-draw
+                                      (lambda (x) x)
+                                      (lambda (y) (if sub?
+                                                      (+ y (- wh h))
+                                                      y)))
                                      w wh (- wh wd) wd))
                      (if (zero? angle)
                          ;; Normal case: no rotation
-                         (prog-picture (lambda (dc x y)
-                                         (let ([f (send dc get-font)])
-                                           (send dc set-font font)
-                                           (send dc draw-text string x y combine?)
-                                           (send dc set-font f)))
+                         (prog-picture (make-draw (lambda (x) x)
+                                                  (lambda (y) y))
                                        w h (- h d) d)
                          ;; Rotation case. Need to find the bounding box.
                          ;; Calculate the four corners, relative to top left as origin:
@@ -286,13 +304,9 @@
                                       [(positive? ca) (* w sa)]
                                       [(negative? sa) (- (* h ca))]
                                       [else (+ (- (* h ca)) (* w sa))])])
-                             (prog-picture (lambda (dc x y)
-                                             (let ([f (send dc get-font)])
-                                               (send dc set-font font)
-                                               (send dc draw-text string (+ x dx) (+ y dy)
-                                                     combine? 0 angle)
-                                               (send dc set-font f)))
-                                           pw ph ph 0))))))))))
+                             (prog-picture (make-draw (lambda (x) (+ x dx))
+                                                      (lambda (y) (+ y dy)))
+                                           pw ph ph 0)))))))))
 
       (define caps-text
 	(case-lambda
@@ -372,6 +386,20 @@
 	 [(exact close-enough x1 y1 x2 y2) (~connect exact close-enough x1 y1 x2 y2 #f)]
 	 [(exact close-enough x1 y1 x2 y2 arrow?)
 	  `((put ,x1 ,y1 (,(if arrow? 'vector 'line) ,(- x2 x1) ,(- y2 y1) #f)))]))
+
+      (define (resolve-color c)
+        (let* ([requested-color (cond
+                                 [(is-a? c color%) c]
+                                 [(string? c)
+                                  (send the-color-database find-color c)]
+                                 [(list? c)
+                                  (apply make-object color% c)])]
+               [color (or requested-color 
+                          (send the-color-database find-color "BLACK"))])
+          (unless requested-color
+            (eprintf "WARNING: couldn't find color: ~s\n" c))
+          color))
+
 
       (define (render dc h+top l dx dy)
 	(define b&w? #f)
@@ -458,16 +486,7 @@
 			   (let ([p (get-pen)]
 				 [b (get-brush)]
 				 [fg (get-text-foreground)])
-			     (let* ([requested-color (cond
-                                                       [(is-a? (cadr x) color%) (cadr x)]
-                                                       [(string? (cadr x))
-                                                        (send the-color-database find-color (cadr x))]
-                                                       [(list? (cadr x))
-                                                        (apply make-object color% (cadr x))])]
-				    [color (or requested-color 
-					       (send the-color-database find-color "BLACK"))])
-			       (unless requested-color
-				 (eprintf "WARNING: couldn't find color: ~s\n" (cadr x)))
+			     (let ([color (resolve-color (cadr x))])
                                (set-pen (find-or-create-pen color (send p get-width) (send p get-style)))
 			       (set-brush (find-or-create-brush color 'solid))
 			       (set-text-foreground color))

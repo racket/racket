@@ -42,6 +42,7 @@
            string? ;; could be more specific, I guess.
            (cons/c string? family/c)
            (cons/c (or/c 'bold 'italic 'superscript 'subscript 'combine 'no-combine 'caps
+                         'outline 'aligned 'unaligned
                          (is-a?/c color%))
                    text-style/c))))
   
