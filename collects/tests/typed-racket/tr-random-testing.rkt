@@ -207,11 +207,15 @@
         [else
          E]))
 
+(define max-mem 1000)
+
 (define num-exceptions 0)
 
 (define (mk-eval lang)
   (call-with-trusted-sandbox-configuration
-   (λ () (make-evaluator lang #:requires '(racket/flonum racket/unsafe/ops)))))
+   (λ ()
+     (parameterize ([sandbox-memory-limit max-mem])
+       (make-evaluator lang #:requires '(racket/flonum racket/unsafe/ops))))))
 (define racket-eval (mk-eval 'racket))
 (define tr-eval     (mk-eval 'typed/racket))
 
@@ -262,7 +266,7 @@
 (flush-output) ; DrDr doesn't print the above if the testing segfaults.
 
 (call-with-limits
- #f 1000
+ #f max-mem
  (lambda ()
    (redex-check tr-arith E (check-all-reals (term E))
                 #:attempts n-attempts
