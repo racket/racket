@@ -345,6 +345,9 @@ pict snip :
           (send bdc set-bitmap #f)
           (make-object image-snip% bm)))
       
+      ;; do not add this anymore, since it is covered internally
+      ;; by drracket's use of the pict/convert library
+      #;
       (drscheme:language:add-snip-value
        ;; Convert to print?
        (lambda (x) 
