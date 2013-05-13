@@ -171,6 +171,9 @@
       ;; taints down to all the relevant identifiers and expressions:
       (arm-for-clause clause syntax-arm))
 
+    (define sequence-specialization-logger
+      (make-logger 'sequence-specialization (current-logger)))
+
     (define (expand-clause orig-stx clause)
       (define (unpack stx)
         (syntax-case stx ()
@@ -294,7 +297,17 @@
                 (and post-guard (not (pred id ...)))
                 (loop-arg ...)))]
           [[(id ...) rhs]
+           #t
            (let ([introducer (make-syntax-introducer)])
+             ;; log non-specialized clauses, for performance tuning
+             (when (log-level? sequence-specialization-logger 'debug)
+               (log-message sequence-specialization-logger
+                            'debug
+                            (format "non-specialized for clause: ~a:~a:~a"
+                                    (syntax-source #'rhs)
+                                    (syntax-line   #'rhs)
+                                    (syntax-column #'rhs))
+                            #'rhs))
              (with-syntax ([[(id ...) rhs] (introducer (syntax-local-introduce clause))])
                (arm-for-clause
                 (syntax-local-introduce
