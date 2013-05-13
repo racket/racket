@@ -286,8 +286,8 @@
 		(= 0 (size e2))) empty/enum]
 	   [(not (infinite? (enum-size e1)))
 	    (cond [(not (infinite? (enum-size e2)))
-		   (let [(size (* (enum-size e1)
-				  (enum-size e2)))]
+		   (let ([size (* (enum-size e1)
+				  (enum-size e2))])
 		     (enum size
 			   (λ (n) ;; bijection from n -> axb
 			      (if (> n size)
@@ -594,7 +594,7 @@
 		  nums))))
 
  ;; const/enum tests
- (let [(e (const/enum 17))]
+ (let ([e (const/enum 17)])
    (test-begin
     (check-eq? (decode e 0) 17)
     (check-exn exn:fail? 
@@ -607,7 +607,7 @@
     (check-bijection? e)))
 
  ;; from-list/enum tests
- (let [(e (from-list/enum '(5 4 1 8)))]
+ (let ([e (from-list/enum '(5 4 1 8))])
    (test-begin
     (check-eq? (decode e 0) 5)
     (check-eq? (decode e 3) 8)
@@ -646,14 +646,14 @@
 
  ;; sum tests
  (test-begin
-  (let [(bool-or-num (sum/enum bools
-			       (from-list/enum '(0 1 2))))
-	(bool-or-nat (sum/enum bools
-			       nats))
-	(nat-or-bool (sum/enum nats
-			       bools))
-	(odd-or-even (sum/enum evens
-			       odds))]
+  (let ([bool-or-num (sum/enum bools
+			       (from-list/enum '(0 1 2)))]
+	[bool-or-nat (sum/enum bools
+				nats)]
+	[nat-or-bool (sum/enum nats
+				bools)]
+	[odd-or-even (sum/enum evens
+				odds)])
     (check-equal? (enum-size bool-or-num)
 		  5)
     (check-equal? (decode bool-or-num 0) #t)
