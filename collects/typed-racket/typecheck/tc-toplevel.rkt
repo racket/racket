@@ -417,7 +417,15 @@
 ;; used only from #%top-interaction
 ;; syntax -> (values #f (or/c void? tc-results/c))
 (define (tc-toplevel-form form)
-  (tc-toplevel/pass1 form)
-  (begin0 (values #f (tc-toplevel/pass2 form))
-          (report-all-errors)))
+  (syntax-parse form
+    [((~literal begin) e ...)
+     (for-each tc-toplevel-form (syntax->list #'(e ...)))
+     (begin0 (values #f (tc-toplevel/pass2 form))
+             (report-all-errors))]
+    [_
+     (when ((internal-syntax-pred define-type-alias-internal) form)
+       ((compose register-type-alias parse-type-alias) form))
+     (tc-toplevel/pass1 form)
+     (begin0 (values #f (tc-toplevel/pass2 form))
+             (report-all-errors))]))
 
