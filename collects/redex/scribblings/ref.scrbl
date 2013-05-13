@@ -2540,8 +2540,8 @@ and for use in DrRacket to easily adjust the typesetting:
 @racket[render-judgment-form],
 @racket[render-metafunctions], and
 @racket[render-lw], 
-and one
-for use in combination with other libraries that operate on picts
+and one for use in combination with other libraries
+that operate on @racketmodname[pict]s
 @racket[term->pict],
 @racket[language->pict],
 @racket[reduction-relation->pict],
@@ -2581,7 +2581,8 @@ sets @racket[dc-for-text-size] and the latter does not.
  is used to determine how the resulting pict will look.
  
  This function is primarily designed to be used with
- Slideshow or with other tools that combine picts together.
+ Slideshow or with other tools that combine @racketmodname[pict]s
+ together.
 }
 
 @defproc[(render-term/pretty-write [lang compiled-lang?] [term any/c] [filename path-string?] [#:width width #f]) void?]{
@@ -2626,7 +2627,8 @@ Produce a pict like @racket[render-language], but without
 adjusting @racket[dc-for-text-size].
 
 This function is primarily designed to be used with
-Slideshow or with other tools that combine picts together.
+Slideshow or with other tools that combine @racketmodname[pict]s
+together.
 }
 
 @defproc[(render-reduction-relation [rel reduction-relation?]
@@ -2662,7 +2664,7 @@ The following forms of arrows can be typeset:
 
 This function is
 primarily designed to be used with Slideshow or with
-other tools that combine picts together.
+other tools that combine @racketmodname[pict]s together.
 }
 
 @deftogether[[
@@ -2686,14 +2688,14 @@ This function sets @racket[dc-for-text-size]. See also
 @defform[(metafunction->pict metafunction-name)]{
   This produces a pict, but without setting @racket[dc-for-text-size].
   It is suitable for use in Slideshow or other libraries that combine
-  picts.
+  @racketmodname[pict]s.
 }
 
 @defform[(metafunctions->pict metafunction-name ...)]{
   Like @racket[metafunction->pict], 
-  this produces a pict, but without setting @racket[dc-for-text-size]
+  this produces a @racketmodname[pict], but without setting @racket[dc-for-text-size]
   and is suitable for use in Slideshow or other libraries that combine
-  picts. Like
+  @racketmodname[pict]s. Like
   @racket[render-metafunctions], it accepts multiple metafunctions
   and renders them together.
 }
@@ -2719,13 +2721,13 @@ This function sets @racket[dc-for-text-size]. See also
 @defform[(relation->pict relation-name)]{
   This produces a pict, but without setting @racket[dc-for-text-size].
   It is suitable for use in Slideshow or other libraries that combine
-  picts.
+  @racketmodname[pict]s.
 }
 
 @defform[(judgment-form->pict judgment-form-name)]{
   This produces a pict, but without setting @racket[dc-for-text-size].
   It is suitable for use in Slideshow or other libraries that combine
-  picts.
+  @racketmodname[pict]s.
 }
 
 @subsection{Customization}
@@ -2959,7 +2961,8 @@ Defaults to @racket[#t].
 
 This parameter's function is called whenever Redex typesets
 some part of a grammar, reduction relation, or
-metafunction. It defaults to slideshow's @racket[text] function.
+metafunction. It defaults to the @racketmodname[pict] 
+library's @racket[text] function.
 }
 
 @defproc[(arrow->pict [arrow symbol?]) pict?]{
