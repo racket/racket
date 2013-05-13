@@ -1892,8 +1892,9 @@
             (N . -> . N))]
 [sinh (from-cases
        (unop -Zero) ; only exact case
-       ((Un -NonNegRat -NonNegFlonum) . -> . -NonNegFlonum) ; possible underflow, no pos -> pos
-       ((Un -NonPosRat -NonPosFlonum) . -> . -NonPosFlonum)
+       ;; possible underflow, no pos -> pos. 0 -> 0, no -NonNegRat -> -NonNegFlonum
+       ((Un -PosRat -NonNegFlonum) . -> . -NonNegFlonum)
+       ((Un -NegRat -NonPosFlonum) . -> . -NonPosFlonum)
        (map unop (list -FlonumNan -Flonum
                        -SingleFlonumNan -NonNegSingleFlonum -NonPosSingleFlonum -SingleFlonum
                        -NonNegInexactReal -NonPosInexactReal -InexactReal

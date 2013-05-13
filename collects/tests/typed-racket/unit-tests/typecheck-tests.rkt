@@ -226,6 +226,7 @@
         (tc-e (flexpt 0.00000000001 100000000000.0) -NonNegFlonum)
         (tc-e (flexpt -2.0 -0.5) -Flonum) ; NaN
         (tc-e (tanh (ann 0 Nonnegative-Integer)) -NonNegReal)
+        (tc-e (sinh (ann 0 Nonpositive-Integer)) -NonPosReal)
         (tc-e (angle -1) -Real)
         (tc-e (angle 2.3) -Zero)
         (tc-e (magnitude 3/4) -PosRat)
