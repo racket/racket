@@ -978,6 +978,7 @@ path/s is either such a string or a list of them.
 "collects/slatex" responsible (sstrickl)
 "collects/slatex/pdf-slatex-launcher.rkt" drdr:command-line (mzc *)
 "collects/slatex/slatex-launcher.rkt" drdr:command-line (mzc *)
+"collects/pict" responsible (mflatt robby)
 "collects/slideshow" responsible (mflatt robby)
 "collects/slideshow/examples/interlocking-components.scm" drdr:command-line (mzc *)
 "collects/slideshow/start.rkt" drdr:command-line (mzc *)
