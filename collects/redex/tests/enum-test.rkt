@@ -17,7 +17,7 @@
 (define-language Rep
   (r (variable variable ...)))
 
-(try-it 1000 Rep r)
+(try-it 100 Rep r)
 
 ;; Recursion test
 (define-language Λc

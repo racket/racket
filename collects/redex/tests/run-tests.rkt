@@ -34,6 +34,7 @@
      "check-syntax-test.rkt"
      "test-docs-complete.rkt"
      "tut-subst-test.rkt"
+     "enum-test.rkt"
      "bitmap-test.rkt")
    (if test-examples?
        '("../examples/cbn-letrec.rkt"
