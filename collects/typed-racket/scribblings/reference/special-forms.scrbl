@@ -13,26 +13,22 @@
    (examples #:eval the-top-eval . args))
 
 
-@(define-syntax-rule (def-racket for-id for*-id with-handlers-id
-                                 default-continuation-prompt-tag-id
-                                 mod-beg-id lambda-id λ-id define-id)
-  (begin
-    (require (for-label (only-in racket/base for for* with-handlers
-                                             default-continuation-prompt-tag
-                                             #%module-begin lambda λ define)))
-    (define for-id (racket for))
-    (define for*-id (racket for*))
-    (define mod-beg-id (racket #%module-begin))
-    (define with-handlers-id (racket with-handlers))
-    (define default-continuation-prompt-tag-id
-      (racket default-continuation-prompt-tag))
-    (define lambda-id (racket lambda))
-    (define λ-id (racket λ))
-    (define define-id (racket define))))
-@(def-racket for-id for*-id with-handlers-id
-  default-continuation-prompt-tag-id
-  mod-beg-id lambda-id λ-id define-id)
+@(module def-racket racket/base
+   (require (for-label racket/base) scribble/manual)
 
+   (define for-id (racket for))
+   (define for*-id (racket for*))
+   (define mod-beg-id (racket #%module-begin))
+   (define with-handlers-id (racket with-handlers))
+   (define default-continuation-prompt-tag-id
+     (racket default-continuation-prompt-tag))
+   (define lambda-id (racket lambda))
+   (define λ-id (racket λ))
+   (define define-id (racket define))
+
+   (provide (all-defined-out)))
+
+@(require 'def-racket)
 
 @title[#:tag "special-forms"]{Special Form Reference}
 
