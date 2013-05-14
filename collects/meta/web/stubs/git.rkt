@@ -724,13 +724,17 @@
        case you should be aware of this and avoid letting git guess your name
        and email.  (Some confusion is likely to happen anyway, and git has a
        way to “map” some name/email to another when mistakes happen.)}
-  @~ @npre{git config --global push.default tracking}
+  @~ @npre{git config --global push.default simple}
      @p*{
        By default, when you run @cmd{git push}, git will push all branches that
        correspond to branches in the remote repository.  This can be surprising
        if you're working on several branches since it will push them all out.
-       Setting this option to @cmd{tracking} will make git push the current
-       branch to the branch it is tracking.
+       Setting this option to @cmd{upstream} will make git push the current
+       branch to the branch it is tracking, and on newer git versions setting
+       it to @cmd{simple} is similar except that it will refuse to create a
+       remote branch.  (And on really old systems, you should use a value of
+       @cmd{tracking}, which is the old and now-deprecated synonym for
+       @cmd{upstream}.)
      @~
        Another option for this is @cmd{current}, which makes @cmd{git push}
        always push the current branch to the remote it was cloned from.  This
