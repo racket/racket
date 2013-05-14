@@ -344,7 +344,10 @@
 		  (error/enum 'unimplemented "named-repeat")]
 		 [`(repeat ,pat #f ,mismatch)
 		  (error/enum 'unimplemented "mismatch-repeat")]
-		 [else (loop sub-pat)]))
+		 [else (map/enum
+                        (λ (x) (list x))
+                        car
+                        (loop sub-pat))]))
 	    sub-pats)))]
 	[(? (compose not pair?)) 
 	 (const/enum pat)]))]
@@ -436,7 +439,10 @@
 		  (error/enum 'unimplemented "named-repeat")]
 		 [`(repeat ,pat #f ,mismatch)
 		  (error/enum 'unimplemented "mismatch-repeat")]
-		 [else (loop sub-pat)]))
+		 [else (map/enum
+                        list
+                        cdr
+                        (loop sub-pat))]))
 	    sub-pats)))]
 	[(? (compose not pair?)) 
 	 (const/enum pat)]))]))
