@@ -1,5 +1,7 @@
 #lang racket/base
 
+;; This module provides helper macros for `require/typed`
+
 (require racket/contract/region racket/contract/base
          syntax/location
          (for-syntax racket/base
@@ -25,19 +27,16 @@
                                           'inferred-name
                                           (syntax-e #'name)))])]))
 
-
 (define-syntax (get-alternate stx)
   (syntax-case stx ()
     [(_ id)
      (tr:get-alternate #'id)]))
 
-
-
-;Requires an identifier from an untyped module into a typed module
-;nm is the import
-;hidden is an id that will end up being the actual definition
-;nm will be bound to a rename transformer so that it is not provided
-;with all-defined-out
+;; Requires an identifier from an untyped module into a typed module
+;; nm is the import
+;; hidden is an id that will end up being the actual definition
+;; nm will be bound to a rename transformer so that it is not provided
+;; with all-defined-out
 (define-syntax (require/contract stx)
   (define-syntax-class renameable
     (pattern nm:id
@@ -66,3 +65,4 @@
                             (current-contract-region)
                             (quote nm.nm)
                             (quote-srcloc nm.nm)))))]))
+
