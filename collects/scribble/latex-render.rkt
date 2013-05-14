@@ -374,7 +374,7 @@
                   [(italic) (wrap e "textit" tt?)]
                   [(bold) (wrap e "textbf" tt?)]
                   [(tt) (wrap e "Scribtexttt" #t)]
-                  [(url) (wrap e "nolinkurl" 'exact)]
+                  [(url) (wrap e "Snolinkurl" 'url)]
                   [(no-break) (wrap e "mbox" tt?)]
                   [(sf) (wrap e "textsf" #f)]
                   [(subscript) (wrap e "textsub" #f)]
@@ -422,12 +422,15 @@
                   (let ([v (car l)])
                     (cond
                      [(target-url? v)
-                      (define target (regexp-replace* #rx"%"
-                                                      (let ([p (target-url-addr v)])
-                                                        (if (path? p)
-                                                            (path->string p)
-                                                            p))
-                                                      "\\\\%"))
+                      (define target (let* ([s (let ([p (target-url-addr v)])
+                                                 (if (path? p)
+                                                     (path->string p)
+                                                     p))]
+                                            [s (regexp-replace* #rx"\\\\" s "%5c")]
+                                            [s (regexp-replace* #rx"{" s "%7b")]
+                                            [s (regexp-replace* #rx"}" s "%7d")]
+                                            [s (regexp-replace* #rx"%" s "\\\\%")])
+                                       s))
                       (if (regexp-match? #rx"^[^#]*#[^#]*$" target)
                           ;; work around a problem with `\href' as an
                           ;; argument to other macros, such as `\marginpar':
@@ -790,8 +793,20 @@
           [else ses])))
 
     (define/private (display-protected s)
-      (if (eq? (rendering-tt) 'exact)
-          (display s)
+      (define rtt (rendering-tt))
+      (cond
+       [(eq? rtt 'exact)
+        (display s)]
+       [(eq? rtt 'url)
+        (for ([c (in-string s)])
+          (case c
+            [(#\%) (display "\\%")]
+            [(#\#) (display "\\#")]
+            [(#\\) (display "\\%5c")]
+            [(#\{) (display "\\%7b")]
+            [(#\}) (display "\\%7d")]
+            [else (display c)]))]
+       [else
           (let ([len (string-length s)])
             (let loop ([i 0])
               (unless (= i len)
@@ -1051,7 +1066,7 @@
                                      c)]
                                 [else c])])])
                           c)])))
-                (loop (add1 i)))))))
+                (loop (add1 i)))))]))
     
     
     (define/private (box-character c)
