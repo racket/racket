@@ -24,7 +24,7 @@
   (e (e e)
      (λ (x) e)
      x)
-  (x variable))
+  (x (variable-except λ)))
 
 ;; slow: fix dep/enum
 (try-it 250 Λc e)
@@ -36,3 +36,8 @@
 
 ;; Very slow, to be fixed
 (try-it 100 Named n)
+
+(define-language not-SKI
+  (x (variable-except s k i)))
+
+(try-it 21 not-SKI x)

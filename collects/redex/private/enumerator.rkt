@@ -80,20 +80,28 @@
         (λ (x) (encode e x))))
 
 ;; except/enum : enum a, a -> enum a
-(define (except/enum e a)
-  (unless (> (size e) 0)
-    (error 'empty-enum))
-  (let ([m (encode e a)])
-    (enum (- (size e) 1)
-          (λ (n)
-             (if (< n m)
-                 (decode e n)
-                 (decode e (+ n 1))))
-          (λ (x)
-             (let ([n (encode e x)])
-               (cond [(< n m) n]
-                     [(> n m) (- n 1)]
-                     [else (error 'excepted)]))))))
+(define except/enum
+  (case-lambda
+    [(e) e]
+    [(e a . rest)
+     (let ([excepted
+            (begin
+              (unless (> (size e) 0)
+                (error 'empty-enum))
+              (with-handlers ([exn:fail? (λ (_)
+                                            (apply except/enum e rest))])
+                (let ([m (encode e a)])
+                  (enum (- (size e) 1)
+                        (λ (n)
+                           (if (< n m)
+                               (decode e n)
+                               (decode e (+ n 1))))
+                        (λ (x)
+                           (let ([n (encode e x)])
+                             (cond [(< n m) n]
+                                   [(> n m) (- n 1)]
+                                   [else (error 'excepted)])))))))])
+       (apply except/enum excepted rest))]))
 
 ;; to-list : enum a -> listof a
 ;; better be finite
@@ -869,4 +877,13 @@
    (check-equal? (to-list (up-to 3))
                  '(0 1 2 3))
    (check-equal? (foldl-enum cons '() (up-to 3))
-                 '(3 2 1 0))))
+                 '(3 2 1 0)))
+
+  ;; except/enum test
+  (define not-3 (except/enum nats 3))
+  (test-begin
+   (check-equal? (decode not-3 0) 0)
+   (check-equal? (decode not-3 3) 4))
+  (define not-a (except/enum nats 'a))
+  (test-begin
+   (check-equal? (decode not-a 0) 0)))
