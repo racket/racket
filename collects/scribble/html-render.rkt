@@ -639,13 +639,14 @@
                                         `((a ([href
                                                ,(format
                                                  "#~a"
-                                                 (anchor-name
-                                                  (add-tag-prefixes
-                                                   (tag-key (if (part? p)
-                                                                (car (part-tags/nonempty p))
-                                                                (target-element-tag p))
-                                                            ri)
-                                                   prefixes)))]
+                                                 (uri-unreserved-encode
+                                                  (anchor-name
+                                                   (add-tag-prefixes
+                                                    (tag-key (if (part? p)
+                                                                 (car (part-tags/nonempty p))
+                                                                 (target-element-tag p))
+                                                             ri)
+                                                    prefixes))))]
                                               [class
                                                   ,(cond
                                                     [(part? p) "tocsubseclink"]
