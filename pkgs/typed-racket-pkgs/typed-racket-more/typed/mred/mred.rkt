@@ -1,97 +1,150 @@
 #lang typed/racket/base
 
-(require typed/private/utils)
+(require racket/class
+         typed/private/utils)
 
-(dt Frame% (Class ()
-                  ([label String])
-                  ([show (Any -> Void)])))
+(provide Frame%
+         Bitmap%
+         Font-List%
+         Font%
+         Dialog%
+         Text-Field%
+         Horizontal-Panel%
+         Choice%
+         Message%
+         Horizontal-Pane%
+         Editor-Canvas%
+         Bitmap-DC%
+         Color%
+         Snip%
+         Text:Basic%
+         Text%
+         Button%
+         Event%)
 
-(dt Bitmap% (Class (Real Real Boolean)
-                   ()
-                   ([get-width (-> Integer)]
-                    [get-height (-> Integer)])))
-(dt Font-List% (Class () () ([find-or-create-font
-			      (case-lambda
-			       (Integer Symbol Symbol Symbol -> (Instance Font%))
-			       (Integer String Symbol Symbol Symbol -> (Instance Font%)))])))
-(dt Font% (Class () () ([get-face (-> (Option String))]
-                        [get-point-size (-> Integer)])))
-(dt Dialog% (Class ()
-                   ([parent Any] [width Integer] [label String])
-                   ([show (Any -> Void)])))
-(dt Text-Field% (Class ()
-		       ([parent (Instance Dialog%)]
-			[callback (Any Any -> Any)]
-			[label String])
-		       ([get-value (-> String)]
-			[focus (-> Void)])))
-(dt Horizontal-Panel% (Class ()
-                             ([parent (Instance Dialog%)]
-                              [stretchable-height Any #t]
-                              [alignment (List Symbol Symbol) #t])
-                             ()))
-(dt Choice% (Class ()
-                   ([parent (Instance Horizontal-Panel%)] [label String] [choices (Listof Any)] [callback (Any Any -> Any)])
-                   ([get-selection (-> (Option Natural))]
-                    [set-selection (Integer -> Any)]
-                    [get-string-selection (-> (Option String))]
-                    [set-string-selection (String -> Void)])))
-(dt Message% (Class ()
-                    ([parent (Instance Horizontal-Panel%)] [label String])
-                    ([set-label ((U String (Instance Bitmap%)) -> Void)])))
-(dt Horizontal-Pane% (Class ()
-                            ([parent (Instance Horizontal-Panel%)])
-                            ()))
-(dt Editor-Canvas% (Class ()
-                          ([parent (Instance Dialog%)] [editor (Instance Text:Basic%)])
-                          ([set-line-count ((U #f Integer) -> Void)])))
-(dt Bitmap-DC% (Class ((Instance Bitmap%))
-                      ()
-                      ([get-text-extent (String (Instance Font%) -> (values Real Real Real Real))]
-                       [get-pixel (Number Number (Instance Color%) -> Boolean)]
-                       [set-bitmap ((Option (Instance Bitmap%)) -> Void)]
-                       [clear (-> Void)]
-                       [set-font ((Instance Font%) -> Void)]
-                       [draw-text (String Number Number -> Void)])))
-(dt Color% (Class () () ([red (-> Number)])))
+(define-type Frame%
+  (Rec This
+    (Class (init [label String]
+                 [parent (Option This) #:optional]
+                 [width (Option Integer) #:optional]
+                 [height (Option Integer) #:optional]
+                 [x (Option Integer) #:optional]
+                 [y (Option Integer) #:optional]
+                 ;; more
+                 )
+           [show (Any -> Void)])))
 
-(dt Snip% (Class () () ([get-count (-> Integer)])))
+(define-type Bitmap%
+  (Class [get-width (-> Integer)]
+         [get-height (-> Integer)]))
 
-(dt Text:Basic% (Class ()
-		       ()
-		       ([begin-edit-sequence (-> Void)]
-			[end-edit-sequence (-> Void)]
-			[lock (Boolean -> Void)]
-			[last-position (-> Number)]
-			[last-paragraph (-> Exact-Nonnegative-Integer)]
-			[delete (Number Number -> Void)]
-			[auto-wrap (Any -> Void)]
-			[paragraph-end-position (Number -> Integer)]
-			[paragraph-start-position (Number -> Integer)]
-			[get-start-position (-> Integer)]
-			[get-end-position (-> Integer)]
-			[get-text (Integer (U Integer 'eof) -> String)]
-			[insert (String Number Number -> Void)])))
+(define-type Font-List%
+  (Class
+   [find-or-create-font
+    (case-> (Integer Symbol Symbol Symbol -> (Instance Font%))
+            (Integer String Symbol Symbol Symbol -> (Instance Font%)))]))
 
-(dt Text% (Class ()
-		 ()
-		 ([begin-edit-sequence (-> Void)]
-		  [end-edit-sequence (-> Void)]
-		  [lock (Boolean -> Void)]
-		  [last-position (-> Number)]
-		  [last-paragraph (-> Exact-Nonnegative-Integer)]
-		  [delete (Number Number -> Void)]
-		  [auto-wrap (Any -> Void)]
-		  [paragraph-end-position (Number -> Integer)]
-		  [paragraph-start-position (Number -> Integer)]
-		  [get-start-position (-> Integer)]
-		  [get-end-position (-> Integer)]
-		  [while-unlocked ((-> Any) -> Any)]
-		  [get-text (Integer (U Integer 'eof) -> String)]
-		  [insert (String Number Number -> Void)])))
+(define-type Font%
+  (Class [get-face (-> (Option String))]
+         [get-point-size (-> Integer)]))
 
-(dt Button% (Rec B% (Class (String (Instance Frame%) (B% Any -> Any)) () ())))
-(dt Event% (Class () () ()))
+(define-type Dialog%
+  (Class (init [label String]
+               [parent Any #:optional]
+               [width Integer #:optional])
+         [show (Any -> Void)]))
+
+(define-type Text-Field%
+  (Class (init [label String]
+               [parent (Instance Dialog%)]
+               [callback (Any Any -> Any) #:optional])
+         [get-value (-> String)]
+         [focus (-> Void)]))
+
+(define-type Horizontal-Panel%
+  (Class (init [parent (Instance Dialog%)]
+               [stretchable-height Any #:optional]
+               [alignment (List Symbol Symbol) #:optional])))
+
+(define-type Choice%
+  (Class (init [parent (Instance Horizontal-Panel%)]
+               [label String]
+               [choices (Listof Any)]
+               [callback (Any Any -> Any)])
+         [get-selection (-> (Option Natural))]
+         [set-selection (Integer -> Any)]
+         [get-string-selection (-> (Option String))]
+         [set-string-selection (String -> Void)]))
+
+(define-type Message%
+  (Class (init [parent (Instance Horizontal-Panel%)]
+               [label String])
+         [set-label ((U String (Instance Bitmap%)) -> Void)]))
+
+(define-type Horizontal-Pane%
+  (Class (init [parent (Instance Horizontal-Panel%)])))
+
+(define-type Editor-Canvas%
+  (Class (init [parent (Instance Dialog%)]
+               [editor (Instance Text:Basic%)])
+         [set-line-count ((U #f Integer) -> Void)]))
+
+(define-type Bitmap-DC%
+  (Class (init [bitmap (Instance Bitmap%)])
+         [get-text-extent (String (Instance Font%) ->
+                                    (values Nonnegative-Real Nonnegative-Real
+                                            Nonnegative-Real Nonnegative-Real))]
+         [get-pixel (Number Number (Instance Color%) -> Boolean)]
+         [set-bitmap ((Option (Instance Bitmap%)) -> Void)]
+         [clear (-> Void)]
+         [set-font ((Instance Font%) -> Void)]
+         [draw-text (String Number Number -> Void)]))
+
+(define-type Color%
+  (Class [red (-> Number)]))
+
+(define-type Snip%
+  (Class [get-count (-> Integer)]))
+
+(define-type Text:Basic%
+    (Class [begin-edit-sequence (-> Void)]
+           [end-edit-sequence (-> Void)]
+           [lock (Boolean -> Void)]
+           [last-position (-> Number)]
+           [last-paragraph (-> Exact-Nonnegative-Integer)]
+           [delete (Number Number -> Void)]
+           [auto-wrap (Any -> Void)]
+           [paragraph-end-position (Number -> Integer)]
+           [paragraph-start-position (Number -> Integer)]
+           [get-start-position (-> Integer)]
+           [get-end-position (-> Integer)]
+           [get-text (Integer (U Integer 'eof) -> String)]
+           [insert (String Number Number -> Void)]))
+
+(define-type Text%
+  (Class [begin-edit-sequence (-> Void)]
+         [end-edit-sequence (-> Void)]
+         [lock (Boolean -> Void)]
+         [last-position (-> Number)]
+         [last-paragraph (-> Exact-Nonnegative-Integer)]
+         [delete (Number Number -> Void)]
+         [auto-wrap (Any -> Void)]
+         [paragraph-end-position (Number -> Integer)]
+         [paragraph-start-position (Number -> Integer)]
+         [get-start-position (-> Integer)]
+         [get-end-position (-> Integer)]
+         [while-unlocked ((-> Any) -> Any)]
+         [get-text (Integer (U Integer 'eof) -> String)]
+         [insert (String Number Number -> Void)]))
+
+(define-type Button%
+  (Rec B%
+    (Class (init [label String]
+                 [parent (Instance Frame%)]
+                 [callback (B% Any -> Any)]))))
+
+(define-type Event%
+  (Class))
 
 (require/typed/provide
  racket/gui
@@ -109,7 +162,15 @@
  [editor-canvas% Editor-Canvas%]
  [bitmap-dc% Bitmap-DC%]
  [bitmap% Bitmap%]
+ [make-bitmap
+  (case->
+   (Exact-Positive-Integer Exact-Positive-Integer -> (Instance Bitmap%))
+   (Exact-Positive-Integer Exact-Positive-Integer Any -> (Instance Bitmap%)))]
  [color% Color%]
+ [make-color
+  (case->
+   (Byte Byte Byte -> (Instance Color%))
+   (Byte Byte Byte Real -> (Instance Color%)))]
  [snip% Snip%]
  [message-box (String String -> (U 'ok 'cancel 'yes 'no))]
  [open-input-text-editor

@@ -12,9 +12,9 @@
 
 (define-type (Treeof A) (Rec T (U A (Listof T))))
 
-(define-type Plot-Device% (Class () () ()))
-(define-type 2D-Plot-Area% (Class () () ()))
-(define-type 3D-Plot-Area% (Class () () ()))
+(define-type Plot-Device% (Class))
+(define-type 2D-Plot-Area% (Class))
+(define-type 3D-Plot-Area% (Class))
 
 ;; ===================================================================================================
 ;; Struct types
