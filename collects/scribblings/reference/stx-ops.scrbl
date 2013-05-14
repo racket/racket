@@ -1,5 +1,8 @@
 #lang scribble/doc
-@(require "mz.rkt")
+@(require "mz.rkt" scribble/eval)
+
+@(define stx-eval (make-base-eval))A
+@(stx-eval '(require (for-syntax racket/base)))
 
 @title[#:tag "stxops"]{Syntax Object Content}
 
@@ -7,13 +10,27 @@
 @defproc[(syntax? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a @tech{syntax object}, @racket[#f]
-otherwise. See also @secref["stxobj-model"].}
+otherwise. See also @secref["stxobj-model"].
+
+@examples[#:eval stx-eval
+  (syntax? #'quinoa)
+  (syntax? #'(spelt triticale buckwheat))
+  (syntax? (datum->syntax #f 'millet))
+  (syntax? "barley")
+]}
 
 
 @defproc[(identifier? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a @tech{syntax object} and
-@racket[(syntax-e stx)] produces a symbol.}
+@racket[(syntax-e stx)] produces a symbol.
+
+@examples[#:eval stx-eval
+  (identifier? #'linguine)
+  (identifier? #'(if wheat? udon soba))
+  (identifier? 'ramen)
+  (identifier? 15)
+]}
 
 
 @defproc[(syntax-source [stx syntax?]) any]{
@@ -121,6 +138,18 @@ leaving nested syntax structure (if any) in place.  The result of
 
     ]
 
+@examples[#:eval stx-eval
+  (syntax-e #'a)
+  (syntax-e #'(x . y))
+  (syntax-e #'#(1 2 (+ 3 4)))
+  (syntax-e #'#&"hello world")
+  (syntax-e #'#hash((imperial . "yellow") (festival . "green")))
+  (syntax-e #'#(point 3 4))
+  (syntax-e #'3)
+  (syntax-e #'"three")
+  (syntax-e #'#t)
+]
+
 A @deftech{syntax pair} is a pair containing a @tech{syntax object} as its
 first element, and either the empty list, a syntax pair, or a syntax
 object as its second element.
@@ -146,7 +175,13 @@ list. In other words, @tech{syntax pairs} in @racket[(syntax-e stx)]
 are flattened.
 
 If @racket[stx] is @tech{tainted} or @tech{armed}, then any syntax
-object in the result of @racket[(syntax->list stx)] is @tech{tainted}.}
+object in the result of @racket[(syntax->list stx)] is @tech{tainted}.
+
+@examples[#:eval stx-eval
+  (syntax->list #'())
+  (syntax->list #'(1 (+ 3 4) 5 6))
+  (syntax->list #'a)
+]}
 
 
 @defproc[(syntax->datum [stx syntax?]) any]{
@@ -159,7 +194,19 @@ table} values (not keys), and immutable @tech{prefab} structures,
 
 The stripping operation does not mutate @racket[stx]; it creates new
 pairs, vectors, boxes, hash tables, and @tech{prefab} structures as
-needed to strip lexical and source-location information recursively.}
+needed to strip lexical and source-location information recursively.
+
+@examples[#:eval stx-eval
+  (syntax->datum #'a)
+  (syntax->datum #'(x . y))
+  (syntax->datum #'#(1 2 (+ 3 4)))
+  (syntax->datum #'#&"hello world")
+  (syntax->datum #'#hash((imperial . "yellow") (festival . "green")))
+  (syntax->datum #'#(point 3 4))
+  (syntax->datum #'3)
+  (syntax->datum #'"three")
+  (syntax->datum #'#t)
+]}
 
 @defproc[(datum->syntax [ctxt (or/c syntax? #f)]
                         [v any/c]
@@ -289,7 +336,18 @@ in the corresponding generated name, which is useful for debugging
 purposes.
 
 The generated identifiers are built with interned symbols (not
-@racket[gensym]s); see also @secref["print-compiled"].}
+@racket[gensym]s); see also @secref["print-compiled"].
+
+@examples[#:eval stx-eval
+  (generate-temporaries '(a b c d))
+  (generate-temporaries #'(1 2 3 4))
+  (define-syntax (set!-values stx)
+    (syntax-case stx ()
+      [(_ (id ...) expr)
+       (with-syntax ([(temp ...) (generate-temporaries #'(id ...))])
+         #'(let-values ([(temp ...) expr])
+             (set! id temp) ... (void)))]))
+]}
 
 
 @defproc[(identifier-prune-lexical-context [id-stx identifier?]
@@ -322,3 +380,6 @@ context does not include any bindings.}
          syntax?]{
 
 For backward compatibility only; returns @racket[new-stx].}
+
+@close-eval[stx-eval]
+
