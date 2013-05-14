@@ -25,7 +25,7 @@
 (define-struct/cond-contract lam-result ([args (listof (list/c identifier? Type/c))]
                                          [kws (listof (list/c keyword? identifier? Type/c boolean?))]
                                          [rest (or/c #f (list/c identifier? Type/c))]
-                                         [drest (or/c #f (cons/c identifier? (cons/c Type/c symbol?)))]
+                                         [drest (or/c #f (list/c identifier? (cons/c Type/c symbol?)))]
                                          [body tc-results/c])
   #:transparent)
 
@@ -33,16 +33,15 @@
   (match lr
     [(struct lam-result ((list (list arg-ids arg-tys) ...) (list (list kw kw-id kw-ty req?) ...) rest drest body))
      (let ([arg-names (append arg-ids
-                              (if rest (list (car rest)) null)
-                              (if drest (list (car drest)) null)
+                              (if rest (list (first rest)) null)
+                              (if drest (list (first drest)) null)
                               kw-id)])
        (make-arr
         arg-tys
         (abstract-results body arg-names)
         #:kws (map make-Keyword kw kw-ty req?)
-        #:rest (if rest (second rest) #f)
-        #:drest (if drest (cdr drest) #f)))]
-    [_ (int-err "not a lam-result")]))
+        #:rest (and rest (second rest))
+        #:drest (and drest (second drest))))]))
 
 (define-syntax-class cl-rhs
   #:literals (if)
@@ -100,7 +99,7 @@
                         null
                         (and rest-ty (list (or rest (generate-temporary)) rest-ty))
                         ;; make up a fake name if none exists, this is an error case anyway
-                        (and drest (cons (or rest (generate-temporary)) drest))
+                        (and drest (list (or rest (generate-temporary)) drest))
                         (tc-exprs/check (syntax->list body) ret-ty))))
     ;; Check that the number of formal arguments is valid for the expected type.
     ;; Thus it must be able to accept the number of arguments that the expected
@@ -218,7 +217,7 @@
                      combined-args
                      null
                      #f
-                     (cons rest-id (cons rest-type bound))
+                     (list rest-id (cons rest-type bound))
                      (tc-exprs (syntax->list body))))))]
          ;; Lambda with regular rest argument
          [rest-id
@@ -303,7 +302,8 @@
                   ;; very conservative -- only do anything interesting if we get exactly one thing that matches
                   [(list)
                    (if (and (= 1 (length formals*)) expected-type)
-                       (tc-error/expr #:return (list (lam-result null null (list #'here Univ) #f (ret (Un))))
+                       (tc-error/expr #:return (list (lam-result null null (list (generate-temporary) Univ)
+                                                                 #f (ret (Un))))
                                       "Expected a function of type ~a, but got a function with the wrong arity"
                                       expected-type)
                        (tc/lambda-clause f* b*))]
