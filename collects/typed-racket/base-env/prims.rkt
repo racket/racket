@@ -730,8 +730,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (for/annotation stx)
   (syntax-parse stx
    [(_ x ...)
-    (syntax/loc stx
-      (ann (for x ...) Void))]))
+    (quasisyntax/loc stx
+      (ann #,(syntax/loc stx (for x ...)) Void))]))
 (define-syntax (for*/annotation stx)
   (syntax-parse stx
    [(_ x ...)
