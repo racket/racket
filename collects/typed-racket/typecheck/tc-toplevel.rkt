@@ -419,6 +419,9 @@
 (define (tc-toplevel-form form)
   (syntax-parse form
     [((~literal begin) e ...)
+     ;; Don't open up `begin`s that are supposed to be ignored
+     #:when (not (or (syntax-property form 'typechecker:ignore)
+                     (syntax-property form 'typechecker:ignore-some)))
      (for-each tc-toplevel-form (syntax->list #'(e ...)))
      (begin0 (values #f (tc-toplevel/pass2 form))
              (report-all-errors))]
