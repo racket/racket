@@ -133,7 +133,21 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (raise-syntax-error #f "at least one specification is required" stx))
        #`(begin c.spec ...)]
       [(_ #:internal nm:opt-rename ty lib (~optional [~seq #:struct-maker parent]) ...)
-       (with-syntax ([cnt* (generate-temporary #'nm.nm)]
+       (with-syntax ([cnt* (if (eq? (syntax-local-context) 'top-level)
+                               ;; if we're at the top-level, we can generate the contract
+                               ;; immediately, but otherwise the contract will be fixed up
+                               ;; by the module type-checking pass later
+                               (let ([typ (parse-type #'ty)])
+                                 (ignore
+                                  (type->contract
+                                   typ
+                                   ;; this is for a `require/typed', so the value is not from the typed side
+                                   #:typed-side #f
+                                   (lambda ()
+                                     (tc-error/stx #'ty "Type ~a could not be converted to a contract." typ)))))
+                               ;; in the fix-up case, the contract is just an identifier
+                               ;; that is defined below
+                               (generate-temporary #'nm.nm))]
                      [hidden (generate-temporary #'nm.nm)]
                      [sm (if (attribute parent)
                              #'(#:struct-maker parent)
@@ -143,20 +157,14 @@ This file defines two sorts of primitives. All of them are provided into any mod
                               'typechecker:contract-def)])
            (quasisyntax/loc stx
              (begin
-               #,(syntax-property (if (eq? (syntax-local-context) 'top-level)
-                                      (let ([typ (parse-type #'ty)])
-                                        #`(define cnt*
-                                            #,(type->contract
-                                               typ
-                                               ;; this is for a `require/typed', so the value is not from the typed side
-                                               #:typed-side #f
-                                               (lambda () (tc-error/stx #'ty "Type ~a could not be converted to a contract." typ)))))
-                                      (syntax-property #'(define cnt* #f)
-                                                   prop-name #'ty))
-                                  'typechecker:ignore #t)
+               ;; define `cnt*` to be fixed up later by the module
+               ;; type-checking (not defined at top-level since it
+               ;; doesn't work with local expansion)
+               #,@(ignore (if (eq? (syntax-local-context) 'top-level)
+                              #'()
+                              #`(#,(syntax-property #'(define cnt* #f) prop-name #'ty))))
                #,(internal #'(require/typed-internal hidden ty . sm))
-               #,(syntax-property #'(require/contract nm.spec hidden cnt* lib)
-                                  'typechecker:ignore #t)))))]))
+               #,(ignore #'(require/contract nm.spec hidden cnt* lib))))))]))
   (values (r/t-maker #t) (r/t-maker #f))))
 
 (define-syntax-rule (require/typed/provide lib [nm t] ...)
