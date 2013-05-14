@@ -513,21 +513,3 @@
      [`(,ts ...)
       (map loop ts)]
      [x x])))
-
-(module+ test
-	 (require rackunit)
-
-	 (define rep `(,(make-nt 'r
-				 `(,(make-rhs `(list variable
-						     (repeat variable #f #f)))))))
-	 (define rs (hash-ref (lang-enumerators rep) 'r))
-	 (test-begin
-	  (check-equal? (enum-ith rs 0) '(a))
-	  (check-equal? (size rs) +inf.f))
-	 (define λc `(,(make-nt 'e
-				`(,(make-rhs `(list (repeat variable #f #f)))
-				  ,(make-rhs `(list λ variable (nt e)))
-				  ,(make-rhs `(list (nt e) (nt e)))))))
-	 (define les (lang-enumerators λc))
-	 (define es (hash-ref les 'e))
-	 (check-equal? (size es) +inf.f))
