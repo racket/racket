@@ -1,6 +1,7 @@
 #lang racket/base
 
 (provide provide/contract
+         provide/contract-for-contract-out
          (protect-out (for-syntax true-provide/contract
                                   make-provide/contract-transformer
                                   provide/contract-transformer?
@@ -523,7 +524,7 @@
                                                     #f
                                                     (with-syntax ([field-contract-id field-contract-id]
                                                                   [field-contract field-contract])
-                                                      #'(define field-contract-id (verify-contract 'provide/contract field-contract)))))
+                                                      #`(define field-contract-id (verify-contract '#,who field-contract)))))
                                               field-contract-ids
                                               field-contracts))]
                          [(field-contracts ...) field-contracts]
@@ -753,9 +754,9 @@
 
                                    #,@(if no-need-to-check-ctrct?
                                           (list)
-                                          (list #'(define contract-id
+                                          (list #`(define contract-id
                                                     (let ([ex-id ctrct]) ;; let is here to give the right name.
-                                                      (verify-contract 'provide/contract ex-id)))))
+                                                      (verify-contract '#,who ex-id)))))
                                    (define-syntax id-rename
                                      (make-provide/contract-transformer (quote-syntax contract-id)
                                                                         (a:update-loc
@@ -833,21 +834,26 @@
                (define pos-module-source (quote-module-name))
                bodies ...)))]))]))
 
-(define-syntax (provide/contract stx)
+(define-for-syntax (provide/contract-for-whom stx who)
   (define s-l-c (syntax-local-context))
   (case s-l-c
    [(module-begin)
     #`(begin ;; force us into the 'module' local context
              #,stx)]
    [(module) ;; the good case
-    (true-provide/contract stx #f 'provide/contract)]
+    (true-provide/contract stx #f who)]
    [else ;; expression or internal definition
-    (raise-syntax-error 'provide/contract
+    (raise-syntax-error who
                         (format "not allowed in a ~a context"
                                 (if (pair? s-l-c)
                                     "internal definition"
                                     s-l-c))
                         stx)]))
+
+(define-syntax (provide/contract stx) 
+  (provide/contract-for-whom stx 'provide/contract))
+(define-syntax (provide/contract-for-contract-out stx)
+  (provide/contract-for-whom stx 'contract-out))
 
 (define (make-pc-struct-type struct-name srcloc struct:struct-name . ctcs)
   (chaperone-struct-type

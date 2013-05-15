@@ -14924,6 +14924,18 @@ so that propagation occurs.
    (λ (x)
      (and (exn:fail:contract:blame? x)
           (regexp-match #rx"^g.*contract from: pce10-bug" (exn-message x)))))
+  
+  (contract-error-test
+   'contract-error-test18
+   #'(begin
+       (eval '(module pce18-bug racket
+                (struct point (x y))
+                (provide (contract-out
+                          (struct point ([x integer?])))))))
+   (λ (x)
+     (and (exn:fail:syntax? x)
+          ;; testing that the error says "contract-out" and not "provide/contract"
+          (regexp-match #rx"contract-out: found 2 fields" (exn-message x)))))
 
   (contract-eval
    `(,test

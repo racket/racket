@@ -24,6 +24,6 @@
      (syntax-case stx ()
        [(_ . args)
         (syntax-local-lift-module-end-declaration 
-         #`(provide/contract . args))])
+         #`(provide/contract-for-contract-out . args))])
      
      #`(combine-out))))
