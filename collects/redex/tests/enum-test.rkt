@@ -7,11 +7,14 @@
   (syntax-case stx ()
     [(_ N l p)
      (with-syntax ([line (syntax-line stx)])
-       #'(for ([i (in-range N)])
-           (unless (redex-match
-                    l p
-                    (generate-term l p #:i-th i))
-             (error 'bad-term "line ~a: i=~a" line i))))]))
+       #'(test-begin
+          (for ([i (in-range N)])
+            (check-not-exn
+             (λ ()
+                (unless (redex-match
+                         l p
+                         (generate-term l p #:i-th i))
+                  (error 'bad-term "line ~a: i=~a" line i)))))))]))
 
 ;; Repeat test
 (define-language Rep
@@ -38,6 +41,11 @@
 (try-it 100 Named n)
 
 (define-language not-SKI
+  (y x
+     s
+     k
+     i)
   (x (variable-except s k i)))
 
-(try-it 21 not-SKI x)
+(try-it 22 not-SKI x)
+(try-it 25 not-SKI y)
