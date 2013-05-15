@@ -2884,6 +2884,7 @@ static Scheme_Object *make_subprocess(Scheme_Object *child_thunk,
 {
   Scheme_Thread *child;
   int turn_on_multi;
+  Scheme_Object *name_sym = NULL;
  
   turn_on_multi = !scheme_first_thread->next;
   
@@ -2897,23 +2898,25 @@ static Scheme_Object *make_subprocess(Scheme_Object *child_thunk,
       maybe_recycle_cell = NULL;
   }
 
-  child = make_thread(config, cells, break_cell, mgr, child_start);
-
-  /* Use child_thunk name, if any, for the thread name: */
+  /* Use child_thunk name, if any, for the thread name.
+     (Get it before calling make_thread(), in case
+     getting the name blocks.) */
   {
-    Scheme_Object *sym;
     const char *s;
     int len;
     
     s = scheme_get_proc_name(child_thunk, &len, -1);
     if (s)  {
       if (len < 0)
-	sym = (Scheme_Object *)s;
+	name_sym = (Scheme_Object *)s;
       else
-	sym = scheme_intern_exact_symbol(s, len);
-      child->name = sym;
+	name_sym = scheme_intern_exact_symbol(s, len);
     }
   }
+
+  child = make_thread(config, cells, break_cell, mgr, child_start);
+  if (name_sym)
+    child->name = name_sym;
 
   {
     Scheme_Object *v;

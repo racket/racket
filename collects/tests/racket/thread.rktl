@@ -1454,5 +1454,12 @@
   (test "yes" values v))
 
 ; --------------------
+;; Make sure that extracting a procedure name for a thread
+;; doesn't create trouble:
+
+(for ([i 1000])
+  (thread (make-keyword-procedure (lambda (x y) '()))))
+
+; --------------------
 
 (report-errs)
