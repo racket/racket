@@ -1705,10 +1705,16 @@ metafunctions or unnamed reduction-relation cases) to application counts.}
                  (code:line language @#,ttpattern #:i-th)]
                 [from-judgment-form
                  (code:line language #:satisfying
-                            (judgment-form-id @#,ttpattern ...))]
+                            (judgment-form-id @#,ttpattern ...))
+                 (code:line language #:satisfying
+                            (judgment-form-id @#,ttpattern ...)
+                            size-expr)]
                 [from-metafunction
                  (code:line language #:satisfying 
                             (metafunction-id @#,ttpattern ...) = @#,ttpattern)
+                 (code:line language #:satisfying 
+                            (metafunction-id @#,ttpattern ...) = @#,ttpattern
+                            size-expr)
                  (code:line #:source metafunction size-expr kw-args)
                  (code:line #:source metafunction)]
                 [from-reduction-relation
@@ -1730,9 +1736,41 @@ Generates terms in a number of different ways:
                  
                  In the third case, picks a term from an enumeration of the terms, returning the
                  term whose index matches the value of @racket[index-expr]. The fourth case 
-                 returns a function that accepts an index and returns that term.}
+                 returns a function that accepts an index and returns that term.
+                 
+                 @examples[#:eval
+                           redex-eval
+                           (define-language L
+                             (e ::=
+                                (e e)
+                                (λ (x) e)
+                                x)
+                             (x ::= a b c))
+                           
+                           (for/list ([i (in-range 10)])
+                             (generate-term L e 3))
+                                                   
+                           (for/list ([i (in-range 10)])
+                             (generate-term L e #:i-th i))]}
            @item{@racket[from-judgment-form]: Randomly picks a term that satisfies
-                  the given use of the judgment form.}
+                  the given use of the judgment form.
+                  
+                  @examples[#:eval
+                            redex-eval
+                            (define-language L
+                              (nat ::= Z (S nat)))
+                            (define-judgment-form L
+                              #:mode (sum I I O)
+                              [---------------
+                               (sum Z nat nat)]
+                              [(sum nat_1 nat_2 nat_3)
+                               -------------------------------
+                               (sum (S nat_1) nat_2 (S nat_3))])
+                            
+                            (for/list ([i (in-range 10)])
+                              (generate-term L #:satisfying 
+                                             (sum nat_1 nat_2 nat_3)
+                                             3))]}
            @item{@racket[from-metafunction]: The first form randomly picks a term
                   that satisfies the given invocation of the metafunction, using
                   techniques similar to how the @racket[from-judgment-form] case works.
@@ -1742,12 +1780,35 @@ Generates terms in a number of different ways:
                   patterns from earlier cases when generating terms based on a particular case.
                   The third case is like the second, except it returns a function that accepts
                   the size and keywords arguments that may be more efficient if multiple 
-                  random terms are generated.}
+                  random terms are generated.
+                  @examples[#:eval
+                            redex-eval
+                            (define-language L
+                             (n number))
+                            (define-metafunction L
+                              [(F one-clause n) ()]
+                              [(F another-clause n) ()])
+                            
+                            (for/list ([i (in-range 10)])
+                              (generate-term #:source F 5))]}
            @item{@racket[from-reduction-relation]: In the first case, @racket[generate-term]
                   randomly picks a rule from the reduction relation and tries to pick a term
                   that satisfies its domain pattern, returning that. The second case returns
                   a function that accepts the size and keyword arguments that may be more
-                  efficient if multiple random terms are generated.}]
+                  efficient if multiple random terms are generated.
+                  
+                  @examples[#:eval
+                            redex-eval
+                            (define-language L
+                             (n number))
+                            (for/list ([i (in-range 10)])
+                              (generate-term
+                               #:source
+                               (reduction-relation
+                                L
+                                (--> (one-clause n) ())
+                                (--> (another-clause n) ()))
+                               5))]}]
 
 The argument @racket[size-expr] bounds the height of the generated term
 (measured as the height of its parse tree). 
@@ -1769,34 +1830,6 @@ repeating as necessary. The optional keyword argument @racket[retries-expr]
 @racket[generate-term] is unable to produce a satisfying term after 
 @racket[retries-expr] attempts, it raises an exception recognized by
 @racket[exn:fail:redex:generation-failure?].
-
-@examples[
-#:eval redex-eval
-       (define-language L
-         (n number))
-       
-       (generate-term L (+ n_1 n_2) 5)
-       
-       (define R
-         (reduction-relation 
-          L
-          (--> (one-clause n) ())
-          (--> (another-clause n) ())))
-       
-       (random-seed 0)
-       
-       (generate-term #:source R 5)
-       
-       (define R-left-hand-sides
-         (generate-term #:source R))
-       (R-left-hand-sides 0)
-       (R-left-hand-sides 1)
-       
-       (define-metafunction L
-         [(F one-clause n) ()]
-         [(F another-clause n) ()])
-
-       (generate-term #:source F 5)]
 }
 
 @defform/subs[(redex-check language @#,ttpattern property-expr kw-arg ...)
