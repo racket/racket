@@ -73,7 +73,7 @@
          (let ([for-each-eval (lambda (l) (for-each eval l))]) for-each-eval)
          (list ',expression '(void))))
       (let ([new-expression (rewrite-out expression)])
-        (unless (equal? new-expression expression)
+        (when new-expression
           (contract-eval
            `(,test
              (void)
@@ -88,51 +88,80 @@
           (list ',(rewrite expression k) '(void))))))
 
   (define (test/spec-passed/result name expression result)
-    (printf "testing: ~s\n" name)
-    (contract-eval `(,test ',result eval ',expression))
-    (let/ec k
-      (contract-eval
-       `(,test
-          ',result
-          eval
-          ',(rewrite expression k)))))
+    (parameterize ([compile-enforce-module-constants #f])
+      (printf "testing: ~s\n" name)
+      (contract-eval `(,test ',result eval ',expression))
+      (let/ec k
+        (contract-eval
+         `(,test
+           ',result
+           eval
+           ',(rewrite expression k))))
+      (let ([new-expression (rewrite-out expression)])
+        (when new-expression
+          (printf "testing contract-out rewritten: ~s\n" name)
+          (contract-eval
+           `(,test
+             ',result
+             eval
+             ',new-expression))))))
 
   ;; rewrites `provide/contract' to use `contract-out'
   (define (rewrite-out orig-exp)
-    (let loop ([exp orig-exp])
-      (match exp
-        [`(module ,modname ,lang ,bodies ...)
-         (define at-beginning '())
-
-         ;; remove (and save) the provide/contract declarations
-         (define removed-bodies
-           (apply
-            append
-            (for/list ([body (in-list bodies)])
-              (match body
-                [`(provide/contract . ,args)
-                 (set! at-beginning (cons `(provide (contract-out . ,args))
-                                          at-beginning))
-                 (list)]
-                [else
-                 (list body)]))))
-
-         ;; insert the provide/contract (rewrite to contract-out) after the
-         ;; first require that has 'contract' in it
-         (define inserted-bodies
-           (apply
-            append
-            (for/list ([body (in-list removed-bodies)])
-              (match body
-                [`(require ,(? (λ (x) (and (symbol? x) (regexp-match #rx"contract" (symbol->string x)))) mod))
-                 (cons body (reverse at-beginning))]
-                [else
-                 (list body)]))))
-
-         `(module ,modname ,lang ,@inserted-bodies)]
-        [(? list?)
-         (map loop exp)]
-        [else exp])))
+    (define rewrote? #f)
+    (define maybe-rewritten?
+      (let loop ([exp orig-exp])
+        (match exp
+          [`(module ,modname ,lang ,bodies ...)
+           (define at-beginning '())
+           (define at-end '())
+           
+           ;; remove (and save) the provide/contract & contract-out
+           ;; declarations, switching their senses
+           (define removed-bodies
+             (apply
+              append
+              (for/list ([body (in-list bodies)])
+                (match body
+                  [`(provide/contract . ,args)
+                   (set! rewrote? #t)
+                   (set! at-beginning (cons `(provide (contract-out . ,args))
+                                            at-beginning))
+                   (list)]
+                  [`(provide (contract-out . ,args))
+                   (set! rewrote? #t)
+                   (set! at-end (cons `(provide/contract . ,args)
+                                      at-end))
+                   (list)]
+                  [else
+                   (list body)]))))
+           
+           ;; insert the provide/contract (rewrite to contract-out) after the
+           ;; first require that has 'contract' in it
+           (define inserted-bodies
+             (if (equal? lang 'racket)
+                 (append (reverse at-beginning)
+                         removed-bodies)
+                 (apply
+                  append
+                  (for/list ([body (in-list removed-bodies)])
+                    (match body
+                      [`(require . ,(? (λ (l)
+                                         (for/or ([x (in-list l)])
+                                           (and (symbol? x)
+                                                (regexp-match #rx"contract" (symbol->string x)))))))
+                       (cons body (reverse at-beginning))]
+                      [else
+                       (list body)])))))
+           
+           `(module ,modname ,lang 
+              (void) ;; always insert this to work around bug in 'provide'
+              ,@inserted-bodies ,@(reverse at-end))]
+          [(? list?)
+           (map loop exp)]
+          [else exp])))
+    
+    (and rewrote? maybe-rewritten?))
 
   ;; rewrites `contract' to use opt/c. If there is a module definition in there, we skip that test.
   (define (rewrite exp k)
@@ -14626,18 +14655,18 @@ so that propagation occurs.
    'provide/contract38
    '(begin
       (eval
-        '(module provide/contract38-a racket
-           (define-struct s () #:transparent)
-	   (provide/contract [struct s ()])))
-
+       '(module provide/contract38-a racket
+          (define-struct s () #:transparent)
+          (provide/contract [struct s ()])))
+      
       (eval
-        '(module provide/contract38-b racket
-           (require 'provide/contract38-a)
-	   (define a-struct (make-s))
-	   (define-values (type _) (struct-info a-struct))
-	   (provide the-answer)
-	   (define the-answer (eq? type struct:s))))
-
+       '(module provide/contract38-b racket
+          (require 'provide/contract38-a)
+          (define a-struct (make-s))
+          (define-values (type _) (struct-info a-struct))
+          (provide the-answer)
+          (define the-answer (eq? type struct:s))))
+      
       (dynamic-require ''provide/contract38-b 'the-answer))
    #t)
 
