@@ -12,10 +12,9 @@
    ;; variants often have just "libpng", etc.
    (let loop ([alts '(("libpng16" ("16" ""))
                       ("libpng15" ("15" ""))
-                      ("libpng12" ("0" ""))
-                      ("libpng"))])
+                      ("libpng12" ("0" "")))])
      (cond
-      [(null? alts) #f]
+      [(null? alts) (ffi-lib "libpng")]
       [else (apply ffi-lib (car alts)
                    #:fail (lambda ()
                             (loop (cdr alts))))]))]
