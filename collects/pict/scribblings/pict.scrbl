@@ -14,16 +14,16 @@
 @(ss-eval '(require pict racket/math racket/class racket/draw
                     racket/list pict/balloon pict/flash))
 
-@title[#:style 'toc]{Functional Pictures}
+@title[#:style 'toc]{Pict: Functional Pictures}
 
 @declare-exporting[pict]
 
 @defmodule*/no-declare[(pict)]{ The
 @racketmodname[pict] library is one of the standard Racket
 functional picture libraries (the other being @racketmodname[2htdp/image]).
-This library was original designed for use with Slideshow,
-and is re-provided by the
-@racketmodname[slideshow] language.}
+This library was original designed for use with 
+@seclink[#:doc '(lib "scribblings/slideshow/slideshow.scrbl") "top"]{Slideshow},
+and is re-provided by the @racketmodname[slideshow] language.}
 
 @local-table-of-contents[]
 

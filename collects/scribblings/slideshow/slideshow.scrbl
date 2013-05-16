@@ -21,7 +21,8 @@ Functional Presentations'' @cite["Findler06"].
 @defmodulelang*/no-declare[(slideshow)]{Most of the bindings defined
 in the manual are provided by the @racketmodname[slideshow] language,
 which also re-exports all of @racketmodname[racket] except for
-@racket[printable<%>] (due to backward-compatibility issues).}
+@racket[printable<%>] (due to backward-compatibility issues)
+and all of @racketmodname[pict].}
 
 @table-of-contents[]
 
@@ -31,6 +32,7 @@ which also re-exports all of @racketmodname[racket] except for
 @include-section["slides.scrbl"]
 @include-section["code.scrbl"]
 @include-section["play.scrbl"]
+@include-section["legacy.scrbl"]
 
 @(bibliography
   (bib-entry #:key "Findler06" 

@@ -1,4 +1,4 @@
 #lang setup/infotab
 
 (define scribblings 
-  '(("scribblings/pict.scrbl" () (gui-library))))
+  '(("scribblings/pict.scrbl" (multi-page) (gui-library 100))))

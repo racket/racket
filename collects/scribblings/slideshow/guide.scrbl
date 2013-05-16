@@ -18,7 +18,7 @@ The @racketmodname[slideshow] module acts as a language that includes:
 
 @itemize[
 
- @item{all of @racketmodname[racket];}
+ @item{all of @racketmodname[racket] except for @racket[printable<%>];}
 
  @item{pict-creating functions from @racketmodname[pict]; and}
 
