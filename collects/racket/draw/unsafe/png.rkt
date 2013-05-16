@@ -10,11 +10,15 @@
   [(unix)
    ;; Most Linux distros supply "libpng12", while other Unix
    ;; variants often have just "libpng", etc.
-   (ffi-lib "libpng15" '("15" "")
-	    #:fail (lambda ()
-		     (ffi-lib "libpng12" '("0" "")
-			      #:fail (lambda ()
-				       (ffi-lib "libpng")))))]
+   (let loop ([alts '(("libpng16" ("16" ""))
+                      ("libpng15" ("15" ""))
+                      ("libpng12" ("0" ""))
+                      ("libpng"))])
+     (cond
+      [(null? alts) #f]
+      [else (apply ffi-lib (car alts)
+                   #:fail (lambda ()
+                            (loop (cdr alts))))]))]
   [(macosx) (ffi-lib "libpng15.15.dylib")]
   [(windows)
    (ffi-lib "zlib1.dll")
@@ -29,9 +33,12 @@
 ;;  assume that other versions are also ok
 (define PNG_LIBPNG_VER_STRING (string->bytes/latin-1
                                (let ([v (png_access_version_number)])
-                                 (format "~s.~s"
+                                 (format "~s.~s~a"
                                          (quotient v 10000)
-                                         (quotient (remainder v 10000) 100)))))
+                                         (quotient (remainder v 10000) 100)
+                                         (if (zero? (remainder v 100))
+                                             ""
+                                             (format ".~a" (remainder v 100)))))))
 
 (define _png_structp (_cpointer 'png_structp))
 (define _png_infop (_cpointer 'png_infop))
