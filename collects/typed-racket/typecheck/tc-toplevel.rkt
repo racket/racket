@@ -422,8 +422,10 @@
      ;; Don't open up `begin`s that are supposed to be ignored
      #:when (not (or (syntax-property form 'typechecker:ignore)
                      (syntax-property form 'typechecker:ignore-some)))
-     (for-each tc-toplevel-form (syntax->list #'(e ...)))
-     (begin0 (values #f (tc-toplevel/pass2 form))
+     (define-values (_ pass2-results)
+       (for/lists (_1 _2) ([form (syntax->list #'(e ...))])
+         (tc-toplevel-form form)))
+     (begin0 (values #f (last pass2-results))
              (report-all-errors))]
     [_
      (when ((internal-syntax-pred define-type-alias-internal) form)
