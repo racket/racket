@@ -361,16 +361,16 @@
           (tc-error "Expected ~a type variables, but given ~a"
                     (length ns) (length tvars))))
        ;; check the bodies appropriately
-       (if tvars
-           ;; make both annotated and given type variables point to the
-           ;; same actual type variables (the fresh names)
-           (extend-tvars/new ns fresh-ns
-            (extend-tvars/new tvars fresh-ns
-             (maybe-loop form formals bodies (ret expected*))))
-           ;; no plambda: type variables given
-           (extend-tvars/new ns fresh-ns
-            (maybe-loop form formals bodies (ret expected*))))
-       t)]
+       (make-Poly fresh-ns #:original-names ns
+         (if tvars
+             ;; make both annotated and given type variables point to the
+             ;; same actual type variables (the fresh names)
+             (extend-tvars/new ns fresh-ns
+              (extend-tvars/new tvars fresh-ns
+               (maybe-loop form formals bodies (ret expected*))))
+             ;; no plambda: type variables given
+             (extend-tvars/new ns fresh-ns
+              (maybe-loop form formals bodies (ret expected*))))))]
     [(tc-result1: (and t (PolyDots-names: (list ns ... dvar) expected*)))
      (let-values
          ([(tvars dotted)
@@ -381,27 +381,25 @@
                     (values var dvar)]
                    [_ (tc-error "Expected a polymorphic function with ..., but given function had no ...")])
                  (values ns dvar)))])
-       ;; check the body for side effect
-       (extend-indexes dotted
-         (extend-tvars tvars
-           (maybe-loop form formals bodies (ret expected*))))
-       t)]
-    [(or (tc-result1: _) (tc-any-results:) #f)
+       ;; check the bodies appropriately
+       (make-PolyDots (append tvars (list dotted))
+         (extend-indexes dotted
+           (extend-tvars tvars
+             (maybe-loop form formals bodies (ret expected*))))))]
+    [_
      (match (map syntax-e (syntax->list (plambda-prop form)))
        [(list tvars ... dotted-var '...)
-        (let* ([ty (extend-indexes dotted-var
-                     (extend-tvars tvars
-                       (tc/mono-lambda/type formals bodies #f)))])
-          (make-PolyDots (append tvars (list dotted-var)) ty))]
+        (make-PolyDots (append tvars (list dotted-var))
+          (extend-indexes dotted-var
+            (extend-tvars tvars
+              (tc/mono-lambda/type formals bodies #f))))]
        [tvars
-        (let* (;; manually make some fresh names since
-               ;; we don't use a match expander
-               [fresh-tvars (map gensym tvars)]
-               [ty (extend-tvars/new tvars fresh-tvars
-                     (tc/mono-lambda/type formals bodies #f))])
-          ;(printf "plambda: ~a ~a ~a \n" literal-tvars new-tvars ty)
-          (make-Poly fresh-tvars ty #:original-names tvars))])]
-    [_ (int-err "not a good expected value: ~a" expected)]))
+        ;; manually make some fresh names since
+        ;; we don't use a match expander
+        (define fresh-tvars (map gensym tvars))
+        (make-Poly fresh-tvars #:original-names tvars
+          (extend-tvars/new tvars fresh-tvars
+            (tc/mono-lambda/type formals bodies #f)))])]))
 
 ;; typecheck a sequence of case-lambda clauses, which is possibly polymorphic
 ;; tc/lambda/internal syntax syntax-list syntax-list option[type] -> tc-result
