@@ -21,7 +21,8 @@
          (for-label (only-in '#%paramz [parameterization-key pz:pk])
                     (only-in racket/private/class-internal find-method/who)))
 
-(import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-send^ check-subforms^ tc-literal^)
+(import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-send^ check-subforms^ tc-literal^
+        check-class^)
 (export tc-expr^)
 
 (define-literal-set tc-expr-literals #:for-label
@@ -184,6 +185,14 @@
       (int-err "bad form input to tc-expr: ~a" form))
     (syntax-parse form
       #:literal-sets (kernel-literals tc-expr-literals)
+      [stx
+       ;; a class: generated class
+       #:when (syntax-property form 'tr:class)
+       ;; use internal TR forms to hide information obtained
+       ;; at the class: level so that inits, fields, and method
+       ;; presence/absence can be checked immediately here
+       (check-class form expected)
+       expected]
       [stx:exn-handlers^
        (register-ignored! form)
        (check-subforms/with-handlers/check form expected)]

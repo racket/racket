@@ -19,6 +19,10 @@
    [cond-contracted check-subforms/with-handlers (syntax? . -> . any)]
    [cond-contracted check-subforms/with-handlers/check (syntax? tc-results/c . -> . any)]))
 
+(define-signature check-class^
+  ;; FIXME: make sure this is correct
+  ([cond-contracted check-class (syntax? Type/c . -> . any)]))
+
 (define-signature tc-if^
   ([cond-contracted tc/if-twoarm ((syntax? syntax? syntax?) (tc-results/c) . ->* . tc-results/c)]))
 

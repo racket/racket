@@ -21,6 +21,7 @@
  (only-in (types abbrev) [-Boolean B] [-Symbol Sym])
  (only-in (types numeric-tower) [-Number N])
  (only-in (rep type-rep)
+          make-Class
           make-Name
           make-ValuesDots
           make-MPairTop
@@ -958,6 +959,9 @@
 [struct->vector (Univ . -> . (-vec Univ))]
 [struct? (-> Univ -Boolean)]
 [struct-type? (make-pred-ty (make-StructTypeTop))]
+
+;; Section 6.2 (Classes)
+[object% (make-Class #f null null null)]
 
 ;; Section 9.1
 [exn:misc:match? (-> Univ B)]
