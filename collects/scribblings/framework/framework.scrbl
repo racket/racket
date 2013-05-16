@@ -125,9 +125,9 @@ the @secref["editor-snip"] section.
 @defmodule[framework/framework-sig]
 
 @defsignature[framework^ ()]{
-  Contains of the names of the procedures in this
-  manual, except   those that begin with @racket[test:] and
-  @racket[gui-utils:]. 
+  Contains all of the names of the procedures in this
+  manual, except those that begin with @racket[test:] or
+  @racket[gui-utils:].
 }
 
 
