@@ -92,7 +92,7 @@
   [(:lookup Γ v (listcons τ)) (:set Γ v_2 (list τ) Γ_2)
    -----
    (check-instr Π Γ (fetch-field v 1 v_2) Γ_2)]
-  [(:lookup Γ v_0 τ_0) (:lookup Γ v_0 τ_1)
+  [(:lookup Γ v_0 τ_0) (:lookup Γ v_1 τ_1)
    (⊔ (list τ_0) τ_1 (list τ)) (:set Γ v (listcons τ) Γ_2)
    -----
    (check-instr Π Γ (cons v_0 v_1 v) Γ_2)])

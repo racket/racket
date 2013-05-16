@@ -132,6 +132,12 @@
                            (y : (list (list nil)) 
                               (z : (listcons (list nil))
                                  empty))))))
+(test-equal (judgment-holds (check-instr
+                             (l0 : (v0 : nil empty) empty)
+                             (v0 : nil empty)
+                             (cons v0 x f)
+                             Γ))
+            #f)
 
 (test-equal (judgment-holds (check-block empty empty halt)) #t)
 (test-equal (judgment-holds (check-block empty
