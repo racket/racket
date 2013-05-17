@@ -253,7 +253,20 @@ Similar to @racket[for/list], but the last @racket[body] expression
 should produce as many values as given @racket[id]s, and the result is
 as many lists as supplied @racket[id]s. The @racket[id]s are bound to
 the lists accumulated so far in the @racket[for-clause]s and
-@racket[body]s.}
+@racket[body]s.
+
+@examples[
+(for/lists (l1 l2 l3)
+           ([i '(1 2 3)]
+            [j "abc"]
+            #:when (odd? i)
+            [k #(#t #f)])
+  (values i j k))
+(for/lists (acc)
+           ([x '(tvp tofu seitan tvp tofu)]
+            #:unless (member x acc))
+  x)
+]}
 
 
 @defform[(for/first (for-clause ...) body-or-break ... body)]{ Iterates like
