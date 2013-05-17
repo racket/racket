@@ -587,7 +587,7 @@
                     [(exp) (values #f #'exp)]
                     [else (raise-syntax-error 'struct/dc "could not parse clause" stx clause)]))
                 (indep-clause exp lazy? #'sel-name (name->sel-id #'id #'sel-name)))]
-             [_ (raise-syntax-error 'struct/dc "could not parse clause" stx #'clause)])))
+             [_ (raise-syntax-error 'struct/dc "could not parse clause" stx clause)])))
        
        
        (let ()
