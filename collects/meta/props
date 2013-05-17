@@ -351,7 +351,7 @@ path/s is either such a string or a list of them.
   '(#rx"(?:~|[.]bak)$"
     #rx"(?:^|/)(?:#|[.]git)"
     #rx"/compiled$"
-    #rx"^(?:README|bin|lib|include|[.]mailmap|add-on)$"
+    #rx"^(?:README|bin|lib|include|[.]mailmap|add-on|zos|house-calls)$"
     #rx"^collects/info-domain$"
     #rx"^doc/[^/]*$"
     #rx"(?:^|/)[.]DS_Store$"
@@ -857,6 +857,7 @@ path/s is either such a string or a list of them.
 "collects/openssl" responsible (mflatt)
 "collects/parser-tools" responsible (mflatt)
 "collects/parser-tools/private-lex/error-tests.rkt" drdr:command-line #f
+"collects/pict" responsible (mflatt robby)
 "collects/picturing-programs" responsible (sbloch)
 "collects/pkg" responsible (jay)
 "collects/pkg/gui" responsible (mflatt)
@@ -931,6 +932,7 @@ path/s is either such a string or a list of them.
 "collects/redex/tests/color-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/compiler" drdr:command-line #f
 "collects/redex/tests/core-layout-test.rkt" drdr:command-line (mzc *)
+"collects/redex/tests/enum-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/hole-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/keyword-macros-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/matcher-test.rkt" drdr:command-line (mzc *)
@@ -939,7 +941,6 @@ path/s is either such a string or a list of them.
 "collects/redex/tests/run-tests.rkt" drdr:command-line (racket * "--examples" "--no-bitmap-gui") drdr:timeout 360
 "collects/redex/tests/ryr-test.rkt" drdr:timeout 200
 "collects/redex/tests/stepper-test.rkt" drdr:command-line (mzc *)
-"collects/redex/tests/enum-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/term-test.rkt" drdr:command-line (mzc *)
 "collects/redex/tests/test-docs-complete.rkt" drdr:command-line (raco "make" *)
 "collects/redex/tests/tl-test.rkt" drdr:command-line (mzc *)
@@ -979,7 +980,6 @@ path/s is either such a string or a list of them.
 "collects/slatex" responsible (sstrickl)
 "collects/slatex/pdf-slatex-launcher.rkt" drdr:command-line (mzc *)
 "collects/slatex/slatex-launcher.rkt" drdr:command-line (mzc *)
-"collects/pict" responsible (mflatt robby)
 "collects/slideshow" responsible (mflatt robby)
 "collects/slideshow/examples/interlocking-components.scm" drdr:command-line (mzc *)
 "collects/slideshow/start.rkt" drdr:command-line (mzc *)
