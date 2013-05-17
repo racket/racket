@@ -1950,11 +1950,18 @@ term that does not match @racket[pattern].}
   
   @examples[#:eval
             redex-eval
-            (define gen-sum (redex-generator nats (sum n_1 n_2 n_3) 5))
-            (gen-sum)
-            (gen-sum)
-            (gen-sum)
-            (gen-sum)]
+            (define-language L
+              (nat ::= Z (S nat)))
+            (define-judgment-form L
+              #:mode (sum I I O)
+              [---------------
+               (sum Z nat nat)]
+              [(sum nat_1 nat_2 nat_3)
+               -------------------------------
+               (sum (S nat_1) nat_2 (S nat_3))])
+            (define gen-sum (redex-generator L (sum nat_1 nat_2 nat_3) 3))
+            (for/list ([_ (in-range 5)])
+              (gen-sum))]
 }
 
 @defstruct[counterexample ([term any/c]) #:inspector #f]{
