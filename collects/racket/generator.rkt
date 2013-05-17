@@ -143,42 +143,54 @@
 (define-syntax-rule (infinite-generator body0 body ...)
   (generator () (let loop () body0 body ... (loop))))
 
-(define stop-value (gensym))
+(define stop-value (gensym 'stop-value))
+
+(begin-for-syntax
+  (define (expand-in-generator arity arity-allowed? stx)
+    (syntax-case stx ()
+
+      [(_ #:arity n body0 body ...)
+       (let ([new-arity (syntax-e #'n)])
+         (unless (exact-nonnegative-integer? new-arity)
+           (define message "expected a literal exact nonnegative integer")
+           (raise-syntax-error #f message stx #'n))
+         (unless arity-allowed?
+           (define message "cannot specify arity more than once")
+           (raise-syntax-error #f message stx #'n))
+         (when (and arity (not (= arity new-arity)))
+           (define message
+             (format "arity mismatch, context expects a generator of arity ~a"
+               arity))
+           (raise-syntax-error #f message stx #'n))
+         (define new-stx (syntax/loc stx (in-generator body0 body ...)))
+         (expand-in-generator new-arity #f new-stx))]
+
+      [(_ body0 body ...)
+       (let ([real-arity (or arity 1)])
+         (cond
+           [(zero? real-arity)
+            #'(let ([stop? #f])
+                (in-producer
+                  (generator () body0 body ... (set! stop? #t) (values))
+                  (lambda () stop?)))]
+           [else
+            (define vars (generate-temporaries (build-list real-arity values)))
+            (define stops (build-list real-arity (lambda (i) #'stop-value)))
+            (with-syntax ([(x ...) vars]
+                          [x0 (car vars)]
+                          [(stop ...) stops])
+              #'(in-producer
+                  (generator () body0 body ... (values stop ...))
+                  (lambda (x ...) (eq? x0 stop-value))))]))])))
 
 (define-sequence-syntax in-generator
+  (lambda (stx) (expand-in-generator #f #t stx))
   (lambda (stx)
     (syntax-case stx ()
-      [(_ #:arity n body0 body ...)
-       (if (exact-nonnegative-integer? (syntax-e #'n))
-           #'(in-producer (generator () body0 body ... (vector->values (make-vector n stop-value)))
-                          (lambda xs (eq? (car xs) stop-value)))
-           (raise-syntax-error #f 
-                               "expected a literal exact nonnegative integer"
-                               stx
-                               #'n))]
-      [(_ body0 body ...)
-       #'(in-producer (generator () body0 body ... stop-value) stop-value)]))
-  (lambda (stx)
-    (let loop ([stx stx])
-      (syntax-case stx ()
-        [((id ...) (_ #:arity n body0 body ...))
-         (and (exact-integer? #'n)
-              (= (syntax-e #'n (length (syntax->list #'(id ...))))))
-         ;; arity matches, so drop it:
-         (loop #'[((id ...) (_ body0 body ...))])]
-        [(() (_ body0 body ...))
-         #'[()
-            (in-producer (generator () body0 body ... stop-value) stop-value)]]
-        [((id ...) (_ body0 body ...))
-         (with-syntax ([(stops ...) (syntax-case #'((id stop-value) ...) ()
-                                      [((x v) ...) #'(v ...)])])
-           #'[(id ...)
-              (in-producer (generator () body0 body ... (values stops ...))
-                           (lambda xs (eq? (car xs) stop-value)))])]
-        [((id ...) expr)
-         ;; arity mismatch or other syntax error; fall back to expression mode:
-         #'[(id ...) (values expr)]]))))
-        
+      [((id ...) expr)
+       (let ([arity (length (syntax->list #'(id ...)))])
+         (with-syntax ([e (expand-in-generator arity #t #'expr)])
+           #'[(id ...) e]))])))
 
 (define (sequence->generator sequence)
   (generator () (for ([i sequence]) (yield i))))
