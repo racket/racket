@@ -466,7 +466,8 @@
                       (if (string=? x 'foo)
                           "foo"
                           x))]
-        #;[tc-e (let: ([x : (U String 5) 5])
+
+        [tc-e (let: ([x : (U String 5) 5])
                       (if (eq? x 5)
                           "foo"
                           x))
@@ -553,12 +554,13 @@
 
         ;; or tests - doesn't do anything good yet
 
-        #;
+        #| FIXME: This should pass, but the filter is different for some reason
         [tc-e (let: ([x : Any 3])
                     (if (or (boolean? x) (number? x))
                         (if (boolean? x) 12 x)
                         47))
-              Univ]
+              N]
+        |#
 
         ;; test for fake or
         [tc-e (let: ([x : Any 1])
@@ -604,8 +606,7 @@
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (number? z))])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
-                (t:-> Univ Univ : (-FS  (-not-filter (-val #f) 0) (-filter (-val #f) 0)))
-                #;(make-pred-ty (list Univ) Univ (-val #f) 0 null)]
+                (t:-> Univ Univ : (-FS  (-not-filter (-val #f) 0) (-filter (-val #f) 0)))]
         [tc-e/t (let* ([z (ann 1 : Any)]
                        [p? (lambda: ([x : Any]) (not (number? z)))])
                   (lambda: ([x : Any]) (if (p? x) (ann (add1 7) Any) 12)))
@@ -706,13 +707,14 @@
         [tc-e (raise-type-error 'foo "bar" 5) (t:Un)]
         [tc-e (raise-type-error 'foo "bar" 7 (list 5)) (t:Un)]
 
-        #;[tc-e
-           (let ((x '(1 3 5 7 9)))
-             (do: : Number ((x : (list-of Number) x (cdr x))
-                            (sum : Number 0 (+ sum (car x))))
-                  ((null? x) sum)))
-           N]
-
+        #| FIXME: this typechecks, but the equality check seems broken
+        [tc-e
+         (let ((x '(1 3 5 7 9)))
+           (do: : Number ((x : (Listof Number) x (cdr x))
+                          (sum : Number 0 (+ sum (car x))))
+                ((null? x) sum)))
+         N]
+        |#
 
         ;; inference with internal define
         [tc-e (let ()
@@ -748,8 +750,8 @@
                 [[x : Number *] (+ 1 (car x))])
                5)
               N]
-        #;
-        [tc-e `(4 ,@'(3)) (-pair N (-lst N))]
+
+        [tc-e `(4 ,@'(3)) (-pair -PosByte (-lst* -PosByte))]
 
         [tc-e
          (let ((x '(1 3 5 7 9)))
@@ -830,11 +832,12 @@
         [tc-err (ann 3 (Rec a (U a 3)))]
         [tc-err (ann 3 (Rec a (Rec b a)))]
 
-        #;
+        #| FIXME: why should this error?
         [tc-err (lambda: ([x : Any])
                          (if (number? (not (not x)))
                              (add1 x)
                              12))]
+        |#
 
         [tc-e (filter exact-integer? (list 1 2 3 'foo))
               (-lst -Integer)]
@@ -869,7 +872,8 @@
         [tc-e/t (plambda: (a ...) [as : a ... a]
                           (apply fold-left (lambda: ([c : Integer] [a : Char] . [xs : a ... a]) c)
                                  3 (list #\c) (map list as)))
-                (-polydots (a) ((list) (a a) . ->... . -Integer))]|#
+                (-polydots (a) ((list) (a a) . ->... . -Integer))]
+        |#
 
         ;; First is same as second, but with map explicitly instantiated.
         [tc-e/t (plambda: (a ...) [ys : (a ... a -> Number) *]
@@ -920,7 +924,8 @@
               (-HT -Number -Number)]
         [tc-e #{(make-immutable-hash) :: (HashTable String Symbol)}
               (-HT -String -Symbol)]
-        #;[tc-err (let: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
+
+        [tc-err (let: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                         (fact 20))]
 
         [tc-err (ann (lambda: ([x : Any]) #f) (Any -> Boolean : String))]
@@ -1455,10 +1460,11 @@
         ;Wills
         (tc-e (make-will-executor) -Will-Executor)
         ;; FIXME: Broken because ManyUniv doesn't have a corresponding tc-result
-        #;
+        #|
         (tc-e (let: ((w : Will-Executor (make-will-executor)))
                 (will-register w 'a (lambda: ((s : Symbol)) (void)))
                 (will-execute w)) #:ret tc-any-results)
+        |#
 
         ;Promises
         ;For some reason they are failing in the test suite
@@ -1679,7 +1685,8 @@
 
 ;; these no longer work with the new scheme for top-level identifiers
 ;; could probably be revived
-#;(define (tc-toplevel-tests)
+#|
+(define (tc-toplevel-tests)
 #reader typed-racket/typed-reader
 (test-suite "Tests for tc-toplevel"
             (tc-tl 3)
@@ -1689,6 +1696,7 @@
             [tc-tl (pdefine: (a b) (mymap [f : (a -> b)] (l : (list-of a))) : (list-of b)
                              (if (null? l) #{'() : (list-of b)}
                                  (cons (f (car l)) (map f (cdr l)))))]))
+|#
 
+(define-go typecheck-tests)
 
-(define-go typecheck-tests #;tc-toplevel-tests)
