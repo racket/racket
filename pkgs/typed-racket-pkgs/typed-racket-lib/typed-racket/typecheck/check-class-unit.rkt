@@ -146,30 +146,36 @@
      (check-super-new super-new-stx super-inits)
      ;; trawl the body and find methods and type-check them
      (define meths (trawl-for-property #'body 'tr:class:method))
-     (with-lexical-env/extend (map (λ (m) (dict-ref local-method-table m))
-                                   (set->list this%-method-names))
-                              ;; FIXME: the types we put here are fine in the expected
-                              ;;        case, but not if the class doesn't have an annotation.
-                              ;;        Then we need to hunt down annotations in a first pass.
-                              ;;        (should probably do this in expected case anyway)
-                              ;; FIXME: this doesn't work because the names of local methods
-                              ;;        are obscured and need to be reconstructed somehow
-                              (map (λ (m) (->* (list (make-Univ))
-                                               (fixup-method-type (car (dict-ref methods m))
-                                                                  self-type)))
-                                   (set->list this%-method-names))
-      (for ([meth meths])
-        (define method-name (syntax-property meth 'tr:class:method))
-        (define method-type
-          (fixup-method-type
-           (car (dict-ref methods method-name))
-           self-type))
-        (define expected (ret method-type))
-        (define annotated (annotate-method meth self-type method-type))
-        (tc-expr/check annotated expected)))
+     (check-methods meths methods self-type local-method-table this%-method-names)
      ;; trawl the body for top-level expressions too
      (define top-level-exprs (trawl-for-property #'body 'tr:class:top-level))
      (void)]))
+
+;; check-methods : Listof<Syntax> Dict Type Dict<Symbol, Id> Set<Symbol> -> Void
+;; Type-check the methods inside of a class
+(define (check-methods meths methods self-type local-method-table
+                       this%-method-names)
+  (with-lexical-env/extend (map (λ (m) (dict-ref local-method-table m))
+                                (set->list this%-method-names))
+                           ;; FIXME: the types we put here are fine in the expected
+                           ;;        case, but not if the class doesn't have an annotation.
+                           ;;        Then we need to hunt down annotations in a first pass.
+                           ;;        (should probably do this in expected case anyway)
+                           ;; FIXME: this doesn't work because the names of local methods
+                           ;;        are obscured and need to be reconstructed somehow
+                           (map (λ (m) (->* (list (make-Univ))
+                                            (fixup-method-type (car (dict-ref methods m))
+                                                               self-type)))
+                                (set->list this%-method-names))
+    (for ([meth meths])
+      (define method-name (syntax-property meth 'tr:class:method))
+      (define method-type
+        (fixup-method-type
+         (car (dict-ref methods method-name))
+         self-type))
+      (define expected (ret method-type))
+      (define annotated (annotate-method meth self-type method-type))
+      (tc-expr/check annotated expected))))
 
 ;; Syntax -> Dict<Symbol, Id> Dict<Symbol, (List Symbol Symbol)>
 ;; Construct tables mapping internal method names to the accessors
