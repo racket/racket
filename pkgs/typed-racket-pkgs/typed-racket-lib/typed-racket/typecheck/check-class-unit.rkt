@@ -147,15 +147,18 @@
      ;; trawl the body and find methods and type-check them
      (define meths (trawl-for-property #'body 'tr:class:method))
      (define-values (lexical-names lexical-types)
-       (local-tables->lexical-env local-method-table methods
-                                  this%-method-names self-type))
+       (local-tables->lexical-env local-method-table methods this%-method-names
+                                  local-field-table fields this%-field-names
+                                  self-type))
      (with-lexical-env/extend lexical-names lexical-types
       (check-methods meths methods self-type))
      ;; trawl the body for top-level expressions too
      (define top-level-exprs (trawl-for-property #'body 'tr:class:top-level))
      (void)]))
 
-;; local-tables->lexical-env : Dict<Symbol, Id> Dict List<Symbol> Type
+;; local-tables->lexical-env : Dict<Symbol, Id> Dict List<Symbol>
+;;                             Dict<Symbol, (List Id Id)> Dict List<Symbol>
+;;                             Type
 ;;                             -> List<Id> List<Type>
 ;; Construct mappings to put into the lexical type-checking environment
 ;; from the class local accessor mappings
@@ -164,14 +167,31 @@
 ;;        case, but not if the class doesn't have an annotation.
 ;;        Then we need to hunt down annotations in a first pass.
 ;;        (should probably do this in expected case anyway)
-(define (local-tables->lexical-env local-method-table method-types
-                                   method-names self-type)
-  (values (map (λ (m) (dict-ref local-method-table m))
-               (set->list method-names))
-          (map (λ (m) (->* (list (make-Univ))
-                           (fixup-method-type (car (dict-ref method-types m))
-                                              self-type)))
-               (set->list method-names))))
+(define (local-tables->lexical-env local-method-table methods method-names
+                                   local-field-table fields field-names
+                                   self-type)
+  (define (localize local-table names)
+    (map (λ (m) (dict-ref local-table m))
+                (set->list names)))
+  (define localized-method-names (localize local-method-table method-names))
+  (define localized-field-pairs (localize local-field-table field-names))
+  (define localized-field-get-names (map car localized-field-pairs))
+  (define localized-field-set-names (map cadr localized-field-pairs))
+  (define method-types
+    (map (λ (m) (->* (list (make-Univ))
+                     (fixup-method-type (car (dict-ref methods m))
+                                        self-type)))
+         (set->list method-names)))
+  (define field-get-types
+    (map (λ (f) (->* (list (make-Univ)) (car (dict-ref fields f))))
+         (set->list field-names)))
+  (define field-set-types
+    (map (λ (f) (->* (list (make-Univ) (car (dict-ref fields f)))
+                     -Void))
+         (set->list field-names)))
+  (values (append localized-method-names
+                  localized-field-get-names localized-field-set-names)
+          (append method-types field-get-types field-set-types)))
 
 ;; check-methods : Listof<Syntax> Dict Type -> Void
 ;; Type-check the methods inside of a class
