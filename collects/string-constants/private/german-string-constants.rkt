@@ -1697,6 +1697,8 @@
   (install-pkg-abort-update "Aktualisierung abbrechen")
   (install-pkg-abort-remove "Entfernung abbrechen")
   (install-pkg-abort-generic-action "Aktion abbrechen")
+  (install-pkg-show-all-options "Alle Optionen anzeigen")
+  (pkg-manager-menu-item "Paket-Manager...")
   
   )
 
