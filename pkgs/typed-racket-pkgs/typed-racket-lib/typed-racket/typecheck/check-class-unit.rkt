@@ -139,25 +139,37 @@
      |#
      ;; trawl the body for the local name table
      (define locals (trawl-for-property #'body 'tr:class:local-table))
-     (define local-table
-      (syntax-parse (car locals)
-        #:literals (let-values #%plain-app #%plain-lambda)
-        [(let-values ([(method ...)
-                       (#%plain-app
-                        values
-                        (#%plain-lambda ()
-                          (#%plain-app (#%plain-app local-method self1) self2))
-                        ...)])
-            (#%plain-app void))
-          (map cons
-              (syntax->datum #'(method ...))
-              (syntax->list #'(local-method ...)))]))
+     (define-values (local-method-table local-field-table)
+       (syntax-parse (car locals)
+         #:literals (let-values #%plain-app #%plain-lambda values)
+         [(let-values ([(method:id ...)
+                        (#%plain-app
+                         values
+                         (#%plain-lambda ()
+                           (#%plain-app (#%plain-app local-method:id _) _))
+                         ...)]
+                       [(field:id ...)
+                        (#%plain-app
+                         values
+                         (#%plain-lambda ()
+                           (let-values (((_) _)) (#%plain-app local-field-get:id _))
+                           (let-values (((_) _))
+                             (let-values (((_) _)) (#%plain-app local-field-set:id _ _))))
+                         ...)])
+             (#%plain-app void))
+           (values (map cons
+                        (syntax->datum #'(method ...))
+                        (syntax->list #'(local-method ...)))
+                   (map list
+                        (syntax->datum #'(field ...))
+                        (syntax->list #'(local-field-get ...))
+                        (syntax->list #'(local-field-set ...))))]))
      ;; find the `super-new` call (or error if missing)
      (define super-new-stx (trawl-for-property #'body 'tr:class:super-new))
      (check-super-new super-new-stx super-inits)
      ;; trawl the body and find methods and type-check them
      (define meths (trawl-for-property #'body 'tr:class:method))
-     (with-lexical-env/extend (map (λ (m) (dict-ref local-table m))
+     (with-lexical-env/extend (map (λ (m) (dict-ref local-method-table m))
                                    (set->list this%-method-names))
                               ;; FIXME: the types we put here are fine in the expected
                               ;;        case, but not if the class doesn't have an annotation.
