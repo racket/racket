@@ -162,6 +162,8 @@
            (define annotated (annotate-method meth self-type))
            (tc-expr/check annotated expected)))
         ;; trawl the body for top-level expressions too
+        (define top-level-exprs (trawl-for-property #'body 'tr:class:top-level))
+        (pretty-print (map syntax->datum top-level-exprs))
         ])]))
 
 ;; Syntax -> Listof<Syntax>

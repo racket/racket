@@ -224,8 +224,10 @@
                            clause?
                            non-clause?))
         (define name-dict (extract-names clauses))
-        (define annotated-others
-          (for/list ([other others])
+        (define-values (annotated-methods other-top-level)
+          (for/fold ([methods '()]
+                     [rest-top '()])
+                    ([other others])
             (define stx (non-clause-stx other))
             (syntax-parse stx
               ;; if it's a method definition for a declared method, then
@@ -233,12 +235,14 @@
               [(define-values (id) . rst)
                #:when (memf (λ (n) (free-identifier=? #'id n))
                             (dict-ref name-dict #'public))
-               (non-clause (syntax-property stx
-                                            'tr:class:method
-                                            (syntax-e #'id)))]
+               (values (cons (non-clause (syntax-property stx
+                                                          'tr:class:method
+                                                          (syntax-e #'id)))
+                             methods)
+                       rest-top)]
               ;; FIXME: this needs to handle external/internal names too
               ;; FIXME: this needs to track overrides and other things
-              [_ other])))
+              [_ (values methods (append rest-top (list other)))])))
         (define annotated-super
           (syntax-property #'super 'tr:class:super #t))
         (syntax-property
@@ -254,7 +258,10 @@
                     (public #,@(dict-ref name-dict #'public '()))))
               (class #,annotated-super
                 #,@(map clause-stx clauses)
-                #,@(map non-clause-stx annotated-others)
+                #,@(map non-clause-stx annotated-methods)
+                #,(syntax-property
+                   #`(begin #,@(map non-clause-stx other-top-level))
+                   'tr:class:top-level #t)
                 #,(make-locals-table name-dict)))
           'tr:class #t)
          'typechecker:ignore #t)])]))
