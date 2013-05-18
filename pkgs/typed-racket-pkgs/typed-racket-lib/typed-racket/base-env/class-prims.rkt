@@ -225,24 +225,7 @@
                            non-clause?))
         (define name-dict (extract-names clauses))
         (define-values (annotated-methods other-top-level)
-          (for/fold ([methods '()]
-                     [rest-top '()])
-                    ([other others])
-            (define stx (non-clause-stx other))
-            (syntax-parse stx
-              ;; if it's a method definition for a declared method, then
-              ;; mark it as something to type-check
-              [(define-values (id) . rst)
-               #:when (memf (λ (n) (free-identifier=? #'id n))
-                            (dict-ref name-dict #'public))
-               (values (cons (non-clause (syntax-property stx
-                                                          'tr:class:method
-                                                          (syntax-e #'id)))
-                             methods)
-                       rest-top)]
-              ;; FIXME: this needs to handle external/internal names too
-              ;; FIXME: this needs to track overrides and other things
-              [_ (values methods (append rest-top (list other)))])))
+          (process-class-contents others name-dict))
         (define annotated-super
           (syntax-property #'super 'tr:class:super #t))
         (syntax-property
@@ -267,6 +250,35 @@
          'typechecker:ignore #t)])]))
 
 (begin-for-syntax
+  ;; process-class-contents : Listof<Syntax> Dict<Id, Listof<Id>>
+  ;;                          -> Listof<Syntax> Listof<Syntax>
+  ;; Process methods and other top-level expressions and definitions
+  ;; that aren't class clauses like `init` or `public`
+  (define (process-class-contents contents name-dict)
+    (for/fold ([methods '()]
+               [rest-top '()])
+              ([content contents])
+      (define stx (non-clause-stx content))
+      (syntax-parse stx
+        #:literals (define-values super-new)
+        ;; if it's a method definition for a declared method, then
+        ;; mark it as something to type-check
+        ;; FIXME: this needs to handle external/internal names too
+        ;; FIXME: this needs to track overrides and other things
+        [(define-values (id) . rst)
+         #:when (memf (λ (n) (free-identifier=? #'id n))
+                      (dict-ref name-dict #'public))
+         (values (cons (non-clause (syntax-property stx
+                                                    'tr:class:method
+                                                    (syntax-e #'id)))
+                       methods)
+                 rest-top)]
+        ;; Identify super-new for the benefit of the type checker
+        [(super-new [init-id init-expr] ...)
+         (define new-non-clause
+           (non-clause (syntax-property stx 'tr:class:super-new #t)))
+         (values methods (append rest-top (list new-non-clause)))]
+        [_ (values methods (append rest-top (list content)))])))
   ;; This is a neat/horrible trick
   ;;
   ;; In order to detect the mappings that class-internal.rkt has

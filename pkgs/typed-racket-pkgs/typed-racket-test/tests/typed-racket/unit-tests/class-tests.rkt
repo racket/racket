@@ -234,5 +234,29 @@
               (public m)
               (define-values (m)
                 (lambda (x) (number->string x))))])
-      (send (new c%) m 4)))))
+      (send (new c%) m 4)))
+
+   ;; check a good super-new call
+   (check-ok
+    (: c% (Class (init [x Integer])))
+    (define c% (class: object% (super-new) (init x)))
+    (: d% (Class))
+    (define d% (class: c% (super-new [x (+ 3 5)]))))
+
+   ;; fails, missing super-new
+   (check-err
+    (: c% (Class (init [x Integer])))
+    (define c% (class: object% (init x))))
+
+   ;; fails, non-top-level super-new
+   (check-err
+    (: c% (Class (init [x Integer])))
+    (define c% (class: object% (let () (super-new)) (init x))))
+
+   ;; fails, bad super-new argument
+   (check-err
+    (: c% (Class (init [x Integer])))
+    (define c% (class: object% (super-new) (init x)))
+    (: d% (Class))
+    (define d% (class: c% (super-new [x "bad"]))))))
 

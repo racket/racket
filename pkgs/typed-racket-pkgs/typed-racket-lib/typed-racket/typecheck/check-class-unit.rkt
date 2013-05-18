@@ -145,6 +145,9 @@
           (map cons
               (syntax->datum #'(method ...))
               (syntax->list #'(local-method ...)))]))
+     ;; find the `super-new` call (or error if missing)
+     (define super-new-stx (trawl-for-property #'body 'tr:class:super-new))
+     (check-super-new super-new-stx super-inits)
      ;; trawl the body and find methods and type-check them
      (define meths (trawl-for-property #'body 'tr:class:method))
      (with-lexical-env/extend (map (λ (m) (dict-ref local-table m))
@@ -171,6 +174,28 @@
      ;; trawl the body for top-level expressions too
      (define top-level-exprs (trawl-for-property #'body 'tr:class:top-level))
      (void)]))
+
+;; check-super-new : Listof<Syntax> Inits -> Void
+;; Check if the super-new call is well-typed
+(define (check-super-new super-new-stx super-inits)
+  (cond [(null? super-new-stx)
+         (tc-error/expr
+          "typed classes must call super-new at the class top-level")]
+        [else
+         (syntax-parse (car super-new-stx)
+           #:literals (#%plain-app list cons quote)
+           [(#%plain-app super-go _ _ _ _ _
+                         (#%plain-app
+                          list
+                          (#%plain-app cons (quote init-id) arg:expr)
+                          ...))
+            (for ([init-id (syntax->datum #'(init-id ...))]
+                  [init-arg (syntax->list #'(arg ...))])
+              (define maybe-expected (dict-ref super-inits init-id #f))
+              (if maybe-expected
+                  (tc-expr/check init-arg (ret (car maybe-expected)))
+                  (tc-error/expr "init argument ~a not accepted by superclass"
+                                 init-id)))])]))
 
 ;; Syntax -> Listof<Syntax>
 ;; Look through the expansion of the class macro in search for
