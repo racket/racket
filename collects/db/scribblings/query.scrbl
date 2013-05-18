@@ -49,6 +49,8 @@ disconnected:
 @item{changing communication settings, such as changing the
   connection's character encoding}
 @item{communication failures and internal errors in the library}
+@item{a @seclink["breakhandler" #:doc '(lib "scribblings/reference/reference.scrbl")]{break} 
+  occurring during a connection operation}
 ]
 See @secref["transactions"] for information on how errors can affect
 the transaction status.

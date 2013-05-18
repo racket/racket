@@ -291,7 +291,8 @@
                      (with-handlers ([exn?
                                       (lambda (e2)
                                         (error/exn-in-rollback 'call-with-transaction e1 e2))])
-                       (send c end-transaction '|call-with-transaction (rollback)| 'rollback #t))
+                       (when (send c connected?)
+                         (send c end-transaction '|call-with-transaction (rollback)| 'rollback #t)))
                      (raise e1))])
     (begin0 (call-with-continuation-barrier proc)
       (send c end-transaction '|call-with-transaction (commit)| 'commit #t))))
