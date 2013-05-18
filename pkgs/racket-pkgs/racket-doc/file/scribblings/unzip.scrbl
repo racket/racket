@@ -96,7 +96,7 @@ itself or as the containing directory of other entries. If
 @racket[path->zip-path].}
 
 
-@defproc[(unzip-entry [path (or/c path-string? input-port?)]
+@defproc[(unzip-entry [in (or/c path-string? input-port?)]
                       [zipdir zip-directory?]
                       [entry (or/c bytes? path-string?)]
                       [entry-reader (bytes? boolean? input-port? . -> . any)
