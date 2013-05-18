@@ -48,7 +48,7 @@
   (syntax-parse form
     #:literals (let-values #%plain-lambda quote-syntax begin
                 #%plain-app values class:-internal letrec-syntaxes+values
-                c:init c:init-field c:field c:public)
+                c:init c:init-field c:field c:public c:override)
     ;; Inspect the expansion of the class macro for the pieces that
     ;; we need to type-check like superclass, methods, top-level
     ;; expressions and so on
@@ -63,7 +63,8 @@
                                      (c:init internal-init-names ...)
                                      (c:init-field internal-init-field-names ...)
                                      (c:field internal-field-names ...)
-                                     (c:public internal-public-names ...)))
+                                     (c:public internal-public-names ...)
+                                     (c:override internal-override-names ...)))
                                    (#%plain-app values))))
                                (let-values (((superclass) superclass-expr)
                                             ((interfaces) interface-expr))
@@ -103,8 +104,12 @@
        (list->set
         (append (syntax->datum #'(internal-field-names ...))
                 (syntax->datum #'(internal-init-field-names ...)))))
-     (define this%-method-names
+     (define this%-public-names
        (list->set (syntax->datum #'(internal-public-names ...))))
+     (define this%-override-names
+       (list->set (syntax->datum #'(internal-override-names ...))))
+     (define this%-method-names
+       (set-union this%-public-names this%-override-names))
      ;; Use the internal class: information to check whether clauses
      ;; exist or are absent appropriately
      (when expected?
@@ -114,20 +119,22 @@
       (check-exists (set-union this%-init-names super-init-names)
                     exp-init-names
                     "initialization argument")
-      (check-exists (set-union this%-method-names super-method-names)
+      (check-exists (set-union this%-public-names super-method-names)
                     exp-method-names
                     "public method")
       (check-exists (set-union this%-field-names super-field-names)
                     exp-field-names
                     "public field"))
+     (check-exists super-method-names this%-override-names
+                   "override method")
      (check-absent super-field-names this%-field-names "public field")
-     (check-absent super-method-names this%-method-names "public method")
+     (check-absent super-method-names this%-public-names "public method")
      ;; FIXME: the control flow for the failure of these checks is
      ;;        still up in the air
      #|
      (check-no-extra (set-union this%-field-names super-field-names)
                      exp-field-names)
-     (check-no-extra (set-union this%-method-names super-method-names)
+     (check-no-extra (set-union this%-public-names super-method-names)
                      exp-method-names)
      |#
      ;; trawl the body for the local name table
@@ -151,7 +158,7 @@
      ;; trawl the body and find methods and type-check them
      (define meths (trawl-for-property #'body 'tr:class:method))
      (with-lexical-env/extend (map (λ (m) (dict-ref local-table m))
-                                   (syntax->datum #'(internal-public-names ...)))
+                                   (set->list this%-method-names))
                               ;; FIXME: the types we put here are fine in the expected
                               ;;        case, but not if the class doesn't have an annotation.
                               ;;        Then we need to hunt down annotations in a first pass.
@@ -161,7 +168,7 @@
                               (map (λ (m) (->* (list (make-Univ))
                                                (fixup-method-type (car (dict-ref methods m))
                                                                   self-type)))
-                                   (syntax->datum #'(internal-public-names ...)))
+                                   (set->list this%-method-names))
       (for ([meth meths])
         (define method-name (syntax-property meth 'tr:class:method))
         (define method-type

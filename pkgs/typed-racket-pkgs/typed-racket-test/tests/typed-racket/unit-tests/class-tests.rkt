@@ -259,5 +259,31 @@
     (: c% (Class (init [x Integer])))
     (define c% (class: object% (super-new) (init x)))
     (: d% (Class))
-    (define d% (class: c% (super-new [x "bad"]))))))
+    (define d% (class: c% (super-new [x "bad"]))))
+
+   ;; test override
+   (check-ok
+    (: c% (Class [m (Integer -> Integer)]))
+    (define c% (class: object% (super-new)
+                 (define/public (m y) (add1 y))))
+    (: d% (Class [m (Integer -> Integer)]))
+    (define d% (class: c% (super-new)
+                 (define/override (m y) (* 2 y)))))
+
+   ;; test local call to overriden method
+   (check-ok
+    (: c% (Class [m (Integer -> Integer)]))
+    (define c% (class: object% (super-new)
+                 (define/public (m y) (add1 y))))
+    (: d% (Class [n (Integer -> Integer)]
+                 [m (Integer -> Integer)]))
+    (define d% (class: c% (super-new)
+                 (define/public (n x) (m x))
+                 (define/override (m y) (* 2 y)))))
+
+   ;; fails, superclass missing public for override
+   (check-err
+    (: d% (Class [m (Integer -> Integer)]))
+    (define d% (class: object% (super-new)
+                 (define/override (m y) (* 2 y)))))))
 
