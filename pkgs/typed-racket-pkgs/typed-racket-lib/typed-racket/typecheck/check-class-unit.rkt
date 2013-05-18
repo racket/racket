@@ -48,7 +48,8 @@
   (syntax-parse form
     #:literals (let-values #%plain-lambda quote-syntax begin
                 #%plain-app values class:-internal letrec-syntaxes+values
-                c:init c:init-field c:field c:public c:override)
+                c:init c:init-field c:field c:public c:override
+                c:private)
     ;; Inspect the expansion of the class macro for the pieces that
     ;; we need to type-check like superclass, methods, top-level
     ;; expressions and so on
@@ -64,7 +65,8 @@
                                      (c:init-field internal-init-field-names ...)
                                      (c:field internal-field-names ...)
                                      (c:public internal-public-names ...)
-                                     (c:override internal-override-names ...)))
+                                     (c:override internal-override-names ...)
+                                     (c:private internal-private-names ...)))
                                    (#%plain-app values))))
                                (let-values (((superclass) superclass-expr)
                                             ((interfaces) interface-expr))
@@ -108,6 +110,8 @@
        (list->set (syntax->datum #'(internal-public-names ...))))
      (define this%-override-names
        (list->set (syntax->datum #'(internal-override-names ...))))
+     (define this%-private-names
+       (list->set (syntax->datum #'(internal-private-names ...))))
      (define this%-method-names
        (set-union this%-public-names this%-override-names))
      ;; Use the internal class: information to check whether clauses
@@ -139,7 +143,7 @@
      |#
      ;; trawl the body for the local name table
      (define locals (trawl-for-property #'body 'tr:class:local-table))
-     (define-values (local-method-table local-field-table)
+     (define-values (local-method-table local-private-table local-field-table)
        (construct-local-mapping-tables (car locals)))
      ;; find the `super-new` call (or error if missing)
      (define super-new-stx (trawl-for-property #'body 'tr:class:super-new))
@@ -220,6 +224,11 @@
                     (#%plain-lambda ()
                       (#%plain-app (#%plain-app local-method:id _) _))
                     ...)]
+                  [(private:id ...)
+                   (#%plain-app
+                    values
+                    (#%plain-lambda () (#%plain-app local-private:id _))
+                    ...)]
                   [(field:id ...)
                    (#%plain-app
                     values
@@ -232,6 +241,9 @@
      (values (map cons
                   (syntax->datum #'(method ...))
                   (syntax->list #'(local-method ...)))
+             (map cons
+                  (syntax->datum #'(private ...))
+                  (syntax->list #'(local-private ...)))
              (map list
                   (syntax->datum #'(field ...))
                   (syntax->list #'(local-field-get ...))

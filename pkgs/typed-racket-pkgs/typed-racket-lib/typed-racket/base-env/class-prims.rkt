@@ -239,7 +239,8 @@
                     (init-field #,@(dict-ref name-dict #'init-field '()))
                     (field #,@(dict-ref name-dict #'field '()))
                     (public #,@(dict-ref name-dict #'public '()))
-                    (override #,@(dict-ref name-dict #'override '()))))
+                    (override #,@(dict-ref name-dict #'override '()))
+                    (private #,@(dict-ref name-dict #'private '()))))
               (class #,annotated-super
                 #,@(map clause-stx clauses)
                 #,@(map non-clause-stx annotated-methods)
@@ -269,7 +270,8 @@
         [(define-values (id) . rst)
          #:when (memf (λ (n) (free-identifier=? #'id n))
                       (append (dict-ref name-dict #'public '())
-                              (dict-ref name-dict #'override '())))
+                              (dict-ref name-dict #'override '())
+                              (dict-ref name-dict #'private '())))
          (values (cons (non-clause (syntax-property stx
                                                     'tr:class:method
                                                     (syntax-e #'id)))
@@ -293,6 +295,7 @@
     (define method-names
       (append (dict-ref name-dict #'public '())
               (dict-ref name-dict #'override '())))
+    (define private-names (dict-ref name-dict #'private '()))
     (define field-names
       (append (dict-ref name-dict #'field '())
               (dict-ref name-dict #'init-field '())))
@@ -300,6 +303,9 @@
      #`(let-values ([(#,@method-names)
                      (values #,@(map (λ (stx) #`(λ () (#,stx)))
                                      method-names))]
+                    [(#,@private-names)
+                     (values #,@(map (λ (stx) #`(λ () (#,stx)))
+                                     private-names))]
                     [(#,@field-names)
                      (values #,@(map (λ (stx) #`(λ () #,stx (set! #,stx 0)))
                                      field-names))])
