@@ -140,30 +140,7 @@
      ;; trawl the body for the local name table
      (define locals (trawl-for-property #'body 'tr:class:local-table))
      (define-values (local-method-table local-field-table)
-       (syntax-parse (car locals)
-         #:literals (let-values #%plain-app #%plain-lambda values)
-         [(let-values ([(method:id ...)
-                        (#%plain-app
-                         values
-                         (#%plain-lambda ()
-                           (#%plain-app (#%plain-app local-method:id _) _))
-                         ...)]
-                       [(field:id ...)
-                        (#%plain-app
-                         values
-                         (#%plain-lambda ()
-                           (let-values (((_) _)) (#%plain-app local-field-get:id _))
-                           (let-values (((_) _))
-                             (let-values (((_) _)) (#%plain-app local-field-set:id _ _))))
-                         ...)])
-             (#%plain-app void))
-           (values (map cons
-                        (syntax->datum #'(method ...))
-                        (syntax->list #'(local-method ...)))
-                   (map list
-                        (syntax->datum #'(field ...))
-                        (syntax->list #'(local-field-get ...))
-                        (syntax->list #'(local-field-set ...))))]))
+       (construct-local-mapping-tables (car locals)))
      ;; find the `super-new` call (or error if missing)
      (define super-new-stx (trawl-for-property #'body 'tr:class:super-new))
      (check-super-new super-new-stx super-inits)
@@ -193,6 +170,37 @@
      ;; trawl the body for top-level expressions too
      (define top-level-exprs (trawl-for-property #'body 'tr:class:top-level))
      (void)]))
+
+;; Syntax -> Dict<Symbol, Id> Dict<Symbol, (List Symbol Symbol)>
+;; Construct tables mapping internal method names to the accessors
+;; generated inside the untyped class macro.
+(define (construct-local-mapping-tables stx)
+  (syntax-parse stx
+    #:literals (let-values #%plain-app #%plain-lambda values)
+    ;; See base-env/class-prims.rkt to see how this in-syntax
+    ;; table is constructed at the surface syntax
+    [(let-values ([(method:id ...)
+                   (#%plain-app
+                    values
+                    (#%plain-lambda ()
+                      (#%plain-app (#%plain-app local-method:id _) _))
+                    ...)]
+                  [(field:id ...)
+                   (#%plain-app
+                    values
+                    (#%plain-lambda ()
+                      (let-values (((_) _)) (#%plain-app local-field-get:id _))
+                      (let-values (((_) _))
+                        (let-values (((_) _)) (#%plain-app local-field-set:id _ _))))
+                    ...)])
+       (#%plain-app void))
+     (values (map cons
+                  (syntax->datum #'(method ...))
+                  (syntax->list #'(local-method ...)))
+             (map list
+                  (syntax->datum #'(field ...))
+                  (syntax->list #'(local-field-get ...))
+                  (syntax->list #'(local-field-set ...))))]))
 
 ;; check-super-new : Listof<Syntax> Inits -> Void
 ;; Check if the super-new call is well-typed
