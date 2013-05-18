@@ -799,7 +799,7 @@ path/s is either such a string or a list of them.
 "collects/math/tests/matrix-tests.rkt" drdr:timeout 120
 "collects/meta" responsible (eli)
 "collects/meta/build" drdr:command-line #f
-"collects/meta/check-dists.rkt" drdr:timeout 480
+"collects/meta/check-dists.rkt" drdr:timeout 1200
 "collects/meta/contrib/completion/racket-completion.bash" responsible (samth sstrickl) drdr:command-line #f
 "collects/meta/drdr" responsible (jay) drdr:command-line #f
 "collects/meta/drdr2" responsible (jay) drdr:command-line #f
