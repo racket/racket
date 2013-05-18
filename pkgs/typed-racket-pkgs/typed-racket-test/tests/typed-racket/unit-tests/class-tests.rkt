@@ -285,5 +285,21 @@
    (check-err
     (: d% (Class [m (Integer -> Integer)]))
     (define d% (class: object% (super-new)
-                 (define/override (m y) (* 2 y)))))))
+                 (define/override (m y) (* 2 y)))))
+
+   ;; local field access and set!
+   (check-ok
+    (: c% (Class (field [x Integer])
+                 [m (Integer -> Integer)]))
+    (define c% (class: object% (super-new)
+                 (field [x 0])
+                 (define/public (m y)
+                   (begin0 x (set! x (+ x 1)))))))
+
+   ;; fails, missing local field
+   (check-err
+    (: c% (Class [m (Integer -> Integer)]))
+    (define c% (class: object% (super-new)
+                 (define/public (m y)
+                   (begin0 x (set! x (+ x 1)))))))))
 

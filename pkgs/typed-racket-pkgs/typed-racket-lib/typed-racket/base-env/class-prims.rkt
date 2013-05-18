@@ -293,10 +293,16 @@
     (define method-names
       (append (dict-ref name-dict #'public '())
               (dict-ref name-dict #'override '())))
+    (define field-names
+      (append (dict-ref name-dict #'field '())
+              (dict-ref name-dict #'init-field '())))
     (syntax-property
      #`(let-values ([(#,@method-names)
                      (values #,@(map (λ (stx) #`(λ () (#,stx)))
-                                     method-names))])
+                                     method-names))]
+                    [(#,@field-names)
+                     (values #,@(map (λ (stx) #`(λ () #,stx (set! #,stx 0)))
+                                     field-names))])
          (void))
      'tr:class:local-table #t)))
 

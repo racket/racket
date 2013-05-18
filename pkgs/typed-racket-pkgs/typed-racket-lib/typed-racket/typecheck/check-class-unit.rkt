@@ -139,48 +139,103 @@
      |#
      ;; trawl the body for the local name table
      (define locals (trawl-for-property #'body 'tr:class:local-table))
-     (define local-table
-      (syntax-parse (car locals)
-        #:literals (let-values #%plain-app #%plain-lambda)
-        [(let-values ([(method ...)
-                       (#%plain-app
-                        values
-                        (#%plain-lambda ()
-                          (#%plain-app (#%plain-app local-method self1) self2))
-                        ...)])
-            (#%plain-app void))
-          (map cons
-              (syntax->datum #'(method ...))
-              (syntax->list #'(local-method ...)))]))
+     (define-values (local-method-table local-field-table)
+       (construct-local-mapping-tables (car locals)))
      ;; find the `super-new` call (or error if missing)
      (define super-new-stx (trawl-for-property #'body 'tr:class:super-new))
      (check-super-new super-new-stx super-inits)
      ;; trawl the body and find methods and type-check them
      (define meths (trawl-for-property #'body 'tr:class:method))
-     (with-lexical-env/extend (map (λ (m) (dict-ref local-table m))
-                                   (set->list this%-method-names))
-                              ;; FIXME: the types we put here are fine in the expected
-                              ;;        case, but not if the class doesn't have an annotation.
-                              ;;        Then we need to hunt down annotations in a first pass.
-                              ;;        (should probably do this in expected case anyway)
-                              ;; FIXME: this doesn't work because the names of local methods
-                              ;;        are obscured and need to be reconstructed somehow
-                              (map (λ (m) (->* (list (make-Univ))
-                                               (fixup-method-type (car (dict-ref methods m))
-                                                                  self-type)))
-                                   (set->list this%-method-names))
-      (for ([meth meths])
-        (define method-name (syntax-property meth 'tr:class:method))
-        (define method-type
-          (fixup-method-type
-           (car (dict-ref methods method-name))
-           self-type))
-        (define expected (ret method-type))
-        (define annotated (annotate-method meth self-type))
-        (tc-expr/check annotated expected)))
+     (define-values (lexical-names lexical-types)
+       (local-tables->lexical-env local-method-table methods this%-method-names
+                                  local-field-table fields this%-field-names
+                                  self-type))
+     (with-lexical-env/extend lexical-names lexical-types
+      (check-methods meths methods self-type))
      ;; trawl the body for top-level expressions too
      (define top-level-exprs (trawl-for-property #'body 'tr:class:top-level))
      (void)]))
+
+;; local-tables->lexical-env : Dict<Symbol, Id> Dict List<Symbol>
+;;                             Dict<Symbol, (List Id Id)> Dict List<Symbol>
+;;                             Type
+;;                             -> List<Id> List<Type>
+;; Construct mappings to put into the lexical type-checking environment
+;; from the class local accessor mappings
+;;
+;; FIXME: the types we put here are fine in the expected
+;;        case, but not if the class doesn't have an annotation.
+;;        Then we need to hunt down annotations in a first pass.
+;;        (should probably do this in expected case anyway)
+(define (local-tables->lexical-env local-method-table methods method-names
+                                   local-field-table fields field-names
+                                   self-type)
+  (define (localize local-table names)
+    (map (λ (m) (dict-ref local-table m))
+                (set->list names)))
+  (define localized-method-names (localize local-method-table method-names))
+  (define localized-field-pairs (localize local-field-table field-names))
+  (define localized-field-get-names (map car localized-field-pairs))
+  (define localized-field-set-names (map cadr localized-field-pairs))
+  (define method-types
+    (map (λ (m) (->* (list (make-Univ))
+                     (fixup-method-type (car (dict-ref methods m))
+                                        self-type)))
+         (set->list method-names)))
+  (define field-get-types
+    (map (λ (f) (->* (list (make-Univ)) (car (dict-ref fields f))))
+         (set->list field-names)))
+  (define field-set-types
+    (map (λ (f) (->* (list (make-Univ) (car (dict-ref fields f)))
+                     -Void))
+         (set->list field-names)))
+  (values (append localized-method-names
+                  localized-field-get-names localized-field-set-names)
+          (append method-types field-get-types field-set-types)))
+
+;; check-methods : Listof<Syntax> Dict Type -> Void
+;; Type-check the methods inside of a class
+(define (check-methods meths methods self-type)
+  (for ([meth meths])
+    (define method-name (syntax-property meth 'tr:class:method))
+    (define method-type
+      (fixup-method-type
+       (car (dict-ref methods method-name))
+       self-type))
+    (define expected (ret method-type))
+    (define annotated (annotate-method meth self-type method-type))
+    (tc-expr/check annotated expected)))
+
+;; Syntax -> Dict<Symbol, Id> Dict<Symbol, (List Symbol Symbol)>
+;; Construct tables mapping internal method names to the accessors
+;; generated inside the untyped class macro.
+(define (construct-local-mapping-tables stx)
+  (syntax-parse stx
+    #:literals (let-values #%plain-app #%plain-lambda values)
+    ;; See base-env/class-prims.rkt to see how this in-syntax
+    ;; table is constructed at the surface syntax
+    [(let-values ([(method:id ...)
+                   (#%plain-app
+                    values
+                    (#%plain-lambda ()
+                      (#%plain-app (#%plain-app local-method:id _) _))
+                    ...)]
+                  [(field:id ...)
+                   (#%plain-app
+                    values
+                    (#%plain-lambda ()
+                      (let-values (((_) _)) (#%plain-app local-field-get:id _))
+                      (let-values (((_) _))
+                        (let-values (((_) _)) (#%plain-app local-field-set:id _ _))))
+                    ...)])
+       (#%plain-app void))
+     (values (map cons
+                  (syntax->datum #'(method ...))
+                  (syntax->list #'(local-method ...)))
+             (map list
+                  (syntax->datum #'(field ...))
+                  (syntax->list #'(local-field-get ...))
+                  (syntax->list #'(local-field-set ...))))]))
 
 ;; check-super-new : Listof<Syntax> Inits -> Void
 ;; Check if the super-new call is well-typed
@@ -244,8 +299,9 @@
     [_ (tc-error "fixup-method-type: internal error")]))
 
 ;; annotate-method : Syntax Type -> Syntax
-;; Adds a self type annotation for the first argument
-(define (annotate-method stx self-type)
+;; Adds a self type annotation for the first argument and annotated
+;; the let-values binding for tc-expr
+(define (annotate-method stx self-type method-type)
   (syntax-parse stx
     #:literals (let-values #%plain-lambda)
     [(let-values ([(meth-name:id)
@@ -254,7 +310,7 @@
        m)
      (define annotated-self-param
        (type-ascription-property #'self-param self-type))
-     #`(let-values ([(meth-name)
+     #`(let-values ([(#,(syntax-property #'meth-name 'type-label method-type))
                      (#%plain-lambda (#,annotated-self-param id ...)
                        body ...)])
          m)]
