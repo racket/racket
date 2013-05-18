@@ -537,9 +537,7 @@
         (define unused-hash (hash-ref unused/phases level))
         (color-unused require-hash unused-hash module-lang-requires))
       
-      (annotate-counts connections)
-      
-      (make-rename-menus (list phase-to-binders phase-to-varrefs phase-to-tops)))
+      (annotate-counts connections))
     
     ;; color-unused : hash-table[sexp -o> syntax] hash-table[sexp -o> #f] hash-table[syntax -o> #t] -> void
     (define (color-unused requires unused module-lang-requires)
@@ -592,7 +590,7 @@
       (define binders (get-ids all-binders var))
       (when binders
         (for ([x (in-list binders)])
-          (connect-syntaxes x var actual? (id-level phase-level x) connections)))
+          (connect-syntaxes x var actual? all-binders (id-level phase-level x) connections)))
         
       (when (and unused/phases phase-to-requires)
         (define req-path/pr (get-module-req-path var phase-level))
@@ -630,7 +628,7 @@
                   (connect-syntaxes (if (syntax-source raw-module-path)
                                         raw-module-path
                                         req-stx)
-                                    var actual?
+                                    var actual? all-binders
                                     (id-level phase-level var)
                                     connections))))))))
              
@@ -722,6 +720,7 @@
         (when (pair? val) 
           (define start (car val))
           (define end (cdr val))
+          (define (get-str) (send (list-ref key 0) get-text (list-ref key 1) (list-ref key 2)))
           (define (show-starts)
             (add-mouse-over/loc (list-ref key 0) (list-ref key 1) (list-ref key 2)
                                 (cond
@@ -765,7 +764,7 @@
     
     ;; connect-syntaxes : syntax[original] syntax[original] boolean symbol connections -> void
     ;; adds an arrow from `from' to `to', unless they have the same source loc. 
-    (define (connect-syntaxes from to actual? level connections)
+    (define (connect-syntaxes from to actual? all-binders level connections)
       (let ([from-source (find-source-editor from)] 
             [to-source (find-source-editor to)]
             [defs-text (current-annotations)])
@@ -789,10 +788,23 @@
                     (define end-before (or (hash-ref connections connections-end #f) (cons 0 0)))
                     (hash-set! connections connections-start (cons (+ (car start-before) 1) (cdr start-before)))
                     (hash-set! connections connections-end (cons (car end-before) (+ 1 (cdr end-before)))))
-                  (send defs-text syncheck:add-arrow
+                  (define (name-dup? str)
+                    (define sym (string->symbol str))
+                    (define id1 (datum->syntax from sym))
+                    (define id2 (datum->syntax to sym)) ;; do I need both?
+                    (define ans #f)
+                    (for-each-ids 
+                     all-binders
+                     (λ (ids)
+                       (set! ans (or ans
+                                     (for/or ([id (in-list ids)])
+                                       (or (free-identifier=? id1 id)
+                                           (free-identifier=? id2 id)))))))
+                    ans)
+                  (send defs-text syncheck:add-arrow/name-dup
                         from-source from-pos-left from-pos-right
                         to-source to-pos-left to-pos-right
-                        actual? level))))))))
+                        actual? level name-dup?))))))))
     
     ;; add-jump-to-definition : syntax symbol path -> void
     ;; registers the range in the editor so that the
@@ -1062,165 +1074,7 @@
                    (add-between 
                     (map (λ (x) (format "~s" x)) libs) 
                     ", ")))])))
-    
-    
-    
-    ;                                                          
-    ;                                                          
-    ;                                                          
-    ;                                        ;                 
-    ;                                        ;                 
-    ;                                                          
-    ;   ; ;;    ;;;   ;;;;    ;;;;  ;;;;;    ;    ;;;;    ;;;; 
-    ;   ;;  ;  ;   ;  ;   ;  ;   ;  ; ; ;    ;    ;   ;  ;   ; 
-    ;   ;   ;  ;;;;;  ;   ;  ;   ;  ; ; ;    ;    ;   ;  ;   ; 
-    ;   ;      ;      ;   ;  ;   ;  ; ; ;    ;    ;   ;  ;   ; 
-    ;   ;      ;   ;  ;   ;  ;  ;;  ; ; ;    ;    ;   ;  ;   ; 
-    ;   ;       ;;;   ;   ;   ;; ;  ; ; ;    ;    ;   ;   ;;;; 
-    ;                                                        ; 
-    ;                                                    ;   ; 
-    ;                                                     ;;;  
-    
-    
-    ;; make-rename-menus : (listof phase-to-mapping) -> void
-    (define (make-rename-menus phase-tos)
-      
-      ;; table : symbol -o> (listof (pair (non-empty-listof identifier?)
-      ;;                                  (non-empty-setof (list ed start fin))))
-      ;; this table maps the names of identifiers to information that tells how to build
-      ;; the rename menus.
-      ;;
-      ;; In the simple case that every identifier in the file has a different
-      ;; name, then each of the symbols in the table will map to a singleton list where the
-      ;; listof identifiers is also a singleton list and each of the '(list ed start fin)'
-      ;; corresponds to the locations of that identifier in the file.
-      ;;
-      ;; In the more common case, there will be multiple, distinct uses of an identifier that
-      ;; are spelled the same way in the file, eg (+ (let ([x 1]) x) (let ([x 2]) x)). In
-      ;; this case, the 'x' entry in the table will point to a list of length two,
-      ;; with each of the corresponding list of identifiers in the pair still being a
-      ;; singleton list.
-      ;;
-      ;; In the bizarro case, some macro will have taken an identifier from its input and
-      ;; put it into two distinct binding locations, eg:
-      ;; (define-syntax-rule (m x) (begin (define x 1) (lambda (x) x)))
-      ;; In this case, there is only one 'x' in the original program, but there are two
-      ;; distinct identifiers (according to free-identifier=?) in the program. To cope
-      ;; with this, the code below recognizes that two distinct identifiers come from the
-      ;; same source location and then puts those two identifiers into the first list into
-      ;; the same 'pair' in the table, unioning the corresponding sets of source locations
-      (define table (make-hash))
-    
-      (struct pair (ids locs) #:transparent)
-      
-      (let ([defs-text (current-annotations)])
-        (when defs-text
-          (for ([phase-to-mapping (in-list phase-tos)])
-            (for ([(level id-set) (in-hash phase-to-mapping)])
-              (for-each-ids
-               id-set
-               (λ (vars)
-                 (for ([var (in-list vars)])
-                   (define ed (find-source-editor var))
-                   (when ed
-                     (define pos (syntax-position var))
-                     (define span (syntax-span var))
-                     (when (and pos span)
-                       (define start (- pos 1))
-                       (define fin (+ start span))
-                       (define loc (list ed start fin))
-                       (define var-sym (syntax-e var))
-                       
-                       (define current-pairs (hash-ref table var-sym '()))
-                       (define free-id-matching-pair #f)
-                       (define added-source-loc-sets '())
-                       (define new-pairs
-                         (for/list ([a-pair (in-list current-pairs)])
-                           (define ids (pair-ids a-pair))
-                           (define loc-set (pair-locs a-pair))
-                           (cond
-                             [(ormap (λ (this-id) (free-identifier=? this-id var)) ids)
-                              (define new-pair (pair ids (set-add loc-set loc)))
-                              (set! free-id-matching-pair new-pair)
-                              new-pair]
-                             [(set-member? loc-set loc)
-                              ;; here we are in the biazarro case;
-                              ;; we found this source location in a set that corresponds to
-                              ;; some other identifier. so, we know we need to do some kind of a merger
-                              ;; just keep track of the set for now, the merger happens after this loop
-                              (set! added-source-loc-sets (cons a-pair added-source-loc-sets))
-                              a-pair]
-                             [else
-                              a-pair])))
-                       
-                       ;; first step in updating the table; put the new set in.
-                       (cond
-                         [free-id-matching-pair
-                          (hash-set! table var-sym new-pairs)]
-                         [else
-                          (set! free-id-matching-pair (pair (list var) (set loc)))
-                          (hash-set! table var-sym (cons free-id-matching-pair new-pairs))])
-                       
-                       (unless (null? added-source-loc-sets)
-                         ;; here we are in the bizarro case; we need to union the sets
-                         ;; in the added-source-loc-sets list.
-                         (define pairs-to-merge (cons free-id-matching-pair added-source-loc-sets))
-                         (define removed-sets (filter (λ (x) (not (memq x pairs-to-merge)))
-                                                      (hash-ref table var-sym)))
-                         (define new-pair (pair (apply append (map pair-ids pairs-to-merge))
-                                                (apply set-union (map pair-locs pairs-to-merge))))
-                         (hash-set! table var-sym (cons new-pair removed-sets))))))))))
-          
-          (hash-for-each
-           table
-           (λ (id-as-sym pairs)
-             (for ([a-pair (in-list pairs)])
-               (define loc-lst (set->list (pair-locs a-pair)))
-               (define ids (pair-ids a-pair))
-               (define (name-dup? new-str)
-                 (and (for/or ([phase-to-map (in-list phase-tos)])
-                        (for/or ([(level id-set) (in-hash phase-to-map)])
-                          (for/or ([id (in-list ids)])
-                            (for/or ([corresponding-id (in-list (or (get-ids id-set id) '()))])
-                              (let ([new-id (datum->syntax corresponding-id (string->symbol new-str))])
-                                (for/or ([phase-to-map (in-list phase-tos)])
-                                  (for/or ([(level id-set) (in-hash phase-to-map)])
-                                    (get-ids id-set new-id))))))))
-                      #t))
-               
-               (define max-to-send-at-once (current-max-to-send-at-once))
-               (let loop ([loc-lst loc-lst]
-                          [len (length loc-lst)])
-                 (cond
-                   [(<= len max-to-send-at-once)
-                    (send defs-text syncheck:add-id-set
-                          loc-lst
-                          name-dup?)]
-                   [else
-                    (send defs-text syncheck:add-id-set
-                          (take loc-lst max-to-send-at-once)
-                          name-dup?)
-                    ;; drop one fewer so that we're sure that the
-                    ;; sets get unioned properly
-                    (loop (drop loc-lst (- max-to-send-at-once 1))
-                          (- len (- max-to-send-at-once 1)))]))))))))
-    
-    ;; remove-duplicates-stx : (listof syntax[original]) -> (listof syntax[original])
-    ;; removes duplicates, based on the source locations of the identifiers
-    (define (remove-duplicates-stx ids)
-      (cond
-        [(null? ids) null]
-        [else (let loop ([fst (car ids)]
-                         [rst (cdr ids)])
-                (cond
-                  [(null? rst) (list fst)]
-                  [else (if (and (eq? (syntax-source fst)
-                                      (syntax-source (car rst)))
-                                 (= (syntax-position fst)
-                                    (syntax-position (car rst))))
-                            (loop fst (cdr rst))
-                            (cons fst (loop (car rst) (cdr rst))))]))]))
-    
+
     
     ;                                            
     ;                                            

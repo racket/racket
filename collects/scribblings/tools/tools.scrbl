@@ -650,7 +650,7 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
 }
 
 @defparam[current-max-to-send-at-once m (or/c +inf.0 (and/c exact-integer? (>=/c 2)))]{
- See @xmethod[syncheck-annotations<%> syncheck:add-id-set].
+ No longer used.
 }
 
 @definterface[syncheck-annotations<%> ()]{
@@ -715,24 +715,11 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                                                           exact-nonnegative-integer?
                                                           exact-nonnegative-integer?))]
                                  [new-name-interferes? (-> symbol boolean?)])
-            void?]{
-   Called to indicate that all of the locations in the @racket[all-ids] list 
-   refer to the same identifier.
-   
-   The @racket[new-name-interferes?] procedure determines if a potential new name
-   at one of the corresponding places would interfere with the existing bindings
-   in the program.
-   
-   Usually, this method is called with maximal sets in @racket[all-ids], in the
-   sense that, for a given call, either a source location is in the list, or
-   the location it does not contain a identifier that refers to one of the ones
-   in @racket[all-ids]. If, however, @racket[current-max-to-send-at-once] is not
-   @racket[+inf.0], then this set might not contain all of the source locations
-   for a given identifier and multiple calls are made. In the case that multiple
-   calls are made, the intersection of the @racket[all-ids] lists (on those
-   multiple calls) is non-empty.
- }
-                  
+            void?]{This method is no longer called by Check Syntax. It is here
+                   for backwards compatibility only. The information it provided
+                   must now be synthesized from the information supplied to
+                   @method[syncheck-annotations<%> syncheck:add-arrow/name-dup].}
+           
  @defmethod[(syncheck:add-arrow [start-source-obj (not/c #f)]
                                 [start-left exact-nonnegative-integer?]
                                 [start-right exact-nonnegative-integer?]
@@ -742,10 +729,33 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                                 [actual? boolean?]
                                 [phase-level (or/c exact-nonnegative-integer? #f)])
             void?]{
+    This function is not called directly anymore by Check Syntax. Instead
+    @method[syncheck-annotations<%> syncheck:add-arrow/name-dup] is.
+    
+    This method is invoked by the default implementation of 
+    @racket[_syncheck:add-arrow/name-dup] in 
+    @racket[annotations-mixin].
+ }
+ @defmethod[(syncheck:add-arrow/name-dup [start-source-obj (not/c #f)]
+                                         [start-left exact-nonnegative-integer?]
+                                         [start-right exact-nonnegative-integer?]
+                                         [end-source-obj (not/c #f)]
+                                         [end-left exact-nonnegative-integer?]
+                                         [end-right exact-nonnegative-integer?]
+                                         [actual? boolean?]
+                                         [phase-level (or/c exact-nonnegative-integer? #f)]
+                                         [name-dup? (-> string? boolean?)])
+            void?]{
    Called to indicate that there should be an arrow between the locations described by the first six arguments.
+   
    The @racket[phase-level] argument indicates the phase of the binding and the @racket[actual?] argument
    indicates if the binding is a real one, or a predicted one from a syntax template (predicted bindings
-   are drawn with question marks in Check Syntax).
+   are drawn with question marks in Check Syntax). 
+   
+   The @racket[name-dup?] predicate returns @racket[#t]
+   in case that this variable (either the start or end), when replaced with the given string, would
+   shadow some other binding (or otherwise interfere with the binding structure of the program at
+   the time the program was expanded).
  }
  @defmethod[(syncheck:add-tail-arrow [from-source-obj (not/c #f)]
                                      [from-pos exact-nonnegative-integer?]
@@ -797,10 +807,8 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                                                                exact-nonnegative-integer?))]
                                       [new-name-interferes? (-> symbol boolean?)])
             void?]{
-    This method is listed only for backwards compatibility. It is not called directly
-    by check syntax, but it is called by the default implementation of 
-    @method[syncheck-annotations<%> syncheck:add-rename-menu] in 
-    @racket[annotations-mixin].
+    This method is listed only for backwards compatibility. It is not called
+    by Check Syntax anymore.
   }
 }
 
@@ -814,58 +822,51 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
   By default:
   @itemlist[@item{The @method[syncheck-annotations<%> syncheck:find-source-object] 
                       method ignores its arguments and returns @racket[#f];}
-            @item{the @method[syncheck-annotations<%> syncheck:add-id-set]
-                      manufactures a symbol and then passes that and its arguments to 
-                      @method[syncheck-annotations<%> syncheck:add-rename-menu]
-                      (this is for backwards compatibility -- the @method[syncheck-annotations<%> syncheck:add-rename-menu]
-                      is not called directly by Check Syntax anymore; the @method[syncheck-annotations<%> syncheck:add-id-set]
-                      calls it instead); and}
+            @item{the @method[syncheck-annotations<%> syncheck:add-arrow/name-dup] method drops the
+                      @racket[_name-dup?] argument and calls
+                      @method[syncheck-annotations<%> syncheck:add-arrow]; and}
             @item{all of the other methods ignore their arguments and return @racket[(void)].}]
     
   Here is an example showing how use this library to extract all
   of the arrows that Check Syntax would draw from various
   expressions:
-  @interaction[#:eval syncheck-example-eval
-            (require drracket/check-syntax racket/class)
-            (define arrows-collector%
-              (class (annotations-mixin object%)
-                (super-new)
-                (define/override (syncheck:find-source-object stx)
-                  stx)
-                (define/override (syncheck:add-arrow start-source-obj
-                                                     start-left
-                                                     start-right
-                                                     end-source-obj
-                                                     end-left
-                                                     end-right
-                                                     actual?
-                                                     phase-level)
-                  (set! arrows
-                        (cons (list start-source-obj end-source-obj)
-                              arrows)))
-                (define arrows '())
-                (define/public (collected-arrows) arrows)))
-            (define (arrows form)
-              (define base-namespace
-                (make-base-namespace))
-              (define-values (add-syntax done)
-                (make-traversal base-namespace #f))
-              (define collector (new arrows-collector%))
-              (parameterize ([current-annotations collector]
-                             [current-namespace base-namespace])
-                (add-syntax (expand form))
-                (done))
-              (send collector collected-arrows))
-            (define (make-id name pos orig?)
-              (datum->syntax
-               #f
-               name
-               (list #f #f #f pos (string-length (symbol->string name)))
-               (and orig? #'is-orig)))
-            (arrows `(λ (,(make-id 'x 1 #t)) ,(make-id 'x 2 #t)))
-            (arrows `(λ (x) x))
-            (arrows `(λ (,(make-id 'x 1 #f)) ,(make-id 'x 2 #t)))
-            (arrows `(λ (,(make-id 'x 1 #t)) x))]
+  @interaction[#:eval
+               syncheck-example-eval
+               (require drracket/check-syntax racket/class)
+               (define arrows-collector%
+                 (class (annotations-mixin object%)
+                   (super-new)
+                   (define/override (syncheck:find-source-object stx)
+                     stx)
+                   (define/override (syncheck:add-arrow/name-dup
+                                     start-source-obj start-left start-right
+                                     end-source-obj end-left end-right
+                                     actual? phase-level name-dup?)
+                     (set! arrows
+                           (cons (list start-source-obj end-source-obj)
+                                 arrows)))
+                   (define arrows '())
+                   (define/public (get-collected-arrows) arrows)))
+               (define (arrows form)
+                 (define base-namespace (make-base-namespace))
+                 (define-values (add-syntax done)
+                   (make-traversal base-namespace #f))
+                 (define collector (new arrows-collector%))
+                 (parameterize ([current-annotations collector]
+                                [current-namespace base-namespace])
+                   (add-syntax (expand form))
+                   (done))
+                 (send collector get-collected-arrows))
+               (define (make-id name pos orig?)
+                 (datum->syntax
+                  #f
+                  name
+                  (list #f #f #f pos (string-length (symbol->string name)))
+                  (and orig? #'is-orig)))
+               (arrows `(λ (,(make-id 'x 1 #t)) ,(make-id 'x 2 #t)))
+               (arrows `(λ (x) x))
+               (arrows `(λ (,(make-id 'x 1 #f)) ,(make-id 'x 2 #t)))
+               (arrows `(λ (,(make-id 'x 1 #t)) x))]
 }
 
 @(close-eval syncheck-example-eval)
@@ -881,6 +882,7 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                     syncheck:add-docs-menu
                     syncheck:add-rename-menu
                     syncheck:add-arrow
+                    syncheck:add-arrow/name-dup
                     syncheck:add-tail-arrow
                     syncheck:add-mouse-over-status
                     syncheck:add-jump-to-definition

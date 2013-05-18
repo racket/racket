@@ -16,6 +16,7 @@ If the namespace does not, they are colored the unbound color.
 
 |#
 
+(module+ test (require rackunit))
 
 (require string-constants
          racket/unit
@@ -191,14 +192,14 @@ If the namespace does not, they are colored the unbound color.
       (drracket:unit:add-to-program-editor-mixin clearing-text-mixin))
     (define (phase2) (void))
     
-    ;;;  ;;; ;;; ;;;;; 
+     ;;;  ;;; ;;; ;;;;; 
     ;   ;  ;   ;    ;   
     ;   ;  ;   ;    ;   
     ;      ;   ;    ;   
     ;  ;;  ;   ;    ;   
     ;   ;  ;   ;    ;   
     ;   ;  ;; ;;    ;   
-    ;;;    ;;;   ;;;;; 
+     ;;;    ;;;   ;;;;; 
     
     
     ;; used for quicker debugging of the preference panel
@@ -214,7 +215,7 @@ If the namespace does not, they are colored the unbound color.
     (define-struct (var-arrow arrow)
       (start-text start-pos-left start-pos-right
                   end-text end-pos-left end-pos-right
-                  actual? level) ;; level is one of 'lexical, 'top-level, 'import
+                  actual? level name-dup?) ;; level is one of 'lexical, 'top-level, 'import
       #:transparent)
     (define-struct (tail-arrow arrow) (from-text from-pos to-text to-pos) #:transparent)
     
@@ -361,7 +362,6 @@ If the namespace does not, they are colored the unbound color.
             ;;   - arrow
             ;;   - string
             ;;   - colored-region
-            ;;   - identifier-location-set
             (define/private (get-arrow-record text)
               (unless (object? text)
                 (error 'get-arrow-record "expected a text as the second argument, got ~e" text))
@@ -657,49 +657,21 @@ If the namespace does not, they are colored the unbound color.
             
             ;; no longer used, but must be here for backwards compatibility
             (define/public (syncheck:add-rename-menu id to-be-renamed/poss name-dup?) (void))
-            (define/public (syncheck:add-id-set to-be-renamed/poss name-dup?)
-              (add-identifier-to-range to-be-renamed/poss name-dup?))
+            (define/public (syncheck:add-id-set to-be-renamed/poss name-dup?) (void))
 
-            (define/private (make-rename-menu menu an-identifier-location-set)
-              (define example-lst (set-first (uf-find (identifier-location-set-set an-identifier-location-set))))
-              (define name-to-offer (send (list-ref example-lst 0) get-text
-                                          (list-ref example-lst 1)
-                                          (list-ref example-lst 2)))
-              (new menu-item%
-                   [parent menu]
-                   [label (fw:gui-utils:format-literal-label (string-constant cs-rename-var) name-to-offer)]
-                   [callback
-                    (λ (x y)
-                      (let ([frame-parent (find-menu-parent menu)])
-                        (rename-menu-callback frame-parent
-                                              name-to-offer
-                                              an-identifier-location-set)))]))
-            
             (define/public (syncheck:rename-identifier text)
-              (when arrow-records                
-                (define arrow-record (hash-ref arrow-records text #f))
-                (define (find-ils pos)
-                  (define vec-ents (interval-map-ref arrow-record pos null))
-                  (for/or ([x (in-list vec-ents)])
-                    (and (identifier-location-set? x)
-                         x)))
-                (define an-identifier-location-set 
-                  (or (find-ils (send text get-start-position))
-                      (and (= (send text get-start-position) 
-                              (send text get-end-position))
-                           (find-ils (- (send text get-start-position) 1)))))
-                (when an-identifier-location-set
-                  (define example-lst (set-first (uf-find (identifier-location-set-set an-identifier-location-set))))
-                  (define name-to-offer (send (list-ref example-lst 0) get-text
-                                              (list-ref example-lst 1)
-                                              (list-ref example-lst 2)))
-                  (define frame-parent
-                    (let ([canvas (send text get-canvas)])
-                      (and canvas
-                           (send canvas get-top-level-window))))
-                  (rename-menu-callback frame-parent
-                                        name-to-offer
-                                        an-identifier-location-set))))
+              (define canvas (send text get-canvas))
+              
+              (define-values (binding-identifiers identifiers-hash)
+                (position->matching-identifiers-hash text 
+                                                     (send text get-start-position) 
+                                                     (send text get-end-position)))
+              (unless (null? binding-identifiers)
+                (define name-to-offer (find-name-to-offer binding-identifiers))
+                (rename-menu-callback identifiers-hash
+                                      name-to-offer
+                                      binding-identifiers
+                                      (and canvas (send canvas get-top-level-window)))))
             
             
             (define/public (syncheck:tack/untack-arrows text)
@@ -717,15 +689,14 @@ If the namespace does not, they are colored the unbound color.
                 (when arrows
                   (tack/untack-callback arrows))))
             
-            ;; rename-callback : string 
-            ;;                   (and/c syncheck-text<%> definitions-text<%>)
-            ;;                   (list source number number)
-            ;;                   (listof id-set) 
+            ;; rename-callback : (non-empty-listof identifier?)
             ;;                   (union #f (is-a?/c top-level-window<%>)) 
             ;;                -> void
             ;; callback for the rename popup menu item
-            (define/private (rename-menu-callback parent name-to-offer an-identifier-location-set)
-              (define name-dup? (identifier-location-set-name-dup? an-identifier-location-set))
+            (define/private (rename-menu-callback identifiers-hash name-to-offer binding-identifiers parent)
+              (define (name-dup? x) 
+                (for/or ([var-arrow (in-list binding-identifiers)])
+                  ((var-arrow-name-dup? var-arrow) x)))
               (define new-str
                 (fw:keymap:call/text-keymap-initializer
                  (λ ()
@@ -755,28 +726,40 @@ If the namespace does not, they are colored the unbound color.
                        1)))
                 
                 (when do-renaming?
-                  (define txts (list this))
-                  (define positions-to-rename 
-                    (remove-duplicates
-                     (sort (set->list (uf-find
-                                       (identifier-location-set-set 
-                                        an-identifier-location-set)))
-                           >
-                           #:key cadr)))
-                  (begin-edit-sequence)
-                  (for ([info (in-list positions-to-rename)])
-                    (define source-editor (list-ref info 0))
-                    (define start (list-ref info 1))
-                    (define end (list-ref info 2))
-                    (when (is-a? source-editor text%)
-                      (unless (memq source-editor txts)
-                        (send source-editor begin-edit-sequence)
-                        (set! txts (cons source-editor txts)))
-                      (send source-editor delete start end #f)
-                      (send source-editor insert new-sym start start #f)))
-                  (invalidate-bitmap-cache)
-                  (for ([txt (in-list txts)])
+                  (define edit-sequence-txts (list this))
+                  (define per-txt-positions (make-hash))
+                  (for ([(k _) (in-hash identifiers-hash)])
+                    (define-values (txt start-pos end-pos) (apply values k))
+                    (hash-set! per-txt-positions txt 
+                               (cons (cons start-pos end-pos)
+                                     (hash-ref per-txt-positions txt '()))))
+                  (for ([(source-txt start+ends) (in-hash per-txt-positions)])
+                    (when (is-a? source-txt text%)
+                      (define merged-positions (sort-and-merge start+ends))
+                      (begin-edit-sequence)
+                      (for ([start+end (in-list (reverse merged-positions))])
+                        (define start (car start+end))
+                        (define end (cdr start+end))
+                        (unless (memq source-txt edit-sequence-txts)
+                          (send source-txt begin-edit-sequence)
+                          (set! edit-sequence-txts (cons source-txt edit-sequence-txts)))
+                        (send source-txt delete start end #f)
+                        (send source-txt insert new-sym start start #f))))
+                  (for ([txt (in-list edit-sequence-txts)])
                     (send txt end-edit-sequence)))))
+            
+            ;; find-name-to-offer : (non-empty-listof identifier?) -> string?
+            (define/private (find-name-to-offer binding-var-arrows)
+              (define longest-var-arrow
+                (car 
+                 (sort binding-var-arrows
+                       >
+                       #:key (λ (x) (- (var-arrow-start-pos-right x)
+                                       (var-arrow-start-pos-left x))))))
+              (send (var-arrow-start-text longest-var-arrow)
+                    get-text
+                    (var-arrow-start-pos-left longest-var-arrow)
+                    (var-arrow-start-pos-right longest-var-arrow)))
               
               
             ;; find-parent : menu-item-container<%> -> (union #f (is-a?/c top-level-window<%>)
@@ -816,11 +799,22 @@ If the namespace does not, they are colored the unbound color.
                         raw-color))
                   (add-to-range/key text start fin (make-colored-region color text start fin) #f #f))))
             
-            ;; syncheck:add-arrow : symbol text number number text number number boolean -> void
-            ;; pre: start-editor, end-editor are embedded in `this' (or are `this')
+            ;; this method is no longer used; see docs for more
             (define/public (syncheck:add-arrow start-text start-pos-left start-pos-right
                                                end-text end-pos-left end-pos-right
                                                actual? level)
+              (printf "hello?!\n")
+              (for ([x (in-list (continuation-mark-set->context
+                                 (current-continuation-marks)))])
+                (printf "  ~s\n" x))
+              (printf "\n")
+              (void))
+            
+            ;; syncheck:add-arrow : symbol text number number text number number boolean -> void
+            ;; pre: start-editor, end-editor are embedded in `this' (or are `this')
+            (define/public (syncheck:add-arrow/name-dup start-text start-pos-left start-pos-right
+                                                        end-text end-pos-left end-pos-right
+                                                        actual? level name-dup?)
               (when (and arrow-records
                          (preferences:get 'drracket:syncheck:show-arrows?))
                 (when (add-to-bindings-table
@@ -828,7 +822,7 @@ If the namespace does not, they are colored the unbound color.
                        end-text end-pos-left end-pos-right)
                   (let ([arrow (make-var-arrow start-text start-pos-left start-pos-right
                                                end-text end-pos-left end-pos-right
-                                               actual? level)])
+                                               actual? level name-dup?)])
                     (add-to-range/key start-text start-pos-left start-pos-right arrow #f #f)
                     (add-to-range/key end-text end-pos-left end-pos-right arrow #f #f)))))
             
@@ -880,33 +874,7 @@ If the namespace does not, they are colored the unbound color.
                       [else
                        (interval-map-cons*!
                         arrow-record start end to-add null)])))
-            
-            (define/private (add-identifier-to-range text/start/ends name-dup?)
-              (when arrow-records
-                (define id-set (apply set text/start/ends))
-                (define fresh-uf (uf-new id-set))
-                (define new-il-set (identifier-location-set fresh-uf name-dup?))
-                (for ([text/start/span (in-list text/start/ends)])
-                  (define arrow-record (get-arrow-record (list-ref text/start/span 0)))
-                  (define start (list-ref text/start/span 1))
-                  (define end (list-ref text/start/span 2))
-                  (interval-map-update*! arrow-record start end
-                                         (lambda (curr-val)
-                                           (define this-uf-set
-                                             (for/or ([thing (in-list curr-val)])
-                                               (and (identifier-location-set? thing)
-                                                    (identifier-location-set-set thing))))
-                                           (cond
-                                             [this-uf-set
-                                              (set! id-set (set-union (uf-find this-uf-set) id-set))
-                                              (uf-union! fresh-uf this-uf-set)
-                                              (uf-set-canonical! this-uf-set id-set)
-                                              curr-val]
-                                             [else 
-                                              (cons new-il-set curr-val)]))
-                                         '()))))
-            
-            (inherit get-top-level-window)
+                        (inherit get-top-level-window)
             
             (define/augment (on-change)
               (inner (void) on-change)
@@ -1209,10 +1177,6 @@ If the namespace does not, they are colored the unbound color.
                   (define var-arrows (filter var-arrow? arrows))
                   (define add-menus (append (map cdr (filter pair? vec-ents))
                                             (filter procedure? vec-ents)))
-                  (define identifier-location-set/f 
-                    (for/or ([x (in-list vec-ents)])
-                      (and (identifier-location-set? x)
-                           x)))
                   (unless (null? arrows)
                     (add-sep)
                     (make-object menu-item%
@@ -1273,9 +1237,23 @@ If the namespace does not, they are colored the unbound color.
                          arrow-record
                          start-selection
                          end-selection))))
-                  (for-each (λ (f) (f menu)) add-menus)
-                  (when identifier-location-set/f
-                    (make-rename-menu menu identifier-location-set/f))
+                  (for ([f (in-list add-menus)])
+                    (f menu))
+                  
+                  (define-values (binding-identifiers identifiers-hash)
+                    (position->matching-identifiers-hash text pos (+ pos 1)))
+                  (unless (null? binding-identifiers)
+                    (define name-to-offer (find-name-to-offer binding-identifiers))
+                    (new menu-item%
+                         [parent menu]
+                         [label (fw:gui-utils:format-literal-label (string-constant cs-rename-var) name-to-offer)]
+                         [callback
+                          (λ (x y)
+                            (let ([frame-parent (find-menu-parent menu)])
+                              (rename-menu-callback identifiers-hash
+                                                    name-to-offer 
+                                                    binding-identifiers
+                                                    frame-parent)))]))
                   (void))))
             
             (define/private (update-tooltip-frame-and-matching-identifiers refreshing?)
@@ -1294,45 +1272,90 @@ If the namespace does not, they are colored the unbound color.
                 ;; #f or 'out-of-sync
                 [_ (send tooltip-frame show #f)]))
             
-            (define current-matching-identifiers (set))
+            (define current-matching-identifiers (make-hash))
+            
             (define/private (update-matching-identifiers refreshing?)
-              (define id-set (position->matching-identifier-set cursor-text cursor-pos))
+              
               (define clr "GreenYellow")
               (define style 'ellipse) 
-              (unless (equal? current-matching-identifiers id-set)
-                (define in-edit-sequence '())
-                (define (uh/highlight highlight?)
-                  (for ([lst (in-set current-matching-identifiers)])
-                    (define txt (list-ref lst 0))
-                    (define start (list-ref lst 1))
-                    (define end (list-ref lst 2))
-                    (unless refreshing?
-                      (unless (member txt in-edit-sequence)
-                        (set! in-edit-sequence (cons txt in-edit-sequence))
-                        (send txt begin-edit-sequence)))
-                    (if highlight?
-                        (send txt highlight-range start end clr #f 'low style)
-                        (send txt unhighlight-range start end clr #f style))))
-                (uh/highlight #f)
-                (set! current-matching-identifiers id-set)
-                (uh/highlight #t)
-                (for ([x (in-list in-edit-sequence)])
-                  (send x end-edit-sequence))))
-            
-            ;; return the set of locations of identifiers that have the
-            ;; same binding information as the identifier at cursor-pos (if any)
-            (define/private (position->matching-identifier-set cursor-text cursor-pos)
-              (define arrow-records (fetch-arrow-records cursor-text cursor-pos))
-              (if arrow-records
-                  (let ([an-identifier-location-set
-                         (for/or ([x (in-list arrow-records)])
-                           (and (identifier-location-set? x)
-                                x))])
-                    (if an-identifier-location-set
-                        (uf-find (identifier-location-set-set
-                                  an-identifier-location-set))
-                        (set)))
-                  (set)))
+              
+              (define in-edit-sequence '())
+              (define (un/highlight highlight?)
+                (for ([(lst _) (in-hash current-matching-identifiers)])
+                  (define txt (list-ref lst 0))
+                  (define start (list-ref lst 1))
+                  (define end (list-ref lst 2))
+                  (unless refreshing?
+                    (unless (member txt in-edit-sequence)
+                      (set! in-edit-sequence (cons txt in-edit-sequence))
+                      (send txt begin-edit-sequence)))
+                  (if highlight?
+                      (send txt highlight-range start end clr #f 'low style)
+                      (send txt unhighlight-range start end clr #f style))))
+              
+              (un/highlight #f)
+              
+              (set! current-matching-identifiers
+                    (if (and cursor-text cursor-pos)
+                        (let-values ([(_binders hash) (position->matching-identifiers-hash 
+                                                       cursor-text cursor-pos cursor-pos)])
+                          hash)
+                        (make-hash)))
+              
+              (un/highlight #t)
+              
+              (for ([txt (in-list in-edit-sequence)])
+                (send txt end-edit-sequence)))
+
+            ;; position->matching-identifiers-hash : txt pos pos -> (values (listof var-arrow?) hash[(list txt pos pos) -o> #t])
+            (define/private (position->matching-identifiers-hash the-text the-start-pos the-end-pos)
+              (define binding-arrows '())
+              (for ([the-pos (in-range the-start-pos (+ the-end-pos 1))])
+                (define arrs (fetch-arrow-records the-text the-pos))
+                (when arrs
+                  (for ([arrow (in-list arrs)])
+                    (when (var-arrow? arrow)
+                      (cond
+                        [(and (equal? (var-arrow-start-text arrow) the-text)
+                              (<= (var-arrow-start-pos-left arrow) 
+                                  the-pos 
+                                  (var-arrow-start-pos-right arrow)))
+                         ;; a binding occurrence => keep it
+                         (set! binding-arrows (cons arrow binding-arrows))]
+                        [else
+                         ;; a bound occurrence => find binders
+                         (for ([candidate-binder (in-list (fetch-arrow-records (var-arrow-start-text arrow)
+                                                                               (var-arrow-start-pos-left arrow)))])
+                           (when (var-arrow? candidate-binder)
+                             (when (and (equal? (var-arrow-start-text arrow) (var-arrow-start-text candidate-binder))
+                                        (equal? (var-arrow-start-pos-left arrow) (var-arrow-start-pos-left candidate-binder))
+                                        (equal? (var-arrow-start-pos-right arrow) (var-arrow-start-pos-right candidate-binder)))
+                               (set! binding-arrows (cons candidate-binder binding-arrows)))))])))))
+              
+              
+              (define identifiers-hash (make-hash))
+              (define (add-one txt start end)
+                (hash-set! identifiers-hash (list txt start end) #t))
+              (for ([binding-arrow (in-list binding-arrows)])
+                (add-one (var-arrow-start-text binding-arrow)
+                         (var-arrow-start-pos-left binding-arrow)
+                         (var-arrow-start-pos-right binding-arrow))
+                (for ([pos (in-range (var-arrow-start-pos-left binding-arrow)
+                                     (var-arrow-start-pos-right binding-arrow))])
+                  (for ([arrow (in-list (fetch-arrow-records (var-arrow-start-text binding-arrow)
+                                                             pos))])
+                    (when (var-arrow? arrow)
+                      (when (and (equal? (var-arrow-start-text arrow)
+                                         (var-arrow-start-text binding-arrow))
+                                 (equal? (var-arrow-start-pos-left arrow)
+                                         (var-arrow-start-pos-left binding-arrow))
+                                 (equal? (var-arrow-start-pos-right arrow)
+                                         (var-arrow-start-pos-right binding-arrow)))
+                        (add-one (var-arrow-end-text arrow)
+                                 (var-arrow-end-pos-left arrow)
+                                 (var-arrow-end-pos-right arrow)))))))
+              
+              (values binding-arrows identifiers-hash))
             
             ;; Sometimes when this is called, the calls to 'tooltip-info->ltrb'
             ;; fail and we get no information back. When that happens, we return 
@@ -1484,49 +1507,41 @@ If the namespace does not, they are colored the unbound color.
             (define/public (syncheck:jump-to-next-bound-occurrence text [backwards? #f])
               (jump-to-binding/bound-helper 
                text 
-               (λ (pos text vec-ents)
-                 (jump-to-next-callback pos text backwards?))))
+               (λ (start-pos end-pos text vec-ents)
+                 (jump-to-next-callback start-pos end-pos text backwards?))))
             
             ;; syncheck:jump-to-binding-occurrence : text -> void
             (define/public (syncheck:jump-to-binding-occurrence text)
               (jump-to-binding/bound-helper 
                text 
-               (λ (pos text vec-ents)
+               (λ (start-pos end-pos text vec-ents)
                  (jump-to-binding-callback vec-ents))))
             
             (define/private (jump-to-binding/bound-helper text do-jump)
-              (let ([pos (send text get-start-position)])
-                (when arrow-records
-                  (let ([arrow-record (hash-ref arrow-records text #f)])
-                    (when arrow-record
-                      (let ([vec-ents (filter var-arrow? (interval-map-ref arrow-record pos null))])
-                        (unless (null? vec-ents)
-                          (do-jump pos text vec-ents))))))))
+              (when arrow-records
+                (define arrow-record (hash-ref arrow-records text #f))
+                (when arrow-record
+                  (define arrows '())
+                  (define start-pos (send text get-start-position))
+                  (define end-pos (send text get-end-position))
+                  (for ([pos (in-range start-pos (+ end-pos 1))])
+                    (set! arrows (append (filter var-arrow? (interval-map-ref arrow-record pos null))
+                                         arrows)))
+                  (unless (null? arrows)
+                    (do-jump start-pos end-pos text arrows)))))
             
-            ;; jump-to-next-callback : num text (listof arrow) boolean? -> void
+            ;; jump-to-next-callback : num text boolean? -> void
             ;; callback for the jump popup menu item
-            (define/private (jump-to-next-callback pos txt backwards?)
+            (define/private (jump-to-next-callback start-pos end-pos txt backwards?)
+              (define-values (_binders identifiers-hash) (position->matching-identifiers-hash txt start-pos end-pos))
               (define orig-arrows 
-                (sort (set->list (position->matching-identifier-set txt pos))
+                (sort (hash-map identifiers-hash
+                                (λ (x y) x))
                       (λ (x y) (if backwards?
                                    (not (syncheck:compare-bindings x y))
                                    (syncheck:compare-bindings x y)))))
-              (cond
-                [(null? orig-arrows) (void)]
-                [(null? (cdr orig-arrows)) (jump-to (car orig-arrows))]
-                [else
-                 (let loop ([arrows orig-arrows])
-                   (cond
-                     [(null? arrows) (jump-to (car orig-arrows))]
-                     [else 
-                      (define arrow (car arrows))
-                      (cond
-                        [(and (object=? txt (list-ref arrow 0))
-                              (<= (list-ref arrow 1) pos (list-ref arrow 2)))
-                         (jump-to (if (null? (cdr arrows))
-                                      (car orig-arrows)
-                                      (cadr arrows)))]
-                        [else (loop (cdr arrows))])]))]))
+              (define best (pick-next-arrow orig-arrows backwards? txt start-pos end-pos))
+              (when best (jump-to best)))
             
             ;; jump-to : (list text number number) -> void
             (define/public (jump-to to-arrow)
@@ -1831,13 +1846,14 @@ If the namespace does not, they are colored the unbound color.
           ;; using 'defs-text' all the time is wrong in the case of embedded editors,
           ;; but they already don't work and we've arranged for them to not appear here ....
           (match x
-            [`#(syncheck:add-arrow ,start-pos-left ,start-pos-right
-                                   ,end-pos-left ,end-pos-right
-                                   ,actual? ,level)
-             (send defs-text syncheck:add-arrow
+            [`#(syncheck:add-arrow/name-dup ,start-pos-left ,start-pos-right
+                                            ,end-pos-left ,end-pos-right
+                                            ,actual? ,level ,name-dup-pc ,name-dup-id)
+             (define name-dup? (build-name-dup? name-dup-pc name-dup-id))
+             (send defs-text syncheck:add-arrow/name-dup
                    defs-text start-pos-left start-pos-right
                    defs-text end-pos-left end-pos-right 
-                   actual? level)]
+                   actual? level name-dup?)]
             [`#(syncheck:add-tail-arrow ,from-pos ,to-pos)
              (send defs-text syncheck:add-tail-arrow defs-text from-pos defs-text to-pos)]
             [`#(syncheck:add-mouse-over-status ,pos-left ,pos-right ,str)
@@ -1853,25 +1869,29 @@ If the namespace does not, they are colored the unbound color.
             [`#(syncheck:add-definition-target ,start-pos ,end-pos ,id ,mods)
              (send defs-text syncheck:add-definition-target defs-text start-pos end-pos id mods)]
             [`#(syncheck:add-id-set ,to-be-renamed/poss ,name-dup-pc ,name-dup-id)
-             (define other-side-dead? #f)
-             (define (name-dup? name) 
-               (cond
-                 [other-side-dead? 
-                  ;; just give up here ...
-                  #f]
-                 [else
-                  (place-channel-put name-dup-pc (list name-dup-id name))
-                  (define res (sync/timeout .5 (handle-evt name-dup-pc list)))
-                  (cond
-                    [(list? res) (car res)]
-                    [else
-                     (printf "other side died\n")
-                     (set! other-side-dead? #t)
-                     #f])]))
              (define to-be-renamed/poss/fixed
                (for/list ([lst (in-list to-be-renamed/poss)])
                  (list defs-text (list-ref lst 0) (list-ref lst 1))))
+             (define name-dup? (build-name-dup? name-dup-pc name-dup-id))
              (send defs-text syncheck:add-id-set to-be-renamed/poss/fixed name-dup?)]))
+        
+        (define/private (build-name-dup? name-dup-pc name-dup-id)
+          (define other-side-dead? #f)
+          (define (name-dup? name) 
+            (cond
+              [other-side-dead? 
+               ;; just give up here ...
+               #f]
+              [else
+               (place-channel-put name-dup-pc (list name-dup-id name))
+               (define res (sync/timeout .5 (handle-evt name-dup-pc list)))
+               (cond
+                 [(list? res) (car res)]
+                 [else
+                  (printf "other side died\n")
+                  (set! other-side-dead? #t)
+                  #f])]))
+          name-dup?)
         
         (define/augment (enable-evaluation)
           (send check-syntax-button enable #t)
@@ -2291,4 +2311,126 @@ If the namespace does not, they are colored the unbound color.
               defs-text 
               val))))))
 
+
+
 (define-runtime-path online-comp.rkt "online-comp.rkt")
+
+
+
+              
+(define (pick-next-arrow orig-arrows backwards? txt start-pos end-pos)
+  
+  (cond
+    [(null? orig-arrows) #f]
+    [(null? (cdr orig-arrows)) (car orig-arrows)]
+    [else
+     ;; find-overlap : -> (listof arrow)
+     ;; returns a list of arrows starting with the first arrow 
+     ;; that overlaps with 'pos' or is beyond 'pos' if there are
+     ;; no overlapping arrows, and continues thru all of the
+     ;; sorted arrows (wrapping back around thru the buffer)
+     (define (find-overlap)
+       (let loop ([fst-arrow (car orig-arrows)]
+                  [rst-arrows (cdr orig-arrows)]
+                  [acc '()])
+         (cond
+           [(null? rst-arrows) (reverse (cons fst-arrow acc))]
+           [else
+            (define snd-arrow (car rst-arrows))
+            (cond
+              [(overlaps? fst-arrow)
+               (append (cons fst-arrow rst-arrows) (reverse acc))]
+              [(if backwards?
+                   (between? snd-arrow fst-arrow)
+                   (between? fst-arrow snd-arrow))
+               (append rst-arrows (reverse (cons fst-arrow acc)))]
+              [else
+               (loop snd-arrow (cdr rst-arrows) (cons fst-arrow acc))])])))
+     
+     ;; find-first-non-overlap : (listof arrow) -> arrow
+     ;; finds the first arrow in the input list that does not overlap with
+     ;; start-pos/end-pos or returns (car orig-arrows) if all overlap
+     (define (find-first-non-overlap arrows)
+       (or (for/or ([arrow (in-list arrows)])
+             (and (not (overlaps? arrow))
+                  arrow))
+           (car orig-arrows)))
+     
+     (define (overlaps? arrow)
+       (define-values (a-text a-left a-right) (apply values arrow))
+       (and (equal? a-text txt)
+            (not (or (end-pos . < . a-left)
+                     (a-right . < . start-pos)))))
+     
+     (define (between? fst-arrow snd-arrow)
+       (define-values (fa-text fa-left fa-right) (apply values fst-arrow))
+       (define-values (sa-text sa-left sa-right) (apply values snd-arrow))
+       (and (equal? fa-text sa-text)
+            (overlaps? (list fa-text fa-right sa-left))))
+     
+     (find-first-non-overlap (find-overlap))]))
+
+(module+ test 
+  (check-equal? (pick-next-arrow '() #t 'txt1 0 1) #f)
+  (check-equal? (pick-next-arrow '((a 1 2)) #t 'txt1 0 1) '(a 1 2))
+  (check-equal? (pick-next-arrow '((a 2 3) (a 10 12)) #f 'a 0 1) '(a 2 3))
+  (check-equal? (pick-next-arrow '((a 1 3) (a 10 12)) #f 'a 0 0) '(a 1 3))
+  (check-equal? (pick-next-arrow '((a 1 3) (a 10 12)) #f 'a 2 2) '(a 10 12))
+  (check-equal? (pick-next-arrow '((a 1 3) (a 10 12)) #f 'a 4 4) '(a 10 12))
+  (check-equal? (pick-next-arrow '((a 1 3) (a 10 12)) #f 'a 11 11) '(a 1 3))
+  (check-equal? (pick-next-arrow '((a 1 3) (a 10 12)) #f 'a 14 14) '(a 1 3)))
+
+;; sort-and-merge : (listof (cons number number)) -> (listof (cons number number))
+;; the result is guaranteed to be non-overlapping ranges, 
+;; sorted from smallest to largest
+(define (sort-and-merge start+ends)
+  (define sorted-positions (sort start+ends < #:key car))
+  (let loop ([positions sorted-positions])
+    (cond
+      [(null? positions) '()]
+      [(null? (cdr positions)) positions]
+      [else
+       (define fst (car positions))
+       (define snd (cadr positions))
+       (cond
+         [(<= (cdr fst) (car snd)) ;; no overlap
+          (cons fst (loop (cdr positions)))]
+         [else
+          (define merged (cons (car fst) (max (cdr fst) (cdr snd))))
+          (loop (cons merged (cddr positions)))])])))
+
+(module+ test
+  (check-equal? (sort-and-merge '()) '())
+  (check-equal? (sort-and-merge '((1 . 2))) '((1 . 2)))
+  
+  (check-equal? (sort-and-merge '((1 . 2) (10 . 11))) '((1 . 2) (10 . 11)))
+  (check-equal? (sort-and-merge '((10 . 11) (1 . 2))) '((1 . 2) (10 . 11)))
+  (check-equal? (sort-and-merge '((1 . 2) (2 . 3))) '((1 . 2) (2 . 3)))
+  (check-equal? (sort-and-merge '((2 . 3) (1 . 2))) '((1 . 2) (2 . 3)))
+  (check-equal? (sort-and-merge '((1 . 3) (2 . 4))) '((1 . 4)))
+  (check-equal? (sort-and-merge '((2 . 4) (1 . 3))) '((1 . 4)))
+  (check-equal? (sort-and-merge '((2 . 4) (3 . 11) (1 . 3))) '((1 . 11)))
+  
+  ;; both answers seem fine -- other answers, not so much
+  (check-not-false (member (sort-and-merge '((1 . 1) (1 . 1)))
+                           (list '((1 . 1) (1 . 1))
+                                 '((1 . 1) ))))
+  
+  (for ([_ (in-range 100)])
+    (define input
+      (for/list ([i (in-range 10)])
+        (define start (random 50))
+        (cons start (+ start (random 100)))))
+    (define output (sort-and-merge input))
+    (define (valid? lst)
+      (cond
+        [(null? lst) #t]
+        [(null? (cdr lst)) #t]
+        [else
+         (define fst (car lst))
+         (define snd (cadr lst))
+         (and (<= (car fst) (cdr fst) (car snd) (cdr snd))
+              (valid? (cdr lst)))]))
+    (check-true
+     (valid? output)
+     (format "~s = ~s, but invalid" `(sort-and-merge ',input) `',output))))

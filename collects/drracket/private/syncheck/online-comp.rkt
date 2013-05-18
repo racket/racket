@@ -34,10 +34,15 @@
            #'(define/override (name args ...)
                (add-to-trace (vector 'name wanted-args ...))))]))
 
-    (log syncheck:add-arrow
-         _start-text start-pos-left start-pos-right
-         _end-text end-pos-left end-pos-right
-         actual? level)
+    (define/override (syncheck:add-arrow/name-dup _start-text start-pos-left start-pos-right
+                                                  _end-text end-pos-left end-pos-right
+                                                  actual? level name-dup?)
+      (define id (hash-count table))
+      (hash-set! table id name-dup?)
+      (add-to-trace (vector 'syncheck:add-arrow/name-dup
+                            start-pos-left start-pos-right
+                            end-pos-left end-pos-right
+                            actual? level remote-chan id)))
     (log syncheck:add-tail-arrow _from-text from-pos _to-text to-pos)
     (log syncheck:add-mouse-over-status _text pos-left pos-right str)
     (log syncheck:add-background-color _text color start fin)

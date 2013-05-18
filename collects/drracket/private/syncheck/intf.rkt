@@ -10,6 +10,7 @@
     syncheck:add-docs-menu
     syncheck:add-id-set
     syncheck:add-arrow
+    syncheck:add-arrow/name-dup
     syncheck:add-tail-arrow
     syncheck:add-mouse-over-status
     syncheck:add-jump-to-definition
@@ -55,6 +56,12 @@
                                        end-text end-pos-left end-pos-right
                                        actual? level)
       (void))
+    (define/public (syncheck:add-arrow/name-dup start-text start-pos-left start-pos-right
+                                                end-text end-pos-left end-pos-right
+                                                actual? level name-dup?)
+      (syncheck:add-arrow start-text start-pos-left start-pos-right
+                          end-text end-pos-left end-pos-right
+                          actual? level))
     (define/public (syncheck:add-tail-arrow from-text from-pos to-text to-pos) (void))
     (define/public (syncheck:add-mouse-over-status text pos-left pos-right str) (void))
     (define/public (syncheck:add-jump-to-definition text start end id filename submods) (void))

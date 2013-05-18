@@ -1,4 +1,11 @@
 ------------------------------
+       Version 5.3.4
+------------------------------
+
+  . Check Syntax no longer calls the syncheck:add-id-set method (and
+    thus neither the syncheck:add-rename-menu method).
+
+------------------------------
        Version 5.3.3
 ------------------------------
 

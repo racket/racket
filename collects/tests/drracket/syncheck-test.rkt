@@ -1074,11 +1074,11 @@
                         "yxy"
                         "(lambda (yxy) yxy yxy)")
      
-     (build-rename-test "(define-syntax-rule (m x) (λ (x) x))(m z)"
-                        39
+     (build-rename-test "(define-syntax-rule (m x y) (λ (x) x y))(m z z)"
+                        43
                         "z"
                         "qq"
-                        "(define-syntax-rule (m x) (λ (x) x))(m qq)")
+                        "(define-syntax-rule (m x y) (λ (x) x y))(m qq qq)")
      
      (build-rename-test (string-append
                          "#lang racket/base\n"
@@ -1294,7 +1294,7 @@
                 [menu-item
                  menu-item]
                 [else
-                 (eprintf "syncheck-test.rkt: rename test ~s didn't find menu item named ~s in ~s"
+                 (eprintf "syncheck-test.rkt: rename test ~s didn't find menu item named ~s in ~s\n"
                           test
                           item-name
                           (map (λ (x) (and (is-a? x labelled-menu-item<%>) (send x get-label)))
