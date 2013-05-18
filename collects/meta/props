@@ -1421,16 +1421,11 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/setup.rktl" drdr:random #t
 "collects/tests/racket/shared-tests.rktl" drdr:command-line #f
 "collects/tests/racket/sp.rktl" drdr:random #t
-"collects/tests/racket/stress" responsible (jay)
-"collects/tests/racket/stress/apply.rkt" drdr:random #t
+"collects/tests/racket/stress" responsible (jay) drdr:random #t
 "collects/tests/racket/stress/contract-lifting.rkt" responsible (robby sstrickl)
-"collects/tests/racket/stress/dict.rkt" drdr:timeout 180 drdr:random #t
-"collects/tests/racket/stress/fuzz.rkt" responsible (samth mflatt) drdr:command-line (racket * "-c") drdr:timeout 300 drdr:random #t
-"collects/tests/racket/stress/hash.rkt" drdr:random #t
-"collects/tests/racket/stress/module-stack.rkt" drdr:timeout 500 drdr:random #t
-"collects/tests/racket/stress/mpfr-ffi-call-vs-racket.rkt" drdr:random #t
-"collects/tests/racket/stress/sequence.rkt" drdr:random #t
-"collects/tests/racket/stress/vector.rkt" drdr:random #t
+"collects/tests/racket/stress/dict.rkt" drdr:timeout 180
+"collects/tests/racket/stress/fuzz.rkt" responsible (samth mflatt) drdr:command-line (racket * "-c") drdr:timeout 300
+"collects/tests/racket/stress/module-stack.rkt" drdr:timeout 500
 "collects/tests/racket/structlib.rktl" drdr:random #t
 "collects/tests/racket/stx.rktl" drdr:random #t
 "collects/tests/racket/submodule.rktl" drdr:random #t
@@ -1628,9 +1623,6 @@ path/s is either such a string or a list of them.
 "man/man1/raco.1" responsible (mflatt)
 "man/man1/setup-plt.1" responsible (mflatt)
 "src" responsible (mflatt)
-"src/build/configure" drdr:random #t
-"src/build/make" drdr:random #t
-"src/build/make-install" drdr:random #t
 "src/foreign" responsible (eli)
 
 #:end-props |#
