@@ -238,7 +238,8 @@
                     (init #,@(dict-ref name-dict #'init '()))
                     (init-field #,@(dict-ref name-dict #'init-field '()))
                     (field #,@(dict-ref name-dict #'field '()))
-                    (public #,@(dict-ref name-dict #'public '()))))
+                    (public #,@(dict-ref name-dict #'public '()))
+                    (override #,@(dict-ref name-dict #'override '()))))
               (class #,annotated-super
                 #,@(map clause-stx clauses)
                 #,@(map non-clause-stx annotated-methods)
@@ -264,10 +265,11 @@
         ;; if it's a method definition for a declared method, then
         ;; mark it as something to type-check
         ;; FIXME: this needs to handle external/internal names too
-        ;; FIXME: this needs to track overrides and other things
+        ;; FIXME: this needs to track privates, augments, etc.
         [(define-values (id) . rst)
          #:when (memf (λ (n) (free-identifier=? #'id n))
-                      (dict-ref name-dict #'public))
+                      (append (dict-ref name-dict #'public '())
+                              (dict-ref name-dict #'override '())))
          (values (cons (non-clause (syntax-property stx
                                                     'tr:class:method
                                                     (syntax-e #'id)))
@@ -288,10 +290,13 @@
   ;; set!-transformers to the appropriate accessors, which lets
   ;; us figure out the accessor identifiers.
   (define (make-locals-table name-dict)
-   (syntax-property
-    #`(let-values ([(#,@(dict-ref name-dict #'public '()))
-                    (values #,@(map (λ (stx) #`(λ () (#,stx)))
-                                    (dict-ref name-dict #'public '())))])
-        (void))
-    'tr:class:local-table #t)))
+    (define method-names
+      (append (dict-ref name-dict #'public '())
+              (dict-ref name-dict #'override '())))
+    (syntax-property
+     #`(let-values ([(#,@method-names)
+                     (values #,@(map (λ (stx) #`(λ () (#,stx)))
+                                     method-names))])
+         (void))
+     'tr:class:local-table #t)))
 
