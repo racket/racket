@@ -301,5 +301,20 @@
     (: c% (Class [m (Integer -> Integer)]))
     (define c% (class: object% (super-new)
                  (define/public (m y)
-                   (begin0 x (set! x (+ x 1)))))))))
+                   (begin0 x (set! x (+ x 1)))))))
+
+   ;; test type-checking without expected class type
+   (check-ok
+    (define c% (class: object% (super-new)
+                 (: m (Integer -> Integer))
+                 (define/public (m x)
+                   0)))
+    (send (new c%) m 5))
+
+   ;; test fields without expected class type
+   (check-ok
+    (define c% (class: object% (super-new)
+                 (: x Integer)
+                 (field [x 0])))
+    (get-field x (new c%)))))
 

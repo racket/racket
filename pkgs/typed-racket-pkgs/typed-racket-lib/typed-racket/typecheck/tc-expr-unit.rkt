@@ -188,9 +188,6 @@
       [stx
        ;; a class: generated class
        #:when (syntax-property form 'tr:class)
-       ;; use internal TR forms to hide information obtained
-       ;; at the class: level so that inits, fields, and method
-       ;; presence/absence can be checked immediately here
        (check-class form expected)
        expected]
       [stx:exn-handlers^
@@ -328,6 +325,9 @@
   (define (internal-tc-expr form)
     (syntax-parse form
       #:literal-sets (kernel-literals tc-expr-literals)
+      [stx
+       #:when (syntax-property form 'tr:class)
+       (ret (check-class form #f))]
       ;;
       [stx:exn-handlers^
        (register-ignored! form)

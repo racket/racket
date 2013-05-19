@@ -13,20 +13,22 @@
          "tc-funapp.rkt"
          "tc-subst.rkt"
          (prefix-in c: racket/class)
-         (private syntax-properties type-annotation)
+         (private parse-type syntax-properties type-annotation)
          (base-env class-prims)
          (env lexical-env)
          (types utils abbrev union subtype resolve)
+         (typecheck internal-forms)
          (utils tc-utils)
          (rep type-rep)
          (for-template racket/base
                        (prefix-in c: racket/class)
-                       (base-env class-prims)))
+                       (base-env class-prims)
+                       (typecheck internal-forms)))
 
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-expr^)
 (export check-class^)
 
-;; Syntax TCResults -> Void
+;; Syntax TCResults -> Type
 ;; Type-check a class form by trawling its innards
 ;;
 ;; Assumptions:
@@ -38,13 +40,13 @@
 ;;  class produced by class: due to the syntax property
 (define (check-class form [expected #f])
   (match expected
-    [(tc-result1: (and self-class-type (Class: _ inits fields methods)))
-     (do-check form #t self-class-type inits fields methods)]
-    [#f (do-check form #f #f null null null)]))
+    [(tc-result1: (and self-class-type (Class: _ _ _ _)))
+     (do-check form #t self-class-type)]
+    [#f (do-check form #f #f)]))
 
-;; Syntax Boolean Option<Type> Inits Fields Methods -> Type
+;; Syntax Boolean Option<Type> -> Type
 ;; Do the actual type-checking
-(define (do-check form expected? self-class-type inits fields methods)
+(define (do-check form expected? self-class-type)
   (syntax-parse form
     #:literals (let-values #%plain-lambda quote-syntax begin
                 #%plain-app values class:-internal letrec-syntaxes+values
@@ -77,8 +79,6 @@
                                                                       ...)
                                                            body))
                                          ????))))
-     ;; Type for self in method calls
-     (define self-type (make-Instance self-class-type))
      ;; Make sure the superclass is a class
      ;; FIXME: maybe should check the property on this expression
      ;;        as a sanity check too
@@ -114,6 +114,20 @@
        (list->set (syntax->datum #'(internal-private-names ...))))
      (define this%-method-names
        (set-union this%-public-names this%-override-names))
+     ;; trawl the body for top-level expressions
+     (define top-level-exprs (trawl-for-property #'body 'tr:class:top-level))
+     (define internals-table
+       (register-internals top-level-exprs #'(internal-public-names ...)))
+     ;; Type for self in method calls
+     (define self-type
+       (if self-class-type
+           (make-Instance self-class-type)
+           (infer-self-type internals-table
+                            this%-init-names
+                            this%-field-names
+                            this%-public-names)))
+     (match-define (Instance: (Class: _ inits fields methods))
+                   self-type)
      ;; Use the internal class: information to check whether clauses
      ;; exist or are absent appropriately
      (when expected?
@@ -154,11 +168,22 @@
        (local-tables->lexical-env local-method-table methods this%-method-names
                                   local-field-table fields this%-field-names
                                   self-type))
-     (with-lexical-env/extend lexical-names lexical-types
-      (check-methods meths methods self-type))
-     ;; trawl the body for top-level expressions too
-     (define top-level-exprs (trawl-for-property #'body 'tr:class:top-level))
-     (void)]))
+     (define checked-method-types
+       (with-lexical-env/extend lexical-names lexical-types
+         (check-methods meths methods self-type)))
+     (if expected?
+         self-class-type
+         (merge-types self-type checked-method-types))]))
+
+;; merge-types : Type Dict<Symbol, Type> -> Type
+;; Given a self object type, construct the real class type based on
+;; new information found from type-checking. Only used when an expected
+;; type was not provided.
+(define (merge-types self-type method-types)
+  (match-define (Instance: (and class-type (Class: _ _ _ _)))
+                self-type)
+  ;; FIXME: this is an incorrect stub implementation
+  class-type)
 
 ;; local-tables->lexical-env : Dict<Symbol, Id> Dict List<Symbol>
 ;;                             Dict<Symbol, (List Id Id)> Dict List<Symbol>
@@ -181,34 +206,44 @@
   (define localized-field-pairs (localize local-field-table field-names))
   (define localized-field-get-names (map car localized-field-pairs))
   (define localized-field-set-names (map cadr localized-field-pairs))
+  (define default-type (list (make-Univ)))
   (define method-types
-    (map (λ (m) (->* (list (make-Univ))
-                     (fixup-method-type (car (dict-ref methods m))
-                                        self-type)))
-         (set->list method-names)))
+    (for/list ([m (set->list method-names)])
+      (define maybe-type (dict-ref methods m #f))
+      (->* (list (make-Univ))
+           (if maybe-type
+               (fixup-method-type (car maybe-type) self-type)
+               (->* (list (make-Univ)) (make-Univ))))))
   (define field-get-types
-    (map (λ (f) (->* (list (make-Univ)) (car (dict-ref fields f))))
-         (set->list field-names)))
+    (for/list ([f (set->list field-names)])
+      (define maybe-type (dict-ref fields f))
+      (->* (list (make-Univ)) (or (and maybe-type (car maybe-type))
+                                  (make-Univ)))))
   (define field-set-types
-    (map (λ (f) (->* (list (make-Univ) (car (dict-ref fields f)))
-                     -Void))
-         (set->list field-names)))
+    (for/list ([f (set->list field-names)])
+      (define maybe-type (dict-ref fields f))
+      (->* (list (make-Univ) (or (and maybe-type
+                                      (car maybe-type))
+                                 -bot))
+           -Void)))
   (values (append localized-method-names
                   localized-field-get-names localized-field-set-names)
           (append method-types field-get-types field-set-types)))
 
-;; check-methods : Listof<Syntax> Dict Type -> Void
+;; check-methods : Listof<Syntax> Dict Type -> Dict<Symbol, Type>
 ;; Type-check the methods inside of a class
 (define (check-methods meths methods self-type)
   (for ([meth meths])
     (define method-name (syntax-property meth 'tr:class:method))
-    (define method-type
-      (fixup-method-type
-       (car (dict-ref methods method-name))
-       self-type))
-    (define expected (ret method-type))
-    (define annotated (annotate-method meth self-type method-type))
-    (tc-expr/check annotated expected)))
+    (define maybe-expected (dict-ref methods method-name #f))
+    (cond [maybe-expected
+           (define method-type
+             (fixup-method-type (car maybe-expected) self-type))
+           (define expected (ret method-type))
+           (define annotated (annotate-method meth self-type method-type))
+           (tc-expr/check annotated expected)
+           (list method-name method-type)]
+          [else (list method-name (tc-expr/t meth))])))
 
 ;; Syntax -> Dict<Symbol, Id> Dict<Symbol, (List Symbol Symbol)>
 ;; Construct tables mapping internal method names to the accessors
@@ -297,6 +332,44 @@
      (apply append (map (λ (stx) (trawl-for-property stx prop))
                         (syntax->list #'(e ...))))]
     [_ '()]))
+
+;; register-internals : Listof<Syntax> -> Dict<Symbol, Type>
+;; Find : annotations and register them
+;; TODO: support `define-type`?
+(define (register-internals stxs dummy)
+  (for/fold ([table '()])
+            ([stx stxs])
+    (syntax-parse stx
+      #:literals (let-values begin quote-syntax :-internal
+                  #%plain-app values void)
+      [(let-values ((()
+                     (begin
+                       (quote-syntax (:-internal name:id type:expr))
+                       (#%plain-app values))))
+         (#%plain-app void))
+       (cons (cons (syntax-e #'name) (parse-type #'type))
+             table)]
+      [_ table])))
+
+;; infer-self-type : Dict<Symbol, Type> Set<Symbol> * 3 -> Type
+;; Construct a self object type based on the registered types
+;; from : inside the class body.
+(define (infer-self-type internals-table inits fields publics)
+  (define (make-type-dict names [inits? #f])
+    (for/fold ([type-dict '()])
+              ([name names])
+      (cond [(dict-ref internals-table name #f) =>
+             (λ (type)
+               (define entry
+                 ;; FIXME: this should record the correct optional
+                 ;;        boolean based on internal macro data
+                 (if inits? (list name type #f) (list name type)))
+               (cons entry type-dict))]
+            [else type-dict])))
+  (define init-types (make-type-dict inits #t))
+  (define field-types (make-type-dict fields))
+  (define public-types (make-type-dict publics))
+  (make-Instance (make-Class #f init-types field-types public-types)))
 
 ;; fixup-method-type : Function Type -> Function
 ;; Fix up a method's arity from a regular function type
