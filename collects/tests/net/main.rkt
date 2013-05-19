@@ -19,7 +19,6 @@
         do (dns:tests)
         do (url:tests)
         do (ucodec:tests)
-        do (ucodec:noels-tests)
         do (cgi:tests)
         do (ftp:tests)
         do (head:tests)
