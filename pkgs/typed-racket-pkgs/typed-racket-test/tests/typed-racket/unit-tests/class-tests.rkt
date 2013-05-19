@@ -325,6 +325,20 @@
                    0)))
     (send (new c%) m 5))
 
+   ;; fails, because the local call type is unknown
+   ;; and is assumed to be Any
+   (check-err
+    (class: object% (super-new)
+            (define/public (m) (n))
+            (define/public (n x) 0)))
+
+   ;; test type-checking for classes without any
+   ;; internal type annotations on methods
+   (check-ok
+    (define c% (class: object% (super-new)
+                 (define/public (m) 0)))
+    (send (new c%) m))
+
    ;; test fields without expected class type
    (check-ok
     (define c% (class: object% (super-new)

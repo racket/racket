@@ -185,10 +185,17 @@
 ;; new information found from type-checking. Only used when an expected
 ;; type was not provided.
 (define (merge-types self-type method-types)
-  (match-define (Instance: (and class-type (Class: _ _ _ _)))
+  (match-define (Instance: (and class-type (Class: #f inits fields methods)))
                 self-type)
-  ;; FIXME: this is an incorrect stub implementation
-  class-type)
+  (define new-methods
+    (for/fold ([methods methods])
+              ([(name type) (in-dict method-types)])
+      (define old-type (dict-ref methods name #f))
+      ;; sanity check
+      (when (and old-type (not (equal? old-type type)))
+        (tc-error "merge-types: internal error"))
+      (dict-set methods name type)))
+  (make-Class #f inits fields new-methods))
 
 ;; local-tables->lexical-env : Dict<Symbol, Id> Dict List<Symbol>
 ;;                             Dict<Symbol, (List Id Id)> Dict List<Symbol>
@@ -218,15 +225,15 @@
       (->* (list (make-Univ))
            (if maybe-type
                (fixup-method-type (car maybe-type) self-type)
-               (->* (list (make-Univ)) (make-Univ))))))
+               (make-Univ)))))
   (define field-get-types
     (for/list ([f (set->list field-names)])
-      (define maybe-type (dict-ref fields f))
+      (define maybe-type (dict-ref fields f #f))
       (->* (list (make-Univ)) (or (and maybe-type (car maybe-type))
                                   (make-Univ)))))
   (define field-set-types
     (for/list ([f (set->list field-names)])
-      (define maybe-type (dict-ref fields f))
+      (define maybe-type (dict-ref fields f #f))
       (->* (list (make-Univ) (or (and maybe-type
                                       (car maybe-type))
                                  -bot))
@@ -238,17 +245,19 @@
 ;; check-methods : Listof<Syntax> Dict Type -> Dict<Symbol, Type>
 ;; Type-check the methods inside of a class
 (define (check-methods meths methods self-type)
-  (for ([meth meths])
+  (for/list ([meth meths])
     (define method-name (syntax-property meth 'tr:class:method))
     (define maybe-expected (dict-ref methods method-name #f))
     (cond [maybe-expected
+           (define pre-method-type (car maybe-expected))
            (define method-type
-             (fixup-method-type (car maybe-expected) self-type))
+             (fixup-method-type pre-method-type self-type))
            (define expected (ret method-type))
            (define annotated (annotate-method meth self-type method-type))
            (tc-expr/check annotated expected)
-           (list method-name method-type)]
-          [else (list method-name (tc-expr/t meth))])))
+           (list method-name pre-method-type)]
+          [else (list method-name
+                      (unfixup-method-type (tc-expr/t meth)))])))
 
 ;; Syntax -> Dict<Symbol, Id> Dict<Symbol, (List Symbol Symbol)>
 ;; Construct tables mapping internal method names to the accessors
@@ -385,6 +394,19 @@
        (for/list ([arr arrs])
          (match-define (arr: doms rng rest drest kws) arr)
          (make-arr (cons self-type doms) rng rest drest kws)))
+     (make-Function fixed-arrs)]
+    [_ (tc-error "fixup-method-type: internal error")]))
+
+;; unfixup-method-type : Function -> Function
+;; Turn a "real" method type back into a function type
+;; FIXME: this is a really badly named function
+(define (unfixup-method-type type)
+  (match type
+    [(Function: (list arrs ...))
+     (define fixed-arrs
+       (for/list ([arr arrs])
+         (match-define (arr: doms rng rest drest kws) arr)
+         (make-arr (cdr doms) rng rest drest kws)))
      (make-Function fixed-arrs)]
     [_ (tc-error "fixup-method-type: internal error")]))
 
