@@ -83,26 +83,18 @@ See more in PR8831.
 ;; Draws inspiration from encode-decode.scm by Kurt Normark and a code
 ;; sample provided by Eli Barzilay
 
-(require racket/match racket/string racket/list)
+(require racket/string racket/list)
 
-(provide uri-encode
-         uri-decode
-         uri-path-segment-encode
-         uri-path-segment-decode
-         uri-userinfo-encode
-         uri-userinfo-decode
-         uri-unreserved-encode
-         uri-unreserved-decode
-         uri-path-segment-unreserved-encode
-         uri-path-segment-unreserved-decode
-         form-urlencoded-encode
-         form-urlencoded-decode
-         alist->form-urlencoded
-         form-urlencoded->alist
+(provide uri-encode                         uri-decode
+         uri-path-segment-encode            uri-path-segment-decode
+         uri-userinfo-encode                uri-userinfo-decode
+         uri-unreserved-encode              uri-unreserved-decode
+         uri-path-segment-unreserved-encode uri-path-segment-unreserved-decode
+         form-urlencoded-encode             form-urlencoded-decode
+         alist->form-urlencoded             form-urlencoded->alist
          current-alist-separator-mode)
 
-(define (self-map-char ch) (cons ch ch))
-(define (self-map-chars str) (map self-map-char (string->list str)))
+(define (self-map-chars str) (map (λ (ch) (cons ch ch)) (string->list str)))
 
 ;; The characters that always map to themselves
 (define alphanumeric-mapping
@@ -114,33 +106,25 @@ See more in PR8831.
 (define safe-mapping (self-map-chars "-_.!~*'()"))
 
 ;; The strict URI mapping
-(define uri-mapping (append alphanumeric-mapping safe-mapping))
+(define uri-mapping `(,@alphanumeric-mapping ,@safe-mapping))
 
 ;; The uri path segment mapping from RFC 3986
 (define path-segment-extra-mapping (self-map-chars "@+,=$&:"))
-(define uri-path-segment-mapping
-  (append uri-mapping
-          path-segment-extra-mapping))
+(define uri-path-segment-mapping `(,@uri-mapping ,@path-segment-extra-mapping))
 
 ;; from RFC 3986
-(define unreserved-mapping
-  (append alphanumeric-mapping
-          (self-map-chars "-._~")))
+(define unreserved-mapping `(,@alphanumeric-mapping ,@(self-map-chars "-._~")))
 
 ;; The uri path segment mapping from RFC 3986
 (define uri-path-segment-unreserved-mapping
-  (append unreserved-mapping
-          path-segment-extra-mapping))
+  `(,@unreserved-mapping ,@path-segment-extra-mapping))
 
 ;; from RFC 3986
-(define sub-delims-mapping
-  (self-map-chars "!$&'()*+,;="))
+(define sub-delims-mapping (self-map-chars "!$&'()*+,;="))
 
 ;; The uri userinfo mapping from RFC 3986
 (define uri-userinfo-mapping
-  (append unreserved-mapping
-          sub-delims-mapping
-          (self-map-chars ":")))
+  `(,@unreserved-mapping ,@sub-delims-mapping ,@(self-map-chars ":")))
 
 ;; The form-urlencoded mapping
 (define form-urlencoded-mapping
@@ -152,175 +136,97 @@ See more in PR8831.
 
 (define ascii-size 128)
 
-;; (listof (cons char char)) -> (values (vectorof string) (vectorof string))
+;; (listof (cons char char)) -> (values (vectorof string) (vectorof int))
 (define (make-codec-tables alist)
-  (let ([encoding-table (build-vector ascii-size number->hex-string)]
-        [decoding-table (build-vector ascii-size values)])
-    (for-each (match-lambda
-               [(cons orig enc)
-                (vector-set! encoding-table
-                             (char->integer orig)
-                             (string enc))
-                (vector-set! decoding-table
-                             (char->integer enc)
-                             (char->integer orig))])
-              alist)
-
-    (values encoding-table decoding-table)))
-
-(define-values (uri-encoding-vector uri-decoding-vector)
-  (make-codec-tables uri-mapping))
-
-(define-values (uri-path-segment-encoding-vector
-                uri-path-segment-decoding-vector)
-  (make-codec-tables uri-path-segment-mapping))
-
-(define-values (uri-userinfo-encoding-vector
-                uri-userinfo-decoding-vector)
-  (make-codec-tables uri-userinfo-mapping))
-
-(define-values (uri-unreserved-encoding-vector
-                uri-unreserved-decoding-vector)
-  (make-codec-tables unreserved-mapping))
-
-(define-values (uri-path-segment-unreserved-encoding-vector
-                uri-path-segment-unreserved-decoding-vector)
-  (make-codec-tables uri-path-segment-unreserved-mapping))
-
-(define-values (form-urlencoded-encoding-vector
-                form-urlencoded-decoding-vector)
-  (make-codec-tables form-urlencoded-mapping))
+  (define encoding-table (build-vector ascii-size number->hex-string))
+  (define decoding-table (build-vector ascii-size values))
+  (for ([orig+enc (in-list alist)])
+    (vector-set! encoding-table
+                 (char->integer (car orig+enc))
+                 (string (cdr orig+enc)))
+    (vector-set! decoding-table
+                 (char->integer (cdr orig+enc))
+                 (char->integer (car orig+enc))))
+  (values encoding-table decoding-table))
 
 ;; vector string -> string
 (define (encode table str)
   ;; First, check for an ASCII string with no conversion needed:
   (if (for/and ([char (in-string str)])
         (define v (char->integer char))
-        (and (byte? v)
+        (and (< v ascii-size)
              (let ([s (vector-ref table v)])
                (and (= 1 (string-length s))
                     (eq? char (string-ref s 0))))))
       str
-      (apply string-append
-             (for/list ([byte (in-bytes (string->bytes/utf-8 str))])
-               (if (< byte ascii-size)
-                   (vector-ref table byte)
-                   (number->hex-string byte))))))
+      (string-append* (for/list ([byte (in-bytes (string->bytes/utf-8 str))])
+                        (if (< byte ascii-size)
+                            (vector-ref table byte)
+                            (number->hex-string byte))))))
 
 ;; vector string -> string
 (define (decode table str)
-  (define internal-decode
-    (match-lambda [(list) (list)]
-                  [(list* #\% (? hex-digit? char1) (? hex-digit? char2) rest)
-                   ;; This used to consult the table again, but I think that's
-                   ;;  wrong. For example %2b should produce +, not a space.
-                   (cons (string->number (string char1 char2) 16)
-                         (internal-decode rest))]
-                  [(cons (? ascii-char? char) rest)
-                   (cons (vector-ref table (char->integer char))
-                         (internal-decode rest))]
-                  [(cons char rest)
-                   ;; JBC : this appears to handle strings containing
-                   ;; non-ascii characters; shouldn't this just be an 
-                   ;; error?
-                   (append
-                    (bytes->list (string->bytes/utf-8 (string char)))
-                    (internal-decode rest))]))
+  (define max-ascii (integer->char ascii-size))
+  (define (internal-decode l)
+    (if (null? l) '()
+        (let* ([c (car l)] [l (cdr l)]
+               [hex (and (equal? #\% c) (pair? l) (pair? (cdr l))
+                         (string->number (string (car l) (cadr l)) 16))])
+          (if hex (cons hex (internal-decode (cddr l)))
+              (cons (if (char<? c max-ascii)
+                      (vector-ref table (char->integer c))
+                      ;; This should probably error, but strings to be decoded
+                      ;; might come from misbehaving sources; maybe it's better
+                      ;; to add some parameter for a permissive mode
+                      (bytes->list (string->bytes/utf-8 (string c))))
+                    (internal-decode l))))))
   (bytes->string/utf-8 (apply bytes (internal-decode (string->list str)))))
 
-(define (ascii-char? c)
-  (< (char->integer c) ascii-size))
+;; Utility for defining codecs
+(define-syntax-rule (define-codecs [encoder decoder mapping] ...)
+  (begin (define-values [encoder decoder]
+           (let-values ([(v:en v:de) (make-codec-tables mapping)])
+             (define (encoder str) (encode v:en str))
+             (define (decoder str) (decode v:de str))
+             (values encoder decoder)))
+         ...))
 
-(define (hex-digit? c)
-  (or (char<=? #\0 c #\9)
-      (char<=? #\a c #\f)
-      (char<=? #\A c #\F)))
-
-;; string -> string
-(define (uri-encode str)
-  (encode uri-encoding-vector str))
-
-;; string -> string
-(define (uri-decode str)
-  (decode uri-decoding-vector str))
-
-;; string -> string
-(define (uri-path-segment-encode str)
-  (encode uri-path-segment-encoding-vector str))
-
-;; string -> string
-(define (uri-path-segment-decode str)
-  (decode uri-path-segment-decoding-vector str))
-
-;; string -> string
-(define (uri-userinfo-encode str)
-  (encode uri-userinfo-encoding-vector str))
-
-;; string -> string
-(define (uri-userinfo-decode str)
-  (decode uri-userinfo-decoding-vector str))
-
-;; string -> string
-(define (uri-unreserved-encode str)
-  (encode uri-unreserved-encoding-vector str))
-
-;; string -> string
-(define (uri-unreserved-decode str)
-  (decode uri-unreserved-decoding-vector str))
-
-;; string -> string
-(define (uri-path-segment-unreserved-encode str)
-  (encode uri-path-segment-unreserved-encoding-vector str))
-
-;; string -> string
-(define (uri-path-segment-unreserved-decode str)
-  (decode uri-path-segment-unreserved-decoding-vector str))
-
-;; string -> string
-(define (form-urlencoded-encode str)
-  (encode form-urlencoded-encoding-vector str))
-
-;; string -> string
-(define (form-urlencoded-decode str)
-  (decode form-urlencoded-decoding-vector str))
+;; All of these are string -> string
+(define-codecs
+  [uri-encode uri-decode uri-mapping]
+  [uri-path-segment-encode uri-path-segment-decode uri-path-segment-mapping]
+  [uri-userinfo-encode uri-userinfo-decode uri-userinfo-mapping]
+  [uri-unreserved-encode uri-unreserved-decode unreserved-mapping]
+  [uri-path-segment-unreserved-encode uri-path-segment-unreserved-decode
+   uri-path-segment-unreserved-mapping]
+  [form-urlencoded-encode form-urlencoded-decode form-urlencoded-mapping])
 
 ;; listof (cons string string) -> string
 ;; http://www.w3.org/TR/html401/appendix/notes.html#ampersands-in-uris
 ;; listof (cons symbol string) -> string
 (define (alist->form-urlencoded args)
-  (let* ([sep (if (memq (current-alist-separator-mode) '(semi semi-or-amp))
-                ";" "&")]
-         [format-one
-          (lambda (arg)
-            (let* ([name  (car arg)]
-                   [value (cdr arg)]
-                   [name  (form-urlencoded-encode (symbol->string name))]
-                   [value (and value (form-urlencoded-encode value))])
-              (if value (string-append name "=" value) name)))]
-         [strs (if (null? args)
-                 '()
-                 (cons (format-one (car args))
-                       (apply append
-                              (map (lambda (a) (list sep (format-one a)))
-                                   (cdr args)))))])
-    (apply string-append strs)))
+  (string-join
+   (for/list ([arg (in-list args)])
+     (define name  (form-urlencoded-encode (symbol->string (car arg))))
+     (define value (and (cdr arg) (form-urlencoded-encode (cdr arg))))
+     (if value (string-append name "=" value) name))
+   (if (memq (current-alist-separator-mode) '(semi semi-or-amp)) ";" "&")))
 
 ;; string -> listof (cons string string)
 ;; http://www.w3.org/TR/html401/appendix/notes.html#ampersands-in-uris
 (define (form-urlencoded->alist str)
-  (define keyval-regexp #rx"=")
-  (define value-regexp
+  (define sep-regexp
     (case (current-alist-separator-mode)
       [(semi) #rx"[;]"]
       [(amp) #rx"[&]"]
       [else #rx"[&;]"]))
-  (define (parse-keyval keyval)
-    (let (;; m = #f => no "=..." part
-          [m (regexp-match-positions keyval-regexp keyval)])
-      (cons (string->symbol (form-urlencoded-decode
-                             (if m (substring keyval 0 (caar m)) keyval)))
-            (and m (form-urlencoded-decode (substring keyval (cdar m)))))))
-  (if (equal? "" str) '() (map parse-keyval (regexp-split value-regexp str))))
+  (if (equal? "" str) '()
+      (for/list ([keyval (in-list (regexp-split sep-regexp str))])
+        ;; m = #f => no "=..." part
+        (define m (regexp-match-positions #rx"=" keyval))
+        (cons (string->symbol (form-urlencoded-decode
+                               (if m (substring keyval 0 (caar m)) keyval)))
+              (and m (form-urlencoded-decode (substring keyval (cdar m))))))))
 
 (define current-alist-separator-mode
   (make-parameter 'amp-or-semi
