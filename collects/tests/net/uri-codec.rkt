@@ -69,12 +69,12 @@
         (uri-userinfo-decode "hello")         => "hello"
         (uri-userinfo-decode "hello%20there") => "hello there"
         (uri-userinfo-decode "hello:there")   => "hello:there"
-        
+
         ;; tried to choose characters from each subset:
         (uri-encode "M~(@; ")              =>  "M~(%40%3B%20"
         (uri-path-segment-encode "M~(@; ") =>  "M~(@%3B%20"
         (uri-userinfo-encode "M~(@; ")     =>  "M~(%40;%20"
-        (uri-unreserved-encode "M~(@; ")   =>  "M~%28%40%3B%20"         
+        (uri-unreserved-encode "M~(@; ")   =>  "M~%28%40%3B%20"
         (uri-path-segment-unreserved-encode "M~(@; ") =>  "M~%28@%3B%20"
         ;; matching decodes:
         (uri-decode "M~(%40%3B%20")              =>  "M~(@; "
@@ -85,11 +85,10 @@
 
         (uri-path-segment-decode "M~%28@%3B%20")   =>  "M~(@; "
         (uri-path-segment-unreserved-decode "M~(@%3B%20")   =>  "M~(@; "
+        (uri-encode "æçè") => "%C3%A6%C3%A7%C3%A8"
         ))
 
 ;; tests adapted from Noel Welsh's original test suite
-(provide noels-tests)
-(module+ main (noels-tests))
 (define (noels-tests)
   (define (pad2 str)
     (if (= (string-length str) 1) (string-append "0" str) str))
