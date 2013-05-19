@@ -20,7 +20,6 @@
 
 (struct lang-enum (enums))
 (struct decomposition (ctx term))
-(struct hole ())
 (struct named (name val))
 (struct named-t (val term))
 (struct name (name) #:transparent)
@@ -100,10 +99,8 @@
                (set-union (loop p1 s)
                           (loop p2 s))]
               [`(hide-hole ,p) (loop p s)]
-              [`(side-condition ,p ,g ,e) ;; error
-               (unsupported/enum pat)]
-              [`(cross ,s)
-               (unsupported/enum pat)] ;; error
+              [`(side-condition ,p ,g ,e) s]
+              [`(cross ,s) s]
               [`(list ,sub-pats ...)
                (fold-map/set
                 (λ (sub-pat)
@@ -297,19 +294,17 @@
       (loop p2
             (loop p1 named-pats))]
      [`(hide-hole ,p) (loop p named-pats)]
-     [`(side-condition ,p ,g ,e) ;; error
-      (unsupported/enum pat)]
+     [`(side-condition ,p ,g ,e) ;; not supported
+      named-pats]
      [`(cross ,s)
-      (unsupported/enum pat)] ;; error
+      named-pats] ;; not supported
      [`(list ,sub-pats ...)
       (foldl (λ (sub-pat named-pats)
                 (match sub-pat
                   [`(repeat ,pat #f #f)
                    (loop pat named-pats)]
-                  [`(repeat ,pat ,name #f)
-                   (loop pat (cons (unimplemented "named repeat") named-pats))]
-                  [`(repeat ,pat #f ,mismatch)
-                   (loop pat (cons (unimplemented "mismatch repeat") named-pats))]
+                  [`(repeat ,pat ,name ,mismatch)
+                   (loop pat (cons (unimplemented "named/mismatched repeat") named-pats))]
                   [else (loop sub-pat named-pats)]))
              named-pats
              sub-pats)]
@@ -387,7 +382,7 @@
      [`variable-not-otherwise-mentioned
       (error/enum 'unimplemented "var-not-mentioned")] ;; error
      [`hole
-      (const/enum 'hole)]
+      (const/enum the-hole)]
      [`(nt ,id)
       (hash-ref nt-enums id)]
      [`(name ,n ,pat)
@@ -504,6 +499,8 @@
 (define (to-term aug)
   (cond [(named? aug)
          (rep-name aug)]
+        [(decomposition? aug)
+         (plug-hole aug)]
         [else aug]))
 
 (define (rep-name s)
@@ -516,19 +513,16 @@
        (cond [(and (name? term)
                    (equal? (name-name term) n))
               val]
+             [(cons? term)
+              (map loop term)]
              [(named? term)
               (map-named loop
                          term)]
+             [(decomposition? term)
+              (map-decomp loop
+                          term)]
              [else term])))))
 
-(define (map-named f n)
-  (let ([v (named-val n)])
-   (named (named-name n)
-          (named-t
-           (named-t-val v)
-           (f (named-t-term v))))))
-
-#;
 (define (plug-hole ctx term)
   (to-term
    (let loop ([ctx ctx])
@@ -541,3 +535,16 @@
        [`(,ts ...)
         (map loop ts)]
        [x x]))))
+
+(define (map-decomp f dcmp)
+  (let ([ctx (decomposition-ctx dcmp)]
+        [term (decomposition-term dcmp)])
+    (decomposition (f ctx)
+                   (f term))))
+
+(define (map-named f n)
+  (let ([v (named-val n)])
+   (named (named-name n)
+          (named-t
+           (named-t-val v)
+           (f (named-t-term v))))))

@@ -35,7 +35,7 @@
 
 ;; Name test
 (define-language Named
-  (n (any_1 any_1)))
+  (n (number_1 number_1)))
 
 ;; Very slow, to be fixed
 (try-it 100 Named n)
@@ -49,3 +49,18 @@
 
 (try-it 22 not-SKI x)
 (try-it 25 not-SKI y)
+
+(define-language λv
+  (e (e e ...)
+     (if0 e e e)
+     x
+     v)
+  (v (λ (x ...) e)
+     number
+     +)
+  (E (v ... E e ...)
+     (if0 E e e)
+     hole)
+  (x (variable-except λ + if0)))
+
+(try-it 100 λv E)

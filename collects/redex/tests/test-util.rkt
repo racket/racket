@@ -1,6 +1,7 @@
 #lang scheme
 
 (require "../private/matcher.rkt"
+         "../private/lang-struct.rkt"
          (for-syntax syntax/parse setup/path-to-relative)
          setup/path-to-relative
          racket/runtime-path)
