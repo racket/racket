@@ -159,15 +159,20 @@
      (define locals (trawl-for-property #'body 'tr:class:local-table))
      (define-values (local-method-table local-private-table local-field-table)
        (construct-local-mapping-tables (car locals)))
+     ;; start type-checking elements in the body
+     (define-values (lexical-names lexical-types)
+       (local-tables->lexical-env local-method-table methods this%-method-names
+                                  local-field-table fields this%-field-names
+                                  self-type))
+     (with-lexical-env/extend lexical-names lexical-types
+       (for ([stx top-level-exprs]
+             #:unless (syntax-property stx 'tr:class:super-new))
+         (tc-expr stx)))
      ;; find the `super-new` call (or error if missing)
      (define super-new-stx (trawl-for-property #'body 'tr:class:super-new))
      (check-super-new super-new-stx super-inits)
      ;; trawl the body and find methods and type-check them
      (define meths (trawl-for-property #'body 'tr:class:method))
-     (define-values (lexical-names lexical-types)
-       (local-tables->lexical-env local-method-table methods this%-method-names
-                                  local-field-table fields this%-field-names
-                                  self-type))
      (define checked-method-types
        (with-lexical-env/extend lexical-names lexical-types
          (check-methods meths methods self-type)))

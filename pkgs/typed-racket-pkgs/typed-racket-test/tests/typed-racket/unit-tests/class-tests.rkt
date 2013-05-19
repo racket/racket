@@ -303,6 +303,20 @@
                  (define/public (m y)
                    (begin0 x (set! x (+ x 1)))))))
 
+   ;; test top-level expressions in the class
+   (check-ok
+    (: c% (Class [m (Integer -> Integer)]))
+    (define c% (class: object% (super-new)
+                 (define/public (m y) 0)
+                 (+ 3 5))))
+
+   ;; fails, bad top-level expression
+   (check-err
+    (: c% (Class [m (Integer -> Integer)]))
+    (define c% (class: object% (super-new)
+                 (define/public (m y) 0)
+                 (+ "foo" 5))))
+
    ;; test type-checking without expected class type
    (check-ok
     (define c% (class: object% (super-new)
