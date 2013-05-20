@@ -28,6 +28,34 @@
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-expr^)
 (export check-class^)
 
+;; Syntax classes for use in functions below
+(define-syntax-class name-pair
+  (pattern (internal:id external:id)))
+
+(define-syntax-class internal-class-data
+  #:literals (#%plain-app quote-syntax class:-internal begin
+              values c:init c:init-field c:field
+              c:public c:override c:private)
+  (pattern (begin (quote-syntax
+                   (class:-internal
+                    (c:init init-names:name-pair ...)
+                    (c:init-field init-field-names:name-pair ...)
+                    (c:field field-names:name-pair ...)
+                    (c:public public-names:name-pair ...)
+                    (c:override override-names:name-pair ...)
+                    (c:private private-names:id ...)))
+                  (#%plain-app values))
+           #:with init-internals #'(init-names.internal ...)
+           #:with init-externals #'(init-names.external ...)
+           #:with init-field-internals #'(init-field-names.internal ...)
+           #:with init-field-externals #'(init-field-names.external ...)
+           #:with field-internals #'(field-names.internal ...)
+           #:with field-externals #'(field-names.external ...)
+           #:with public-internals #'(public-names.internal ...)
+           #:with public-externals #'(public-names.external ...)
+           #:with override-internals #'(override-names.internal ...)
+           #:with override-externals #'(override-names.external ...)))
+
 ;; Syntax TCResults -> Type
 ;; Type-check a class form by trawling its innards
 ;;
@@ -48,10 +76,8 @@
 ;; Do the actual type-checking
 (define (do-check form expected? self-class-type)
   (syntax-parse form
-    #:literals (let-values #%plain-lambda quote-syntax begin
-                #%plain-app values class:-internal letrec-syntaxes+values
-                c:init c:init-field c:field c:public c:override
-                c:private)
+    #:literals (let-values #%plain-lambda begin
+                #%plain-app values letrec-syntaxes+values)
     ;; Inspect the expansion of the class macro for the pieces that
     ;; we need to type-check like superclass, methods, top-level
     ;; expressions and so on
@@ -59,17 +85,7 @@
        (letrec-syntaxes+values ()
                                ((()
                                  ;; residual class: data
-                                 ;; FIXME: put in syntax class
-                                 (begin
-                                   (quote-syntax
-                                    (class:-internal
-                                     (c:init internal-init-names ...)
-                                     (c:init-field internal-init-field-names ...)
-                                     (c:field internal-field-names ...)
-                                     (c:public internal-public-names ...)
-                                     (c:override internal-override-names ...)
-                                     (c:private internal-private-names ...)))
-                                   (#%plain-app values))))
+                                 data:internal-class-data))
                                (let-values (((superclass) superclass-expr)
                                             ((interfaces) interface-expr))
                                  (?#%app compose-class
@@ -98,34 +114,66 @@
      (define super-init-names (list->set (dict-keys super-inits)))
      (define super-field-names (list->set (dict-keys super-fields)))
      (define super-method-names (list->set (dict-keys super-methods)))
+     (define this%-init-internals
+       (list->set (append (syntax->datum #'data.init-internals)
+                          (syntax->datum #'data.init-internals))))
+     (define this%-public-internals
+       (list->set (syntax->datum #'data.public-internals)))
+     (define this%-override-internals
+       (list->set (syntax->datum #'data.override-internals)))
+     (define this%-method-internals
+       (set-union this%-public-internals this%-override-internals))
+     (define this%-field-internals
+       (list->set (syntax->datum #'data.field-internals)))
      (define this%-init-names
        (list->set
-        (append (syntax->datum #'(internal-init-names ...))
-                (syntax->datum #'(internal-init-field-names ...)))))
+        (append (syntax->datum #'data.init-externals)
+                (syntax->datum #'data.init-field-externals))))
      (define this%-field-names
        (list->set
-        (append (syntax->datum #'(internal-field-names ...))
-                (syntax->datum #'(internal-init-field-names ...)))))
+        (append (syntax->datum #'data.field-externals)
+                (syntax->datum #'data.init-field-externals))))
      (define this%-public-names
-       (list->set (syntax->datum #'(internal-public-names ...))))
+       (list->set (syntax->datum #'data.public-externals)))
      (define this%-override-names
-       (list->set (syntax->datum #'(internal-override-names ...))))
+       (list->set (syntax->datum #'data.override-externals)))
      (define this%-private-names
-       (list->set (syntax->datum #'(internal-private-names ...))))
+       (list->set (syntax->datum #'(data.private-names ...))))
      (define this%-method-names
        (set-union this%-public-names this%-override-names))
+     (define all-internal
+       (apply append
+              (map (λ (stx) (syntax->datum stx))
+                   (list #'data.init-internals
+                         #'data.init-field-internals
+                         #'data.field-internals
+                         #'data.public-internals
+                         #'data.override-internals))))
+     (define all-external
+       (apply append
+              (map (λ (stx) (syntax->datum stx))
+                   (list #'data.init-externals
+                         #'data.init-field-externals
+                         #'data.field-externals
+                         #'data.public-externals
+                         #'data.override-externals))))
+     ;; establish a mapping between internal and external names
+     (define internal-external-mapping
+       (for/hash ([internal all-internal]
+                  [external all-external])
+         (values internal external)))
      ;; trawl the body for top-level expressions
      (define top-level-exprs (trawl-for-property #'body 'tr:class:top-level))
-     (define internals-table
-       (register-internals top-level-exprs #'(internal-public-names ...)))
+     (define internals-table (register-internals top-level-exprs))
      ;; Type for self in method calls
      (define self-type
        (if self-class-type
            (make-Instance self-class-type)
            (infer-self-type internals-table
-                            this%-init-names
-                            this%-field-names
-                            this%-public-names)))
+                            internal-external-mapping
+                            this%-init-internals
+                            this%-field-internals
+                            this%-public-internals)))
      (match-define (Instance: (Class: _ inits fields methods))
                    self-type)
      ;; Use the internal class: information to check whether clauses
@@ -161,8 +209,8 @@
        (construct-local-mapping-tables (car locals)))
      ;; start type-checking elements in the body
      (define-values (lexical-names lexical-types)
-       (local-tables->lexical-env local-method-table methods this%-method-names
-                                  local-field-table fields this%-field-names
+       (local-tables->lexical-env local-method-table methods this%-method-internals
+                                  local-field-table fields this%-field-internals
                                   self-type))
      (with-lexical-env/extend lexical-names lexical-types
        (for ([stx top-level-exprs]
@@ -175,7 +223,7 @@
      (define meths (trawl-for-property #'body 'tr:class:method))
      (define checked-method-types
        (with-lexical-env/extend lexical-names lexical-types
-         (check-methods meths methods self-type)))
+         (check-methods internal-external-mapping meths methods self-type)))
      (if expected?
          self-class-type
          (merge-types self-type checked-method-types))]))
@@ -242,12 +290,15 @@
                   localized-field-get-names localized-field-set-names)
           (append method-types field-get-types field-set-types)))
 
-;; check-methods : Listof<Syntax> Dict Type -> Dict<Symbol, Type>
+;; check-methods : Listof<Syntax> Dict<Symbol, Symbol> Dict Type
+;;                 -> Dict<Symbol, Type>
 ;; Type-check the methods inside of a class
-(define (check-methods meths methods self-type)
+(define (check-methods internal-external-mapping
+                       meths methods self-type)
   (for/list ([meth meths])
     (define method-name (syntax-property meth 'tr:class:method))
-    (define maybe-expected (dict-ref methods method-name #f))
+    (define external-name (dict-ref internal-external-mapping method-name))
+    (define maybe-expected (dict-ref methods external-name #f))
     (cond [maybe-expected
            (define pre-method-type (car maybe-expected))
            (define method-type
@@ -255,8 +306,8 @@
            (define expected (ret method-type))
            (define annotated (annotate-method meth self-type method-type))
            (tc-expr/check annotated expected)
-           (list method-name pre-method-type)]
-          [else (list method-name
+           (list external-name pre-method-type)]
+          [else (list external-name
                       (unfixup-method-type (tc-expr/t meth)))])))
 
 ;; Syntax -> Dict<Symbol, Id> Dict<Symbol, (List Symbol Symbol)>
@@ -350,7 +401,7 @@
 ;; register-internals : Listof<Syntax> -> Dict<Symbol, Type>
 ;; Find : annotations and register them
 ;; TODO: support `define-type`?
-(define (register-internals stxs dummy)
+(define (register-internals stxs)
   (for/fold ([table '()])
             ([stx stxs])
     (syntax-parse stx
@@ -365,19 +416,22 @@
              table)]
       [_ table])))
 
-;; infer-self-type : Dict<Symbol, Type> Set<Symbol> * 3 -> Type
+;; infer-self-type : Dict<Symbol, Type> Dict<Symbol, Symbol>
+;;                   Set<Symbol> * 3 -> Type
 ;; Construct a self object type based on the registered types
 ;; from : inside the class body.
-(define (infer-self-type internals-table inits fields publics)
+(define (infer-self-type internals-table internal-external-mapping
+                         inits fields publics)
   (define (make-type-dict names [inits? #f])
     (for/fold ([type-dict '()])
               ([name names])
+      (define external (dict-ref internal-external-mapping name))
       (cond [(dict-ref internals-table name #f) =>
              (λ (type)
                (define entry
                  ;; FIXME: this should record the correct optional
                  ;;        boolean based on internal macro data
-                 (if inits? (list name type #f) (list name type)))
+                 (if inits? (list external type #f) (list external type)))
                (cons entry type-dict))]
             [else type-dict])))
   (define init-types (make-type-dict inits #t))

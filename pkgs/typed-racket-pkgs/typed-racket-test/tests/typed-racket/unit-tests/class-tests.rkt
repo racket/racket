@@ -317,6 +317,70 @@
                  (define/public (m y) 0)
                  (+ "foo" 5))))
 
+   ;; test different internal/external names
+   (check-ok
+    (define c% (class: object% (super-new)
+                 (public [m n])
+                 (define m (lambda () 0))))
+    (send (new c%) n))
+
+   ;; internal/external the same is ok
+   (check-ok
+    (define c% (class: object% (super-new)
+                 (public [m m])
+                 (define m (lambda () 0))))
+    (send (new c%) m))
+
+   ;; fails, internal name not accessible
+   (check-err
+    (define c% (class: object% (super-new)
+                 (public [m n])
+                 (define m (lambda () 0))))
+    (send (new c%) m))
+
+   ;; test internal/external with expected
+   (check-ok
+    (: c% (Class [n (-> Integer)]))
+    (define c% (class: object% (super-new)
+                 (public [m n])
+                 (define m (lambda () 0))))
+    (send (new c%) n))
+
+   ;; test internal/external field
+   (check-ok
+    (define c% (class: object% (super-new)
+                 (: f Integer)
+                 (field ([f g] 0))))
+    (get-field g (new c%)))
+
+   ;; fail, internal name not accessible
+   (check-err
+    (define c% (class: object% (super-new)
+                 (: f Integer)
+                 (field ([f g] 0))))
+    (get-field f (new c%)))
+
+   ;; test internal/external init
+   (check-ok
+    (define c% (class: object% (super-new)
+                 (: i Integer)
+                 (init ([i j]))))
+    (new c% [j 5]))
+
+   ;; fails, internal name not accessible
+   (check-err
+    (define c% (class: object% (super-new)
+                 (: i Integer)
+                 (init ([i j]))))
+    (new c% [i 5]))
+
+   ;; test type-checking method with internal/external
+   (check-err
+    (: c% (Class [n (Integer -> Integer)]))
+    (define c% (class: object% (super-new)
+                 (public [m n])
+                 (define m (lambda () 0)))))
+
    ;; test type-checking without expected class type
    (check-ok
     (define c% (class: object% (super-new)

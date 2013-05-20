@@ -70,10 +70,15 @@
             (quote-syntax inspect)))))
 
 (begin-for-syntax
- ;; A Clause is a (clause Syntax Id Listof<Id>)
+ ;; A Clause is a (clause Syntax Id Listof<Syntax>)
  ;;
  ;; interp. a class clause such as init or field.
  (struct clause (stx type ids))
+
+ ;; An InitClause is a (init-clause Syntax Id Listof<Syntax> Boolean)
+ ;;
+ ;; interp. an init class clause
+ (struct init-clause clause (optional?))
 
  ;; A NonClause is a (non-clause Syntax)
  ;;
@@ -82,31 +87,29 @@
  (struct non-clause (stx))
  
  (define-syntax-class init-decl
-   (pattern id
-            #:with internal-id #'id
-            #:with external-id #'id)
+   (pattern id:id
+            #:attr optional? #f
+            #:with ids #'(id id))
    (pattern (ren:renamed)
-            #:with internal-id #'ren.internal-id
-            #:with external-id #'ren.external-id)
+            #:attr optional? #f
+            #:with ids #'ren.ids)
    (pattern (mren:maybe-renamed default-value:expr)
-            #:with internal-id #'mren.internal-id
-            #:with external-id #'mren.external-id))
+            #:attr optional? #t
+            #:with ids #'mren.ids))
 
  (define-syntax-class field-decl
    (pattern (mren:maybe-renamed default-value:expr)
-            #:with internal-id #'mren.internal-id
-            #:with external-id #'mren.external-id))
+            #:with ids #'mren.ids))
 
  (define-syntax-class renamed
-   (pattern (internal-id:id external-id:id)))
+   (pattern (internal-id:id external-id:id)
+            #:with ids #'(internal-id external-id)))
 
  (define-syntax-class maybe-renamed
-   (pattern id
-            #:with internal-id #'id
-            #:with external-id #'id)
+   (pattern id:id
+            #:with ids #'(id id))
    (pattern ren:renamed
-            #:with internal-id #'ren.internal-id
-            #:with external-id #'ren.external-id))
+            #:with ids #'ren.ids))
  
  (define-syntax-class class-clause
    (pattern (~and ((~and clause-name (~or (~literal init)
@@ -117,11 +120,12 @@
             ;; make this an attribute instead to represent
             ;; internal and external names
             #:attr data
-            (clause #'form #'clause-name
-                    (stx->list #'(names.external-id ...))))
+            (init-clause #'form #'clause-name
+                         (stx->list #'(names.ids ...))
+                         (attribute names.optional?)))
    (pattern (~and ((~literal field) names:field-decl ...) form)
             #:attr data (clause #'form #'field
-                                (stx->list #'(names.external-id ...))))
+                                (stx->list #'(names.ids ...))))
    (pattern (~and ((~and clause-name (~or (~literal inherit-field)
                                           (~literal public)
                                           (~literal pubment)
@@ -139,7 +143,7 @@
                   form)
             #:attr data
             (clause #'form #'clause-name
-                    (stx->list #'(names.external-id ...))))
+                    (stx->list #'(names.ids ...))))
    (pattern (~and ((~and clause-name (~or (~literal private)
                                           (~literal abstract)))
                    names:id ...)
@@ -176,11 +180,13 @@
      [_ stx]))
  
  (module+ test
-   ;; equal? check but considers identifier equality
+   ;; equal? check but considers stx pair equality
    (define (equal?/id x y)
-      (if (and (identifier? x) (identifier? y))
-          (free-identifier=? x y)
-          (equal?/recur x y equal?/id)))
+     (if (and (syntax? x) (syntax? y))
+         (and (free-identifier=? (stx-car x) (stx-car y))
+              (free-identifier=? (stx-car (stx-cdr x))
+                                 (stx-car (stx-cdr y))))
+         (equal?/recur x y equal?/id)))
 
    ;; utility macro for checking if a syntax matches a
    ;; given syntax class
@@ -200,11 +206,15 @@
    (check-true (syntax-parses? #'(public f g h) class-clause))
    (check-true (syntax-parses? #'(public f) class-clause-or-other))
    (check-equal?/id
-    (extract-names (list (clause #'(init x y z) #'init (list #'x #'y #'z))
-                         (clause #'(public f g h) #'public (list #'f #'g #'h))))
+    (extract-names (list (clause #'(init x y z)
+                                 #'init
+                                 (list #'(x x) #'(y y) #'(z z)))
+                         (clause #'(public f g h)
+                                 #'public
+                                 (list #'(f f) #'(g g) #'(h h)))))
     (make-immutable-free-id-table
-     (hash #'public (list #'f #'g #'h)
-           #'init (list #'x #'y #'z))))))
+     (hash #'public (list #'(f f) #'(g g) #'(h h))
+           #'init (list #'(x x) #'(y y) #'(z z)))))))
 
 (define-syntax (class: stx)
   (syntax-parse stx
@@ -269,8 +279,8 @@
         ;; FIXME: this needs to track privates, augments, etc.
         [(define-values (id) . rst)
          #:when (memf (λ (n) (free-identifier=? #'id n))
-                      (append (dict-ref name-dict #'public '())
-                              (dict-ref name-dict #'override '())
+                      (append (stx-map stx-car (dict-ref name-dict #'public '()))
+                              (stx-map stx-car (dict-ref name-dict #'override '()))
                               (dict-ref name-dict #'private '())))
          (values (cons (non-clause (syntax-property stx
                                                     'tr:class:method
@@ -293,12 +303,12 @@
   ;; us figure out the accessor identifiers.
   (define (make-locals-table name-dict)
     (define method-names
-      (append (dict-ref name-dict #'public '())
-              (dict-ref name-dict #'override '())))
+      (append (stx-map stx-car (dict-ref name-dict #'public '()))
+              (stx-map stx-car (dict-ref name-dict #'override '()))))
     (define private-names (dict-ref name-dict #'private '()))
     (define field-names
-      (append (dict-ref name-dict #'field '())
-              (dict-ref name-dict #'init-field '())))
+      (append (stx-map stx-car (dict-ref name-dict #'field '()))
+              (stx-map stx-car (dict-ref name-dict #'init-field '()))))
     (syntax-property
      #`(let-values ([(#,@method-names)
                      (values #,@(map (λ (stx) #`(λ () (#,stx)))
