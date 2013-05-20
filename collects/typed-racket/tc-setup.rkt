@@ -13,7 +13,7 @@
          (for-template racket/base))
 (lazy-require [typed-racket/optimizer/optimizer (optimize-top)])
 
-(provide tc-setup invis-kw maybe-optimize)
+(provide tc-setup invis-kw maybe-optimize init-current-type-names)
 
 (define-syntax-class invis-kw
   #:literals (define-values define-syntaxes #%require #%provide begin)
@@ -28,6 +28,16 @@
           (do-time "Optimized")))
       body))
 
+;; -> Promise<Dict<Name, Type>>
+;; initialize the type names for printing
+(define (init-current-type-names)
+  (lazy
+   (append
+    (type-name-env-map (lambda (id ty)
+                         (cons (syntax-e id) ty)))
+    (type-alias-env-map (lambda (id ty)
+                          (cons (syntax-e id) ty))))))
+
 (define-syntax-rule (tc-setup orig-stx stx expand-ctxt fully-expanded-stx init checker pre-result post-result . body)
   (let ()
     (set-box! typed-context? #t)
@@ -41,13 +51,7 @@
                      [print-syntax? #f]
                      ;; this parameter is just for printing types
                      ;; this is a parameter to avoid dependency issues
-                     [current-type-names
-                      (lazy
-                        (append
-                         (type-name-env-map (lambda (id ty)
-                                              (cons (syntax-e id) ty)))
-                         (type-alias-env-map (lambda (id ty)
-                                               (cons (syntax-e id) ty)))))]
+                     [current-type-names (init-current-type-names)]
                      ;; reinitialize disappeared uses
                      [disappeared-use-todo      null]
                      [disappeared-bindings-todo null])

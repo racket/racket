@@ -23,7 +23,8 @@
       #'(provide print-type print-filter print-object print-pathelem)))
 (provide-printer)
 
-(provide print-multi-line-case-> special-dots-printing? print-complex-filters?)
+(provide print-multi-line-case-> special-dots-printing? print-complex-filters?
+         current-print-type-fuel)
 
 
 ;; do we attempt to find instantiations of polymorphic types to print?
@@ -36,8 +37,14 @@
 (define special-dots-printing? (make-parameter #f))
 (define print-complex-filters? (make-parameter #f))
 
+;; this parameter controls how far down the type to expand type names
+;; interp. 0 -> don't expand
+;;         1 -> expand one level, etc.
+;;    +inf.0 -> expand always
+(define current-print-type-fuel (make-parameter 0))
+
 ;; does t have a type name associated with it currently?
-;; has-name : Type -> Maybe[Symbol]
+;; has-name : Type -> Maybe[Listof<Symbol>]
 (define (has-name? t)
   (cond 
    [print-aliases
@@ -47,7 +54,7 @@
 	 n))
     (if (null? candidates)
 	#f
-	(car (sort candidates string>? #:key symbol->string)))]
+	(sort candidates string>? #:key symbol->string))]
    [else #f]))
 
 ;; print-filter : Filter Port Boolean
@@ -104,11 +111,12 @@
     [(Path: pes i) (fp "~a" (append pes (list i)))]
     [else (fp "(Unknown Object: ~a)" (struct->vector object))]))
 
+;; print-union : Type LSet<Type> -> Void
 ;; Unions are represented as a flat list of branches. In some cases, it would
 ;; be nicer to print them using higher-level descriptions instead.
 ;; We do set coverage, with the elements of the union being what we want to
 ;; cover, and all the names types we know about being the sets.
-(define (print-union t)
+(define (print-union t ignored-names)
   (match-define (Union: elems) t)
   (define valid-names
     ;; We keep only unions, and only those that are subtypes of t.
@@ -116,7 +124,8 @@
     (filter (lambda (p)
               (match p
                 [(cons name (and t* (Union: elts)))
-                 (subtype t* t)]
+                 (and (not (member name ignored-names))
+                      (subtype t* t))]
                 [_ #f]))
             (force (current-type-names))))
   ;; names and the sets themselves (not the union types)
@@ -215,7 +224,7 @@
 
 ;; print out a type
 ;; print-type : Type Port Boolean -> Void
-(define (print-type type port write?)
+(define (print-type type port write? [ignored-names '()])
   (define (fp . args) (apply fprintf port args))
   (define (tuple? t)
     (match t
@@ -233,8 +242,20 @@
     [(Univ:) (fp "Any")]
     ;; names are just the printed as the original syntax
     [(Name: stx) (fp "~a" (syntax-e stx))]
-    [(app has-name? (? values name))
-     (fp "~a" name)]
+    ;; If a type has a name, then print it with that name.
+    ;; However, we expand the alias in some cases
+    ;; (i.e., the fuel is > 0) for the :type form.
+    [(app has-name? (? values names))
+     (=> fail)
+     (when (not (null? ignored-names)) (fail))
+     (define fuel (current-print-type-fuel))
+     (if (> fuel 0)
+         (parameterize ([current-print-type-fuel (sub1 fuel)])
+           ;; if we still have fuel, print the expanded type and
+           ;; add the name to the ignored list so that the union
+           ;; printer does not try to print with the name.
+           (print-type type port write? (append names ignored-names)))
+         (fp "~a" (car names)))]
     [(StructType: (Struct: nm _ _ _ _ _)) (fp "(StructType ~a)" (syntax-e nm))]
     [(StructTop: (Struct: nm _ _ _ _ _)) (fp "(Struct ~a)" (syntax-e nm))]
     [(BoxTop:) (fp "Box")]
@@ -282,7 +303,7 @@
     [(Ephemeron: e) (fp "(Ephemeronof ~a)" e)]
     [(CustodianBox: e) (fp "(CustodianBoxof ~a)" e)]
     [(Set: e) (fp "(Setof ~a)" e)]
-    [(Union: elems) (fp "~a" (cons 'U (print-union type)))]
+    [(Union: elems) (fp "~a" (cons 'U (print-union type ignored-names)))]
     [(Pair: l r) (fp "(Pairof ~a ~a)" l r)]
     [(ListDots: dty dbound)
      (fp "(List ~a ...~a~a)" dty (if (special-dots-printing?) "" " ") dbound)]
