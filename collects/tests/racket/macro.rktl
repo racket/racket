@@ -854,5 +854,67 @@
   (eval '(t)))
 
 ;; ----------------------------------------
+;; Check that a `free-identifier=?' mapping via a rename transformer
+;; doesn't mess up a `free-identifier=?' test where the relevant
+;; identifier is shadowed with a lexical binding; this test was
+;; provided by Carl Eastlund.
+
+(module lang-for-identifier=?-test racket/base
+  (#%module-begin
+
+    (provide
+      #%module-begin
+      (all-from-out racket/base)
+      (for-syntax
+        (all-from-out racket/base)
+        (all-from-out syntax/parse)))
+
+    (require
+      (for-syntax
+        racket/base
+        syntax/parse))
+
+    (define-syntax (#%module-begin stx)
+      (syntax-parse stx
+        [(_ before ...)
+         (syntax-parse (local-expand
+                         #'(#%plain-module-begin before ...)
+                         'module-begin
+                         '())
+           #:literal-sets {kernel-literals}
+           [(#%plain-module-begin
+              _
+              _
+              (#%plain-lambda {one:id}
+                (letrec-syntaxes+values _ _ two:id)))
+            
+            (let ()
+              (when (bound-identifier=? #'one #'two)
+                (unless (free-identifier=? #'one #'two)
+                  (error 'bug
+                         "{bound,free}-identifier=? inconsistency")))
+              
+              #'(#%plain-module-begin))])]))))
+
+(module consistency-of-identifier=?-test 'lang-for-identifier=?-test
+  (#%module-begin
+
+    (define-syntaxes {lam}
+      (lambda (stx)
+        (syntax-parse stx
+          [(_ unmarked . body)
+           (define/syntax-parse marked
+             (syntax-local-introduce (attribute unmarked)))
+           #'(#%plain-lambda {marked}
+               (define-syntaxes {unmarked}
+                 (make-rename-transformer #'marked))
+               . body)])))
+
+    (define-syntaxes {x}
+      (make-rename-transformer #'dummy))
+
+    (lam x x)))
+
+;; ----------------------------------------
 
 (report-errs)

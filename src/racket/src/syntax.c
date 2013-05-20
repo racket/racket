@@ -4437,8 +4437,9 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
   Scheme_Object *bdg = NULL;
 
   result = ((Scheme_Stx *)a)->u.modinfo_cache;
-  if (result && SAME_OBJ(phase, scheme_make_integer(0)))
+  if (result && SAME_OBJ(phase, scheme_make_integer(0))) {
     return result;
+  }
 
   WRAP_POS_INIT(wraps, ((Scheme_Stx *)a)->wraps);
 
@@ -4458,7 +4459,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 	result = SCHEME_STX_VAL(a);
 
 #if 0
-      printf("%p %p %s (%d) %d %p\n", 
+      printf("%p %p %s (%d) %d %p\n",
              a, orig_phase, SCHEME_SYMBOLP(result) ? SCHEME_SYM_VAL(result) : "!?", 
              can_cache, sealed, free_id_recur);
 #endif 
@@ -4563,7 +4564,10 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
             if (SCHEME_BOXP(rename)) {
               /* only happens with free_id_renames */
               rename = SCHEME_BOX_VAL(rename);
-              result = SCHEME_CAR(rename);
+              if (no_lexical || SCHEME_TRUEP(SCHEME_CDR(rename)))
+                result = SCHEME_CAR(rename);
+              else
+                rename = NULL;
             } else if (SCHEME_PAIRP(rename)) {
 	      if (nom_mod_p(rename)) {
 		result = glob_id;
