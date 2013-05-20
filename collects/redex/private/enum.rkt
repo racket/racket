@@ -19,11 +19,19 @@
   [enum? (-> any/c boolean?)]))
 
 (struct lang-enum (enums))
-(struct decomposition (ctx term))
-(struct named (name val))
-(struct named-t (val term))
-(struct name (name) #:transparent)
-(struct unimplemented (msg))
+(struct repeat (n terms) #:transparent)
+(struct decomposition (ctx term) #:transparent)
+(struct named (name val) #:transparent)
+(struct named-t (val term) #:transparent)
+(struct mismatch (name val) #:transparent)
+(struct mismatch-t (vals term) #:transparent)
+
+(struct name-ref (name) #:transparent)
+(struct mismatch-ref (name) #:transparent)
+
+(struct unimplemented (msg) #:transparent)
+(struct named-pats (names map) #:transparent
+        ) ;; listof symbol and hash symbol -o> (or named, mismatched, named-repeat, mismatch-repeat)
 
 (define enum-ith decode)
 
@@ -265,10 +273,10 @@
               (sep-names pat)
               l-enums))
 
-;; sep-names : single-pattern lang -> (assoclist symbol pattern)
+;; sep-names : single-pattern lang -> named-pats
 (define (sep-names pat)
   (let loop ([pat pat]
-             [named-pats '()])
+             [named-pats empty-named-pats])
     (match-a-pattern
      pat
      [`any named-pats]
@@ -285,11 +293,12 @@
      [`hole named-pats]
      ;; names inside nts are separate
      [`(nt ,id) named-pats]
-     [`(name ,name ,pat)
+     [`(name ,n ,pat)
       (loop pat
-            (add-if-new name pat named-pats))]
-     [`(mismatch-name ,name ,pat)
-      (loop pat (cons (unimplemented "mismatch") named-pats))]
+            (add-named n pat named-pats))]
+     [`(mismatch-name ,n ,pat)
+      (loop pat
+            (add-mismatch n pat named-pats))]
      [`(in-hole ,p1 ,p2)
       (loop p2
             (loop p1 named-pats))]
@@ -304,16 +313,84 @@
                   [`(repeat ,pat #f #f)
                    (loop pat named-pats)]
                   [`(repeat ,pat ,name ,mismatch)
-                   (loop pat (cons (unimplemented "named/mismatched repeat") named-pats))]
+                   (loop pat
+                         (add-unimplemented name "named/mismatched repeat" named-pats))]
                   [else (loop sub-pat named-pats)]))
              named-pats
              sub-pats)]
      [(? (compose not pair?))
       named-pats])))
 
-(define (add-if-new k v l)
-  (cond [(assoc-named k l) l]
-        [else (cons (named k v) l)]))
+;; named-pats combinators
+(define empty-named-pats
+  (named-pats '() (hash)))
+
+(define (empty-named-pats? nps)
+  (null? (named-pats-names nps)))
+
+(define (next-named-pats nps)
+  (hash-ref (named-pats-map nps)
+            (car (named-pats-names nps))))
+
+(define (rest-named-pats nps)
+  (named-pats (cdr (named-pats-names nps))
+              (named-pats-map nps)))
+
+(define (member-named-pats name nps)
+  (member name (named-pats-names nps)))
+
+(define (add-named name pat nps)
+  (cond [(member-named-pats name nps)
+         nps]
+        [else
+         (add-named-pats name (named name pat) nps)]))
+(define (add-unimplemented name msg nps)
+  (add-named-pats name
+                  (unimplemented msg)
+                  nps))
+
+(define (add-mismatch n pat nps)
+  (cond [(member-named-pats n nps)
+         (named-pats-set n
+                         (mismatch
+                          n
+                          (cons pat
+                                (mismatch-val
+                                 (hash-ref (named-pats-map nps)
+                                           n))))
+                         nps)]
+        [else
+         (add-named-pats n
+                         (mismatch n (list pat))
+                         nps)]))
+
+(define (named-pats-set n val nps)
+  (named-pats
+   (named-pats-names nps)
+   (hash-set (named-pats-map nps)
+             n val)))
+
+(define (add-named-pats n val nps)
+  (named-pats (cons n (named-pats-names nps))
+              (hash-set (named-pats-map nps) n val)))
+
+(define (reverse-named-pats nps)
+  (named-pats (named-pats-names nps)
+              (foldl
+               (λ (kv m)
+                  (let ([key (car kv)]
+                        [val (cdr kv)])
+                    (hash-set m key
+                              (cond [(named? val)
+                                     val]
+                                    [(mismatch? val)
+                                     (mismatch (mismatch-name val)
+                                               (reverse
+                                                (mismatch-val val)))]
+                                    [(unimplemented? val)
+                                     val]))))
+               (hash)
+               (hash->list (named-pats-map nps)))))
 
 (define (assoc-named n l)
   (cond [(null? l) #f]
@@ -324,14 +401,14 @@
                             n)))
              (assoc-named n (cdr l)))]))
 
-(define (enum-names pat named-pats nt-enums)
-  (let rec ([named-pats named-pats]
+(define (enum-names pat nps nt-enums)
+  (let rec ([nps nps]
             [env (hash)])
-    (cond [(null? named-pats)
+    (cond [(empty-named-pats? nps)
            (pat/enum-with-names pat nt-enums env)]
           [else
-           (let ([cur (car named-pats)])
-             (cond ([named? cur]
+           (let ([cur (next-named-pats nps)])
+             (cond [(named? cur)
                     (let ([name (named-name cur)]
                           [pat (named-val cur)])
                       (map/enum
@@ -352,12 +429,47 @@
                        (dep/enum
                         (pat/enum-with-names pat nt-enums env)
                         (λ (term)
-                           (rec (cdr named-pats)
+                           (rec (rest-named-pats nps)
                                 (hash-set env
                                           name
-                                          term)))))))
-                   [else (error/enum 'unimplemented
-                                     (unimplemented-msg cur))]))])))
+                                          term))))))]
+                   [(mismatch? cur)
+                    (let ([name (mismatch-name cur)])
+                      (map/enum
+                       (λ (ts)
+                          (mismatch name
+                                    (mismatch-t (car ts)
+                                                (cdr ts))))
+                       (λ (n)
+                          (if (equal? (mismatch-name n)
+                                      name)
+                              (let ([val (mismatch-val n)])
+                                (cons (mismatch-t-vals val)
+                                      (mismatch-t-term val)))
+                              (error 'wrong-name
+                                     "expected ~a, got ~a"
+                                     name
+                                     (named-name n))))
+                       (dep/enum
+                        (fold-enum
+                         (λ (excepts pat)
+                            (except/enum
+                             (pat/enum-with-names pat
+                                                  nt-enums
+                                                  (hash-set env
+                                                            (mismatch-name cur)
+                                                            excepts))
+                             excepts))
+                         (mismatch-val cur))
+                        (λ (terms)
+                           (rec (rest-named-pats nps)
+                                (hash-set env
+                                          name
+                                          terms))))))]
+                   [(unimplemented? cur)
+                    (error/enum 'unimplemented
+                                (unimplemented-msg cur))]
+                   [else (error 'unexpected "expected name, mismatch or unimplemented, got: ~a in ~a" cur nps)]))])))
 
 (define (pat/enum-with-names pat nt-enums named-terms)
   (let loop ([pat pat])
@@ -375,7 +487,7 @@
      [`boolean bool/enum]
      [`variable var/enum]
      [`(variable-except ,s ...)
-      (apply except/enum var/enum s)]
+      (except/enum var/enum s)]
      [`(variable-prefix ,s)
       ;; todo
       (error/enum 'unimplemented "var-prefix")]
@@ -386,9 +498,9 @@
      [`(nt ,id)
       (hash-ref nt-enums id)]
      [`(name ,n ,pat)
-      (const/enum (name n))]
-     [`(mismatch-name ,name ,pat)
-      (error/enum 'unimplemented "mismatch-name")]
+      (const/enum (name-ref n))]
+     [`(mismatch-name ,n ,pat)
+      (const/enum (mismatch-ref n))]
      [`(in-hole ,p1 ,p2) ;; untested
       (map/enum
        (λ (ts)
@@ -408,33 +520,29 @@
       (unsupported/enum pat)]
      [`(list ,sub-pats ...)
       ;; enum-list
-      (map/enum
-       flatten-1
-       identity
-       (list/enum
-        (map
-         (λ (sub-pat)
-            (match sub-pat
-              [`(repeat ,pat #f #f)
-               (map/enum
-                cdr
-                (λ (ts)
-                   (cons (length ts)
-                         ts))
-                (dep/enum
-                 nats
-                 (λ (n)
-                    (list/enum
-                     (build-list n (const (loop pat)))))))]
-              [`(repeat ,pat ,name #f)
-               (error/enum 'unimplemented "named-repeat")]
-              [`(repeat ,pat #f ,mismatch)
-               (error/enum 'unimplemented "mismatch-repeat")]
-              [else (map/enum
-                     list
-                     car
-                     (loop sub-pat))]))
-         sub-pats)))]
+      (list/enum
+       (map
+        (λ (sub-pat)
+           (match sub-pat
+             [`(repeat ,pat #f #f)
+              (map/enum
+               (λ (n-ts)
+                  (repeat (car n-ts)
+                          (cdr n-ts)))
+               (λ (rep)
+                  (cons (repeat-n rep)
+                        (repeat-terms rep)))
+               (dep/enum
+                nats
+                (λ (n)
+                   (list/enum
+                    (build-list n (const (loop pat)))))))]
+             [`(repeat ,pat ,name #f)
+              (error/enum 'unimplemented "named-repeat")]
+             [`(repeat ,pat #f ,mismatch)
+              (error/enum 'unimplemented "mismatch-repeat")]
+             [else (loop sub-pat)]))
+        sub-pats))]
      [(? (compose not pair?)) 
       (const/enum pat)])))
 
@@ -475,10 +583,9 @@
                       (λ (n) (- (- n) 1))
                       nats)))
 
-(define real/enum (from-list/enum '(0.0 1.5 123.112354)))
+(define real/enum (from-list/enum '(0.5 1.5 123.112354)))
 (define num/enum
-  (sum/enum natural/enum
-            integer/enum
+  (sum/enum integer/enum
             real/enum))
 
 (define bool/enum
@@ -499,9 +606,26 @@
 (define (to-term aug)
   (cond [(named? aug)
          (rep-name aug)]
+        [(mismatch? aug)
+         (rep-mismatches aug)]
         [(decomposition? aug)
          (plug-hole aug)]
+        [(repeat? aug)
+         (map-repeat to-term
+                     aug)]
+        [(list? aug)
+         (expand-repeats
+          (map to-term aug))]
         [else aug]))
+
+(define (expand-repeats sub-terms)
+  (append*
+   (map
+    (λ (t)
+       (cond [(repeat? t)
+              (repeat-terms t)]
+             [else (list t)]))
+    sub-terms)))
 
 (define (rep-name s)
   (to-term
@@ -510,10 +634,10 @@
           [val (named-t-val v)]
           [term (named-t-term v)])
      (let loop ([term term])
-       (cond [(and (name? term)
-                   (equal? (name-name term) n))
+       (cond [(and (name-ref? term)
+                   (equal? (name-ref-name term) n))
               val]
-             [(cons? term)
+             [(list? term)
               (map loop term)]
              [(named? term)
               (map-named loop
@@ -521,13 +645,48 @@
              [(decomposition? term)
               (map-decomp loop
                           term)]
+             [(mismatch? term)
+              (map-mismatch loop
+                            term)]
+             [(repeat? term)
+              (map-repeat loop
+                          term)]
              [else term])))))
+
+(define (rep-mismatches m)
+  (to-term
+   (let* ([name (mismatch-name m)]
+          [v (mismatch-val m)]
+          [vals (mismatch-t-vals v)]
+          [term (mismatch-t-term v)])
+     (let ([vals vals])
+       (let loop ([term term])
+         (cond [(and (mismatch-ref? term)
+                     (equal? (mismatch-ref-name term) name))
+                (begin0
+                    (car vals)
+                  (set! vals (cdr vals)))]
+               [(list? term)
+                (map loop term)]
+               [(named? term)
+                (map-named loop
+                           term)]
+               [(decomposition? term)
+                (map-decomp loop
+                            term)]
+               [(mismatch? term)
+                (map-mismatch loop
+                              term)]
+               [(repeat? term)
+                (map-repeat loop
+                            term)]
+               [else term]))))))
 
 (define (plug-hole ctx term)
   (to-term
    (let loop ([ctx ctx])
      (cond [(hole? ctx) term]
-           [(cons? ctx) (map loop ctx)]
+           [(list? ctx) (map loop ctx)]
            [(named? )])
      (match
        ctx
@@ -544,7 +703,18 @@
 
 (define (map-named f n)
   (let ([v (named-val n)])
-   (named (named-name n)
-          (named-t
-           (named-t-val v)
-           (f (named-t-term v))))))
+    (named (named-name n)
+           (named-t
+            (named-t-val v)
+            (f (named-t-term v))))))
+
+(define (map-mismatch f m)
+  (let ([v (mismatch-val m)])
+    (mismatch (mismatch-name m)
+              (mismatch-t
+               (mismatch-t-vals v)
+               (f (mismatch-t-term v))))))
+
+(define (map-repeat f r)
+  (repeat (repeat-n r)
+          (map f (repeat-terms r))))

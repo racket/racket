@@ -26,7 +26,7 @@
          to-list
          take/enum
          drop/enum
-         foldl-enum
+         fold-enum
          display-enum
 
          nats
@@ -80,28 +80,24 @@
         (λ (x) (encode e x))))
 
 ;; except/enum : enum a, a -> enum a
-(define except/enum
-  (case-lambda
-    [(e) e]
-    [(e a . rest)
-     (let ([excepted
-            (begin
-              (unless (> (size e) 0)
-                (error 'empty-enum))
-              (with-handlers ([exn:fail? (λ (_)
-                                            (apply except/enum e rest))])
-                (let ([m (encode e a)])
-                  (enum (- (size e) 1)
-                        (λ (n)
-                           (if (< n m)
-                               (decode e n)
-                               (decode e (+ n 1))))
-                        (λ (x)
-                           (let ([n (encode e x)])
-                             (cond [(< n m) n]
-                                   [(> n m) (- n 1)]
-                                   [else (error 'excepted)])))))))])
-       (apply except/enum excepted rest))]))
+(define (except/enum e excepts)
+  (cond [(empty? excepts) e]
+        [else
+         (except/enum
+          (begin
+            (with-handlers ([exn:fail? (λ (_) e)])
+              (let ([m (encode e (car excepts))])
+                (enum (- (size e) 1)
+                      (λ (n)
+                         (if (< n m)
+                             (decode e n)
+                             (decode e (+ n 1))))
+                      (λ (x)
+                         (let ([n (encode e x)])
+                           (cond [(< n m) n]
+                                 [(> n m) (- n 1)]
+                                 [else (error 'excepted)])))))))
+          (cdr excepts))]))
 
 ;; to-list : enum a -> listof a
 ;; better be finite
@@ -140,11 +136,6 @@
            (decode e (+ n m)))
         (λ (x)
            (- (encode e x) n))))
-
-;; foldl-enum : enum a, b, (a,b -> b) -> b
-;; better be a finite enum
-(define (foldl-enum f id e)
-  (foldl f id (to-list e)))
 
 ;; display-enum : enum a, Nat -> void
 (define (display-enum e n)
@@ -509,7 +500,32 @@
         [else ;; both infinite, same as prod/enum
          (dep/enum e f)]))
 
+;; fold-enum : ((listof a), b -> enum a), (listof b) -> enum (listof a)
+(define (fold-enum f l)
+  (map/enum
+   reverse
+   reverse
+   (let loop ([l l]
+              [acc (const/enum '())])
+     (cond [(empty? l) acc]
+           [else
+            (loop
+             (cdr l)
+             (flip-dep/enum
+              acc
+              (λ (xs)
+                 (f xs (car l)))))]))))
 
+;; flip-dep/enum : enum a (a -> enum b) -> enum (b,a)
+(define (flip-dep/enum e f)
+  (map/enum
+   (λ (ab)
+      (cons (cdr ab)
+            (car ab)))
+   (λ (ba)
+      (cons (cdr ba)
+            (car ba)))
+   (dep/enum e f)))
 
 ;; more utility enums
 ;; nats of course
@@ -585,305 +601,312 @@
 
 
 (module+
-  test
-  (require rackunit)
-  (provide check-bijection?)
-  (define confidence 1000)
-  (define nums (build-list confidence identity))
-  (define-simple-check (check-bijection? e)
-    (let ([nums (build-list (if (<= (enum-size e) confidence)
-                                (enum-size e)
-                                confidence)
-                            identity)])
-      (andmap =
-              nums
-              (map (λ (n)
-                      (encode e (decode e n)))
-                   nums))))
+ test
+ (require rackunit)
+ (provide check-bijection?)
+ (define confidence 1000)
+ (define nums (build-list confidence identity))
+ (define-simple-check (check-bijection? e)
+   (let ([nums (build-list (if (<= (enum-size e) confidence)
+                               (enum-size e)
+                               confidence)
+                           identity)])
+     (andmap =
+             nums
+             (map (λ (n)
+                     (encode e (decode e n)))
+                  nums))))
 
-  ;; const/enum tests
-  (let ([e (const/enum 17)])
-    (test-begin
-     (check-eq? (decode e 0) 17)
-     (check-exn exn:fail? 
-                (λ ()
-                   (decode e 1)))
-     (check-eq? (encode e 17) 0)
-     (check-exn exn:fail?
-                (λ ()
-                   (encode e 0)))
-     (check-bijection? e)))
+ ;; const/enum tests
+ (let ([e (const/enum 17)])
+   (test-begin
+    (check-eq? (decode e 0) 17)
+    (check-exn exn:fail? 
+               (λ ()
+                  (decode e 1)))
+    (check-eq? (encode e 17) 0)
+    (check-exn exn:fail?
+               (λ ()
+                  (encode e 0)))
+    (check-bijection? e)))
 
-  ;; from-list/enum tests
-  (let ([e (from-list/enum '(5 4 1 8))])
-    (test-begin
-     (check-eq? (decode e 0) 5)
-     (check-eq? (decode e 3) 8)
-     (check-exn exn:fail?
-                (λ () (decode e 4)))
-     (check-eq? (encode e 5) 0)
-     (check-eq? (encode e 8) 3)
-     (check-exn exn:fail?
-                (λ ()
-                   (encode e 17)))
-     (check-bijection? e)))
+ ;; from-list/enum tests
+ (let ([e (from-list/enum '(5 4 1 8))])
+   (test-begin
+    (check-eq? (decode e 0) 5)
+    (check-eq? (decode e 3) 8)
+    (check-exn exn:fail?
+               (λ () (decode e 4)))
+    (check-eq? (encode e 5) 0)
+    (check-eq? (encode e 8) 3)
+    (check-exn exn:fail?
+               (λ ()
+                  (encode e 17)))
+    (check-bijection? e)))
 
-  ;; map test
-  (define nats+1 (nats+/enum 1))
+ ;; map test
+ (define nats+1 (nats+/enum 1))
 
-  (test-begin
-   (check-equal? (size nats+1) +inf.f)
-   (check-equal? (decode nats+1 0) 1)
-   (check-equal? (decode nats+1 1) 2)
-   (check-bijection? nats+1))
-  ;; encode check
-  (test-begin
-   (check-exn exn:fail?
-              (λ ()
-                 (decode nats -1))))
+ (test-begin
+  (check-equal? (size nats+1) +inf.f)
+  (check-equal? (decode nats+1 0) 1)
+  (check-equal? (decode nats+1 1) 2)
+  (check-bijection? nats+1))
+ ;; encode check
+ (test-begin
+  (check-exn exn:fail?
+             (λ ()
+                (decode nats -1))))
 
-  ;; ints checks
-  (test-begin
-   (check-eq? (decode ints 0) 0)  ; 0 -> 0
-   (check-eq? (decode ints 1) 1)  ; 1 -> 1
-   (check-eq? (decode ints 2) -1) ; 2 -> 1
-   (check-eq? (encode ints 0) 0)
-   (check-eq? (encode ints 1) 1)
-   (check-eq? (encode ints -1) 2)
-   (check-bijection? ints))  ; -1 -> 2, -3 -> 4
+ ;; ints checks
+ (test-begin
+  (check-eq? (decode ints 0) 0)         ; 0 -> 0
+  (check-eq? (decode ints 1) 1)         ; 1 -> 1
+  (check-eq? (decode ints 2) -1)        ; 2 -> 1
+  (check-eq? (encode ints 0) 0)
+  (check-eq? (encode ints 1) 1)
+  (check-eq? (encode ints -1) 2)
+  (check-bijection? ints))              ; -1 -> 2, -3 -> 4
 
-  ;; sum tests
-  (test-begin
-   (let ([bool-or-num (sum/enum bools
-                                (from-list/enum '(0 1 2)))]
-         [bool-or-nat (sum/enum bools
-                                nats)]
-         [nat-or-bool (sum/enum nats
-                                bools)]
-         [odd-or-even (sum/enum evens
-                                odds)])
-     (check-equal? (enum-size bool-or-num)
-                   5)
-     (check-equal? (decode bool-or-num 0) #t)
-     (check-equal? (decode bool-or-num 1) #f)
-     (check-equal? (decode bool-or-num 2) 0)
-     (check-exn exn:fail?
-                (λ ()
-                   (decode bool-or-num 5)))
-     (check-equal? (encode bool-or-num #f) 1)
-     (check-equal? (encode bool-or-num 2) 4)
-     (check-bijection? bool-or-num)
+ ;; sum tests
+ (test-begin
+  (let ([bool-or-num (sum/enum bools
+                               (from-list/enum '(0 1 2)))]
+        [bool-or-nat (sum/enum bools
+                               nats)]
+        [nat-or-bool (sum/enum nats
+                               bools)]
+        [odd-or-even (sum/enum evens
+                               odds)])
+    (check-equal? (enum-size bool-or-num)
+                  5)
+    (check-equal? (decode bool-or-num 0) #t)
+    (check-equal? (decode bool-or-num 1) #f)
+    (check-equal? (decode bool-or-num 2) 0)
+    (check-exn exn:fail?
+               (λ ()
+                  (decode bool-or-num 5)))
+    (check-equal? (encode bool-or-num #f) 1)
+    (check-equal? (encode bool-or-num 2) 4)
+    (check-bijection? bool-or-num)
      
-     (check-equal? (enum-size bool-or-nat)
-                   +inf.f)
-     (check-equal? (decode bool-or-nat 0) #t)
-     (check-equal? (decode bool-or-nat 2) 0)
-     (check-bijection? bool-or-nat)
+    (check-equal? (enum-size bool-or-nat)
+                  +inf.f)
+    (check-equal? (decode bool-or-nat 0) #t)
+    (check-equal? (decode bool-or-nat 2) 0)
+    (check-bijection? bool-or-nat)
      
-     (check-equal? (encode bool-or-num #f) 1)
-     (check-equal? (encode bool-or-num 2) 4)
+    (check-equal? (encode bool-or-num #f) 1)
+    (check-equal? (encode bool-or-num 2) 4)
 
-     (check-equal? (enum-size odd-or-even)
-                   +inf.f)
-     (check-equal? (decode odd-or-even 0) 0)
-     (check-equal? (decode odd-or-even 1) 1)
-     (check-equal? (decode odd-or-even 2) 2)
-     (check-exn exn:fail?
-                (λ ()
-                   (decode odd-or-even -1)))
-     (check-equal? (encode odd-or-even 0) 0)   
-     (check-equal? (encode odd-or-even 1) 1)
-     (check-equal? (encode odd-or-even 2) 2)
-     (check-equal? (encode odd-or-even 3) 3)
-     (check-bijection? odd-or-even)))
+    (check-equal? (enum-size odd-or-even)
+                  +inf.f)
+    (check-equal? (decode odd-or-even 0) 0)
+    (check-equal? (decode odd-or-even 1) 1)
+    (check-equal? (decode odd-or-even 2) 2)
+    (check-exn exn:fail?
+               (λ ()
+                  (decode odd-or-even -1)))
+    (check-equal? (encode odd-or-even 0) 0)   
+    (check-equal? (encode odd-or-even 1) 1)
+    (check-equal? (encode odd-or-even 2) 2)
+    (check-equal? (encode odd-or-even 3) 3)
+    (check-bijection? odd-or-even)))
 
-  ;; prod/enum tests
-  (define bool*bool (prod/enum bools bools))
-  (define 1*b (prod/enum (const/enum 1) bools))
-  (define bool*nats (prod/enum bools nats))
-  (define nats*bool (prod/enum nats bools))
-  (define nats*nats (prod/enum nats nats))
-  (define ns-equal? (λ (ns ms)
-                       (and (= (car ns)
-                               (car ms))
-                            (= (cdr ns)
-                               (cdr ms)))))
+ ;; prod/enum tests
+ (define bool*bool (prod/enum bools bools))
+ (define 1*b (prod/enum (const/enum 1) bools))
+ (define bool*nats (prod/enum bools nats))
+ (define nats*bool (prod/enum nats bools))
+ (define nats*nats (prod/enum nats nats))
+ (define ns-equal? (λ (ns ms)
+                      (and (= (car ns)
+                              (car ms))
+                           (= (cdr ns)
+                              (cdr ms)))))
 
-  ;; prod tests
-  (test-begin
+ ;; prod tests
+ (test-begin
 
-   (check-equal? (size 1*b) 2)
-   (check-equal? (decode 1*b 0) (cons 1 #t))
-   (check-equal? (decode 1*b 1) (cons 1 #f))
-   (check-bijection? 1*b)
-   (check-equal? (enum-size bool*bool) 4)
-   (check-equal? (decode bool*bool 0)
-                 (cons #t #t))
-   (check-equal? (decode bool*bool 1)
-                 (cons #t #f))
-   (check-equal? (decode bool*bool 2)
-                 (cons #f #t))
-   (check-equal? (decode bool*bool 3)
-                 (cons #f #f))
-   (check-bijection? bool*bool)
+  (check-equal? (size 1*b) 2)
+  (check-equal? (decode 1*b 0) (cons 1 #t))
+  (check-equal? (decode 1*b 1) (cons 1 #f))
+  (check-bijection? 1*b)
+  (check-equal? (enum-size bool*bool) 4)
+  (check-equal? (decode bool*bool 0)
+                (cons #t #t))
+  (check-equal? (decode bool*bool 1)
+                (cons #t #f))
+  (check-equal? (decode bool*bool 2)
+                (cons #f #t))
+  (check-equal? (decode bool*bool 3)
+                (cons #f #f))
+  (check-bijection? bool*bool)
 
-   (check-equal? (enum-size bool*nats) +inf.f)
-   (check-equal? (decode bool*nats 0)
-                 (cons #t 0))
-   (check-equal? (decode bool*nats 1)
-                 (cons #f 0))
-   (check-equal? (decode bool*nats 2)
-                 (cons #t 1))
-   (check-equal? (decode bool*nats 3)
-                 (cons #f 1))
-   (check-bijection? bool*nats)
+  (check-equal? (enum-size bool*nats) +inf.f)
+  (check-equal? (decode bool*nats 0)
+                (cons #t 0))
+  (check-equal? (decode bool*nats 1)
+                (cons #f 0))
+  (check-equal? (decode bool*nats 2)
+                (cons #t 1))
+  (check-equal? (decode bool*nats 3)
+                (cons #f 1))
+  (check-bijection? bool*nats)
 
-   (check-equal? (enum-size nats*bool) +inf.f)
-   (check-equal? (decode nats*bool 0)
-                 (cons 0 #t))
-   (check-equal? (decode nats*bool 1)
-                 (cons 0 #f))
-   (check-equal? (decode nats*bool 2)
-                 (cons 1 #t))
-   (check-equal? (decode nats*bool 3)
-                 (cons 1 #f))
-   (check-bijection? nats*bool)
+  (check-equal? (enum-size nats*bool) +inf.f)
+  (check-equal? (decode nats*bool 0)
+                (cons 0 #t))
+  (check-equal? (decode nats*bool 1)
+                (cons 0 #f))
+  (check-equal? (decode nats*bool 2)
+                (cons 1 #t))
+  (check-equal? (decode nats*bool 3)
+                (cons 1 #f))
+  (check-bijection? nats*bool)
 
-   (check-equal? (enum-size nats*nats) +inf.f)
-   (check ns-equal?
-          (decode nats*nats 0)
-          (cons 0 0))
-   (check ns-equal?
-          (decode nats*nats 1)
-          (cons 0 1))
-   (check ns-equal?
-          (decode nats*nats 2)
-          (cons 1 0))
-   (check ns-equal?
-          (decode nats*nats 3)
-          (cons 0 2))
-   (check ns-equal?
-          (decode nats*nats 4)
-          (cons 1 1))
-   (check-bijection? nats*nats))
-
-
-  ;; dep/enum tests
-  (define (up-to n)
-    (take/enum nats (+ n 1)))
-
-  (define 3-up
-    (dep/enum
-     (from-list/enum '(0 1 2))
-     up-to))
-
-  (define from-3
-    (dep/enum
-     (from-list/enum '(0 1 2))
-     nats+/enum))
-
-  (define nats-to
-    (dep/enum nats up-to))
-
-  (define nats-up
-    (dep/enum nats nats+/enum))
-
-  (test-begin
-   (check-equal? (size 3-up) 6)
-   (check-equal? (decode 3-up 0) (cons 0 0))
-   (check-equal? (decode 3-up 1) (cons 1 0))
-   (check-equal? (decode 3-up 2) (cons 1 1))
-   (check-equal? (decode 3-up 3) (cons 2 0))
-   (check-equal? (decode 3-up 4) (cons 2 1))
-   (check-equal? (decode 3-up 5) (cons 2 2))
-   (check-bijection? 3-up)
-
-   (check-equal? (size from-3) +inf.f)
-   (check-equal? (decode from-3 0) (cons 0 0))
-   (check-equal? (decode from-3 1) (cons 1 1))
-   (check-equal? (decode from-3 2) (cons 2 2))
-   (check-equal? (decode from-3 3) (cons 0 1))
-   (check-equal? (decode from-3 4) (cons 1 2))
-   (check-equal? (decode from-3 5) (cons 2 3))
-   (check-equal? (decode from-3 6) (cons 0 2))
-   (check-bijection? from-3)
-
-   (check-equal? (size nats-to) +inf.f)
-   (check-equal? (decode nats-to 0) (cons 0 0))
-   (check-equal? (decode nats-to 1) (cons 1 0))
-   (check-equal? (decode nats-to 2) (cons 1 1))
-   (check-equal? (decode nats-to 3) (cons 2 0))
-   (check-equal? (decode nats-to 4) (cons 2 1))
-   (check-equal? (decode nats-to 5) (cons 2 2))
-   (check-equal? (decode nats-to 6) (cons 3 0))
-   (check-bijection? nats-to)
-
-   (check-equal? (size nats-up) +inf.f)
-   (check-equal? (decode nats-up 0) (cons 0 0))
-   (check-equal? (decode nats-up 1) (cons 0 1))
-   (check-equal? (decode nats-up 2) (cons 1 1))
-   (check-equal? (decode nats-up 3) (cons 0 2))
-   (check-equal? (decode nats-up 4) (cons 1 2))
-   (check-equal? (decode nats-up 5) (cons 2 2))
-   (check-equal? (decode nats-up 6) (cons 0 3))
-   (check-equal? (decode nats-up 7) (cons 1 3))
-
-   (check-bijection? nats-up))
-
-  ;; dep2/enum tests
-  ;; same as dep unless the right side is finite
-  (define 3-up-2
-    (dep2/enum
-     (from-list/enum '(0 1 2))
-     up-to))
-
-  (define nats-to-2
-    (dep2/enum nats up-to))
+  (check-equal? (enum-size nats*nats) +inf.f)
+  (check ns-equal?
+         (decode nats*nats 0)
+         (cons 0 0))
+  (check ns-equal?
+         (decode nats*nats 1)
+         (cons 0 1))
+  (check ns-equal?
+         (decode nats*nats 2)
+         (cons 1 0))
+  (check ns-equal?
+         (decode nats*nats 3)
+         (cons 0 2))
+  (check ns-equal?
+         (decode nats*nats 4)
+         (cons 1 1))
+  (check-bijection? nats*nats))
 
 
-  (test-begin
-   (check-equal? (size 3-up-2) 6)
-   (check-equal? (decode 3-up-2 0) (cons 0 0))
-   (check-equal? (decode 3-up-2 1) (cons 1 0))
-   (check-equal? (decode 3-up-2 2) (cons 1 1))
-   (check-equal? (decode 3-up-2 3) (cons 2 0))
-   (check-equal? (decode 3-up-2 4) (cons 2 1))
-   (check-equal? (decode 3-up-2 5) (cons 2 2))
-   (check-bijection? 3-up-2)
+ ;; dep/enum tests
+ (define (up-to n)
+   (take/enum nats (+ n 1)))
 
-   (check-equal? (size nats-to-2) +inf.f)
-   (check-equal? (decode nats-to-2 0) (cons 0 0))
-   (check-equal? (decode nats-to-2 1) (cons 1 0))
-   (check-equal? (decode nats-to-2 2) (cons 1 1))
-   (check-equal? (decode nats-to-2 3) (cons 2 0))
-   (check-equal? (decode nats-to-2 4) (cons 2 1))
-   (check-equal? (decode nats-to-2 5) (cons 2 2))
-   (check-equal? (decode nats-to-2 6) (cons 3 0))
-   (check-bijection? nats-to-2)
-   )
+ (define 3-up
+   (dep/enum
+    (from-list/enum '(0 1 2))
+    up-to))
+
+ (define from-3
+   (dep/enum
+    (from-list/enum '(0 1 2))
+    nats+/enum))
+
+ (define nats-to
+   (dep/enum nats up-to))
+
+ (define nats-up
+   (dep/enum nats nats+/enum))
+
+ (test-begin
+  (check-equal? (size 3-up) 6)
+  (check-equal? (decode 3-up 0) (cons 0 0))
+  (check-equal? (decode 3-up 1) (cons 1 0))
+  (check-equal? (decode 3-up 2) (cons 1 1))
+  (check-equal? (decode 3-up 3) (cons 2 0))
+  (check-equal? (decode 3-up 4) (cons 2 1))
+  (check-equal? (decode 3-up 5) (cons 2 2))
+  (check-bijection? 3-up)
+
+  (check-equal? (size from-3) +inf.f)
+  (check-equal? (decode from-3 0) (cons 0 0))
+  (check-equal? (decode from-3 1) (cons 1 1))
+  (check-equal? (decode from-3 2) (cons 2 2))
+  (check-equal? (decode from-3 3) (cons 0 1))
+  (check-equal? (decode from-3 4) (cons 1 2))
+  (check-equal? (decode from-3 5) (cons 2 3))
+  (check-equal? (decode from-3 6) (cons 0 2))
+  (check-bijection? from-3)
+
+  (check-equal? (size nats-to) +inf.f)
+  (check-equal? (decode nats-to 0) (cons 0 0))
+  (check-equal? (decode nats-to 1) (cons 1 0))
+  (check-equal? (decode nats-to 2) (cons 1 1))
+  (check-equal? (decode nats-to 3) (cons 2 0))
+  (check-equal? (decode nats-to 4) (cons 2 1))
+  (check-equal? (decode nats-to 5) (cons 2 2))
+  (check-equal? (decode nats-to 6) (cons 3 0))
+  (check-bijection? nats-to)
+
+  (check-equal? (size nats-up) +inf.f)
+  (check-equal? (decode nats-up 0) (cons 0 0))
+  (check-equal? (decode nats-up 1) (cons 0 1))
+  (check-equal? (decode nats-up 2) (cons 1 1))
+  (check-equal? (decode nats-up 3) (cons 0 2))
+  (check-equal? (decode nats-up 4) (cons 1 2))
+  (check-equal? (decode nats-up 5) (cons 2 2))
+  (check-equal? (decode nats-up 6) (cons 0 3))
+  (check-equal? (decode nats-up 7) (cons 1 3))
+
+  (check-bijection? nats-up))
+
+ ;; dep2/enum tests
+ ;; same as dep unless the right side is finite
+ (define 3-up-2
+   (dep2/enum
+    (from-list/enum '(0 1 2))
+    up-to))
+
+ (define nats-to-2
+   (dep2/enum nats up-to))
 
 
-  ;; take/enum test
-  (define to-2 (up-to 2))
-  (test-begin
-   (check-equal? (size to-2) 3)
-   (check-equal? (decode to-2 0) 0)
-   (check-equal? (decode to-2 1) 1)
-   (check-equal? (decode to-2 2) 2)
-   (check-bijection? to-2))
+ (test-begin
+  (check-equal? (size 3-up-2) 6)
+  (check-equal? (decode 3-up-2 0) (cons 0 0))
+  (check-equal? (decode 3-up-2 1) (cons 1 0))
+  (check-equal? (decode 3-up-2 2) (cons 1 1))
+  (check-equal? (decode 3-up-2 3) (cons 2 0))
+  (check-equal? (decode 3-up-2 4) (cons 2 1))
+  (check-equal? (decode 3-up-2 5) (cons 2 2))
+  (check-bijection? 3-up-2)
 
-  ;; to-list, foldl test
-  (test-begin
-   (check-equal? (to-list (up-to 3))
-                 '(0 1 2 3))
-   (check-equal? (foldl-enum cons '() (up-to 3))
-                 '(3 2 1 0)))
+  (check-equal? (size nats-to-2) +inf.f)
+  (check-equal? (decode nats-to-2 0) (cons 0 0))
+  (check-equal? (decode nats-to-2 1) (cons 1 0))
+  (check-equal? (decode nats-to-2 2) (cons 1 1))
+  (check-equal? (decode nats-to-2 3) (cons 2 0))
+  (check-equal? (decode nats-to-2 4) (cons 2 1))
+  (check-equal? (decode nats-to-2 5) (cons 2 2))
+  (check-equal? (decode nats-to-2 6) (cons 3 0))
+  (check-bijection? nats-to-2)
+  )
 
-  ;; except/enum test
-  (define not-3 (except/enum nats 3))
-  (test-begin
-   (check-equal? (decode not-3 0) 0)
-   (check-equal? (decode not-3 3) 4))
-  (define not-a (except/enum nats 'a))
-  (test-begin
-   (check-equal? (decode not-a 0) 0)))
+ ;; take/enum test
+ (define to-2 (up-to 2))
+ (test-begin
+  (check-equal? (size to-2) 3)
+  (check-equal? (decode to-2 0) 0)
+  (check-equal? (decode to-2 1) 1)
+  (check-equal? (decode to-2 2) 2)
+  (check-bijection? to-2))
+
+ ;; to-list test
+ (test-begin
+  (check-equal? (to-list (up-to 3))
+                '(0 1 2 3)))
+
+ ;; except/enum test
+ (define not-3 (except/enum nats '(3)))
+ (test-begin
+  (check-equal? (decode not-3 0) 0)
+  (check-equal? (decode not-3 3) 4)
+  (check-bijection? not-3))
+ (define not-a (except/enum nats '(a)))
+ (test-begin
+  (check-equal? (decode not-a 0) 0)
+  (check-bijection? not-a))
+
+ ;; fold-enum tests
+ (define complicated
+   (fold-enum
+    (λ (excepts n)
+       (except/enum (up-to n) excepts))
+    '(2 4 6)))
+ (check-bijection? complicated))
