@@ -6,6 +6,7 @@
          (private with-types type-contract parse-type)
          (except-in syntax/parse id)
          racket/match racket/syntax unstable/match racket/list syntax/stx
+         racket/promise
          (types utils abbrev generalize printer)
          (typecheck provide-handling tc-toplevel tc-app-helper)
          (rep type-rep)
@@ -48,11 +49,13 @@
 (define did-I-suggest-:print-type-already? #f)
 (define :print-type-message " ... [Use (:print-type <expr>) to see more.]")
 (define (ti-core stx init)
+  (current-type-names (init-current-type-names))
   (syntax-parse stx
     [(_ . ((~datum module) . rest))
      #'(module . rest)]
     [(_ . ((~literal :type) ty:expr))
-     #`(display #,(format "~a\n" (parse-type #'ty)))]
+     (parameterize ([current-print-type-fuel 1])
+       #`(display #,(format "~a\n" (parse-type #'ty))))]
     ;; Prints the _entire_ type. May be quite large.
     [(_ . ((~literal :print-type) e:expr))
      (tc-setup #'stx #'e 'top-level expanded init tc-toplevel-form before type
