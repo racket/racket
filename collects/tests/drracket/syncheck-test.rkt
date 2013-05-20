@@ -9,7 +9,8 @@
            racket/list
            racket/file
            racket/set
-           mred
+           racket/pretty
+           racket/gui/base
            framework
            mrlib/text-string-style-desc
            (for-syntax racket/base))
@@ -18,17 +19,21 @@
   
   ;; type str/ann = (list (union symbol string) symbol)
   ;; type test = (make-test string
-  ;;                        (listof str/ann)
+  ;;                        (or/c (-> any (listof str/ann))  -- if proc, then pass in result of setup thunk
+  ;;                              (listof str/ann))
   ;;                        (listof (cons (list number number) (listof (list number number)))))
   ;;                        (listof (list number number) (listof string)))
-  (define-struct test (line input expected arrows tooltips) #:transparent)
+  ;;                        (-> any)
+  ;;                        (any -> void?)  -- argument is the result of the setup thunk
+  (define-struct test (line input expected arrows tooltips setup teardown) #:transparent)
   (define-struct (dir-test test) () #:transparent)
   
   (define-struct rename-test (line input pos old-name new-name output) #:transparent)
   
   (define build-test/proc
-    (λ (line input expected [arrow-table '()] #:tooltips [tooltips #f])
-      (make-test line input expected arrow-table tooltips)))
+    (λ (line input expected [arrow-table '()] #:tooltips [tooltips #f] 
+             #:setup [setup void] #:teardown [teardown void])
+      (make-test line input expected arrow-table tooltips setup teardown)))
   
   (define-syntax (build-test stx)
     (syntax-case stx ()
@@ -47,11 +52,12 @@
       [(_ args ...)
        (with-syntax ([line (syntax-line stx)])
          ;; #f is for the tooltip portion of the test, just skip 'em
-         #'(make-dir-test line args ... #f))]))
+         #'(make-dir-test line args ... #f void void))]))
   
   ;; tests : (listof test)
   (define tests
     (list
+                   
      (build-test "12345"
                 '(("12345" constant)))
      (build-test "'abcdef"
@@ -1041,6 +1047,152 @@
                  (list '((6 12) (14 31) (38 54) (56 63))
                        '((32 33) (69 70))))
      
+     
+     
+     (build-test 
+      (λ (fn) 
+        (string-append
+         "#lang racket/base\n"
+         ;; 'values' is here so we get to the require 
+         ;; before attempting to expand 'm'
+         "(values\n"
+         " (m a-x\n"
+         "    a a a\n"
+         "    a-x a-x))\n"
+         ;; this is last because its length might change
+         (format "~s\n" `(require (file ,(path->string fn))))))
+      '(("#lang racket/base\n("    default-color)
+        ("values"                  imported)
+        ("\n ("                    default-color)
+        ("m"                       imported)
+        (" "                       default-color)
+        ("a-x"                     lexically-bound)
+        ("\n    "                  default-color)
+        ("a"                       lexically-bound)
+        (" "                       default-color)
+        ("a"                       lexically-bound)
+        (" "                       default-color)
+        ("a"                       lexically-bound)
+        ("\n    "                  default-color)
+        ("a-x"                     lexically-bound)
+        (" "                       default-color)
+        ("a-x"                     lexically-bound)
+        ("))\n("                   default-color)
+        ("require"                 imported)
+        (#rx" [(]file \"[^\"]*\"[)][)]\n" default-color))
+      '(((6 17) (19 25) (59 66))
+        ((30 33) (48 51) (52 55))
+        ((30 31) (38 39) (40 41) (42 43))
+        ((67 166) (28 29)))
+      #:setup
+      (λ () 
+        (define fn (make-temporary-file "syncheck-test-~a.rkt"))
+        (call-with-output-file fn
+          (λ (port)
+            (fprintf port "#lang racket/base\n")
+            (pretty-write '(require (for-syntax racket/base)) port)
+            (pretty-write '(provide m) port)
+            (pretty-write
+             '(define-syntax (m stx)
+                (syntax-case stx ()
+                  [(_ a . rst)
+                   (let ()
+                     (define str (regexp-replace #rx"-.*$" (symbol->string (syntax-e #'a)) ""))
+                     (with-syntax ([a2 (datum->syntax #'a 
+                                                      (string->symbol str)
+                                                      (vector (syntax-source #'a)
+                                                              (syntax-line #'a)
+                                                              (syntax-column #'a)
+                                                              (syntax-position #'a)
+                                                              (string-length str))
+                                                      #'a)])
+                       #'(begin
+                           (let ([a 1][a2 1]) . rst))))]))
+             port))
+          #:exists 'truncate)
+        fn)
+      #:teardown (λ (fn) (delete-file fn)))
+     
+     (build-test 
+      (λ (fn) 
+        (string-append
+         "#lang racket/base\n"
+         ;; 'values' is here so we get to the require 
+         ;; before attempting to expand 'n'
+         "(values\n"
+         " (n e\n"
+         "    e_11111111111111\n"
+         "    e e e\n"
+         "    e_11111111111111 e_11111111111111))\n"
+         ;; this is last because its length might change
+         (format "~s\n" `(require (file ,(path->string fn))))))
+      '(("#lang racket/base\n(" default-color)
+        ("values" imported)
+        ("\n (" default-color)
+        ("n" imported)
+        (" " default-color)
+        ("e" lexically-bound)
+        ("\n    " default-color)
+        ("e_11111111111111" lexically-bound)
+        ("\n    " default-color)
+        ("e" lexically-bound)
+        (" " default-color)
+        ("e" lexically-bound)
+        (" " default-color)
+        ("e" lexically-bound)
+        ("\n    " default-color)
+        ("e_11111111111111" lexically-bound)
+        (" " default-color)
+        ("e_11111111111111" lexically-bound)
+        ("))\n(" default-color)
+        ("require" imported)
+        (#rx" [(]file \"[^\"]*\"[)][)]\n" default-color))
+      '(((6 17) (19 25) (104 111))
+        ((36 52) (67 83) (84 100))
+        ((30 31) (36 37) (57 58) (59 60) (61 62) (67 68) (84 85))
+        ((112 211) (28 29)))
+      #:setup
+      (λ () 
+        (define fn (make-temporary-file "syncheck-test-~a.rkt"))
+        (call-with-output-file fn
+          (λ (port)
+            (fprintf port "#lang racket/base\n")
+            (pretty-write '(require (for-syntax racket/base)) port)
+            (pretty-write '(provide n) port)
+            (pretty-write
+             '(define-syntax (n stx)
+                (syntax-case stx ()
+                  [(_ b1 b2 . rst)
+                   (let ()
+                     (define str (regexp-replace #rx"-.*$" (symbol->string (syntax-e #'a)) ""))
+                     #`(let ([b1 1]
+                             [b2 1])
+                         #,(datum->syntax #'b1
+                                          (syntax-e #'b1)
+                                          (vector (syntax-source #'b2)
+                                                  (syntax-line #'b2)
+                                                  (syntax-column #'b2)
+                                                  (syntax-position #'b2)
+                                                  (string-length (symbol->string (syntax-e #'b1))))
+                                          #'b1)
+                         (let-syntax ([b2 (λ (x)
+                                            (unless (identifier? x)
+                                              (raise-syntax-error 'b2 "only ids"))
+                                            (datum->syntax x
+                                                           'b1
+                                                           (vector (syntax-source x)
+                                                                   (syntax-line x)
+                                                                   (syntax-column x)
+                                                                   (syntax-position x)
+                                                                   (string-length (symbol->string 'b1)))
+                                                           x))])
+                           . 
+                           rst)))]))
+             port))
+          #:exists 'truncate)
+        fn)
+      #:teardown (λ (fn) (delete-file fn)))
+     
      (build-rename-test "(lambda (x) x)"
                         9
                         "x"
@@ -1244,11 +1396,17 @@
       (clear-definitions drs)
       (cond
         [(test? test)
-         (let ([input (test-input test)]
+         (let ([pre-input (test-input test)]
                [expected (test-expected test)]
                [arrows (test-arrows test)]
                [tooltips (test-tooltips test)]
-               [relative (find-relative-path save-dir (collection-path "mzlib"))])
+               [relative (find-relative-path save-dir (collection-path "mzlib"))]
+               [setup (test-setup test)]
+               [teardown (test-teardown test)])
+           (define setup-result (setup))
+           (define input (if (procedure? pre-input)
+                             (pre-input setup-result)
+                             pre-input))
            (cond
              [(dir-test? test)
               (insert-in-definitions drs (format input (path->require-string relative)))]
@@ -1270,11 +1428,14 @@
                              got
                              arrows 
                              (queue-callback/res (λ () (send defs syncheck:get-bindings-table)))
-                             input))
+                             input
+                             (test-line test)))
            (when tooltips
              (compare-tooltips (queue-callback/res (λ () (send defs syncheck:get-bindings-table #t)))
                                tooltips
-                               (test-line test))))]
+                               (test-line test)))
+           
+           (teardown setup-result))]
         [(rename-test? test)
          (insert-in-definitions drs (rename-test-input test))
          (click-check-syntax-and-check-errors drs test)
@@ -1355,53 +1516,85 @@
   ;;                  (listof (cons (list number number) (listof (list number number))))
   ;;                  hash-table[(list text number number) -o> (listof (list text number number))]
   ;;               -> void
-  (define (compare-arrows test-exp expected raw-actual)
+  (define (compare-arrows test-exp expected raw-actual line)
     (when expected
-      (let ()
-        (define already-checked (make-hash))
-        
-        (define actual-ht (make-hash))
-        (define stupid-internal-define-syntax1
-          (hash-for-each raw-actual
-            (lambda (k v)
-              (hash-set! actual-ht (cdr k)
-                         (sort (map cdr (set->list v))
-                               (lambda (x y) (< (car x) (car y))))))))
-        (define expected-ht (make-hash))
-        (define stupid-internal-define-syntax2
-          (for-each (lambda (binding) (hash-set! expected-ht (car binding) (cdr binding)))
-                    expected))
-        ;; binding-in-ht? : hash-table (list number number) (listof (list number number)) -> boolean
-        (define (test-binding expected? ht)
-          (lambda (pr)
-            (let ([frm (car pr)]
-                  [to (cdr pr)])
-              (hash-ref
-               already-checked
-               frm
-               (lambda ()
-                 (hash-set! already-checked frm #t)
-                 (let ([ht-ent (hash-ref ht frm (lambda () 'nothing-there))])
-                   (unless (equal? ht-ent to)
-                     (eprintf (if expected?
-                                  "FAILED arrow test ~s from ~s\n  expected ~s\n    actual ~s\n"
-                                  "FAILED arrow test ~s from ~s\n    actual ~s\n  expected ~s\n")
-                             test-exp
-                             frm
-                             ht-ent
-                             to))))))))
-        
-        (for-each (test-binding #t expected-ht) (hash-map actual-ht cons))
-        (for-each (test-binding #f actual-ht) (hash-map expected-ht cons)))))
+      (define already-checked (make-hash))
+      
+      (define actual-ht (make-hash))
+      (define stupid-internal-define-syntax1
+        (hash-for-each raw-actual
+                       (lambda (k v)
+                         (hash-set! actual-ht (cdr k)
+                                    (sort (map cdr (set->list v))
+                                          (lambda (x y) (< (car x) (car y))))))))
+      (define expected-ht (make-hash))
+      (for ([binding (in-list expected)])
+        (hash-set! expected-ht (car binding) (cdr binding)))
+      ;; binding-in-ht? : hash-table (list number number) (listof (list number number)) -> boolean
+      (define (test-binding expected? ht)
+        (lambda (pr)
+          (let ([frm (car pr)]
+                [to (cdr pr)])
+            (hash-ref
+             already-checked
+             frm
+             (lambda ()
+               (hash-set! already-checked frm #t)
+               (let ([ht-ent (hash-ref ht frm (lambda () 'nothing-there))])
+                 (unless (equal? ht-ent to)
+                   (eprintf (if expected?
+                                "FAILED arrow test line ~a ~s from ~s\n  expected ~s\n    actual ~s\n"
+                                "FAILED arrow test line ~a ~s from ~s\n    actual ~s\n  expected ~s\n")
+                            line
+                            test-exp
+                            frm
+                            ht-ent
+                            to))))))))
+      
+      (for-each (test-binding #t expected-ht) (hash-map actual-ht cons))
+      (for-each (test-binding #f actual-ht) (hash-map expected-ht cons))))
   
-  (define (compare-output raw-expected got arrows arrows-got input)
+  (define (compare-output raw-expected got arrows arrows-got input line)
     (let ([expected (collapse-and-rename raw-expected)])
       (cond
-        [(equal? got expected)
-         (compare-arrows input arrows arrows-got)]
+        [(not-matching-colors got expected)
+         =>
+         (λ (msg)
+           (eprintf "FAILED line ~a: ~s\n      expected: ~s\n           got: ~s\n   ~a\n"
+                    line input expected got msg))]
         [else
-         (eprintf "FAILED: ~s\n      expected: ~s\n           got: ~s\n"
-                  input expected got)])))
+         (compare-arrows input arrows arrows-got line)])))
+  
+  (define (not-matching-colors got expected)
+    (let loop ([got got]
+               [expected expected]
+               [i 0])
+      (cond
+        [(and (pair? got) (pair? expected))
+         (or (not-matching-single-color i (car got) (car expected))
+             (loop (cdr got) (cdr expected) (+ i 1)))]
+        [(and (null? got) (null? expected))
+         #f]
+        [else
+         (format "lengths different by ~a" (abs (- (length got) (length expected))))])))
+  
+  (define (not-matching-single-color i got expected)
+    (define got-str (list-ref got 0))
+    (define got-color (list-ref got 1))
+    (define exp-str (list-ref expected 0))
+    (define exp-color (list-ref expected 1))
+    (or (cond
+          [(string? exp-str)
+           (if (equal? got-str exp-str)
+               #f
+               (format "strings at position ~a do not match; got ~s" i got-str))]
+          [(regexp? exp-str)
+           (if (regexp-match? exp-str got-str)
+               #f
+               (format "regexp at position ~a does not match actual string: ~s" i got-str))])
+        (if (equal? got-color exp-color)
+            #f
+            (format "colors at position ~a do not match; got ~s" i got-color))))
   
   (define (compare-tooltips got expected line)
     (unless (equal? got expected)
