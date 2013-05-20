@@ -177,9 +177,9 @@
        (add-disappeared-use #'kw)
        (let ([v (parse-type #'t)])
          (match (resolve v)
-           [(and s Struct?) (make-StructTop s)]
+           [(and s (? Struct?)) (make-StructTop s)]
            [_ (tc-error/delayed "Argument to Struct must be a structure type, got ~a" v)
-              (make-Instance (Un))]))]
+              (make-StructTop (Un))]))]
       [((~and kw t:Instance) t)
        (add-disappeared-use #'kw)
        (let ([v (parse-type #'t)])
