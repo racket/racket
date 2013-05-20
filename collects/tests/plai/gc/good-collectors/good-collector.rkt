@@ -152,6 +152,7 @@ A collector for use in testing the random mutator generator.
 
 (define (collect-garbage get-roots)
   (let ([roots (map read-root (get-roots))])
+    ;; (eprintf "roots: ~a\n" roots)
     (collect-garbage-help roots
                           (remove* roots (get-all-records 0)))))
 
@@ -164,6 +165,7 @@ A collector for use in testing the random mutator generator.
         (let ([proc (heap-ref (+ (car gray) 1))])
           (if (procedure? proc)
               (let ([new-locs (map read-root (procedure-roots proc))])
+                ;; (eprintf "proc roots: ~a\n" new-locs)
                 (collect-garbage-help 
                  (add-in new-locs (cdr gray) white)
                  (remove* new-locs white)))

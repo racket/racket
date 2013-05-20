@@ -138,19 +138,23 @@
         body-expr)
      (with-syntax ([((tmp ...) ...)
                     (map generate-temporaries (syntax->list #'((id ...) ...)))])
-       (let ([binding-list (syntax->list #'((tmp ...) ...))])
-         (with-syntax ([((previous-tmp ...) ...)
+       (let ([binding-list (syntax->list #'((id ...) ...))])
+         (with-syntax ([((previous-id ...) ...)
                         (build-list (length binding-list) 
                                     (λ (n) (append-map syntax->list (take binding-list n))))])
            (syntax/loc stx
              (let*-values ([(tmp ...) 
-                            (syntax-parameterize ([mutator-env-roots 
-                                                   (append
-                                                    (find-referenced-locals
-                                                     (list #'previous-tmp ...)
-                                                     #'expr)
-                                                    (syntax-parameter-value #'mutator-env-roots))]
-                                                  [mutator-tail-call? #f])
+                            (syntax-parameterize
+                                ([mutator-env-roots 
+                                  (append
+                                   (switch-over
+                                    (syntax->list #'(id ... ...))
+                                    (syntax->list #'(tmp ... ...))
+                                    (find-referenced-locals
+                                     (list #'previous-id ...)
+                                     #'body-expr))
+                                   (syntax-parameter-value #'mutator-env-roots))]
+                                 [mutator-tail-call? #f])
                                                  expr)]
                            ...)
                (let-values ([(id ...) (values tmp ...)]
