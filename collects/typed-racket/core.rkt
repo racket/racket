@@ -53,8 +53,16 @@
   (syntax-parse stx
     [(_ . ((~datum module) . rest))
      #'(module . rest)]
-    [(_ . ((~literal :type) ty:expr))
-     (parameterize ([current-print-type-fuel 1])
+    [(_ . ((~literal :type)
+           (~optional (~and #:verbose verbose-kw))
+           ty:expr))
+     (parameterize ([current-print-type-fuel
+                     (if (attribute verbose-kw) +inf.0 1)]
+                    ;; This makes sure unions are totally flat for the
+                    ;; infinite fuel case. If fuel that's not 0, 1, or +inf.0
+                    ;; is ever used, more may need to be done.
+                    [current-type-names
+                     (if (attribute verbose-kw) '() (current-type-names))])
        #`(display #,(format "~a\n" (parse-type #'ty))))]
     ;; Prints the _entire_ type. May be quite large.
     [(_ . ((~literal :print-type) e:expr))
