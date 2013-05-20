@@ -425,6 +425,8 @@ value created by a @racket[_dict-expr] is a @deftech{plist dictionary}:
           (list 'false)
           (list 'integer integer)
           (list 'real real)
+          (list 'data string)
+          (list 'date string)
           dict-expr
           (list 'array pl-expr ...)]
 [dict-expr (list 'dict assoc-pair ...)]
@@ -466,7 +468,11 @@ Write a @tech{plist value} to the given port.}
                             "another string"
                             (true)))
          (assoc-pair "sixth-key"
-                     (array))))
+                     (array))
+         (assoc-pair "seventh-key"
+                     (data "some data"))
+         (assoc-pair "eighth-key"
+                     (date "2013-05-10T20:29:55Z"))))
 (define-values (in out) (make-pipe))
 (write-plist my-dict out)
 (close-output-port out)
@@ -503,6 +509,10 @@ indentation:
     </array>
     <key>sixth-key</key>
     <array />
+    <key>seventh-key</key>
+    <data>some data</data>
+    <key>eighth-key</key>
+    <date>2013-05-10T20:29:55Z</date>
   </dict>
 </plist>
 }|

@@ -3,18 +3,6 @@
          racket/contract
          xml)
 
-; a dict is (list 'dict assoc-pair ...)
-; an assoc-pair is (list 'assoc-pair key value)
-; a key is a string
-; a value is either: 
-;  a string,
-;  a boolean, 
-;  an integer : (list 'integer number)
-;  a real : (list 'real number)
-;  a dict, or
-;  an array : (list 'array value ...)
-; (we're ignoring data & date)
-
 (define (plist-dict? v)
   (and (list? v)
        (pair? v)
@@ -38,8 +26,9 @@
              [(real) (and (= (length v) 2)
                           (real? (cadr v)))]
              [(array) (andmap plist-value? (cdr v))]
+             [(data) (and (= (length v) 2) (string? (cadr v)))]
+             [(date) (and (= (length v) 2) (string? (cadr v)))]
              [else (plist-dict? v)]))))
-
 
 ; raise-plist-exn : string mark-set xexpr symbol -> ???
 (define (raise-plist-exn tag mark-set xexpr type)
@@ -85,6 +74,14 @@
               (expand-dict x))
          =>
          (lambda (x) x)]
+        [(and (eq? (car x) 'date)
+              (expand-date x))
+         =>
+         (lambda (x) x)]
+        [(and (eq? (car x) 'data)
+              (expand-data x))
+         =>
+         (lambda (x) x)]
         [(and (eq? (car x) 'array)
               (expand-array x))
          =>
@@ -107,6 +104,20 @@
          `(integer ,(number->string (cadr x)))]
         [else
          (raise-plist-exn "integer" (current-continuation-marks) x 'plist:integer)]))
+
+(define (expand-date x)
+  (cond [(and (eq? (car x) 'date)
+              (string? (cadr x)))
+         `(date ,(cadr x))]
+        [else
+         (raise-plist-exn "date" (current-continuation-marks) x 'plist:date)]))
+
+(define (expand-data x)
+  (cond [(and (eq? (car x) 'data)
+              (string? (cadr x)))
+         `(data ,(cadr x))]
+        [else
+         (raise-plist-exn "data" (current-continuation-marks) x 'plist:data)]))
 
 ; expand-array : xexpr -> xexpr
 (define (expand-array x)
@@ -160,7 +171,9 @@
     [(true false) value]
     [(integer real) (list (car value) (string->number (cadr value)))]
     [(dict) (collapse-dict value)]
-    [(array) (collapse-array value)]))
+    [(array) (collapse-array value)]
+    [(date) value]
+    [(data) value]))
 
 ; collapse-array : xexpr -> array
 (define (collapse-array xexpr)

@@ -751,11 +751,15 @@ END
                                   "another string"
                                   (true)))
                (assoc-pair "sixth-key"
-                           (array))))
+                           (array))
+               (assoc-pair "seventh-key"
+                           (data "some data"))
+               (assoc-pair "eighth-key"
+                           (date "2013-05-10T20:29:55Z"))))
       (define example-str #<<END
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist SYSTEM "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="0.9"><dict><key>first-key</key><string>just a string with some  whitespace in it</string><key>second-key</key><false /><key>third-key</key><dict /><key>fourth-key</key><dict><key>inner-key</key><real>3.432</real></dict><key>fifth-key</key><array><integer>14</integer><string>another string</string><true /></array><key>sixth-key</key><array /></dict></plist>
+<plist version="0.9"><dict><key>first-key</key><string>just a string with some  whitespace in it</string><key>second-key</key><false /><key>third-key</key><dict /><key>fourth-key</key><dict><key>inner-key</key><real>3.432</real></dict><key>fifth-key</key><array><integer>14</integer><string>another string</string><true /></array><key>sixth-key</key><array /><key>seventh-key</key><data>some data</data><key>eighth-key</key><date>2013-05-10T20:29:55Z</date></dict></plist>
 END
         )]
      (test-suite
@@ -819,4 +823,5 @@ END
              (plist-value? v))
             (test-plist-round-trip v))))))))
 
-(run-tests xml-tests)
+(module+ test
+  (run-tests xml-tests))
