@@ -12,17 +12,15 @@
          racket/set
          racket/class
          racket/list
-         racket/contract
          syntax/boundmap
-         framework/preferences
          scribble/manual-struct)
 
 (provide make-traversal
          current-max-to-send-at-once)
 
 (define current-max-to-send-at-once (make-parameter +inf.0))
-    
-    
+
+
     ;                                                                                                             
     ;                                                                                                             
     ;                                                                                                             
@@ -590,7 +588,7 @@
       (define binders (get-ids all-binders var))
       (when binders
         (for ([x (in-list binders)])
-          (connect-syntaxes x var actual? all-binders (id-level phase-level x) connections)))
+          (connect-syntaxes x var actual? all-binders (id-level phase-level x) connections #f)))
         
       (when (and unused/phases phase-to-requires)
         (define req-path/pr (get-module-req-path var phase-level))
@@ -630,7 +628,8 @@
                                         req-stx)
                                     var actual? all-binders
                                     (id-level phase-level var)
-                                    connections))))))))
+                                    connections
+                                    #t))))))))
              
     (define (id/require-match? var id req-stx)
       (match req-stx
@@ -764,7 +763,7 @@
     
     ;; connect-syntaxes : syntax[original] syntax[original] boolean symbol connections -> void
     ;; adds an arrow from `from' to `to', unless they have the same source loc. 
-    (define (connect-syntaxes from to actual? all-binders level connections)
+    (define (connect-syntaxes from to actual? all-binders level connections require-arrow?)
       (let ([from-source (find-source-editor from)] 
             [to-source (find-source-editor to)]
             [defs-text (current-annotations)])
@@ -804,7 +803,7 @@
                   (send defs-text syncheck:add-arrow/name-dup
                         from-source from-pos-left from-pos-right
                         to-source to-pos-left to-pos-right
-                        actual? level name-dup?))))))))
+                        actual? level require-arrow? name-dup?))))))))
     
     ;; add-jump-to-definition : syntax symbol path -> void
     ;; registers the range in the editor so that the

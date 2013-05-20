@@ -50,7 +50,7 @@
       (void))
     (define/public (syncheck:add-arrow/name-dup start-text start-pos-left start-pos-right
                                                 end-text end-pos-left end-pos-right
-                                                actual? level name-dup?)
+                                                actual? level require-arrow? name-dup?)
       (syncheck:add-arrow start-text start-pos-left start-pos-right
                           end-text end-pos-left end-pos-right
                           actual? level))

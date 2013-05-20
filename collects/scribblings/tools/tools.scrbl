@@ -744,6 +744,7 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                                          [end-right exact-nonnegative-integer?]
                                          [actual? boolean?]
                                          [phase-level (or/c exact-nonnegative-integer? #f)]
+                                         [require-arrow? boolean?]
                                          [name-dup? (-> string? boolean?)])
             void?]{
    Called to indicate that there should be an arrow between the locations described by the first six arguments.
@@ -751,6 +752,9 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
    The @racket[phase-level] argument indicates the phase of the binding and the @racket[actual?] argument
    indicates if the binding is a real one, or a predicted one from a syntax template (predicted bindings
    are drawn with question marks in Check Syntax). 
+   
+   The @racket[require-arrow?] argument indicates if this arrow points from
+   an imported identifier to its corresponding @racket[require].
    
    The @racket[name-dup?] predicate returns @racket[#t]
    in case that this variable (either the start or end), when replaced with the given string, would
@@ -823,13 +827,17 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
   @itemlist[@item{The @method[syncheck-annotations<%> syncheck:find-source-object] 
                       method ignores its arguments and returns @racket[#f];}
             @item{the @method[syncheck-annotations<%> syncheck:add-arrow/name-dup] method drops the
-                      @racket[_name-dup?] argument and calls
+                      @racket[_require-arrow?] and @racket[_name-dup?] arguments and calls
                       @method[syncheck-annotations<%> syncheck:add-arrow]; and}
             @item{all of the other methods ignore their arguments and return @racket[(void)].}]
     
   Here is an example showing how use this library to extract all
   of the arrows that Check Syntax would draw from various
-  expressions:
+  expressions. One subtle point: arrows are only included when
+  the corresponding identifiers are @racket[syntax-original?];
+  the code below manages this by copying the properties from
+  an identifier that is @racket[syntax-original?] in the
+  call to @racket[datum->syntax].
   @interaction[#:eval
                syncheck-example-eval
                (require drracket/check-syntax racket/class)
@@ -841,7 +849,7 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
                    (define/override (syncheck:add-arrow/name-dup
                                      start-source-obj start-left start-right
                                      end-source-obj end-left end-right
-                                     actual? phase-level name-dup?)
+                                     actual? phase-level require-arrow? name-dup?)
                      (set! arrows
                            (cons (list start-source-obj end-source-obj)
                                  arrows)))
