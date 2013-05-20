@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label file/tar file/gzip))
+@(require "common.rkt" (for-label file/tar file/gzip racket/file))
 
 @title[#:tag "tar"]{@exec{tar} File Creation}
 

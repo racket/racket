@@ -1266,4 +1266,4 @@ than specified in the contract above, it is returned as-is.}
          xref?]{
 
 Like @racket[load-xref], but automatically find all cross-reference files for
-manuals that have been installed with @exec{setup-plt}.}
+manuals that have been installed with @exec{raco setup}.}
