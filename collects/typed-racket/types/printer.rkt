@@ -235,7 +235,10 @@
 ;; print out a type
 ;; print-type : Type Port Boolean -> Void
 (define (print-type type port write? [ignored-names '()])
-  (define (fp . args) (apply fprintf port args))
+  (define (fp . args)
+    (parameterize ([current-print-type-fuel
+                    (sub1 (current-print-type-fuel))])
+      (apply fprintf port args)))
   (define (tuple? t)
     (match t
       [(Pair: a (? tuple?)) #t]
@@ -302,7 +305,12 @@
      (when proc
        (fp " ~a" proc))
      (fp ")")]
-    [(Function: arities) (fp "~a" (print-case-lambda type))]
+    [(Function: arities)
+     (define fun-type
+       (parameterize ([current-print-type-fuel
+                       (sub1 (current-print-type-fuel))])
+         (print-case-lambda type)))
+     (fp "~a" fun-type)]
     [(arr: _ _ _ _ _) (fp "(arr ~a)" (format-arr type))]
     [(Vector: e) (fp "(Vectorof ~a)" e)]
     [(HeterogeneousVector: e) (fp "(Vector")
