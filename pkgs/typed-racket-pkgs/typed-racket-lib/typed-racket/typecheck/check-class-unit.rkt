@@ -113,7 +113,6 @@
           ;; FIXME: is this the right thing to do?
           (values null null null)]))
      ;; Define sets of names for use later
-     (define optional-inits (list->set (syntax->datum #'data.optional-inits)))
      (define super-init-names (list->set (dict-keys super-inits)))
      (define super-field-names (list->set (dict-keys super-fields)))
      (define super-method-names (list->set (dict-keys super-methods)))
@@ -165,6 +164,10 @@
        (for/hash ([internal all-internal]
                   [external all-external])
          (values internal external)))
+     ;; define which init names are optional
+     (define optional-inits (list->set (syntax->datum #'data.optional-inits)))
+     (define optional-external (for/set ([n optional-inits])
+                                 (dict-ref internal-external-mapping n)))
      ;; trawl the body for top-level expressions
      (define top-level-exprs (trawl-for-property #'body 'tr:class:top-level))
      (define internals-table (register-internals top-level-exprs))
@@ -190,32 +193,6 @@
                             this%-public-internals)))
      (match-define (Instance: (Class: _ inits fields methods))
                    self-type)
-     ;; Use the internal class: information to check whether clauses
-     ;; exist or are absent appropriately
-     (when expected?
-       (define exp-init-names (list->set (dict-keys inits)))
-       (define exp-field-names (list->set (dict-keys fields)))
-       (define exp-method-names (list->set (dict-keys methods)))
-       (define exp-optional-inits
-         (for/set ([(name val) (in-dict inits)]
-                   #:when (cadr val))
-                  name))
-       (check-same (set-union this%-init-names
-                              (list->set (dict-keys remaining-super-inits)))
-                   exp-init-names
-                   "initialization argument")
-       (check-same (set-union this%-public-names super-method-names)
-                   exp-method-names
-                   "public method")
-       (check-same (set-union this%-field-names super-field-names)
-                   exp-field-names
-                   "public field")
-       (check-same exp-optional-inits this%-init-names
-                   "optional init argument"))
-     (check-exists super-method-names this%-override-names
-                   "override method")
-     (check-absent super-field-names this%-field-names "public field")
-     (check-absent super-method-names this%-public-names "public method")
      ;; trawl the body for the local name table
      (define locals (trawl-for-property #'body 'tr:class:local-table))
      (define-values (local-method-table local-private-table local-field-table)
@@ -243,9 +220,52 @@
      (define checked-method-types
        (with-lexical-env/extend lexical-names lexical-types
          (check-methods internal-external-mapping meths methods self-type)))
-     (if expected?
-         self-class-type
-         (merge-types self-type checked-method-types))]))
+     (define final-class-type
+       (if expected?
+           self-class-type
+           (merge-types self-type checked-method-types)))
+     (check-method-presence-and-absence
+      final-class-type
+      this%-init-names this%-field-names
+      this%-public-names this%-override-names
+      optional-external
+      remaining-super-inits super-field-names
+      super-method-names)
+     final-class-type]))
+
+;; check-method-presence-and-absence : Type Set<Symbol> * 8 -> Void
+;; use the internal class: information to check whether clauses
+;; exist or are absent appropriately
+(define (check-method-presence-and-absence
+         class-type this%-init-names this%-field-names
+         this%-public-names this%-override-names
+         optional-external
+         remaining-super-inits super-field-names
+         super-method-names)
+  (match-define (Class: _ inits fields methods) class-type)
+  (define exp-init-names (list->set (dict-keys inits)))
+  (define exp-field-names (list->set (dict-keys fields)))
+  (define exp-method-names (list->set (dict-keys methods)))
+  (define exp-optional-inits
+    (for/set ([(name val) (in-dict inits)]
+              #:when (cadr val))
+             name))
+  (check-same (set-union this%-init-names
+                         (list->set (dict-keys remaining-super-inits)))
+              exp-init-names
+              "initialization argument")
+  (check-same (set-union this%-public-names super-method-names)
+              exp-method-names
+              "public method")
+  (check-same (set-union this%-field-names super-field-names)
+              exp-field-names
+              "public field")
+  (check-same optional-external exp-optional-inits
+              "optional init argument")
+  (check-exists super-method-names this%-override-names
+                "override method")
+  (check-absent super-field-names this%-field-names "public field")
+  (check-absent super-method-names this%-public-names "public method"))
 
 ;; merge-types : Type Dict<Symbol, Type> -> Type
 ;; Given a self object type, construct the real class type based on
