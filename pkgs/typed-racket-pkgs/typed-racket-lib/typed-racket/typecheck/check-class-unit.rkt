@@ -398,7 +398,11 @@
          (tc-error/expr
           "typed classes must call super-new at the class top-level")
          null]
-        [else
+        [(> (length super-new-stx) 1)
+         (tc-error/expr
+          "typed classes must only call super-new a single time")
+         null]
+        [(= (length super-new-stx) 1)
          (syntax-parse (car super-new-stx)
            #:literals (#%plain-app list cons quote)
            [(#%plain-app super-go _ _ _ _ _
