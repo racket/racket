@@ -385,6 +385,12 @@
                  (super-new [x 3])))
     (new c% [x 5]))
 
+   ;; fails, super-new can only be called once per class
+   (check-err
+    (class: object%
+      (super-new)
+      (super-new)))
+
    ;; test different internal/external names
    (check-ok
     (define c% (class: object% (super-new)
