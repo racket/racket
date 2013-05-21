@@ -88,7 +88,10 @@
        (with-syntax
            ([((from-path-pat ...) ...)
              (map (lambda (pp/is-pre)
-                    (define pp/is (datum->syntax pp/is-pre (filter (compose not string-syntax?) (syntax->list pp/is-pre)) pp/is-pre))
+                    (define pp/is 
+                      (datum->syntax pp/is-pre
+                                     (filter (compose not string-syntax?) (syntax->list pp/is-pre))
+                                     pp/is-pre))
                     (for/list ([pp/i (dispatch-pattern-not-... pp/is)]
                                [next-...? (dispatch-pattern-next-...? pp/is)])
                       (with-syntax ([pp pp/i]
