@@ -345,6 +345,23 @@
               (init x))
       (super-new)))
 
+   ;; test that provided super-class inits don't count
+   ;; towards the type of current class
+   (check-ok
+    (: c% (Class))
+    (define c% (class: (class: object% (super-new)
+                         (: x Integer)
+                         (init x))
+                 (super-new [x 3]))))
+
+   ;; fails, super-class init already provided
+   (check-err
+    (define c% (class: (class: object% (super-new)
+                         (: x Integer)
+                         (init x))
+                 (super-new [x 3])))
+    (new c% [x 5]))
+
    ;; test different internal/external names
    (check-ok
     (define c% (class: object% (super-new)

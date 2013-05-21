@@ -170,7 +170,11 @@
      (define internals-table (register-internals top-level-exprs))
      ;; find the `super-new` call (or error if missing)
      (define super-new-stx (trawl-for-property #'body 'tr:class:super-new))
-     (check-super-new super-new-stx super-inits)
+     (define provided-super-inits (check-super-new super-new-stx super-inits))
+     (define remaining-super-inits
+       (for/list ([(name val) (in-dict super-inits)]
+                  #:unless (member name provided-super-inits))
+         (cons name val)))
      ;; Type for self in method calls
      (define self-type
        (if self-class-type
@@ -178,7 +182,7 @@
            (infer-self-type internals-table
                             optional-inits
                             internal-external-mapping
-                            super-inits
+                            remaining-super-inits
                             super-fields
                             super-methods
                             this%-init-internals
@@ -389,7 +393,8 @@
               (if maybe-expected
                   (tc-expr/check init-arg (ret (car maybe-expected)))
                   (tc-error/expr "init argument ~a not accepted by superclass"
-                                 init-id)))])]))
+                                 init-id)))
+            provided-inits])]))
 
 ;; Syntax -> Listof<Syntax>
 ;; Look through the expansion of the class macro in search for
@@ -453,9 +458,9 @@
              (λ (type)
                (define entry
                  (if inits?
-                     (list external type (set-member? optional-inits name))
-                     (list external type)))
-               (cons entry type-dict))]
+                     (list type (set-member? optional-inits name))
+                     (list type)))
+               (dict-set type-dict external entry))]
             [else type-dict])))
   (define init-types (make-type-dict inits super-inits #t))
   (define field-types (make-type-dict fields super-fields))
