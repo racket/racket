@@ -20,12 +20,12 @@
 (tr-eval '(:type Foo))
 (tr-eval '(:type Bar))
 
-(check-equal? (get-output-string out) "(U Integer String)\n(Foo -> Foo)\n")
-
 ;; if #:verbose, make sure it's the full type
 (tr-eval '(:type #:verbose Bar))
+
 (check-equal? (get-output-string out)
-              (string-append "(U Integer String)\n(Foo -> Foo)\n"
+              (string-append "(U Integer String)\n[can expand further: String Integer]"
+                             "(Foo -> Foo)\n[can expand further: Foo]"
                              "((U 0 1 Byte-Larger-Than-One Positive-Index-Not-Byte "
                              "Positive-Fixnum-Not-Index Negative-Fixnum "
                              "Positive-Integer-Not-Fixnum Negative-Integer-Not-Fixnum String) "

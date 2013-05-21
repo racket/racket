@@ -6,7 +6,9 @@
          (private with-types type-contract parse-type)
          (except-in syntax/parse id)
          racket/match racket/syntax unstable/match racket/list syntax/stx
+         racket/format
          racket/promise
+         (only-in racket/string string-join)
          (types utils abbrev generalize printer)
          (typecheck provide-handling tc-toplevel tc-app-helper)
          (rep type-rep)
@@ -62,8 +64,16 @@
                     ;; infinite fuel case. If fuel that's not 0, 1, or +inf.0
                     ;; is ever used, more may need to be done.
                     [current-type-names
-                     (if (attribute verbose-kw) '() (current-type-names))])
-       #`(display #,(format "~a\n" (parse-type #'ty))))]
+                     (if (attribute verbose-kw) '() (current-type-names))]
+                    [current-print-unexpanded (box '())])
+       (define type (format "~a" (parse-type #'ty)))
+       (define unexpanded
+         (remove-duplicates (unbox (current-print-unexpanded))))
+       (define cue (if (null? unexpanded)
+                       ""
+                       (format "[can expand further: ~a]"
+                               (string-join (map ~a unexpanded)))))
+       #`(display #,(format "~a\n~a" type cue)))]
     ;; Prints the _entire_ type. May be quite large.
     [(_ . ((~literal :print-type) e:expr))
      (tc-setup #'stx #'e 'top-level expanded init tc-toplevel-form before type

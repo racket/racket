@@ -24,7 +24,7 @@
 (provide-printer)
 
 (provide print-multi-line-case-> special-dots-printing? print-complex-filters?
-         current-print-type-fuel)
+         current-print-type-fuel current-print-unexpanded)
 
 
 ;; do we attempt to find instantiations of polymorphic types to print?
@@ -42,6 +42,10 @@
 ;;         1 -> expand one level, etc.
 ;;    +inf.0 -> expand always
 (define current-print-type-fuel (make-parameter 0))
+
+;; this parameter allows the printer to communicate unexpanded
+;; type aliases to its clients, which is used to cue the user
+(define current-print-unexpanded (make-parameter (box '())))
 
 ;; does t have a type name associated with it currently?
 ;; has-name : Type -> Maybe[Listof<Symbol>]
@@ -142,7 +146,13 @@
              [candidates candidates]
              [coverage   '()])
     (cond [(null? to-cover) ; done
-           (append (map car coverage) uncoverable)] ; we want the names
+           (define coverage-names (map car coverage))
+           ;; to allow :type to cue the user on unexpanded aliases
+           (set-box! (current-print-unexpanded)
+                     ;; FIXME: this could be pickier about the names to
+                     ;;        report since, e.g., "String" can't be expanded
+                     (append coverage-names (unbox (current-print-unexpanded))))
+           (append coverage-names uncoverable)] ; we want the names
           [else
            ;; pick the candidate that covers the most uncovered types
            (define (covers-how-many? c)
@@ -249,13 +259,17 @@
      (=> fail)
      (when (not (null? ignored-names)) (fail))
      (define fuel (current-print-type-fuel))
-     (if (> fuel 0)
-         (parameterize ([current-print-type-fuel (sub1 fuel)])
-           ;; if we still have fuel, print the expanded type and
-           ;; add the name to the ignored list so that the union
-           ;; printer does not try to print with the name.
-           (print-type type port write? (append names ignored-names)))
-         (fp "~a" (car names)))]
+     (cond [(> fuel 0)
+            (parameterize ([current-print-type-fuel (sub1 fuel)])
+              ;; if we still have fuel, print the expanded type and
+              ;; add the name to the ignored list so that the union
+              ;; printer does not try to print with the name.
+              (print-type type port write? (append names ignored-names)))]
+           [else
+            ;; to allow :type to cue the user on unexpanded aliases
+            (set-box! (current-print-unexpanded)
+                      (cons (car names) (unbox (current-print-unexpanded))))
+            (fp "~a" (car names))])]
     [(StructType: (Struct: nm _ _ _ _ _)) (fp "(StructType ~a)" (syntax-e nm))]
     [(StructTop: (Struct: nm _ _ _ _ _)) (fp "(Struct ~a)" (syntax-e nm))]
     [(BoxTop:) (fp "Box")]
