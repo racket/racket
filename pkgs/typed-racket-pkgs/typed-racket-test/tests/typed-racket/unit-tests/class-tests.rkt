@@ -152,13 +152,31 @@
                  [m (-> Integer)]))
     (define n% (class: j% (super-new))))
 
-   ;; should fail, too many methods (FIXME)
-   #|
-   (: o% (Class))
-   (define o% (class: object%
-                (super-new)
-                (define/public (m) 0)))
-   |#
+   ;; should fail, too many methods
+   (check-err
+    (: o% (Class))
+    (define o% (class: object%
+                 (super-new)
+                 (define/public (m) 0))))
+
+   ;; same as previous
+   (check-err
+    (: c% (Class [m (Integer -> Integer)]))
+    (define c% (class: object% (super-new)
+                 (define/public (m x) (add1 x))
+                 (define/public (n) 0))))
+
+   ;; fails, too many inits
+   (check-err
+    (: c% (Class (init [str String #:optional])))
+    (define c% (class: object% (super-new)
+                 (init str x))))
+
+   ;; fails, too many fields
+   (check-err
+    (: c% (Class (field [str String])))
+    (define c% (class: object% (super-new)
+                 (field [str "foo"] [x 0]))))
 
    ;; Mixin on classes without row polymorphism
    (check-ok

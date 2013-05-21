@@ -193,37 +193,29 @@
      ;; Use the internal class: information to check whether clauses
      ;; exist or are absent appropriately
      (when expected?
-      (define exp-init-names (list->set (dict-keys inits)))
-      (define exp-field-names (list->set (dict-keys fields)))
-      (define exp-method-names (list->set (dict-keys methods)))
-      (define exp-optional-inits
-        (for/set ([(name val) (in-dict inits)]
-                  #:when (cadr val))
-          name))
-      ;; FIXME: these three should probably be `check-same`
-      (check-exists (set-union this%-init-names super-init-names)
-                    exp-init-names
-                    "initialization argument")
-      (check-exists (set-union this%-public-names super-method-names)
-                    exp-method-names
-                    "public method")
-      (check-exists (set-union this%-field-names super-field-names)
-                    exp-field-names
-                    "public field")
-      (check-same exp-optional-inits this%-init-names
-                  "optional init argument"))
+       (define exp-init-names (list->set (dict-keys inits)))
+       (define exp-field-names (list->set (dict-keys fields)))
+       (define exp-method-names (list->set (dict-keys methods)))
+       (define exp-optional-inits
+         (for/set ([(name val) (in-dict inits)]
+                   #:when (cadr val))
+                  name))
+       (check-same (set-union this%-init-names
+                              (list->set (dict-keys remaining-super-inits)))
+                   exp-init-names
+                   "initialization argument")
+       (check-same (set-union this%-public-names super-method-names)
+                   exp-method-names
+                   "public method")
+       (check-same (set-union this%-field-names super-field-names)
+                   exp-field-names
+                   "public field")
+       (check-same exp-optional-inits this%-init-names
+                   "optional init argument"))
      (check-exists super-method-names this%-override-names
                    "override method")
      (check-absent super-field-names this%-field-names "public field")
      (check-absent super-method-names this%-public-names "public method")
-     ;; FIXME: the control flow for the failure of these checks is
-     ;;        still up in the air
-     #|
-     (check-no-extra (set-union this%-field-names super-field-names)
-                     exp-field-names)
-     (check-no-extra (set-union this%-public-names super-method-names)
-                     exp-method-names)
-     |#
      ;; trawl the body for the local name table
      (define locals (trawl-for-property #'body 'tr:class:local-table))
      (define-values (local-method-table local-private-table local-field-table)
