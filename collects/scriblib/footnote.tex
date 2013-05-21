@@ -7,5 +7,6 @@
 \newcommand{\FootnoteTarget}[1]{}
 \newcommand{\FootnoteContent}[1]{#1}
 
-\newenvironment{FootnoteBlock}{}{}
+% Redefine \noindent to avoid generating any output at all:
+\newenvironment{FootnoteBlock}{\renewcommand{\noindent}{}}{}
 \newcommand{\FootnoteBlockContent}[1]{}
