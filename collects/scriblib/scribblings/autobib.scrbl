@@ -121,12 +121,13 @@ Returns @racket[#t] if @racket[v] is a value produced by
                    [#:is-book? is-book? any/c #f]
                    [#:location location any/c #f]
                    [#:date date (or/c #f date? exact-nonnegative-integer? string?) #f]
-                   [#:url url string? #f])
+                   [#:url url string? #f]
+                   [#:note note any/c #f])
          bib?]{
 
 Produces a value that represents a document to cite. Except for
 @racket[is-book?] and @racket[url], the arguments are used as
-elements, except that @racket[#f] means that the information is not
+content, except that @racket[#f] means that the information is not
 supplied. Functions like @racket[proceedings-location],
 @racket[author-name], and @racket[authors] help produce elements in a
 standard format.

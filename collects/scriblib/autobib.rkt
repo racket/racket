@@ -39,7 +39,7 @@
 (define colbibnumber-style (make-style "Autocolbibnumber" autobib-style-extras))
 (define colbibentry-style (make-style "Autocolbibentry" autobib-style-extras))
 
-(define-struct auto-bib (author date title location url is-book? key specific))
+(define-struct auto-bib (author date title location url note is-book? key specific))
 (define-struct bib-group (ht))
 
 (define-struct (author-element element) (names cite))
@@ -324,12 +324,13 @@
              null))
 
 (define (bib->entry bib style disambiguation render-date-bib i)
-  (define-values (author date title location url is-book?)
+  (define-values (author date title location url note is-book?)
     (values (auto-bib-author bib)
             (auto-bib-date bib)
             (auto-bib-title bib)
             (auto-bib-location bib)
             (auto-bib-url bib)
+            (auto-bib-note bib)
             (auto-bib-is-book? bib)))
   (make-element (send style entry-style)
                 (append
@@ -356,7 +357,8 @@
                                   (decode-content (list (render-date-bib date))))
                             ".")
                      null)
-                 (if url `(" " ,(link url (make-element 'url (list url)))) null))))
+                 (if url `(" " ,(link url (make-element 'url (list url)))) null)
+                 (if note `(" " ,note) null))))
 
 (define-syntax (define-cite stx)
   (syntax-parse stx
@@ -404,13 +406,14 @@
                   #:is-book? [is-book? #f]
                   #:location [location #f]
                   #:date [date #f]
-                  #:url [url #f])
+                  #:url [url #f]
+                  #:note [note #f])
   (define author*
     (cond [(not author) #f]
           [(author-element? author) author]
           [else (parse-author author)]))
   (define parsed-date (understand-date date))
-  (make-auto-bib author* parsed-date title location url is-book?
+  (make-auto-bib author* parsed-date title location url note is-book?
                  (content->string
                   (make-element #f
                                 (append
@@ -418,7 +421,8 @@
                                  (list title)
                                  (if location (decode-content (list location)) null)
                                  (if date (decode-content (list (default-render-date-bib parsed-date))) null)
-                                 (if url (list (link url (make-element 'url (list url)))) null))))
+                                 (if url (list (link url (make-element 'url (list url)))) null)
+                                 (if note (list note) null))))
                  ""))
 
 (define (in-bib bib where)
@@ -428,6 +432,7 @@
    (auto-bib-title bib)
    (auto-bib-location bib)
    (auto-bib-url bib)
+   (auto-bib-note bib)
    (auto-bib-is-book? bib)
    (auto-bib-key bib)
    ;; "where" is the only specific part of auto-bib elements currently.
