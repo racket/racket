@@ -12,7 +12,8 @@
 (import restrict^ dmap^)
 (export constraints^)
 
-
+;; It's hard to remove this use of exceptions
+;; because there's no monadic version of `hash-union` etc
 (define-values (fail-sym exn:infer?)
   (let ([sym (gensym 'infer-fail)])
     (values sym (λ (s) (and (pair? s) (eq? (car s) sym))))))
