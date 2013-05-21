@@ -377,7 +377,13 @@
                           list
                           (#%plain-app cons (quote init-id) arg:expr)
                           ...))
-            (for ([init-id (syntax->datum #'(init-id ...))]
+            (define provided-inits (syntax->datum #'(init-id ...)))
+            (for ([(name val) (in-dict super-inits)]
+                  #:when (not (cadr val)))
+              (unless (member name provided-inits)
+                (tc-error/expr "mandatory superclass init ~a not provided"
+                               name)))
+            (for ([init-id provided-inits]
                   [init-arg (syntax->list #'(arg ...))])
               (define maybe-expected (dict-ref super-inits init-id #f))
               (if maybe-expected

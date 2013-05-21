@@ -338,6 +338,13 @@
                  (init x)))
     (new d%))
 
+   ;; fails, mandatory super-class init not provided
+   (check-err
+    (class: (class: object% (super-new)
+              (: x Integer)
+              (init x))
+      (super-new)))
+
    ;; test different internal/external names
    (check-ok
     (define c% (class: object% (super-new)
