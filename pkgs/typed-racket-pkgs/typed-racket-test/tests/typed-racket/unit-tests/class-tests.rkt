@@ -14,7 +14,8 @@
 (gen-test-main)
 
 (define-syntax-rule (run/tr-module e ...)
-  (parameterize ([current-output-port (open-output-nowhere)])
+  (parameterize ([current-output-port (open-output-nowhere)]
+                 [current-error-port (open-output-nowhere)])
     (define ns (make-base-namespace))
     (eval (quote (module typed typed/racket
                    e ...))
