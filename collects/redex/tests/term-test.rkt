@@ -1,5 +1,6 @@
 (module term-test scheme
   (require "../private/term.rkt"
+           "../private/lang-struct.rkt"
            "../private/matcher.rkt"
            "test-util.rkt")
   

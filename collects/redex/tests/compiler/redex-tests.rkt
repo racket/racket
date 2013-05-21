@@ -1,6 +1,7 @@
 #lang racket
 (require (only-in redex term))
-(require "../../private/matcher.rkt"
+(require "../../private/lang-struct.rkt"
+         "../../private/matcher.rkt"
          (only-in "../test-util.rkt" equal/bindings?)
          mzlib/list)
 (require "../../private/compiler/match.rkt")

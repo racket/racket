@@ -3,6 +3,7 @@
          racket/class
          framework
          racket/pretty
+         "lang-struct.rkt"
          "matcher.rkt")
 
 (provide reflowing-snip<%>

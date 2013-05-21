@@ -10,6 +10,7 @@
                      "matcher.rkt")
          syntax/datum
          "error.rkt"
+         "lang-struct.rkt"
          "matcher.rkt")
 
 (provide term term-let define-term

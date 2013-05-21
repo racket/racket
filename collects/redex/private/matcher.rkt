@@ -1933,14 +1933,6 @@ See match-a-pattern.rkt for more details
 
 |#
 (define (context? x) #t)
-(define-values (the-hole the-not-hole hole?)
-  (let ()
-    (define-struct hole (id)
-      #:property prop:equal+hash (list (λ (x y recur) #t) (λ (v recur) 255) (λ (v recur) 65535))
-      #:inspector #f)
-    (define the-hole (make-hole 'the-hole))
-    (define the-not-hole (make-hole 'the-not-hole))
-    (values the-hole the-not-hole hole?)))
 
 (define (hole->not-hole exp)
   (let loop ([exp exp])
@@ -2043,7 +2035,6 @@ See match-a-pattern.rkt for more details
          none? none
          
          make-repeat
-         the-not-hole the-hole hole?
          rewrite-ellipses
          build-compatible-context-language
          caching-enabled?

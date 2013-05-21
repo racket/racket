@@ -12,8 +12,9 @@
                   make-bind
                   make-mtch
                   build-flat-context
-                  the-hole
                   )
+         (only-in "../../private/lang-struct.rkt"
+                  the-hole)
          racket/list)
 
 (define plug (λ (x y)
