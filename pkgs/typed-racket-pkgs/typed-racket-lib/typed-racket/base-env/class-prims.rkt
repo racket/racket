@@ -24,10 +24,14 @@
 (provide ;; Typed class macro that coordinates with TR
          class:
          ;; for use in ~literal clauses
-         class:-internal)
+         class:-internal
+         optional-init)
 
 ;; give it a binding, but it shouldn't be used directly
 (define-syntax (class:-internal stx)
+  (raise-syntax-error "should only be used internally"))
+
+(define-syntax (optional-init stx)
   (raise-syntax-error "should only be used internally"))
 
 (begin-for-syntax
@@ -180,13 +184,15 @@
      [_ stx]))
  
  (module+ test
-   ;; equal? check but considers stx pair equality
+   ;; equal? check but considers id & stx pair equality
    (define (equal?/id x y)
-     (if (and (syntax? x) (syntax? y))
-         (and (free-identifier=? (stx-car x) (stx-car y))
-              (free-identifier=? (stx-car (stx-cdr x))
-                                 (stx-car (stx-cdr y))))
-         (equal?/recur x y equal?/id)))
+     (cond [(and (identifier? x) (identifier? y))
+            (free-identifier=? x y)]
+           [(and (syntax? x) (syntax? y))
+            (and (free-identifier=? (stx-car x) (stx-car y))
+                 (free-identifier=? (stx-car (stx-cdr x))
+                                    (stx-car (stx-cdr y))))]
+           (equal?/recur x y equal?/id)))
 
    ;; utility macro for checking if a syntax matches a
    ;; given syntax class
@@ -238,6 +244,7 @@
           (process-class-contents others name-dict))
         (define annotated-super
           (syntax-property #'super 'tr:class:super #t))
+        (define optional-inits (get-optional-inits clauses))
         (syntax-property
          (syntax-property
           #`(let-values ()
@@ -247,6 +254,7 @@
                  #`(class:-internal
                     (init #,@(dict-ref name-dict #'init '()))
                     (init-field #,@(dict-ref name-dict #'init-field '()))
+                    (optional-init #,@optional-inits)
                     (field #,@(dict-ref name-dict #'field '()))
                     (public #,@(dict-ref name-dict #'public '()))
                     (override #,@(dict-ref name-dict #'override '()))
@@ -293,6 +301,25 @@
            (non-clause (syntax-property stx 'tr:class:super-new #t)))
          (values methods (append rest-top (list new-non-clause)))]
         [_ (values methods (append rest-top (list content)))])))
+
+  ;; get-optional-inits : Listof<Clause> -> Listof<Id>
+  ;; Get a list of the internal names of mandatory inits
+  (define (get-optional-inits clauses)
+    (flatten
+     (for/list ([clause clauses]
+                #:when (init-clause? clause))
+       (for/list ([id-pair (stx->list (clause-ids clause))]
+                  [optional? (init-clause-optional? clause)]
+                  #:when optional?)
+         (stx-car id-pair)))))
+
+  (module+ test
+    (check-equal?/id
+     (get-optional-inits
+      (list (init-clause #'(init [x 0]) #'init #'([x x]) (list #t))
+            (init-clause #'(init [(a b)]) #'init #'([a b]) (list #f))))
+     (list #'x)))
+
   ;; This is a neat/horrible trick
   ;;
   ;; In order to detect the mappings that class-internal.rkt has

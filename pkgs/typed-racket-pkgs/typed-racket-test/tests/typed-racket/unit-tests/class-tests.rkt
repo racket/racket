@@ -34,7 +34,7 @@
 
    ;; Basic class with init and public method
    (check-ok
-    (: c% (Class (init [x Integer])
+    (: c% (Class (init [x Integer #:optional])
                  [m (Integer -> Integer)]))
     (define c%
       (class: object%
@@ -45,7 +45,7 @@
 
    ;; Fails, bad superclass expression
    (check-err
-    (: d% (Class (init [x Integer])
+    (: d% (Class (init [x Integer #:optional])
                  [m (Integer -> Integer)]))
     (define d% (class: 5
                  (super-new)
@@ -54,7 +54,7 @@
 
    ;; Method using argument type
    (check-ok
-    (: e% (Class (init [x Integer])
+    (: e% (Class (init [x Integer #:optional])
                  [m (Integer -> Integer)]))
     (define e% (class: object%
                  (super-new)
@@ -63,7 +63,7 @@
 
    ;; Send inside a method
    (check-ok
-    (: f% (Class (init [x Integer])
+    (: f% (Class (init [x Integer #:optional])
                  [m (Integer -> Integer)]))
     (define f% (class: object%
                  (super-new)
@@ -72,7 +72,7 @@
 
    ;; Fails, send to missing method
    (check-err
-    (: g% (Class (init [x Integer])
+    (: g% (Class (init [x Integer #:optional])
                  [m (Integer -> Integer)]))
     (define g% (class: object%
                  (super-new)
@@ -239,24 +239,24 @@
 
    ;; check a good super-new call
    (check-ok
-    (: c% (Class (init [x Integer])))
+    (: c% (Class (init [x Integer #:optional])))
     (define c% (class: object% (super-new) (init x)))
     (: d% (Class))
     (define d% (class: c% (super-new [x (+ 3 5)]))))
 
    ;; fails, missing super-new
    (check-err
-    (: c% (Class (init [x Integer])))
+    (: c% (Class (init [x Integer #:optional])))
     (define c% (class: object% (init x))))
 
    ;; fails, non-top-level super-new
    (check-err
-    (: c% (Class (init [x Integer])))
+    (: c% (Class (init [x Integer #:optional])))
     (define c% (class: object% (let () (super-new)) (init x))))
 
    ;; fails, bad super-new argument
    (check-err
-    (: c% (Class (init [x Integer])))
+    (: c% (Class (init [x Integer #:optional])))
     (define c% (class: object% (super-new) (init x)))
     (: d% (Class))
     (define d% (class: c% (super-new [x "bad"]))))
@@ -316,6 +316,27 @@
     (define c% (class: object% (super-new)
                  (define/public (m y) 0)
                  (+ "foo" 5))))
+
+   ;; test optional init arg
+   (check-ok
+    (: c% (Class (init [x Integer #:optional])))
+    (define c% (class: object% (super-new)
+                 (: x Integer)
+                 (init [x 0]))))
+
+   ;; fails, expected mandatory but got optional
+   (check-err
+    (: c% (Class (init [x Integer])))
+    (define c% (class: object% (super-new)
+                 (: x Integer)
+                 (init [x 0]))))
+
+   ;; fails, mandatory init not provided
+   (check-err
+    (define d% (class: object% (super-new)
+                 (: x Integer)
+                 (init x)))
+    (new d%))
 
    ;; test different internal/external names
    (check-ok

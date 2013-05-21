@@ -34,12 +34,13 @@
 
 (define-syntax-class internal-class-data
   #:literals (#%plain-app quote-syntax class:-internal begin
-              values c:init c:init-field c:field
+              values c:init c:init-field optional-init c:field
               c:public c:override c:private)
   (pattern (begin (quote-syntax
                    (class:-internal
                     (c:init init-names:name-pair ...)
                     (c:init-field init-field-names:name-pair ...)
+                    (optional-init optional-names:id ...)
                     (c:field field-names:name-pair ...)
                     (c:public public-names:name-pair ...)
                     (c:override override-names:name-pair ...)
@@ -49,6 +50,7 @@
            #:with init-externals #'(init-names.external ...)
            #:with init-field-internals #'(init-field-names.internal ...)
            #:with init-field-externals #'(init-field-names.external ...)
+           #:with optional-inits #'(optional-names ...)
            #:with field-internals #'(field-names.internal ...)
            #:with field-externals #'(field-names.external ...)
            #:with public-internals #'(public-names.internal ...)
@@ -111,6 +113,7 @@
           ;; FIXME: is this the right thing to do?
           (values null null null)]))
      ;; Define sets of names for use later
+     (define optional-inits (list->set (syntax->datum #'data.optional-inits)))
      (define super-init-names (list->set (dict-keys super-inits)))
      (define super-field-names (list->set (dict-keys super-fields)))
      (define super-method-names (list->set (dict-keys super-methods)))
@@ -170,6 +173,7 @@
        (if self-class-type
            (make-Instance self-class-type)
            (infer-self-type internals-table
+                            optional-inits
                             internal-external-mapping
                             this%-init-internals
                             this%-field-internals
@@ -182,6 +186,11 @@
       (define exp-init-names (list->set (dict-keys inits)))
       (define exp-field-names (list->set (dict-keys fields)))
       (define exp-method-names (list->set (dict-keys methods)))
+      (define exp-optional-inits
+        (for/set ([(name val) (in-dict inits)]
+                  #:when (cadr val))
+          name))
+      ;; FIXME: these three should probably be `check-same`
       (check-exists (set-union this%-init-names super-init-names)
                     exp-init-names
                     "initialization argument")
@@ -190,7 +199,9 @@
                     "public method")
       (check-exists (set-union this%-field-names super-field-names)
                     exp-field-names
-                    "public field"))
+                    "public field")
+      (check-same exp-optional-inits this%-init-names
+                  "optional init argument"))
      (check-exists super-method-names this%-override-names
                    "override method")
      (check-absent super-field-names this%-field-names "public field")
@@ -416,11 +427,12 @@
              table)]
       [_ table])))
 
-;; infer-self-type : Dict<Symbol, Type> Dict<Symbol, Symbol>
+;; infer-self-type : Dict<Symbol, Type> Set<Symbol> Dict<Symbol, Symbol>
 ;;                   Set<Symbol> * 3 -> Type
 ;; Construct a self object type based on the registered types
 ;; from : inside the class body.
-(define (infer-self-type internals-table internal-external-mapping
+(define (infer-self-type internals-table optional-inits
+                         internal-external-mapping
                          inits fields publics)
   (define (make-type-dict names [inits? #f])
     (for/fold ([type-dict '()])
@@ -431,7 +443,9 @@
                (define entry
                  ;; FIXME: this should record the correct optional
                  ;;        boolean based on internal macro data
-                 (if inits? (list external type #f) (list external type)))
+                 (if inits?
+                     (list external type (set-member? optional-inits name))
+                     (list external type)))
                (cons entry type-dict))]
             [else type-dict])))
   (define init-types (make-type-dict inits #t))
@@ -502,6 +516,21 @@
   (when present
     (tc-error/expr "superclass defines conflicting ~a ~a"
                    msg present)))
+
+;; Set<Symbol> Set<Symbol> String -> Void
+;; check that the names are exactly the same as expected
+(define (check-same actual expected msg)
+  (define missing
+    (for/or ([m (in-set expected)])
+      (and (not (set-member? actual m)) m)))
+  (when missing
+    (tc-error/expr "class definition missing ~a ~a" msg missing))
+  (define too-many
+    (for/or ([m (in-set actual)])
+      (and (not (set-member? expected m)) m)))
+  (when too-many
+    (tc-error/expr "class definition has unexpected ~a ~a"
+                   msg too-many)))
 
 ;; check-no-extra : Set<Symbol> Set<Symbol> -> Void
 ;; check that the actual names don't include names not in the
