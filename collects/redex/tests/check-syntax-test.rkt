@@ -45,19 +45,6 @@
     (super-new)
     (define/override (syncheck:find-source-object stx)
       stx)
-    (define/override (syncheck:add-rename-menu id
-                                               all-ids
-                                               new-name-interferes?)
-      (match all-ids
-        [(list (list ids _ _) ...)
-         (set! renames (cons ids renames))]))
-    (define renames '())
-    (define/public (collected-rename-class stx)
-      (for/fold ([class (set)]) ([ids renames])
-                (if (for/or ([id ids])
-                            (equal? (source stx) (source id)))
-                    (set-union class (apply set (map source ids)))
-                    class)))
     (define/override (syncheck:add-arrow start-source-obj
                                          start-left
                                          start-right
@@ -113,11 +100,7 @@
   
   (test (send annotations collected-arrows)
         (expected-arrows
-         (list language-binding judgment-form-binding)))
-  (test (send annotations collected-rename-class language-def-name)
-        (expected-rename-class language-binding))
-  (test (send annotations collected-rename-class mode-name)
-        (expected-rename-class judgment-form-binding)))
+         (list language-binding judgment-form-binding))))
 
 ;; metafunctions
 (let ([annotations (new collector%)])
@@ -152,11 +135,7 @@
   
   (test (send annotations collected-arrows)
         (expected-arrows
-         (list language-binding metafunction-binding)))
-  (test (send annotations collected-rename-class language-def-name)
-        (expected-rename-class language-binding))
-  (test (send annotations collected-rename-class contract-name)
-        (expected-rename-class metafunction-binding)))
+         (list language-binding metafunction-binding))))
 
 ;; define-term
 (let ([annotations (new collector%)])
@@ -174,9 +153,8 @@
                  (term (#,use-name b)))))
     (done))
   
-  (test (send annotations collected-rename-class def-name)
-        (expected-rename-class (list def-name use-name)))
-  (test (send annotations collected-rename-class use-name)
-        (expected-rename-class (list def-name use-name))))
+  (test (send annotations collected-arrows) 
+        (expected-arrows
+         (list (list def-name use-name)))))
 
 (print-tests-passed 'check-syntax-test.rkt)
