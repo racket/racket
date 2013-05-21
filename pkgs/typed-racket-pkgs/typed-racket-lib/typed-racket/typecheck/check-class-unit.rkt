@@ -372,7 +372,8 @@
 (define (check-super-new super-new-stx super-inits)
   (cond [(null? super-new-stx)
          (tc-error/expr
-          "typed classes must call super-new at the class top-level")]
+          "typed classes must call super-new at the class top-level")
+         null]
         [else
          (syntax-parse (car super-new-stx)
            #:literals (#%plain-app list cons quote)
