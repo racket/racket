@@ -4,6 +4,7 @@
          racket/list
          raco/command-name
          net/url
+         "name.rkt"
          "lib.rkt"
          "commands.rkt"
          (prefix-in setup: setup/setup))
@@ -81,6 +82,8 @@
    'install
    scope installation shared user
    (lambda ()
+     (unless (package-source->name name)
+       ((current-pkg-error) (format "~e is an invalid package name" name)))
      (with-pkg-lock
       (define setup-collects
         (pkg-install #:dep-behavior deps
