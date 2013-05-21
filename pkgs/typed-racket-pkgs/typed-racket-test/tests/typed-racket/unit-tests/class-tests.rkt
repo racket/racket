@@ -424,6 +424,17 @@
                  (define/public (m) 0)))
     (send (new c%) m))
 
+   ;; test inheritance without expected
+   (check-ok
+    (define c% (class: (class: object% (super-new)
+                         (: m (-> Integer))
+                         (define/public (m) 0))
+                 (super-new)
+                 (: n (-> Integer))
+                 (define/public (n) 1)))
+    (send (new c%) m)
+    (send (new c%) n))
+
    ;; test fields without expected class type
    (check-ok
     (define c% (class: object% (super-new)

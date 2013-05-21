@@ -168,6 +168,9 @@
      ;; trawl the body for top-level expressions
      (define top-level-exprs (trawl-for-property #'body 'tr:class:top-level))
      (define internals-table (register-internals top-level-exprs))
+     ;; find the `super-new` call (or error if missing)
+     (define super-new-stx (trawl-for-property #'body 'tr:class:super-new))
+     (check-super-new super-new-stx super-inits)
      ;; Type for self in method calls
      (define self-type
        (if self-class-type
@@ -175,6 +178,9 @@
            (infer-self-type internals-table
                             optional-inits
                             internal-external-mapping
+                            super-inits
+                            super-fields
+                            super-methods
                             this%-init-internals
                             this%-field-internals
                             this%-public-internals)))
@@ -227,9 +233,6 @@
        (for ([stx top-level-exprs]
              #:unless (syntax-property stx 'tr:class:super-new))
          (tc-expr stx)))
-     ;; find the `super-new` call (or error if missing)
-     (define super-new-stx (trawl-for-property #'body 'tr:class:super-new))
-     (check-super-new super-new-stx super-inits)
      ;; trawl the body and find methods and type-check them
      (define meths (trawl-for-property #'body 'tr:class:method))
      (define checked-method-types
@@ -428,29 +431,29 @@
       [_ table])))
 
 ;; infer-self-type : Dict<Symbol, Type> Set<Symbol> Dict<Symbol, Symbol>
+;;                   Inits Fields Methods
 ;;                   Set<Symbol> * 3 -> Type
 ;; Construct a self object type based on the registered types
 ;; from : inside the class body.
 (define (infer-self-type internals-table optional-inits
                          internal-external-mapping
+                         super-inits super-fields super-methods
                          inits fields publics)
-  (define (make-type-dict names [inits? #f])
-    (for/fold ([type-dict '()])
+  (define (make-type-dict names supers [inits? #f])
+    (for/fold ([type-dict supers])
               ([name names])
       (define external (dict-ref internal-external-mapping name))
       (cond [(dict-ref internals-table name #f) =>
              (λ (type)
                (define entry
-                 ;; FIXME: this should record the correct optional
-                 ;;        boolean based on internal macro data
                  (if inits?
                      (list external type (set-member? optional-inits name))
                      (list external type)))
                (cons entry type-dict))]
             [else type-dict])))
-  (define init-types (make-type-dict inits #t))
-  (define field-types (make-type-dict fields))
-  (define public-types (make-type-dict publics))
+  (define init-types (make-type-dict inits super-inits #t))
+  (define field-types (make-type-dict fields super-fields))
+  (define public-types (make-type-dict publics super-methods))
   (make-Instance (make-Class #f init-types field-types public-types)))
 
 ;; fixup-method-type : Function Type -> Function
