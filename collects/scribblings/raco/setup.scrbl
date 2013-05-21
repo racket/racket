@@ -28,7 +28,9 @@
                     racket/future
                     mrlib/terminal
                     (only-in ffi/unsafe ffi-lib)
-                    racket/path))
+                    racket/path
+                    setup/collects
+                    syntax/modcollapse))
 
 @(define-syntax-rule (local-module mod . body)
    (begin
@@ -1160,7 +1162,37 @@ following two APIs cover two aspects of this: a way to convert a path to
 a value that is relative to the @filepath{collets} tree, and a way to
 display such paths (e.g., in error messages).
 
-@subsection{Representing paths relative to @filepath{collects}}
+@subsection{Representing Collection-Based Paths}
+
+@defmodule[setup/collects]
+
+@defproc[(path->collects-relative [path path-string?])
+         (or/c path-string? (cons/c 'collects (listof bytes?)))]{
+
+Checks whether @racket[path] (normalized by
+@racket[path->complete-path] and @racket[simplify-path] with
+@racket[#f] as its second argument) matches the result of
+@racket[collection-file-path]. If so, the result is a list starting
+with @racket['collects] and containing the relevant path elements as
+byte strings. If not, the path is returned as-is.}
+
+@defproc[(collects-relative->path
+          [rel (or/c path-string?
+                     (cons/c 'collects bytes? bytes? (listof bytes?)))])
+         path-string?]{
+
+The inverse of @racket[path->collects-relative]: if @racket[rel]
+is a pair that starts with @racket['collects], then it is converted
+back to a path using @racket[collection-file-path].}
+
+@defproc[(path->module-path [path path-string?])
+         (or/c path-string? module-path?)]{
+
+Like @racket[path->collects-relative], but the result is either
+@racket[path] or a normalized (in the sense of
+@racket[collapse-module-path]) module path.}
+
+@subsection{Representing Paths Relative to @filepath{collects}}
 
 @defmodule[setup/main-collects]
 
@@ -1178,7 +1210,9 @@ The @racket[path] argument should be a complete path. Applying
 usually a good idea.
 
 For historical reasons, @racket[path] can be a byte string, which is
-converted to a path using @racket[bytes->path].}
+converted to a path using @racket[bytes->path].
+
+See also @racket[collects-relative->path].}
 
 @defproc[(main-collects-relative->path
           [rel (or/c bytes? path-string?
@@ -1192,7 +1226,7 @@ back to a path relative to @racket[(find-collects-dir)].
 For historical reasons, if @racket[rel] is any kind of value other
 than specified in the contract above, it is returned as-is.}
 
-@subsection{Displaying paths relative to a common root}
+@subsection{Displaying Paths Relative to a Common Root}
 
 @defmodule[setup/path-to-relative]
 

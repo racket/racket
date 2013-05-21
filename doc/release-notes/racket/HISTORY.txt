@@ -3,6 +3,7 @@ Move explode-path from racket/path to racket/base
 Changed read-on-demand-source to support #t
 slideshow/pict: added 'outline style for text
 scriblib/autobib: add #:note
+setup/collects: added
 
 Version 5.3.4.9
 racket/place: allow keywords as place messages

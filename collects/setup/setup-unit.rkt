@@ -28,7 +28,7 @@
          "path-relativize.rkt"
          "private/omitted-paths.rkt"
          "parallel-build.rkt"
-         "collects.rkt"
+         "private/cc-struct.rkt"
          "link.rkt")
 
 (define-namespace-anchor anchor)

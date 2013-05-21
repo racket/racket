@@ -6,7 +6,7 @@
          racket/path
          racket/fasl
          racket/serialize
-         setup/collects
+         "private/cc-struct.rkt"
          setup/parallel-do
          racket/class
          racket/future

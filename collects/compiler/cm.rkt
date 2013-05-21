@@ -2,7 +2,6 @@
 (require syntax/modcode
          syntax/modresolve
          syntax/modread
-         setup/main-collects
          setup/dirs
 	 unstable/file
          racket/file
@@ -10,7 +9,8 @@
          racket/path
          racket/promise
          openssl/sha1
-         racket/place)
+         racket/place
+         setup/collects)
 
 (provide make-compilation-manager-load/use-compiled-handler
          managed-compile-zo
@@ -126,6 +126,18 @@
                 [else 
                  (c-loop (cdr paths))])]))]))))
 
+(define (path*->collects-relative p)
+  (if (bytes? p)
+      (let ([q (path->collects-relative (bytes->path p))])
+        (if (path? q)
+            (path->bytes q)
+            q))
+      (path->collects-relative p)))
+
+(define (collects-relative*->path p)
+  (if (bytes? p)
+      (bytes->path p)
+      (collects-relative->path p)))
 
 (define (reroot-path* base root)
   (cond
@@ -279,7 +291,7 @@
                   ;; (cons 'ext rel-path) => a non-module file, check source
                   ;; rel-path => a module file name, check cache
                   (let* ([ext? (and (pair? dep) (eq? 'ext (car dep)))]
-                         [p (main-collects-relative->path (if ext? (cdr dep) dep))])
+                         [p (collects-relative*->path (if ext? (cdr dep) dep))])
                     (cond
                      [ext? (let ([v (get-source-sha1 p)])
                              (cond
@@ -321,9 +333,9 @@
     (with-compile-output dep-path
       (lambda (op tmp-path)
         (let ([deps (append
-                     (map path->main-collects-relative deps)
+                     (map path*->collects-relative deps)
                      (map (lambda (x)
-                            (cons 'ext (path->main-collects-relative x)))
+                            (cons 'ext (path*->collects-relative x)))
                           external-deps))])
         (write (list* (version)
                       (cons (or src-sha1 (get-source-sha1 path))
@@ -678,7 +690,7 @@
                  ;; (cons 'ext rel-path) => a non-module file (check date)
                  ;; rel-path => a module file name (check transitive dates)
                  (define ext? (and (pair? p) (eq? 'ext (car p))))
-                 (define d (main-collects-relative->path (if ext? (cdr p) p)))
+                 (define d (collects-relative*->path (if ext? (cdr p) p)))
                  (define t
                    (if ext?
                        (cons (try-file-time d) #f)
