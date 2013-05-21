@@ -4984,19 +4984,21 @@ An example
             [c (in-list method-contracts)])
         (when c
           (let ([i (hash-ref method-ht m)]
-                [p ((contract-projection c) blame)])
+                [p ((contract-projection c) (blame-add-context blame (format "the ~a method in" m)
+                                                               #:important m))])
             (vector-set! meths i (make-method (p (vector-ref meths i)) m))))))
     
     ;; Handle external field contracts
     (unless (null? fields)
-      (let ([bset (blame-swap blame)])
-        (for ([f (in-list fields)]
-              [c (in-list field-contracts)])
-          (when c
-            (let ([fi (hash-ref field-ht f)]
-                  [p-pos ((contract-projection c) blame)]
-                  [p-neg ((contract-projection c) bset)])
-              (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg)))))))
+      (for ([f (in-list fields)]
+            [c (in-list field-contracts)])
+        (when c
+          (define fld-context (format "the ~a field in" f))
+          (define bset (blame-add-context blame fld-context #:swap? #t))
+          (let ([fi (hash-ref field-ht f)]
+                [p-pos ((contract-projection c) (blame-add-context blame fld-context))]
+                [p-neg ((contract-projection c) bset)])
+            (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg))))))
     
     c))
 
@@ -5007,7 +5009,9 @@ An example
 (define (make-wrapper-object ctc obj blame methods method-contracts fields field-contracts)
   (check-object-contract obj methods fields (λ args (apply raise-blame-error blame obj args)))
   (let ([original-obj (if (has-original-object? obj) (original-object obj) obj)]
-        [new-cls (make-wrapper-class (object-ref obj) blame methods method-contracts fields field-contracts)])
+        [new-cls (make-wrapper-class (object-ref obj) 
+                                     blame
+                                     methods method-contracts fields field-contracts)])
     (impersonate-struct obj object-ref (λ (o c) new-cls)
                         impersonator-prop:contracted ctc
                         impersonator-prop:original-object original-obj)))

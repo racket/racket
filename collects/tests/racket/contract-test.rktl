@@ -13826,6 +13826,37 @@ so that propagation occurs.
                             'pos 'neg)
                   #f))
   
+  (context-test '("the 1st argument of" "the save-file method in")
+                '(send (contract (object/c
+                                  (save-file (->m string? string?)))
+                                 (new (class object%
+                                        (define/public (save-file s . args) #f)
+                                        (super-new)))
+                                 'pos
+                                 'neg)
+                       save-file 1))
+
+  (context-test '("the f field in")
+                '(get-field 
+                  f
+                  (contract (object/c (field [f string?]))
+                            (new (class object%
+                                   (field [f 1])
+                                   (super-new)))
+                            'pos
+                            'neg)))
+  
+  (context-test '("the 1st argument of" "the f field in")
+                '((get-field 
+                   f
+                   (contract (object/c (field [f (-> string? any)]))
+                             (new (class object%
+                                    (field [f (λ (x) 1)])
+                                    (super-new)))
+                             'pos
+                             'neg))
+                  #f))
+  
 
   (let* ([blame-pos (contract-eval '(make-blame (srcloc #f #f #f #f #f) #f (λ () 'integer?) 'positive 'negative #t))]
          [blame-neg (contract-eval `(blame-swap ,blame-pos))])
