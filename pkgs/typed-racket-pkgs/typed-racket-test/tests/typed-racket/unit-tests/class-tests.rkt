@@ -317,6 +317,29 @@
                  (define/public (m y) 0)
                  (+ "foo" 5))))
 
+   ;; test private method
+   (check-ok
+    (class: object% (super-new)
+      (: x (-> Integer))
+      (define/private (x) 3)
+      (: m (-> Integer))
+      (define/public (m) (x))))
+
+   ;; fails, public and private types conflict
+   (check-err
+    (class: object% (super-new)
+      (: x (-> Integer))
+      (define/private (x) 3)
+      (: m (-> String))
+      (define/public (m) (x))))
+
+   ;; fails, not enough annotation on private
+   (check-err
+    (class: object% (super-new)
+      (define/private (x) 3)
+      (: m (-> Integer))
+      (define/public (m) (x))))
+
    ;; test optional init arg
    (check-ok
     (: c% (Class (init [x Integer #:optional])))

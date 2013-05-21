@@ -228,10 +228,19 @@
      (define locals (trawl-for-property #'body 'tr:class:local-table))
      (define-values (local-method-table local-private-table local-field-table)
        (construct-local-mapping-tables (car locals)))
+     ;; types for private elements
+     (define private-method-types
+       (for/hash ([(name type) (in-dict internals-table)]
+                  #:when (set-member? this%-private-names name))
+         (values name type)))
      ;; start type-checking elements in the body
      (define-values (lexical-names lexical-types)
-       (local-tables->lexical-env local-method-table methods this%-method-internals
-                                  local-field-table fields this%-field-internals
+       (local-tables->lexical-env local-method-table methods
+                                  this%-method-internals
+                                  local-field-table fields
+                                  this%-field-internals
+                                  local-private-table private-method-types
+                                  this%-private-names
                                   self-type))
      (with-lexical-env/extend lexical-names lexical-types
        (for ([stx top-level-exprs]
@@ -276,7 +285,10 @@
 ;;        (should probably do this in expected case anyway)
 (define (local-tables->lexical-env local-method-table methods method-names
                                    local-field-table fields field-names
+                                   local-private-table
+                                   private-types private-methods
                                    self-type)
+  ;; localize to accessor names via the provided tables
   (define (localize local-table names)
     (map (λ (m) (dict-ref local-table m))
                 (set->list names)))
@@ -284,29 +296,41 @@
   (define localized-field-pairs (localize local-field-table field-names))
   (define localized-field-get-names (map car localized-field-pairs))
   (define localized-field-set-names (map cadr localized-field-pairs))
+  (define localized-private-methods
+    (localize local-private-table private-methods))
   (define default-type (list (make-Univ)))
+
+  ;; construct the types for the accessors
   (define method-types
-    (for/list ([m (set->list method-names)])
+    (for/list ([m (in-set method-names)])
       (define maybe-type (dict-ref methods m #f))
       (->* (list (make-Univ))
            (if maybe-type
                (fixup-method-type (car maybe-type) self-type)
                (make-Univ)))))
   (define field-get-types
-    (for/list ([f (set->list field-names)])
+    (for/list ([f (in-set field-names)])
       (define maybe-type (dict-ref fields f #f))
       (->* (list (make-Univ)) (or (and maybe-type (car maybe-type))
                                   (make-Univ)))))
   (define field-set-types
-    (for/list ([f (set->list field-names)])
+    (for/list ([f (in-set field-names)])
       (define maybe-type (dict-ref fields f #f))
       (->* (list (make-Univ) (or (and maybe-type
                                       (car maybe-type))
                                  -bot))
            -Void)))
+  (define private-method-types
+    (for/list ([f (in-set private-methods)])
+      (define maybe-type (dict-ref private-types f #f))
+      (or (and maybe-type (fixup-method-type maybe-type self-type))
+          (make-Univ))))
   (values (append localized-method-names
-                  localized-field-get-names localized-field-set-names)
-          (append method-types field-get-types field-set-types)))
+                  localized-private-methods
+                  localized-field-get-names
+                  localized-field-set-names)
+          (append method-types private-method-types
+                  field-get-types field-set-types)))
 
 ;; check-methods : Listof<Syntax> Dict<Symbol, Symbol> Dict Type
 ;;                 -> Dict<Symbol, Type>
