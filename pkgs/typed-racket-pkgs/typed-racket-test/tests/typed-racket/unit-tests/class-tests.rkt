@@ -34,7 +34,7 @@
 
    ;; Basic class with init and public method
    (check-ok
-    (: c% (Class (init [x Integer #:optional])
+    (: c% (Class (init [x Integer])
                  [m (Integer -> Integer)]))
     (define c%
       (class: object%
@@ -45,7 +45,7 @@
 
    ;; Fails, bad superclass expression
    (check-err
-    (: d% (Class (init [x Integer #:optional])
+    (: d% (Class (init [x Integer])
                  [m (Integer -> Integer)]))
     (define d% (class: 5
                  (super-new)
@@ -54,7 +54,7 @@
 
    ;; Method using argument type
    (check-ok
-    (: e% (Class (init [x Integer #:optional])
+    (: e% (Class (init [x Integer])
                  [m (Integer -> Integer)]))
     (define e% (class: object%
                  (super-new)
@@ -63,7 +63,7 @@
 
    ;; Send inside a method
    (check-ok
-    (: f% (Class (init [x Integer #:optional])
+    (: f% (Class (init [x Integer])
                  [m (Integer -> Integer)]))
     (define f% (class: object%
                  (super-new)
@@ -178,6 +178,19 @@
     (define c% (class: object% (super-new)
                  (field [str "foo"] [x 0]))))
 
+   ;; FIXME: for the following two tests, we could improve
+   ;;        things by either figuring out the init or field
+   ;;        type when a default expr is provided. Otherwise,
+   ;;        we should still provide a better error message.
+   ;;
+   ;; fails, init with no type annotation
+   (check-err
+     (define c% (class: object% (super-new) (init x))))
+
+   ;; fails, field with no type annotation
+   (check-err
+     (define c% (class: object% (super-new) (field [x 0]))))
+
    ;; Mixin on classes without row polymorphism
    (check-ok
      (: mixin ((Class [m (-> Integer)])
@@ -257,24 +270,24 @@
 
    ;; check a good super-new call
    (check-ok
-    (: c% (Class (init [x Integer #:optional])))
+    (: c% (Class (init [x Integer])))
     (define c% (class: object% (super-new) (init x)))
     (: d% (Class))
     (define d% (class: c% (super-new [x (+ 3 5)]))))
 
    ;; fails, missing super-new
    (check-err
-    (: c% (Class (init [x Integer #:optional])))
+    (: c% (Class (init [x Integer])))
     (define c% (class: object% (init x))))
 
    ;; fails, non-top-level super-new
    (check-err
-    (: c% (Class (init [x Integer #:optional])))
+    (: c% (Class (init [x Integer])))
     (define c% (class: object% (let () (super-new)) (init x))))
 
    ;; fails, bad super-new argument
    (check-err
-    (: c% (Class (init [x Integer #:optional])))
+    (: c% (Class (init [x Integer])))
     (define c% (class: object% (super-new) (init x)))
     (: d% (Class))
     (define d% (class: c% (super-new [x "bad"]))))
