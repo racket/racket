@@ -2348,10 +2348,10 @@ tcp_listen(int argc, Scheme_Object *argv[])
       mz_freeaddrinfo(tcp_listen_addr);
     } else {
       scheme_raise_exn(MZEXN_FAIL_NETWORK,
-		       "tcp-listen: host not found\n"
+		       "tcp-listen: host lookup failed\n"
                        "  address: %s\n"
                        "  system error: %N",
-		       address, 1, err);
+		       address ? address : "#f", 1, err);
       return NULL;
     }
   }
