@@ -251,7 +251,8 @@
                    self-type)
      ;; trawl the body for the local name table
      (define locals (trawl-for-property #'cls.make-methods 'tr:class:local-table))
-     (define-values (local-method-table local-private-table local-field-table)
+     (define-values (local-method-table local-private-table local-field-table
+                     local-init-table)
        (construct-local-mapping-tables (car locals)))
      ;; types for private elements
      (define private-method-types
@@ -259,12 +260,17 @@
                   #:when (set-member? this%-private-names name))
          (values name type)))
      ;; start type-checking elements in the body
-     (define-values (lexical-names lexical-types)
+     (define-values (lexical-names lexical-types
+                     lexical-names/top-level lexical-types/top-level)
        (local-tables->lexical-env internal-external-mapping
                                   local-method-table methods
                                   this%-method-internals
                                   local-field-table fields
                                   this%-field-internals
+                                  local-init-table inits
+                                  ;; omit init-fields here since they don't have
+                                  ;; init accessors, only field accessors
+                                  (list->set (syntax->datum #'cls.init-internals))
                                   local-private-table private-method-types
                                   this%-private-names
                                   self-type))
@@ -272,7 +278,7 @@
        (for ([stx top-level-exprs]
              #:unless (syntax-property stx 'tr:class:super-new))
          (tc-expr stx)))
-     (with-lexical-env/extend lexical-names lexical-types
+     (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
        (check-field-set!s #'cls.initializer-body local-field-table inits))
      ;; trawl the body and find methods and type-check them
      (define meths (trawl-for-property #'cls.make-methods 'tr:class:method))
@@ -347,7 +353,7 @@
 ;;                             Dict<Symbol, Id> Dict List<Symbol>
 ;;                             Dict<Symbol, (List Id Id)> Dict List<Symbol>
 ;;                             Type
-;;                             -> List<Id> List<Type>
+;;                             -> List<Id> List<Type> List<Id> List<Type>
 ;; Construct mappings to put into the lexical type-checking environment
 ;; from the class local accessor mappings
 ;;
@@ -358,19 +364,20 @@
 (define (local-tables->lexical-env internal-external-mapping
                                    local-method-table methods method-names
                                    local-field-table fields field-names
+                                   local-init-table inits init-names
                                    local-private-table
                                    private-types private-methods
                                    self-type)
   ;; localize to accessor names via the provided tables
   (define (localize local-table names)
-    (map (λ (m) (dict-ref local-table m))
-                (set->list names)))
+    (for/list ([m names]) (dict-ref local-table m)))
   (define localized-method-names (localize local-method-table method-names))
   (define localized-field-pairs (localize local-field-table field-names))
   (define localized-field-get-names (map car localized-field-pairs))
   (define localized-field-set-names (map cadr localized-field-pairs))
   (define localized-private-methods
     (localize local-private-table private-methods))
+  (define localized-init-names (localize local-init-table init-names))
   (define default-type (list (make-Univ)))
 
   ;; construct the types for the accessors
@@ -400,12 +407,27 @@
       (define maybe-type (dict-ref private-types f #f))
       (or (and maybe-type (fixup-method-type maybe-type self-type))
           (make-Univ))))
+  (define init-types
+    (for/list ([i (in-set init-names)])
+      (define external (dict-ref internal-external-mapping i))
+      (car (dict-ref inits external (list -Bottom)))))
+
   (values (append localized-method-names
                   localized-private-methods
                   localized-field-get-names
                   localized-field-set-names)
           (append method-types private-method-types
-                  field-get-types field-set-types)))
+                  field-get-types field-set-types)
+          ;; FIXME: consider removing method names and types
+          ;;        from top-level environment to avoid <undefined>
+          (append localized-method-names
+                  localized-private-methods
+                  localized-field-get-names
+                  localized-field-set-names
+                  localized-init-names)
+          (append method-types private-method-types
+                  field-get-types field-set-types
+                  init-types)))
 
 ;; check-methods : Listof<Syntax> Dict<Symbol, Symbol> Dict Type
 ;;                 -> Dict<Symbol, Type>
@@ -429,11 +451,56 @@
 
 ;; check-field-set!s : Syntax Dict<Symbol, Symbol> Dict<Symbol, Type> -> Void
 ;; Check that fields are initialized to the correct type
+;; FIXME: this function is too long
 (define (check-field-set!s stx local-field-table inits)
   (for ([form (syntax->list stx)])
     (syntax-parse form
       #:literals (let-values #%plain-app quote)
-      ;; init-field case
+      ;; init with default
+      ;; FIXME: undefined can appear here
+      [(set! internal-init:id
+             (#%plain-app extract-arg:id
+                          _
+                          (quote init-external:id)
+                          init-args:id
+                          init-val:expr))
+       (define init-name (syntax-e #'init-external))
+       (define init-type (car (dict-ref inits init-name '(#f))))
+       (cond [init-type
+              ;; This is a type for the internal `extract-args` function
+              ;; that extracts init arguments from the object. We just
+              ;; want to make sure that init argument default value
+              ;; (the last argument) matches the type for the init.
+              ;;
+              ;; The rest is plumbing to make the type system happy.
+              (define extract-arg-type
+                (cl->* (->* (list (Un (-val #f) -Symbol) (-val init-name)
+                                  (make-Univ) (-val #f)) init-type)
+                       (->* (list (Un (-val #f) -Symbol) (-val init-name)
+                                  (make-Univ) (->* '() init-type))
+                            init-type)))
+              ;; Catch the exception because the error that is produced
+              ;; in the case of a type error is incomprehensible for a
+              ;; programmer looking at surface syntax. Raise a custom
+              ;; type error instead.
+              (with-handlers
+                  ([exn:fail:syntax?
+                    (λ (e) (tc-error/expr "Default init value has wrong type"))])
+                (parameterize ([delay-errors? #f])
+                  (with-lexical-env/extend
+                   (list #'self #'init-args #'extract-arg)
+                   (list (make-Univ) (make-Univ) extract-arg-type)
+                   (tc-expr form))))]
+             ;; If the type can't be found, it means that there was no
+             ;; expected type or no annotation was provided via (: ...).
+             ;;
+             ;; FIXME: is this the right place to raise this error, or
+             ;;        should it be caught earlier so that this function
+             ;;        can be simpler?
+             [else
+              (tc-error/expr "Init argument ~a has no type annotation"
+                             init-name)])]
+      ;; init-field with default
       [(let-values (((obj1:id) self:id))
          (let-values (((x:id)
                        (#%plain-app extract-arg:id
@@ -445,22 +512,27 @@
        #:when (free-identifier=? #'x #'y)
        #:when (free-identifier=? #'obj1 #'obj2)
        (define init-name (syntax-e #'name))
-       (define init-type (car (dict-ref inits init-name)))
-       (define extract-arg-type
-        (cl->* (->* (list (Un (-val #f) -Symbol) (-val init-name)
-                          (make-Univ) (-val #f)) init-type)
-               (->* (list (Un (-val #f) -Symbol) (-val init-name)
-                          (make-Univ) (->* '() init-type))
-                    init-type)))
-       (with-handlers
-         ([exn:fail:syntax?
-           ;; FIXME: produce a better error message
-           (λ (e) (tc-error/expr "Default init value has wrong type"))])
-         (parameterize ([delay-errors? #f])
-          (with-lexical-env/extend
-           (list #'self #'init-args #'extract-arg)
-           (list (make-Univ) (make-Univ) extract-arg-type)
-           (tc-expr form))))]
+       (define init-type (car (dict-ref inits init-name '(#f))))
+       (cond [init-type
+              (define extract-arg-type
+                (cl->* (->* (list (Un (-val #f) -Symbol) (-val init-name)
+                                  (make-Univ) (-val #f)) init-type)
+                       (->* (list (Un (-val #f) -Symbol) (-val init-name)
+                                  (make-Univ) (->* '() init-type))
+                            init-type)))
+              (with-handlers
+                  ([exn:fail:syntax?
+                    ;; FIXME: produce a better error message
+                    (λ (e) (tc-error/expr "Default init value has wrong type"))])
+                (parameterize ([delay-errors? #f])
+                  (with-lexical-env/extend
+                   (list #'self #'init-args #'extract-arg)
+                   (list (make-Univ) (make-Univ) extract-arg-type)
+                   (tc-expr form))))]
+             [else
+              (tc-error/expr "Init argument ~a has no type annotation"
+                             init-name)])]
+      ;; any field or init-field without default
       ;; FIXME: could use the local table to make sure the
       ;;        setter is known as a sanity check
       [(let-values (((obj1:id) self:id))
@@ -472,7 +544,8 @@
          (tc-expr form))]
       [_ (void)])))
 
-;; Syntax -> Dict<Symbol, Id> Dict<Symbol, (List Symbol Symbol)>
+;; Syntax -> Dict<Symbol, Id> Dict<Symbol, Id>
+;;           Dict<Symbol, (List Symbol Symbol)> Dict<Symbol, Id>
 ;; Construct tables mapping internal method names to the accessors
 ;; generated inside the untyped class macro.
 (define (construct-local-mapping-tables stx)
@@ -498,7 +571,9 @@
                       (let-values (((_) _)) (#%plain-app local-field-get:id _))
                       (let-values (((_) _))
                         (let-values (((_) _)) (#%plain-app local-field-set:id _ _))))
-                    ...)])
+                    ...)]
+                  [(init:id ...)
+                   (#%plain-app values (#%plain-lambda () local-init:id) ...)])
        (#%plain-app void))
      (values (map cons
                   (syntax->datum #'(method ...))
@@ -509,7 +584,10 @@
              (map list
                   (syntax->datum #'(field ...))
                   (syntax->list #'(local-field-get ...))
-                  (syntax->list #'(local-field-set ...))))]))
+                  (syntax->list #'(local-field-set ...)))
+             (map cons
+                  (syntax->datum #'(init ...))
+                  (syntax->list #'(local-init ...))))]))
 
 ;; check-super-new : Listof<Syntax> Inits -> Void
 ;; Check if the super-new call is well-typed

@@ -495,6 +495,18 @@
                  (init ([i j]))))
     (new c% [i 5]))
 
+   ;; test init default values
+   (check-ok
+    (class: object% (super-new)
+      (: z Integer)
+      (init [z 0])))
+
+   ;; fails, bad default init value
+   (check-err
+    (class: object% (super-new)
+      (: z Integer)
+      (init [z "foo"])))
+
    ;; test init field default value
    (check-ok
     (define c% (class: object% (super-new)
