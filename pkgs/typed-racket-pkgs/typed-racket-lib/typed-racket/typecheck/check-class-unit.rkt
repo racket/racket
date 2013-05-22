@@ -220,10 +220,6 @@
        (for/hash ([internal all-internal]
                   [external all-external])
          (values internal external)))
-     ;; define which init names are optional
-     (define optional-inits (list->set (syntax->datum #'cls.optional-inits)))
-     (define optional-external (for/set ([n optional-inits])
-                                 (dict-ref internal-external-mapping n)))
      ;; trawl the body for top-level expressions
      (define top-level-exprs (trawl-for-property #'cls.make-methods 'tr:class:top-level))
      (define internals-table (register-internals top-level-exprs))
@@ -234,6 +230,14 @@
        (for/list ([(name val) (in-dict super-inits)]
                   #:unless (member name provided-super-inits))
          (cons name val)))
+     ;; define which init names are optional
+     (define optional-inits (list->set (syntax->datum #'cls.optional-inits)))
+     (define optional-external (for/set ([n optional-inits])
+                                 (dict-ref internal-external-mapping n)))
+     (define optional-super
+       (for/set ([(name val) (in-dict remaining-super-inits)]
+                 #:when (cadr val))
+         name))
      ;; Type for self in method calls
      (define self-type
        (if self-class-type
@@ -293,7 +297,7 @@
       final-class-type
       this%-init-names this%-field-names
       this%-public-names this%-override-names
-      optional-external
+      (set-union optional-external optional-super)
       remaining-super-inits super-field-names
       super-method-names)
      final-class-type]))
