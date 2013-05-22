@@ -160,7 +160,7 @@
 
 (define (splitf-at list pred)
   (unless (procedure? pred)
-    (raise-argument-error 'splitf-at "procedure?" 0 list pred))
+    (raise-argument-error 'splitf-at "procedure?" 1 list pred))
   (let loop ([list list] [pfx '()])
     (if (and (pair? list) (pred (car list)))
       (loop (cdr list) (cons (car list) pfx))
