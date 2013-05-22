@@ -336,6 +336,8 @@
     (define field-names
       (append (stx-map stx-car (dict-ref name-dict #'field '()))
               (stx-map stx-car (dict-ref name-dict #'init-field '()))))
+    (define init-names
+      (stx-map stx-car (dict-ref name-dict #'init '())))
     (syntax-property
      #`(let-values ([(#,@method-names)
                      (values #,@(map (λ (stx) #`(λ () (#,stx)))
@@ -345,7 +347,10 @@
                                      private-names))]
                     [(#,@field-names)
                      (values #,@(map (λ (stx) #`(λ () #,stx (set! #,stx 0)))
-                                     field-names))])
+                                     field-names))]
+                    [(#,@init-names)
+                     (values #,@(map (λ (stx) #`(λ () #,stx))
+                                     init-names))])
          (void))
      'tr:class:local-table #t)))
 
