@@ -384,6 +384,16 @@
                  (: x Integer)
                  (init [x 0]))))
 
+   ;; test init coverage when all optionals are
+   ;; in the superclass
+   (check-ok
+    (: c% (Class (init [x Integer #:optional])))
+    (: d% (Class (init [x Integer #:optional])))
+    (define c% (class: object% (super-new)
+                 (: x Integer)
+                 (init [x 0])))
+    (define d% (class: c% (super-new))))
+
    ;; fails, expected mandatory but got optional
    (check-err
     (: c% (Class (init [x Integer])))
