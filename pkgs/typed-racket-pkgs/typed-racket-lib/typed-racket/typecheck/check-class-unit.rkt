@@ -44,7 +44,7 @@
                     (c:field field-names:name-pair ...)
                     (c:public public-names:name-pair ...)
                     (c:override override-names:name-pair ...)
-                    (c:private private-names:id ...)))
+                    (c:private privates:id ...)))
                   (#%plain-app values))
            #:with init-internals #'(init-names.internal ...)
            #:with init-externals #'(init-names.external ...)
@@ -56,7 +56,76 @@
            #:with public-internals #'(public-names.internal ...)
            #:with public-externals #'(public-names.external ...)
            #:with override-internals #'(override-names.internal ...)
-           #:with override-externals #'(override-names.external ...)))
+           #:with override-externals #'(override-names.external ...)
+           #:with private-names #'(privates ...)))
+
+(define-syntax-class initializer-body
+  #:literals (let-values)
+  #:attributes (val)
+  (pattern (let-values () body:initializer-body)
+           #:with val #'body.val)
+  (pattern (e:expr ...)
+           #:with val #'(e ...)))
+
+(define-syntax-class initializer-class
+  #:literals (#%plain-lambda)
+  #:attributes (val)
+  (pattern (#%plain-lambda
+            (self:id super-go:id si_c:id si_inited?:id
+                     si_leftovers:id init-args:id)
+            body:initializer-body)
+           #:with val #'body.val))
+
+(define-syntax-class make-methods-body
+  #:literals (let-values letrec-syntaxes+values #%plain-app values)
+  #:attributes (initializer-body)
+  (pattern (let-values () body:make-methods-body)
+           #:with initializer-body #'body.initializer-body)
+  (pattern (letrec-syntaxes+values _ _ body)
+           #:with initializer-body #'body.initializer-body)
+  (pattern (letrec-syntaxes+values
+            _ _
+            (#%plain-app
+             values
+             public:expr
+             override:expr
+             augride:expr
+             initializer:initializer-class))
+           #:with initializer-body #'initializer.val))
+
+(define-syntax-class make-methods-class
+  #:literals (let-values #%plain-lambda)
+  #:attributes (initializer-body)
+  (pattern (#%plain-lambda
+            (local-accessor:id local-mutator:id local-method-or-field:id ...)
+            (let-values ([(field-name:id) accessor-or-mutator] ...)
+              body:make-methods-body))
+           #:with initializer-body #'body.initializer-body))
+
+(define-syntax-class class-expansion
+  #:literals (let-values letrec-syntaxes+values #%plain-app)
+  #:attributes (superclass-expr initializer-body
+                init-internals init-externals
+                init-field-internals init-field-externals
+                optional-inits
+                field-internals field-externals
+                public-internals public-externals
+                override-internals override-externals
+                private-names
+                make-methods)
+  (pattern (let-values ()
+             (letrec-syntaxes+values
+              ()
+              ((() ;; residual class: data
+                   :internal-class-data))
+              (let-values (((superclass:id) superclass-expr)
+                           ((interfaces:id) interface-expr))
+                (#%plain-app
+                 compose-class:id
+                 internal:expr ...
+                 make-methods:make-methods-class
+                 (quote #f)))))
+           #:with initializer-body #'make-methods.initializer-body))
 
 ;; Syntax TCResults -> Type
 ;; Type-check a class form by trawling its innards
@@ -78,29 +147,14 @@
 ;; Do the actual type-checking
 (define (do-check form expected? self-class-type)
   (syntax-parse form
-    #:literals (let-values #%plain-lambda begin
-                #%plain-app values letrec-syntaxes+values)
     ;; Inspect the expansion of the class macro for the pieces that
     ;; we need to type-check like superclass, methods, top-level
     ;; expressions and so on
-    [(let-values ()
-       (letrec-syntaxes+values ()
-                               ((()
-                                 ;; residual class: data
-                                 data:internal-class-data))
-                               (let-values (((superclass) superclass-expr)
-                                            ((interfaces) interface-expr))
-                                 (?#%app compose-class
-                                         internal ...
-                                         (#%plain-lambda (local-accessor local-mutator ??? ...)
-                                                         (let-values ([(field-name) accessor-or-mutator]
-                                                                      ...)
-                                                           body))
-                                         ????))))
+    [cls:class-expansion
      ;; Make sure the superclass is a class
      ;; FIXME: maybe should check the property on this expression
      ;;        as a sanity check too
-     (define super-type (tc-expr #'superclass-expr))
+     (define super-type (tc-expr #'cls.superclass-expr))
      (define-values (super-inits super-fields super-methods)
        (match super-type
          ;; FIXME: should handle the case where the super class is
@@ -109,7 +163,7 @@
           (values super-inits super-fields super-methods)]
          [(tc-result1: t)
           (tc-error/expr "expected a superclass but got ~a" t
-                         #:stx #'superclass-expr)
+                         #:stx #'cls.superclass-expr)
           ;; FIXME: is this the right thing to do?
           (values null null null)]))
      ;; Define sets of names for use later
@@ -117,62 +171,62 @@
      (define super-field-names (list->set (dict-keys super-fields)))
      (define super-method-names (list->set (dict-keys super-methods)))
      (define this%-init-internals
-       (list->set (append (syntax->datum #'data.init-internals)
-                          (syntax->datum #'data.init-internals))))
+       (list->set (append (syntax->datum #'cls.init-internals)
+                          (syntax->datum #'cls.init-field-internals))))
      (define this%-public-internals
-       (list->set (syntax->datum #'data.public-internals)))
+       (list->set (syntax->datum #'cls.public-internals)))
      (define this%-override-internals
-       (list->set (syntax->datum #'data.override-internals)))
+       (list->set (syntax->datum #'cls.override-internals)))
      (define this%-method-internals
        (set-union this%-public-internals this%-override-internals))
      (define this%-field-internals
-       (list->set (syntax->datum #'data.field-internals)))
+       (list->set (syntax->datum #'cls.field-internals)))
      (define this%-init-names
        (list->set
-        (append (syntax->datum #'data.init-externals)
-                (syntax->datum #'data.init-field-externals))))
+        (append (syntax->datum #'cls.init-externals)
+                (syntax->datum #'cls.init-field-externals))))
      (define this%-field-names
        (list->set
-        (append (syntax->datum #'data.field-externals)
-                (syntax->datum #'data.init-field-externals))))
+        (append (syntax->datum #'cls.field-externals)
+                (syntax->datum #'cls.init-field-externals))))
      (define this%-public-names
-       (list->set (syntax->datum #'data.public-externals)))
+       (list->set (syntax->datum #'cls.public-externals)))
      (define this%-override-names
-       (list->set (syntax->datum #'data.override-externals)))
+       (list->set (syntax->datum #'cls.override-externals)))
      (define this%-private-names
-       (list->set (syntax->datum #'(data.private-names ...))))
+       (list->set (syntax->datum #'cls.private-names)))
      (define this%-method-names
        (set-union this%-public-names this%-override-names))
      (define all-internal
        (apply append
               (map (λ (stx) (syntax->datum stx))
-                   (list #'data.init-internals
-                         #'data.init-field-internals
-                         #'data.field-internals
-                         #'data.public-internals
-                         #'data.override-internals))))
+                   (list #'cls.init-internals
+                         #'cls.init-field-internals
+                         #'cls.field-internals
+                         #'cls.public-internals
+                         #'cls.override-internals))))
      (define all-external
        (apply append
               (map (λ (stx) (syntax->datum stx))
-                   (list #'data.init-externals
-                         #'data.init-field-externals
-                         #'data.field-externals
-                         #'data.public-externals
-                         #'data.override-externals))))
+                   (list #'cls.init-externals
+                         #'cls.init-field-externals
+                         #'cls.field-externals
+                         #'cls.public-externals
+                         #'cls.override-externals))))
      ;; establish a mapping between internal and external names
      (define internal-external-mapping
        (for/hash ([internal all-internal]
                   [external all-external])
          (values internal external)))
      ;; define which init names are optional
-     (define optional-inits (list->set (syntax->datum #'data.optional-inits)))
+     (define optional-inits (list->set (syntax->datum #'cls.optional-inits)))
      (define optional-external (for/set ([n optional-inits])
                                  (dict-ref internal-external-mapping n)))
      ;; trawl the body for top-level expressions
-     (define top-level-exprs (trawl-for-property #'body 'tr:class:top-level))
+     (define top-level-exprs (trawl-for-property #'cls.make-methods 'tr:class:top-level))
      (define internals-table (register-internals top-level-exprs))
      ;; find the `super-new` call (or error if missing)
-     (define super-new-stx (trawl-for-property #'body 'tr:class:super-new))
+     (define super-new-stx (trawl-for-property #'cls.make-methods 'tr:class:super-new))
      (define provided-super-inits (check-super-new super-new-stx super-inits))
      (define remaining-super-inits
        (for/list ([(name val) (in-dict super-inits)]
@@ -194,7 +248,7 @@
      (match-define (Instance: (Class: _ inits fields methods))
                    self-type)
      ;; trawl the body for the local name table
-     (define locals (trawl-for-property #'body 'tr:class:local-table))
+     (define locals (trawl-for-property #'cls.make-methods 'tr:class:local-table))
      (define-values (local-method-table local-private-table local-field-table)
        (construct-local-mapping-tables (car locals)))
      ;; types for private elements
@@ -216,7 +270,7 @@
              #:unless (syntax-property stx 'tr:class:super-new))
          (tc-expr stx)))
      ;; trawl the body and find methods and type-check them
-     (define meths (trawl-for-property #'body 'tr:class:method))
+     (define meths (trawl-for-property #'cls.make-methods 'tr:class:method))
      (define checked-method-types
        (with-lexical-env/extend lexical-names lexical-types
          (check-methods internal-external-mapping meths methods self-type)))
