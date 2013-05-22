@@ -495,6 +495,18 @@
                  (init ([i j]))))
     (new c% [i 5]))
 
+   ;; test init field default value
+   (check-ok
+    (define c% (class: object% (super-new)
+                 (: x Integer)
+                 (init-field ([x y] 0)))))
+
+   ;; fails, wrong init-field default
+   (check-err
+    (define c% (class: object% (super-new)
+                 (: x Integer)
+                 (init-field ([x y] "foo")))))
+
    ;; test type-checking method with internal/external
    (check-err
     (: c% (Class [n (Integer -> Integer)]))
