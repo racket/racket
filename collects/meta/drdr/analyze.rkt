@@ -161,7 +161,8 @@
         (for/or ([p (in-list ps)])
           ; XXX This squelch should be disabled if the committer changed this file
           ; XXX But even then it can lead to problems
-          (not (path-random? (build-path (revision-trunk-dir cur-rev) (substring (path->string* p) 1)))))
+          (not (path-random? (build-path (revision-trunk-dir cur-rev)
+                                         (substring (path->string* p) 1)))))
         (not (symbol=? id 'changes))))))
   (define mail-recipients
     (remove-duplicates
@@ -283,12 +284,17 @@
             (define dur (status-duration log))
             (define any-stderr? (ormap stderr? output-log))
             (define changed?
-              (if (previous-rev)
+              (if (and (previous-rev)
+                       (not (path-random? (trunk-path log-pth))))
                   (with-handlers ([exn:fail? 
                                    ; This #f means that new files are NOT considered changed
                                    (lambda (x) #f)])
-                    (define prev-log-pth ((rebase-path (revision-log-dir (current-rev)) (revision-log-dir (previous-rev))) log-pth))
-                    (log-different? output-log (status-output-log (read-cache prev-log-pth))))
+                    (define prev-log-pth
+                      ((rebase-path (revision-log-dir (current-rev)) 
+                                    (revision-log-dir (previous-rev)))
+                       log-pth))
+                    (log-different? output-log
+                                    (status-output-log (read-cache prev-log-pth))))
                   #f))
             (define responsible 
               (or (path-responsible (trunk-path log-pth))
