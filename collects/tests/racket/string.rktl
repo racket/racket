@@ -437,6 +437,9 @@
   (test "  x"     string-trim "  x  " #:left? #f)
   (test "x  "     string-trim "  x  " #:right? #f)
   (test "  x  "   string-trim "  x  " #:left? #f #:right? #f)
+  (test "x"       string-trim " x\t" #px" |\t")
+  (test "x"       string-trim "\tx " #px" |\t")
+  (test "\t x \t" string-trim " \t x \t " #px" |\t")
   (for* ([i+e '([""       ""  ""]
                 ["a"      "a" "a"]
                 ["aa"     ""  ""]
@@ -467,7 +470,8 @@
   (for ([s (in-list '(" " "   "  "\n\t\r"))])
     (test '() string-split s))
   (test '("x" "y" "z") string-split "axayaza" "a")
-  (test '("" "x" "y" "z" "") string-split "axayaza" "a" #:trim? #f))
+  (test '("" "x" "y" "z" "") string-split "axayaza" "a" #:trim? #f)
+  (test '("foo" "bar" "baz") string-split "foo,bar;baz" #rx",|;"))
 
 ;; ---------- string-replace/* ----------
 (let ()

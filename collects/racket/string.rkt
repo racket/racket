@@ -35,8 +35,8 @@
     (apply string-append r)))
 
 ;; Utility for the functions below: get a string or a regexp and return a list
-;; of the regexp (strings are converted using `regexp-quote'), the and versions
-;; that matches at the beginning/end.
+;; of the regexp (strings are converted using `regexp-quote'), and versions
+;; that match at the beginning/end.
 (define get-rxs
   (let ([t (make-weak-hasheq)] [t+ (make-weak-hasheq)])
     (let ([spaces '(#px"\\s+" #px"^\\s+" #px"\\s+$")])
@@ -45,7 +45,8 @@
     (λ (who rx +?)
       (hash-ref! (if +? t+ t) rx
         (λ () (let* ([s (cond [(string? rx) (regexp-quote rx)]
-                              [(regexp? rx) (object-name rx)]
+                              [(regexp? rx) (string-append
+                                             "(?:" (object-name rx) ")")]
                               [else (raise-argument-error
                                      who "(or/c string? regexp?)" rx)])]
                      [s (if +? (string-append "(?:" s ")+") s)]
