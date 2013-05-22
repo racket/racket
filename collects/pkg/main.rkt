@@ -82,7 +82,7 @@
    'install
    scope installation shared user
    (lambda ()
-     (unless (package-source->name name)
+     (unless (or (not name) (package-source->name name))
        ((current-pkg-error) (format "~e is an invalid package name" name)))
      (with-pkg-lock
       (define setup-collects
