@@ -1509,7 +1509,7 @@
       (lambda ()
         (define dest-dir (build-path tmp-dir name))
         (make-directory dest-dir)
-        (generate-stripped-directory (eq? mode 'binary) dir dest-dir)
+        (generate-stripped-directory mode dir dest-dir)
         (create-as-is create:format name dest-dir dir 
                       #:hide-src? #t 
                       #:quiet? quiet?
@@ -1549,11 +1549,10 @@
     [(as-is) (create-as-is create:format pkg-name dir dir
                            #:dest dest-dir
                            #:quiet? quiet?)]
-    [(source binary) (stripped-create mode pkg-name dir
-                                      #:dest dest-dir
-                                      #:format create:format
-                                      #:quiet? quiet?)]))
-  
+    [else (stripped-create mode pkg-name dir
+                           #:dest dest-dir
+                           #:format create:format
+                           #:quiet? quiet?)]))
 
 (define (pkg-catalog-copy srcs dest
                         #:from-config? [from-config? #f]
@@ -2012,7 +2011,7 @@
    (->* ((or/c 'zip 'tgz 'plt 'MANIFEST)
          path-string?)
         (#:source (or/c 'dir 'name)
-                  #:mode (or/c 'as-is 'source 'binary)
+                  #:mode (or/c 'as-is 'source 'binary 'built)
                   #:quiet? boolean?
                   #:dest (or/c (and/c path-string? complete-path?) #f))
         void?)]

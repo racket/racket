@@ -261,7 +261,16 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    A list of documents to build. Each document in the list is itself
    represented as a list, where each document's list starts with a
    string that is a collection-relative path to the document's source
-   file.
+   file. A directory for pre-rendered documentation is computed from the
+   source file name by starting with the directory of the @filepath{info.rkt}
+   file, adding @filepath{doc}, and then using the source file's name without
+   a suffix; if such a directory exists and does not have a
+   @filepath{synced.rktd} file, then it is treated as pre-rendered
+   documentation and moved into place, in which case the documentation source file
+   need not be present. (Moving documentation into place may require no movement
+   at all, depending on the way that the enclosing collection is installed, but 
+   movement includes adding a @filepath{synced.rktd} file to represent
+   the installation.)
 
    More precisely a @racketidfont{scribblings} entry must be a value
    that can be generated from an expression matching the following

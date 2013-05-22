@@ -192,7 +192,7 @@
   ;;              Find Collections                 ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define (make-cc* collection path omit-root info-root 
+  (define (make-cc* collection parent path omit-root info-root 
                     info-path info-path-mode shadowing-policy 
                     main?)
     (define info
@@ -218,6 +218,7 @@
                       (format "~a (~a)" path-name name)
                       path-name)
                   info
+                  parent
                   omit-root
                   info-root info-path info-path-mode
                   shadowing-policy
@@ -232,6 +233,7 @@
 
   ;; collection-cc! : listof-path .... -> cc
   (define (collection-cc! collection-p
+                          #:parent [parent-cc #f]
                           #:path [dir (apply collection-path collection-p)]
                           #:omit-root [omit-root #f]
                           #:info-root [given-info-root #f]
@@ -258,6 +260,7 @@
              dir))
     (define new-cc
       (make-cc* collection-p
+                parent-cc
                 dir
                 (if (eq? omit-root 'dir)
                     dir
@@ -302,6 +305,7 @@
       (error 'planet-cc! "non-path when building package ~e" pkg-file))
     (and (directory-exists? path)
          (make-cc* #f
+                   #f
                    path
                    omit-root
                    #f ; don't need info-root; absolute paths in cache.rktd will be ok
@@ -404,6 +408,7 @@
     (define (build-collection-tree cc)
       (define (make-child-cc parent-cc name)
         (collection-cc! (append (cc-collection parent-cc) (list name))
+                        #:parent parent-cc
                         #:path (build-path (cc-path parent-cc) name)
                         #:info-root (cc-info-root cc)
                         #:info-path (cc-info-path cc)
@@ -440,6 +445,7 @@
     (define (make-children-ccs cc children)
       (map (lambda (child)
              (collection-cc! (append (cc-collection cc) (list child))
+                             #:parent cc
                              #:path (build-path (cc-path cc) child)
                              #:info-root (cc-info-root cc)
                              #:info-path (cc-info-path cc)
@@ -589,6 +595,12 @@
                            "encountered ~a, neither a file nor a directory"
                            path)]))))
 
+  (define (assume-virtual-sources? cc)
+    (or ((cc-info cc) 'assume-virtual-sources (lambda () #f))
+        (let ([cc (cc-parent-cc cc)])
+          (and cc
+               (assume-virtual-sources? cc)))))
+
   (define (clean-collection cc dependencies)
     (begin-record-error cc "Cleaning"
       (define info (cc-info cc))
@@ -597,7 +609,7 @@
          info
          'clean
          (lambda ()
-           (if (info 'assume-virtual-sources (lambda () #f))
+           (if (assume-virtual-sources? cc)
                null
                (list mode-dir
                      (build-path mode-dir "native")
@@ -745,9 +757,9 @@
                        [compile-notify-handler doing-path])
           (thunk)))))
 
-  (define (clean-cc dir info)
+  (define (clean-cc cc dir info)
     ;; Clean up bad .zos:
-    (unless (info 'assume-virtual-sources (lambda () #f))
+    (unless (assume-virtual-sources? cc)
       (define c (build-path dir "compiled"))
       (when (directory-exists? c)
         (define ok-zo-files
@@ -807,7 +819,7 @@
          (lambda ()
            (define dir  (cc-path cc))
            (define info (cc-info cc))
-           (clean-cc dir info)
+           (clean-cc cc dir info)
            (compile-directory-zos dir info
                                   #:omit-root (cc-omit-root cc)
                                   #:managed-compile-zo caching-managed-compile-zo
@@ -853,7 +865,7 @@
             (iterate-cct (lambda (cc)
                            (define dir (cc-path cc))
                            (define info (cc-info cc))
-                           (clean-cc dir info))
+                           (clean-cc cc dir info))
                          cct)
             (parallel-compile (parallel-workers) setup-fprintf handle-error cct)
             (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])

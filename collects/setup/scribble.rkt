@@ -48,8 +48,7 @@
                                  under-main?
                                  pkg?
                                  category
-                                 out-count
-                                 pre-rendered?)
+                                 out-count)
   #:transparent)
 (define-serializable-struct info (doc       ; doc structure above
                                   undef     ; unresolved requires
@@ -147,10 +146,8 @@
                                   (apply validate i)))
                            infos)])
            (and (not (memq #f infos)) infos))))
-  (define ((get-docs main-dirs pre-rendered?) i rec)
-    (let* ([pre-s (and i (i (if pre-rendered?
-                                'rendered-scribblings
-                                'scribblings)))]
+  (define ((get-docs main-dirs) i rec)
+    (let* ([pre-s (and i (i 'scribblings))]
            [s (validate-scribblings-infos pre-s)]
            [dir (directory-record-path rec)])
       (if s
@@ -178,30 +175,23 @@
                              dest
                              flags under-main? (and (path->pkg src) #t)
                              (caddr d)
-                             (list-ref d 4)
-                             pre-rendered?)))
+                             (list-ref d 4))))
                s)
           (begin (setup-printf
                   "WARNING"
-                  "bad '~ascribblings info: ~e from: ~e" 
-                  (if pre-rendered? "rendered-" "")
+                  "bad 'scribblings info: ~e from: ~e" 
                   pre-s dir)
                  null))))
   (log-setup-info "getting documents")
   (define docs
     (let* ([recs (find-relevant-directory-records '(scribblings) 'all-available)]
-           [r-recs (find-relevant-directory-records '(rendered-scribblings) 'all-available)]
            [main-dirs (parameterize ([current-library-collection-paths
                                       (list (find-collects-dir))])
                         (for/hash ([k (in-list
-                                       (append
-                                        (find-relevant-directories '(rendered-scribblings) 'no-planet)
-                                        (find-relevant-directories '(scribblings) 'no-planet)))])
+                                       (find-relevant-directories '(scribblings) 'no-planet))])
                           (values k #t)))]
-           [infos (map get-info/full (map directory-record-path recs))]
-           [r-infos (map get-info/full (map directory-record-path r-recs))])
-      (filter-user-docs (append (append-map (get-docs main-dirs #f) infos recs) 
-                                (append-map (get-docs main-dirs #t) r-infos r-recs))
+           [infos (map get-info/full (map directory-record-path recs))])
+      (filter-user-docs (append-map (get-docs main-dirs) infos recs)
                         make-user?)))
   (define-values (main-docs user-docs) (partition doc-under-main? docs))
 
@@ -759,13 +749,16 @@
                        only-fast? force-out-of-date? lock)
          doc)
 
-  ;; First, move pre-rendered documentation into place
-  (when (and (doc-pre-rendered? doc)
-             (can-build? only-dirs doc)
-             (or (not (directory-exists? (doc-dest-dir doc)))
-                 force-out-of-date?
-                 (not (file-exists? (build-path (doc-dest-dir doc) "synced.rktd")))))
-    (move-documentation-into-place doc setup-printf workerid lock))
+  ;; First, move pre-rendered documentation, if any, into place
+  (let ([rendered-dir (let-values ([(base name dir?) (split-path (doc-src-file doc))])
+                        (build-path (doc-src-dir doc) "doc" (path-replace-suffix name #"")))])
+    (when (and (can-build? only-dirs doc)
+               (directory-exists? rendered-dir)
+               (not (file-exists? (build-path rendered-dir "synced.rktd")))
+               (or (not (directory-exists? (doc-dest-dir doc)))
+                   force-out-of-date?
+                   (not (file-exists? (build-path (doc-dest-dir doc) "synced.rktd")))))
+      (move-documentation-into-place doc rendered-dir setup-printf workerid lock)))
 
   (let* ([info-out-files (for/list ([i (add1 (doc-out-count doc))])
                            (sxref-path latex-dest doc (format "out~a.sxref" i)))]
@@ -773,14 +766,17 @@
          [db-file (find-db-file doc latex-dest)]
          [stamp-file  (sxref-path latex-dest doc "stamp.sxref")]
          [out-file (build-path (doc-dest-dir doc) "index.html")]
-         [src-zo (and 
-                  (not (doc-pre-rendered? doc))
-                  (let-values ([(base name dir?) (split-path (doc-src-file doc))])
-                    (define path (build-path base "compiled" (path-add-suffix name ".zo")))
-                    (or (for/or ([root (in-list (current-compiled-file-roots))])
-                          (define p (reroot-path* path root))
-                          (and (file-exists? p) p))
-                        path)))]
+         [src-zo (let-values ([(base name dir?) (split-path (doc-src-file doc))])
+                   (define path (build-path base "compiled" (path-add-suffix name ".zo")))
+                   (or (for/or ([root (in-list (current-compiled-file-roots))])
+                         (define p (reroot-path* path root))
+                         (and (file-exists? p) p))
+                       (if (and (not (file-exists? path))
+                                (file-exists? out-file))
+                           ;; assume installed as pre-rendered:
+                           #f
+                           ;; need to render, so complain if no source is available:
+                           path)))]
          [renderer (make-renderer latex-dest doc)]
          [can-run? (can-build? only-dirs doc)]
          [stamp-time (file-or-directory-modify-seconds stamp-file #f (lambda () -inf.0))]
@@ -815,13 +811,13 @@
          [info-in-time (file-or-directory-modify-seconds info-in-file #f (lambda () #f))]
          [info-time (min (or info-out-time -inf.0) (or info-in-time -inf.0))]
          [vers (send renderer get-serialize-version)]
-         [src-time (and (not (doc-pre-rendered? doc))
+         [src-time (and src-zo
                         (file-or-directory-modify-seconds/stamp
                          src-zo
                          stamp-time stamp-data 0
                          get-compiled-file-sha1))]
          [up-to-date?
-          (or (doc-pre-rendered? doc)
+          (or (not src-zo)
               (and (not force-out-of-date?)
                    info-out-time
                    info-in-time
@@ -832,7 +828,7 @@
                        ;; this is mostly useful if we interrupt setup-plt after
                        ;; it runs some documents without rendering them:
                        (info-time . >= . src-time))))]
-         [can-run? (and (not (doc-pre-rendered? doc))
+         [can-run? (and src-zo
                         (or (not latex-dest)
                             (not (omit? (doc-category doc))))
                         (or can-run?
@@ -966,9 +962,7 @@
              (lambda () #f))
             #f))))
 
-(define (move-documentation-into-place doc setup-printf workerid lock)
-  (define src-dir (let-values ([(base name dir?) (split-path (doc-src-file doc))])
-                    (build-path base "doc" (path-replace-suffix name #""))))
+(define (move-documentation-into-place doc src-dir setup-printf workerid lock)
   (define dest-dir (doc-dest-dir doc))
   (define move? (not (equal? (file-or-directory-identity src-dir)
                              (and (directory-exists? dest-dir)
@@ -1157,6 +1151,12 @@
            (doc-src-file doc)
            (lambda () (send renderer render (list v) (list dest-dir) ri))
            void))
+         (unless (or latex-dest (main-doc? doc))
+           ;; Since dest dir is the same place as pre-built documentation,
+           ;; mark it so that it is not treated as needing an install:
+           (let ([synced (build-path (doc-dest-dir doc) "synced.rktd")])
+             (unless (file-exists? synced)
+               (close-output-port (open-output-file synced)))))
          (gc-point)
          (list in-delta? out-delta? undef searches))))
    (lambda () #f)))

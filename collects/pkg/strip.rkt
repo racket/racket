@@ -4,32 +4,44 @@
          syntax/modread
          racket/match
          racket/file
-         racket/list)
+         racket/list
+         racket/set)
 
 (provide generate-stripped-directory
          fixup-local-redirect-reference)
 
-(define (generate-stripped-directory binary? dir dest-dir)
+(define (generate-stripped-directory mode dir dest-dir)
   (define drop-keep-ns (make-base-namespace))
   (define (add-drop+keeps dir base drops keeps)
     (define get-info (get-info/full dir #:namespace drop-keep-ns))
-    (define drop-tag (if binary? 'binary-omit-files 'source-omit-files))
-    (define more-drops (if get-info
-                           (get-info drop-tag (lambda () null))
-                           null))
-    (define keep-tag (if binary? 'binary-keep-files 'source-keep-files))
-    (define more-keeps (if get-info
-                           (get-info keep-tag (lambda () null))
-                           null))
-    (define (check tag l)
+    (define (get-paths tag)
+      (define l (if get-info
+                    (get-info tag (lambda () null))
+                    null))
       (unless (and (list? l) (andmap (lambda (p)
                                        (and (path-string? p)
                                             (relative-path? p)))
                                      l))
-        (error 'strip "bad ~a value from \"info.rkt\": ~e" tag l)))
-    (check drop-tag more-drops)
-    (check keep-tag more-keeps)
-
+        (error 'strip "bad ~a value from \"info.rkt\": ~e" tag l))
+      l)
+    (define (intersect l1 l2)
+      (set->list (set-intersect (list->set l1) (list->set l2))))
+    (define (union l1 l2)
+      (set->list (set-union (list->set l1) (list->set l2))))
+    (define more-drops
+      (case mode
+        [(source) (get-paths 'source-omit-files)]
+        [(binary) (get-paths 'binary-omit-files)]
+        [(built) 
+         (intersect (get-paths 'source-omit-files)
+                    (get-paths 'binary-omit-files))]))
+    (define more-keeps
+      (case mode
+        [(source) (get-paths 'source-keep-files)]
+        [(binary) (get-paths 'binary-keep-files)]
+        [(built) 
+         (union (get-paths 'source-keep-files)
+                (get-paths 'binary-keep-files))]))
     (define (add ht l)
       (for/fold ([ht ht]) ([i (in-list l)])
         (hash-set ht 
@@ -44,32 +56,36 @@
     (define bstr (path->bytes path))
     (or (regexp-match? #rx#"^(?:[.]git.*|[.]svn|.*~|#.*#)$"
                        bstr)
-        (regexp-match? (if binary?
-                           #rx#"^(?:tests|scribblings|.*(?:[.]scrbl|[.]dep|_scrbl[.]zo))$"
-                           #rx#"^(?:compiled|doc)$")
-                       bstr)
-        (and binary?
-             (regexp-match? #rx"[.](?:ss|rkt)$" bstr)
-             (not (equal? #"info.rkt" bstr))
-             (file-exists? (let-values ([(base name dir?) (split-path (get-p))])
-                             (build-path base "compiled" (path-add-suffix name #".zo")))))
-        (and binary?
-             ;; drop these, because they're recreated on fixup:
-             (or
-              (equal? #"info_rkt.zo" bstr)
-              (equal? #"info_rkt.dep" bstr)))))
-
+        ;; can appear as a marker in rendered documentation:
+        (equal? #"synced.rktd" bstr)
+        (case mode
+          [(source)
+           (regexp-match? #rx#"^(?:compiled|doc)$" bstr)]
+          [(binary)
+           (or (regexp-match? #rx#"^(?:tests|scribblings|.*(?:[.]scrbl|[.]dep|_scrbl[.]zo))$"
+                              bstr)
+               (and (regexp-match? #rx"[.](?:ss|rkt)$" bstr)
+                    (not (equal? #"info.rkt" bstr))
+                    (file-exists? (let-values ([(base name dir?) (split-path (get-p))])
+                                    (build-path base "compiled" (path-add-suffix name #".zo")))))
+               ;; drop these, because they're recreated on fixup:
+               (equal? #"info_rkt.zo" bstr)
+               (equal? #"info_rkt.dep" bstr))]
+          [(built)
+           #f])))
+  
   (define (fixup new-p path src-base)
-    (when binary?
+    (unless (eq? mode 'source)
       (define bstr (path->bytes path))
       (cond
        [(regexp-match? #rx"[.]html$" bstr)
         (fixup-html new-p)]
-       [(equal? #"info.rkt" bstr)
+       [(and (eq? mode 'binary)
+             (equal? #"info.rkt" bstr))
         (fixup-info new-p src-base)]
-       [(regexp-match? #rx"[.]zo$" bstr)
-        (fixup-zo new-p)]
-       [else (void)])))
+       [(and (eq? mode 'binary)
+             (regexp-match? #rx"[.]zo$" bstr))
+        (fixup-zo new-p)])))
   
   (define (explore base paths drops keeps)
     (for ([path (in-list paths)])
@@ -201,8 +217,6 @@
 (define ((fixup-info-definition get-info) defn)
   (match defn
     [`(define build-deps . ,v) #f]
-    [`(define scribblings . ,v)
-     `(define rendered-scribblings . ,v)]
     [`(define copy-foreign-libs . ,v)
      `(define move-foreign-libs . ,v)]
     [`(define copy-man-pages . ,v)

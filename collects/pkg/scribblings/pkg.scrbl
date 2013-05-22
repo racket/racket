@@ -364,10 +364,10 @@ removing any of the @nonterm{pkg}s.
     GitHub repository or other non-archive formats. The @exec{create}
     sub-command can create an archive from a directory (the default) or
     from an installed package. It can also adjust the archive's content
-    to include only sources (which is the recommended mode, although not
-    the default) or as a ``binary'' package (but packages are
+    to include only sources, only compiled bytecode and rendered documentation,
+    or both---but packages are
     normally provided as source and converted to binary form by an
-    automatic service, instead of by a package author).
+    automatic service, instead of by a package author.
 
  The @exec{create} sub-command accepts 
  the following @nonterm{option}s:
@@ -382,34 +382,11 @@ removing any of the @nonterm{pkg}s.
  @item{@DFlag{manifest} --- Creates a manifest file for a directory, rather than an archive.}
  @item{@DFlag{as-is} --- Bundle all content of the package directory as is, with no filtering
        of sources, compiled files, or repository elements.}
- @item{@DFlag{source} --- Bundle only sources in the package directory, pruning (by default) 
-       @filepath{compiled} directories (that normally hold compiled
-       bytecode), @filepath{doc} directories (that normally hold rendered documentation),
-       directories named @filepath{.svn}, directories and files whose names start with @filepath{.git},
-       and files whose name ends with @litchar{~} or starts and ends with @litchar{#}.
-       Override the default pruning rules with @racket[source-omit-files] and/or
-       @racket[source-keep-files] definitions in @filepath{info.rkt} files within the
-       package directory.}
+ @item{@DFlag{source} --- Bundle only sources in the package directory; see @secref["strip"].}
  @item{@DFlag{binary} --- Bundle compiled bytecode and rendered
-       documentation in the package directory. Normally, this option is sensible for
-       a package that is installed from source in a user-specific scope. Bundling prunes (by default)
-       @filepath{.rkt} and @filepath{.ss} files for which compiled bytecode is present, files with
-       a @filepath{.scrbl} suffix and their compiled files, files with a @filepath{.dep} suffix,
-       @filepath{tests} directories, @filepath{scribblings}
-       directories, @filepath{.svn} directories, directories and files whose names 
-       start with @filepath{.git}, and files whose name ends with @litchar{~} or starts and ends
-       with @litchar{#}. For each @filepath{.zo} file, submodules named @racketidfont{test},
-       @racketidfont{doc}, or @racketidfont{srcdoc} are removed. For each @filepath{.html} file that
-       refers to a @filepath{local-redirect.js} script, the path to the script is removed.
-       In addition, bundling updates any @filepath{info.rkt} as follows: it
-       adds a @racket[assume-virtual-sources] entry,
-       converts a @racket[scribblings] entry to a @racket[rendered-scribblings] entry,
-       changes a @racket[copy-foreign-libs] entry to a @racket[move-foreign-libs] entry,
-       changes a @racket[copy-man-pages] entry to a @racket[move-man-pages] entry,
-       and removes any @racket[build-deps] entry. Override
-       the default pruning rules with @racket[binary-omit-files]
-       and/or @racket[binary-keep-files] definitions in
-       @filepath{info.rkt} files within the package directory.}
+       documentation in the package directory; see @secref["strip"].}
+ @item{@DFlag{built} --- Bundle compiled sources, bytecode, and rendered
+       documentation in the package directory, filtering repository elements; see @secref["strip"].}
   @item{@DFlag{dest} @nonterm{dest-dir} --- Writes generated bundles to @nonterm{dest-dir}.}
   ]
 }
@@ -751,11 +728,12 @@ The following @filepath{info.rkt} fields are used by the package manager:
        on the version of the Racket installation.}
 
  @item{@racketidfont{build-deps} --- like @racketidfont{deps}, but for
-       dependencies that can be dropped in a ``binary'' variant of the
-       package that does not include sources. The
-       @racketidfont{build-deps} and @racketidfont{deps} lists are appended,
-       while @command-ref["create"] strips away @racketidfont{build-deps}
-       when converting a package for @DFlag{binary} mode.}
+       dependencies that can be dropped in a @tech{binary package},
+       which does not include sources; see @secref["strip"]. The
+       @racketidfont{build-deps} and @racketidfont{deps} lists are
+       appended, while @command-ref["create"] strips away
+       @racketidfont{build-deps} when converting a package for
+       @DFlag{binary} mode.}
 
  @item{@racketidfont{setup-collects} --- a list of path strings and/or
        lists of path strings, which are used as collection names to
@@ -766,6 +744,10 @@ The following @filepath{info.rkt} fields are used by the package manager:
        links).}
 
 ]
+
+@; ----------------------------------------
+
+@include-section["strip.scrbl"]
 
 @; ----------------------------------------
 

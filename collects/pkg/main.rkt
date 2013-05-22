@@ -208,6 +208,7 @@
   [#:bool as-is () "Bundle the directory/package as-is (the default)"]
   [#:bool source () "Bundle sources only"]
   [#:bool binary () "Bundle bytecode and rendered documentation without sources"]
+  [#:bool built () "Bundle sources, bytecode and rendered documentation"]
   #:once-each
   [(#:str dest-dir #f) dest () "Create output files in <dest-dir>"]
   #:args (directory-or-package)
@@ -222,6 +223,7 @@
                 #:mode (cond
                         [source 'source]
                         [binary 'binary]
+                        [built 'built]
                         [else 'as-is])))]
  [config
   "View and modify the package manager's configuration"
