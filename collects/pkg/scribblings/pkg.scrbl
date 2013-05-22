@@ -385,7 +385,8 @@ removing any of the @nonterm{pkg}s.
  @item{@DFlag{source} --- Bundle only sources in the package directory, pruning (by default) 
        @filepath{compiled} directories (that normally hold compiled
        bytecode), @filepath{doc} directories (that normally hold rendered documentation),
-       directories named @filepath{.svn}, and directories and files whose names start with @filepath{.git}.
+       directories named @filepath{.svn}, directories and files whose names start with @filepath{.git},
+       and files whose name ends with @litchar{~} or starts and ends with @litchar{#}.
        Override the default pruning rules with @racket[source-omit-files] and/or
        @racket[source-keep-files] definitions in @filepath{info.rkt} files within the
        package directory.}
@@ -393,9 +394,12 @@ removing any of the @nonterm{pkg}s.
        documentation in the package directory. Normally, this option is sensible for
        a package that is installed from source in a user-specific scope. Bundling prunes (by default)
        @filepath{.rkt} and @filepath{.ss} files for which compiled bytecode is present, files with
-       a @filepath{.scrbl} suffix, @filepath{tests} directories, @filepath{scribblings}
-       directories, @filepath{.svn} directories, and directories and files whose names 
-       start with @filepath{.git}. For each @filepath{.html} file that
+       a @filepath{.scrbl} suffix and their compiled files, files with a @filepath{.dep} suffix,
+       @filepath{tests} directories, @filepath{scribblings}
+       directories, @filepath{.svn} directories, directories and files whose names 
+       start with @filepath{.git}, and files whose name ends with @litchar{~} or starts and ends
+       with @litchar{#}. For each @filepath{.zo} file, submodules named @racketidfont{test},
+       @racketidfont{doc}, or @racketidfont{srcdoc} are removed. For each @filepath{.html} file that
        refers to a @filepath{local-redirect.js} script, the path to the script is removed.
        In addition, bundling updates any @filepath{info.rkt} as follows: it
        adds a @racket[assume-virtual-sources] entry,

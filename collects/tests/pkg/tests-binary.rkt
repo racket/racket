@@ -22,6 +22,9 @@
  $ "racket -l racket/base -l x -e '(x)'" =stdout> "'x\n"
  $ "racket -l racket/base -l y -e '(y)'" =stdout> "'y\n"
 
+ $ "racket -l racket/base -e '(require (submod x test))'"
+ $ "racket -l racket/base -e '(require (submod y/other doc))'"
+
  $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-x #t)'"
  $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-y #t)'"
 
@@ -81,7 +84,8 @@
      (parameterize ([current-directory d])
        (unzip z)
        (for ([f (in-directory)])
-         (when (or (regexp-match? #rx#"[.](?:rkt|scrbl)$" (path->bytes f))
+         (when (or (and (regexp-match? #rx#"(?:[.](?:rkt|scrbl|dep)|_scrbl[.]zo)$" (path->bytes f))
+                        (not (regexp-match? #rx#"(?:info_rkt[.]dep)$" (path->bytes f))))
                    (regexp-match? #rx#"nobin" (path->bytes f)))
            (unless (regexp-match? #rx#"(?:info[.]rkt|keep.scrbl)$" (path->bytes f))
              (error 'binary "extra ~s" f)))))))
@@ -114,6 +118,9 @@
 
  $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-x #f)'"
  $ "racket -l racket/base -t test-docs.rkt -e '(test-docs-y #t)'"
+
+ $ "racket -l racket/base -e '(require (submod x test))'" =exit> 1
+ $ "racket -l racket/base -e '(require (submod y/other doc))'" =exit> 1
 
  (shelly-case
   "check that cleaning doesn't destroy a binary install"
