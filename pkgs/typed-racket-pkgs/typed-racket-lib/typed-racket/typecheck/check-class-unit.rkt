@@ -181,7 +181,8 @@
      (define this%-method-internals
        (set-union this%-public-internals this%-override-internals))
      (define this%-field-internals
-       (list->set (syntax->datum #'cls.field-internals)))
+       (list->set (append (syntax->datum #'cls.field-internals)
+                          (syntax->datum #'cls.init-field-internals))))
      (define this%-init-names
        (list->set
         (append (syntax->datum #'cls.init-externals)
@@ -272,7 +273,7 @@
              #:unless (syntax-property stx 'tr:class:super-new))
          (tc-expr stx)))
      (with-lexical-env/extend lexical-names lexical-types
-       (check-field-set!s #'cls.initializer-body local-field-table))
+       (check-field-set!s #'cls.initializer-body local-field-table inits))
      ;; trawl the body and find methods and type-check them
      (define meths (trawl-for-property #'cls.make-methods 'tr:class:method))
      (define checked-method-types
@@ -426,12 +427,40 @@
           [else (list external-name
                       (unfixup-method-type (tc-expr/t meth)))])))
 
-;; check-field-set!s : Syntax Dict<Symbol, Symbol> -> Void
+;; check-field-set!s : Syntax Dict<Symbol, Symbol> Dict<Symbol, Type> -> Void
 ;; Check that fields are initialized to the correct type
-(define (check-field-set!s stx local-field-table)
+(define (check-field-set!s stx local-field-table inits)
   (for ([form (syntax->list stx)])
     (syntax-parse form
-      #:literals (let-values #%plain-app)
+      #:literals (let-values #%plain-app quote)
+      ;; init-field case
+      [(let-values (((obj1:id) self:id))
+         (let-values (((x:id)
+                       (#%plain-app extract-arg:id
+                                    _
+                                    (quote name:id)
+                                    init-args:id
+                                    init-val:expr)))
+           (#%plain-app local-setter:id obj2:id y:id)))
+       #:when (free-identifier=? #'x #'y)
+       #:when (free-identifier=? #'obj1 #'obj2)
+       (define init-name (syntax-e #'name))
+       (define init-type (car (dict-ref inits init-name)))
+       (define extract-arg-type
+        (cl->* (->* (list (Un (-val #f) -Symbol) (-val init-name)
+                          (make-Univ) (-val #f)) init-type)
+               (->* (list (Un (-val #f) -Symbol) (-val init-name)
+                          (make-Univ) (->* '() init-type))
+                    init-type)))
+       (with-handlers
+         ([exn:fail:syntax?
+           ;; FIXME: produce a better error message
+           (λ (e) (tc-error/expr "Default init value has wrong type"))])
+         (parameterize ([delay-errors? #f])
+          (with-lexical-env/extend
+           (list #'self #'init-args #'extract-arg)
+           (list (make-Univ) (make-Univ) extract-arg-type)
+           (tc-expr form))))]
       ;; FIXME: could use the local table to make sure the
       ;;        setter is known as a sanity check
       [(let-values (((obj1:id) self:id))
