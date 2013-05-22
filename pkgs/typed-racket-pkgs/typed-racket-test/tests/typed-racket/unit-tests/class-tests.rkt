@@ -106,6 +106,12 @@
                  (field [n 0])
                  (define/public (m) (get-field n this)))))
 
+   ;; fails, field's default value has wrong type
+   (check-err
+    (class: object% (super-new)
+      (: x Integer)
+      (field [x "foo"])))
+
    ;; Fail, field access to missing field
    (check-err
     (: k% (Class (field [n Integer])
@@ -428,6 +434,16 @@
                  (public [m n])
                  (define m (lambda () 0))))
     (send (new c%) n))
+
+   ;; test local calls with internal/external
+   (check-ok
+    (define c% (class: object% (super-new)
+                 (: m (-> Integer))
+                 (public [m n])
+                 (define m (lambda () 0))
+                 (: z (-> Integer))
+                 (define/public (z) (m))))
+    (send (new c%) z))
 
    ;; internal/external the same is ok
    (check-ok

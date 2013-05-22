@@ -60,12 +60,14 @@
            #:with private-names #'(privates ...)))
 
 (define-syntax-class initializer-body
-  #:literals (let-values)
+  #:literals (letrec-syntaxes+values)
   #:attributes (val)
-  (pattern (let-values () body:initializer-body)
+  (pattern (letrec-syntaxes+values _ _ body:initializer-body)
            #:with val #'body.val)
-  (pattern (e:expr ...)
-           #:with val #'(e ...)))
+  (pattern (letrec-syntaxes+values _ _
+             (~and e0 (~not letrec-syntaxes+values))
+             e:expr ...)
+           #:with val #'(e0 e ...)))
 
 (define-syntax-class initializer-class
   #:literals (#%plain-lambda)
@@ -79,19 +81,18 @@
 (define-syntax-class make-methods-body
   #:literals (let-values letrec-syntaxes+values #%plain-app values)
   #:attributes (initializer-body)
-  (pattern (let-values () body:make-methods-body)
-           #:with initializer-body #'body.initializer-body)
-  (pattern (letrec-syntaxes+values _ _ body)
-           #:with initializer-body #'body.initializer-body)
-  (pattern (letrec-syntaxes+values
-            _ _
+  (pattern (letrec-values _
             (#%plain-app
              values
              public:expr
              override:expr
              augride:expr
              initializer:initializer-class))
-           #:with initializer-body #'initializer.val))
+           #:with initializer-body #'initializer.val)
+  (pattern (let-values () body:make-methods-body)
+           #:with initializer-body #'body.initializer-body)
+  (pattern (letrec-syntaxes+values _ _ body:make-methods-body)
+           #:with initializer-body #'body.initializer-body))
 
 (define-syntax-class make-methods-class
   #:literals (let-values #%plain-lambda)
@@ -258,7 +259,8 @@
          (values name type)))
      ;; start type-checking elements in the body
      (define-values (lexical-names lexical-types)
-       (local-tables->lexical-env local-method-table methods
+       (local-tables->lexical-env internal-external-mapping
+                                  local-method-table methods
                                   this%-method-internals
                                   local-field-table fields
                                   this%-field-internals
@@ -269,6 +271,8 @@
        (for ([stx top-level-exprs]
              #:unless (syntax-property stx 'tr:class:super-new))
          (tc-expr stx)))
+     (with-lexical-env/extend lexical-names lexical-types
+       (check-field-set!s #'cls.initializer-body local-field-table))
      ;; trawl the body and find methods and type-check them
      (define meths (trawl-for-property #'cls.make-methods 'tr:class:method))
      (define checked-method-types
@@ -338,7 +342,8 @@
       (dict-set methods name type)))
   (make-Class #f inits fields new-methods))
 
-;; local-tables->lexical-env : Dict<Symbol, Id> Dict List<Symbol>
+;; local-tables->lexical-env : Dict<Symbol, Symbol>
+;;                             Dict<Symbol, Id> Dict List<Symbol>
 ;;                             Dict<Symbol, (List Id Id)> Dict List<Symbol>
 ;;                             Type
 ;;                             -> List<Id> List<Type>
@@ -349,7 +354,8 @@
 ;;        case, but not if the class doesn't have an annotation.
 ;;        Then we need to hunt down annotations in a first pass.
 ;;        (should probably do this in expected case anyway)
-(define (local-tables->lexical-env local-method-table methods method-names
+(define (local-tables->lexical-env internal-external-mapping
+                                   local-method-table methods method-names
                                    local-field-table fields field-names
                                    local-private-table
                                    private-types private-methods
@@ -369,22 +375,24 @@
   ;; construct the types for the accessors
   (define method-types
     (for/list ([m (in-set method-names)])
-      (define maybe-type (dict-ref methods m #f))
+      (define external (dict-ref internal-external-mapping m))
+      (define maybe-type (dict-ref methods external #f))
       (->* (list (make-Univ))
            (if maybe-type
                (fixup-method-type (car maybe-type) self-type)
                (make-Univ)))))
   (define field-get-types
     (for/list ([f (in-set field-names)])
-      (define maybe-type (dict-ref fields f #f))
+      (define external (dict-ref internal-external-mapping f))
+      (define maybe-type (dict-ref fields external #f))
       (->* (list (make-Univ)) (or (and maybe-type (car maybe-type))
                                   (make-Univ)))))
   (define field-set-types
     (for/list ([f (in-set field-names)])
-      (define maybe-type (dict-ref fields f #f))
-      (->* (list (make-Univ) (or (and maybe-type
-                                      (car maybe-type))
-                                 -bot))
+      (define external (dict-ref internal-external-mapping f))
+      (define maybe-type (dict-ref fields external #f))
+      (->* (list (make-Univ) (or (and maybe-type (car maybe-type))
+                                 -Bottom))
            -Void)))
   (define private-method-types
     (for/list ([f (in-set private-methods)])
@@ -417,6 +425,23 @@
            (list external-name pre-method-type)]
           [else (list external-name
                       (unfixup-method-type (tc-expr/t meth)))])))
+
+;; check-field-set!s : Syntax Dict<Symbol, Symbol> -> Void
+;; Check that fields are initialized to the correct type
+(define (check-field-set!s stx local-field-table)
+  (for ([form (syntax->list stx)])
+    (syntax-parse form
+      #:literals (let-values #%plain-app)
+      ;; FIXME: could use the local table to make sure the
+      ;;        setter is known as a sanity check
+      [(let-values (((obj1:id) self:id))
+         (let-values (((x:id) init-val:expr))
+           (#%plain-app local-setter:id obj2:id y:id)))
+       #:when (free-identifier=? #'x #'y)
+       #:when (free-identifier=? #'obj1 #'obj2)
+       (with-lexical-env/extend (list #'self) (list (make-Univ))
+         (tc-expr form))]
+      [_ (void)])))
 
 ;; Syntax -> Dict<Symbol, Id> Dict<Symbol, (List Symbol Symbol)>
 ;; Construct tables mapping internal method names to the accessors
