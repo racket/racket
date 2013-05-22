@@ -740,7 +740,7 @@
         [_ pat]))))
 
 ;; used in generating the `any' pattern
-(define-language sexp (sexp variable string number hole (sexp ...)))
+(define-language sexp (sexp variable string number boolean hole (sexp ...)))
 
 (define-signature decisions^
   (next-variable-decision
