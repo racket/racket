@@ -71,41 +71,42 @@
 
 (define-syntax-class initializer-class
   #:literals (#%plain-lambda)
-  #:attributes (val)
+  #:attributes (initializer-body initializer-self-id
+                initializer-args-id)
   (pattern (#%plain-lambda
             (self:id super-go:id si_c:id si_inited?:id
                      si_leftovers:id init-args:id)
             body:initializer-body)
-           #:with val #'body.val))
+           #:with initializer-body #'body.val
+           #:with initializer-self-id #'self
+           #:with initializer-args-id #'init-args))
 
 (define-syntax-class make-methods-body
   #:literals (let-values letrec-syntaxes+values #%plain-app values)
-  #:attributes (initializer-body)
+  #:attributes (initializer-body initializer-self-id
+                initializer-args-id)
   (pattern (letrec-values _
             (#%plain-app
              values
              public:expr
              override:expr
              augride:expr
-             initializer:initializer-class))
-           #:with initializer-body #'initializer.val)
-  (pattern (let-values () body:make-methods-body)
-           #:with initializer-body #'body.initializer-body)
-  (pattern (letrec-syntaxes+values _ _ body:make-methods-body)
-           #:with initializer-body #'body.initializer-body))
+             :initializer-class)))
+  (pattern (let-values () :make-methods-body))
+  (pattern (letrec-syntaxes+values _ _ :make-methods-body)))
 
 (define-syntax-class make-methods-class
   #:literals (let-values #%plain-lambda)
-  #:attributes (initializer-body)
+  #:attributes (initializer-body initializer-self-id
+                initializer-args-id)
   (pattern (#%plain-lambda
             (local-accessor:id local-mutator:id local-method-or-field:id ...)
             (let-values ([(field-name:id) accessor-or-mutator] ...)
-              body:make-methods-body))
-           #:with initializer-body #'body.initializer-body))
+              :make-methods-body))))
 
 (define-syntax-class class-expansion
   #:literals (let-values letrec-syntaxes+values #%plain-app)
-  #:attributes (superclass-expr initializer-body
+  #:attributes (superclass-expr
                 init-internals init-externals
                 init-field-internals init-field-externals
                 optional-inits
@@ -113,7 +114,10 @@
                 public-internals public-externals
                 override-internals override-externals
                 private-names
-                make-methods)
+                make-methods
+                initializer-body
+                initializer-self-id
+                initializer-args-id)
   (pattern (let-values ()
              (letrec-syntaxes+values
               ()
@@ -124,9 +128,8 @@
                 (#%plain-app
                  compose-class:id
                  internal:expr ...
-                 make-methods:make-methods-class
-                 (quote #f)))))
-           #:with initializer-body #'make-methods.initializer-body))
+                 (~and make-methods :make-methods-class)
+                 (quote #f)))))))
 
 ;; Syntax TCResults -> Type
 ;; Type-check a class form by trawling its innards
@@ -282,6 +285,8 @@
                                   (list->set (syntax->datum #'cls.init-internals))
                                   local-private-table private-method-types
                                   this%-private-names
+                                  #'cls.initializer-self-id
+                                  #'cls.initializer-args-id
                                   self-type))
      (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
        (check-super-new provided-super-inits super-inits))
@@ -363,7 +368,7 @@
 ;; local-tables->lexical-env : Dict<Symbol, Symbol>
 ;;                             Dict<Symbol, Id> Dict List<Symbol>
 ;;                             Dict<Symbol, (List Id Id)> Dict List<Symbol>
-;;                             Type
+;;                             Id Id Type
 ;;                             -> List<Id> List<Type> List<Id> List<Type>
 ;; Construct mappings to put into the lexical type-checking environment
 ;; from the class local accessor mappings
@@ -373,6 +378,7 @@
                                    local-init-table inits init-names
                                    local-private-table
                                    private-types private-methods
+                                   self-id init-args-id
                                    self-type)
   ;; localize to accessor names via the provided tables
   (define (localize local-table names)
@@ -430,10 +436,16 @@
                   localized-private-methods
                   localized-field-get-names
                   localized-field-set-names
-                  localized-init-names)
+                  localized-init-names
+                  ;; Set `self` to the self-type and `init-args`
+                  ;; to Any, so that accessors can use them without
+                  ;; problems.
+                  ;; Be careful though!
+                  (list self-id init-args-id))
           (append method-types private-method-types
                   field-get-types field-set-types
-                  init-types)))
+                  init-types
+                  (list self-type (make-Univ)))))
 
 ;; check-methods : Listof<Syntax> Dict<Symbol, Symbol> Dict Type
 ;;                 -> Dict<Symbol, Type>

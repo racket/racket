@@ -347,12 +347,40 @@
                  (define/public (m y) 0)
                  (+ 3 5))))
 
+   ;; test top-level method call
+   (check-ok
+    (: c% (Class [m (Integer -> Integer)]))
+    (define c% (class: object% (super-new)
+                 (define/public (m y) 0)
+                 (m 3))))
+
+   ;; test top-level field access
+   (check-ok
+    (: c% (Class (field [f String])))
+    (define c% (class: object% (super-new)
+                 (field [f "foo"])
+                 (string-append f "z"))))
+
    ;; fails, bad top-level expression
    (check-err
     (: c% (Class [m (Integer -> Integer)]))
     (define c% (class: object% (super-new)
                  (define/public (m y) 0)
                  (+ "foo" 5))))
+
+   ;; fails, ill-typed method call
+   (check-err
+    (: c% (Class [m (Integer -> Integer)]))
+    (define c% (class: object% (super-new)
+                 (define/public (m y) 0)
+                 (m "foo"))))
+
+   ;; fails, ill-typed field access
+   (check-err
+    (: c% (Class [f String]))
+    (define c% (class: object% (super-new)
+                 (field [f "foo"])
+                 (set! f 5))))
 
    ;; test private method
    (check-ok
