@@ -528,8 +528,8 @@
                     (λ (e) (tc-error/expr "Default init value has wrong type"))])
                 (parameterize ([delay-errors? #f])
                   (with-lexical-env/extend
-                   (list #'self #'init-args #'extract-arg)
-                   (list (make-Univ) (make-Univ) extract-arg-type)
+                   (list #'extract-arg)
+                   (list extract-arg-type)
                    (tc-expr form))))]
              ;; If the type can't be found, it means that there was no
              ;; expected type or no annotation was provided via (: ...).
@@ -566,8 +566,8 @@
                     (λ (e) (tc-error/expr "Default init value has wrong type"))])
                 (parameterize ([delay-errors? #f])
                   (with-lexical-env/extend
-                   (list #'self #'init-args #'extract-arg)
-                   (list (make-Univ) (make-Univ) extract-arg-type)
+                   (list #'extract-arg)
+                   (list extract-arg-type)
                    (tc-expr form))))]
              [else
               (tc-error/expr "Init argument ~a has no type annotation"
@@ -580,8 +580,7 @@
            (#%plain-app local-setter:id obj2:id y:id)))
        #:when (free-identifier=? #'x #'y)
        #:when (free-identifier=? #'obj1 #'obj2)
-       (with-lexical-env/extend (list #'self) (list (make-Univ))
-         (tc-expr form))]
+       (tc-expr form)]
       [_ (void)])))
 
 ;; Syntax -> Dict<Symbol, Id> Dict<Symbol, Id>
