@@ -104,7 +104,7 @@
   (test
    (string->symbol (format "racket:test-auto-parens-behavior ~a" which))
    (λ (x) (if (list? final-pos)
-              (equal? x (car final-pos) (cadr final-pos) final-text)
+              (equal? x (list (car final-pos) (cadr final-pos) final-text))
               (equal? x (list final-pos final-pos final-text))))
    (λ ()
      (queue-sexp-to-mred
@@ -139,8 +139,10 @@
 ;;   a key(s), and runs tests to check what happens when that key(s) is/are
 ;;   typed - in both possible settings of the 'automatic-parens preference
 ;;
-;; final-states is a list of 2 pairs of strings. each pair is the final text before
+;; final-states is a list of 2-pairs of strings. each pair is the final text before
 ;;   and after the cursor, for auto-parens disabled and enabled respectively
+;;  (NB. final-states could also contain 3-pairs of strings, the middle portion 
+;;       representing text that is selected after the insertion)
 (define (test-parens-behavior/full which
                                init-text-before init-text-selected init-text-after
                                keys
@@ -150,9 +152,14 @@
   (define initial-end-pos (+ initial-start-pos (string-length init-text-selected)))
   (for-each
    (lambda (label auto? final-pair)
-     (test-auto-parens-behavior (format "~a-~a" which label)
+     (test-auto-parens-behavior (format "~a (~a)" which label)
                              initial-text (list initial-start-pos initial-end-pos) keys
-                             (apply string-append final-pair) (string-length (car final-pair))
+                             (apply string-append final-pair)
+                             (if (= 3 (length final-pair)) 
+                                 ; final-pair could actually be a triplet to indicate residual selection after insertion
+                                 (list (string-length (car final-pair)) (string-length (string-append (car final-pair)
+                                                                                                      (cadr final-pair))))
+                                 (string-length (car final-pair)))
                              auto?))
    '("no-auto-parens" "with-auto-parens")
    '(#f #t)
@@ -168,12 +175,22 @@
                              k
                              `([,(string-append "(list 1 #\\" (string k)) ")"]
                                [,(string-append "(list 1 #\\" (string k)) ")"]))
-  ;; test that auto-parens has no effect in strings
-  (test-parens-behavior/full (format "~a-in-string" k)
-                             "\" abc def " "" " \""
+  ;; test that escaped characters in a string never result in a pair of characters typed...
+  ;; except for | which is a hard case to detect, because the tokenizer ends up
+  ;; in an error state
+  (unless (or (eq? #\| k))
+      (test-parens-behavior/full (format "literal-~a-in-string" k)
+                             "\"abc \\" "" "def\""
                              k
-                             `([,(string-append "\" abc def " (string k)) " \""]
-                               [,(string-append "\" abc def " (string k)) " \""]))
+                             `([,(string-append "\"abc \\" (string k)) "def\""]
+                               [,(string-append "\"abc \\" (string k)) "def\""])))
+  ;; test that auto-parens has no effect in strings, *except for double quotes*
+  (unless (eq? #\" k)
+    (test-parens-behavior/full (format "~a-in-string" k)
+                               "\" abc def " "" " \""
+                               k
+                               `([,(string-append "\" abc def " (string k)) " \""]
+                                 [,(string-append "\" abc def " (string k)) " \""])))
 
   ;; test that auto-parens has no effect in various comment situations
   (define scenarios
@@ -278,9 +295,7 @@
                            "\"abcd \\" "" ""
                            #\"
                            '(["\"abcd \\\"" ""]
-                             ["\"abcd \\\"" "\""])) ; this one inserts a pair
-                                  ; because the string wasn't closed anyway
-                                  ; (it's a hard case to distinguish)
+                             ["\"abcd \\\"" "\""])) ; this happens to insert double since string was not closed
 (test-parens-behavior/full 'double-quote-escaped-2
                            "\"abcd \\" "" "\""
                            #\"
@@ -352,6 +367,24 @@
                            #\]
                            '([")]" "" ""]
                              [")]" "" ""]))
+
+(test-parens-behavior/full '|"-splits-string|
+                           " \"abcd" "" "efg\" "
+                           #\"
+                           '([" \"abcd\""     "efg\" "]
+                             [" \"abcd\" "    "\"efg\" "]))
+(test-parens-behavior/full '|"-splits-string-at-beginning|
+                           " \"" "" "abcdefg\" "
+                           #\"
+                           '([" \"\""     "abcdefg\" "]
+                             [" \"\" "    "\"abcdefg\" "]))
+(test-parens-behavior/full '|"-splits-out-selected-string|
+                           " \"abc" "def" "ghi\" "
+                           #\"
+                           '([" \"abc\"" "" "ghi\" "]
+                             ; test that "def" remains selected afterwards...
+                             [" \"abc\" "   "\"def\""    " \"ghi\" "]))
+
 
 
 #| for these, the key-event with meta-down doesn't seem to work... maybe a Mac OS
