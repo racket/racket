@@ -516,6 +516,16 @@
       (inherit m)
       (m "foo")))
 
+   ;; test that keyword methods type-check
+   ;; FIXME: send with keywords does not work yet
+   (check-ok
+    (: c% (Class [n (Integer #:foo Integer -> Integer)]))
+    (define c%
+      (class: object%
+        (super-new)
+        (define/public (n x #:foo foo)
+          (+ foo x)))))
+
    ;; test different internal/external names
    (check-ok
     (define c% (class: object% (super-new)
