@@ -224,11 +224,16 @@
      (define top-level-exprs (trawl-for-property #'cls.make-methods 'tr:class:top-level))
      (define internals-table (register-internals top-level-exprs))
      ;; find the `super-new` call (or error if missing)
-     (define super-new-stx (trawl-for-property #'cls.make-methods 'tr:class:super-new))
-     (define provided-super-inits (check-super-new super-new-stx super-inits))
+     (define super-new-stxs (trawl-for-property #'cls.make-methods 'tr:class:super-new))
+     (define super-new-stx (check-super-new-exists super-new-stxs))
+     (define provided-super-inits
+       (if super-new-stx
+           (find-provided-inits super-new-stx super-inits)
+           '()))
+     (define provided-init-names (dict-keys provided-super-inits))
      (define remaining-super-inits
        (for/list ([(name val) (in-dict super-inits)]
-                  #:unless (member name provided-super-inits))
+                  #:unless (member name provided-init-names))
          (cons name val)))
      ;; define which init names are optional
      (define optional-inits (list->set (syntax->datum #'cls.optional-inits)))
@@ -278,6 +283,8 @@
                                   local-private-table private-method-types
                                   this%-private-names
                                   self-type))
+     (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
+       (check-super-new provided-super-inits super-inits))
      (with-lexical-env/extend lexical-names lexical-types
        (for ([stx top-level-exprs]
              #:unless (syntax-property stx 'tr:class:super-new))
@@ -593,39 +600,47 @@
                   (syntax->datum #'(init ...))
                   (syntax->list #'(local-init ...))))]))
 
-;; check-super-new : Listof<Syntax> Inits -> Void
-;; Check if the super-new call is well-typed
-(define (check-super-new super-new-stx super-inits)
-  (cond [(null? super-new-stx)
+;; check-super-new-exists : Listof<Syntax> -> (U Syntax #f)
+;; Check if a `super-new` call exists and if there is only
+;; one call. Return #f on error.
+(define (check-super-new-exists stxs)
+  (cond [(null? stxs)
          (tc-error/expr
           "typed classes must call super-new at the class top-level")
-         null]
-        [(> (length super-new-stx) 1)
+         #f]
+        [(> (length stxs) 1)
          (tc-error/expr
           "typed classes must only call super-new a single time")
-         null]
-        [(= (length super-new-stx) 1)
-         (syntax-parse (car super-new-stx)
-           #:literals (#%plain-app list cons quote)
-           [(#%plain-app super-go _ _ _ _ _
-                         (#%plain-app
-                          list
-                          (#%plain-app cons (quote init-id) arg:expr)
-                          ...))
-            (define provided-inits (syntax->datum #'(init-id ...)))
-            (for ([(name val) (in-dict super-inits)]
-                  #:when (not (cadr val)))
-              (unless (member name provided-inits)
-                (tc-error/expr "mandatory superclass init ~a not provided"
-                               name)))
-            (for ([init-id provided-inits]
-                  [init-arg (syntax->list #'(arg ...))])
-              (define maybe-expected (dict-ref super-inits init-id #f))
-              (if maybe-expected
-                  (tc-expr/check init-arg (ret (car maybe-expected)))
-                  (tc-error/expr "init argument ~a not accepted by superclass"
-                                 init-id)))
-            provided-inits])]))
+         #f]
+        [else (car stxs)]))
+
+;; find-provided-inits : Syntax Inits -> Dict<Symbol, Syntax>
+;; Find the init arguments that were provided via super-new
+(define (find-provided-inits stx super-inits)
+  (syntax-parse stx
+    #:literals (#%plain-app list cons quote)
+    [(#%plain-app super-go _ _ _ _ _
+                  (#%plain-app
+                   list
+                   (#%plain-app cons (quote init-id) arg:expr)
+                   ...))
+     (define provided-inits (syntax->datum #'(init-id ...)))
+     (for ([(name val) (in-dict super-inits)]
+           #:when (not (cadr val)))
+       (unless (member name provided-inits)
+         (tc-error/expr "mandatory superclass init ~a not provided"
+                        name)))
+     (map cons provided-inits (syntax->list #'(arg ...)))]))
+
+;; check-super-new : Dict<Symbol, Syntax> Dict<Symbol, Type> -> Void
+;; Check if the super-new call is well-typed
+(define (check-super-new provided-inits super-inits)
+  (for ([(init-id init-arg) (in-dict provided-inits)])
+    (define maybe-expected (dict-ref super-inits init-id #f))
+    (if maybe-expected
+        (tc-expr/check init-arg (ret (car maybe-expected)))
+        (tc-error/expr "init argument ~a not accepted by superclass"
+                       init-id))))
 
 ;; Syntax -> Listof<Syntax>
 ;; Look through the expansion of the class macro in search for
