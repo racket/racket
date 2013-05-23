@@ -664,10 +664,9 @@
                    (#%plain-app cons (quote init-id) arg:expr)
                    ...))
      (define provided-inits (syntax->datum #'(init-id ...)))
-     (for ([(name val) (in-dict super-inits)]
-           #:when (not (cadr val)))
-       (unless (member name provided-inits)
-         (tc-error/expr "mandatory superclass init ~a not provided"
+     (for ([name provided-inits])
+       (unless (dict-ref super-inits name #f)
+         (tc-error/expr "super-new: init argument ~a not accepted by superclass"
                         name)))
      (map cons provided-inits (syntax->list #'(arg ...)))]))
 
