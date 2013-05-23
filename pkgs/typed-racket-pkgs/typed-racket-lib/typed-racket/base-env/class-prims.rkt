@@ -162,7 +162,6 @@
 
  ;; Listof<Clause> -> Hash<Identifier, Names>
  ;; Extract names from init, public, etc. clauses
- ;; FIXME: deal with internal vs. external names
  (define (extract-names clauses)
    (for/fold ([clauses (make-immutable-free-id-table)])
              ([clause clauses])
@@ -283,8 +282,7 @@
         #:literals (define-values super-new)
         ;; if it's a method definition for a declared method, then
         ;; mark it as something to type-check
-        ;; FIXME: this needs to handle external/internal names too
-        ;; FIXME: this needs to track privates, augments, etc.
+        ;; FIXME: this needs to track augments, etc.
         [(define-values (id) . rst)
          #:when (memf (λ (n) (free-identifier=? #'id n))
                       (append (stx-map stx-car (dict-ref name-dict #'public '()))

@@ -367,11 +367,6 @@
 ;;                             -> List<Id> List<Type> List<Id> List<Type>
 ;; Construct mappings to put into the lexical type-checking environment
 ;; from the class local accessor mappings
-;;
-;; FIXME: the types we put here are fine in the expected
-;;        case, but not if the class doesn't have an annotation.
-;;        Then we need to hunt down annotations in a first pass.
-;;        (should probably do this in expected case anyway)
 (define (local-tables->lexical-env internal-external-mapping
                                    local-method-table methods method-names
                                    local-field-table fields field-names
@@ -763,8 +758,6 @@
     (for/or ([m (in-set required)])
       (and (not (set-member? actual m)) m)))
   (when missing
-    ;; FIXME: make this a delayed error? Do it for every single
-    ;;        name separately?
     (tc-error/expr "class definition missing ~a ~a" msg missing)))
 
 ;; Set<Symbol> Set<Symbol> String -> Void
