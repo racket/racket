@@ -66,7 +66,7 @@ Like @racket[thread], except that ``killing'' the thread through
 @racket[kill-thread] or @racket[custodian-shutdown-all] merely
 suspends the thread instead of terminating it.  }
 
-@defproc[(call-in-nested-thread [thunk (->any)]
+@defproc[(call-in-nested-thread [thunk (-> any)]
                                 [cust custodian? (current-custodian)]) 
           any]{
 
