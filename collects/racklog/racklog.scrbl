@@ -1422,7 +1422,7 @@ frozen structure in @racket[F].}
 @bibliography[
  @bib-entry[#:key "aop" 
                   #:author "Leon Sterling and Ehud Shapiro"
-                  #:url "http://mitpress.mit.edu/book-home.tcl?isbn=0262193388"
+                  #:url "http://mitpress.mit.edu/books/art-prolog"
                   #:title "The Art of Prolog, 2nd Edition"
                   #:location "MIT Press"
                   #:date "1994"
@@ -1441,7 +1441,7 @@ frozen structure in @racket[F].}
     #:is-book? #t]
  @bib-entry[#:key "ok:prolog"
     #:author "Richard A O'Keefe"
-    #:url "http://mitpress.mit.edu/book-home.tcl?isbn=0262150395"
+    #:url "http://mitpress.mit.edu/books/craft-prolog"
     #:title "The Craft of Prolog"
     #:location "MIT Press"
     #:date "1990"
