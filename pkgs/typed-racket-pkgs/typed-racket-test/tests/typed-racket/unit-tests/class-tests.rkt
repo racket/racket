@@ -526,6 +526,16 @@
         (define/public (n x #:foo foo)
           (+ foo x)))))
 
+   ;; test instance subtyping
+   (check-ok
+    (define c%
+      (class: object%
+        (super-new)
+        (: x (U False Number))
+        (field [x 0])))
+    (: x (Instance (Class)))
+    (define x (new c%)))
+
    ;; test different internal/external names
    (check-ok
     (define c% (class: object% (super-new)
