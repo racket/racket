@@ -285,7 +285,7 @@
                                   self-type))
      (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
        (check-super-new provided-super-inits super-inits))
-     (with-lexical-env/extend lexical-names lexical-types
+     (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
        (for ([stx top-level-exprs]
              #:unless (syntax-property stx 'tr:class:super-new))
          (tc-expr stx)))
