@@ -485,6 +485,37 @@
                  (init x)
                  (super-new [x x]))))
 
+   ;; test inherit method
+   (check-ok
+    (class: (class: object% (super-new)
+              (: m (Integer -> Integer))
+              (define/public (m x) (add1 x)))
+      (super-new)
+      (inherit m)
+      (m 5)))
+
+   ;; test internal name with inherit
+   (check-ok
+    (class: (class: object% (super-new)
+              (: m (Integer -> Integer))
+              (define/public (m x) (add1 x)))
+      (super-new)
+      (inherit [n m])
+      (n 5)))
+
+   ;; fails, missing super method for inherit
+   (check-err
+    (class: (class: object% (super-new)) (super-new) (inherit z)))
+
+   ;; fails, bad argument type to inherited method
+   (check-err
+    (class: (class: object% (super-new)
+              (: m (Integer -> Integer))
+              (define/public (m x) (add1 x)))
+      (super-new)
+      (inherit m)
+      (m "foo")))
+
    ;; test different internal/external names
    (check-ok
     (define c% (class: object% (super-new)

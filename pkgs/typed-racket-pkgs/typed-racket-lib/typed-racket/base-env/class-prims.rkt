@@ -257,7 +257,8 @@
                     (field #,@(dict-ref name-dict #'field '()))
                     (public #,@(dict-ref name-dict #'public '()))
                     (override #,@(dict-ref name-dict #'override '()))
-                    (private #,@(dict-ref name-dict #'private '()))))
+                    (private #,@(dict-ref name-dict #'private '()))
+                    (inherit #,@(dict-ref name-dict #'inherit '()))))
               (class #,annotated-super
                 #,@(map clause-stx clauses)
                 #,@(map non-clause-stx annotated-methods)
@@ -336,6 +337,8 @@
               (stx-map stx-car (dict-ref name-dict #'init-field '()))))
     (define init-names
       (stx-map stx-car (dict-ref name-dict #'init '())))
+    (define inherit-names
+      (stx-map stx-car (dict-ref name-dict #'inherit '())))
     (syntax-property
      #`(let-values ([(#,@method-names)
                      (values #,@(map (λ (stx) #`(λ () (#,stx)))
@@ -348,7 +351,10 @@
                                      field-names))]
                     [(#,@init-names)
                      (values #,@(map (λ (stx) #`(λ () #,stx))
-                                     init-names))])
+                                     init-names))]
+                    [(#,@inherit-names)
+                     (values #,@(map (λ (stx) #`(λ () (#,stx)))
+                                     inherit-names))])
          (void))
      'tr:class:local-table #t)))
 
