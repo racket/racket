@@ -1358,31 +1358,39 @@
   actual-type)
 
 
-  ;; determines if the cursor is currently sitting in a string
-  ;; literal or a comment. To do this more accurately, first
-  ;; insert a space at the current cursor start position, then
-  ;; check what classification of that space character itself
-  (define (in-string/comment? text)
-    (define selection-start (send text get-start-position))
-    (define selection-end (send text get-end-position))
-    (send text begin-edit-sequence #t #f)
-    (send text insert " " selection-start)
-    (define type (send text classify-position selection-start))
-    (send text delete selection-start (add1 selection-start))
-    (send text end-edit-sequence)
-    (send text undo)  ; to avoid messing up the editor's modified state
-                      ; in case of a simple skip
-    (and (member type '(comment string)) #t))
+;; in-position? : text (list symbol) -> boolean
+;; determines if the cursor is currently sitting in a particular
+;; position. To do this more accurately, first
+;; insert a space at the current cursor start position, then
+;; check what classification of that space character itself
+;; (note: the place where this shows up is if the cursor is
+;;  right in front of the quotes of a string literal, i.e.
+;;  |"...."  where | indicates cursor position)
+(define (in-position? text sym-list)
+  (define selection-start (send text get-start-position))
+  (define selection-end (send text get-end-position))
+  (send text begin-edit-sequence #t #f)
+  (send text insert " " selection-start)
+  (define type (send text classify-position selection-start))
+  (send text delete selection-start (add1 selection-start))
+  (send text end-edit-sequence)
+  (send text undo)  ; to avoid messing up the editor's modified state
+  ; in case of a simple skip
+  (and (member type sym-list) #t))
 
-  ;; produces the 1 character string immediately following
-  ;; the cursor, if there is one and if there is not a current
-  ;; selection, in which case produces #f
-  (define (immediately-following-cursor text)
-    (define selection-start (send text get-start-position))
-    (and (= selection-start (send text get-end-position))   ; nothing selected
-         (< selection-start (send text last-position))
-         (send text get-text selection-start (+ selection-start 1))))
+;; determines if the cursor is currently sitting in a string
+;; literal or a comment. 
+(define (in-string/comment? text)
+  (in-position? text '(comment string)))
 
+;; produces the 1 character string immediately following
+;; the cursor, if there is one and if there is not a current
+;; selection, in which case produces #f
+(define (immediately-following-cursor text)
+  (define selection-start (send text get-start-position))
+  (and (= selection-start (send text get-end-position))   ; nothing selected
+       (< selection-start (send text last-position))
+       (send text get-text selection-start (+ selection-start 1))))
 
 
 (define set-mode-mixin
@@ -1520,19 +1528,21 @@
   
   (send keymap map-function "leftbuttondouble" "paren-double-select")
   
-
-
-  (define (insert-brace-pair text open-brace close-brace)
+  (define (insert-brace-pair text open-brace close-brace [space-between? #f])
     (define selection-start (send text get-start-position))
     (define hash-before?  ; tweak to detect and correctly close block comments #| ... |#
       (and (< 0 selection-start)
            (string=? "#" (send text get-text (- selection-start 1) selection-start))))
     (send text begin-edit-sequence)
     (send text set-position (send text get-end-position))
+    (when space-between? (send text insert " "))
     (send text insert close-brace)
-    (when (and (char=? #\| open-brace) hash-before?) (send text insert #\#))
+    (when (and (char? open-brace) (char=? #\| open-brace) hash-before?) 
+      (send text insert #\#))
     (send text set-position selection-start)
     (send text insert open-brace)
+    (when space-between?
+      (send text set-position (+ (send text get-start-position) 1)))
     (send text end-edit-sequence))
   
   ;; only insert a pair if:
@@ -1543,41 +1553,70 @@
     (define open-parens 
       (for/list ([x (racket-paren:get-paren-pairs)]) (string-ref (car x) 0)))
     (cond
-      [(preferences:get 'framework:automatic-parens)
+      [(not (preferences:get 'framework:automatic-parens))
+       (send text insert open-brace)]
+    
+      [else  ; automatic-parens is enabled
        (define c (immediately-following-cursor text))
-       (define when-inserted (position-type-when-inserted text (string open-brace)))
+       (define cur-token 
+         (send text classify-position (send text get-start-position)))
+       (define when-inserted 
+         (position-type-when-inserted text (string open-brace)))
        (cond
          ; insert paren pair if it results valid parenthesis token...
          [(member open-brace open-parens)
-          (if (eq? (position-type-when-inserted text (string open-brace)) 'parenthesis)
+          (if (eq? 'parenthesis when-inserted)
               (insert-brace-pair text open-brace close-brace)
               (send text insert open-brace))]
          
          ; ASSUME: from here on, open-brace is either "  or  |
-         ; is there a token error at current position which would 
-         ; be fixed by inserting the character...
-         [(and (eq? 'error (send text classify-position (send text get-start-position)))
-               (not (eq? 'error when-inserted)))
+         
+         ; is there a token error at current position - see if inserting an
+         ; open brace would fix it
+         [(and (eq? 'error cur-token) (not (eq? 'error when-inserted))) 
           (send text insert open-brace)]
          
-         ; smart-skip over a  "  |  or  |# ...
-         [(and c (char=? #\" open-brace) (string=? c "\""))
-          (send text set-position (+ 1 (send text get-end-position)))]
-         [(and c (char=? #\| open-brace) (string=? c "|"))
+         ; smart-skip over a  | , or  |# ...
+         [(and c (char=? #\| open-brace) (string=? c "|") 
+               (in-position? text '(symbol comment)))
           (send text set-position (+ 1 (send text get-end-position)))
           (define d (immediately-following-cursor text))
           (when (and d (string=? d "#"))   ; a block comment?
             (send text set-position (+ 1 (send text get-end-position))))]
-
-         ; are we in a string or comment...
+ 
+         ; are we in a string and " has been typed?
+         [(and (in-position? text '(string)) (char=? #\" open-brace))
+          (define start-position (send text get-start-position))
+          (define end-position (send text get-end-position))
+          (cond
+            ; smart skip a " if it is the immediately following character (c)
+            [(and c (string=? c "\"")) 
+             (send text set-position (+ 1 end-position))]
+            
+            ; there is no current selection - split the string in two
+            [(= start-position end-position)
+             (insert-brace-pair text #\" #\" #t)]
+            
+            ; there is a selection - split the selected text off as a
+            ; separate string from the surrounding in an intelligent way
+            ; and retain selection of the split-out string
+            [else (define selection-length (- end-position start-position))
+                  (insert-brace-pair text "\" \"" "\" \"")
+                  (define cur-position (send text get-start-position))
+                  (send text set-position (- cur-position 1) (+ cur-position selection-length 1))])]
+         
+         ; are we otherwise in a string or comment...
+         ; (note, in-string/comment? doesn't work very well if tokenizer is in
+         ;        an error state and inserting the open-brace doesn't help, 
+         ;        e.g.  typing " or | at the end of  "blah blah\
          [(in-string/comment? text) (send text insert open-brace)]
          
-         ; otherwise if open-brace would result in some literal
+         ; otherwise if open-brace would result in some literal...
          [(eq? 'constant when-inserted) (send text insert open-brace)]
          
+         ; at this point probably the tokenizer is in some error state anyway...
          [else (insert-brace-pair text open-brace close-brace)])]
-      [else
-       (send text insert open-brace)]))
+      ))
   
   (add-edit-function "insert-()-pair" (λ (text) (insert-brace-pair text #\( #\))))
   (add-edit-function "insert-[]-pair" (λ (text) (insert-brace-pair text #\[ #\])))
