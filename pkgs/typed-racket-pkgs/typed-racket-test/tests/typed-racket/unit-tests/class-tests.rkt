@@ -438,6 +438,25 @@
       (super-new)
       (super-new)))
 
+   ;; test passing an init arg to super-new
+   (check-ok
+    (define c% (class: (class: object% (super-new)
+                         (: x Integer)
+                         (init x))
+                 (: x Integer)
+                 (init x)
+                 (super-new [x x])))
+    (new c% [x 5]))
+
+   ;; fails, bad argument type to super-new
+   (check-err
+    (define c% (class: (class: object% (super-new)
+                         (: x Integer)
+                         (init x))
+                 (: x String)
+                 (init x)
+                 (super-new [x x]))))
+
    ;; test different internal/external names
    (check-ok
     (define c% (class: object% (super-new)
