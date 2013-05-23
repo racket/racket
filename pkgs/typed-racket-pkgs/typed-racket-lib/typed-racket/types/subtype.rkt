@@ -585,6 +585,18 @@
                     ([n (in-list names*)] [m (in-list meths*)] #:break (not A))
                     (and A (cond [(assq n s) => (lambda (spec) (subtype* A (cadr spec) m))]
                                  [else #f])))]
+         [((Instance: (Class: _ _ field-map method-map))
+           (Instance: (Class: _ _ field-map* method-map*)))
+          (define (subtype-clause? map map*)
+            (match-define (list (and s (list names types)) ...) map)
+            (match-define (list (and s* (list names* types*)) ...) map*)
+            (for/fold ([A A0])
+                      ([n names*] [m types*] #:break (not A))
+              (and A (cond [(assq n s) =>
+                            (lambda (spec) (subtype* A (cadr spec) m))]
+                           [else #f]))))
+          (and (subtype-clause? method-map method-map*)
+               (subtype-clause? field-map field-map*))]
          ;; otherwise, not a subtype
          [(_ _) #f])))
      (when (null? A)
