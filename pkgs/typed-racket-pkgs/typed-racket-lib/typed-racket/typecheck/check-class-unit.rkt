@@ -743,7 +743,7 @@
          (match-define (arr: doms rng rest drest kws) arr)
          (make-arr (cdr doms) rng rest drest kws)))
      (make-Function fixed-arrs)]
-    [_ (tc-error "fixup-method-type: internal error")]))
+    [_ (tc-error/expr "expected a function type for method")]))
 
 ;; annotate-method : Syntax Type -> Syntax
 ;; Adds a self type annotation for the first argument and annotated
