@@ -160,12 +160,14 @@
     (string->url pkg-url-str))
   (match (url-scheme pkg-url)
     ["github"
-     (match-define (list* user repo branch path)
-                   (url-path pkg-url))
-     (url->string
-      (struct-copy url pkg-url
-                   [scheme "http"]
-                   [path (list* user repo (path/param "tree" empty) branch path)]))]
+     (match (url-path pkg-url)
+       [(list* user repo branch path)
+        (url->string
+         (struct-copy url pkg-url
+                      [scheme "http"]
+                      [path (list* user repo (path/param "tree" empty) branch path)]))]
+       [_
+        pkg-url-str])]
     [_
      pkg-url-str]))
 
