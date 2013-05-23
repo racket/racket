@@ -794,6 +794,20 @@
                      (#%plain-lambda (#,annotated-self-param id ...)
                        body ...)])
          m)]
+    [(let-values ([(meth-name:id)
+                   (let-values (((core:id)
+                                 (#%plain-lambda (param:id ...)
+                                   core-body ...)))
+                     method-body ...)])
+       m)
+     #`(let-values ([(#,(syntax-property #'meth-name 'type-label method-type))
+                     #,(syntax-property
+                        #'(let-values (((core)
+                                        (#%plain-lambda (param ...)
+                                                        core-body ...)))
+                            method-body ...)
+                        'kw-lambda #t)])
+         m)]
     [_ (tc-error "annotate-method: internal error")]))
 
 ;; Set<Symbol> Set<Symbol> String -> Void
