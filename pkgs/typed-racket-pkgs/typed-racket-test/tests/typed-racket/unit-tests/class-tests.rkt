@@ -536,6 +536,15 @@
     (: x (Instance (Class)))
     (define x (new c%)))
 
+   ;; test use of `this` in field default
+   (check-ok
+    (class: object%
+      (super-new)
+      (: x Integer)
+      (field [x 0])
+      (: y Integer)
+      (field [y (get-field x this)])))
+
    ;; test different internal/external names
    (check-ok
     (define c% (class: object% (super-new)
