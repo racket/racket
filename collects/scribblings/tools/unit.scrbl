@@ -197,12 +197,11 @@ editors that have program text where errors can occur.
 
 
 
-@defmethod[#:mode override 
-           (after-delete [start number]
-                         [len number])
+@defmethod[#:mode augment
+           (after-delete [start number] [len number])
            void?]{
 
-Calls the super method.
+Calls the inner method.
 
 Resets an error highlighting.
 
@@ -210,12 +209,12 @@ Resets an error highlighting.
 
 }
 
-@defmethod[#:mode override 
+@defmethod[#:mode augment
            (after-insert [start number]
                          [len number])
            void?]{
 
-Calls the super method.
+Calls the inner method.
 
 Resets an error highlighting.
 
@@ -493,16 +492,14 @@ stores the canvas, until
 
 }
 
-@defmethod[#:mode override 
-           (on-close)
-           void?]{
+@defmethod[#:mode augment (on-close) void?]{
 
 Sends the result of
 @method[drracket:unit:frame<%> get-interactions-text] the
 @method[drracket:rep:text% shutdown] and 
 @method[drracket:rep:text% on-close] methods.
 
-Calls the super method.
+Always calls the inner method.
 
 
 }
