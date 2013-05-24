@@ -25,13 +25,17 @@
          class:
          ;; for use in ~literal clauses
          class:-internal
-         optional-init)
+         optional-init
+         private-field)
 
 ;; give it a binding, but it shouldn't be used directly
 (define-syntax (class:-internal stx)
   (raise-syntax-error "should only be used internally"))
 
 (define-syntax (optional-init stx)
+  (raise-syntax-error "should only be used internally"))
+
+(define-syntax (private-field stx)
   (raise-syntax-error "should only be used internally"))
 
 (begin-for-syntax
@@ -239,7 +243,7 @@
                            clause?
                            non-clause?))
         (define name-dict (extract-names clauses))
-        (define-values (annotated-methods other-top-level)
+        (define-values (annotated-methods other-top-level private-fields)
           (process-class-contents others name-dict))
         (define annotated-super
           (syntax-property #'super 'tr:class:super #t))
@@ -258,6 +262,7 @@
                     (public #,@(dict-ref name-dict #'public '()))
                     (override #,@(dict-ref name-dict #'override '()))
                     (private #,@(dict-ref name-dict #'private '()))
+                    (private-field #,@private-fields)
                     (inherit #,@(dict-ref name-dict #'inherit '()))))
               (class #,annotated-super
                 #,@(map clause-stx clauses)
@@ -265,18 +270,19 @@
                 #,(syntax-property
                    #`(begin #,@(map non-clause-stx other-top-level))
                    'tr:class:top-level #t)
-                #,(make-locals-table name-dict)))
+                #,(make-locals-table name-dict private-fields)))
           'tr:class #t)
          'typechecker:ignore #t)])]))
 
 (begin-for-syntax
   ;; process-class-contents : Listof<Syntax> Dict<Id, Listof<Id>>
-  ;;                          -> Listof<Syntax> Listof<Syntax>
+  ;;                          -> Listof<Syntax> Listof<Syntax> Listof<Syntax>
   ;; Process methods and other top-level expressions and definitions
   ;; that aren't class clauses like `init` or `public`
   (define (process-class-contents contents name-dict)
     (for/fold ([methods '()]
-               [rest-top '()])
+               [rest-top '()]
+               [private-fields '()])
               ([content contents])
       (define stx (non-clause-stx content))
       (syntax-parse stx
@@ -293,13 +299,21 @@
                                                     'tr:class:method
                                                     (syntax-e #'id)))
                        methods)
-                 rest-top)]
+                 rest-top private-fields)]
+        ;; private field definition
+        [(define-values (id ...) . rst)
+         (values methods
+                 (append rest-top (list content))
+                 (append (syntax->list #'(id ...))
+                         private-fields))]
         ;; Identify super-new for the benefit of the type checker
         [(super-new [init-id init-expr] ...)
          (define new-non-clause
            (non-clause (syntax-property stx 'tr:class:super-new #t)))
-         (values methods (append rest-top (list new-non-clause)))]
-        [_ (values methods (append rest-top (list content)))])))
+         (values methods (append rest-top (list new-non-clause))
+                 private-fields)]
+        [_ (values methods (append rest-top (list content))
+                   private-fields)])))
 
   ;; get-optional-inits : Listof<Clause> -> Listof<Id>
   ;; Get a list of the internal names of mandatory inits
@@ -327,7 +341,7 @@
   ;; The identifiers inside the lambdas below will expand via
   ;; set!-transformers to the appropriate accessors, which lets
   ;; us figure out the accessor identifiers.
-  (define (make-locals-table name-dict)
+  (define (make-locals-table name-dict private-field-names)
     (define public-names (stx-map stx-car (dict-ref name-dict #'public '())))
     (define override-names
       (stx-map stx-car (dict-ref name-dict #'override '())))
@@ -349,6 +363,9 @@
                     [(#,@field-names)
                      (values #,@(map (λ (stx) #`(λ () #,stx (set! #,stx 0)))
                                      field-names))]
+                    [(#,@private-field-names)
+                     (values #,@(map (λ (stx) #`(λ () #,stx (set! #,stx 0)))
+                                     private-field-names))]
                     [(#,@init-names)
                      (values #,@(map (λ (stx) #`(λ () #,stx))
                                      init-names))]
