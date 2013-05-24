@@ -254,7 +254,7 @@
              (match (map (f (not (= 1 (length arrs)))) arrs)
                [(list e) e]
                [l #`(case-> #,@l)])])]
-          [_ (int-err "not a function" f)]))
+          [_ (int-err "not a function ~a" f)]))
 
       ;; Helpers for contract requirements
       (define (set-impersonator!)
