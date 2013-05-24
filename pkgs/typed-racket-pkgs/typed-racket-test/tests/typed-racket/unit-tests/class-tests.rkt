@@ -382,6 +382,44 @@
                  (field [f "foo"])
                  (set! f 5))))
 
+   ;; test private field
+   (check-ok
+    (class: object%
+      (super-new)
+      (: x Integer)
+      (define x 5)
+      (set! x 8)
+      (+ x 1))
+    (: d% (Class (field [y String])))
+    (define d%
+      (class: object%
+        (super-new)
+        (: x Integer)
+        (define x 5)
+        (: y String)
+        (field [y "foo"]))))
+
+   ;; fails, bad private field set!
+   (check-err
+    (class: object%
+      (super-new)
+      (: x Integer)
+      (define x 5)
+      (set! x "foo")))
+
+   ;; fails, bad private field default
+   (check-err
+    (class: object%
+      (super-new)
+      (: x Integer)
+      (define x "foo")))
+
+   ;; fails, private field needs type annotation
+   (check-err
+    (class: object%
+      (super-new)
+      (define x "foo")))
+
    ;; test private method
    (check-ok
     (class: object% (super-new)

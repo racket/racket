@@ -35,7 +35,7 @@
 (define-syntax-class internal-class-data
   #:literals (#%plain-app quote-syntax class:-internal begin
               values c:init c:init-field optional-init c:field
-              c:public c:override c:private c:inherit)
+              c:public c:override c:private c:inherit private-field)
   (pattern (begin (quote-syntax
                    (class:-internal
                     (c:init init-names:name-pair ...)
@@ -45,6 +45,7 @@
                     (c:public public-names:name-pair ...)
                     (c:override override-names:name-pair ...)
                     (c:private privates:id ...)
+                    (private-field private-fields:id ...)
                     (c:inherit inherit-names:name-pair ...)))
                   (#%plain-app values))
            #:with init-internals #'(init-names.internal ...)
@@ -60,7 +61,8 @@
            #:with override-externals #'(override-names.external ...)
            #:with inherit-externals #'(inherit-names.external ...)
            #:with inherit-internals #'(inherit-names.internal ...)
-           #:with private-names #'(privates ...)))
+           #:with private-names #'(privates ...)
+           #:with private-field-names #'(private-fields ...)))
 
 (define-syntax-class initializer-body
   #:literals (letrec-syntaxes+values)
@@ -117,7 +119,7 @@
                 public-internals public-externals
                 override-internals override-externals
                 inherit-internals inherit-externals
-                private-names
+                private-names private-field-names
                 make-methods
                 initializer-body
                 initializer-self-id
@@ -208,6 +210,8 @@
        (list->set (syntax->datum #'cls.inherit-externals)))
      (define this%-private-names
        (list->set (syntax->datum #'cls.private-names)))
+     (define this%-private-fields
+       (list->set (syntax->datum #'cls.private-field-names)))
      (define this%-method-names
        (set-union this%-public-names this%-override-names))
      (define all-internal
@@ -274,13 +278,18 @@
      ;; trawl the body for the local name table
      (define locals (trawl-for-property #'cls.make-methods 'tr:class:local-table))
      (define-values (local-method-table local-private-table local-field-table
-                     local-init-table local-inherit-table local-super-table)
+                     local-private-field-table local-init-table
+                     local-inherit-table local-super-table)
        (construct-local-mapping-tables (car locals)))
      ;; types for private elements
      (define private-method-types
        (for/hash ([(name type) (in-dict internals-table)]
                   #:when (set-member? this%-private-names name))
          (values name type)))
+     (define private-field-types
+       (for/hash ([(name type) (in-dict internals-table)]
+                  #:when (set-member? this%-private-fields name))
+         (values name (list type))))
      ;; start type-checking elements in the body
      (define-values (lexical-names lexical-types
                      lexical-names/top-level lexical-types/top-level)
@@ -289,6 +298,8 @@
                                   this%-method-internals
                                   local-field-table fields
                                   this%-field-internals
+                                  local-private-field-table private-field-types
+                                  this%-private-fields
                                   local-init-table inits
                                   ;; omit init-fields here since they don't have
                                   ;; init accessors, only field accessors
@@ -393,6 +404,8 @@
 (define (local-tables->lexical-env internal-external-mapping
                                    local-method-table methods method-names
                                    local-field-table fields field-names
+                                   local-private-field-table
+                                   private-field-types private-field-names
                                    local-init-table inits init-names
                                    local-inherit-table local-super-table
                                    super-types
@@ -408,6 +421,12 @@
   (define localized-field-pairs (localize local-field-table field-names))
   (define localized-field-get-names (map car localized-field-pairs))
   (define localized-field-set-names (map cadr localized-field-pairs))
+  (define localized-private-field-pairs
+    (localize local-private-field-table private-field-names))
+  (define localized-private-field-get-names
+    (map car localized-private-field-pairs))
+  (define localized-private-field-set-names
+    (map cadr localized-private-field-pairs))
   (define localized-inherit-names (localize local-inherit-table inherit-names))
   (define localized-private-methods
     (localize local-private-table private-methods))
@@ -429,19 +448,26 @@
   (define method-types (make-method-types method-names methods))
   (define inherit-types (make-method-types inherit-names super-types))
 
-  (define field-get-types
-    (for/list ([f (in-set field-names)])
-      (define external (dict-ref internal-external-mapping f))
-      (define maybe-type (dict-ref fields external #f))
-      (->* (list (make-Univ)) (or (and maybe-type (car maybe-type))
-                                  (make-Univ)))))
-  (define field-set-types
-    (for/list ([f (in-set field-names)])
-      (define external (dict-ref internal-external-mapping f))
-      (define maybe-type (dict-ref fields external #f))
-      (->* (list (make-Univ) (or (and maybe-type (car maybe-type))
-                                 -Bottom))
-           -Void)))
+  ;; construct field accessor types
+  (define (make-field-types field-names type-map #:private? [private? #f])
+    (for/lists (_1 _2) ([f (in-set field-names)])
+      (define external
+        (if private?
+            f
+            (dict-ref internal-external-mapping f)))
+      (define maybe-type (dict-ref type-map external #f))
+      (values
+       (->* (list (make-Univ)) (or (and maybe-type (car maybe-type))
+                                   (make-Univ)))
+       (->* (list (make-Univ) (or (and maybe-type (car maybe-type))
+                                  -Bottom))
+            -Void))))
+
+  (define-values (field-get-types field-set-types)
+    (make-field-types field-names fields))
+  (define-values (private-field-get-types private-field-set-types)
+    (make-field-types private-field-names private-field-types
+                      #:private? #t))
 
   ;; types for privates and super calls
   (define (make-private-like-types names type-map)
@@ -465,10 +491,13 @@
                             localized-private-methods
                             localized-field-get-names
                             localized-field-set-names
+                            localized-private-field-get-names
+                            localized-private-field-set-names
                             localized-inherit-names
                             localized-override-names))
   (define all-types (append method-types private-method-types
                             field-get-types field-set-types
+                            private-field-get-types private-field-set-types
                             inherit-types super-call-types))
   (values all-names all-types
           ;; FIXME: consider removing method names and types
@@ -628,6 +657,14 @@
                       (let-values (((_) _))
                         (let-values (((_) _)) (#%plain-app local-field-set:id _ _))))
                     ...)]
+                  [(private-field:id ...)
+                   (#%plain-app
+                    values
+                    (#%plain-lambda ()
+                      (let-values (((_) _)) (#%plain-app local-private-get:id _))
+                      (let-values (((_) _))
+                        (let-values (((_) _)) (#%plain-app local-private-set:id _ _))))
+                    ...)]
                   [(init:id ...)
                    (#%plain-app values (#%plain-lambda () local-init:id) ...)]
                   [(inherit:id ...)
@@ -656,6 +693,10 @@
                   (syntax->datum #'(field ...))
                   (syntax->list #'(local-field-get ...))
                   (syntax->list #'(local-field-set ...)))
+             (map list
+                  (syntax->datum #'(private-field ...))
+                  (syntax->list #'(local-private-get ...))
+                  (syntax->list #'(local-private-set ...)))
              (map cons
                   (syntax->datum #'(init ...))
                   (syntax->list #'(local-init ...)))
