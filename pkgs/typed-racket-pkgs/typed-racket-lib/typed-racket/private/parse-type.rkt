@@ -13,6 +13,7 @@
          (only-in racket/class init init-field field)
          (for-template (only-in racket/class init init-field field))
          (only-in racket/list flatten)
+         racket/dict
          racket/match
          racket/syntax
          (only-in unstable/list check-duplicate)
@@ -561,12 +562,22 @@
 ;; process-class-clauses : Type FieldDict MethodDict -> FieldDict MethodDict
 ;; Merges #:extends class type and the current class clauses appropriately
 (define (merge-with-parent-type parent-type fields methods)
-  ;; (Listof Symbol) String -> Void
+  ;; (Listof Symbol) Dict Dict String -> (Values Dict Dict)
   ;; check for duplicates in a class clause
-  (define (check-duplicate-clause clause-lst err-msg)
-    (define maybe-dup (check-duplicate clause-lst))
-    (when maybe-dup
-      (tc-error err-msg maybe-dup)))
+  (define (check-duplicate-clause names super-names types super-types err-msg)
+    (define maybe-dup (check-duplicate (append names super-names)))
+    (cond [maybe-dup
+           (define type (car (dict-ref types maybe-dup)))
+           (define super-type (car (dict-ref super-types maybe-dup)))
+           (cond [;; if there is a duplicate, but the type is the same,
+                  ;; then let it through and check for any other duplicates
+                  (type-equal? type super-type)
+                  (check-duplicate-clause
+                   (remove maybe-dup names) super-names
+                   (dict-remove types maybe-dup) super-types
+                   err-msg)]
+                 [else (tc-error err-msg maybe-dup)])]
+          [else (values types super-types)]))
 
   (define-values (super-fields super-methods)
    (match parent-type
@@ -581,16 +592,20 @@
 
   ;; if any duplicates are found between this class and the superclass
   ;; type, then raise an error
-  (check-duplicate-clause
-   (append field-names super-field-names)
-   "field or init-field name ~a conflicts with #:extends clause")
-  (check-duplicate-clause
-   (append method-names super-method-names)
-   "method name ~a conflicts with #:extends clause")
+  (define-values (checked-fields checked-super-fields)
+    (check-duplicate-clause
+     field-names super-field-names
+     fields super-fields
+     "field or init-field name ~a conflicts with #:extends clause"))
+  (define-values (checked-methods checked-super-methods)
+   (check-duplicate-clause
+    method-names super-method-names
+    methods super-methods
+    "method name ~a conflicts with #:extends clause"))
 
   ;; then append the super types if there were no errors
-  (define merged-fields (append super-fields fields))
-  (define merged-methods (append super-methods methods))
+  (define merged-fields (append checked-super-fields checked-fields))
+  (define merged-methods (append checked-super-methods checked-methods))
   (values merged-fields merged-methods))
 
 ;; Syntax (Syntax -> Type) -> Type
