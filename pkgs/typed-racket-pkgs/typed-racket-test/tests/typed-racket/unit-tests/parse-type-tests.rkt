@@ -225,6 +225,9 @@
    ;; test #:extends
    [(Class #:extends (Class [m (Number -> Number)]) (field [x Number]))
     (make-Class #f null `((x ,-Number)) `((m ,(t:-> N N))))]
+   [(Class #:extends (Class (init [x Integer]) [m (Number -> Number)])
+           (field [x Number]))
+    (make-Class #f null `((x ,-Number)) `((m ,(t:-> N N))))]
    [FAIL (Class #:extends (Class [m (Number -> Number)]) [m String])]
    ))
 

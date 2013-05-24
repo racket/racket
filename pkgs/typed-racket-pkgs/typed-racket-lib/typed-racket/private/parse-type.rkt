@@ -620,23 +620,18 @@
   ;; if any duplicates are found between this class and the superclass
   ;; type, then raise an error
   (check-duplicate-clause
-   (append init-names init-field-names super-init-names)
-   "init or init-field name ~a conflicts with #:extends clause")
-  (check-duplicate-clause
    (append field-names init-field-names super-field-names)
    "field or init-field name ~a conflicts with #:extends clause")
   (check-duplicate-clause
    (append method-names super-method-names)
    "method name ~a conflicts with #:extends clause")
 
-  ;; then append the super types if there were no errors
   (define inits
-    (append
-     super-inits
-     (map list
-          (append init-names init-field-names)
-          (append init-types init-field-types)
-          (append init-optional?s init-field-optional?s))))
+    (map list
+         (append init-names init-field-names)
+         (append init-types init-field-types)
+         (append init-optional?s init-field-optional?s)))
+  ;; then append the super types if there were no errors
   (define fields
     (append
      super-fields
