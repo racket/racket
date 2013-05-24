@@ -328,9 +328,9 @@
   ;; set!-transformers to the appropriate accessors, which lets
   ;; us figure out the accessor identifiers.
   (define (make-locals-table name-dict)
-    (define method-names
-      (append (stx-map stx-car (dict-ref name-dict #'public '()))
-              (stx-map stx-car (dict-ref name-dict #'override '()))))
+    (define public-names (stx-map stx-car (dict-ref name-dict #'public '())))
+    (define override-names
+      (stx-map stx-car (dict-ref name-dict #'override '())))
     (define private-names (dict-ref name-dict #'private '()))
     (define field-names
       (append (stx-map stx-car (dict-ref name-dict #'field '()))
@@ -340,9 +340,9 @@
     (define inherit-names
       (stx-map stx-car (dict-ref name-dict #'inherit '())))
     (syntax-property
-     #`(let-values ([(#,@method-names)
+     #`(let-values ([(#,@public-names)
                      (values #,@(map (λ (stx) #`(λ () (#,stx)))
-                                     method-names))]
+                                     public-names))]
                     [(#,@private-names)
                      (values #,@(map (λ (stx) #`(λ () (#,stx)))
                                      private-names))]
@@ -354,7 +354,10 @@
                                      init-names))]
                     [(#,@inherit-names)
                      (values #,@(map (λ (stx) #`(λ () (#,stx)))
-                                     inherit-names))])
+                                     inherit-names))]
+                    [(#,@override-names)
+                     (values #,@(map (λ (stx) #`(λ () (#,stx) (super #,stx)))
+                                     override-names))])
          (void))
      'tr:class:local-table #t)))
 

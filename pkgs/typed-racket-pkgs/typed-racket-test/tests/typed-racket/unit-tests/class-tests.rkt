@@ -436,13 +436,6 @@
                  (init x)))
     (new d%))
 
-   ;; fails, mandatory super-class init not provided
-   (check-err
-    (class: (class: object% (super-new)
-              (: x Integer)
-              (init x))
-      (super-new)))
-
    ;; test that provided super-class inits don't count
    ;; towards the type of current class
    (check-ok
@@ -544,6 +537,45 @@
       (field [x 0])
       (: y Integer)
       (field [y (get-field x this)])))
+
+   ;; test super calls
+   (check-ok
+    (define c%
+      (class: object%
+        (super-new)
+        (: m (Integer -> Integer))
+        (define/public (m x) 0)))
+    (define d%
+      (class: c%
+        (super-new)
+        (define/override (m x) (add1 (super m 5)))))
+    (send (new d%) m 1))
+
+   ;; test super calls at top-level
+   (check-ok
+    (define c%
+      (class: object%
+        (super-new)
+        (: m (Integer -> Integer))
+        (define/public (m x) 0)))
+    (define d%
+      (class: c%
+        (super-new)
+        (super m 5)
+        (define/override (m x) 5))))
+
+   ;; fails, bad super call argument
+   (check-err
+    (define c%
+      (class: object%
+        (super-new)
+        (: m (Integer -> Integer))
+        (define/public (m x) 0)))
+    (define d%
+      (class: c%
+        (super-new)
+        (super m "foo")
+        (define/override (m x) 5))))
 
    ;; test different internal/external names
    (check-ok

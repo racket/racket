@@ -274,7 +274,7 @@
      ;; trawl the body for the local name table
      (define locals (trawl-for-property #'cls.make-methods 'tr:class:local-table))
      (define-values (local-method-table local-private-table local-field-table
-                     local-init-table local-inherit-table)
+                     local-init-table local-inherit-table local-super-table)
        (construct-local-mapping-tables (car locals)))
      ;; types for private elements
      (define private-method-types
@@ -293,8 +293,10 @@
                                   ;; omit init-fields here since they don't have
                                   ;; init accessors, only field accessors
                                   (list->set (syntax->datum #'cls.init-internals))
-                                  local-inherit-table super-methods
+                                  local-inherit-table local-super-table
+                                  super-methods
                                   this%-inherit-internals
+                                  this%-override-internals
                                   local-private-table private-method-types
                                   this%-private-names
                                   #'cls.initializer-self-id
@@ -309,10 +311,10 @@
      (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
        (check-field-set!s #'cls.initializer-body local-field-table inits))
      ;; trawl the body and find methods and type-check them
-     (define meths (trawl-for-property #'cls.make-methods 'tr:class:method))
+     (define meth-stxs (trawl-for-property #'cls.make-methods 'tr:class:method))
      (define checked-method-types
        (with-lexical-env/extend lexical-names lexical-types
-         (check-methods internal-external-mapping meths methods self-type)))
+         (check-methods internal-external-mapping meth-stxs methods self-type)))
      (define final-class-type
        (if expected?
            self-class-type
@@ -392,8 +394,9 @@
                                    local-method-table methods method-names
                                    local-field-table fields field-names
                                    local-init-table inits init-names
-                                   local-inherit-table super-types
-                                   inherit-names
+                                   local-inherit-table local-super-table
+                                   super-types
+                                   inherit-names override-names
                                    local-private-table
                                    private-types private-methods
                                    self-id init-args-id
@@ -408,6 +411,8 @@
   (define localized-inherit-names (localize local-inherit-table inherit-names))
   (define localized-private-methods
     (localize local-private-table private-methods))
+  (define localized-override-names
+    (localize local-super-table override-names))
   (define localized-init-names (localize local-init-table init-names))
   (define default-type (list (make-Univ)))
 
@@ -437,11 +442,20 @@
       (->* (list (make-Univ) (or (and maybe-type (car maybe-type))
                                  -Bottom))
            -Void)))
-  (define private-method-types
-    (for/list ([f (in-set private-methods)])
-      (define maybe-type (dict-ref private-types f #f))
+
+  ;; types for privates and super calls
+  (define (make-private-like-types names type-map)
+    (for/list ([f (in-set names)])
+      (define pre-type (dict-ref type-map f #f))
+      (define maybe-type (if (pair? pre-type) (car pre-type) pre-type))
       (or (and maybe-type (fixup-method-type maybe-type self-type))
           (make-Univ))))
+
+  (define private-method-types
+    (make-private-like-types private-methods private-types))
+  (define super-call-types
+    (make-private-like-types override-names super-types))
+
   (define init-types
     (for/list ([i (in-set init-names)])
       (define external (dict-ref internal-external-mapping i))
@@ -451,10 +465,11 @@
                             localized-private-methods
                             localized-field-get-names
                             localized-field-set-names
-                            localized-inherit-names))
+                            localized-inherit-names
+                            localized-override-names))
   (define all-types (append method-types private-method-types
                             field-get-types field-set-types
-                            inherit-types))
+                            inherit-types super-call-types))
   (values all-names all-types
           ;; FIXME: consider removing method names and types
           ;;        from top-level environment to avoid <undefined>
@@ -620,11 +635,20 @@
                     values
                     (#%plain-lambda ()
                       (#%plain-app (#%plain-app local-inherit:id _) _))
+                    ...)]
+                  [(override:id ...)
+                   (#%plain-app
+                    values
+                    (#%plain-lambda ()
+                      (#%plain-app (#%plain-app local-override:id _) _)
+                      (#%plain-app local-super:id _))
                     ...)])
        (#%plain-app void))
      (values (map cons
-                  (syntax->datum #'(method ...))
-                  (syntax->list #'(local-method ...)))
+                  (append (syntax->datum #'(method ...))
+                          (syntax->datum #'(override ...)))
+                  (append (syntax->list #'(local-method ...))
+                          (syntax->list #'(local-override ...))))
              (map cons
                   (syntax->datum #'(private ...))
                   (syntax->list #'(local-private ...)))
@@ -637,7 +661,10 @@
                   (syntax->list #'(local-init ...)))
              (map cons
                   (syntax->datum #'(inherit ...))
-                  (syntax->list #'(local-inherit ...))))]))
+                  (syntax->list #'(local-inherit ...)))
+             (map cons
+                  (syntax->datum #'(override ...))
+                  (syntax->list #'(local-super ...))))]))
 
 ;; check-super-new-exists : Listof<Syntax> -> (U Syntax #f)
 ;; Check if a `super-new` call exists and if there is only
@@ -761,7 +788,7 @@
          (match-define (arr: doms rng rest drest kws) arr)
          (make-arr (cons self-type doms) rng rest drest kws)))
      (make-Function fixed-arrs)]
-    [_ (tc-error "fixup-method-type: internal error")]))
+    [_ (displayln type) (tc-error "fixup-method-type: internal error")]))
 
 ;; unfixup-method-type : Function -> Function
 ;; Turn a "real" method type back into a function type
