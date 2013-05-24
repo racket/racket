@@ -223,7 +223,7 @@
       [((~and kw t:Instance) t)
        (add-disappeared-use #'kw)
        (let ([v (parse-type #'t)])
-         (if (not (or (Mu? v) (Class? v) (Union? v) (Error? v)))
+         (if (not (or (F? v) (Mu? v) (Class? v) (Union? v) (Error? v)))
              (begin (tc-error/delayed "Argument to Instance must be a class type, got ~a" v)
                     (make-Instance (Un)))
              (make-Instance v)))]
@@ -559,9 +559,9 @@
   #:attributes (label type)
   (pattern (label:id type:expr)))
 
-;; process-class-clauses : Type FieldDict MethodDict -> FieldDict MethodDict
+;; process-class-clauses : Syntax FieldDict MethodDict -> FieldDict MethodDict
 ;; Merges #:extends class type and the current class clauses appropriately
-(define (merge-with-parent-type parent-type fields methods)
+(define (merge-with-parent-type stx fields methods)
   ;; (Listof Symbol) Dict Dict String -> (Values Dict Dict)
   ;; check for duplicates in a class clause
   (define (check-duplicate-clause names super-names types super-types err-msg)
@@ -576,14 +576,22 @@
                    (remove maybe-dup names) super-names
                    (dict-remove types maybe-dup) super-types
                    err-msg)]
-                 [else (tc-error err-msg maybe-dup)])]
+                 [else
+                  (displayln type)
+                  (displayln super-type)
+                  (tc-error/stx stx err-msg maybe-dup)])]
           [else (values types super-types)]))
 
+  (define parent-type (parse-type stx))
+  (define (match-parent-type parent-type)
+    (match parent-type
+      [(Class: _ _ fields methods)
+       (values fields methods)]
+      [(? Mu?)
+       (match-parent-type (unfold parent-type))]
+      [_ (tc-error "expected a class type for #:extends clause")]))
   (define-values (super-fields super-methods)
-   (match parent-type
-     [(Class: _ _ fields methods)
-      (values fields methods)]
-     [_ (tc-error "expected a class type for #:extends clause")]))
+    (match-parent-type parent-type))
 
   (match-define (list (list field-names _) ...) fields)
   (match-define (list (list method-names _) ...) methods)
@@ -614,8 +622,7 @@
   (syntax-parse stx
     [(kw clause:class-type-clauses)
      (add-disappeared-use #'kw)
-     (define parent-types
-       (stx-map parse-type (stx->list #'clause.extends-types)))
+     (define parent-types (stx->list #'clause.extends-types))
 
      (define given-inits
        (for/list ([name (append (stx-map syntax-e #'clause.init-names)
