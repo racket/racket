@@ -229,12 +229,19 @@
            #:extends (Class [n (Number -> Number)])
            (field [x Number]))
     (make-Class #f null `((x ,-Number)) `((n ,(t:-> N N)) (m ,(t:-> N N))))]
+   [(Class #:extends (Class [m (Number -> Number)])
+           #:extends (Class [m (Number -> Number)])
+           (field [x Number]))
+    (make-Class #f null `((x ,-Number)) `((m ,(t:-> N N))))]
    [(Class #:extends (Class (init [x Integer]) [m (Number -> Number)])
            (field [x Number]))
     (make-Class #f null `((x ,-Number)) `((m ,(t:-> N N))))]
    [FAIL (Class #:extends Number)]
    [FAIL (Class #:extends Number [m (Number -> Number)])]
    [FAIL (Class #:extends (Class [m (Number -> Number)]) [m String])]
+   [FAIL (Class #:extends (Class [m (Number -> Number)])
+                #:extends (Class [m (String -> String)])
+                (field [x Number]))]
    ))
 
 ;; FIXME - add tests for parse-values-type, parse-tc-results
