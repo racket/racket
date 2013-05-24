@@ -302,11 +302,46 @@
       [((key-id val-id) (_ dict-expr))
        #'[(key-id val-id)
           (:do-in ([(d) dict-expr])
-                  (void)
+                  (unless (d:dict? d)
+                    (raise-argument-error 'in-dict "dict?" d))
                   ([i (d:dict-iterate-first d)])
                   i
-                  ([key-id (d:dict-iterate-key d i)]
-                   [val-id (d:dict-iterate-value d i)])
+                  ([(key-id) (d:dict-iterate-key d i)]
+                   [(val-id) (d:dict-iterate-value d i)])
+                  #t
+                  #t
+                  ((d:dict-iterate-next d i)))]]
+      [_ #f])))
+
+(define-sequence-syntax :in-dict-keys
+  (lambda () #'in-dict-keys)
+  (lambda (stx)
+    (syntax-case stx ()
+      [((key-id) (_ dict-expr))
+       #'[(key-id)
+          (:do-in ([(d) dict-expr])
+                  (unless (d:dict? d)
+                    (raise-argument-error 'in-dict-keys "dict?" d))
+                  ([i (d:dict-iterate-first d)])
+                  i
+                  ([(key-id) (d:dict-iterate-key d i)])
+                  #t
+                  #t
+                  ((d:dict-iterate-next d i)))]]
+      [_ #f])))
+
+(define-sequence-syntax :in-dict-values
+  (lambda () #'in-dict-values)
+  (lambda (stx)
+    (syntax-case stx ()
+      [((val-id) (_ dict-expr))
+       #'[(key-id val-id)
+          (:do-in ([(d) dict-expr])
+                  (unless (d:dict? d)
+                    (raise-argument-error 'in-dict-values "dict?" d))
+                  ([i (d:dict-iterate-first d)])
+                  i
+                  ([(val-id) (d:dict-iterate-value d i)])
                   #t
                   #t
                   ((d:dict-iterate-next d i)))]]
@@ -355,19 +390,19 @@
              val+pos-true))))
 
 (define (dict-map d f)
-  (for/list ([(k v) (in-dict d)])
+  (for/list ([(k v) (:in-dict d)])
     (f k v)))
 
 (define (dict-for-each d f)
-  (for ([(k v) (in-dict d)])
+  (for ([(k v) (:in-dict d)])
     (f k v)))
 
 (define (dict-keys d)
-  (for/list ([k (in-dict-keys d)])
+  (for/list ([k (:in-dict-keys d)])
     k))
 
 (define (dict-values d)
-  (for/list ([v (in-dict-values d)])
+  (for/list ([v (:in-dict-values d)])
     v))
 
 (define (dict->list d)
@@ -540,8 +575,8 @@
                      [create-immutable-custom-hash make-immutable-custom-hash])
          make-weak-custom-hash
 
-         in-dict
-         in-dict-keys
-         in-dict-values
+         (rename-out [:in-dict in-dict]
+                     [:in-dict-keys in-dict-keys]
+                     [:in-dict-values in-dict-values])
          in-dict-pairs)
   
