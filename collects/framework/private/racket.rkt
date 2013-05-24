@@ -1345,38 +1345,25 @@
          [else #f])))))
 
 
-(define (position-type-when-inserted text char)
-  (define selection-start (send text get-start-position))
-  (define selection-end (send text get-end-position))
-  (send text begin-edit-sequence #t #f)
-  (send text insert char selection-start)
-  (define actual-type (send text classify-position selection-start))
-  (send text delete selection-start (+ 1 selection-start))
-  (send text end-edit-sequence)
-  (send text undo)  ; to avoid messing up the editor's modified state
-  ;(printf "check: |~a| actual: ~a~n" char actual-type)
-  actual-type)
-
-
 ;; in-position? : text (list symbol) -> boolean
 ;; determines if the cursor is currently sitting in a particular
-;; position. To do this more accurately, first
-;; insert a space at the current cursor start position, then
-;; check what classification of that space character itself
-;; (note: the place where this shows up is if the cursor is
-;;  right in front of the quotes of a string literal, i.e.
-;;  |"...."  where | indicates cursor position)
+;; position. To make detection of whether the cursor is in
+;; a string or comment more robust, check also the position
+;; right before the cursor to make sure it matches. This handles
+;; the situation ... |"blah blah"  where | indicates cursor; in
+;; this case, the cursor is _not_ in the string (although
+;; classify-position characterizes it so).
 (define (in-position? text sym-list)
   (define selection-start (send text get-start-position))
-  (define selection-end (send text get-end-position))
-  (send text begin-edit-sequence #t #f)
-  (send text insert " " selection-start)
-  (define type (send text classify-position selection-start))
-  (send text delete selection-start (add1 selection-start))
-  (send text end-edit-sequence)
-  (send text undo)  ; to avoid messing up the editor's modified state
-  ; in case of a simple skip
-  (and (member type sym-list) #t))
+  (define first-type (send text classify-position selection-start))
+  (define final-type
+    (if (and (member first-type '(string comment))
+             (or (= selection-start 0)
+                 (not (eq? (send text classify-position (- selection-start 1))
+                           first-type))))
+        'white-space
+        first-type))
+  (and (member final-type sym-list) #t))
 
 ;; determines if the cursor is currently sitting in a string
 ;; literal or a comment. 
@@ -1528,7 +1515,10 @@
   
   (send keymap map-function "leftbuttondouble" "paren-double-select")
   
-  (define (insert-brace-pair text open-brace close-brace [space-between? #f])
+
+  ;(define (insert-brace-pair text open-brace close-brace [space-between? #f])
+  ;  (insert/check/balance text open-brace close-brace #f space-between?))
+    #|
     (define selection-start (send text get-start-position))
     (define hash-before?  ; tweak to detect and correctly close block comments #| ... |#
       (and (< 0 selection-start)
@@ -1543,12 +1533,46 @@
     (send text insert open-brace)
     (when space-between?
       (send text set-position (+ (send text get-start-position) 1)))
+    (send text end-edit-sequence))|#
+
+  ;; Inserts the open parens character and, if the resulting token
+  ;; type satisfies checkp, then go ahead and insert the close parens
+  ;; and set the cursor between them.
+  ;; When space-between?, adds a space between the braces and places
+  ;; the cursor after the space.
+  ;; checkp: (or/c #f symbol (symbol -> boolean))
+  ;;  When checkp is #f, always inserts both open and close braces
+  ;;  When checkp is a symbol, only inserts the closing brace if 
+  ;;    the tokenizer identifies open-brace as that type of token
+  ;;    having inserted it
+  ;;  When checkp is a predicate, only inserts the closing brace if
+  ;;    the token type of the inserted open-brace satisfies it
+  (define (insert-brace-pair text open-brace close-brace [checkp #f] [space-between? #f])
+    (define selection-start (send text get-start-position))
+    (define selection-end (send text get-end-position))
+    (define open-len (if (string? open-brace) (string-length open-brace) 1))
+    (send text begin-edit-sequence)
+    (send text insert open-brace selection-start)
+    (define tok-type (send text classify-position selection-start))
+    (when (or (not checkp)
+              (and (symbol? checkp) (eq? checkp tok-type))
+              (and (procedure? checkp) (checkp tok-type)))
+      (define hash-before?  ; tweak to detect and correctly close block comments #| ... |#
+        (and (< 0 selection-start)
+             (string=? "#" (send text get-text (- selection-start 1) selection-start))))
+      (send text set-position (+ selection-end open-len))
+      (when space-between? (send text insert " "))
+      (send text insert close-brace)
+      (when (and (char? open-brace) (char=? #\| open-brace) hash-before?) 
+        (send text insert #\#))
+      (send text set-position (+ selection-start open-len (if space-between? 1 0)))
+      )
     (send text end-edit-sequence))
   
-  ;; only insert a pair if:
-  ;;   - automatic-parens is on, and
-  ;;   - cursor is not in a string or line/block comment, and
-  ;;   - cursor is not preceded by #\ or \ escape characters
+
+  ;; only insert a pair if automatic-parens preference is on, depending
+  ;; on other analyses of the state of the text (e.g. auto-parens shouldn't
+  ;; affect typing literal characters inside a string constant, etc.)
   (define (maybe-insert-brace-pair text open-brace close-brace)
     (define open-parens 
       (for/list ([x (racket-paren:get-paren-pairs)]) (string-ref (car x) 0)))
@@ -1560,63 +1584,54 @@
        (define c (immediately-following-cursor text))
        (define cur-token 
          (send text classify-position (send text get-start-position)))
-       (define when-inserted 
-         (position-type-when-inserted text (string open-brace)))
        (cond
          ; insert paren pair if it results valid parenthesis token...
-         [(member open-brace open-parens)
-          (if (eq? 'parenthesis when-inserted)
-              (insert-brace-pair text open-brace close-brace)
-              (send text insert open-brace))]
+         [(member open-brace open-parens) (insert-brace-pair text open-brace close-brace 'parenthesis)]
          
          ; ASSUME: from here on, open-brace is either "  or  |
+         [else
+          ;(printf "tok ~a~n" cur-token)
+          (match cur-token
+            [(or 'error #f) (insert-brace-pair text open-brace close-brace 'error)]
+            ['constant (insert-brace-pair text open-brace close-brace 
+                                       (λ(t) (not (eq? t 'constant))))]
+            [(or 'symbol 'comment)
+             (cond
+               [(and c (char=? #\| open-brace) (string=? c "|"))   ;; smart skip
+                   (send text set-position (+ 1 (send text get-end-position)))
+                   (define d (immediately-following-cursor text))
+                   (when (and d (string=? d "#"))   ; a block comment?
+                     (send text set-position (+ 1 (send text get-end-position))))]
+               [(eq? cur-token 'comment) (send text insert open-brace)]
+               [else (insert-brace-pair text open-brace close-brace)])]
+            ['string
+             (cond
+               [(not (char=? #\" open-brace)) (send text insert open-brace)]
+               [else 
+                (define start-position (send text get-start-position))
+                (define end-position (send text get-end-position))
+                (cond
+                  ; smart skip a " if it is the immediately following character (c)
+                  [(and c (string=? c "\"")) 
+                   (send text set-position (+ 1 end-position))]
+                  
+                  ; there is no current selection - split the string in two
+                  [(= start-position end-position)
+                   (insert-brace-pair text #\" #\" #f #t)]
+                  
+                  ; there is a selection - split the selected text off as a
+                  ; separate string from the surrounding in an intelligent way
+                  ; and retain selection of the split-out string
+                  [else (define selection-length (- end-position start-position))
+                        (insert-brace-pair text "\" \"" "\" \"")
+                        (define cur-position (send text get-start-position))
+                        (send text set-position (- cur-position 1) (+ cur-position selection-length 1))])
+                ]
+               )]
+            [_  (insert-brace-pair text open-brace close-brace)]) ])]))
          
-         ; is there a token error at current position - see if inserting an
-         ; open brace would fix it
-         [(and (eq? 'error cur-token) (not (eq? 'error when-inserted))) 
-          (send text insert open-brace)]
-         
-         ; smart-skip over a  | , or  |# ...
-         [(and c (char=? #\| open-brace) (string=? c "|") 
-               (in-position? text '(symbol comment)))
-          (send text set-position (+ 1 (send text get-end-position)))
-          (define d (immediately-following-cursor text))
-          (when (and d (string=? d "#"))   ; a block comment?
-            (send text set-position (+ 1 (send text get-end-position))))]
- 
-         ; are we in a string and " has been typed?
-         [(and (in-position? text '(string)) (char=? #\" open-brace))
-          (define start-position (send text get-start-position))
-          (define end-position (send text get-end-position))
-          (cond
-            ; smart skip a " if it is the immediately following character (c)
-            [(and c (string=? c "\"")) 
-             (send text set-position (+ 1 end-position))]
-            
-            ; there is no current selection - split the string in two
-            [(= start-position end-position)
-             (insert-brace-pair text #\" #\" #t)]
-            
-            ; there is a selection - split the selected text off as a
-            ; separate string from the surrounding in an intelligent way
-            ; and retain selection of the split-out string
-            [else (define selection-length (- end-position start-position))
-                  (insert-brace-pair text "\" \"" "\" \"")
-                  (define cur-position (send text get-start-position))
-                  (send text set-position (- cur-position 1) (+ cur-position selection-length 1))])]
-         
-         ; are we otherwise in a string or comment...
-         ; (note, in-string/comment? doesn't work very well if tokenizer is in
-         ;        an error state and inserting the open-brace doesn't help, 
-         ;        e.g.  typing " or | at the end of  "blah blah\
-         [(in-string/comment? text) (send text insert open-brace)]
-         
-         ; otherwise if open-brace would result in some literal...
-         [(eq? 'constant when-inserted) (send text insert open-brace)]
-         
-         ; at this point probably the tokenizer is in some error state anyway...
-         [else (insert-brace-pair text open-brace close-brace)])]
-      ))
+
+      
   
   (add-edit-function "insert-()-pair" (λ (text) (insert-brace-pair text #\( #\))))
   (add-edit-function "insert-[]-pair" (λ (text) (insert-brace-pair text #\[ #\])))
@@ -1838,15 +1853,15 @@
     (send text end-edit-sequence)
     (cond
       [(and (preferences:get 'framework:automatic-parens)
-            (not (in-string/comment? text))
-            (eq? (position-type-when-inserted text real-char) 'parenthesis))
-       (send text insert (case real-char
+            (not (in-string/comment? text)))
+       (send text insert real-char start-pos start-pos)
+       (when (eq? (send text classify-position start-pos) 'parenthesis)
+         (send text insert (case real-char
                            [(#\() #\)]
                            [(#\[) #\]]
                            [(#\{) #\}])
-             end-pos end-pos)
-       (send text insert real-char start-pos start-pos)
-       (send text set-position (+ start-pos 1))]
+             (+ end-pos 1) (+ end-pos 1))
+         (send text set-position (+ start-pos 1)))]
       [else
        (send text insert real-char start-pos end-pos)])))
 
