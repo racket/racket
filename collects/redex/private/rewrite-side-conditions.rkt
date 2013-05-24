@@ -56,8 +56,19 @@
     (define last-contexts (make-hasheq))
     (define last-stx (make-hasheq)) ;; used for syntax error reporting
     (define assignments #hasheq())
-    (define (record-binder pat-stx under)
+
+    ;; hash[sym -o> (listof (list stx (listof id[mismatch-ellipsis-binders])))
+    (define vars-under-mismatch-table (make-hash))
+    
+    (define (record-binder pat-stx under under-mismatch-ellipsis)
       (define pat-sym (syntax->datum pat-stx))
+      (hash-set! vars-under-mismatch-table
+                 (syntax-e pat-stx)
+                 (cons
+                  (list pat-stx under-mismatch-ellipsis)
+                  (hash-ref vars-under-mismatch-table
+                            (syntax-e pat-stx)
+                            '())))
       (set! assignments
             (if (null? under)
                 assignments
@@ -95,15 +106,16 @@
     
     (define-values (term names)
       (let loop ([term orig-stx]
-                 [under '()])
+                 [under '()]
+                 [under-mismatch-ellipsis '()])
         (syntax-case term (side-condition variable-except variable-prefix hole name in-hole hide-hole cross unquote and)
           [(side-condition pre-pat (and))
            ;; rewriting metafunctions (and possibly other things) that have no where, etc clauses
            ;; end up with side-conditions that are empty 'and' expressions, so we just toss them here.
-           (loop #'pre-pat under)]
+           (loop #'pre-pat under under-mismatch-ellipsis)]
           [(side-condition pre-pat exp)
            (let ()
-             (define-values (pre-term pre-vars) (loop #'pre-pat under))
+             (define-values (pre-term pre-vars) (loop #'pre-pat under under-mismatch-ellipsis))
              (define names/ellipses (map build-dots pre-vars))
              (with-syntax ([pre-term pre-term]
                            [((name name/ellipses) ...)
@@ -159,8 +171,8 @@
           [hole (values term '())]
           [(name x y)
            (let ()
-             (define-values (sub-term sub-vars) (loop #'y under))
-             (record-binder #'x under)
+             (define-values (sub-term sub-vars) (loop #'y under under-mismatch-ellipsis))
+             (record-binder #'x under under-mismatch-ellipsis)
              (values #`(name x #,sub-term)
                      (cons (make-id/depth #'x (length under) #f)
                            sub-vars)))]
@@ -168,15 +180,15 @@
           [name (expected-arguments 'name term)]
           [(in-hole a b)
            (let ()
-             (define-values (a-term a-vars) (loop #'a under))
-             (define-values (b-term b-vars) (loop #'b under))
+             (define-values (a-term a-vars) (loop #'a under under-mismatch-ellipsis))
+             (define-values (b-term b-vars) (loop #'b under under-mismatch-ellipsis))
              (values #`(in-hole #,a-term #,b-term)
                      (append a-vars b-vars)))]
           [(in-hole a ...) (expected-exact 'in-hole 2 term)]
           [in-hole (expected-arguments 'in-hole term)]
           [(hide-hole a) 
            (let ()
-             (define-values (sub-term vars) (loop #'a under))
+             (define-values (sub-term vars) (loop #'a under under-mismatch-ellipsis))
              (values #`(hide-hole #,sub-term) vars))]
           [(hide-hole a ...) (expected-exact 'hide-hole 1 term)]
           [hide-hole (expected-arguments 'hide-hole term)]
@@ -210,14 +222,14 @@
                     orig-stx
                     term)]
                   [(memq prefix-sym all-nts)
-                   (record-binder term under)
+                   (record-binder term under under-mismatch-ellipsis)
                    (record-syncheck-use term prefix-sym)
                    (values (if mismatch?
                                `(mismatch-name ,term (nt ,prefix-stx))
                                `(name ,term (nt ,prefix-stx)))
                            (list (make-id/depth term (length under) mismatch?)))]
                   [(memq prefix-sym underscore-allowed)
-                   (record-binder term under)
+                   (record-binder term under under-mismatch-ellipsis)
                    (values (if mismatch?
                                `(mismatch-name ,term ,prefix-stx)
                                `(name ,term ,prefix-stx))
@@ -239,14 +251,14 @@
                 (record-syncheck-use term (syntax-e term))
                 (cond
                   [bind-names?
-                   (record-binder term under)
+                   (record-binder term under under-mismatch-ellipsis)
                    (values `(name ,term (nt ,term)) (list (make-id/depth term (length under) #f)))]
                   [else
                    (values `(nt ,term) '())])]
                [(memq (syntax-e term) underscore-allowed)
                 (cond
                   [bind-names?
-                   (record-binder #'term under)
+                   (record-binder #'term under under-mismatch-ellipsis)
                    (values `(name ,term ,term) (list (make-id/depth term (length under) #f)))]
                   [else
                    (values term '())])]
@@ -268,7 +280,7 @@
                  (cond
                    [(null? terms) (values '() '())]
                    [(null? (cdr terms))
-                    (define-values (term vars) (loop (car terms) under))
+                    (define-values (term vars) (loop (car terms) under under-mismatch-ellipsis))
                     (values (list term) vars)]
                    [(is-ellipsis? (cadr terms))
                     (when (and (pair? (cddr terms))
@@ -300,9 +312,13 @@
                                            (cadr terms)
                                            (string->symbol ellipsis-str)
                                            (cadr terms)))
-                    (record-binder ellipsis+name under)
+                    (record-binder ellipsis+name under under-mismatch-ellipsis)
                     (define-values (fst-term fst-vars) 
-                      (loop (car terms) (cons (syntax-e ellipsis+name) under)))
+                      (loop (car terms) 
+                            (cons (syntax-e ellipsis+name) under)
+                            (if mismatch?
+                                (cons (syntax-e (cadr terms)) under-mismatch-ellipsis)
+                                under-mismatch-ellipsis)))
                     (define-values (rst-terms rst-vars) (t-loop (cddr terms)))
                     (values (cons `(repeat ,fst-term 
                                            ,ellipsis+name
@@ -310,7 +326,7 @@
                                   rst-terms)
                             (append fst-vars rst-vars))]
                    [else
-                    (define-values (fst-term fst-vars) (loop (car terms) under))
+                    (define-values (fst-term fst-vars) (loop (car terms) under under-mismatch-ellipsis))
                     (define-values (rst-terms rst-vars) (t-loop (cdr terms)))
                     (values (cons fst-term rst-terms)
                             (append fst-vars rst-vars))])))
@@ -328,7 +344,7 @@
     
     (define closed-table
       (make-immutable-hasheq (hash-map assignments (λ (cls _) (cons cls (find cls assignments))))))
-    
+     
     (define repeat-id-counts (make-hash))
 
     (define ellipsis-normalized 
@@ -362,14 +378,18 @@
         (syntax-case pat (repeat)
           [(repeat sub-pat name mismatch-name)
            (let ()
+             (define final-match-repeat-name 
+               (if (= 1 (hash-ref repeat-id-counts (syntax-e #'name)))
+                   #f
+                   #'name))
+             (define final-mismatch-repeat-name
+               (if (and (syntax-e #'mismatch-name)
+                        (= 1 (hash-ref repeat-id-counts (syntax-e #'mismatch-name))))
+                   #f
+                   #'mismatch-name))
              #`(repeat #,(loop #'sub-pat) 
-                       #,(if (= 1 (hash-ref repeat-id-counts (syntax-e #'name)))
-                             #f
-                             #'name)
-                       #,(if (and (syntax-e #'mismatch-name)
-                                  (= 1 (hash-ref repeat-id-counts (syntax-e #'mismatch-name))))
-                             #f
-                             #'mismatch-name)))]
+                       #,final-match-repeat-name
+                       #,final-mismatch-repeat-name))]
           [(a ...)
            (let ()
              (define new (map loop (syntax->list #'(a ...))))
@@ -379,6 +399,29 @@
           [_ pat])))
     
     (filter-duplicates what orig-stx names)
+    
+    (for ([(id stx+mismatches) (in-hash vars-under-mismatch-table)])
+      (define all-ids (map car stx+mismatches))
+      (define all-mismatch-idss (map cadr stx+mismatches))
+      (let loop ([all-mismatch-idss all-mismatch-idss])
+        (cond
+          [(null? all-mismatch-idss) (void)]
+          [else
+           (define id-in-multiple-places/f
+             (for/or ([mismatch-id (in-list (car all-mismatch-idss))])
+               (for/or ([other-mismatch-ids (in-list (cdr all-mismatch-idss))])
+                 (and (member mismatch-id other-mismatch-ids)
+                      mismatch-id))))
+           (when id-in-multiple-places/f
+             (raise-syntax-error what 
+                                 (format "~a appears under ~a in multiple places (so this pattern would always fail)"
+                                         id
+                                         id-in-multiple-places/f)
+                                 orig-stx
+                                 (car all-ids)
+                                 (cdr all-ids)))
+           (loop (cdr all-mismatch-idss))])))
+    
     (let ([without-mismatch-names (filter (λ (x) (not (id/depth-mismatch? x))) names)])
       (with-syntax ([(name/ellipses ...) (map build-dots without-mismatch-names)]
                     [(name ...) (map id/depth-id without-mismatch-names)]

@@ -7,15 +7,18 @@
 (define-syntax (rsc stx)
   (syntax-case stx ()
     [(_ pat (nts ...) bind-names?)
-     (with-syntax ([(ignore pat (vars ...) (vars/ellipses ...))
-                    (rewrite-side-conditions/check-errs 
-                     (syntax->datum #'(nts ...))
-                     'rsc
-                     (syntax-e #'bind-names?)
-                     #'pat)])
-       #'(list `pat
-               `(vars ...)
-               `(vars/ellipses ...)))]))
+     (with-handlers ((exn:fail:syntax?
+                      (λ (x)
+                        #`'#,(exn-message x))))
+       (with-syntax ([(ignore pat (vars ...) (vars/ellipses ...))
+                      (rewrite-side-conditions/check-errs 
+                       (syntax->datum #'(nts ...))
+                       'rsc
+                       (syntax-e #'bind-names?)
+                       #'pat)])
+         #'(list `pat
+                 `(vars ...)
+                 `(vars/ellipses ...))))]))
 
 (check-equal? (rsc 1 () #t) `(1 () ()))
 (check-equal? (rsc (1) () #t) `((list 1) () ()))
@@ -42,6 +45,10 @@
               `((in-hole (list hole a #f (hide-hole hole)) (cross x-x))
                 ()
                 ()))
+
+(check-regexp-match
+ #rx"any_1 appears under ..._!_1 in multiple places"
+ (rsc (any_1 ..._!_1 any_1 ..._!_1) () #f))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
