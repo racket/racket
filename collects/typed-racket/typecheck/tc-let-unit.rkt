@@ -10,7 +10,7 @@
          syntax/free-vars
          (typecheck signatures tc-metafunctions tc-subst check-below)
          racket/match (contract-req)
-         syntax/kerncase syntax/parse unstable/syntax
+         syntax/kerncase syntax/parse syntax/stx
          (for-template racket/base (typecheck internal-forms)))
 
 
@@ -202,9 +202,7 @@
   (cond [(andmap (lambda (fv)
                    (or (not (s:member fv letrec-bound-ids bound-identifier=?)) ; from outside
                        (s:member fv transitively-safe-bindings bound-identifier=?)))
-                 (apply append
-                        (syntax-map (lambda (x) (free-vars x))
-                                    clause-rhs)))
+                 (apply append (stx-map free-vars clause-rhs)))
          'transitively-safe]
         [else
          (syntax-parse clause-rhs #:literal-sets (kernel-literals)

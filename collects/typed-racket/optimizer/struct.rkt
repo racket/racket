@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require syntax/parse unstable/syntax
+(require syntax/parse syntax/stx unstable/syntax
          (for-template racket/base racket/unsafe/ops)
          "../utils/utils.rkt"
          (utils tc-utils)
@@ -25,4 +25,4 @@
                         #`(unsafe-struct-ref  #,((optimize) #'s) #,idx))
                  (begin (log-optimization "struct set" struct-opt-msg this-syntax)
                         #`(unsafe-struct-set! #,((optimize) #'s) #,idx
-                                              #,@(syntax-map (optimize) #'(v ...))))))))
+                                              #,@(stx-map (optimize) #'(v ...))))))))

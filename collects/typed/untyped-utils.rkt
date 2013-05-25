@@ -2,8 +2,8 @@
 
 (require (for-syntax racket/base
                      syntax/parse
+                     syntax/stx
                      racket/syntax
-                     unstable/syntax
                      typed-racket/utils/tc-utils)
          typed-racket/utils/tc-utils)
 
@@ -32,7 +32,7 @@
          (typed/untyped-renamer #'typed-name #'untyped-name)))]))
 
 (define-for-syntax (freshen ids)
-  (syntax-map (lambda (id) ((make-syntax-introducer) id)) ids))
+  (stx-map (lambda (id) ((make-syntax-introducer) id)) ids))
 
 (define-syntax (require/untyped-contract stx)
   (syntax-parse stx #:literals (begin)

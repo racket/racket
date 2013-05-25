@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require syntax/parse unstable/syntax unstable/sequence
+(require syntax/parse syntax/stx unstable/syntax unstable/sequence
          racket/list racket/dict racket/match
          "../utils/utils.rkt"
          "../utils/tc-utils.rkt"
@@ -66,7 +66,7 @@
             (and (subtypeof? (cadr p) -FloatComplex)
                  (could-be-unboxed-in? (car (syntax-e (car p)))
                                        #'(begin body ...))))
-          (syntax-map syntax->list #'(clause ...))))
+          (stx-map syntax->list #'(clause ...))))
         ((function-candidates others)
          ;; extract function bindings that have float-complex arguments
          ;; we may be able to pass arguments unboxed
@@ -148,7 +148,7 @@
                      (opt-functions.res ...
                       opt-others.res ...
                       opt-candidates.bindings ... ...)
-                     #,@(syntax-map (optimize) #'(body ...)))))))
+                     #,@(stx-map (optimize) #'(body ...)))))))
 
 (define-splicing-syntax-class let-like-keyword
   #:commit
@@ -194,13 +194,13 @@
         ([ids e-rhs:expr] ...) e-body:expr ...)
        #:with rebindings
        (filter (lambda (x) x)
-               (syntax-map (syntax-parser
-                            [((id) rhs)
-                             #:when (and (identifier? #'rhs)
-                                         (free-identifier=? v #'rhs))
-                             #'id]
-                            [_ #f])
-                           #'((ids e-rhs) ...)))
+               (stx-map (syntax-parser
+                         [((id) rhs)
+                          #:when (and (identifier? #'rhs)
+                                      (free-identifier=? v #'rhs))
+                          #'id]
+                         [_ #f])
+                        #'((ids e-rhs) ...)))
        (or (look-at #'(e-rhs ... e-body ...))
            (ormap (lambda (x) (could-be-unboxed-in? x exp))
                   (syntax->list #'rebindings)))]
@@ -301,16 +301,14 @@
            ;; partition of the arguments
            #:with ((to-unbox ...) (boxed ...)) #'unboxed-info
            #:with (real-params ...)
-           (syntax-map (lambda (x) (unboxed-gensym "unboxed-real-"))
-                       #'(to-unbox ...))
+           (stx-map (lambda (x) (unboxed-gensym "unboxed-real-")) #'(to-unbox ...))
            #:with (imag-params ...)
-           (syntax-map (lambda (x) (unboxed-gensym "unboxed-imag-"))
-                       #'(to-unbox ...))
+           (stx-map (lambda (x) (unboxed-gensym "unboxed-imag-")) #'(to-unbox ...))
            #:with res
            (begin
              (log-optimization "fun -> unboxed fun" arity-raising-opt-msg #'v)
              ;; add unboxed parameters to the unboxed vars table
-             (let ((to-unbox (syntax-map syntax->datum #'(to-unbox ...))))
+             (let ((to-unbox (syntax->datum #'(to-unbox ...))))
                (let loop ((params     (syntax->list #'params))
                           (i          0)
                           (real-parts (syntax->list #'(real-params ...)))
@@ -323,7 +321,7 @@
                         #`((v) (#%plain-lambda
                                 (real-params ... imag-params ...
                                  #,@(reverse boxed))
-                                #,@(syntax-map (optimize) #'(body ...))))]
+                                #,@(stx-map (optimize) #'(body ...))))]
 
                        [(memq i to-unbox)
                         ;; we unbox the current param, add to the table

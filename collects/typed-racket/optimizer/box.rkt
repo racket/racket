@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require syntax/parse unstable/syntax
+(require syntax/parse syntax/stx
          racket/match
          "../utils/utils.rkt"
          (for-template racket/base racket/unsafe/ops)
@@ -31,4 +31,4 @@
            #:with opt
            (begin (log-optimization "box" "Box check elimination." this-syntax)
                   (add-disappeared-use #'op)
-                  #`(op.unsafe b.opt #,@(syntax-map (optimize) #'(new ...))))))
+                  #`(op.unsafe b.opt #,@(stx-map (optimize) #'(new ...))))))
