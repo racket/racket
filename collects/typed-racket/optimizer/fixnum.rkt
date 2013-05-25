@@ -157,9 +157,7 @@
            #:with opt
            (begin (log-optimization "fixnum bounded expr" fixnum-opt-msg this-syntax)
                   (add-disappeared-use #'op)
-                  (let ([post-opt (syntax->list #'(n1.opt n2.opt ns.opt ...))])
-                    (n-ary->binary #'op.unsafe
-                                   (car post-opt) (cadr post-opt) (cddr post-opt)))))
+                  (n-ary->binary #'op.unsafe #'n1.opt #'n2.opt (syntax->list #'(ns.opt ...)))))
   (pattern (#%plain-app (~var op (fixnum-op potentially-bounded-nonzero-fixnum-ops))
                         n1:fixnum-expr n2:nonzero-fixnum-expr)
            #:when (check-if-safe this-syntax)

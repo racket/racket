@@ -225,8 +225,8 @@
                   #`(c1.bindings ... c2.bindings ... cs.bindings ... ...
                      ;; we want to bind the intermediate results to reuse them
                      ;; the final results are bound to real-binding and imag-binding
-                     #,@(let loop ([a  (car (syntax->list #'reals))]
-                                   [b  (car (syntax->list #'imags))]
+                     #,@(let loop ([a  (stx-car #'reals)]
+                                   [b  (stx-car #'imags)]
                                    [e1 (cdr (syntax->list #'reals))]
                                    [e2 (cdr (syntax->list #'imags))]
                                    [rs (append (stx-map (lambda (x) (unboxed-gensym "unboxed-real-"))
@@ -377,9 +377,7 @@
   (pattern v:id
            #:with unboxed-info (dict-ref unboxed-vars-table #'v #f)
            #:when (syntax->datum #'unboxed-info)
-           #:with real-binding (car   (syntax->list #'unboxed-info))
-           #:with imag-binding (cadr  (syntax->list #'unboxed-info))
-           #:with orig-binding (caddr (syntax->list #'unboxed-info))
+           #:with (real-binding imag-binding orig-binding) #'unboxed-info
            #:with (bindings ...)
            (begin (log-optimization "leave var unboxed"
                                     complex-unboxing-opt-msg
@@ -636,9 +634,7 @@
            #:with unboxed-info (dict-ref unboxed-vars-table #'v #f)
            #:when (syntax->datum #'unboxed-info)
            #:when (subtypeof? #'v -FloatComplex)
-           #:with real-binding (car   (syntax->list #'unboxed-info))
-           #:with imag-binding (cadr  (syntax->list #'unboxed-info))
-           #:with orig-binding (caddr (syntax->list #'unboxed-info))
+           #:with (real-binding imag-binding orig-binding) #'unboxed-info
            #:with (bindings ...) #'()
            ;; unboxed variable used in a boxed fashion, we have to box
            #:with opt
