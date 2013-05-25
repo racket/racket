@@ -50,7 +50,7 @@
     [((tc-results: ts fs os) (tc-results: ts2 (NoFilter:) (NoObject:)))
      (unless (= (length ts) (length ts2))
        (tc-error/expr "Expected ~a values, but got ~a" (length ts2) (length ts)))
-     (unless (for/and ([t ts] [s ts2]) (subtype t s))
+     (unless (for/and ([t (in-list ts)] [s (in-list ts2)]) (subtype t s))
        (tc-error/expr "Expected ~a, but got ~a" (stringify ts2) (stringify ts)))
      (if (= (length ts) (length ts2))
          (ret ts2 fs os)
@@ -79,7 +79,7 @@
      (unless (= (length t1) (length t2))
        (tc-error/expr "Expected ~a values and ~a ..., but got ~a values"
                       (length t2) dty (length t1)))
-     (unless (for/and ([t t1] [s t2]) (subtype t s))
+     (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (tc-error/expr "Expected ~a, but got ~a" (stringify t2) (stringify t1)))
      expected]
     ;; case where you have (Values a ... a) but expected something else
@@ -87,7 +87,7 @@
      (unless (= (length t1) (length t2))
        (tc-error/expr "Expected ~a values, but got ~a values and ~a ..."
                       (length t2) (length t1) dty))
-     (unless (for/and ([t t1] [s t2]) (subtype t s))
+     (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (tc-error/expr "Expected ~a, but got ~a" (stringify t2) (stringify t1)))
      expected]
     [((tc-results: t1 f o dty1 dbound) (tc-results: t2 f o dty2 dbound))
@@ -101,7 +101,7 @@
     [((tc-results: t1 fs os) (tc-results: t2 fs os))
      (unless (= (length t1) (length t2))
        (tc-error/expr "Expected ~a values, but got ~a" (length t2) (length t1)))
-     (unless (for/and ([t t1] [s t2]) (subtype t s))
+     (unless (for/and ([t (in-list t1)] [s (in-list t2)]) (subtype t s))
        (tc-error/expr "Expected ~a, but got ~a" (stringify t2) (stringify t1)))
      expected]
     [((tc-any-results:) (or (? Type/c? t) (tc-result1: t _ _)))

@@ -45,14 +45,16 @@
     (match expected
       [(tc-results: ets efs eos)
        (match-let ([(list (tc-result1: ts fs os) ...)
-                    (for/list ([arg (syntax->list #'args)]
-                               [et ets] [ef efs] [eo eos])
+                    (for/list ([arg (in-list (syntax->list #'args))]
+                               [et (in-list ets)]
+                               [ef (in-list efs)]
+                               [eo (in-list eos)])
                       (single-value arg (ret et ef eo)))])
          (if (= (length ts) (length ets) (length (syntax->list #'args)))
              (ret ts fs os)
              (tc-error/expr #:return expected "wrong number of values: expected ~a but got ~a"
                             (length ets) (length (syntax->list #'args)))))]
       [_ (match-let ([(list (tc-result1: ts fs os) ...)
-                      (for/list ([arg (syntax->list #'args)])
+                      (for/list ([arg (in-list (syntax->list #'args))])
                         (single-value arg))])
            (ret ts fs os))])))

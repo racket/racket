@@ -72,15 +72,15 @@
                    (cond [(Type/c? t)
                           (list (make-tc-result t (mk t) (make-Empty)))]
                          [else
-                          (for/list ([i t])
+                          (for/list ([i (in-list t)])
                             (make-tc-result i (mk t) (make-Empty)))])
                    #f))]
                [(t f)
                 (make-tc-results
                  (if (Type/c? t)
                      (list (make-tc-result t f (make-Empty)))
-                     (for/list ([i t] [f f])
-                               (make-tc-result i f (make-Empty))))
+                     (for/list ([i (in-list t)] [f (in-list f)])
+                       (make-tc-result i f (make-Empty))))
                  #f)]
                [(t f o)
                 (make-tc-results

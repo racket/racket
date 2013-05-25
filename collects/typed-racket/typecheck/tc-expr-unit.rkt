@@ -39,7 +39,7 @@
     [(list ty)
      (list
       (for/fold ([ty ty])
-        ([inst (in-improper-stx inst)])
+        ([inst (in-list (in-improper-stx inst))])
         (cond [(not inst) ty]
               [(not (or (Poly? ty) (PolyDots? ty)))
                (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a"

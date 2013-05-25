@@ -108,8 +108,8 @@
   ((listof identifier?) syntax? (syntax? . -> . tc-results/c) (syntax? tc-results/c . -> . tc-results/c) . -> . tc-results/c)
   (match stxs
     [(list stx ...)
-     (let ([anns (for/list ([s stxs]) (type-annotation s #:infer #t))])
-       (if (for/and ([a anns]) a)
+     (let ([anns (for/list ([s (in-list stxs)]) (type-annotation s #:infer #t))])
+       (if (for/and ([a (in-list anns)]) a)
            (tc-expr/check expr (ret anns))
            (let ([ty (tc-expr expr)])
              (match ty
@@ -126,7 +126,8 @@
                                       (length stxs) (length tys) (stringify tys))
                       (ret (map (lambda _ (Un)) stxs)))
                     (combine-results
-                     (for/list ([stx stxs] [ty tys] [a anns] [f fs] [o os])
+                     (for/list ([stx (in-list stxs)] [ty (in-list tys)]
+                                [a (in-list anns)] [f (in-list fs)] [o (in-list os)])
                        (cond [a (check-type stx ty a) (ret a f o)]
                              ;; mutated variables get generalized, so that we don't infer too small a type
                              [(is-var-mutated? stx) (ret (generalize ty) f o)]

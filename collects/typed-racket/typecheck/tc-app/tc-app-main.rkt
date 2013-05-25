@@ -85,7 +85,7 @@
        (define (matching-arities arrs)
          (for/list ([arr (in-list arrs)] #:when (arr-matches? arr args*)) arr))
        (define (has-drest/filter? arrs)
-         (for/or ([arr arrs])
+         (for/or ([arr (in-list arrs)])
            (or (has-filter? arr) (arr-drest arr))))
 
        (define arg-tys
@@ -103,7 +103,7 @@
                     (in-sequences (in-list dom) (in-cycle (in-value rest)))))))
             (for/list ([a (in-list args*)] [types matching-domains])
               (match-define (cons t ts) types)
-              (if (for/and ((t2 ts)) (equal? t t2))
+              (if (for/and ((t2 (in-list ts))) (equal? t t2))
                   (tc-expr/check a (ret t))
                   (single-value a)))]
            [_ (map single-value args*)]))
