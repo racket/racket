@@ -86,7 +86,14 @@
           (hash-set! resolver-cache seq r*))
         r*)))
 
+
+;; Repeatedly unfolds Mu, App, and Name constructors until the top type
+;; constructor is not one of them.
+;; Type/c? -> Type/c?
 (define (resolve t)
-  (if (needs-resolving? t) (resolve-once t) t))
+  (let loop ((t t))
+    (if (needs-resolving? t)
+        (loop (resolve-once t))
+        t)))
 
 ;(trace resolve-app)
