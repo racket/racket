@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "utils/utils.rkt"
-         (except-in syntax/parse id)
+         (except-in syntax/parse id) syntax/stx
          racket/pretty racket/promise racket/lazy-require
          (private type-contract)
          (types utils)
@@ -24,7 +24,7 @@
   (if (optimize?)
       (begin
         (do-time "Starting optimizer")
-        (begin0 (map optimize-top (syntax->list body))
+        (begin0 (stx-map optimize-top body)
           (do-time "Optimized")))
       body))
 

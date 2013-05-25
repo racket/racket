@@ -2,7 +2,7 @@
 
 (require "../../utils/utils.rkt"
          (prefix-in c: (contract-req))
-         syntax/parse racket/match unstable/sequence unstable/syntax
+         syntax/parse syntax/stx racket/match unstable/sequence unstable/syntax
          syntax/parse/experimental/reflect
          "signatures.rkt"
          "utils.rkt"
@@ -115,7 +115,7 @@
        (unless (= (length ts) (syntax-length #'(args ...)))
          (tc-error/expr "expected vector with ~a elements, but got ~a"
                         (length ts)
-                        (make-HeterogeneousVector (map tc-expr/t (syntax->list #'(args ...))))))
+                        (make-HeterogeneousVector (stx-map tc-expr/t #'(args ...)))))
        (for ([e (in-syntax #'(args ...))]
              [t (in-list ts)])
          (tc-expr/check e (ret t)))

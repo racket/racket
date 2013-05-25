@@ -5,7 +5,7 @@
          "utils.rkt"
          syntax/parse racket/match
          syntax/parse/experimental/reflect
-         unstable/list
+         unstable/list syntax/stx
          (typecheck signatures tc-funapp)
          (types abbrev utils)
          (private type-annotation)
@@ -51,7 +51,7 @@
          (tc-expr/check #'quo (ret Univ))
          (tc/funapp #'op #'(quo arg)
                     (ret (instantiate-poly t (extend (list Univ Univ)
-                                                     (map type-annotation (syntax->list #'(i ...)))
+                                                     (stx-map type-annotation #'(i ...))
                                                      Univ)))
                     (list (ret Univ) (single-value #'arg))
                     expected)]))

@@ -1,7 +1,7 @@
 #lang racket/base
 
-(require unstable/match racket/match unstable/sequence
-         racket/dict syntax/id-table racket/syntax unstable/syntax
+(require unstable/match racket/match unstable/sequence unstable/syntax
+         racket/dict syntax/id-table racket/syntax syntax/stx
          "../utils/utils.rkt"
          (for-template racket/base)
          (types type-table utils subtype)
@@ -50,8 +50,7 @@
 (define (n-ary-comp->binary op arg1 arg2 rest)
   ;; First, generate temps to bind the result of each arg2 args ...
   ;; to avoid computing them multiple times.
-  (define lifted (map (lambda (x) (unboxed-gensym))
-                      (syntax->list #`(#,arg2 #,@rest))))
+  (define lifted (stx-map (lambda (x) (unboxed-gensym)) #`(#,arg2 #,@rest)))
   ;; Second, build the list ((op arg1 tmp2) (op tmp2 tmp3) ...)
   (define tests
     (let loop ([res  (list #`(#,op #,arg1 #,(car lifted)))]

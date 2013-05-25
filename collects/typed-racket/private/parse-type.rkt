@@ -70,7 +70,7 @@
     [((~and kw t:All) (vars:id ... v:id dd:ddd) . t:all-body)
      (when (check-duplicate-identifier (syntax->list #'(vars ... v)))
        (tc-error "All: duplicate type variable or index"))
-     (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
+     (let* ([vars (stx-map syntax-e #'(vars ...))]
             [v (syntax-e #'v)])
        (add-disappeared-use #'kw)
        (extend-indexes v
@@ -79,7 +79,7 @@
     [((~and kw t:All) (vars:id ...) . t:all-body)
      (when (check-duplicate-identifier (syntax->list #'(vars ...)))
        (tc-error "All: duplicate type variable"))
-     (let* ([vars (map syntax-e (syntax->list #'(vars ...)))])
+     (let* ([vars (stx-map syntax-e #'(vars ...))])
        (add-disappeared-use #'kw)
        (extend-tvars vars
          (make-Poly vars (parse-type #'t.type))))]
@@ -151,6 +151,9 @@
                              (attribute o.object)
                              -no-obj)))
 
+(define (parse-types stx-list)
+  (stx-map parse-type stx-list))
+
 (define (parse-type stx)
   (parameterize ([current-orig-stx stx])
     (syntax-parse
@@ -166,17 +169,17 @@
       [((~and kw t:Class) (pos-args ...) ([fname fty . rest] ...) ([mname mty] ...))
        (add-disappeared-use #'kw)
        (make-Class
-        (map parse-type (syntax->list #'(pos-args ...)))
+        (parse-types #'(pos-args ...))
         (map list
-             (map syntax-e (syntax->list #'(fname ...)))
-             (map parse-type (syntax->list #'(fty ...)))
+             (stx-map syntax-e #'(fname ...))
+             (parse-types #'(fty ...))
              (for/list ((e (in-syntax #'(rest ...))))
                (syntax-case e ()
                  [(#t) #t]
                  [_ #f])))
         (map list
-             (map syntax-e (syntax->list #'(mname ...)))
-             (map parse-type (syntax->list #'(mty ...)))))]
+             (stx-map syntax-e #'(mname ...))
+             (parse-types #'(mty ...))))]
       [((~and kw t:Refinement) p?:id)
        (add-disappeared-use #'kw)
        (match (lookup-type/lexical #'p?)
@@ -202,10 +205,10 @@
        (parse-list-type stx)]
       [((~and kw t:List*) ts ... t)
        (add-disappeared-use #'kw)
-       (-Tuple* (map parse-type (syntax->list #'(ts ...))) (parse-type #'t))]
+       (-Tuple* (parse-types #'(ts ...)) (parse-type #'t))]
       [((~and kw t:Vector) ts ...)
        (add-disappeared-use #'kw)
-       (make-HeterogeneousVector (map parse-type (syntax->list #'(ts ...))))]
+       (make-HeterogeneousVector (parse-types #'(ts ...)))]
       [((~and kw cons) fst rst)
        (add-disappeared-use #'kw)
        (-pair (parse-type #'fst) (parse-type #'rst))]
@@ -252,7 +255,7 @@
                  t*))))]
       [((~and kw t:U) ts ...)
        (add-disappeared-use #'kw)
-       (apply Un (map parse-type (syntax->list #'(ts ...))))]
+       (apply Un (parse-types #'(ts ...)))]
       [((~and kw quote) (t1 . t2))
        (add-disappeared-use #'kw)
        (-pair (parse-type #'(quote t1)) (parse-type #'(quote t2)))]
@@ -285,7 +288,7 @@
       [(dom ... (~and kw t:->) rng : latent:full-latent)
        (add-disappeared-use #'kw)
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
-       (->* (map parse-type (syntax->list #'(dom ...)))
+       (->* (parse-types #'(dom ...))
             (parse-type #'rng)
             : (-FS (attribute latent.positive) (attribute latent.negative))
             : (attribute latent.object))]
@@ -297,7 +300,7 @@
        (add-disappeared-use #'kw)
        (make-Function
         (list (make-arr
-               (map parse-type (syntax->list #'(dom ...)))
+               (parse-types #'(dom ...))
                (parse-values-type #'rng)
                #:rest (parse-type #'rest)
                #:kws (attribute kws.Keyword))))]
@@ -310,7 +313,7 @@
                          bnd))
          (make-Function
           (list
-           (make-arr-dots (map parse-type (syntax->list #'(dom ...)))
+           (make-arr-dots (parse-types #'(dom ...))
                           (parse-values-type #'rng)
                           (extend-tvars (list bnd)
                             (parse-type #'rest))
@@ -320,14 +323,14 @@
        (let ([var (infer-index stx)])
          (make-Function
           (list
-           (make-arr-dots (map parse-type (syntax->list #'(dom ...)))
+           (make-arr-dots (parse-types #'(dom ...))
                           (parse-values-type #'rng)
                           (extend-tvars (list var) (parse-type #'rest))
                           var))))]
       #| ;; has to be below the previous one
      [(dom:expr ... (~and kw t:->) rng)
       (add-disappeared-use #'kw)
-      (->* (map parse-type (syntax->list #'(dom ...)))
+      (->* (parse-types #'(dom ...))
            (parse-values-type #'rng))]     |#
       ;; use expr to rule out keywords
       [(dom:non-keyword-ty ... kws:keyword-tys ... (~and kw t:->) rng)
@@ -385,7 +388,7 @@
       [(id arg args ...)
        (let loop
          ([rator (parse-type #'id)]
-          [args (map parse-type (syntax->list #'(arg args ...)))])
+          [args (parse-types #'(arg args ...))])
          (resolve-app-check-error rator args stx)
          (match rator
            [(Name: _) (make-App rator args stx)]
@@ -425,7 +428,7 @@
            (if (bound-tvar? var)
                (tc-error/stx #'bound "Used a type variable (~a) not bound with ... as a bound on a ..." var)
                (tc-error/stx #'bound "Type variable ~a is unbound" var)))
-         (-Tuple* (map parse-type (syntax->list #'(tys ...)))
+         (-Tuple* (parse-types #'(tys ...))
                   (make-ListDots
                    (extend-tvars (list var)
                      (parse-type #'dty))
@@ -433,14 +436,14 @@
       [((~and kw t:List) tys ... dty _:ddd)
        (add-disappeared-use #'kw)
        (let ([var (infer-index stx)])
-         (-Tuple* (map parse-type (syntax->list #'(tys ...)))
-                    (make-ListDots
-                     (extend-tvars (list var)
-                       (parse-type #'dty))
-                     var)))]
+         (-Tuple* (parse-types #'(tys ...))
+                  (make-ListDots
+                    (extend-tvars (list var)
+                      (parse-type #'dty))
+                    var)))]
       [((~and kw t:List) tys ...)
        (add-disappeared-use #'kw)
-       (-Tuple (map parse-type (syntax->list #'(tys ...))))])))
+       (-Tuple (parse-types #'(tys ...)))])))
 
 ;; Syntax -> Type
 ;; Parse a (Values ...) type
@@ -454,20 +457,20 @@
            (if (bound-tvar? var)
                (tc-error/stx #'bound "Used a type variable (~a) not bound with ... as a bound on a ..." var)
                (tc-error/stx #'bound "Type variable ~a is unbound" var)))
-         (-values-dots (map parse-type (syntax->list #'(tys ...)))
+         (-values-dots (parse-types #'(tys ...))
                        (extend-tvars (list var)
                          (parse-type #'dty))
                        var))]
       [((~and kw (~or t:Values values)) tys ... dty _:ddd)
        (add-disappeared-use #'kw)
        (let ([var (infer-index stx)])
-         (-values-dots (map parse-type (syntax->list #'(tys ...)))
+         (-values-dots (parse-types #'(tys ...))
                        (extend-tvars (list var)
                          (parse-type #'dty))
                        var))]
       [((~and kw (~or t:Values values)) tys ...)
        (add-disappeared-use #'kw)
-       (-values (map parse-type (syntax->list #'(tys ...))))]
+       (-values (parse-types #'(tys ...)))]
       [t
        (-values (list (parse-type #'t)))])))
 
@@ -475,9 +478,9 @@
   (syntax-parse stx #:literals (values)
     [((~and kw values) t ...)
      (add-disappeared-use #'kw)
-     (ret (map parse-type (syntax->list #'(t ...)))
-          (map (lambda (x) (make-NoFilter)) (syntax->list #'(t ...)))
-          (map (lambda (x) (make-NoObject)) (syntax->list #'(t ...))))]
+     (ret (parse-types #'(t ...))
+          (stx-map (lambda (x) (make-NoFilter)) #'(t ...))
+          (stx-map (lambda (x) (make-NoObject)) #'(t ...)))]
     [t (ret (parse-type #'t) (make-NoFilter) (make-NoObject))]))
 
 (define parse-tc-results/id (parse/id parse-tc-results))

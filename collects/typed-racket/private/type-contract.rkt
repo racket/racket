@@ -383,7 +383,7 @@
              (match-let ([(Poly-names: vs-nm _) ty])
                (with-syntax ([(v ...) (generate-temporaries vs-nm)])
                  (set-impersonator!)
-                 (parameterize ([vars (append (map list vs (syntax->list #'(v ...)))
+                 (parameterize ([vars (append (stx-map list vs #'(v ...))
                                               (vars))])
                    #`(parametric->/c (v ...) #,(t->c b))))))]
         [(Mu: n b)

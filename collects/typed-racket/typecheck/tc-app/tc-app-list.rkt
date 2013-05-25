@@ -4,7 +4,7 @@
 (require "../../utils/utils.rkt"
          "signatures.rkt"
          "utils.rkt"
-         syntax/parse racket/match unstable/sequence unstable/syntax
+         syntax/parse syntax/stx racket/match unstable/sequence unstable/syntax
          syntax/parse/experimental/reflect
          (only-in '#%kernel [reverse k:reverse])
          (typecheck signatures tc-funapp)
@@ -29,7 +29,7 @@
   #:literals (reverse k:reverse list list*
               cons map andmap ormap)
   (pattern (~and form (map f arg0 arg ...))
-    (match* ((single-value #'arg0) (map single-value (syntax->list #'(arg ...))))
+    (match* ((single-value #'arg0) (stx-map single-value #'(arg ...)))
       ;; if the argument is a ListDots
       [((tc-result1: (ListDots: t0 bound0))
         (list (tc-result1: (or (and (ListDots: t bound) (app (λ _ #f) var))
@@ -92,11 +92,11 @@
          (tc-expr/check ac (ret exp)))
        expected]
       [_
-       (let ([tys (map tc-expr/t (syntax->list #'args))])
+       (let ([tys (stx-map tc-expr/t #'args)])
          (ret (apply -lst* tys)))]))
   ;; special case for `list*'
   (pattern (list* . args)
-    (match-let* ([(list tys ... last) (map tc-expr/t (syntax->list #'args))])
+    (match-let* ([(list tys ... last) (stx-map tc-expr/t #'args)])
       (ret (foldr -pair last tys))))
   ;; special case for `reverse' to propagate expected type info
   (pattern ((~or reverse k:reverse) arg)

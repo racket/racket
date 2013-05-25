@@ -107,7 +107,7 @@
   tcr)
 
 (define (tc/letrec-values namess exprs body form [expected #f])
-  (let* ([names (map syntax->list (syntax->list namess))]
+  (let* ([names (stx-map syntax->list namess)]
          [orig-flat-names (apply append names)]
          [exprs (syntax->list exprs)]
          ;; the clauses for error reporting
@@ -223,7 +223,7 @@
 
 (define (tc/let-values namess exprs body form [expected #f])
   (let* (;; a list of each name clause
-         [names (map syntax->list (syntax->list namess))]
+         [names (stx-map syntax->list namess)]
          ;; all the trailing expressions - the ones actually bound to the names
          [exprs (syntax->list exprs)]
          ;; the types of the exprs
