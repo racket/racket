@@ -34,7 +34,7 @@
     [(FilterSet: f+ f-)
      (-FS (subst-filter (add-extra-filter f+) k o polarity)
           (subst-filter (add-extra-filter f-) k o polarity))]
-    [_ (-FS -top -top)]))
+    [_ -no-filter]))
 
 (define/cond-contract (subst-type t k o polarity)
      (-> Type/c name-ref/c Object? boolean? Type/c)
@@ -64,9 +64,9 @@
     [(Path: p i)
      (if (name-ref=? i k)
          (match o
-           [(Empty:) (make-Empty)]
+           [(Empty:) -no-obj]
            ;; the result is not from an annotation, so it isn't a NoObject
-           [(NoObject:) (make-Empty)]
+           [(NoObject:) -no-obj]
            [(Path: p* i*) (make-Path (append p p*) i*)])
          t)]))
 

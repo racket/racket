@@ -35,7 +35,7 @@
       [(_ i) (app lookup (? values i))]))
   (match o
     [(Path: p (lookup: idx)) (make-Path p idx)]
-    [_ (make-Empty)]))
+    [_ -no-obj]))
 
 
 (define/cond-contract (abstract-filter ids keys fs)
@@ -43,7 +43,7 @@
   (match fs
     [(FilterSet: f+ f-)
      (-FS (abo ids keys f+) (abo ids keys f-))]
-    [(NoFilter:) (-FS -top -top)]))
+    [(NoFilter:) -no-filter]))
 
 (define/cond-contract (abo xs idxs f)
   ((listof identifier?) (listof name-ref/c) Filter/c . -> . Filter/c)

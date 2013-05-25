@@ -3,6 +3,7 @@
 (require "../utils/utils.rkt"
          (rep free-variance type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
+         (types base-abbrev)
          racket/match
          (contract-req))
 
@@ -67,20 +68,19 @@
 ;; convenience function for returning the result of typechecking an expression
 (define ret
   (case-lambda [(t)
-                (let ([mk (lambda (t) (make-FilterSet (make-Top) (make-Top)))])
-                  (make-tc-results
-                   (cond [(Type/c? t)
-                          (list (make-tc-result t (mk t) (make-Empty)))]
-                         [else
-                          (for/list ([i (in-list t)])
-                            (make-tc-result i (mk t) (make-Empty)))])
-                   #f))]
+                (make-tc-results
+                 (cond [(Type/c? t)
+                        (list (make-tc-result t -no-filter -no-obj))]
+                       [else
+                        (for/list ([i (in-list t)])
+                          (make-tc-result i -no-filter -no-obj))])
+                 #f)]
                [(t f)
                 (make-tc-results
                  (if (Type/c? t)
-                     (list (make-tc-result t f (make-Empty)))
+                     (list (make-tc-result t f -no-obj))
                      (for/list ([i (in-list t)] [f (in-list f)])
-                       (make-tc-result i f (make-Empty))))
+                       (make-tc-result i f -no-obj)))
                  #f)]
                [(t f o)
                 (make-tc-results
