@@ -87,6 +87,9 @@
         r*)))
 
 (define (resolve t)
-  (if (needs-resolving? t) (resolve-once t) t))
+  (let loop ((t t))
+    (if (needs-resolving? t)
+        (loop (resolve-once t))
+        t)))
 
 ;(trace resolve-app)
