@@ -309,40 +309,45 @@ This file defines two sorts of primitives. All of them are provided into any mod
                  (syntax/loc stx (define-type-alias ty (Opaque pred))))
            #,(ignore-property #'(require/contract pred hidden pred-cnt lib) #t))))]))
 
+(begin-for-syntax
+  (define-syntax-class type-variables
+    #:attributes ((vars 1))
+    #:description "a sequence of type variables"
+    (pattern (vars:id ...)
+      #:fail-when (check-duplicate-identifier (syntax->list #'(vars ...)))
+                  "duplicate type variable declaration")))
+
 (define-syntax (plambda: stx)
   (syntax-parse stx
-    [(plambda: (tvars:id ...) formals . body)
-     #:fail-when (check-duplicate-identifier (syntax->list #'(tvars ...)))
-                 "duplicate type variable declaration"
+    [(plambda: tvars:type-variables formals . body)
      (quasisyntax/loc stx
        (#%expression
-        #,(plambda-property (syntax/loc stx (lambda: formals . body))
-                            #'(tvars ...))))]))
+        #,(plambda-property
+            (syntax/loc stx (lambda: formals . body))
+            #'(tvars.vars ...))))]))
 
 (define-syntax (pcase-lambda: stx)
   (syntax-parse stx
-    [(pcase-lambda: (tvars:id ...) cl ...)
-     #:fail-when (check-duplicate-identifier (syntax->list #'(tvars ...)))
-                 "duplicate type variable declaration"
+    [(pcase-lambda: tvars:type-variables cl ...)
      (quasisyntax/loc stx
        (#%expression
-        #,(plambda-property (syntax/loc stx (case-lambda: cl ...))
-                            #'(tvars ...))))]))
+        #,(plambda-property
+            (syntax/loc stx (case-lambda: cl ...))
+            #'(tvars.vars ...))))]))
 
 (define-syntax (popt-lambda: stx)
   (syntax-parse stx
-    [(popt-lambda: (tvars:id ...) formals . body)
-     #:fail-when (check-duplicate-identifier (syntax->list #'(tvars ...)))
-                 "duplicate type variable declaration"
+    [(popt-lambda: tvars:type-variables formals . body)
      (quasisyntax/loc stx
        (#%expression
-        #,(plambda-property (syntax/loc stx (opt-lambda: formals . body))
-                            #'(tvars ...))))]))
+        #,(plambda-property
+            (syntax/loc stx (opt-lambda: formals . body))
+            #'(tvars.vars ...))))]))
 
 (define-syntax (pdefine: stx)
   (syntax-parse stx #:literals (:)
-    [(pdefine: (tvars:id ...) (nm:id . formals:annotated-formals) : ret-ty . body)
-     (with-syntax ([type (syntax/loc #'ret-ty (All (tvars ...) (formals.arg-ty ... -> ret-ty)))])
+    [(pdefine: tvars:type-variables (nm:id . formals:annotated-formals) : ret-ty . body)
+     (with-syntax ([type (syntax/loc #'ret-ty (All (tvars.vars ...) (formals.arg-ty ... -> ret-ty)))])
        (syntax/loc stx
          (begin
           (: nm : type)
@@ -374,14 +379,14 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (identifier? #'nm)
      (with-syntax ([new-nm (type-label-property #'nm #'ty)])
        (syntax/loc stx (define new-nm body)))]
-    [(define: (tvars:id ...) nm:id : ty body)
-     (with-syntax ([type (syntax/loc #'ty (All (tvars ...) ty))])
+    [(define: tvars:type-variables nm:id : ty body)
+     (with-syntax ([type (syntax/loc #'ty (All (tvars.vars ...) ty))])
        (syntax/loc stx
          (begin
            (: nm : type)
            (define nm body))))]
-    [(define: (tvars:id ...) (nm:id . formals:annotated-formals) : ret-ty body ...)
-     (with-syntax ([type (syntax/loc #'ret-ty (All (tvars ...) (formals.arg-ty ... -> ret-ty)))])
+    [(define: tvars:type-variables (nm:id . formals:annotated-formals) : ret-ty body ...)
+     (with-syntax ([type (syntax/loc #'ret-ty (All (tvars.vars ...) (formals.arg-ty ... -> ret-ty)))])
        (syntax/loc stx
          (begin
           (: nm : type)
