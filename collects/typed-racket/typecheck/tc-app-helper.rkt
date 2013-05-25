@@ -2,6 +2,7 @@
 
 (require "../utils/utils.rkt"
          racket/match unstable/list unstable/sequence racket/set syntax/parse
+         syntax/stx
          (only-in srfi/1 unzip4) (only-in racket/list make-list)
          (contract-req)
          (typecheck check-below tc-subst)
@@ -12,7 +13,7 @@
 
 (provide/cond-contract
   [tc/funapp1
-    ((syntax? (and/c syntax? syntax->list) arr? (listof tc-results/c) (or/c #f tc-results/c))
+    ((syntax? stx-list? arr? (listof tc-results/c) (or/c #f tc-results/c))
      (#:check boolean?)
      . ->* . tc-results/c)])
 (define (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
