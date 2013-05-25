@@ -13,9 +13,11 @@
         (send pkg-gui show #t)
         (set! pkg-gui (make-pkg-gui #:wrap-terminal-action wrap-terminal-action))))
   
-  (define (install-pkg parent wrap-terminal-action)
+  (define (install-pkg parent wrap-terminal-action 
+                       #:package-to-offer [package-to-offer #f])
     (make-pkg-installer #:parent parent 
-                        #:wrap-terminal-action wrap-terminal-action)))
+                        #:wrap-terminal-action wrap-terminal-action
+                        #:package-to-offer package-to-offer)))
 
 (require string-constants
          racket/match

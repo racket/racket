@@ -49,7 +49,7 @@
 (define by-source-panel%
   (class vertical-panel%
     (init-field [in-terminal in-terminal])
-    
+    (init [text-field-initial-value #f])
     (super-new)
     
     (inherit get-top-level-window)
@@ -65,7 +65,7 @@
                     [callback (λ (_1 _2) 
                                  (preferences:set 'drracket:gui-installer-pkg-source (send tf get-value))
                                  (adjust-all))]))
-    (send tf set-value (preferences:get 'drracket:gui-installer-pkg-source))
+    (send tf set-value (or text-field-initial-value (preferences:get 'drracket:gui-installer-pkg-source)))
 
     (define browse-button (new button%
                                [parent source-panel]

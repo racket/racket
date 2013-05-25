@@ -27,8 +27,10 @@ profile todo:
          racket/match
          mrlib/include-bitmap
          images/compile-time
+         pkg/lib
          (for-syntax images/icons/misc images/icons/style images/icons/control images/logos)
-         (for-syntax racket/base))
+         (for-syntax racket/base)
+         (submod "frame.rkt" install-pkg))
 
 (define orig (current-output-port))
 (define (oprintf . args) (apply fprintf orig args))
@@ -102,16 +104,17 @@ profile todo:
       (define/public (set-callback cb) (set! callback cb))
       (define/public (get-callback) callback)
       
-      (define in-bounds? #f)
       (define grabbed? #f)
+      (define in-bounds? #f)
       
       (define (set-clicked new-grabbed? new-in-bounds? dc)
-        (let ([needs-invalidate? (not (eq? (and grabbed? in-bounds?)
-                                           (and new-grabbed? new-in-bounds?)))])
-          (set! grabbed? new-grabbed?)
-          (set! in-bounds? new-in-bounds?)
-          (when needs-invalidate?
-            (invalidate dc))))
+        (define needs-invalidate?
+          (or (not (equal? grabbed? new-grabbed?))
+              (not (equal? new-in-bounds? in-bounds?))))
+        (set! grabbed? new-grabbed?)
+        (set! in-bounds? new-in-bounds?)
+        (when needs-invalidate?
+          (invalidate dc)))
       
       (define/override (draw dc x y left top right bottom dx dy draw-caret)
         (super draw dc x y left top right bottom dx dy draw-caret)
@@ -126,21 +129,21 @@ profile todo:
               (send dc set-brush brush)))))
       
       (define/override (on-event dc x y editorx editory evt)
-        (let-values ([(w h) (get-w/h dc)])
-          (let ([in-bounds? (and (<= (- (send evt get-x) x) w)
-                                 (<= (- (send evt get-y) y) h))])
-            (cond
-              [(send evt button-down? 'left)
-               (set-clicked #t in-bounds? dc)]
-              [(send evt button-up? 'left)
-               (let ([admin (send this get-admin)])
-                 (when admin
-                   (send (send admin get-editor) set-caret-owner #f 'global)))
-               (when (and grabbed? in-bounds?)
-                 (callback))
-               (set-clicked #f in-bounds? dc)]
-              [else
-               (set-clicked grabbed? in-bounds? dc)]))))
+        (define-values (w h) (get-w/h dc))
+        (define in-bounds? (and (<= (- (send evt get-x) x) w)
+                                (<= (- (send evt get-y) y) h)))
+        (cond
+          [(send evt button-down? 'left)
+           (set-clicked #t in-bounds? dc)]
+          [(send evt button-up? 'left)
+           (let ([admin (send this get-admin)])
+             (when admin
+               (send (send admin get-editor) set-caret-owner #f 'global)))
+           (when (and grabbed? in-bounds?)
+             (callback this))
+           (set-clicked #f in-bounds? dc)]
+          [else
+           (set-clicked grabbed? in-bounds? dc)]))
       
       (define/private (invalidate dc)
         (let ([admin (get-admin)])
@@ -165,14 +168,38 @@ profile todo:
   
   (define clickable-image-snip%  (clickable-snip-mixin image-snip%))
   (define clickable-string-snip%  
-    (class (clickable-snip-mixin string-snip%)
+    (class (clickable-snip-mixin snip%)
+      (define/override (get-extent dc x y wb hb db sb lb rb)
+        (define-values (w h d a) (send dc get-text-extent str))
+        (set-box/f wb w)
+        (set-box/f hb h)
+        (set-box/f db d)
+        (set-box/f sb a)
+        (set-box/f lb 0)
+        (set-box/f rb 0))
+      (define/override (draw dc x y left top right bottom dx dy draw-caret)
+        (define font (send dc get-font))
+        (send dc set-font (send the-font-list find-or-create-font
+                                (send font get-point-size)
+                                (send font get-face)
+                                (send font get-family)
+                                (send font get-style)
+                                (send font get-weight)
+                                #t
+                                (send font get-smoothing)
+                                #f
+                                (send font get-hinting)))
+        (send dc draw-text str x y)
+        (send dc set-font font))
+      
       (inherit get-callback set-callback)
       (init-field str)
       (define/override (copy)
         (let ([n (new clickable-string-snip% [str str])])
           (send n set-callback (get-callback))
           n))
-      (super-make-object str)))
+      (super-new)))
+  (define (set-box/f b v) (when (box? b) (set-box! b v)))
   
   ;; make-note% : string -> (union class #f)
   (define (make-note% filename bitmap)
@@ -196,6 +223,14 @@ profile todo:
   (define mf-note% (make-note% "mf.gif" (include-bitmap (lib "icons/mf.gif") 'gif)))
   (define small-planet-bitmap (compiled-bitmap (planet-logo #:height (default-icon-height))))
   (define planet-note% (make-note% "small-planet.png" small-planet-bitmap))
+  (define install-note% 
+    (class clickable-image-snip%
+      (inherit get-callback)
+      (define/override (copy) 
+        (let ([n (new install-note%)])
+          (send n set-callback (get-callback))
+          n))
+      (super-new)))
   
   ;; display-stats : (syntax -> syntax)
   ;; count the number of syntax expressions & number of with-continuation-marks in an 
@@ -316,6 +351,7 @@ profile todo:
       (when (exn:fail:syntax? exn)
         (unless (error-print-source-location)
           (show-syntax-error-context (current-error-port) exn)))
+      (print-pkg-icon-to-stderr exn)
       (newline (current-error-port))
       (flush-output (current-error-port))
       (when (and ints
@@ -373,7 +409,7 @@ profile todo:
             (when planet-note%
               (when (port-writes-special? (current-error-port))
                 (let ([note (new planet-note%)])
-                  (send note set-callback (λ () 
+                  (send note set-callback (λ (snp) 
                                             ;; =Kernel= =Handler=
                                             (drracket:unit:forget-saved-bug-report table)
                                             (send-url (url->string gp-url))))
@@ -383,6 +419,7 @@ profile todo:
                        (drracket:unit:record-saved-bug-report table))))
                   (write-special note (current-error-port))
                   (display #\space (current-error-port))))))))))
+  
   
   ;; =Kernel= =User=
   (define (bug-info->ticket-url table)
@@ -415,6 +452,34 @@ profile todo:
       [else #f]))
   
   ;; =User=
+  (define (print-pkg-icon-to-stderr exn)
+    (when (exn:missing-module? exn)
+      (define mod ((exn:missing-module-accessor exn) exn))
+      (define pkgs (pkg-catalog-suggestions-for-module mod))
+      (unless (null? pkgs)
+        (display "\n" (current-error-port))
+        (display "  packages that provide the missing module:" (current-error-port))
+        (for ([pkg (in-list pkgs)])
+          (eprintf "\n    ~a" pkg)
+          (when (port-writes-special? (current-error-port))
+            (define note (new clickable-string-snip% [str "[install]"]))
+            (send note set-callback 
+                  (λ (snp) 
+                    ;; =Kernel= =Handler=
+                    (define admin (send snp get-admin))
+                    (define canvas (and admin (send (send admin get-editor) get-canvas)))
+                    (define tlw (and canvas (send canvas get-top-level-window)))
+                    (install-pkg
+                     tlw
+                     (lambda (thunk)
+                       (parameterize ([error-display-handler drracket:init:original-error-display-handler])
+                         (thunk)))
+                     #:package-to-offer pkg)))
+            (eprintf "  ")
+            (write-special note (current-error-port)))))))
+  
+  
+  ;; =User=
   (define (exn->trace exn)
     (let ([sp (open-output-string)])
       (parameterize ([current-error-port sp])
@@ -427,7 +492,7 @@ profile todo:
       (let ([note% (if (mf-bday?) mf-note% bug-note%)])
         (when note%
           (let ([note (new note%)])
-            (send note set-callback (λ () (show-backtrace-window/edition-pairs/two msg cms1 editions1 cms2 editions2 defs ints)))
+            (send note set-callback (λ (snp) (show-backtrace-window/edition-pairs/two msg cms1 editions1 cms2 editions2 defs ints)))
             (write-special note (current-error-port))
             (display #\space (current-error-port)))))))
   
@@ -447,7 +512,7 @@ profile todo:
                     (when (port-writes-special? (current-error-port))
                       (let ([note (new file-note%)])
                         (send note set-callback 
-                              (λ () (open-and-highlight-in-file srcs-to-display edition-pair)))
+                              (λ (snp) (open-and-highlight-in-file srcs-to-display edition-pair)))
                         (write-special note (current-error-port))
                         (display #\space (current-error-port))))))]
                [do-src

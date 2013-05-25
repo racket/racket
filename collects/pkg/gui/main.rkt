@@ -23,7 +23,9 @@
         (#:parent
          (or/c #f (is-a?/c top-level-window<%>))
          #:wrap-terminal-action 
-         (-> (-> any) any))
+         (-> (-> any) any)
+         #:package-to-offer 
+         (or/c #f string?))
         (is-a?/c top-level-window<%>))]))
 
 (define pkg-gui-frame% 
@@ -37,7 +39,9 @@
 (define (make-pkg-installer #:parent 
                             [parent #f]
                             #:wrap-terminal-action 
-                            [wrap-terminal-action (λ (t) (t))])
+                            [wrap-terminal-action (λ (t) (t))]
+                            #:package-to-offer
+                            [package-to-offer #f])
   
   (define allow-close? #t)
   
@@ -78,7 +82,8 @@
   (define by-source-panel
     (new by-source-panel% 
          [parent dlg]
-         [in-terminal in-terminal-panel]))
+         [in-terminal in-terminal-panel]
+         [text-field-initial-value package-to-offer]))
   
   (define close (new button% 
                      [label (string-constant close)] 
