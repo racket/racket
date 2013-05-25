@@ -55,7 +55,7 @@
     (plai-syntax-error 'type-case stx-loc type-case:not-a-type)))
 
 (require (for-syntax syntax/parse
-                     racket/syntax unstable/syntax
+                     racket/syntax syntax/stx
                      (only-in racket/function curry)))
 
 (define-for-syntax (syntax-string s)
@@ -106,7 +106,7 @@
      ;; Ensure variant names are unique.
      (assert-unique #'(variant ...))
      ;; Ensure each set of fields have unique names.
-     (syntax-map assert-unique #'((field ...) ...))
+     (stx-map assert-unique #'((field ...) ...))
 
      ;; Ensure type and variant names are unbound
      (map (assert-unbound 'define-type)
@@ -119,51 +119,51 @@
 
        (with-syntax
            ([((field/c-val ...) ...)
-             (syntax-map generate-temporaries #'((field/c ...) ...))]
+             (stx-map generate-temporaries #'((field/c ...) ...))]
             [((the-field/c ...) ...)
-             (syntax-map generate-temporaries #'((field/c ...) ...))]
+             (stx-map generate-temporaries #'((field/c ...) ...))]
             [datatype?
              (format-id stx "~a?" #'datatype #:source #'datatype)]
             [(variant? ...)
-             (syntax-map (λ (x) (format-id stx "~a?" x #:source x)) #'(variant ...))]
+             (stx-map (λ (x) (format-id stx "~a?" x #:source x)) #'(variant ...))]
             [(variant*? ...)
-             (syntax-map (λ (x) (format-id x "~a?" x #:source x)) #'(variant* ...))]
+             (stx-map (λ (x) (format-id x "~a?" x #:source x)) #'(variant* ...))]
             [(make-variant ...)
-             (syntax-map (λ (x) (format-id stx "make-~a" x #:source x)) #'(variant ...))]
+             (stx-map (λ (x) (format-id stx "make-~a" x #:source x)) #'(variant ...))]
             [(make-variant* ...)
-             (syntax-map (λ (x) (format-id x "make-~a" x #:source x)) #'(variant* ...))])
+             (stx-map (λ (x) (format-id x "make-~a" x #:source x)) #'(variant* ...))])
 
          (with-syntax
              ([((f:variant? ...) ...)
-               (syntax-map (lambda (v? fs)
-                             (syntax-map (lambda (f) v?) fs))
-                           #'(variant? ...)
-                           #'((field ...) ...))]
+               (stx-map (lambda (v? fs)
+                          (stx-map (lambda (f) v?) fs))
+                        #'(variant? ...)
+                        #'((field ...) ...))]
               [((variant-field ...) ...)
-               (syntax-map (lambda (variant fields)
-                             (syntax-map (λ (f) (format-id stx "~a-~a" variant f #:source f))
-                                         fields))
-                           #'(variant ...)
-                           #'((field ...) ...))]
+               (stx-map (lambda (variant fields)
+                          (stx-map (λ (f) (format-id stx "~a-~a" variant f #:source f))
+                                   fields))
+                        #'(variant ...)
+                        #'((field ...) ...))]
               [((variant*-field ...) ...)
-               (syntax-map (lambda (variant fields)
-                             (syntax-map (λ (f) (format-id variant "~a-~a" variant f #:source f))
-                                         fields))
-                           #'(variant* ...)
-                           #'((field ...) ...))]
+               (stx-map (lambda (variant fields)
+                          (stx-map (λ (f) (format-id variant "~a-~a" variant f #:source f))
+                                   fields))
+                        #'(variant* ...)
+                        #'((field ...) ...))]
 
               [((set-variant-field! ...) ...)
-               (syntax-map (lambda (variant fields)
-                             (syntax-map (λ (f) (format-id stx "set-~a-~a!" variant f #:source f))
-                                         fields))
-                           #'(variant ...)
-                           #'((field ...) ...))]
+               (stx-map (lambda (variant fields)
+                          (stx-map (λ (f) (format-id stx "set-~a-~a!" variant f #:source f))
+                                   fields))
+                        #'(variant ...)
+                        #'((field ...) ...))]
               [((set-variant*-field! ...) ...)
-               (syntax-map (lambda (variant fields)
-                             (syntax-map (λ (f) (format-id variant "set-~a-~a!" variant f #:source f))
-                                         fields))
-                           #'(variant* ...)
-                           #'((field ...) ...))])
+               (stx-map (lambda (variant fields)
+                          (stx-map (λ (f) (format-id variant "set-~a-~a!" variant f #:source f))
+                                   fields))
+                        #'(variant* ...)
+                        #'((field ...) ...))])
 
            (syntax/loc stx
              (begin
