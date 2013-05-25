@@ -12,7 +12,7 @@
     (int-err "drest passed to kw-convert"))
 
   (define arities
-    (for/list ([i (length opt-t)])
+    (for/list ([i (in-range (length opt-t))])
       (make-arr* (append plain-t (take opt-t i))
                  rng
                  #:kws kw-t
@@ -21,7 +21,7 @@
   (define ts 
     (flatten
      (list
-      (for/list ([k mand-kw-t])
+      (for/list ([k (in-list mand-kw-t)])
         (match k
           [(Keyword: _ t _) t]))
       (for/list ([k (in-list opt-kw-t)])
@@ -35,7 +35,7 @@
   (define ts/true
     (flatten
      (list
-      (for/list ([k mand-kw-t])
+      (for/list ([k (in-list mand-kw-t)])
         (match k
           [(Keyword: _ t _) t]))
       (for/list ([k (in-list opt-kw-t)])
@@ -49,7 +49,7 @@
   (define ts/false
     (flatten
      (list
-      (for/list ([k mand-kw-t])
+      (for/list ([k (in-list mand-kw-t)])
         (match k
           [(Keyword: _ t _) t]))
       (for/list ([k (in-list opt-kw-t)])
@@ -79,7 +79,7 @@
       [(_ _) #f]))
   (define (kw-equal? a b)
     (and (equal? (length a) (length b))
-         (for/and ([k1 a] [k2 b])
+         (for/and ([k1 (in-list a)] [k2 (in-list b)])
            (type-equal? k1 k2))))
   (match* (a b)
     [((arr: args result rest drest kws)
@@ -89,7 +89,7 @@
           (drest-equal? drest drest*)
           (type-equal? result result*)
           (kw-equal? kws kws*)
-          (for/and ([p args] [p* args*])
+          (for/and ([p (in-list args)] [p* (in-list args*)])
             (type-equal? p p*)))]))
 
 (define (arity-length a)

@@ -37,7 +37,7 @@
   (define fv-cnts (for/list ([t (in-list fv-types)]
                              [stx (in-list (syntax->list fvtys))])
                     (type->contract t #:typed-side #f (no-contract t))))
-  (define ex-types (for/list ([t (syntax->list extys)])
+  (define ex-types (for/list ([t (in-list (syntax->list extys))])
                      (parse-type t)))
   (define ex-cnts (for/list ([t (in-list ex-types)]
                              [stx (in-list (syntax->list extys))])

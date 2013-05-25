@@ -59,7 +59,7 @@
 ;; extend/many : type-env list<symbol> option<list<symbol>> -> type-env
 ;; extend type environment for many symbols
 (define (extend/many env vars [fresh-vars #f])
-  (let ([fresh-vars (or fresh-vars (for/list ([_ vars]) #f))])
-   (for/fold ([env env]) ([var vars] [fresh-var fresh-vars])
+  (let ([fresh-vars (or fresh-vars (for/list ([_ (in-list vars)]) #f))])
+   (for/fold ([env env]) ([var (in-list vars)] [fresh-var (in-list fresh-vars)])
      (extend env var fresh-var))))
 

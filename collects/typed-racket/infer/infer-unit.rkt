@@ -70,7 +70,7 @@
   (cset? symbol? (listof symbol?) . -> . cset?)
   (mover cset dbound vars
          (λ (cmap dmap)
-           (make-dcon (for/list ([v vars])
+           (make-dcon (for/list ([v (in-list vars)])
                         (hash-ref cmap v
                                   (λ () (int-err "No constraint for new var ~a" v))))
                       #f))))
@@ -110,7 +110,7 @@
   (mover cset dbound vars
          (λ (cmap dmap)
            ((if exact? make-dcon-exact make-dcon)
-            (for/list ([v vars])
+            (for/list ([v (in-list vars)])
               (hash-ref cmap v (λ () (int-err "No constraint for new var ~a" v))))
             (match (hash-ref (dmap-map dmap) dbound
                              (λ () (int-err "No constraint for bound ~a" dbound)))
@@ -206,7 +206,7 @@
      (unless (<= (length ss) (length ts))
        (fail! ss ts))
      (let* ([vars      (var-store-take dbound dty (- (length ts) (length ss)))]
-            [new-tys   (for/list ([var vars])
+            [new-tys   (for/list ([var (in-list vars)])
                          (substitute (make-F var) dbound dty))]
             [new-s-arr (make-arr (append ss new-tys) s #f #f null)]
             [new-cset  (cgen/arr V (append vars X) Y new-s-arr t-arr)])
@@ -219,7 +219,7 @@
      (unless (<= (length ts) (length ss))
        (fail! ss ts))
      (let* ([vars     (var-store-take dbound dty (- (length ss) (length ts)))]
-            [new-tys  (for/list ([var vars])
+            [new-tys  (for/list ([var (in-list vars)])
                         (substitute (make-F var) dbound dty))]
             [new-t-arr (make-arr (append ts new-tys) t #f #f null)]
             [new-cset (cgen/arr V (append vars X) Y s-arr new-t-arr)])
@@ -270,7 +270,7 @@
            (cset-meet* (list arg-mapping darg-mapping ret-mapping)))
          ;; the hard case
          (let* ([vars     (var-store-take dbound t-dty (- (length ss) (length ts)))]
-                [new-tys  (for/list ([var vars])
+                [new-tys  (for/list ([var (in-list vars)])
                             (substitute (make-F var) dbound t-dty))]
                 [new-t-arr (make-arr (append ts new-tys) t #f (cons t-dty dbound) null)]
                 [new-cset (cgen/arr V (append vars X) Y s-arr new-t-arr)])
@@ -283,7 +283,7 @@
      (cond [(< (length ss) (length ts))
             ;; the hard case
             (let* ([vars     (var-store-take dbound s-dty (- (length ts) (length ss)))]
-                   [new-tys  (for/list ([var vars])
+                   [new-tys  (for/list ([var (in-list vars)])
                                (substitute (make-F var) dbound s-dty))]
                    [new-s-arr (make-arr (append ss new-tys) s #f (cons s-dty dbound) null)]
                    [new-cset (cgen/arr V (append vars X) Y new-s-arr t-arr)])
@@ -362,7 +362,7 @@
 
            (let* ([vars     (var-store-take dbound s-dty (- (length ts) (length ss)))]
                   ;; new-tys are dummy plain type variables, standing in for the elements of dbound that need to be generated
-                  [new-tys  (for/list ([var vars])
+                  [new-tys  (for/list ([var (in-list vars)])
                               (substitute (make-F var) dbound s-dty))]
                   ;; generate constraints on the prefixes, and on the dummy types
                   [new-cset (cgen/list V (append vars X) Y (append ss new-tys) ts)])
@@ -417,7 +417,7 @@
           [((Poly: v1 b1) T) (cgen (append v1 V) X Y b1 T)]
 
           ;; constrain *each* element of es to be below T, and then combine the constraints
-          [((Union: es) T) (cset-meet* (cons empty (for/list ([e es]) (cg e T))))]
+          [((Union: es) T) (cset-meet* (cons empty (for/list ([e (in-list es)]) (cg e T))))]
 
           ;; find *an* element of es which can be made to be a supertype of S
           ;; FIXME: we're using multiple csets here, but I don't think it makes a difference
@@ -425,7 +425,7 @@
           [(S (Union: es))
            (cset-combine
             (filter values
-                    (for/list ([e es])
+                    (for/list ([e (in-list es)])
                       (with-handlers ([exn:infer? (λ _ #f)]) (cg S e)))))]
 
           ;; two structs with the same name
@@ -488,14 +488,14 @@
                (list portable-fixnum? -NonNegFixnum)
                (list values -Nat)))
            (define type
-             (for/or ((pred-type possibilities))
+             (for/or ([pred-type (in-list possibilities)])
                (match pred-type
                  ((list pred? type)
                   (and (pred? n) type)))))
            (cg type t*)]
           [((Base: _ _ _ _ #t) (Sequence: (list t*)))
            (define type
-             (for/or ((t (list -Byte -Index -NonNegFixnum -Nat)))
+             (for/or ([t (in-list (list -Byte -Index -NonNegFixnum -Nat))])
                (and (subtype S t) t)))
            (if type
                (cg type t*)
@@ -529,7 +529,7 @@
 
            (let* ([vars     (var-store-take dbound s-dty (length ts))]
                   ;; new-tys are dummy plain type variables, standing in for the elements of dbound that need to be generated
-                  [new-tys  (for/list ([var vars])
+                  [new-tys  (for/list ([var (in-list vars)])
                               (substitute (make-F var) dbound s-dty))]
                   ;; generate constraints on the prefixes, and on the dummy types
                   [new-cset (cgen/list V (append vars X) Y new-tys ts)])
@@ -604,10 +604,10 @@
           [((Function: (list s-arr ...))
             (Function: (list t-arr ...)))
            (cset-meet*
-            (for/list ([t-arr t-arr])
+            (for/list ([t-arr (in-list t-arr)])
               ;; for each element of t-arr, we need to get at least one element of s-arr that works
               (let ([results (filter values
-                                     (for/list ([s-arr s-arr])
+                                     (for/list ([s-arr (in-list s-arr)])
                                        (with-handlers ([exn:infer? (lambda (_) #f)])
                                          (cgen/arr V X Y s-arr t-arr))))])
                 ;; ensure that something produces a constraint set
@@ -692,26 +692,26 @@
                                    (constraint->type f idx-hash #:variable k))))]
                        [(dcon fixed rest)
                         (values k
-                                (i-subst/starred (for/list ([f fixed])
+                                (i-subst/starred (for/list ([f (in-list fixed)])
                                                    (constraint->type f idx-hash #:variable k))
                                                  (constraint->type rest idx-hash)))]
                        [(dcon-exact fixed rest)
                         (values k
                                 (i-subst/starred
-                                 (for/list ([f fixed])
+                                 (for/list ([f (in-list fixed)])
                                    (constraint->type f idx-hash #:variable k))
                                  (constraint->type rest idx-hash)))]
                        [(dcon-dotted fixed dc dbound)
                         (values k
                                 (i-subst/dotted
-                                 (for/list ([f fixed])
+                                 (for/list ([f (in-list fixed)])
                                    (constraint->type f idx-hash #:variable k))
                                  (constraint->type dc idx-hash #:variable k)
                                  dbound))]))
                    (for/hash ([(k v) (in-hash cmap)])
                      (values k (t-subst (constraint->type v var-hash)))))])
        ;; verify that we got all the important variables
-       (and (for/and ([v (fv R)])
+       (and (for/and ([v (in-list (fv R))])
               (let ([entry (hash-ref subst v #f)])
                 ;; Make sure we got a subst entry for a type var
                 ;; (i.e. just a type to substitute)
@@ -733,7 +733,7 @@
   (unless (= (length S) (length T))
     (fail! S T))
   (cset-meet*
-   (for/list ([s S] [t T])
+   (for/list ([s (in-list S)] [t (in-list T)])
              ;; We meet early to prune the csets to a reasonable size.
              ;; This weakens the inference a bit, but sometimes avoids
              ;; constraint explosion.
@@ -784,7 +784,7 @@
            [cs-short (cgen/list null X (list dotted-var) short-S T
                                 #:expected-cset expected-cset)]
            [new-vars (var-store-take dotted-var T-dotted (length rest-S))]
-           [new-Ts (for/list ([v new-vars])
+           [new-Ts (for/list ([v (in-list new-vars)])
                      (substitute (make-F v) dotted-var
                                  (substitute-dots (map make-F new-vars) #f dotted-var T-dotted)))]
            [cs-dotted (cgen/list null (append new-vars X) (list dotted-var) rest-S new-Ts

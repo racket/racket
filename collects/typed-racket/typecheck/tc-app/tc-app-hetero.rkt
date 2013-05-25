@@ -68,7 +68,7 @@
      (ret -Void)]
     [(not i-val)
      (define val-t (single-value val-e))
-     (for ((es-type es-t))
+     (for ((es-type (in-list es-t)))
        (check-below val-t es-type))
      (cond-check-below (ret -Void) expected)]
     [else

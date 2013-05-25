@@ -236,7 +236,7 @@
       [(define-values (var ...) expr)
        (let* ([vars (syntax->list #'(var ...))]
               [ts (map lookup-type vars)])
-         (unless (for/and ([v (syntax->list #'(var ...))])
+         (unless (for/and ([v (in-list (syntax->list #'(var ...)))])
                    (free-id-table-ref unann-defs v (lambda _ #f)))
            (when (= 1 (length vars))
              (add-scoped-tvars #'expr (lookup-scoped-tvars (first vars))))
@@ -312,7 +312,7 @@
   (resolve-type-aliases parse-type)
   ;; Parse and register the structure types
   (define parsed-structs
-    (for/list ((def struct-defs))
+    (for/list ((def (in-list struct-defs)))
       (define parsed (parse-define-struct-internal def))
       (register-parsed-struct-sty! parsed)
       parsed))
@@ -355,7 +355,7 @@
                     (~datum expand)))))
       (syntax-parse p #:literals (#%provide)
         [(#%provide form ...)
-         (for/fold ([h h]) ([f (syntax->list #'(form ...))])
+         (for/fold ([h h]) ([f (in-list (syntax->list #'(form ...)))])
            (parameterize ([current-orig-stx f])
              (syntax-parse f
                [i:id
@@ -420,7 +420,7 @@
      #:when (not (or (syntax-property form 'typechecker:ignore)
                      (syntax-property form 'typechecker:ignore-some)))
      (define result
-       (for/last ([form (syntax->list #'(e ...))])
+       (for/last ([form (in-list (syntax->list #'(e ...)))])
          (define-values (_ result) (tc-toplevel-form form))
          result))
      (begin0 (values #f (or result (void)))

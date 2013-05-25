@@ -18,8 +18,8 @@
      (unless (and rest2 (= (length fixed1) (length fixed2)))
        (fail! fixed1 fixed2))
      (make-dcon-exact
-      (for/list ([c1 fixed1]
-                 [c2 fixed2])
+      (for/list ([c1 (in-list fixed1)]
+                 [c2 (in-list fixed2)])
         (c-meet c1 c2 (c-X c1)))
       (c-meet rest1 rest2 (c-X rest1)))]
     ;; redo in the other order to call the first case
@@ -29,15 +29,15 @@
      (unless (= (length fixed1) (length fixed2))
        (fail! fixed1 fixed2))
      (make-dcon
-      (for/list ([c1 fixed1]
-                 [c2 fixed2])
+      (for/list ([c1 (in-list fixed1)]
+                 [c2 (in-list fixed2)])
         (c-meet c1 c2 (c-X c1)))
       #f)]
     [((struct dcon (fixed1 #f)) (struct dcon (fixed2 rest)))
      (unless (>= (length fixed1) (length fixed2))
        (fail! fixed1 fixed2))
      (make-dcon
-      (for/list ([c1 fixed1]
+      (for/list ([c1 (in-list fixed1)]
                  [c2 (in-sequence-forever fixed2 rest)])
         (c-meet c1 c2 (c-X c1)))
       #f)]
@@ -49,7 +49,7 @@
                        (values fixed1 fixed2 rest1 rest2)
                        (values fixed2 fixed1 rest2 rest1))])
        (make-dcon
-        (for/list ([c1 longer]
+        (for/list ([c1 (in-list longer)]
                    [c2 (in-sequence-forever shorter srest)])
           (c-meet c1 c2 (c-X c1)))
         (c-meet lrest srest (c-X lrest))))]
@@ -57,7 +57,7 @@
      (unless (and (= (length fixed1) (length fixed2))
                   (eq? bound1 bound2))
        (fail! bound1 bound2))
-     (make-dcon-dotted (for/list ([c1 fixed1] [c2 fixed2])
+     (make-dcon-dotted (for/list ([c1 (in-list fixed1)] [c2 (in-list fixed2)])
                          (c-meet c1 c2 (c-X c1)))
                        (c-meet c1 c2 bound1) bound1)]
     [((struct dcon _) (struct dcon-dotted _))
