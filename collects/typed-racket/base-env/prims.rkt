@@ -57,6 +57,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
           "annotate-classes.rkt"
           "internal.rkt"
           "../utils/tc-utils.rkt"
+          "../private/syntax-properties.rkt"
           "../types/utils.rkt"
           "for-clauses.rkt")
          "../types/numeric-predicates.rkt"
@@ -318,9 +319,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
                  "duplicate type variable declaration"
      (quasisyntax/loc stx
        (#%expression
-        #,(syntax-property (syntax/loc stx (lambda: formals . body))
-                           'typechecker:plambda
-                           #'(tvars ...))))]))
+        #,(plambda-property (syntax/loc stx (lambda: formals . body))
+                            #'(tvars ...))))]))
 
 (define-syntax (pcase-lambda: stx)
   (syntax-parse stx
@@ -329,9 +329,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
                  "duplicate type variable declaration"
      (quasisyntax/loc stx
        (#%expression
-        #,(syntax-property (syntax/loc stx (case-lambda: cl ...))
-                           'typechecker:plambda
-                           #'(tvars ...))))]))
+        #,(plambda-property (syntax/loc stx (case-lambda: cl ...))
+                            #'(tvars ...))))]))
 
 (define-syntax (popt-lambda: stx)
   (syntax-parse stx
@@ -340,9 +339,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
                  "duplicate type variable declaration"
      (quasisyntax/loc stx
        (#%expression
-        #,(syntax-property (syntax/loc stx (opt-lambda: formals . body))
-                           'typechecker:plambda
-                           #'(tvars ...))))]))
+        #,(plambda-property (syntax/loc stx (opt-lambda: formals . body))
+                            #'(tvars ...))))]))
 
 (define-syntax (pdefine: stx)
   (syntax-parse stx #:literals (:)
