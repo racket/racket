@@ -2,7 +2,7 @@
 
 (require "../../utils/utils.rkt"
          (prefix-in c: (contract-req))
-         syntax/parse racket/match unstable/sequence
+         syntax/parse racket/match unstable/sequence unstable/syntax
          syntax/parse/experimental/reflect
          "signatures.rkt"
          "utils.rkt"
@@ -112,7 +112,7 @@
                 (tc-expr/check e (ret t))
                 t)))]
       [(tc-result1: (app resolve (HeterogeneousVector: ts)))
-       (unless (= (length ts) (length (syntax->list #'(args ...))))
+       (unless (= (length ts) (syntax-length #'(args ...)))
          (tc-error/expr "expected vector with ~a elements, but got ~a"
                         (length ts)
                         (make-HeterogeneousVector (map tc-expr/t (syntax->list #'(args ...))))))

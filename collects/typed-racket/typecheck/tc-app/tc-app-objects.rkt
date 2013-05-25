@@ -3,7 +3,7 @@
 (require "../../utils/utils.rkt"
          "signatures.rkt"
          "utils.rkt"
-         syntax/parse racket/match unstable/sequence
+         syntax/parse racket/match unstable/sequence unstable/syntax
          syntax/parse/experimental/reflect
          (typecheck signatures tc-funapp)
          (types abbrev union utils)
@@ -39,9 +39,9 @@
         [(tc-result1: (Union: '())) (ret (Un))]
         [(tc-result1: (and c (Class: pos-tys (list (and tnflds (list tnames _ _)) ...) _)))
          (unless (= (length pos-tys)
-                    (length (syntax->list pos-args)))
+                    (syntax-length pos-args))
            (tc-error/delayed "expected ~a positional arguments, but got ~a"
-                             (length pos-tys) (length (syntax->list pos-args))))
+                             (length pos-tys) (syntax-length pos-args)))
          ;; use for, since they might be different lengths in error case
          (for ([pa (in-syntax pos-args)]
                [pt (in-list pos-tys)])
