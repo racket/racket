@@ -7,9 +7,9 @@
          racket/set
          racket/list
          (for-syntax syntax/parse
+                     syntax/stx
                      syntax/id-table
                      racket/syntax
-                     unstable/syntax
                      racket/dict
                      racket/list
                      racket/base))
@@ -45,7 +45,7 @@
          [start-set start-set]
          [((next-state_n ...) ...)
           (for/list ([states (in-list (syntax->list #'(((next-state ...) ...) ...)))])
-            (syntax-map set->num states))]
+            (stx-map set->num states))]
          ; Use optimized version if there are not too many states
          [op= (if is-fixnum? #'unsafe-fx= #'=)]
          [bit-shift (if is-fixnum? #'unsafe-fxlshift #'arithmetic-shift)]

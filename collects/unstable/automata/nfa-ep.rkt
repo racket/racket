@@ -1,8 +1,8 @@
 #lang racket/base
 (require "nfa.rkt"
          (for-syntax syntax/parse
+                     syntax/stx
                      racket/syntax
-                     unstable/syntax
                      syntax/id-table
                      racket/dict
                      racket/list
@@ -34,13 +34,13 @@
             (list* state (append-map state->epsilons es)))))
     (with-syntax*
         ([((start* ...) ...)
-          (syntax-map state->epsilons #'(start ...))]
+          (stx-map state->epsilons #'(start ...))]
          [((((next-state* ...) ...) ...) ...)
-          (syntax-map (λ (ns*)
-                        (syntax-map (λ (ns)
-                                      (syntax-map state->epsilons ns))
-                                    ns*))
-                      #'(((next-state ...) ...) ...))])
+          (stx-map (λ (ns*)
+                     (stx-map (λ (ns)
+                                (stx-map state->epsilons ns))
+                              ns*))
+                   #'(((next-state ...) ...) ...))])
       (syntax/loc stx
         (nfa (start* ... ...)
              (end ...)
