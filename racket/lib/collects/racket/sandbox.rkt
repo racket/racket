@@ -932,6 +932,7 @@
        (read-bytecode ,(PLANET-BASE-DIR))
        (exists ,(find-system-path 'addon-dir))
        (read ,(find-system-path 'links-file))
+       (read ,(build-path (find-config-dir) "links.rktd"))
        (read ,(find-lib-dir))
        ,@(compute-permissions allow-for-require allow-for-load)
        ,@(sandbox-path-permissions))]
