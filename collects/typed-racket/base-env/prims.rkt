@@ -74,7 +74,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                 [typed-racket/private/type-contract (type->contract)]
                 [typed-racket/env/type-name-env (register-type-name)]))
 
-(define-for-syntax (ignore stx) (syntax-property stx 'typechecker:ignore #t))
+(define-for-syntax (ignore stx) (ignore-property stx #t))
 
 (define-syntaxes (require/typed-legacy require/typed)
  (let ()
@@ -193,11 +193,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(_ name:id ty:expr)
      #`(begin
-         #,(syntax-property (if (eq? (syntax-local-context) 'top-level)
+         #,(ignore-property (if (eq? (syntax-local-context) 'top-level)
                                 #'(define name (procedure-rename (make-predicate ty) 'name))
                                 (syntax-property #'(define name #f)
                                                  'typechecker:flat-contract-def #'ty))
-                            'typechecker:ignore #t)
+                            #t)
          ;; not a require, this is just the unchecked declaration syntax
          #,(internal #'(require/typed-internal name (Any -> Boolean : ty))))]))
 
@@ -218,7 +218,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
          #`(ann
              #,(syntax-property
-                 (syntax-property name 'typechecker:ignore-some #t)
+                 (ignore-some-property name #t)
                  'typechecker:external-check check-valid-type)
 
              (Any -> Boolean : ty)))
@@ -227,7 +227,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
              ;; This code should never get run, typechecking will have an error earlier
              #`(error 'make-predicate "Couldn't parse type")
              #`(ann
-               #,(syntax-property
+               #,(ignore-some-property
                    (type->contract
                      typ
                      ;; must be a flat contract
@@ -235,7 +235,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                      ;; the value is not from the typed side
                      #:typed-side #f
                      (lambda () (tc-error/stx #'ty "Type ~a could not be converted to a predicate." typ)))
-                    'typechecker:ignore-some #t)
+                   #t)
                (Any -> Boolean : ty)))))]))
 
 (define-syntax (cast stx)
@@ -244,7 +244,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (define (apply-contract ctc-expr)
        #`(#%expression
            (ann
-             #,(syntax-property
+             #,(ignore-some-property
                  #`(let-values (((val) #,(syntax-property #'(ann v Any) 'with-type #t)))
                      (contract
                        #,ctc-expr
@@ -253,7 +253,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                        'typed-world
                        val
                        (quote-syntax #,stx)))
-                   'typechecker:ignore-some #t)
+                 #t)
              ty)))
 
      (cond [(not (unbox typed-context?)) ; no-check, don't check
@@ -303,14 +303,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (with-syntax ([hidden (generate-temporary #'pred)])
        (quasisyntax/loc stx
          (begin
-           #,(syntax-property #'(define pred-cnt (any/c . c-> . boolean?))
-                              'typechecker:ignore #t)
+           #,(ignore-property #'(define pred-cnt (any/c . c-> . boolean?)) #t)
            #,(internal #'(require/typed-internal hidden (Any -> Boolean : (Opaque pred))))
            #,(if (attribute ne)
                  (internal (syntax/loc stx (define-type-alias-internal ty (Opaque pred))))
                  (syntax/loc stx (define-type-alias ty (Opaque pred))))
-           #,(syntax-property #'(require/contract pred hidden pred-cnt lib)
-                              'typechecker:ignore #t))))]))
+           #,(ignore-property #'(require/contract pred hidden pred-cnt lib) #t))))]))
 
 (define-syntax (plambda: stx)
   (syntax-parse stx
@@ -496,9 +494,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ nm ((~describe "field specification" [fld:optionally-annotated-name]) ...) [proc : proc-ty])
      (with-syntax*
       ([proc* (syntax-property #'(ann proc : proc-ty) 'typechecker:with-type #t)]
-       [d-s (syntax-property (syntax/loc stx (define-struct nm (fld.name ...)
+       [d-s (ignore-some-property (syntax/loc stx (define-struct nm (fld.name ...)
                                                #:property prop:procedure proc*))
-                             'typechecker:ignore-some #t)]
+                                  #t)]
        [dtsi (quasisyntax/loc stx (dtsi/exec* () nm (fld ...) proc-ty))])
       #'(begin d-s dtsi))]))
 
@@ -568,8 +566,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
        [(_ vars:maybe-type-vars nm:struct-name (fs:fld-spec ...)
            opts:struct-options)
         (let ([mutable? (if (attribute opts.mutable?) #'(#:mutable) #'())])
-          (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fs.fld ...) . opts))
-                                              'typechecker:ignore #t)]
+          (with-syntax ([d-s (ignore-some-property
+                               (syntax/loc stx (define-struct nm (fs.fld ...) . opts))
+                               #t)]
                         [dtsi (quasisyntax/loc stx
                                 (dtsi* (vars.vars ...) nm (fs ...)
                                        #,@mutable?))])
@@ -580,11 +579,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
            opts:struct-options)
         (let ([mutable? (if (attribute opts.mutable?) #'(#:mutable) #'())]
               [cname (datum->syntax #f (format-symbol "make-~a" (syntax-e #'nm.name)))])
-          (with-syntax ([d-s (syntax-property (quasisyntax/loc stx
+          (with-syntax ([d-s (ignore-property (quasisyntax/loc stx
                                                 (struct #,@(attribute nm.new-spec) (fs.fld ...)
                                                         #:extra-constructor-name #,cname
                                                         . opts))
-                                              'typechecker:ignore #t)]
+                                              #t)]
                         [dtsi (quasisyntax/loc stx
                                 (dtsi* (vars.vars ...)
                                        nm.old-spec (fs ...)
