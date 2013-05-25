@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require (for-syntax racket/base) racket/contract/base)
+(require (for-syntax racket/base) racket/contract/base syntax/stx)
 
 ;; Added by samth:
 
@@ -11,11 +11,15 @@
 ;; knows that it's a list, in contrast to this code which will just
 ;; throw an error.)
 (define-sequence-syntax in-syntax
-  (λ () #'(λ (e) (in-list (syntax->list e))))
+  (λ () #'in-syntax/proc)
   (λ (stx)
     (syntax-case stx ()
-      [[ids (_ arg)]
-       #'[ids (in-list (syntax->list arg))]])))
+      [[(id) (_ arg)]
+       #'[(id) (in-list (in-syntax/proc arg))]])))
+
+(define (in-syntax/proc stx)
+  (or (stx->list stx)
+      (raise-type-error 'in-syntax "stx-list" stx)))
 
 ;; ELI: This is very specific, and indeed there are no uses of it
 ;; anywhere in the tree other than in TR where it came from.
