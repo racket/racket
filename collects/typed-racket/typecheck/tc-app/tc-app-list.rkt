@@ -4,7 +4,7 @@
 (require "../../utils/utils.rkt"
          "signatures.rkt"
          "utils.rkt"
-         syntax/parse racket/match
+         syntax/parse racket/match unstable/sequence
          syntax/parse/experimental/reflect
          (only-in '#%kernel [reverse k:reverse])
          (typecheck signatures tc-funapp)
@@ -81,13 +81,13 @@
   (pattern (list . args)
     (match expected
       [(tc-result1: (Listof: elem-ty))
-       (for ([i (in-list (syntax->list #'args))])
+       (for ([i (in-syntax #'args)])
          (tc-expr/check i (ret elem-ty)))
        expected]
       [(tc-result1: (List: (? (lambda (ts) (= (length (syntax->list #'args))
                                               (length ts)))
                               ts)))
-       (for ([ac (in-list (syntax->list #'args))]
+       (for ([ac (in-syntax #'args)]
              [exp (in-list ts)])
          (tc-expr/check ac (ret exp)))
        expected]

@@ -6,7 +6,7 @@
          (utils tc-utils)
          (types utils resolve base-abbrev match-expanders
                 numeric-tower substitute current-seen)
-         (for-syntax racket/base syntax/parse))
+         (for-syntax racket/base syntax/parse unstable/sequence))
 
 (lazy-require
   ("union.rkt" (Un))
@@ -66,10 +66,10 @@
     [(_ init (s:sub* . args) ...+)
      (with-syntax ([(A* ... A-last) (generate-temporaries #'(s ...))])
        (with-syntax ([(clauses ...)
-                      (for/list ([s (in-list (syntax->list #'(s ...)))]
-                                 [args (in-list (syntax->list #'(args ...)))]
-                                 [A (in-list (syntax->list #'(init A* ...)))]
-                                 [A-next (in-list (syntax->list #'(A* ... A-last)))])
+                      (for/list ([s (in-syntax #'(s ...))]
+                                 [args (in-syntax #'(args ...))]
+                                 [A (in-syntax #'(init A* ...))]
+                                 [A-next (in-syntax #'(A* ... A-last))])
                          #`[#,A-next (#,s #,A . #,args)])])
         (syntax/loc stx (let*/and (clauses ...)
 			   A-last))))]))

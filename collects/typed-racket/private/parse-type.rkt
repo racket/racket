@@ -8,7 +8,7 @@
                     [make-arr* make-arr])
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: (contract-req))
-         syntax/parse racket/dict
+         syntax/parse racket/dict unstable/sequence
          (env type-env-structs tvar-env type-name-env type-alias-env
               lexical-env index-env)
          racket/match
@@ -47,7 +47,7 @@
   (pattern (type))
   (pattern (x ...)
      #:fail-unless (= 1 (length
-                         (for/list ([i (in-list (syntax->list #'(x ...)))]
+                         (for/list ([i (in-syntax #'(x ...))]
                                     #:when (and (identifier? i)
                                                 (free-identifier=? i #'t:->)))
                                    i))) #f
@@ -172,10 +172,10 @@
         (map list
              (map syntax-e (syntax->list #'(fname ...)))
              (map parse-type (syntax->list #'(fty ...)))
-             (map (lambda (e) (syntax-case e ()
-                                [(#t) #t]
-                                [_ #f]))
-                  (syntax->list #'(rest ...))))
+             (for/list ((e (in-syntax #'(rest ...))))
+               (syntax-case e ()
+                 [(#t) #t]
+                 [_ #f])))
         (map list
              (map syntax-e (syntax->list #'(mname ...)))
              (map parse-type (syntax->list #'(mty ...)))))]
@@ -217,7 +217,7 @@
       [((~and kw (~or case-lambda t:case->)) tys ...)
        (add-disappeared-use #'kw)
        (make-Function
-        (for/list ([ty (syntax->list #'(tys ...))])
+        (for/list ([ty (in-syntax #'(tys ...))])
           (let ([t (parse-type ty)])
             (match t
               [(Function: (list arr)) arr]
@@ -278,8 +278,8 @@
         (~and kw t:->)
         (~and (~seq rest-dom ...) (~seq (~or _ (~between t:-> 1 +inf.0)) ...)))
        (add-disappeared-use #'kw)
-       (let ([doms (for/list ([d (syntax->list #'(dom ...))])
-                    (parse-type d))])
+       (let ([doms (for/list ([d (in-syntax #'(dom ...))])
+                     (parse-type d))])
          (make-Function
           (list (make-arr
                  doms
@@ -334,7 +334,7 @@
       ;; use expr to rule out keywords
       [(dom:non-keyword-ty ... kws:keyword-tys ... (~and kw t:->) rng)
        (add-disappeared-use #'kw)
-      (let ([doms (for/list ([d (syntax->list #'(dom ...))])
+      (let ([doms (for/list ([d (in-syntax #'(dom ...))])
                     (parse-type d))])
          (make-Function
           (list (make-arr

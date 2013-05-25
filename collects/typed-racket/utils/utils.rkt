@@ -5,7 +5,7 @@ This file is for utilities that are of general interest,
 at least theoretically.
 |#
 
-(require (for-syntax racket/base syntax/parse racket/string)
+(require (for-syntax racket/base syntax/parse racket/string unstable/sequence)
          racket/require-syntax racket/provide-syntax
          racket/struct-info "timing.rkt")
 
@@ -42,20 +42,19 @@ at least theoretically.
             (syntax-parse stx
               [(form id:identifier ...)
                (with-syntax ([(id* ...)
-                              (map (lambda (id)
-                                     (datum->syntax
-                                      id
-                                      `(lib
-                                        ,(datum->syntax
-                                          #f
-                                          (string-join
-                                           (list "typed-racket"
-                                                 (symbol->string (syntax-e #'nm))
-                                                 (string-append (symbol->string (syntax-e id)) ".rkt"))
-                                           "/")
-                                          id id))
-                                      id id))
-                                   (syntax->list #'(id ...)))])
+                              (for/list ([id (in-syntax #'(id ...))])
+                                (datum->syntax
+                                 id
+                                 `(lib
+                                   ,(datum->syntax
+                                     #f
+                                     (string-join
+                                      (list "typed-racket"
+                                            (symbol->string (syntax-e #'nm))
+                                            (string-append (symbol->string (syntax-e id)) ".rkt"))
+                                      "/")
+                                     id id))
+                                 id id))])
                  (syntax-property (syntax/loc stx (combine-in id* ...))
                                   'disappeared-use
                                   #'form))]))
@@ -63,19 +62,18 @@ at least theoretically.
             (syntax-parse stx
               [(_ id:identifier ...)
                (with-syntax ([(id* ...)
-                              (map (lambda (id)
-                                     (datum->syntax
-                                      id
-                                      `(lib
-                                        ,(datum->syntax
-                                          #f
-                                          (string-join
-                                           (list "typed-racket"
-                                                 (symbol->string (syntax-e #'nm))
-                                                 (string-append (symbol->string (syntax-e id)) ".rkt"))
-                                           "/")
-                                          id id))))
-                                   (syntax->list #'(id ...)))])
+                              (for/list ([id (in-syntax #'(id ...))])
+                                (datum->syntax
+                                 id
+                                 `(lib
+                                   ,(datum->syntax
+                                     #f
+                                     (string-join
+                                      (list "typed-racket"
+                                            (symbol->string (syntax-e #'nm))
+                                            (string-append (symbol->string (syntax-e id)) ".rkt"))
+                                      "/")
+                                     id id))))])
                  (syntax/loc stx (combine-out (all-from-out id*) ...)))]))
           (provide nm nm-out)))]))
 

@@ -2,7 +2,7 @@
 
 (require "../../utils/utils.rkt"
          (prefix-in c: (contract-req))
-         syntax/parse racket/match
+         syntax/parse racket/match unstable/sequence
          syntax/parse/experimental/reflect
          "signatures.rkt"
          "utils.rkt"
@@ -107,16 +107,16 @@
   (pattern (~and form ((~or vector-immutable vector) args:expr ...))
     (match expected
       [(tc-result1: (app resolve (Vector: t)))
-       (define es (syntax->list #'(args ...)))
-       (for ([e (in-list es)])
-         (tc-expr/check e (ret t)))
-       (ret (make-HeterogeneousVector (map (λ (_) t) es)))]
+       (ret (make-HeterogeneousVector 
+              (for/list ([e (in-syntax #'(args ...))])
+                (tc-expr/check e (ret t))
+                t)))]
       [(tc-result1: (app resolve (HeterogeneousVector: ts)))
        (unless (= (length ts) (length (syntax->list #'(args ...))))
          (tc-error/expr "expected vector with ~a elements, but got ~a"
                         (length ts)
                         (make-HeterogeneousVector (map tc-expr/t (syntax->list #'(args ...))))))
-       (for ([e (in-list (syntax->list #'(args ...)))]
+       (for ([e (in-syntax #'(args ...))]
              [t (in-list ts)])
          (tc-expr/check e (ret t)))
        expected]
@@ -133,6 +133,7 @@
          [_ (continue)])]
       ;; since vectors are mutable, if there is no expected type, we want to generalize the element type
       [(or #f (tc-any-results:) (tc-result1: _))
-       (ret (make-HeterogeneousVector (map (lambda (x) (generalize (tc-expr/t x)))
-                                           (syntax->list #'(args ...)))))]
+       (ret (make-HeterogeneousVector
+              (for/list ((e (in-syntax #'(args ...))))
+                (generalize (tc-expr/t e)))))]
       [_ (int-err "bad expected: ~a" expected)])))

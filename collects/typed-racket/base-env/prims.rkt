@@ -51,6 +51,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
           racket/lazy-require
           syntax/parse
           racket/syntax
+          unstable/sequence
           racket/base
           racket/struct-info
           syntax/struct
@@ -466,10 +467,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (with-handlers: stx)
   (syntax-parse stx
     [(_ ([pred? action] ...) . body)
-     (with-syntax ([(pred?* ...) (map (lambda (s) (with-type-property #`(ann #,s : (Any -> Any)) #t))
-                                      (syntax->list #'(pred? ...)))]
+     (with-syntax ([(pred?* ...)
+                    (for/list ([s (in-syntax #'(pred? ...))])
+                      (with-type-property #`(ann #,s : (Any -> Any)) #t))]
                    [(action* ...)
-                    (map (lambda (s) (exn-handler-property s #t)) (syntax->list #'(action ...)))]
+                    (for/list ([s (in-syntax #'(action ...))])
+                      (exn-handler-property s #t))]
                    [body* (exn-body-property #'(let-values () . body) #t)])
        (with-handlers-property #'(with-handlers ([pred?* action*] ...) body*) #t))]))
 

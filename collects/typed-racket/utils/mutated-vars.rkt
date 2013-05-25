@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require (for-template racket/base) racket/dict
-         syntax/id-table syntax/kerncase)
+         syntax/id-table syntax/kerncase unstable/sequence)
 
 ;; find and add to mapping all the set!'ed variables in form
 ;; if the supplied mapping is mutable, mutates it
@@ -14,8 +14,7 @@
   (let loop ([stx form] [tbl tbl])
     ;; syntax-list -> table
     (define (fmv/list lstx)
-      (for/fold ([tbl tbl])
-          ([stx (in-list (syntax->list lstx))])
+      (for/fold ([tbl tbl]) ([stx (in-syntax lstx)])
         (loop stx tbl)))
     (kernel-syntax-case* stx #f (#%top-interaction)
       ;; what we care about: set!
