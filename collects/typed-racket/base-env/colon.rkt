@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require (for-syntax racket/base syntax/parse "internal.rkt" "../utils/disappeared-use.rkt")
+(require (for-syntax racket/base syntax/parse unstable/sequence
+                     "internal.rkt" "../utils/disappeared-use.rkt")
          "../typecheck/internal-forms.rkt"
          (prefix-in t: "base-types-extra.rkt"))
 
@@ -13,7 +14,7 @@
     ;; explicitly parenthesized
     (syntax-parse stx #:literals (: t:->)
       [(: id (~and kw :) x ...)
-       #:fail-unless (for/first ([i (in-list (syntax->list #'(x ...)))]
+       #:fail-unless (for/first ([i (in-syntax #'(x ...))]
                                  #:when (identifier? i)
                                  #:when (free-identifier=? i #'t:->))
                        i) 

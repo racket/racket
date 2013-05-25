@@ -1,8 +1,8 @@
 #lang racket/base
 
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
-         syntax/kerncase racket/syntax syntax/parse syntax/id-table
-         racket/list unstable/list racket/dict racket/match
+         syntax/kerncase racket/syntax syntax/parse syntax/stx syntax/id-table
+         racket/list unstable/list racket/dict racket/match unstable/sequence
          (prefix-in c: (contract-req))
          (rep type-rep free-variance)
          (types utils abbrev type-table)
@@ -233,23 +233,19 @@
 
       ;; definitions just need to typecheck their bodies
       [(define-values (var ...) expr)
-       (let* ([vars (syntax->list #'(var ...))]
-              [ts (map lookup-type vars)])
-         (unless (for/and ([v (in-list (syntax->list #'(var ...)))])
-                   (free-id-table-ref unann-defs v (lambda _ #f)))
-           (when (= 1 (length vars))
-             (add-scoped-tvars #'expr (lookup-scoped-tvars (first vars))))
-           (tc-expr/check #'expr (ret ts)))
-         (void))]
+       (unless (for/and ([v (in-syntax #'(var ...))])
+                 (free-id-table-ref unann-defs v (lambda _ #f)))
+         (let ([ts (map lookup-type (syntax->list #'(var ...)))])
+           (when (= 1 (length ts))
+             (add-scoped-tvars #'expr (lookup-scoped-tvars (stx-car #'(var ...)))))
+           (tc-expr/check #'expr (ret ts))))
+       (void)]
 
       ;; to handle the top-level, we have to recur into begins
       [(begin) (void)]
       [(begin . rest)
-       (let loop ([l (syntax->list #'rest)])
-         (if (null? (cdr l))
-             (tc-toplevel/pass2 (car l))
-             (begin (tc-toplevel/pass2 (car l))
-                    (loop (cdr l)))))]
+       (for/last ([form (in-syntax #'rest)])
+         (tc-toplevel/pass2 form))]
 
       ;; otherwise, the form was just an expression
       [_ (tc-expr/check form tc-any-results)])))
@@ -354,7 +350,7 @@
                     (~datum expand)))))
       (syntax-parse p #:literals (#%provide)
         [(#%provide form ...)
-         (for/fold ([h h]) ([f (in-list (syntax->list #'(form ...)))])
+         (for/fold ([h h]) ([f (in-syntax #'(form ...))])
            (parameterize ([current-orig-stx f])
              (syntax-parse f
                [i:id
@@ -418,7 +414,7 @@
      ;; Don't open up `begin`s that are supposed to be ignored
      #:when (not (or (ignore-property form) (ignore-some-property form)))
      (define result
-       (for/last ([form (in-list (syntax->list #'(e ...)))])
+       (for/last ([form (in-syntax #'(e ...))])
          (define-values (_ result) (tc-toplevel-form form))
          result))
      (begin0 (values #f (or result (void)))

@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require syntax/parse unstable/syntax
+(require syntax/parse unstable/syntax unstable/sequence
          racket/list racket/dict racket/match
          "../utils/utils.rkt"
          "../utils/tc-utils.rkt"
@@ -135,12 +135,9 @@
                               this-syntax))
           ;; add the unboxed bindings to the table, for them to be used by
           ;; further optimizations
-          (for ((v (in-list (syntax->list
-                             #'(opt-candidates.id ...))))
-                (r (in-list (syntax->list
-                             #'(opt-candidates.real-binding ...))))
-                (i (in-list (syntax->list
-                             #'(opt-candidates.imag-binding ...)))))
+          (for ((v (in-syntax #'(opt-candidates.id ...)))
+                (r (in-syntax #'(opt-candidates.real-binding ...)))
+                (i (in-syntax #'(opt-candidates.imag-binding ...))))
             (dict-set! unboxed-vars-table v (list r i v)))
           ;; in the case where no bindings are unboxed, we create a let
           ;; that is equivalent to the original, but with all parts
