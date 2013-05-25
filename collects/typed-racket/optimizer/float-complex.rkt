@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require syntax/parse syntax/id-table racket/dict unstable/syntax racket/match
+(require syntax/parse syntax/stx syntax/id-table racket/dict
+         unstable/syntax racket/match
          "../utils/utils.rkt" racket/unsafe/ops unstable/sequence
          (for-template racket/base racket/math racket/flonum racket/unsafe/ops)
          (utils tc-utils)
@@ -127,7 +128,7 @@
                                 (let ()
                                   ;; unlike addition, we simply can't skip real parts of imaginaries
                                   (define (skip-0s l)
-                                    (let* ((l1 (syntax-map get-part-or-0.0 l))
+                                    (let* ((l1 (stx-map get-part-or-0.0 l))
                                            ;; but we can skip all but the first 0
                                            (l2 (filter (lambda (x) (not (equal? (syntax->datum x) 0.0)))
                                                        (cdr l1))))
@@ -168,19 +169,19 @@
                   #`(c1.bindings ... c2.bindings ... cs.bindings ... ...
                      ;; we want to bind the intermediate results to reuse them
                      ;; the final results are bound to real-binding and imag-binding
-                     #,@(let ((lr (syntax-map get-part-or-0.0
-                                              #'(c1.real-binding c2.real-binding cs.real-binding ...)))
-                              (li (syntax-map get-part-or-0.0
-                                              #'(c1.imag-binding c2.imag-binding cs.imag-binding ...))))
+                     #,@(let ((lr (stx-map get-part-or-0.0
+                                           #'(c1.real-binding c2.real-binding cs.real-binding ...)))
+                              (li (stx-map get-part-or-0.0
+                                           #'(c1.imag-binding c2.imag-binding cs.imag-binding ...))))
                           (let loop ([o1 (car lr)]
                                      [o2 (car li)]
                                      [e1 (cdr lr)]
                                      [e2 (cdr li)]
-                                     [rs (append (syntax-map (lambda (x) (unboxed-gensym "unboxed-real-"))
-                                                             #'(cs.real-binding ...))
+                                     [rs (append (stx-map (lambda (x) (unboxed-gensym "unboxed-real-"))
+                                                          #'(cs.real-binding ...))
                                                  (list #'real-binding))]
-                                     [is (append (syntax-map (lambda (x) (unboxed-gensym "unboxed-imag-"))
-                                                             #'(cs.imag-binding ...))
+                                     [is (append (stx-map (lambda (x) (unboxed-gensym "unboxed-imag-"))
+                                                          #'(cs.imag-binding ...))
                                                  (list #'imag-binding))]
                                      [res '()])
                             (if (null? e1)
@@ -212,10 +213,10 @@
            #:when (subtypeof? this-syntax -FloatComplex)
            #:with real-binding (unboxed-gensym "unboxed-real-")
            #:with imag-binding (unboxed-gensym "unboxed-imag-")
-           #:with reals (syntax-map get-part-or-0.0
-                                    #'(c1.real-binding c2.real-binding cs.real-binding ...))
-           #:with imags (syntax-map get-part-or-0.0
-                                    #'(c1.imag-binding c2.imag-binding cs.imag-binding ...))
+           #:with reals (stx-map get-part-or-0.0
+                                 #'(c1.real-binding c2.real-binding cs.real-binding ...))
+           #:with imags (stx-map get-part-or-0.0
+                                 #'(c1.imag-binding c2.imag-binding cs.imag-binding ...))
            #:with (bindings ...)
            (begin (log-optimization "unboxed binary float complex"
                                     complex-unboxing-opt-msg
@@ -228,11 +229,11 @@
                                    [b  (car (syntax->list #'imags))]
                                    [e1 (cdr (syntax->list #'reals))]
                                    [e2 (cdr (syntax->list #'imags))]
-                                   [rs (append (syntax-map (lambda (x) (unboxed-gensym "unboxed-real-"))
-                                                           #'(cs.real-binding ...))
+                                   [rs (append (stx-map (lambda (x) (unboxed-gensym "unboxed-real-"))
+                                                        #'(cs.real-binding ...))
                                                (list #'real-binding))]
-                                   [is (append (syntax-map (lambda (x) (unboxed-gensym "unboxed-imag-"))
-                                                           #'(cs.imag-binding ...))
+                                   [is (append (stx-map (lambda (x) (unboxed-gensym "unboxed-imag-"))
+                                                        #'(cs.imag-binding ...))
                                                (list #'imag-binding))]
                                    [res '()])
                           (if (null? e1)
@@ -674,7 +675,7 @@
                 (reset-unboxed-gensym)
                 #`(let*-values (e.bindings ... ...)
                     (#%plain-app #,opt-operator
-                                 #,@(syntax-map get-part-or-0.0 #'(e.real-binding ...))
-                                 #,@(syntax-map get-part-or-0.0 #'(e.imag-binding ...))
+                                 #,@(stx-map get-part-or-0.0 #'(e.real-binding ...))
+                                 #,@(stx-map get-part-or-0.0 #'(e.imag-binding ...))
                                  #,@(map (lambda (i) ((optimize) (get-arg i)))
                                          boxed)))])))) ; boxed params
