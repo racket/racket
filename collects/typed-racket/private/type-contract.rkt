@@ -15,6 +15,7 @@
  (prefix-in t: (types abbrev numeric-tower))
  (private parse-type syntax-properties)
  racket/match unstable/match syntax/struct syntax/stx racket/syntax racket/list
+ unstable/sequence
  (contract-req)
  (for-template racket/base racket/contract racket/set (utils any-wrap)
                (prefix-in t: (types numeric-predicates))
@@ -76,11 +77,10 @@
 		(syntax->datum stx))]))
 
 (define (change-contract-fixups forms)
-  (map (lambda (e)
-         (if (not (define/fixup-contract? e))
-             e
-             (generate-contract-def e)))
-       (syntax->list forms)))
+  (for/list ((e (in-syntax forms)))
+    (if (not (define/fixup-contract? e))
+        e
+        (generate-contract-def e))))
 
 (define (no-duplicates l)
   (= (length l) (length (remove-duplicates l))))
