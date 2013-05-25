@@ -53,17 +53,16 @@
             n (stringify tnames)))
          (for-each (match-lambda
                      [(list tname tfty opt?)
-                      (let ([s (dict-ref name-assoc tname
-                                 (lambda ()
-                                   (unless opt?
-                                     (tc-error/delayed "value not provided for named init arg ~a"
-                                                       tname))
-                                   #f))])
-                        (if s
-                            ;; this argument was present
-                            (tc-expr/check s (ret tfty))
-                            ;; this argument wasn't provided, and was optional
-                            #f))])
+                      (define s
+                        (dict-ref name-assoc tname
+                          (lambda ()
+                            (unless opt?
+                              (tc-error/delayed "value not provided for named init arg ~a"
+                                                tname))
+                            #f)))
+                      ;; Only check the argument if it is provided
+                      (when s
+                        (tc-expr/check s (ret tfty)))])
                    tnflds)
          (ret (make-Instance c))]
         [(tc-result1: t)
