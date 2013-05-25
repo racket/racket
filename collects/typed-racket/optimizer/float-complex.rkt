@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require syntax/parse syntax/id-table racket/dict unstable/syntax racket/match
-         "../utils/utils.rkt" racket/unsafe/ops
+         "../utils/utils.rkt" racket/unsafe/ops unstable/sequence
          (for-template racket/base racket/math racket/flonum racket/unsafe/ops)
          (utils tc-utils)
          (types numeric-tower subtype type-table utils)
@@ -495,7 +495,7 @@
   ;; reasonable definition.
   (pattern e:arith-expr
            #:when (when (and (in-complex-layer? #'e)
-                             (for/and ([subexpr (in-list (syntax->list #'(e.args ...)))])
+                             (for/and ([subexpr (in-syntax #'(e.args ...))])
                                (subtypeof? subexpr -Real)))
                     (log-missed-optimization
                      "unexpected complex type"
@@ -601,7 +601,7 @@
   (pattern (#%plain-app (~literal /) e:expr ...)
            #:when (subtypeof? this-syntax -FloatComplex)
            #:when (let ([irritants
-                         (for/list ([c (syntax->list #'(e ...))]
+                         (for/list ([c (in-syntax #'(e ...))]
                                     #:when (match (type-of c)
                                              [(tc-result1: t)
                                               (subtype -Zero t)]

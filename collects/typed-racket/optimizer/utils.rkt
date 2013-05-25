@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require unstable/match racket/match
+(require unstable/match racket/match unstable/sequence
          racket/dict syntax/id-table racket/syntax unstable/syntax
          "../utils/utils.rkt"
          (for-template racket/base)
@@ -44,7 +44,7 @@
 ;; this works on operations that are (A A -> A)
 (define (n-ary->binary op arg1 arg2 rest)
   (for/fold ([o arg1])
-      ([e (in-list (syntax->list #`(#,arg2 #,@rest)))])
+      ([e (in-syntax #`(#,arg2 #,@rest))])
     #`(#,op #,o #,e)))
 ;; this works on operations that are (A A -> B)
 (define (n-ary-comp->binary op arg1 arg2 rest)
@@ -63,7 +63,7 @@
                         (cdr l))])))
   ;; Finally, build the whole thing.
   #`(let #,(for/list ([lhs (in-list lifted)]
-                      [rhs (in-list (syntax->list #`(#,arg2 #,@rest)))])
+                      [rhs (in-syntax #`(#,arg2 #,@rest))])
              #`(#,lhs #,rhs))
       (and #,@tests)))
 
