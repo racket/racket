@@ -2,15 +2,9 @@
 
 ;; from Eli
 
-(provide (all-defined-out))
+(provide look-for-in-orig)
 
 ;; -------------------- utilities
-
-(define (pull-from-syntax stx . locs)
-  (let loop ([stx stx] [locs locs])
-    (if (null? locs)
-      stx
-      (loop (list-ref (syntax->list stx) (car locs)) (cdr locs)))))
 
 (define (syntax-loc stx) (list (syntax-source stx) (syntax-position stx) (syntax-span stx)))
 
