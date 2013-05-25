@@ -1,0 +1,203 @@
+Building Racket
+===============
+
+The "racket" directory contains a stripped down version of Racket ---
+enough to run `raco pkg' to install everything else.
+
+The "pkgs" directory contains the packages that are included in a
+Racket distribution.
+
+On Unix and Mac OS X, you can build Racket plus the included packages
+with `make in-place' (or just `make'). The resulting build is in the
+"racket" subdirectory.  For now, you need to have `git' installed for
+downloading native-library packages. If you want more control over the
+process, see below.
+
+On Windows, you must first clone "git://github.com/plt/libs.git"
+as "build/native-pkgs". Then, you can use `nmake win32-in-place'.
+
+
+Building Core Racket
+====================
+
+Instead of using the top-level makefile, you can go into "racket/src"
+and follow the "README" there, which gives you more configuration
+options.
+
+If you don't want any special configuration and you just want the core
+build, you can use `make core' (or `nmake win32-core') with the
+top-level makefile.
+
+
+Installing Packages
+===================
+
+In the near future, after you've built the core, you can install
+packages via a package-catalog server (ignoring the content of
+"pkgs"). That catalog server is not ready, yet.
+
+
+Linking Packages for Development Mode
+=====================================
+
+Aside from the issue of native-library packages, using all of the
+packages in "pkgs" corresponds to a build that is like the main Racket
+distribution. Furthermore, if you install all of those packages with
+`raco pkg install -i --link ...', then you can edit libraries or
+update via `git pull' plus `raco setup' (as opposed to updating or
+reinstalling packages).
+
+The `pkg-links' target of the makefile links (or re-links) packages
+from "pkgs" into the "racket" build. (The `in-place' target of the
+makefile uses `pkg-links'.) Packages are linked using installation
+scope, so that the links affect only the build in the "racket"
+directory. Use the `pkg-links' target whenever the set of native
+packages or packages in "pkgs" changes. Packages are linked with the
+`--no-setup' flag (effectively), which means that a `raco setup' is
+needed after installing links.
+
+Native-library packages provide (on Mac OS X and Windows) pre-built
+native libraries, such as Cario. Currently, the libraries must be
+downloaded from GitHub. On a non-Windows platform, the
+`native-from-git' makefile target clones/updates the native-library
+reposiroty from GitHub; otherwise, clone
+
+   git://github.com/plt/libs.git
+
+as
+ 
+   build/native-pkgs
+
+When you have a "build/native-pkgs" directory, then the `pkg-links'
+makefile target also links relavant native packages.
+
+You need a "racket" build before linking packages. So, to get set up:
+
+ git clone git://github.com/mflatt/racket.git plt
+ cd plt
+ git checkout pkg
+
+ make core
+
+ # Mac OS X:
+ make native-from-git
+ # Windows:
+ git clone git://github.com/plt/libs.git build/native-pkgs
+
+ make pkg-links
+ racket/bin/raco setup
+
+
+Trying Packages Locally
+=======================
+
+Suppose that you've built core "racket" and you want to see what
+it looks like to install individual packages.
+
+Use `make local-catalog' to create a package catalog that provides
+mappings for all of the packages in "pkgs" as well as packages
+pre-built native libraries downloaded from GitHub. (On Unix, use the
+`local-source-catalog' makefile target to skip native libraries, since
+none are needed.)
+
+To install a package, try
+
+ racket/bin/raco pkg install -i --catalog build/local/catalog --deps search-auto <pkg-name>
+
+The `-i' flag makes the package install specific to the build in the
+"racket" directory. The `--catalog build/local/catalog' causes the
+installation to use the catalog created by the `local-catalog'
+makefile target. The `--deps search-auto' flag installs dependencies
+(from the local catalog) automatically.
+
+To remove the package, try
+
+ racket/bin/raco pkg remove -i --auto <pkg-name>
+
+The `--auto' flag undoes automatic installs from `--deps search-auto'.
+
+If you try out packages in this way, clean out all package
+installations before trying to create installers (as described in the
+next section), because the distribution-bundle process expects a core
+build in "racket" that has no installed packages.
+
+
+Building Installers
+===================
+
+To build distribution installers, do not use `make in-place' or just
+`make', but instead start from a clean repository.
+
+Use one non-Windows machine as a server, where packages will be
+pre-built. Then, create platform-specific installers on N client
+machines, each of which contacts the server machine to obtain
+pre-built packages. The server can act as a client, naturally, to
+create an installer for the server's platform.
+
+Roughly, the steps are
+
+ 1. On the server machine:
+      make server PKGS="..."
+
+ 2. On each client machine:
+      make client SERVER=... PKGS="..."
+    or
+      nmake win32-client SERVER=... PKGS="..."
+
+    Add `RELEASE_MODE=--release' to the `client' line to build
+    a "release" installer, as opposed to a snapshot installer.
+
+In more detail:
+
+ 1a. Build "racket" on a server.
+    
+     The `core' target of the makefile will do that, if you haven't
+     done it already. On Windows, use `nmake win32-core'.
+
+ 1b. On the server, build packages and start a catalog server.
+
+     The `server-from-core' target of the makefile will do that. (The
+     server only works on non-Windows platforms, currently.)
+
+     Alternatively, use the `server' target, which combines `core' and
+     `server-from-core' (i.e., steps 1a and 1b).
+
+     The `PKGS' variable of the makefile determines which packages are
+     built for potential inclusion in a distribution.
+
+     The `SRC_CATALOG' variable determines the catalog that is used to
+     get package sources and native-library packages, but a value of
+     "local" triggers a bootstrap mode where native libraries are
+     downloaded directly from GitHub and all other packages are
+     represented by directories in the makefile's directory. For now,
+     "local" is the default.
+
+     If you stop the server and want to restart it, use the
+     `built-package-server' makefile target instead of starting over
+     with the `server' target.
+
+ 2a. On each client (one for each platform to bundle), build "racket".
+
+     This is the same as step 1, but on each client. If the client and
+     server are the same, there's nothing more to do for step 3.
+
+ 2b. On each client, create an installer.
+
+     The `client' (or `win32-client') target of the makefile will do
+     that. Provide `SERVER' as the hostname of the server machine, and
+     provide the same `PKGS' (or a subset) as in step 1b if you want a
+     different set than the ones listed in the makefile.
+
+     Alternatively, use the `client' target, which combines `core' and
+     `client-from-core' (i.e., steps 2a and 2b).
+
+     To create a release installer, provide `RELEASE_MODE' as
+     "--release". A release installer has slightly different defaults
+     that are suitable for infrequently updated release installations,
+     as opposed to ferquently updated snapshot installations.
+
+     On Windows, you need NSIS installed, either in the usual location
+     or with `makensis' in your command-line path.
+
+On each client, step 2b produces a "bundle/installer.txt" file that
+contains the path to the generated installer.

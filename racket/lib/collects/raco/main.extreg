@@ -1,0 +1,5 @@
+(("Racket Package"
+  "Racket Setup.Document"
+  ("plt")
+  "doc.ico"
+  "setup -p \"%1\""))
