@@ -19,7 +19,10 @@
   (match t
     [(Values: (list (Result: ts _ _) ...)) (ret ts)]
     [(ValuesDots: (list (Result: ts _ _) ...) dty dbound)
-     (ret ts (for/list ([t ts]) (make-NoFilter)) (for/list ([t ts]) (make-Empty)) dty dbound)]
+     (ret ts
+          (for/list ([t (in-list ts)]) (make-NoFilter))
+          (for/list ([t (in-list ts)]) -no-obj)
+          dty dbound)]
     [_ (int-err "do-ret fails: ~a" t)]))
 
 (define (tc/apply f args)

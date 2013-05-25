@@ -4,7 +4,7 @@
          racket/match racket/set racket/function unstable/function
          racket/lazy-require
          (contract-req)
-         (only-in (types base-abbrev) -lst* -result)
+         (only-in (types base-abbrev) -lst* -result -no-filter -no-obj)
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          (rep free-variance)
@@ -111,8 +111,8 @@
                                        (for/list ([img images])
                                          (make-Result
                                           (substitute img name expanded)
-                                          (make-FilterSet (make-Top) (make-Top))
-                                          (make-Empty))))))
+                                          -no-filter
+                                          -no-obj)))))
                                    (make-ValuesDots (map sb types) (sb dty) dbound))]
                  [#:arr dom rng rest drest kws
                         (if (and (pair? drest)

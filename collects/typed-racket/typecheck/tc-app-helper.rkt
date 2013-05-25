@@ -41,9 +41,9 @@
        (let-values
            ([(o-a t-a) (for/lists (os ts)
                          ([nm (in-range arg-count)]
-                          [oa (in-sequence-forever (in-list o-a) (make-Empty))]
-                          [ta (in-sequence-forever (in-list t-a) (Un))])
-                         (values (if (>= nm dom-count) (make-Empty) oa)
+                          [oa (in-sequence-forever (in-list o-a) -no-obj)]
+                          [ta (in-sequence-forever (in-list t-a) -Bottom)])
+                         (values (if (>= nm dom-count) -no-obj oa)
                                  ta))])
            (match rng
             ((AnyValues:) tc-any-results)
