@@ -100,6 +100,15 @@ Performs @racket[(map f (syntax->list stxl) ...)].
 (syntax-map syntax-e #'(a b c))]
 }
 
+@addition{@author+email["Eric Dobson" "eric.n.dobson@gmail.com"]}
+
+@defproc[(syntax-length [stx syntax?]) exact-nonnegative-integer?]{
+Performs @racket[(length (syntax->list stx))].
+
+@examples[#:eval the-eval
+(syntax-length #'(d e f))]
+}
+
 @addition[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @section{Syntax Object Source Locations}

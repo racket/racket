@@ -7,6 +7,9 @@
 
 (provide (rename-out [stx-map syntax-map])
 
+         ;; by endobson
+         syntax-length
+
          ;; by cce:
          syntax-source-file-name
          syntax-source-directory
@@ -103,3 +106,9 @@
        [(id . args)
         (let ([stx* (cons #'(#%expression id) (cdr (syntax-e stx)))])
           (datum->syntax stx stx* stx))]))))
+
+;; by endobson
+
+(define (syntax-length stx)
+  (let ((list (syntax->list stx)))
+    (and list (length list))))
