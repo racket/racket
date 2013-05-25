@@ -91,15 +91,6 @@ Bounds are inclusive.
 
 @;{----}
 
-@addition{@author+email["Sam Tobin-Hochstadt" "samth@racket-lang.org"]}
-
-@defproc[(syntax-map [f (-> syntax? A)] [stxl syntax?] ...) (listof A)]{
-Performs @racket[(map f (syntax->list stxl) ...)].
-
-@examples[#:eval the-eval
-(syntax-map syntax-e #'(a b c))]
-}
-
 @addition{@author+email["Eric Dobson" "eric.n.dobson@gmail.com"]}
 
 @defproc[(syntax-length [stx syntax?]) exact-nonnegative-integer?]{

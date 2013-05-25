@@ -18,12 +18,6 @@
 (run-tests
  (test-suite "syntax.rkt"
 
-   (test-suite "Syntax Lists"
-
-     (test-suite "syntax-map"
-       (test-case "identifiers to symbols"
-         (check-equal? (syntax-map syntax-e #'(a b c)) '(a b c)))))
-
    (test-suite "Syntax Source Locations"
 
      (test-suite "syntax-source-file-name"
