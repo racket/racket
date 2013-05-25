@@ -69,8 +69,8 @@
                             (generalize (tc-expr/t ac)))))]
             [ts (cons ts1 ann-ts)])
        ;; check that the actual arguments are ok here
-       (for/list ([a (syntax->list #'(actuals ...))]
-                  [t ann-ts])
+       (for/list ([a (in-list (syntax->list #'(actuals ...)))]
+                  [t (in-list ann-ts)])
          (tc-expr/check a (ret t)))
        ;; then check that the function typechecks with the inferred types
        (add-typeof-expr lam (tc/rec-lambda/check args body lp ts expected))
@@ -80,8 +80,8 @@
       ((~and inner-body (if e1 e2 e3:id)))
       (null actuals ...))
      #:when (free-identifier=? #'val #'e3)
-     (let ([ts (for/list ([ac (syntax->list #'(actuals ...))]
-                          [f (syntax->list #'(acc ...))])
+     (let ([ts (for/list ([ac (in-list (syntax->list #'(actuals ...)))]
+                          [f (in-list (syntax->list #'(acc ...)))])
                  (let ([type (type-annotation f #:infer #t)])
                    (if type
                        (tc-expr/check/t ac (ret type))
@@ -96,8 +96,8 @@
        expected)]
     ;; special case when argument needs inference
     [(_ body* _)
-     (let ([ts (for/list ([ac (syntax->list actuals)]
-                          [f (syntax->list args)])
+     (let ([ts (for/list ([ac (in-list (syntax->list actuals))]
+                          [f (in-list (syntax->list args))])
                  (let* ([infer-t (or (type-annotation f #:infer #t)
                                      (find-annotation #'(begin . body*) f))])
                    (if infer-t

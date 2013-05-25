@@ -21,7 +21,7 @@
   (match tc
     [(tc-any-results:) tc]
     [(tc-results: ts _ _)
-     (ret ts (for/list ([f ts]) (make-NoFilter)) (for/list ([f ts]) (make-NoObject)))]))
+     (ret ts (for/list ([f (in-list ts)]) (make-NoFilter)) (for/list ([f (in-list ts)]) (make-NoObject)))]))
 
 (define/cond-contract (do-check expr->type namess results expected-results form exprs body clauses expected #:abstract [abstract null])
      (((syntax? syntax? tc-results/c . -> . any/c)
@@ -45,9 +45,9 @@
                  (values ts
                          e-ts
                          (apply append
-                                (for/list ([n names]
-                                           [f+ fs+]
-                                           [f- fs-])
+                                (for/list ([n (in-list names)]
+                                           [f+ (in-list fs+)]
+                                           [f- (in-list fs-)])
                                   (list (make-ImpFilter (-not-filter (-val #f) n) f+)
                                         (make-ImpFilter (-filter (-val #f) n) f-)))))]
                 [((tc-results: ts (NoFilter:) _) (tc-results: e-ts (NoFilter:) _))
@@ -153,8 +153,8 @@
                     ([(safe-bindings _)
                       (for/fold ([safe-bindings              '()] ; includes transitively-safe
                                  [transitively-safe-bindings '()])
-                          ([names  names]
-                           [clause clauses])
+                          ([names  (in-list names)]
+                           [clause (in-list clauses)])
                         (case (safe-letrec-values-clause? clause transitively-safe-bindings flat-names)
                           ;; transitively safe -> safe to mention in a subsequent rhs
                           [(transitively-safe) (values (append names safe-bindings)
@@ -231,7 +231,7 @@
          ;; the types of the exprs
          #;[inferred-types (map (tc-expr-t/maybe-expected expected) exprs)]
          ;; the annotated types of the name (possibly using the inferred types)
-         [types (for/list ([name names] [e exprs])
+         [types (for/list ([name (in-list names)] [e (in-list exprs)])
                   (get-type/infer name e (tc-expr-t/maybe-expected expected)
                                          tc-expr/check))]
          ;; the clauses for error reporting
