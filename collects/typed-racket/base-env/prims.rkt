@@ -52,6 +52,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
           syntax/parse
           racket/syntax
           unstable/sequence
+          unstable/syntax
           racket/base
           racket/struct-info
           syntax/struct
@@ -130,7 +131,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (define ((r/t-maker legacy) stx)
     (syntax-parse stx
       [(_ lib:expr (~var c (clause legacy #'lib)) ...)
-       (unless (< 0 (length (syntax->list #'(c ...))))
+       (when (zero? (syntax-length #'(c ...)))
          (raise-syntax-error #f "at least one specification is required" stx))
        #`(begin c.spec ...)]
       [(_ #:internal nm:opt-rename ty lib (~optional [~seq #:struct-maker parent]) ...)
@@ -649,7 +650,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                       [hidden (generate-temporary #'name.nm)]
                       [orig-struct-info (generate-temporary #'nm)]
                       [spec (if (syntax-e #'name.parent) #'(nm parent) #'nm)]
-                      [num-fields (length (syntax->list #'(fld ...)))]
+                      [num-fields (syntax-length #'(fld ...))]
                       [(type-des _ pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)]
                       [(mut ...) (map (lambda _ #'#f) (syntax->list #'(sel ...)))]
                       [maker-name #'input-maker.name]

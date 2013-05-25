@@ -128,7 +128,7 @@
    #:with (opt-functions:unboxed-fun-clause ...) #'(function-candidates ...)
    #:with (opt-others:opt-let-clause ...) #'(others ...)
    #:with opt
-   (begin (when (not (null? (syntax->list #'(opt-candidates.id ...))))
+   (begin (unless (zero? (syntax-length #'(opt-candidates.id ...)))
             ;; only log when we actually optimize
             (log-optimization "unboxed let bindings"
                               arity-raising-opt-msg

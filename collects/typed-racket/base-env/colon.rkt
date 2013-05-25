@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require (for-syntax racket/base syntax/parse unstable/sequence
+(require (for-syntax racket/base syntax/parse unstable/sequence unstable/syntax
                      "internal.rkt" "../utils/disappeared-use.rkt")
          "../typecheck/internal-forms.rkt"
          (prefix-in t: "base-types-extra.rkt"))
@@ -34,7 +34,7 @@
      (syntax-property (internal (syntax/loc stx (:-internal i ty)))
                       'disappeared-use #'i)]
     [(_ i:id x ...)
-     (case (length (syntax->list #'(x ...)))
+     (case (syntax-length #'(x ...))
        [(1)  (err "can only annotate identifiers with types" #'i)]
        [(0)  (err "missing type")]
        [else (err "bad syntax (multiple types after identifier)")])]))

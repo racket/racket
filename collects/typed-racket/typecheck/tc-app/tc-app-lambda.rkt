@@ -5,7 +5,7 @@
          "utils.rkt"
          syntax/parse racket/match racket/list
          syntax/parse/experimental/reflect
-         unstable/sequence
+         unstable/sequence unstable/syntax
          (typecheck signatures tc-funapp find-annotation)
          (types abbrev utils generalize type-table)
          (private type-annotation)
@@ -27,22 +27,22 @@
     (let-loop-check #'lam #'lp #'actuals #'(args ...) #'body expected))
   ;; inference for ((lambda
   (pattern ((#%plain-lambda (x ...) . body) args ...)
-   #:fail-unless (= (length (syntax->list #'(x ...)))
-                    (length (syntax->list #'(args ...)))) #f
+   #:fail-unless (= (syntax-length #'(x ...))
+                    (syntax-length #'(args ...))) #f
    #:fail-when (andmap type-annotation (syntax->list #'(x ...))) #f
    (tc/let-values #'((x) ...) #'(args ...) #'body
                   #'(let-values ([(x) args] ...) . body)
                   expected))
   ;; inference for ((lambda with dotted rest
   (pattern ((#%plain-lambda (x ... . rst:id) . body) args ...)
-   #:fail-unless (<= (length (syntax->list #'(x ...)))
-                     (length (syntax->list #'(args ...)))) #f
+   #:fail-unless (<= (syntax-length #'(x ...))
+                     (syntax-length #'(args ...))) #f
    ;; FIXME - remove this restriction - doesn't work because the annotation
    ;; on rst is not a normal annotation, may have * or ...
    #:fail-when (type-annotation #'rst) #f
    #:fail-when (andmap type-annotation (syntax->list #'(x ...))) #f
    (let-values ([(fixed-args varargs) 
-                 (split-at (syntax->list #'(args ...)) (length (syntax->list #'(x ...))))])
+                 (split-at (syntax->list #'(args ...)) (syntax-length #'(x ...)))])
      (with-syntax ([(fixed-args ...) fixed-args]
                    [varg #`(#%plain-app list #,@varargs)])
        (tc/let-values #'((x) ... (rst)) #`(fixed-args ... varg) #'body

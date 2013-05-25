@@ -13,8 +13,8 @@
          (utils tc-utils stxclass-util)
          (env lexical-env type-env-structs tvar-env index-env)
          racket/private/class-internal
-         syntax/parse
-         unstable/function #;unstable/debug         
+         syntax/parse 
+         unstable/function unstable/syntax #;unstable/debug         
          (only-in srfi/1 split-at)
          (for-template "internal-forms.rkt" (only-in '#%paramz [parameterization-key pz:pk])))
 
@@ -45,15 +45,15 @@
                (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a"
                               (cleanup-type ty))]
               [(and (Poly? ty)
-                    (not (= (length (syntax->list inst)) (Poly-n ty))))
+                    (not (= (syntax-length inst) (Poly-n ty))))
                (tc-error/expr #:return (Un)
                               "Wrong number of type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
-                              (cleanup-type ty) (Poly-n ty) (length (syntax->list inst)))]
-              [(and (PolyDots? ty) (not (>= (length (syntax->list inst)) (sub1 (PolyDots-n ty)))))
+                              (cleanup-type ty) (Poly-n ty) (syntax-length inst))]
+              [(and (PolyDots? ty) (not (>= (syntax-length inst) (sub1 (PolyDots-n ty)))))
                ;; we can provide 0 arguments for the ... var
                (tc-error/expr #:return (Un)
                               "Wrong number of type arguments to polymorphic type ~a:\nexpected at least: ~a\ngot: ~a"
-                              (cleanup-type ty) (sub1 (PolyDots-n ty)) (length (syntax->list inst)))]
+                              (cleanup-type ty) (sub1 (PolyDots-n ty)) (syntax-length inst))]
               [(PolyDots? ty)
                ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
                ;; use instantiate-poly-dotted, otherwise we do the normal thing.
