@@ -4,8 +4,7 @@
 (require (rename-in "../../utils/utils.rkt" [infer r:infer])
          "signatures.rkt"
          "utils.rkt"
-         syntax/parse racket/match
-         racket/set
+         syntax/parse syntax/stx racket/match racket/set
          syntax/parse/experimental/reflect
          (typecheck signatures tc-app-helper tc-funapp tc-metafunctions)
          (types abbrev utils union substitute subtype)
@@ -36,7 +35,7 @@
        (=> fail)
        (unless (set-empty? (fv/list kw-formals))
          (fail))
-       (match (map single-value (syntax->list #'pos-args))
+       (match (stx-map single-value #'pos-args)
          [(list (tc-result1: argtys-t) ...)
           (let* ([subst (infer vars null argtys-t dom rng
                                (and expected (tc-results->values expected)))])
@@ -58,7 +57,7 @@
     [(arr: dom rng rest #f ktys)
      ;; assumes that everything is in sorted order
      (let loop ([actual-kws kws]
-                [actuals (map tc-expr/t (syntax->list kw-args))]
+                [actuals (stx-map tc-expr/t kw-args)]
                 [formals ktys])
        (match* (actual-kws formals)
          [('() '())
@@ -101,7 +100,7 @@
      (tc-keywords/internal a kws kw-args #t)
      (tc/funapp (car (syntax-e form)) kw-args
                 (ret (make-Function (list (make-arr* dom rng #:rest rest))))
-                (map tc-expr (syntax->list pos-args)) expected)]
+                (stx-map tc-expr pos-args) expected)]
     [(list (and a (arr: doms rngs rests (and drests #f) ktyss)) ...)
      (let ([new-arities
             (for/list ([a (in-list arities)]
@@ -113,7 +112,7 @@
            (domain-mismatches
             (car (syntax-e form)) (cdr (syntax-e form))
             arities doms rests drests rngs
-            (map tc-expr (syntax->list pos-args))
+            (stx-map tc-expr pos-args)
             #f #f #:expected expected
             #:return (or expected (ret (Un)))
             #:msg-thunk
@@ -122,7 +121,7 @@
                              dom)))
            (tc/funapp (car (syntax-e form)) kw-args
                       (ret (make-Function new-arities))
-                      (map tc-expr (syntax->list pos-args)) expected)))]))
+                      (stx-map tc-expr pos-args) expected)))]))
 
 (define (type->list t)
   (match t

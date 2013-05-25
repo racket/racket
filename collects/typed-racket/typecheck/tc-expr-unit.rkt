@@ -13,7 +13,7 @@
          (utils tc-utils stxclass-util)
          (env lexical-env type-env-structs tvar-env index-env)
          racket/private/class-internal
-         syntax/parse 
+         syntax/parse syntax/stx
          unstable/function unstable/syntax #;unstable/debug         
          (only-in srfi/1 split-at)
          (for-template "internal-forms.rkt" (only-in '#%paramz [parameterization-key pz:pk])))
@@ -75,7 +75,7 @@
                          [_
                           (instantiate-poly ty (map parse-type stx-list))]))))]
               [else
-               (instantiate-poly ty (map parse-type (syntax->list inst)))])))]
+               (instantiate-poly ty (stx-map parse-type inst))])))]
     [_ (if inst
            (tc-error/expr #:return (Un)
                           "Cannot instantiate expression that produces ~a values"

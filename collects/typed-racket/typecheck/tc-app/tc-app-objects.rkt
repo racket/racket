@@ -3,7 +3,7 @@
 (require "../../utils/utils.rkt"
          "signatures.rkt"
          "utils.rkt"
-         syntax/parse racket/match unstable/sequence unstable/syntax
+         syntax/parse syntax/stx racket/match unstable/sequence unstable/syntax
          syntax/parse/experimental/reflect
          (typecheck signatures tc-funapp)
          (types abbrev union utils)
@@ -31,8 +31,8 @@
 ;; do-make-object now takes blame as its first argument, which isn't checked
 ;; (it's just an s-expression)
 (define (check-do-make-object b cl pos-args names named-args)
-  (let* ([names (map syntax-e (syntax->list names))]
-         [name-assoc (map list names (syntax->list named-args))])
+  (let* ([names (stx-map syntax-e names)]
+         [name-assoc (stx-map list names named-args)])
     (let loop ([t (tc-expr cl)])
       (match t
         [(tc-result1: (? Mu? t*)) (loop (ret (unfold t*)))]

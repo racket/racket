@@ -179,11 +179,11 @@
 
       ;; to handle the top-level, we have to recur into begins
       [(begin . rest)
-       (apply append (filter list? (map tc-toplevel/pass1 (syntax->list #'rest))))]
+       (apply append (filter list? (stx-map tc-toplevel/pass1 #'rest)))]
 
       ;; define-syntaxes just get noted
       [(define-syntaxes (var:id ...) . rest)
-       (map make-def-stx-binding (syntax->list #'(var ...)))]
+       (stx-map make-def-stx-binding #'(var ...))]
 
       ;; otherwise, do nothing in this pass
       ;; handles expressions, provides, requires, etc and whatnot
@@ -236,7 +236,7 @@
       [(define-values (var ...) expr)
        (unless (for/and ([v (in-syntax #'(var ...))])
                  (free-id-table-ref unann-defs v (lambda _ #f)))
-         (let ([ts (map lookup-type (syntax->list #'(var ...)))])
+         (let ([ts (stx-map lookup-type #'(var ...))])
            (when (= 1 (length ts))
              (add-scoped-tvars #'expr (lookup-scoped-tvars (stx-car #'(var ...)))))
            (tc-expr/check #'expr (ret ts))))

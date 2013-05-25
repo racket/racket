@@ -50,6 +50,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (for-syntax
           racket/lazy-require
           syntax/parse
+          syntax/stx
           racket/syntax
           unstable/sequence
           unstable/syntax
@@ -652,7 +653,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                       [spec (if (syntax-e #'name.parent) #'(nm parent) #'nm)]
                       [num-fields (syntax-length #'(fld ...))]
                       [(type-des _ pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)]
-                      [(mut ...) (map (lambda _ #'#f) (syntax->list #'(sel ...)))]
+                      [(mut ...) (stx-map (lambda _ #'#f) #'(sel ...))]
                       [maker-name #'input-maker.name]
                       ;maker-name's symbolic form is used in the require form
                       [id-is-ctor? (or (attribute input-maker.extra) (bound-identifier=? #'maker-name #'nm))]

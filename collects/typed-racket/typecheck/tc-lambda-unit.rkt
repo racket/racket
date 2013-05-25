@@ -320,7 +320,7 @@
 (define (tc/mono-lambda/type formals bodies expected)
   (make-Function (map lam-result->type
                       (tc/mono-lambda
-                        (map make-formals (syntax->list formals))
+                        (stx-map make-formals formals)
                         (syntax->list bodies)
                         expected))))
 
