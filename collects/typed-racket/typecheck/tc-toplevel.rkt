@@ -6,7 +6,7 @@
          (prefix-in c: (contract-req))
          (rep type-rep free-variance)
          (types utils abbrev type-table)
-         (private parse-type type-annotation type-contract)
+         (private parse-type type-annotation type-contract syntax-properties)
          (env global-env init-envs type-name-env type-alias-env
               lexical-env env-req mvar-env scoped-tvar-env)
          (utils tc-utils mutated-vars)
@@ -98,8 +98,7 @@
 
       ;; forms that are handled in other ways
       [stx
-       #:when (or (syntax-property form 'typechecker:ignore)
-                  (syntax-property form 'typechecker:ignore-some))
+       #:when (or (ignore-property form) (ignore-some-property form))
        (list)]
 
       [((~literal module) n:id spec ((~literal #%plain-module-begin) body ...))
@@ -202,12 +201,12 @@
                                    require/typed-internal values module module*)
       ;; these forms we have been instructed to ignore
       [stx
-       (syntax-property form 'typechecker:ignore)
+       (ignore-property form)
        (void)]
 
       ;; this is a form that we mostly ignore, but we check some interior parts
       [stx
-       (syntax-property form 'typechecker:ignore-some)
+       (ignore-some-property form)
        (check-subforms/ignore form)]
 
       ;; these forms should always be ignored
@@ -417,8 +416,7 @@
   (syntax-parse form
     [((~literal begin) e ...)
      ;; Don't open up `begin`s that are supposed to be ignored
-     #:when (not (or (syntax-property form 'typechecker:ignore)
-                     (syntax-property form 'typechecker:ignore-some)))
+     #:when (not (or (ignore-property form) (ignore-some-property form)))
      (define result
        (for/last ([form (in-list (syntax->list #'(e ...)))])
          (define-values (_ result) (tc-toplevel-form form))

@@ -7,7 +7,7 @@
          "check-below.rkt" "tc-funapp.rkt" "tc-app-helper.rkt" "../types/kw-types.rkt"
          (types utils abbrev numeric-tower union subtype
                 type-table filter-ops generalize)
-         (private-in parse-type type-annotation)
+         (private-in parse-type type-annotation syntax-properties)
          (rep type-rep filter-rep object-rep)
          (only-in (infer infer) restrict)
          (except-in (utils tc-utils stxclass-util))
@@ -185,7 +185,7 @@
        #:when (syntax-property form 'typechecker:with-handlers)
        (check-subforms/with-handlers/check form expected)]
       [stx
-       #:when (syntax-property form 'typechecker:ignore-some)
+       #:when (ignore-some-property form)
        (check-subforms/ignore form)
        ;; We trust ignore to be only on syntax objects objects that are well typed
        expected]
@@ -311,7 +311,7 @@
            (int-err "internal error: with-handlers"))
          ty)]
       [stx
-       #:when (syntax-property form 'typechecker:ignore-some)
+       #:when (ignore-some-property form)
        (check-subforms/ignore form)
        (ret Univ)]
       ;; explicit failure

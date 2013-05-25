@@ -4,6 +4,7 @@
          racket/pretty
          (for-template racket/base)
          "../utils/utils.rkt"
+         (private syntax-properties)
          (optimizer utils logging
                     number fixnum float float-complex vector string list pair
                     sequence box struct dead-code apply unboxed-let
@@ -96,8 +97,8 @@
       ([optimize
         (syntax-parser
           [e:expr
-           #:when (and (not (syntax-property #'e 'typechecker:ignore))
-                       (not (syntax-property #'e 'typechecker:ignore-some))
+           #:when (and (not (ignore-property #'e))
+                       (not (ignore-some-property #'e))
                        (not (syntax-property #'e 'typechecker:with-handlers))
                        #;
                        (not (syntax-property #'e 'kw-lambda)))
