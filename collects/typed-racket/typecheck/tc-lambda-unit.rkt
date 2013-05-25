@@ -7,7 +7,7 @@
          (except-in (rep type-rep) make-arr)
          (rename-in (except-in (types abbrev utils union) -> ->* one-of/c)
                     [make-arr* make-arr])
-         (private type-annotation)
+         (private type-annotation syntax-properties)
          (typecheck signatures tc-metafunctions tc-subst check-below)
          (env type-env-structs lexical-env tvar-env index-env scoped-tvar-env)
          (utils tc-utils)
@@ -325,7 +325,7 @@
                         expected))))
 
 (define (plambda-prop stx)
-  (define d (syntax-property stx 'typechecker:plambda))
+  (define d (plambda-property stx))
   (and d (car (flatten d))))
 
 (define (has-poly-annotation? form)
