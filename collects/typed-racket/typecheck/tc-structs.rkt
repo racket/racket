@@ -195,7 +195,7 @@
   (add-struct-constructor! (struct-names-constructor names))
 
   (define def-bindings
-    (for/list ([b bindings])
+    (for/list ([b (in-list bindings)])
         (define id (car b))
         (define t (cdr b))
         (register-type id t)
@@ -223,7 +223,7 @@
   (define tvarss (map (compose struct-desc-tvars parsed-struct-desc) parsed-structs))
   (let loop ()
     (define sames
-      (for/list ((sty stys) (tvars tvarss))
+      (for/list ((sty (in-list stys)) (tvars (in-list tvarss)))
         (cond
           ((null? tvars) #t)
           (else

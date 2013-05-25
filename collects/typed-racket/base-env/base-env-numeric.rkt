@@ -93,10 +93,11 @@
                        -RealZero -NonNegReal -NonPosReal -Real)))))
   
   (define (inexact-zero->exact-zero-type)
-    (for/list ([t  (list -FlonumPosZero -FlonumNegZero -FlonumZero
-                         -SingleFlonumPosZero -SingleFlonumNegZero -SingleFlonumZero
-                         -InexactRealPosZero -InexactRealNegZero -InexactRealZero
-                         -RealZero)])
+    (for/list ([t (in-list
+                    (list -FlonumPosZero -FlonumNegZero -FlonumZero
+                          -SingleFlonumPosZero -SingleFlonumNegZero -SingleFlonumZero
+                          -InexactRealPosZero -InexactRealNegZero -InexactRealZero
+                          -RealZero))])
       (-> t -Zero)))
   
   (define (exact-round-type) ; also used for exact-truncate

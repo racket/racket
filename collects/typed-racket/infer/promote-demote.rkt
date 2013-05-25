@@ -10,7 +10,7 @@
 (export promote-demote^)
 
 (define (V-in? V . ts)
-  (for/or ([e (append* (map fv ts))])
+  (for/or ([e (in-list (append* (map fv ts)))])
           (memq e V)))
 
 (define (get-filters rng)
@@ -39,19 +39,19 @@
                       [(apply V-in? V (get-filters rng))
                        (make-top-arr)]
                       [(and drest (memq (cdr drest) V))
-                       (make-arr (for/list ([d dom]) (var-demote d V))
+                       (make-arr (for/list ([d (in-list dom)]) (var-demote d V))
                                  (vp rng)
                                  (var-demote (car drest) V)
                                  #f
-                                 (for/list ([k kws]) (var-demote k V)))]
+                                 (for/list ([k (in-list kws)]) (var-demote k V)))]
                       [else
-                       (make-arr (for/list ([d dom]) (var-demote d V))
+                       (make-arr (for/list ([d (in-list dom)]) (var-demote d V))
                                  (vp rng)
                                  (and rest (var-demote rest V))
                                  (and drest
                                       (cons (var-demote (car drest) V)
                                             (cdr drest)))
-                                 (for/list ([k kws]) (var-demote k V)))])]))
+                                 (for/list ([k (in-list kws)]) (var-demote k V)))])]))
 
 (define (var-demote T V)
   (define (vd t) (var-demote t V))
@@ -74,16 +74,16 @@
                       [(apply V-in? V (get-filters rng))
                        (make-top-arr)]
                       [(and drest (memq (cdr drest) V))
-                       (make-arr (for/list ([d dom]) (var-promote d V))
+                       (make-arr (for/list ([d (in-list dom)]) (var-promote d V))
                                  (vd rng)
                                  (var-promote (car drest) V)
                                  #f
-                                 (for/list ([k kws]) (var-demote k V)))]
+                                 (for/list ([k (in-list kws)]) (var-demote k V)))]
                       [else
-                       (make-arr (for/list ([d dom]) (var-promote d V))
+                       (make-arr (for/list ([d (in-list dom)]) (var-promote d V))
                                  (vd rng)
                                  (and rest (var-promote rest V))
                                  (and drest
                                       (cons (var-promote (car drest) V)
                                             (cdr drest)))
-                                 (for/list ([k kws]) (var-demote k V)))])]))
+                                 (for/list ([k (in-list kws)]) (var-demote k V)))])]))

@@ -61,7 +61,7 @@
                                        (values #'(begin) e null)))
                        (list* type-desc constr pred super accs)))
          (define/with-syntax (type-desc* constr* pred* super* accs* ...) 
-           (for/list ([i new-ids]) (if (identifier? i) #`(syntax #,i) i)))
+           (for/list ([i (in-list new-ids)]) (if (identifier? i) #`(syntax #,i) i)))
          (values 
           #`(begin
               #,@defns

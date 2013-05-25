@@ -17,19 +17,19 @@
        [(tc-any-results:) (make-AnyValues)]
        [(tc-results: ts fs os dty dbound)
         (make-ValuesDots
-         (for/list ([t ts] [f fs] [o os])
+         (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
            (make-Result t (abstract-filter arg-names keys f) (abstract-object arg-names keys o)))
          dty dbound)]
        [(tc-results: ts fs os)
         (make-Values
-         (for/list ([t ts] [f fs] [o os])
+         (for/list ([t (in-list ts)] [f (in-list fs)] [o (in-list os)])
            (make-Result t (abstract-filter arg-names keys f) (abstract-object arg-names keys o))))]))
 
 
 (define/cond-contract (abstract-object ids keys o)
   (-> (listof identifier?) (listof name-ref/c) Object? Object?)
   (define (lookup y)
-    (for/first ([x ids] [i keys] #:when (free-identifier=? x y)) i))
+    (for/first ([x (in-list ids)] [i (in-list keys)] #:when (free-identifier=? x y)) i))
   (define-match-expander lookup:
     (syntax-rules ()
       [(_ i) (app lookup (? values i))]))
@@ -49,7 +49,7 @@
   ((listof identifier?) (listof name-ref/c) Filter/c . -> . Filter/c)
   (define/cond-contract (lookup y)
        (identifier? . -> . (or/c #f integer?))
-       (for/first ([x xs] [i idxs] #:when (free-identifier=? x y)) i))
+       (for/first ([x (in-list xs)] [i (in-list idxs)] #:when (free-identifier=? x y)) i))
   (define-match-expander lookup:
     (syntax-rules ()
       [(_ i) (or (? identifier? (app lookup (? values i)))
@@ -119,7 +119,7 @@
             [(AndFilter: ps) (loop derived-props derived-atoms (append ps (cdr worklist)))]
             [(ImpFilter: a c)
              ;(printf "combining ~a with ~a\n" p (append derived-props derived-atoms))
-             (if (for/or ([p (append derived-props derived-atoms)])
+             (if (for/or ([p (in-list (append derived-props derived-atoms))])
                    (implied-atomic? a p))
                  (loop derived-props derived-atoms (cons c (cdr worklist)))
                  (loop (cons p derived-props) derived-atoms (cdr worklist)))]

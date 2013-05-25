@@ -21,7 +21,7 @@
     [(_  (lsts ... arrs) f-stx args-stx pred infer t argtys expected)
      (with-syntax ([(vars ... a) (generate-temporaries #'(lsts ... arrs))])
        (syntax/loc stx
-         (or (for/or ([vars lsts] ... [a arrs]
+         (or (for/or ([vars (in-list lsts)] ... [a (in-list arrs)]
                       #:when (pred vars ... a))
                (let ([substitution (infer vars ... a)])
                  (and substitution
@@ -135,7 +135,7 @@
      (tc/funapp f-stx args-stx (ret (resolve-once t) f o) argtys expected)]
     ;; a union of functions can be applied if we can apply all of the elements
     [((tc-result1: (Union: (and ts (list (Function: _) ...)))) _)
-     (ret (for/fold ([result (Un)]) ([fty ts])
+     (ret (for/fold ([result (Un)]) ([fty (in-list ts)])
             (match (tc/funapp f-stx args-stx (ret fty) argtys expected)
               [(tc-result1: t) (Un result t)])))]
     ;; error type is a perfectly good fcn type

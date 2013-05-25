@@ -13,7 +13,7 @@
     ;; explicitly parenthesized
     (syntax-parse stx #:literals (: t:->)
       [(: id (~and kw :) x ...)
-       #:fail-unless (for/first ([i (syntax->list #'(x ...))]
+       #:fail-unless (for/first ([i (in-list (syntax->list #'(x ...)))]
                                  #:when (identifier? i)
                                  #:when (free-identifier=? i #'t:->))
                        i) 
