@@ -4,7 +4,7 @@
          "signatures.rkt"
          "utils.rkt"
          syntax/parse syntax/stx racket/match unstable/sequence unstable/syntax
-         syntax/parse/experimental/reflect
+         syntax/parse/experimental/reflect racket/dict
          (typecheck signatures tc-funapp)
          (types abbrev union utils)
          (rep type-rep)
@@ -32,7 +32,7 @@
 ;; (it's just an s-expression)
 (define (check-do-make-object b cl pos-args names named-args)
   (let* ([names (stx-map syntax-e names)]
-         [name-assoc (stx-map list names named-args)])
+         [name-assoc (stx-map cons names named-args)])
     (let loop ([t (tc-expr cl)])
       (match t
         [(tc-result1: (? Mu? t*)) (loop (ret (unfold t*)))]
@@ -53,12 +53,12 @@
             n (stringify tnames)))
          (for-each (match-lambda
                      [(list tname tfty opt?)
-                      (let ([s (cond [(assq tname name-assoc) => cadr]
-                                     [(not opt?)
-                                      (tc-error/delayed "value not provided for named init arg ~a"
-                                                        tname)
-                                      #f]
-                                     [else #f])])
+                      (let ([s (dict-ref name-assoc tname
+                                 (lambda ()
+                                   (unless opt?
+                                     (tc-error/delayed "value not provided for named init arg ~a"
+                                                       tname))
+                                   #f))])
                         (if s
                             ;; this argument was present
                             (tc-expr/check s (ret tfty))
