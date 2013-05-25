@@ -15,12 +15,6 @@
 (import tc-expr^)
 (export tc-if^)
 
-(define (erase-filter tc)
-  (match tc
-    [(tc-any-results:) tc]
-    [(tc-results: ts _ _)
-     (ret ts (for/list ([f ts]) (make-NoFilter)) (for/list ([f ts]) (make-NoObject)))]))
-
 (define (tc/if-twoarm tst thn els [expected #f])
   (define (tc expr reachable?)
     (unless reachable? (warn-unreachable expr))
