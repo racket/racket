@@ -609,8 +609,6 @@
                    (dict-remove types maybe-dup) super-types
                    err-msg)]
                  [else
-                  (displayln type)
-                  (displayln super-type)
                   (tc-error/stx stx err-msg maybe-dup)])]
           [else (values types super-types)]))
 
