@@ -802,7 +802,7 @@ static Scheme_Object *custodian_limit_mem(int argc, Scheme_Object *args[])
   } else if (SCHEME_BIGNUMP(args[1]) && SCHEME_BIGPOS(args[1])) {
     lim = 0x3fffffff; /* more memory than we actually have */
   } else {
-    scheme_wrong_contract("custodian-limit-memory", "positive-exact-integer?", 1, argc, args);
+    scheme_wrong_contract("custodian-limit-memory", "exact-positive-integer?", 1, argc, args);
     return NULL;
   }
 

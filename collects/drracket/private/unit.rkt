@@ -4818,7 +4818,7 @@ module browser threading seems wrong.
     (define (is-valid-number? txt)
       (let* ([n (string->number (send txt get-text))])
         (and n
-             (integer? n)
+             (exact-positive-integer? n)
              (8 . <= . n))))
     
     (define (background sd)
