@@ -2,7 +2,7 @@
 
 (begin
   (require
-   racket/list racket/math racket/flonum racket/unsafe/ops
+   racket/list racket/math racket/flonum racket/unsafe/ops unstable/sequence racket/match
    (for-template racket/flonum racket/fixnum racket/math racket/unsafe/ops racket/base
                  (only-in "../types/numeric-predicates.rkt" index?))
    (only-in (types abbrev numeric-tower) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-PosInt -Pos]))
@@ -691,14 +691,13 @@
                        [unsafe-fllog      fllog]
                        [unsafe-flexp      flexp]
                        [unsafe-flexpt     flexpt])))
-   (define phase (namespace-base-phase (namespace-anchor->namespace anchor)))
+    (define phase (namespace-base-phase (namespace-anchor->namespace anchor)))
 
-   (for-each
-    (lambda (ids)
-     (let* ((ids (syntax->list ids)) (id1 (first ids)) (id2 (second ids)))
-      (unless (free-identifier=? id1 id2 (sub1 phase))
-       (error 'flonum-operations "The assumption that the safe and unsafe flonum-ops are the same binding has been violated. ~a and ~a are diffferent bindings." id1 id2))))
-    (syntax->list flonum-ops)))
+    (for ([op-pair (in-syntax flonum-ops)])
+      (match op-pair
+       [(app syntax->list (list id1 id2))
+        (unless (free-identifier=? id1 id2 (sub1 phase))
+          (error 'flonum-operations "The assumption that the safe and unsafe flonum-ops are the same binding has been violated. ~a and ~a are diffferent bindings." id1 id2))])))
 
   )
 
