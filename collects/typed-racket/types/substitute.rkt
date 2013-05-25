@@ -98,7 +98,7 @@
                                  ;; We need to recur first, just to expand out any dotted usages of this.
                                  (let ([expanded (sb dty)])
                                    (for/fold ([t (make-Value null)])
-                                     ([img (reverse images)])
+                                     ([img (in-list (reverse images))])
                                      (make-Pair (substitute img name expanded) t)))
                                  (make-ListDots (sb dty) dbound))]
                  [#:ValuesDots types dty dbound
@@ -108,7 +108,7 @@
                                      (map sb types)
                                      ;; We need to recur first, just to expand out any dotted usages of this.
                                      (let ([expanded (sb dty)])
-                                       (for/list ([img images])
+                                       (for/list ([img (in-list images)])
                                          (make-Result
                                           (substitute img name expanded)
                                           (make-FilterSet (make-Top) (make-Top))

@@ -82,8 +82,8 @@
                          #,@(syntax-map (optimize) #'(e-body ...)))))
   (pattern (kw:identifier expr ...)
            #:when
-	   (for/or ([k (list #'if #'begin #'begin0 #'set! #'#%plain-app #'#%app #'#%expression
-			     #'#%variable-reference #'with-continuation-mark)])
+	   (for/or ([k (in-list (list #'if #'begin #'begin0 #'set! #'#%plain-app #'#%app #'#%expression
+			                      #'#%variable-reference #'with-continuation-mark))])
 	     (free-identifier=? k #'kw))
            ;; we don't want to optimize in the cases that don't match the #:when clause
            #:with opt (quasisyntax/loc/origin this-syntax #'kw

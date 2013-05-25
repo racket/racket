@@ -41,7 +41,7 @@
                                (and (Listof: t var) (app (λ _ #f) bound))))
               ...))
        (=> fail)
-       (unless (for/and ([b bound]) (or (not b) (eq? bound0 b))) (fail))
+       (unless (for/and ([b (in-list bound)]) (or (not b) (eq? bound0 b))) (fail))
        (define expected-elem-type
          (match expected
            [(or #f (tc-any-results:)) #f]

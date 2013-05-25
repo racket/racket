@@ -31,7 +31,7 @@
 ;; index variables Y.  For now, we add the widest constraints for
 ;; variables in X to the cmap and create an empty dmap.
 (define (empty-cset X Y)
-  (make-cset (list (cons (for/hash ([x X]) (values x (no-constraint x)))
+  (make-cset (list (cons (for/hash ([x (in-list X)]) (values x (no-constraint x)))
                          (make-dmap (make-immutable-hash null))))))
 
 
@@ -82,7 +82,7 @@
 (define (cset-meet* args)
   (for/fold ([c (make-cset (list (cons (make-immutable-hash null)
                                        (make-dmap (make-immutable-hash null)))))])
-    ([a args])
+    ([a (in-list args)])
     (cset-meet a c)))
 
 (define (cset-combine l)

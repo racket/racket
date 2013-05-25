@@ -45,7 +45,7 @@
      (parse-type #'ty)]
     [(x ...)
      #:fail-unless (= 1 (length
-                         (for/list ([i (syntax->list #'(x ...))]
+                         (for/list ([i (in-list (syntax->list #'(x ...)))]
                                     #:when (and (identifier? i)
                                                 (free-identifier=? i #'t:->)))
                                    i)))

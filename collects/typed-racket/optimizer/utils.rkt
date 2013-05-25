@@ -36,7 +36,7 @@
 
 ;; generates a table matching safe to unsafe promitives
 (define (mk-unsafe-tbl generic safe-pattern unsafe-pattern)
-  (for/fold ([h (make-immutable-free-id-table)]) ([g generic])
+  (for/fold ([h (make-immutable-free-id-table)]) ([g (in-list generic)])
     (let ([f (format-id g safe-pattern g)] [u (format-id g unsafe-pattern g)])
       (dict-set (dict-set h g u) f u))))
 
@@ -44,7 +44,7 @@
 ;; this works on operations that are (A A -> A)
 (define (n-ary->binary op arg1 arg2 rest)
   (for/fold ([o arg1])
-      ([e (syntax->list #`(#,arg2 #,@rest))])
+      ([e (in-list (syntax->list #`(#,arg2 #,@rest)))])
     #`(#,op #,o #,e)))
 ;; this works on operations that are (A A -> B)
 (define (n-ary-comp->binary op arg1 arg2 rest)

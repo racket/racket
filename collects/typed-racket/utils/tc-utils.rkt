@@ -92,7 +92,7 @@ don't depend on any other portion of the system
      (raise-typecheck-error msg stx)]
     [l
      (let ([stxs
-            (for/list ([e l])
+            (for/list ([e (in-list l)])
               (with-handlers ([exn:fail:syntax? 
                                (λ (e) ((error-display-handler) (exn-message e) e))])
                 (raise-typecheck-error (err-msg e) (err-stx e)))
@@ -126,7 +126,7 @@ don't depend on any other portion of the system
     ;; vars and such don't confuse the user.
     (cond
      [(or (not (orig-module-stx))
-          (for/and ([s ostxs])
+          (for/and ([s (in-list ostxs)])
             (eq? (syntax-source s) (syntax-source (orig-module-stx)))))
       (raise-typecheck-error (apply format msg rest) stxs)]
      [else (raise-typecheck-error

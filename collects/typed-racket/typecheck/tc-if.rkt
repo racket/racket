@@ -19,7 +19,7 @@
   (match tc
     [(tc-any-results:) tc]
     [(tc-results: ts _ _)
-     (ret ts (for/list ([f ts]) (make-NoFilter)) (for/list ([f ts]) (make-NoObject)))]))
+     (ret ts (for/list ([f (in-list ts)]) (make-NoFilter)) (for/list ([f (in-list ts)]) (make-NoObject)))]))
 
 (define (tc/if-twoarm tst thn els [expected #f])
   (define (tc expr reachable?)
@@ -83,7 +83,9 @@
             ;; if we have the same number of values in both cases
             (cond [(= (length ts) (length us))
                    (combine-results
-                    (for/list ([f2 fs2] [f3 fs3] [t2 ts] [t3 us] [o2 os2] [o3 os3])
+                    (for/list ([f2 (in-list fs2)] [f3 (in-list fs3)]
+                               [t2 (in-list ts)] [t3 (in-list us)]
+                               [o2 (in-list os2)] [o3 (in-list os3)])
                       (let ([filter
                              (match* (f2 f3)
                                [((NoFilter:) _)

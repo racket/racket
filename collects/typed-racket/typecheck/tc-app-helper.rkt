@@ -58,7 +58,7 @@
     [((arr: _ _ _ _
             ;; at least one mandatory keyword
             (app (λ (kws)
-                   (for/or ([keyword kws])
+                   (for/or ([keyword (in-list kws)])
                      (match keyword
                        [(Keyword: kw _ #t) kw]
                        [_ #f])))
