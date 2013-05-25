@@ -4,10 +4,10 @@
          racket/list racket/match
          racket/dict
          (prefix-in c: (contract-req))
-         (rep type-rep filter-rep rep-utils)
+         (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          (only-in (infer infer) restrict)
-         (types union subtype remove-intersect abbrev))
+         (types union subtype remove-intersect abbrev tc-result))
 
 (provide (all-defined-out))
 
@@ -203,3 +203,12 @@
                                        (-and false-filter new-filters))
                                   op)))
                   rest drest kws))))])]))
+
+;; tc-results/c -> tc-results/c
+(define (erase-filter tc)
+  (match tc
+    [(tc-any-results:) tc]
+    [(tc-results: ts _ _)
+     (ret ts
+          (for/list ([f (in-list ts)]) (make-NoFilter))
+          (for/list ([f (in-list ts)]) (make-NoObject)))]))

@@ -2,7 +2,7 @@
 
 (require "../utils/utils.rkt"
          (only-in srfi/1/list s:member)
-         (except-in (types utils abbrev union) -> ->* one-of/c)
+         (except-in (types utils abbrev union filter-ops) -> ->* one-of/c)
          (only-in (types abbrev) (-> t:->))
          (private type-annotation parse-type syntax-properties)
          (env lexical-env type-alias-env global-env type-env-structs scoped-tvar-env)
@@ -16,12 +16,6 @@
 
 (import tc-expr^)
 (export tc-let^)
-
-(define (erase-filter tc)
-  (match tc
-    [(tc-any-results:) tc]
-    [(tc-results: ts _ _)
-     (ret ts (for/list ([f (in-list ts)]) (make-NoFilter)) (for/list ([f (in-list ts)]) (make-NoObject)))]))
 
 (define/cond-contract (do-check expr->type namess results expected-results form exprs body clauses expected #:abstract [abstract null])
      (((syntax? syntax? tc-results/c . -> . any/c)
