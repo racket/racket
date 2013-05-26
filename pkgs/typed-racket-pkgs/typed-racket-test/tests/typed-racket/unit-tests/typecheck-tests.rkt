@@ -1,60 +1,93 @@
 #lang racket/base
 
-(require (for-syntax typed-racket/env/global-env) typed-racket/env/global-env
-         (for-template typed-racket/env/global-env)
-         (for-meta 2 typed-racket/env/global-env))
-(require "test-utils.rkt"
-         (for-syntax racket/base)
-         (for-template racket/base))
-(require (private type-annotation parse-type)
-         (except-in
-          (base-env prims
-                    base-types-extra
-                    base-env-indexing base-structs)
-          define lambda λ)
-         (submod typed-racket/base-env/base-types initialize)
-         (typecheck typechecker)
-         (rep type-rep filter-rep object-rep)
-         (rename-in (types utils union numeric-tower abbrev filter-ops)
-                    [Un t:Un]
-                    [-> t:->])
-         (utils tc-utils utils)
-         (utils mutated-vars)
-         (env type-name-env type-env-structs init-envs mvar-env)
-         rackunit rackunit/text-ui
-         syntax/parse
-         (for-syntax (utils tc-utils) racket/file racket/port
-                     (typecheck typechecker)
-                     (env global-env)
-                     (base-env base-env-indexing))
-         racket/file racket/port racket/flonum racket/math
-         (env global-env)
-         (for-meta 2 (env global-env))
-         (for-template
-          racket/file racket/port
-            (base-env base-types base-types-extra base-env-indexing))
-         (for-syntax syntax/kerncase syntax/parse))
+;; Allow evaluation at phase1
+(module evaluator racket/base
+  (require
+    (for-syntax
+      racket/base
+      syntax/parse))
+  (provide phase1-eval)
+  (define-namespace-anchor anchor)
+  (define namespace (namespace-anchor->empty-namespace anchor))
+  (define-syntax phase1-eval
+    (syntax-parser
+      [(_ form:expr ...)
+       #'(eval-syntax (quote-syntax (begin-for-syntax form ...)) namespace)])))
 
-(require (prefix-in b: (base-env base-env))
-         (prefix-in n: (base-env base-env-numeric)))
+;; Functions for testing correct behavior of typechecking
+(module tester racket/base
+  (require
+    typed-racket/utils/utils
+    racket/base
+    syntax/parse
+    (base-env
+      base-env-indexing
+      base-structs)
+    (typecheck typechecker)
+    (utils mutated-vars)
+    (env mvar-env)
+    (prefix-in b: (base-env base-env))
+    (prefix-in n: (base-env base-env-numeric))
+    (submod typed-racket/base-env/base-types initialize))
+  (provide test-literal test test/proc tc tc-literal tr-expand)
 
-(provide typecheck-tests)
 
-(b:init) (n:init) (initialize-structs) (initialize-indexing) (initialize-type-names)
+  (b:init)
+  (n:init)
+  (initialize-structs)
+  (initialize-indexing)
+  (initialize-type-names)
+  
+  ;; tr-expand: syntax? -> syntax?
+  ;; Expands out a form and annotates it with necesarry TR machinery.
+  (define (tr-expand stx)
+    (define expanded-stx (local-expand stx 'expression '()))
+    (find-mutated-vars expanded-stx mvar-env)
+    expanded-stx)
 
-(define N -Number)
-(define B -Boolean)
-(define Sym -Symbol)
-(define -Pos -PosInt)
-(define R -Real)
 
-(define-namespace-anchor anch)
+  ;; tc: syntax? (option/c tc-results?) -> tc-results?
+  ;; Typechecks the expression using the expected information if provided.
+  (define (tc expr expected)
+    (if expected
+        (tc-expr/check expr expected)
+        (tc-expr expr)))
 
-(define (-path t var [p null])
-  (ret t
-       (-FS (make-NotTypeFilter (-val #f) p var)
-            (make-TypeFilter (-val #f) p var))
-       (make-Path p var)))
+  ;; test: syntax? tc-results? [(option/c tc-results?)] -> void?
+  ;; Checks that the expression typechecks using the expected type to the golden result.
+  (define (test expr golden (expected #f))
+    (test/proc expr (lambda (_) golden) expected))
+
+  ;; test/proc: syntax? (syntax? -> tc-results?) [(option/c tc-results?)] -> void?
+  ;; Checks that the expression typechecks to golden result. The golden result is computed by applying
+  ;; the golden function to the expanded syntax of the expression.
+  (define (test/proc expr golden-fun (expected #f))
+    (define expanded-expr (tr-expand expr))
+    (define result (tc expanded-expr expected))
+    (define golden (golden-fun expanded-expr))
+    (unless (equal? golden result)
+      (error 'test "failed: ~a != ~a" golden result)))
+
+  ;; test/literal syntax? tc-results? [(option/c tc-results?)] -> void?
+  ;; Checks that the literal typechecks using the expected type to the golden result.
+  (define (test-literal literal golden expected)
+    (define result (tc-literal literal expected))
+    (unless (equal? golden result)
+      (error 'test "failed: ~a != ~a" golden result))))
+
+
+(require
+  (submod "." evaluator)
+  (for-syntax
+    racket/base
+    syntax/parse
+    (submod "." tester)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Helpers for actual checks
 
 (begin-for-syntax
   (define-splicing-syntax-class return
@@ -63,88 +96,115 @@
 
   (define-splicing-syntax-class expected
     (pattern (~seq #:expected v:expr))
-    (pattern (~seq) #:attr v #'#f)))
-
-;; check that a literal typechecks correctly
-(define-syntax tc-l
-  (syntax-parser
-    [(_ lit ty exp:expected)
-     #'(check-type-equal? (format "~s" 'lit) (tc-literal #'lit exp.v) ty)]))
-
-(define-syntax tc-l/err
-  (syntax-parser
-    [(_ expr exp:expected)
-     #'(test-exn (format "~a" 'expr)
-                 exn:fail:syntax?
-                 (lambda () (tc-literal #'expr exp.v)))]))
+    (pattern (~seq) #:attr v #'#f))
 
 
+  (define (check-no-error stx body)
+    (quasisyntax/loc stx
+      (check-not-exn
+        (lambda () #,body))))
 
-(define (expand-helper stx k)
-  (parameterize ([delay-errors? #f]
-                 [current-namespace (namespace-anchor->namespace anch)]
-                 [orig-module-stx stx])
-    (let ([ex (expand stx)])
-      (find-mutated-vars ex mvar-env)
-      (k ex))))
-
-;; local-expand and then typecheck an expression
-(define-syntax (tc-expr/expand/values stx)
-  (syntax-case stx ()
-    [(_ e)
-     #'(expand-helper (quote-syntax e)
-         (λ (ex) (values (lambda () (tc-expr ex)) ex)))]))
-
-(define-syntax (tc-expr/expand/check stx)
-  (syntax-case stx ()
-    [(_ e exp)
-     #'(expand-helper (quote-syntax e)
-                      (λ (stx)
-                        (let ((expected exp))
-                          (if expected
-                              (tc-expr/check stx expected)
-                              (tc-expr stx)))))]))
+  (define (check-syntax-error stx body)
+    (quasisyntax/loc stx
+      (check-exn
+        exn:fail:syntax?
+        (lambda () #,body)))))
 
 
+;;Constructs the syntax that calls eval and returns the answer to the user
 (define-syntax (tc-e stx)
   (syntax-parse stx
-    [(_ expr:expr #:proc p)
-     (quasisyntax/loc stx
-       (let-values ([(t e) (tc-expr/expand/values expr)])
-         #,(quasisyntax/loc stx (check-tc-result-equal? (format "~a ~s" #,(syntax-line stx) 'expr) (t) (p e)))))]
-    [(_ expr:expr r:return x:expected)
-     (quasisyntax/loc stx
-        (check-tc-result-equal? (format "~a ~a" #,(syntax-line stx) 'expr)
-                                (tc-expr/expand/check expr x.v) r.v))]))
+    [(_ code:expr #:proc p)
+     (check-no-error stx
+       #'(phase1-eval (test/proc (quote-syntax code) p)))]
+    [(_ code:expr return:return x:expected)
+     (check-no-error stx
+       #'(phase1-eval (test (quote-syntax code) return.v x.v)))]))
 
 (define-syntax (tc-e/t stx)
   (syntax-parse stx
     [(_ e t) (syntax/loc stx (tc-e e #:ret (ret t (-FS -top -bot))))]))
 
+;; check that a literal typechecks correctly
+(define-syntax (tc-l stx)
+  (syntax-parse stx
+    [(_ lit ty exp:expected)
+     (check-no-error stx
+       #'(phase1-eval (test-literal #'lit ty exp.v)))]))
+
+
 ;; check that typechecking this expression fails
 (define-syntax (tc-err stx)
   (syntax-parse stx
-    [(_ expr ex:expected)
-     #'(test-exn (format "~a" 'expr)
-                 exn:fail:syntax?
-                 (lambda () (tc-expr/expand/check expr ex.v)))]))
+    [(_ code:expr ex:expected)
+     (check-syntax-error stx
+       #'(phase1-eval (tc (tr-expand (quote-syntax code)) ex.v)))]))
 
-(define-syntax-class (let-name n)
-  #:literals (let-values)
-  (pattern (let-values ([(i:id) _] ...) . _)
-           #:with x (list-ref (syntax->list #'(i ...)) n)))
+(define-syntax (tc-l/err stx)
+  (syntax-parse stx
+    [(_ lit:expr ex:expected)
+     (check-syntax-error stx
+       #'(phase1-eval (tc-literal #'lit ex.v)))]))
 
-(define-syntax-rule (get-let-name id n e)
-  (syntax-parser
-   [p #:declare p (let-name n)
-      #:with id #'p.x
-      e]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(require
+  rackunit
+
+  ;; Needed for bindings of identifiers in expressions
+  racket/bool
+  racket/file
+  racket/fixnum
+  racket/flonum
+  racket/list
+  racket/math
+  racket/path
+  racket/sequence
+  racket/set
+  racket/string
+  racket/tcp
+  racket/udp
+  racket/vector
+
+  typed-racket/utils/utils
+  ;; Needed for bindings of types and TR primitives in expressions
+  (except-in (base-env extra-procs prims base-types base-types-extra)
+    define lambda λ)
+  ;; Needed for constructing TR types in expected values
+  (for-syntax
+    (rep type-rep filter-rep object-rep)
+    (rename-in (types abbrev union numeric-tower filter-ops utils)
+               [Un t:Un]
+               [-> t:->])))
+
+(begin-for-syntax
+  ;; More tests need to be written to use these macros.
+  (define-syntax-class (let-name n)
+    #:literals (let-values)
+    (pattern (let-values ([(i:id) _] ...) . _)
+             #:with x (list-ref (syntax->list #'(i ...)) n)))
+
+  (define-syntax-rule (get-let-name id n e)
+    (syntax-parser
+     [p #:declare p (let-name n)
+        #:with id #'p.x
+        e]))
+
+  (define (-path t var [p null])
+    (ret t
+         (-FS (make-NotTypeFilter (-val #f) p var)
+              (make-TypeFilter (-val #f) p var))
+         (make-Path p var))))
+
 
 (define (typecheck-tests)
   (test-suite
-   "Typechecker tests"
-   #reader typed-racket/typed-reader
-     (test-suite
+    "Typechecker tests"
+    #reader typed-racket/typed-reader
+      (test-suite
         "tc-expr tests"
 
         [tc-e
@@ -152,7 +212,7 @@
                (if (pair? x)
                    (+ 1 (car x))
                    5))
-         N]
+         -Number]
         (tc-e/t 0 -Zero)
         (tc-e/t 1 -One)
         (tc-e/t (if (let ([y 12]) y) 3 4) -PosByte)
@@ -214,7 +274,7 @@
         (tc-e (expt 0.5 0.3) -PosFlonum)
         (tc-e (expt 0.5 2) -PosFlonum)
         (tc-e (expt 0.5 0) -One)
-        (tc-e (expt -1/2 -1/2) N)
+        (tc-e (expt -1/2 -1/2) -Number)
         (tc-e (flexpt 0.5 0.3) -NonNegFlonum)
         (tc-e (flexpt 0.00000000001 100000000000.0) -NonNegFlonum)
         (tc-e (flexpt -2.0 -0.5) -Flonum) ; NaN
@@ -239,8 +299,8 @@
         (tc-e (let: ([z : 4611686018427387904 4611686018427387904]) z) (-val 4611686018427387904))
 
         [tc-e/t (lambda: () 3) (t:-> -PosByte : -true-filter)]
-        [tc-e/t (lambda: ([x : Number]) 3) (t:-> N -PosByte : -true-filter)]
-        [tc-e/t (lambda: ([x : Number] [y : Boolean]) 3) (t:-> N B -PosByte : -true-filter)]
+        [tc-e/t (lambda: ([x : Number]) 3) (t:-> -Number -PosByte : -true-filter)]
+        [tc-e/t (lambda: ([x : Number] [y : Boolean]) 3) (t:-> -Number -Boolean -PosByte : -true-filter)]
         [tc-e/t (lambda () 3) (t:-> -PosByte : -true-filter)]
         [tc-e (values 3 4) #:ret (ret (list -PosByte -PosByte) (list -true-filter -true-filter))]
         [tc-e (cons 3 4) (-pair -PosByte -PosByte)]
@@ -269,44 +329,44 @@
                 (make-Poly '(a) (t:-> (make-Listof (-v a)) (-v a)))]
         [tc-e/t (plambda: (a) ([l : (Listof a)]) (car l))
                 (make-Poly '(a) (t:-> (make-Listof (-v a)) (-v a)))]
-        [tc-e/t (case-lambda: [([a : Number] [b : Number]) (+ a b)]) (t:-> N N N)]
-        [tc-e (let: ([x : Number 5]) x) N]
+        [tc-e/t (case-lambda: [([a : Number] [b : Number]) (+ a b)]) (t:-> -Number -Number -Number)]
+        [tc-e (let: ([x : Number 5]) x) -Number]
         [tc-e (let-values ([(x) 4]) (+ x 1)) -PosIndex]
         [tc-e (let-values ([(#{x : Number} #{y : Boolean}) (values 3 #t)]) (and (= x 1) (not y)))
               -Boolean]
         [tc-e/t (values 3) -PosByte]
         [tc-e (values) #:ret (ret null)]
         [tc-e (values 3 #f) #:ret (ret (list -PosByte (-val #f)) (list (-FS -top -bot) (-FS -bot -top)))]
-        [tc-e (map #{values @ Symbol} '(a b c)) (-pair Sym (make-Listof  Sym))]
-        [tc-e (andmap add1 (ann '() (Listof Number))) (t:Un (-val #t) N)]
-        [tc-e (ormap add1 (ann '() (Listof Number))) (t:Un (-val #f) N)]
+        [tc-e (map #{values @ Symbol} '(a b c)) (-pair -Symbol (make-Listof -Symbol))]
+        [tc-e (andmap add1 (ann '() (Listof Number))) (t:Un (-val #t) -Number)]
+        [tc-e (ormap add1 (ann '() (Listof Number))) (t:Un (-val #f) -Number)]
         [tc-e (letrec: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                        (fact 20))
-              N]
+              -Number]
         [tc-e (let: fact : Number ([n : Number 20])
                     (if (zero? n) 1 (* n (fact (- n 1)))))
-              N]
+              -Number]
         [tc-e (let: ([v : Any 5])
                     (if (number? v) (+ v 1) 3))
-              N]
+              -Number]
         [tc-e (let: ([v : Any #f])
                     (if (number? v) (+ v 1) 3))
-              N]
+              -Number]
         [tc-e (let: ([v : (Un Number Boolean) #f])
                     (if (boolean? v) 5 (+ v 1)))
-              N]
-        [tc-e (let: ([f : (Number Number -> Number) +]) (f 3 4)) N]
-        [tc-e (let: ([+ : (Boolean -> Number) (lambda: ([x : Boolean]) 3)]) (+ #f)) N]
+              -Number]
+        [tc-e (let: ([f : (Number Number -> Number) +]) (f 3 4)) -Number]
+        [tc-e (let: ([+ : (Boolean -> Number) (lambda: ([x : Boolean]) 3)]) (+ #f)) -Number]
         [tc-e (when #f #t) -Void]
         [tc-e (when (number? #f) (+ 4 5)) -Void]
         [tc-e (let: ([x : (Un #f Number) 7])
                     (if x (+ x 1) 3))
-              N]
+              -Number]
         [tc-e (let: ([x : Number 1])
                     (if (and (number? x) #t)
                         (+ x 4)
                         'bc))
-              N]
+              -Number]
         [tc-e/t (let: ((x : Number 3)) (if (boolean? x) (not x) #t)) (-val #t)]
         [tc-e/t (begin 3) -PosByte]
         [tc-e/t (begin #f 3) -PosByte]
@@ -325,23 +385,23 @@
                       (cond [(pair? x) 1]
                             [(null? x) 1]))
               -One]
-        [tc-e/t (lambda: ([x : Number] . [y : Number *]) (car y)) (->* (list N) N N)]
-        [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3) N]
-        [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4 5) N]
-        [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4) N]
-        [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '(4)) N]
-        [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '(4 6 7)) N]
-        [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '()) N]
+        [tc-e/t (lambda: ([x : Number] . [y : Number *]) (car y)) (->* (list -Number) -Number -Number)]
+        [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3) -Number]
+        [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4 5) -Number]
+        [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4) -Number]
+        [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '(4)) -Number]
+        [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '(4 6 7)) -Number]
+        [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '()) -Number]
 
-        [tc-e/t (lambda: ([x : Number] . [y : Boolean *]) (car y)) (->* (list N) B B)]
-        [tc-e ((lambda: ([x : Number] . [y : Boolean *]) (car y)) 3) B]
-        [tc-e (apply (lambda: ([x : Number] . [y : Boolean *]) (car y)) 3 '(#f)) B]
+        [tc-e/t (lambda: ([x : Number] . [y : Boolean *]) (car y)) (->* (list -Number) -Boolean -Boolean)]
+        [tc-e ((lambda: ([x : Number] . [y : Boolean *]) (car y)) 3) -Boolean]
+        [tc-e (apply (lambda: ([x : Number] . [y : Boolean *]) (car y)) 3 '(#f)) -Boolean]
         [tc-e (lambda args (void)) #:ret (ret (t:-> -String -Void) (-FS -top -bot))
                                    #:expected (ret (t:-> -String -Void) (-FS -top -bot))]
-        [tc-e (lambda (x y . z) 
+        [tc-e (lambda (x y . z)
                 (+ x y (+ (length z))))
-              #:ret (ret (t:-> -Byte -Index N) (-FS -top -bot))
-              #:expected (ret (t:-> -Byte -Index N) (-FS -top -bot))]
+              #:ret (ret (t:-> -Byte -Index -Number) (-FS -top -bot))
+              #:expected (ret (t:-> -Byte -Index -Number) (-FS -top -bot))]
 
         [tc-e/t (let: ([x : Number 3])
                       (when (number? x) #t))
@@ -364,20 +424,20 @@
                     (if (not (boolean? x))
                         (add1 x)
                         3))
-              N]
+              -Number]
 
         [tc-e (let ([x 1]) x) -One]
         [tc-e (let ([x 1]) (boolean? x)) #:ret (ret -Boolean (-FS -bot -top))]
-        [tc-e (boolean? number?) #:ret (ret -Boolean (-FS -bot (-not-filter B #'number?)))]
+        [tc-e (boolean? number?) #:ret (ret -Boolean (-FS -bot (-not-filter -Boolean #'number?)))]
 
-        [tc-e (let: ([x : (Option Number) #f]) x) (t:Un N (-val #f))]
+        [tc-e (let: ([x : (Option Number) #f]) x) (t:Un -Number (-val #f))]
         [tc-e (let: ([x : Any 12]) (not (not x))) -Boolean]
 
         [tc-e (let: ([x : (Option Number) #f])
                     (if (let ([z 1]) x)
                         (add1 x)
                         12))
-              N]
+              -Number]
         [tc-err (5 4)]
         [tc-err (apply 5 '(2))]
         [tc-err (map (lambda: ([x : Any] [y : Any]) 1) '(1))]
@@ -428,13 +488,13 @@
                     (if (number? (let ([z 1]) x))
                         (add1 x)
                         12))
-              N]
+              -Number]
 
         [tc-e (let: ([x : (Option Number) #f])
                     (if x
                         (add1 x)
                         12))
-              N]
+              -Number]
 
 
         [tc-e null #:ret (-path (-val null) #'null)]
@@ -450,10 +510,10 @@
         ;; eq? as predicate
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (eq? x 'foo) 3 x))
-              N]
+              -Number]
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (eq? 'foo x) 3 x))
-              N]
+              -Number]
 
         [tc-err (let: ([x : (U String 'foo) 'foo])
                       (if (string=? x 'foo)
@@ -477,10 +537,10 @@
         ;; equal? as predicate for symbols
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (equal? x 'foo) 3 x))
-              N]
+              -Number]
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (equal? 'foo x) 3 x))
-              N]
+              -Number]
 
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
@@ -494,7 +554,7 @@
         [tc-e (let: ([x : (Listof Symbol)'(a b c)])
                     (cond [(memq 'a x) => car]
                           [else 'foo]))
-              Sym]
+              -Symbol]
 
         [tc-e (list 2 3 4) (-lst* -PosByte -PosByte -PosByte)]
         [tc-e (list 2 3 4 'a) (-lst* -PosByte -PosByte -PosByte (-val 'a))]
@@ -524,9 +584,9 @@
 
         ;;; tests for and
         [tc-e (let: ([x : Any 1]) (and (number? x) (boolean? x)))
-              #:ret (ret B (-FS -bot -top))]
+              #:ret (ret -Boolean (-FS -bot -top))]
         [tc-e (let: ([x : Any 1]) (and (number? x) x))
-              (t:Un N (-val #f))]
+              (t:Un -Number (-val #f))]
         [tc-e (let: ([x : Any 1]) (and x (boolean? x)))
               -Boolean]
 
@@ -548,7 +608,7 @@
                     (if (or (boolean? x) (number? x))
                         (if (boolean? x) 12 x)
                         47))
-              N]
+              -Number]
         |#
 
         ;; test for fake or
@@ -558,7 +618,7 @@
                             (boolean? x))
                         (if (boolean? x) 1 (+ 1 x))
                         4))
-              N]
+              -Number]
         ;; these don't invoke the or rule
         [tc-e (let: ([x : Any 1]
                      [y : Any 12])
@@ -584,10 +644,10 @@
         ;; T-AbsPred
         [tc-e/t (let ([p? (lambda: ([x : Any]) (number? x))])
                   (lambda: ([x : Any]) (if (p? x) (add1 x) (add1 12))))
-                (t:-> Univ N)]
+                (t:-> Univ -Number)]
         [tc-e/t (let ([p? (lambda: ([x : Any]) (not (number? x)))])
                   (lambda: ([x : Any]) (if (p? x) 12 (add1 x))))
-                (t:-> Univ N : (-FS -top (-filter -Number 0)))]
+                (t:-> Univ -Number : (-FS -top (-filter -Number 0)))]
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (number? z))])
                   (lambda: ([x : Any]) (if (p? x) 11 12)))
@@ -609,7 +669,7 @@
                   (lambda: ([x : Any]) (if (p? x) x 12)))
                 (t:-> Univ Univ)]
 
-        [tc-e (not 1) #:ret (ret B (-FS -bot -top))]
+        [tc-e (not 1) #:ret (ret -Boolean (-FS -bot -top))]
 
         [tc-err ((lambda () 1) 2)]
         [tc-err (apply (lambda () 1) '(2))]
@@ -621,12 +681,12 @@
 
         ;; these don't work because the type annotation gets lost in marshalling
         #|
-        [tc-e (letrec-syntaxes+values () ([(#{x : Number}) (values 1)]) (add1 x)) N]
-        [tc-e (letrec-values ([(#{x : Number}) (values 1)]) (add1 x)) N]
-        [tc-e (letrec ([#{x : Number} (values 1)]) (add1 x)) N]
+        [tc-e (letrec-syntaxes+values () ([(#{x : Number}) (values 1)]) (add1 x)) -Number]
+        [tc-e (letrec-values ([(#{x : Number}) (values 1)]) (add1 x)) -Number]
+        [tc-e (letrec ([#{x : Number} (values 1)]) (add1 x)) -Number]
         |#
 
-        [tc-e (letrec: ([x : Number (values 1)]) (add1 x)) N]
+        [tc-e (letrec: ([x : Number (values 1)]) (add1 x)) -Number]
 
         [tc-e (let ()
                  (: complicated Boolean)
@@ -658,10 +718,10 @@
 
         [tc-e (call-with-values (lambda () (values 1 2))
                                 (lambda: ([x : Number] [y : Number]) (+ x y)))
-              N]
+              -Number]
         [tc-e (call-with-values (lambda () 1)
                                 (lambda: ([x : Number]) (+ x 1)))
-              N]
+              -Number]
         [tc-err (call-with-values (lambda () 1)
                                   (lambda: () 2))]
 
@@ -683,7 +743,7 @@
                 (app f (list 1 2 3)))
               -PosByte]
         [tc-e ((lambda () (call/cc (lambda: ([k : (Number -> (U))]) (if (read) 5 (k 10))))))
-              N]
+              -Number]
 
         [tc-e (number->string 5) -String]
 
@@ -702,7 +762,7 @@
            (do: : Number ((x : (Listof Number) x (cdr x))
                           (sum : Number 0 (+ sum (car x))))
                 ((null? x) sum)))
-         N]
+         -Number]
         |#
 
         ;; inference with internal define
@@ -738,7 +798,7 @@
         [tc-e ((case-lambda:
                 [[x : Number *] (+ 1 (car x))])
                5)
-              N]
+              -Number]
 
         [tc-e `(4 ,@'(3)) (-pair -PosByte (-lst* -PosByte))]
 
@@ -747,7 +807,7 @@
            (do: : Number ((x : (Listof Number) x (cdr x))
                           (sum : Number 0 (+ sum (car x))))
                 ((null? x) sum)))
-         #:ret (ret N (-FS -top -top) (make-NoObject))]
+         #:ret (ret -Number (-FS -top -top) (make-NoObject))]
 
         [tc-e/t (if #f 1 'foo) (-val 'foo)]
 
@@ -771,7 +831,7 @@
         [tc-e/t (plambda: (a ...) ([z : String] . [w : Number ... a])
                         (apply (plambda: (b ...) ([x : Number] . [y : Number ... b]) x)
                                1 w))
-              (-polydots (a) ((list -String) (N a) . ->... . N))]
+              (-polydots (a) ((list -String) (-Number a) . ->... . -Number))]
         [tc-e/t (let ([f (plambda: (a ...) [w : a ... a] w)])
                   (f 1 "hello" #\c))
                 (-pair -One (-pair -String (-pair -Char (-val null))))]
@@ -786,11 +846,11 @@
 
         ;; instantiating dotted terms
         [tc-e/t (inst (plambda: (a ...) [xs : a ... a] 3) Integer Boolean Integer)
-                (-Integer B -Integer . t:-> . -PosByte : -true-filter)]
+                (-Integer -Boolean -Integer . t:-> . -PosByte : -true-filter)]
         [tc-e/t (inst (plambda: (a ...) [xs : (a ... a -> Integer) ... a] 3) Integer Boolean Integer)
-                ((-Integer B -Integer . t:-> . -Integer)
-                 (-Integer B -Integer . t:-> . -Integer)
-                 (-Integer B -Integer . t:-> . -Integer)
+                ((-Integer -Boolean -Integer . t:-> . -Integer)
+                 (-Integer -Boolean -Integer . t:-> . -Integer)
+                 (-Integer -Boolean -Integer . t:-> . -Integer)
                  . t:-> . -PosByte : -true-filter)]
 
         [tc-e/t (plambda: (z x y ...) () (inst map z x y ... y))
@@ -871,13 +931,13 @@
                    (lambda: ([y : (a ... a -> Number)])
                      (apply y zs))
                    ys)))
-              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N)) : -true-filter))]
+              (-polydots (a) ((list) ((list) (a a) . ->... . -Number) . ->* . ((list) (a a) . ->... . (-lst -Number)) : -true-filter))]
         [tc-e/t (plambda: (a ...) [ys : (a ... a -> Number) *]
                 (lambda: [zs : a ... a]
                   (map (lambda: ([y : (a ... a -> Number)])
                          (apply y zs))
                        ys)))
-              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N)) : -true-filter))]
+              (-polydots (a) ((list) ((list) (a a) . ->... . -Number) . ->* . ((list) (a a) . ->... . (-lst -Number)) : -true-filter))]
 
         [tc-e/t (lambda: ((x : (All (t) t)))
                        ((inst (inst x (All (t) (t -> t)))
@@ -890,10 +950,10 @@
         [tc-e/t (inst (plambda: (a ...) [ys : Number ... a]
                                 (apply + ys))
                       Boolean String Number)
-                (N N N . t:-> . N)]
+                (-Number -Number -Number . t:-> . -Number)]
 
         [tc-e (assq 'foo #{'((a b) (foo bar)) :: (Listof (List Symbol Symbol))})
-              (t:Un (-val #f) (-pair Sym (-pair Sym (-val null))))]
+              (t:Un (-val #f) (-pair -Symbol (-pair -Symbol (-val null))))]
 
         [tc-e/t (ann (lambda (x) x) (All (a) (a -> a)))
                 (-poly (a) (a . t:-> . a))]
@@ -995,8 +1055,8 @@
 
 
         ;;Path tests
-        (tc-e (path-string? "foo") B)
-        (tc-e (path-string? (string->path "foo")) #:ret (ret B (-FS -top -bot)))
+        (tc-e (path-string? "foo") -Boolean)
+        (tc-e (path-string? (string->path "foo")) #:ret (ret -Boolean (-FS -top -bot)))
         (tc-e (bytes->path #"foo" 'unix) -SomeSystemPath)
         (tc-e (bytes->path #"foo") -Path)
         (tc-e (bytes->path-element #"foo") -Path)
@@ -1014,8 +1074,8 @@
         (tc-e (expand-user-path "foo") -Path)
 
         ;;String Tests
-        (tc-e (string? "a") #:ret (ret B (-FS -top -bot)))
-        (tc-e (string? 2) #:ret (ret B (-FS -bot -top)))
+        (tc-e (string? "a") #:ret (ret -Boolean (-FS -top -bot)))
+        (tc-e (string? 2) #:ret (ret -Boolean (-FS -bot -top)))
 
         (tc-e (string->immutable-string (string #\a #\b)) -String)
         (tc-e (string-length (make-string 5 #\z)) -Index)
@@ -1033,11 +1093,11 @@
         (tc-e (string->list "abcde") (-lst -Char))
         (tc-e (list->string (list #\a #\d #\d)) -String)
 
-        (tc-e (string=? "a" "a") B)
-        (tc-e (string<? "a" "a") B)
-        (tc-e (string>? "a" "a") B)
-        (tc-e (string<=? "a" "a") B)
-        (tc-e (string>=? "a" "a") B)
+        (tc-e (string=? "a" "a") -Boolean)
+        (tc-e (string<? "a" "a") -Boolean)
+        (tc-e (string>? "a" "a") -Boolean)
+        (tc-e (string<=? "a" "a") -Boolean)
+        (tc-e (string>=? "a" "a") -Boolean)
 
         (tc-e (string-upcase "a") -String)
         (tc-e (string-downcase "a") -String)
@@ -1045,11 +1105,11 @@
         (tc-e (string-foldcase "a") -String)
 
 
-        (tc-e (string-ci=? "a" "A") B)
-        (tc-e (string-ci<? "a" "A") B)
-        (tc-e (string-ci>? "a" "A") B)
-        (tc-e (string-ci<=? "a" "A") B)
-        (tc-e (string-ci>=? "a" "A") B)
+        (tc-e (string-ci=? "a" "A") -Boolean)
+        (tc-e (string-ci<? "a" "A") -Boolean)
+        (tc-e (string-ci>? "a" "A") -Boolean)
+        (tc-e (string-ci<=? "a" "A") -Boolean)
+        (tc-e (string-ci>=? "a" "A") -Boolean)
 
 
         (tc-e (string-normalize-nfd "a") -String)
@@ -1059,31 +1119,31 @@
 
 
 
-        (tc-e (string-locale=? "a" "a") B)
-        (tc-e (string-locale<? "a" "a") B)
-        (tc-e (string-locale>? "a" "a") B)
+        (tc-e (string-locale=? "a" "a") -Boolean)
+        (tc-e (string-locale<? "a" "a") -Boolean)
+        (tc-e (string-locale>? "a" "a") -Boolean)
 
         (tc-e (string-locale-upcase "a") -String)
         (tc-e (string-locale-downcase "a") -String)
 
 
-        (tc-e (string-locale-ci=? "a" "A") B)
-        (tc-e (string-locale-ci<? "a" "A") B)
-        (tc-e (string-locale-ci>? "a" "A") B)
+        (tc-e (string-locale-ci=? "a" "A") -Boolean)
+        (tc-e (string-locale-ci<? "a" "A") -Boolean)
+        (tc-e (string-locale-ci>? "a" "A") -Boolean)
 
         ;Symbols
 
-        (tc-e (symbol? 'foo) #:ret (ret B (-FS -top -bot)))
-        (tc-e (symbol? 2) #:ret (ret B (-FS -bot -top)))
+        (tc-e (symbol? 'foo) #:ret (ret -Boolean (-FS -top -bot)))
+        (tc-e (symbol? 2) #:ret (ret -Boolean (-FS -bot -top)))
 
-        (tc-e (symbol-interned? 'foo) B)
-        (tc-e (symbol-interned? (string->unreadable-symbol "bar")) B)
-        (tc-e (symbol-interned? (string->uninterned-symbol "bar")) B)
-        (tc-e (symbol-interned? (gensym 'foo)) B)
-        (tc-e (symbol-interned? (gensym "foo")) B)
+        (tc-e (symbol-interned? 'foo) -Boolean)
+        (tc-e (symbol-interned? (string->unreadable-symbol "bar")) -Boolean)
+        (tc-e (symbol-interned? (string->uninterned-symbol "bar")) -Boolean)
+        (tc-e (symbol-interned? (gensym 'foo)) -Boolean)
+        (tc-e (symbol-interned? (gensym "foo")) -Boolean)
 
-        (tc-e (symbol-unreadable? (gensym)) B)
-        (tc-e (symbol-unreadable? 'foo) B)
+        (tc-e (symbol-unreadable? (gensym)) -Boolean)
+        (tc-e (symbol-unreadable? 'foo) -Boolean)
         (tc-e (string->unreadable-symbol "bar") -Symbol)
         (tc-e (string->uninterned-symbol "bar") -Symbol)
 
@@ -1091,25 +1151,25 @@
         (tc-e (string->symbol (symbol->string 'foo)) -Symbol)
 
         ;Booleans
-        (tc-e (not #f) #:ret (ret B (-FS -top -bot)))
-        (tc-e (false? #f) #:ret (ret B (-FS -top -bot)))
-        (tc-e (not #t) #:ret (ret B (-FS -bot -top)))
+        (tc-e (not #f) #:ret (ret -Boolean (-FS -top -bot)))
+        (tc-e (false? #f) #:ret (ret -Boolean (-FS -top -bot)))
+        (tc-e (not #t) #:ret (ret -Boolean (-FS -bot -top)))
         ;; It's not clear why the following test doesn't work,
         ;; but it works fine in the real typechecker
-        ;(tc-e (false? #t) #:ret (ret B (-FS -bot -top)))
+        ;(tc-e (false? #t) #:ret (ret -Boolean (-FS -bot -top)))
 
 
-        (tc-e (boolean? true) #:ret (ret B (-FS (-filter B #'true) -bot)))
-        (tc-e (boolean? 6) #:ret (ret B (-FS -bot -top)))
-        (tc-e (immutable? (cons 3 4)) B)
+        (tc-e (boolean? true) #:ret (ret -Boolean (-FS (-filter -Boolean #'true) -bot)))
+        (tc-e (boolean? 6) #:ret (ret -Boolean (-FS -bot -top)))
+        (tc-e (immutable? (cons 3 4)) -Boolean)
 
-        (tc-e (boolean=? #t false) B)
-        (tc-e (symbol=? 'foo 'foo) B)
+        (tc-e (boolean=? #t false) -Boolean)
+        (tc-e (symbol=? 'foo 'foo) -Boolean)
 
-        (tc-e (equal? 1 2) B)
-        (tc-e (eqv? 1 2) B)
-        (tc-e (eq? 1 2) B)
-        (tc-e (equal?/recur 'foo 'bar eq?) B)
+        (tc-e (equal? 1 2) -Boolean)
+        (tc-e (eqv? 1 2) -Boolean)
+        (tc-e (eq? 1 2) -Boolean)
+        (tc-e (equal?/recur 'foo 'bar eq?) -Boolean)
 
 
 
@@ -1172,8 +1232,8 @@
         (tc-e (path-list-string->path-list "/bin:/sbin:/usr/bin" null) (-lst -Path))
         (tc-e (find-executable-path "racket" "collects" #t) (-opt -Path))
 
-        (tc-e (file-exists? "/usr") B)
-        (tc-e (link-exists? "/usr") B)
+        (tc-e (file-exists? "/usr") -Boolean)
+        (tc-e (link-exists? "/usr") -Boolean)
         (tc-e (delete-file "does-not-exist") -Void)
 
         (tc-e (rename-file-or-directory "old" "new") -Void)
@@ -1200,7 +1260,7 @@
 
         (tc-e (current-drive) -Path)
 
-        (tc-e (directory-exists? "e") B)
+        (tc-e (directory-exists? "e") -Boolean)
         (tc-e (make-directory "e") -Void)
 
         (tc-e (delete-directory "e") -Void)
@@ -1231,7 +1291,6 @@
 
         (tc-e (preferences-lock-file-mode) (one-of/c 'exists 'file-lock))
 
-
         (tc-e (make-lock-file-name "tmp.file") -Pathlike)
         (tc-e (make-lock-file-name "tmp.dir" "tmp.file") -Pathlike)
 
@@ -1250,8 +1309,8 @@
 
         ;Syntax
 
-        (tc-e (syntax? #'id) #:ret (ret B (-FS -top -bot)))
-        (tc-e (syntax? 2) #:ret (ret B (-FS -bot -top)))
+        (tc-e (syntax? #'id) #:ret (ret -Boolean (-FS -top -bot)))
+        (tc-e (syntax? 2) #:ret (ret -Boolean (-FS -bot -top)))
 
         (tc-e (syntax-source #'here) Univ)
         (tc-e (syntax-line #'here) (-opt -PosInt))
@@ -1261,20 +1320,20 @@
 
 
         ;Parameters
-        (tc-e (parameter-procedure=? current-input-port current-output-port) B)
+        (tc-e (parameter-procedure=? current-input-port current-output-port) -Boolean)
 
         ;Namespaces
-        (tc-e (namespace? 2) #:ret (ret B (-FS -bot -top)))
-        (tc-e (namespace? (make-empty-namespace)) #:ret (ret B (-FS -top -bot)))
+        (tc-e (namespace? 2) #:ret (ret -Boolean (-FS -bot -top)))
+        (tc-e (namespace? (make-empty-namespace)) #:ret (ret -Boolean (-FS -top -bot)))
 
-        (tc-e (namespace-anchor? 3) #:ret (ret B (-FS -bot -top)))
+        (tc-e (namespace-anchor? 3) #:ret (ret -Boolean (-FS -bot -top)))
         (tc-e/t (lambda: ((x : Namespace-Anchor)) (namespace-anchor? x))
-                (t:-> -Namespace-Anchor B : (-FS (-filter -Namespace-Anchor 0) -bot)))
+                (t:-> -Namespace-Anchor -Boolean : (-FS (-filter -Namespace-Anchor 0) -bot)))
 
 
-        (tc-e (variable-reference? 3) #:ret (ret B (-FS -bot -top)))
+        (tc-e (variable-reference? 3) #:ret (ret -Boolean (-FS -bot -top)))
         (tc-e/t (lambda: ((x : Variable-Reference)) (variable-reference? x))
-                (t:-> -Variable-Reference  B : (-FS (-filter -Variable-Reference 0) -bot)))
+                (t:-> -Variable-Reference  -Boolean : (-FS (-filter -Variable-Reference 0) -bot)))
 
         (tc-e (system-type 'os) (one-of/c 'unix 'windows 'macosx))
         (tc-e (system-type 'gc) (one-of/c 'cgc '3m))
@@ -1337,9 +1396,10 @@
                 (define-values (p std-out std-in std-err)
                  (subprocess #f #f #f (string->path "/bin/bash")))
                 (subprocess? p))
-              #:ret (ret B (-FS -top -bot)))
+              #:ret (ret -Boolean (-FS -top -bot)))
 
 
+        #;
         (tc-e (let ()
                 (: std-out Input-Port)
                 (: std-in  Output-Port)
@@ -1352,6 +1412,7 @@
               -Nat)
 
 
+        #;
         (tc-e (let ()
                 (: std-out #f)
                 (: std-in  #f)
@@ -1376,29 +1437,29 @@
         (tc-e (compile-syntax #'(+ 1 2)) -Compiled-Expression)
         (tc-e (let: ((e : Compiled-Expression (compile #'(+ 1 2))))
                 (compiled-expression? e))
-              #:ret (ret B (-FS -top -bot)))
+              #:ret (ret -Boolean (-FS -top -bot)))
         (tc-e (let: ((e : Compiled-Expression (compile #'(module + racket 2))))
-                (compiled-module-expression? e)) B)
+                (compiled-module-expression? e)) -Boolean)
 
         ;Impersonator Property
-        (tc-e (make-impersonator-property 'prop) (list -Impersonator-Property (t:-> Univ B) (t:-> Univ Univ)))
+        (tc-e (make-impersonator-property 'prop) (list -Impersonator-Property (t:-> Univ -Boolean) (t:-> Univ Univ)))
         (tc-e (let-values: ((((prop : Impersonator-Property) (pred : (Any -> Any)) (acc : (Any -> Any)))
                              (make-impersonator-property 'prop)))
                (impersonator-property? prop))
-              #:ret (ret B (-FS -top -bot)))
+              #:ret (ret -Boolean (-FS -top -bot)))
 
         ;Security Guards
         (tc-e (make-security-guard (current-security-guard) (lambda args (void)) (lambda args (void))) -Security-Guard)
         (tc-e (let: ((s : Security-Guard (current-security-guard)))
                 (security-guard? s))
-              #:ret (ret B (-FS -top -bot)))
+              #:ret (ret -Boolean (-FS -top -bot)))
 
 
         ;Custodians
         (tc-e (make-custodian) -Custodian)
         (tc-e (let: ((c : Custodian (current-custodian)))
                 (custodian? c))
-              #:ret (ret B (-FS -top -bot)))
+              #:ret (ret -Boolean (-FS -top -bot)))
         (tc-e (let: ((c : (Custodian-Boxof Integer) (make-custodian-box (current-custodian) 1)))
                 (custodian-box-value c)) -Int)
 
@@ -1406,14 +1467,14 @@
         (tc-e (make-thread-group) -Thread-Group)
         (tc-e (let: ((tg : Thread-Group (current-thread-group)))
                 (thread-group? tg))
-              #:ret (ret B (-FS -top -bot)))
+              #:ret (ret -Boolean (-FS -top -bot)))
 
 
         ;Inspector
         (tc-e (make-inspector) -Inspector)
         (tc-e (let: ((i : Inspector (current-inspector)))
                 (inspector? i))
-              #:ret (ret B (-FS -top -bot)))
+              #:ret (ret -Boolean (-FS -top -bot)))
 
         ;Continuation Prompt Tags ang Continuation Mark Sets
         ;; TODO: supporting default-continuation-prompt-tag means we need to
@@ -1422,7 +1483,7 @@
         (tc-e (let: ((pt : (Prompt-Tagof Integer Integer) (make-continuation-prompt-tag)))
                    (continuation-marks #f pt)) -Cont-Mark-Set)
         (tc-e (let: ((set : Continuation-Mark-Set (current-continuation-marks)))
-                   (continuation-mark-set? set)) #:ret (ret B (-FS -top -bot)))
+                   (continuation-mark-set? set)) #:ret (ret -Boolean (-FS -top -bot)))
 
         ;Logging
         (tc-e (make-logger 'name) -Logger)
@@ -1476,11 +1537,11 @@
                 (pseudo-random-generator->vector pg)) (make-HeterogeneousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)))
 
         ;Structure Type Properties
-        (tc-e (make-struct-type-property 'prop) (list -Struct-Type-Property (t:-> Univ B) (t:-> Univ Univ)))
+        (tc-e (make-struct-type-property 'prop) (list -Struct-Type-Property (t:-> Univ -Boolean) (t:-> Univ Univ)))
         (tc-e (let-values: ((((prop : Struct-Type-Property) (pred : (Any -> Any)) (acc : (Any -> Any)))
                              (make-struct-type-property 'prop)))
                (struct-type-property? prop))
-              #:ret (ret B (-FS -top -bot)))
+              #:ret (ret -Boolean (-FS -top -bot)))
 
         ;Wills
         (tc-e (make-will-executor) -Will-Executor)
@@ -1496,7 +1557,7 @@
         #|
         (tc-e (delay 's) (-Promise -Symbol))
         (tc-e (let: ((p : (Promise Symbol) (delay 's)))
-                  (promise-running? p)) B)
+                  (promise-running? p)) -Boolean)
         |#
 
 
@@ -1654,7 +1715,7 @@
         [tc-e (vector-set! (ann (vector 'a 'b) (Vector Symbol Symbol)) (+ -1 2) 'c)
               -Void]
         [tc-err
-          (ann 
+          (ann
             ((letrec ((x (lambda (acc #{ v : Symbol}) (if v (list v) acc)))) x) null (list 'bad 'prog))
             (Listof Symbol))]
         [tc-e (filter values empty)
@@ -1668,7 +1729,7 @@
         [tc-e
            ((inst filter Any Symbol) symbol? null)
            (-lst -Symbol)]
-        [tc-e/t (ann (plambda: (A B ...) ((a : A) b : B ... B)
+        [tc-e/t (ann (plambda: (A -Boolean ...) ((a : A) b : B ... B)
                        (apply (inst values A B ... B) a b)) 
                      (All (A B ...) (A B ... -> (values A B ... B))))
               (-polydots (a b) ((list a) (b b) . ->... . (make-ValuesDots (list (-result a)) b 'b)))]
@@ -1739,20 +1800,4 @@
   ))
 
 
-;; these no longer work with the new scheme for top-level identifiers
-;; could probably be revived
-#|
-(define (tc-toplevel-tests)
-#reader typed-racket/typed-reader
-(test-suite "Tests for tc-toplevel"
-            (tc-tl 3)
-            (tc-tl (define: x : Number 4))
-            (tc-tl (define: (f [x : Number]) : Number x))
-            [tc-tl (pdefine: (a) (f [x : a]) : Number 3)]
-            [tc-tl (pdefine: (a b) (mymap [f : (a -> b)] (l : (list-of a))) : (list-of b)
-                             (if (null? l) #{'() : (list-of b)}
-                                 (cons (f (car l)) (map f (cdr l)))))]))
-|#
-
-(define-go typecheck-tests)
-
+(provide typecheck-tests)

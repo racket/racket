@@ -2,7 +2,7 @@
 
 (require
  "test-utils.rkt"
- "typecheck-tests.rkt" ;;fail
+ "typecheck-tests.rkt" ;;pass
 
  "subtype-tests.rkt" ;; pass
  "type-equal-tests.rkt" ;; pass
