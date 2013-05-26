@@ -1,5 +1,5 @@
 #lang racket/base
-(require (for-template racket/base))
+(require (for-template racket/base) syntax/stx)
 
 (provide arm)
 
@@ -15,7 +15,7 @@
     [(#%require . _) stx]
     [(#%provide . _) stx]
     [(begin form ...)
-     (quasisyntax/loc stx (begin #,@(map arm (syntax->list #'(form ...)))))]
+     (quasisyntax/loc stx (begin #,@(stx-map arm #'(form ...))))]
     [(define-values ids expr)
      (quasisyntax/loc stx (define-values ids #,(arm #'expr)))]
     [(define-syntaxes ids expr)

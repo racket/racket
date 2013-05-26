@@ -3,7 +3,7 @@
 (require "../../utils/utils.rkt"
          "signatures.rkt"
          "utils.rkt"
-         syntax/parse racket/match
+         syntax/parse racket/match unstable/sequence unstable/syntax
          syntax/parse/experimental/reflect
          (typecheck signatures tc-funapp)
          (types abbrev utils)
@@ -45,14 +45,16 @@
     (match expected
       [(tc-results: ets efs eos)
        (match-let ([(list (tc-result1: ts fs os) ...)
-                    (for/list ([arg (syntax->list #'args)]
-                               [et ets] [ef efs] [eo eos])
+                    (for/list ([arg (in-syntax #'args)]
+                               [et (in-list ets)]
+                               [ef (in-list efs)]
+                               [eo (in-list eos)])
                       (single-value arg (ret et ef eo)))])
-         (if (= (length ts) (length ets) (length (syntax->list #'args)))
+         (if (= (length ts) (length ets) (syntax-length #'args))
              (ret ts fs os)
              (tc-error/expr #:return expected "wrong number of values: expected ~a but got ~a"
-                            (length ets) (length (syntax->list #'args)))))]
+                            (length ets) (syntax-length #'args))))]
       [_ (match-let ([(list (tc-result1: ts fs os) ...)
-                      (for/list ([arg (syntax->list #'args)])
+                      (for/list ([arg (in-syntax #'args)])
                         (single-value arg))])
            (ret ts fs os))])))

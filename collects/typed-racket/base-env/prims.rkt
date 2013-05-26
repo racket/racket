@@ -50,7 +50,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (for-syntax
           racket/lazy-require
           syntax/parse
+          syntax/stx
           racket/syntax
+          unstable/sequence
+          unstable/syntax
           racket/base
           racket/struct-info
           syntax/struct
@@ -129,7 +132,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (define ((r/t-maker legacy) stx)
     (syntax-parse stx
       [(_ lib:expr (~var c (clause legacy #'lib)) ...)
-       (unless (< 0 (length (syntax->list #'(c ...))))
+       (when (zero? (syntax-length #'(c ...)))
          (raise-syntax-error #f "at least one specification is required" stx))
        #`(begin c.spec ...)]
       [(_ #:internal nm:opt-rename ty lib (~optional [~seq #:struct-maker parent]) ...)
@@ -474,10 +477,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (with-handlers: stx)
   (syntax-parse stx
     [(_ ([pred? action] ...) . body)
-     (with-syntax ([(pred?* ...) (map (lambda (s) (syntax-property #`(ann #,s : (Any -> Any)) 'typechecker:with-type #t))
-                                      (syntax->list #'(pred? ...)))]
+     (with-syntax ([(pred?* ...)
+                    (for/list ([s (in-syntax #'(pred? ...))])
+                      (syntax-property #`(ann #,s : (Any -> Any)) 'typechecker:with-type #t))]
                    [(action* ...)
-                    (map (lambda (s) (syntax-property s 'typechecker:exn-handler #t)) (syntax->list #'(action ...)))]
+                    (for/list ([s (in-syntax #'(action ...))])
+                      (syntax-property s 'typechecker:exn-handler #t))]
                    [body* (syntax-property #'(let-values () . body) 'typechecker:exn-body #t)])
        (syntax-property #'(with-handlers ([pred?* action*] ...) body*)
                         'typechecker:with-handlers
@@ -646,9 +651,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
                       [hidden (generate-temporary #'name.nm)]
                       [orig-struct-info (generate-temporary #'nm)]
                       [spec (if (syntax-e #'name.parent) #'(nm parent) #'nm)]
-                      [num-fields (length (syntax->list #'(fld ...)))]
+                      [num-fields (syntax-length #'(fld ...))]
                       [(type-des _ pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)]
-                      [(mut ...) (map (lambda _ #'#f) (syntax->list #'(sel ...)))]
+                      [(mut ...) (stx-map (lambda _ #'#f) #'(sel ...))]
                       [maker-name #'input-maker.name]
                       ;maker-name's symbolic form is used in the require form
                       [id-is-ctor? (or (attribute input-maker.extra) (bound-identifier=? #'maker-name #'nm))]

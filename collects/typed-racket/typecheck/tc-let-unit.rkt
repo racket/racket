@@ -10,7 +10,7 @@
          syntax/free-vars
          (typecheck signatures tc-metafunctions tc-subst check-below)
          racket/match (contract-req)
-         syntax/kerncase syntax/parse unstable/syntax
+         syntax/kerncase syntax/parse syntax/stx
          (for-template racket/base (typecheck internal-forms)))
 
 
@@ -21,7 +21,7 @@
   (match tc
     [(tc-any-results:) tc]
     [(tc-results: ts _ _)
-     (ret ts (for/list ([f ts]) (make-NoFilter)) (for/list ([f ts]) (make-NoObject)))]))
+     (ret ts (for/list ([f (in-list ts)]) (make-NoFilter)) (for/list ([f (in-list ts)]) (make-NoObject)))]))
 
 (define/cond-contract (do-check expr->type namess results expected-results form exprs body clauses expected #:abstract [abstract null])
      (((syntax? syntax? tc-results/c . -> . any/c)
@@ -45,9 +45,9 @@
                  (values ts
                          e-ts
                          (apply append
-                                (for/list ([n names]
-                                           [f+ fs+]
-                                           [f- fs-])
+                                (for/list ([n (in-list names)]
+                                           [f+ (in-list fs+)]
+                                           [f- (in-list fs-)])
                                   (list (make-ImpFilter (-not-filter (-val #f) n) f+)
                                         (make-ImpFilter (-filter (-val #f) n) f-)))))]
                 [((tc-results: ts (NoFilter:) _) (tc-results: e-ts (NoFilter:) _))
@@ -107,7 +107,7 @@
   tcr)
 
 (define (tc/letrec-values namess exprs body form [expected #f])
-  (let* ([names (map syntax->list (syntax->list namess))]
+  (let* ([names (stx-map syntax->list namess)]
          [orig-flat-names (apply append names)]
          [exprs (syntax->list exprs)]
          ;; the clauses for error reporting
@@ -144,8 +144,8 @@
                     ([(safe-bindings _)
                       (for/fold ([safe-bindings              '()] ; includes transitively-safe
                                  [transitively-safe-bindings '()])
-                          ([names  names]
-                           [clause clauses])
+                          ([names  (in-list names)]
+                           [clause (in-list clauses)])
                         (case (safe-letrec-values-clause? clause transitively-safe-bindings flat-names)
                           ;; transitively safe -> safe to mention in a subsequent rhs
                           [(transitively-safe) (values (append names safe-bindings)
@@ -193,9 +193,7 @@
   (cond [(andmap (lambda (fv)
                    (or (not (s:member fv letrec-bound-ids bound-identifier=?)) ; from outside
                        (s:member fv transitively-safe-bindings bound-identifier=?)))
-                 (apply append
-                        (syntax-map (lambda (x) (free-vars x))
-                                    clause-rhs)))
+                 (apply append (stx-map free-vars clause-rhs)))
          'transitively-safe]
         [else
          (syntax-parse clause-rhs #:literal-sets (kernel-literals)
@@ -216,13 +214,13 @@
 
 (define (tc/let-values namess exprs body form [expected #f])
   (let* (;; a list of each name clause
-         [names (map syntax->list (syntax->list namess))]
+         [names (stx-map syntax->list namess)]
          ;; all the trailing expressions - the ones actually bound to the names
          [exprs (syntax->list exprs)]
          ;; the types of the exprs
          #;[inferred-types (map (tc-expr-t/maybe-expected expected) exprs)]
          ;; the annotated types of the name (possibly using the inferred types)
-         [types (for/list ([name names] [e exprs])
+         [types (for/list ([name (in-list names)] [e (in-list exprs)])
                   (get-type/infer name e (tc-expr-t/maybe-expected expected)
                                          tc-expr/check))]
          ;; the clauses for error reporting

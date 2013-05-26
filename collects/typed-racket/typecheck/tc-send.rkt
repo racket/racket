@@ -2,7 +2,7 @@
 
 
 (require "../utils/utils.rkt"
-         racket/match 
+         racket/match syntax/stx
          (typecheck signatures tc-funapp)
          (types base-abbrev utils type-table)
          (rep type-rep) 
@@ -18,7 +18,7 @@
        [(tc-result1: (Value: (? symbol? s)))
         (let* ([ftype (cond [(assq s methods) => cadr]
                             [else (tc-error/expr "send: method ~a not understood by class ~a" s c)])]
-               [retval (tc/funapp rcvr args (ret ftype) (map tc-expr (syntax->list args)) expected)])
+               [retval (tc/funapp rcvr args (ret ftype) (stx-map tc-expr args) expected)])
           (add-typeof-expr form retval)
           retval)]
        [(tc-result1: t) (int-err "non-symbol methods not supported by Typed Racket: ~a" t)])]

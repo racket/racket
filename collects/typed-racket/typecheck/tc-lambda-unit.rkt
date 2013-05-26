@@ -320,7 +320,7 @@
 (define (tc/mono-lambda/type formals bodies expected)
   (make-Function (map lam-result->type
                       (tc/mono-lambda
-                        (map make-formals (syntax->list formals))
+                        (stx-map make-formals formals)
                         (syntax->list bodies)
                         expected))))
 
@@ -347,8 +347,8 @@
               [(list id ...)
                (list id)]))]
         [scoped-tvarss
-          (for/list ((tvarss (lookup-scoped-tvar-layer form)))
-            (for/list ((tvar tvarss))
+          (for/list ((tvarss (in-list (lookup-scoped-tvar-layer form))))
+            (for/list ((tvar (in-list tvarss)))
               (match tvar
                 [(list (list v ...) dotted-v)
                  (list (map syntax-e v) (syntax-e dotted-v))]
@@ -393,7 +393,7 @@
     [(tc-result1: (and t (Poly-fresh: ns fresh-ns expected*)))
      ;; make sure the declared and annotated type variable arities match up
      ;; with the expected type variable arity
-     (for ((tvars tvarss))
+     (for ((tvars (in-list tvarss)))
        (when (and (cons? tvars) (list? (first tvars)))
          (tc-error
           "Expected a polymorphic function without ..., but given function/annotation had ..."))
@@ -404,7 +404,7 @@
     [(tc-result1: (and t (PolyDots-names: (list ns ... dvar) expected*)))
      ;; make sure the declared and annotated type variable arities match up
      ;; with the expected type variable arity
-     (for ((tvars tvarss))
+     (for ((tvars (in-list tvarss)))
        (match tvars
          [(list (list vars ...) dotted)
           (unless (= (length vars) (length ns))
@@ -415,14 +415,14 @@
      (make-PolyDots (append ns (list dvar)) (extend-and-loop form ns formals bodies (ret expected*)))]
     [(or (tc-results: _) (tc-any-results:) #f)
      (define lengths
-       (for/set ((tvars tvarss))
+       (for/set ((tvars (in-list tvarss)))
          (match tvars
            [(list (list vars ...) dotted)
             (length vars)]
            [(list vars ...)
             (length vars)])))
      (define dots
-       (for/set ((tvars tvarss))
+       (for/set ((tvars (in-list tvarss)))
          (match tvars
            [(list (list vars ...) dotted) #t]
            [(list vars ...) #f])))

@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-         unstable/list syntax/id-table racket/dict racket/syntax
+         unstable/list unstable/sequence syntax/id-table racket/dict racket/syntax
          racket/struct-info racket/match syntax/parse syntax/location
          (only-in srfi/1/list s:member)
          (only-in (private type-contract) type->contract)
@@ -21,7 +21,9 @@
     [_ #f]))
 
 (define (remove-provides forms)
-  (filter (lambda (e) (not (provide? e))) (syntax->list forms)))
+  (for/list ([e (in-syntax forms)]
+             #:unless (provide? e))
+    e))
 
 (define (mem? i vd)
   (cond [(s:member i vd (lambda (i j) (free-identifier=? i (binding-name j)))) => car]
@@ -61,7 +63,7 @@
                                        (values #'(begin) e null)))
                        (list* type-desc constr pred super accs)))
          (define/with-syntax (type-desc* constr* pred* super* accs* ...) 
-           (for/list ([i new-ids]) (if (identifier? i) #`(syntax #,i) i)))
+           (for/list ([i (in-list new-ids)]) (if (identifier? i) #`(syntax #,i) i)))
          (values 
           #`(begin
               #,@defns

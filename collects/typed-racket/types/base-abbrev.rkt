@@ -35,7 +35,7 @@
 ;; -lst* Type is needed by substitute for ListDots
 (define -pair make-Pair)
 (define (-lst* #:tail [tail (-val null)] . args)
-  (for/fold ([tl tail]) ([a (reverse args)]) (-pair a tl)))
+  (for/fold ([tl tail]) ([a (in-list (reverse args))]) (-pair a tl)))
 
 
 ;; Simple union type, does not check for overlaps
@@ -206,7 +206,7 @@
        (with-syntax ([((extra ...) ...)
 		      (for/list ([i (in-range (add1 (length l)))])
 				(take l i))]
-		     [(rsts ...) (for/list ([i (add1 (length l))]) #'rst)])
+		     [(rsts ...) (for/list ([i (in-range (add1 (length l)))]) #'rst)])
 		    #'(make-Function
 		       (list
 			(make-arr* (list ty ... extra ...)

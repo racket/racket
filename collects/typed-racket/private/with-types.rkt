@@ -32,15 +32,15 @@
     (tc-error/stx stx "Type ~a could not be converted to a contract." t))
   (set-box! typed-context? #t)
   (init)
-  (define fv-types (for/list ([t (in-list (syntax->list fvtys))])
+  (define fv-types (for/list ([t (in-syntax fvtys)])
                      (parse-type t)))
   (define fv-cnts (for/list ([t (in-list fv-types)]
-                             [stx (in-list (syntax->list fvtys))])
+                             [stx (in-syntax fvtys)])
                     (type->contract t #:typed-side #f (no-contract t))))
-  (define ex-types (for/list ([t (syntax->list extys)])
+  (define ex-types (for/list ([t (in-syntax extys)])
                      (parse-type t)))
   (define ex-cnts (for/list ([t (in-list ex-types)]
-                             [stx (in-list (syntax->list extys))])
+                             [stx (in-syntax extys)])
                     (type->contract t #:typed-side #t (no-contract t))))
   (define region-tc-result
     (and expr? (parse-tc-results resty)))
@@ -55,7 +55,7 @@
               t #:typed-side #t
               (no-contract t #'region-ty-stx)))])
         null))
-  (for ([i (in-list (syntax->list fvids))]
+  (for ([i (in-syntax fvids)]
         [ty (in-list fv-types)])
     (register-type i ty))
   (define expanded-body
@@ -87,7 +87,7 @@
   (report-all-errors)
   (set-box! typed-context? old-context)
   ;; then clear the new entries from the env ht
-  (for ([i (in-list (syntax->list fvids))])
+  (for ([i (in-syntax fvids)])
     (unregister-type i))
   (with-syntax ([(fv.id ...) fvids]
                 [(cnt ...) fv-cnts]

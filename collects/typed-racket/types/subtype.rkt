@@ -6,7 +6,7 @@
          (utils tc-utils)
          (types utils resolve base-abbrev match-expanders
                 numeric-tower substitute current-seen)
-         (for-syntax racket/base syntax/parse))
+         (for-syntax racket/base syntax/parse unstable/sequence))
 
 (lazy-require
   ("union.rkt" (Un))
@@ -66,10 +66,10 @@
     [(_ init (s:sub* . args) ...+)
      (with-syntax ([(A* ... A-last) (generate-temporaries #'(s ...))])
        (with-syntax ([(clauses ...)
-                      (for/list ([s (syntax->list #'(s ...))]
-                                 [args (syntax->list #'(args ...))]
-                                 [A (syntax->list #'(init A* ...))]
-                                 [A-next (syntax->list #'(A* ... A-last))])
+                      (for/list ([s (in-syntax #'(s ...))]
+                                 [args (in-syntax #'(args ...))]
+                                 [A (in-syntax #'(init A* ...))]
+                                 [A-next (in-syntax #'(A* ... A-last))])
                          #`[#,A-next (#,s #,A . #,args)])])
         (syntax/loc stx (let*/and (clauses ...)
 			   A-last))))]))
@@ -322,7 +322,7 @@
               [((Base: _ _ _ _ #t) (Sequence: (list t*)))
                (define type
                  ;; FIXME: thread the store through here
-                 (for/or ((t (list -Byte -Index -NonNegFixnum -Nat)))
+                 (for/or ((t (in-list (list -Byte -Index -NonNegFixnum -Nat))))
                    (or (and (subtype* A0 s t) t))))
                (if type
                    (subtype* A0 type t*)
@@ -487,11 +487,11 @@
               [((Vector: _) (VectorTop:)) A0]
               [((HeterogeneousVector: _) (VectorTop:)) A0]
               [((HeterogeneousVector: (list e ...)) (Vector: e*))
-               (for/fold ((A A0)) ((e e) #:break (not A))
+               (for/fold ((A A0)) ((e (in-list e)) #:break (not A))
                  (and A (type-equiv? A e e*)))]
               [((HeterogeneousVector: (list s* ...)) (HeterogeneousVector: (list t* ...)))
                (if (= (length s*) (length t*))
-                   (for/fold ((A A0)) ((s s*) (t t*) #:break (not A))
+                   (for/fold ((A A0)) ((s (in-list s*)) (t (in-list t*)) #:break (not A))
                      (type-equiv? A s t))
                    #f)]
               [((MPair: s1 s2) (MPair: t1 t2))
@@ -546,7 +546,7 @@
               [((Class: '() '() (list (and s  (list names  meths )) ...))
                 (Class: '() '() (list (and s* (list names* meths*)) ...)))
                (for/fold ([A A0])
-                         ([n names*] [m meths*] #:break (not A))
+                         ([n (in-list names*)] [m (in-list meths*)] #:break (not A))
                          (and A (cond [(assq n s) => (lambda (spec) (subtype* A (cadr spec) m))]
                                       [else #f])))]
               ;; otherwise, not a subtype

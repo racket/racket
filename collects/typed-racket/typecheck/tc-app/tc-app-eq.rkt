@@ -3,7 +3,7 @@
 (require "../../utils/utils.rkt"
          "signatures.rkt"
          "utils.rkt"
-         syntax/parse racket/match
+         syntax/parse syntax/stx racket/match
          syntax/parse/experimental/reflect
          (typecheck signatures tc-funapp)
          (types abbrev union utils)
@@ -30,7 +30,7 @@
   (pattern (eq?:comparator v1 v2)
     ;; make sure the whole expression is type correct
     (match* ((tc/funapp #'eq? #'(v1 v2) (single-value #'eq?)
-                        (map single-value (syntax->list #'(v1 v2))) expected)
+                        (stx-map single-value #'(v1 v2)) expected)
              ;; check thn and els with the eq? info
              (tc/eq #'eq? #'v1 #'v2))
       [((tc-result1: t) (tc-result1: t* f o))

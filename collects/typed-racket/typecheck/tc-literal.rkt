@@ -95,7 +95,7 @@
          (for/list ([l (in-vector (syntax-e #'i))]
                     [t (in-list ts)])
            check-below (tc-literal l t) t))]
-       [_ (make-HeterogeneousVector (for/list ([l (syntax-e #'i)])
+       [_ (make-HeterogeneousVector (for/list ([l (in-vector (syntax-e #'i))])
                                       (generalize (tc-literal l #f))))])]
     [(~var i (3d hash?))
      (match expected

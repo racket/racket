@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require syntax/parse unstable/syntax
+(require syntax/parse syntax/stx
          (for-template racket/base)
          "../utils/utils.rkt"
          (optimizer utils logging)
@@ -31,11 +31,11 @@
                           (syntax->list #'(args ...)))
            #:with opt
            (begin (log-optimization-info "hidden parameter" #'op)
-                  #`(op #,@(syntax-map (optimize) #'(args ...)))))
+                  #`(op #,@(stx-map (optimize) #'(args ...)))))
   ;; Log calls to struct constructors, so that OC can report those used in
   ;; hot loops.
   (pattern (#%plain-app op:id args ...)
            #:when (struct-constructor? #'op)
            #:with opt
            (begin (log-optimization-info "struct constructor" #'op)
-                  #`(op #,@(syntax-map (optimize) #'(args ...))))))
+                  #`(op #,@(stx-map (optimize) #'(args ...))))))

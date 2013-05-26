@@ -160,7 +160,7 @@
            (define-values (next _)
              (for/fold ([next      (car candidates)]
                         [max-cover (covers-how-many? (car candidates))])
-                 ([c candidates])
+                 ([c (in-list candidates)])
                (let ([how-many? (covers-how-many? c)])
                  (if (> how-many? max-cover)
                      (values c how-many?)
@@ -183,7 +183,7 @@
            (fp "-> ~a" ret)))
      (fp "(")
      (for-each (lambda (t) (fp "~a " t)) dom)
-     (for ([kw kws])
+     (for ([kw (in-list kws)])
        (match kw
          [(Keyword: k t req?)
           (if req?
@@ -206,7 +206,7 @@
         (if (null? pth)
             (fp "-> ~a : ~a" t ft)
             (begin (fp "-> ~a : ~a @" t ft)
-                   (for ([pe pth]) (fp " ~a" pe))))]
+                   (for ([pe (in-list pth)]) (fp " ~a" pe))))]
        [(Values: (list (Result: t fs (Empty:))))
         (fp/filter "-> ~a : ~a" t fs)]
        [(Values: (list (Result: t lf lo)))

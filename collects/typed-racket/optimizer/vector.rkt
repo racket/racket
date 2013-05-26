@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require syntax/parse unstable/syntax
+(require syntax/parse syntax/stx
          racket/match racket/flonum
          (for-template racket/base racket/flonum racket/unsafe/ops)
          "../utils/utils.rkt"
@@ -74,7 +74,7 @@
            (begin (log-optimization "vector" "Vector bounds checking elimination." this-syntax)
                   (add-disappeared-use #'op)
                   #`(op.unsafe v.opt #,((optimize) #'i)
-                               #,@(syntax-map (optimize) #'(new ...)))))
+                               #,@(stx-map (optimize) #'(new ...)))))
 
   ;; we can do the bounds checking separately, to eliminate some of the checks
   (pattern (#%plain-app op:vector-op v:expr i:fixnum-expr new:expr ...)
@@ -83,7 +83,7 @@
                                     "Partial bounds checking elimination."
                                     this-syntax)
                   (add-disappeared-use #'op)
-                  (let ([safe-fallback #`(op new-v new-i #,@(syntax-map (optimize) #'(new ...)))]
+                  (let ([safe-fallback #`(op new-v new-i #,@(stx-map (optimize) #'(new ...)))]
                         [i-known-nonneg? (subtypeof? #'i -NonNegFixnum)])
                     #`(let ([new-i #,((optimize) #'i)]
                             [new-v #,((optimize) #'v)])
@@ -95,7 +95,7 @@
                                         one-sided
                                         #`(and (unsafe-fx>= new-i 0)
                                                #,one-sided)))
-                                (op.unsafe new-v new-i #,@(syntax-map (optimize) #'(new ...)))
+                                (op.unsafe new-v new-i #,@(stx-map (optimize) #'(new ...)))
                                 #,safe-fallback) ; will error. to give the right error message
                             ;; not an impersonator, can use unsafe-vector* ops
                             (if #,(let ([one-sided #'(unsafe-fx< new-i (unsafe-vector-length new-v))])
@@ -103,7 +103,7 @@
                                         one-sided
                                         #`(and (unsafe-fx>= new-i 0)
                                                #,one-sided)))
-                                (op.unsafe-no-impersonator new-v new-i #,@(syntax-map (optimize) #'(new ...)))
+                                (op.unsafe-no-impersonator new-v new-i #,@(stx-map (optimize) #'(new ...)))
                                 #,safe-fallback))))))
   ;; similarly for flvectors
   (pattern (#%plain-app op:flvector-op v:expr i:fixnum-expr new:expr ...)
@@ -112,7 +112,7 @@
                                     "Partial bounds checking elimination."
                                     this-syntax)
                   (add-disappeared-use #'op)
-                  (let ([safe-fallback #`(op new-v new-i #,@(syntax-map (optimize) #'(new ...)))]
+                  (let ([safe-fallback #`(op new-v new-i #,@(stx-map (optimize) #'(new ...)))]
                         [i-known-nonneg? (subtypeof? #'i -NonNegFixnum)])
                     #`(let ([new-i #,((optimize) #'i)]
                             [new-v #,((optimize) #'v)])
@@ -121,5 +121,5 @@
                                     one-sided
                                     #`(and (unsafe-fx>= new-i 0)
                                            #,one-sided)))
-                            (op.unsafe new-v new-i #,@(syntax-map (optimize) #'(new ...)))
+                            (op.unsafe new-v new-i #,@(stx-map (optimize) #'(new ...)))
                             #,safe-fallback))))))

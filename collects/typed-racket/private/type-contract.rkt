@@ -98,7 +98,7 @@
       ((equal? chaperone-sym x) y)
       ((equal? chaperone-sym y) x)
       (else impersonator-sym)))
-  (for/fold ((acc i)) ((v args))
+  (for/fold ((acc i)) ((v (in-list args)))
     (contract-kind-max2 v acc)))
 
 (define (contract-kind-min i . args)
@@ -109,7 +109,7 @@
       ((equal? chaperone-sym x) x)
       ((equal? chaperone-sym y) y)
       (else impersonator-sym)))
-  (for/fold ((acc i)) ((v args))
+  (for/fold ((acc i)) ((v (in-list args)))
     (contract-kind-min2 v acc)))
 
 
@@ -245,7 +245,7 @@
                             #'(dom* ... rst-spec ... . -> . rng*)
                             #'((dom* ...) (opt-dom* ...) rst-spec ... . ->* . rng*))
                         #'(dom* ... . -> . rng*)))))
-             (unless (no-duplicates (for/list ([t arrs])
+             (unless (no-duplicates (for/list ([t (in-list arrs)])
                                       (match t
                                         [(arr: dom _ _ _ _) (length dom)]
                                         ;; is there something more sensible here?
@@ -377,13 +377,13 @@
         [(Poly: vs b)
          (if (not (from-untyped? typed-side))
              ;; in typed positions, no checking needed for the variables
-             (parameterize ([vars (append (for/list ([v vs]) (list v #'any/c)) (vars))])
+             (parameterize ([vars (append (for/list ([v (in-list vs)]) (list v #'any/c)) (vars))])
                (t->c b))
              ;; in untyped positions, use `parameteric/c'
              (match-let ([(Poly-names: vs-nm _) ty])
                (with-syntax ([(v ...) (generate-temporaries vs-nm)])
                  (set-impersonator!)
-                 (parameterize ([vars (append (map list vs (syntax->list #'(v ...)))
+                 (parameterize ([vars (append (stx-map list vs #'(v ...))
                                               (vars))])
                    #`(parametric->/c (v ...) #,(t->c b))))))]
         [(Mu: n b)
@@ -402,15 +402,15 @@
          (t->c (make-Instance (resolve-once t)))]
         [(Instance: (Class: _ _ (list (list name fcn) ...)))
          (set-impersonator!)
-         (with-syntax ([(fcn-cnts ...) (for/list ([f fcn]) (t->c/fun f #:method #t))]
+         (with-syntax ([(fcn-cnts ...) (for/list ([f (in-list fcn)]) (t->c/fun f #:method #t))]
                        [(names ...) name])
            #'(object/c (names fcn-cnts) ...))]
         ;; init args not currently handled by class/c
         [(Class: _ (list (list by-name-init by-name-init-ty _) ...) (list (list name fcn) ...))
          (set-impersonator!)
-         (with-syntax ([(fcn-cnt ...) (for/list ([f fcn]) (t->c/fun f #:method #t))]
+         (with-syntax ([(fcn-cnt ...) (for/list ([f (in-list fcn)]) (t->c/fun f #:method #t))]
                        [(name ...) name]
-                       [(by-name-cnt ...) (for/list ([t by-name-init-ty]) (t->c/neg t))]
+                       [(by-name-cnt ...) (for/list ([t (in-list by-name-init-ty)]) (t->c/neg t))]
                        [(by-name-init ...) by-name-init])
            #'(class/c (name fcn-cnt) ... (init [by-name-init by-name-cnt] ...)))]
         [(Value: '()) #'null?]
@@ -425,7 +425,7 @@
            [poly?
             (with-syntax* ([struct-ctc (generate-temporary 'struct-ctc)])
               (define field-contracts
-                (for/list ([fty flds] [mut? mut?])
+                (for/list ([fty (in-list flds)] [mut? (in-list mut?)])
                   (with-syntax* ([rec (generate-temporary 'rec)])
                     (define required-recursive-kind
                        (contract-kind-min kind (if mut? impersonator-sym chaperone-sym)))

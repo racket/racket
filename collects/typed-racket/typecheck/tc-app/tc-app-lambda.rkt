@@ -5,7 +5,7 @@
          "utils.rkt"
          syntax/parse racket/match racket/list
          syntax/parse/experimental/reflect
-         unstable/sequence
+         unstable/sequence unstable/syntax
          (typecheck signatures tc-funapp find-annotation)
          (types abbrev utils generalize type-table)
          (private type-annotation)
@@ -27,22 +27,22 @@
     (let-loop-check #'lam #'lp #'actuals #'(args ...) #'body expected))
   ;; inference for ((lambda
   (pattern ((#%plain-lambda (x ...) . body) args ...)
-   #:fail-unless (= (length (syntax->list #'(x ...)))
-                    (length (syntax->list #'(args ...)))) #f
+   #:fail-unless (= (syntax-length #'(x ...))
+                    (syntax-length #'(args ...))) #f
    #:fail-when (andmap type-annotation (syntax->list #'(x ...))) #f
    (tc/let-values #'((x) ...) #'(args ...) #'body
                   #'(let-values ([(x) args] ...) . body)
                   expected))
   ;; inference for ((lambda with dotted rest
   (pattern ((#%plain-lambda (x ... . rst:id) . body) args ...)
-   #:fail-unless (<= (length (syntax->list #'(x ...)))
-                     (length (syntax->list #'(args ...)))) #f
+   #:fail-unless (<= (syntax-length #'(x ...))
+                     (syntax-length #'(args ...))) #f
    ;; FIXME - remove this restriction - doesn't work because the annotation
    ;; on rst is not a normal annotation, may have * or ...
    #:fail-when (type-annotation #'rst) #f
    #:fail-when (andmap type-annotation (syntax->list #'(x ...))) #f
    (let-values ([(fixed-args varargs) 
-                 (split-at (syntax->list #'(args ...)) (length (syntax->list #'(x ...))))])
+                 (split-at (syntax->list #'(args ...)) (syntax-length #'(x ...)))])
      (with-syntax ([(fixed-args ...) fixed-args]
                    [varg #`(#%plain-app list #,@varargs)])
        (tc/let-values #'((x) ... (rst)) #`(fixed-args ... varg) #'body
@@ -69,8 +69,8 @@
                             (generalize (tc-expr/t ac)))))]
             [ts (cons ts1 ann-ts)])
        ;; check that the actual arguments are ok here
-       (for/list ([a (syntax->list #'(actuals ...))]
-                  [t ann-ts])
+       (for/list ([a (in-syntax #'(actuals ...))]
+                  [t (in-list ann-ts)])
          (tc-expr/check a (ret t)))
        ;; then check that the function typechecks with the inferred types
        (add-typeof-expr lam (tc/rec-lambda/check args body lp ts expected))
@@ -80,8 +80,8 @@
       ((~and inner-body (if e1 e2 e3:id)))
       (null actuals ...))
      #:when (free-identifier=? #'val #'e3)
-     (let ([ts (for/list ([ac (syntax->list #'(actuals ...))]
-                          [f (syntax->list #'(acc ...))])
+     (let ([ts (for/list ([ac (in-syntax #'(actuals ...))]
+                          [f (in-syntax #'(acc ...))])
                  (let ([type (type-annotation f #:infer #t)])
                    (if type
                        (tc-expr/check/t ac (ret type))
@@ -96,8 +96,8 @@
        expected)]
     ;; special case when argument needs inference
     [(_ body* _)
-     (let ([ts (for/list ([ac (syntax->list actuals)]
-                          [f (syntax->list args)])
+     (let ([ts (for/list ([ac (in-syntax actuals)]
+                          [f (in-syntax args)])
                  (let* ([infer-t (or (type-annotation f #:infer #t)
                                      (find-annotation #'(begin . body*) f))])
                    (if infer-t

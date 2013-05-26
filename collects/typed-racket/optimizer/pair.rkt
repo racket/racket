@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require syntax/parse unstable/syntax
+(require syntax/parse syntax/stx
          racket/match
          (for-template racket/base racket/unsafe/ops racket/list)
          "../utils/utils.rkt"
@@ -66,7 +66,7 @@
            #:with opt
            (begin (log-pair-opt this-syntax)
                   (add-disappeared-use #'op)
-                  #`(op.unsafe #,@(syntax-map (optimize) #'(p e ...))))))
+                  #`(op.unsafe #,@(stx-map (optimize) #'(p e ...))))))
 
 
 ;; change the source location of a given syntax object
