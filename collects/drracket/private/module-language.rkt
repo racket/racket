@@ -37,8 +37,10 @@
   ;; oc-state is either:
   ;;   (clean (or/c symbol? #f)
   ;;          (or/c (non-empty-listof 
-  ;;                 (vector/c string? 
-  ;;                           (listof (vector number? number?))))
+  ;;                 (exn-info string? 
+  ;;                           (listof (vector number? number?))
+  ;;                           (listof string?)
+  ;;                           (or/c #f module-path?)))
   ;;                #f))
   ;;   (dirty boolean?)
   ;;   (running symbol? string?)
@@ -1146,7 +1148,7 @@
       (define error/status-message-hidden? #t) 
       ; a list of triples (in a vector of size 3) of strings, srclocs, and stackframes (as strings)
       ; that show up in the bar and control the "jump to error" / next prev buttons
-      (define error/status-message-strs+srclocs '(#("" () ())))
+      (define error/status-message-strs+srclocs (list (exn-info "" '() '() #f)))
       (define error/status-index 0)
       
       ; if the string should be red/italic or just normal font
