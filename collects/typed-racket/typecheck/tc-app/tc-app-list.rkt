@@ -82,14 +82,14 @@
     (match expected
       [(tc-result1: (Listof: elem-ty))
        (for ([i (in-list (syntax->list #'args))])
-            (tc-expr/check i (ret elem-ty)))
+         (tc-expr/check i (ret elem-ty)))
        expected]
       [(tc-result1: (List: (? (lambda (ts) (= (length (syntax->list #'args))
                                               (length ts)))
                               ts)))
        (for ([ac (in-list (syntax->list #'args))]
              [exp (in-list ts)])
-            (tc-expr/check ac (ret exp)))
+         (tc-expr/check ac (ret exp)))
        expected]
       [_
        (let ([tys (map tc-expr/t (syntax->list #'args))])
