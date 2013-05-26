@@ -96,8 +96,7 @@
 (begin-for-syntax
   (define-splicing-syntax-class return
     (pattern ty:expr #:attr v #'(ret ty))
-    (pattern (~seq #:ret r:expr) #:attr v #'r)
-    (pattern (~seq ty:expr f:expr o:expr) #:attr v #'(ret ty f o)))
+    (pattern (~seq #:ret r:expr) #:attr v #'r))
 
   (define-splicing-syntax-class expected
     (pattern (~seq #:expected v:expr))
