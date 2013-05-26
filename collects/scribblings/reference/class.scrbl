@@ -1753,7 +1753,7 @@ resulting trait are the same as for @racket[trait-sum], otherwise the
  
  [method-spec
   method-id
-  (method-id method-contract)]
+  (method-id method-contract-expr)]
  [field-spec
   field-id
   (field-id contract-expr)]
