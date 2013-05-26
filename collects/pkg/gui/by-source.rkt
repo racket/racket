@@ -381,7 +381,7 @@
       (and (not (equal? the-pkg ""))
            (cons (get-current-action)
                  (append
-                  (if (send cb get-value)
+                  (if (and (send cb is-enabled?) (send cb get-value))
                       '(#:force #t)
                       '())
                   (if (selected-type)
