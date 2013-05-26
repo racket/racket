@@ -4,6 +4,7 @@
          racket/pretty
          (for-template racket/base)
          "../utils/utils.rkt"
+         (private syntax-properties)
          (optimizer utils logging
                     number fixnum float float-complex vector string list pair
                     sequence box struct dead-code apply unboxed-let
@@ -25,7 +26,7 @@
   ;; can't optimize the body of this code because it isn't typechecked
   (pattern ((~and op (~literal let-values))
             ([(i:id) e-rhs:expr]) e-body:expr ...)
-           #:when (syntax-property this-syntax 'kw-lambda)
+           #:when (kw-lambda-property this-syntax)
            #:with opt-rhs ((optimize) #'e-rhs)
            #:with opt (quasisyntax/loc/origin this-syntax #'op
                         (op ([(i) opt-rhs]) e-body ...)))
@@ -96,11 +97,11 @@
       ([optimize
         (syntax-parser
           [e:expr
-           #:when (and (not (syntax-property #'e 'typechecker:ignore))
-                       (not (syntax-property #'e 'typechecker:ignore-some))
-                       (not (syntax-property #'e 'typechecker:with-handlers))
+           #:when (and (not (ignore-property #'e))
+                       (not (ignore-some-property #'e))
+                       (not (with-handlers-property #'e))
                        #;
-                       (not (syntax-property #'e 'kw-lambda)))
+                       (not (kw-lambda-property #'e)))
            #:with e*:opt-expr #'e
            #'e*.opt]
           [e:expr #'e])])

@@ -2,6 +2,8 @@
 
 ;; Provides raise-read-error and raise-read-eof-error
 (require syntax/readerr)
+(require "private/syntax-properties.rkt")
+
 
 (define (skip-whitespace port)
   ;; Skips whitespace characters, sensitive to the current
@@ -37,7 +39,7 @@
                (case (syntax-e next)
                  ;; type annotation
                  [(:) (skip-whitespace port)
-                      (syntax-property name 'type-label (syntax->datum (read-one)))]
+                      (type-label-property name (syntax->datum (read-one)))]
                  [(::) (skip-whitespace port)
                        (datum->syntax name `(ann ,name : ,(read-one)))]
                  [(@) (let ([elems (let loop ([es '()])

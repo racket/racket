@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require syntax/parse "../private/parse-classes.rkt"
+(require syntax/parse
+         "../private/parse-classes.rkt"
+         "../private/syntax-properties.rkt"
          (for-template "colon.rkt"))
 (provide (all-defined-out))
 
@@ -9,10 +11,10 @@
   #:description "type-annotated identifier"
   #:literals (:)
   (pattern [~seq name:id : ty]
-           #:with ann-name (syntax-property #'name 'type-label #'ty))
+           #:with ann-name (type-label-property #'name #'ty))
   (pattern name:id
-           #:when (syntax-property #'name 'type-label)
-           #:with ty (syntax-property #'name 'type-label)
+           #:with ty (type-label-property #'name)
+           #:when #'ty
            #:with ann-name #'name))
 
 (define-splicing-syntax-class optionally-annotated-name
@@ -31,7 +33,7 @@
   #:description "type-annotated identifier"
   #:literals (:)
   (pattern [~seq name:id : ty]
-           #:with ann-name (syntax-property #'name 'type-label (trans #'ty))))
+           #:with ann-name (type-label-property #'name (trans #'ty))))
 
 (define-syntax-class annotated-binding
   #:attributes (name ty ann-name binding rhs)
@@ -74,7 +76,7 @@
   #:literals (:)
   (pattern (~seq name:id : ty s:star)
            #:with formal-ty #'(ty s)
-           #:with ann-name (syntax-property #'name 'type-label #'ty)))
+           #:with ann-name (type-label-property #'name #'ty)))
 
 (define-splicing-syntax-class annotated-dots-rest
   #:attributes (name ann-name bound ty formal-ty)
@@ -82,8 +84,9 @@
   (pattern (~seq name:id : ty bnd:ddd/bound)
            #:with formal-ty #'(ty . bnd)
            #:attr bound (attribute bnd.bound)
-           #:with ann-name (syntax-property (syntax-property #'name 'type-label #'ty)
-                                            'type-dotted (attribute bnd.bound))))
+           #:with ann-name (type-dotted-property
+                             (type-label-property #'name #'ty)
+                             (attribute bnd.bound))))
 
 (define-syntax-class annotated-formal
   #:description "annotated variable of the form [x : T]"
