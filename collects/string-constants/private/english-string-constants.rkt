@@ -274,6 +274,7 @@ please adhere to these guidelines:
  (running "running")
  (not-running "not running")
   
+  (install-package-button "Install ~a") ;; button label: ~a is filled with the name of a pkg
 
  ;;; misc
  (welcome-to-something "Welcome to ~a")

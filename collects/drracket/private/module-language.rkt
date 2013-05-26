@@ -25,7 +25,11 @@
          "eval-helpers.rkt"
          "local-member-names.rkt"
          "rectangle-intersect.rkt"
-         framework/private/logging-timer)
+         pkg/lib
+         framework/private/logging-timer
+         (submod "frame.rkt" install-pkg))
+
+(struct exn-info (str src-vecs exn-stack missing-mods) #:prefab)
 
 ;; submodule to make these accessible to the test suite
 (module oc-status-structs racket/base
@@ -995,7 +999,7 @@
                (send (get-defs) set-margin-error-ranges
                      (set->list
                       (for*/set ([error-message+loc (in-list error-messages+locs)]
-                                 [range (in-list (vector-ref error-message+loc 1))])
+                                 [range (in-list (exn-info-src-vecs error-message+loc))])
                         (define pos (vector-ref range 0))
                         (define span (vector-ref range 1))
                         (error-range (- pos 1) (+ pos span -1) #f))))]
@@ -1006,7 +1010,7 @@
             (send (get-ints) set-error-ranges 
                   (set->list
                    (for*/set ([error-message+loc (in-list error-messages+locs)]
-                              [range (in-list (vector-ref error-message+loc 1))])
+                              [range (in-list (exn-info-src-vecs error-message+loc))])
                      (define pos (vector-ref range 0))
                      (define span (vector-ref range 1))
                      (srcloc (get-defs) #f #f pos span))))))
@@ -1019,24 +1023,26 @@
           [(and (dirty? running-status) our-turn?)
            (set-bottom-bar-status/pending)]
           [(and (dirty? running-status) (not our-turn?))
-           (send (get-defs) set-bottom-bar-status (list (vector "" '() '())) #f #f)]
+           (send (get-defs) set-bottom-bar-status (list (exn-info "" '() '() #f)) #f #f)]
           [(clean? running-status)
            (if (clean-error-messages+locs running-status)
                (send (get-defs) set-bottom-bar-status 
                      (clean-error-messages+locs running-status)
                      #t #t)
                (send (get-defs) set-bottom-bar-status
-                     (list (vector (string-constant online-expansion-finished) 
-                                   '()
-                                   '()))
+                     (list (exn-info (string-constant online-expansion-finished) 
+                                     '()
+                                     '()
+                                     #f))
                      #f
                      #f))]))
       
       (define/private (set-bottom-bar-status/pending)
         (send (get-defs) set-bottom-bar-status
-              (list (vector (string-constant online-expansion-pending) 
-                            '()
-                            '()))
+              (list (exn-info (string-constant online-expansion-pending) 
+                              '()
+                              '()
+                              #f))
               #f
               #f))
       
@@ -1072,7 +1078,7 @@
           [(clean? running-status)
            (if (clean-error-messages+locs running-status)
                (for/list ([pr (clean-error-messages+locs running-status)])
-                 (vector-ref pr 0))
+                 (exn-info-str pr))
                (list sc-finished-successfully))]))
 
       (define bkg-colors '())
@@ -1152,8 +1158,8 @@
         (update-frame-expand-error))
       
       (define/public (set-bottom-bar-status new-error/status-message-strs+srclocs message-err? force-visible?)
-        (define new-error/status-message-str (vector-ref (car new-error/status-message-strs+srclocs) 0))
-        (define srclocs (vector-ref (car new-error/status-message-strs+srclocs) 1))
+        (define new-error/status-message-str (exn-info-str (car new-error/status-message-strs+srclocs)))
+        (define srclocs (exn-info-src-vecs (car new-error/status-message-strs+srclocs)))
         (unless (string? new-error/status-message-str)
           (error 'set-bottom-bar-status "expected a string, got ~s" new-error/status-message-str))
         (when (or (not (and (equal? error/status-message-strs+srclocs new-error/status-message-strs+srclocs)
@@ -1173,7 +1179,7 @@
       (define/public (update-frame-expand-error)
         (when (eq? (get-tab) (send (send (get-tab) get-frame) get-current-tab))
           (define (matching-srcloc error/status-message-str+srcloc)
-            (for/or ([pos+span-vec (vector-ref error/status-message-str+srcloc 1)])
+            (for/or ([pos+span-vec (exn-info-src-vecs error/status-message-str+srcloc 1)])
               (define pos (vector-ref pos+span-vec 0))
               (define span (vector-ref pos+span-vec 1))
               (and (equal? (send (get-tab) get-defs)
@@ -1187,12 +1193,19 @@
               [bottom-bar-most-recent-jumped-to-loc
                (for/list ([error/status-message-str+srcloc (in-list error/status-message-strs+srclocs)]
                           #:when (matching-srcloc error/status-message-str+srcloc))
-                 (vector-ref error/status-message-str+srcloc 0))]
+                 (exn-info-str error/status-message-str+srcloc 0))]
               [else
-               (list (vector-ref (list-ref error/status-message-strs+srclocs error/status-index) 0))]))
+               (list (exn-info-str (list-ref error/status-message-strs+srclocs error/status-index)))]))
+          (define install-suggestions
+            (apply 
+             append
+             (for/list ([error/status-message-str+srcloc (in-list error/status-message-strs+srclocs)]
+                        #:when (exn-info-missing-mods error/status-message-str+srcloc))
+               (pkg-catalog-suggestions-for-module 
+                (exn-info-missing-mods error/status-message-str+srcloc)))))
           (define (combine-msg vec)
-            (define msg (vector-ref vec 0))
-            (define stack (vector-ref vec 2))
+            (define msg (exn-info-str vec))
+            (define stack (exn-info-src-vecs vec))
             (apply
              string-append
              (cons
@@ -1215,16 +1228,17 @@
                 (cond
                   [(null? error/status-message-strs+srclocs) 0]
                   [(null? (cdr error/status-message-strs+srclocs))
-                   (length (vector-ref (car error/status-message-strs+srclocs) 1))]
+                   (length (exn-info-src-vecs (car error/status-message-strs+srclocs)))]
                   [else
                    (for/sum ([error/status-message-str+srcloc (in-list error/status-message-strs+srclocs)])
-                     (max 1 (length (vector-ref error/status-message-str+srcloc 1))))]))))
+                     (max 1 (length (exn-info-src-vecs error/status-message-str+srcloc))))])
+                install-suggestions)))
       (define/public (hide-module-language-error-panel)
         (set! error/status-message-hidden? #t)
         (update-frame-expand-error))
 
       (define/public (expand-error-next) 
-        (define current-srclocs (vector-ref (list-ref error/status-message-strs+srclocs error/status-index) 1))
+        (define current-srclocs (exn-info-src-vecs (list-ref error/status-message-strs+srclocs error/status-index)))
         (define candidates (filter (λ (error-message-srcloc) 
                                      (> (- (vector-ref error-message-srcloc 0) 1) 
                                         (get-end-position)))
@@ -1238,7 +1252,7 @@
            (jump-to (car candidates))]))
       
       (define/public (expand-error-prev) 
-        (define current-srclocs (vector-ref (list-ref error/status-message-strs+srclocs error/status-index) 1))
+        (define current-srclocs (exn-info-src-vecs (list-ref error/status-message-strs+srclocs error/status-index)))
         (define candidates (filter (λ (error-message-srcloc) 
                                      (< (+ (vector-ref error-message-srcloc 0)
                                            (vector-ref error-message-srcloc 1)
@@ -1255,7 +1269,7 @@
       
       (define/private (jump-to-new-index new-error/status-index which)
         (set! error/status-index new-error/status-index)
-        (define current-srclocs (vector-ref (list-ref error/status-message-strs+srclocs error/status-index) 1))
+        (define current-srclocs (exn-info-src-vecs (list-ref error/status-message-strs+srclocs error/status-index)))
         (unless (null? current-srclocs) (jump-to (which current-srclocs)))
         (update-frame-expand-error))
       
@@ -1470,6 +1484,7 @@
       (define expand-error-panel #f)
       (define expand-error-message #f)
       (define expand-error-button-parent-panel #f)
+      (define expand-error-install-suggestions-panel #f)
       (define expand-error-single-child #f)
       (define expand-error-multiple-child #f)
       (define expand-error-zero-child #f)
@@ -1496,6 +1511,11 @@
                                         [msgs '("hi")]
                                         [err? #f]))
         (set! expand-error-button-parent-panel
+              (new horizontal-panel%
+                   [stretchable-width #f]
+                   [stretchable-height #f]
+                   [parent expand-error-panel]))
+        (set! expand-error-install-suggestions-panel
               (new horizontal-panel%
                    [stretchable-width #f]
                    [stretchable-height #f]
@@ -1550,8 +1570,9 @@
       (define expand-error-msg-is-err? #f)
       (define expand-error-srcloc-count 0)
       (define expand-error-hidden? #f)
+      (define expand-error-install-suggestions '())
       
-      (define/public (set-expand-error/status hidden? msgs msgs+stacks err? srcloc-count)
+      (define/public (set-expand-error/status hidden? msgs msgs+stacks err? srcloc-count install-suggestions)
         (unless (and (equal? expand-error-hidden? hidden?)
                      (equal? expand-error-msgs msgs)
                      (equal? expand-error-msgs+stack msgs+stacks)
@@ -1562,6 +1583,7 @@
           (set! expand-error-msgs+stack msgs+stacks)
           (set! expand-error-msg-is-err? err?)
           (set! expand-error-srcloc-count srcloc-count)
+          (set! expand-error-install-suggestions install-suggestions)
           (when expand-error-message
             (send expand-error-parent-panel change-children
                   (λ (l) (if hidden?
@@ -1572,6 +1594,21 @@
                                  l
                                  (append l (list expand-error-panel))))))
             (send expand-error-message set-msgs expand-error-msgs expand-error-msg-is-err? expand-error-msgs+stack)
+            (send expand-error-install-suggestions-panel change-children (λ (l) '()))
+            (for ([suggestion-pkg (in-list expand-error-install-suggestions)])
+              (new button% 
+                   [parent expand-error-install-suggestions-panel]
+                   [callback 
+                    (λ (_1 _2)
+                      (install-pkg
+                       (send expand-error-install-suggestions-panel get-top-level-window)
+                       (lambda (thunk)
+                         (parameterize ([error-display-handler drracket:init:original-error-display-handler])
+                           (thunk)))
+                       #:package-to-offer suggestion-pkg))]
+                   [font small-control-font]
+                   [label (format (string-constant install-package-button) 
+                                  suggestion-pkg)]))
             (send expand-error-button-parent-panel change-children
                   (λ (l)
                     (list (cond
@@ -2041,9 +2078,10 @@
          (line-of-interest)
          (send dirty/pending-tab set-oc-status
                (clean 'exn
-                      (list (vector sc-only-raw-text-files-supported
-                                    (list (vector (+ filename/loc 1) 1))
-                                    '()))))
+                      (list (exn-info sc-only-raw-text-files-supported
+                                      (list (vector (+ filename/loc 1) 1))
+                                      '()
+                                      #f))))
          (oc-maybe-start-something)])))
 
   (define/oc-log (oc-finished res)
@@ -2071,7 +2109,7 @@
          (send running-tab set-oc-status
                (clean (vector-ref res 0)
                       (if (eq? (vector-ref res 0) 'abnormal-termination)
-                          (list (vector sc-abnormal-termination '() '()))
+                          (list (exn-info sc-abnormal-termination '() '() #f))
                           (vector-ref res 1))))
          (send running-tab set-dep-paths (list->set (vector-ref res 2)) #t)])
       (oc-maybe-start-something)))

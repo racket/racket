@@ -7,6 +7,8 @@
          syntax/readerr)
 (provide start)
 
+(struct exn-info (str src-vecs exn-stack missing-mods) #:prefab)
+
 (struct job (cust response-pc working-thd stop-watching-abnormal-termination))
 
 ;; key : any (used by equal? for comparision, but back in the main place)
@@ -275,7 +277,7 @@
              
            (define exn-infos
              (for/list ([an-exn (in-list (cons main-exn extra-exns))])
-               (vector 
+               (exn-info 
                 (trim-message
                  (if (exn? an-exn) 
                      (regexp-replace* #rx"[ \t]*\n[ \t]*" (exn-message an-exn) " ") 
@@ -305,7 +307,9 @@
                           [(not name) (format-srcloc loc)]
                           [(not loc) (format "~a" name)]
                           [else (format "~a:~a" (format-srcloc loc) name)])))
-                    '()))))
+                    '())
+                (and (exn:missing-module? an-exn)
+                     ((exn:missing-module-accessor an-exn) an-exn)))))
            (place-channel-put 
             response-pc
             (vector 
