@@ -1,62 +1,82 @@
 #lang racket/base
 
-(require (for-syntax typed-racket/env/global-env) typed-racket/env/global-env
-         (for-template typed-racket/env/global-env)
-         (for-meta 2 typed-racket/env/global-env))
-(require "test-utils.rkt"
-         (for-syntax racket/base)
-         (for-template racket/base))
-(require (private type-annotation parse-type)
-         (except-in
-          (base-env prims
-                    base-types-extra
-                    base-env-indexing base-structs)
-          define lambda λ)
-         (submod typed-racket/base-env/base-types initialize)
-         (typecheck typechecker)
-         (rep type-rep filter-rep object-rep)
-         (rename-in (types utils union numeric-tower abbrev filter-ops)
-                    [Un t:Un]
-                    [true-lfilter -true-lfilter]
-                    [true-filter -true-filter]
-                    [-> t:->])
-         (utils tc-utils utils)
-         (utils mutated-vars)
-         (env type-name-env type-env-structs init-envs mvar-env)
-         rackunit rackunit/text-ui
-         syntax/parse
-         (for-syntax (utils tc-utils) racket/file racket/port
-                     (typecheck typechecker)
-                     (env global-env)
-                     (base-env base-env-indexing))
-         racket/file racket/port racket/flonum racket/math
-         (env global-env)
-         (for-meta 2 (env global-env))
-         (for-template
-          racket/file racket/port
-            (base-env base-types base-types-extra base-env-indexing))
-         (for-syntax syntax/kerncase syntax/parse))
+;; Allow evaluation at phase1
+(module evaluator racket/base
+  (require
+    (for-syntax
+      racket/base
+      syntax/parse))
+  (provide phase1-eval)
+  (define-namespace-anchor anchor)
+  (define namespace (namespace-anchor->empty-namespace anchor))
+  (define-syntax phase1-eval
+    (syntax-parser
+      [(_ form:expr ...)
+       #'(eval-syntax (quote-syntax (begin-for-syntax form ...)) namespace)])))
 
-(require (prefix-in b: (base-env base-env))
-         (prefix-in n: (base-env base-env-numeric)))
+;; Functions for testing correct behavior of typechecking
+(module tester racket/base
+  (require
+    typed-racket/utils/utils
+    racket/base
+    syntax/parse
+    (base-env
+      base-env-indexing
+      base-structs)
+    (typecheck typechecker)
+    (utils mutated-vars)
+    (env mvar-env)
+    (prefix-in b: (base-env base-env))
+    (prefix-in n: (base-env base-env-numeric))
+    (submod typed-racket/base-env/base-types initialize))
+  (provide test-literal test test/proc tc tc-literal tr-expand)
 
-(provide typecheck-tests)
 
-(b:init) (n:init) (initialize-structs) (initialize-indexing) (initialize-type-names)
+  (b:init)
+  (n:init)
+  (initialize-structs)
+  (initialize-indexing)
+  (initialize-type-names)
+  
+  (define (tr-expand stx)
+    (define expanded-stx (local-expand stx 'expression '()))
+    (find-mutated-vars expanded-stx mvar-env)
+    expanded-stx)
 
-(define N -Number)
-(define B -Boolean)
-(define Sym -Symbol)
-(define -Pos -PosInt)
-(define R -Real)
 
-(define-namespace-anchor anch)
+  (define (tc stx expected)
+    (if expected
+        (tc-expr/check stx expected)
+        (tc-expr stx)))
 
-(define (-path t var [p null])
-  (ret t
-       (-FS (make-NotTypeFilter (-val #f) p var)
-            (make-TypeFilter (-val #f) p var))
-       (make-Path p var)))
+  (define (test stx golden (expected #f))
+    (test/proc stx (lambda (_) golden) expected))
+
+  (define (test/proc stx golden-fun (expected #f))
+    (define ex-stx (tr-expand stx))
+    (define result (tc ex-stx expected))
+    (define golden (golden-fun ex-stx))
+    (unless (equal? golden result)
+      (error 'test "failed: ~a != ~a" golden result)))
+
+  (define (test-literal stx golden expected)
+    (define result (tc-literal stx expected))
+    (unless (equal? golden result)
+      (error 'test "failed: ~a != ~a" golden result))))
+
+
+(require
+  (submod "." evaluator)
+  (for-syntax
+    racket/base
+    syntax/parse
+    (submod "." tester)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Helpers for actual checks
 
 (begin-for-syntax
   (define-splicing-syntax-class return
@@ -65,88 +85,120 @@
 
   (define-splicing-syntax-class expected
     (pattern (~seq #:expected v:expr))
-    (pattern (~seq) #:attr v #'#f)))
-
-;; check that a literal typechecks correctly
-(define-syntax tc-l
-  (syntax-parser
-    [(_ lit ty exp:expected)
-     #'(check-type-equal? (format "~s" 'lit) (tc-literal #'lit exp.v) ty)]))
-
-(define-syntax tc-l/err
-  (syntax-parser
-    [(_ expr exp:expected)
-     #'(test-exn (format "~a" 'expr)
-                 exn:fail:syntax?
-                 (lambda () (tc-literal #'expr exp.v)))]))
+    (pattern (~seq) #:attr v #'#f))
 
 
+  (define (check-no-error stx body)
+    (quasisyntax/loc stx
+      (check-not-exn
+        (lambda () #,body))))
 
-(define (expand-helper stx k)
-  (parameterize ([delay-errors? #f]
-                 [current-namespace (namespace-anchor->namespace anch)]
-                 [orig-module-stx stx])
-    (let ([ex (expand stx)])
-      (find-mutated-vars ex mvar-env)
-      (k ex))))
-
-;; local-expand and then typecheck an expression
-(define-syntax (tc-expr/expand/values stx)
-  (syntax-case stx ()
-    [(_ e)
-     #'(expand-helper (quote-syntax e)
-         (λ (ex) (values (lambda () (tc-expr ex)) ex)))]))
-
-(define-syntax (tc-expr/expand/check stx)
-  (syntax-case stx ()
-    [(_ e exp)
-     #'(expand-helper (quote-syntax e)
-                      (λ (stx)
-                        (let ((expected exp))
-                          (if expected
-                              (tc-expr/check stx expected)
-                              (tc-expr stx)))))]))
+  (define (check-error stx body)
+    (quasisyntax/loc stx
+      (check-exn
+        exn:fail:syntax?
+        (lambda () #,body)))))
 
 
+;;Constructs the syntax that calls eval and returns the answer to the user
 (define-syntax (tc-e stx)
   (syntax-parse stx
-    [(_ expr:expr #:proc p)
-     (quasisyntax/loc stx
-       (let-values ([(t e) (tc-expr/expand/values expr)])
-         #,(quasisyntax/loc stx (check-tc-result-equal? (format "~a ~s" #,(syntax-line stx) 'expr) (t) (p e)))))]
-    [(_ expr:expr r:return x:expected)
-     (quasisyntax/loc stx
-        (check-tc-result-equal? (format "~a ~a" #,(syntax-line stx) 'expr)
-                                (tc-expr/expand/check expr x.v) r.v))]))
+    [(_ code:expr #:proc p)
+     (check-no-error stx
+       #'(phase1-eval (test/proc (quote-syntax code) p)))]
+    [(_ code:expr return:return x:expected)
+     (check-no-error stx
+       #'(phase1-eval (test (quote-syntax code) return.v x.v)))]))
 
 (define-syntax (tc-e/t stx)
   (syntax-parse stx
     [(_ e t) (syntax/loc stx (tc-e e #:ret (ret t (-FS -top -bot))))]))
 
+;; check that a literal typechecks correctly
+(define-syntax (tc-l stx)
+  (syntax-parse stx
+    [(_ lit ty exp:expected)
+     (check-no-error stx
+       #'(phase1-eval (test-literal #'lit ty exp.v)))]))
+
+
 ;; check that typechecking this expression fails
 (define-syntax (tc-err stx)
   (syntax-parse stx
-    [(_ expr ex:expected)
-     #'(test-exn (format "~a" 'expr)
-                 exn:fail:syntax?
-                 (lambda () (tc-expr/expand/check expr ex.v)))]))
+    [(_ code:expr ex:expected)
+     (check-error stx
+       #'(phase1-eval (tc (tr-expand (quote-syntax code)) ex.v)))]))
 
-(define-syntax-class (let-name n)
-  #:literals (let-values)
-  (pattern (let-values ([(i:id) _] ...) . _)
-           #:with x (list-ref (syntax->list #'(i ...)) n)))
+(define-syntax (tc-l/err stx)
+  (syntax-parse stx
+    [(_ lit:expr ex:expected)
+     (check-error stx
+       #'(phase1-eval (tc-literal #'lit ex.v)))]))
 
-(define-syntax-rule (get-let-name id n e)
-  (syntax-parser
-   [p #:declare p (let-name n)
-      #:with id #'p.x
-      e]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(require
+  rackunit
+
+  ;; Needed for bindings of identifiers in expressions
+  racket/bool
+  racket/file
+  racket/fixnum
+  racket/flonum
+  racket/list
+  racket/math
+  racket/path
+  racket/sequence
+  racket/set
+  racket/string
+  racket/tcp
+  racket/udp
+  racket/vector
+
+  typed-racket/utils/utils
+  ;; Needed for bindings of types and TR primitives in expressions
+  (except-in (base-env extra-procs prims base-types base-types-extra)
+    define lambda λ)
+  ;; Needed for constructing TR types in expected values
+  (for-syntax
+    (rep type-rep filter-rep object-rep)
+    (rename-in (types abbrev union numeric-tower filter-ops utils)
+               [Un t:Un]
+               [-> t:->])))
+
+(begin-for-syntax
+  (define-syntax-class (let-name n)
+    #:literals (let-values)
+    (pattern (let-values ([(i:id) _] ...) . _)
+             #:with x (list-ref (syntax->list #'(i ...)) n)))
+
+  (define-syntax-rule (get-let-name id n e)
+    (syntax-parser
+     [p #:declare p (let-name n)
+        #:with id #'p.x
+        e]))
+
+  (define N -Number)
+  (define B -Boolean)
+  (define Sym -Symbol)
+  (define -Pos -PosInt)
+  (define R -Real)
+
+  (define (-path t var [p null])
+    (ret t
+         (-FS (make-NotTypeFilter (-val #f) p var)
+              (make-TypeFilter (-val #f) p var))
+         (make-Path p var))))
+
 
 (define (typecheck-tests)
   (test-suite
-   "Typechecker tests"
-   #reader typed-racket/typed-reader
-     (test-suite
+    "Typechecker tests"
+    #reader typed-racket/typed-reader
+      (test-suite
         "tc-expr tests"
 
         [tc-e
@@ -240,11 +292,11 @@
         (tc-err (let: ([z : 4611686018427387903 4611686018427387903]) z)) ; unsafe
         (tc-e (let: ([z : 4611686018427387904 4611686018427387904]) z) (-val 4611686018427387904))
 
-        [tc-e/t (lambda: () 3) (t:-> -PosByte : -true-lfilter)]
-        [tc-e/t (lambda: ([x : Number]) 3) (t:-> N -PosByte : -true-lfilter)]
-        [tc-e/t (lambda: ([x : Number] [y : Boolean]) 3) (t:-> N B -PosByte : -true-lfilter)]
-        [tc-e/t (lambda () 3) (t:-> -PosByte : -true-lfilter)]
-        [tc-e (values 3 4) #:ret (ret (list -PosByte -PosByte) (list -true-filter -true-filter))]
+        [tc-e/t (lambda: () 3) (t:-> -PosByte : true-lfilter)]
+        [tc-e/t (lambda: ([x : Number]) 3) (t:-> N -PosByte : true-lfilter)]
+        [tc-e/t (lambda: ([x : Number] [y : Boolean]) 3) (t:-> N B -PosByte : true-lfilter)]
+        [tc-e/t (lambda () 3) (t:-> -PosByte : true-lfilter)]
+        [tc-e (values 3 4) #:ret (ret (list -PosByte -PosByte) (list true-filter true-filter))]
         [tc-e (cons 3 4) (-pair -PosByte -PosByte)]
         [tc-e (cons 3 (ann '() : (Listof Integer))) (make-Listof -Integer)]
         [tc-e (void) -Void]
@@ -340,7 +392,7 @@
         [tc-e (apply (lambda: ([x : Number] . [y : Boolean *]) (car y)) 3 '(#f)) B]
         [tc-e (lambda args (void)) #:ret (ret (t:-> -String -Void) (-FS -top -bot))
                                    #:expected (ret (t:-> -String -Void) (-FS -top -bot))]
-        [tc-e (lambda (x y . z) 
+        [tc-e (lambda (x y . z)
                 (+ x y (+ (length z))))
               #:ret (ret (t:-> -Byte -Index N) (-FS -top -bot))
               #:expected (ret (t:-> -Byte -Index N) (-FS -top -bot))]
@@ -593,7 +645,7 @@
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (number? z))])
                   (lambda: ([x : Any]) (if (p? x) 11 12)))
-                (t:-> Univ -PosByte : -true-lfilter)]
+                (t:-> Univ -PosByte : true-lfilter)]
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (number? z))])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
@@ -605,7 +657,7 @@
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (not (number? z)))])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
-                (t:-> Univ -PosByte : -true-lfilter)]
+                (t:-> Univ -PosByte : true-lfilter)]
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) z)])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
@@ -788,12 +840,12 @@
 
         ;; instantiating dotted terms
         [tc-e/t (inst (plambda: (a ...) [xs : a ... a] 3) Integer Boolean Integer)
-                (-Integer B -Integer . t:-> . -PosByte : -true-lfilter)]
+                (-Integer B -Integer . t:-> . -PosByte : true-lfilter)]
         [tc-e/t (inst (plambda: (a ...) [xs : (a ... a -> Integer) ... a] 3) Integer Boolean Integer)
                 ((-Integer B -Integer . t:-> . -Integer)
                  (-Integer B -Integer . t:-> . -Integer)
                  (-Integer B -Integer . t:-> . -Integer)
-                 . t:-> . -PosByte : -true-filter)]
+                 . t:-> . -PosByte : true-filter)]
 
         [tc-e/t (plambda: (z x y ...) () (inst map z x y ... y))
               (-polydots (z x y) (t:-> (cl->*
@@ -873,13 +925,13 @@
                    (lambda: ([y : (a ... a -> Number)])
                      (apply y zs))
                    ys)))
-              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N)) : -true-lfilter))]
+              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N)) : true-lfilter))]
         [tc-e/t (plambda: (a ...) [ys : (a ... a -> Number) *]
                 (lambda: [zs : a ... a]
                   (map (lambda: ([y : (a ... a -> Number)])
                          (apply y zs))
                        ys)))
-              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N)) : -true-lfilter))]
+              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N)) : true-lfilter))]
 
         [tc-e/t (lambda: ((x : (All (t) t)))
                        ((inst (inst x (All (t) (t -> t)))
@@ -933,7 +985,7 @@
                                      [user : Number]
                                      [gc : Number])
                              'whatever))
-         #:ret (ret (-val 'whatever) -true-filter)]
+         #:ret (ret (-val 'whatever) true-filter)]
         [tc-e
          (call-with-values (lambda () ((inst time-apply Number Number Number Number Number Number Number) + (list 1 2 3 4 5 6)))
                            (lambda: ([v : (Listof Number)]
@@ -941,14 +993,14 @@
                                      [user : Number]
                                      [gc : Number])
                              'whatever))
-         #:ret (ret (-val 'whatever) -true-filter)]
+         #:ret (ret (-val 'whatever) true-filter)]
         [tc-e (let: ([l : (Listof Any) (list 1 2 3)])
                 (if (andmap number? l)
                     (+ 1 (car l))
                     7))
               -Number]
         (tc-e (or (string->number "7") 7)
-              #:ret (ret -Number -true-filter))
+              #:ret (ret -Number true-filter))
         [tc-e (let ([x 1]) (if x x (add1 x)))
               #:ret (ret -One (-FS -top -top))]
         [tc-e (let: ([x : (U (Vectorof Integer) String) (vector 1 2 3)])
@@ -1233,7 +1285,6 @@
 
         (tc-e (preferences-lock-file-mode) (one-of/c 'exists 'file-lock))
 
-
         (tc-e (make-lock-file-name "tmp.file") -Pathlike)
         (tc-e (make-lock-file-name "tmp.dir" "tmp.file") -Pathlike)
 
@@ -1342,6 +1393,7 @@
               #:ret (ret B (-FS -top -bot)))
 
 
+        #;
         (tc-e (let ()
                 (: std-out Input-Port)
                 (: std-in  Output-Port)
@@ -1354,6 +1406,7 @@
               -Nat)
 
 
+        #;
         (tc-e (let ()
                 (: std-out #f)
                 (: std-in  #f)
@@ -1656,7 +1709,7 @@
         [tc-e (vector-set! (ann (vector 'a 'b) (Vector Symbol Symbol)) (+ -1 2) 'c)
               -Void]
         [tc-err
-          (ann 
+          (ann
             ((letrec ((x (lambda (acc #{ v : Symbol}) (if v (list v) acc)))) x) null (list 'bad 'prog))
             (Listof Symbol))]
         [tc-e (filter values empty)
@@ -1685,7 +1738,7 @@
           (case-lambda
             [w 'result]
             [(x) (add1 "hello")])
-          (->* (list) Univ (-val 'result) : -true-lfilter)]
+          (->* (list) Univ (-val 'result) : true-lfilter)]
 
         [tc-e
            (opt-lambda: ((x : Symbol 'a)) x)
@@ -1741,20 +1794,4 @@
   ))
 
 
-;; these no longer work with the new scheme for top-level identifiers
-;; could probably be revived
-#|
-(define (tc-toplevel-tests)
-#reader typed-racket/typed-reader
-(test-suite "Tests for tc-toplevel"
-            (tc-tl 3)
-            (tc-tl (define: x : Number 4))
-            (tc-tl (define: (f [x : Number]) : Number x))
-            [tc-tl (pdefine: (a) (f [x : a]) : Number 3)]
-            [tc-tl (pdefine: (a b) (mymap [f : (a -> b)] (l : (list-of a))) : (list-of b)
-                             (if (null? l) #{'() : (list-of b)}
-                                 (cons (f (car l)) (map f (cdr l)))))]))
-|#
-
-(define-go typecheck-tests)
-
+(provide typecheck-tests)
