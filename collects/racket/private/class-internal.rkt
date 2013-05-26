@@ -3496,13 +3496,10 @@ An example
                                 [else #f]))
                             (syntax-local-name))])
            (syntax/loc stx
-             (let* ([inits+contracts (sort (list (cons i i-c) ...)
-                                           (lambda (s1 s2) 
-                                             (string<? (symbol->string s1) (symbol->string s2)))
-                                           #:key car)])
+             (let-values ([(inits init-ctcs) (sort-inits+contracts (list (cons i i-c) ...))])
                (make-class/c methods method-ctcs
                              fields field-ctcs
-                             (map car inits+contracts) (map cdr inits+contracts)
+                             inits init-ctcs
                              inherits inherit-ctcs
                              inherit-fields inherit-field-ctcs
                              supers super-ctcs
@@ -3513,6 +3510,13 @@ An example
                              absents absent-fields
                              opaque?
                              'name))))))]))
+
+(define (sort-inits+contracts lst)
+  (define sorted
+    (sort lst
+          string<?
+          #:key (compose symbol->string car)))
+  (values (map car sorted) (map cdr sorted)))
 
 (define (check-object-contract obj methods fields fail)
   (unless (object? obj)
