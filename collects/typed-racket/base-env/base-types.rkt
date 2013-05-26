@@ -1,11 +1,5 @@
 #lang s-exp "type-env-lang.rkt"
 
-;; This require is necessary, otherwise a somewhat random
-;; selection of unit tests fail.
-;; 
-;; I don't understand this at all. :(
-;; -- STH, 6/26/12
-(require (for-syntax "../env/global-env.rkt"))
 (require "../types/abbrev.rkt" "../types/union.rkt" "../types/numeric-tower.rkt" "../rep/type-rep.rkt")
 
 [Complex -Number]
