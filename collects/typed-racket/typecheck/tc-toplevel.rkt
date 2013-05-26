@@ -159,7 +159,7 @@
        (let* ([vars (syntax->list #'(var ...))])
          (cond
            ;; if all the variables have types, we stick them into the environment
-           [(andmap (lambda (s) (syntax-property s 'type-label)) vars)
+           [(andmap type-label-property vars)
             (let ([ts (map (λ (x) (get-type x #:infer #f)) vars)])
               (for-each register-type-if-undefined vars ts)
               (map make-def-binding vars ts))]

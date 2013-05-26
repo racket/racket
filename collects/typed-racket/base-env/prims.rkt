@@ -155,9 +155,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (define/with-syntax sm (if (attribute parent)
                                   #'(#:struct-maker parent)
                                   #'()))
-       (define prop-name (if (attribute parent)
-                             'typechecker:contract-def/maker
-                             'typechecker:contract-def))
+       (define property
+         (if (attribute parent)
+             contract-def/maker-property
+             contract-def-property))
        (quasisyntax/loc stx
          (begin
            ;; define `cnt*` to be fixed up later by the module
@@ -165,7 +166,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
            ;; doesn't work with local expansion)
            #,@(ignore (if (eq? (syntax-local-context) 'top-level)
                           #'()
-                          #`(#,(syntax-property #'(define cnt* #f) prop-name #'ty))))
+                          #`(#,(property #'(define cnt* #f) #'ty))))
            #,(internal #'(require/typed-internal hidden ty . sm))
            #,(ignore #'(require/contract nm.spec hidden cnt* lib))))]))
   (values (r/t-maker #t) (r/t-maker #f))))
@@ -195,8 +196,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
      #`(begin
          #,(ignore-property (if (eq? (syntax-local-context) 'top-level)
                                 #'(define name (procedure-rename (make-predicate ty) 'name))
-                                (syntax-property #'(define name #f)
-                                                 'typechecker:flat-contract-def #'ty))
+                                (flat-contract-def-property  #'(define name #f) #'ty))
                             #t)
          ;; not a require, this is just the unchecked declaration syntax
          #,(internal #'(require/typed-internal name (Any -> Boolean : ty))))]))
@@ -206,7 +206,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ ty:expr)
      (if (syntax-transforming-module-expression?)
        (let ((name (syntax-local-lift-expression
-                     (syntax-property #'#f 'typechecker:flat-contract-def #'ty))))
+                     (flat-contract-def-property #'#f #'ty))))
          (define (check-valid-type _)
            (define type (parse-type #'ty))
            (define vars (fv type))
@@ -217,10 +217,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                type)))
 
          #`(ann
-             #,(syntax-property
-                 (ignore-some-property name #t)
-                 'typechecker:external-check check-valid-type)
-
+             #,(external-check-property (ignore-some-property name #t) check-valid-type)
              (Any -> Boolean : ty)))
        (let ([typ (parse-type #'ty)])
          (if (Error? typ)
@@ -245,7 +242,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
        #`(#%expression
            (ann
              #,(ignore-some-property
-                 #`(let-values (((val) #,(syntax-property #'(ann v Any) 'with-type #t)))
+                 #`(let-values (((val) #,(with-type-property #'(ann v Any) #t)))
                      (contract
                        #,ctc-expr
                        val
@@ -260,7 +257,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
             #'v]
            [(syntax-transforming-module-expression?)
             (let ((ctc (syntax-local-lift-expression
-                        (syntax-property #'#f 'typechecker:contract-def #'ty))))
+                        (contract-def-property #'#f #'ty))))
               (define (check-valid-type _)
                 (define type (parse-type #'ty))
                 (define vars (fv type))
@@ -269,8 +266,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                   (tc-error/delayed
                    "Type ~a could not be converted to a contract because it contains free variables."
                    type)))
-              (syntax-property (apply-contract ctc)
-                               'typechecker:external-check check-valid-type))]
+              (external-check-property (apply-contract ctc) check-valid-type))]
            [else
             (let ([typ (parse-type #'ty)])
               (if (Error? typ)
@@ -352,7 +348,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (ann stx)
   (syntax-parse stx #:literals (:)
     [(_ (~or (~seq arg : ty) (~seq arg ty)))
-     (syntax-property #'arg 'type-ascription #'ty)]))
+     (type-ascription-property #'arg #'ty)]))
 
 (define-syntax (inst stx)
   (syntax-parse stx #:literals (:)
@@ -360,9 +356,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (syntax/loc stx (inst arg . tys))]
     [(_ arg tys ... ty ddd b:id)
      #:when (eq? (syntax-e #'ddd) '...)
-     (syntax-property #'arg 'type-inst #'(tys ... (ty . b)))]
+     (type-inst-property #'arg #'(tys ... (ty . b)))]
     [(_ arg tys ...)
-     (syntax-property #'arg 'type-inst #'(tys ...))]))
+     (type-inst-property #'arg #'(tys ...))]))
 
 (define-syntax (define: stx)
   (syntax-parse stx #:literals (:)
@@ -373,7 +369,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
            (lambda: formals body ...))))]
     [(define: nm:id ~! (~describe ":" :) (~describe "type" ty) body)
      (identifier? #'nm)
-     (with-syntax ([new-nm (syntax-property #'nm 'type-label #'ty)])
+     (with-syntax ([new-nm (type-label-property #'nm #'ty)])
        (syntax/loc stx (define new-nm body)))]
     [(define: (tvars:id ...) nm:id : ty body)
      (with-syntax ([type (syntax/loc #'ty (All (tvars ...) ty))])
@@ -470,14 +466,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (with-handlers: stx)
   (syntax-parse stx
     [(_ ([pred? action] ...) . body)
-     (with-syntax ([(pred?* ...) (map (lambda (s) (syntax-property #`(ann #,s : (Any -> Any)) 'typechecker:with-type #t))
+     (with-syntax ([(pred?* ...) (map (lambda (s) (with-type-property #`(ann #,s : (Any -> Any)) #t))
                                       (syntax->list #'(pred? ...)))]
                    [(action* ...)
-                    (map (lambda (s) (syntax-property s 'typechecker:exn-handler #t)) (syntax->list #'(action ...)))]
-                   [body* (syntax-property #'(let-values () . body) 'typechecker:exn-body #t)])
-       (syntax-property #'(with-handlers ([pred?* action*] ...) body*)
-                        'typechecker:with-handlers
-                        #t))]))
+                    (map (lambda (s) (exn-handler-property s #t)) (syntax->list #'(action ...)))]
+                   [body* (exn-body-property #'(let-values () . body) #t)])
+       (with-handlers-property #'(with-handlers ([pred?* action*] ...) body*) #t))]))
 
 (begin-for-syntax
   (define-syntax-class dtsi-struct-name
@@ -493,7 +487,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx #:literals (:)
     [(_ nm ((~describe "field specification" [fld:optionally-annotated-name]) ...) [proc : proc-ty])
      (with-syntax*
-      ([proc* (syntax-property #'(ann proc : proc-ty) 'typechecker:with-type #t)]
+      ([proc* (with-type-property #'(ann proc : proc-ty) #t)]
        [d-s (ignore-some-property (syntax/loc stx (define-struct nm (fld.name ...)
                                                #:property prop:procedure proc*))
                                   #t)]
@@ -508,11 +502,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
           [(_ () nm:dtsi-struct-name . rest)
            (internal (quasisyntax/loc stx
                        (#,internal-id
-                        #,(syntax-property #'nm 'struct-info (attribute nm.value)) . rest)))]
+                        #,(struct-info-property #'nm (attribute nm.value)) . rest)))]
           [(_ (vars:id ...) nm:dtsi-struct-name . rest)
            (internal (quasisyntax/loc stx
                        (#,internal-id (vars ...)
-                                      #,(syntax-property #'nm 'struct-info (attribute nm.value)) . rest)))])))
+                                      #,(struct-info-property #'nm (attribute nm.value)) . rest)))])))
     (values (mk #'define-typed-struct-internal)
             (mk #'define-typed-struct/exec-internal))))
 
@@ -755,7 +749,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
         ;; c is not always an expression, could be a break-clause
         clauses c ...) ; no need to annotate the type, it's always Void
      (let ((body #`(; break-clause ...
-                    #,@(syntax-property #'(c ...) 'type-ascription #'Void))))
+                    #,@(type-ascription-property #'(c ...) #'Void))))
        (let loop ((clauses #'clauses))
          (define-splicing-syntax-class for-clause
            ;; single-valued seq-expr
@@ -778,20 +772,18 @@ This file defines two sorts of primitives. All of them are provided into any mod
                     #:with replace-with #'unless))
          (syntax-parse clauses
            [(head:for-clause next:for-clause ... kw:for-kw rest ...)
-            (syntax-property
+            (type-ascription-property
              (quasisyntax/loc stx
                (for
                 (head.expand ... next.expand ... ...)
                 #,(loop #'(kw rest ...))))
-             'type-ascription
              #'Void)]
            [(head:for-clause ...) ; we reached the end
-            (syntax-property
+            (type-ascription-property
              (quasisyntax/loc stx
                (for
                 (head.expand ... ...)
                 #,@body))
-             'type-ascription
              #'Void)]
            [(kw:for-kw guard) ; we end on a keyword clause
             (quasisyntax/loc stx
@@ -804,7 +796,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (define-for-syntax (maybe-annotate-body body ty)
   (if (syntax-e ty)
-      (syntax-property body 'type-ascription ty)
+      (type-ascription-property body ty)
       body))
 
 ;; Handling #:when clauses manually, like we do with for: above breaks
@@ -851,22 +843,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
         ((var:optionally-annotated-name) ...)
         clause:for-clauses
         c ...) ; c is not always an expression, can be a break-clause
-     (syntax-property
+     (type-ascription-property
       (quasisyntax/loc stx
         (for/lists (var.ann-name ...)
           (clause.expand ... ...)
           c ...))
-      'type-ascription
       #'ty)]
     [(_ ((var:annotated-name) ...)
         clause:for-clauses
         c ...)
-     (syntax-property
+     (type-ascription-property
       (quasisyntax/loc stx
         (for/lists (var.ann-name ...)
           (clause.expand ... ...)
           c ...))
-      'type-ascription
       #'(values var.ty ...))]))
 (define-syntax (for/fold: stx)
   (syntax-parse stx #:literals (:)
@@ -874,22 +864,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
         ((var:optionally-annotated-name init:expr) ...)
         clause:for-clauses
         c ...) ; c is not always an expression, can be a break-clause
-     (syntax-property
+     (type-ascription-property
       (quasisyntax/loc stx
         (for/fold ((var.ann-name init) ...)
           (clause.expand ... ...)
           c ...))
-      'type-ascription
       #'ty)]
     [(_ accum:accumulator-bindings
         clause:for-clauses
         c ...)
-     (syntax-property
+     (type-ascription-property
       (quasisyntax/loc stx
         (for/fold ((accum.ann-name accum.init) ...)
           (clause.expand ... ...)
           c ...))
-      'type-ascription
       #'(values accum.ty ...))]))
 
 
@@ -934,22 +922,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
         ((var:optionally-annotated-name) ...)
         clause:for-clauses
         c ...) ; c is not always an expression, can be a break-clause
-     (syntax-property
+     (type-ascription-property
       (quasisyntax/loc stx
         (for/lists (var.ann-name ...)
           (clause.expand* ... ...)
           c ...))
-      'type-ascription
       #'ty)]
     [(_ ((var:annotated-name) ...)
         clause:for-clauses
         c ...)
-     (syntax-property
+     (type-ascription-property
       (quasisyntax/loc stx
         (for/lists (var.ann-name ...)
           (clause.expand* ... ...)
           c ...))
-      'type-ascription
       #'(values var.ty ...))]))
 (define-syntax (for*/fold: stx)
   (syntax-parse stx #:literals (:)
@@ -957,22 +943,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
         ((var:optionally-annotated-name init:expr) ...)
         clause:for-clauses
         c ...) ; c is not always an expression, can be a break-clause
-     (syntax-property
+     (type-ascription-property
       (quasisyntax/loc stx
         (for/fold ((var.ann-name init) ...)
           (clause.expand* ... ...)
           c ...))
-      'type-ascription
       #'ty)]
     [(_ ((var:annotated-name init:expr) ...)
         clause:for-clauses
         c ...)
-     (syntax-property
+     (type-ascription-property
       (quasisyntax/loc stx
         (for/fold ((var.ann-name init) ...)
           (clause.expand* ... ...)
           c ...))
-      'type-ascription
       #'(values var.ty ...))]))
 
 (define-for-syntax (define-for/acc:-variant for*? for/folder: for/folder op initial final)
@@ -1088,9 +1072,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (values
            (ormap keyword? (map syntax-e arg-list))
            (ormap syntax->list arg-list)))))
-      (syntax-property
-        (syntax-property d 'kw-lambda has-kw?)
-        'opt-lambda has-opt?)]))
+      (opt-lambda-property (kw-lambda-property d has-kw?) has-opt?)]))
 
 ;; do this ourselves so that we don't get the static bindings,
 ;; which are harder to typecheck

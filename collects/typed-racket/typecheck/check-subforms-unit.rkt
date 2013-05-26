@@ -7,6 +7,7 @@
          "signatures.rkt" "tc-metafunctions.rkt"
          "tc-funapp.rkt" "tc-subst.rkt"
          (types utils abbrev union subtype resolve)
+         (private syntax-properties)
          (utils tc-utils)
          (rep type-rep))
 
@@ -56,19 +57,19 @@
       (syntax-parse form
         [stx
          ;; if this needs to be checked
-         #:when (syntax-property form 'typechecker:with-type)
+         #:when (with-type-property form)
          ;; the form should be already ascribed the relevant type
          (tc-expr form)]
         [stx
          ;; this is a handler function
-         #:when (syntax-property form 'typechecker:exn-handler)
+         #:when (exn-handler-property form)
          (let ([t (single-value form)])
            (match t
              [(tc-result1: t)
               (set! handler-tys (cons (get-result-ty t) handler-tys))]))]
         [stx
          ;; this is the body of the with-handlers
-         #:when (syntax-property form 'typechecker:exn-body)
+         #:when (exn-body-property form)
          (set! body-stx form)
          (set! body-ty (tc-expr form))]
         [(a . b)
@@ -84,16 +85,16 @@
       (kernel-syntax-case* form #f ()
         [stx
          ;; if this needs to be checked
-         (syntax-property form 'typechecker:with-type)
+         (with-type-property form)
          ;; the form should be already ascribed the relevant type
          (tc-expr form)]
         [stx
          ;; this is a hander function
-         (syntax-property form 'typechecker:exn-handler)
+         (exn-handler-property form)
          (tc-expr/check form (ret (-> (Un) (tc-results->values expected))))]
         [stx
          ;; this is the body of the with-handlers
-         (syntax-property form 'typechecker:exn-body)
+         (exn-body-property form)
          (tc-expr/check form expected)]
         [(a . b)
          (begin
@@ -109,7 +110,7 @@
     (kernel-syntax-case* form #f ()
       [stx
        ;; if this needs to be checked
-       (syntax-property form 'typechecker:with-type)
+       (with-type-property form)
        ;; the form should be already ascribed the relevant type
        (void (tc-expr form))]
       [(a . b)
