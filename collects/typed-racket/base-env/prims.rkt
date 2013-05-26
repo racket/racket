@@ -1066,8 +1066,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (-lambda stx)
   (syntax-parse stx
     [(_ formals . body)
-     (define d (datum->syntax stx `(,#'λ ,#'formals . ,#'body)
-                              stx stx))
      (define-values (has-kw? has-opt?)
        (syntax-parse #'formals
         ((~or (~and rest:id (~bind ((args 1) null)))
@@ -1077,7 +1075,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (values
            (ormap keyword? (map syntax-e arg-list))
            (ormap syntax->list arg-list)))))
-      (opt-lambda-property (kw-lambda-property d has-kw?) has-opt?)]))
+      (opt-lambda-property
+        (kw-lambda-property
+          (syntax/loc stx (λ formals . body))
+          has-kw?) has-opt?)]))
 
 ;; do this ourselves so that we don't get the static bindings,
 ;; which are harder to typecheck
