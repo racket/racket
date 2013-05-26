@@ -26,7 +26,7 @@
   ;; can't optimize the body of this code because it isn't typechecked
   (pattern ((~and op (~literal let-values))
             ([(i:id) e-rhs:expr]) e-body:expr ...)
-           #:when (syntax-property this-syntax 'kw-lambda)
+           #:when (kw-lambda-property this-syntax)
            #:with opt-rhs ((optimize) #'e-rhs)
            #:with opt (quasisyntax/loc/origin this-syntax #'op
                         (op ([(i) opt-rhs]) e-body ...)))
@@ -99,9 +99,9 @@
           [e:expr
            #:when (and (not (ignore-property #'e))
                        (not (ignore-some-property #'e))
-                       (not (syntax-property #'e 'typechecker:with-handlers))
+                       (not (with-handlers-property #'e))
                        #;
-                       (not (syntax-property #'e 'kw-lambda)))
+                       (not (kw-lambda-property #'e)))
            #:with e*:opt-expr #'e
            #'e*.opt]
           [e:expr #'e])])

@@ -25,7 +25,7 @@
 
 ;; do-inst : syntax type -> type
 (define (do-inst stx ty)
-  (define inst (syntax-property stx 'type-inst))
+  (define inst (type-inst-property stx))
   (define (split-last l)
     (let-values ([(all-but last-list) (split-at l (sub1 (length l)))])
       (values all-but (car last-list))))
@@ -125,10 +125,10 @@
                  ;; around again in case there is an instantiation
                  ;; remove the ascription so we don't loop infinitely
                  (loop (remove-ascription form*) r* #t)))]
-            [(syntax-property form* 'type-inst)
+            [(type-inst-property form*)
              ;; check without property first
              ;; to get the appropriate type to instantiate
-             (match (tc-expr (syntax-property form* 'type-inst #f))
+             (match (tc-expr (type-inst-property form* #f))
                [(tc-results: ts fs os)
                 ;; do the instantiation on the old type
                 (let* ([ts* (do-inst form* ts)]
@@ -138,11 +138,11 @@
                   (check-below ts** expected))]
                ;; no annotations possible on dotted results
                [ty (add-typeof-expr form ty) ty])]
-            [(syntax-property form* 'typechecker:external-check)
+            [(external-check-property form*)
              =>
              (lambda (check)
                (check form*)
-               (loop (syntax-property form* 'typechecker:external-check #f)
+               (loop (external-check-property form* #f)
                      expected
                      checked?))]
             ;; nothing to see here
@@ -182,7 +182,7 @@
       #:literal-sets (kernel-literals)
       #:literals (find-method/who)
       [stx
-       #:when (syntax-property form 'typechecker:with-handlers)
+       #:when (with-handlers-property form)
        (check-subforms/with-handlers/check form expected)]
       [stx
        #:when (ignore-some-property form)
@@ -266,8 +266,7 @@
       ;; kw/opt function def
       [(let-values ([(_) fun])
          . body)
-       #:when (or (syntax-property form 'kw-lambda)
-                  (syntax-property form 'opt-lambda))
+       #:when (or (kw-lambda-property form) (opt-lambda-property form))
        (match expected
          [(tc-result1: (and f (or (Function: _)
                                   (Poly: _ (Function: _)))))
@@ -305,7 +304,7 @@
       #:literals (#%app lambda find-method/who)
       ;;
       [stx
-       #:when (syntax-property form 'typechecker:with-handlers)
+       #:when (with-handlers-property form)
        (let ([ty (check-subforms/with-handlers form)])
          (unless ty
            (int-err "internal error: with-handlers"))
