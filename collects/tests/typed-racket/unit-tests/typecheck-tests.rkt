@@ -40,7 +40,7 @@
 (require (prefix-in b: (base-env base-env))
          (prefix-in n: (base-env base-env-numeric)))
 
-(provide typecheck-tests g)
+(provide typecheck-tests)
 
 (b:init) (n:init) (initialize-structs) (initialize-indexing) (initialize-type-names)
 
@@ -49,8 +49,6 @@
 (define Sym -Symbol)
 (define -Pos -PosInt)
 (define R -Real)
-
-(define (g) (run typecheck-tests))
 
 (define-namespace-anchor anch)
 
@@ -116,16 +114,6 @@
 (define-syntax (tc-e/t stx)
   (syntax-parse stx
     [(_ e t) (syntax/loc stx (tc-e e #:ret (ret t (-FS -top -bot))))]))
-
-;; duplication of the mzscheme toplevel expander, necessary for expanding the rhs of defines
-;; note that this ability is never used
-(define-for-syntax (local-expand/top-level form)
-  (let ([form* (local-expand form 'module (kernel-form-identifier-list #'here))])
-    (kernel-syntax-case form* #f
-                        [(define-syntaxes . _) (raise-syntax-error "don't use syntax defs here!" form)]
-                        [(define-values vals body)
-                         (quasisyntax/loc form (define-values vals #,(local-expand #'body 'expression '())))]
-                        [e (local-expand #'e 'expression '())])))
 
 ;; check that typechecking this expression fails
 (define-syntax (tc-err stx)
