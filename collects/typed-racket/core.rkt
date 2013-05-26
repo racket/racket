@@ -3,7 +3,7 @@
 (require (rename-in "utils/utils.rkt")
          (for-syntax racket/base)
          (for-template racket/base)
-         (private with-types type-contract parse-type)
+         (private with-types type-contract parse-type syntax-properties)
          (except-in syntax/parse id)
          racket/match racket/syntax unstable/match racket/list syntax/stx
          racket/format
@@ -88,8 +88,7 @@
      (with-syntax ([(dummy-arg ...) (generate-temporaries #'(arg-type ...))])
        (tc-setup #'stx
                  ;; create a dummy function with the right argument types
-                 #`(lambda #,(stx-map (lambda (a t)
-                                        (syntax-property a 'type-label t))
+                 #`(lambda #,(stx-map type-label-property
                                       #'(dummy-arg ...) #'(arg-type ...))
                      (op dummy-arg ...))
                  'top-level expanded init tc-toplevel-form before type

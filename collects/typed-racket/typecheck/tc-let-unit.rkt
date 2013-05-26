@@ -4,7 +4,7 @@
          (only-in srfi/1/list s:member)
          (except-in (types utils abbrev union) -> ->* one-of/c)
          (only-in (types abbrev) (-> t:->))
-         (private type-annotation parse-type)
+         (private type-annotation parse-type syntax-properties)
          (env lexical-env type-alias-env global-env type-env-structs scoped-tvar-env)
          (rep type-rep filter-rep object-rep)
          syntax/free-vars
@@ -216,10 +216,10 @@
 (define ((tc-expr-t/maybe-expected expected) e)
   (syntax-parse e #:literals (#%plain-lambda)
     [(#%plain-lambda () _)
-     #:fail-unless (and expected (syntax-property e 'typechecker:called-in-tail-position)) #f
+     #:fail-unless (and expected (tail-position-property e)) #f
      (tc-expr/check e (ret (t:-> (tc-results->values expected))))]
     [_
-     #:fail-unless (and expected (syntax-property e 'typechecker:called-in-tail-position)) #f
+     #:fail-unless (and expected (tail-position-property e)) #f
      (tc-expr/check e expected)]
     [_ (tc-expr e)]))
 

@@ -7,6 +7,7 @@
          syntax/parse/experimental/reflect
          (typecheck signatures tc-funapp tc-app-helper tc-subst)
          (types utils abbrev)
+         (private syntax-properties)
          (rep type-rep filter-rep object-rep rep-utils)
          (for-template racket/base))
 
@@ -18,8 +19,8 @@
 
 (define-syntax-class annotated-op
   (pattern i:identifier
-           #:when (or (syntax-property #'i 'type-inst)
-                      (syntax-property #'i 'type-ascription))))
+           #:when (or (type-inst-property #'i) 
+                      (type-ascription-property #'i))))
 
 (define-tc/app-syntax-class (tc/app-annotated expected)
   ;; Just do regular typechecking if we have one of these.

@@ -6,7 +6,7 @@
 
          (prefix-in c: (contract-req))
          (rep type-rep object-rep free-variance)
-         (private parse-type)
+         (private parse-type syntax-properties)
          (types abbrev utils union resolve substitute type-table)
          (env global-env type-env-structs type-name-env tvar-env)
          (utils tc-utils)
@@ -280,7 +280,7 @@
                  (and proc-ty (parse-type proc-ty))))
   (define sty (mk/inner-struct-type names desc concrete-parent))
 
-  (parsed-struct sty names desc (syntax-property nm/par 'struct-info) type-only))
+  (parsed-struct sty names desc (struct-info-property nm/par) type-only))
 
 
 ;; register a struct type
