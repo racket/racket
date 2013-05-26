@@ -64,7 +64,7 @@
                #:close-button? #f
                (λ (cust parent) (wrap-terminal-action thunk))))
     (send dlg reflow-container)
-    (unless terminal (send dlg center))
+    (unless parent (unless terminal (send dlg center)))
     (set! terminal t)
     (disallow-close)
     (send dlg end-container-sequence)
