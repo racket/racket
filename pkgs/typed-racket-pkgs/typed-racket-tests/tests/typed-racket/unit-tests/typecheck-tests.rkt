@@ -1654,12 +1654,6 @@
            #:expected (ret (t:-> -Symbol -Symbol) (-FS -top -bot))]
         )
   (test-suite
-   "check-type tests"
-   (test-exn "Fails correctly" exn:fail:syntax? (lambda () (parameterize ([orig-module-stx #'here])
-                                                             (check-type #'here N B))))
-   (test-not-exn "Doesn't fail on subtypes" (lambda () (check-type #'here N Univ)))
-   (test-not-exn "Doesn't fail on equal types" (lambda () (check-type #'here N N))))
-  (test-suite
    "tc-literal tests"
    (tc-l 5 -PosByte)
    (tc-l -5 -NegFixnum)
