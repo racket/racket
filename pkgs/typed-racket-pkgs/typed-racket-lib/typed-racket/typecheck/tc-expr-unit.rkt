@@ -22,8 +22,7 @@
 (export tc-expr^)
 
 ;; do-inst : syntax? (listof Type/c) -> (listof Type/c)
-(define (do-inst stx ty)
-  (define inst (type-inst-property stx))
+(define (do-inst ty inst)
   (when (and inst (not (syntax? inst)))
     (int-err "Bad type-inst property ~a" inst))
   (match ty
@@ -114,19 +113,6 @@
                  ;; around again in case there is an instantiation
                  ;; remove the ascription so we don't loop infinitely
                  (loop (remove-ascription form*) r* #t)))]
-            [(type-inst-property form*)
-             ;; check without property first
-             ;; to get the appropriate type to instantiate
-             (match (tc-expr (type-inst-property form* #f))
-               [(tc-results: ts fs os)
-                ;; do the instantiation on the old type
-                (let* ([ts* (do-inst form* ts)]
-                       [ts** (ret ts* fs os)])
-                  (add-typeof-expr form ts**)
-                  ;; make sure the new type is ok
-                  (check-below ts** expected))]
-               ;; no annotations possible on dotted results
-               [ty (add-typeof-expr form ty) ty])]
             [(external-check-property form*)
              =>
              (lambda (check)
@@ -229,7 +215,14 @@
       ;; application
       [(#%plain-app . _) (tc/app/check form expected)]
       ;; #%expression
-      [(#%expression e) (tc-expr/check #'e expected)]
+      [((~and exp #%expression) e)
+       #:when (type-inst-property #'exp)
+       (match (tc-expr #'e)
+         [(tc-results: ts fs os)
+          ;; do the instantiation
+          (ret (do-inst ts (type-inst-property #'exp)) fs os)])]
+      [(#%expression e)
+       (tc-expr/check #'e expected)]
       ;; syntax
       ;; for now, we ignore the rhs of macros
       [(letrec-syntaxes+values stxs vals . body)
@@ -370,6 +363,12 @@
       ;; top-level variable reference - occurs at top level
       [(#%top . id) (tc-id #'id)]
       ;; #%expression
+      [((~and exp #%expression) e)
+       #:when (type-inst-property #'exp)
+       (match (tc-expr #'e)
+         [(tc-results: ts fs os)
+          ;; do the instantiation
+          (ret (do-inst ts (type-inst-property #'exp)) fs os)])]
       [(#%expression e) (tc-expr #'e)]
       ;; #%variable-reference
       [(#%variable-reference . _)
@@ -407,15 +406,8 @@
       [(type-ascription form) => (lambda (ann) (tc-expr/check form ann))]
       [else 
        (let ([ty (internal-tc-expr form)])
-         (match ty
-           [(tc-any-results:)
-            (add-typeof-expr form ty)
-            ty]
-           [(tc-results: ts fs os)
-            (let* ([ts* (do-inst form ts)]
-                   [r (ret ts* fs os)])
-              (add-typeof-expr form r)
-              r)]))])))
+         (add-typeof-expr form ty)
+         ty)])))
 
 (define (single-value form [expected #f])
   (define t (if expected (tc-expr/check form expected) (tc-expr form)))
