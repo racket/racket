@@ -102,14 +102,9 @@
     (unless (syntax? form)
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
-    (let loop ([form* form] [expected expected] [checked? #f])
-      (cond
-            ;; nothing to see here
-            [checked? expected]
-            [else 
-             (define t (tc-expr/check/internal form* expected))
-             (add-typeof-expr form t)
-             (check-below t expected)]))))
+    (define t (tc-expr/check/internal form expected))
+    (add-typeof-expr form t)
+    (check-below t expected)))
 
 (define (explicit-fail stx msg var)
   (cond [(and (identifier? var) (lookup-type/lexical var #:fail (λ _ #f)))
