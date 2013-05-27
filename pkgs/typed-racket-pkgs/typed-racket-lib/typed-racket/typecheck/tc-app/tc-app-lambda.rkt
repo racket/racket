@@ -8,7 +8,7 @@
          unstable/sequence unstable/syntax
          (typecheck signatures find-annotation)
          (types abbrev utils generalize type-table)
-         (private type-annotation)
+         (private type-annotation syntax-properties)
          ;; Needed to construct args to tc/let-values
          (for-template racket/base)
          (for-label racket/base))
@@ -30,15 +30,17 @@
     #:when (free-identifier=? #'lp #'lp*)
     (let-loop-check #'lam #'lp #'actuals #'(args ...) #'body expected))
   ;; inference for ((lambda
-  (pattern ((#%plain-lambda (x ...) . body) args ...)
-   #:when (= (syntax-length #'(x ...))
-             (syntax-length #'(args ...)))
+  (pattern ((~and lam (#%plain-lambda (x ...) . body)) args ...)
+   #:fail-when (plambda-property #'lam) #f
+   #:fail-unless (= (syntax-length #'(x ...))
+                    (syntax-length #'(args ...))) #f
    #:fail-when (andmap type-annotation (syntax->list #'(x ...))) #f
    (tc/let-values #'((x) ...) #'(args ...) #'body expected))
   ;; inference for ((lambda with dotted rest
-  (pattern ((#%plain-lambda (x ... . rst:id) . body) args ...)
-   #:when (<= (syntax-length #'(x ...))
-              (syntax-length #'(args ...)))
+  (pattern ((~and lam (#%plain-lambda (x ... . rst:id) . body)) args ...)
+   #:fail-when (plambda-property #'lam) #f
+   #:fail-unless (<= (syntax-length #'(x ...))
+                     (syntax-length #'(args ...))) #f
    ;; FIXME - remove this restriction - doesn't work because the annotation
    ;; on rst is not a normal annotation, may have * or ...
    #:fail-when (type-annotation #'rst) #f
