@@ -38,7 +38,6 @@
   ;(printf "in type-annotation:~a\n" (syntax->datum stx))
   (cond
     [(type-label-property stx) => pt]
-    [(type-ascription-property stx) => pt]
     ;; this is so that : annotation works in internal def ctxts
     [(and (identifier? stx) (lookup-type stx (lambda () #f)))
      =>
