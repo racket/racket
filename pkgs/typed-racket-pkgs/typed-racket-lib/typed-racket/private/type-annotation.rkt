@@ -39,7 +39,7 @@
   ;(unless let-binding (error 'ohno))
   ;(printf "in type-annotation:~a\n" (syntax->datum stx))
   (syntax-parse stx
-    [(~or v:type-label^ v:type-ascription^) (pt (attribute v.value))]
+    [(~or v:type-label^) (pt (attribute v.value))]
     [i:typed-id^
      (maybe-finish-register-type stx)
      (attribute i.type)]
