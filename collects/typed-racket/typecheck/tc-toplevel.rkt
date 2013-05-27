@@ -194,7 +194,7 @@
 
 ;; typecheck the expressions of a module-top-level form
 ;; no side-effects
-;; syntax -> void
+;; syntax? -> (or/c void? tc-results/c)
 (define (tc-toplevel/pass2 form)
   (parameterize ([current-orig-stx form])
     (kernel-syntax-case* form #f (define-type-alias-internal define-typed-struct-internal define-type-internal
@@ -417,7 +417,7 @@
        (for/last ([form (in-syntax #'(e ...))])
          (define-values (_ result) (tc-toplevel-form form))
          result))
-     (begin0 (values #f (or result (void)))
+     (begin0 (values #f result)
              (report-all-errors))]
     [_
      (when ((internal-syntax-pred define-type-alias-internal) form)
