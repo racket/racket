@@ -222,6 +222,11 @@
    [FAIL (Class (init [x Number]) (init [x Number]))]
    [FAIL (Class (init [x Number]) (init-field [x Number]))]
    [FAIL (Class (field [x Number]) (init-field [x Number]))]
+   ;; test #:self
+   [(Class #:self This% [m ((Instance This%) -> Number)])
+    (-mu This%
+      (make-Class
+       #f null null `((m ,(t:-> (make-Instance This%) N)))))]
    ;; test #:extends
    [(Class #:extends (Class [m (Number -> Number)]) (field [x Number]))
     (make-Class #f null `((x ,-Number)) `((m ,(t:-> N N))))]

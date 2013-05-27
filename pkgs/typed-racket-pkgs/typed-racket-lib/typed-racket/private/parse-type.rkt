@@ -540,7 +540,7 @@
 
 (define-splicing-syntax-class class-type-clauses
   #:description "Class type clause"
-  #:attributes (extends-types
+  #:attributes (self extends-types
                 init-names init-types init-optional?s
                 init-field-names init-field-types
                 init-field-optional?s
@@ -548,6 +548,7 @@
                 method-names method-types)
   #:literals (init init-field field)
   (pattern (~seq (~or (~seq #:extends extends-type:expr)
+                      (~optional (~seq #:self self:id))
                       (init init-clause:init-type ...)
                       (init-field init-field-clause:init-type ...)
                       (field field-clause:field-or-method-type ...)
@@ -653,24 +654,33 @@
     [(kw clause:class-type-clauses)
      (add-disappeared-use #'kw)
      (define parent-types (stx->list #'clause.extends-types))
+     (define recursive-type (attribute clause.self))
+
+     ;; parsing the init, fields, and methods need to be aware of
+     ;; the self type if it's given
+     (define parse-type*
+       (cond [recursive-type
+              (define var (syntax-e recursive-type))
+              (λ (stx) (extend-tvars (list var) (parse-type stx)))]
+             [else parse-type]))
 
      (define given-inits
        (for/list ([name (append (stx-map syntax-e #'clause.init-names)
                                 (stx-map syntax-e #'clause.init-field-names))]
-                  [type (append (stx-map parse-type #'clause.init-types)
-                                (stx-map parse-type #'clause.init-field-types))]
+                  [type (append (stx-map parse-type* #'clause.init-types)
+                                (stx-map parse-type* #'clause.init-field-types))]
                   [optional? (append (attribute clause.init-optional?s)
                                      (attribute clause.init-field-optional?s))])
          (list name type optional?)))
      (define given-fields
        (for/list ([name (append (stx-map syntax-e #'clause.field-names)
                                 (stx-map syntax-e #'clause.init-field-names))]
-                  [type (append (stx-map parse-type #'clause.field-types)
-                                (stx-map parse-type #'clause.init-field-types))])
+                  [type (append (stx-map parse-type* #'clause.field-types)
+                                (stx-map parse-type* #'clause.init-field-types))])
          (list name type)))
      (define given-methods
        (for/list ([name (stx-map syntax-e #'clause.method-names)]
-                  [type (stx-map parse-type #'clause.method-types)])
+                  [type (stx-map parse-type* #'clause.method-types)])
          (list name type)))
 
      ;; merge with all given parent types, erroring if needed
@@ -680,9 +690,16 @@
                 ([parent-type parent-types])
         (merge-with-parent-type parent-type fields methods)))
 
-     (make-Class
-      #f ;; FIXME: put type if it's a row variable
-      given-inits fields methods)]))
+     (define class-type
+       (make-Class
+        #f ;; FIXME: put type if it's a row variable
+        given-inits fields methods))
+
+     (cond [recursive-type
+            =>
+            (λ (self-id)
+              (make-Mu (syntax-e self-id) class-type))]
+           [else class-type])]))
 
 (define (parse-tc-results stx)
   (syntax-parse stx
