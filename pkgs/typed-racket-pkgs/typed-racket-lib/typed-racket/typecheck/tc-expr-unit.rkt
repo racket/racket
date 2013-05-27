@@ -23,102 +23,12 @@
                     (only-in racket/private/class-internal find-method/who)))
 
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-send^ check-subforms^ tc-literal^
-        check-class^)
+        check-class^ tc-expression^)
 (export tc-expr^)
 
 (define-literal-set tc-expr-literals #:for-label
   (find-method/who))
 
-;; do-inst : tc-results? syntax? -> tc-results?
-;; Perform a type instantiation, delegating to the appropriate helper
-;; function depending on if the argument is a row or not
-(define (do-inst tc-res inst)
-  (define inst-type
-    (if (row-syntax? inst) do-row-inst do-normal-inst))
-  (define (error-case tys)
-    (tc-error/expr 
-      "Cannot instantiate expression that produces ~a values"
-      (if (null? tys) 0 "multiple")))
-  (match tc-res
-    [(tc-results: tys fs os)
-     (match tys
-      [(list ty)
-       (ret (list (inst-type ty inst)) fs os)]
-      [_
-       (error-case tys)])]
-    [(tc-results: tys fs os dty dbound)
-     (match tys
-      [(list ty)
-       (ret (list (inst-type ty inst)) fs os dty dbound)]
-      [_
-       (error-case tys)])]))
-
-;; row-syntax? Syntax -> Boolean
-;; This checks if the syntax object resulted from a row instantiation
-(define (row-syntax? stx)
-  (define lst (stx->list stx))
-  (and lst (pair? lst)
-       (eq? (syntax-e (car lst)) '#:row)))
-
-;; do-normal-inst : Type Syntax -> Type
-;; Instantiate a normal polymorphic type
-(define (do-normal-inst ty inst)
-  (cond
-    [(not (or (Poly? ty) (PolyDots? ty)))
-     (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a"
-                    (cleanup-type ty))]
-    [(and (Poly? ty)
-          (not (= (syntax-length inst) (Poly-n ty))))
-     (tc-error/expr #:return (Un)
-                    "Wrong number of type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
-                    (cleanup-type ty) (Poly-n ty) (syntax-length inst))]
-    [(and (PolyDots? ty) (not (>= (syntax-length inst) (sub1 (PolyDots-n ty)))))
-     ;; we can provide 0 arguments for the ... var
-     (tc-error/expr #:return (Un)
-                    "Wrong number of type arguments to polymorphic type ~a:\nexpected at least: ~a\ngot: ~a"
-                    (cleanup-type ty) (sub1 (PolyDots-n ty)) (syntax-length inst))]
-    [(PolyDots? ty)
-     ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
-     ;; use instantiate-poly-dotted, otherwise we do the normal thing.
-     ;; In the case that the list is empty we also do the normal thing
-     (match (syntax->list inst)
-       [(list ty-stxs ... (app syntax-e (cons bound-ty-stx (? identifier? bound-id))))
-        (unless (bound-index? (syntax-e bound-id))
-          (tc-error/stx bound-id "~a is not a type variable bound with ..." (syntax-e bound-id)))
-        (if (= (length ty-stxs) (sub1 (PolyDots-n ty)))
-            (let* ([last-id (syntax-e bound-id)]
-                   [last-ty (extend-tvars (list last-id) (parse-type bound-ty-stx))])
-              (instantiate-poly-dotted ty (map parse-type ty-stxs) last-ty last-id))
-            (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
-                           ty (sub1 (PolyDots-n ty)) (length ty-stxs)))]
-       [stx-list
-        (instantiate-poly ty (map parse-type stx-list))])]
-    [else
-     (instantiate-poly ty (stx-map parse-type inst))]))
-
-;; do-row-inst : Type ClassRow -> Type
-;; Instantiate a row polymorphic function type
-(define (do-row-inst ty row-stx)
-  ;; At this point, we know `stx` represents a row so we can parse it.
-  ;; The parsing is done here because if `inst` did the parsing, it's
-  ;; too early and ends up with an empty type environment.
-  (define row
-    (syntax-parse row-stx
-      [(#:row (~var clauses (row-clauses parse-type)))
-       (attribute clauses.row)]))
-  (cond
-    [(not (PolyRow? ty))
-     (tc-error/expr #:return (Un) "Cannot instantiate non-row-polymorphic type ~a"
-                    (cleanup-type ty))]
-    [else
-     (match-define (PolyRow: _ constraints _) ty)
-     (check-row-constraints
-      row constraints
-      (λ (name)
-        (tc-error/expr
-         (~a "Cannot instantiate row with member " name
-             " that the given row variable requires to be absent"))))
-     (instantiate-poly ty (list row))]))
 
 ;; typecheck an identifier
 ;; the identifier has variable effect
@@ -245,18 +155,7 @@
       ;; application
       [(#%plain-app . _) (tc/app/check form expected)]
       ;; #%expression
-      [((~and exp #%expression) e)
-       #:when (type-inst-property #'exp)
-       (do-inst (tc-expr #'e) (type-inst-property #'exp))]
-      [((~and exp:type-ascription^ #%expression) e)
-       (add-scoped-tvars #'e (parse-literal-alls (attribute exp.value)))
-       (tc-expr/check #'e (parse-tc-results (attribute exp.value)))]
-      [((~and exp #%expression) e)
-       #:when (external-check-property #'exp)
-       ((external-check-property #'exp) #'e)
-       (tc-expr/check #'e expected)]
-      [(#%expression e)
-       (tc-expr/check #'e expected)]
+      [(#%expression e) (tc/#%expression form expected)]
       ;; syntax
       ;; for now, we ignore the rhs of macros
       [(letrec-syntaxes+values stxs vals . body)
@@ -420,13 +319,7 @@
       ;; top-level variable reference - occurs at top level
       [(#%top . id) (tc-id #'id)]
       ;; #%expression
-      [((~and exp #%expression) e)
-       #:when (type-inst-property #'exp)
-       (do-inst (tc-expr #'e) (type-inst-property #'exp))]
-      [((~and exp:type-ascription^ #%expression) e)
-       (add-scoped-tvars #'e (parse-literal-alls (attribute exp.value)))
-       (tc-expr/check #'e (parse-tc-results (attribute exp.value)))]
-      [(#%expression e) (tc-expr #'e)]
+      [(#%expression e) (tc/#%expression form #f)]
       ;; #%variable-reference
       [(#%variable-reference . _)
        (ret -Variable-Reference)]
