@@ -7,7 +7,7 @@
          unstable/sequence unstable/syntax
          (typecheck signatures find-annotation)
          (types abbrev utils generalize type-table)
-         (private type-annotation)
+         (private type-annotation syntax-properties)
 
          (for-template racket/base))
 
