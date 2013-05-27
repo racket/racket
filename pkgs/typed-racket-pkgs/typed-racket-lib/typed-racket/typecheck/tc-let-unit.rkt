@@ -84,8 +84,8 @@
       ;; typecheck the body
       (run 
         (if expected
-          (tc-exprs/check (syntax->list body) (erase-filter expected))
-          (tc-exprs (syntax->list body))))))))
+          (tc-body/check body (erase-filter expected))
+          (tc-body body)))))))
 
 (define (tc-expr/maybe-expected/t e name)
   (define expecteds
