@@ -246,10 +246,11 @@
       [(letrec-syntaxes+values stxs vals . body)
        (tc-expr/check (syntax/loc form (letrec-values vals . body)) expected)]
       ;; begin
-      [(begin e . es) (tc-exprs/check (syntax->list #'(e . es)) expected)]
+      [(begin . es) (tc-body/check #'es expected)]
       [(begin0 e . es)
-       (tc-exprs/check (syntax->list #'es) tc-any-results)
-       (tc-expr/check #'e expected)]
+       (begin0
+         (tc-expr/check #'e expected)
+         (tc-body/check #'es tc-any-results))]
       ;; if
       [(if tst thn els) (tc/if-twoarm #'tst #'thn #'els expected)]
       ;; lambda
@@ -399,10 +400,11 @@
        (tc-expr (syntax/loc form (letrec-values vals . body)))]
 
       ;; begin
-      [(begin e . es) (tc-exprs (syntax->list #'(e . es)))]
+      [(begin . es) (tc-body #'es)]
       [(begin0 e . es)
-       (begin (tc-exprs (syntax->list #'es))
-              (tc-expr #'e))]
+       (begin0
+         (tc-expr #'e)
+         (tc-body #'es))]
       ;; other
       [_ (int-err "cannot typecheck unknown form : ~a" (syntax->datum form))]))
 
@@ -435,17 +437,21 @@
           #:return (or expected (ret (Un)))
      "expected single value, got multiple (or zero) values")]))
 
-;; type-check a list of exprs, producing the type of the last one.
-;; if the list is empty, the type is Void.
-;; list[syntax[expr]] -> tc-result
-(define (tc-exprs exprs)
-  (cond [(null? exprs) (ret -Void)]
-        [(null? (cdr exprs)) (tc-expr (car exprs))]
-        [else (tc-expr/check (car exprs) tc-any-results)
-              (tc-exprs (cdr exprs))]))
+;; type-check a body of exprs, producing the type of the last one.
+;; if the body is empty, the type is Void.
+;; syntax[list[expr]] -> tc-results/c
+(define (tc-body body)
+  (match (syntax->list body)
+    [(list) (ret -Void)]
+    [(list es ... e-final)
+     (for ((e es))
+       (tc-expr/check e tc-any-results))
+     (tc-expr e-final)]))
 
-(define (tc-exprs/check exprs expected)
-  (cond [(null? exprs) (check-below (ret -Void) expected)]
-        [(null? (cdr exprs)) (tc-expr/check (car exprs) expected)]
-        [else (tc-expr/check (car exprs) tc-any-results)
-              (tc-exprs/check (cdr exprs) expected)]))
+(define (tc-body/check body expected)
+  (match (syntax->list body)
+    [(list) (check-below (ret -Void) expected)]
+    [(list es ... e-final)
+     (for ((e es))
+       (tc-expr/check e tc-any-results))
+     (tc-expr/check e-final expected)]))

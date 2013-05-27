@@ -9,8 +9,8 @@
   ([cond-contracted tc-expr (syntax? . -> . tc-results/c)]
    [cond-contracted tc-expr/check (syntax? tc-results/c . -> . tc-results/c)]
    [cond-contracted tc-expr/check/t (syntax? tc-results/c . -> . Type/c)]
-   [cond-contracted tc-exprs ((listof syntax?) . -> . tc-results/c)]
-   [cond-contracted tc-exprs/check ((listof syntax?) tc-results/c . -> . tc-results/c)]
+   [cond-contracted tc-body (syntax? . -> . tc-results/c)]
+   [cond-contracted tc-body/check (syntax? tc-results/c . -> . tc-results/c)]
    [cond-contracted tc-expr/t (syntax? . -> . Type/c)]
    [cond-contracted single-value ((syntax?) ((or/c tc-results/c #f)) . ->* . tc-results/c)]))
 

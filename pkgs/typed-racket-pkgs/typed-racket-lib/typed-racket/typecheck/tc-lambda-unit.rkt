@@ -94,7 +94,7 @@
                         null
                         (and rest-ty (list (or rest (generate-temporary)) rest-ty))
                         (and drest (list (or rest (generate-temporary)) drest))
-                        (tc-exprs/check (syntax->list body) ret-ty))))
+                        (tc-body/check body ret-ty))))
     ;; Check that the number of formal arguments is valid for the expected type.
     ;; Thus it must be able to accept the number of arguments that the expected
     ;; type has. So we check for two cases: if the function doesn't accept
@@ -178,7 +178,7 @@
        null
        #f
        #f
-       (tc-exprs (syntax->list body))))))
+       (tc-body body)))))
 
 
 
@@ -217,7 +217,7 @@
                  null
                  #f
                  (list rest-id (cons rest-type bound))
-                 (tc-exprs (syntax->list body))))))]
+                 (tc-body body)))))]
          ;; Lambda with regular rest argument
          [rest-id
           (let ([rest-type (get-type rest-id #:default Univ)])
@@ -229,7 +229,7 @@
                null
                (list rest-id rest-type)
                #f
-               (tc-exprs (syntax->list body)))))]
+               (tc-body body))))]
          ;; Lambda with no rest argument
          [else
           (with-lexical-env/extend
@@ -239,7 +239,7 @@
              null
              #f
              #f
-             (tc-exprs (syntax->list body))))]))]))
+             (tc-body body)))]))]))
 
 ;; positional: natural? - the number of positional arguments
 ;; rest: boolean? - if there is a positional argument
@@ -512,4 +512,4 @@
           [ft (make-Function (list t))])
      (with-lexical-env/extend
       (list name) (list ft)
-      (begin (tc-exprs/check (syntax->list body) return) (ret ft))))))
+      (begin (tc-body/check body return) (ret ft))))))
