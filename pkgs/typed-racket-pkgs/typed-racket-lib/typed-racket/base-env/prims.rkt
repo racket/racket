@@ -415,7 +415,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (ann stx)
   (syntax-parse stx #:literals (:)
     [(_ (~or (~seq arg : ty) (~seq arg ty)))
-     (type-ascription-property #'arg #'ty)]))
+     (add-ann #'arg #'ty)]))
+
+(define-for-syntax (add-ann expr-stx ty-stx)
+  (type-ascription-property expr-stx ty-stx))
+
 
 (define-syntax (inst stx)
   (syntax-parse stx #:literals (:)
@@ -842,8 +846,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ (~optional (~seq : Void))
         ;; c is not always an expression, could be a break-clause
         clauses c ...) ; no need to annotate the type, it's always Void
-     (let ((body #`(; break-clause ...
-                    #,@(type-ascription-property #'(c ...) #'Void))))
+     (let ((body #'(; break-clause ...
+                    c ...)))
        (let loop ((clauses #'clauses))
          (define-splicing-syntax-class for-clause
            ;; single-valued seq-expr
@@ -865,14 +869,14 @@ This file defines two sorts of primitives. All of them are provided into any mod
                     #:with replace-with #'unless))
          (syntax-parse clauses
            [(head:for-clause next:for-clause ... kw:for-kw rest ...)
-            (type-ascription-property
+            (add-ann
              (quasisyntax/loc stx
                (for
                 (head.expand ... next.expand ... ...)
                 #,(loop #'(kw rest ...))))
              #'Void)]
            [(head:for-clause ...) ; we reached the end
-            (type-ascription-property
+            (add-ann
              (quasisyntax/loc stx
                (for
                 (head.expand ... ...)
@@ -887,10 +891,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
               (kw.replace-with guard
                 #,(loop #'(rest ...))))])))]))
 
-(define-for-syntax (maybe-annotate-body body ty)
-  (if ty
-      (type-ascription-property body ty)
-      body))
+(begin-for-syntax
+  (define-splicing-syntax-class optional-standalone-annotation*
+    #:attributes (ty annotate)
+    (pattern :optional-standalone-annotation
+      #:attr annotate (λ (stx) (if (attribute ty)
+                                   (add-ann stx #'ty)
+                                   stx)))))
 
 ;; Handling #:when clauses manually, like we do with for: above breaks
 ;; the semantics of for/list and co.
@@ -901,15 +908,15 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-for-syntax (define-for-variant name)
   (lambda (stx)
     (syntax-parse stx #:literals (:)
-      [(_ a:optional-standalone-annotation
+      [(_ a:optional-standalone-annotation*
           clause:for-clauses
           c ...) ; c is not always an expression, can be a break-clause
-       (maybe-annotate-body
+       ((attribute a.annotate)
          (quasisyntax/loc stx
            (#,name
             (clause.expand ... ...)
-            c ...))
-         (attribute a.ty))])))
+            c ...)))])))
+
 (define-syntax (define-for-variants stx)
   (syntax-parse stx
     [(_ (name untyped-name) ...)
@@ -934,7 +941,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
         (var:optionally-annotated-formal ...)
         clause:for-clauses
         c ...) ; c is not always an expression, can be a break-clause
-     (type-ascription-property
+     (add-ann
       (quasisyntax/loc stx
         (for/lists (var.ann-name ...)
           (clause.expand ... ...)
@@ -950,9 +957,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
             (clause.expand ... ...)
             c ...)))
      (if all-typed?
-         (type-ascription-property
+         (add-ann
           for-stx
-          #`(values #,@(attribute var.ty)))
+          #'(values var.ty ...))
          for-stx)]))
 (define-syntax (for/fold: stx)
   (syntax-parse stx #:literals (:)
@@ -960,7 +967,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
         ((var:optionally-annotated-name init:expr) ...)
         clause:for-clauses
         c ...) ; c is not always an expression, can be a break-clause
-     (type-ascription-property
+     (add-ann
       (quasisyntax/loc stx
         (for/fold ((var.ann-name init) ...)
           (clause.expand ... ...)
@@ -976,11 +983,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
                    (clause.expand ... ...)
            c ...)))
      (if all-typed?
-         (type-ascription-property
+         (add-ann
           for-stx
-          #`(values #,@(attribute accum.ty)))
+          #'(values accum.ty ...))
          for-stx)]))
-
 
 (define-syntax (for*: stx)
   (syntax-parse stx #:literals (:)
@@ -995,14 +1001,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-for-syntax (define-for*-variant name)
   (lambda (stx)
     (syntax-parse stx #:literals (:)
-      [(_ a:optional-standalone-annotation
+      [(_ a:optional-standalone-annotation*
           clause:for-clauses
           c ...) ; c is not always an expression, can be a break-clause
-       (maybe-annotate-body
+       ((attribute a.annotate)
         (quasisyntax/loc stx
           (#,name (clause.expand ... ...)
-                  c ...))
-        (attribute a.ty))])))
+                  c ...)))])))
 (define-syntax (define-for*-variants stx)
   (syntax-parse stx
     [(_ (name no-colon-name) ...)
@@ -1023,7 +1028,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
         ((var:optionally-annotated-name) ...)
         clause:for-clauses
         c ...) ; c is not always an expression, can be a break-clause
-     (type-ascription-property
+     (add-ann
       (quasisyntax/loc stx
         (for/lists (var.ann-name ...)
           (clause.expand* ... ...)
@@ -1032,7 +1037,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ ((var:annotated-name) ...)
         clause:for-clauses
         c ...)
-     (type-ascription-property
+     (add-ann
       (quasisyntax/loc stx
         (for/lists (var.ann-name ...)
           (clause.expand* ... ...)
@@ -1044,7 +1049,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
         ((var:optionally-annotated-name init:expr) ...)
         clause:for-clauses
         c ...) ; c is not always an expression, can be a break-clause
-     (type-ascription-property
+     (add-ann
       (quasisyntax/loc stx
         (for/fold ((var.ann-name init) ...)
           (clause.expand* ... ...)
@@ -1053,7 +1058,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ ((var:annotated-name init:expr) ...)
         clause:for-clauses
         c ...)
-     (type-ascription-property
+     (add-ann
       (quasisyntax/loc stx
         (for/fold ((var.ann-name init) ...)
           (clause.expand* ... ...)
@@ -1063,7 +1068,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-for-syntax (define-for/acc:-variant for*? for/folder: for/folder op initial final)
   (lambda (stx)
     (syntax-parse stx #:literals (:)
-      [(_ a:optional-standalone-annotation
+      [(_ a:optional-standalone-annotation*
           clause:for-clauses
           c ...) ; c is not always an expression, can be a break-clause
        (cond
