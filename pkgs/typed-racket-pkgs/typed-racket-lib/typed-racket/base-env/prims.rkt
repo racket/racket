@@ -803,7 +803,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx #:literals (: Void)
     ;; the annotation is not necessary (always of Void type), but kept
     ;; for consistency with the other for: macros
-    [(_ (~seq : Void) ...
+    [(_ (~optional (~seq : Void))
         ;; c is not always an expression, could be a break-clause
         clauses c ...) ; no need to annotate the type, it's always Void
      (let ((body #`(; break-clause ...
