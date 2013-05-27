@@ -29,14 +29,29 @@
 (define-literal-set tc-expr-literals #:for-label
   (find-method/who))
 
-;; do-inst : syntax type -> type
+;; do-inst : tc-results? syntax? -> tc-results?
 ;; Perform a type instantiation, delegating to the appropriate helper
 ;; function depending on if the argument is a row or not
-(define (do-inst stx ty)
-  (define inst (type-inst-property stx))
-  (if (row-syntax? inst)
-      (do-row-inst stx inst ty)
-      (do-normal-inst stx inst ty)))
+(define (do-inst tc-res inst)
+  (define inst-type
+    (if (row-syntax? inst) do-row-inst do-normal-inst))
+  (define (error-case tys)
+    (tc-error/expr 
+      "Cannot instantiate expression that produces ~a values"
+      (if (null? tys) 0 "multiple")))
+  (match tc-res
+    [(tc-results: tys fs os)
+     (match tys
+      [(list ty)
+       (ret (list (inst-type ty inst)) fs os)]
+      [_
+       (error-case tys)])]
+    [(tc-results: tys fs os dty dbound)
+     (match tys
+      [(list ty)
+       (ret (list (inst-type ty inst)) fs os dty dbound)]
+      [_
+       (error-case tys)])]))
 
 ;; row-syntax? Syntax -> Boolean
 ;; This checks if the syntax object resulted from a row instantiation
@@ -45,54 +60,45 @@
   (and lst (pair? lst)
        (eq? (syntax-e (car lst)) '#:row)))
 
-;; do-normal-inst : Syntax (Option Syntax) Type -> Type
+;; do-normal-inst : Type Syntax -> Type
 ;; Instantiate a normal polymorphic type
-(define (do-normal-inst stx inst ty)
-  (match ty
-    [(list ty)
-     (list
-       (cond
-         [(not inst) ty]
-         [(not (or (Poly? ty) (PolyDots? ty)))
-          (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a"
-                         (cleanup-type ty))]
-         [(and (Poly? ty)
-               (not (= (syntax-length inst) (Poly-n ty))))
-          (tc-error/expr #:return (Un)
-                         "Wrong number of type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
-                         (cleanup-type ty) (Poly-n ty) (syntax-length inst))]
-         [(and (PolyDots? ty) (not (>= (syntax-length inst) (sub1 (PolyDots-n ty)))))
-          ;; we can provide 0 arguments for the ... var
-          (tc-error/expr #:return (Un)
-                         "Wrong number of type arguments to polymorphic type ~a:\nexpected at least: ~a\ngot: ~a"
-                         (cleanup-type ty) (sub1 (PolyDots-n ty)) (syntax-length inst))]
-         [(PolyDots? ty)
-          ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
-          ;; use instantiate-poly-dotted, otherwise we do the normal thing.
-          ;; In the case that the list is empty we also do the normal thing
-          (match (syntax->list inst)
-            [(list ty-stxs ... (app syntax-e (cons bound-ty-stx (? identifier? bound-id))))
-             (unless (bound-index? (syntax-e bound-id))
-               (tc-error/stx bound-id "~a is not a type variable bound with ..." (syntax-e bound-id)))
-             (if (= (length ty-stxs) (sub1 (PolyDots-n ty)))
-                 (let* ([last-id (syntax-e bound-id)]
-                        [last-ty (extend-tvars (list last-id) (parse-type bound-ty-stx))])
-                   (instantiate-poly-dotted ty (map parse-type ty-stxs) last-ty last-id))
-                 (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
-                                ty (sub1 (PolyDots-n ty)) (length ty-stxs)))]
-            [stx-list
-             (instantiate-poly ty (map parse-type stx-list))])]
-         [else
-          (instantiate-poly ty (stx-map parse-type inst))]))]
-    [_ (if inst
-           (tc-error/expr #:return (Un)
-                          "Cannot instantiate expression that produces ~a values"
-                          (if (null? ty) 0 "multiple"))
-           ty)]))
+(define (do-normal-inst ty inst)
+  (cond
+    [(not (or (Poly? ty) (PolyDots? ty)))
+     (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a"
+                    (cleanup-type ty))]
+    [(and (Poly? ty)
+          (not (= (syntax-length inst) (Poly-n ty))))
+     (tc-error/expr #:return (Un)
+                    "Wrong number of type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
+                    (cleanup-type ty) (Poly-n ty) (syntax-length inst))]
+    [(and (PolyDots? ty) (not (>= (syntax-length inst) (sub1 (PolyDots-n ty)))))
+     ;; we can provide 0 arguments for the ... var
+     (tc-error/expr #:return (Un)
+                    "Wrong number of type arguments to polymorphic type ~a:\nexpected at least: ~a\ngot: ~a"
+                    (cleanup-type ty) (sub1 (PolyDots-n ty)) (syntax-length inst))]
+    [(PolyDots? ty)
+     ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
+     ;; use instantiate-poly-dotted, otherwise we do the normal thing.
+     ;; In the case that the list is empty we also do the normal thing
+     (match (syntax->list inst)
+       [(list ty-stxs ... (app syntax-e (cons bound-ty-stx (? identifier? bound-id))))
+        (unless (bound-index? (syntax-e bound-id))
+          (tc-error/stx bound-id "~a is not a type variable bound with ..." (syntax-e bound-id)))
+        (if (= (length ty-stxs) (sub1 (PolyDots-n ty)))
+            (let* ([last-id (syntax-e bound-id)]
+                   [last-ty (extend-tvars (list last-id) (parse-type bound-ty-stx))])
+              (instantiate-poly-dotted ty (map parse-type ty-stxs) last-ty last-id))
+            (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
+                           ty (sub1 (PolyDots-n ty)) (length ty-stxs)))]
+       [stx-list
+        (instantiate-poly ty (map parse-type stx-list))])]
+    [else
+     (instantiate-poly ty (stx-map parse-type inst))]))
 
-;; do-row-inst : Syntax ClassRow Type -> Type
-;; Instantiate a row polymorphic function
-(define (do-row-inst stx row-stx ty)
+;; do-row-inst : Type ClassRow -> Type
+;; Instantiate a row polymorphic function type
+(define (do-row-inst ty row-stx)
   ;; At this point, we know `stx` represents a row so we can parse it.
   ;; The parsing is done here because if `inst` did the parsing, it's
   ;; too early and ends up with an empty type environment.
@@ -100,27 +106,19 @@
     (syntax-parse row-stx
       [(#:row (~var clauses (row-clauses parse-type)))
        (attribute clauses.row)]))
-  (match ty
-    [(list ty)
-     (list
-      (cond [(not row) ty]
-            [(not (PolyRow? ty))
-             (tc-error/expr #:return (Un) "Cannot instantiate non-row-polymorphic type ~a"
-                            (cleanup-type ty))]
-            [else
-             (match-define (PolyRow: _ constraints _) ty)
-             (check-row-constraints
-              row constraints
-              (λ (name)
-                (tc-error/delayed
-                 (~a "Cannot instantiate row with member " name
-                     " that the given row variable requires to be absent"))))
-             (instantiate-poly ty (list row))]))]
-    [_ (if row
-           (tc-error/expr #:return (Un)
-                          "Cannot instantiate expression that produces ~a values"
-                          (if (null? ty) 0 "multiple"))
-           ty)]))
+  (cond
+    [(not (PolyRow? ty))
+     (tc-error/expr #:return (Un) "Cannot instantiate non-row-polymorphic type ~a"
+                    (cleanup-type ty))]
+    [else
+     (match-define (PolyRow: _ constraints _) ty)
+     (check-row-constraints
+      row constraints
+      (λ (name)
+        (tc-error/expr
+         (~a "Cannot instantiate row with member " name
+             " that the given row variable requires to be absent"))))
+     (instantiate-poly ty (list row))]))
 
 ;; typecheck an identifier
 ;; the identifier has variable effect
@@ -165,19 +163,6 @@
                  ;; around again in case there is an instantiation
                  ;; remove the ascription so we don't loop infinitely
                  (loop (remove-ascription form*) r* #t)))]
-            [(type-inst-property form*)
-             ;; check without property first
-             ;; to get the appropriate type to instantiate
-             (match (tc-expr (type-inst-property form* #f))
-               [(tc-results: ts fs os)
-                ;; do the instantiation on the old type
-                (let* ([ts* (do-inst form* ts)]
-                       [ts** (ret ts* fs os)])
-                  (add-typeof-expr form ts**)
-                  ;; make sure the new type is ok
-                  (check-below ts** expected))]
-               ;; no annotations possible on dotted results
-               [ty (add-typeof-expr form ty) ty])]
             [(external-check-property form*)
              =>
              (lambda (check)
@@ -281,7 +266,11 @@
       ;; application
       [(#%plain-app . _) (tc/app/check form expected)]
       ;; #%expression
-      [(#%expression e) (tc-expr/check #'e expected)]
+      [((~and exp #%expression) e)
+       #:when (type-inst-property #'exp)
+       (do-inst (tc-expr #'e) (type-inst-property #'exp))]
+      [(#%expression e)
+       (tc-expr/check #'e expected)]
       ;; syntax
       ;; for now, we ignore the rhs of macros
       [(letrec-syntaxes+values stxs vals . body)
@@ -445,6 +434,9 @@
       ;; top-level variable reference - occurs at top level
       [(#%top . id) (tc-id #'id)]
       ;; #%expression
+      [((~and exp #%expression) e)
+       #:when (type-inst-property #'exp)
+       (do-inst (tc-expr #'e) (type-inst-property #'exp))]
       [(#%expression e) (tc-expr #'e)]
       ;; #%variable-reference
       [(#%variable-reference . _)
@@ -482,20 +474,8 @@
       [(type-ascription form) => (lambda (ann) (tc-expr/check form ann))]
       [else 
        (let ([ty (internal-tc-expr form)])
-         (match ty
-           [(tc-any-results:)
-            (add-typeof-expr form ty)
-            ty]
-           [(tc-results: ts fs os)
-            (let* ([ts* (do-inst form ts)]
-                   [r (ret ts* fs os)])
-              (add-typeof-expr form r)
-              r)]
-           [(tc-results: ts fs os dty dbound)
-            (define ts* (do-inst form ts))
-            (define r (ret ts* fs os dty dbound))
-            (add-typeof-expr form r)
-            r]))])))
+         (add-typeof-expr form ty)
+         ty)])))
 
 (define (single-value form [expected #f])
   (define t (if expected (tc-expr/check form expected) (tc-expr form)))

@@ -424,12 +424,15 @@ This file defines two sorts of primitives. All of them are provided into any mod
     ;; FIXME: Is the right choice to use a #:row keyword or just
     ;; to use a Row type constructor and keep it consistent?
     [(_ arg #:row e ...)
-     (syntax-property #'arg 'type-inst #'(#:row e ...))]
+     (with-syntax ([expr (type-inst-property #'#%expression #'(#:row e ...))])
+       (syntax/loc #'arg (expr arg)))]
     [(_ arg tys ... ty ddd b:id)
      #:when (eq? (syntax-e #'ddd) '...)
-     (type-inst-property (syntax/loc #'arg (#%expression arg)) #'(tys ... (ty . b)))]
+     (with-syntax ([expr (type-inst-property #'#%expression #'(tys ... (ty . b)))])
+       (syntax/loc #'arg (expr arg)))]
     [(_ arg tys ...)
-     (type-inst-property (syntax/loc #'arg (#%expression arg)) #'(tys ...))]))
+     (with-syntax ([expr (type-inst-property #'#%expression #'(tys ...))])
+       (syntax/loc #'arg (expr arg)))]))
 
 (define-syntax (lambda: stx)
   (syntax-parse stx
