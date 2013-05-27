@@ -11,31 +11,44 @@
   unstable/syntax
   racket/match
   syntax/stx
-  syntax/parse)
+  syntax/parse
+  (for-syntax racket/base syntax/parse))
 
 
 (import tc-expr^)
 (export tc-expression^)
 
+(define-syntax define-expression-annotations
+  (syntax-parser
+    ((_ (name:id attr:id acc:expr) ...)
+     #'(begin
+         (define-syntax-class name
+           #:literal-sets (kernel-literals)
+           (pattern (~and exp #%expression)
+             #:attr attr (acc #'exp)
+             #:when (attribute attr))) ...))))
+
+(define-expression-annotations
+  (type-inst vars type-inst-property)
+  (type-ascrip ty type-ascription)
+  (external-check check external-check-property))
+
+
 ;; Typecheck an (#%expression e) form
 (define (tc/expression form expected)
   (syntax-parse form
-    [((~and exp #%expression) e)
-     #:when (type-inst-property #'exp)
+    [(exp:type-inst e)
      (match (tc-expr #'e)
        [(tc-results: ts fs os)
         ;; do the instantiation
-        (ret (do-inst ts (type-inst-property #'exp)) fs os)])]
-    [((~and exp #%expression) e)
-     #:when (type-ascription #'exp)
-     (tc-expr/check #'e (type-ascription #'exp))]
-    [((~and exp #%expression) e)
-     #:when (external-check-property #'exp)
-      ((external-check-property #'exp) #'e)
+        (ret (do-inst ts (attribute exp.vars)) fs os)])]
+    [(exp:type-ascrip  e)
+     (tc-expr/check #'e (attribute exp.ty))]
+    [(exp:external-check e)
+      ((attribute exp.check) #'e)
       (if expected
          (tc-expr/check #'e expected)
          (tc-expr #'e))]
-
     [(_ e)
      (if expected
          (tc-expr/check #'e expected)
