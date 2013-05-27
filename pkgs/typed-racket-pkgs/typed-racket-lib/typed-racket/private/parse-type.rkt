@@ -34,7 +34,6 @@
                        ;; context of the given syntax object
                        [parse-type/id (syntax? c:any/c . c:-> . Type/c)]
                        [parse-tc-results (syntax? . c:-> . tc-results/c)]
-                       [parse-tc-results/id (syntax? c:any/c . c:-> . tc-results/c)]
                        [parse-literal-alls (syntax? . c:-> . (c:listof (c:or/c (c:listof identifier?) (c:list/c (c:listof identifier?) identifier?))))])
 
 (provide star ddd/bound
@@ -824,8 +823,6 @@
           (stx-map (lambda (x) -no-filter) #'(t ...))
           (stx-map (lambda (x) -no-obj) #'(t ...)))]
     [t (ret (parse-type #'t) -no-filter -no-obj)]))
-
-(define parse-tc-results/id (parse/id parse-tc-results))
 
 (define parse-type/id (parse/id parse-type))
 
