@@ -10,7 +10,6 @@
  "parse-type-tests.rkt" ;; pass
  "subst-tests.rkt" ;; pass
  "infer-tests.rkt" ;; pass
- "type-annotation-test.rkt" ;; pass
  "keyword-expansion-test.rkt" ;;pass
 
  "module-tests.rkt" ;; pass
@@ -35,7 +34,6 @@
                   remove-tests
                   overlap-tests
                   parse-type-tests
-                  type-annotation-tests
                   module-tests
                   fv-tests
                   contract-tests
