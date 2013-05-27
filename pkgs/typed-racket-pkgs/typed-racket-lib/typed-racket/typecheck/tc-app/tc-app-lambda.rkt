@@ -24,7 +24,8 @@
     #:fail-unless (free-identifier=? #'lp #'lp*) #f
     (let-loop-check #'lam #'lp #'actuals #'(args ...) #'body expected))
   ;; inference for ((lambda
-  (pattern ((#%plain-lambda (x ...) . body) args ...)
+  (pattern ((~and lam (#%plain-lambda (x ...) . body)) args ...)
+   #:fail-when (plambda-property #'lam) #f
    #:fail-unless (= (syntax-length #'(x ...))
                     (syntax-length #'(args ...))) #f
    #:fail-when (andmap type-annotation (syntax->list #'(x ...))) #f
@@ -32,7 +33,8 @@
                   #'(let-values ([(x) args] ...) . body)
                   expected))
   ;; inference for ((lambda with dotted rest
-  (pattern ((#%plain-lambda (x ... . rst:id) . body) args ...)
+  (pattern ((~and lam (#%plain-lambda (x ... . rst:id) . body)) args ...)
+   #:fail-when (plambda-property #'lam) #f
    #:fail-unless (<= (syntax-length #'(x ...))
                      (syntax-length #'(args ...))) #f
    ;; FIXME - remove this restriction - doesn't work because the annotation

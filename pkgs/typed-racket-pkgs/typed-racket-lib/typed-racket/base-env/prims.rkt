@@ -354,29 +354,23 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (plambda: stx)
   (syntax-parse stx
     [(plambda: tvars:type-variables formals . body)
-     (quasisyntax/loc stx
-       (#%expression
-        #,(plambda-property
-            (syntax/loc stx (lambda: formals . body))
-            #'(tvars.vars ...))))]))
+     (plambda-property
+       (syntax/loc stx (lambda: formals . body))
+       #'(tvars.vars ...)) ]))
 
 (define-syntax (pcase-lambda: stx)
   (syntax-parse stx
     [(pcase-lambda: tvars:type-variables cl ...)
-     (quasisyntax/loc stx
-       (#%expression
-        #,(plambda-property
-            (syntax/loc stx (case-lambda: cl ...))
-            #'(tvars.vars ...))))]))
+     (plambda-property
+       (syntax/loc stx (case-lambda: cl ...))
+       #'(tvars.vars ...))]))
 
 (define-syntax (popt-lambda: stx)
   (syntax-parse stx
     [(popt-lambda: tvars:type-variables formals . body)
-     (quasisyntax/loc stx
-       (#%expression
-        #,(plambda-property
-            (syntax/loc stx (opt-lambda: formals . body))
-            #'(tvars.vars ...))))]))
+     (plambda-property
+       (syntax/loc stx (opt-lambda: formals . body))
+       #'(tvars.vars ...))]))
 
 (define-syntax (pdefine: stx)
   (syntax-parse stx #:literals (:)
