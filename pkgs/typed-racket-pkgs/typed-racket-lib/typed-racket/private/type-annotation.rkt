@@ -46,38 +46,19 @@
        t)]
     [else #f]))
 
-;(trace type-annotation)
-
 (define (type-ascription stx)
-  (define (pt prop)
-    (add-scoped-tvars stx (parse-literal-alls prop))
-    (if (syntax? prop)
-        (parse-tc-results prop)
-        (parse-tc-results/id stx prop)))
   (cond
     [(type-ascription-property stx)
      =>
      (lambda (prop)
-       (let loop ((prop prop))
-         (if (pair? prop)
-             (loop (cdr prop))
-             (pt prop))))]
+       (unless (syntax? prop)
+         (int-err "Type ascription is bad: ~a" prop))
+       (add-scoped-tvars stx (parse-literal-alls prop))
+       (parse-tc-results prop))]
     [else #f]))
 
 (define (remove-ascription stx)
-  (type-ascription-property
-    stx 
-    (cond
-      [(type-ascription-property stx)
-       =>
-       (lambda (prop)
-         (if (pair? prop)
-             (let loop ((prop (cdr prop)) (last (car prop)))
-               (if (pair? prop)
-                   (cons last (loop (cdr prop) (car prop)))
-                   last))
-               #f))]
-      [else #f])))
+  (type-ascription-property stx #f))
 
 ;; get the type annotation of this identifier, otherwise error
 ;; if #:default is provided, return that instead of error
