@@ -52,6 +52,19 @@ the settings above should match r5rs
                  [defs-prefix "#lang racket\n"])
     
     (check-top-of-repl)
+
+    (test-setting
+     (lambda () (fw:test:set-check-box! "Enforce constant definitions (enables some inlining)" #f))
+     "enforce-module-constants -- #f"
+     "#lang racket/base\n(define x 1)\n"
+     #:interactions "(set! x 2)\n"
+     "> (set! x 2)")
+    (test-setting
+     (lambda () (fw:test:set-check-box! "Enforce constant definitions (enables some inlining)" #t))
+     "enforce-module-constants -- #t"
+     "#lang racket/base\n(define x 1)\n"
+     #:interactions "(set! x 2)\n"
+     #rx"cannot modify a constant")
     
     (prepare-for-test-expression)
     
@@ -1101,7 +1114,8 @@ the settings above should match r5rs
 ;; `result'. `set-setting' is expected to click around
 ;; in the language dialog.
 ;; `setting-name' is used in the error message when the test fails.
-(define (test-setting set-setting setting-name expression result)
+(define (test-setting set-setting setting-name expression result
+                      #:interactions [interactions-expr #f])
   (set-language #f)
   (set-setting)
   (let ([f (test:get-active-top-level-window)])
@@ -1110,10 +1124,15 @@ the settings above should match r5rs
   (let* ([drs (test:get-active-top-level-window)]
          [interactions (send drs get-interactions-text)])
     (clear-definitions drs)
-    (type-in-definitions drs expression)
+    (insert-in-definitions drs expression)
     (do-execute drs)
+    (when interactions
+      (insert-in-interactions drs interactions-expr)
+      (wait-for-computation drs))
     (let* ([got (fetch-output/should-be-tested drs)])
-      (unless (string=? result got)
+      (unless (if (regexp? result)
+                  (regexp-match? result got)
+                  (string=? result got))
         (eprintf "FAILED: ~s ~s ~s test\n expected: ~s\n      got: ~s\n"
                  (language) setting-name expression result got)))))
 

@@ -33,7 +33,8 @@
    collection-paths
    compilation-on?
    full-trace?
-   annotations)
+   annotations
+   enforce-module-constants)
   #:prefab)
 
 (define orig-namespace (current-namespace))
@@ -69,7 +70,7 @@
     (current-library-collection-paths cpaths))
   
   (compile-context-preservation-enabled (prefab-module-settings-full-trace? settings))
-  
+  (compile-enforce-module-constants (prefab-module-settings-enforce-module-constants settings))
   (when (prefab-module-settings-compilation-on? settings)
     (define open-pkgs
       (for/fold ([s (set)]) ([path (in-list currently-open-files)])

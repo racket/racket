@@ -114,18 +114,21 @@
   ;; command-line-args : (vectorof string)
   ;; auto-text : string
   (define-struct (module-language-settings drracket:language:simple-settings)
-    (collection-paths command-line-args auto-text compilation-on? full-trace? submodules-to-run))
+    (collection-paths command-line-args auto-text compilation-on? full-trace? submodules-to-run
+                      enforce-module-constants))
   
   (define (module-language-settings->prefab-module-settings settings)
     (prefab-module-settings (module-language-settings-command-line-args settings)
                             (module-language-settings-collection-paths settings)
                             (module-language-settings-compilation-on? settings)
                             (module-language-settings-full-trace? settings)
-                            (drracket:language:simple-settings-annotations settings)))
+                            (drracket:language:simple-settings-annotations settings)
+                            (module-language-settings-enforce-module-constants settings)))
   
   (define default-compilation-on? #t)
   (define default-full-trace? #t)
   (define default-submodules-to-run (list '(main) '(test)))
+  (define default-enforce-module-constants #t)
   (define (get-default-auto-text) (preferences:get 'drracket:module-language:auto-text))
   
   ;; module-mixin : (implements drracket:language:language<%>)
@@ -247,7 +250,8 @@
            (get-default-auto-text)
            default-compilation-on?
            default-full-trace?
-           default-submodules-to-run)))
+           default-submodules-to-run
+           default-enforce-module-constants)))
       
       ;; default-settings? : -> boolean
       (define/override (default-settings? settings)
@@ -267,7 +271,9 @@
              (equal? (module-language-settings-full-trace? settings)
                      default-full-trace?)
              (equal? (module-language-settings-submodules-to-run settings)
-                     default-submodules-to-run)))
+                     default-submodules-to-run)
+             (equal? (module-language-settings-enforce-module-constants settings)
+                     default-enforce-module-constants)))
       
       (define/override (marshall-settings settings)
         (let ([super-marshalled (super marshall-settings settings)])
@@ -277,7 +283,8 @@
                 (module-language-settings-auto-text settings)
                 (module-language-settings-compilation-on? settings)
                 (module-language-settings-full-trace? settings)
-                (module-language-settings-submodules-to-run settings))))
+                (module-language-settings-submodules-to-run settings)
+                (module-language-settings-enforce-module-constants settings))))
       
       (define/override (unmarshall-settings marshalled)
         (and (list? marshalled)
@@ -297,7 +304,10 @@
                                            (list-ref marshalled 5))]
                           [submodules-to-run (if (<= marshalled-len 6)
                                                  default-submodules-to-run
-                                                 (list-ref marshalled 6))])
+                                                 (list-ref marshalled 6))]
+                          [enforce-module-constants (if (<= marshalled-len 7)
+                                                        default-enforce-module-constants
+                                                        (list-ref marshalled 7))])
                       (and (list? collection-paths)
                            (andmap (λ (x) (or (string? x) (symbol? x)))
                                    collection-paths)
@@ -306,6 +316,7 @@
                            (string? auto-text)
                            (boolean? compilation-on?)
                            ((listof (listof symbol?)) submodules-to-run)
+                           (boolean? enforce-module-constants)
                            (let ([super (super unmarshall-settings 
                                                (let ([p (car marshalled)])
                                                  ;; Convert 'write to 'print:
@@ -331,7 +342,8 @@
                                                      compilation-on?)
                                                 
                                                 full-trace?
-                                                submodules-to-run)))))))))))
+                                                submodules-to-run
+                                                enforce-module-constants)))))))))))
       
       (define/override (on-execute settings run-in-user-thread)
         (super on-execute settings run-in-user-thread)
@@ -612,6 +624,7 @@
            [stretchable-height #f]
            [stretchable-width #f]))
     (define compilation-on-check-box #f)
+    (define enforce-module-constants-checkbox #f)
     (define compilation-on? #t)
     (define save-stacktrace-on-check-box #f)
     (define run-submodules-choice #f)
@@ -652,6 +665,10 @@
          (set! save-stacktrace-on-check-box (new check-box%
                                                  [label (string-constant preserve-stacktrace-information)]
                                                  [parent dynamic-panel]))
+         (set! enforce-module-constants-checkbox
+               (new check-box%
+                    [label (string-constant enforce-module-constants-checkbox-label)]
+                    [parent dynamic-panel]))
          (set! run-submodules-choice 
                (new (class name-message%
                       (define/override (fill-popup menu reset)
@@ -841,7 +858,7 @@
     (update-buttons)
     (install-auto-text (get-default-auto-text))
     (update-compilation-checkbox left-debugging-radio-box right-debugging-radio-box)
-    
+
     (case-lambda
       [()
        (let ([simple-settings (simple-case-lambda)])
@@ -855,7 +872,8 @@
                          [(0 1) compilation-on?]
                          [(#f) #f])
                        (send save-stacktrace-on-check-box get-value)
-                       submodules-to-run))))]
+                       submodules-to-run
+                       (send enforce-module-constants-checkbox get-value)))))]
       [(settings)
        (simple-case-lambda settings)
        (install-collection-paths (module-language-settings-collection-paths settings))
@@ -866,6 +884,7 @@
        (update-compilation-checkbox left-debugging-radio-box right-debugging-radio-box)
        (send save-stacktrace-on-check-box set-value (module-language-settings-full-trace? settings))
        (set! submodules-to-run (module-language-settings-submodules-to-run settings))
+       (send enforce-module-constants-checkbox set-value (module-language-settings-enforce-module-constants settings))
        (update-buttons)]))
   
   (define (add-another-possible-submodule parent)

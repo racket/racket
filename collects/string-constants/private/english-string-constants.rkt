@@ -1160,6 +1160,7 @@ please adhere to these guidelines:
  (enforce-primitives-check-box-label "Disallow redefinition of initial bindings")
  (automatically-compile "Populate \"compiled\" directories (for faster loading)")
  (preserve-stacktrace-information "Preserve stacktrace (disable some optimizations)")
+ (enforce-module-constants-checkbox-label "Enforce constant definitions (enables some inlining)")
  (expression-level-stacktrace "Expression-level stacktrace")
  (function-level-stacktrace "Function-level stacktrace")
  (submodules-to-run "Submodules to Run")

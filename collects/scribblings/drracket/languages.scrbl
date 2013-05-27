@@ -14,17 +14,17 @@ new languages can be added through DrRacket plug-ins.
 
 @section[#:tag "module"]{Language Declared in Source}
 
-The @as-index{@drlang{Use the language declared in the source} mode}
+The @as-index{@drlang{The Racket Language} mode}
 in DrRacket is a kind of meta-language, where the program itself
 specifies its language, usually through a @hash-lang[] line.
 
-More generally, when using the declared-in-source mode, the
+More generally, when using this mode, the
 @tech{definitions window} must contain a module in some form. Besides
 @hash-lang[], a Racket module can be written as @racket[(module
-...)]. In any case, aside from comments, the @tech{definitions window}
+...)]; aside from comments, the @tech{definitions window}
 must contain exactly one module.
 
-In the details pane of the module language, some of the configuration
+In the details pane of the language dialog, some of the configuration
 options correspond to using various libraries and thus can be used
 without DrRacket.  Here's how, for the ones that are straightforward
 (the ones not mentioned here require more sophisticated configuration
@@ -45,7 +45,7 @@ of various libraries).
         The @italic{Syntactic test suite coverage} option means to use @racket[test-coverage-enabled]
         in conjunction with @racket[current-eval].
 
-        The other two checkboxes save compiled @tt{.zo} files and adjust the JIT compiler. 
+        The other three checkboxes save compiled @tt{.zo} files and adjust the compiler. 
         
         The @italic{populate compiled/ directories} option corresponds to 
         @racketblock[(current-load/use-compiled 
@@ -62,6 +62,10 @@ of various libraries).
         
         The @italic{Preserve stacktrace} option corresponds to 
         @racketblock[(compile-context-preservation-enabled #t)]
+        
+        The @italic{Enforce constant definitions (enables some inlining)} option
+        corresponds to calling @racket[compile-enforce-module-constants];
+        checking it passes @racket[#t] and leaving it unchecked passes @racket[#f].
         }
  @item{@bold{Output Syntax}: The output syntax options correspond to settings in the @racketmodname[racket/pretty] library 
        and the @racketmodname[mzlib/pconvert] library.}
