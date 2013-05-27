@@ -418,7 +418,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (add-ann #'arg #'ty)]))
 
 (define-for-syntax (add-ann expr-stx ty-stx)
-  (type-ascription-property expr-stx ty-stx))
+  (type-ascription-property
+    (quasisyntax/loc expr-stx
+      (#%expression #,expr-stx))
+    ty-stx))
 
 
 (define-syntax (inst stx)
