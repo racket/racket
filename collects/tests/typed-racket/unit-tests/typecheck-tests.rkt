@@ -1647,6 +1647,7 @@
                        (apply (inst values A B ... B) a b)) 
                      (All (A B ...) (A B ... -> (values A B ... B))))
               (-polydots (a b) ((list a) (b b) . ->... . (make-ValuesDots (list (-result a)) b 'b)))]
+        [tc-e/t (ann (ann 'x Symbol) Symbol) -Symbol]
         )
   (test-suite
    "check-type tests"
