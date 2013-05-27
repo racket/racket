@@ -18,57 +18,8 @@
 
 (require (for-template racket/base racket/private/class-internal))
 
-(import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-send^ check-subforms^ tc-literal^)
+(import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-send^ check-subforms^ tc-literal^ tc-expression^)
 (export tc-expr^)
-
-;; do-inst : syntax? (listof Type/c) -> (listof Type/c)
-(define (do-inst ty inst)
-  (when (and inst (not (syntax? inst)))
-    (int-err "Bad type-inst property ~a" inst))
-  (match ty
-    [(list ty)
-     (list
-       (cond
-         [(not inst) ty]
-         [(not (or (Poly? ty) (PolyDots? ty)))
-          (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a"
-                         (cleanup-type ty))]
-         [(and (Poly? ty)
-               (not (= (syntax-length inst) (Poly-n ty))))
-          (tc-error/expr #:return (Un)
-                         "Wrong number of type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
-                         (cleanup-type ty) (Poly-n ty) (syntax-length inst))]
-         [(and (PolyDots? ty) (not (>= (syntax-length inst) (sub1 (PolyDots-n ty)))))
-          ;; we can provide 0 arguments for the ... var
-          (tc-error/expr #:return (Un)
-                         "Wrong number of type arguments to polymorphic type ~a:\nexpected at least: ~a\ngot: ~a"
-                         (cleanup-type ty) (sub1 (PolyDots-n ty)) (syntax-length inst))]
-         [(PolyDots? ty)
-          ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
-          ;; use instantiate-poly-dotted, otherwise we do the normal thing.
-          ;; In the case that the list is empty we also do the normal thing
-          (let ((stx-list (syntax->list inst)))
-            (if (null? stx-list)
-                (instantiate-poly ty null)
-                (match stx-list
-                  [(list ty-stxs ... (app syntax-e (cons bound-ty-stx (? identifier? bound-id))))
-                   (unless (bound-index? (syntax-e bound-id))
-                     (tc-error/stx bound-id "~a is not a type variable bound with ..." (syntax-e bound-id)))
-                   (if (= (length ty-stxs) (sub1 (PolyDots-n ty)))
-                       (let* ([last-id (syntax-e bound-id)]
-                              [last-ty (extend-tvars (list last-id) (parse-type bound-ty-stx))])
-                         (instantiate-poly-dotted ty (map parse-type ty-stxs) last-ty last-id))
-                       (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:\nexpected: ~a\ngot: ~a"
-                                      ty (sub1 (PolyDots-n ty)) (length ty-stxs)))]
-                  [_
-                   (instantiate-poly ty (map parse-type stx-list))])))]
-         [else
-          (instantiate-poly ty (stx-map parse-type inst))]))]
-    [_ (if inst
-           (tc-error/expr #:return (Un)
-                          "Cannot instantiate expression that produces ~a values"
-                          (if (null? ty) 0 "multiple"))
-           ty)]))
 
 ;; typecheck an identifier
 ;; the identifier has variable effect
@@ -194,22 +145,7 @@
       ;; application
       [(#%plain-app . _) (tc/app/check form expected)]
       ;; #%expression
-      [((~and exp #%expression) e)
-       #:when (type-inst-property #'exp)
-       (match (tc-expr #'e)
-         [(tc-results: ts fs os)
-          ;; do the instantiation
-          (ret (do-inst ts (type-inst-property #'exp)) fs os)])]
-      [((~and exp #%expression) e)
-       #:when (type-ascription #'exp)
-       (tc-expr/check #'e (type-ascription #'exp))]
-      [((~and exp #%expression) e)
-       #:when (external-check-property #'exp)
-        ((external-check-property #'exp) #'e)
-        (tc-expr/check #'e expected)]
-
-      [(#%expression e)
-       (tc-expr/check #'e expected)]
+      [(#%expression _) (tc/expression form expected)]
       ;; syntax
       ;; for now, we ignore the rhs of macros
       [(letrec-syntaxes+values stxs vals . body)
@@ -350,16 +286,7 @@
       ;; top-level variable reference - occurs at top level
       [(#%top . id) (tc-id #'id)]
       ;; #%expression
-      [((~and exp #%expression) e)
-       #:when (type-inst-property #'exp)
-       (match (tc-expr #'e)
-         [(tc-results: ts fs os)
-          ;; do the instantiation
-          (ret (do-inst ts (type-inst-property #'exp)) fs os)])]
-      [((~and exp #%expression) e)
-       #:when (type-ascription #'exp)
-       (tc-expr/check #'e (type-ascription #'exp))]
-      [(#%expression e) (tc-expr #'e)]
+      [(#%expression _) (tc/expression form #f)]
       ;; #%variable-reference
       [(#%variable-reference . _)
        (ret -Variable-Reference)]
