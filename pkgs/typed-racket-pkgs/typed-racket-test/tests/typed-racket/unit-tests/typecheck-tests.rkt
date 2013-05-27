@@ -1695,6 +1695,9 @@
            (opt-lambda: ((x : Symbol 'a)) x)
            #:ret (ret (t:-> -Symbol -Symbol) (-FS -top -bot))
            #:expected (ret (t:-> -Symbol -Symbol) (-FS -top -bot))]
+
+        [tc-e/t (inst (ann (lambda (a) a) (All (a) (a -> a))) Symbol)
+                (t:-> -Symbol -Symbol)]
         )
   (test-suite
    "check-type tests"

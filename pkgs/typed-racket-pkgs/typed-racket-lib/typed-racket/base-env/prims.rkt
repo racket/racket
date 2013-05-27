@@ -388,9 +388,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (syntax/loc stx (inst arg . tys))]
     [(_ arg tys ... ty ddd b:id)
      #:when (eq? (syntax-e #'ddd) '...)
-     (type-inst-property #'arg #'(tys ... (ty . b)))]
+     (type-inst-property (syntax/loc #'arg (#%expression arg)) #'(tys ... (ty . b)))]
     [(_ arg tys ...)
-     (type-inst-property #'arg #'(tys ...))]))
+     (type-inst-property (syntax/loc #'arg (#%expression arg)) #'(tys ...))]))
 
 (define-syntax (define: stx)
   (syntax-parse stx #:literals (:)
