@@ -255,7 +255,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
                type)))
 
          #`(ann
-             #,(external-check-property (ignore-some-property name #t) check-valid-type)
+             (#,(external-check-property #'#%expression check-valid-type)
+              #,(ignore-some-property name #t))
              (Any -> Boolean : ty)))
        (let ([typ (parse-type #'ty)])
          (if (Error? typ)
@@ -304,7 +305,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
                   (tc-error/delayed
                    "Type ~a could not be converted to a contract because it contains free variables."
                    type)))
-              (external-check-property (apply-contract ctc) check-valid-type))]
+              #`(#,(external-check-property #'#%expression check-valid-type)
+                 #,(apply-contract ctc)))]
            [else
             (let ([typ (parse-type #'ty)])
               (if (Error? typ)

@@ -103,13 +103,7 @@
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
     (let loop ([form* form] [expected expected] [checked? #f])
-      (cond [(external-check-property form*)
-             =>
-             (lambda (check)
-               (check form*)
-               (loop (external-check-property form* #f)
-                     expected
-                     checked?))]
+      (cond
             ;; nothing to see here
             [checked? expected]
             [else 
@@ -214,6 +208,10 @@
       [((~and exp #%expression) e)
        #:when (type-ascription #'exp)
        (tc-expr/check #'e (type-ascription #'exp))]
+      [((~and exp #%expression) e)
+       #:when (external-check-property #'exp)
+        ((external-check-property #'exp) #'e)
+        (tc-expr/check #'e expected)]
 
       [(#%expression e)
        (tc-expr/check #'e expected)]
