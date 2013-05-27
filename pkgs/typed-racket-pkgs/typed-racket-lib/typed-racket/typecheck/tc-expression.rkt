@@ -3,7 +3,7 @@
 (require 
   "../utils/utils.rkt"
   (typecheck tc-expr-unit signatures tc-app-helper)
-  (types tc-result tc-error utils)
+  (types tc-result tc-error utils abbrev)
   (rep type-rep)
   (utils tc-utils)
   (env index-env tvar-env)
@@ -38,11 +38,8 @@
 (define (tc/expression form expected)
   (syntax-parse form
     [(exp:type-inst e)
-     (match (tc-expr #'e)
-       [(tc-results: ts fs os)
-        ;; do the instantiation
-        (ret (do-inst ts (attribute exp.vars)) fs os)])]
-    [(exp:type-ascrip  e)
+     (do-inst (tc-expr #'e) (attribute exp.vars))]
+    [(exp:type-ascrip e)
      (tc-expr/check #'e (attribute exp.ty))]
     [(exp:external-check e)
       ((attribute exp.check) #'e)
@@ -55,13 +52,13 @@
          (tc-expr #'e))]))
 
 
-;; do-inst : syntax? (listof Type/c) -> (listof Type/c)
-(define (do-inst ty inst)
+;; do-inst : syntax? tc-results/c -> tc-results/c
+(define (do-inst results inst)
   (when (and inst (not (syntax? inst)))
     (int-err "Bad type-inst property ~a" inst))
-  (match ty
-    [(list ty)
-     (list
+  (match results
+    [(tc-result1: ty f o)
+     (define new-ty
        (cond
          [(not inst) ty]
          [(not (or (Poly? ty) (PolyDots? ty)))
@@ -95,9 +92,12 @@
                   [_
                    (instantiate-poly ty (map parse-type stx-list))])))]
          [else
-          (instantiate-poly ty (stx-map parse-type inst))]))]
-    [_ (if inst
-           (tc-error/expr "Cannot instantiate expression that produces ~a values"
-                          (if (null? ty) 0 "multiple"))
-           ty)]))
+          (instantiate-poly ty (stx-map parse-type inst))]))
+     (ret new-ty f o)]
+    [(tc-results: ts)
+     (if inst
+         (tc-error/expr #:return (ret -Bottom)
+                        "Cannot instantiate expression that produces ~a values"
+                        (if (null? ts) 0 "multiple"))
+         results)]))
 
