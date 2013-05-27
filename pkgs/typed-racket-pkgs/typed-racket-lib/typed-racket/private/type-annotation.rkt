@@ -15,8 +15,6 @@
          get-type
          get-types
          get-type/infer
-         type-ascription
-         remove-ascription
          check-type
          dotted?)
 
@@ -49,19 +47,6 @@
   [pattern i:id
            #:attr type (type-annotation #'i)
            #:when (attribute type)])
-
-(define (type-ascription stx)
-  (syntax-parse stx
-    [s:type-ascription^
-     (define prop (attribute s.value))
-     (unless (syntax? prop)
-       (int-err "Type ascription is bad: ~a" prop))
-     (add-scoped-tvars stx (parse-literal-alls prop))
-     (parse-tc-results prop)]
-    [_ #f]))
-
-(define (remove-ascription stx)
-  (type-ascription-property stx #f))
 
 ;; get the type annotation of this identifier, otherwise error
 ;; if #:default is provided, return that instead of error

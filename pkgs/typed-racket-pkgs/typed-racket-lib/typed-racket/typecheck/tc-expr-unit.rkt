@@ -9,7 +9,7 @@
          (private-in parse-type type-annotation syntax-properties)
          (rep type-rep filter-rep object-rep)
          (utils tc-utils)
-         (env lexical-env tvar-env index-env)
+         (env lexical-env tvar-env index-env scoped-tvar-env)
          racket/format racket/list
          racket/private/class-internal
          syntax/parse syntax/stx
@@ -153,17 +153,7 @@
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
     (let loop ([form* form] [expected expected] [checked? #f])
-      (cond [(type-ascription form*)
-             =>
-             (lambda (ann)
-               (let* ([r (tc-expr/check/internal form* ann)]
-                      [r* (check-below (check-below r ann) expected)])
-                 ;; add this to the *original* form, since the newer forms aren't really in the program
-                 (add-typeof-expr form r)
-                 ;; around again in case there is an instantiation
-                 ;; remove the ascription so we don't loop infinitely
-                 (loop (remove-ascription form*) r* #t)))]
-            [(external-check-property form*)
+      (cond [(external-check-property form*)
              =>
              (lambda (check)
                (check form*)
@@ -269,6 +259,9 @@
       [((~and exp #%expression) e)
        #:when (type-inst-property #'exp)
        (do-inst (tc-expr #'e) (type-inst-property #'exp))]
+      [((~and exp:type-ascription^ #%expression) e)
+       (add-scoped-tvars #'e (parse-literal-alls (attribute exp.value)))
+       (tc-expr/check #'e (parse-tc-results (attribute exp.value)))]
       [(#%expression e)
        (tc-expr/check #'e expected)]
       ;; syntax
@@ -306,7 +299,7 @@
           (tc-expr/check/type #'fun (kw-convert f #:split #t))
           expected]
          [(or (tc-results: _) (tc-any-results:))
-          (tc-expr (remove-ascription form))])]
+          (tc-expr form)])]
       ;; opt function def
       [(~and (let-values ([(f) fun]) . body) opt:opt-lambda^)
        (define conv-type
@@ -318,7 +311,7 @@
            [_ #f]))
        (if conv-type
            (begin (tc-expr/check/type #'fun conv-type) expected)
-           (tc-expr (remove-ascription form)))]
+           (tc-expr form))]
       ;; let
       [(let-values ([(name ...) expr] ...) . body)
        (tc/let-values #'((name ...) ...) #'(expr ...) #'body expected)]
@@ -437,6 +430,9 @@
       [((~and exp #%expression) e)
        #:when (type-inst-property #'exp)
        (do-inst (tc-expr #'e) (type-inst-property #'exp))]
+      [((~and exp:type-ascription^ #%expression) e)
+       (add-scoped-tvars #'e (parse-literal-alls (attribute exp.value)))
+       (tc-expr/check #'e (parse-tc-results (attribute exp.value)))]
       [(#%expression e) (tc-expr #'e)]
       ;; #%variable-reference
       [(#%variable-reference . _)
@@ -470,12 +466,9 @@
     (unless (syntax? form)
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
-    (cond
-      [(type-ascription form) => (lambda (ann) (tc-expr/check form ann))]
-      [else 
-       (let ([ty (internal-tc-expr form)])
-         (add-typeof-expr form ty)
-         ty)])))
+    (let ([ty (internal-tc-expr form)])
+      (add-typeof-expr form ty)
+      ty)))
 
 (define (single-value form [expected #f])
   (define t (if expected (tc-expr/check form expected) (tc-expr form)))
