@@ -5,7 +5,7 @@
          (except-in (types utils abbrev union) -> ->* one-of/c)
          (only-in (types abbrev) (-> t:->))
          (private type-annotation parse-type)
-         (env lexical-env type-alias-env global-env type-env-structs)
+         (env lexical-env type-alias-env global-env type-env-structs scoped-tvar-env)
          (rep type-rep filter-rep object-rep)
          syntax/free-vars
          (typecheck signatures tc-metafunctions tc-subst check-below)
@@ -112,15 +112,24 @@
          [exprs (syntax->list exprs)]
          ;; the clauses for error reporting
          [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])
+    ;; collect the declarations, which are represented as definitions
     (for-each (lambda (names body)
                 (kernel-syntax-case* body #f (values :-internal define-type-alias-internal)
                   [(begin (quote-syntax (define-type-alias-internal nm ty)) (#%plain-app values))
                    (register-resolved-type-alias #'nm (parse-type #'ty))]
                   [(begin (quote-syntax (:-internal nm ty)) (#%plain-app values))
-                   (register-type-if-undefined #'nm (parse-type #'ty))]
+                   (register-type-if-undefined #'nm (parse-type #'ty))
+                   (register-scoped-tvars #'nm (parse-literal-alls #'ty))]
                   [_ (void)]))
               names
               exprs)
+    ;; add scoped type variables, before we get to typechecking
+    ;; FIXME: can this pass be fused with the one immediately above?
+    (for ([n (in-list names)] [b (in-list exprs)])
+      (syntax-case n ()
+        [(var) (add-scoped-tvars b (lookup-scoped-tvars #'var))]
+        [_ (void)]))
+
     (let loop ([names names] [exprs exprs] [flat-names orig-flat-names] [clauses clauses])
       (cond
         ;; after everything, check the body expressions
