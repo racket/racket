@@ -1469,28 +1469,6 @@
      (apply set-union (set) (map pat-vars ps))]
     [_
      (set)]))
-
-(define-for-syntax (fix-and-extract-dq-vars pat)
-  (define new-ids (hash))
-  (let recur ([pat pat])
-    (syntax-case pat (list name)
-      [(name vname p)
-       (with-syntax ([((vs ...) new-p) (recur #'p)]
-                     [new-vn (datum->syntax #'vname
-                                            (let ([vn (syntax-e #'vname)])
-                                              (hash-ref new-ids vn
-                                                        (λ ()
-                                                          (define new (string->symbol (format "~s_p" vn)))
-                                                          (set! new-ids (hash-set new-ids vn new))
-                                                          new)))
-                                            #'vname)])
-         #'((new-vn vs ...) (name new-vn new-p)))]
-      [(list ps ...)
-       (with-syntax* ([(((vs ...) new-ps) ...) (map recur (syntax->list #'(ps ...)))]
-                      [(u-vs ...) (remove-duplicates (syntax->list #'(vs ... ...)) #:key syntax-e)])
-         #'((u-vs ...) (list new-ps ...)))]
-      [pat
-       #'(() pat)])))
   
 (define-for-syntax (check-arity-consistency mode contracts full-def)
   (when (and contracts (not (= (length mode) (length contracts))))

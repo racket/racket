@@ -700,7 +700,8 @@
                     (for/or ([ntp (in-list (map normalize-pat (nt-pats nt clang)))])
                       (not-failed? (unify* npat ntp #f empty-lang))))
                   (set! memo
-                        (hash-set memo (list nt clang npat) pat-ok?)))))))
+                        (hash-set memo (list nt clang npat) pat-ok?))
+                  pat-ok?)))))
 
 (define (normalize-pat pat)
   (let loop ([pat pat])

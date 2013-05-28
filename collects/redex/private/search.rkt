@@ -21,7 +21,8 @@
          last-gen-trace
          get-most-recent-trace
          update-gen-trace!
-         generation-logger)
+         generation-logger
+         gen-state)
 
 ;; clause : head-pat eq/dqs (listof prem)
 (define-struct clause (head-pat eq/dqs prems lang name) #:transparent)
@@ -45,11 +46,24 @@
 
 (define-struct gen-trace (tr-loc clause input state bound env) #:prefab)
 
+(define gen-state (make-parameter (set 'shuffle-clauses 'success-jump)))
+
+(define (shuffle-clauses?)
+  (set-member? (gen-state) 'shuffle-clauses))
+
+(define (success-jump?)
+  (set-member? (gen-state) 'success-jump))
+
 
 (define bt-count (make-parameter 0))
-(define BT-LIMIT 40)
+(define bt-limit (make-parameter 0))
 (define (inc-bt-count) 
   (bt-count (add1 (bt-count))))
+
+(define pushdown-count (make-parameter 0))
+(define pushdown-limit (make-parameter 0))
+(define (inc-pushdown-count)
+  (pushdown-count (add1 (pushdown-count))))
 
 (define (search/next clauses input bound lang)
   (define name-nums 0)
@@ -58,12 +72,18 @@
                        (fresh-pat-vars input (make-hash))
                        (set! name-nums (unique-name-nums)))))
   (define fs (list (fail-cont empty-env
-                             (list (make-partial-rule fresh-pat (shuffle clauses) '() bound))
+                             (list (make-partial-rule fresh-pat (if (shuffle-clauses?)
+                                                                    (shuffle clauses)
+                                                                    (order-clauses clauses))
+                                                      '() bound))
                              bound)))
   (define v-locs (make-hash))
   (λ ()
     (parameterize ([unique-name-nums name-nums]
-                   [bt-count 0])
+                   [bt-count 0]
+                   [bt-limit (* bound 10)]
+                   [pushdown-count 0]
+                   [pushdown-limit (* bound 200)])
       (define-values (ans fails)
         (with-handlers ([exn:fail:redex:search-failure? (λ (e) 
                                                           (define f-conts (exn:fail:redex:search-failure-fails e))
@@ -73,7 +93,8 @@
           (values (and/fail env/f (unify fresh-pat 'any env/f lang))
                   fails)))
       (set-last-gen-trace! (generation-trace))
-      (set! fs (shuffle-fails fails))  ;; how to test if we're randomizing here?
+      (when (success-jump?)
+        (set! fs (shuffle-fails fails)))  ;; how to test if we're randomizing here?
       (set! name-nums (unique-name-nums))
       ans)))
   
@@ -109,6 +130,7 @@
      (push-down (car fringe) env (cdr fringe) fail)]))
 
 (define (push-down a-partial-rule env fringe fail)
+  (inc-pushdown-count)
   (match a-partial-rule
     [(partial-rule pat clauses tr-loc bound)
      (check-depth-limits bound tr-loc fail)
@@ -136,7 +158,9 @@
                (define prem-cls (prem-clauses prem))
                (make-partial-rule (prem-pat prem) 
                                   (if (positive? bound)
-                                      (shuffle prem-cls)
+                                      (if (shuffle-clauses?)
+                                          (shuffle prem-cls)
+                                          (order-clauses prem-cls))
                                       (order-clauses prem-cls))
                                   (cons n tr-loc)
                                   (- bound 1))))
@@ -241,8 +265,12 @@
 (define-struct (exn:fail:redex:search-failure exn:fail:redex) (fails))
 
 (define (check-depth-limits bound tr-loc fails)
-  (when (> (bt-count) BT-LIMIT)
-    (define str (format "backtrack count of ~s exceeded at ~s" BT-LIMIT tr-loc))
+  (when ((pushdown-count) . > . (pushdown-limit))
+    (define str (format "pushdown count of ~s exceeded at ~s" (pushdown-count) tr-loc))
+    ;(printf "!*\n\t~s\t*!\n" str)
+    (raise (make-exn:fail:redex:search-failure str (current-continuation-marks) fails)))
+  (when (> (bt-count) (bt-limit))
+    (define str (format "backtrack count of ~s exceeded at ~s" (bt-limit) tr-loc))
     (raise (make-exn:fail:redex:search-failure str (current-continuation-marks) fails)))
   (when (> (length tr-loc) (* 3 (+ (length tr-loc) bound)))
     (define str (format "depth bound exceeded at depth: ~s" (length tr-loc)))
@@ -283,4 +311,3 @@
 
 (define (set-last-gen-trace! trace)
   (set! most-recent-trace trace))
-
