@@ -736,7 +736,7 @@ each element in the sequence.
 A @deftech{stream} is a kind of @tech{sequence} that supports
 functional iteration via @racket[stream-first] and
 @racket[stream-rest].  The @racket[stream-cons] form constructs a lazy
-stream, but plain lists can be used as stream, and functions such as
+stream, but plain lists can be used as streams, and functions such as
 @racket[in-range] and @racket[in-naturals] also create streams.
 
 @note-lib[racket/stream]
