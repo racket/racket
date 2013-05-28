@@ -44,7 +44,7 @@
                   (add-disappeared-use #'op)
                   (match (type-of #'v)
                     [(tc-result1: (HeterogeneousVector: es))
-                     #`(begin v.opt #,(length es))]))) ; v may have side effects
+                     #`(let () v.opt #,(length es))]))) ; v may have side effects
   ;; we can optimize vector-length on all vectors.
   ;; since the program typechecked, we know the arg is a vector.
   ;; we can optimize no matter what.
