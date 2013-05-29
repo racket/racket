@@ -849,6 +849,21 @@
                (define/pubment (sum) number))
              exn:fail:object?)
 
+;; example from PR 13798
+(let ()
+  (define test%
+    (class object% (super-new)
+      (define/public (name) "test")))
+  (define sub-abstract%
+    (class test% (super-new) (inherit name)
+      (abstract broken)
+      (define/public (full-name) (string-append (name) "subabs"))))
+  (define sub-concrete%
+    (class sub-abstract% (super-new)
+      (define/override (broken) "broken")))
+
+  (test "testsubabs" 'pr13798 (send (new sub-concrete%) full-name)))
+
 ;; ------------------------------------------------------------
 ;; Test send/apply dotted send and method-call forms:
 

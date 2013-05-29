@@ -1302,11 +1302,8 @@
                                                                       (append local-public-dynamic-names
                                                                               (map car all-inherits)))]
                                     [(method-accessor ...) (generate-temporaries
-                                                            (map car
-                                                                 (append publics overrides augrides
-                                                                         overments augments
-                                                                         override-finals augment-finals
-                                                                         all-inherits abstracts)))]
+                                                            (append local-public-dynamic-names
+                                                                    (map car all-inherits)))]
                                     [(inherit-field-accessor ...) (generate-temporaries
                                                                    (map (lambda (id)
                                                                           (format "get-~a"
@@ -2432,7 +2429,7 @@
                               (append new-normal-indices replace-normal-indices refine-normal-indices
                                       replace-augonly-indices refine-augonly-indices
                                       replace-final-indices refine-final-indices
-                                      inherit-indices new-abstract-indices))])
+                                      new-abstract-indices inherit-indices))])
                     
                     ;; -- Get new methods and initializers --
                     (let-values ([(new-methods override-methods augride-methods init)
