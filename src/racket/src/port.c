@@ -4521,15 +4521,20 @@ static void filename_exn(char *name, char *msg, char *filename, int err, int may
     mod_path = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_MODULE_LOAD_PATH);
     if (SCHEME_TRUEP(mod_path)) {
       if (SCHEME_STXP(mod_path)) {
+        char *srcloc;
+        intptr_t srcloc_len;
         mp = scheme_syntax_to_datum(mod_path, 0, NULL);
+        srcloc = scheme_make_srcloc_string(mod_path, &srcloc_len);
         scheme_raise_exn(MZEXN_FAIL_SYNTAX_MISSING_MODULE,
                          scheme_make_pair(mod_path, scheme_null),
                          mp,
-                         "%s: %s\n"
+                         "%t%s: %s\n"
                          "  module path: %W\n"
                          "  path: %q%s%q%s\n"
                          "  system error: " FILENAME_EXN_E,
-                         name, "cannot open module file", 
+                         srcloc, srcloc_len,
+                         srcloc_len ? "" : name,
+                         "cannot open module file", 
                          mp, filename,
                          pre, rel, post,
                          err);

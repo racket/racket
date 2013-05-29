@@ -29,12 +29,10 @@
      (make-exn:fail:read
       (format "~a~a"
               (cond [(not (error-print-source-location)) ""]
-                    [(and line col)
-                     (format "~a:~a:~a: " source-name line col)]
-                    [pos
-                     (format "~a::~a: " source-name pos)]
-                    [else
-                     (format "~a: " source-name)])
+                    [(srcloc->string (srcloc source-name line col pos span))
+                     (lambda (s)
+                       (format "~a: " s))]
+                    [else ""])
               msg)
       (current-continuation-marks)
       (cons (make-srcloc source-name line col pos span)

@@ -1545,7 +1545,8 @@ TODO
         (current-rep this)
         (let ([dir (or (send context get-directory)
                        drracket:init:first-dir)])
-          (current-directory dir))
+          (current-directory dir)
+          (current-directory-for-user dir))
         
         (set! user-namespace-box (make-weak-box (current-namespace)))
         

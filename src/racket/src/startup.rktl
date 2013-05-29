@@ -1021,6 +1021,13 @@
                 (let-values ([(c f) (loop (cdr l))])
                   (values (cons (car l) c) f)))))))
 
+  (define (format-source-location stx)
+    (srcloc->string (srcloc (syntax-source stx)
+                            (syntax-line stx)
+                            (syntax-column stx)
+                            (syntax-position stx)
+                            (syntax-span stx))))
+    
   (define-values (orig-paramz) #f)
 
   (define-values (standard-module-name-resolver)
@@ -1155,7 +1162,11 @@
                                  (current-directory)))]
                   [show-collection-err (lambda (msg)
                                          (let ([msg (string-append
-                                                     "standard-module-name-resolver: " 
+                                                     (or (and stx
+                                                              (error-print-source-location)
+                                                              (format-source-location stx))
+                                                         "standard-module-name-resolver")
+                                                     ": "
                                                      (regexp-replace #rx"\n" 
                                                                      msg
                                                                      (format "\n  for module path: ~s\n"

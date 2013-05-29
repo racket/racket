@@ -210,6 +210,7 @@ static Scheme_Object *find_system_path(int argc, Scheme_Object **argv);
 
 #ifdef DIR_FUNCTION
 static Scheme_Object *current_directory(int argc, Scheme_Object *argv[]);
+static Scheme_Object *current_user_directory(int argc, Scheme_Object *argv[]);
 #endif
 
 static int has_null(const char *s, intptr_t l);
@@ -540,6 +541,11 @@ void scheme_init_file(Scheme_Env *env)
 			     scheme_register_parameter(current_directory,
 						       "current-directory", 
 						       MZCONFIG_CURRENT_DIRECTORY),
+			     env);
+  scheme_add_global_constant("current-directory-for-user",
+			     scheme_register_parameter(current_user_directory,
+						       "current-directory-for-user", 
+						       MZCONFIG_CURRENT_USER_DIRECTORY),
 			     env);
 #endif
 
@@ -1258,7 +1264,7 @@ Scheme_Object *scheme_remove_current_directory_prefix(Scheme_Object *fn)
   Scheme_Object *cwd;
   intptr_t len;
 
-  cwd = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_DIRECTORY);
+  cwd = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_USER_DIRECTORY);
 
   fn = TO_PATH(fn);
 
@@ -5906,6 +5912,18 @@ static Scheme_Object *current_directory(int argc, Scheme_Object **argv)
 
   return scheme_param_config2("current-directory",
                               scheme_make_integer(MZCONFIG_CURRENT_DIRECTORY),
+                              argc, argv,
+                              -1, cwd_check, 
+                              "path-string?", 1);
+}
+
+static Scheme_Object *current_user_directory(int argc, Scheme_Object **argv)
+{
+  if (!argc)
+    scheme_security_check_file("current-directory-for-user", NULL, SCHEME_GUARD_FILE_EXISTS);
+
+  return scheme_param_config2("current-directory-for-user",
+                              scheme_make_integer(MZCONFIG_CURRENT_USER_DIRECTORY),
                               argc, argv,
                               -1, cwd_check, 
                               "path-string?", 1);

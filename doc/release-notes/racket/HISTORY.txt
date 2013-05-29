@@ -1,3 +1,6 @@
+Version 5.3.4.11
+Added current-directory-for-user, srcloc->string
+
 Version 5.3.4.10
 Move explode-path from racket/path to racket/base
 Changed read-on-demand-source to support #t

@@ -929,6 +929,15 @@ The fields of a @racket[srcloc] instance are as follows:
 ]}
 
 
+@defproc[(srcloc->string [srcloc srcloc?]) (or/c string? #f)]{
+
+Formats @racket[srcloc] as a string suitable for error reporting.  A
+path source in @racket[srcloc] is shown relative to the value of
+@racket[current-directory-for-user]. The result is @racket[#f] if
+@racket[srcloc] does not contain enough information to format a
+string.}
+
+
 @defthing[prop:exn:missing-module struct-type-property?]{
 
 A property that identifies structure types that provide a module path

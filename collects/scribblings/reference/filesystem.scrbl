@@ -413,6 +413,18 @@ variable---if the value of the environment variable identifies the
 same directory as the operating system's report of the current
 directory.}
 
+@defparam*[current-directory-for-user path path-string? (and/c path? complete-path?)]{
+
+Like @racket[current-directory], but use only by
+@racket[srcloc->string] for reporting paths relative to a
+directory.
+
+Normally, @racket[current-directory-for-user] should stay at its
+initial value, reflecting the directory where a user started a
+process. A tool such as DrRacket, however, implicitly lets a user
+select a directory (for the file being edited), in which case updating 
+@racket[current-directory-for-user] makes sense.}
+
 
 @defproc[(current-drive) path?]{
 

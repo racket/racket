@@ -3571,6 +3571,8 @@ void scheme_non_fixnum_result(const char *name, Scheme_Object *o);
 
 void scheme_raise_out_of_memory(const char *where, const char *msg, ...);
 
+char *scheme_make_srcloc_string(Scheme_Object *stx, intptr_t *len);
+
 uintptr_t scheme_get_max_symbol_length();
 
 char *scheme_make_arity_expect_string(const char *map_name,

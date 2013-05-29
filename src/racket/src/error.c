@@ -116,6 +116,7 @@ static Scheme_Object *emergency_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_value_string_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_exit_handler_proc(int, Scheme_Object *[]);
 static Scheme_Object *default_yield_handler(int, Scheme_Object *[]);
+static Scheme_Object *srcloc_to_string(int argc, Scheme_Object **argv);
 
 static Scheme_Object *log_message(int argc, Scheme_Object *argv[]);
 static Scheme_Object *log_level_p(int argc, Scheme_Object *argv[]);
@@ -727,6 +728,8 @@ void scheme_init_error(Scheme_Env *env)
   GLOBAL_FOLDING_PRIM("log-receiver?",  log_reader_p,  1, 1, 1, env);
 
   GLOBAL_PARAMETER("current-logger",    current_logger, MZCONFIG_LOGGER, env);
+
+  GLOBAL_NONCM_PRIM("srcloc->string",   srcloc_to_string, 1, 1, env);
 
   REGISTER_SO(scheme_def_exit_proc);
   REGISTER_SO(default_display_handler);
@@ -2011,24 +2014,18 @@ void scheme_system_error(const char *name, const char *what, int errid)
 
 #define MZERR_MAX_SRC_LEN 100
 
-static char *make_srcloc_string(Scheme_Stx_Srcloc *srcloc, intptr_t *len)
+static char *make_srcloc_string(Scheme_Object *src, intptr_t line, intptr_t col, intptr_t pos, intptr_t *len)
 {
-  intptr_t line, col;
-  Scheme_Object *src;
   char *srcstr, *result;
   intptr_t srclen, rlen;
 
-  if (!srcloc->src || (SCHEME_FALSEP(srcloc->src) && (srcloc->pos < 0))) {
+  if (!src || (SCHEME_FALSEP(src) && (pos < 0))) {
     if (len) *len = 0;
     return NULL;
   }
 
-  line = srcloc->line;
-  col = srcloc->col;
   if (col < 0)
-    col = srcloc->pos;
-
-  src = srcloc->src;
+    col = pos;
 
   if (src && SCHEME_PATHP(src)) {
     /* Strip off prefix matching the current directory: */
@@ -2061,6 +2058,48 @@ static char *make_srcloc_string(Scheme_Stx_Srcloc *srcloc, intptr_t *len)
 
   if (len) *len = rlen;
   return result;
+}
+
+static char *make_stx_srcloc_string(Scheme_Stx_Srcloc *srcloc, intptr_t *len)
+{
+  return make_srcloc_string(srcloc->src, srcloc->line, srcloc->col, srcloc->pos, len);
+}
+
+char *scheme_make_srcloc_string(Scheme_Object *stx, intptr_t *len)
+{
+  return make_stx_srcloc_string(((Scheme_Stx *)stx)->srcloc, len);
+}
+
+static intptr_t struct_number_ref(Scheme_Object *s, int pos)
+{
+  s = scheme_struct_ref(s, pos);
+  if (SCHEME_FALSEP(s))
+    return -1;
+  else
+    return SCHEME_INT_VAL(s);
+}
+
+Scheme_Object *srcloc_to_string(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *src;
+  char *s;
+  intptr_t len, line, col, pos;
+  
+  if (!scheme_is_location(argv[0]))
+    scheme_wrong_contract("srcloc->string", "srcloc?", 0, argc, argv);
+
+  src = scheme_struct_ref(argv[0], 0);
+  if (SCHEME_FALSEP(src)) src = NULL;
+  line = struct_number_ref(argv[0], 1);
+  col = struct_number_ref(argv[0], 2);
+  pos = struct_number_ref(argv[0], 3);
+  
+  s = make_srcloc_string(src, line, col, pos, &len);
+
+  if (s)
+    return scheme_make_sized_utf8_string(s, len);
+  else
+    return scheme_false;
 }
 
 void scheme_read_err(Scheme_Object *port,
@@ -2100,7 +2139,7 @@ void scheme_read_err(Scheme_Object *port,
     pos = ((Scheme_Stx *)xsrc)->srcloc->pos;
 
     if (show_loc)
-      fn = make_srcloc_string(((Scheme_Stx *)xsrc)->srcloc, &fnlen);
+      fn = make_stx_srcloc_string(((Scheme_Stx *)xsrc)->srcloc, &fnlen);
     else
       fn = NULL;
   } else
@@ -2212,7 +2251,7 @@ static void do_wrong_syntax(const char *where,
   if (form) {
     Scheme_Object *pform;
     if (SCHEME_STXP(form)) {
-      p = make_srcloc_string(((Scheme_Stx *)form)->srcloc, &plen);
+      p = make_stx_srcloc_string(((Scheme_Stx *)form)->srcloc, &plen);
       pform = scheme_syntax_to_datum(form, 0, NULL);
 
       /* Try to extract syntax name from syntax */
@@ -2256,7 +2295,7 @@ static void do_wrong_syntax(const char *where,
     Scheme_Object *pform;
     if (SCHEME_STXP(detail_form)) {
       if (((Scheme_Stx *)detail_form)->srcloc->line >= 0)
-	p = make_srcloc_string(((Scheme_Stx *)detail_form)->srcloc, &plen);
+	p = make_stx_srcloc_string(((Scheme_Stx *)detail_form)->srcloc, &plen);
       pform = scheme_syntax_to_datum(detail_form, 0, NULL);
       /* To go in exn record: */
       form = detail_form;

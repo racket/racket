@@ -7457,6 +7457,7 @@ static void make_initial_config(Scheme_Thread *p)
       }
     }
 #endif
+    init_param(cells, paramz, MZCONFIG_CURRENT_USER_DIRECTORY, s);
     scheme_set_original_dir(s);
   }
 
