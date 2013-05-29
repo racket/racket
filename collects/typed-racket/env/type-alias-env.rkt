@@ -53,11 +53,6 @@
      t]))
 
 (define (resolve-type-aliases parse-type)
-    (free-id-table-for-each
-     the-mapping
-     (lambda (id k)
-       (resolve-type-alias id parse-type)))
-    #; ;; fixme – bug in free-id-mapping dict handling
   (for ([(id _) (in-dict the-mapping)])
     (resolve-type-alias id parse-type)))
 
