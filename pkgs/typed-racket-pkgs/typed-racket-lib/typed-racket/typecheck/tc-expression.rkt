@@ -6,13 +6,13 @@
   (types tc-result tc-error utils abbrev)
   (rep type-rep)
   (utils tc-utils)
-  (env index-env tvar-env)
+  (env index-env tvar-env scoped-tvar-env)
   (private syntax-properties type-annotation parse-type)
   unstable/syntax
   racket/match
   syntax/stx
   syntax/parse
-  (for-syntax racket/base syntax/parse))
+  (for-syntax racket/base syntax/parse syntax/parse/experimental/template))
 
 
 (import tc-expr^)
@@ -20,18 +20,21 @@
 
 (define-syntax define-expression-annotations
   (syntax-parser
-    ((_ (name:id attr:id acc:expr) ...)
-     #'(begin
+    ((_ (name:id (attr:id acc:expr) ...) ...)
+     (template
+       (begin
          (define-syntax-class name
            #:literal-sets (kernel-literals)
            (pattern (~and exp #%expression)
-             #:attr attr (acc #'exp)
-             #:when (attribute attr))) ...))))
+             (?@ #:attr attr (acc #'exp)) ...
+             (?@ #:when (attribute attr)) ...)) ...)))))
 
 (define-expression-annotations
-  (type-inst vars type-inst-property)
-  (type-ascrip ty type-ascription)
-  (external-check check external-check-property))
+  (type-inst (vars type-inst-property))
+  (external-check (check external-check-property))
+  (type-ascrip
+    (ty type-ascription)
+    (scoped-vars ascribed-scoped-type-vars)))
 
 
 ;; Typecheck an (#%expression e) form
@@ -40,6 +43,7 @@
     [(exp:type-inst e)
      (do-inst (tc-expr #'e) (attribute exp.vars))]
     [(exp:type-ascrip e)
+     (add-scoped-tvars #'e (attribute exp.scoped-vars))
      (tc-expr/check #'e (attribute exp.ty))]
     [(exp:external-check e)
       ((attribute exp.check) #'e)
