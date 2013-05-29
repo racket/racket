@@ -35,11 +35,11 @@
     (parameterize ([current-namespace 
                     (namespace-anchor->namespace here-anchor)])
       (expand stx)))
-  (printf "~s\n" expanded)
+  #;(printf "~s\n" expanded)
   (define module-name
     (syntax-case expanded ()
       [(#%module name . rest) (syntax-e #'name)]))
-  (printf "~s\n" module-name)
+  #;(printf "~s\n" module-name)
   ;; unwrap the continuation-mark-set->list part:
   (define (wrapped-handler mark-set kind vals)
     (handler (cond [mark-set (extract-mark-list mark-set)]
