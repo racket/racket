@@ -4,7 +4,7 @@
 
 (require "../utils/utils.rkt"
          (except-in (rep type-rep object-rep filter-rep) make-arr)
-         (rename-in (types abbrev union utils printer filter-ops resolve)
+         (rename-in (types abbrev union utils filter-ops resolve)
                     [make-arr* make-arr])
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: (contract-req))
@@ -30,7 +30,6 @@
                                                                      (listof identifier?)))])
 
 (provide star ddd/bound)
-(print-complex-filters? #t)
 
 ;; (Syntax -> Type) -> Syntax Any -> Syntax
 ;; See `parse-type/id`. This is a curried generalization.

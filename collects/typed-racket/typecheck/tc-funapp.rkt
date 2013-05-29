@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
-         racket/match
+         racket/match syntax/stx
          (prefix-in c: (contract-req))
          (for-syntax syntax/parse racket/base)
          (types utils union subtype resolve abbrev substitute)
@@ -12,7 +12,7 @@
 
 (provide/cond-contract
   [tc/funapp
-   (syntax? (c:and/c syntax? syntax->list) tc-results/c (c:listof tc-results/c)
+   (syntax? stx-list? tc-results/c (c:listof tc-results/c)
     (c:or/c #f tc-results/c)
     . c:-> . tc-results/c)])
 

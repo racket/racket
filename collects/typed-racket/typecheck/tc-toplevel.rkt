@@ -86,7 +86,7 @@
 
 
 
-
+;; syntax? -> (listof def-binding?)
 (define (tc-toplevel/pass1 form)
   (parameterize ([current-orig-stx form])
     (syntax-parse form
@@ -146,12 +146,14 @@
 
       ;; predicate assertion - needed for define-type b/c or doesn't work
       [(define-values () (begin (quote-syntax (assert-predicate-internal ty pred)) (#%plain-app values)))
-       (register-type #'pred (make-pred-ty (parse-type #'ty)))]
+       (register-type #'pred (make-pred-ty (parse-type #'ty)))
+       (list)]
 
       ;; top-level type annotation
       [(define-values () (begin (quote-syntax (:-internal id:identifier ty)) (#%plain-app values)))
        (register-type/undefined #'id (parse-type #'ty))
-       (register-scoped-tvars #'id (parse-literal-alls #'ty))]
+       (register-scoped-tvars #'id (parse-literal-alls #'ty))
+       (list)]
 
 
       ;; values definitions
@@ -178,7 +180,7 @@
 
       ;; to handle the top-level, we have to recur into begins
       [(begin . rest)
-       (apply append (filter list? (stx-map tc-toplevel/pass1 #'rest)))]
+       (apply append (stx-map tc-toplevel/pass1 #'rest))]
 
       ;; define-syntaxes just get noted
       [(define-syntaxes (var:id ...) . rest)
@@ -194,7 +196,7 @@
 
 ;; typecheck the expressions of a module-top-level form
 ;; no side-effects
-;; syntax -> void
+;; syntax? -> (or/c void? tc-results/c)
 (define (tc-toplevel/pass2 form)
   (parameterize ([current-orig-stx form])
     (kernel-syntax-case* form #f (define-type-alias-internal define-typed-struct-internal define-type-internal
@@ -322,7 +324,7 @@
   (define defs (apply append 
                       (append
                        struct-bindings
-                       (filter list? (map tc-toplevel/pass1 forms)))))
+                       (map tc-toplevel/pass1 forms))))
   ;(displayln "Finished pass1")
   ;; separate the definitions into structures we'll handle for provides
   (define def-tbl
@@ -417,7 +419,7 @@
        (for/last ([form (in-syntax #'(e ...))])
          (define-values (_ result) (tc-toplevel-form form))
          result))
-     (begin0 (values #f (or result (void)))
+     (begin0 (values #f result)
              (report-all-errors))]
     [_
      (when ((internal-syntax-pred define-type-alias-internal) form)

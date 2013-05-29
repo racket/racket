@@ -35,7 +35,7 @@
 
 (define print-multi-line-case-> (make-parameter #f))
 (define special-dots-printing? (make-parameter #f))
-(define print-complex-filters? (make-parameter #f))
+(define print-complex-filters? (make-parameter #t))
 
 ;; this parameter controls how far down the type to expand type names
 ;; interp. 0 -> don't expand

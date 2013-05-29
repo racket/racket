@@ -13,7 +13,6 @@
          n-ary->binary n-ary-comp->binary
          unboxed-gensym reset-unboxed-gensym
          optimize
-         print-res
          syntax/loc/origin quasisyntax/loc/origin)
 
 ;; for tracking both origin and source location information
@@ -79,8 +78,3 @@
 ;; will be set to the actual optimization function at the entry point
 ;; of the optimizer
 (define optimize (make-parameter #f))
-
-(define (print-res t)
-  (match t
-    [(tc-result1: t f o)
-     (format "~a" t)]))

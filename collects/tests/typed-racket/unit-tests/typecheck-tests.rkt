@@ -40,7 +40,7 @@
 (require (prefix-in b: (base-env base-env))
          (prefix-in n: (base-env base-env-numeric)))
 
-(provide typecheck-tests g)
+(provide typecheck-tests)
 
 (b:init) (n:init) (initialize-structs) (initialize-indexing) (initialize-type-names)
 
@@ -49,8 +49,6 @@
 (define Sym -Symbol)
 (define -Pos -PosInt)
 (define R -Real)
-
-(define (g) (run typecheck-tests))
 
 (define-namespace-anchor anch)
 
@@ -96,8 +94,7 @@
 (begin-for-syntax
   (define-splicing-syntax-class return
     (pattern ty:expr #:attr v #'(ret ty))
-    (pattern (~seq #:ret r:expr) #:attr v #'r)
-    (pattern (~seq ty:expr f:expr o:expr) #:attr v #'(ret ty f o)))
+    (pattern (~seq #:ret r:expr) #:attr v #'r))
 
   (define-splicing-syntax-class expected
     (pattern (~seq #:expected v:expr))
@@ -117,16 +114,6 @@
 (define-syntax (tc-e/t stx)
   (syntax-parse stx
     [(_ e t) (syntax/loc stx (tc-e e #:ret (ret t (-FS -top -bot))))]))
-
-;; duplication of the mzscheme toplevel expander, necessary for expanding the rhs of defines
-;; note that this ability is never used
-(define-for-syntax (local-expand/top-level form)
-  (let ([form* (local-expand form 'module (kernel-form-identifier-list #'here))])
-    (kernel-syntax-case form* #f
-                        [(define-syntaxes . _) (raise-syntax-error "don't use syntax defs here!" form)]
-                        [(define-values vals body)
-                         (quasisyntax/loc form (define-values vals #,(local-expand #'body 'expression '())))]
-                        [e (local-expand #'e 'expression '())])))
 
 ;; check that typechecking this expression fails
 (define-syntax (tc-err stx)
@@ -1647,6 +1634,7 @@
                        (apply (inst values A B ... B) a b)) 
                      (All (A B ...) (A B ... -> (values A B ... B))))
               (-polydots (a b) ((list a) (b b) . ->... . (make-ValuesDots (list (-result a)) b 'b)))]
+        [tc-e/t (ann (ann 'x Symbol) Symbol) -Symbol]
         )
   (test-suite
    "check-type tests"
