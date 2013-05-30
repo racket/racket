@@ -13,13 +13,8 @@
 (provide optimize-top)
 
 
+
 (define-syntax-class opt-expr
-  #:commit
-  (pattern e:opt-expr*
-           #:with opt #'e.opt))
-
-
-(define-syntax-class opt-expr*
   #:commit
   #:literal-sets (kernel-literals)
   
