@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/list unstable/list racket/match
+(require racket/list unstable/list racket/match racket/set
          racket/contract
          (only-in racket/contract/private/guts contract-continuation-mark-key)
          "sampler.rkt")
@@ -30,8 +30,13 @@
 
 (define (analyze-contract-samples contract-samples samples*)
   (define correlated (correlate-contract-samples contract-samples samples*))
-  (print-breakdown correlated))
+  (print-breakdown correlated)
+  (module-graph-view correlated))
 
+
+;;---------------------------------------------------------------------------
+;; Break down contract checking time by contract, then by callee and by chain
+;; of callers.
 
 (define (print-breakdown correlated)
   (match-define (contract-profile total-time n-samples n-contract-samples
@@ -96,6 +101,70 @@
                  (not (equal? (srcloc-source loc) caller-module)))])))
   (list* blame thread-id timestamp new-stack-trace))
 
+
+;;---------------------------------------------------------------------------
+;; Show graph of modules, with contract boundaries and contract costs for each
+;; boundary.
+;; Typed modules are in green, untyped modules are in red.
+
+(define (module-graph-view correlated)
+  (match-define (contract-profile total-time n-samples n-contract-samples
+                                  live-contract-samples all-blames)
+    correlated)
+
+  ;; first, enumerate all the relevant modules
+  (define-values (nodes edge-samples)
+    (for/fold ([nodes (set)] ; set of modules
+               ;; maps pos-neg edges (pairs) to lists of samples
+               [edge-samples (hash)])
+        ([s (in-list live-contract-samples)])
+      (match-define (list blame thread-id timestamp stack-trace ...) s)
+      (define pos (blame-positive blame))
+      (define neg (blame-negative blame))
+      (values (set-add (set-add nodes pos) neg) ; add all new modules
+              (hash-update edge-samples (cons pos neg)
+                           (lambda (ss) (cons s ss))
+                           '()))))
+
+  (define nodes->typed?
+    (for/hash ([n nodes])
+      ;; typed modules have a #%type-decl submodule
+      (define submodule? (not (path? n)))
+      (define filename (if submodule? (car n) n))
+      (define typed?
+        (with-handlers
+            ([(lambda (e)
+                (and (exn:fail:contract? e)
+                     (regexp-match "^dynamic-require: unknown module"
+                                   (exn-message e))))
+              (lambda _ #f)])
+          (dynamic-require
+           (append (list 'submod (list 'file (path->string filename)))
+                   (if submodule? (cdr n) '())
+                   '(#%type-decl))
+           #f)
+          #t))
+      (values n typed?)))
+
+  ;; graphviz output
+  (printf "digraph {\n")
+  (define nodes->names (for/hash ([n nodes]) (values n (gensym))))
+  (for ([n nodes])
+    (printf "~a[label=\"~a\"][color=\"~a\"]\n"
+            (hash-ref nodes->names n)
+            n
+            (if (hash-ref nodes->typed? n) "green" "red")))
+  (for ([(k v) (in-hash edge-samples)])
+    (match-define (cons pos neg) k)
+    (printf "~a -> ~a[label=\"~a\"]\n"
+            (hash-ref nodes->names neg)
+            (hash-ref nodes->names pos)
+            (length v)))
+  (printf "}\n"))
+
+
+;;---------------------------------------------------------------------------
+;; Entry point
 
 (provide (rename-out [contract-profile/user contract-profile]))
 
