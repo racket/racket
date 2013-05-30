@@ -174,6 +174,8 @@
  (running "Programm läuft")
  (not-running "Programm inaktiv")
  
+ (install-package-button "~a installieren") ;; button label: ~a is filled with the name of a pkg
+
  ;;; misc
  (welcome-to-something "Willkommen bei ~a")
  
@@ -1041,6 +1043,7 @@
 
  (automatically-compile "\"compiled\"-Verzeichnisse bestücken (für schnelleres laden)")
  (preserve-stacktrace-information "Stack-Trace behalten (einige Optimierungen werden abgeschaltet)")
+ (enforce-module-constants-checkbox-label "Konstantendefinitionen durchsetzen (sorgt für etwas Inlining)")
  (expression-level-stacktrace "Stack-Trace mit Ausdrücken")
  (function-level-stacktrace "Stack-Trace mit Funktionen")
  (submodules-to-run "Submodule zum Ausführen")
