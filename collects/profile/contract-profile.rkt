@@ -1,9 +1,9 @@
 #lang racket/base
 
-(require racket/list unstable/list racket/match racket/set
+(require racket/list unstable/list racket/match racket/set racket/format
          racket/contract
          (only-in racket/contract/private/guts contract-continuation-mark-key)
-         "sampler.rkt")
+         "sampler.rkt" "utils.rkt")
 
 (struct contract-profile
   (total-time n-samples n-contract-samples
@@ -16,8 +16,12 @@
 
 ;; (listof (U blame? #f)) profile-samples -> contract-profile struct
 (define (correlate-contract-samples contract-samples samples*)
+  ;; car of samples* is total time, car of each sample is thread id
+  ;; for now, we just assume a single thread. fix this eventually.
   (define total-time (car samples*))
-  (define samples    (cdr samples*))
+  ;; reverse is there to sort samples in forward time, which get-times
+  ;; needs.
+  (define samples    (get-times (map cdr (reverse (cdr samples*)))))
   (define n-samples             (length contract-samples))
   ;; combine blame info and stack trace info. samples should line up
   (define aug-contract-samples  (map cons contract-samples samples))
@@ -33,6 +37,10 @@
   (print-breakdown correlated)
   (module-graph-view correlated))
 
+(define (samples-time samples)
+  (for/sum ([s (in-list samples)])
+    (cadr s)))
+
 
 ;;---------------------------------------------------------------------------
 ;; Break down contract checking time by contract, then by callee and by chain
@@ -43,9 +51,13 @@
                                   live-contract-samples all-blames)
     correlated)
 
-  (printf "Running time is ~a% contracts (~a/~a samples).\n\n"
-          (* 100 (/ n-contract-samples n-samples 1.0))
-          n-contract-samples n-samples)
+  (define contract-ratio (/ n-contract-samples n-samples 1.0))
+  (printf "Running time is ~a% contracts\n"
+          (~r (* 100 contract-ratio) #:precision 2))
+  (printf "~a/~a samples\n" n-contract-samples n-samples)
+  (printf "~a/~a ms\n\n"
+          (~r (* contract-ratio total-time) #:precision 0)
+          total-time)
 
   (define (print-contract/loc c)
     (printf "~a @ ~a\n" (blame-contract c) (blame-source c)))
@@ -58,7 +70,7 @@
   (for ([c (in-list samples-by-contract)])
     (define representative (caar c))
     (print-contract/loc representative)
-    (printf "  ~a samples\n\n" (length c)))
+    (printf "  ~a ms\n\n" (samples-time c)))
 
   (displayln "\nBY CALLEE\n")
   (for ([g (in-list samples-by-contract)])
@@ -68,13 +80,15 @@
               (group-by equal? g
                         #:key (lambda (x) (blame-value (car x)))) ; callee source, maybe
               > #:key length)])
-      (printf "  ~a\n  ~a samples\n" (blame-value (caar x)) (length x)))
+      (printf "  ~a\n  ~a ms\n"
+              (blame-value (caar x))
+              (samples-time x)))
     (newline))
 
   (define samples-by-contract-by-caller
     (for/list ([g (in-list samples-by-contract)])
       (sort (group-by equal? (map sample-prune-stack-trace g)
-                      #:key cdddr) ; pruned stack trace
+                      #:key cddr) ; pruned stack trace
             > #:key length)))
 
   (displayln "\nBY CALLER\n")
@@ -82,16 +96,16 @@
          [c g])
     (define representative (car c))
     (print-contract/loc (car representative))
-    (for ([frame (in-list (cdddr representative))])
+    (for ([frame (in-list (cddr representative))])
       (printf "  ~a @ ~a\n" (car frame) (cdr frame)))
-    (printf "  ~a samples\n" (length c))
+    (printf "  ~a ms\n" (samples-time c))
     (newline)))
 
 ;; Unrolls the stack until it hits a function on the negative side of the
 ;; contract boundary (based on module location info).
 ;; Will give bogus results if source location info is incomplete.
 (define (sample-prune-stack-trace sample)
-  (match-define (list blame thread-id timestamp stack-trace ...) sample)
+  (match-define (list blame timestamp stack-trace ...) sample)
   (define caller-module (blame-negative blame))
   (define new-stack-trace
     (dropf stack-trace
@@ -99,7 +113,7 @@
             [(cons name loc)
              (or (not loc)
                  (not (equal? (srcloc-source loc) caller-module)))])))
-  (list* blame thread-id timestamp new-stack-trace))
+  (list* blame timestamp new-stack-trace))
 
 
 ;;---------------------------------------------------------------------------
@@ -156,10 +170,10 @@
             (if (hash-ref nodes->typed? n) "green" "red")))
   (for ([(k v) (in-hash edge-samples)])
     (match-define (cons pos neg) k)
-    (printf "~a -> ~a[label=\"~a\"]\n"
+    (printf "~a -> ~a[label=\"~ams\"]\n"
             (hash-ref nodes->names neg)
             (hash-ref nodes->names pos)
-            (length v)))
+            (samples-time v)))
   (printf "}\n"))
 
 
