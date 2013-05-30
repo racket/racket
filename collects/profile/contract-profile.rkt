@@ -3,7 +3,9 @@
 (require racket/list unstable/list racket/match racket/set racket/format
          racket/contract
          (only-in racket/contract/private/guts contract-continuation-mark-key)
-         "sampler.rkt" "utils.rkt")
+         "sampler.rkt" "utils.rkt"
+         ;; for grphviz rendering
+         redex/private/dot racket/system)
 
 (struct contract-profile
   (total-time n-samples n-contract-samples
@@ -121,6 +123,9 @@
 ;; boundary.
 ;; Typed modules are in green, untyped modules are in red.
 
+(define dot-exe (find-dot))
+(define module-graph-dot-file "tmp-contract-profile-module-graph.dot")
+
 (define (module-graph-view correlated)
   (match-define (contract-profile total-time n-samples n-contract-samples
                                   live-contract-samples all-blames)
@@ -161,20 +166,28 @@
       (values n typed?)))
 
   ;; graphviz output
-  (printf "digraph {\n")
-  (define nodes->names (for/hash ([n nodes]) (values n (gensym))))
-  (for ([n nodes])
-    (printf "~a[label=\"~a\"][color=\"~a\"]\n"
-            (hash-ref nodes->names n)
-            n
-            (if (hash-ref nodes->typed? n) "green" "red")))
-  (for ([(k v) (in-hash edge-samples)])
-    (match-define (cons pos neg) k)
-    (printf "~a -> ~a[label=\"~ams\"]\n"
-            (hash-ref nodes->names neg)
-            (hash-ref nodes->names pos)
-            (samples-time v)))
-  (printf "}\n"))
+  (with-output-to-file module-graph-dot-file
+    #:exists 'replace
+    (lambda ()
+      (printf "digraph {\n")
+      (define nodes->names (for/hash ([n nodes]) (values n (gensym))))
+      (for ([n nodes])
+        (printf "~a[label=\"~a\"][color=\"~a\"]\n"
+                (hash-ref nodes->names n)
+                n
+                (if (hash-ref nodes->typed? n) "green" "red")))
+      (for ([(k v) (in-hash edge-samples)])
+        (match-define (cons pos neg) k)
+        (printf "~a -> ~a[label=\"~ams\"]\n"
+                (hash-ref nodes->names neg)
+                (hash-ref nodes->names pos)
+                (samples-time v)))
+      (printf "}\n")))
+  ;; render, if graphviz is installed
+  (when dot-exe
+    (system (format "~a -Tpdf -O ~a"
+                    (path->string dot-exe)
+                    module-graph-dot-file))))
 
 
 ;;---------------------------------------------------------------------------
