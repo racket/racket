@@ -17,6 +17,11 @@
 (define-syntax-class opt-expr
   #:commit
   #:literal-sets (kernel-literals)
+  #:attributes (opt)
+  (pattern opt:expr
+    #:when (or (ignore-property #'opt)
+               (ignore-some-property #'opt)
+               (with-handlers-property #'opt)))
   
   ;; can't optimize the body of this code because it isn't typechecked
   (pattern ((~and op (~literal let-values))
@@ -86,18 +91,7 @@
            #:with opt #'other))
 
 (define (optimize-top stx)
-  (parameterize
-      ([optimize
-        (syntax-parser
-          [e:expr
-           #:when (and (not (ignore-property #'e))
-                       (not (ignore-some-property #'e))
-                       (not (with-handlers-property #'e))
-                       #;
-                       (not (kw-lambda-property #'e)))
-           #:with e*:opt-expr #'e
-           #'e*.opt]
-          [e:expr #'e])])
+  (parameterize ([optimize (syntax-parser [e:opt-expr #'e.opt])])
     (let ((result ((optimize) stx)))
       (when *show-optimized-code*
         (pretty-print (syntax->datum result)))
