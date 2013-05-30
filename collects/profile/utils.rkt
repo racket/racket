@@ -171,3 +171,53 @@
   ;; can be there with another node, eg (* -> A 2-> B 3-> A)), but be safe and
   ;; look for any empty layer
   (filter pair? (vector->list layers)))
+
+;; gets a list of thread-id and data for that thread beginning with the
+;; millisecond count, and returns a similar list where the samples begin with
+;; the time spent for that sample.  The time spent is taken as half of the two
+;; touching ranges; for example, if there are three samples showing snapshot
+;; times of 10, 20, 60, then the middle one is assumed to have a time of 25.
+;; For the first and last samples, the time is twice the half of the single
+;; touching range -- with this example, this would be 10 for the first and 40
+;; for the last.  If there is a thread with just one sample, it is dropped.
+(provide get-times)
+(define (get-times samples)
+  (cond
+    ;; nothing to do
+    [(null? samples) '()]
+    ;; throw out a single sample
+    [(null? (cdr samples)) '()]
+    [else (let loop ([samples samples]
+                     [prevs   (cons #f (map car samples))]
+                     [r       '()])
+            (if (null? samples)
+              (reverse r)
+              (let* ([prev (car prevs)]
+                     [cur  (caar samples)]
+                     [data (cdar samples)]
+                     [prevs (cdr prevs)]
+                     [samples (cdr samples)]
+                     [next (and (pair? samples) (caar samples))])
+                (loop samples prevs
+                      (cons (cons (if next
+                                    ;; not the last: there must be a next
+                                    (if prev (/ (- next prev) 2) (- next cur))
+                                    ;; last one: there must be a prev
+                                    (- cur prev))
+                                  data)
+                            r)))))]))
+
+(module+ test
+  (require rackunit)
+  (check-equal? (get-times '())
+                '())
+  (check-equal? (get-times '([10 a]))
+                '())
+  (check-equal? (get-times '([10 a] [20 b]))
+                '([10 a] [10 b]))
+  (check-equal? (get-times '([10 a] [20 b] [60 c]))
+                '([10 a] [25 b] [40 c]))
+  (check-equal? (get-times '([10 a] [20 b] [30 c] [40 d]))
+                '([10 a] [10 b] [10 c] [10 d]))
+  (check-equal? (get-times '([10 a] [20 b] [60 c] [80 d]))
+                '([10 a] [25 b] [30 c] [20 d])))
