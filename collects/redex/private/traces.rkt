@@ -645,7 +645,7 @@
       (make-object menu-item% "Print..."
         file-menu
         (lambda (item evt) (send graph-pb print)))
-      (make-object menu-item% "Export as Encapsulted PostScript..."
+      (make-object menu-item% "Export as Encapsulated PostScript..."
         file-menu
         (lambda (item evt) (send graph-pb print #t #f 'postscript this #f)))
       (make-object menu-item% "Export as PostScript..."
