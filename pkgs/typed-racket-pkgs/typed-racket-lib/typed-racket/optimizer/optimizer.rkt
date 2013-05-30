@@ -5,10 +5,12 @@
          (for-template racket/base)
          "../utils/utils.rkt"
          (private syntax-properties)
-         (optimizer utils
-                    number fixnum float float-complex vector string list pair
-                    sequence box struct dead-code apply unboxed-let
-                    hidden-costs))
+         (except-in
+           (optimizer utils
+                      number fixnum float float-complex vector string list pair
+                      sequence box struct dead-code apply unboxed-let
+                      hidden-costs)
+           opt-expr))
 
 (provide optimize-top)
 
