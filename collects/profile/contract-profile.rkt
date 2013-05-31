@@ -4,8 +4,7 @@
          racket/contract
          (only-in racket/contract/private/guts contract-continuation-mark-key)
          "sampler.rkt" "utils.rkt"
-         ;; for grphviz rendering
-         redex/private/dot racket/system)
+         "contract-profiler/dot.rkt")
 
 (struct contract-profile
   (total-time n-samples n-contract-samples
@@ -130,7 +129,6 @@
 ;; boundary.
 ;; Typed modules are in green, untyped modules are in red.
 
-(define dot-exe (find-dot))
 (define module-graph-dot-file "tmp-contract-profile-module-graph.dot")
 
 (define (module-graph-view correlated)
@@ -195,10 +193,7 @@
                 (samples-time v)))
       (printf "}\n")))
   ;; render, if graphviz is installed
-  (when dot-exe
-    (system (format "~a -Tpdf -O ~a"
-                    (path->string dot-exe)
-                    module-graph-dot-file))))
+  (render-dot module-graph-dot-file))
 
 
 ;;---------------------------------------------------------------------------
