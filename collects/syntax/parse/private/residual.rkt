@@ -1,7 +1,8 @@
 #lang racket/base
 (require (for-syntax racket/base)
          racket/stxparam
-         racket/lazy-require)
+         racket/lazy-require
+         racket/private/promise)
 
 ;; ============================================================
 ;; Compile-time
@@ -33,10 +34,11 @@
                             [else #f]))
                     (attribute-mapping-name self))])
            #`(let ([value #,(attribute-mapping-var self)])
-               (check-attr-value-is-syntax '#,(attribute-mapping-depth self)
-                                           value
-                                            (quote-syntax #,source-name))
-               value)))))
+               (if (syntax-list^depth? '#,(attribute-mapping-depth self) value)
+                   value
+                   (check/force-syntax-list^depth '#,(attribute-mapping-depth self)
+                                                  value
+                                                  (quote-syntax #,source-name))))))))
  )
 
 ;; ============================================================
@@ -54,7 +56,6 @@
          attribute-binding
          stx-list-take
          stx-list-drop/cx
-         check-list^depth*
          check-literal*
          begin-for-syntax/once
 
@@ -131,30 +132,45 @@
               (if (syntax? x) x cx)
               (sub1 n)))))
 
-;; check-attr-value-is-syntax : nat any id -> boolean
-;; returns #t if value is a (listof^depth syntax)
-;; used by attribute-mapping code above
-(define (check-attr-value-is-syntax depth value source-id)
-  (define (check-syntax depth value)
-    (if (zero? depth)
-        (syntax? value)
-        (and (list? value)
-             (for/and ([part (in-list value)])
-                      (check-syntax (sub1 depth) part)))))
-  (unless (check-syntax depth value)
+;; check/force-syntax-list^depth : nat any id -> (listof^depth syntax)
+;; Checks that value is (listof^depth syntax); forces promises.
+;; Slow path for attribute-mapping code, assumes value is not syntax-list^depth? already.
+(define (check/force-syntax-list^depth depth value0 source-id)
+  (define (bad)
     (raise-syntax-error #f
-                        (format "attribute is bound to non-syntax value: ~e" value)
-                        source-id)))
+                        (format "attribute is bound to non-syntax value: ~e" value0)
+                        source-id))
+  (define (loop depth value)
+    (cond [(promise? value)
+           (loop depth (force value))]
+          [(zero? depth)
+           (if (syntax? value) value (bad))]
+          [else (loop-list depth value)]))
+  (define (loop-list depth value)
+    (cond [(promise? value)
+           (loop-list depth (force value))]
+          [(pair? value)
+           (let ([new-car (loop (sub1 depth) (car value))]
+                 [new-cdr (loop-list depth (cdr value))])
+             ;; Don't copy unless necessary
+             (if (and (eq? new-car (car value))
+                      (eq? new-cdr (cdr value)))
+                 value
+                 (cons new-car new-cdr)))]
+          [(null? value)
+           null]
+          [else
+           (bad)]))
+  (loop depth value0))
 
-;; check-list^depth* : symbol nat any -> list^depth
-(define (check-list^depth* aname n0 v0)
-  (define (loop n v)
-    (when (positive? n)
-      (unless (list? v)
-        (raise-type-error aname (format "lists nested ~s deep" n0) v))
-      (for ([x (in-list v)]) (loop (sub1 n) x))))
-  (loop n0 v0)
-  v0)
+;; syntax-list^depth? : nat any -> boolean
+;; Returns true iff value is (listof^depth syntax).
+(define (syntax-list^depth? depth value)
+  (if (zero? depth)
+      (syntax? value)
+      (and (list? value)
+           (for/and ([part (in-list value)])
+             (syntax-list^depth? (sub1 depth) part)))))
 
 ;; check-literal* : id phase phase (listof phase) stx -> void
 (define (check-literal* id used-phase mod-phase ok-phases/ct-rel ctx)

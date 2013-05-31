@@ -31,7 +31,8 @@
                                               (lambda (e) (raise (fixup e)))])
                                (thunk))))])
        (make-evaluator 'racket/base
-                       #:requires (let ([mods '(syntax/parse
+                       #:requires (let ([mods '(racket/promise
+                                                syntax/parse
                                                 syntax/parse/debug
                                                 syntax/parse/experimental/splicing
                                                 syntax/parse/experimental/contract

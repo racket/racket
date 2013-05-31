@@ -696,7 +696,7 @@ Conventions:
      (for/fold ([k #'k]) ([side (in-list (reverse (syntax->list #'(side ...))))])
        (syntax-case side ()
          [#s(clause:attr a expr)
-            #`(let-attributes ([a (wrap-user-code (check-list^depth a expr))])
+            #`(let-attributes ([a (wrap-user-code expr)])
                 #,k)]))]))
 
 (begin-for-syntax
