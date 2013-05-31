@@ -1027,7 +1027,7 @@
               [(gold) 
                (send (get-defs) set-gold-highlighted-errors 
                      (remove-duplicates
-                      (apply append (map (λ (x) (vector-ref x 1)) error-messages+locs))))])
+                      (apply append (map exn-info-src-vecs error-messages+locs))))])
             (send (get-ints) set-error-ranges 
                   (set->list
                    (for*/set ([error-message+loc (in-list error-messages+locs)]
