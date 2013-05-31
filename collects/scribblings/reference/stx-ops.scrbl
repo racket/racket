@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "mz.rkt" scribble/eval)
 
-@(define stx-eval (make-base-eval))A
+@(define stx-eval (make-base-eval))
 @(stx-eval '(require (for-syntax racket/base)))
 
 @title[#:tag "stxops"]{Syntax Object Content}
