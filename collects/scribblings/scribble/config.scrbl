@@ -40,7 +40,7 @@ extend or configure Scribble fall into two groups:
                                       (make-tex-addition "inbox.tex")))
         ]{Implementing Styles}
 
-When a string is uses as a style in an @racket[element], 
+When a string is used as a style in an @racket[element], 
 a @racket[multiarg-element], @racket[paragraph], @racket[table],
 @racket[itemization], @racket[nested-flow], or
 @racket[compound-paragraph], it corresponds to a CSS class for HTML
