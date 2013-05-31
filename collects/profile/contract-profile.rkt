@@ -29,7 +29,14 @@
   (define aug-contract-samples  (map cons contract-samples samples))
   (define live-contract-samples (filter car aug-contract-samples))
   (define n-contract-samples    (length live-contract-samples))
-  (define all-blames (remove-duplicates (filter values contract-samples)))
+  (define all-blames
+    (set->list (for/set ([b (in-list contract-samples)]
+                         #:when b)
+                 ;; An original blamed and its swapped version are the same
+                 ;; for our purposes.
+                 (if (blame-swapped? b)
+                     (blame-swap b) ; swap back
+                     b))))
   (contract-profile total-time n-samples n-contract-samples
                     live-contract-samples all-blames))
 
@@ -140,8 +147,12 @@
       (match-define (list blame thread-id timestamp stack-trace ...) s)
       (define pos (blame-positive blame))
       (define neg (blame-negative blame))
+      ;; We consider original blames and their swapped versions to be the same.
+      (define edge-key (if (blame-swapped? blame)
+                           (cons neg pos)
+                           (cons pos neg)))
       (values (set-add (set-add nodes pos) neg) ; add all new modules
-              (hash-update edge-samples (cons pos neg)
+              (hash-update edge-samples edge-key
                            (lambda (ss) (cons s ss))
                            '()))))
 
