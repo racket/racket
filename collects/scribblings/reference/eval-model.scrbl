@@ -844,7 +844,7 @@ the ports, TCP connections, @|etc|, that it manages, as well as
 terminating (or suspending) its threads. A custodian that has been
 shut down cannot manage new objects.  After the current custodian is shut
 down, if a procedure is called that attempts to create a managed resource (e.g.,
-@racket[open-input-port], @racket[thread]), then the
+@racket[open-input-file], @racket[thread]), then the
 @exnraise[exn:fail:contract].
 
 A thread can have multiple managing custodians, and a suspended thread

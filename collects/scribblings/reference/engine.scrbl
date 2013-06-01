@@ -67,7 +67,7 @@ procedure raises an exception, then it is re-raised by
 @racket[engine-run].}
 
 
-@defproc[(engine-result [engine engine]) any]{
+@defproc[(engine-result [engine engine?]) any]{
 
 Returns the result for @racket[engine] if it has completed with a
 value (as opposed to an exception), @racket[#f] otherwise.}

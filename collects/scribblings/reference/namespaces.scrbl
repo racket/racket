@@ -334,7 +334,7 @@ module was declared, unless the module declaration itself included
 assignments to the binding via @racket[set!].}
 
 
-@defproc[(namespace-syntax-introduce [stx syntax-object?]) syntax-object?]{
+@defproc[(namespace-syntax-introduce [stx syntax?]) syntax?]{
 
 Returns a syntax object like @racket[stx], except that the current
 namespace's bindings are included in the @tech{syntax object}'s
