@@ -358,12 +358,12 @@
         scoped-tvarss)))
 
 
-;; tc/plambda syntax syntax-list syntax-list type -> Poly
+;; tc/plambda syntax tvarss-list syntax-list syntax-list type -> Poly
 ;; formals and bodies must by syntax-lists
 (define/cond-contract (tc/plambda form tvarss-list formals bodies expected)
-  (syntax? syntax? syntax? (or/c tc-results/c #f) . -> . Type/c)
+  (syntax? (listof list?) syntax? syntax? (or/c tc-results/c #f) . -> . Type/c)
   (define/cond-contract (maybe-loop form formals bodies expected)
-    (syntax? syntax? syntax? tc-results/c . -> . Type/c)
+    (syntax? syntax? syntax? (or/c tc-results/c #f) . -> . Type/c)
     (match expected
       [(tc-result1: (or (Poly: _ _) (PolyDots: _ _)))
        (tc/plambda form (remove-poly-layer tvarss-list) formals bodies expected)]
