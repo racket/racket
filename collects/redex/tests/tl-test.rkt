@@ -134,6 +134,12 @@
           #t))
   
   (let ()
+    (define-language L
+      [Cv (name n variable-not-otherwise-mentioned)])
+    (test (redex-match L Cv ()) #f)
+    (test (pair? (redex-match L Cv x)) #f))
+  
+  (let ()
     (define-language lang
       ((x y) 1 2 3))
     (define-extended-language lang2 lang
