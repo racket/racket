@@ -57,7 +57,7 @@
   ;; tests : (listof test)
   (define tests
     (list
-                   
+
      (build-test "12345"
                 '(("12345" constant)))
      (build-test "'abcdef"
@@ -1047,8 +1047,6 @@
                  (list '((6 12) (14 31) (38 54) (56 63))
                        '((32 33) (69 70))))
      
-     
-     
      (build-test 
       (λ (fn) 
         (string-append
@@ -1080,10 +1078,10 @@
         ("))\n("                   default-color)
         ("require"                 imported)
         (#rx" [(]file \"[^\"]*\"[)][)]\n" default-color))
-      '(((6 17) (19 25) (59 66))
+      `(((6 17) (19 25) (59 66))
         ((30 33) (48 51) (52 55))
         ((30 31) (38 39) (40 41) (42 43))
-        ((67 166) (28 29)))
+        ((67 ,(λ (end-of-file) (- end-of-file 2))) (28 29)))
       #:setup
       (λ () 
         (define fn (make-temporary-file "syncheck-test-~a.rkt"))
@@ -1513,25 +1511,34 @@
                       (cons fst (loop (cdr ids)))))]))))
     
   ;; compare-arrows : expression
-  ;;                  (listof (cons (list number number) (listof (list number number))))
-  ;;                  hash-table[(list text number number) -o> (listof (list text number number))]
+  ;;                  (or/c #f (listof (cons (list number-or-proc number-or-proc) (listof (list number-or-proc number-or-proc)))))
+  ;;                  hash-table[(list text number number) -o> (setof (list text number number))]
   ;;               -> void
-  (define (compare-arrows test-exp expected raw-actual line)
-    (when expected
+  (define (compare-arrows test-exp raw-expected raw-actual line)
+    (when raw-expected
+      ;; convert the number-or-proc's in raw-expected to be just numbers
+      (define expected 
+        (let loop ([stuff raw-expected])
+          (cond
+            [(list? stuff)
+             (for/list ([ele (in-list stuff)])
+               (loop ele))]
+            [(procedure? stuff)
+             (stuff (string-length test-exp))]
+            [else
+             stuff])))
       (define already-checked (make-hash))
       
       (define actual-ht (make-hash))
-      (define stupid-internal-define-syntax1
-        (hash-for-each raw-actual
-                       (lambda (k v)
-                         (hash-set! actual-ht (cdr k)
-                                    (sort (map cdr (set->list v))
-                                          (lambda (x y) (< (car x) (car y))))))))
+      (for ([(k v) (in-hash raw-actual)])
+        (hash-set! actual-ht (cdr k)
+                   (sort (map cdr (set->list v))
+                         (lambda (x y) (< (car x) (car y))))))
       (define expected-ht (make-hash))
       (for ([binding (in-list expected)])
         (hash-set! expected-ht (car binding) (cdr binding)))
       ;; binding-in-ht? : hash-table (list number number) (listof (list number number)) -> boolean
-      (define (test-binding expected? ht)
+      (define (test-binding expected? ht) ;; dont-care
         (lambda (pr)
           (let ([frm (car pr)]
                 [to (cdr pr)])
@@ -1540,17 +1547,17 @@
              frm
              (lambda ()
                (hash-set! already-checked frm #t)
-               (let ([ht-ent (hash-ref ht frm (lambda () 'nothing-there))])
-                 (unless (equal? ht-ent to)
-                   (eprintf (if expected?
-                                "FAILED arrow test line ~a ~s from ~s\n  expected ~s\n    actual ~s\n"
-                                "FAILED arrow test line ~a ~s from ~s\n    actual ~s\n  expected ~s\n")
-                            line
-                            test-exp
-                            frm
-                            ht-ent
-                            to))))))))
-      
+               (define ht-ent (hash-ref ht frm 'nothing-there))
+               (unless (equal? ht-ent to)
+                 (eprintf (if expected?
+                              "FAILED arrow test line ~a ~s from ~s\n  expected ~s\n    actual ~s\n"
+                              "FAILED arrow test line ~a ~s from ~s\n    actual ~s\n  expected ~s\n")
+                          line
+                          test-exp
+                          frm
+                          ht-ent
+                          to)))))))
+        
       (for-each (test-binding #t expected-ht) (hash-map actual-ht cons))
       (for-each (test-binding #f actual-ht) (hash-map expected-ht cons))))
   
