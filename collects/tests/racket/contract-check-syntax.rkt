@@ -31,19 +31,6 @@
     (super-new)
     (define/override (syncheck:find-source-object stx)
       stx)
-    (define/override (syncheck:add-rename-menu id
-                                               all-ids
-                                               new-name-interferes?)
-      (match all-ids
-        [(list (list ids _ _) ...)
-         (set! renames (cons ids renames))]))
-    (define renames '())
-    (define/public (collected-rename-class stx)
-      (for/fold ([class (set)]) ([ids renames])
-                (if (for/or ([id ids])
-                            (equal? (source stx) (source id)))
-                    (set-union class (apply set (map source ids)))
-                    class)))
     (define/override (syncheck:add-arrow start-source-obj
                                          start-left
                                          start-right
@@ -86,11 +73,7 @@
   (check-equal? (send annotations collected-arrows)
                 (set (list (source x1) (source x2))
                      (list (source x1) (source x3))
-                     (list (source y1) (source y2))))
-  (check-equal? (send annotations collected-rename-class x1)
-                (set (source x1) (source x2) (source x3)))
-  (check-equal? (send annotations collected-rename-class y1)
-                (set (source y1) (source y2))))
+                     (list (source y1) (source y2)))))
 
 (let ([annotations (new collector%)])
   (define-values (add-syntax done)
@@ -112,6 +95,4 @@
   
   (check-equal? (send annotations collected-arrows)
                 (set (list (source x1) (source x2))
-                     (list (source x1) (source x3))))
-  (check-equal? (send annotations collected-rename-class x1)
-                (set (source x1) (source x2) (source x3))))
+                     (list (source x1) (source x3)))))
