@@ -1200,7 +1200,7 @@
       (define/public (update-frame-expand-error)
         (when (eq? (get-tab) (send (send (get-tab) get-frame) get-current-tab))
           (define (matching-srcloc error/status-message-str+srcloc)
-            (for/or ([pos+span-vec (exn-info-src-vecs error/status-message-str+srcloc 1)])
+            (for/or ([pos+span-vec (exn-info-src-vecs error/status-message-str+srcloc)])
               (define pos (vector-ref pos+span-vec 0))
               (define span (vector-ref pos+span-vec 1))
               (and (equal? (send (get-tab) get-defs)
@@ -1214,7 +1214,7 @@
               [bottom-bar-most-recent-jumped-to-loc
                (for/list ([error/status-message-str+srcloc (in-list error/status-message-strs+srclocs)]
                           #:when (matching-srcloc error/status-message-str+srcloc))
-                 (exn-info-str error/status-message-str+srcloc 0))]
+                 (exn-info-str error/status-message-str+srcloc))]
               [else
                (list (exn-info-str (list-ref error/status-message-strs+srclocs error/status-index)))]))
           (define install-suggestions
