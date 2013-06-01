@@ -436,6 +436,10 @@
 (test #t is-a? picky (class->interface picky-fish%))
 (test #f is-a? red-fish (class->interface picky-fish%))
 
+(err/rt-test (is-a? 1 2) exn:fail?)
+(err/rt-test (is-a? red-fish 2) exn:fail?)
+(test #f is-a? 11 eater<%>)
+
 (err/rt-test (instantiate fish% () (bad-size 10)) exn:fail:object?)
 (err/rt-test (instantiate fish% () (size 10) (size 12)) exn:fail:object?)
 (err/rt-test (instantiate fish% (10) (size 12)) exn:fail:object?)

@@ -4651,9 +4651,8 @@ An example
 
 (define (is-a? v c)
   (cond
-    [(not (object? v)) #f]
-    [(class? c) ((class-object? (class-orig-cls c)) v)]
-    [(interface? c) (implementation? (object-ref v) c)]
+    [(class? c) (and (object? v) ((class-object? (class-orig-cls c)) v))]
+    [(interface? c) (and (object? v) (implementation? (object-ref v) c))]
     [else (raise-argument-error 'is-a? "(or/c class? interface?)" 1 v c)]))
 
 (define (subclass? v c)
