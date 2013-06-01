@@ -20,7 +20,7 @@ at least theoretically.
  rep utils typecheck infer env private types)
 
 (define optimize? (make-parameter #t))
-(define-for-syntax enable-contracts? #t)
+(define-for-syntax enable-contracts? #f)
 
 (define-syntax do-contract-req
   (if enable-contracts?
