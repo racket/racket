@@ -1,5 +1,9 @@
 Version 5.3.4.11
 Added current-directory-for-user, srcloc->string
+Fixed is-a? so that it always signals an error when its second
+ argument is not a class or interface (in the past (is-a? 1 2) 
+ would return #f instead). This bug appears to have been 
+ introduced in late Feb 2010.
 
 Version 5.3.4.10
 Move explode-path from racket/path to racket/base
