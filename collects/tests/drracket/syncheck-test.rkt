@@ -1145,10 +1145,10 @@
         ("))\n(" default-color)
         ("require" imported)
         (#rx" [(]file \"[^\"]*\"[)][)]\n" default-color))
-      '(((6 17) (19 25) (104 111))
+      `(((6 17) (19 25) (104 111))
         ((36 52) (67 83) (84 100))
         ((30 31) (36 37) (57 58) (59 60) (61 62) (67 68) (84 85))
-        ((112 211) (28 29)))
+        ((112 ,(λ (end-of-file) (- end-of-file 2))) (28 29)))
       #:setup
       (λ () 
         (define fn (make-temporary-file "syncheck-test-~a.rkt"))
