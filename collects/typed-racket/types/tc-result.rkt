@@ -5,14 +5,14 @@
          (utils tc-utils)
          (types base-abbrev)
          racket/match
-         (contract-req))
+         (prefix-in c: (contract-req)))
 
 ;; this structure represents the result of typechecking an expression
 (define-struct/cond-contract tc-result
   ([t Type/c] [f FilterSet/c] [o Object?])
   #:transparent)
 (define-struct/cond-contract tc-results
-  ([ts (listof tc-result?)] [drest (or/c (cons/c Type/c symbol?) #f)])
+  ([ts (c:listof tc-result?)] [drest (c:or/c (c:cons/c Type/c symbol?) #f)])
   #:transparent)
 (define-struct/cond-contract tc-any-results () #:transparent)
 (define tc-any-results* (tc-any-results))
@@ -101,16 +101,16 @@
 
 (provide/cond-contract
  [ret
-  (->i ([t (or/c Type/c (listof Type/c))])
-       ([f (t) (if (list? t)
-                   (listof FilterSet/c)
-                   FilterSet/c)]
-        [o (t) (if (list? t)
-                   (listof Object?)
-                   Object?)]
-        [dty Type/c]
-        [dbound symbol?])
-       [res tc-results/c])])
+  (c:->i ([t (c:or/c Type/c (c:listof Type/c))])
+         ([f (t) (if (list? t)
+                     (c:listof FilterSet/c)
+                     FilterSet/c)]
+          [o (t) (if (list? t)
+                     (c:listof Object?)
+                     Object?)]
+          [dty Type/c]
+          [dbound symbol?])
+         [res tc-results/c])])
 
 (define (combine-results tcs)
   (match tcs
@@ -123,8 +123,8 @@
          (rename-out
            (tc-any-results* tc-any-results)))
 (provide/cond-contract
- [combine-results ((listof tc-results?) . -> . tc-results?)]
- [tc-result-t (tc-result? . -> . Type/c)]
- [tc-result-equal? (tc-result? tc-result? . -> . boolean?)]
- [tc-results? (any/c . -> . boolean?)]
- [tc-results/c flat-contract?])
+ [combine-results ((c:listof tc-results?) . c:-> . tc-results?)]
+ [tc-result-t (tc-result? . c:-> . Type/c)]
+ [tc-result-equal? (tc-result? tc-result? . c:-> . boolean?)]
+ [tc-results? (c:any/c . c:-> . boolean?)]
+ [tc-results/c c:flat-contract?])

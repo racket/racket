@@ -26,8 +26,8 @@
                        [parse-type/id (syntax? c:any/c . c:-> . Type/c)]
                        [parse-tc-results (syntax? . c:-> . tc-results/c)]
                        [parse-tc-results/id (syntax? c:any/c . c:-> . tc-results/c)]
-                       [parse-literal-alls (syntax? . c:-> . (values (listof identifier?)
-                                                                     (listof identifier?)))])
+                       [parse-literal-alls (syntax? . c:-> . (values (c:listof identifier?)
+                                                                     (c:listof identifier?)))])
 
 (provide star ddd/bound)
 
