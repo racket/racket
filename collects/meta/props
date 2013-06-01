@@ -1354,6 +1354,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/cm.rktl" drdr:random #t
 "collects/tests/racket/compile.rktl" drdr:command-line #f
 "collects/tests/racket/contmark.rktl" drdr:command-line #f
+"collects/tests/racket/contract-check-syntax.rkt" responsible (robby)
 "collects/tests/racket/contract-mzlib-test.rktl" responsible (robby) drdr:command-line (racket "-r" *)
 "collects/tests/racket/contract-opt-tests.rkt" responsible (robby) drdr:command-line (racket "-r" *)
 "collects/tests/racket/contract-stress-argmin.rkt" responsible (robby) drdr:command-line (racket "-r" *)
