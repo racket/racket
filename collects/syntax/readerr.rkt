@@ -30,6 +30,7 @@
       (format "~a~a"
               (cond [(not (error-print-source-location)) ""]
                     [(srcloc->string (srcloc source-name line col pos span))
+                     =>
                      (lambda (s)
                        (format "~a: " s))]
                     [else ""])
