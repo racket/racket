@@ -1,5 +1,6 @@
 #lang racket/base
 (require syntax/parse/private/minimatch
+         (only-in syntax/parse/private/residual check/force-syntax-list^depth)
          racket/private/stx) ;; syntax/stx
 (provide translate)
 
@@ -393,18 +394,12 @@ An VarRef is one of
 (define (check-stx ctx v)
   (if (syntax? v)
       v
-      (error/not-stx ctx v)))
+      (check/force-syntax-list^depth 0 v ctx)))
 
 (define (check-list ctx v)
   (if (list? v)
       v
-      (error/not-list ctx v)))
-
-(define (error/not-stx ctx v)
-  (raise-syntax-error 'template "pattern variable value is not syntax" ctx))
-
-(define (error/not-list ctx v)
-  (raise-syntax-error 'template "pattern variable value is not syntax list" ctx))
+      (check/force-syntax-list^depth 1 v ctx)))
 
 (define (error/bad-index index)
   (error 'template "internal error: bad index: ~e" index))

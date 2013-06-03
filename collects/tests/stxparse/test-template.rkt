@@ -2,6 +2,7 @@
 (require (for-syntax racket/base)
          rackunit
          (only-in "setup.rkt" convert-syntax-error tcerr)
+         racket/promise
          racket/syntax
          syntax/parse
          syntax/parse/experimental/template)
@@ -237,3 +238,83 @@
       #rx"cannot apply syntax location to template")
 (terx (quasitemplate/loc loc (?? 1 2))
       #rx"cannot apply syntax location to template")
+
+;; Lazy attribute tests from test.rkt
+
+(test-case "lazy syntax-valued attributes"
+  (let ([counter 0])
+    (define-syntax-class foo
+      (pattern n:nat
+               #:attr 2n
+                      (delay
+                        (set! counter (add1 counter))
+                        (datum->syntax #'n (* 2 (syntax-e #'n))))))
+    (syntax-parse #'45
+      [x:foo
+       (check-equal? counter 0) ;; hasn't run yet
+       (attribute x.2n)
+       (check-pred promise? (attribute x.2n))
+       (check-equal? counter 0) ;; still hasn't run yet
+       (template (lambda (q) x.2n))
+       (check-equal? counter 1) ;; run
+       (template (lambda (q) x.2n))
+       (force (attribute x.2n))
+       (check-equal? counter 1) ;; still only run once
+       (void)])))
+
+(test-case "lazy syntax-valued attributes, lists"
+  ;; check both (promiseof (listof syntax)) and (listof (promiseof syntax)) work
+  (let ([counter 0])
+    (define-syntax-class foo
+      (pattern (x:id ...)
+               #:attr [alpha 1]
+                      (delay (set! counter (add1 counter))
+                             (filter (lambda (x)
+                                       (regexp-match #rx"^[a-z]+$" (symbol->string (syntax-e x))))
+                                     (syntax->list #'(x ...))))
+               #:attr [alpha-part 1]
+                      (map (lambda (x)
+                             (delay
+                               (set! counter (add1 counter))
+                               (datum->syntax #f
+                                 (car (regexp-match #rx"^[a-z]+" (symbol->string (syntax-e x)))))))
+                           (syntax->list #'(x ...)))))
+    (syntax-parse #'(abc g64 xyz c%)
+      [f:foo
+       (check-equal? counter 0)
+       (check-pred syntax? (template (f.alpha ...)))
+       (check-equal? (syntax->datum (template (f.alpha ...))) '(abc xyz))
+       (check-equal? counter 1)
+       (check-pred syntax? (template (f.alpha-part ...)))
+       (check-equal? (syntax->datum (template (f.alpha-part ...))) '("abc" "g" "xyz" "c"))
+       (check-equal? counter 5)
+       (void)])))
+
+(test-case "lazy syntax-valued attributes, ??, ?@"
+  (let ()
+    (define-syntax-class foo
+      (pattern n:nat
+               #:attr [factor 1]
+                      (delay
+                        (let ([n (syntax-e #'n)])
+                          (for/list ([f (in-range 2 n)]
+                                     #:when (zero? (remainder n f)))
+                            (datum->syntax #f f))))
+               #:attr half
+                      (let ([n (syntax-e #'n)])
+                        (if (zero? (remainder n 2))
+                            (delay (datum->syntax #f (quotient n 2)))
+                            #f))))
+    (syntax-parse #'(1 2 3 4 5 6 7)
+      [(n:foo ...)
+       (let ([factors (template ((n.factor ...) ...))])
+         (check-pred syntax? factors)
+         (check-equal? (syntax->datum factors)
+                       '(() () () (2) () (2 3) ())))
+       (check-exn #rx"attribute is bound to non-syntax value"
+                  (lambda () (template (n.half ...))))
+       (let ([halves (template ((?? n.half) ...))])
+         (check-pred syntax? halves)
+         (check-equal? (syntax->datum halves)
+                       '(1 2 3)))
+       (void)])))
