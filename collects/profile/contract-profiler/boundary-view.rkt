@@ -43,9 +43,8 @@
 ;; all functions (not just contracted ones) makes renderings undecipherable.
 ;; Also, most non-dot Graphviz renderers cope poorly with our graphs. fdp is
 ;; probably the next best one.
+;; This is less of a problem now that we never show non-contracted nodes.
 
-;; only show contracted edges and related nodes
-(define show-only-contracted? #t)
 ;; draw borders to group functions from the same module
 (define show-module-clustering? #t)
 
@@ -120,13 +119,9 @@
                         s)))
       (boundary contracted-function boundary-edges b time-spent)))
 
-  (define all-contracted-edges
-    (append* (map boundary-edges all-boundaries)))
-
   (with-output-to-file boundary-graph-dot-file
     #:exists 'replace
-    (lambda () (render regular-profile all-boundaries all-contracted-edges
-                       contracts->keys)))
+    (lambda () (render all-boundaries contracts->keys)))
   (render-dot boundary-graph-dot-file)
   ;; print contract key
   ;; TODO find a way to add to pdf
@@ -152,14 +147,27 @@
   (define src (node-src node))
   (and src (srcloc-source src)))
 
+(define (node-location node)
+  (define id (node-id node))
+  (define src (node-src node))
+  (format "~a~a~a"
+          (if id (format "~a" id) "")
+          (if (and id src) "\n" "")
+          (if src
+              (prune-module-name (format-source (node-src node)))
+              "")))
+
+(define (summarize-boundary b contracts->keys)
+  (format "\n[~a] @ ~a : ~ams"
+          ;; show the contract key
+          (dict-ref contracts->keys (blame-contract (boundary-blame b)))
+          (prune-module-name (blame-negative (boundary-blame b)))
+          (boundary-time b)))
+
+
 ;; Inspired by ../render-graphviz.rkt
-(define (render profile all-boundaries all-contracted-edges contracts->keys
-                #:hide-self [hide-self% 1/100]
-                #:hide-subs [hide-subs% 2/100])
-  (define *-node (profile-*-node profile))
-  (define hidden (get-hidden profile hide-self% hide-subs%))
-  ;; TODO hiding may be useful when we show non-contracted nodes too, o/w not
-  (define nodes  (remq* hidden (profile-nodes profile)))
+(define (render all-boundaries contracts->keys)
+
   (define total-contract-time
     (max 1e-20 (for/sum ([b (in-list all-boundaries)]) (boundary-time b))))
   (define max-self%
@@ -167,46 +175,22 @@
          (max m (boundary-time b)))
        total-contract-time))
 
-  (define nodes-to-show
-    (if show-only-contracted?
-        (set->list (for/fold ([contract-related-nodes ; boundary nodes
-                               ;; need to add all boundary nodes, since some
-                               ;; have no boundary edges, and wouldn't be
-                               ;; found by iterating over edges
-                               ;; TODO explain that in docs: contracted nodes
-                               ;;  whose callers can't be found in profile
-                               ;; also, some of these nodes may not be from
-                               ;; the profile at all (created for boundary
-                               ;; nodes that were not in the profile)
-                               (for/set ([b (in-list all-boundaries)])
-                                 (boundary-contracted-node b))])
-                       ([e (in-list all-contracted-edges)])
-                     ;; nodes on either side of boundary edges
-                     (set-add (set-add contract-related-nodes
-                                       (edge-caller e))
-                              (edge-callee e))))
-        nodes)) ;; TODO this won't have nodes on contracted edges that are not in the profile
-  (define node->
-    (let ([t (make-hasheq)])
-      (for ([node (in-list nodes-to-show)] [idx (in-naturals 1)])
-        (define id (node-id node))
-        (define src (node-src node))
-        (hash-set! t node
-                   (list (format "node~a" idx)
-                         (format "~a~a~a"
-                                 (if id (format "~a" id) "")
-                                 (if (and id src) "\n" "")
-                                 (if src
-                                     (prune-module-name (format-source (node-src node)))
-                                     "")))))
-      (λ (mode node)
-        ((case mode [(index) car] [(label) cadr]) (hash-ref t node)))))
+  ;; All boundary-related nodes, which includes both actual boundary nodes and
+  ;; callers that call boundary nodes across boundary edges.
+  (define nodes
+    (set->list
+     (for/fold ([nodes (set)])
+         ([b (in-list all-boundaries)])
+       (for/fold ([nodes* (set-add nodes (boundary-contracted-node b))])
+           ([e (in-list (boundary-edges b))])
+         (set-add nodes* (edge-caller e))))))
+  (define nodes->names (for/hash ([n nodes]) (values n (gensym))))
 
   (printf "digraph Profile {\n")
   (printf "splines=\"true\"\n") ; polyline kinda works too, maybe
 
   ;; cluster nodes per module, to show boundaries
-  (for ([module-nodes (in-list (group-by equal? nodes-to-show #:key node->module))]
+  (for ([module-nodes (in-list (group-by equal? nodes #:key node->module))]
         [cluster-idx  (in-naturals 1)])
     (define known-module? (node->module (first module-nodes)))
     ;; don't cluster nodes for which we have no module info
@@ -215,54 +199,41 @@
       (printf "penwidth=3.0\n")
       (printf "graph[shape=\"ellipse\"]\n"))
 
+    ;; render the cluster's nodes
     (for ([node (in-list module-nodes)])
       (define boundaries (node->boundaries node all-boundaries))
       (define self% (/ (for/sum ([b (in-list boundaries)]) (boundary-time b))
                        total-contract-time))
       (define label
-        (string-append
-         (node-> 'label node)
-         (format "\n~ams" (node-self node))
-         (if (null? boundaries)
-             ""
-             ;; Display a summary of each boundary, which includes which
-             ;; contract is used, the negative party and contract time spent.
-             (string-join
-              (for/list ([b (in-list boundaries)])
-                (format
-                 "\n[~a] @ ~a : ~ams"
-                 ;; show the contract key
-                 (dict-ref contracts->keys (blame-contract (boundary-blame b)))
-                 (prune-module-name (blame-negative (boundary-blame b)))
-                 (boundary-time b)))
-              ""))))
-      (printf "~a [" (node-> 'index node))
-      (printf "label=~s, " label)
+        (format
+         "~a\n~ams~a"
+         (node-location node)
+         (node-self node) ; raw running time (not contracts)
+         ;; Display a summary of each boundary, which includes which contract
+         ;; is used, the negative party and contract time spent.
+         (string-join
+          (for/list ([b (in-list boundaries)])
+            (summarize-boundary b contracts->keys))
+          "")))
+      (printf "~a [label=~s, style=filled" (dict-ref nodes->names node) label)
+      ;; Boundary nodes are boxes, caller nodes are ovals.
       (unless (null? boundaries)
-        (printf "color=\"blue\", shape=\"box\", ")
-        (printf "fillcolor=\"1,~a,1\", " (exact->inexact (/ self% max-self%))))
-      (printf "style=filled];\n"))
+        (printf ", shape=\"box\", fillcolor=\"1,~a,1\""
+                (/ self% max-self% 1.0)))
+      (printf "];\n"))
+
     (when (and known-module? show-module-clustering?)
       (printf "}\n")))
+
   ;; draw edges
   ;; needs to be done after the clusters, otherwise any node mentioned in an
   ;; edge printed inside a cluster is considered to be in the cluster, which
   ;; messes things up
-  (for ([node (in-list nodes-to-show)])
-    (define boundaries (node->boundaries node all-boundaries))
-    ;; draw the graph backwards, from callees to callers (unlike analyze.rkt)
-    ;; this makes it easy to mark boundary edges specially, since we know
-    ;; which edges these are from the callee's boundaries
-    (for ([edge (in-list (node-callers node))])
-      (define caller (edge-caller edge))
-      (define boundary-edge?
-        (for/or ([b (in-list boundaries)])
-          (memq edge (boundary-edges b))))
-      (unless (or (eq? *-node caller) (memq caller hidden))
-        (when (or (not show-only-contracted?) boundary-edge?)
-          (printf "~a -> ~a" (node-> 'index caller) (node-> 'index node))
-          ;; contract info for boundary edges
-          (when boundary-edge?
-            (printf "[color=\"red\"]"))
-          (printf ";\n")))))
+  (for* ([node     (in-list nodes)]
+         [boundary (in-list (node->boundaries node all-boundaries))]
+         [edge     (in-list (boundary-edges boundary))])
+    (printf "~a -> ~a;\n"
+            (dict-ref nodes->names (edge-caller edge))
+            (dict-ref nodes->names node)))
+
   (printf "}\n"))
