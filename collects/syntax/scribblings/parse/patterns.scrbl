@@ -1003,11 +1003,13 @@ specific ill-formed terms and address them with custom failure
 messages.
 }
 
-@specsubform[(@#,defhere[~parse] S-pattern stx-expr)
-             #:contracts ([stx-expr syntax?])]{
+@specsubform[(@#,defhere[~parse] S-pattern stx-expr)]{
 
-Evaluates @racket[stx-expr] to a syntax object and matches it against
-@racket[S-pattern].
+Evaluates @racket[stx-expr] and matches it against
+@racket[S-pattern]. If @racket[stx-expr] does not produce a syntax
+object, the value is implicitly converted to a syntax object, unless
+the conversion would produce @tech{3D syntax}, in which case an
+exception is raised instead.
 }
 
 @specsubform[(@#,def[~and a] A-pattern ...+)]{

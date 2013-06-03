@@ -45,6 +45,7 @@
 ;; Run-time
 
 (require "runtime-progress.rkt"
+         "3d-stx.rkt"
          syntax/stx)
 
 (provide (all-from-out "runtime-progress.rkt")
@@ -56,6 +57,8 @@
          attribute-binding
          stx-list-take
          stx-list-drop/cx
+         datum->syntax/with-clause
+         check/force-syntax-list^depth
          check-literal*
          begin-for-syntax/once
 
@@ -138,7 +141,7 @@
 (define (check/force-syntax-list^depth depth value0 source-id)
   (define (bad)
     (raise-syntax-error #f
-                        (format "attribute is bound to non-syntax value: ~e" value0)
+                        (format "attribute is bound to non-syntax value\n  value: ~e" value0)
                         source-id))
   (define (loop depth value)
     (cond [(promise? value)
@@ -171,6 +174,19 @@
       (and (list? value)
            (for/and ([part (in-list value)])
              (syntax-list^depth? (sub1 depth) part)))))
+
+;; datum->syntax/with-clause : any -> syntax
+(define (datum->syntax/with-clause x)
+  (cond [(syntax? x) x]
+        [(2d-stx? x #:traverse-syntax? #f)
+         (datum->syntax #f x #f)]
+        [else
+         (error 'datum->syntax/with-clause
+                (string-append
+                 "implicit conversion to 3D syntax\n"
+                 " right-hand side of #:with clause or ~~parse pattern would be 3D syntax\n"
+                 "  value: ~e")
+                x)]))
 
 ;; check-literal* : id phase phase (listof phase) stx -> void
 (define (check-literal* id used-phase mod-phase ok-phases/ct-rel ctx)

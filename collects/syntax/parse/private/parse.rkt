@@ -679,7 +679,7 @@ Conventions:
                   (fail (failure pr* es*)))
                 k))]
        [#s(action:parse _ pattern expr)
-        #`(let* ([y (datum->syntax #f (wrap-user-code expr) #f)]
+        #`(let* ([y (datum->syntax/with-clause (wrap-user-code expr))]
                  [cy y]
                  [pr* (ps-add-stx pr y)])
             (parse:S y cy pattern pr* es k))]

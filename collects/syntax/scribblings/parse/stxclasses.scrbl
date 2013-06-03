@@ -209,6 +209,12 @@ evaluation of subsequent side conditions. If the @racket[#:with] match
 fails, the matching process backtracks. Since a syntax object may
 match a pattern in several ways, backtracking may cause the same
 clause to be tried multiple times before the next clause is reached.
+
+If the value of @racket[stx-expr] is not a syntax object, it is
+implicitly converted to a syntax object. If the the conversion would
+produce @deftech{3D syntax}---that is, syntax that contains unwritable
+values such as procedures, non-prefab structures, etc---then an
+exception is raised instead.
 }
 
 @specsubform[(code:line #:attr attr-arity-decl expr)]{
