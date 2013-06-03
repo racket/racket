@@ -392,7 +392,8 @@ Conventions:
                                                   #'ctx clause)]))
                         (else
                          (raise-syntax-error #f "internal error: unknown body mode" #'ctx #'body-mode)))])
-                 (values pattern body-expr defs2)))]))
+                 (values pattern body-expr defs2)))]
+            [_ (raise-syntax-error #f "expected clause" #'ctx clause)]))
         (unless (stx-list? clauses-stx)
           (raise-syntax-error #f "expected sequence of clauses" #'ctx))
         (define-values (patterns body-exprs defs2s)
