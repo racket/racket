@@ -3,17 +3,9 @@
 (require racket/list unstable/list racket/match racket/set racket/format
          racket/contract
          (only-in racket/contract/private/guts contract-continuation-mark-key)
-         "sampler.rkt" "utils.rkt"
-         "contract-profiler/dot.rkt")
-
-(struct contract-profile
-  (total-time n-samples n-contract-samples
-   ;; (pairof blame? profile-sample)
-   ;; samples taken while a contract was running
-   live-contract-samples
-   ;; (listof blame?)
-   ;; all the blames that were observed during sampling
-   all-blames))
+         "sampler.rkt" "utils.rkt" "analyzer.rkt"
+         "contract-profiler/dot.rkt" "contract-profiler/utils.rkt"
+         "contract-profiler/boundary-view.rkt")
 
 ;; (listof (U blame? #f)) profile-samples -> contract-profile struct
 (define (correlate-contract-samples contract-samples samples*)
@@ -36,18 +28,16 @@
                  (if (blame-swapped? b)
                      (blame-swap b) ; swap back
                      b))))
+  (define regular-profile (analyze-samples samples*))
   (contract-profile total-time n-samples n-contract-samples
-                    live-contract-samples all-blames))
+                    live-contract-samples all-blames regular-profile))
 
 
 (define (analyze-contract-samples contract-samples samples*)
   (define correlated (correlate-contract-samples contract-samples samples*))
   (print-breakdown correlated)
-  (module-graph-view correlated))
-
-(define (samples-time samples)
-  (for/sum ([s (in-list samples)])
-    (cadr s)))
+  (module-graph-view correlated)
+  (boundary-view correlated))
 
 
 ;;---------------------------------------------------------------------------
@@ -55,8 +45,9 @@
 ;; of callers.
 
 (define (print-breakdown correlated)
-  (match-define (contract-profile total-time n-samples n-contract-samples
-                                  live-contract-samples all-blames)
+  (match-define (contract-profile
+                 total-time n-samples n-contract-samples
+                 live-contract-samples all-blames regular-profile)
     correlated)
 
   (define contract-ratio (/ n-contract-samples n-samples 1.0))
@@ -129,11 +120,13 @@
 ;; boundary.
 ;; Typed modules are in green, untyped modules are in red.
 
-(define module-graph-dot-file "tmp-contract-profile-module-graph.dot")
+(define module-graph-dot-file
+  (string-append output-file-prefix "module-graph.dot"))
 
 (define (module-graph-view correlated)
-  (match-define (contract-profile total-time n-samples n-contract-samples
-                                  live-contract-samples all-blames)
+  (match-define (contract-profile
+                 total-time n-samples n-contract-samples
+                 live-contract-samples all-blames regular-profile)
     correlated)
 
   ;; first, enumerate all the relevant modules
