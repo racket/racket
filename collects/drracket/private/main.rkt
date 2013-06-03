@@ -37,9 +37,11 @@
 
 (frame:current-icon todays-icon)
   
+(define file-opened-via-application-file-handler? #f)
 (application-file-handler
  (let ([default (application-file-handler)])
    (λ (name)
+     (set! file-opened-via-application-file-handler? #t)
      (if (null? (get-top-level-windows))
          (handler:edit-file name)
          (default name)))))
@@ -789,7 +791,8 @@
                         f
                         (λ () (drracket:unit:open-drscheme-window f))))
                 no-dups)])
-     (when (null? (filter (λ (x) x) frames))
+     (when (and (null? (filter (λ (x) x) frames)) 
+                (not file-opened-via-application-file-handler?))
        (make-basic))
      (when (and (preferences:get 'drracket:open-in-tabs)
                 (not (null? no-dups)))
