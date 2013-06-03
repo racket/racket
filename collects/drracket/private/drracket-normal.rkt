@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require mred
+(require racket/gui/base
          racket/class
          racket/cmdline
          racket/list
@@ -8,6 +8,7 @@
          framework/splash
          racket/runtime-path
          racket/file
+	 (for-syntax racket/base)
          "frame-icon.rkt"
          "eb.rkt")
 
@@ -21,6 +22,24 @@
      (if ssec
          (string->number ssec)
          (current-seconds)))))
+
+(define-syntax (def-imgs stx)
+  (syntax-case stx ()
+    [(_ img ...)
+     (with-syntax ([(str ...) (map (compose symbol->string syntax-e)
+                                   (syntax->list #'(img ...)))])
+       #'(begin (define img str) ...
+                (when (getenv "PLTDRBREAKIMAGES")
+                  (set! img (string-append "PLTDRBREAKIMAGES-dne-" img)) ...)))]))
+
+(def-imgs 
+  plt-logo-red-shiny.png
+  plt-logo-red-diffuse.png
+  heart.png
+  texas-plt-bw.gif
+  PLT-pumpkin.png
+  PLT-206-larval.png
+  PLT-206-mars.jpg)
 
 ;; updates the command-line-arguments with only the files
 ;; to open. See also main.rkt.
@@ -62,8 +81,8 @@
 ;; magic strings and their associated images.  There should not be a string
 ;; in this list that is a prefix of another.
 (define magic-images
-  (list #;(magic-img "larval" "PLT-206-larval.png")
-        (magic-img "mars"   "PLT-206-mars.jpg")))
+  (list #;(magic-img "larval" PLT-206-larval.png)
+        (magic-img "mars"   PLT-206-mars.jpg)))
 
 (define (load-magic-images)
   (set! load-magic-images void) ; run only once
@@ -114,9 +133,9 @@
 
 (when (eb-bday?) (install-eb))
 
-(define weekend-bitmap-spec (collection-file-path "plt-logo-red-shiny.png" "icons"))
-(define normal-bitmap-spec (collection-file-path "plt-logo-red-diffuse.png" "icons"))
-(define valentines-days-spec (collection-file-path "heart.png" "icons"))
+(define weekend-bitmap-spec (collection-file-path plt-logo-red-shiny.png "icons" #:fail (λ (x) plt-logo-red-shiny.png)))
+(define normal-bitmap-spec (collection-file-path plt-logo-red-diffuse.png "icons" #:fail (λ (x) plt-logo-red-diffuse.png)))
+(define valentines-days-spec (collection-file-path heart.png "icons" #:fail (λ (x) heart.png)))
 
 (define the-bitmap-spec
   (cond
@@ -129,14 +148,19 @@
                size 
                size))]
     [texas-independence-day?
-     (collection-file-path "texas-plt-bw.gif" "icons")]
+     (collection-file-path texas-plt-bw.gif "icons")]
     [halloween?
-     (collection-file-path "PLT-pumpkin.png" "icons")]
+     (collection-file-path PLT-pumpkin.png "icons")]
     [(weekend-date? startup-date)
      weekend-bitmap-spec]
     [else normal-bitmap-spec]))
 
-(define the-splash-bitmap (and (path? the-bitmap-spec) (read-bitmap the-bitmap-spec)))
+(define (read-bitmap/no-crash fn)
+  (with-handlers ((exn:fail? (λ (x) (make-object bitmap% "dne.png"))))
+    (read-bitmap fn)))
+
+(define the-splash-bitmap (and (path? the-bitmap-spec)
+                               (read-bitmap/no-crash the-bitmap-spec)))
 (set-splash-char-observer drracket-splash-char-observer)
 
 (when (eq? (system-type) 'macosx)
@@ -154,13 +178,13 @@
   (define (set-icon state)
     (case state
       [(valentines) 
-       (unless valentines-bitmap (set! valentines-bitmap (read-bitmap valentines-days-spec)))
+       (unless valentines-bitmap (set! valentines-bitmap (read-bitmap/no-crash valentines-days-spec)))
        (set-doc-tile-bitmap valentines-bitmap)]
       [(weekend)
-       (unless weekend-bitmap (set! weekend-bitmap (read-bitmap weekend-bitmap-spec)))
+       (unless weekend-bitmap (set! weekend-bitmap (read-bitmap/no-crash weekend-bitmap-spec)))
        (set-doc-tile-bitmap weekend-bitmap)]
       [(normal) 
-       (unless weekday-bitmap (set! weekday-bitmap (read-bitmap normal-bitmap-spec)))
+       (unless weekday-bitmap (set! weekday-bitmap (read-bitmap/no-crash normal-bitmap-spec)))
        (set-doc-tile-bitmap weekday-bitmap)]))
   (set-icon initial-state)
   (void

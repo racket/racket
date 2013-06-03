@@ -23,7 +23,16 @@
   (printf "trying ~a, ~a/~a PLTDREASTERSECONDS=~a\n" what month day the-seconds)
   (unless (putenv "PLTDREASTERSECONDS" (number->string the-seconds))
     (error 'easter-egg-lib.rkt "putenv failed"))
-  (start-up-and-check-car))
+  (start-up-and-check-car)
+  
+  ;; start up with (an approximation to) broken image files
+  (unless (putenv "PLTDRBREAKIMAGES" "yes")
+    (error 'easter-egg-lib.rkt "putenv.2 failed"))
+  (printf "trying ~a, ~a/~a PLTDREASTERSECONDS=~a PLTDRBREAKIMAGES=yes\n" what month day the-seconds)
+  (start-up-and-check-car)
+  (environment-variables-set! (current-environment-variables)
+                              #"PLTDRBREAKIMAGES"	 
+                              #f))
 
 (define (start-up-and-check-car)
   (fire-up-separate-drracket-and-run-tests

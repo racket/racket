@@ -157,8 +157,6 @@
    (let/ec k
      (define (no-splash)
        (set! splash-bitmap #f)
-       (set! splash-canvas #f)
-       (set! splash-eventspace #f)
        (k (void)))
      (send (get-gauge) set-range splash-max-width)
      (send splash-tlw set-label splash-title)
@@ -187,7 +185,6 @@
            (set! splash-bitmap splash-draw-spec)])
         
         (unless (send splash-bitmap ok?)
-          (eprintf "WARNING: bad bitmap ~s\n" splash-draw-spec)
           (no-splash))
         
         (send splash-canvas min-width (send splash-bitmap get-width))
