@@ -2,11 +2,25 @@
 
 @(require "shared.rkt")
 
-@title[#:tag "branch-and-commit"]{Branch and Commit}
+@title[#:tag "branch-and-commit"]{Retiquette: Branch and Commit}
 
-Working with the code base also requires style rules for actions on the
+ This section is specifically for Racketeers who commit to the Racket code
+ base.
+
+ Working with the bug database requires one critical work flow rule.
+
+ Working with the code base requires style rules for actions on the
  repository. Currently we are using Git and below are a few rules on how to
  act in this context.
+
+@;-----------------------------------------------------------------------------
+@section{Bugfix Workflow}
+
+Re-assign bug reports only after you can eliminate your own code as the source
+ of a bug. The best way to accomplish this goal is to create a new example that
+ re-creates the problem without involvement of your code. When you have such a
+ code snippet, re-assign the code to the person responsible for the apparently
+ buggy component and submit the code snippet as part of the justification.
 
 @; -----------------------------------------------------------------------------
 @section{Commit}
@@ -73,7 +87,7 @@ fork:
 @item{setup mail notifications:
   @verbatim{
     ssh pltgit config set eli/my-plt hooks.counter true
-    ssh pltgit config set eli/my-plt hooks.mailinglist "eli@barzilay.org,..."}}
+    ssh pltgit config set eli/my-plt hooks.mailinglist @eli,...}}
 
 @item{allow someone else to push commits to my repository:
   @verbatim{
