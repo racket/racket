@@ -410,6 +410,10 @@ The recognized @tech{style properties} are as follows:
        multi-page documents) takes on the location and color of the
        main table of contents, instead.}
 
+ @item{@racket['no-sidebar] --- As a style for the main part of a
+       document, causes the HTML output to not include an ``on this 
+       page'' margin box.}
+
  @item{@racket[document-version] structure --- A version number for
        this part and its sub-parts (except as overridden). When it is
        not @racket[""] may be used when rendering a document; at a

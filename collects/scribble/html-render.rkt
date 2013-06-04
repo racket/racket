@@ -514,9 +514,11 @@
               null
               ;; toc-wrap determines if we get the toc or just the title !!!
               `((div ([class "tocview"]) ,@(toc-content))))
-          ,@(render-onthispage-contents
-             d ri top (if (part-style? d 'no-toc) "tocview" "tocsub")
-             sub-parts-on-other-page?)
+          ,@(if (part-style? d 'no-sidebar)
+                null
+                (render-onthispage-contents
+                 d ri top (if (part-style? d 'no-toc) "tocview" "tocsub")
+                 sub-parts-on-other-page?))
           ,@(parameterize ([extra-breaking? #t])
               (append-map (lambda (e)
                             (let loop ([e e])
