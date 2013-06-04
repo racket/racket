@@ -35,7 +35,9 @@
 
 (define (analyze-contract-samples contract-samples samples*)
   (define correlated (correlate-contract-samples contract-samples samples*))
-  (print-breakdown correlated)
+  (with-output-to-file cost-breakdown-file
+    #:exists 'replace
+    (lambda () (print-breakdown correlated)))
   (module-graph-view correlated)
   (boundary-view correlated))
 
@@ -43,6 +45,9 @@
 ;;---------------------------------------------------------------------------
 ;; Break down contract checking time by contract, then by callee and by chain
 ;; of callers.
+
+(define cost-breakdown-file
+  (string-append output-file-prefix "cost-breakdown.txt"))
 
 (define (print-breakdown correlated)
   (match-define (contract-profile
