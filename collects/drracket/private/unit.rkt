@@ -4086,26 +4086,13 @@ module browser threading seems wrong.
           language-specific-menu
           (λ (x y) (drracket:module-overview:module-overview this)))
         (let ()
-          (define base-title (format (string-constant module-browser-in-file) ""))
           (define (update-menu-item i)
             (define fn (send definitions-text get-filename))
-            (send i set-label 
-                  (if fn
-                      (let* ([str (path->string fn)]
-                             [overage (- 200 
-                                         (+ (string-length str)
-                                            (string-length base-title)))])
-                        (format (string-constant module-browser-in-file)
-                                (if (overage . >= . 0)
-                                    str
-                                    (string-append "..."
-                                                   (substring str
-                                                              (+ (- (string-length str) (abs overage)) 3)
-                                                              (string-length str))))))
-                      (string-constant module-browser-no-file)))
+            (define lab-str (compute-label-string fn))
+            (send i set-label lab-str)
             (send i enable fn))
           (define i (new menu:can-restore-menu-item%
-                         [label base-title]
+                         [label ""]
                          [parent language-specific-menu]
                          [demand-callback update-menu-item]
                          [callback (λ (x y) 
@@ -5209,3 +5196,35 @@ module browser threading seems wrong.
       (send frame show #t)
       (send (send frame get-interactions-text) initialize-console)
       frame)))
+
+(define/contract (compute-label-string fn)
+  (-> (or/c path? #f) label-string?)
+  (cond
+    [fn
+     (define base-title (format (string-constant module-browser-in-file) ""))
+     (define str (path->string fn))
+     (define limit (- 200 (string-length base-title)))
+     (define str-to-use
+       (if (<= (string-length str) limit)
+           str
+           (string-append "..."
+                          (substring str
+                                     (+ (- (string-length str) limit) 3)
+                                     (string-length str)))))
+     (format (string-constant module-browser-in-file) str-to-use)]
+    [else (string-constant module-browser-no-file)]))
+
+(module+ test
+  (require rackunit)
+  (check-equal? (compute-label-string (string->path "x"))
+                (format (string-constant module-browser-in-file) "x"))
+  (check-equal? (compute-label-string #f)
+                (string-constant module-browser-no-file))
+  (check-equal? (string-length (compute-label-string (string->path (make-string 200 #\x))))
+                200)
+  (for ([i (in-range 100 300)])
+    (let/ec k
+      (parameterize ([error-escape-handler k])
+        (check-true (string? 
+                     (compute-label-string 
+                      (string->path (make-string i #\x)))))))))
