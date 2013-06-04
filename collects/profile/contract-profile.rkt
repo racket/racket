@@ -204,9 +204,11 @@
 (define-syntax-rule (contract-profile/user body ...)
   (let ([sampler (create-sampler (current-thread) 0.005 (current-custodian)
                                  (list contract-continuation-mark-key))])
-    body ...
-    (sampler 'stop)
-    (define samples          (sampler 'get-snapshots))
-    (define contract-samples (for/list ([s (in-list (sampler 'get-custom-snapshots))])
-                               (and s (vector-ref s 0))))
-    (analyze-contract-samples contract-samples samples)))
+    (begin0 (begin body ...)
+      (let ()
+        (sampler 'stop)
+        (define samples (sampler 'get-snapshots))
+        (define contract-samples
+          (for/list ([s (in-list (sampler 'get-custom-snapshots))])
+            (and s (vector-ref s 0))))
+        (analyze-contract-samples contract-samples samples)))))
