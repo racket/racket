@@ -274,15 +274,6 @@
     [(define-syntaxes (nm ...) . rest) (syntax->list #'(nm ...))]
     [_ #f]))
 
-;; Syntax -> Syntax Syntax Syntax Option<Integer>
-;; Parse a type alias internal declaration
-(define (parse-type-alias form)
-  (kernel-syntax-case* form #f
-    (define-type-alias-internal values)
-    [(define-values () (begin (quote-syntax (define-type-alias-internal nm rec-nm ty args)) (#%plain-app values)))
-     (values #'nm #'rec-nm #'ty (syntax-e #'args))]
-    [_ (int-err "not define-type-alias")]))
-
 ;; actually do the work on a module
 ;; produces prelude and post-lude syntax objects
 ;; syntax-list -> (values syntax syntax)
@@ -301,18 +292,8 @@
   (do-time "Form splitting done")
   ;(printf "before parsing type aliases~n")
 
-  ;; Register type alias names with a dummy value so that it's in
-  ;; scope for the actual mapping in the next loop
   (define-values (type-alias-names type-alias-map)
-    (for/lists (_1 _2) ([type-alias type-aliases])
-      (define-values (id name-id type-stx args) (parse-type-alias type-alias))
-      (register-resolved-type-alias id Err)
-      (register-resolved-type-alias
-       name-id
-       (if args
-           (make-Poly (map syntax-e args) Err)
-           Err))
-      (values id (list id name-id type-stx args))))
+    (get-type-alias-info type-aliases))
 
   ;; Add the struct names to the type table, but not with a type
   ;(printf "before adding type names~n")
@@ -322,62 +303,7 @@
     (for-each add-constant-variance! names type-vars))
   ;(printf "after adding type names~n")
 
-  ;; Find type alias dependencies
-  (define-values (type-alias-dependency-map type-alias-types)
-    (for/lists (_1 _2)
-               ([(name alias-info) (in-dict type-alias-map)])
-      (define links-box (box null))
-      (define type
-        (parameterize ([current-referenced-aliases links-box])
-          (parse-type (cadr alias-info))))
-      (define pre-dependencies (unbox links-box))
-      (define alias-dependencies
-        (filter (λ (id) (memf (λ (id2) (free-identifier=? id id2))
-                              type-alias-names))
-                pre-dependencies))
-      (values (cons name alias-dependencies) type)))
-
-  (define components
-    (find-strongly-connected-type-aliases type-alias-dependency-map))
-
-  ;; A singleton component can be either a self-cycle or a node that
-  ;; that does not participate in cycles, so we disambiguate
-  (define acyclic-singletons
-    (let ()
-     (define (has-self-cycle? component)
-       (define id (car component))
-       (memf (λ (id2) (free-identifier=? id id2))
-             (dict-ref type-alias-dependency-map id)))
-     (for/list ([component components]
-                #:when (= (length component) 1)
-                #:unless (has-self-cycle? component))
-       (car component))))
-
-  ;; Actually register recursive type aliases
-  (for ([(id record) (in-dict type-alias-map)]
-        #:unless (member id acyclic-singletons))
-    (match-define (list rec-name _ args) record)
-    (define deps (dict-ref type-alias-dependency-map id))
-    (register-resolved-type-alias id (make-RecName rec-name id deps args)))
-  (for ([(id record) (in-dict type-alias-map)]
-         #:unless (member id acyclic-singletons))
-    (match-define (list rec-name type-stx _) record)
-    (define type
-      ;; make sure to reject the type if it uses polymorphic
-      ;; recursion (see resolve.rkt)
-      (parameterize ([current-check-polymorphic-recursion? #t])
-        (parse-type type-stx)))
-    (register-resolved-type-alias rec-name type)
-    (check-type-alias-contractive id type))
-
-  ;; Register non-recursive type aliases
-  ;;
-  ;; Note that the connected component algorithm returns results
-  ;; in topologically sorted order, so we want to go through in the
-  ;; reverse order of that to avoid unbound type aliases.
-  (for ([id (reverse acyclic-singletons)])
-    (define type-stx (cadr (dict-ref type-alias-map id)))
-    (register-resolved-type-alias id (parse-type type-stx)))
+  (register-all-type-aliases type-alias-names type-alias-map)
 
   ;; Parse and register the structure types
   (define parsed-structs
@@ -495,7 +421,9 @@
              (report-all-errors))]
     [_
      (when ((internal-syntax-pred define-type-alias-internal) form)
-       ((compose register-type-alias parse-type-alias) form))
+       (define-values (alias-names alias-map)
+         (get-type-alias-info (list form)))
+       (register-all-type-aliases alias-names alias-map))
      (tc-toplevel/pass1 form)
      (begin0 (values #f (tc-toplevel/pass2 form))
              (report-all-errors))]))
