@@ -26,6 +26,21 @@
 
   (provide even->odd Even Odd even-lst odd-lst))
 
+;; make sure it works in a let
+(module let-even/odd typed/racket
+  (let ()
+    (define-type (Even A) (U Null (Pairof A (Odd A))))
+    (define-type (Odd A) (Pairof A (Even A)))
+
+    (: even-lst (Even Integer))
+    (define even-lst '(1 2 3 4))
+
+    (: odd-lst (Odd Integer))
+    (define odd-lst '(1 2 3))
+
+    (cons 3 even-lst)))
+
 (require 'num-even/odd)
 (require 'poly-even/odd)
+(require 'let-even/odd)
 
