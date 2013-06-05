@@ -461,10 +461,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
 ;; Syntax classes for `define-type-alias`
 (begin-for-syntax
  (define-syntax-class type-alias-rest
-   #:attributes (arity)
+   #:attributes (args)
    (pattern (All (arg:id ...) rest)
-            #:attr arity (length (syntax->list #'(arg ...))))
-   (pattern type:expr #:attr arity #f)))
+            #:with args #'(arg ...))
+   (pattern type:expr #:with args #'#f)))
 
 (define-syntax (define-type-alias stx)
   (syntax-parse stx
@@ -483,7 +483,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                #'(begin))
          #,(internal (quasisyntax/loc stx
                        (define-type-alias-internal tname rec-tname rest
-                         #,(attribute rest.arity)))))]
+                         rest.args))))]
     [(_ (tname:id args:id ...) rest)
      (syntax/loc stx (define-type-alias tname (All (args ...) rest)))]))
 

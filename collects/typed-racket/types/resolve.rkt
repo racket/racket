@@ -10,17 +10,24 @@
          racket/format)
 
 (provide resolve-name resolve-app needs-resolving?
-         resolve resolve-app-check-error)
+         resolve resolve-app-check-error
+         current-check-polymorphic-recursion?)
 (provide/cond-contract [resolve-once (Type/c . -> . (or/c Type/c #f))])
 
 (define-struct poly (name vars) #:prefab)
+
+;; Parameter<Boolean>
+;; This parameter controls whether or not the resolving process
+;; should check for polymorphic recursion in implicit recursive
+;; type names. This should only need to be enabled at type alias
+;; definition time.
+(define current-check-polymorphic-recursion? (make-parameter #f))
 
 (define (resolve-name t)
   (match t
     [(Name: n) (let ([t (lookup-type-name n)])
                  (if (Type/c? t) t #f))]
-    ;; FIXME: dummy argument
-    [(RecName: n _ _) (lookup-type-alias n values)]
+    [(RecName: n _ _ _) (lookup-type-alias n values)]
     [_ (int-err "resolve-name: not a name ~a" t)]))
 
 (define already-resolving? (make-parameter #f))
@@ -50,14 +57,44 @@
                           " does not match the given number:"
                           " expected " num-poly
                           ", given " num-rands))))]
-      [(RecName: _ _ arity)
-       (cond [arity
+      [(RecName: _ _ _ args)
+       (cond [args
               (define num-rands (length rands))
-              (unless (= num-rands arity)
+              (define num-args (length args))
+              (unless (= num-rands num-args)
                 (tc-error (~a "The expected number of arguments for "
                               rator " does not match the given number:"
-                              " expected " arity
-                              ", given " num-rands)))]
+                              " expected " num-args
+                              ", given " num-rands)))
+              ;; Does not allow polymorphic recursion since both type
+              ;; inference and equirecursive subtyping for polymorphic
+              ;; recursion are difficult.
+              ;;
+              ;; Type inference is known to be undecidable in general, but
+              ;; practical algorithms do exist[1] that do not diverge in
+              ;; practice.
+              ;;
+              ;; It is possible that equirecursive subtyping with polymorphic
+              ;; recursion is as difficult as equivalence of DPDAs[2], which is
+              ;; known to be decidable[3], but good algorithms may not exist.
+              ;;
+              ;; [1]: Fritz Henglein. "Type inference with polymorphic recursion"
+              ;;      TOPLAS 1993
+              ;; [2]: Marvin Solomon. "Type definitions with parameters"
+              ;;      POPL 1978
+              ;; [3]: Geraud Senizergues. "L(A)=L(B)? decidability results from complete formal systems"
+              ;;      TCS 2001.
+              ;;
+              (define (check-argument given-type arg-name)
+                (define ok?
+                  (if (F? given-type)
+                      (type-equal? given-type (make-F (syntax-e arg-name)))
+                      (not (member (syntax-e arg-name) (fv given-type)))))
+                (unless ok?
+                  (tc-error (~a "Recursive type " rator " cannot be applied at"
+                                " a different type in its recursive invocation"))))
+              (when (current-check-polymorphic-recursion?)
+                (for-each check-argument rands args))]
              [else
               (tc-error "Type ~a cannot be applied, arguments were: ~a" rator rands)])]
       [(Mu: _ _) (void)]
@@ -74,7 +111,7 @@
       [(Name: _)
        (let ([r (resolve-name rator)])
          (and r (resolve-app r rands stx)))]
-      [(RecName: _ _ _) (resolve-app (resolve-name rator) rands stx)]
+      [(RecName: _ _ _ _) (resolve-app (resolve-name rator) rands stx)]
       [(Poly: _ _) (instantiate-poly rator rands)]
       [(Mu: _ _) (resolve-app (unfold rator) rands stx)]
       [(App: r r* s) (resolve-app (resolve-app r r* s) rands stx)]
@@ -95,7 +132,7 @@
                   [(App: r r* s)
                    (resolve-app r r* s)]
                   [(Name: _) (resolve-name t)]
-                  [(RecName: _ _ _) (resolve-name t)])])
+                  [(RecName: _ _ _ _) (resolve-name t)])])
         (when (and r* (not (currently-subtyping?)))
           (hash-set! resolver-cache seq r*))
         r*)))

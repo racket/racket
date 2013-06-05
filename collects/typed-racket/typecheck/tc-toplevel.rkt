@@ -279,8 +279,8 @@
 (define (parse-type-alias form)
   (kernel-syntax-case* form #f
     (define-type-alias-internal values)
-    [(define-values () (begin (quote-syntax (define-type-alias-internal nm rec-nm ty arity)) (#%plain-app values)))
-     (values #'nm #'rec-nm #'ty (syntax-e #'arity))]
+    [(define-values () (begin (quote-syntax (define-type-alias-internal nm rec-nm ty args)) (#%plain-app values)))
+     (values #'nm #'rec-nm #'ty (syntax-e #'args))]
     [_ (int-err "not define-type-alias")]))
 
 ;; actually do the work on a module
@@ -305,14 +305,14 @@
   ;; scope for the actual mapping in the next loop
   (define-values (type-alias-names type-alias-map)
     (for/lists (_1 _2) ([type-alias type-aliases])
-      (define-values (id name-id type-stx arity) (parse-type-alias type-alias))
+      (define-values (id name-id type-stx args) (parse-type-alias type-alias))
       (register-resolved-type-alias id Err)
       (register-resolved-type-alias
        name-id
-       (if arity
-           (make-Poly (build-list arity (λ (_) (gensym))) Err)
+       (if args
+           (make-Poly (map syntax-e args) Err)
            Err))
-      (values id (list id name-id type-stx arity))))
+      (values id (list id name-id type-stx args))))
 
   ;; Add the struct names to the type table, but not with a type
   ;(printf "before adding type names~n")
@@ -356,30 +356,19 @@
   ;; Actually register recursive type aliases
   (for ([(id record) (in-dict type-alias-map)]
         #:unless (member id acyclic-singletons))
-    (match-define (list rec-name _ arity) record)
+    (match-define (list rec-name _ args) record)
     (define deps (dict-ref type-alias-dependency-map id))
-    (register-resolved-type-alias id (make-RecName rec-name deps arity)))
+    (register-resolved-type-alias id (make-RecName rec-name id deps args)))
   (for ([(id record) (in-dict type-alias-map)]
          #:unless (member id acyclic-singletons))
     (match-define (list rec-name type-stx _) record)
-    (define type (parse-type type-stx))
+    (define type
+      ;; make sure to reject the type if it uses polymorphic
+      ;; recursion (see resolve.rkt)
+      (parameterize ([current-check-polymorphic-recursion? #t])
+        (parse-type type-stx)))
     (register-resolved-type-alias rec-name type)
-    (define productive
-      (let loop ([type type])
-        (match type
-          [(Union: elems) (andmap loop elems)]
-          ;; FIXME: more stringent for mutual recursion?
-          [(Name: stx) (not (free-identifier=? stx id))]
-          [(App: rator rands stx)
-           (loop (resolve-app rator rands stx))]
-          [(Mu: _ body) (loop body)]
-          [(Poly: names body) (loop body)]
-          [(PolyDots: names body) (loop body)]
-          [else #t])))
-    (unless productive
-      (tc-error/stx
-       id
-       "Recursive types are not allowed directly inside their definition")))
+    (check-type-alias-contractive id type))
 
   ;; Register non-recursive type aliases
   ;;

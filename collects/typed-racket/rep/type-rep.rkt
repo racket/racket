@@ -110,9 +110,13 @@
 ;;
 ;; interp.
 ;; A type name, potentially recursive or mutually recursive
-;; The deps are the other aliases this depends on.
-(def-type RecName ([id identifier?] [deps (listof identifier?)]
-                   [arity (or/c #f natural-number/c)])
+;; id is the name stored in the environment
+;; orig-id is the name to use for printing
+;; deps are the other aliases this depends on
+;; args are the type parameters for this type
+(def-type RecName ([id identifier?] [orig-id identifier]
+                   [deps (listof identifier?)]
+                   [args (or/c #f (listof identifier?))])
   [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
 
 ;; rator is a type
@@ -125,7 +129,7 @@
                 ((Name: n)
                  (instantiate-frees n (map f rands)))
                 ;; FIXME: is this right?
-                ((RecName: n _ _)
+                ((RecName: n _ _ _)
                  (instantiate-frees n (map f rands)))
                 (else (f (resolve-app rator rands stx)))))]
 

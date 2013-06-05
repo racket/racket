@@ -4,12 +4,16 @@
 
 (require "../utils/utils.rkt"
          (utils tc-utils)
+         (rep type-rep)
+         (types resolve)
 	 data/queue
          racket/dict
+         racket/format
          racket/match
          syntax/id-table)
 
-(provide find-strongly-connected-type-aliases)
+(provide find-strongly-connected-type-aliases
+         check-type-alias-contractive)
 
 (module+ test (require rackunit))
 
@@ -127,4 +131,30 @@
   (check-equal?/id (find-strongly-connected-type-aliases example-6)
                    (list (list #'a) (list #'b) (list #'c)
                          (list #'e) (list #'f) (list #'d))))
+
+;; check-recursive-type-alias : Id Type -> Void
+;;
+;; This function checks if the given type alias is
+;; "contractive" or "productive"
+;;   i.e., that you can unfold a good type like μx.int->x to
+;;         μx.int->int->int->...x but a type like
+;;         μx.x only unfolds to itself
+;;
+(define (check-type-alias-contractive id type)
+  (define/match (check type)
+    [((Union: elems)) (andmap check elems)]
+    [((RecName: stx _ _ _))
+     (or (not (free-identifier=? stx id))
+         (check (resolve-once type)))]
+    [((App: rator rands stx))
+     (check (resolve-app rator rands stx))]
+    [((Mu: _ body)) (check body)]
+    [((Poly: names body)) (check body)]
+    [((PolyDots: names body)) (check body)]
+    [(_) #t])
+  (define productive (check type))
+  (unless productive
+    (tc-error/stx
+     id
+     "Recursive types are not allowed directly inside their definition")))
 

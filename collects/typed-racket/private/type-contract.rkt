@@ -269,17 +269,17 @@
         ;; Applications of a potentially polymorphically
         ;; recursive type constructor turns into a contract
         ;; function application.
-        [(App: (and rator (RecName: stx _ _)) rands _)
+        [(App: (and rator (RecName: stx _ _ _)) rands _)
          #`(#,(t->c rator) #,@(map t->c rands))]
         ;; A recursive name depends on other type aliases,
         ;; possibly in mutual recursion. The contract will recur
         ;; on all dependencies as a conservative approximation.
-        [(RecName: stx deps arity)
+        [(RecName: stx _ deps args)
          ;; -> Type
          ;; Construct the type for the recursion
          (define (make-recname-type ty)
            (define kind (contract-kind->keyword (current-contract-kind)))
-           (cond [arity
+           (cond [args
                   (match-define (Poly: vs b) (resolve-once ty))
                   (define arg (generate-temporary 'ctc))
                   (parameterize ([vars (append (for/list ([var vs]) (list var arg))
