@@ -3142,6 +3142,8 @@ would have been just outside the sequence is replaced with an
                                   expression)]{
 Shorthand for nested @racket[with-compound-rewriter] expressions.}
 
+@subsection{LWs}
+                                              
 @defstruct[lw ([e (or/c string?
                         symbol?
                         pict? 
@@ -3317,7 +3319,6 @@ the empty string and the @racket[x] in the typeset output.
 @defproc[(just-after [stuff (or/c pict? string? symbol?)]
                      [lw lw?])
                     lw?]{}]]{
-
 These two helper functions build new lws whose contents are
 the first argument, and whose line and column are based on
 the second argument, making the new loc wrapper be either
@@ -3325,5 +3326,6 @@ just before or just after that argument. The line-span and
 column-span of the new lw is always zero.
 }
 
+@include-section["dynamic-typesetting-and-macros.scrbl"]
 
 @close-eval[redex-eval]
