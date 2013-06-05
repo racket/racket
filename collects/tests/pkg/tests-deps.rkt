@@ -33,6 +33,17 @@
      $ "raco pkg remove pkg-test2"
      $ "racket -e '(require pkg-test2)'" =exit> 1))
 
+   $ "test -f test-pkgs/pkg-test3.zip"
+   (with-fake-root
+    (shelly-case
+     "local - fail (default, single-collection)"
+     $ "racket -e '(require pkg-test3)'" =exit> 1
+     $ "raco pkg install test-pkgs/pkg-test3.zip" =exit> 1
+     $ "raco pkg install test-pkgs/pkg-test1.zip" =exit> 0
+     $ "raco pkg install test-pkgs/pkg-test3.zip" =exit> 0
+     $ "racket -e '(require pkg-test3)'" =exit> 0
+     $ "raco pkg remove pkg-test3"))
+
    (with-fake-root
     (shelly-case
      "local - looks at all packages given on cmdline"
@@ -99,6 +110,14 @@
      $ "racket -e '(require pkg-test2/contains-dep)'" =exit> 0
      $ "raco pkg remove pkg-test2"
      $ "racket -e '(require pkg-test2)'" =exit> 1))
+
+   (with-fake-root
+    (shelly-case
+     "local - search-auto, single-collection"
+     $ "raco pkg config --set catalogs http://localhost:9990"
+     $ "racket -e '(require pkg-test3)'" =exit> 1
+     $ "raco pkg install --deps search-auto test-pkgs/pkg-test3.zip" =exit> 0
+     $ "racket -e '(require pkg-test3)'" =exit> 0))
 
    (with-fake-root
     (shelly-case

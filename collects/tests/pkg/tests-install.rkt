@@ -23,6 +23,9 @@
    (shelly-install "local package (zip)" "test-pkgs/pkg-test1.zip")
    (shelly-install "local package (plt)" "test-pkgs/pkg-test1.plt")
    (shelly-install* "local package (zip, compiled)" "test-pkgs/pkg-test1b.zip" "pkg-test1b")
+   (shelly-install* "local package (zip, single-collection)" 
+                    "test-pkgs/pkg-test1.zip test-pkgs/pkg-test3.zip" 
+                    "pkg-test1 pkg-test3")
 
    (shelly-case
     "invalid package format is an error"
@@ -73,7 +76,12 @@
     "local directory fails when not there"
     $ "raco pkg install test-pkgs/pkg-test1-not-there/" =exit> 1)
 
-   (shelly-install "local package (directory)" "test-pkgs/pkg-test1/")
+   (shelly-install "local package (directory)" "test-pkgs/pkg-test1/"
+                   $ "racket -e '(require pkg-test1)'")
+   (shelly-install* "local package (single-collection directory)" 
+                    "test-pkgs/pkg-test1/ test-pkgs/pkg-test3/"
+                    "pkg-test1 pkg-test3"
+                    $ "racket -e '(require pkg-test3)'")
 
    (with-fake-root
     (shelly-case
@@ -95,6 +103,19 @@
       $ "racket -e '(require pkg-test1)'" =exit> 1
       (finally
        $ "rm -r test-pkgs/pkg-test1-linking"))))
+
+   (with-fake-root
+    (shelly-case
+     "linking local directory, single-collection"
+     (shelly-wind
+      $ "cp -r test-pkgs/pkg-test3 test-pkgs/pkg-test3-linking"
+      $ "racket -e '(require pkg-test3)'" =exit> 1
+      $ "raco pkg install --link test-pkgs/pkg-test1 test-pkgs/pkg-test3-linking"
+      $ "racket -e '(require pkg-test3)'"
+      $ "raco pkg remove pkg-test1 pkg-test3-linking"
+      $ "racket -e '(require pkg-test3)'" =exit> 1
+      (finally
+       $ "rm -r test-pkgs/pkg-test3-linking"))))
 
    (with-fake-root
     (shelly-case

@@ -88,7 +88,7 @@
   (if (and (list? mod)
            (= 2 (length mod))
            (eq? (car mod) 'lib)
-           (regexp-match #rx"[.]rkt$" (cadr mod)))
+           (regexp-match? #rx"[.]rkt$" (cadr mod)))
       (string->symbol (regexp-replace #rx"[.]rkt$" (cadr mod) ""))
       mod))
 
@@ -143,7 +143,7 @@
     (with-handlers ([exn:fail? (λ (x)
                                   (log-exn x "getting info")
                                   #f)])
-      (get-info/full pkg-dir #:namespace metadata-ns)))  
+      (get-info/full pkg-dir #:namespace metadata-ns)))
   (define v
     (if get-info
         (get-info key get-default)
@@ -410,6 +410,7 @@
         (for/hash ([(k v) (in-hash the-db)])
           (values k
                   (if (eq? 'pnr (car (pkg-info-orig-pkg v)))
+                      ;; note: legacy 'pnr entry cannot be a single-collection package
                       (struct-copy pkg-info v
                                    [orig-pkg `(catalog ,(cadr (pkg-info-orig-pkg v)))])
                       v))))))
@@ -499,6 +500,7 @@
      (hash-ref cfg "default-scope" "user"))))
 
 (struct pkg-info (orig-pkg checksum auto?) #:prefab)
+(struct sc-pkg-info pkg-info (collect) #:prefab) ; a pkg with a single collection
 (struct install-info (name orig-pkg directory clean? checksum module-paths))
 
 (define (update-install-info-orig-pkg if op)
@@ -558,8 +560,8 @@
 (define ((remove-package quiet?) pkg-name)
   (unless quiet?
     (printf "Removing ~a\n" pkg-name))
-  (match-define (pkg-info orig-pkg checksum _)
-                (package-info pkg-name))
+  (define pi (package-info pkg-name))
+  (match-define (pkg-info orig-pkg checksum _) pi)
   (define pkg-dir (pkg-directory* pkg-name))
   (remove-from-pkg-db! pkg-name)
   (match orig-pkg
@@ -568,13 +570,13 @@
             #:remove? #t
             #:user? (not (eq? (current-pkg-scope) 'installation))
             #:version-regexp (link-version-regexp)
-            #:root? #t)]
+            #:root? (not (sc-pkg-info? pi)))]
     [_
      (links pkg-dir
             #:remove? #t
             #:user? (not (eq? (current-pkg-scope) 'installation))
             #:version-regexp (link-version-regexp)
-            #:root? #t)
+            #:root? (not (sc-pkg-info? pi)))
      (delete-directory/files pkg-dir)]))
 
 (define (pkg-remove in-pkgs
@@ -643,7 +645,8 @@
                             given-pkg-name
                             #:given-checksum [given-checksum #f]
                             check-sums?
-                            download-printf)
+                            download-printf
+                            metadata-ns)
   (define-values (inferred-pkg-name type) 
     (if (path? pkg)
         (package-source->name+type (path->string pkg)
@@ -664,7 +667,8 @@
     (stage-package/info (string-append "github://github.com/" pkg) type 
                         pkg-name 
                         #:given-checksum given-checksum
-                        check-sums? download-printf)]
+                        check-sums? download-printf
+                        metadata-ns)]
    [(or (eq? type 'file-url) (eq? type 'dir-url) (eq? type 'github))
     (define pkg-url (string->url pkg))
     (define scheme (url-scheme pkg-url))
@@ -719,7 +723,8 @@
                                             pkg-name
                                             #:given-checksum checksum
                                             check-sums?
-                                            download-printf))
+                                            download-printf
+                                            metadata-ns))
                      (λ ()
                         (delete-directory/files tmp-dir))))
               (λ ()
@@ -792,7 +797,8 @@
                                      pkg-name
                                      #:given-checksum checksum
                                      check-sums?
-                                     download-printf))
+                                     download-printf
+                                     metadata-ns))
               (λ ()
                  (when (or (file-exists? package-path)
                            (directory-exists? package-path))
@@ -872,7 +878,8 @@
                                  pkg-name
                                  #:given-checksum checksum
                                  check-sums?
-                                 download-printf)
+                                 download-printf
+                                 metadata-ns)
              `(file ,(simple-form-path* pkg)))
             checksum))
         (λ ()
@@ -888,7 +895,7 @@
                       `(link ,(simple-form-path* pkg))
                       pkg
                       #f #f
-                      (directory->module-paths pkg))]
+                      (directory->module-paths pkg pkg-name metadata-ns))]
        [else
         (define pkg-dir
           (make-temporary-file "pkg~a" 'directory))
@@ -899,7 +906,7 @@
                       `(dir ,(simple-form-path* pkg))
                       pkg-dir
                       #t #f
-                      (directory->module-paths pkg-dir))]))]
+                      (directory->module-paths pkg-dir pkg-name metadata-ns))]))]
    [(eq? type 'name)
     (define catalog-info (package-catalog-lookup pkg #f))
     (define source (hash-ref catalog-info 'source))
@@ -909,7 +916,8 @@
                                      pkg-name
                                      #:given-checksum checksum
                                      check-sums?
-                                     download-printf))
+                                     download-printf
+                                     metadata-ns))
     (when (and (install-info-checksum info)
                check-sums?
                (not (equal? (install-info-checksum info) checksum)))
@@ -929,8 +937,10 @@
                                 (pkg-desc-name desc)
                                 #:given-checksum checksum 
                                 #t
-                                void))
-  (values (install-info-directory i)
+                                void
+                                (make-metadata-namespace)))
+  (values (install-info-name i)
+          (install-info-directory i)
           (install-info-checksum i)
           (install-info-clean? i)))
 
@@ -1034,7 +1044,7 @@
       [(and
         (not (eq? dep-behavior 'force))
         (let ()
-          (define deps (get-all-deps metadata-ns pkg-dir ))
+          (define deps (get-all-deps metadata-ns pkg-dir))
           (define unsatisfied-deps
             (map dependency->source
                  (filter-not (λ (dep)
@@ -1198,20 +1208,28 @@
               final-pkg-dir]
              [else
               pkg-dir]))
-         (log-pkg-debug "creating link to ~e" final-pkg-dir)
+         (define single-collect (pkg-single-collection final-pkg-dir 
+                                                       #:namespace metadata-ns))
+         (log-pkg-debug "creating ~alink to ~e" 
+                        (if single-collect "single-collection " "") 
+                        final-pkg-dir)
          (links final-pkg-dir
+                #:name single-collect
                 #:user? (not (eq? 'installation (current-pkg-scope)))
                 #:version-regexp (link-version-regexp)
-                #:root? #t)
+                #:root? (not single-collect))
          (define this-pkg-info
-           (pkg-info orig-pkg checksum auto?))
+           (if single-collect
+               (sc-pkg-info orig-pkg checksum auto? single-collect)
+               (pkg-info orig-pkg checksum auto?)))
          (log-pkg-debug "updating db with ~e to ~e" pkg-name this-pkg-info)
          (update-pkg-db! pkg-name this-pkg-info))]))
   (define metadata-ns (make-metadata-namespace))
   (define infos
     (for/list ([v (in-list descs)])
       (stage-package/info (pkg-desc-source v) (pkg-desc-type v) (pkg-desc-name v) 
-                          check-sums? download-printf)))
+                          check-sums? download-printf
+                          metadata-ns)))
   (define setup-collects (get-setup-collects (map install-info-directory
                                                   (append old-infos infos))
                                              metadata-ns))
@@ -1222,6 +1240,12 @@
   (pre-succeed)
   (for-each (λ (t) (t)) do-its)
   setup-collects)
+
+(define (pkg-single-collection dir #:namespace [metadata-ns (make-metadata-namespace)])
+  (define i (get-info/full dir #:namespace metadata-ns))
+  (and i (let ([s (i 'single-collection (lambda () #f))])
+           (and (string? s) 
+                s))))
 
 (define (get-setup-collects pkg-directories metadata-ns)
   (maybe-append
@@ -1478,6 +1502,10 @@
               (apply zip pkg/complete (directory-list))))]
          ['plt
           (define dest pkg/complete)
+          (when (pkg-single-collection dir)
+            (pkg-error (~a "single-collection package not supported in .plt format\n"
+                           "  directory: ~a")
+                       dir))
           (parameterize ([current-directory dir])
             (define names (filter std-filter (directory-list)))
             (define dirs (filter directory-exists? names))
@@ -1841,13 +1869,14 @@
 
 (define (get-pkg-content desc 
                          #:extract-info [extract-info extract-dependencies])
-  (define-values (dir cksum clean?) (pkg-stage desc))
+  (define-values (pkg-name dir cksum clean?) (pkg-stage desc))
+  (define metadata-ns (make-metadata-namespace))
   (define get-info (with-handlers ([exn:fail? (λ (x)
                                                  (log-exn x "getting info")
                                                  #f)])
-                     (get-info/full dir #:namespace (make-base-namespace))))
+                     (get-info/full dir #:namespace metadata-ns)))
   (define module-paths
-    (set->list (directory->module-paths dir)))
+    (set->list (directory->module-paths dir pkg-name metadata-ns)))
   (begin0
    (values cksum
            module-paths
@@ -1855,15 +1884,21 @@
    (when clean?
      (delete-directory/files dir))))
 
-(define (directory->module-paths dir)
+(define (directory->module-paths dir pkg-name metadata-ns)
   (define dummy (build-path dir "dummy.rkt"))
   (define compiled (string->path-element "compiled"))
+  (define single-collect (pkg-single-collection dir #:namespace metadata-ns))
   (define (try-path s f)
     (define mp
       `(lib ,(apply ~a
-                    #:separator "/" 
-                    (map path-element->string 
-                         (explode-path f)))))
+                    #:separator "/"
+                    (let ([l (map path-element->string 
+                                  (explode-path f))])
+                      (if single-collect
+                          (if (eq? 'relative (car l))
+                              (cons single-collect (cdr l))
+                              (cons single-collect l))
+                          l)))))
     (if (module-path? mp)
         (set-add s (collapse-module-path mp dummy))
         s))
@@ -1874,7 +1909,7 @@
        [else
         (define-values (base name dir?) (split-path f))
         (cond
-         [(eq? 'relative base) s]
+         [(and (eq? 'relative base) (not single-collect)) s]
          [else
           (define bstr (path-element->bytes name))
           (cond
@@ -1984,7 +2019,8 @@
  with-pkg-lock
  with-pkg-lock/read-only
  (struct-out pkg-info)
-  pkg-desc?
+ (struct-out sc-pkg-info)
+ pkg-desc?
  (contract-out
   [current-pkg-scope
    (parameter/c package-scope/c)]
@@ -2064,7 +2100,8 @@
         (hash/c string? pkg-info?))]
   [pkg-stage (->* (pkg-desc?)
                   (#:checksum (or/c #f string?))
-                  (values path?
+                  (values string?
+                          path?
                           (or/c #f string?)
                           boolean?))]
   [pkg-config-catalogs
@@ -2093,4 +2130,8 @@
                             any/c))
         (values (or/c #f string?)
                 (listof module-path?)
-                any/c))]))
+                any/c))]
+  [pkg-single-collection
+   (->* (path-string?)
+        (#:namespace namespace?)
+        (or/c #f string?))]))

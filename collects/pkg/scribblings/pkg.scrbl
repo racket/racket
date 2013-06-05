@@ -83,9 +83,19 @@ name as the package. The @tech{checksum} is typically left implicit.
 The package directory can contain a file named @filepath{info.rkt}
 to declare other metadata (see @secref["metadata"]).
 
-A @deftech{package source} identifies a @tech{package}
+A @tech{package} is a @deftech{multi-collection package} by default;
+each directory within the package is a @gtech{collection} that is
+provided by the package. If a @tech{package} has an
+@filepath{info.rkt} file that defines @racketidfont{single-collection}
+as a string, then the package is a @deftech{single-collection
+package}; in that case, the package directory doubles as
+@gtech{collection} named by @racketidfont{single-collection}.
+
+More generally, a @deftech{package source} identifies a @tech{package}
 representation. Each package source type has a different way of
-storing the @tech{checksum}. The valid package source types are:
+storing the @tech{checksum} and providing the package content (usually
+with @tech{multi-collection package} and @tech{single-collection
+package} variants). The valid @tech{package source} types are:
 
 @itemlist[
 
@@ -96,7 +106,10 @@ example, @filepath{~/tic-tac-toe.zip}'s @tech{checksum} would be inside
 @filepath{~/tic-tac-toe.zip.CHECKSUM}. The valid archive formats
 are (currently) @filepath{.zip}, @filepath{.tar}, @filepath{.tgz}, 
 @filepath{.tar.gz}, and
-@filepath{.plt}.
+@filepath{.plt}, each of which represents package content analogous
+to a directory ,
+but the @filepath{.plt} format does not accommodate a 
+@tech{single-collection package} representation.
 
 A package source is inferred to refer to a file
 only when it has a suffix matching a valid archive format
@@ -213,7 +226,9 @@ into account when determining a @tech{package update}, although a change
 in a package's @tech{version} (in either direction)
 implies a change in the @tech{checksum} because the checksum is
 computed from the package source and the meta-data that specifies
-the version is part of the source.
+the version is part of the source. A @tech{single-collection package}
+can be a @tech{package update} of a @tech{multi-collection package}
+and vice versa.
 
 A @deftech{package scope} determines the effect of package installations,
 updates, @|etc|, with respect to different users, Racket versions, and
@@ -274,7 +289,11 @@ sub-sub-commands:
        environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
 
   @item{@DFlag{link} --- Implies @exec{--type dir} (and overrides any specified type),
-        and links the existing directory as an installed package.}
+        and links the existing directory as an installed package. The package is identified
+        as a @tech{single-collection package} or a @tech{multi-collection package} at the
+        time that it is installed, and that categorization does not change even if the @schemeidfont{single-collection}
+        definition in @filepath{info.rkt} is changed (i.e., he package must be removed and re-installed
+        for the change to take effect).}
 
  @item{@DFlag{scope} @nonterm{scope} --- Selects the @tech{package scope} for installation, where @nonterm{scope} is one of
   @itemlist[
@@ -496,26 +515,38 @@ select its name, @nonterm{package}:
 
 @commandline{mkdir @nonterm{package}}
 
-Next, link your development directory to your local package
-repository:
-
-@commandline{raco pkg install --link @nonterm{package}}
-
 Optionally, enter your directory and create a basic @filepath{info.rkt} file:
 
 @commandline{cd @nonterm{package}}
 @commandline{echo "#lang setup/infotab" > info.rkt}
 @commandline{echo "(define deps (list))" >> info.rkt}
 
-The @filepath{info.rkt} file is not necessary if you have no dependencies, but
-you may wish to create it to simplify adding dependencies in the
-future. (Note that this @filepath{info.rkt} is for the package, not for
-a collection; definitions such as @racket[scribblings] or
-@racket[raco-commands] work only in a collection's @filepath{info.rkt}.)
+The @filepath{info.rkt} file is not necessary for a
+@tech{multi-collection package} with no dependencies, but you may wish
+to create it to simplify adding dependencies in the future.  For a
+@tech{single-collection package}, you must create an
+@filepath{info.rkt} file, and you must give the collection a name,
+@nonterm{collect}:
 
-Next, inside the @nonterm{package} directory, create directories for
-the collections and modules that your package will provide. For
-example, the developer of @pkgname{tic-tac-toe} package that provides
+@commandline{echo '(define single-collection "@nonterm{collect}")' >> info.rkt}
+
+Note that in the case of a @tech{multi-collection package}, the
+@filepath{info.rkt} is for the package, not for a collection;
+definitions such as @racket[scribblings] or @racket[raco-commands]
+work only in a collection's @filepath{info.rkt}. For a
+@tech{single-collection package}, the @filepath{info.rkt} file serves
+double-duty for the package and collection.
+
+Next, link your development directory to your local package
+repository:
+
+@commandline{raco pkg install --link @nonterm{package}}
+
+
+Finally, inside the @nonterm{package} directory, add directories and/or
+files to implement the collections and/or modules that your package
+provide. For
+example, the developer of a @pkgname{tic-tac-toe} @tech{multi-collection package} that provides
 @racketidfont{games/tic-tac-toe/main} and @racketidfont{data/matrix}
 libraries might create directories and files like this:
 
@@ -740,7 +771,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
        set up via @exec{raco setup} after the package is installed, or
        @racket['all] to indicate that all collections need to be
        setup. By default, only collections included in the package are
-       set up (plus collections for global documentation catalogs and
+       set up (plus collections for global documentation indexes and
        links).}
 
 ]

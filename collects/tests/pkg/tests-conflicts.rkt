@@ -46,6 +46,15 @@
                    $ "test -f test-pkgs/pkg-test1b.zip"
                    $ "raco pkg install test-pkgs/pkg-test1b.zip" =exit> 1)
 
+   (shelly-install* "conflicts are caught in single-collection" 
+                    "test-pkgs/pkg-test1.zip test-pkgs/pkg-test3.zip" "pkg-test1 pkg-test3"
+                    $ "test -f test-pkgs/pkg-test3-v2.zip"
+                    $ "raco pkg install test-pkgs/pkg-test3-v2.zip" =exit> 1)
+   (shelly-install* "conflicts are caught in single-collection against multi-collection"
+                    "test-pkgs/pkg-test1.zip test-pkgs/pkg-test3-v2.zip" "pkg-test1 pkg-test3-v2"
+                    $ "test -f test-pkgs/pkg-test3.zip"
+                    $ "raco pkg install test-pkgs/pkg-test3.zip" =exit> 1)
+
    (shelly-wind
     $ "cp -r test-pkgs/pkg-test1 test-pkgs/pkg-test1-linking"
     (shelly-install* "conflicts are caught, even with a link" 
