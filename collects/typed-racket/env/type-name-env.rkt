@@ -63,8 +63,10 @@
 (define (register-type-variance! id variance)
   (free-id-table-set! variance-mapping id variance))
 
-(define (lookup-type-variance id )
-  (free-id-table-ref variance-mapping id))
+(define (lookup-type-variance id)
+  (free-id-table-ref
+   variance-mapping id
+   (lambda () (lookup-variance-fail id))))
 
 ;; map over the-mapping, producing a list
 ;; (id variance -> T) -> listof[T]

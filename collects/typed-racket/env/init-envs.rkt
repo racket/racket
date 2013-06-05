@@ -51,6 +51,8 @@
     [(Union: elems) `(make-Union (sort (list ,@(map sub elems)) < #:key Type-seq))]
     [(Base: n cnt pred marshaled _) marshaled]
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
+    [(RecName: stx deps arity)
+     `(make-RecName (quote-syntax ,stx) (quote-syntax ,deps) ,arity)]
     [(fld: t acc mut) `(make-fld ,(sub t) (quote-syntax ,acc) ,mut)]
     [(Struct: name parent flds proc poly? pred-id)
      `(make-Struct (quote-syntax ,name) ,(sub parent)

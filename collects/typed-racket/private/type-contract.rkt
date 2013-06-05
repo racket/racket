@@ -10,7 +10,7 @@
  (rep type-rep filter-rep object-rep)
  (typecheck internal-forms)
  (utils tc-utils require-contract)
- (env type-name-env)
+ (env type-alias-env type-name-env)
  (types resolve utils)
  (prefix-in t: (types abbrev numeric-tower))
  (private parse-type syntax-properties)
@@ -266,6 +266,56 @@
 
 
       (match ty
+        ;; Applications of a potentially polymorphically
+        ;; recursive type constructor turns into a contract
+        ;; function application.
+        [(App: (and rator (RecName: stx _ _)) rands _)
+         #`(#,(t->c rator) #,@(map t->c rands))]
+        ;; A recursive name depends on other type aliases,
+        ;; possibly in mutual recursion. The contract will recur
+        ;; on all dependencies as a conservative approximation.
+        [(RecName: stx deps arity)
+         ;; -> Type
+         ;; Construct the type for the recursion
+         (define (make-recname-type ty)
+           (define kind (contract-kind->keyword (current-contract-kind)))
+           (cond [arity
+                  (match-define (Poly: vs b) (resolve-once ty))
+                  (define arg (generate-temporary 'ctc))
+                  (parameterize ([vars (append (for/list ([var vs]) (list var arg))
+                                               (vars))])
+                    #`(λ (#,arg) (recursive-contract #,(t->c/both b) #,kind)))]
+                 [else #`(recursive-contract
+                          #,(t->c/both (resolve-once ty))
+                          #,kind)]))
+         (define n (syntax-e stx))
+         (cond [(assoc n (vars)) => second]
+               [else
+                (define/with-syntax (n* dep ...)
+                  (generate-temporaries (cons n deps)))
+                (parameterize ([vars (append (list (list n #'n*))
+                                             (map list deps (syntax->list #'(dep ...)))
+                                             (vars))]
+                               [current-contract-kind
+                                (contract-kind-min kind chaperone-sym)])
+                  (define ctc (make-recname-type ty))
+                  (define dep-resolved
+                    (for/list ([dep deps])
+                      (define type (lookup-type-alias dep values))
+                      (define resolved
+                        (if (needs-resolving? type)
+                            (resolve-once type)
+                            type))
+                      resolved))
+                  (define dep-ctcs (map t->c/both dep-resolved))
+                  (define/with-syntax (dep-ctc ...) dep-ctcs)
+                  #`(letrec ([n* #,ctc]
+                             [dep (recursive-contract
+                                   dep-ctc
+                                   #,(contract-kind->keyword
+                                      (current-contract-kind)))]
+                             ...)
+                      n*))])]
         [(or (App: _ _ _) (Name: _)) (t->c (resolve-once ty))]
         ;; any/c doesn't provide protection in positive position
         [(Univ:)

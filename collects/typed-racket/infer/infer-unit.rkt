@@ -435,6 +435,12 @@
              [_ (void)])
            ;; constrain v to be above S (but don't mention V)
            (singleton (var-promote S V) v Univ)]
+ 
+          ;; recursive names should get resolved as they're seen
+          [(s (? RecName? t))
+           (cg s (resolve-once t))]
+          [((? RecName? s) t)
+           (cg (resolve-once s) t)]
 
           ;; constrain b1 to be below T, but don't mention the new vars
           [((Poly: v1 b1) T) (cgen (append v1 V) X Y b1 T)]

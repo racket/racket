@@ -2,7 +2,7 @@
 (require "../utils/utils.rkt")
 
 (require (rep type-rep rep-utils free-variance)
-         (env type-name-env)
+         (env type-alias-env type-name-env)
          (utils tc-utils)
          (types utils current-seen)
          racket/match
@@ -19,6 +19,8 @@
   (match t
     [(Name: n) (let ([t (lookup-type-name n)])
                  (if (Type/c? t) t #f))]
+    ;; FIXME: dummy argument
+    [(RecName: n _ _) (lookup-type-alias n values)]
     [_ (int-err "resolve-name: not a name ~a" t)]))
 
 (define already-resolving? (make-parameter #f))
@@ -48,6 +50,16 @@
                           " does not match the given number:"
                           " expected " num-poly
                           ", given " num-rands))))]
+      [(RecName: _ _ arity)
+       (cond [arity
+              (define num-rands (length rands))
+              (unless (= num-rands arity)
+                (tc-error (~a "The expected number of arguments for "
+                              rator " does not match the given number:"
+                              " expected " arity
+                              ", given " num-rands)))]
+             [else
+              (tc-error "Type ~a cannot be applied, arguments were: ~a" rator rands)])]
       [(Mu: _ _) (void)]
       [(App: _ _ _) (void)]
       [(Error:) (void)]
@@ -62,6 +74,7 @@
       [(Name: _)
        (let ([r (resolve-name rator)])
          (and r (resolve-app r rands stx)))]
+      [(RecName: _ _ _) (resolve-app (resolve-name rator) rands stx)]
       [(Poly: _ _) (instantiate-poly rator rands)]
       [(Mu: _ _) (resolve-app (unfold rator) rands stx)]
       [(App: r r* s) (resolve-app (resolve-app r r* s) rands stx)]
@@ -69,7 +82,7 @@
 
 
 (define (needs-resolving? t)
-  (or (Mu? t) (App? t) (Name? t)))
+  (or (Mu? t) (App? t) (Name? t) (RecName? t)))
 
 (define resolver-cache (make-hasheq))
 
@@ -81,7 +94,8 @@
                   [(Mu: _ _) (unfold t)]
                   [(App: r r* s)
                    (resolve-app r r* s)]
-                  [(Name: _) (resolve-name t)])])
+                  [(Name: _) (resolve-name t)]
+                  [(RecName: _ _ _) (resolve-name t)])])
         (when (and r* (not (currently-subtyping?)))
           (hash-set! resolver-cache seq r*))
         r*)))

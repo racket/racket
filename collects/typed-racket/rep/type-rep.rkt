@@ -106,6 +106,15 @@
 ;; This will always resolve to a struct
 (def-type Name ([id identifier?]) [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
 
+;; id is an Identifier, deps is a Listof<Identifier>
+;;
+;; interp.
+;; A type name, potentially recursive or mutually recursive
+;; The deps are the other aliases this depends on.
+(def-type RecName ([id identifier?] [deps (listof identifier?)]
+                   [arity (or/c #f natural-number/c)])
+  [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
+
 ;; rator is a type
 ;; rands is a list of types
 ;; stx is the syntax of the pair of parens
@@ -114,6 +123,9 @@
   [#:frees (λ (f)
               (match rator 
                 ((Name: n)
+                 (instantiate-frees n (map f rands)))
+                ;; FIXME: is this right?
+                ((RecName: n _ _)
                  (instantiate-frees n (map f rands)))
                 (else (f (resolve-app rator rands stx)))))]
 
@@ -182,7 +194,7 @@
 (def-type Set ([elem Type/c])
   [#:key 'set])
 
-;; name is a Symbol (not a Name)
+;; name is a Symbol (not a Name or RecName)
 ;; contract is used when generating contracts from types
 ;; predicate is used to check (at compile-time) whether a value belongs
 ;; to that base type. This is used to check for subtyping between value

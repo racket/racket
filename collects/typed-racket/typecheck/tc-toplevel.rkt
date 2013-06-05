@@ -5,10 +5,11 @@
          racket/list unstable/list racket/dict racket/match unstable/sequence
          (prefix-in c: (contract-req))
          (rep type-rep free-variance)
-         (types utils abbrev type-table)
+         (types utils abbrev type-table resolve)
          (private parse-type type-annotation type-contract syntax-properties)
          (env global-env init-envs type-name-env type-alias-env
-              lexical-env env-req mvar-env scoped-tvar-env)
+              type-alias-helper lexical-env env-req mvar-env
+              scoped-tvar-env)
          (utils tc-utils mutated-vars)
          (typecheck provide-handling def-binding tc-structs typechecker)
 
@@ -273,11 +274,13 @@
     [(define-syntaxes (nm ...) . rest) (syntax->list #'(nm ...))]
     [_ #f]))
 
+;; Syntax -> Syntax Syntax Syntax Option<Integer>
+;; Parse a type alias internal declaration
 (define (parse-type-alias form)
   (kernel-syntax-case* form #f
     (define-type-alias-internal values)
-    [(define-values () (begin (quote-syntax (define-type-alias-internal nm ty)) (#%plain-app values)))
-     (values #'nm #'ty)]
+    [(define-values () (begin (quote-syntax (define-type-alias-internal nm rec-nm ty arity)) (#%plain-app values)))
+     (values #'nm #'rec-nm #'ty (syntax-e #'arity))]
     [_ (int-err "not define-type-alias")]))
 
 ;; actually do the work on a module
@@ -297,7 +300,20 @@
      define/fixup-contract?))
   (do-time "Form splitting done")
   ;(printf "before parsing type aliases~n")
-  (for-each (compose register-type-alias parse-type-alias) type-aliases)
+
+  ;; Register type alias names with a dummy value so that it's in
+  ;; scope for the actual mapping in the next loop
+  (define-values (type-alias-names type-alias-map)
+    (for/lists (_1 _2) ([type-alias type-aliases])
+      (define-values (id name-id type-stx arity) (parse-type-alias type-alias))
+      (register-resolved-type-alias id Err)
+      (register-resolved-type-alias
+       name-id
+       (if arity
+           (make-Poly (build-list arity (λ (_) (gensym))) Err)
+           Err))
+      (values id (list id name-id type-stx arity))))
+
   ;; Add the struct names to the type table, but not with a type
   ;(printf "before adding type names~n")
   (let ((names (map name-of-struct struct-defs))
@@ -305,8 +321,75 @@
     (for-each register-type-name names)
     (for-each add-constant-variance! names type-vars))
   ;(printf "after adding type names~n")
-  ;; resolve all the type aliases, and error if there are cycles
-  (resolve-type-aliases parse-type)
+
+  ;; Find type alias dependencies
+  (define-values (type-alias-dependency-map type-alias-types)
+    (for/lists (_1 _2)
+               ([(name alias-info) (in-dict type-alias-map)])
+      (define links-box (box null))
+      (define type
+        (parameterize ([current-referenced-aliases links-box])
+          (parse-type (cadr alias-info))))
+      (define pre-dependencies (unbox links-box))
+      (define alias-dependencies
+        (filter (λ (id) (memf (λ (id2) (free-identifier=? id id2))
+                              type-alias-names))
+                pre-dependencies))
+      (values (cons name alias-dependencies) type)))
+
+  (define components
+    (find-strongly-connected-type-aliases type-alias-dependency-map))
+
+  ;; A singleton component can be either a self-cycle or a node that
+  ;; that does not participate in cycles, so we disambiguate
+  (define acyclic-singletons
+    (let ()
+     (define (has-self-cycle? component)
+       (define id (car component))
+       (memf (λ (id2) (free-identifier=? id id2))
+             (dict-ref type-alias-dependency-map id)))
+     (for/list ([component components]
+                #:when (= (length component) 1)
+                #:unless (has-self-cycle? component))
+       (car component))))
+
+  ;; Actually register recursive type aliases
+  (for ([(id record) (in-dict type-alias-map)]
+        #:unless (member id acyclic-singletons))
+    (match-define (list rec-name _ arity) record)
+    (define deps (dict-ref type-alias-dependency-map id))
+    (register-resolved-type-alias id (make-RecName rec-name deps arity)))
+  (for ([(id record) (in-dict type-alias-map)]
+         #:unless (member id acyclic-singletons))
+    (match-define (list rec-name type-stx _) record)
+    (define type (parse-type type-stx))
+    (register-resolved-type-alias rec-name type)
+    (define productive
+      (let loop ([type type])
+        (match type
+          [(Union: elems) (andmap loop elems)]
+          ;; FIXME: more stringent for mutual recursion?
+          [(Name: stx) (not (free-identifier=? stx id))]
+          [(App: rator rands stx)
+           (loop (resolve-app rator rands stx))]
+          [(Mu: _ body) (loop body)]
+          [(Poly: names body) (loop body)]
+          [(PolyDots: names body) (loop body)]
+          [else #t])))
+    (unless productive
+      (tc-error/stx
+       id
+       "Recursive types are not allowed directly inside their definition")))
+
+  ;; Register non-recursive type aliases
+  ;;
+  ;; Note that the connected component algorithm returns results
+  ;; in topologically sorted order, so we want to go through in the
+  ;; reverse order of that to avoid unbound type aliases.
+  (for ([id (reverse acyclic-singletons)])
+    (define type-stx (cadr (dict-ref type-alias-map id)))
+    (register-resolved-type-alias id (parse-type type-stx)))
+
   ;; Parse and register the structure types
   (define parsed-structs
     (for/list ((def (in-list struct-defs)))

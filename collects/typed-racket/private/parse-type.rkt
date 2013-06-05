@@ -28,7 +28,12 @@
                        [parse-tc-results/id (syntax? c:any/c . c:-> . tc-results/c)]
                        [parse-literal-alls (syntax? . c:-> . (c:listof (c:or/c (c:listof identifier?) (c:list/c (c:listof identifier?) identifier?))))])
 
-(provide star ddd/bound)
+(provide star ddd/bound current-referenced-aliases)
+
+;; current-referenced-aliases : Parameter<Option<Box<List<Id>>>>
+;; This parameter is used to coordinate with the type-checker to determine
+;; if a type alias should be recursive or not
+(define current-referenced-aliases (make-parameter #f))
 
 ;; (Syntax -> Type) -> Syntax Any -> Syntax
 ;; See `parse-type/id`. This is a curried generalization.
@@ -356,6 +361,9 @@
           =>
           (lambda (t)
             ;(printf "found a type alias ~a\n" #'id)
+            (when (current-referenced-aliases)
+              (define alias-box (current-referenced-aliases))
+              (set-box! alias-box (cons #'id (unbox alias-box))))
             (add-disappeared-use #'id)
             t)]
          ;; if it's a type name, we just use the name
@@ -390,6 +398,7 @@
          (resolve-app-check-error rator args stx)
          (match rator
            [(Name: _) (make-App rator args stx)]
+           [(RecName: _ _ _) (make-App rator args stx)]
            [(Poly: _ _) (instantiate-poly rator args)]
            [(Mu: _ _) (loop (unfold rator) args)]
            [(Error:) Err]
