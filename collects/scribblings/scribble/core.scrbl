@@ -268,8 +268,8 @@ The @racketmodname[scribble/tag] library provides functions for constructing
 
 A @deftech{style} combines a @tech{style name} with a list of
 @tech{style properties} in a @racket[style] structure. A @deftech{style name}
-is either a string, symbol, of @racket[#f]. A @deftech{style property} can be
-anything, including a symbol a structure such as
+is either a string, symbol, or @racket[#f]. A @deftech{style property} can be
+anything, including a symbol or a structure such as
 @racket[color-property].
 
 A style has a single @tech{style name}, because the name typically
