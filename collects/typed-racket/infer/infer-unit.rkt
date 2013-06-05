@@ -1,5 +1,12 @@
 #lang racket/unit
 
+;; This is the main file that defines local type inference in TR
+;;
+;; The algorithm is based on
+;;   "Local Type Inference" by Pierce and Turner
+;;   ACM TOPLAS, Vol. 22, No. 1, January 2000.
+;;
+
 (require "../utils/utils.rkt"
          (except-in
           (combine-in
@@ -20,12 +27,20 @@
 (import dmap^ constraints^ promote-demote^)
 (export infer^)
 
+;; For more data definitions, see "constraint-structs.rkt"
+;;
+;; A Seen is a set represented by a list of Pair<Seq, Seq>
 (define (empty-set) '())
 
 (define current-seen (make-parameter (empty-set)))
 
+;; Type Type -> Pair<Seq, Seq>
+;; construct a pair for the set of seen type pairs
 (define (seen-before s t)
   (cons (Type-seq s) (Type-seq t)))
+
+;; Type Type Seen -> Seen
+;; Add the type pair to the set of seen type pairs
 (define/cond-contract (remember s t A)
   ((or/c AnyValues? Values/c ValuesDots?) (or/c AnyValues? Values/c ValuesDots?)
    (listof (cons/c exact-nonnegative-integer?
@@ -34,19 +49,27 @@
    (listof (cons/c exact-nonnegative-integer?
                    exact-nonnegative-integer?)))
  (cons (seen-before s t) A))
+
+;; Type Type -> Boolean
+;; Check if a given type pair have been seen before
 (define/cond-contract (seen? s t)
   ((or/c AnyValues? Values/c ValuesDots?) (or/c AnyValues? Values/c ValuesDots?)
    . -> . any/c)
  (member (seen-before s t) (current-seen)))
 
-
+;; (CMap DMap -> Pair<CMap, DMap>) CSet -> CSet
+;; Map a function over a constraint set
 (define (map/cset f cset)
   (make-cset (for/list ([(cmap dmap) (in-pairs (cset-maps cset))])
                (f cmap dmap))))
 
+;; Symbol DCon -> DMap
+;; Construct a dmap containing only a single mapping
 (define (singleton-dmap dbound dcon)
   (make-dmap (make-immutable-hash (list (cons dbound dcon)))))
 
+;; Hash<K, V> Listof<K> -> Hash<K, V>
+;; Remove all provided keys from the hash table
 (define (hash-remove* hash keys)
   (for/fold ([h hash]) ([k (in-list keys)]) (hash-remove h k)))
 
@@ -399,7 +422,7 @@
           ;; all other variables are compatible only with themselves
           [((F: (? (λ (e) (memq e X)) v)) T)
            (match T
-             ;; only possible when v* is an index
+             ;; fail when v* is an index variable
              [(F: v*) (when (and (bound-index? v*) (not (bound-tvar? v*)))
                         (fail! S T))]
              [_ (void)])

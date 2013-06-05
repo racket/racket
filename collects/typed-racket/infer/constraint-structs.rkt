@@ -4,7 +4,7 @@
 
 ;; S, T types
 ;; X a var
-;; represents S <: X <: T
+;; represents S <: X <: T (see "Local Type Inference" pg. 12)
 (define-struct/cond-contract c ([S Type/c] [X symbol?] [T Type/c]) #:transparent)
 
 ;; fixed : Listof[c]
