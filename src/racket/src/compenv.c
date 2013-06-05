@@ -2439,10 +2439,11 @@ Scheme_Object *scheme_namespace_lookup_value(Scheme_Object *sym, Scheme_Env *gen
   return v;
 }
 
-Scheme_Object *scheme_find_local_shadower(Scheme_Object *sym, Scheme_Object *sym_marks, Scheme_Comp_Env *env)
+Scheme_Object *scheme_find_local_shadower(Scheme_Object *sym, Scheme_Object *sym_marks, Scheme_Comp_Env *env,
+                                          Scheme_Object **_free_id)
 {
   Scheme_Comp_Env *frame;
-  Scheme_Object *esym, *uid = NULL, *env_marks, *prop;
+  Scheme_Object *esym, *uid = NULL, *env_marks, *prop, *val;
 
   /* Walk backward through the frames, looking for a renaming binding
      with the same marks as the given identifier, sym. Skip over
@@ -2482,12 +2483,19 @@ Scheme_Object *scheme_find_local_shadower(Scheme_Object *sym, Scheme_Object *sym
             prop = scheme_stx_property(esym, unshadowable_symbol, NULL);
             if (SCHEME_FALSEP(prop)) {
               env_marks = scheme_stx_extract_marks(esym);
-              if (scheme_equal(env_marks, sym_marks)) { /* This used to have 1 || --- why? */
+              if (scheme_equal(env_marks, sym_marks)) {
                 sym = esym;
                 if (COMPILE_DATA(frame)->const_uids)
                   uid = COMPILE_DATA(frame)->const_uids[i];
                 else
                   uid = frame->uid;
+                val = COMPILE_DATA(frame)->const_vals[i];
+                if (val && SAME_TYPE(SCHEME_TYPE(val), scheme_macro_type)) {
+                  if (scheme_is_binding_rename_transformer(SCHEME_PTR_VAL(val))) {
+                    val = scheme_rename_transformer_id(SCHEME_PTR_VAL(val));
+                    *_free_id = val;
+                  }
+                }
                 break;
               }
             }

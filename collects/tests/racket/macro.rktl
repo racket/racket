@@ -230,6 +230,14 @@
 	  (foozzz foozz)
 	  foozz)))
 
+(test #t 'free-identifier=?-of-rename-via-shadower
+      (let ([y 5])
+        (let-syntax ([m (lambda (stx)
+                          #`(quote-syntax #,(syntax-local-get-shadower #'x)))])
+          (let-syntax ([x (make-rename-transformer #'y)])
+            (free-identifier=? (m) #'y)))))
+
+
 (test #t set!-transformer? (make-set!-transformer void))
 (test #t rename-transformer? (make-rename-transformer #'void))
 

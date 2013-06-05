@@ -2327,7 +2327,7 @@ static Scheme_Object *
 local_get_shadower(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env;
-  Scheme_Object *sym, *sym_marks = NULL, *orig_sym, *uid = NULL;
+  Scheme_Object *sym, *sym_marks = NULL, *orig_sym, *uid = NULL, *free_id = NULL;
 
   env = scheme_current_thread->current_local_env;
   if (!env)
@@ -2341,7 +2341,7 @@ local_get_shadower(int argc, Scheme_Object *argv[])
 
   sym_marks = scheme_stx_extract_marks(sym);
 
-  uid = scheme_find_local_shadower(sym, sym_marks, env);
+  uid = scheme_find_local_shadower(sym, sym_marks, env, &free_id);
 
   if (!uid) {
     uid = scheme_tl_id_sym(env->genv, sym, NULL, 0, 
@@ -2366,11 +2366,14 @@ local_get_shadower(int argc, Scheme_Object *argv[])
 
     result = scheme_datum_to_syntax(SCHEME_STX_VAL(sym), orig_sym, sym, 0, 0);
     ((Scheme_Stx *)result)->props = ((Scheme_Stx *)orig_sym)->props;
-    
+
     rn = scheme_make_rename(uid, 1);
     scheme_set_rename(rn, 0, result);
 
     result = scheme_add_rename(result, rn);
+
+    if (free_id)
+      scheme_install_free_id_rename(result, free_id, NULL, scheme_make_integer(0));
 
     if (!scheme_stx_is_clean(orig_sym))
       result = scheme_stx_taint(result);
