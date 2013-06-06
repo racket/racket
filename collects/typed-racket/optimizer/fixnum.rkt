@@ -194,9 +194,8 @@
            (begin (log-optimization "fixnum fx*" fixnum-opt-msg this-syntax)
                   (add-disappeared-use #'op)
                   #'(unsafe-fx* n1.opt n2.opt)))
-  (pattern (#%plain-app (~and op (~literal fxquotient)) n1:fixnum-expr n2:fixnum-expr)
-           #:when (and (subtypeof? #'n1 -NonNegFixnum)
-                       (subtypeof? #'n2 -Fixnum))
+  (pattern (#%plain-app (~and op (~literal fxquotient)) n1:fixnum-expr n2:nonzero-fixnum-expr)
+           #:when (subtypeof? #'n1 -NonNegFixnum)
            #:with opt
            (begin (log-optimization "fixnum fxquotient" fixnum-opt-msg this-syntax)
                   (add-disappeared-use #'op)

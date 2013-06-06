@@ -25,7 +25,7 @@ TR opt: fixnum-bounded-expr.rkt 99:5 (+ 300 301) -- fixnum bounded expr
 TR opt: fixnum-bounded-expr.rkt 99:17 (+ 301 302) -- fixnum bounded expr
 TR opt: fixnum-bounded-expr.rkt 99:0 (fx- (+ 300 301) (+ 301 302)) -- fixnum fx-
 TR opt: fixnum-bounded-expr.rkt 102:0 (fx* 4 5) -- fixnum fx*
-TR opt: fixnum-bounded-expr.rkt 105:0 (fxquotient (ann 34 Nonnegative-Fixnum) (ann -4 Fixnum)) -- fixnum fxquotient
+TR opt: fixnum-bounded-expr.rkt 105:0 (fxquotient (ann 34 Nonnegative-Fixnum) (ann -4 Negative-Fixnum)) -- fixnum fxquotient
 TR opt: fixnum-bounded-expr.rkt 108:0 (fxabs (ann 64235 Nonnegative-Fixnum)) -- fixnum fxabs
 28
 89525
@@ -102,7 +102,7 @@ TR opt: fixnum-bounded-expr.rkt 108:0 (fxabs (ann 64235 Nonnegative-Fixnum)) -- 
 (fx* 4 5) ; ok, (* Byte Byte)
 (fx* 300 300) ; not ok
 
-(fxquotient (ann 34 Nonnegative-Fixnum) (ann -4 Fixnum))
+(fxquotient (ann 34 Nonnegative-Fixnum) (ann -4 Negative-Fixnum))
 (fxquotient -4 -5) ; not ok
 
 (fxabs (ann 64235 Nonnegative-Fixnum)) ; ok
