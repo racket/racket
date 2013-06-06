@@ -1712,12 +1712,21 @@ v4 todo:
                                           "the domain of" 
                                           #:swap? #t)))
                                  dom-ctcs+case-nums)
-                            (map (λ (f)
-                                   (define p (f rng-blame))
-                                   (lambda args
-                                     (with-continuation-mark
-                                      contract-continuation-mark-key blame
-                                      (apply p args))))
+                            (map (let ([memo '()])
+                                   ;; to preserve procedure-closure-contents-eq?ness of the
+                                   ;; wrapped procedures, memoize with f as the key.
+                                   (λ (f)
+                                     (define target
+                                       (assoc f memo procedure-closure-contents-eq?))
+                                     (if target
+                                         (cdr target)
+                                         (let* ([p   (f rng-blame)]
+                                                [new (lambda args
+                                                       (with-continuation-mark
+                                                        contract-continuation-mark-key blame
+                                                        (apply p args)))])
+                                           (set! memo (cons (cons f new) memo))
+                                           new))))
                                  rng-ctcs)))
       (define (chk val mtd?) 
         (cond
