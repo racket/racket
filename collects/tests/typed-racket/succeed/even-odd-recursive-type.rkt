@@ -30,7 +30,7 @@
 (module let-even/odd typed/racket
   (let ()
     (define-type (Even A) (U Null (Pairof A (Odd A))))
-    (define-type (Odd A) (Pairof A (Even A)))
+    (define-type (Odd B) (Pairof B (Even B)))
 
     (: even-lst (Even Integer))
     (define even-lst '(1 2 3 4))

@@ -11,17 +11,20 @@
 
 (provide resolve-name resolve-app needs-resolving?
          resolve resolve-app-check-error
-         current-check-polymorphic-recursion?)
+         current-check-polymorphic-recursion)
 (provide/cond-contract [resolve-once (Type/c . -> . (or/c Type/c #f))])
 
 (define-struct poly (name vars) #:prefab)
 
-;; Parameter<Boolean>
+;; Parameter<Option<Listof<Symbol>>>
 ;; This parameter controls whether or not the resolving process
 ;; should check for polymorphic recursion in implicit recursive
 ;; type names. This should only need to be enabled at type alias
 ;; definition time.
-(define current-check-polymorphic-recursion? (make-parameter #f))
+;;
+;; If not #f, it should be a list of symbols that correspond
+;; to the type parameters of the type being parsed.
+(define current-check-polymorphic-recursion (make-parameter #f))
 
 (define (resolve-name t)
   (match t
@@ -88,13 +91,14 @@
               (define (check-argument given-type arg-name)
                 (define ok?
                   (if (F? given-type)
-                      (type-equal? given-type (make-F (syntax-e arg-name)))
-                      (not (member (syntax-e arg-name) (fv given-type)))))
+                      (type-equal? given-type (make-F arg-name))
+                      (not (member arg-name (fv given-type)))))
                 (unless ok?
                   (tc-error (~a "Recursive type " rator " cannot be applied at"
                                 " a different type in its recursive invocation"))))
-              (when (current-check-polymorphic-recursion?)
-                (for-each check-argument rands args))]
+              (define current-vars (current-check-polymorphic-recursion))
+              (when current-vars
+                (for-each check-argument rands current-vars))]
              [else
               (tc-error "Type ~a cannot be applied, arguments were: ~a" rator rands)])]
       [(Mu: _ _) (void)]

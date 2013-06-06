@@ -233,10 +233,17 @@
   (for ([(id record) (in-dict type-alias-map)]
         #:unless (member id acyclic-singletons))
     (match-define (list rec-name type-stx _) record)
+    ;; FIXME: this code does a redundant parse
+    (define pre-type (parse-type type-stx))
+    (define maybe-type-params
+      (match pre-type
+        [(Poly-names: names _) names]
+        [_ #f]))
     (define type
       ;; make sure to reject the type if it uses polymorphic
       ;; recursion (see resolve.rkt)
-      (parameterize ([current-check-polymorphic-recursion? #t])
+      (parameterize ([current-check-polymorphic-recursion
+                      maybe-type-params])
         (parse-type type-stx)))
     (register-resolved-type-alias rec-name type)
     (check-type-alias-contractive id type))
