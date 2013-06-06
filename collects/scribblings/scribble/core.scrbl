@@ -376,7 +376,7 @@ The recognized @tech{style properties} are as follows:
  @item{@racket['hidden] --- The part title is not shown; for Latex
        output, the part title is not shown only if its is empty, and
        in that case, it is also excluded from tables of contents.  The
-       @racket['toc-hidden] style usually should be included with
+       @racket['toc-hidden] @tech{style property} usually should be included with
        @racket['hidden] (for consistency in non-Latex output).}
 
  @item{@racket['grouper] --- The part is numbered with a Roman
@@ -390,7 +390,7 @@ The recognized @tech{style properties} are as follows:
 
  @item{@racket['non-toc] --- Initial sub-parts of the part are
        @emph{not} rendered on separate pages for multi-page HTML
-       mode; this style applies only to the main part.}
+       mode; this @tech{style property} applies only to the main part.}
 
  @item{@racket['reveal] --- Shows sub-parts when this part is
        displayed in a table-of-contents panel in HTML output (which
@@ -402,7 +402,7 @@ The recognized @tech{style properties} are as follows:
        listing except when those sub-parts are top-level entries in
        the listing.}
 
- @item{@racket['no-toc] --- As a style for the main part of a
+ @item{@racket['no-toc] --- As a @tech{style property} for the main part of a
        document, causes the HTML output to not include a margin box
        for the main table of contents; the ``on this page'' box that
        contains @racket[toc-element] and @racket[toc-target-element]
@@ -410,7 +410,7 @@ The recognized @tech{style properties} are as follows:
        multi-page documents) takes on the location and color of the
        main table of contents, instead.}
 
- @item{@racket['no-sidebar] --- As a style for the main part of a
+ @item{@racket['no-sidebar] --- As a @tech{style property} for the main part of a
        document, causes the HTML output to not include an ``on this 
        page'' margin box.}
 
@@ -434,7 +434,7 @@ The recognized @tech{style properties} are as follows:
        @racket[""] to suppress a date in an output document.}
 
   @item{@racket[body-id] structure --- Generated HTML uses the given
-        string @tt{id} attribute of the @tt{<body>} tag; this style can
+        string @tt{id} attribute of the @tt{<body>} tag; this @tech{style property} can
         be set separately for parts that start different HTML pages,
         otherwise it is effectively inherited by sub-parts; the
         default is @racket["scribble-racket-lang.org"], but
@@ -483,7 +483,7 @@ recognized:
  @item{@racket['pretitle] --- Typeset before the title of the
        enclosing part.}
 
- @item{@racket['wraps] --- Like a @racket[#f] style name, but not
+ @item{@racket['wraps] --- Like a @racket[#f] @tech{style name}, but not
        @tech{boxable} in the sense of @racket[box-mode] for Latex output.}
 
 ]
@@ -496,7 +496,7 @@ The currently recognized @tech{style properties} are as follows:
 @itemize[
 
  @item{@racket['omitable] --- When a table cell contains a single
-       @racket[paragraph] with the @racket['omitable] style property,
+       @racket[paragraph] with the @racket['omitable] @tech{style property},
        then when rendering to HTML, no @tt{<p>} tag wraps the cell
        content.}
 
