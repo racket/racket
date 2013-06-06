@@ -809,7 +809,7 @@ the @racket[_float] type.
 @racketblock[
 (define-fun-syntax _float*
   (syntax-id-rules (_float*)
-    [(_float*) (type: _float pre: (x => (+ 0.0 x)))]))
+    [_float* (type: _float pre: (x => (+ 0.0 x)))]))
 
 (_fun _float* ->> _bool)]}
 
