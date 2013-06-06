@@ -131,6 +131,8 @@
                   #'(op.unsafe n1.opt n2.opt)))
 
   (pattern (#%plain-app (~and op (~literal -)) f:fixnum-expr)
+           ;; Invalid for `(- <most-negative-fixnum>)'.
+           #:when (subtypeof? #'f -NonNegFixnum)
            #:with opt
            (begin (log-optimization "unary fixnum" fixnum-opt-msg this-syntax)
                   (add-disappeared-use #'op)
