@@ -88,6 +88,11 @@ to the wrong number of arguments, the resulting error hides the first
 argument as if the procedure had been compiled with the
 @indexed-racket['method-arity-error] syntax property.}
 
+@defproc[(procedure-closure-contents-eq? [proc1 procedure?]
+                                         [proc2 procedure?]) boolean?]{
+Compares the contents of the closures of @racket[proc1] and @racket[proc2]
+for equality by comparing closure elements pointwise using @racket[eq?]}
+
 @; ----------------------------------------
 @section{Keywords and Arity}
 
