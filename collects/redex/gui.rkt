@@ -43,7 +43,9 @@
                #:edge-label-font (or/c #f (is-a?/c font%))
                #:edge-labels? boolean?
                #:filter (-> any/c (or/c #f string?) any/c)
-               #:graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>))
+               #:graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>)
+               #:reduce (-> reduction-relation? any/c
+                            (listof (list/c (or/c false/c string?) any/c))))
               any)]
  [traces/ps (->* (reduction-relation?
                   any/c
@@ -61,6 +63,8 @@
                   #:edge-labels? boolean?
                   #:filter (-> any/c (or/c #f string?) any/c)
                   #:graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>)
+                  #:reduce (-> reduction-relation? any/c
+                               (listof (list/c (or/c false/c string?) any/c)))
                   #:post-process (-> (is-a?/c graph-pasteboard<%>) any/c))
                  any)]
  

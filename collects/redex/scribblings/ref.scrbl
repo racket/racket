@@ -2099,6 +2099,8 @@ exploring reduction sequences.
 @defproc[(traces [reductions reduction-relation?] 
                  [expr (or/c any/c (listof any/c))]
                  [#:multiple? multiple? boolean? #f]
+                 [#:reduce reduce (-> reduction-relation? any/c
+                                      (listof (list/c (union false/c string?) any/c))) apply-reduction-relation/tag-with-names]
                  [#:pred pred
                          (or/c (-> sexp any)
                                (-> sexp term-node? any))
@@ -2132,6 +2134,12 @@ expression). Then, it reduces the terms until at least
 found, or no more reductions can occur. It inserts each new
 term into the gui. Clicking the @onscreen{reduce} button reduces
 until @racket[reduction-steps-cutoff] more terms are found.
+
+The @racket[reduce] function applies the reduction relation to the terms.
+By default, it is @racket[apply-reduction-relation/tag-with-names];
+it may be changed to only return a subset of the possible reductions,
+for example, but it must satisfy the same contract as
+@racket[apply-reduction-relation/tag-with-names].
 
 The @racket[pred] function indicates if a term has a particular
 property. If it returns @racket[#f], the term is displayed with a
@@ -2278,6 +2286,8 @@ traces window instead of just the numbers.
                     [expr (or/c any/c (listof any/c))]
                     [file (or/c path-string? path?)]
                     [#:multiple? multiple? boolean? #f]
+                    [#:reduce reduce (-> reduction-relation? any/c
+                                         (listof (list/c (union false/c string?) any/c))) apply-reduction-relation/tag-with-names]
                     [#:pred pred
                             (or/c (-> sexp any)
                                   (-> sexp term-node? any))

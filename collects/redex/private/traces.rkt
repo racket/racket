@@ -141,7 +141,8 @@
                    #:filter [term-filter (lambda (x y) #t)]
                    #:post-process [post-process void]
                    #:x-spacing [x-spacing default-x-spacing]
-                   #:y-spacing [y-spacing default-x-spacing])
+                   #:y-spacing [y-spacing default-x-spacing]
+                   #:reduce [reduce apply-reduction-relation/tag-with-names])
   (let-values ([(graph-pb canvas)
                 (traces reductions pre-exprs
                         #:no-show-frame? #t
@@ -157,7 +158,8 @@
                         #:graph-pasteboard-mixin extra-graph-pasteboard-mixin
                         #:filter term-filter
                         #:x-spacing x-spacing
-                        #:y-spacing y-spacing)])
+                        #:y-spacing y-spacing
+                        #:reduce reduce)])
     (post-process graph-pb)
     (print-to-ps graph-pb canvas filename)))
 
@@ -252,7 +254,8 @@
                 #:graph-pasteboard-mixin [extra-graph-pasteboard-mixin values]
                 #:no-show-frame? [no-show-frame? #f]
                 #:x-spacing [x-spacing default-x-spacing]
-                #:y-spacing [y-spacing default-y-spacing])
+                #:y-spacing [y-spacing default-y-spacing]
+                #:reduce [reduce apply-reduction-relation/tag-with-names])
   (define exprs (if multiple? pre-exprs (list pre-exprs)))
   (define main-eventspace (current-eventspace))
   (define saved-parameterization (current-parameterization))
@@ -443,7 +446,7 @@
                                                    (get-user-char-width user-char-width sexp)
                                                    light-arrow-color dark-arrow-color dark-label-color light-label-color
                                                    dark-pen-color light-pen-color)))))))
-                         (apply-reduction-relation/tag-with-names reductions (send snip get-expr))))]
+                         (reduce reductions (send snip get-expr))))]
                   [new-y 
                    (call-on-eventspace-main-thread
                     (lambda () ; =eventspace main thread=
