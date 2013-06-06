@@ -2,7 +2,7 @@
 (require racket/match 
          (for-syntax racket/match
                      racket/base))
-(provide match-a-pattern)
+(provide match-a-pattern wildcard)
 
 #|
 
@@ -22,7 +22,7 @@ a self-reference in the grammar.
   var ::= symbol?     
   condition ::= (-> bindings? any) ;; any is treated like a boolean
 
-Also, the `(cross ,nt) pattern alwyas has hypenated non-terminals, ie
+Also, the `(cross ,nt) pattern always has hypenated non-terminals, ie
 (cross e) in the source turns into (cross e-e) after translation (which
 means that the other cross non-terminals, e.g. (cross e-v), are not
 directly available as redex patterns, but can only be used via the
@@ -72,11 +72,14 @@ turns into this:
 
 |#
 
+(define wildcard '_)
+
 (define-syntax (match-a-pattern stx)
-  (define (check-pats pats allow-else?)
+  (define (check-pats pats allow-else? allow-wc-name?)
     (let ()
       (define should-be-pats
         (append '(`any
+                  `_ ;; wildcard
                   `number
                   `string
                   `natural
@@ -88,8 +91,11 @@ turns into this:
                   `(variable-prefix ,var)
                   `variable-not-otherwise-mentioned
                   `hole
-                  `(nt ,var)
-                  `(name ,var ,pat)
+                  `(nt ,var))
+                (if allow-wc-name?
+                    (list '`(name ,var _))
+                    (list))
+                '(`(name ,var ,pat)
                   `(mismatch-name ,var ,pat)
                   `(in-hole ,pat ,pat) ;; context, then contractum
                   `(hide-hole ,pat)
@@ -129,12 +135,20 @@ turns into this:
                             (format "did not find pattern ~s"
                                     (car should-be-pats))
                             stx))))
+  (define (do to-match pats rhss allow-else? allow-wc-name?)
+    (let ()
+       (check-pats (syntax->list pats) allow-else? allow-wc-name?)
+       (with-syntax ([(pats ...) pats]
+                     [((rhs ...) ...) rhss])
+         #`(match #,to-match [pats rhs ...] ...))))
   (syntax-case stx ()
+    [(_ #:allow-else #:allow-wc-name to-match [pats rhs ...] ...)
+     (do #'to-match #'(pats ...) #'((rhs ...) ...) #t #t)]
+    [(_ #:allow-wc-name #:allow-else to-match [pats rhs ...] ...)
+     (do #'to-match #'(pats ...) #'((rhs ...) ...) #t #t)]
+    [(_ #:allow-wc-name to-match [pats rhs ...] ...)
+     (do #'to-match #'(pats ...) #'((rhs ...) ...) #f #t)]
     [(_ #:allow-else to-match [pats rhs ...] ...)
-     (let ()
-       (check-pats (syntax->list #'(pats ...)) #t)
-       #'(match to-match [pats rhs ...] ...))]
+     (do #'to-match #'(pats ...) #'((rhs ...) ...) #t #f)]
     [(_ to-match [pats rhs ...] ...)
-     (let ()
-       (check-pats (syntax->list #'(pats ...)) #f)
-       #'(match to-match [pats rhs ...] ...))]))
+     (do #'to-match #'(pats ...) #'((rhs ...) ...) #f #f)]))

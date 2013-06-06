@@ -283,8 +283,9 @@
         (define (build-mismatch var) 
           (set! mismatch-id (+ mismatch-id 1))
           (make-mismatch mismatch-id var))
-        (match-a-pattern pat
+        (match-a-pattern #:allow-wc-name pat
           [`any (values pat '())]
+          [`_ (values pat '())]
           [`number (values pat '())]
           [`string (values pat '())]
           [`natural (values pat '())]
@@ -297,6 +298,7 @@
           [`variable-not-otherwise-mentioned (values pat '())]
           [`hole (values pat '())]
           [`(nt ,x) (values pat '())]
+          [`(name ,name _) (values '_ '())]
           [`(name ,name ,p) 
            (define-values (p-rewritten p-names) (loop p))
            (add/ret `(name ,name ,p-rewritten) (cons name p-names))]
@@ -367,6 +369,7 @@
                    (let*-values ([(lang nt) ((next-any-decision) langc sexpc)]
                                  [(term) (gen-nt lang nt #f r s a the-not-hole)])
                      (values term e)))]
+                [`_ (recur `any)]
                 [`number (generator/attempts (λ (a) ((next-number-decision) a)))]
                 [`string (generator/attempts (λ (a) ((next-string-decision) lits a)))]
                 [`natural (generator/attempts (λ (a) ((next-natural-decision) a)))]
@@ -524,6 +527,7 @@
       (let loop ([pat pat])
         (match-a-pattern pat
           [`any (void)]
+          [`_ (void)]
           [`number (void)]
           [`string (void)]
           [`natural (void)]
@@ -687,6 +691,7 @@
     (let recur ([pat pattern] [under null])
       (match-a-pattern pat
                        [`any assignments]
+                       [`_ assignments]
                        [`number assignments]
                        [`string assignments]
                        [`natural assignments]

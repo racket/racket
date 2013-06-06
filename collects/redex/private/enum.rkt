@@ -86,6 +86,7 @@
              (match-a-pattern
               pat
               [`any s]
+              [`_ s]
               [`number s]
               [`string s]
               [`natural s]
@@ -147,6 +148,7 @@
     (match-a-pattern
      pat
      [`any #f]
+     [`_ #f]
      [`number #f]
      [`string #f]
      [`natural #f]
@@ -277,9 +279,10 @@
 (define (sep-names pat)
   (let loop ([pat pat]
              [named-pats empty-named-pats])
-    (match-a-pattern
+    (match-a-pattern #:allow-wc-name
      pat
      [`any named-pats]
+     [`_ named-pats]
      [`number named-pats]
      [`string named-pats]
      [`natural named-pats]
@@ -293,6 +296,7 @@
      [`hole named-pats]
      ;; names inside nts are separate
      [`(nt ,id) named-pats]
+     [`(name ,n _) named-pats] ;; Don't name wildcards!
      [`(name ,n ,pat)
       (loop pat
             (add-named n pat named-pats))]
@@ -479,6 +483,7 @@
       (sum/enum
        any/enum
        (listof/enum any/enum))]
+     [`_ (loop `any)]
      [`number num/enum]
      [`string string/enum]
      [`natural natural/enum]

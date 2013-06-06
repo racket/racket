@@ -255,6 +255,7 @@ See match-a-pattern.rkt for more details
   (let loop ([pat pat])
     (match-a-pattern pat
       [`any (void)]
+      [`_ (void)]
       [`number (void)]
       [`string (void)]
       [`natural (void)]
@@ -295,6 +296,7 @@ See match-a-pattern.rkt for more details
   (let loop ([pat pat])
     (match-a-pattern pat
       [`any pat]
+      [`_ pat]
       [`number pat]
       [`string pat]
       [`natural pat]
@@ -332,6 +334,7 @@ See match-a-pattern.rkt for more details
      (let loop ([pattern pattern])
        (match-a-pattern pattern
          [`any #f]
+         [`_ #f]
          [`number #f]
          [`string #f]
          [`natural #f]
@@ -475,6 +478,7 @@ See match-a-pattern.rkt for more details
          (values pattern #f))
        (match-a-pattern pattern
          [`any untouched-pattern]
+         [`_ untouched-pattern]
          [`number untouched-pattern]
          [`string untouched-pattern]
          [`natural untouched-pattern]
@@ -581,6 +585,7 @@ See match-a-pattern.rkt for more details
   (let loop ([pattern pattern])
     (match-a-pattern pattern
       [`any #t]
+      [`_ #t]
       [`number #f]
       [`string #f]
       [`natural #f]
@@ -616,6 +621,7 @@ See match-a-pattern.rkt for more details
   (let loop ([pattern pattern])
     (match-a-pattern pattern
       [`any #t]
+      [`_ #t]
       [`number #t]
       [`string #t]
       [`natural #t]
@@ -778,6 +784,7 @@ See match-a-pattern.rkt for more details
   (define (true-compile-pattern pattern)
     (match-a-pattern pattern
       [`any (simple-match (λ (x) #t))]
+      [`_ (simple-match (λ (x) #t))]
       [`number (simple-match number?)]
       [`string (simple-match string?)]
       [`natural (simple-match exact-nonnegative-integer?)]
@@ -824,6 +831,7 @@ See match-a-pattern.rkt for more details
         has-hole?
         #f
         '())]
+      ;; IAN: LOOK
       [`(name ,name ,pat)
        (define-values (match-pat has-hole? has-hide-hole? names) 
          (parameterize ([in-name-parameter #t])
@@ -1829,8 +1837,9 @@ See match-a-pattern.rkt for more details
 (define (extract-empty-bindings pattern)
   (let loop ([pattern pattern]
              [ribs null])
-    (match-a-pattern pattern
+    (match-a-pattern #:allow-wc-name pattern
       [`any ribs]
+      [`_ ribs]
       [`number ribs]
       [`string ribs]
       [`natural ribs]
@@ -1844,6 +1853,7 @@ See match-a-pattern.rkt for more details
       
       [`hole ribs]
       [`(nt ,nt) ribs]
+      [`(name ,name _) ribs] ;; Don't bind wildcards!
       [`(name ,name ,pat)
        (cons (make-bind name '()) (loop pat ribs))]
       [`(mismatch-name ,name ,pat) 

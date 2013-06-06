@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require (for-template racket/base "defined-checks.rkt"))
+(require (for-template racket/base "defined-checks.rkt")
+         "match-a-pattern.rkt")
 (provide make-term-fn
          term-fn?
          term-fn-get-id
@@ -73,8 +74,8 @@
     (language-id-get (set!-transformer-procedure val) n)))
 (define (language-id-nt-identifiers stx id) (language-id-getter stx id 2))
 
-(define pattern-symbols '(any number natural integer real string variable 
-                              variable-not-otherwise-mentioned hole symbol))
+(define pattern-symbols `(any number natural integer real string variable 
+                              variable-not-otherwise-mentioned hole symbol ,wildcard))
 
 (define-values (struct:metafunc-proc make-metafunc-proc metafunc-proc? metafunc-proc-ref metafunc-proc-set!)
   (make-struct-type 'metafunc-proc #f 10 0 #f null (current-inspector) 0))

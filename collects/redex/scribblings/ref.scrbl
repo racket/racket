@@ -100,7 +100,8 @@ references are wrapped with angle brackets; otherwise identifiers
 in the grammar are terminals.
 
 @(racketgrammar* #;#:literals #;(any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole hide-hole name in-hole side-condition cross) 
-   [pattern any 
+   [pattern any
+            _
             number 
             natural
             integer
@@ -132,6 +133,11 @@ This @pattern may also be suffixed with an underscore and another
 identifier, in which case they bind the full name (as if it
 were an implicit @pattech[name] @pattern) and match the portion
 before the underscore.
+}
+
+@item{The @defpattech[any] @pattern matches any sexpression but does
+not bind, even when wrapped in @pattech[name].  This @pattern may not
+be suffixed.
 }
 
 @item{The @defpattech[number] @pattern matches any number.
@@ -230,7 +236,7 @@ example, this @|pattern|:
 matches lists of three @tt{e}s, but where all three of them are
 distinct.
 
-Unlike a @tt{_} @|pattern|, the @tt{_!_} @|pattern|s do not bind names.
+Unlike a symbol @tt{_} symbol @|pattern|, the @tt{_!_} @|pattern|s do not bind names.
 
 If @tt{_} names and @tt{_!_} are mixed, they are treated as
 separate. That is, this @pattern @tt{(e_1 e_!_1)} matches just the
@@ -265,7 +271,7 @@ matches what the embedded @ttpattern matches, and then the guard
 expression is evaluated. If it returns @racket[#f], the @pattern fails
 to match, and if it returns anything else, the @pattern matches. Any
 occurrences of @racket[name] in the @pattern (including those implicitly
-there via @tt{_} pattersn) are bound using @racket[term-let] in the
+there via @tt{_} patterns) are bound using @racket[term-let] in the
 guard. 
 }
 
