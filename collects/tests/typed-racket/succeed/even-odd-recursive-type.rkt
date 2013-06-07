@@ -1,5 +1,7 @@
 #lang racket
 
+(require rackunit)
+
 (module num-even/odd typed/racket
   (define-type Even (U Null (Pairof Number Odd)))
   (define-type Odd (Pairof Number Even))
@@ -40,7 +42,31 @@
 
     (cons 3 even-lst)))
 
-(require 'num-even/odd)
-(require 'poly-even/odd)
-(require 'let-even/odd)
+(module even/odd* typed/racket
+  ;; weird variant that alternates types between
+  ;; Even and Odd
+  (define-type (Even A B) (U Null (Pairof A (Odd A B))))
+  (define-type (Odd A B) (Pairof B (Even A B)))
+
+  (: even-lst (Even Integer String))
+  (define even-lst '(1 "b" 3 "a"))
+
+  (: odd-lst (Odd Integer String))
+  (define odd-lst '("b" 2 "a"))
+
+  ;; specialized for more interesting contract
+  (: even->odd (String (Even Integer String) -> (Odd Integer String)))
+  (define (even->odd elem lst) (cons elem lst))
+
+  (provide even-lst odd-lst even->odd))
+
+(require (prefix-in a: 'num-even/odd))
+(require (prefix-in b: 'poly-even/odd))
+(require (prefix-in c: 'let-even/odd))
+(require (prefix-in d: 'even/odd*))
+
+;; make sure contract generation on even/odd* worked
+(cons 3 d:odd-lst)
+(check-equal? (d:even->odd "c" d:even-lst) '("c" 1 "b" 3 "a"))
+(check-exn exn:fail:contract? (λ () (d:even->odd 1 d:even-lst)))
 

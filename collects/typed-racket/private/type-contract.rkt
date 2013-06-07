@@ -282,10 +282,11 @@
            (define kind (contract-kind->keyword (current-contract-kind)))
            (cond [args
                   (match-define (Poly: vs b) (resolve-once ty))
-                  (define arg (generate-temporary 'ctc))
-                  (parameterize ([vars (append (for/list ([var vs]) (list var arg))
+                  (define args (generate-temporaries vs))
+                  (parameterize ([vars (append (for/list ([var vs] [arg args])
+                                                 (list var arg))
                                                (vars))])
-                    #`(λ (#,arg) (recursive-contract #,(t->c/both b) #,kind)))]
+                    #`(λ (#,@args) (recursive-contract #,(t->c/both b) #,kind)))]
                  [else #`(recursive-contract
                           #,(t->c/both (resolve-once ty))
                           #,kind)]))
