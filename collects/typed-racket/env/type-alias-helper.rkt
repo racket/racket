@@ -224,6 +224,15 @@
                #:unless (has-self-cycle? component))
       (car component)))
 
+  ;; Register non-recursive type aliases
+  ;;
+  ;; Note that the connected component algorithm returns results
+  ;; in topologically sorted order, so we want to go through in the
+  ;; reverse order of that to avoid unbound type aliases.
+  (for ([id (reverse acyclic-singletons)])
+    (define type-stx (cadr (dict-ref type-alias-map id)))
+    (register-resolved-type-alias id (parse-type type-stx)))
+
   ;; Actually register recursive type aliases
   (for ([(id record) (in-dict type-alias-map)]
         #:unless (member id acyclic-singletons))
@@ -246,16 +255,7 @@
                       maybe-type-params])
         (parse-type type-stx)))
     (register-resolved-type-alias rec-name type)
-    (check-type-alias-contractive id type))
-
-  ;; Register non-recursive type aliases
-  ;;
-  ;; Note that the connected component algorithm returns results
-  ;; in topologically sorted order, so we want to go through in the
-  ;; reverse order of that to avoid unbound type aliases.
-  (for ([id (reverse acyclic-singletons)])
-    (define type-stx (cadr (dict-ref type-alias-map id)))
-    (register-resolved-type-alias id (parse-type type-stx))))
+    (check-type-alias-contractive id type)))
 
 ;; Syntax -> Syntax Syntax Syntax Option<Integer>
 ;; Parse a type alias internal declaration
