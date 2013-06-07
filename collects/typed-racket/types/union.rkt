@@ -3,9 +3,10 @@
 (require "../utils/utils.rkt"
          (rep type-rep)
          (prefix-in c: (contract-req))
-         (types subtype base-abbrev)
+         (types subtype base-abbrev resolve)
          racket/match
-         racket/list)
+         racket/list
+         (only-in unstable/match match*?))
 
 
 (provide/cond-contract
@@ -24,6 +25,15 @@
 (define (merge a b)
   (define b* (make-union* b))
   (cond
+    ;; If a union element is a Name application, then it should not
+    ;; be checked for subtyping since that can cause infinite
+    ;; loops if this is called during type instantiation.
+    [(match*? (a b) ((App: (? Name?) _ _) b))
+     (match-define (App: rator rands stx) a)
+     ;; However, we should check if it's a well-formed application
+     ;; so that bad applications are rejected early.
+     (resolve-app-check-error rator rands stx)
+     (cons a b)]
     [(subtype a b*) b]
     [(subtype b* a) (list a)]
     [else (cons a b)]))
