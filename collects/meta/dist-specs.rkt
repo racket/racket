@@ -491,6 +491,9 @@ mz-extras :+= (package: "trace")
 ;; -------------------- profile
 mz-extras :+= (package: "profile")
 
+;; -------------------- contract profile
+plt-extras :+= (package: "contract-profile")
+
 ;; -------------------- specific file format libraries
 mz-extras :+= (package: "file")
 
