@@ -53,7 +53,9 @@
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
     [(RecName: stx orig-id deps args)
      `(make-RecName (quote-syntax ,stx) (quote-syntax ,orig-id)
-                    (quote-syntax ,deps) (quote-syntax ,args))]
+                    (list ,@(map (λ (x) `(quote-syntax ,x)) deps))
+                    ,(and args
+                          `(list ,@(map (λ (x) `(quote-syntax ,x)) args))))]
     [(fld: t acc mut) `(make-fld ,(sub t) (quote-syntax ,acc) ,mut)]
     [(Struct: name parent flds proc poly? pred-id)
      `(make-Struct (quote-syntax ,name) ,(sub parent)
