@@ -215,7 +215,7 @@
                 (define prefix-stx (datum->syntax term prefix-sym))
                 (define mismatch? (regexp-match? #rx"^!_" suffix))
                 (cond
-                  [(eq? prefix-sym '||) (values #'any '())]
+                  [(and (eq? prefix-sym '||) (eq? suffix-sym '||)) (values #'any '())]
                   [(eq? prefix-sym '...)
                    (raise-syntax-error 
                     what
