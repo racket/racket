@@ -215,6 +215,7 @@
                 (define prefix-stx (datum->syntax term prefix-sym))
                 (define mismatch? (regexp-match? #rx"^!_" suffix))
                 (cond
+                  [(eq? prefix-sym '||) (values #'any '())]
                   [(eq? prefix-sym '...)
                    (raise-syntax-error 
                     what
@@ -410,8 +411,7 @@
            (define id-in-multiple-places/f
              (for/or ([mismatch-id (in-list (car all-mismatch-idss))])
                (for/or ([other-mismatch-ids (in-list (cdr all-mismatch-idss))])
-                 (and (member mismatch-id other-mismatch-ids)
-                      mismatch-id))))
+                 (and (member mismatch-id other-mismatch-ids) mismatch-id))))
            (when id-in-multiple-places/f
              (raise-syntax-error what 
                                  (format "~a appears under ~a in multiple places (so this pattern would always fail)"
