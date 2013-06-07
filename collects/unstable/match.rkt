@@ -5,7 +5,7 @@
          (for-syntax racket/base)
          (for-syntax syntax/parse))
 
-(provide match? as object)
+(provide match? match*? as object)
 
 (define-syntax-rule (match? e p ...)
   (match e [p #t] ... [_ #f]))
@@ -13,6 +13,14 @@
 (define-match-expander as
   (syntax-rules ()
     [(as ([x e] ...) p ...) (and (app (lambda (y) e) x) ... p ...)]))
+
+;; Added by asumu
+;; Like match? but with match*
+(define-syntax (match*? stx)
+  (syntax-parse stx
+   [(_ (e ...) (p ...) ...)
+    (with-syntax ([(?_ ...) (generate-temporaries #'(e ...))])
+     #'(match* (e ...) [(p ...) #t] ... [(?_ ...) #f]))]))
 
 ;; Added by asumu
 ;; Match expander for objects from racket/class

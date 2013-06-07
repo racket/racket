@@ -48,6 +48,25 @@ result value of @racket[rhs-expr], and continues matching each subsequent
 
 @addition[@author+email["Asumu Takikawa" "asumu@racket-lang.org"]]
 
+@defform[(match*? (val-expr ...) (pat ...) ...)]{
+
+Similar to @racket[match?], but uses @racket[match*] and accepts
+multiple @racket[val-expr] and corresponding @racket[pat] in each
+clause to match on.
+
+@defexamples[
+#:eval the-eval
+(match*? (1 2 3)
+  (a b c)
+  (x #f z))
+(match*? (1 2 3)
+  (a (? odd?) c)
+  (x y z))
+(match*? (#f #f #f)
+  (1 2 3)
+  (4 5 6))
+]}
+
 @defform/subs[
   (define/match (head args)
     match*-clause ...)
