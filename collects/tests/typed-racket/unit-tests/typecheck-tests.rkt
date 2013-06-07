@@ -1086,6 +1086,7 @@
         (tc-e (symbol-interned? (string->unreadable-symbol "bar")) B)
         (tc-e (symbol-interned? (string->uninterned-symbol "bar")) B)
         (tc-e (symbol-interned? (gensym 'foo)) B)
+        (tc-e (symbol-interned? (gensym "foo")) B)
 
         (tc-e (symbol-unreadable? (gensym)) B)
         (tc-e (symbol-unreadable? 'foo) B)
