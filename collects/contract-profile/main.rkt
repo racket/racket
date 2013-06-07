@@ -3,9 +3,8 @@
 (require racket/list unstable/list racket/match racket/set racket/format
          racket/contract
          (only-in racket/contract/private/guts contract-continuation-mark-key)
-         "sampler.rkt" "utils.rkt" "analyzer.rkt"
-         "contract-profiler/dot.rkt" "contract-profiler/utils.rkt"
-         "contract-profiler/boundary-view.rkt")
+         profile/sampler profile/utils profile/analyzer
+         "dot.rkt" "utils.rkt" "boundary-view.rkt")
 
 ;; (listof (U blame? #f)) profile-samples -> contract-profile struct
 (define (correlate-contract-samples contract-samples samples*)

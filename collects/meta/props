@@ -676,6 +676,7 @@ path/s is either such a string or a list of them.
 "collects/compiler/demodularizer" responsible (jay)
 "collects/compiler/demodularizer/batch.rkt" drdr:command-line #f
 "collects/config" responsible (mflatt eli)
+"collects/contract-profile" responsible (stamourv)
 "collects/data" responsible (ryanc samth)
 "collects/datalog" responsible (jay)
 "collects/db" responsible (ryanc)

@@ -23,4 +23,3 @@ limits.
 @include-section["sampler.scrbl"]
 @include-section["analyzer.scrbl"]
 @include-section["renderers.scrbl"]
-@include-section["contract-profile.scrbl"]

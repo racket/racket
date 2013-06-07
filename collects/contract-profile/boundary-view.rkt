@@ -2,7 +2,7 @@
 
 (require racket/list unstable/list racket/match racket/contract racket/string
          racket/set racket/dict
-         "../structs.rkt" "../utils.rkt"
+         profile/structs profile/utils
          "utils.rkt" "dot.rkt")
 
 (provide boundary-view)

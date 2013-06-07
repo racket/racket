@@ -1,13 +1,13 @@
 #lang scribble/doc
 
 @(require scribble/manual
-          (for-label racket/base racket/contract profile/analyzer))
+          (for-label racket/base racket/contract))
 
 @title[#:tag "contract-profiling"]{Contract Profiling}
 
 @defmodule[profile/contract-profile]
 
-This modules provides experimental support for contract profiling.
+This module provides experimental support for contract profiling.
 
 @defform[(contract-profile body ...)]{
 
