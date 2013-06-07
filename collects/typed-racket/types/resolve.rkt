@@ -30,7 +30,6 @@
   (match t
     [(Name: n) (let ([t (lookup-type-name n)])
                  (if (Type/c? t) t #f))]
-    [(RecName: n _ _ _) (lookup-type-alias n values)]
     [_ (int-err "resolve-name: not a name ~a" t)]))
 
 (define already-resolving? (make-parameter #f))
@@ -81,13 +80,16 @@
               ;; recursion is as difficult as equivalence of DPDAs[2], which is
               ;; known to be decidable[3], but good algorithms may not exist.
               ;;
-              ;; [1]: Fritz Henglein. "Type inference with polymorphic recursion"
-              ;;      TOPLAS 1993
-              ;; [2]: Marvin Solomon. "Type definitions with parameters"
-              ;;      POPL 1978
-              ;; [3]: Geraud Senizergues. "L(A)=L(B)? decidability results from complete formal systems"
-              ;;      TCS 2001.
+              ;; [1] Fritz Henglein. "Type inference with polymorphic recursion"
+              ;;     TOPLAS 1993
+              ;; [2] Marvin Solomon. "Type definitions with parameters"
+              ;;     POPL 1978
+              ;; [3] Geraud Senizergues.
+              ;;     "L(A)=L(B)? decidability results from complete formal systems"
+              ;;     TCS 2001.
               ;;
+              ;; check-argument : Type Id -> Void
+              ;; Check argument to make sure there's no polymorphic recursion
               (define (check-argument given-type arg-name)
                 (define ok?
                   (if (F? given-type)
@@ -115,7 +117,7 @@
       [(Name: _)
        (let ([r (resolve-name rator)])
          (and r (resolve-app r rands stx)))]
-      [(RecName: _ _ _ _) (resolve-app (resolve-name rator) rands stx)]
+      [(RecName: _ _ _ _) (resolve-app (resolve-once rator) rands stx)]
       [(Poly: _ _) (instantiate-poly rator rands)]
       [(Mu: _ _) (resolve-app (unfold rator) rands stx)]
       [(App: r r* s) (resolve-app (resolve-app r r* s) rands stx)]
@@ -136,7 +138,7 @@
                   [(App: r r* s)
                    (resolve-app r r* s)]
                   [(Name: _) (resolve-name t)]
-                  [(RecName: _ _ _ _) (resolve-name t)])])
+                  [(RecName: n _ _ _) (lookup-type-alias n values)])])
         (when (and r* (not (currently-subtyping?)))
           (hash-set! resolver-cache seq r*))
         r*)))

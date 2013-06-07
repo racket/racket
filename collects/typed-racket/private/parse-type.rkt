@@ -33,6 +33,10 @@
 ;; current-referenced-aliases : Parameter<Option<Box<List<Id>>>>
 ;; This parameter is used to coordinate with the type-checker to determine
 ;; if a type alias should be recursive or not
+;;
+;; interp. the argument is #f if not checking for type aliases.
+;;         Otherwise, it should be a box containing a list of
+;;         identifiers (i.e., type aliases in the syntax)
 (define current-referenced-aliases (make-parameter #f))
 
 ;; (Syntax -> Type) -> Syntax Any -> Syntax

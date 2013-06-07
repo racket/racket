@@ -275,9 +275,10 @@
         ;; possibly in mutual recursion. The contract will recur
         ;; on all dependencies as a conservative approximation.
         [(RecName: stx _ deps args)
-         ;; -> Type
-         ;; Construct the type for the recursion
-         (define (make-recname-type ty)
+         ;; Type -> Syntax
+         ;; Construct a contract function that corresponds to
+         ;; a type operator, where the argument to the function
+         (define (make-recname-ctc ty)
            (define kind (contract-kind->keyword (current-contract-kind)))
            (cond [args
                   (match-define (Poly: vs b) (resolve-once ty))
@@ -289,7 +290,9 @@
                           #,(t->c/both (resolve-once ty))
                           #,kind)]))
          (define n (syntax-e stx))
-         (cond [(assoc n (vars)) => second]
+         (cond [;; When this is a recursive reference, just use
+                ;; the identifier stored in the environment.
+                (assoc n (vars)) => second]
                [else
                 (define/with-syntax (n* dep ...)
                   (generate-temporaries (cons n deps)))
@@ -298,7 +301,10 @@
                                              (vars))]
                                [current-contract-kind
                                 (contract-kind-min kind chaperone-sym)])
-                  (define ctc (make-recname-type ty))
+                  ;; Construct contracts for each of the other type
+                  ;; aliases that are depended on by the current type
+                  ;; alias to establish the mutual recursion.
+                  (define ctc (make-recname-ctc ty))
                   (define dep-resolved
                     (for/list ([dep deps])
                       (define type (lookup-type-alias dep values))

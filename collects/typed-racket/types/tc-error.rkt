@@ -39,5 +39,5 @@
   (tc-error/expr "~a is not bound as a type" (syntax-e i)))
 
 (define (lookup-variance-fail i)
-  (tc-error/stx i "~a is bound but missing a variance" (syntax-e i)))
+  (int-err "~a is bound but missing a variance" (syntax-e i)))
 

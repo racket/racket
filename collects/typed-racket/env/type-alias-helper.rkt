@@ -142,7 +142,7 @@
                    (list (list #'a) (list #'b) (list #'c)
                          (list #'e) (list #'f) (list #'d))))
 
-;; check-recursive-type-alias : Id Type -> Void
+;; check-type-alias-contractive : Id Type -> Void
 ;;
 ;; This function checks if the given type alias is
 ;; "contractive" or "productive"
