@@ -251,10 +251,11 @@
       [_ (values stx 0)]))
   
   (define (check-id id stx)
-    (when lang-nts
+    (when (and lang-nts (not (eq? id '_)))
       (define m (regexp-match #rx"^([^_]*)_" (symbol->string id)))
       (when m
-        (unless (memq (string->symbol (list-ref m 1)) (append pattern-symbols lang-nts))
+        (unless (let ([pre (string->symbol (list-ref m 1))])
+                  (or (memq pre pattern-symbols) (memq pre lang-nts)))
           (raise-syntax-error 'term "before underscore must be either a non-terminal or a built-in pattern" arg-stx stx)))))
   
   (values
