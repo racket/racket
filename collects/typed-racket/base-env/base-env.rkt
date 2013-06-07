@@ -389,7 +389,7 @@
 [string->symbol (-String . -> . Sym)]
 [string->uninterned-symbol (-String . -> . Sym)]
 [string->unreadable-symbol (-String . -> . Sym)]
-[gensym (->opt [Sym] Sym)]
+[gensym (->opt [(Un Sym -String)] Sym)]
 
 
 
