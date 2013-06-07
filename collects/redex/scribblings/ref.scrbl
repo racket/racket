@@ -101,6 +101,7 @@ in the grammar are terminals.
 
 @(racketgrammar* #;#:literals #;(any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole hide-hole name in-hole side-condition cross) 
    [pattern any 
+            _
             number 
             natural
             integer
@@ -132,6 +133,10 @@ This @pattern may also be suffixed with an underscore and another
 identifier, in which case they bind the full name (as if it
 were an implicit @pattech[name] @pattern) and match the portion
 before the underscore.
+}
+
+@item{The @defpattech[_] @pattern matches any sexpression,
+but does not bind $pattech[_] as a name, nor can it be suffixed to bind a name.
 }
 
 @item{The @defpattech[number] @pattern matches any number.
