@@ -213,8 +213,10 @@
                 (define suffix-sym (string->symbol suffix))
                 (define prefix-sym (string->symbol prefix))
                 (define prefix-stx (datum->syntax term prefix-sym))
-                (define mismatch? (regexp-match? #rx"^!_" suffix))
+                (define mismatch? (regexp-match? #rx"^!_" suffix)) ;; As in e_!_
                 (cond
+                 [(eq? (syntax-e term) '_)
+                   (values `_ (list))]
                   [(eq? prefix-sym '...)
                    (raise-syntax-error 
                     what

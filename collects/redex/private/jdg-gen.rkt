@@ -7,6 +7,7 @@
          (only-in "reduction-semantics.rkt"
                   do-test-match)
          "pat-unify.rkt"
+         "match-a-pattern.rkt"
          (for-syntax racket/base))
 
 (provide pat->term
@@ -68,7 +69,7 @@
                             (and/fail (for/and ([nt (remove nt-pat all-nts)])
                                         ((get-matcher nt) term))
                                       term))]
-           [`any
+           [(or `any (== wildcard eq?))
             (for/not-failed ([nt-pat nts])
                             (define term (recur `(nt ,nt-pat)))
                             (and/fail (for/and ([nt (remove nt-pat nts)])

@@ -1079,6 +1079,7 @@
                 ((list (name z ,(bound)) (name y ,(bound)))
                  . (list 5 4)))
               #t)
+(test-unify `_ 5 '() '() #t)
 
 ;; mismatch-name
 (test-unify `(list (name a any) foo)

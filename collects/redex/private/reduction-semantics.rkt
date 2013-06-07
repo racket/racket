@@ -694,6 +694,7 @@
                            (syntax lhs-arrow) 
                            name-table lang-id 
                            allow-zero-rules?))))]))
+
     (define (rewrite-node-pat id term)
       (let loop ([t term])
         (syntax-case t (side-condition)
@@ -912,36 +913,29 @@
      (λ (lang-id)
        (let ([cp (compile-pattern lang-id side-conditions-rewritten #t)])
          (λ (main-exp exp f other-matches)
-           (let ([mtchs (match-pattern cp exp)])
-             (if mtchs
-                 (let loop ([mtchs mtchs]
-                            [acc other-matches])
-                   (cond
-                     [(null? mtchs) acc]
-                     [else 
-                      (let* ([mtch (car mtchs)]
-                             [bindings (mtch-bindings mtch)]
-                             [really-matched (build-really-matched main-exp bindings)])
-                        (cond
-                          [really-matched
-                           (for-each
-                            (λ (c)
-                              (let ([r (coverage-relation c)])
-                                (when (and (reduction-relation? r)
-                                           (memf (λ (r) (eq? case-id (rewrite-proc-id r)))
-                                                 (reduction-relation-make-procs r)))
-                                  (cover-case case-id c))))
-                            (relation-coverage))
-                           (loop (cdr mtchs) 
-                                 (map/mt (λ (x) (list name
-                                                      (if (none? (car x)) 
-                                                          name
-                                                          (format "~a" (car x)))
-                                                      (f (cdr x)))) 
-                                         really-matched acc))]
-                          [else 
-                           (loop (cdr mtchs) acc)]))]))
-                 other-matches)))))
+            (define mtchs (match-pattern cp exp))
+            (if mtchs
+                (for/fold ([acc other-matches]) ([mtch (in-list mtchs)])
+                  (define bindings (mtch-bindings mtch))
+                  (define really-matched (build-really-matched main-exp bindings))
+                  (cond
+                   [really-matched
+                    (for-each
+                     (λ (c)
+                        (define r (coverage-relation c))
+                        (when (and (reduction-relation? r)
+                                   (memf (λ (r) (eq? case-id (rewrite-proc-id r)))
+                                         (reduction-relation-make-procs r)))
+                          (cover-case case-id c)))
+                     (relation-coverage))
+                    (map/mt (λ (x) (list name
+                                         (if (none? (car x)) 
+                                             name
+                                             (format "~a" (car x)))
+                                         (f (cdr x)))) 
+                            really-matched acc)]
+                   [else acc]))
+                other-matches))))
      name
      lhs-w/extras-proc
      lhs-source

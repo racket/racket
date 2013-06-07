@@ -47,7 +47,6 @@
 ;; A pat* doesn't have any meaning unless it is paired with an environment - all
 ;; names in a pat* are bound, and a pat* may have constraints (cstrs) on subpatterns.
 
-
 (struct lvar (id) #:prefab)
 
 (struct uninstantiated () #:prefab)
@@ -72,18 +71,17 @@
            res
            (unif-fail))]))
 
-(define predef-pats (set 'any 'number 'string 'integer 'boolean 'real 'variable 'natural 'variable-not-otherwise-mentioned))
-(define (predef-pat? a)
-  (set-member? predef-pats a))
-(define (var? s)
-  (symbol? s))
-(define (n-t? s)
-  (symbol? s))
+(define predef-pats
+  (set 'any 'number 'string 'integer 'boolean 'real 'variable 'natural 'variable-not-otherwise-mentioned wildcard))
+(define (predef-pat? a) (set-member? predef-pats a))
+(define var? symbol?)
+(define n-t? symbol?)
 (define (pat-or-pat*? is-pat*? p)
   (let loop ([p p])
     (extract-clauses
      (match-a-pattern #:allow-else p
        [`any #t]
+       [`_ #t]
        [`number #t]
        [`string #t]
        [`natural #t]
@@ -160,7 +158,7 @@
     (define eqs (hash-copy (env-eqs e)))
     (define t* (bind-names t eqs L))
     (define u* (bind-names u eqs L))
-    (define res (and/fail (not-failed? t*) 
+    (define res (and/fail (not-failed? t*)
                           (not-failed? u*)
                           (unify* t* u* eqs L)))
     (and/fail (not-failed? res)
@@ -254,7 +252,6 @@
                     "non-groundable pat at internal pattern position: ~s" p))
            p])))
 
-
 (define (groundable? p)
   (match p
     [`(nt ,_) #f]
@@ -262,13 +259,11 @@
     [`(cstr ,_ ,p)
      (groundable? p)]
     [_ #t]))
-           
-                
+                          
 (define (hash/mut->imm h0)
   (for/fold ([h (hash)]) 
     ([(k v) (in-hash h0)])
-    (hash-set h k v)))                                    
-                                           
+    (hash-set h k v)))                                           
 
 ;; eqs dqs -> dqs or #f
 ;; simplified - first element in lhs of all inequations is a var not occuring in lhs of eqns
@@ -332,7 +327,6 @@
                 (cons `(name ,v1 ,(bound)) new-dq-l)
                 (cons t1 new-dq-r))])]))) 
 
-
 ;; the "root" pats will be pats without names,
 ;; which match both pat and pat*...
 ;; (those are the ones bind-names does nothing with)
@@ -342,6 +336,7 @@
   (match pat
     [`(name ,name ,(bound))
      (error 'bind-names "pat*, not a pat: ~s\n" pat)]
+    [`(name ,name _) wildcard]
     [`(name ,name ,pat)
      (define b-pat (bind-names pat e L))
      (and/fail (not-failed? b-pat)
@@ -503,6 +498,8 @@
     [((? base-type? t) (? base-type? u))
      (and/fail (equal? t u)
                t)]
+    [(`_ u) u]
+    [(t `_) t]
     [((? (compose not pair?) t) (? (compose not pair?) u))
      (and/fail (equal? t u)
                t)]
@@ -568,7 +565,6 @@
     [`(cstr ,(lvar _))
      (error 'occurs?* "rogue lvar: ~s\n" p)]
     [_ #f]))
-
 
 (define (instantiate* id pat e L)
   (define id-pat (resolve (lookup-pat id e) e))
@@ -651,25 +647,26 @@
 
 (define (number-type? symbol)
   (member symbol
-          '(any number real integer natural)))
+          `(any number real integer natural ,wildcard)))
 
 (define npreds (hash 'number number?
                      'real real?
                      'integer integer?
                      'natural (λ (n) (and (integer? n)
                                            (>= n 0)))
-                     'any (λ (n) #t)))
+                     'any (λ (n) #t)
+                     wildcard (λ (n) #t)))
 (define (number-pred symbol)
   (hash-ref npreds symbol))
 
 (define (number-superset? super sub)
-  (define nums '(any number real integer natural))
+  (define nums `(any number real integer natural ,wildcard))
   (>= (length (member super nums))
       (length (member sub nums))))
 
 (define (base-type? symbol)
   (member symbol
-          '(any number string natural integer real boolean
+          `(any number string natural integer real boolean ,wildcard
                 variable variable-not-otherwise-mentioned)))
 
 (define (lookup-pat id env)
@@ -707,6 +704,7 @@
   (let loop ([pat pat])
     (match-a-pattern pat
                      [`any pat]
+                     [`_ pat]
                      [`number pat]
                      [`string pat]
                      [`natural pat]
