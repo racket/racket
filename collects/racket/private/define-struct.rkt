@@ -5,6 +5,7 @@
   (#%require "small-scheme.rkt" "define.rkt" "../stxparam.rkt"
              (for-syntax '#%kernel "define.rkt"
                          "procedure-alias.rkt"
+                         "member.rkt"
                          "stx.rkt" "stxcase-scheme.rkt" "small-scheme.rkt" 
                          "stxloc.rkt" "qqstx.rkt"
                          "struct-info.rkt"))

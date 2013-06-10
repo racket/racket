@@ -2,7 +2,8 @@
 (module old-procs '#%kernel
   (#%require "small-scheme.rkt"
              "more-scheme.rkt"
-             "define.rkt")
+             "define.rkt"
+             "member.rkt")
 
   (#%provide make-namespace
              free-identifier=?*

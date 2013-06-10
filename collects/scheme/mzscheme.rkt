@@ -21,8 +21,8 @@
              (only racket/private/cond old-cond)
              ;; shadows #%kernel bindings:
              (only racket/private/list 
-                   assq assv assoc reverse
-                   memq memv member) 
+                   assq assv assoc reverse)
+             racket/private/member
              racket/tcp
              racket/udp
              '#%builtin) ; so it's attached

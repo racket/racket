@@ -11,7 +11,8 @@
 (module main '#%kernel
   (#%require '#%min-stx
              ;; Need to make sure they're here:
-             '#%builtin)
+             '#%builtin
+             racket/private/member)
 
   (when (file-stream-port? (current-output-port))
     (file-stream-buffer-mode (current-output-port) 'line))

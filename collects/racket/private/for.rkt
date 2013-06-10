@@ -4,12 +4,14 @@
              "misc.rkt"
              "define.rkt"
              "letstx-scheme.rkt"
+             "member.rkt"
              "reverse.rkt"
              '#%unsafe
              (for-syntax '#%kernel
                          "stx.rkt"
                          "qqstx.rkt"
                          "define.rkt"
+                         "member.rkt"
                          "small-scheme.rkt"
                          "stxcase-scheme.rkt"))
 
