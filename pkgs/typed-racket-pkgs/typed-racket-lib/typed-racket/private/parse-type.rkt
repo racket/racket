@@ -44,6 +44,7 @@
 (define-literal-syntax-class #:for-label quote)
 (define-literal-syntax-class #:for-label cons)
 (define-literal-syntax-class #:for-label Class)
+(define-literal-syntax-class #:for-label Object)
 (define-literal-syntax-class #:for-label Refinement)
 (define-literal-syntax-class #:for-label Instance)
 (define-literal-syntax-class #:for-label List)
@@ -249,6 +250,8 @@
        (-pair (parse-type #'fst) (parse-type #'rst))]
       [(:Class^ e ...)
        (parse-class-type stx)]
+      [(:Object^ e ...)
+       (parse-object-type stx)]
       [(:Refinement^ p?:id)
        (match (lookup-type/lexical #'p?)
          [(and t (Function: (list (arr: (list dom) _ #f #f '()))))
@@ -538,6 +541,24 @@
 (define (flatten-class-clause stx)
   (flatten (map stx->list (stx->list stx))))
 
+(define-splicing-syntax-class object-type-clauses
+  #:description "Object type clause"
+  #:attributes (field-names field-types method-names method-types)
+  #:literals (field)
+  (pattern (~seq (~or (field field-clause:field-or-method-type ...)
+                      method-clause:field-or-method-type)
+                 ...)
+           #:with field-names (flatten-class-clause #'((field-clause.label ...) ...))
+           #:with field-types (flatten-class-clause #'((field-clause.type ...) ...))
+           #:with method-names #'(method-clause.label ...)
+           #:with method-types #'(method-clause.type ...)
+           #:fail-when
+           (check-duplicate-identifier (syntax->list #'field-names))
+           "duplicate field or init-field clause"
+           #:fail-when
+           (check-duplicate-identifier (syntax->list #'method-names))
+           "duplicate method clause"))
+
 (define-splicing-syntax-class class-type-clauses
   #:description "Class type clause"
   #:attributes (self extends-types
@@ -647,7 +668,22 @@
   (define merged-methods (append checked-super-methods checked-methods))
   (values merged-fields merged-methods))
 
-;; Syntax (Syntax -> Type) -> Type
+;; Syntax -> Type
+;; Parse a (Object ...) type
+;; This is an alternative way to write down an Instance type
+(define (parse-object-type stx)
+  (syntax-parse stx
+    [(kw clause:object-type-clauses)
+     (add-disappeared-use #'kw)
+     (define fields (map list
+                         (stx-map syntax-e #'clause.field-names)
+                         (stx-map parse-type #'clause.field-types)))
+     (define methods (map list
+                          (stx-map syntax-e #'clause.method-names)
+                          (stx-map parse-type #'clause.method-types)))
+     (make-Instance (make-Class #f null fields methods))]))
+
+;; Syntax -> Type
 ;; Parse a (Class ...) type
 (define (parse-class-type stx)
   (syntax-parse stx

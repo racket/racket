@@ -247,6 +247,19 @@
    [FAIL (Class #:extends (Class [m (Number -> Number)])
                 #:extends (Class [m (String -> String)])
                 (field [x Number]))]
+   ;; Test Object types
+   [(Object) (make-Instance (make-Class #f null null null))]
+   [(Object [m (Number -> Number)])
+    (make-Instance (make-Class #f null null `((m ,(t:-> N N)))))]
+   [(Object [m (Number -> Number)] (field [f Number]))
+    (make-Instance (make-Class #f null `((f ,N)) `((m ,(t:-> N N)))))]
+   [FAIL (Object foobar)]
+   [FAIL (Object [x UNBOUND])]
+   [FAIL (Object [x Number #:random-keyword])]
+   [FAIL (Object (random-clause [x Number]))]
+   [FAIL (Object [x Number] [x Number])]
+   [FAIL (Object (field [x Number]) (field [x Number]))]
+   [FAIL (Object [x Number] [x Number])]
    ))
 
 ;; FIXME - add tests for parse-values-type, parse-tc-results
