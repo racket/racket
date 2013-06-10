@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "mzrl.rkt" racket/list racket/file)
+(require "rktrl.rkt" racket/list racket/file)
 
 ;; --------------------------------------------------------------------------
 ;; Configuration

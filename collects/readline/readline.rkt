@@ -1,3 +1,3 @@
-(module readline mzscheme
-  (require "mzrl.rkt")
-  (provide (all-from "mzrl.rkt")))
+#lang racket
+(require "rktrl.rkt")
+(provide (all-from-out "rktrl.rkt"))

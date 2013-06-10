@@ -1,7 +1,7 @@
 ;; This module initializes readline unconditionally, "rep.rkt" uses it if we're
 ;; using a `terminal-port?' for input.
 
-#lang scheme/base
+#lang racket/base
 
 (require "pread.rkt")
 
