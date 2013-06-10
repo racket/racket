@@ -563,7 +563,8 @@ effectively shuffles the list.}
 @; ----------------------------------------
 @section{List Searching}
 
-@defproc[(member [v any/c] [lst list?])
+@defproc[(member [v any/c] [lst list?]
+                 [is-equal? (any/c any/c -> any/c) equal?])
          (or/c list? #f)]{
 
 Locates the first element of @racket[lst] that is @racket[equal?] to
@@ -573,7 +574,9 @@ starting with that element is returned.  Otherwise, the result is
 
 @mz-examples[
   (member 2 (list 1 2 3 4))
-  (member 9 (list 1 2 3 4))]}
+  (member 9 (list 1 2 3 4))
+  (member #'x (list #'x #'y) free-identifier=?)
+  (member #'a (list #'x #'y) free-identifier=?)]}
 
 
 @defproc[(memv [v any/c] [lst list?])

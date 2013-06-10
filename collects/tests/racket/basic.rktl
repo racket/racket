@@ -264,7 +264,9 @@
   (test '(b . c) memq 'b '(a b . c))
   (test '#f memq 'a '(b c d))
 
-  (arity-test memq 2 2)
+  (if (eq? memq-name 'member)
+      (arity-test memq 2 3)
+      (arity-test memq 2 2))
   (err/rt-test (memq 'a 1) exn:application:mismatch?)
   (err/rt-test (memq 'a '(1 . 2)) exn:application:mismatch?))
 
@@ -284,6 +286,16 @@
 (test '(1/2) member 1/2 '(1/2))
 
 (test '((1 2)) member '(1 2) '(1 2 (1 2)))
+
+;; Additional tests for member with equality check argument
+(let ([stxs (list #'a #'b #'c)])
+  (test stxs member #'a stxs free-identifier=?)
+  (test (cdr stxs) member #'b stxs free-identifier=?)
+  (test #f member #'z stxs free-identifier=?))
+(test '(2 1 2) member 2 '(1 2 1 2) =)
+(test #f member 2 '(3 4 5 6) =)
+(test '(#"b" #"c") member #"b" '(#"a" #"b" #"c") bytes=?)
+(test #f member #"z" '(#"a" #"b" #"c") bytes=?)
 
 (define (test-ass assq assq-name)
   (define e '((a 1) (b 2) (c 3)))

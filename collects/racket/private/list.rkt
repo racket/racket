@@ -427,9 +427,22 @@
                         [(eq? v (car ls)) ls]
                         [else (loop (cdr ls))])))])
               id))
+          (define-syntax-rule (mk-member id)
+            (let* ([default (mk member equal?)]
+                   [id (case-lambda
+                        ([v orig-l] (default v orig-l))
+                        ([v orig-l eq?]
+                         (unless (and (procedure? eq?)
+                                      (procedure-arity-includes? eq? 2))
+                           (raise-argument-error
+                            'member
+                            "(procedure-arity-includes/c 2)"
+                            eq?))
+                         ((mk member eq?) v orig-l)))])
+              id))
           (values (mk memq eq?)
                   (mk memv eqv?)
-                  (mk member equal?)))
+                  (mk-member member)))
         (values memq memv member)))
 
   )
