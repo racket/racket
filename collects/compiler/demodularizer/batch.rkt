@@ -39,80 +39,13 @@ Here's the idea:
 - Then, it will pay to do dead code elimination and inlining, etc.
 |#
 
-(require racket/pretty
-         racket/system
-         racket/cmdline
-         "mpi.rkt"
-         "util.rkt"
-         "nodep.rkt"
-         "merge.rkt"
-         "gc-toplevels.rkt"
-         "alpha.rkt"
-         "module.rkt"
-         "replace-modidx.rkt"
-         compiler/decompile
-         compiler/zo-marshal
+(require racket/cmdline
          racket/set
-         raco/command-name)
-
-(define (main file-to-batch output-file)
-  (define-values (base name dir?) (split-path file-to-batch))
-  (when (or (eq? base #f) dir?)
-    (error 'batch "Cannot run on directory"))
-  
-  ;; Compile 
-  
-  (log-info "Compiling module")
-  (void (system* (find-executable-path "raco") "make" file-to-batch)) 
-  
-  (define merged-zo-path 
-    (or output-file
-        (path-add-suffix file-to-batch #"_merged.zo")))
-  
-  ;; Transformations
-  (define path-cache (make-hash))
-  
-  (log-info "Removing dependencies")
-  (define-values (batch-nodep top-lang-info top-self-modidx get-modvar-rewrite)
-    (parameterize ([MODULE-PATHS path-cache])
-      (nodep-file file-to-batch)))
-  
-  (log-info "Merging modules")
-  (define batch-merge
-    (parameterize ([MODULE-PATHS path-cache])
-      (merge-compilation-top get-modvar-rewrite batch-nodep)))
-  
-  ; Not doing this for now
-  ;(log-info "GC-ing top-levels")
-  (define batch-gcd
-    batch-merge
-    #;(gc-toplevels batch-merge))
-  
-  (log-info "Alpha-varying top-levels")
-  (define batch-alpha
-    (alpha-vary-ctop batch-gcd))
-  
-  (log-info "Replacing self-modidx")
-  (define batch-replace-modidx
-    (replace-modidx batch-alpha top-self-modidx))
-  
-  (define batch-modname
-    (string->symbol (regexp-replace #rx"\\.zo$" (path->string merged-zo-path) "")))
-  (log-info (format "Modularizing into ~a" batch-modname))
-  (define batch-mod
-    (wrap-in-kernel-module batch-modname batch-modname top-lang-info top-self-modidx batch-replace-modidx))
-  
-  (log-info "Writing merged zo")
-  (void
-   (with-output-to-file 
-       merged-zo-path
-     (lambda ()
-       (zo-marshal-to batch-mod (current-output-port)))
-     #:exists 'replace)))
+         raco/command-name
+         "main.rkt")
 
 
-(let ()
-  (define output-file (make-parameter #f))
+(let ([output-file (make-parameter #f)])
   (command-line #:program (short-program+command-name)
                 #:multi
                 [("-e" "--exclude-modules") path "Exclude <path> from flattening"
@@ -120,5 +53,7 @@ Here's the idea:
                 #:once-each
                 [("-o") dest-filename "Write output as <dest-filename>"
                  (output-file (string->path dest-filename))]
+                [("-g" "--garbage-collect") "Garbage-collect final module (unsound)"
+                 (garbage-collect-toplevels-enabled #t)]                         
                 #:args (filename) 
-                (main filename (output-file))))
+                (demodularize filename (output-file))))
