@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/contract/base
          racket/list
+         racket/path
          "modread.rkt")
 
 (provide moddep-current-open-input-file
@@ -10,24 +11,35 @@
          make-exn:get-module-code)
 
 (provide/contract
- [get-module-code (->* (path?)
-                       (#:roots
-                        (listof (or/c path? 'same))
-                        #:submodule-path
-                        (listof symbol?)
-                        #:sub-path 
-                        (and/c path-string? relative-path?)
-                        (and/c path-string? relative-path?)
-                        #:compile (-> any/c any)
-                        (-> any/c any)
-                        #:extension-handler (or/c false/c (path? boolean? . -> . any))
-                        (or/c false/c (path? boolean? . -> . any))
-                        #:choose 
-                        (path? path? path? . -> . (or/c (symbols 'src 'zo 'so) false/c))
-                        #:notify  (any/c . -> . any)
-                        #:source-reader (any/c input-port? . -> . (or/c syntax? eof-object?))
-                        #:rkt-try-ss? boolean?)
-                       any)])
+ [get-module-code
+  (->* (path?)
+       (#:roots (listof (or/c path? 'same))
+        #:submodule-path (listof symbol?)
+        #:sub-path (and/c path-string? relative-path?)
+        (and/c path-string? relative-path?)
+        #:compile (-> any/c any)
+        (-> any/c any)
+        #:extension-handler (or/c false/c (path? boolean? . -> . any))
+        (or/c false/c (path? boolean? . -> . any))
+        #:choose (path? path? path? . -> . (or/c 'src 'zo 'so #f))
+        #:notify  (any/c . -> . any)
+        #:source-reader (any/c input-port? . -> . (or/c syntax? eof-object?))
+        #:rkt-try-ss? boolean?)
+       any)]
+ [get-module-path
+  (->* (path?)
+       (#:roots (listof (or/c path? 'same))
+        #:submodule? boolean?
+        #:sub-path (and/c path-string? relative-path?)
+        (and/c path-string? relative-path?)
+        #:choose (path? path? path? . -> . (or/c 'src 'zo 'so #f))
+        #:rkt-try-ss? boolean?)
+       (values path? (or/c 'src 'zo 'so)))]
+ [get-metadata-path
+  (->* (path?)
+       (#:roots (listof (or/c path? 'same)))
+       #:rest (listof (or/c path-string? 'same))
+       path?)])
 
 (define moddep-current-open-input-file
   (make-parameter open-input-file))
@@ -82,6 +94,18 @@
     [(relative-path? root) (build-path base root)]
     [else (reroot-path base root)]))
 
+(define (get-metadata-path
+          #:roots [roots (current-compiled-file-roots)]
+          base . args)
+  (cond
+    [(or (equal? roots '(same)) (null? roots))
+     (apply build-path base args)]
+    [else
+     (or (for/or ([root (in-list (if (null? (cdr roots)) null roots))])
+           (define p (apply build-path (reroot-path* base root) args))
+           (and (file-exists? p) p))
+       (apply build-path (reroot-path* base (car roots)) args))]))
+
 (define (get-module-path
           path0
           #:roots [roots (current-compiled-file-roots)]
@@ -116,15 +140,6 @@
              resolved-path
              (build-path path0-rel alt-src-file))))
   (define path0-base (if (eq? path0-rel 'relative) 'same path0-rel))
-  (define (build-found-path base . args)
-    (cond
-      [(or (equal? roots '(same)) (null? roots))
-       (apply build-path base args)]
-      [else
-       (or (for/or ([root (in-list (if (null? (cdr roots)) null roots))])
-             (define p (apply build-path (reroot-path* base root) args))
-             (and (file-exists? p) p))
-           (apply build-path (reroot-path* base (car roots)) args))]))
   (define main-src-date
     (file-or-directory-modify-seconds main-src-path #f (lambda () #f)))
   (define alt-src-date
@@ -136,18 +151,23 @@
   (define src-path (if alt-src-date alt-src-path main-src-path))
   (define try-alt? (and alt-src-file (not alt-src-date) (not main-src-date)))
   (define (get-so file)
-    (build-found-path path0-base
-                      sub-path
-                      "native"
-                      (system-library-subpath)
-                      (path-add-suffix file (system-type 'so-suffix))))
+    (get-metadata-path #:roots roots
+                       path0-base
+                       sub-path
+                       "native"
+                       (system-library-subpath)
+                       (path-add-suffix file (system-type 'so-suffix))))
   (define zo
-    (build-found-path path0-base sub-path (path-add-suffix src-file #".zo")))
+    (get-metadata-path #:roots roots
+                       path0-base
+                       sub-path
+                       (path-add-suffix src-file #".zo")))
   (define alt-zo
     (and try-alt?
-         (build-found-path path0-base
-                           sub-path
-                           (path-add-suffix alt-src-file #".zo"))))
+         (get-metadata-path #:roots roots
+                            path0-base
+                            sub-path
+                            (path-add-suffix alt-src-file #".zo"))))
   (define so (get-so src-file))
   (define alt-so (and try-alt? (get-so alt-src-file)))
   (define prefer (choose src-path zo so))
@@ -164,7 +184,7 @@
                    (if (and try-alt? (date>=? alt-zo src-date))
                        alt-zo
                        zo))])
-       (values zo 'zo))]
+       (values (simple-form-path zo) 'zo))]
     ;; Maybe there's an .so? Use it only if we don't prefer source
     ;; and only if there's no submodule path.
     [(and (not submodule?)
@@ -179,10 +199,10 @@
                    (if (and try-alt? (date>=? alt-so src-date))
                        alt-so
                        so))])
-       (values so 'so))]
+       (values (simple-form-path so) 'so))]
     ;; Use source if it exists
     [(or (eq? prefer 'src) src-date)
-     (values src-path 'src)]
+     (values (simple-form-path src-path) 'src)]
     ;; Report a not-there error
     [else (raise (make-exn:get-module-code
                    (format "get-module-code: no such file: ~e" resolved-path)
