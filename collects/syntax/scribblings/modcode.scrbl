@@ -5,7 +5,7 @@
 
 @defmodule[syntax/modcode]
 
-@defproc[(get-module-code [path path?]
+@defproc[(get-module-code [path path-string?]
                           [#:submodule-path submodule-path (listof symbol?) '()]
                           [#:sub-path compiled-subdir0 (and/c path-string? relative-path?) "compiled"]
                           [compiled-subdir (and/c path-string? relative-path?) compiled-subdir0]
@@ -22,7 +22,8 @@
                           [#:notify notify-proc (any/c . -> . any) void]
                           [#:source-reader read-syntax-proc 
                                         (any/c input-port? . -> . (or/c syntax? eof-object?)) 
-                                        read-syntax])
+                                        read-syntax]
+                          [#:rkt-try-ss? rkt-try-ss? boolean? #t])
          any]{
 
 Returns a compiled expression for the declaration of the module
@@ -46,6 +47,10 @@ when a native-code version of @racket[path] should be used. In that
 case, the arguments to @racket[ext-proc] are the path for the
 extension, and a boolean indicating whether the extension is a @tt{_loader}
 file (@racket[#t]) or not (@racket[#f]).
+
+The @racket[rkt-try-ss?] argument defaults to @racket[#t].  If it is not
+@racket[#f], then if @racket[path] ends in @filepath{.rkt}, then the
+corresponding file ending in @filepath{.ss} will be tried as well.
 
 The @racket[choose-proc] argument is a procedure that takes three
 paths: a source path, a @filepath{.zo} file path, and an extension path
@@ -73,6 +78,53 @@ If @racket[notify-proc] is supplied, it is called for the file
 
 If @racket[read-syntax-proc] is provided, it is used to read the
 module from a source file (but not from a bytecode file).}
+
+@defproc[(get-module-path [path path-string?]
+                          [#:submodule? submodule? boolean?]
+                          [#:sub-path compiled-subdir0 (and/c path-string? relative-path?) "compiled"]
+                          [compiled-subdir (and/c path-string? relative-path?) compiled-subdir0]
+                          [#:roots roots (listof (or/c path-string? 'same)) (current-compiled-file-roots)]
+                          [#:choose choose-proc 
+                           (path? path? path? 
+                            . -> . 
+                            (or/c (symbols 'src 'zo 'so) false/c))
+                           (lambda (src zo so) #f)]
+                          [#:rkt-try-ss? rkt-try-ss? boolean? #t])
+         (values path? (or/c 'src 'zo 'so))]{
+
+Produces two values.  The first is the path of the latest source or compiled
+file for the module specified by @racket[path]; this result is the path of the
+file that @racket[get-module-code] would read to produce a compiled module
+expression.  The second value is @racket['src], @racket['zo], or @racket['so],
+depending on whether the first value represents a Racket source file, a
+compiled bytecode file, or a native library file.
+
+The @racket[compiled-subdir], @racket[roots], @racket[choose-proc], and
+@racket[rkt-try-ss?] arguments are interpreted the same as by
+@racket[get-module-code].
+
+The @racket[submodule?] argument represents whether the desired module is a
+submodule of the one specified by @racket[path].  When @racket[submodule?] is
+true, the result is never a @racket['so] path, as native libraries cannot
+provide submodules.
+}
+
+@defproc[(get-metadata-path [path path-string?]
+                            [#:roots roots (listof (or/c path? 'same)) 
+                                           (current-compiled-file-roots)]
+                            [sub-path (or/c path-string? 'same)]
+                            ...+)
+         path?]{
+
+Constructs the path used to store compilation metadata for a source file stored
+in the directory @racket[path].  The argument @racket[roots] specifies the
+possible root directories to consider and to search for an existing file.  The
+@racket[sub-path] arguments specify the subdirectories and filename of the
+result relative to the chosen root.  For example, the compiled @filepath{.zo}
+file for @filepath{/path/to/source.rkt} might be stored in
+@racket[(get-metadata-path (build-path "/path/to") "compiled" "source_rkt.zo")].
+
+}
 
 @defparam[moddep-current-open-input-file proc (path-string? . -> . input-port?)]{
 
