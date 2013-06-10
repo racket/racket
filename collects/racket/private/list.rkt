@@ -27,10 +27,7 @@
            build-string
            build-list
 
-           (rename-out [alt-reverse reverse]
-                       [alt-memq memq]
-                       [alt-memv memv]
-                       [alt-member member])
+           (rename-out [alt-reverse reverse])
 
            compose
            compose1)
@@ -412,40 +409,4 @@
               (mk-simple-compose app1 f g)
               (mk-simple-compose app* f g))))
       (values compose1 compose)))
-
-  (define-values (alt-memq alt-memv alt-member)
-    (if (eval-jit-enabled)
-        (let ()
-          (define-syntax-rule (mk id eq?)
-            (let ([id
-                   (lambda (v orig-l)
-                     (let loop ([ls orig-l])
-                       (cond
-                        [(null? ls) #f]
-                        [(not (pair? ls))
-                         (bad-list 'id orig-l)]
-                        [(eq? v (car ls)) ls]
-                        [else (loop (cdr ls))])))])
-              id))
-          ;; Create the `member` function that takes an extra argument
-          ;; Uses `mk` to construct the body
-          (define-syntax-rule (mk-member id)
-            (let* ([default (mk member equal?)]
-                   [id (case-lambda
-                        ([v orig-l] (default v orig-l))
-                        ([v orig-l eq?]
-                         (unless (and (procedure? eq?)
-                                      (procedure-arity-includes? eq? 2))
-                           (raise-argument-error
-                            'member
-                            "(procedure-arity-includes/c 2)"
-                            eq?))
-                         ((mk member eq?) v orig-l)))])
-              id))
-          (values (mk memq eq?)
-                  (mk memv eqv?)
-                  ;; Note that this uses `mk-member`
-                  (mk-member member)))
-        (values memq memv member)))
-
   )

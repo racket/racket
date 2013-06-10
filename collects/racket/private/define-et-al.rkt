@@ -4,7 +4,7 @@
 
 (module define-et-al '#%kernel
   (#%require (for-syntax '#%kernel "stx.rkt" "qq-and-or.rkt" 
-                         "cond.rkt"))
+                         "member.rkt" "cond.rkt"))
   
   ;; No error checking here, because these macros merely help
   ;;  us write macros before the real define and define-syntax

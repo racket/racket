@@ -4,7 +4,8 @@
 (module stxcase '#%kernel
   (#%require "stx.rkt" "small-scheme.rkt" '#%paramz '#%unsafe
              "ellipses.rkt"
-             (for-syntax "stx.rkt" "small-scheme.rkt" "sc.rkt" '#%kernel))
+             (for-syntax "stx.rkt" "small-scheme.rkt"
+                         "member.rkt" "sc.rkt" '#%kernel))
 
   (-define (datum->syntax/shape orig datum)
      (if (syntax? datum)

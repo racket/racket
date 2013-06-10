@@ -4,6 +4,7 @@
 
 (module more-scheme '#%kernel
   (#%require "small-scheme.rkt" "define.rkt" '#%paramz "case.rkt" "logger.rkt"
+             "member.rkt"
              (for-syntax '#%kernel "stx.rkt" "small-scheme.rkt" "stxcase-scheme.rkt" "qqstx.rkt"))
 
   (define-syntax case-test

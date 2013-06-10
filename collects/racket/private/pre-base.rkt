@@ -14,6 +14,7 @@
              (prefix printing: "modbeg.rkt")
              "for.rkt"
              "map.rkt" ; shadows #%kernel bindings
+             "member.rkt"
              "kernstruct.rkt"
              "norm-arity.rkt"
              "top-int.rkt"
@@ -188,6 +189,7 @@
                               prop:stream in-stream empty-stream make-do-stream
                               split-for-body)
              (all-from "kernstruct.rkt")
+             (all-from "member.rkt")
              #%top-interaction
 
              map for-each andmap ormap
