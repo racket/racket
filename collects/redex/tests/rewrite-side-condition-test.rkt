@@ -22,6 +22,7 @@
 
 (check-equal? (rsc 1 () #t) `(1 () ()))
 (check-equal? (rsc (1) () #t) `((list 1) () ()))
+(check-equal? (rsc (_ _ (name x _)) () #t) `((list any any (name x any)) (x) (x)))
 (check-equal? (rsc (1 ...) () #t) `((list (repeat 1 #f #f)) () ()))
 (check-equal? (rsc (1 ..._2) () #t) `((list (repeat 1 #f #f)) () ()))
 (check-equal? (rsc (1 ..._2 1 ..._2) () #t) `((list (repeat 1 ..._2 #f) (repeat 1 ..._2 #f)) () ()))
@@ -68,8 +69,6 @@
               '(list (repeat (name x_1 (nt x)) ..._2 #f)
                      (repeat (name x (nt x)) ..._2 #f)
                      (repeat (name x_1 (nt x)) ..._2 #f)))
-
-
 (check-equal? (car (rsc (x_1 ..._1 x_2 ..._2 (x_1 x_2) ..._3) (x) #t))
               '(list (repeat (name x_1 (nt x)) ..._3 #f)
                      (repeat (name x_2 (nt x)) ..._3 #f)
