@@ -525,8 +525,14 @@
 [memv (-poly (a) (-> a (-lst a) (-opt (-lst a))))]
 [kernel:memv (-poly (a) (-> a (-lst a) (-opt (-lst a))))]
 [memf (-poly (a) ((a . -> . Univ) (-lst a) . -> . (-opt (-lst a))))]
-[member (-poly (a) (a (-lst a) . -> . (-opt (-lst a))))]
-[kernel:member (-poly (a) (a (-lst a) . -> . (-opt (-lst a))))]
+[member (-poly (a)
+          (cl->* (a (-lst a) . -> . (-opt (-lst a)))
+                 (a (-lst a) (-> a a Univ)
+                    . -> . (-opt (-lst a)))))]
+[kernel:member (-poly (a)
+                 (cl->* (a (-lst a) . -> . (-opt (-lst a)))
+                        (a (-lst a) (-> a a Univ)
+                           . -> . (-opt (-lst a)))))]
 [findf (-poly (a) ((a . -> . B) (-lst a) . -> . (-opt a)))]
 
 [char=? (->* (list -Char -Char) -Char B)]
