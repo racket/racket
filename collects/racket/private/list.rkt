@@ -427,6 +427,8 @@
                         [(eq? v (car ls)) ls]
                         [else (loop (cdr ls))])))])
               id))
+          ;; Create the `member` function that takes an extra argument
+          ;; Uses `mk` to construct the body
           (define-syntax-rule (mk-member id)
             (let* ([default (mk member equal?)]
                    [id (case-lambda
@@ -442,6 +444,7 @@
               id))
           (values (mk memq eq?)
                   (mk memv eqv?)
+                  ;; Note that this uses `mk-member`
                   (mk-member member)))
         (values memq memv member)))
 
