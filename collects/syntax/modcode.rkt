@@ -82,19 +82,13 @@
     [(relative-path? root) (build-path base root)]
     [else (reroot-path base root)]))
 
-(define (get-module-code
+(define (get-module-path
           path0
           #:roots [roots (current-compiled-file-roots)]
-          #:submodule-path [submodule-path '()]
+          #:submodule? [submodule? #f]
           #:sub-path [sub-path/kw "compiled"]
           [sub-path sub-path/kw]
-          #:compile [compile/kw compile]
-          [compiler compile/kw]
-          #:extension-handler [ext-handler/kw #f]
-          [ext-handler ext-handler/kw] 
           #:choose [choose (lambda (src zo so) #f)]
-          #:notify [notify void]
-          #:source-reader [read-src-syntax read-syntax]
           #:rkt-try-ss? [rkt-try-ss? #t])
   (define resolved-path (resolve path0))
   (define-values (path0-rel path0-file path0-dir?) (split-path path0))
@@ -156,26 +150,7 @@
                            (path-add-suffix alt-src-file #".zo"))))
   (define so (get-so src-file))
   (define alt-so (and try-alt? (get-so alt-src-file)))
-  (define (with-dir t)
-    (parameterize ([current-load-relative-directory
-                    (if (path? path0-base) path0-base (current-directory))])
-      (t)))
   (define prefer (choose src-path zo so))
-  (define (extract-submodule m [sm-path submodule-path])
-    (cond
-      [(null? sm-path) m]
-      [else 
-       (extract-submodule
-         (or (for/or ([c (in-list (append (module-compiled-submodules m #t)
-                                          (module-compiled-submodules m #f)))])
-               (and (eq? (last (module-compiled-name c)) (car sm-path))
-                    c))
-           (raise
-             (make-exn:get-module-code
-               (format "get-module-code: cannot find submodule: ~e" sm-path)
-               (current-continuation-marks)
-               #f)))
-         (cdr sm-path))]))
   (cond
     ;; Use .zo, if it's new enough
     [(or (eq? prefer 'zo)
@@ -189,11 +164,10 @@
                    (if (and try-alt? (date>=? alt-zo src-date))
                        alt-zo
                        zo))])
-       (notify zo)
-       (extract-submodule (read-one src-path zo #f read-syntax)))]
+       (values zo 'zo))]
     ;; Maybe there's an .so? Use it only if we don't prefer source
     ;; and only if there's no submodule path.
-    [(and (null? submodule-path)
+    [(and (not submodule?)
           (or (eq? prefer 'so)
               (and (not prefer)
                    (pair? roots)
@@ -205,28 +179,75 @@
                    (if (and try-alt? (date>=? alt-so src-date))
                        alt-so
                        so))])
-       (if ext-handler
-           (begin
-             (notify so)
-             (ext-handler so #f))
-           (raise (make-exn:get-module-code
-                    (format "get-module-code: cannot use extension file; ~e" so)
-                    (current-continuation-marks)
-                    so))))]
+       (values so 'so))]
     ;; Use source if it exists
     [(or (eq? prefer 'src) src-date)
-     (notify src-path)
-     (define (compile-one)
-       (with-dir
-         (lambda ()
-           (compiler (read-one resolved-path src-path #t read-src-syntax)))))
-     (if (null? submodule-path)
-         ;; allow any result:
-         (compile-one)
-         ;; expect a compiled-module result:
-         (extract-submodule (compile-one)))]
+     (values src-path 'src)]
     ;; Report a not-there error
     [else (raise (make-exn:get-module-code
                    (format "get-module-code: no such file: ~e" resolved-path)
                    (current-continuation-marks)
                    #f))]))
+
+(define (get-module-code
+          path0
+          #:roots [roots (current-compiled-file-roots)]
+          #:submodule-path [submodule-path '()]
+          #:sub-path [sub-path/kw "compiled"]
+          [sub-path sub-path/kw]
+          #:compile [compile/kw compile]
+          [compiler compile/kw]
+          #:extension-handler [ext-handler/kw #f]
+          [ext-handler ext-handler/kw] 
+          #:choose [choose (lambda (src zo so) #f)]
+          #:notify [notify void]
+          #:source-reader [read-src-syntax read-syntax]
+          #:rkt-try-ss? [rkt-try-ss? #t])
+  (define-values (path type)
+    (get-module-path
+      path0
+      #:roots roots
+      #:submodule? (pair? submodule-path)
+      #:sub-path sub-path
+      #:choose choose
+      #:rkt-try-ss? rkt-try-ss?))
+  (define (extract-submodule m [sm-path submodule-path])
+    (cond
+      [(null? sm-path) m]
+      [else 
+       (extract-submodule
+         (or (for/or ([c (in-list (append (module-compiled-submodules m #t)
+                                          (module-compiled-submodules m #f)))])
+               (and (eq? (last (module-compiled-name c)) (car sm-path))
+                    c))
+             (raise
+               (make-exn:get-module-code
+                 (format "get-module-code: cannot find submodule: ~e" sm-path)
+                 (current-continuation-marks)
+                 #f)))
+         (cdr sm-path))]))
+  (case type
+    [(zo)
+     (notify path)
+     (extract-submodule (read-one path0 path #f read-syntax))]
+    [(so)
+     (if ext-handler
+         (begin
+           (notify path)
+           (ext-handler path #f))
+         (raise (make-exn:get-module-code
+                  (format "get-module-code: cannot use extension file; ~e" path)
+                  (current-continuation-marks)
+                  path)))]
+    [(src)
+     (notify path)
+     (define (compile-one)
+       (define-values (path0-base path0-name path0-dir?) (split-path path0))
+       (parameterize ([current-load-relative-directory
+                       (if (path? path0-base) path0-base (current-directory))])
+         (compiler (read-one path0 path #t read-src-syntax))))
+     (if (null? submodule-path)
+         ;; allow any result:
+         (compile-one)
+         ;; expect a compiled-module result:
+         (extract-submodule (compile-one)))]))
