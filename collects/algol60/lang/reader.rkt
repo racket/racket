@@ -19,7 +19,7 @@ algol60/lang/algol60
          "../compile.rkt"
          ;; Compiles a simplified AST to Scheme.
 
-         mzlib/file
+         racket/file
          syntax/strip-context)
 
 
