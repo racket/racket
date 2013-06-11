@@ -2231,6 +2231,25 @@
                         (check-hash-tables #t #f)
                         (check-hash-tables #t #t)
                         #t))
+  
+  ;; Make sure copy doesn't share:
+  (for ([make-hash (list make-hash
+                         make-weak-hash)])
+    (when make-hash
+      (define c1 (make-hash))
+      (hash-set! c1 'the-key1 'the-val1)
+      (hash-set! c1 'the-key2 'the-val2)
+      (hash-set! c1 'the-key3 'the-val3)
+      (hash-set! c1 'the-key4 'the-val4)
+      (define c2 (hash-copy c1))
+      (hash-set! c1 'the-key3 'the-val5)
+      (hash-set! c2 'the-key4 'the-val6)
+      (hash-remove! c1 'the-key1)
+      (hash-remove! c2 'the-key2)
+      (test 'the-val1 hash-ref c2 'the-key1)
+      (test 'the-val2 hash-ref c1 'the-key2)
+      (test 'the-val3 hash-ref c2 'the-key3)
+      (test 'the-val4 hash-ref c1 'the-key4)))
 
   (save)) ; prevents gcing of the ht-registered values
 

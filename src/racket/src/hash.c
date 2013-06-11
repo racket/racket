@@ -578,33 +578,52 @@ scheme_make_bucket_table (intptr_t size, int type)
   return table;
 }
 
-Scheme_Bucket_Table *scheme_clone_bucket_table(Scheme_Bucket_Table *bt)
+static Scheme_Bucket *
+allocate_bucket (Scheme_Bucket_Table *table, const char *key, void *val)
 {
-  Scheme_Bucket_Table *table;
-  size_t asize;
+  size_t bsize;
+  Scheme_Type type;
+  Scheme_Bucket *bucket;
 
-  table = MALLOC_ONE_TAGGED(Scheme_Bucket_Table);
-  table->so.type = scheme_bucket_table_type;
-  table->size = bt->size;
-  table->count = bt->count;
-  table->weak = bt->weak;
-  table->with_home = 0;
-  table->make_hash_indices = bt->make_hash_indices;
-  table->compare = bt->compare;
-  if (bt->mutex) {
-    Scheme_Object *sema;
-    sema = scheme_make_sema(1);
-    table->mutex = sema;
-  }
-  {
-    Scheme_Bucket **ba;
-    asize = (size_t)table->size * sizeof(Scheme_Bucket *);
-    ba = (Scheme_Bucket **)scheme_malloc(asize);
-    table->buckets = ba;
-    memcpy(ba, bt->buckets, asize);
+  if (table->with_home) {
+    bsize = sizeof(Scheme_Bucket_With_Home);
+    type = scheme_variable_type;
+  } else  {
+    bsize = sizeof(Scheme_Bucket);
+    type = scheme_bucket_type;
   }
 
-  return table;
+  bucket = (Scheme_Bucket *)scheme_malloc_tagged(bsize);
+
+  bucket->so.type = type;
+
+  if (type == scheme_variable_type)
+    ((Scheme_Bucket_With_Flags *)bucket)->flags = GLOB_HAS_HOME_PTR;
+
+  if (table->weak) {
+#ifdef MZ_PRECISE_GC
+    void *kb;
+    kb = GC_malloc_weak_box((void *)key, (void **)bucket, (void **)&bucket->val - (void **)bucket, 
+                            (table->weak > 1));
+    bucket->key = (char *)kb;
+#else
+    char *kb;
+    kb = (char *)MALLOC_ONE_WEAK(void *);
+    bucket->key = kb;
+    *(void **)bucket->key = (void *)key;
+    if (table->weak > 1) {
+      scheme_late_weak_reference_indirect((void **)bucket->key, (void *)key);
+      scheme_late_weak_reference_indirect((void **)&bucket->val, (void *)key);
+    } else {
+      scheme_weak_reference_indirect((void **)bucket->key, (void *)key);
+      scheme_weak_reference_indirect((void **)&bucket->val, (void *)key);
+    }
+#endif
+  } else
+    bucket->key = (char *)key;
+  bucket->val = val;
+
+  return bucket;
 }
 
 static Scheme_Bucket *
@@ -724,50 +743,10 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
     goto rehash_key;
   }
 
-  if (b) {
+  if (b)
     bucket = b;
-  } else {
-    size_t bsize;
-    Scheme_Type type;
-
-    if (table->with_home) {
-      bsize = sizeof(Scheme_Bucket_With_Home);
-      type = scheme_variable_type;
-    } else  {
-      bsize = sizeof(Scheme_Bucket);
-      type = scheme_bucket_type;
-    }
-
-    bucket = (Scheme_Bucket *)scheme_malloc_tagged(bsize);
-
-    bucket->so.type = type;
-
-    if (type == scheme_variable_type)
-      ((Scheme_Bucket_With_Flags *)bucket)->flags = GLOB_HAS_HOME_PTR;
-
-    if (table->weak) {
-#ifdef MZ_PRECISE_GC
-      void *kb;
-      kb = GC_malloc_weak_box((void *)key, (void **)bucket, (void **)&bucket->val - (void **)bucket, 
-                              (table->weak > 1));
-      bucket->key = (char *)kb;
-#else
-      char *kb;
-      kb = (char *)MALLOC_ONE_WEAK(void *);
-      bucket->key = kb;
-      *(void **)bucket->key = (void *)key;
-      if (table->weak > 1) {
-        scheme_late_weak_reference_indirect((void **)bucket->key, (void *)key);
-        scheme_late_weak_reference_indirect((void **)&bucket->val, (void *)key);
-      } else {
-        scheme_weak_reference_indirect((void **)bucket->key, (void *)key);
-        scheme_weak_reference_indirect((void **)&bucket->val, (void *)key);
-      }
-#endif
-    } else
-      bucket->key = (char *)key;
-    bucket->val = NULL;
-  }
+  else
+    bucket = allocate_bucket(table, key, NULL);
 
   table->buckets[h] = bucket;
 
@@ -901,6 +880,51 @@ int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *
 int scheme_bucket_table_equal(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2)
 {
   return scheme_equal((Scheme_Object *)t1, (Scheme_Object *)t2);
+}
+
+Scheme_Bucket_Table *scheme_clone_bucket_table(Scheme_Bucket_Table *bt)
+{
+  Scheme_Bucket_Table *table;
+  size_t asize;
+
+  table = MALLOC_ONE_TAGGED(Scheme_Bucket_Table);
+  table->so.type = scheme_bucket_table_type;
+  table->size = bt->size;
+  table->count = bt->count;
+  table->weak = bt->weak;
+  table->with_home = 0;
+  table->make_hash_indices = bt->make_hash_indices;
+  table->compare = bt->compare;
+  if (bt->mutex) {
+    Scheme_Object *sema;
+    sema = scheme_make_sema(1);
+    table->mutex = sema;
+  }
+  {
+    Scheme_Bucket **ba, *bucket;
+    int i;
+    asize = (size_t)table->size * sizeof(Scheme_Bucket *);
+    ba = (Scheme_Bucket **)scheme_malloc(asize);
+    table->buckets = ba;
+    memcpy(ba, bt->buckets, asize);
+    /* clone individual buckets */
+    for (i = table->size; i--; ) {
+      bucket = ba[i];
+      if (bucket) {
+        if (bucket->key) {
+          if (table->weak) {
+            void *hk = (void *)HT_EXTRACT_WEAK(bucket->key);
+            if (hk)
+              bucket = allocate_bucket(table, hk, bucket->val);
+          } else
+            bucket = allocate_bucket(table, bucket->key, bucket->val);
+          ba[i] = bucket;
+        }
+      }
+    }
+  }
+
+  return table;
 }
 
 /*========================================================================*/
