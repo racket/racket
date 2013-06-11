@@ -49,6 +49,7 @@ the @rfc for more information about JSON.
 
 @defproc[(write-json [x jsexpr?] [out output-port? (current-output-port)]
                      [#:null jsnull any? (json-null)]
+                     [#:function name symbol? 'write-json]
                      [#:encode encode (or/c 'control 'all) 'control])
          any]{
   Writes the @racket[x] @tech{jsexpr}, encoded as JSON, to the
@@ -60,7 +61,9 @@ the @rfc for more information about JSON.
   encoded as well.  This can be useful if you need to transport the text
   via channels that might not support UTF-8.  Note that characters in
   the range of @tt{U+10000} and above are encoded as two @tt{\uHHHH}
-  escapes, see Section 2.5 of the @|rfc|.}
+  escapes, see Section 2.5 of the @|rfc|.
+
+  @racket[name] is used when reporting errors.}
 
 @defproc[(jsexpr->string [x jsexpr?]
                          [#:null jsnull any? (json-null)]
@@ -78,11 +81,14 @@ the @rfc for more information about JSON.
 @section{Parsing JSON Text into JS-Expressions}
 
 @defproc[(read-json [in input-port? (current-input-port)]
+                     [#:function name symbol? 'read-json]
                     [#:null jsnull any? (json-null)])
          (or/c jsexpr? eof-object?)]{
   Reads a @tech{jsexpr} from a JSON-encoded input port @racket[in] as a
   Racket (immutable) value, or produces @racket[eof] if only whitespace
-  remains.}
+  remains.
+
+  @racket[name] is used when reporting errors.}
 
 @defproc[(string->jsexpr [str string?] [#:null jsnull any? (json-null)])
          jsexpr?]{
