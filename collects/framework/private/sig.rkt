@@ -187,6 +187,7 @@
      foreground-color<%>
      hide-caret/selection<%>
      nbsp->space<%>
+     column-guide<%>
      normalize-paste<%>
      delegate<%>
      wide-snip<%>
@@ -227,6 +228,7 @@
      foreground-color-mixin
      hide-caret/selection-mixin
      nbsp->space-mixin
+     column-guide-mixin
      normalize-paste-mixin
      wide-snip-mixin
      delegate-mixin

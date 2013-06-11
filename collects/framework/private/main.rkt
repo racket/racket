@@ -24,6 +24,10 @@
 
 (application-preferences-handler (λ () (preferences:show-dialog)))
 
+(preferences:set-default 'framework:column-guide-width
+                         '(#f 102)
+                         (list/c boolean? (and/c exact-integer? (>=/c 2))))
+
 (preferences:set-default 'framework:aspell-dict #f (λ (x) (or (not x) (string? x))))
 
 (preferences:set-default 'framework:line-spacing-add-gap?

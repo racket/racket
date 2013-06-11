@@ -88,7 +88,7 @@ The @onscreen{Editing} panel consists of several sub-panels:
       @item{@PrefItem{Add one pixel of extra space between lines} ---
              If checked, then an extra pixel of whitespace is added
              between lines in the editor. The default value is platform-specific;
-             some fonts (notably those with ╔══╗ characters) only look right with
+             some fonts (notably those with @tt{╔══╗} characters) only look right with
              this unchecked.}
       @item{@PrefItem{Always use the platform-specific linefeed convention} ---
              If checked, DrRacket always saves files with CRLF line terminators. 
@@ -102,13 +102,16 @@ The @onscreen{Editing} panel consists of several sub-panels:
              
              This option is only available under Windows. On other operating
              systems, all files are always saved with LF line terminators.}
+      @item{@PrefItem{Maximum character width guide} --- If checked, DrRacket
+             draws a vertical line in files that exceed the given maximum
+             width. The vertical line shows where the given maximum width is.}
       @item{@PrefItem{Show line numbers} --- If checked, DrRacket shows
             line numbers for the file being edited in the left-hand
             column}
       @item{@PrefItem{Show definitions/interactions labels} --- If checked,
              then the teaching languages show big friendly labels indicating
              which window is the definitions window and which is the interactions
-             window.]}
+             window.]}]}
 
 @item{@onscreen{Racket}
 

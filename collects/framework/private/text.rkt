@@ -883,6 +883,100 @@
       (inner (void) after-insert start len))
     (super-new)))
 
+(define column-guide<%> (interface ((class->interface text%))))
+(define column-guide-mixin-pen-size 2)
+(define column-guide-mixin 
+  (mixin ((class->interface text%)) (column-guide<%>)
+    (inherit get-style-list invalidate-bitmap-cache get-dc
+             begin-edit-sequence end-edit-sequence
+             get-extent get-padding)
+    (define char-width #f)
+    (define pen #f)
+    ;; these two functions are defined as private fields
+    ;; because they are weakly held callbacks
+    (define (bw-cb p v)
+      (set! pen 
+            (send the-pen-list find-or-create-pen
+                  (if v
+                      (make-object color% 225 225 51)
+                      (make-object color% 204 204 51))
+                  (* column-guide-mixin-pen-size 2)
+                  'solid)))
+    (define (cw-cb p v)
+      (define new-cw (and (car v) (cadr v)))
+      (unless (equal? new-cw char-width)
+        (define (inv cw)
+          (define x-pos (get-x-spot cw))
+          (when x-pos
+            (invalidate-bitmap-cache 
+             (- x-pos (send pen get-width))
+             0
+             (+ x-pos (send pen get-width))
+             'end)))
+        (define old-char-w char-width)
+        (set! char-width new-cw)
+        (begin-edit-sequence)
+        (inv old-char-w)
+        (inv char-width)
+        (end-edit-sequence)))
+      
+    (super-new)
+    
+    (preferences:add-callback 'framework:white-on-black? bw-cb #t)
+    (bw-cb 'ignored-arg (preferences:get 'framework:white-on-black?))
+    
+    (preferences:add-callback 'framework:column-guide-width cw-cb #t)
+    (cw-cb 'ignored-arg (preferences:get 'framework:column-guide-width))
+    
+    (define aw (box 0.0))
+    (define ah (box 0.0))
+    (define left-padding 0)
+    
+    (define/augment (on-change)
+      (inner (void) on-change)
+      (define old-aw (unbox aw))
+      (define old-ah (unbox ah))
+      (get-extent aw ah)
+      (define-values (left top right bottom) (get-padding))
+      (unless (and (= old-aw (unbox aw)) 
+                   (= old-ah (unbox ah))
+                   (= left left-padding))
+        (set! left-padding left)
+        (invalidate-bitmap-cache)))
+    
+    (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
+      (super on-paint before? dc left top right bottom dx dy draw-caret)
+      (when char-width
+        (when before?
+          (define x-pos (get-x-spot char-width))
+          (when x-pos
+            (define old-pen (send dc get-pen))
+            (send dc set-pen pen)
+            (when (< x-pos (- (unbox aw) 3))
+              (send dc draw-line
+                    (+ dx x-pos)
+                    (+ dy top column-guide-mixin-pen-size)
+                    (+ dx x-pos)
+                    (+ dy (min (unbox ah) bottom) (- column-guide-mixin-pen-size))))
+            (send dc set-pen old-pen)))))
+
+    (define/private (get-x-spot char-width)
+      (cond
+        [char-width 
+         (define dc (get-dc))
+         (cond
+           [dc
+            (define style (or (send (get-style-list) find-named-style "Standard")
+                              (send (get-style-list) find-named-style "Basic")))
+            (cond
+              [style
+               (define fnt (send style get-font))
+               (define-values (xw _1 _2 _3) (send dc get-text-extent "x" fnt))
+               (+ left-padding (* xw char-width))]
+              [else #f])]
+           [else #f])]
+        [else #f]))))
+
 (define normalize-paste<%> (interface ((class->interface text%))
                              ask-normalize?
                              string-normalize))

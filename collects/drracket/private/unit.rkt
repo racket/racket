@@ -542,7 +542,8 @@ module browser threading seems wrong.
                      (drracket:rep:drs-autocomplete-mixin
                       (λ (x) x)
                       (text:normalize-paste-mixin
-                       text:info%)))))))))))])
+                       (text:column-guide-mixin
+                        text:info%))))))))))))])
        ((get-program-editor-mixin)
         (class* definitions-super% (drracket:unit:definitions-text<%>)
           (inherit get-top-level-window is-locked? lock while-unlocked highlight-first-line
@@ -3413,6 +3414,23 @@ module browser threading seems wrong.
                                (preferences:set 'drracket:show-line-numbers? (not value))
                                (show-line-numbers! (not value)))]))
         (set-show-menu-sort-key show-line-numbers-menu-item 302)
+        
+        (define show-column-guide-menu-item
+          (new menu:can-restore-menu-item%
+               [label ""]
+               [parent (get-show-menu)]
+               [demand-callback (λ (itm) 
+                                  (define pv (preferences:get 'framework:column-guide-width))
+                                  (send itm set-label
+                                        (format (if (car pv)
+                                                    (string-constant hide-column-width-guide)
+                                                    (string-constant show-column-width-guide))
+                                                (cadr pv))))]
+               [callback (λ (self evt)
+                           (define ov (preferences:get 'framework:column-guide-width))
+                           (preferences:set 'framework:column-guide-width
+                                            (list (not (car ov)) (cadr ov))))]))
+        (set-show-menu-sort-key show-column-guide-menu-item 303)
         
         (let ()
           (define (font-adjust adj label key shortcut)
