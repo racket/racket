@@ -85,6 +85,11 @@ The @onscreen{Editing} panel consists of several sub-panels:
       @item{@PrefItem{Enable automatic parentheses} --- If checked,
              typing an open parenthesis, curley brace, square bracket, or a double quote
              character automatically inserts a matching one.}
+      @item{@PrefItem{Add one pixel of extra space between lines} ---
+             If checked, then an extra pixel of whitespace is added
+             between lines in the editor. The default value is platform-specific;
+             some fonts (notably those with ╔══╗ characters) only look right with
+             this unchecked.}
       @item{@PrefItem{Always use the platform-specific linefeed convention} ---
              If checked, DrRacket always saves files with CRLF line terminators. 
              If unchecked, DrRacket looks at each file as it is opened and if every
@@ -99,7 +104,11 @@ The @onscreen{Editing} panel consists of several sub-panels:
              systems, all files are always saved with LF line terminators.}
       @item{@PrefItem{Show line numbers} --- If checked, DrRacket shows
             line numbers for the file being edited in the left-hand
-            column}]}
+            column}
+      @item{@PrefItem{Show definitions/interactions labels} --- If checked,
+             then the teaching languages show big friendly labels indicating
+             which window is the definitions window and which is the interactions
+             window.]}
 
 @item{@onscreen{Racket}
 
