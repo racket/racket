@@ -5,6 +5,9 @@
   . Check Syntax no longer calls the syncheck:add-id-set method (and
     thus neither the syncheck:add-rename-menu method).
 
+  . Added a column width guide that defaults to 102 columns, but
+    is also disabled by default
+
 ------------------------------
        Version 5.3.3
 ------------------------------
