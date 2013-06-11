@@ -63,6 +63,9 @@
          default-font-size
          metafunction-font-size
          reduction-relation-rule-separation
+
+         where-make-prefix-pict
+         where-combine
          
          just-before
          just-after         
@@ -352,7 +355,7 @@
                 frsh))])
     (if (null? lst)
         (blank)
-        (let ([where (basic-text " where " (default-style))])
+        (let ([where ((where-make-prefix-pict))])
           (let ([max-w (- max-w (pict-width where))])
             (htl-append where
                         (let loop ([p (car lst)][lst (cdr lst)])
@@ -366,8 +369,16 @@
                                         (loop (car lst) (cdr lst)))]
                             [else (loop (htl-append p (car lst)) (cdr lst))]))))))))
 
+(define where-make-prefix-pict
+  (make-parameter (lambda ()
+                    (basic-text " where " (default-style)))))
+
 (define (where-pict lhs rhs)
-  (htl-append lhs (make-=) rhs))
+  ((where-combine) lhs rhs))
+
+(define where-combine
+  (make-parameter (lambda (lhs rhs)
+                    (htl-append lhs (make-=) rhs))))
 
 (define (rp->side-condition-pict rp max-w)
   (side-condition-pict (rule-pict-fresh-vars rp)

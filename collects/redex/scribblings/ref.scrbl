@@ -11,7 +11,7 @@
                      mrlib/graph
                      (except-in 2htdp/image make-pen text)
                      (only-in pict pict? text dc-for-text-size text-style/c
-                              vc-append)
+                              vc-append hbl-append)
                      redex))
 
 @(define-syntax (defpattech stx)
@@ -3045,9 +3045,22 @@ single reduction relation.
 }
 @defparam[relation-clauses-combine combine 
                                    (parameter/c (-> (listof pict?) pict?))]{
-  @racket[combine] is called with the list of picts that are obtained by rendering
+  The @racket[combine] function is called with the list of picts that are obtained by rendering
   a relation; it should put them together into a single pict. It defaults to
   @racket[(λ (l) (apply vc-append 20 l))]
+}
+
+@defparam[where-make-prefix-pict make-prefix (parameter/c (-> pict?))]{
+  The @racket[make-prefix] function is called with no arguments to generate a pict
+  that prefixes @tech{@racket[where] clauses}. It defaults to a function that
+  produces a pict for ``where'' surrounded by spaces using the default style.
+}
+
+@defparam[where-combine combine (parameter/c (-> pict? pict? pict?))]{
+  The @racket[combine] function is called with picts for the left and right
+  side of a where clause, and it should put them together into a single pict. It defaults to
+  @racket[(λ (l r) (hbl-append l _=-pict r))], where @racket[_=-pict] is an equal
+  sign surrounded by spaces using the default style.
 }
 
 @subsection[#:tag "pink"]{Removing the Pink Background}

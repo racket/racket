@@ -1,3 +1,8 @@
+v5.3.4.11
+
+  * added where-make-prefix-pict and where-combine parameters.
+
+
 v5.3.4
 
   * adjusted define-union-language to allow the unioned languages to
