@@ -1250,20 +1250,23 @@
 (define (get-setup-collects pkg-directories metadata-ns)
   (maybe-append
    (for/list ([pkg-dir (in-list pkg-directories)])
-     (get-metadata metadata-ns pkg-dir 
-                   'setup-collects (lambda () (package-collections
-                                               pkg-dir
-                                               metadata-ns))
-                   #:checker (lambda (v)
-                               (unless (or (eq? v 'all)
-                                           (and (list? v)
-                                                (for ([c (in-list v)])
-                                                  (or (path-string? c)
-                                                      (and (list? c)
-                                                           (pair? c)
-                                                           (andmap path-string? c))))))
-                                 (pkg-error "bad 'setup-collects value\n  value: ~e"
-                                            v)))))))
+     (define single-collect
+       (pkg-single-collection pkg-dir #:namespace metadata-ns))
+     (or (and single-collect (list single-collect))
+         (get-metadata metadata-ns pkg-dir
+                       'setup-collects (lambda () (package-collections
+                                                   pkg-dir
+                                                   metadata-ns))
+                       #:checker (lambda (v)
+                                   (unless (or (eq? v 'all)
+                                               (and (list? v)
+                                                    (for ([c (in-list v)])
+                                                      (or (path-string? c)
+                                                          (and (list? c)
+                                                               (pair? c)
+                                                               (andmap path-string? c))))))
+                                     (pkg-error "bad 'setup-collects value\n  value: ~e"
+                                                v))))))))
 
 (define (pkg-install descs
                      #:old-infos [old-infos empty]
