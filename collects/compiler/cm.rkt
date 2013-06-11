@@ -609,8 +609,7 @@
   (or (try-file-time (build-path dir "native" (system-library-subpath)
                                  (path-add-suffix name (system-type
                                                         'so-suffix))))
-      (try-file-time (build-path dir (path-add-suffix name #".zo")))
-      -inf.0))
+      (try-file-time (build-path dir (path-add-suffix name #".zo")))))
 
 (define (try-file-sha1 path dep-path)
   (with-module-reading-parameterization
@@ -666,7 +665,7 @@
        [(not path-time)
         (trace-printf "~a does not exist" orig-path)
         (or (hash-ref up-to-date orig-path #f)
-            (let ([stamp (cons path-zo-time
+            (let ([stamp (cons (or path-zo-time +inf.0)
                                (delay (get-compiled-sha1 mode roots path)))])
               (hash-set! up-to-date main-path stamp)
               (unless (eq? main-path alt-path)
@@ -681,7 +680,7 @@
               (lambda ()
                 (trace-printf "newer version...")
                 (maybe-compile-zo #f #f mode roots path orig-path read-src-syntax up-to-date new-seen))]
-             [(> path-time path-zo-time)
+             [(> path-time (or path-zo-time -inf.0))
               (trace-printf "newer src...")
               ;; If `sha1-only?', then `maybe-compile-zo' returns a #f or thunk:
               (maybe-compile-zo sha1-only? deps mode roots path orig-path read-src-syntax up-to-date new-seen)]
@@ -693,11 +692,11 @@
                  (define d (collects-relative*->path (if ext? (cdr p) p)))
                  (define t
                    (if ext?
-                       (cons (try-file-time d) #f)
+                       (cons (or (try-file-time d) +inf.0) #f)
                        (compile-root mode roots d up-to-date read-src-syntax #f new-seen)))
                  (and t
                       (car t)
-                      (> (car t) path-zo-time)
+                      (> (car t) (or path-zo-time -inf.0))
                       (begin (trace-printf "newer: ~a (~a > ~a)..."
                                            d (car t) path-zo-time)
                              #t)))
@@ -709,7 +708,7 @@
            [(and build sha1-only?) #f]
            [else
             (when build (build))
-            (let ([stamp (cons (get-compiled-time mode roots path)
+            (let ([stamp (cons (or (get-compiled-time mode roots path) +inf.0)
                                (delay (get-compiled-sha1 mode roots path)))])
               (hash-set! up-to-date main-path stamp)
               (unless (eq? main-path alt-path)

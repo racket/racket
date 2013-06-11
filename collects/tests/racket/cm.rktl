@@ -55,7 +55,8 @@
                                   (printf "mangling .zo for ~a\n" f)
                                   (with-output-to-file d
                                     #:exists 'truncate
-                                    (lambda () (display "#~bad"))))))
+                                    (lambda () (display "#~bad")))
+                                  (file-or-directory-modify-seconds d ts))))
                             (caddr recomp))
                   (for-each (lambda (f)
                               (printf "re-making ~a\n" f)
@@ -88,15 +89,37 @@
        ("i.rkt" "(module i scheme/base)" #t)
        ("j.rkt" "(module j racket/base (module+ main (require \"b.rkt\")))" #t))
      '([("a.rkt") ("a.rkt") ("a.rkt")]
-       [("b.rkt") ("a.rkt") ("a.rkt" "b.rkt" "j.rkt")]
-       [("b.rkt") ("b.rkt") ("b.rkt" "j.rkt")]
+       [("b.rkt") ("a.rkt" "j.rkt") ("a.rkt" "b.rkt" "j.rkt")]
+       [("b.rkt") ("b.rkt") ("b.rkt")]
+       [() ("j.rkt") ("j.rkt")]
        [() ("a.rkt") ("a.rkt")]
-       [("c.sch") ("a.rkt") ("a.rkt" "b.rkt" "j.rkt")]
+       [("c.sch") ("j.rkt") ("b.rkt" "j.rkt")]
+       [() ("a.rkt") ("a.rkt")]
        [("f.rkt") ("a.rkt") ("a.rkt" "d.rkt" "f.rkt")]
        [("e.rkt") ("e.rkt") ("e.rkt")]
        [() ("a.rkt") ("a.rkt" "d.rkt")]
        [("i.rkt") ("a.rkt") ("a.rkt" "g.rkt" "i.rkt")]
        [("h.sch") ("a.rkt") ("a.rkt" "g.rkt")]))
+
+;; test that deleting a relevant file makes compilation fail:
+(define (try-remove rmv chk)
+  (printf "breaking ~a\n" rmv)
+  (delete-file (build-path dir rmv))
+  (for ([sfx '(#".zo" #".dep")])
+    (let ([f (build-path dir "compiled" (path-add-suffix rmv sfx))])
+      (when (file-exists? f)
+        (delete-file f))))
+  (test 'correctly-failed
+        'try-compile
+        (parameterize ([current-namespace (make-base-namespace)])
+          (with-handlers ([(lambda (exn)
+                             (or (exn:missing-module? exn)
+                                 (exn:fail:syntax? exn)))
+                           (lambda (exn) 'correctly-failed)])
+            (managed-compile-zo (build-path dir chk))))))
+(try-remove "e.rkt" "d.rkt")
+(try-remove "d.rkt" "a.rkt")
+(try-remove "c.sch" "b.rkt")
 
 ;; test manager-skip-file-handler
 (parameterize ([manager-skip-file-handler
