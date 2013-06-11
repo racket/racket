@@ -373,6 +373,49 @@
   }
 }
 
+@definterface[text:column-guide<%> (text%)]{
+  Classes that implement this interface show a vertical line
+  at a specified column width (when the content in the
+  text has any lines wider than that column width).
+  
+  The column width is determined by the @racket['framework:column-guide-width]
+  preference; that preference is a list of length two where the
+  first element is a boolean indicating if the line should be
+  visible at all, and the second is the width where the line
+  would be visible (if the first is @racket[#t]).
+  
+  The position of the line is determined by taking the
+  width of the @litchar{x} character in the @racket["Standard"]
+  style (or, if there is no @racket["Standard"] style, then
+  the @racket["Basic"] style) and multiplying that by the
+  preference value.
+  
+}
+
+@defmixin[column-guide-mixin (text%) (text:column-guide<%>)]{
+ @defmethod[#:mode extend (on-paint [before? any/]
+                                    [dc (is-a?/c dc<%>)]
+                                    [left real?]
+                                    [top real?]
+                                    [right real?]
+                                    [bottom real?]
+                                    [dx real?]
+                                    [dy real?]
+                                    [draw-caret (or/c 'no-caret 'show-inactive-caret 'show-caret
+                                                      (cons/c exact-nonnegative-integer?
+                                                              exact-nonnegative-integer?))])
+                   void?]{
+    Draws the column guide (if appropriate; see @racket[text:column-guide<%>]).
+  }
+ @defmethod[#:mode augment (on-change) void?]{
+   Checks to see if any of the state that would cause the line to draw
+   in a different place has changed (via calls to @method[editor<%> get-extent] and
+   @method[text% get-padding]; if so makes (up to) two calls to
+   @method[editor<%> invalidate-bitmap-cache] with rectangles that cover the
+   old and new locations of the line.
+ }
+}
+
 @definterface[text:normalize-paste<%> (text:basic<%>)]{
   @defmethod[(ask-normalize?) boolean?]{
     Prompts the user if the pasted text should be normalized (and updates
