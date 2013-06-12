@@ -375,6 +375,17 @@
         [(F: v) (cond [(assoc v (vars)) => second]
                       [else (int-err "unknown var: ~a" v)])]
         [(Poly: vs b)
+         ;; Don't generate poly contracts for non-functions
+         (define function-type?
+           (let loop ([ty ty])
+             (match (resolve ty)
+               [(Function: _) #t]
+               [(Union: elems) (andmap loop elems)]
+               [(Poly: _ body) (loop body)]
+               [(PolyDots: _ body) (loop body)]
+               [_ #f])))
+         (unless function-type?
+           (exit (fail)))
          (if (not (from-untyped? typed-side))
              ;; in typed positions, no checking needed for the variables
              (parameterize ([vars (append (for/list ([v (in-list vs)]) (list v #'any/c)) (vars))])
