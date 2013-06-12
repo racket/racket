@@ -2473,10 +2473,10 @@ Returns @racket[#t] if @racket[v] is an instance of a class
 ]}
 
 
-@defproc[(subclass? [v any/c] [class class?]) boolean?]{
+@defproc[(subclass? [v any/c] [cls class?]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a class derived from (or equal
-to) @racket[class], @racket[#f] otherwise.
+to) @racket[cls], @racket[#f] otherwise.
 
 @defexamples[#:eval class-eval
   (subclass? (class object% (super-new)) object%)
@@ -2485,10 +2485,10 @@ to) @racket[class], @racket[#f] otherwise.
 ]}
 
 
-@defproc[(implementation? [v any/c] [interface interface?]) boolean?]{
+@defproc[(implementation? [v any/c] [intf interface?]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a class that implements
-@racket[interface], @racket[#f] otherwise.
+@racket[intf], @racket[#f] otherwise.
 
 @defexamples[#:eval class-eval
   (define i<%> (interface () go))
@@ -2502,10 +2502,10 @@ Returns @racket[#t] if @racket[v] is a class that implements
 ]}
 
 
-@defproc[(interface-extension? [v any/c] [interface interface?]) boolean?]{
+@defproc[(interface-extension? [v any/c] [intf interface?]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is an interface that extends
-@racket[interface], @racket[#f] otherwise.
+@racket[intf], @racket[#f] otherwise.
 
 @defexamples[#:eval class-eval
   (define point<%> (interface () get-x get-y))
@@ -2517,9 +2517,9 @@ Returns @racket[#t] if @racket[v] is an interface that extends
 ]}
 
 
-@defproc[(method-in-interface? [sym symbol?] [interface interface?]) boolean?]{
+@defproc[(method-in-interface? [sym symbol?] [intf interface?]) boolean?]{
 
-Returns @racket[#t] if @racket[interface] (or any of its ancestor
+Returns @racket[#t] if @racket[intf] (or any of its ancestor
 interfaces) includes a member with the name @racket[sym], @racket[#f]
 otherwise.
 
@@ -2530,12 +2530,12 @@ otherwise.
 ]}
 
 
-@defproc[(interface->method-names [interface interface?]) (listof symbol?)]{
+@defproc[(interface->method-names [intf interface?]) (listof symbol?)]{
 
-Returns a list of symbols for the method names in @racket[interface],
+Returns a list of symbols for the method names in @racket[intf],
 including methods inherited from superinterfaces, but not including
 methods whose names are local (i.e., declared with
-@racket[define-local-member-names]).
+@racket[define-local-member-name]).
 
 @defexamples[#:eval class-eval
   (define i<%> (interface () get-x get-y))
@@ -2568,7 +2568,7 @@ that accepts @racket[cnt] arguments, @racket[#f] otherwise.
 Returns a list of all of the names of the fields bound in
 @racket[object], including fields inherited from superinterfaces, but
 not including fields whose names are local (i.e., declared with
-@racket[define-local-member-names]).
+@racket[define-local-member-name]).
 
 @defexamples[#:eval class-eval
   (field-names (new object%))
