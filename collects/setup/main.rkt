@@ -8,11 +8,13 @@
 ;; .zo file. Do not `require' this module from anywhere, not even 
 ;; `for-label', otherwise it could get a .zo anyway.
 
+;; Also, do not `require' any module that is compiled. That constraint
+;; essentially restrcts this module to `require's of '#%... modules.
+
 (module main '#%kernel
   (#%require '#%min-stx
              ;; Need to make sure they're here:
-             '#%builtin
-             racket/private/member)
+             '#%builtin)
 
   (when (file-stream-port? (current-output-port))
     (file-stream-buffer-mode (current-output-port) 'line))
@@ -54,6 +56,14 @@
                   (cons (car flags) (filter-flags (cdr flags))))))))
 
   (define-values (flags) (filter-flags (vector->list (current-command-line-arguments))))
+
+  (define-values (member)
+    (lambda (a l)
+      (if (null? l)
+          #f
+          (if (equal? a (car l))
+              l
+              (member a (cdr l))))))
 
   ;; Checks whether a flag is present:
   (define-values (on?)
