@@ -329,7 +329,10 @@
       (when success?
         (set! ranges-deq (make-queue))))
         
-    (define/public (highlight-range start end in-color [caret-space? #f] [priority 'low] [style 'rectangle] 
+    (define/public (highlight-range start end in-color 
+                                    [caret-space? #f]
+                                    [priority 'low]
+                                    [style 'rectangle] 
                                     #:adjust-on-insert/delete? [adjust-on-insert/delete? #f]
                                     #:key [key #f])
       (unless (let ([exact-pos-int?
@@ -351,10 +354,12 @@
                   (and (string? in-color)
                        (send the-color-database find-color in-color)))
         (error 'highlight-range
-               "expected a color or a string in the-color-database for the third argument, got ~e" in-color))
+               "expected a color or a string in the-color-database for the third argument, got ~e" 
+               in-color))
       (unless (memq style '(rectangle hollow-ellipse ellipse dot))
         (error 'highlight-range
-               "expected one of 'rectangle, 'ellipse 'hollow-ellipse, or 'dot as the style, got ~e" style))
+               "expected one of 'rectangle, 'ellipse 'hollow-ellipse, or 'dot as the style, got ~e"
+               style))
       (when (eq? style 'dot)
         (unless (= start end)
           (error 'highlight-range
@@ -434,7 +439,8 @@
            (loop new-left new-top new-right new-bottom
                  (cdr rectangles))])))
     
-    (define/override (on-paint before dc left-margin top-margin right-margin bottom-margin dx dy draw-caret)
+    (define/override (on-paint before dc left-margin top-margin right-margin bottom-margin
+                               dx dy draw-caret)
       (super on-paint before dc left-margin top-margin right-margin bottom-margin dx dy draw-caret)
       (when before
         (define-values (view-x view-y view-width view-height)
@@ -582,7 +588,8 @@
      (set! edition (+ edition 1))
      (inner (void) after-delete start len))
     
-    (define/public (move/copy-to-edit dest-edit start end dest-position #:try-to-move? [try-to-move? #t])
+    (define/public (move/copy-to-edit dest-edit start end dest-position
+                                      #:try-to-move? [try-to-move? #t])
       (split-snip start)
       (split-snip end)
       (let loop ([snip (find-snip end 'before)])
@@ -808,7 +815,7 @@
                    (send this do-draw-single-line dc dx dy 0 (unbox by) #f #f)
                    (send dc set-pen (if w-o-b? "white" "black") 1 'solid)
                    (send this draw-separator dc (unbox by) (+ (unbox by) line-height) dx dy)
-                   (define-values (padding-left padding-top padding-right padding-bottom) (get-padding))
+                   (define-values (padding-left _1 _2 _3) (get-padding))
                    padding-left]
                   [else 0]))
               (send dc draw-text first-line (+ x-start (+ (unbox bx) dx)) (+ (unbox by) dy))
@@ -1217,7 +1224,8 @@
                   [next
                    (unless (and to-replace-highlight
                                 (= (car to-replace-highlight) next)
-                                (= (cdr to-replace-highlight) (+ next (string-length searching-str))))
+                                (= (cdr to-replace-highlight) 
+                                   (+ next (string-length searching-str))))
                      (replace-highlight->normal-hit)
                      (define pr (cons next (+ next (string-length searching-str))))
                      (unhighlight-hit pr)
@@ -1273,11 +1281,12 @@
               (set! clear-yellow void)
               (when (and searching-str (= (string-length searching-str) (- end start)))
                 (when (do-search start end)
-                  (set! clear-yellow (highlight-range start end
-                                                      (if (preferences:get 'framework:white-on-black?)
-                                                          white-on-black-yellow-bubble-color
-                                                          "khaki")
-                                                      #f 'low 'ellipse))))
+                  (set! clear-yellow (highlight-range
+                                      start end
+                                      (if (preferences:get 'framework:white-on-black?)
+                                          white-on-black-yellow-bubble-color
+                                          "khaki")
+                                      #f 'low 'ellipse))))
               (end-edit-sequence)]))]
         [else
          (clear-yellow)
@@ -1423,7 +1432,8 @@
       (unhighlight-ranges/key 'plt:framework:search-bubbles)
       (set! search-bubble-table (make-hash)))
     
-    (define/private (do-search start end) (find-string searching-str 'forward start end #t case-sensitive?))
+    (define/private (do-search start end)
+      (find-string searching-str 'forward start end #t case-sensitive?))
     
     ;; INVARIANT: when a search bubble is highlighted,
     ;; the search-bubble-table has it mapped to #t
@@ -1793,7 +1803,10 @@
       (send delegate lock #t)
       (send delegate end-edit-sequence))
     
-    (define/override (highlight-range start end color [caret-space? #f] [priority 'low] [style 'rectangle] 
+    (define/override (highlight-range start end color 
+                                      [caret-space? #f] 
+                                      [priority 'low]
+                                      [style 'rectangle] 
                                       #:adjust-on-insert/delete? [adjust-on-insert/delete? #f]
                                       #:key [key #f])
       (when delegate 
@@ -2430,7 +2443,8 @@
           (begin-edit-sequence)
           (send ed set-port-text this)
           (lock #f)
-          #;(unless (= unread-start-point (paragraph-start-position (position-paragraph unread-start-point)))
+          #;(unless (= unread-start-point (paragraph-start-position 
+                                           (position-paragraph unread-start-point)))
               (insert-between "\n"))
           (insert-between es)
           (insert-between eof-button)
@@ -2579,18 +2593,20 @@
                   (handle-evt
                    (alarm-evt (+ last-flush msec-timeout))
                    (λ (_)
-                     (let-values ([(viable-bytes remaining-queue) (split-queue converter text-to-insert)])
-                       ;; we always queue the work here since the always event means no one waits for the callback
-                       (queue-insertion viable-bytes always-evt)
-                       (loop remaining-queue (current-inexact-milliseconds))))))
+                     (define-values (viable-bytes remaining-queue)
+                       (split-queue converter text-to-insert))
+                     ;; we always queue the work here since the 
+                     ;; always event means no one waits for the callback
+                     (queue-insertion viable-bytes always-evt)
+                     (loop remaining-queue (current-inexact-milliseconds)))))
               (handle-evt
                flush-chan
                (λ (return-evt/to-insert-chan)
-                 (let-values ([(viable-bytes remaining-queue) (split-queue converter text-to-insert)])
-                   (if (channel? return-evt/to-insert-chan)
-                       (channel-put return-evt/to-insert-chan viable-bytes) 
-                       (queue-insertion viable-bytes return-evt/to-insert-chan))
-                   (loop remaining-queue (current-inexact-milliseconds)))))
+                 (define-values (viable-bytes remaining-queue) (split-queue converter text-to-insert))
+                 (if (channel? return-evt/to-insert-chan)
+                     (channel-put return-evt/to-insert-chan viable-bytes) 
+                     (queue-insertion viable-bytes return-evt/to-insert-chan))
+                 (loop remaining-queue (current-inexact-milliseconds))))
               (handle-evt
                clear-output-chan
                (λ (_)
@@ -2771,41 +2787,46 @@
     ;; extracts the viable bytes (and other stuff) from the front of the queue
     ;; and returns them as strings (and other stuff).
     (define/private (split-queue converter q)
-      (let ([lst (at-queue->list q)])
-        (let loop ([lst lst]
-                   [acc null])
-          (if (null? lst)
-              (values (reverse acc)
-                      (empty-at-queue))
-              (let-values ([(front rest) (peel lst)])
-                (cond
-                  [(not front) (values (reverse acc)
-                                       (empty-at-queue))]
-                  [(bytes? (car front))
-                   (let ([the-bytes (car front)]
-                         [key (cdr front)])
-                     (if (null? rest)
-                         (let-values ([(converted-bytes src-read-k termination)
-                                       (bytes-convert converter the-bytes)])
-                           (if (eq? termination 'aborts)
-                               (values (reverse (cons (cons (bytes->string/utf-8 converted-bytes) key) acc))
-                                       (at-enqueue 
-                                        (cons (subbytes the-bytes
-                                                        src-read-k
-                                                        (bytes-length the-bytes))
-                                              key)
-                                        (empty-at-queue)))
-                               (values (reverse (cons (cons (bytes->string/utf-8 converted-bytes) key) acc))
-                                       (empty-at-queue))))
-                         (let-values ([(converted-bytes src-read-k termination)
-                                       (bytes-convert converter the-bytes)]
-                                      [(more-bytes more-termination) (bytes-convert-end converter)])
-                           (loop rest
-                                 (cons (cons (bytes->string/utf-8 (bytes-append converted-bytes more-bytes))
-                                             key)
-                                       acc)))))]
-                  [else (loop rest
-                              (cons front acc))]))))))
+      (define lst (at-queue->list q))
+      (let loop ([lst lst] [acc null])
+        (cond
+          [(null? lst)
+           (values (reverse acc)
+                   (empty-at-queue))]
+          [else
+           (define-values (front rest) (peel lst))
+           (cond
+             [(not front) (values (reverse acc)
+                                  (empty-at-queue))]
+             [(bytes? (car front))
+              (define the-bytes (car front))
+              (define key (cdr front))
+              (cond
+                [(null? rest)
+                 (define-values (converted-bytes src-read-k termination)
+                   (bytes-convert converter the-bytes))
+                 (cond
+                   [(eq? termination 'aborts)
+                    (values (reverse (cons (cons (bytes->string/utf-8 converted-bytes) key) acc))
+                            (at-enqueue 
+                             (cons (subbytes the-bytes
+                                             src-read-k
+                                             (bytes-length the-bytes))
+                                   key)
+                             (empty-at-queue)))]
+                   [else
+                    (values (reverse (cons (cons (bytes->string/utf-8 converted-bytes) key) acc))
+                            (empty-at-queue))])]
+                [else
+                 (define-values (converted-bytes src-read-k termination)
+                   (bytes-convert converter the-bytes))
+                 (define-values (more-bytes more-termination) (bytes-convert-end converter))
+                 (loop rest
+                       (cons (cons (bytes->string/utf-8 (bytes-append converted-bytes more-bytes))
+                                   key)
+                             acc))])]
+             [else (loop rest
+                         (cons front acc))])])))
     
     ;; peel : (cons (cons (union snip bytes) X) (listof (cons (union snip bytes) X))
     ;;     -> (values (cons (union snip bytes) X) (listof (cons (union snip bytes) X)
@@ -3142,23 +3163,23 @@
   (define (peek-proc bstr skip-count progress-evt)
     (poll-guard-evt
      (lambda (polling?)
-       (let ([evt 
-              (nack-guard-evt
-               (λ (nack)
-                 (let ([chan (make-channel)])
-                   (channel-put peek-chan (make-peeker bstr skip-count progress-evt chan nack polling?))
-                   chan)))])
-         (if polling? 
-             (let ([v (sync evt)])
-               (if (eq? v 0)
-                   ;; Don't return 0, because that means something is
-                   ;; probably ready. We want to indicate that nothing is
-                   ;; ready.
-                   never-evt
-                   ;; Even on success, package it as an event, because
-                   ;; `read-bytes-proc' expects an event
-                   (wrap-evt always-evt (lambda (_) v))))
-             evt)))))
+       (define evt 
+         (nack-guard-evt
+          (λ (nack)
+            (define chan (make-channel))
+            (channel-put peek-chan (make-peeker bstr skip-count progress-evt chan nack polling?))
+            chan)))
+       (if polling? 
+           (let ([v (sync evt)])
+             (if (eq? v 0)
+                 ;; Don't return 0, because that means something is
+                 ;; probably ready. We want to indicate that nothing is
+                 ;; ready.
+                 never-evt
+                 ;; Even on success, package it as an event, because
+                 ;; `read-bytes-proc' expects an event
+                 (wrap-evt always-evt (lambda (_) v))))
+           evt))))
   
   (define (progress-evt-proc)
     (sync
@@ -3490,8 +3511,8 @@ designates the character that triggers autocompletion
         (auto-complete))
       (inner (void) after-set-position))
     
-    ;; on-char must handle inputs for two modes: normal text mode and in-the-middle-of-autocompleting mode
-    ;; perhaps it would be better to handle this using the state machine pattern
+    ;; on-char must handle inputs for two modes: normal text mode and in-the-middle-of-autocompleting
+    ;; mode perhaps it would be better to handle this using the state machine pattern
     (define/override (on-char key-event)
       (cond
         [completions-box
@@ -3624,7 +3645,8 @@ designates the character that triggers autocompletion
     
     (define/public (scroll-down)
       (when hidden?
-        (set! all-completions (append (drop all-completions (autocomplete-limit)) visible-completions))
+        (set! all-completions (append (drop all-completions (autocomplete-limit))
+                                      visible-completions))
         (set! visible-completions (take all-completions (autocomplete-limit)))))
     
     (define/public (scroll-up)
@@ -3781,8 +3803,8 @@ designates the character that triggers autocompletion
           
           (make-geometry final-x final-y w h vec))))
     
-    ;; geometry records the menu's current width and height and a vector associating mouse location with
-    ;; selected item
+    ;; geometry records the menu's current width and height and
+    ;; a vector associating mouse location with a selected item
     (define geometry (compute-geometry))
     
     (define highlighted-menu-item 0) ; the currently-highlighted menu item
