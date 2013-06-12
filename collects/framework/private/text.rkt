@@ -961,21 +961,16 @@
             (send dc set-pen old-pen)))))
 
     (define/private (get-x-spot char-width)
-      (cond
-        [char-width 
-         (define dc (get-dc))
-         (cond
-           [dc
-            (define style (or (send (get-style-list) find-named-style "Standard")
-                              (send (get-style-list) find-named-style "Basic")))
-            (cond
-              [style
-               (define fnt (send style get-font))
-               (define-values (xw _1 _2 _3) (send dc get-text-extent "x" fnt))
-               (+ left-padding (* xw char-width))]
-              [else #f])]
-           [else #f])]
-        [else #f]))))
+      (let/ec return
+        (unless char-width (return #f))
+        (define dc (get-dc))
+        (unless dc (return #f))
+        (define style (or (send (get-style-list) find-named-style "Standard")
+                          (send (get-style-list) find-named-style "Basic")))
+        (unless style (return #f))
+        (define fnt (send style get-font))
+        (define-values (xw _1 _2 _3) (send dc get-text-extent "x" fnt))
+        (+ left-padding (* xw char-width))))))
 
 (define normalize-paste<%> (interface ((class->interface text%))
                              ask-normalize?
