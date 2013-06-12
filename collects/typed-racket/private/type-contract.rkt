@@ -381,9 +381,8 @@
              (match ty
                [(Function: _) #t]
                [(Union: elems) (andmap loop elems)]
-               [(App: rator rands stx)
-                (loop (resolve-app rator rands stx))]
-               [(Mu: _ body) (loop body)]
+               [(? needs-resolving?)
+                (loop (resolve ty))]
                [(Poly: _ body) (loop body)]
                [(PolyDots: _ body) (loop body)]
                [_ #f])))
