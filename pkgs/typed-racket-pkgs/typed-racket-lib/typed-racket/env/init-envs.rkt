@@ -89,6 +89,8 @@
     [(Mu-name: n b) `(make-Mu ,(sub n) ,(sub b))]
     [(Poly-names: ns b) `(make-Poly (list ,@(map sub ns)) ,(sub b))]
     [(PolyDots-names: ns b) `(make-PolyDots (list ,@(map sub ns)) ,(sub b))]
+    [(PolyRow-names: ns c b) `(make-PolyRow (list ,@(map sub ns))
+                                            (quote ,c) ,(sub b))]
     [(arr: dom rng rest drest kws)
      `(make-arr ,(sub dom) ,(sub rng) ,(sub rest) ,(sub drest) ,(sub kws))]
     [(TypeFilter: t p i)

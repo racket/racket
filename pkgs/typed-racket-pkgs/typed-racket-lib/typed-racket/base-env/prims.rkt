@@ -125,6 +125,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
           "../private/parse-classes.rkt"
           "../private/syntax-properties.rkt"
           "../types/utils.rkt"
+          "../types/classes.rkt"
           "for-clauses.rkt"
           'struct-extraction)
          "../types/numeric-predicates.rkt"
@@ -422,6 +423,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx #:literals (:)
     [(_ arg : . tys)
      (syntax/loc stx (inst arg . tys))]
+    ;; FIXME: Is the right choice to use a #:row keyword or just
+    ;; to use a Row type constructor and keep it consistent?
+    [(_ arg #:row e ...)
+     (syntax-property #'arg 'type-inst #'(#:row e ...))]
     [(_ arg tys ... ty ddd b:id)
      #:when (eq? (syntax-e #'ddd) '...)
      (type-inst-property (syntax/loc #'arg (#%expression arg)) #'(tys ... (ty . b)))]

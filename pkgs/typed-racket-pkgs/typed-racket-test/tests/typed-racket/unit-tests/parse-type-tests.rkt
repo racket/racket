@@ -4,6 +4,7 @@
          (for-syntax
            racket/base
            racket/dict
+           racket/set
            (base-env base-structs)
            (env tvar-env type-alias-env)
            (utils tc-utils)
@@ -222,11 +223,27 @@
    [FAIL (Class (init [x Number]) (init [x Number]))]
    [FAIL (Class (init [x Number]) (init-field [x Number]))]
    [FAIL (Class (field [x Number]) (init-field [x Number]))]
-   ;; test #:self
-   [(Class #:self This% [m ((Instance This%) -> Number)])
-    (-mu This%
-      (make-Class
-       #f null null `((m ,(t:-> (make-Instance This%) N)))))]
+   ;; test #:row-var
+   [(All (r #:row) (Class #:row-var r))
+    (make-PolyRow (list 'r)
+                  (list null null null)
+                  (make-Class (make-F 'r) null null null))]
+   [(All (r #:row) (Class #:implements (Class #:row-var r)))
+    (make-PolyRow (list 'r)
+                  (list null null null)
+                  (make-Class (make-F 'r) null null null))]
+   [(All (r #:row) (Class #:implements (Class) #:row-var r))
+    (make-PolyRow (list 'r)
+                  (list null null null)
+                  (make-Class (make-F 'r) null null null))]
+   [FAIL (Class #:row-var 5)]
+   [FAIL (Class #:row-var (list 3))]
+   [FAIL (Class #:implements (Class #:row-var r) #:row-var x)]
+   [FAIL (Class #:implements (Class #:row-var r) #:row-var r)]
+   [FAIL (All (r #:row)
+           (All (x #:row)
+            (Class #:implements (Class #:row-var r) #:row-var x)))]
+   [FAIL (All (r #:row) (Class #:implements (Class #:row-var r) #:row-var r))]
    ;; test #:implements
    [(Class #:implements (Class [m (Number -> Number)]) (field [x Number]))
     (make-Class #f null `((x ,-Number)) `((m ,(t:-> N N))))]
@@ -260,6 +277,22 @@
    [FAIL (Object [x Number] [x Number])]
    [FAIL (Object (field [x Number]) (field [x Number]))]
    [FAIL (Object [x Number] [x Number])]
+   ;; Test row polymorphic types
+   [(All (r #:row) ((Class #:row-var r) -> (Class #:row-var r)))
+    (-polyrow (r) (list null null null)
+      (t:-> (make-Class r null null null)
+            (make-Class r null null null)))]
+   [(All (r #:row (init x y z) (field f) m n)
+      ((Class #:row-var r) -> (Class #:row-var r)))
+    (-polyrow (r) (list '(x y z) '(f) '(m n))
+      (t:-> (make-Class r null null null)
+            (make-Class r null null null)))]
+   ;; Class types cannot use a row variable that doesn't constrain
+   ;; all of its members to be absent in the row
+   [FAIL (All (r #:row (init x))
+           ((Class #:row-var r (init y)) -> (Class #:row-var r)))]
+   [FAIL (All (r #:row (init x y z) (field f) m n)
+           ((Class #:row-var r a b c) -> (Class #:row-var r)))]
    ))
 
 ;; FIXME - add tests for parse-values-type, parse-tc-results

@@ -4,16 +4,16 @@
 
 (require "../utils/utils.rkt"
          (except-in (rep type-rep object-rep filter-rep) make-arr)
-         (rename-in (types abbrev union utils filter-ops resolve)
+         (rename-in (types abbrev union utils filter-ops resolve classes)
                     [make-arr* make-arr])
          (utils tc-utils stxclass-util literal-syntax-class)
          syntax/stx (prefix-in c: (contract-req))
          syntax/parse unstable/sequence
-         (env tvar-env type-name-env type-alias-env lexical-env index-env)
-         (only-in racket/class init init-field field)
-         (for-template (only-in racket/class init init-field field))
+         (env tvar-env type-name-env type-alias-env
+              lexical-env index-env row-constraint-env)
          (only-in racket/list flatten)
          racket/dict
+         racket/format
          racket/match
          racket/syntax
          (only-in unstable/list check-duplicate)
@@ -103,6 +103,29 @@
      (let* ([vars (stx-map syntax-e #'(vars ...))])
        (extend-tvars vars
          (make-Poly vars (parse-type #'t.type))))]
+    ;; Next two are row polymorphic cases
+    [(:All^ (var:id #:row) . t:omit-parens)
+     (add-disappeared-use #'kw)
+     (define var* (syntax-e #'var))
+     ;; When we're inferring the row constraints, there
+     ;; should be no need to extend the constraint environment
+     (define body-type
+       (extend-tvars (list var*) (parse-type #'t.type)))
+     (make-PolyRow
+      (list var*)
+      ;; No constraints listed, so we need to infer the constraints
+      (infer-row-constraints body-type)
+      body-type)]
+    [(:All^ (var:id #:row constr:row-constraints) . t:omit-parens)
+     (add-disappeared-use #'kw)
+     (define var* (syntax-e #'var))
+     (define constraints (attribute constr.constraints))
+     (extend-row-constraints (list var*) (list constraints)
+       (extend-tvars (list var*)
+         (make-PolyRow
+          (list var*)
+          constraints
+          (parse-type #'t.type))))]
     [(:All^ (_:id ...) _ _ _ ...) (tc-error "All: too many forms in body of All type")]
     [(:All^ . rest) (tc-error "All: bad syntax")]))
 
@@ -120,7 +143,7 @@
            #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #f)))
 
 (define-syntax-class non-keyword-ty
-  (pattern (k e:expr ...)
+  (pattern (k e ...)
            #:when (not (keyword? (syntax->datum #'k))))
   (pattern t:expr
            #:when (and (not (keyword? (syntax->datum #'t)))
@@ -534,88 +557,12 @@
       [t
        (-values (list (parse-type #'t)))])))
 
-;;; Syntax classes and utilities for (Class ...) type parsing
+;;; Utilities for (Class ...) type parsing
 
-;; Syntax -> Syntax
-;; removes two levels of nesting
-(define (flatten-class-clause stx)
-  (flatten (map stx->list (stx->list stx))))
-
-(define-splicing-syntax-class object-type-clauses
-  #:description "Object type clause"
-  #:attributes (field-names field-types method-names method-types)
-  #:literals (field)
-  (pattern (~seq (~or (field field-clause:field-or-method-type ...)
-                      method-clause:field-or-method-type)
-                 ...)
-           #:with field-names (flatten-class-clause #'((field-clause.label ...) ...))
-           #:with field-types (flatten-class-clause #'((field-clause.type ...) ...))
-           #:with method-names #'(method-clause.label ...)
-           #:with method-types #'(method-clause.type ...)
-           #:fail-when
-           (check-duplicate-identifier (syntax->list #'field-names))
-           "duplicate field or init-field clause"
-           #:fail-when
-           (check-duplicate-identifier (syntax->list #'method-names))
-           "duplicate method clause"))
-
-(define-splicing-syntax-class class-type-clauses
-  #:description "Class type clause"
-  #:attributes (self extends-types
-                init-names init-types init-optional?s
-                init-field-names init-field-types
-                init-field-optional?s
-                field-names field-types
-                method-names method-types)
-  #:literals (init init-field field)
-  (pattern (~seq (~or (~seq #:implements extends-type:expr)
-                      (~optional (~seq #:self self:id))
-                      (init init-clause:init-type ...)
-                      (init-field init-field-clause:init-type ...)
-                      (field field-clause:field-or-method-type ...)
-                      method-clause:field-or-method-type)
-                 ...)
-           ;; FIXME: improve these somehow
-           #:with init-names (flatten-class-clause #'((init-clause.label ...) ...))
-           #:with init-types (flatten-class-clause #'((init-clause.type ...) ...))
-           #:attr init-optional?s (flatten (attribute init-clause.optional?))
-           #:with init-field-names (flatten-class-clause #'((init-field-clause.label ...) ...))
-           #:with init-field-types (flatten-class-clause #'((init-field-clause.type ...) ...))
-           #:attr init-field-optional?s (flatten (attribute init-field-clause.optional?))
-           #:with field-names (flatten-class-clause #'((field-clause.label ...) ...))
-           #:with field-types (flatten-class-clause #'((field-clause.type ...) ...))
-           #:with method-names #'(method-clause.label ...)
-           #:with method-types #'(method-clause.type ...)
-           #:with extends-types #'(extends-type ...)
-           #:fail-when
-           (check-duplicate-identifier
-            (append (syntax->list #'init-names)
-                    (syntax->list #'init-field-names)))
-           "duplicate init or init-field clause"
-           #:fail-when
-           (check-duplicate-identifier
-            (append (syntax->list #'field-names)
-                    (syntax->list #'init-field-names)))
-           "duplicate field or init-field clause"
-           #:fail-when
-           (check-duplicate-identifier (syntax->list #'method-names))
-           "duplicate method clause"))
-
-(define-syntax-class init-type
-  #:description "Initialization argument label and type"
-  #:attributes (label type optional?)
-  (pattern
-   (label:id type:expr
-    (~optional (~and #:optional (~bind [optional? #t]))))))
-
-(define-syntax-class field-or-method-type
-  #:description "Pair of field or method label and type"
-  #:attributes (label type)
-  (pattern (label:id type:expr)))
-
-;; process-class-clauses : Syntax FieldDict MethodDict -> FieldDict MethodDict
+;; process-class-clauses : Option<F> Syntax FieldDict MethodDict
+;;                         -> Option<Id> FieldDict MethodDict
 ;; Merges #:implements class type and the current class clauses appropriately
-(define (merge-with-parent-type stx fields methods)
+(define (merge-with-parent-type row-var stx fields methods)
   ;; (Listof Symbol) Dict Dict String -> (Values Dict Dict)
   ;; check for duplicates in a class clause
   (define (check-duplicate-clause names super-names types super-types err-msg)
@@ -637,12 +584,12 @@
   (define parent-type (parse-type stx))
   (define (match-parent-type parent-type)
     (match parent-type
-      [(Class: _ _ fields methods)
-       (values fields methods)]
+      [(Class: row-var _ fields methods)
+       (values row-var fields methods)]
       [(? Mu?)
        (match-parent-type (unfold parent-type))]
       [_ (tc-error "expected a class type for #:implements clause")]))
-  (define-values (super-fields super-methods)
+  (define-values (super-row-var super-fields super-methods)
     (match-parent-type parent-type))
 
   (match-define (list (list field-names _) ...) fields)
@@ -663,10 +610,16 @@
     methods super-methods
     "method name ~a conflicts with #:implements clause"))
 
+  ;; it is an error for both the extending type and extended type
+  ;; to have row variables
+  (when (and row-var super-row-var)
+    (tc-error (~a "class type with row variable cannot"
+                  " extend another type that has a row variable")))
+
   ;; then append the super types if there were no errors
   (define merged-fields (append checked-super-fields checked-fields))
   (define merged-methods (append checked-super-methods checked-methods))
-  (values merged-fields merged-methods))
+  (values (or row-var super-row-var) merged-fields merged-methods))
 
 ;; Syntax -> Type
 ;; Parse a (Object ...) type
@@ -687,55 +640,49 @@
 ;; Parse a (Class ...) type
 (define (parse-class-type stx)
   (syntax-parse stx
-    [(kw clause:class-type-clauses)
+    [(kw (~var clause (class-type-clauses parse-type)))
      (add-disappeared-use #'kw)
+
      (define parent-types (stx->list #'clause.extends-types))
-     (define recursive-type (attribute clause.self))
-
-     ;; parsing the init, fields, and methods need to be aware of
-     ;; the self type if it's given
-     (define parse-type*
-       (cond [recursive-type
-              (define var (syntax-e recursive-type))
-              (λ (stx) (extend-tvars (list var) (parse-type stx)))]
-             [else parse-type]))
-
-     (define given-inits
-       (for/list ([name (append (stx-map syntax-e #'clause.init-names)
-                                (stx-map syntax-e #'clause.init-field-names))]
-                  [type (append (stx-map parse-type* #'clause.init-types)
-                                (stx-map parse-type* #'clause.init-field-types))]
-                  [optional? (append (attribute clause.init-optional?s)
-                                     (attribute clause.init-field-optional?s))])
-         (list name type optional?)))
-     (define given-fields
-       (for/list ([name (append (stx-map syntax-e #'clause.field-names)
-                                (stx-map syntax-e #'clause.init-field-names))]
-                  [type (append (stx-map parse-type* #'clause.field-types)
-                                (stx-map parse-type* #'clause.init-field-types))])
-         (list name type)))
-     (define given-methods
-       (for/list ([name (stx-map syntax-e #'clause.method-names)]
-                  [type (stx-map parse-type* #'clause.method-types)])
-         (list name type)))
+     (define given-inits (attribute clause.inits))
+     (define given-fields (attribute clause.fields))
+     (define given-methods (attribute clause.methods))
+     (define given-row-var
+       (and (attribute clause.row-var)
+            (parse-type (attribute clause.row-var))))
 
      ;; merge with all given parent types, erroring if needed
-     (define-values (fields methods)
-      (for/fold ([fields given-fields]
+     (define-values (row-var fields methods)
+      (for/fold ([row-var given-row-var]
+                 [fields given-fields]
                  [methods given-methods])
                 ([parent-type parent-types])
-        (merge-with-parent-type parent-type fields methods)))
+        (merge-with-parent-type row-var parent-type fields methods)))
+
+     ;; check constraints on row var for consistency with class
+     (when (and row-var (has-row-constraints? (F-n row-var)))
+       (define constraints (lookup-row-constraints (F-n row-var)))
+       (check-constraints given-inits (car constraints))
+       (check-constraints fields (cadr constraints))
+       (check-constraints methods (caddr constraints)))
 
      (define class-type
-       (make-Class
-        #f ;; FIXME: put type if it's a row variable
-        given-inits fields methods))
+       (make-Class row-var given-inits fields methods))
 
-     (cond [recursive-type
-            =>
-            (λ (self-id)
-              (make-Mu (syntax-e self-id) class-type))]
-           [else class-type])]))
+     class-type]))
+
+;; check-constraints : Dict<Name, _> Listof<Name> -> Void
+;; helper to check if the constraints are consistent with the type
+(define (check-constraints type-table constraint-names)
+  (define names-from-type (dict-keys type-table))
+  (define conflicting-name
+    (for/or ([m (in-list names-from-type)])
+      (and (not (memq m constraint-names))
+           m)))
+  (when conflicting-name
+    (tc-error (~a "class type cannot contain member "
+                  conflicting-name
+                  " because it conflicts with the row variable constraints"))))
 
 (define (parse-tc-results stx)
   (syntax-parse stx
