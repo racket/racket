@@ -410,7 +410,7 @@
   (define/cond-contract (maybe-loop form formals bodies expected)
     (syntax? syntax? syntax? (or/c tc-results/c #f) . -> . Type/c)
     (match expected
-      [(tc-result1: (or (Poly: _ _) (PolyDots: _ _)))
+      [(tc-result1: (or (Poly: _ _) (PolyDots: _ _) (PolyRow: _ _ _)))
        (tc/plambda form (remove-poly-layer tvarss-list) formals bodies expected)]
       [(tc-result1: (and v (Values: _))) (maybe-loop form formals bodies (values->tc-results v #f))]
       [_ 
@@ -458,6 +458,20 @@
          [else
            (tc-error "Expected a polymorphic function with ..., but function/annotation had no ...")]))
      (make-PolyDots (append ns (list dvar)) (extend-and-loop form ns formals bodies (ret expected*)))]
+    [(tc-result1: (and t (PolyRow-fresh: ns fresh-ns constraints expected*)))
+     (for ((tvars (in-list tvarss)))
+       (when (and (cons? tvars) (list? (first tvars)))
+         (tc-error
+          "Expected a polymorphic function without ..., but given function/annotation had ..."))
+       (unless (= (length tvars) 1)
+         (tc-error "Expected ~a type variable, but given ~a"
+                   1 (length tvars))))
+     (make-PolyRow
+      #:original-names ns
+      fresh-ns
+      constraints
+      (extend-and-loop form fresh-ns
+                       formals bodies (ret expected*)))]
     [(or (tc-results: _) (tc-any-results:) #f)
      (define lengths
        (for/set ((tvars (in-list tvarss)))
@@ -488,7 +502,7 @@
 (define (tc/lambda/internal form formals bodies expected)
   (if (or (has-poly-annotation? form)
           (match expected
-            [(tc-result1: t) (or (Poly? t) (PolyDots? t))]
+            [(tc-result1: t) (or (Poly? t) (PolyDots? t) (PolyRow? t))]
             [_ #f]))
       (ret (tc/plambda form (get-poly-tvarss form) formals bodies expected) -true-filter)
       (ret (tc/mono-lambda/type formals bodies expected) -true-filter)))

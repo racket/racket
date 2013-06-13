@@ -276,3 +276,10 @@
      (let ([dotted (-v dotted)]
            [vars (-v vars)] ...)
        (make-PolyDots (list 'vars ... 'dotted) ty))]))
+
+(define-syntax -polyrow
+  (syntax-rules ()
+    [(_ (var) consts ty)
+     (let ([var (-v var)])
+       (make-PolyRow (list 'var) consts ty))]))
+

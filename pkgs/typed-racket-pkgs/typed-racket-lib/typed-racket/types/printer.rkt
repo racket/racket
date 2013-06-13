@@ -270,7 +270,9 @@
 ;; class->sexp : Class [#:object? Boolean] -> S-expression
 ;; Convert a class or object type to an s-expression
 (define (class->sexp cls #:object? [object? #f])
-  (match-define (Class: _ inits fields methods) cls)
+  (match-define (Class: row-var inits fields methods) cls)
+  (define row-var*
+    (if (and row-var (F? row-var)) `(#:row-var ,(F-n row-var)) '()))
   (define inits*
     (if (or object? (null? inits))
         null
@@ -293,7 +295,7 @@
     (for/list ([name+type (in-list methods)])
       (match-define (list name type) name+type)
       `(,name ,(type->sexp type))))
-  `(,(if object? 'Object 'Class) ,@inits* ,@fields* ,@methods*))
+  `(,(if object? 'Object 'Class) ,@row-var* ,@inits* ,@fields* ,@methods*))
 
 ;; type->sexp : Type -> S-expression
 ;; convert a type to an s-expression that can be printed
@@ -417,6 +419,9 @@
      `(All ,names ,(t->s body))]
     [(PolyDots-names: (list names ... dotted) body)
      `(All ,(append names (list dotted '...)) ,(t->s body))]
+    ;; FIXME: should this print constraints too
+    [(PolyRow-names: names _ body)
+     `(All (,(car names) #:row) ,(t->s body))]
     [(Mu: x (Syntax: (Union: (list
                               (Base: 'Number _ _ _)
                               (Base: 'Boolean _ _ _)

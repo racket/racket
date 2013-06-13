@@ -5,11 +5,12 @@
          racket/match (prefix-in - (contract-req))
          "signatures.rkt"
          "check-below.rkt" "tc-app-helper.rkt" "../types/kw-types.rkt"
-         (types utils abbrev union subtype type-table)
+         (types utils abbrev union subtype type-table classes)
          (private-in parse-type type-annotation syntax-properties)
          (rep type-rep filter-rep object-rep)
          (utils tc-utils)
          (env lexical-env tvar-env index-env)
+         racket/format
          racket/private/class-internal
          syntax/parse syntax/stx
          unstable/syntax
@@ -29,8 +30,23 @@
   (find-method/who))
 
 ;; do-inst : syntax type -> type
+;; Perform a type instantiation, delegating to the appropriate helper
+;; function depending on if the argument is a row or not
 (define (do-inst stx ty)
   (define inst (type-inst-property stx))
+  (if (row-syntax? inst)
+      (do-row-inst stx inst ty)
+      (do-normal-inst stx inst ty)))
+
+;; row-syntax? Syntax -> Boolean
+;; This checks if the syntax object resulted from a row instantiation
+(define (row-syntax? stx)
+  (define lst (stx->list stx))
+  (and lst (eq? (syntax-e (car lst)) '#:row)))
+
+;; do-normal-inst : Syntax Syntax Type -> Type
+;; Instantiate a normal polymorphic type
+(define (do-normal-inst stx inst ty)
   (define (split-last l)
     (let-values ([(all-but last-list) (split-at l (sub1 (length l)))])
       (values all-but (car last-list))))
@@ -82,6 +98,38 @@
               [else
                (instantiate-poly ty (stx-map parse-type inst))])))]
     [_ (if inst
+           (tc-error/expr #:return (Un)
+                          "Cannot instantiate expression that produces ~a values"
+                          (if (null? ty) 0 "multiple"))
+           ty)]))
+
+;; do-row-inst : Syntax ClassRow Type -> Type
+;; Instantiate a row polymorphic function
+(define (do-row-inst stx row-stx ty)
+  ;; At this point, we know `stx` represents a row so we can parse it.
+  ;; The parsing is done here because if `inst` did the parsing, it's
+  ;; too early and ends up with an empty type environment.
+  (define row
+    (syntax-parse row-stx
+      [(#:row (~var clauses (row-clauses parse-type)))
+       (attribute clauses.row)]))
+  (match ty
+    [(list ty)
+     (list
+      (cond [(not row) ty]
+            [(not (PolyRow? ty))
+             (tc-error/expr #:return (Un) "Cannot instantiate non-row-polymorphic type ~a"
+                            (cleanup-type ty))]
+            [else
+             (match-define (PolyRow: _ constraints _) ty)
+             (check-row-constraints
+              row constraints
+              (λ (name)
+                (tc-error/expr
+                 (~a "Cannot instantiate row with member " name
+                     " that the given row variable requires to be absent"))))
+             (instantiate-poly ty (list row))]))]
+    [_ (if row
            (tc-error/expr #:return (Un)
                           "Cannot instantiate expression that produces ~a values"
                           (if (null? ty) 0 "multiple"))

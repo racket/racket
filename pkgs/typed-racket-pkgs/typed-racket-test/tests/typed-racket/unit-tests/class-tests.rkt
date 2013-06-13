@@ -751,5 +751,80 @@
     (define c% (class: object% (super-new)
                  (: x Integer)
                  (field [x 0])))
-    (get-field x (new c%)))))
+    (get-field x (new c%)))
+
+   ;; row polymorphism, basic example with instantiation
+   (check-ok
+    (: f (All (A #:row (field x))
+           ((Class #:row-var A)
+            ->
+            (Class #:row-var A (field [x Integer])))))
+    (define (f cls)
+      (class: cls (super-new)
+        (field [x 5])))
+    (inst f #:row (field [y Integer])))
+
+   ;; fails, because the instantiation uses a field that
+   ;; is supposed to be absent via the row constraint
+   (check-err
+    (: f (All (A #:row (field x))
+           ((Class #:row-var A)
+            ->
+            (Class #:row-var A (field [x Integer])))))
+    (define (f cls)
+      (class: cls (super-new)
+        (field [x 5])))
+    (inst f #:row (field [x Integer])))
+
+   ;; fails, mixin argument is missing required field
+   (check-err
+    (: f (All (A #:row (field x))
+           ((Class #:row-var A)
+            ->
+            (Class #:row-var A (field [x Integer])))))
+    (define (f cls)
+      (class: cls (super-new)
+        (field [x 5])))
+    (define instantiated
+      (inst f #:row (field [y Integer])))
+    (instantiated
+     (class: object% (super-new))))
+
+   ;; mixin application succeeds
+   (check-ok
+    (: f (All (A #:row (field x))
+           ((Class #:row-var A)
+            ->
+            (Class #:row-var A (field [x Integer])))))
+    (define (f cls)
+      (class: cls (super-new)
+        (field [x 5])))
+    (define instantiated
+      (inst f #:row (field [y Integer])))
+    (instantiated
+     (class: object% (super-new)
+       (: y Integer)
+       (field [y 0]))))
+
+   ;; Basic row constraint inference
+   (check-ok
+    (: f (All (A #:row) ; inferred
+           ((Class #:row-var A)
+            ->
+            (Class #:row-var A (field [x Integer])))))
+    (define (f cls)
+      (class: cls (super-new)
+        (field [x 5])))
+    (inst f #:row (field [y Integer])))
+
+   ;; fails, inferred constraint and instantiation don't match
+   (check-err
+    (: f (All (A #:row)
+           ((Class #:row-var A)
+            ->
+            (Class #:row-var A (field [x Integer])))))
+    (define (f cls)
+      (class: cls (super-new)
+        (field [x 5])))
+    (inst f #:row (field [x Integer])))))
 
