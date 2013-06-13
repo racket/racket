@@ -10,7 +10,8 @@
           racket/class
           (for-syntax racket/base)
           (for-label 2htdp/image
-                     2htdp/planetcute))
+                     2htdp/planetcute
+                     (only-in lang/htdp-beginner first list rest empty? define cond)))
 
 @; -----------------------------------------------------------------------------
 
@@ -19,8 +20,7 @@
 @defmodule[2htdp/planetcute]
 
 @(define pc-eval (make-base-eval))
-@(interaction-eval #:eval pc-eval (require 2htdp/image))
-@(interaction-eval #:eval pc-eval (require 2htdp/planetcute))
+@(interaction-eval #:eval pc-eval (require 2htdp/image 2htdp/planetcute racket/list))
 
 The @racketmodname[2htdp/planetcute] library contains the 
 @link["http://www.lostgarden.com/2007/05/dancs-miraculously-flexible-game.html"]{Planet Cute} 
@@ -32,24 +32,25 @@ from the Planet Cute website.
 
 @racketblock+eval[#:eval 
                   pc-eval
-                  (code:comment "stacks its arguments on each")
-                  (code:comment "other, separated by 40 pixels")
-                  (define (stack arg . args)
+                  (code:comment "stack : non-empty-list-of-images -> image")
+                  (code:comment "stacks 'imgs' on each other, separated by 40 pixels")
+                  (define (stack imgs)
                     (cond
-                      [(null? args) arg]
-                      [else (overlay/xy arg 0 40
-                                        (apply stack args))]))]
+                      [(empty? (rest imgs)) (first imgs)]
+                      [else (overlay/xy (first imgs)
+                                        0 40
+                                        (stack (rest imgs)))]))]
 @interaction[#:eval 
              pc-eval
              (beside/align
               "bottom"
-              (stack wall-block-tall stone-block)
-              (stack character-cat-girl
-                     stone-block stone-block
-                     stone-block stone-block)
+              (stack (list wall-block-tall stone-block))
+              (stack (list character-cat-girl
+                           stone-block stone-block
+                           stone-block stone-block))
               water-block
-              (stack grass-block dirt-block)
-              (stack grass-block dirt-block dirt-block))]
+              (stack (list grass-block dirt-block))
+              (stack (list grass-block dirt-block dirt-block)))]
 
 @(close-eval pc-eval)
 
