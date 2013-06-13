@@ -14,7 +14,7 @@
          (env lexical-env type-env-structs tvar-env index-env)
          racket/private/class-internal
          syntax/parse syntax/stx
-         unstable/function unstable/syntax #;unstable/debug         
+         unstable/function unstable/syntax
          (only-in srfi/1 split-at)
          (for-template "internal-forms.rkt" (only-in '#%paramz [parameterization-key pz:pk])))
 

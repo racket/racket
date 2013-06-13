@@ -15,7 +15,7 @@
          (env env-req)
          (for-template (only-in (base-env prims) :type :print-type :query-type/result))
          (utils utils tc-utils arm)
-         "tc-setup.rkt" "utils/debug.rkt")
+         "tc-setup.rkt")
 
 (provide mb-core ti-core wt-core)
 

@@ -6,7 +6,6 @@
          (for-template racket/base)
          (rep type-rep)
          syntax/parse
-         unstable/debug
          syntax/id-table
          racket/contract
          racket/match

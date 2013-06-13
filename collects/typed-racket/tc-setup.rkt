@@ -7,7 +7,7 @@
          (types utils)
          (typecheck typechecker provide-handling tc-toplevel)
          (env tvar-env type-name-env type-alias-env env-req mvar-env)
-         (utils tc-utils disarm mutated-vars debug)
+         (utils tc-utils disarm mutated-vars)
          (rep type-rep)
          (for-syntax racket/base)
          (for-template racket/base))
@@ -63,8 +63,7 @@
         (do-time "Initialized Envs")
         (find-mutated-vars fully-expanded-stx mvar-env)
         (parameterize ([orig-module-stx (or (orig-module-stx) orig-stx)]
-                       [expanded-module-stx fully-expanded-stx]
-                       [debugging? #f])
+                       [expanded-module-stx fully-expanded-stx])
           (do-time "Starting `checker'")
           (define-values (pre-result post-result) (checker fully-expanded-stx))
           (do-time "Typechecking Done")
