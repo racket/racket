@@ -38,7 +38,7 @@
                       AGL_PIXEL_SIZE 32
                       AGL_OFFSCREEN
                       AGL_NONE))])
-      (and fmt
+      (when fmt
            (let ([d (aglCreateContext fmt #f)])
              (when d
                (void (aglSetCurrentContext d))))))))
