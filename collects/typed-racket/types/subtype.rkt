@@ -1,6 +1,6 @@
 #lang racket/base
 (require (except-in "../utils/utils.rkt" infer)
-         racket/match unstable/match racket/function racket/lazy-require racket/list
+         racket/match racket/function racket/lazy-require racket/list
          (prefix-in c: (contract-req))
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)

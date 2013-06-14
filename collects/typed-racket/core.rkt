@@ -5,7 +5,7 @@
          (for-template racket/base)
          (private with-types type-contract parse-type syntax-properties)
          (except-in syntax/parse id)
-         racket/match racket/syntax unstable/match racket/list syntax/stx
+         racket/match racket/syntax racket/list syntax/stx
          racket/format
          racket/promise
          (only-in racket/string string-join)

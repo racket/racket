@@ -14,7 +14,7 @@
  (types resolve utils)
  (prefix-in t: (types abbrev numeric-tower))
  (private parse-type syntax-properties)
- racket/match unstable/match syntax/struct syntax/stx racket/syntax racket/list
+ racket/match syntax/struct syntax/stx racket/syntax racket/list
  unstable/sequence
  (contract-req)
  (for-template racket/base racket/contract racket/set (utils any-wrap)

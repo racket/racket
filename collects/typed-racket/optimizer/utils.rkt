@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require unstable/match racket/match unstable/sequence unstable/syntax
+(require racket/match unstable/sequence unstable/syntax
          racket/dict syntax/id-table racket/syntax syntax/stx
          "../utils/utils.rkt"
          (for-template racket/base)

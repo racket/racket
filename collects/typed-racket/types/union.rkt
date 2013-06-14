@@ -5,8 +5,7 @@
          (prefix-in c: (contract-req))
          (types subtype base-abbrev resolve)
          racket/match
-         racket/list
-         (only-in unstable/match match*?))
+         racket/list)
 
 
 (provide/cond-contract
@@ -24,19 +23,18 @@
 ;; The output is a non overlapping list of non Union types.
 (define (merge a b)
   (define b* (make-union* b))
-  (cond
+  (match* (a b)
     ;; If a union element is a Name application, then it should not
     ;; be checked for subtyping since that can cause infinite
     ;; loops if this is called during type instantiation.
-    [(match*? (a b) ((App: (? Name?) _ _) b))
-     (match-define (App: rator rands stx) a)
+    [((App: (and (Name: _) rator) rands stx) _)
      ;; However, we should check if it's a well-formed application
      ;; so that bad applications are rejected early.
      (resolve-app-check-error rator rands stx)
      (cons a b)]
-    [(subtype a b*) b]
-    [(subtype b* a) (list a)]
-    [else (cons a b)]))
+    [((? (λ _ (subtype a b*))) _) b]
+    [((? (λ _ (subtype b* a))) _) (list a)]
+    [(_ _) (cons a b)]))
 
 ;; Type -> List[Type]
 (define (flat t)
