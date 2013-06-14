@@ -570,7 +570,7 @@
                                                          @interaction[#:eval (bsl) x (cddr x)]
                                                          }
   @defproc[(caddr [x list?]) any/c]{
-                                    LISP-style selector: @racket[(caddr x)].
+                                    LISP-style selector: @racket[(car (cdr (cdr x)))].
                                                          @interaction[#:eval (bsl) x (caddr x)]
                                                          }
   @defproc[(caadr [x list?]) any/c]{
@@ -582,7 +582,7 @@
                                                          @interaction[#:eval (bsl) w (caaar w)]
                                                          }
   @defproc[(cdaar [x list?]) any/c]{
-                                    LISP-style selector: @racket[(cdr (cadr (car x)))].
+                                    LISP-style selector: @racket[(cdr (car (car x)))].
                                                          @interaction[#:eval (bsl) w (cdaar w)]
                                                          }
   @defproc[(cdadr [x list?]) any/c]{
