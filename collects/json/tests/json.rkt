@@ -104,8 +104,8 @@
                                   @T{ 1 [2,3] "four" }))])
           je)
         => '(1 (2 3) "four")
-        (string->jsexpr "]") =error> "read-json:"
-        (string->jsexpr "foo") =error> "read-json:"
+        (string->jsexpr "]") =error> "string->jsexpr:"
+        (string->jsexpr "foo") =error> "string->jsexpr:"
         (string->jsexpr "") => eof
         (string->jsexpr " \t\r\n") => eof
 
@@ -117,20 +117,20 @@
         (string->jsexpr @T{ "/" }) => "/"
         (string->jsexpr @T{ "\/" }) => "/"
         ;; More error tests:
-        (string->jsexpr @T{ [1,2,,3] }) =error> "read-json:"
-        (string->jsexpr @T{ [1,2,3,] }) =error> "read-json:"
-        (string->jsexpr @T{ {42 : "bad-key!"} }) =error> "read-json:"
-        (string->jsexpr @T{ {'no-colon' , ""} }) =error> "read-json:"
-        (string->jsexpr @T{ {"x":1,,"y":2} }) =error> "read-json:"
-        (string->jsexpr @T{ {x:1, y:2} }) =error> "read-json:"
-        (string->jsexpr " {x:1, y:2] ") =error> "read-json:"
-        (string->jsexpr " [\"x\",1, \"y\",2} ") =error> "read-json:"
-        (string->jsexpr @T{ truelove }) =error> "read-json:"
-        (string->jsexpr @T{ truebred }) =error> "read-json:"
-        (string->jsexpr @T{ falsehood }) =error> "read-json:"
-        (string->jsexpr @T{ falsetto }) =error> "read-json:"
-        (string->jsexpr @T{ nullity }) =error> "read-json:"
-        (string->jsexpr @T{ nulliparous }) =error> "read-json:"
+        (string->jsexpr @T{ [1,2,,3] }) =error> "string->jsexpr:"
+        (string->jsexpr @T{ [1,2,3,] }) =error> "string->jsexpr:"
+        (string->jsexpr @T{ {42 : "bad-key!"} }) =error> "string->jsexpr:"
+        (string->jsexpr @T{ {'no-colon' , ""} }) =error> "string->jsexpr:"
+        (string->jsexpr @T{ {"x":1,,"y":2} }) =error> "string->jsexpr:"
+        (string->jsexpr @T{ {x:1, y:2} }) =error> "string->jsexpr:"
+        (string->jsexpr " {x:1, y:2] ") =error> "string->jsexpr:"
+        (string->jsexpr " [\"x\",1, \"y\",2} ") =error> "string->jsexpr:"
+        (string->jsexpr @T{ truelove }) =error> "string->jsexpr:"
+        (string->jsexpr @T{ truebred }) =error> "string->jsexpr:"
+        (string->jsexpr @T{ falsehood }) =error> "string->jsexpr:"
+        (string->jsexpr @T{ falsetto }) =error> "string->jsexpr:"
+        (string->jsexpr @T{ nullity }) =error> "string->jsexpr:"
+        (string->jsexpr @T{ nulliparous }) =error> "string->jsexpr:"
         ))
 
 (test do (pred-tests)
