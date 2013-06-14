@@ -46,6 +46,19 @@
                  o))))
      (define (check-name name code)
        (test name module-compiled-name code))
+     (define-values (m-path m-type)
+       (get-module-path file.sfx
+                        #:choose (lambda (src zo so)
+                                   (test src? file-exists? src)
+                                   (test zo? file-exists? zo)
+                                   (test so? file-exists? so)
+                                   #f)))
+     (test
+       (cond
+         [zo? (list file.zo 'zo)]
+         [so? (list file.so 'so)]
+         [else (list file.sfx 'src)])
+       list m-path m-type)
      (check-name
       'file
       (get-module-code file.sfx
@@ -54,6 +67,19 @@
                                   (test zo? file-exists? zo)
                                   (test so? file-exists? so)
                                   #f)))
+     (define-values (sm-path sm-type)
+       (get-module-path file.sfx
+                        #:submodule? #t
+                        #:choose (lambda (src zo so)
+                                   (test src? file-exists? src)
+                                   (test zo? file-exists? zo)
+                                   (test so? file-exists? so)
+                                   #f)))
+     (test
+       (cond
+         [zo? (list file.zo 'zo)]
+         [else (list file.sfx 'src)])
+       list sm-path sm-type)
      (check-name
       '(file inner)
       (get-module-code file.sfx
