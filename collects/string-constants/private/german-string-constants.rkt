@@ -428,6 +428,9 @@
  (hide-line-numbers/menu "Zeilen&nummern ausblenden")
 
  (show-line-numbers-in-definitions "Alle Zeilennummern in Definitionen einblenden") ;; shows up in the popup menu item in the bottom of the drracket window; controls the line numbers on each line in the definitions; used in a checkable menu item
+ (maximum-char-width-guide-pref-check-box "Richtschnur für maximale Zeichenbreite")
+ (hide-column-width-guide "Richtschnur für Spaltenbreite für Dateien mit ~a Spalten einblenden")
+ (show-column-width-guide "Richtschnur für Spaltenbreite für Dateien mit ~a Spalten ausblenden") ;; filled with a number > 2
  (limit-interactions-size "Umfang der Interaktionen einschränken")
  (background-color "Hintergrundfarbe")
  (default-text-color "Standard für Text") ;; used for configuring colors, but doesn't need the word "color"
