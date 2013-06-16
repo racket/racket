@@ -963,52 +963,58 @@
             #f))))
 
 (define (move-documentation-into-place doc src-dir setup-printf workerid lock)
-  (define dest-dir (doc-dest-dir doc))
-  (define move? (not (equal? (file-or-directory-identity src-dir)
-                             (and (directory-exists? dest-dir)
-                                  (file-or-directory-identity dest-dir)))))
-  (setup-printf (string-append
-                 (if workerid (format "~a " workerid) "")
-                 (if move? "moving" "syncing"))
-                "~a"
-                (path->relative-string/setup src-dir))
+  (with-handlers ([exn:fail? (lambda (exn)
+                               ;; On any failure, log the error and give up.
+                               ;; Maybe further actions are appropriate, but
+                               ;; overall clean-up and repair is intended to be
+                               ;; the job of the regular documentation builder.
+                               (log-error (exn-message exn)))])
+    (define dest-dir (doc-dest-dir doc))
+    (define move? (not (equal? (file-or-directory-identity src-dir)
+                               (and (directory-exists? dest-dir)
+                                    (file-or-directory-identity dest-dir)))))
+    (setup-printf (string-append
+                   (if workerid (format "~a " workerid) "")
+                   (if move? "moving" "syncing"))
+                  "~a"
+                  (path->relative-string/setup src-dir))
 
-  (when move?
-    (when (directory-exists? dest-dir)
-      (delete-directory/files dest-dir)
-    (copy-directory/files src-dir dest-dir)
-    (delete-directory/files src-dir)))
-  ;; Register provided-tag information with the database:
-  (let ([provides-path (build-path dest-dir "provides.sxref")])
-    (when (file-exists? provides-path)
-      ;; register keys provided in "out<n>.sxref" with
-      ;; the database
-      (define providess (call-with-input-file*
-                         provides-path
-                         (lambda (in) (fasl->s-exp in))))
-      (define db-file (find-db-file doc #f))
-      (for ([provides (in-list providess)]
-            [n (in-naturals)])
-        (define filename (sxref-path #f doc (format "out~a.sxref" n)))
-        (call-with-lock
-         lock
-         (lambda ()
-           (doc-db-clear-provides db-file filename)
-           (doc-db-add-provides db-file provides filename))))))
-  ;; For each ".html" file, check for a reference to "local-redirect.js",
-  ;; and fix up the path if there is a reference:
-  (define js-path (if (doc-under-main? doc)
-                      "../local-redirect"
-                      (url->string (path->url (build-path (find-user-doc-dir)
-                                                          "local-redirect")))))
-  (for ([p (in-directory dest-dir)])
-    (when (regexp-match? #rx#"[.]html$" (path->bytes p))
-      (fixup-local-redirect-reference p js-path)))
-  ;; The existence of "synced.rktd" means that the db is in sync
-  ;; with "provides.sxref" and ".html" files have been updated.
-  (let ([provided-path (build-path dest-dir "synced.rktd")])
-    (unless (file-exists? provided-path)
-      (call-with-output-file provided-path (lambda (o) (write '#t o))))))
+    (when move?
+      (when (directory-exists? dest-dir)
+        (delete-directory/files dest-dir)
+        (copy-directory/files src-dir dest-dir)
+        (delete-directory/files src-dir)))
+    ;; Register provided-tag information with the database:
+    (let ([provides-path (build-path dest-dir "provides.sxref")])
+      (when (file-exists? provides-path)
+        ;; register keys provided in "out<n>.sxref" with
+        ;; the database
+        (define providess (call-with-input-file*
+                           provides-path
+                           (lambda (in) (fasl->s-exp in))))
+        (define db-file (find-db-file doc #f))
+        (for ([provides (in-list providess)]
+              [n (in-naturals)])
+          (define filename (sxref-path #f doc (format "out~a.sxref" n)))
+          (call-with-lock
+           lock
+           (lambda ()
+             (doc-db-clear-provides db-file filename)
+             (doc-db-add-provides db-file provides filename))))))
+    ;; For each ".html" file, check for a reference to "local-redirect.js",
+    ;; and fix up the path if there is a reference:
+    (define js-path (if (doc-under-main? doc)
+                        "../local-redirect"
+                        (url->string (path->url (build-path (find-user-doc-dir)
+                                                            "local-redirect")))))
+    (for ([p (in-directory dest-dir)])
+      (when (regexp-match? #rx#"[.]html$" (path->bytes p))
+        (fixup-local-redirect-reference p js-path)))
+    ;; The existence of "synced.rktd" means that the db is in sync
+    ;; with "provides.sxref" and ".html" files have been updated.
+    (let ([provided-path (build-path dest-dir "synced.rktd")])
+      (unless (file-exists? provided-path)
+        (call-with-output-file provided-path (lambda (o) (write '#t o)))))))
 
 (define (read-delayed-in! info latex-dest)
   (let* ([doc (info-doc info)]
