@@ -1,8 +1,8 @@
 #| 
 A test case:
 
-(module tmp mzscheme
-   (require mzlib/class mred browser framework)
+#lang racket
+   (require racket/gui browser framework)
    
    (define f%
      (frame:status-line-mixin 
@@ -22,15 +22,16 @@ A test case:
 	 ;; The starting URL:
 	 "http://www.htdp.org/";
 	 ;; #f means not a relative URL:
-	 #f))
+	 #f)
 |#
 
-#lang scheme/unit
+#lang racket/unit
 
-(require mzlib/class
+(require racket/class
+         (only-in racket/list last-pair)
          "sig.rkt"
-         scheme/path
-         scheme/file
+         racket/path
+         racket/file
          net/url-sig
          net/url-structs
          net/head
@@ -39,28 +40,22 @@ A test case:
          string-constants
          setup/plt-installer-sig)
 
-   
-(import html^
+  (import html^
         mred^
         setup:plt-installer^
         url^)
-(export hyper^)
-(init-depend mred^)
+  (export hyper^)
+  (init-depend mred^)
 
-(define (last-pair l)
-  (if (null? (cdr l))
-      l
-      (last-pair (cdr l))))
-
-(define-struct (exn:file-saved-instead exn) (pathname))
-(define-struct (exn:cancelled exn) ())
-(define-struct (exn:tcp-problem exn) ())
+(struct exn:file-saved-instead exn (pathname))
+(struct exn:cancelled exn ())
+(struct exn:tcp-problem exn ())
 
 (define history-limit 20)
 
-(define-struct hyperlink (anchor-start anchor-end url-string))
+(struct hyperlink (anchor-start anchor-end url-string))
 
-(define-struct hypertag (name position))
+(struct hypertag (name position))
 
 (define (same-page-url? a b)
   (or (eq? a b)
@@ -104,7 +99,7 @@ A test case:
                   (equal? "file" (url-scheme url)))
              (with-handlers ([exn:fail:filesystem? (lambda (x) #f)])
                (path-below?
-                (normal-case-path (normalize-path (build-path (collection-path "mzlib") 
+                (normal-case-path (normalize-path (build-path (collection-path "racket") 
                                                               'up
                                                               'up)))
                 (normal-case-path (normalize-path (apply build-path 
@@ -115,7 +110,7 @@ A test case:
          (define title #f)
          (define htmling? #f)
          (define redirection #f)
-         (define hypertags-list (list (make-hypertag "top" 0)))
+         (define hypertags-list (list (hypertag "top" 0)))
          (define hyper-delta (make-object style-delta% 'change-underline #t))
          (let ([mult (send hyper-delta get-foreground-mult)]
                [add (send hyper-delta get-foreground-add)])
@@ -162,7 +157,7 @@ A test case:
                        (when (string=? name (hypertag-name tag))
                          (remove-tag  name)))
                      hypertags-list)
-           (let ([new-tag (make-hypertag name pos)])
+           (let ([new-tag (hypertag name pos)])
              (set! hypertags-list
                    (let insert-loop ([tags-left hypertags-list])
                      (cond [(null? tags-left)(cons new-tag '())]
@@ -184,30 +179,30 @@ A test case:
                  (filter (lambda (x) (not (string=? name (hypertag-name x))))
                          hypertags-list)))
          (define/public (add-link start end url-string)
-           (let* ([new-link (make-hyperlink start end url-string)])
+           (let* ([new-link (hyperlink start end url-string)])
              (set-clickback start end 
                             (lambda (x y z)
                               (post-url url-string)))))
          
          ;; remember the directory when the callback is added (during parsing)
          ;; and restore it during the evaluation of the callback.
-         (define/public (add-scheme-callback start end scheme-string)
+         (define/public (add-racket-callback start end racket-string)
            (let ([dir (current-load-relative-directory)])
              (set-clickback 
               start end 
               (lambda (edit start end)
                 (if (url-allows-evaling? url)
                     (parameterize ([current-load-relative-directory dir])
-                      (eval-scheme-string scheme-string))
+                      (eval-racket-string racket-string))
                     (message-box (string-constant help-desk)
-                                 "<A MZSCHEME= ...> disabled"))))))
+                                 "<A RACKET= ...> disabled"))))))
          (define/public (add-thunk-callback start end thunk)
            (set-clickback 
             start end 
             (lambda (edit start end)
               (thunk))))
          
-         (define/public (eval-scheme-string s)
+         (define/public (eval-racket-string s)
            (let ([v 
                   (dynamic-wind
                       begin-busy-cursor
@@ -388,13 +383,13 @@ A test case:
                                       (send d center)
                                       (send d show #t)
                                       (unless (or d? i?)
-                                        (raise (make-exn:cancelled
+                                        (raise (exn:cancelled
                                                 "Package Cancelled"
                                                 (current-continuation-marks))))
                                       i?))]
                               [tmp-plt-filename
                                (if install?
-                                   (make-temporary-file "tmp~a.plt")
+                                   (make-temporary-file "tmp~a.rkt")
                                    (put-file 
                                     (if size
                                         (format 
@@ -449,7 +444,7 @@ A test case:
                              (queue-callback (lambda () (semaphore-post wait-to-start)))
                              (send d show #t)
                              (when exn 
-                               (raise (make-exn:tcp-problem (exn-message exn) (current-continuation-marks)))))
+                               (raise (exn:tcp-problem (exn-message exn) (current-continuation-marks)))))
                            (let ([sema (make-semaphore 0)])
                              (when (and tmp-plt-filename install?)
                                (run-installer tmp-plt-filename
@@ -458,13 +453,13 @@ A test case:
                                (yield sema))))
                          (raise
                           (if tmp-plt-filename
-                              (make-exn:file-saved-instead
+                              (exn:file-saved-instead
                                (if install?
                                    (string-constant package-was-installed)
                                    (string-constant download-was-saved))
                                (current-continuation-marks)
                                tmp-plt-filename)
-                              (make-exn:cancelled "The download was cancelled."
+                              (exn:cancelled "The download was cancelled."
                                                   (current-continuation-marks)))))]
                       [(or (and (url? url)
                                 (not (null? (url-path url)))
@@ -576,9 +571,9 @@ A test case:
 ;; build-html-error-message : exn -> string[html]
 (define ((build-html-error-message str) exn)
   (string-append
-   "<html><head><title>Error Evaluating Scheme</title></head>"
+   "<html><head><title>Error Evaluating Racket</title></head>"
    "<body>"
-   "<h2>Error Evaluating Scheme Code</h2>"
+   "<h2>Error Evaluating Racket Code</h2>"
    (format "<pre>\n~a\n</pre>" str)
    "<p><p>"
    (format "<font color=\"red\">~a</font>" 
@@ -743,7 +738,7 @@ A test case:
                        (set-page (list e (or tag-pos 0) (send e last-position)) #t)
                        (when tag-pos (send e set-position tag-pos)))]
                     [(exn? result) 
-                     (message-box (string-constant drscheme)
+                     (message-box (string-constant drracket)
                                   (exn-message result)
                                   tlw)]
                     [else (void)]))))))

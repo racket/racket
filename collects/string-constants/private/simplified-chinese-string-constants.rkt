@@ -33,6 +33,7 @@
   ;;; general purpose (DrRacket is hereby a word in every language, by decree of Robby :)
   (plt "PLT")
   (drscheme "DrRacket")
+  (drracket "DrRacket")
   (ok "确定")
   (cancel "取消")
   (abort "中止")

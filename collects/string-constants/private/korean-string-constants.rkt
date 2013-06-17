@@ -24,6 +24,7 @@
  ;;; general purpose (DrRacket is hereby a word in every language, by decree of Robby :)
  (plt "PLT")
  (drscheme "DrRacket")
+ (drracket "DrRacket")
  (ok "확인")
  (cancel "취소")
  (abort "중단")
