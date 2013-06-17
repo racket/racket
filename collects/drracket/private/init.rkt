@@ -75,7 +75,7 @@
                 (thread
                  (λ () 
                    (message-box title text #f '(stop ok) #:dialog-mixin frame:focus-table-mixin)
-                   (channel-put currently-visible #f))))
+                   (channel-put currently-visible-chan #f))))
               (loop (cons (make-recent msg (current-seconds)) recently-seen-errors)
                     #t)])))
         (handle-evt
@@ -86,7 +86,7 @@
   ;; override error-display-handler to duplicate the error
   ;; message in both the standard place (as defined by the
   ;; current error-display-handler) and in a message box
-  ;; identifying the error as a drscheme internal error.
+  ;; identifying the error as a drracket internal error.
   (error-display-handler
    (λ (msg exn)
      ;; this  may raise an exception if the port is gone.
