@@ -392,7 +392,7 @@
   
 }
 
-@defmixin[column-guide-mixin (text%) (text:column-guide<%>)]{
+@defmixin[text:column-guide-mixin (text%) (text:column-guide<%>)]{
  @defmethod[#:mode extend (on-paint [before? any/]
                                     [dc (is-a?/c dc<%>)]
                                     [left real?]
