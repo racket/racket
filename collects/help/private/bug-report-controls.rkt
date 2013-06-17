@@ -273,8 +273,14 @@
                  (let ([field
                         (keymap:call/text-keymap-initializer
                          (lambda ()
-                           (make-object text-field% #f panel void "")))])
+                           (new text-field%
+                                [label #f]
+                                [parent panel]
+                                [callback void]
+                                [init-value ""]
+                                [min-height (bri-min-height bri)])))])
                    (send field set-value (bri-value bri))
+                   (send (send field get-editor) set-position 0)
                    field))
                #f
                #:top-panel synthesized-panel))))

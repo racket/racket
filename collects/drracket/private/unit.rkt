@@ -1202,6 +1202,7 @@ module browser threading seems wrong.
                   (string-constant change-to-horizontal-alignment))]
              [callback
               (λ (a b) 
+                (car)
                 (preferences:set 'drracket:defs/ints-horizontal vertical?)
                 (set-orientation vertical?))])
         (popup-menu menu (send evt get-x) (send evt get-y)))

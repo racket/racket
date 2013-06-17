@@ -11,7 +11,8 @@
          "drsig.rkt")
 
 (import [prefix drracket:frame: drracket:frame^]
-        [prefix drracket:language-configuration: drracket:language-configuration/internal^])
+        [prefix drracket:language-configuration: drracket:language-configuration/internal^]
+        [prefix drracket:init: drracket:init^])
 (export drracket:help-desk^)
 
 (define (-add-help-desk-font-prefs b) '(add-help-desk-font-prefs b))
@@ -31,6 +32,25 @@
       (send language marshall-settings settings)))))
 
 (set-bug-report-info! "Computer Language" get-computer-language-info)
+(set-bug-report-info! "Recent Internal Errors" 
+                      (λ ()
+                        (define errs (drracket:init:get-last-N-errors))
+                        (define sp (open-output-string))
+                        (unless (null? errs) 
+                          (fprintf sp "Saved ~a internal error~a:\n\n"
+                                   (length errs)
+                                   (if (= 1 (length errs)) "" "s")))
+                        (parameterize ([current-error-port sp])
+                          (define first? #t)
+                          (for ([err (in-list errs)])
+                            (if first? 
+                                (set! first? #f)
+                                (eprintf "\n\n"))
+                            (drracket:init:original-error-display-handler
+                             (list-ref err 0)
+                             (list-ref err 1))))
+                        (get-output-string sp))
+                      100)
 
 (define lang-message%
   (class canvas%

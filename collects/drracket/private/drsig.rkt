@@ -139,7 +139,8 @@
    system-eventspace
    system-namespace
    system-security-guard
-   first-dir))
+   first-dir
+   get-last-N-errors))
 
 (define-signature drracket:language-configuration-cm^
   ())
