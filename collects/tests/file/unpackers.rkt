@@ -165,8 +165,8 @@
             (test do (tester))))
     cleanup))
 
-(define (untar-tests) (test do (run-tests untar-tests*)))
-(define (unzip-tests) (test do (run-tests unzip-tests*)))
+(define (untar-tests) (when tar-exe (test do (run-tests untar-tests*))))
+(define (unzip-tests) (when zip-exe (test do (run-tests unzip-tests*))))
 
 (module+ main (tests))
 (define (tests)
