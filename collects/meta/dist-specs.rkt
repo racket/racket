@@ -598,7 +598,8 @@ plt-extras :+=
   (- (package: "2htdp/")
      "uchat/") ; Matthias doesn't want this in now
   (package: "test-engine/")
-  (package: "realm")
+  (- (package: "realm")
+     "todo.txt")
 
 ;; -------------------- math
 dr-extras :+= (package: "math") (get-libs: math)
