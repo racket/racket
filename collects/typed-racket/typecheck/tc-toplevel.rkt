@@ -5,10 +5,11 @@
          racket/list unstable/list racket/dict racket/match unstable/sequence
          (prefix-in c: (contract-req))
          (rep type-rep free-variance)
-         (types utils abbrev type-table)
+         (types utils abbrev type-table resolve)
          (private parse-type type-annotation type-contract syntax-properties)
          (env global-env init-envs type-name-env type-alias-env
-              lexical-env env-req mvar-env scoped-tvar-env)
+              type-alias-helper lexical-env env-req mvar-env
+              scoped-tvar-env)
          (utils tc-utils mutated-vars)
          (typecheck provide-handling def-binding tc-structs typechecker)
 
@@ -273,13 +274,6 @@
     [(define-syntaxes (nm ...) . rest) (syntax->list #'(nm ...))]
     [_ #f]))
 
-(define (parse-type-alias form)
-  (kernel-syntax-case* form #f
-    (define-type-alias-internal values)
-    [(define-values () (begin (quote-syntax (define-type-alias-internal nm ty)) (#%plain-app values)))
-     (values #'nm #'ty)]
-    [_ (int-err "not define-type-alias")]))
-
 ;; actually do the work on a module
 ;; produces prelude and post-lude syntax objects
 ;; syntax-list -> (values syntax syntax)
@@ -297,7 +291,10 @@
      define/fixup-contract?))
   (do-time "Form splitting done")
   ;(printf "before parsing type aliases~n")
-  (for-each (compose register-type-alias parse-type-alias) type-aliases)
+
+  (define-values (type-alias-names type-alias-map)
+    (get-type-alias-info type-aliases))
+
   ;; Add the struct names to the type table, but not with a type
   ;(printf "before adding type names~n")
   (let ((names (map name-of-struct struct-defs))
@@ -305,8 +302,9 @@
     (for-each register-type-name names)
     (for-each add-constant-variance! names type-vars))
   ;(printf "after adding type names~n")
-  ;; resolve all the type aliases, and error if there are cycles
-  (resolve-type-aliases parse-type)
+
+  (register-all-type-aliases type-alias-names type-alias-map)
+
   ;; Parse and register the structure types
   (define parsed-structs
     (for/list ((def (in-list struct-defs)))
@@ -423,7 +421,9 @@
              (report-all-errors))]
     [_
      (when ((internal-syntax-pred define-type-alias-internal) form)
-       ((compose register-type-alias parse-type-alias) form))
+       (define-values (alias-names alias-map)
+         (get-type-alias-info (list form)))
+       (register-all-type-aliases alias-names alias-map))
      (tc-toplevel/pass1 form)
      (begin0 (values #f (tc-toplevel/pass2 form))
              (report-all-errors))]))

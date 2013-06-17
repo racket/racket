@@ -5,7 +5,8 @@
          (except-in (types utils abbrev union filter-ops) -> ->* one-of/c)
          (only-in (types abbrev) (-> t:->))
          (private type-annotation parse-type syntax-properties)
-         (env lexical-env type-alias-env global-env type-env-structs scoped-tvar-env)
+         (env lexical-env type-alias-env type-alias-helper
+              global-env type-env-structs scoped-tvar-env)
          (rep type-rep filter-rep object-rep)
          syntax/free-vars
          (typecheck signatures tc-metafunctions tc-subst check-below)
@@ -106,17 +107,27 @@
          [exprs (syntax->list exprs)]
          ;; the clauses for error reporting
          [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])
+
+    ;; define type aliases (see tc-toplevel.rkt and type-alias-helper.rkt)
+    (define type-aliases
+      (for/fold ([aliases '()]) ([expr exprs])
+        (kernel-syntax-case* expr #f (values define-type-alias-internal)
+          [(begin (quote-syntax (define-type-alias-internal _ _ _ _)) (#%plain-app values))
+           (cons expr aliases)]
+          [_ aliases])))
+    (define-values (alias-names alias-map) (get-type-alias-info type-aliases))
+    (register-all-type-aliases alias-names alias-map)
+
     ;; collect the declarations, which are represented as definitions
     (for-each (lambda (names body)
-                (kernel-syntax-case* body #f (values :-internal define-type-alias-internal)
-                  [(begin (quote-syntax (define-type-alias-internal nm ty)) (#%plain-app values))
-                   (register-resolved-type-alias #'nm (parse-type #'ty))]
+                (kernel-syntax-case* body #f (values :-internal)
                   [(begin (quote-syntax (:-internal nm ty)) (#%plain-app values))
                    (register-type-if-undefined #'nm (parse-type #'ty))
                    (register-scoped-tvars #'nm (parse-literal-alls #'ty))]
                   [_ (void)]))
               names
               exprs)
+
     ;; add scoped type variables, before we get to typechecking
     ;; FIXME: can this pass be fused with the one immediately above?
     (for ([n (in-list names)] [b (in-list exprs)])

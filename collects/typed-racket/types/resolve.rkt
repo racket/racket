@@ -2,7 +2,7 @@
 (require "../utils/utils.rkt")
 
 (require (rep type-rep rep-utils free-variance)
-         (env type-name-env)
+         (env type-alias-env type-name-env)
          (utils tc-utils)
          (types utils current-seen)
          racket/match
@@ -10,10 +10,21 @@
          racket/format)
 
 (provide resolve-name resolve-app needs-resolving?
-         resolve resolve-app-check-error)
+         resolve resolve-app-check-error
+         current-check-polymorphic-recursion)
 (provide/cond-contract [resolve-once (Type/c . -> . (or/c Type/c #f))])
 
 (define-struct poly (name vars) #:prefab)
+
+;; Parameter<Option<Listof<Symbol>>>
+;; This parameter controls whether or not the resolving process
+;; should check for polymorphic recursion in implicit recursive
+;; type names. This should only need to be enabled at type alias
+;; definition time.
+;;
+;; If not #f, it should be a list of symbols that correspond
+;; to the type parameters of the type being parsed.
+(define current-check-polymorphic-recursion (make-parameter #f))
 
 (define (resolve-name t)
   (match t
@@ -48,6 +59,50 @@
                           " does not match the given number:"
                           " expected " num-poly
                           ", given " num-rands))))]
+      [(RecName: _ _ _ args)
+       (cond [args
+              (define num-rands (length rands))
+              (define num-args (length args))
+              (unless (= num-rands num-args)
+                (tc-error (~a "The expected number of arguments for "
+                              rator " does not match the given number:"
+                              " expected " num-args
+                              ", given " num-rands)))
+              ;; Does not allow polymorphic recursion since both type
+              ;; inference and equirecursive subtyping for polymorphic
+              ;; recursion are difficult.
+              ;;
+              ;; Type inference is known to be undecidable in general, but
+              ;; practical algorithms do exist[1] that do not diverge in
+              ;; practice.
+              ;;
+              ;; It is possible that equirecursive subtyping with polymorphic
+              ;; recursion is as difficult as equivalence of DPDAs[2], which is
+              ;; known to be decidable[3], but good algorithms may not exist.
+              ;;
+              ;; [1] Fritz Henglein. "Type inference with polymorphic recursion"
+              ;;     TOPLAS 1993
+              ;; [2] Marvin Solomon. "Type definitions with parameters"
+              ;;     POPL 1978
+              ;; [3] Geraud Senizergues.
+              ;;     "L(A)=L(B)? decidability results from complete formal systems"
+              ;;     TCS 2001.
+              ;;
+              ;; check-argument : Type Id -> Void
+              ;; Check argument to make sure there's no polymorphic recursion
+              (define (check-argument given-type arg-name)
+                (define ok?
+                  (if (F? given-type)
+                      (type-equal? given-type (make-F arg-name))
+                      (not (member arg-name (fv given-type)))))
+                (unless ok?
+                  (tc-error (~a "Recursive type " rator " cannot be applied at"
+                                " a different type in its recursive invocation"))))
+              (define current-vars (current-check-polymorphic-recursion))
+              (when current-vars
+                (for-each check-argument rands current-vars))]
+             [else
+              (tc-error "Type ~a cannot be applied, arguments were: ~a" rator rands)])]
       [(Mu: _ _) (void)]
       [(App: _ _ _) (void)]
       [(Error:) (void)]
@@ -62,6 +117,7 @@
       [(Name: _)
        (let ([r (resolve-name rator)])
          (and r (resolve-app r rands stx)))]
+      [(RecName: _ _ _ _) (resolve-app (resolve-once rator) rands stx)]
       [(Poly: _ _) (instantiate-poly rator rands)]
       [(Mu: _ _) (resolve-app (unfold rator) rands stx)]
       [(App: r r* s) (resolve-app (resolve-app r r* s) rands stx)]
@@ -69,7 +125,7 @@
 
 
 (define (needs-resolving? t)
-  (or (Mu? t) (App? t) (Name? t)))
+  (or (Mu? t) (App? t) (Name? t) (RecName? t)))
 
 (define resolver-cache (make-hasheq))
 
@@ -81,7 +137,8 @@
                   [(Mu: _ _) (unfold t)]
                   [(App: r r* s)
                    (resolve-app r r* s)]
-                  [(Name: _) (resolve-name t)])])
+                  [(Name: _) (resolve-name t)]
+                  [(RecName: n _ _ _) (lookup-type-alias n values)])])
         (when (and r* (not (currently-subtyping?)))
           (hash-set! resolver-cache seq r*))
         r*)))
