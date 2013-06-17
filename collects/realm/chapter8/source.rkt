@@ -22,9 +22,6 @@
    After that, it is the player's turn again. 
  
    Just in case, the player can end a turn prematurely with "e". 
- 
-   Finally, "n" starts a new game. 
-
 
    Play
    ----
@@ -219,7 +216,7 @@
     [(key=? "up" k)    (move-target w (- PER-ROW))]
     
     [(key=? "e" k) (end-turn w)]
-    [(key=? "n" k) (initialize-orc-world)]
+;;    [(key=? "n" k) (initialize-orc-world)]
     
     [else w])
   (give-monster-turn-if-attack#=0 w)

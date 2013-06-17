@@ -6,7 +6,7 @@
    
    You pick a number. The program guesses the nunber, 
    by asking you questions. Your responses are "too 
-   small" "too large" or "you uessed it". 
+   small" "too large" or "you guessed it". 
 
    In the Distributed Guess My Number game a player uses a client to connect 
    to the server. The Server attempts to guess what number the client is thinking
