@@ -552,7 +552,8 @@
        (values row-var fields methods)]
       [(? Mu?)
        (match-parent-type (unfold parent-type))]
-      [_ (tc-error "expected a class type for #:implements clause")]))
+      [_ (tc-error "expected a class type for #:implements clause, got ~a"
+                   parent-type)]))
   (define-values (super-row-var super-fields super-methods)
     (match-parent-type parent-type))
 
