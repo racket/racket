@@ -884,7 +884,16 @@
       (current-error-port (swallow-specials original-error-port))
       (current-load-relative-directory #f)
       (current-directory init-dir)
-      (error-display-handler (λ (str exn) (set! error-str str)))
+      (error-display-handler (λ (str exn) 
+                               (set! error-str str)
+                               (when (exn? exn)
+                                 (set! error-str
+                                       (apply
+                                        string-append
+                                        error-str
+                                        (for/list ([x (in-list (continuation-mark-set->context 
+                                                                (exn-continuation-marks exn)))])
+                                          (format "\n  ~s" x)))))))
       
       ;; instead of escaping when there's an error on the user thread,
       ;; we just shut it all down. This kills the event handling loop
