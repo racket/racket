@@ -10,7 +10,8 @@
                       "private-lex/util.rkt"
                       "private-lex/actions.rkt"
                       "private-lex/front.rkt"
-                      "private-lex/unicode-chars.rkt")
+                      "private-lex/unicode-chars.rkt"
+                      "private-lex/unicode-identifier-chars.rkt")
 
   (require mzlib/stxparam
            syntax/readerr
@@ -29,6 +30,7 @@
            ;; Lex abbrevs for unicode char sets.  See mzscheme manual section 3.4.
            any-char any-string nothing alphabetic lower-case upper-case title-case
            numeric symbolic punctuation graphic whitespace blank iso-control
+           xid-start xid-continue
 
            ;; A regular expression operator
            char-set)
@@ -365,6 +367,26 @@
   (define-lex-abbrev any-string (intersection))
   (define-lex-abbrev nothing (union))
   (create-unicode-abbrevs #'here)
+  
+  ;; Create lexical abbreviations for the XID_Start and XID_Continue
+  ;; unicode character sets, extracted automatically from unicode text files
+  (define-syntax (create-unicode-identifier-abbrevs stx)
+    (syntax-case stx ()
+      ((_ ctxt)
+       (with-syntax (((ranges ...) (map (lambda (range)
+                                          `(union ,@(map (lambda (x)
+                                                           `(char-range ,(integer->char (car x))
+                                                                        ,(integer->char (cdr x))))
+                                                         range)))
+                                        (list xid-start-ranges
+                                              xid-continue-ranges)))
+                     ((names ...) (map (lambda (sym)
+                                         (datum->syntax-object (syntax ctxt) sym #f))
+                                       '(xid-start
+                                         xid-continue))))
+         (syntax (define-lex-abbrevs (names ranges) ...))))))
+  
+  (create-unicode-identifier-abbrevs #'here)
   
   (define-lex-trans (char-set stx)
     (syntax-case stx ()
