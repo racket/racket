@@ -970,6 +970,7 @@ path/s is either such a string or a list of them.
 "collects/scribblings/raco" responsible (jay mflatt)
 "collects/scribblings/reference/distributed.scrbl" responsible (tewk)
 "collects/scribblings/reference/generic.scrbl" responsible (asumu stamourv)
+"collects/scribblings/style" responsible (matthias)
 "collects/scriblib" responsible (mflatt)
 "collects/setup" responsible (mflatt)
 "collects/setup/main.rkt" drdr:command-line #f

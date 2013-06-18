@@ -365,7 +365,7 @@ mz-manuals := (scribblings: "main/") ; generates main pages (next line)
                     "getting-started/")
               (notes: "COPYING*.txt")
               (doc: "doc-license.txt") ; needed (when docs are included)
-              (doc+src: "reference/" "guide/" "quick/" "more/"
+              (doc+src: "reference/" "guide/" "quick/" "more/" "style/"
                         "foreign/" "inside/"
                         "scheme/"
                         "honu/")
