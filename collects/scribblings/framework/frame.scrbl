@@ -204,7 +204,7 @@
                               [width (or/c (integer-in 0 10000) #f) #f]
                               [height (or/c (integer-in 0 10000) #f) #f]
                               [x (or/c (integer-in -10000 10000) #f) #f]
-                              [y (or/c (integer-in -10000 10000) false/c) #f])]{
+                              [y (or/c (integer-in -10000 10000) #f) #f])]{
 
     The  @racket[size-preferences-key] symbol is used with
     @racket[preferences:get] and @racket[preferences:set] to track the current
@@ -305,7 +305,7 @@
   @defmethod*[(((close-status-line (id symbol?)) void?))]{
     Closes the status line @racket[id].
   }
-  @defmethod*[(((update-status-line (id symbol?) (status (or/c #f string))) void?))]{
+  @defmethod*[(((update-status-line (id symbol?) (status (or/c #f string?))) void?))]{
     Updates the status line named by @racket[id] with @racket[status]. If
     @racket[status] is @racket[#f], the status line is becomes blank (and may
     be used by other ids).
