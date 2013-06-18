@@ -101,9 +101,9 @@
 (define (reset-relevant-directories-state!)
   (set! preferred-table
         (make-table
-         (lambda (i l)
-           (if (null? l)
-             (list i)
+         (lambda (root-dir i l)
+           (if (or root-dir (null? l))
+             (cons i l)
              (match-let ([(struct directory-record (my-maj my-min _ _ _)) i]
                          [(struct directory-record (their-maj their-min _ _ _))
                           (car l)])
@@ -112,9 +112,10 @@
                 (list i)
                 l))))
          #f #f))
-  (set! all-available-table (make-table cons #f #f))
-  (set! no-planet-table (make-table cons #f #f))
-  (set! no-user-table (make-table cons #f #f)))
+  (define (always root-dir i l) (cons i l))
+  (set! all-available-table (make-table always #f #f))
+  (set! no-planet-table (make-table always #f #f))
+  (set! no-user-table (make-table always #f #f)))
 
 (reset-relevant-directories-state!)
 
@@ -166,7 +167,7 @@
                                (main-lib-relative->path pathbytes)))
                        fields)])
                  (hash-set! colls key
-                            ((table-insert t) new-item old-items)))]
+                            ((table-insert t) root-dir new-item old-items)))]
               [_ (error 'find-relevant-directories
                         "bad info-domain cache entry: ~e in: ~a" i f)])))))
     ;; For each coll, invert the mapping, adding the col name to the list
