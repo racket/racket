@@ -21,7 +21,13 @@
               (t (-Number . -> . -Number))
               (t (-Promise -Number))
               (t (-set Univ)) 
-              ))
+              ;; Adapted from PR 13815
+              (t (-poly (a) (-> a a)))
+              (t (-poly (a) (-mu X (-> a X))))
+              (t (-poly (a) (-poly (b) (-> a a))))
+              (t (-poly (a) (-App (-poly (b) (-> a a)) (list -Number) #'#f)))
+              (t/fail (-poly (a) -Flonum))
+              (t/fail (-poly (a) (-set -Number)))))
 
 (define-go contract-tests)
 (provide contract-tests)
