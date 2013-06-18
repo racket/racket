@@ -61,10 +61,10 @@
  [interval-style (Parameterof Plot-Brush-Style)]
  [interval-line1-color (Parameterof Plot-Color)]
  [interval-line1-width (Parameterof Real Nonnegative-Real)]
- [interval-line1-style (Parameterof Plot-Pen-Styles)]
+ [interval-line1-style (Parameterof Plot-Pen-Style)]
  [interval-line2-color (Parameterof Plot-Color)]
  [interval-line2-width (Parameterof Real Nonnegative-Real)]
- [interval-line2-style (Parameterof Plot-Pen-Styles)]
+ [interval-line2-style (Parameterof Plot-Pen-Style)]
  [interval-alpha (Parameterof Real)]
  
  ;; 9.6 Points
@@ -96,30 +96,30 @@
  [contour-samples (Parameterof Integer Natural)]
  [contour-levels (Parameterof (U 'auto Integer (Listof Real))
                               (U 'auto Positive-Integer (Listof Real)))]
- [contour-colors (Parameterof (U Plot-Colors (Listof Real)))]
- [contour-widths (Parameterof (U Pen-Widths (Listof Real)))]
- [contour-styles (Parameterof (U Plot-Pen-Styles (Listof Real)))]
- [contour-alphas (Parameterof (U Alphas (Listof Real)))]
- [contour-interval-colors (U Plot-Colors (Listof ivl))]
- [contour-interval-styles (U Plot-Brush-Styles (Listof ivl))]
- [contour-interval-alphas (U Alphas (Listof ivl))]
+ [contour-colors (Parameterof (Plot-Colors (Listof Real)))]
+ [contour-widths (Parameterof (Pen-Widths (Listof Real)))]
+ [contour-styles (Parameterof (Plot-Pen-Styles (Listof Real)))]
+ [contour-alphas (Parameterof (Alphas (Listof Real)))]
+ [contour-interval-colors (Parameterof (Plot-Colors (Listof ivl)))]
+ [contour-interval-styles (Parameterof (Plot-Brush-Styles (Listof ivl)))]
+ [contour-interval-alphas (Parameterof (Alphas (Listof ivl)))]
  
  ;; 9.10 Rectangles
  [rectangle-color (Parameterof Plot-Color)]
  [rectangle-style (Parameterof Plot-Brush-Style)]
  [rectangle-line-color (Parameterof Plot-Color)]
  [rectangle-line-width (Parameterof Real Nonnegative-Real)]
- [rectangle-line-style (Parameterof Plot-Pen-Styles)]
+ [rectangle-line-style (Parameterof Plot-Pen-Style)]
  [rectangle-alpha (Parameterof Real Nonnegative-Real)]
  [rectangle3d-line-width (Parameterof Real Nonnegative-Real)]
  [discrete-histogram-skip (Parameterof Real Nonnegative-Real)]
  [discrete-histogram-invert? (Parameterof Boolean)]
- [stacked-histogram-alphas (Parameterof (U Alphas Integer) (U Alphas Natural))]
- [stacked-histogram-colors (Parameterof (U Plot-Colors Integer) (U Plot-Colors Natural))]
- [stacked-histogram-line-styles (Parameterof (U Plot-Pen-Styles Integer)
-                                             (U Plot-Pen-Styles Natural))]
- [stacked-histogram-styles (Parameterof (U Plot-Brush-Styles Integer)
-                                        (U Plot-Brush-Styles Natural))]
+ [stacked-histogram-alphas (Parameterof (Alphas Integer) (Alphas Natural))]
+ [stacked-histogram-colors (Parameterof (Plot-Colors Integer) (Plot-Colors Natural))]
+ [stacked-histogram-line-styles (Parameterof (Plot-Pen-Styles Integer)
+                                             (Plot-Pen-Styles Natural))]
+ [stacked-histogram-styles (Parameterof (Plot-Brush-Styles Integer)
+                                        (Plot-Brush-Styles Natural))]
  
  ;; 9.11 Decorations
  [x-axis-alpha (Parameterof Real Nonnegative-Real)]
@@ -159,20 +159,20 @@
  [surface-alpha (Parameterof Real Nonnegative-Real)]
  
  ;; 9.14 Contour Surfaces
- [contour-interval-line-colors (Parameterof (U Plot-Colors (Listof ivl)))]
- [contour-interval-line-widths (Parameterof (U Pen-Widths (Listof ivl)))]
- [contour-interval-line-styles (Parameterof (U Plot-Pen-Styles (Listof ivl)))]
+ [contour-interval-line-colors (Parameterof (Plot-Colors (Listof ivl)))]
+ [contour-interval-line-widths (Parameterof (Pen-Widths (Listof ivl)))]
+ [contour-interval-line-styles (Parameterof (Plot-Pen-Styles (Listof ivl)))]
  
  ;; 9.15 Isosurfaces
  [default-isosurface-colors ((Listof Real) -> (Listof Plot-Color))]
  [default-isosurface-line-colors ((Listof Real) -> (Listof Plot-Color))]
  [isosurface-levels (Parameterof (U 'auto Integer (Listof Real)) (U 'auto Natural (Listof Real)))]
- [isosurface-colors (Parameterof (U Plot-Colors (Listof Real)))]
- [isosurface-styles (Parameterof (U Plot-Brush-Styles (Listof Real)))]
- [isosurface-line-colors (Parameterof (U Plot-Colors (Listof Real)))]
- [isosurface-line-widths (U Pen-Widths (Listof Real))]
- [isosurface-line-styles (U Plot-Pen-Styles (Listof Real))]
- [isosurface-alphas (U Alphas (Listof Real))]
+ [isosurface-colors (Parameterof (Plot-Colors (Listof Real)))]
+ [isosurface-styles (Parameterof (Plot-Brush-Styles (Listof Real)))]
+ [isosurface-line-colors (Parameterof (Plot-Colors (Listof Real)))]
+ [isosurface-line-widths (Parameterof (Pen-Widths (Listof Real)))]
+ [isosurface-line-styles (Parameterof (Plot-Pen-Styles (Listof Real)))]
+ [isosurface-alphas (Parameterof (Alphas (Listof Real)))]
  
  ;; 7.1 Axis Transforms
  [plot-x-transform (Parameterof Axis-Transform)]
