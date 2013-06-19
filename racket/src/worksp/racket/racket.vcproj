@@ -338,6 +338,7 @@
 				OutputFile="..\..\..\RacketCGC.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
+				GenerateManifest="true"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\RacketCGC.pdb"
 				SubSystem="1"

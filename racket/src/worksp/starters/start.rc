@@ -1,6 +1,5 @@
-//Microsoft Developer Studio generated resource script.
-//
-#include "resource.h"
+#include <windows.h>
+#include "../../racket/src/schvers.h"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -22,8 +21,8 @@ APPLICATION             ICON    DISCARDABLE     "mzstart.ico"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 5,3,5,1
- PRODUCTVERSION 5,3,5,1
+ FILEVERSION MZSCHEME_VERSION_X,MZSCHEME_VERSION_Y,MZSCHEME_VERSION_Z,MZSCHEME_VERSION_W
+ PRODUCTVERSION MZSCHEME_VERSION_X,MZSCHEME_VERSION_Y,MZSCHEME_VERSION_Z,MZSCHEME_VERSION_W
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -45,7 +44,7 @@ BEGIN
 #ifdef MZSTART
             VALUE "FileDescription", "Racket Launcher\0"
 #endif
-            VALUE "FileVersion", "5, 3, 5, 1\0"
+            VALUE "FileVersion", MZSCHEME_VERSION "\0"
 #ifdef MRSTART
             VALUE "InternalName", "mrstart\0"
 #endif
@@ -60,7 +59,7 @@ BEGIN
             VALUE "OriginalFilename", "MzStart.exe\0"
 #endif
             VALUE "ProductName", "Racket\0"
-            VALUE "ProductVersion", "5, 3, 5, 1\0"
+            VALUE "ProductVersion", MZSCHEME_VERSION "\0"
         END
     END
     BLOCK "VarFileInfo"

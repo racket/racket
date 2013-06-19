@@ -1,6 +1,8 @@
 // Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
+#include <windows.h>
+#include "../../racket/src/schvers.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -53,8 +55,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 5,3,5,1
- PRODUCTVERSION 5,3,5,1
+ FILEVERSION MZSCHEME_VERSION_X,MZSCHEME_VERSION_Y,MZSCHEME_VERSION_Z,MZSCHEME_VERSION_W
+ PRODUCTVERSION MZSCHEME_VERSION_X,MZSCHEME_VERSION_Y,MZSCHEME_VERSION_Z,MZSCHEME_VERSION_W
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -70,12 +72,12 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "MzCOM Module"
-            VALUE "FileVersion", "5, 3, 5, 1"
+            VALUE "FileVersion", MZSCHEME_VERSION "\0"
             VALUE "InternalName", "MzCOM"
             VALUE "LegalCopyright", "Copyright 2000-2013 PLT (Paul Steckler)"
             VALUE "OriginalFilename", "MzCOM.EXE"
             VALUE "ProductName", "MzCOM Module"
-            VALUE "ProductVersion", "5, 3, 5, 1"
+            VALUE "ProductVersion", MZSCHEME_VERSION "\0"
         END
     END
     BLOCK "VarFileInfo"
