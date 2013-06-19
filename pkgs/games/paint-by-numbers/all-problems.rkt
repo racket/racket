@@ -16,7 +16,7 @@
            (let* ([prob-dir (collection-file-path "problems" "games" "paint-by-numbers")]
                   [files (call-with-input-file (build-path prob-dir "directory") read)])
              (for/list ([file files] #:when (file-exists? (build-path prob-dir file)))
-               (define path-spec (path->string (build-path "problems" file)))
+               (define path-spec (string-append "problems" "/" file))
                path-spec))])
        #'(list (include unit-names) ...))]))
 
