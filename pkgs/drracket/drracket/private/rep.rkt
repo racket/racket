@@ -229,7 +229,7 @@ TODO
           (format "a:~a" i) 
           (format "show-tab-~a" i))
     (send drs-bindings-keymap map-function 
-          (format "~c:m:~a" i) 
+          (format "~~c:m:~a" i) 
           (format "show-tab-~a" i)))
   
   (define (get-drs-bindings-keymap) drs-bindings-keymap)

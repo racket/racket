@@ -1139,7 +1139,7 @@
                                           (if shift? "s:" "")
                                           roman-char)
                                   (format "insert ~a" greek-char))
-                             (map (format "~c:m:x;c:g;~a~a" 
+                             (map (format "~~c:m:x;c:g;~a~a" 
                                           (if shift? "s:" "")
                                           roman-char)
                                   (format "insert ~a" greek-char))
