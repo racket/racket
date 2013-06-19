@@ -321,7 +321,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
   (define (make-meta-prefix-list key)
-    (list (string-append "m:" key)
+    (list (string-append "~c:m:" key)
           (string-append "ESC;" key)))
   
   (define send-map-function-meta
@@ -1139,7 +1139,7 @@
                                           (if shift? "s:" "")
                                           roman-char)
                                   (format "insert ~a" greek-char))
-                             (map (format "m:x;c:g;~a~a" 
+                             (map (format "~c:m:x;c:g;~a~a" 
                                           (if shift? "s:" "")
                                           roman-char)
                                   (format "insert ~a" greek-char))

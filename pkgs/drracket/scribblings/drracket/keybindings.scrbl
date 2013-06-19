@@ -304,7 +304,7 @@ s-exp framework/keybinding-lang
   (apply string-append
          (map (λ (p)
                 (case p
-                  [(ctl) "c:"] [(cmd) "d:"] [(alt meta) "m:"]
+                  [(ctl) "c:"] [(cmd) "d:"] [(alt meta) "~c:m:"]
                   [(shift) "s:"] [(option) "a:"]))
               (get-default-shortcut-prefix))))
 

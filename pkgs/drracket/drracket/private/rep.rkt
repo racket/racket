@@ -206,8 +206,8 @@ TODO
     (add-drs-function "send-selection-to-repl-and-go" (λ (frame) (send frame send-selection-to-repl #t)))
     (add-drs-function "move-to-interactions" (λ (frame) (send frame move-to-interactions))))
   
-  (send drs-bindings-keymap map-function "m:p" "jump-to-previous-error-loc")
-  (send drs-bindings-keymap map-function "m:n" "jump-to-next-error-loc")
+  (send drs-bindings-keymap map-function "~c:m:p" "jump-to-previous-error-loc")
+  (send drs-bindings-keymap map-function "~c:m:n" "jump-to-next-error-loc")
   (send drs-bindings-keymap map-function "esc;p" "jump-to-previous-error-loc")
   (send drs-bindings-keymap map-function "esc;n" "jump-to-next-error-loc")
   (send drs-bindings-keymap map-function "c:x;`" "jump-to-next-error-loc")
@@ -229,7 +229,7 @@ TODO
           (format "a:~a" i) 
           (format "show-tab-~a" i))
     (send drs-bindings-keymap map-function 
-          (format "m:~a" i) 
+          (format "~c:m:~a" i) 
           (format "show-tab-~a" i)))
   
   (define (get-drs-bindings-keymap) drs-bindings-keymap)

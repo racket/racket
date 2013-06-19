@@ -4,8 +4,8 @@
 
 (keybinding "c:c;c:e" (lambda (ed evt) (send-toplevel-form ed #f)))
 (keybinding "c:c;c:r" (lambda (ed evt) (send-selection ed #f)))
-(keybinding "c:c;m:e" (lambda (ed evt) (send-toplevel-form ed #t)))
-(keybinding "c:c;m:r" (lambda (ed evt) (send-selection ed #t)))
+(keybinding "c:c;~c:m:e" (lambda (ed evt) (send-toplevel-form ed #t)))
+(keybinding "c:c;~c:m:r" (lambda (ed evt) (send-selection ed #t)))
 
 (define/contract (send-toplevel-form defs shift-focus?)
   (-> any/c boolean? any)
