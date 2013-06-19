@@ -244,20 +244,10 @@
                           #:parent [parent-cc #f]
                           #:path [dir (apply collection-path collection-p)]
                           #:omit-root [omit-root #f]
-                          #:info-root [given-info-root #f]
+                          #:info-root [info-root #f]
                           #:info-path [info-path #f]
                           #:info-path-mode [info-path-mode 'relative]
                           #:main? [main? #f])
-    (define info-root
-      (or given-info-root
-          (ormap (lambda (p)
-                   (parameterize ([current-library-collection-paths (list p)]
-                                  ;; to disable collection links file:
-                                  [use-user-specific-search-paths #f])
-                     (and (with-handlers ([exn:fail? (lambda (x) #f)])
-                            (apply collection-path collection-p))
-                          p)))
-                 (current-library-collection-paths))))
     (unless (directory-exists? dir)
       (error name-sym "directory: ~e does not exist for collection: ~s"
              dir
@@ -348,6 +338,7 @@
         #:unless (skip-collection-directory? collection)
         #:when (directory-exists? (build-path cp collection)))
     (collection-cc! (list collection)
+                    #:info-root cp
                     #:path (build-path cp collection)
                     #:main? (equal? cp (find-collects-dir))))
   (let ([main-collects (find-collects-dir)])
@@ -1038,9 +1029,16 @@
           (define info-path (build-path c "info-domain" "compiled" "cache.rktd"))
           (when (file-exists? info-path)
             (get-info-ht c info-path 'relative))))
-      (when (make-user)
-        (define info-path (get-planet-cache-path))
+      (unless (avoid-main-installation)
+        (define info-path (build-path (find-lib-dir) "info-cache.rktd"))
         (when (file-exists? info-path)
+          (get-info-ht #f info-path 'abs-in-relative)))
+      (when (make-user)
+        (define info-path (build-path (find-user-lib-dir) "info-cache.rktd"))
+        (when (file-exists? info-path)
+          (get-info-ht #f info-path 'abs-in-relative))
+        (define planet-info-path (get-planet-cache-path))
+        (when (file-exists? planet-info-path)
           (get-info-ht #f info-path 'abs))))
     ;; Write out each collection-root-specific table to a "cache.rktd" file:
     (hash-for-each ht
