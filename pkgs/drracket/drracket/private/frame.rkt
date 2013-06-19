@@ -35,7 +35,6 @@
          help/bug-report
          setup/unpack
          mrlib/terminal
-         pkg
          (submod "." install-pkg))
 (provide frame@)
 (define-unit frame@  
