@@ -46,9 +46,7 @@
         [(vector 'log name dir res)
          (dynamic-require 'typed-racket/core #f)
          (with-handlers ([exn:fail? 
-                          (λ (e) (place-channel-put 
-                                  res 
-                                  (string-append "EXCEPTION: " (exn-message e))))])
+                          (λ (e) (place-channel-put res (serialize-exn e)))])
            (define lg (generate-log/place name dir))
            (place-channel-put res lg))
          (loop)]
