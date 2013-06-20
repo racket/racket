@@ -134,7 +134,7 @@ server-from-core:
 
 # Boostrap mode: make packages from local directories:
 build-from-local:
-	$(MAKE) native-and-local-catalog
+	$(MAKE) local-catalog
 	$(MAKE) local-build
 	$(MAKE) packages-from-local
 
