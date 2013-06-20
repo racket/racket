@@ -4,24 +4,19 @@
 
 (define-struct game (file name set icon))
 
-(define gamedirs 
-  (filter directory-exists?
-          (map (λ (x) (build-path x "games"))
-               (current-library-collection-paths))))
-
-(define (get-game gamedir game)
-  (let* ([game (path-element->string game)]
-         [info (with-handlers ([exn:fail? (lambda (x) #f)])
-                 (get-info (list "games" game)))]
-         [main (and info (info 'game (lambda () #f)))]
-         [gamefile (lambda (f) (build-path gamedir game f))])
-    (and main
-         (make-game
-          (gamefile main)
-          (info 'name (lambda ()
-                        (string-titlecase (regexp-replace* #rx"-" game " "))))
-          (info 'game-set  (lambda () "Other Games"))
-          (info 'game-icon (lambda () (gamefile (format "~a.png" game))))))))
+(define (get-game gamedir)
+  (define-values (base name dir?) (split-path gamedir))
+  (define game (path-element->string name))
+  (define info (with-handlers ([exn:fail? (lambda (x) #f)])
+                 (get-info (list "games" game))))
+  (define main (and info (info 'game (lambda () #f))))
+  (define (gamefile f) (build-path gamedir f))
+  (and main
+       (make-game
+        (gamefile main)
+        (info 'name (λ () (string-titlecase (regexp-replace* #rx"-" game " "))))
+        (info 'game-set  (λ () "Other Games"))
+        (info 'game-icon (λ () (gamefile (format "~a.png" game)))))))
 
 (define (run-game game)
   (define c (make-custodian))
@@ -51,15 +46,12 @@
          (run))))))
 
 (define games
-  (apply 
-   append
-   (for/list ([gamedir (in-list gamedirs)])
-     (filter values (map (λ (x) (get-game gamedir x))
-                         (directory-list gamedir))))))
+  (for/list ([gamedir (in-list (find-relevant-directories '(game)))])
+    (get-game gamedir)))
 
 (define game-sets
   (let ([ht (make-hash)])
-    (for ([g games])
+    (for ([g (in-list games)])
       (let ([set (game-set g)])
         (hash-set! ht set (cons g (hash-ref ht set '())))))
     (sort (hash-map ht cons)
@@ -79,7 +71,7 @@
 (send f stretchable-width #f)
 (send f stretchable-height #f)
 
-(for ([set game-sets])
+(for ([set (in-list game-sets)])
   (define set-name (car set))
   (define games (cdr set))
   (define panel
@@ -102,7 +94,7 @@
  (lambda ()
    (message-box
     "Oops"
-    "There aren't actually any preferences. This is just a test for Mac OS X"
+    "There aren't actually any preferences."
     f
     '(ok))))
 
