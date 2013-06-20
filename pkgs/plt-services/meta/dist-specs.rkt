@@ -107,7 +107,7 @@ i386-linux-ubuntu-hardy     :=tag unix
 i386-linux-ubuntu-intrepid  :=tag unix
 i386-linux-ubuntu-jaunty    :=tag unix
 i386-linux-ubuntu-karmic    :=tag unix
-i386-linux-ubuntu-precise   :=tag unix
+x86_64-linux-ubuntu-precise :=tag unix
 i386-freebsd      :=tag unix
 i386-win32        :=tag win
 x86_64-win32      :=tag win
@@ -771,7 +771,7 @@ platform
          i386-linux-ubuntu-intrepid  => "Linux i386, built on Ubuntu Intrepid"
          i386-linux-ubuntu-jaunty    => "Linux i386, built on Ubuntu Jaunty"
          i386-linux-ubuntu-karmic    => "Linux i386, built on Ubuntu Karmic"
-         i386-linux-ubuntu-precise   => "Linux i386, built on Ubuntu Precise"
+         x86_64-linux-ubuntu-precise => "Linux x86_64, built on Ubuntu Precise"
          i386-freebsd      => "FreeBSD (i386)"
          sparc-solaris     => "Solaris"
          ppc-osx-mac       => "Mac OS X (PPC)"
