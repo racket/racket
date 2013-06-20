@@ -44,6 +44,7 @@
     (let loop ()
       (match (place-channel-get get-ch)                
         [(vector 'log name dir res)
+         (dynamic-require 'typed-racket/core #f)
          (with-handlers ([exn:fail? 
                           (λ (e) (place-channel-put 
                                   res 
@@ -63,6 +64,8 @@
              (dr p)
              (place-channel-put res #t)))
          (loop)]))))
+
+(define-namespace-anchor anchor)
 
 (define (generate-log/place name dir)
   ;; some tests require other tests, so some fiddling is required
@@ -85,4 +88,7 @@
         (thunk
           (parameterize ([current-namespace (make-base-empty-namespace)]
                          [current-load/use-compiled test-load/use-compiled])
+            (define orig-namespace (namespace-anchor->namespace anchor))
+            (namespace-attach-module orig-namespace 'racket)
+            (namespace-attach-module orig-namespace 'typed-racket/core)
             (dynamic-require file #f)))))))
