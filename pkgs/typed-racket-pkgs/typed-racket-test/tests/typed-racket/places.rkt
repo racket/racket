@@ -1,7 +1,7 @@
 #lang racket
 
 (require racket/place typed-racket/optimizer/logging
-         unstable/open-place compiler/compiler)
+         unstable/open-place syntax/modcode)
 (provide start-worker dr serialize-exn deserialize-exn s-exn? generate-log/place verbose?)
 
 (define verbose? (make-parameter #f))
@@ -64,20 +64,25 @@
              (place-channel-put res #t)))
          (loop)]))))
 
-(define comp (compile-zos #f #:module? #t))
-
 (define (generate-log/place name dir)
   ;; some tests require other tests, so some fiddling is required
-  (define f (build-path dir name))
+  (define file (simplify-path (build-path dir name)))
+  (define orig-load/use-compiled (current-load/use-compiled))
+  (define orig-use-compiled-file-paths (use-compiled-file-paths))
+  (define (test-load/use-compiled path name)
+    (parameterize [(use-compiled-file-paths null)
+                   (current-load/use-compiled reset-load/use-compiled)]
+      (orig-load/use-compiled path name)))
+  (define (reset-load/use-compiled path name)
+    (parameterize [(use-compiled-file-paths orig-use-compiled-file-paths)
+                   (current-load/use-compiled orig-load/use-compiled)]
+      (orig-load/use-compiled path name)))
+
   (with-output-to-string
     (lambda ()
       (with-tr-logging-to-port
-       (current-output-port)
-       (lambda ()
-         (comp (list f) 'auto)))
-      (parameterize
-          ([current-namespace (make-base-empty-namespace)]
-           [current-load-relative-directory dir])
-        (dynamic-require f #f))
-      ;; clean up compiled files in prevision of the next testing run
-      (delete-directory/files (build-path dir "compiled")))))
+        (current-output-port)
+        (thunk
+          (parameterize ([current-namespace (make-base-empty-namespace)]
+                         [current-load/use-compiled test-load/use-compiled])
+            (dynamic-require file #f)))))))

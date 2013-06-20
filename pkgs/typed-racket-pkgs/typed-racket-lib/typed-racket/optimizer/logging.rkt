@@ -132,6 +132,7 @@
    (lambda (l)
      (displayln ; print log message
       (string-trim (vector-ref l 1) "TR-optimizer: ") ; remove logger prefix
-      port))
+      port)
+     (flush-output port))
    thunk
    'debug 'TR-optimizer))
