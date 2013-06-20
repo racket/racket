@@ -72,7 +72,6 @@
   [(get-marks-core (wcm (name w_1 ((v_4 v_5) ... (v_1 v_3) (v_6 v_7) ...)) E_1) v_1 e_2) (get-marks E_1 v_1 (cons v_3 e_2))]
   [(get-marks-core (wcm w_1 E_1) v_1 e_2) (get-marks E_1 v_1 e_2) (side-condition (term (notInDom v_1 w_1)))]
   [(get-marks-core (v ... E_1 e ...) v_1 e_2) (get-marks E_1 v_1 e_2)]
-  [(get-marks-core (if E_1 e_1 e_3) v_1 e_2) (get-marks E_1 v_1 e_2)]
   [(get-marks-core (begin E_1 e) v_1 e_2) (get-marks E_1 v_1 e_2)]
   [(get-marks-core (% v_2 E_1 v_3) v_1 e_2) (get-marks E_1 v_1 e_2)]
   [(get-marks-core (% v_2 e_1 E_1) v_1 e_2) (get-marks E_1 v_1 e_2)]
@@ -80,7 +79,7 @@
   [(get-marks-core (dw x e_1 E_1 e_3) v_1 e_2) (get-marks E_1 v_1 e_2)])
 
 (define-metafunction grammar
-  [(get-marks (if E_1 e e) v_1 e_2) (get-marks E_1 v_1 e_2)]
+  [(get-marks (if E_1 e_1 e_3) v_1 e_2) (get-marks E_1 v_1 e_2)]
   [(get-marks (set! x E_1) v_1 e_2) (get-marks E_1 v_1 e_2)]
   [(get-marks E_1 v_1 e_2) (get-marks-core E_1 v_1 e_2)])
 
