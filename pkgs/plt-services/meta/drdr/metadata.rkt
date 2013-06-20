@@ -46,7 +46,15 @@
 ;;; Property lookup
 (provide props-cache)
 (define props-cache (make-hasheq))
-(define (get-prop a-fs-path prop [def #f] #:as-string? [as-string? #f])
+(define (get-prop og-a-fs-path prop [def #f] #:as-string? [as-string? #f])
+  (define a-fs-path 
+    (match (explode-path og-a-fs-path)
+      [(list* "racket" "lib" (and cp (list* "collects" _)))
+       (apply build-path cp)]
+      [(list* "pkgs" _ cp)
+       (apply build-path (list* "collects" cp))]
+      [_
+       og-a-fs-path]))
   (define rev (current-rev))
   (define a-path
     (substring

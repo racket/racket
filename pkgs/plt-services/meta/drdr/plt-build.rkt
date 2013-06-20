@@ -24,14 +24,8 @@
 (define (build-revision rev)
   (define rev-dir (revision-dir rev))
   (define co-dir (revision-trunk-dir rev))
-  (define src-dir (build-path co-dir "src"))
-  (define build-dir (build-path src-dir "build"))
-  (define futures-build-dir (build-path src-dir "futures-build"))
   (define log-dir (revision-log-dir rev))
-  (define trunk-dir
-    (revision-trunk-dir rev))
-  (define setup-plt-path
-    (path->string (build-path trunk-dir "bin" "setup-plt")))
+  (define trunk-dir (revision-trunk-dir rev))  
   ;; Checkout the repository revision
   (cache/file/timestamp
    (build-path rev-dir "checkout-done")
@@ -44,34 +38,19 @@
             (notify! "Checking out ~a@~a into ~a"
                      repo rev to-dir)
             (scm-export-repo rev repo to-dir))))
-  ;; Make the build directory
-  (make-directory* build-dir)
-  ;; Run Configure, Make, Make Install
-  (parameterize ([current-directory build-dir])
-    (run/collect/wait/log
-     #:timeout (current-subprocess-timeout-seconds)
-     #:env (current-env)
-     (build-path log-dir "src" "build" "configure")
-     (path->string (build-path src-dir "configure"))
-     empty)
-    (run/collect/wait/log
-     #:timeout (current-make-timeout-seconds)
-     #:env (current-env)
-     (build-path log-dir "src" "build" "make")
-     (make-path)
-     (list "-j" (number->string (number-of-cpus))))
+  (parameterize ([current-directory co-dir])
     (with-env
      (["PLT_SETUP_OPTIONS" (format "-j ~a" (number-of-cpus))])
      (run/collect/wait/log
       #:timeout (current-make-install-timeout-seconds)
       #:env (current-env)
-      (build-path log-dir "src" "build" "make-install")
+      (build-path log-dir "pkg-src" "build" "make")
       (make-path)
-      (list "-j" (number->string (number-of-cpus)) "install"))))
+      (list "-j" (number->string (number-of-cpus))))))
   (run/collect/wait/log
    #:timeout (current-make-install-timeout-seconds)
    #:env (current-env)
-   (build-path log-dir "src" "build" "archive")
+   (build-path log-dir "pkg-src" "build" "archive")
    (tar-path)
    (list "-czvf"
          (path->string (revision-trunk.tgz rev))
@@ -190,18 +169,20 @@
   (define trunk->log
     (rebase-path trunk-dir log-dir))
   (define racket-path
-    (path->string (build-path trunk-dir "bin" "racket")))
+    (path->string (build-path trunk-dir "racket" "bin" "racket")))
   (define raco-path
-    (path->string (build-path trunk-dir "bin" "raco")))
+    (path->string (build-path trunk-dir "racket" "bin" "raco")))
   ;; XXX Remove
   (define mzc-path
-    (path->string (build-path trunk-dir "bin" "mzc")))
+    (path->string (build-path trunk-dir "racket" "bin" "mzc")))
   (define gracket-path
-    (path->string (build-path trunk-dir "bin" "gracket")))
-  (define collects-pth
-    (build-path trunk-dir "collects"))
+    (path->string (build-path trunk-dir "racket" "bin" "gracket")))
   (define gui-workers (make-job-queue 1))
   (define test-workers (make-job-queue (number-of-cpus)))
+
+  (define pkgs-pths
+    (list (build-path trunk-dir "racket" "lib" "collects")
+          (build-path trunk-dir "pkgs")))
   (define (test-directory dir-pth upper-sema)
     (define dir-log (build-path (trunk->log dir-pth) ".index.test"))
     (cond
@@ -324,16 +305,29 @@
   (run/collect/wait/log
    #:timeout (current-subprocess-timeout-seconds)
    #:env (current-env)
-   (build-path log-dir "src" "build" "set-browser.rkt")
+   (build-path log-dir "pkg-src" "build" "set-browser.rkt")
    racket-path
    (list "-t"
          (path->string*
           (build-path (drdr-directory) "set-browser.rkt"))))
-  ;; And go    
+  ;; And go
+  (define (test-directories ps upper-sema)
+    (define list-sema (make-semaphore 0))
+    (define how-many 
+      (for/fold ([cnt 0]) ([p (in-list ps)])
+        (if (directory-exists? p)
+          (begin (test-directory p list-sema)
+                 (add1 cnt))
+          cnt)))
+    (and (not (zero? how-many))
+         (thread
+          (lambda ()
+            (semaphore-wait* list-sema how-many)
+            (semaphore-post upper-sema)))))
+
   (define top-sema (make-semaphore 0))
   (notify! "Starting testing")
-  (when (directory-exists? collects-pth)
-    (test-directory collects-pth top-sema)
+  (when (test-directories pkgs-pths top-sema)
     (notify! "All testing scheduled... waiting for completion")
     (sync
      top-sema
