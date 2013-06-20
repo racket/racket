@@ -968,7 +968,7 @@ added get-regions
                  (cond
                    [m (loop m)]
                    [else (values #f #f #f)])])]
-             [(<= b (last-position))
+             [(< b (last-position))
               (loop b)]
              [else
               (values #f #f #f)])]
