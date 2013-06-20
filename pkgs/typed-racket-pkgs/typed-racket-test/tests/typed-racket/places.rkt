@@ -33,16 +33,14 @@
     [(s-exn m)
      (exn m (current-continuation-marks))]))
 
-(define (dr p [reg-box #f])
+(define (dr p)
   (parameterize ([current-namespace (make-base-empty-namespace)])
-    (dynamic-require `(file ,(if (string? p) p (path->string p))) #f)
-    (and reg-box (set-box! reg-box (namespace-module-registry (current-namespace))))))
+    (dynamic-require `(file ,(if (string? p) p (path->string p))) #f)))
 
 
 (define (start-worker get-ch name)
   (define verb (verbose?))
   (open-place ch
-    (define reg (box #f))
     (let loop ()
       (match (place-channel-get get-ch)                
         [(vector 'log name dir res)
@@ -50,7 +48,7 @@
                           (λ (e) (place-channel-put 
                                   res 
                                   (string-append "EXCEPTION: " (exn-message e))))])
-           (define lg (generate-log/place name dir reg))
+           (define lg (generate-log/place name dir))
            (place-channel-put res lg))
          (loop)]
         [(vector p* res error?) 
@@ -62,13 +60,13 @@
                           [current-directory path]
                           [current-output-port (open-output-nowhere)]                        
                           [error-display-handler (if error? void (error-display-handler))]) 
-             (dr p reg)
+             (dr p)
              (place-channel-put res #t)))
          (loop)]))))
 
 (define comp (compile-zos #f #:module? #t))
 
-(define (generate-log/place name dir [reg-box #f])
+(define (generate-log/place name dir)
   ;; some tests require other tests, so some fiddling is required
   (define f (build-path dir name))
   (with-output-to-string
@@ -80,7 +78,6 @@
       (parameterize
           ([current-namespace (make-base-empty-namespace)]
            [current-load-relative-directory dir])
-        (dynamic-require f #f)
-        (and reg-box (set-box! reg-box (namespace-module-registry (current-namespace)))))
+        (dynamic-require f #f))
       ;; clean up compiled files in prevision of the next testing run
       (delete-directory/files (build-path dir "compiled")))))
