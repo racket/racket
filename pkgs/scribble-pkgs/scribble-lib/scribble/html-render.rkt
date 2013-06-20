@@ -1262,7 +1262,11 @@
              [resources (for/list ([p (in-list properties)]
                                    #:when (install-resource? p))
                           (install-resource-path p))]
-             [link? (and (ormap target-url? properties)
+             [link-resource (for/or ([p (in-list properties)]
+                                     #:when (link-resource? p))
+                              (link-resource-path p))]
+             [link? (and (or (ormap target-url? properties)
+                             link-resource)
                          (not (current-no-links)))]
              [anchor? (ormap url-anchor? properties)]
              [attribs
@@ -1317,7 +1321,11 @@
                    [link? 'a]
                    [newline? 'br]
                    [else 'span]) 
-                 ,attribs
+                 ,(append
+                   (if link-resource
+                       `([href ,(install-file link-resource)])
+                       null)
+                   attribs)
                  ,@content))))))
 
     (define/private (element-style->attribs name style [extras null])

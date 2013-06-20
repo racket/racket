@@ -7,3 +7,4 @@
 (define primary-file "main.rkt")
 
 (define scribblings '(("scribblings/plai.scrbl" (multi-page) (teaching -20))))
+(define release-notes (list (list "PLAI" "HISTORY.txt")))

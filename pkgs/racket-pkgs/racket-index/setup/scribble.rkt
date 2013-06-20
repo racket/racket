@@ -201,14 +201,8 @@
     ;; in the main installation:
     (log-setup-info "checking installation document directories")
     (define main-doc-dir (find-doc-dir))
-    (define extra-dirs (call-with-input-file*
-                        (build-path main-doc-dir "keep-dirs.rktd")
-                        (lambda (i) (read i))))
-    (define expected (set-union
-                      (for/set ([doc (in-list main-docs)])
-                        (doc-dest-dir doc))
-                      (for/set ([i (in-list extra-dirs)])
-                         (build-path main-doc-dir i))))
+    (define expected (for/set ([doc (in-list main-docs)])
+                       (doc-dest-dir doc)))
     (for ([i (in-list (directory-list main-doc-dir))])
       (define p (build-path main-doc-dir i))
       (when (directory-exists? p)
@@ -1241,6 +1235,7 @@
   (when (and (doc-pkg? doc)
              (not (doc-under-main? doc))
              (not latex-dest))
+    (make-directory*/ignore-exists-exn (doc-dest-dir doc))
     (with-compile-output
      (sxref-path latex-dest doc "provides.sxref")
      (lambda (out tmp-filename)

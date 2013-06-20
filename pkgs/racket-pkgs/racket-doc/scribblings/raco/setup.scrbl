@@ -405,6 +405,27 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    into the document. It must be a positive, exact integer, and the
    default is @racket[1].}
 
+ @item{@as-index{@racketidfont{release-notes}} : @racket[(listof (cons/c string? (cons/c string? list?)))] ---
+   A list of release-notes text files to link from the main documentation pages.
+   Each note is itself represented as a list, and the list can specify auxiliary
+   notes that are grouped with the main note.
+
+   A @racketidfont{release-notes} entry must be a value
+   that can be generated from an expression matching the following
+   @racket[entry] grammar:
+
+   @racketgrammar*[
+     #:literals (list)
+     [entry (list note ...)]
+     [doc (list label-string note-path)
+          (list label-string note-path order-integer)
+          (list label-string note-path order-integer
+                (list sub-note ...))]
+     [sub-note (list label-string note-path)]
+   ]
+
+   The @racket[_order-integer] is used to order notes and defaults to @racket[0].}
+
  @item{@indexed-racket[racket-launcher-names] : @racket[(listof string?)]
    --- @elemtag["racket-launcher-names"] A list of executable names
    to be generated in the installation's executable directory to run

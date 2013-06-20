@@ -18,7 +18,7 @@
     ---
     (license "License"          plt  "license/index.html")
     (acks    "Acknowledgements" plt  "acks/index.html")
-    (release "Release Notes"    plt  "release/index.html")
+    (release "Release Notes"    user  "release/index.html")
     ---
     (bugreport "Report a Bug"   #f ,(format "~a?v=~a" bug-url (version)))))
 

@@ -21,8 +21,8 @@ General Public License (LGPL).  This means
 
 ]
 
-See @filepath{doc/release-notes/COPYING_LESSER.txt} in your Racket installation
-for more information.
+See @filepath{COPYING_LESSER.txt} in your Racket installation's @filepath{lib}
+directory for more information.
 
 @copyright{
   Racket
@@ -30,27 +30,6 @@ for more information.
 }
 
 Racket software includes or extends the following copyrighted material:
-
-@copyright{
-  DrScheme
-  Copyright (c) 1995-2003 PLT
-  Copyright (c) 2004-2010 PLT Design Inc.
-  All rights reserved.
-}
-
-@copyright{
-  MrEd
-  Copyright (c) 1995-2003 PLT
-  Copyright (c) 2004-2010 PLT Design Inc.
-  All rights reserved.
-}
-
-@copyright{
-  MzScheme
-  Copyright (c) 1995-2003 PLT
-  Copyright (c) 2004-2010 PLT Design Inc.
-  All rights reserved.
-}
 
 @copyright{
   libscheme
@@ -80,13 +59,6 @@ Racket software includes or extends the following copyrighted material:
 }
 
 @copyright{
-  GNU MPFR Library
-  Copyright (c) 2000-2012
-  Free Software Foundation, Inc.
-  Contributed by the AriC and Caramel projects, INRIA.
-}
-
-@copyright{
   GNU lightning
   Copyright (c) 1994, 1995, 1996, 1999, 2000, 2001, 2002, 2011
   Free Software Foundation, Inc.
@@ -97,20 +69,5 @@ Racket software includes or extends the following copyrighted material:
   Copyright (c) 2003-2005 Hewlett-Packard Development Company, L.P.
 }
 
-@copyright{
-  PSMTabBarControl
-  John Pannell, Robert Payne, Adam Strzelecki, Dorian Johnson
-  https://github.com/dorianj/PSMTabBarControl
-}
-
-@copyright{
-  Clanbomber icon and Stop icons
-  Everaldo Coelho
-  http://www.everaldo.com/
-}
-
-@copyright{
-  Save icon
-  David Vignoni
-  http://icon-king.com/
-}
+See also other @filepath{LICENSE.txt} files in your distribution or
+packages.

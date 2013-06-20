@@ -47,5 +47,9 @@ cd ..
 ..\..\racket -l racket/kernel/init -e "(if (directory-exists? \"../../etc\") (void) (make-directory \"../../etc\"))"
 if errorlevel 1 exit /B 1
 
+copy COPYING-libscheme.txt ..\..\etc\
+copy COPYING_LESSER.txt ..\..\etc\
+copy COPYING.txt ..\..\etc\
+
 ..\..\racket -N "raco setup" %SELF_RACKET_FLAGS% -l- setup %PLT_SETUP_OPTIONS%
 if errorlevel 1 exit /B 1

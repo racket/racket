@@ -18,6 +18,8 @@ builddir = @builddir@
 
 NOOP = :
 
+ICP = @ICP@
+
 # RUN_RACKET_<X> typically redirects to RUN_THIS_RACKET_<X>,
 # but it can also redirect to an existing Racket executable
 # that is the same as the version being built (which is
@@ -34,6 +36,10 @@ ALLDIRINFO = "$(DESTDIR)$(bindir)" \
              "$(DESTDIR)$(libpltdir)" \
              "$(DESTDIR)$(configdir)" \
              "$(DESTDIR)$(mandir)"
+
+COPYING = "$(srcdir)/COPYING-libscheme.txt" \
+          "$(srcdir)/COPYING_LESSER.txt" \
+          "$(srcdir)/COPYING.txt"
 
 all:
 	$(MAKE) @MAIN_VARIANT@
@@ -92,6 +98,7 @@ install-common-middle:
 install-common-last:
 	$(MAKE) fix-paths
 	$(MAKE) @MAKE_INSTALL_PKGSCOPE@-raco-pkg-default-scope
+	$(ICP) $(COPYING) "$(DESTDIR)$(libpltdir)"/
 
 install-no:
 	$(NOOP)

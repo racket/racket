@@ -7,4 +7,4 @@
     ("local-redirect.scrbl" (depends-all-main no-depend-on) (omit))
     ("license.scrbl" () (omit))
     ("acks.scrbl"    () (omit))
-    ("release.scrbl" () (omit))))
+    ("release.scrbl" (depends-all-main no-depend-on) (omit))))

@@ -84,6 +84,7 @@ XCode:
  Build PSMTabBarControl. You only need the Framework target, and
  in Release mode (which is "Build for Archiving" in Xcode 4.5).
  Use `ditto' to reduce the framework to one architecture.
+ Add back the "LICENSE.txt" file.
 
 Install:
   racket install-libs.rkt <dest>/lib

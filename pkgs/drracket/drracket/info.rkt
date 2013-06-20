@@ -8,3 +8,5 @@
 
 (define gracket-launcher-names     '("DrRacket"))
 (define gracket-launcher-libraries '("drracket.rkt"))
+
+(define release-notes (list (list "DrRacket" "HISTORY.txt")))

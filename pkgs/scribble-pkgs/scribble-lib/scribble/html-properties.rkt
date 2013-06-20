@@ -22,5 +22,6 @@
 
  [part-link-redirect ([url url?])]
  [install-resource ([path path-string?])]
+ [link-resource ([path path-string?])]
 
  [head-extra ([xexpr xexpr/c])])

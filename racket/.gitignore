@@ -2,6 +2,7 @@
 /bin/
 /include/
 /etc/
+/doc/
 
 # Windows and OSX executables
 /*.app
