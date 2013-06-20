@@ -7,6 +7,8 @@
 (provide doc-db-available?
          doc-db-clear-provides
          doc-db-add-provides
+         doc-db-set-provides-timestamp
+         doc-db-get-provides-timestamp
          doc-db-clear-dependencies
          doc-db-add-dependencies
          doc-db-clear-searches
@@ -134,6 +136,33 @@
   (clear 'doc-db-clear-provides
          db-file filename
          "DELETE FROM documented WHERE pathid=$1"))
+
+(define (doc-db-set-provides-timestamp db-file filename seconds)
+  (call-with-database
+   'doc-db-set-provides-timestamp
+   db-file
+   #:write? #t
+   (lambda (db)
+     (prepare-tables db)
+     (define pathid (filename->pathid db filename))
+     (query-exec db "DELETE FROM timestamps WHERE pathid=$1"
+                 pathid)
+     (query-exec db "INSERT INTO timestamps VALUES ($1, $2)"
+                 pathid seconds))))
+
+(define (doc-db-get-provides-timestamp db-file filename)
+  (call-with-database
+   'doc-db-get-provides-timestamp
+   db-file
+   #:write? #t
+   (lambda (db)
+     (prepare-tables db)
+     (define pathid (filename->pathid db filename))
+     (define row
+       (query-maybe-row db (~a "SELECT seconds FROM timestamps"
+                               " WHERE pathid=$1")
+                        pathid))
+     (and row (vector-ref row 0)))))
 
 (define (doc-db-add-dependencies db-file depends filename)
   (add 'doc-db-add-dependencies
@@ -355,6 +384,8 @@
          (define pathid (vector-ref row 2))
          (query-exec db "DELETE FROM documented WHERE pathid=$1"
                      pathid)
+         (query-exec db "DELETE FROM timestamps WHERE pathid=$1"
+                     pathid)
          (query-exec db "DELETE FROM searches WHERE pathid=$1"
                      pathid)
          (query-exec db "DELETE FROM searchSets WHERE pathid=$1"
@@ -441,7 +472,14 @@
     (query-exec db (~a "CREATE INDEX searchesTag "
                        "on searches (stag)"))
     (query-exec db (~a "CREATE INDEX searchesPathId "
-                       "on searches (pathid, setid)"))))
+                       "on searches (pathid, setid)")))
+  (when (null? 
+         (query-rows db (~a "SELECT name FROM sqlite_master"
+                            " WHERE type='table' AND name='timestamps'")))
+    (query-exec db (~a "CREATE TABLE timestamps "
+                       "(pathid SMALLINT,"
+                       " seconds BIGINT,"
+                       " PRIMARY KEY (pathid))"))))
 
 (define (exn:fail:retry? v)
   (and (exn:fail:sql? v)

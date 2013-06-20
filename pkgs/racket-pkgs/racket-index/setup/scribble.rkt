@@ -810,6 +810,10 @@
                           (and t
                                (let ([t2 (file-or-directory-modify-seconds info-out-file #f (lambda () #f))])
                                  (and t2 (min t t2)))))]
+         [provides-time (for/fold ([t +inf.0]) ([info-out-file info-out-files])
+                          (and t
+                               (let ([t2 (doc-db-get-provides-timestamp db-file info-out-file)])
+                                 (and t2 (min t t2)))))]
          [info-in-time (file-or-directory-modify-seconds info-in-file #f (lambda () #f))]
          [info-time (min (or info-out-time -inf.0) (or info-in-time -inf.0))]
          [vers (send renderer get-serialize-version)]
@@ -823,9 +827,12 @@
               (and (not force-out-of-date?)
                    info-out-time
                    info-in-time
+                   provides-time
                    (or (not can-run?)
                        ;; Need to rebuild if output file is older than input:
                        (my-time . >= . src-time)
+                       ;; Need to rebuild if database is out of sync:
+                       (provides-time . >= . info-out-time)
                        ;; But we can use in/out information if they're already built;
                        ;; this is mostly useful if we interrupt setup-plt after
                        ;; it runs some documents without rendering them:
@@ -923,6 +930,8 @@
                              (not (for/and ([sci scis]
                                             [out-v out-vs])
                                     (serialized=? sci (cadr out-v))))
+                             (not provides-time)
+                             (info-out-time . > . provides-time)
                              (info-out-time . > . (current-seconds)))])
                    (when (and (verbose) need-out-write?)
                      (eprintf " [New out ~a]\n" (doc-src-file doc)))
@@ -1002,7 +1011,9 @@
            lock
            (lambda ()
              (doc-db-clear-provides db-file filename)
-             (doc-db-add-provides db-file provides filename))))))
+             (doc-db-add-provides db-file provides filename)
+             (doc-db-set-provides-timestamp db-file filename 
+                                            (file-or-directory-modify-seconds filename)))))))
     ;; For each ".html" file, check for a reference to "local-redirect.js",
     ;; and fix up the path if there is a reference:
     (define js-path (if (doc-under-main? doc)
@@ -1209,7 +1220,7 @@
                                      (dynamic-require sub 'doc)
                                      (dynamic-require mod-path 'doc))))))))
 
-(define (write- latex-dest vers doc name datas prep!)
+(define (write- latex-dest vers doc name datas prep! final!)
   (let* ([filename (sxref-path latex-dest doc name)])
     (prep! filename)
     (when (verbose) (printf " [Caching to disk ~a]\n" filename))
@@ -1220,9 +1231,22 @@
        (for ([data (in-list datas)])
          (write-bytes (s-exp->fasl (append (list (list vers (doc-flags doc))) 
                                            data)) 
-                      out))))))
+                      out))))
+    (final! filename)))
 
 (define (write-out latex-dest vers doc scis providess db-file lock)
+  ;; A "provides.sxref" file is used when a package is converted to binary
+  ;; form, in which case cross-reference information needs to be loaded
+  ;; into the database at install time:
+  (when (and (doc-pkg? doc)
+             (not (doc-under-main? doc))
+             (not latex-dest))
+    (with-compile-output
+     (sxref-path latex-dest doc "provides.sxref")
+     (lambda (out tmp-filename)
+       (s-exp->fasl providess out))))
+  ;; Write each "out.sxref" file and install the corresponding provides
+  ;; into the database:
   (for ([i (add1 (doc-out-count doc))]
         [sci scis]
         [provides providess])
@@ -1233,15 +1257,14 @@
                lock
                (lambda ()
                  (doc-db-clear-provides db-file filename)
-                 (doc-db-add-provides db-file provides filename))))))
-  ;; Used for a package is converted to "binary" form:
-  (when (and (doc-pkg? doc)
-             (not (doc-under-main? doc))
-             (not latex-dest))
-    (with-compile-output
-     (sxref-path latex-dest doc "provides.sxref")
-     (lambda (out tmp-filename)
-       (s-exp->fasl providess out)))))
+                 (doc-db-add-provides db-file provides filename))))
+            (lambda (filename)
+              (call-with-lock
+               lock
+               (lambda ()
+                 (doc-db-set-provides-timestamp
+                  db-file filename 
+                  (file-or-directory-modify-seconds filename))))))))
 
 (define (write-out/info latex-dest info scis providess db-file lock)
   (write-out latex-dest (info-vers info) (info-doc info) scis providess db-file lock))
@@ -1258,7 +1281,8 @@
                (doc-db-clear-dependencies db-file filename)
                (doc-db-clear-searches db-file filename)
                (doc-db-add-dependencies db-file undef filename)
-               (doc-db-add-searches db-file searches filename))))))
+               (doc-db-add-searches db-file searches filename))))
+          void))
 
 (define (write-in/info latex-dest info lock)
   (when (eq? 'delayed (info-undef info))
