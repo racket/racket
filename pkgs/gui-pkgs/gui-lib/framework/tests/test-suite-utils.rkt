@@ -98,8 +98,7 @@
      (unless (system*
               racket-bin
               (path->string
-               (build-path (collection-path "tests" "framework")
-                           "framework-test-engine.rkt")))
+               (collection-file-path "framework-test-engine.rkt" "framework" "tests")))
        (eprintf "starting gracket failed; used path ~s\n" racket-bin))))
   (debug-printf mz-tcp "accepting listener\n")
   (let-values ([(in out) (tcp-accept listener)])
