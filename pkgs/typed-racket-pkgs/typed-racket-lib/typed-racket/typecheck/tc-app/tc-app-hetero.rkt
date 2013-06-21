@@ -136,4 +136,4 @@
        (ret (make-HeterogeneousVector
               (for/list ((e (in-syntax #'(args ...))))
                 (generalize (tc-expr/t e)))))]
-      [_ (int-err "bad expected: ~a" expected)])))
+      [_ (ret Err)])))
