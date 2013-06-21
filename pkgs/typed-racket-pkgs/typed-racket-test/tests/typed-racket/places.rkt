@@ -78,15 +78,18 @@
     (parameterize [(use-compiled-file-paths orig-use-compiled-file-paths)
                    (current-load/use-compiled orig-load/use-compiled)]
       (orig-load/use-compiled path name)))
+  (define tr-log-output (open-output-string))
 
-  (with-output-to-string
-    (lambda ()
-      (with-tr-logging-to-port
-        (current-output-port)
-        (thunk
-          (parameterize ([current-namespace (make-base-empty-namespace)]
-                         [current-load/use-compiled test-load/use-compiled])
-            (define orig-namespace (namespace-anchor->namespace anchor))
-            (namespace-attach-module orig-namespace 'racket)
-            (namespace-attach-module orig-namespace 'typed-racket/core)
-            (dynamic-require file #f)))))))
+  (define regular-output
+    (with-output-to-string
+      (lambda ()
+        (with-tr-logging-to-port
+          tr-log-output
+          (thunk
+            (parameterize ([current-namespace (make-base-empty-namespace)]
+                           [current-load/use-compiled test-load/use-compiled])
+              (define orig-namespace (namespace-anchor->namespace anchor))
+              (namespace-attach-module orig-namespace 'racket)
+              (namespace-attach-module orig-namespace 'typed-racket/core)
+              (dynamic-require file #f)))))))
+  (list (get-output-string tr-log-output) regular-output))

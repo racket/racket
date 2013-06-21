@@ -16,10 +16,11 @@
     (test-begin
       ;; ugly, but otherwise rackunit spews the entire logs to
       ;; stderr, and they can be quite long
+      (define-values (tr-log output) (generate-log name dir))
       (check-equal?
        ;; actual log
        (with-input-from-string
-           (string-append "(" (generate-log name dir) ")")
+           (string-append "(" tr-log output ")")
          read)
        ;; expected log
        (with-input-from-file (build-path dir name)
