@@ -1,8 +1,8 @@
 #;#;
 #<<END
+TR missed opt: sqrt-segfault.rkt 21:31 (sqrt dist2) -- unexpected complex type
 TR opt: sqrt-segfault.rkt 19:14 (- 0.0 0.0) -- binary float
 TR opt: sqrt-segfault.rkt 20:14 (* dx dx) -- binary float
-TR missed opt: sqrt-segfault.rkt 21:31 (sqrt dist2) -- unexpected complex type
 END
 ""
 

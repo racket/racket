@@ -1,11 +1,5 @@
 #;#;
 #<<END
-TR opt: pr13468.rkt 90:13 6.0+2.3i -- unboxed literal
-TR opt: pr13468.rkt 90:13 6.0+2.3i -- unboxed literal
-TR opt: pr13468.rkt 90:5 (- (ann 6.0+2.3i Float-Complex)) -- unboxed unary float complex
-TR opt: pr13468.rkt 91:13 6.0+2.3i -- unboxed literal
-TR opt: pr13468.rkt 91:13 6.0+2.3i -- unboxed literal
-TR opt: pr13468.rkt 91:5 (/ (ann 6.0+2.3i Float-Complex)) -- unboxed unary float complex
 TR missed opt: pr13468.rkt 92:5 (/ (ann 0.0+0.0i Float-Complex) (ann 1 Number)) -- Float-Complex division, potential exact 0s on the rhss -- caused by: 92:42 1
 TR missed opt: pr13468.rkt 95:5 (expt (ann -5.0 Flonum) (ann 2.0 Flonum)) -- unexpected complex type
 TR opt: pr13468.rkt 116:21 0.0 -- float-arg-expr in complex ops
@@ -32,6 +26,12 @@ TR opt: pr13468.rkt 146:21 -6.0 -- float-arg-expr in complex ops
 TR opt: pr13468.rkt 146:5 (real-part (ann -6.0 Negative-Flonum)) -- unboxed unary float complex
 TR opt: pr13468.rkt 147:21 6.0 -- float-arg-expr in complex ops
 TR opt: pr13468.rkt 147:5 (real-part (ann 6.0 Flonum)) -- unboxed unary float complex
+TR opt: pr13468.rkt 90:13 6.0+2.3i -- unboxed literal
+TR opt: pr13468.rkt 90:13 6.0+2.3i -- unboxed literal
+TR opt: pr13468.rkt 90:5 (- (ann 6.0+2.3i Float-Complex)) -- unboxed unary float complex
+TR opt: pr13468.rkt 91:13 6.0+2.3i -- unboxed literal
+TR opt: pr13468.rkt 91:13 6.0+2.3i -- unboxed literal
+TR opt: pr13468.rkt 91:5 (/ (ann 6.0+2.3i Float-Complex)) -- unboxed unary float complex
 END
 #<<END
 -6.0-2.3i
