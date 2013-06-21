@@ -1,7 +1,6 @@
 #;#;
 #<<END
-TR opt: define-float.rkt 11:10 (+ 1.0 2.0) -- binary float
-
+TR opt: define-float.rkt 10:10 (+ 1.0 2.0) -- binary float
 END
 ""
 

@@ -1,14 +1,13 @@
 #;#;
 #<<END
-TR opt: exact-inexact.rkt 26:0 (exact->inexact (expt 10 100)) -- int to float
-TR opt: exact-inexact.rkt 27:7 (exact->inexact (expt 2.3 3.2)) -- float to float
-TR opt: exact-inexact.rkt 27:0 (round (exact->inexact (expt 2.3 3.2))) -- unary float
-TR opt: exact-inexact.rkt 28:0 (real->double-flonum (expt 10 100)) -- int to float
-TR opt: exact-inexact.rkt 29:7 (real->double-flonum (expt 2.3 3.2)) -- float to float
-TR opt: exact-inexact.rkt 29:0 (round (real->double-flonum (expt 2.3 3.2))) -- unary float
-TR opt: exact-inexact.rkt 32:0 (exact->inexact (expt 1.0f0 2.0f0)) -- single-float to single-float
-TR opt: exact-inexact.rkt 33:0 (real->single-flonum (expt 1.0f0 2.0f0)) -- single-float to single-float
-
+TR opt: exact-inexact.rkt 25:0 (exact->inexact (expt 10 100)) -- int to float
+TR opt: exact-inexact.rkt 26:7 (exact->inexact (expt 2.3 3.2)) -- float to float
+TR opt: exact-inexact.rkt 26:0 (round (exact->inexact (expt 2.3 3.2))) -- unary float
+TR opt: exact-inexact.rkt 27:0 (real->double-flonum (expt 10 100)) -- int to float
+TR opt: exact-inexact.rkt 28:7 (real->double-flonum (expt 2.3 3.2)) -- float to float
+TR opt: exact-inexact.rkt 28:0 (round (real->double-flonum (expt 2.3 3.2))) -- unary float
+TR opt: exact-inexact.rkt 31:0 (exact->inexact (expt 1.0f0 2.0f0)) -- single-float to single-float
+TR opt: exact-inexact.rkt 32:0 (real->single-flonum (expt 1.0f0 2.0f0)) -- single-float to single-float
 END
 #<<END
 1e+100

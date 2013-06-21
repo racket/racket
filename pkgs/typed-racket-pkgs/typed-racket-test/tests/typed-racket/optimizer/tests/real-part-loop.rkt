@@ -16,7 +16,6 @@ TR opt: real-part-loop.rkt 34:6 (loop (+ v 3.6)) -- call to fun with unboxed arg
 TR opt: real-part-loop.rkt 31:15 0.0+1.0i -- unboxed literal
 TR opt: real-part-loop.rkt 31:1 (let loop ((v 0.0+1.0i)) (if (> (real-part v) 70000.2) 0 (loop (+ v 3.6)))) -- unboxed call site
 TR opt: real-part-loop.rkt 31:6 loop -- unboxed let loop
-
 END
 #<<END
 0

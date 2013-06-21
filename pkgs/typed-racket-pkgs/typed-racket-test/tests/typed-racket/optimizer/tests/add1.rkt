@@ -1,10 +1,9 @@
 #;#;
 #<<END
-TR opt: add1.rkt 18:5 (add1 5) -- fixnum add1
-TR opt: add1.rkt 19:5 (sub1 3) -- fixnum sub1
-TR opt: add1.rkt 20:5 (add1 2.3) -- float add1
-TR opt: add1.rkt 21:5 (sub1 2.25) -- float sub1
-
+TR opt: add1.rkt 17:5 (add1 5) -- fixnum add1
+TR opt: add1.rkt 18:5 (sub1 3) -- fixnum sub1
+TR opt: add1.rkt 19:5 (add1 2.3) -- float add1
+TR opt: add1.rkt 20:5 (sub1 2.25) -- float sub1
 END
 #<<END
 6

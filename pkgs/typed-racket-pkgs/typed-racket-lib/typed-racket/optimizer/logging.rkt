@@ -2,10 +2,11 @@
 
 (require racket/set racket/string racket/match racket/list
          unstable/syntax unstable/logging
+         data/queue
          "../utils/tc-utils.rkt")
 
 (provide log-optimization log-missed-optimization log-optimization-info
-         with-tr-logging-to-port
+         with-tr-logging-to-queue
          (struct-out log-entry)
          (struct-out opt-log-entry)
          (struct-out missed-opt-log-entry)
@@ -127,12 +128,10 @@
 
 ;;--------------------------------------------------------------------
 
-(define (with-tr-logging-to-port port thunk)
+(define (with-tr-logging-to-queue queue thunk)
   (with-intercepted-logging
    (lambda (l)
-     (displayln ; print log message
-      (string-trim (vector-ref l 1) "TR-optimizer: ") ; remove logger prefix
-      port)
-     (flush-output port))
+     (enqueue! queue
+      (string-trim (vector-ref l 1) "TR-optimizer: "))) ; remove logger prefix
    thunk
    'debug 'TR-optimizer))

@@ -1,7 +1,6 @@
 #;#;
 #<<END
-TR opt: pair-fun.rkt 15:6 (car x) -- pair
-
+TR opt: pair-fun.rkt 14:6 (car x) -- pair
 END
 ""
 

@@ -1,8 +1,7 @@
 #;#;
 #<<END
-TR opt: string-length.rkt 18:0 (string-length "eh") -- string-length
-TR opt: string-length.rkt 19:0 (bytes-length #"eh") -- bytes-length
-
+TR opt: string-length.rkt 17:0 (string-length "eh") -- string-length
+TR opt: string-length.rkt 18:0 (bytes-length #"eh") -- bytes-length
 END
 #<<END
 2

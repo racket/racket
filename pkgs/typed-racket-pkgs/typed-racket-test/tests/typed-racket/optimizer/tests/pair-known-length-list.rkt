@@ -1,18 +1,17 @@
 #;#;
 #<<END
-TR opt: pair-known-length-list.rkt 31:0 (car x) -- pair
-TR opt: pair-known-length-list.rkt 32:0 (cdr x) -- pair
-TR opt: pair-known-length-list.rkt 33:0 (car (cdr x)) -- pair
+TR opt: pair-known-length-list.rkt 30:0 (car x) -- pair
+TR opt: pair-known-length-list.rkt 31:0 (cdr x) -- pair
+TR opt: pair-known-length-list.rkt 32:0 (car (cdr x)) -- pair
+TR opt: pair-known-length-list.rkt 32:5 (cdr x) -- pair
+TR opt: pair-known-length-list.rkt 33:0 (cdr (cdr x)) -- pair
 TR opt: pair-known-length-list.rkt 33:5 (cdr x) -- pair
-TR opt: pair-known-length-list.rkt 34:0 (cdr (cdr x)) -- pair
-TR opt: pair-known-length-list.rkt 34:5 (cdr x) -- pair
-TR opt: pair-known-length-list.rkt 35:0 (car (cdr (cdr x))) -- pair
+TR opt: pair-known-length-list.rkt 34:0 (car (cdr (cdr x))) -- pair
+TR opt: pair-known-length-list.rkt 34:5 (cdr (cdr x)) -- pair
+TR opt: pair-known-length-list.rkt 34:10 (cdr x) -- pair
+TR opt: pair-known-length-list.rkt 35:0 (cdr (cdr (cdr x))) -- pair
 TR opt: pair-known-length-list.rkt 35:5 (cdr (cdr x)) -- pair
 TR opt: pair-known-length-list.rkt 35:10 (cdr x) -- pair
-TR opt: pair-known-length-list.rkt 36:0 (cdr (cdr (cdr x))) -- pair
-TR opt: pair-known-length-list.rkt 36:5 (cdr (cdr x)) -- pair
-TR opt: pair-known-length-list.rkt 36:10 (cdr x) -- pair
-
 END
 #<<END
 1

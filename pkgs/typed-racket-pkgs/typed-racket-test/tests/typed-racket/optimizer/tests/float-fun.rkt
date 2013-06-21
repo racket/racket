@@ -1,7 +1,6 @@
 #;#;
 #<<END
-TR opt: float-fun.rkt 14:2 (+ x 1.0) -- binary float
-
+TR opt: float-fun.rkt 13:2 (+ x 1.0) -- binary float
 END
 ""
 

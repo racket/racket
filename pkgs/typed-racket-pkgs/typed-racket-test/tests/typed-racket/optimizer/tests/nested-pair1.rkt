@@ -1,8 +1,7 @@
 #;#;
 #<<END
-TR opt: nested-pair1.rkt 15:0 (car (cdr (quote (1 2)))) -- pair
-TR opt: nested-pair1.rkt 15:5 (cdr (quote (1 2))) -- pair
-
+TR opt: nested-pair1.rkt 14:0 (car (cdr (quote (1 2)))) -- pair
+TR opt: nested-pair1.rkt 14:5 (cdr (quote (1 2))) -- pair
 END
 #<<END
 2

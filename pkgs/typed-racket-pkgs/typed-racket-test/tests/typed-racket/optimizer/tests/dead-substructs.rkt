@@ -1,8 +1,7 @@
 #;#;
 #<<END
-TR info: dead-substructs.rkt 29:4 make-child1 -- struct constructor
-TR info: dead-substructs.rkt 30:4 make-child2 -- struct constructor
-
+TR info: dead-substructs.rkt 28:4 make-child1 -- struct constructor
+TR info: dead-substructs.rkt 29:4 make-child2 -- struct constructor
 END
 #<<END
 1
