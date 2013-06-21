@@ -70,6 +70,9 @@
   (define file (simplify-path (build-path dir name)))
   (define orig-load/use-compiled (current-load/use-compiled))
   (define orig-use-compiled-file-paths (use-compiled-file-paths))
+  (define full-tr-logs (make-queue))
+  (define sub-tr-logs (make-queue))
+
   (define (test-load/use-compiled path name)
     (parameterize [(use-compiled-file-paths null)
                    (current-load/use-compiled reset-load/use-compiled)]
@@ -77,14 +80,16 @@
   (define (reset-load/use-compiled path name)
     (parameterize [(use-compiled-file-paths orig-use-compiled-file-paths)
                    (current-load/use-compiled orig-load/use-compiled)]
-      (orig-load/use-compiled path name)))
-  (define tr-logs (make-queue))
+        (with-tr-logging-to-queue
+          sub-tr-logs
+          (thunk
+            (orig-load/use-compiled path name)))))
 
   (define regular-output
     (with-output-to-string
       (lambda ()
         (with-tr-logging-to-queue
-          tr-logs
+          full-tr-logs
           (thunk
             (parameterize ([current-namespace (make-base-empty-namespace)]
                            [current-load/use-compiled test-load/use-compiled])
@@ -92,4 +97,12 @@
               (namespace-attach-module orig-namespace 'racket)
               (namespace-attach-module orig-namespace 'typed-racket/core)
               (dynamic-require file #f)))))))
-  (list (sort (queue->list tr-logs) string<?) regular-output))
+
+  (define tr-logs
+    (let ((tr-logs (queue->list full-tr-logs)))
+      (sort
+        (for/fold ((tr-logs tr-logs)) ((entry (in-queue sub-tr-logs)))
+          (remove entry tr-logs))
+        string<?)))
+
+  (list tr-logs regular-output))
