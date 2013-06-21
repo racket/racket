@@ -1,8 +1,9 @@
 #;
-(
-TR opt: case-lambda-dead-branch.rkt 12:5 (x y) -- dead case-lambda branch
-TR opt: case-lambda-dead-branch.rkt 18:5 (x y) -- dead case-lambda branch
-)
+#<<END
+TR opt: case-lambda-dead-branch.rkt 13:5 (x y) -- dead case-lambda branch
+TR opt: case-lambda-dead-branch.rkt 19:5 (x y) -- dead case-lambda branch
+
+END
 #lang typed/racket
 
 (: f (case-> (Symbol Symbol -> String)))

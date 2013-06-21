@@ -1,9 +1,10 @@
 #;
-(
-TR opt: binary-nonzero-fixnum.rkt 11:8 (vector-length (quote #(1 2 3))) -- known-length vector-length
-TR opt: binary-nonzero-fixnum.rkt 11:0 (modulo (vector-length (quote #(1 2 3))) 2) -- binary nonzero fixnum
+#<<END
+TR opt: binary-nonzero-fixnum.rkt 12:8 (vector-length (quote #(1 2 3))) -- known-length vector-length
+TR opt: binary-nonzero-fixnum.rkt 12:0 (modulo (vector-length (quote #(1 2 3))) 2) -- binary nonzero fixnum
 1
-)
+
+END
 
 #lang typed/scheme
 #:optimize

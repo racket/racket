@@ -1,7 +1,8 @@
 #;
-(
-TR opt: pair-fun.rkt 13:6 (car x) -- pair
-)
+#<<END
+TR opt: pair-fun.rkt 14:6 (car x) -- pair
+
+END
 
 #lang typed/scheme
 #:optimize

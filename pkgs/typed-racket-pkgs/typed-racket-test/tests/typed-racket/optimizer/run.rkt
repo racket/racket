@@ -25,7 +25,9 @@
        (with-input-from-file (build-path dir name)
          (lambda () ; from the test file
            (read-line) ; skip the #;
-           (read)))))))
+           (with-input-from-string (read) 
+              (lambda ()
+                (for/list ((v (in-port))) v)))))))))
 
 
 (define-runtime-path tests-dir                "./tests")

@@ -1,8 +1,9 @@
 #;
-(
-TR opt: invalid-exact-inexact.rkt 9:0 (exact->inexact 1.0) -- float to float
+#<<END
+TR opt: invalid-exact-inexact.rkt 10:0 (exact->inexact 1.0) -- float to float
 1.0
-)
+
+END
 
 #lang typed/scheme
 #:optimize

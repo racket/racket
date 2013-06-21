@@ -1,7 +1,8 @@
 #;
-(
+#<<END
 0
-)
+
+END
 
 #lang typed/scheme
 #:optimize

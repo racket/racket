@@ -1,8 +1,9 @@
 #;
-(
-TR opt: double-float.rkt 10:0 (+ 2.0 2.0 2.0) -- binary float
+#<<END
+TR opt: double-float.rkt 11:0 (+ 2.0 2.0 2.0) -- binary float
 6.0
-)
+
+END
 
 #lang typed/scheme
 #:optimize

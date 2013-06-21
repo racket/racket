@@ -1,10 +1,13 @@
 #;
-(
-TR missed opt: all-real.rkt 24:0 (+ (ann 3 Real) (ann 4 Real)) -- all args float-arg-expr, result not Float -- caused by: 24:8 3, 24:21 4
-TR info: all-real.rkt 24:0 (+ (ann 3 Real) (ann 4 Real)) -- exact real arith
-TR missed opt: all-real.rkt 25:0 (* (ann 3 Real) (ann 4 Real)) -- all args float-arg-expr, result not Float -- caused by: 25:8 3, 25:21 4
-TR info: all-real.rkt 25:0 (* (ann 3 Real) (ann 4 Real)) -- exact real arith
-7 12)
+#<<END
+TR missed opt: all-real.rkt 27:0 (+ (ann 3 Real) (ann 4 Real)) -- all args float-arg-expr, result not Float -- caused by: 27:8 3, 27:21 4
+TR info: all-real.rkt 27:0 (+ (ann 3 Real) (ann 4 Real)) -- exact real arith
+TR missed opt: all-real.rkt 28:0 (* (ann 3 Real) (ann 4 Real)) -- all args float-arg-expr, result not Float -- caused by: 28:8 3, 28:21 4
+TR info: all-real.rkt 28:0 (* (ann 3 Real) (ann 4 Real)) -- exact real arith
+7
+12
+
+END
 
 #lang typed/racket
 

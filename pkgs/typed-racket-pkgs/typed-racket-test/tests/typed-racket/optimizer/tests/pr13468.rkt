@@ -1,37 +1,37 @@
 #;
-(
-TR opt: pr13468.rkt 86:13 6.0+2.3i -- unboxed literal
-TR opt: pr13468.rkt 86:13 6.0+2.3i -- unboxed literal
-TR opt: pr13468.rkt 86:5 (- (ann 6.0+2.3i Float-Complex)) -- unboxed unary float complex
-TR opt: pr13468.rkt 87:13 6.0+2.3i -- unboxed literal
-TR opt: pr13468.rkt 87:13 6.0+2.3i -- unboxed literal
-TR opt: pr13468.rkt 87:5 (/ (ann 6.0+2.3i Float-Complex)) -- unboxed unary float complex
-TR missed opt: pr13468.rkt 88:5 (/ (ann 0.0+0.0i Float-Complex) (ann 1 Number)) -- Float-Complex division, potential exact 0s on the rhss -- caused by: 88:42 1
-TR missed opt: pr13468.rkt 91:5 (expt (ann -5.0 Flonum) (ann 2.0 Flonum)) -- unexpected complex type
-TR opt: pr13468.rkt 112:21 0.0 -- float-arg-expr in complex ops
-TR opt: pr13468.rkt 112:5 (magnitude (ann 0.0 Flonum-Zero)) -- unboxed unary float complex
-TR opt: pr13468.rkt 113:21 6.0 -- float-arg-expr in complex ops
-TR opt: pr13468.rkt 113:5 (magnitude (ann 6.0 Positive-Flonum)) -- unboxed unary float complex
-TR opt: pr13468.rkt 114:21 6.0 -- float-arg-expr in complex ops
-TR opt: pr13468.rkt 114:5 (magnitude (ann 6.0 Nonnegative-Flonum)) -- unboxed unary float complex
-TR opt: pr13468.rkt 115:21 -6.0 -- float-arg-expr in complex ops
-TR opt: pr13468.rkt 115:5 (magnitude (ann -6.0 Nonpositive-Flonum)) -- unboxed unary float complex
-TR opt: pr13468.rkt 116:21 -6.0 -- float-arg-expr in complex ops
-TR opt: pr13468.rkt 116:5 (magnitude (ann -6.0 Negative-Flonum)) -- unboxed unary float complex
-TR opt: pr13468.rkt 117:21 6.0 -- float-arg-expr in complex ops
-TR opt: pr13468.rkt 117:5 (magnitude (ann 6.0 Flonum)) -- unboxed unary float complex
-TR opt: pr13468.rkt 138:21 0.0 -- float-arg-expr in complex ops
-TR opt: pr13468.rkt 138:5 (real-part (ann 0.0 Flonum-Zero)) -- unboxed unary float complex
-TR opt: pr13468.rkt 139:21 6.0 -- float-arg-expr in complex ops
-TR opt: pr13468.rkt 139:5 (real-part (ann 6.0 Positive-Flonum)) -- unboxed unary float complex
-TR opt: pr13468.rkt 140:21 6.0 -- float-arg-expr in complex ops
-TR opt: pr13468.rkt 140:5 (real-part (ann 6.0 Nonnegative-Flonum)) -- unboxed unary float complex
-TR opt: pr13468.rkt 141:21 -6.0 -- float-arg-expr in complex ops
-TR opt: pr13468.rkt 141:5 (real-part (ann -6.0 Nonpositive-Flonum)) -- unboxed unary float complex
-TR opt: pr13468.rkt 142:21 -6.0 -- float-arg-expr in complex ops
-TR opt: pr13468.rkt 142:5 (real-part (ann -6.0 Negative-Flonum)) -- unboxed unary float complex
-TR opt: pr13468.rkt 143:21 6.0 -- float-arg-expr in complex ops
-TR opt: pr13468.rkt 143:5 (real-part (ann 6.0 Flonum)) -- unboxed unary float complex
+#<<END
+TR opt: pr13468.rkt 88:13 6.0+2.3i -- unboxed literal
+TR opt: pr13468.rkt 88:13 6.0+2.3i -- unboxed literal
+TR opt: pr13468.rkt 88:5 (- (ann 6.0+2.3i Float-Complex)) -- unboxed unary float complex
+TR opt: pr13468.rkt 89:13 6.0+2.3i -- unboxed literal
+TR opt: pr13468.rkt 89:13 6.0+2.3i -- unboxed literal
+TR opt: pr13468.rkt 89:5 (/ (ann 6.0+2.3i Float-Complex)) -- unboxed unary float complex
+TR missed opt: pr13468.rkt 90:5 (/ (ann 0.0+0.0i Float-Complex) (ann 1 Number)) -- Float-Complex division, potential exact 0s on the rhss -- caused by: 90:42 1
+TR missed opt: pr13468.rkt 93:5 (expt (ann -5.0 Flonum) (ann 2.0 Flonum)) -- unexpected complex type
+TR opt: pr13468.rkt 114:21 0.0 -- float-arg-expr in complex ops
+TR opt: pr13468.rkt 114:5 (magnitude (ann 0.0 Flonum-Zero)) -- unboxed unary float complex
+TR opt: pr13468.rkt 115:21 6.0 -- float-arg-expr in complex ops
+TR opt: pr13468.rkt 115:5 (magnitude (ann 6.0 Positive-Flonum)) -- unboxed unary float complex
+TR opt: pr13468.rkt 116:21 6.0 -- float-arg-expr in complex ops
+TR opt: pr13468.rkt 116:5 (magnitude (ann 6.0 Nonnegative-Flonum)) -- unboxed unary float complex
+TR opt: pr13468.rkt 117:21 -6.0 -- float-arg-expr in complex ops
+TR opt: pr13468.rkt 117:5 (magnitude (ann -6.0 Nonpositive-Flonum)) -- unboxed unary float complex
+TR opt: pr13468.rkt 118:21 -6.0 -- float-arg-expr in complex ops
+TR opt: pr13468.rkt 118:5 (magnitude (ann -6.0 Negative-Flonum)) -- unboxed unary float complex
+TR opt: pr13468.rkt 119:21 6.0 -- float-arg-expr in complex ops
+TR opt: pr13468.rkt 119:5 (magnitude (ann 6.0 Flonum)) -- unboxed unary float complex
+TR opt: pr13468.rkt 140:21 0.0 -- float-arg-expr in complex ops
+TR opt: pr13468.rkt 140:5 (real-part (ann 0.0 Flonum-Zero)) -- unboxed unary float complex
+TR opt: pr13468.rkt 141:21 6.0 -- float-arg-expr in complex ops
+TR opt: pr13468.rkt 141:5 (real-part (ann 6.0 Positive-Flonum)) -- unboxed unary float complex
+TR opt: pr13468.rkt 142:21 6.0 -- float-arg-expr in complex ops
+TR opt: pr13468.rkt 142:5 (real-part (ann 6.0 Nonnegative-Flonum)) -- unboxed unary float complex
+TR opt: pr13468.rkt 143:21 -6.0 -- float-arg-expr in complex ops
+TR opt: pr13468.rkt 143:5 (real-part (ann -6.0 Nonpositive-Flonum)) -- unboxed unary float complex
+TR opt: pr13468.rkt 144:21 -6.0 -- float-arg-expr in complex ops
+TR opt: pr13468.rkt 144:5 (real-part (ann -6.0 Negative-Flonum)) -- unboxed unary float complex
+TR opt: pr13468.rkt 145:21 6.0 -- float-arg-expr in complex ops
+TR opt: pr13468.rkt 145:5 (real-part (ann 6.0 Flonum)) -- unboxed unary float complex
 -6.0-2.3i
 0.1453136352627755-0.055703560184063944i
 0.0+0.0i
@@ -76,7 +76,9 @@ TR opt: pr13468.rkt 143:5 (real-part (ann 6.0 Flonum)) -- unboxed unary float co
 -6.0
 -6.0
 6.0
-0)
+0
+
+END
 
 #lang typed/racket
 

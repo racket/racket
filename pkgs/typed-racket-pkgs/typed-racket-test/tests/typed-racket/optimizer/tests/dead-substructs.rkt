@@ -1,8 +1,11 @@
 #;
-(
-TR info: dead-substructs.rkt 23:4 make-child1 -- struct constructor
-TR info: dead-substructs.rkt 24:4 make-child2 -- struct constructor
-1 2)
+#<<END
+TR info: dead-substructs.rkt 26:4 make-child1 -- struct constructor
+TR info: dead-substructs.rkt 27:4 make-child2 -- struct constructor
+1
+2
+
+END
 
 #lang typed/scheme
 #:optimize

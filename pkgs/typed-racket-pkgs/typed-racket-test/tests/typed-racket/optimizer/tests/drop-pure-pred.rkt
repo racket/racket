@@ -1,9 +1,10 @@
 #;
-(
-TR opt: drop-pure-pred.rkt 15:6 (list 2) -- dead else branch
-TR opt: drop-pure-pred.rkt 13:6 (exact-integer? x) -- useless pure code
+#<<END
+TR opt: drop-pure-pred.rkt 16:6 (list 2) -- dead else branch
+TR opt: drop-pure-pred.rkt 14:6 (exact-integer? x) -- useless pure code
 '(1)
-)
+
+END
 
 #lang typed/scheme
 #:optimize

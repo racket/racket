@@ -1,7 +1,8 @@
 #;
-(
-TR opt: invalid-vector-set.rkt 10:2 (vector-set! x 0 2) -- vector partial bounds checking elimination
-)
+#<<END
+TR opt: invalid-vector-set.rkt 11:2 (vector-set! x 0 2) -- vector partial bounds checking elimination
+
+END
 
 #lang typed/scheme
 #:optimize
