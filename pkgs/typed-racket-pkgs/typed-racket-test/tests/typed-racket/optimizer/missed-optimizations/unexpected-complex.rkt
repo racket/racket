@@ -1,9 +1,12 @@
-#;
+#;#;
 #<<END
-TR missed opt: unexpected-complex.rkt 16:0 (sqrt (ann 4 Integer)) -- unexpected complex type
-TR opt: unexpected-complex.rkt 17:3 1.2+3.4i -- unboxed literal
-TR opt: unexpected-complex.rkt 17:12 2.0 -- float-arg-expr in complex ops
-TR opt: unexpected-complex.rkt 17:0 (+ 1.2+3.4i 2.0) -- unboxed binary float complex
+TR missed opt: unexpected-complex.rkt 19:0 (sqrt (ann 4 Integer)) -- unexpected complex type
+TR opt: unexpected-complex.rkt 20:3 1.2+3.4i -- unboxed literal
+TR opt: unexpected-complex.rkt 20:12 2.0 -- float-arg-expr in complex ops
+TR opt: unexpected-complex.rkt 20:0 (+ 1.2+3.4i 2.0) -- unboxed binary float complex
+
+END
+#<<END
 2
 3.2+3.4i
 

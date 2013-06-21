@@ -1,38 +1,41 @@
-#;
+#;#;
 #<<END
-TR missed opt: pair.rkt 59:0 (car (ann (list 1 2 3) (Listof Byte))) -- car/cdr on a potentially empty list -- caused by: 59:10 (list 1 2 3)
-TR opt: pair.rkt 60:0 (car (list 1 2 3)) -- pair
-TR missed opt: pair.rkt 61:0 (cdr (ann (list 1 2 3) (Listof Byte))) -- car/cdr on a potentially empty list -- caused by: 61:10 (list 1 2 3)
-TR opt: pair.rkt 62:0 (cdr (list 1 2 3)) -- pair
-TR opt: pair.rkt 63:0 (cdr (cdr (list 1 2 3))) -- pair
-TR opt: pair.rkt 63:5 (cdr (list 1 2 3)) -- pair
-TR opt: pair.rkt 64:0 (cdr (cdr (cdr (list 1 2 3)))) -- pair
-TR opt: pair.rkt 64:5 (cdr (cdr (list 1 2 3))) -- pair
-TR opt: pair.rkt 64:10 (cdr (list 1 2 3)) -- pair
-TR missed opt: pair.rkt 65:16 (cdr (cdr (cdr (cdr (list 1 2 3))))) -- car/cdr on a potentially empty list -- caused by: 65:21 (cdr (cdr (cdr (list 1 2 3))))
-TR opt: pair.rkt 65:21 (cdr (cdr (cdr (list 1 2 3)))) -- pair
-TR opt: pair.rkt 65:26 (cdr (cdr (list 1 2 3))) -- pair
-TR opt: pair.rkt 65:31 (cdr (list 1 2 3)) -- pair
-TR missed opt: pair.rkt 68:0 (mcar (values (ann (mlist 1) (MListof Byte)))) -- car/cdr on a potentially empty list -- caused by: 68:6 (values (ann (mlist 1) (MListof Byte)))
-TR opt: pair.rkt 69:0 (mcar (mlist 1 2 3)) -- pair
-TR missed opt: pair.rkt 70:0 (mcdr (values (ann (mlist 1) (MListof Byte)))) -- car/cdr on a potentially empty list -- caused by: 70:6 (values (ann (mlist 1) (MListof Byte)))
-TR opt: pair.rkt 71:0 (mcdr (mlist 1 2 3)) -- pair
-TR opt: pair.rkt 72:0 (mcdr (mcdr (mlist 1 2 3))) -- pair
-TR opt: pair.rkt 72:6 (mcdr (mlist 1 2 3)) -- pair
-TR opt: pair.rkt 73:0 (mcdr (mcdr (mcdr (mlist 1 2 3)))) -- pair
-TR opt: pair.rkt 73:6 (mcdr (mcdr (mlist 1 2 3))) -- pair
-TR opt: pair.rkt 73:12 (mcdr (mlist 1 2 3)) -- pair
-TR missed opt: pair.rkt 74:0 (set-mcar! (values (ann (mlist 2) (MListof Byte))) 2) -- car/cdr on a potentially empty list -- caused by: 74:11 (values (ann (mlist 2) (MListof Byte)))
-TR opt: pair.rkt 75:0 (set-mcar! (mlist 2 3 4) 2) -- pair
-TR missed opt: pair.rkt 76:0 (set-mcdr! (values (ann (mlist 2) (MListof Byte))) (values (ann (mlist 2) (MListof Byte)))) -- car/cdr on a potentially empty list -- caused by: 76:11 (values (ann (mlist 2) (MListof Byte)))
-TR opt: pair.rkt 78:0 (mcar (mcons 2 3)) -- pair
-TR opt: pair.rkt 79:0 (mcdr (mcons 2 3)) -- pair
-TR opt: pair.rkt 80:0 (set-mcar! (mcons 2 3) 3) -- pair
-TR opt: pair.rkt 81:0 (set-mcdr! (mcons 2 3) 4) -- pair
-TR missed opt: pair.rkt 82:17 (mcar (quote ())) -- car/cdr on a potentially empty list -- caused by: 82:23 (quote ())
-TR missed opt: pair.rkt 83:17 (mcdr (quote ())) -- car/cdr on a potentially empty list -- caused by: 83:23 (quote ())
-TR missed opt: pair.rkt 84:17 (set-mcar! (quote ()) 2) -- car/cdr on a potentially empty list -- caused by: 84:28 (quote ())
-TR missed opt: pair.rkt 85:17 (set-mcdr! (ann (quote ()) (MListof Integer)) (ann (mlist 3) (MListof Integer))) -- car/cdr on a potentially empty list -- caused by: 85:33 (quote ())
+TR missed opt: pair.rkt 62:0 (car (ann (list 1 2 3) (Listof Byte))) -- car/cdr on a potentially empty list -- caused by: 62:10 (list 1 2 3)
+TR opt: pair.rkt 63:0 (car (list 1 2 3)) -- pair
+TR missed opt: pair.rkt 64:0 (cdr (ann (list 1 2 3) (Listof Byte))) -- car/cdr on a potentially empty list -- caused by: 64:10 (list 1 2 3)
+TR opt: pair.rkt 65:0 (cdr (list 1 2 3)) -- pair
+TR opt: pair.rkt 66:0 (cdr (cdr (list 1 2 3))) -- pair
+TR opt: pair.rkt 66:5 (cdr (list 1 2 3)) -- pair
+TR opt: pair.rkt 67:0 (cdr (cdr (cdr (list 1 2 3)))) -- pair
+TR opt: pair.rkt 67:5 (cdr (cdr (list 1 2 3))) -- pair
+TR opt: pair.rkt 67:10 (cdr (list 1 2 3)) -- pair
+TR missed opt: pair.rkt 68:16 (cdr (cdr (cdr (cdr (list 1 2 3))))) -- car/cdr on a potentially empty list -- caused by: 68:21 (cdr (cdr (cdr (list 1 2 3))))
+TR opt: pair.rkt 68:21 (cdr (cdr (cdr (list 1 2 3)))) -- pair
+TR opt: pair.rkt 68:26 (cdr (cdr (list 1 2 3))) -- pair
+TR opt: pair.rkt 68:31 (cdr (list 1 2 3)) -- pair
+TR missed opt: pair.rkt 71:0 (mcar (values (ann (mlist 1) (MListof Byte)))) -- car/cdr on a potentially empty list -- caused by: 71:6 (values (ann (mlist 1) (MListof Byte)))
+TR opt: pair.rkt 72:0 (mcar (mlist 1 2 3)) -- pair
+TR missed opt: pair.rkt 73:0 (mcdr (values (ann (mlist 1) (MListof Byte)))) -- car/cdr on a potentially empty list -- caused by: 73:6 (values (ann (mlist 1) (MListof Byte)))
+TR opt: pair.rkt 74:0 (mcdr (mlist 1 2 3)) -- pair
+TR opt: pair.rkt 75:0 (mcdr (mcdr (mlist 1 2 3))) -- pair
+TR opt: pair.rkt 75:6 (mcdr (mlist 1 2 3)) -- pair
+TR opt: pair.rkt 76:0 (mcdr (mcdr (mcdr (mlist 1 2 3)))) -- pair
+TR opt: pair.rkt 76:6 (mcdr (mcdr (mlist 1 2 3))) -- pair
+TR opt: pair.rkt 76:12 (mcdr (mlist 1 2 3)) -- pair
+TR missed opt: pair.rkt 77:0 (set-mcar! (values (ann (mlist 2) (MListof Byte))) 2) -- car/cdr on a potentially empty list -- caused by: 77:11 (values (ann (mlist 2) (MListof Byte)))
+TR opt: pair.rkt 78:0 (set-mcar! (mlist 2 3 4) 2) -- pair
+TR missed opt: pair.rkt 79:0 (set-mcdr! (values (ann (mlist 2) (MListof Byte))) (values (ann (mlist 2) (MListof Byte)))) -- car/cdr on a potentially empty list -- caused by: 79:11 (values (ann (mlist 2) (MListof Byte)))
+TR opt: pair.rkt 81:0 (mcar (mcons 2 3)) -- pair
+TR opt: pair.rkt 82:0 (mcdr (mcons 2 3)) -- pair
+TR opt: pair.rkt 83:0 (set-mcar! (mcons 2 3) 3) -- pair
+TR opt: pair.rkt 84:0 (set-mcdr! (mcons 2 3) 4) -- pair
+TR missed opt: pair.rkt 85:17 (mcar (quote ())) -- car/cdr on a potentially empty list -- caused by: 85:23 (quote ())
+TR missed opt: pair.rkt 86:17 (mcdr (quote ())) -- car/cdr on a potentially empty list -- caused by: 86:23 (quote ())
+TR missed opt: pair.rkt 87:17 (set-mcar! (quote ()) 2) -- car/cdr on a potentially empty list -- caused by: 87:28 (quote ())
+TR missed opt: pair.rkt 88:17 (set-mcdr! (ann (quote ()) (MListof Integer)) (ann (mlist 3) (MListof Integer))) -- car/cdr on a potentially empty list -- caused by: 88:33 (quote ())
+
+END
+#<<END
 1
 1
 '(2 3)

@@ -1,6 +1,9 @@
-#;
+#;#;
 #<<END
-TR missed opt: invalid-fxquotient.rkt 13:21 (quotient fixnum-min -1) -- out of fixnum range
+TR missed opt: invalid-fxquotient.rkt 16:21 (quotient fixnum-min -1) -- out of fixnum range
+
+END
+#<<END
 #t
 
 END

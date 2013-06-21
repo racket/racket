@@ -1,7 +1,10 @@
-#;
+#;#;
 #<<END
-TR opt: false-huh-dead-code.rkt 11:16 1 -- dead then branch
-TR opt: false-huh-dead-code.rkt 12:13 1 -- dead then branch
+TR opt: false-huh-dead-code.rkt 14:16 1 -- dead then branch
+TR opt: false-huh-dead-code.rkt 15:13 1 -- dead then branch
+
+END
+#<<END
 2
 2
 

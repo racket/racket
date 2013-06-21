@@ -1,6 +1,9 @@
-#;
+#;#;
 #<<END
-TR opt: cross-module-struct2.rkt 12:0 (x-x a) -- struct ref
+TR opt: cross-module-struct2.rkt 15:0 (x-x a) -- struct ref
+
+END
+#<<END
 1
 
 END

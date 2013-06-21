@@ -1,6 +1,9 @@
-#;
+#;#;
 #<<END
-TR opt: n-ary-float.rkt 11:0 (+ 1.0 2.0 3.0) -- binary float
+TR opt: n-ary-float.rkt 14:0 (+ 1.0 2.0 3.0) -- binary float
+
+END
+#<<END
 6.0
 
 END

@@ -1,6 +1,9 @@
-#;
+#;#;
 #<<END
-TR opt: literal-int.rkt 14:0 (+ 1 2.0) -- binary float
+TR opt: literal-int.rkt 17:0 (+ 1 2.0) -- binary float
+
+END
+#<<END
 3.0
 1
 

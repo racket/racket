@@ -1,8 +1,11 @@
-#;
+#;#;
 #<<END
-TR opt: vector-ref-set-ref.rkt 16:0 (vector-ref x 0) -- vector
-TR opt: vector-ref-set-ref.rkt 17:0 (vector-set! x 1 "2") -- vector
-TR opt: vector-ref-set-ref.rkt 18:0 (vector-ref x 1) -- vector
+TR opt: vector-ref-set-ref.rkt 19:0 (vector-ref x 0) -- vector
+TR opt: vector-ref-set-ref.rkt 20:0 (vector-set! x 1 "2") -- vector
+TR opt: vector-ref-set-ref.rkt 21:0 (vector-ref x 1) -- vector
+
+END
+#<<END
 1
 "2"
 

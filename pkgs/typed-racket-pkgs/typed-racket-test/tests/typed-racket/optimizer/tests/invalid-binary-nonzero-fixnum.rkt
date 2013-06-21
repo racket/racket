@@ -1,8 +1,9 @@
-#;
+#;#;
 #<<END
-TR info: invalid-binary-nonzero-fixnum.rkt 11:3 display -- hidden parameter
+TR info: invalid-binary-nonzero-fixnum.rkt 12:3 display -- hidden parameter
 
 END
+""
 
 #lang typed/scheme
 #:optimize

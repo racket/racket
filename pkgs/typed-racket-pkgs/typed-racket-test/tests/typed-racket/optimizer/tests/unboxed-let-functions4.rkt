@@ -1,18 +1,21 @@
-#;
+#;#;
 #<<END
-TR opt: unboxed-let-functions4.rkt 25:21 x -- unbox float-complex
-TR opt: unboxed-let-functions4.rkt 25:23 y -- float-arg-expr in complex ops
-TR opt: unboxed-let-functions4.rkt 25:18 (+ x y) -- unboxed binary float complex
-TR opt: unboxed-let-functions4.rkt 24:32 x -- unboxed var -> table
-TR opt: unboxed-let-functions4.rkt 24:7 f -- fun -> unboxed fun
-TR opt: unboxed-let-functions4.rkt 25:21 x -- leave var unboxed
-TR opt: unboxed-let-functions4.rkt 25:23 y -- float-arg-expr in complex ops
-TR opt: unboxed-let-functions4.rkt 25:18 (+ x y) -- unboxed binary float complex
-TR opt: unboxed-let-functions4.rkt 27:8 1.0+2.0i -- unboxed literal
-TR opt: unboxed-let-functions4.rkt 27:17 2.0+4.0i -- unboxed literal
-TR opt: unboxed-let-functions4.rkt 27:5 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
-TR opt: unboxed-let-functions4.rkt 26:2 (f 3.0 (+ 1.0+2.0i 2.0+4.0i)) -- unboxed call site
-TR opt: unboxed-let-functions4.rkt 26:2 (f 3.0 (+ 1.0+2.0i 2.0+4.0i)) -- call to fun with unboxed args
+TR opt: unboxed-let-functions4.rkt 28:21 x -- unbox float-complex
+TR opt: unboxed-let-functions4.rkt 28:23 y -- float-arg-expr in complex ops
+TR opt: unboxed-let-functions4.rkt 28:18 (+ x y) -- unboxed binary float complex
+TR opt: unboxed-let-functions4.rkt 27:32 x -- unboxed var -> table
+TR opt: unboxed-let-functions4.rkt 27:7 f -- fun -> unboxed fun
+TR opt: unboxed-let-functions4.rkt 28:21 x -- leave var unboxed
+TR opt: unboxed-let-functions4.rkt 28:23 y -- float-arg-expr in complex ops
+TR opt: unboxed-let-functions4.rkt 28:18 (+ x y) -- unboxed binary float complex
+TR opt: unboxed-let-functions4.rkt 30:8 1.0+2.0i -- unboxed literal
+TR opt: unboxed-let-functions4.rkt 30:17 2.0+4.0i -- unboxed literal
+TR opt: unboxed-let-functions4.rkt 30:5 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
+TR opt: unboxed-let-functions4.rkt 29:2 (f 3.0 (+ 1.0+2.0i 2.0+4.0i)) -- unboxed call site
+TR opt: unboxed-let-functions4.rkt 29:2 (f 3.0 (+ 1.0+2.0i 2.0+4.0i)) -- call to fun with unboxed args
+
+END
+#<<END
 6.0+6.0i
 
 END

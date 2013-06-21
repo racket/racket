@@ -1,6 +1,9 @@
-#;
+#;#;
 #<<END
-TR opt: let-rhs.rkt 13:9 (+ 1.0 2.0) -- binary float
+TR opt: let-rhs.rkt 16:9 (+ 1.0 2.0) -- binary float
+
+END
+#<<END
 3.0
 
 END

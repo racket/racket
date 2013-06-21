@@ -1,6 +1,9 @@
-#;
+#;#;
 #<<END
-TR opt: ternary-equality.rkt 13:0 (= 1 1 1) -- multi fixnum comp
+TR opt: ternary-equality.rkt 16:0 (= 1 1 1) -- multi fixnum comp
+
+END
+#<<END
 #t
 
 END

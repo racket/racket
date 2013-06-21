@@ -13,15 +13,23 @@
   ;; generate the new log, that will become the expected log
   (define-values (new-tr-log new-output) (generate-log file dir))
   (define in (open-input-file (build-path dir file)))
-  (read-line in) ; drop the #;
-  (read in) ; drop the old expected log
+  (read-line in) ; drop the #;#;
+  (read in) ; drop the old expected tr log
+  (read in) ; drop the old expected output
   (let ([rest (port->string in)])
     (with-output-to-file (build-path dir file) #:exists 'truncate
       (lambda ()
-        (displayln "#;")
+        (displayln "#;#;")
         (displayln "#<<END")
-        (display (string-append new-tr-log new-output))
-        (display "\nEND")
+        (displayln new-tr-log)
+        (displayln "END")
+        (if (regexp-match "\n" new-output)
+            (begin
+              (displayln "#<<END")
+              (displayln new-output)
+              (display "END"))
+            (begin
+              (write new-output)))
         (display rest)))))
 
 ;; proc returns the list of tests to be run on each file

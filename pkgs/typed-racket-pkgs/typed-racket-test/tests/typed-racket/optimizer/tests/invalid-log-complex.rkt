@@ -1,6 +1,9 @@
-#;
+#;#;
 #<<END
-TR missed opt: invalid-log-complex.rkt 11:11 (log (ann 2.0 Float)) -- unexpected complex type
+TR missed opt: invalid-log-complex.rkt 14:11 (log (ann 2.0 Float)) -- unexpected complex type
+
+END
+#<<END
 0.6931471805599453
 
 END

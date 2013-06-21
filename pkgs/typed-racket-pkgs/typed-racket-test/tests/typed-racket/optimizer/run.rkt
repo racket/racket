@@ -14,21 +14,15 @@
   (test-suite
     (format "Log Comparison for ~a" name)
     (test-begin
-      ;; ugly, but otherwise rackunit spews the entire logs to
-      ;; stderr, and they can be quite long
-      (define-values (tr-log output) (generate-log name dir))
-      (check-equal?
-       ;; actual log
-       (with-input-from-string
-           (string-append "(" tr-log output ")")
-         read)
-       ;; expected log
-       (with-input-from-file (build-path dir name)
-         (lambda () ; from the test file
-           (read-line) ; skip the #;
-           (with-input-from-string (read) 
-              (lambda ()
-                (for/list ((v (in-port))) v)))))))))
+      (define-values (log output) (generate-log name dir))
+      (define-values (expected-log expected-output)
+        (with-input-from-file (build-path dir name)
+          (lambda () ; from the test file
+            (read-line) ; skip the #;#;
+            (values (read) (read)))))
+
+      (check-equal? log expected-log)
+      (check-equal? output expected-output))))
 
 
 (define-runtime-path tests-dir                "./tests")
