@@ -455,7 +455,7 @@ this purpose:
 (define (render s)
   (text (symbol->string s) 40 'red))
 
-(check-expecy (render 'closed) (text "closed" 40 'red))
+(check-expect (render 'closed) (text "closed" 40 'red))
 ))
  The function @racket[symbol->string] translates a symbol into a string,
  which is needed because @racket[text] can deal only with the latter, not
