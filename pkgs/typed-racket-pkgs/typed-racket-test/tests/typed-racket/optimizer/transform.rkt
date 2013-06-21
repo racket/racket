@@ -11,7 +11,7 @@
 
 (define (transform file dir)
   ;; generate the new log, that will become the expected log
-  (define new-log (generate-log file dir))
+  (define-values (new-tr-log new-output) (generate-log file dir))
   (define in (open-input-file (build-path dir file)))
   (read-line in) ; drop the #;
   (read in) ; drop the old expected log
@@ -20,7 +20,7 @@
       (lambda ()
         (displayln "#;")
         (displayln "#<<END")
-        (display new-log)
+        (display (string-append new-tr-log new-output))
         (display "\nEND")
         (display rest)))))
 
