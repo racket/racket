@@ -1,8 +1,11 @@
-#;
+#;#;
 #<<END
-TR opt: unboxed-let-functions8.rkt 15:67 x -- unbox float-complex
-TR opt: unboxed-let-functions8.rkt 15:69 2.0+4.0i -- unboxed literal
-TR opt: unboxed-let-functions8.rkt 15:64 (+ x 2.0+4.0i) -- unboxed binary float complex
+TR opt: unboxed-let-functions8.rkt 18:67 x -- unbox float-complex
+TR opt: unboxed-let-functions8.rkt 18:69 2.0+4.0i -- unboxed literal
+TR opt: unboxed-let-functions8.rkt 18:64 (+ x 2.0+4.0i) -- unboxed binary float complex
+
+END
+#<<END
 3.0+6.0i
 
 END

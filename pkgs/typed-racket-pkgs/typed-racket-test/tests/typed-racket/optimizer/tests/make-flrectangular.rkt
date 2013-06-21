@@ -1,7 +1,10 @@
-#;
+#;#;
 #<<END
-TR opt: make-flrectangular.rkt 13:0 (make-rectangular 1.0 2.2) -- binary float comp
-TR opt: make-flrectangular.rkt 14:0 (make-flrectangular 1.0 2.2) -- binary float comp
+TR opt: make-flrectangular.rkt 16:0 (make-rectangular 1.0 2.2) -- binary float comp
+TR opt: make-flrectangular.rkt 17:0 (make-flrectangular 1.0 2.2) -- binary float comp
+
+END
+#<<END
 1.0+2.2i
 1.0+2.2i
 

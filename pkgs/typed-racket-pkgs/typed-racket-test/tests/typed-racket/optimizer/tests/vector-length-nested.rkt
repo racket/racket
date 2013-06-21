@@ -1,7 +1,10 @@
-#;
+#;#;
 #<<END
-TR opt: vector-length-nested.rkt 12:0 (vector-length (vector-ref (ann (vector (vector 1 2) 2 3) (Vector (Vectorof Integer) Integer Integer)) 0)) -- vector-length
-TR opt: vector-length-nested.rkt 13:1 (vector-ref (ann (vector (vector 1 2) 2 3) (Vector (Vectorof Integer) Integer Integer)) 0) -- vector
+TR opt: vector-length-nested.rkt 15:0 (vector-length (vector-ref (ann (vector (vector 1 2) 2 3) (Vector (Vectorof Integer) Integer Integer)) 0)) -- vector-length
+TR opt: vector-length-nested.rkt 16:1 (vector-ref (ann (vector (vector 1 2) 2 3) (Vector (Vectorof Integer) Integer Integer)) 0) -- vector
+
+END
+#<<END
 2
 
 END

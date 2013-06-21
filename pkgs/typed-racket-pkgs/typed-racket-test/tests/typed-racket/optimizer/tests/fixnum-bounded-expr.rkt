@@ -1,4 +1,4 @@
-#;
+#;#;
 #<<END
 TR opt: fixnum-bounded-expr.rkt 70:2 (+ x (sqr y)) -- fixnum bounded expr
 TR opt: fixnum-bounded-expr.rkt 76:7 (* y y) -- fixnum bounded expr
@@ -27,6 +27,9 @@ TR opt: fixnum-bounded-expr.rkt 100:0 (fx- (+ 300 301) (+ 301 302)) -- fixnum fx
 TR opt: fixnum-bounded-expr.rkt 103:0 (fx* 4 5) -- fixnum fx*
 TR opt: fixnum-bounded-expr.rkt 106:0 (fxquotient (ann 34 Nonnegative-Fixnum) (ann -4 Negative-Fixnum)) -- fixnum fxquotient
 TR opt: fixnum-bounded-expr.rkt 109:0 (fxabs (ann 64235 Nonnegative-Fixnum)) -- fixnum fxabs
+
+END
+#<<END
 28
 89525
 28

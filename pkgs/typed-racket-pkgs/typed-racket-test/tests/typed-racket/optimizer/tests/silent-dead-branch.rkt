@@ -1,8 +1,9 @@
-#;
+#;#;
 #<<END
-TR opt: silent-dead-branch.rkt 13:0 (when (number? "1") 1) -- dead then branch
+TR opt: silent-dead-branch.rkt 14:0 (when (number? "1") 1) -- dead then branch
 
 END
+""
 
 #lang typed/racket
 

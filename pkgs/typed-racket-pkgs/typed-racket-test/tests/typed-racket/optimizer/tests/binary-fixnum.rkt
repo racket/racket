@@ -1,9 +1,10 @@
-#;
+#;#;
 #<<END
-TR opt: binary-fixnum.rkt 13:15 (vector-length v) -- vector-length
-TR opt: binary-fixnum.rkt 13:2 (bitwise-and (vector-length v) 1) -- binary fixnum
+TR opt: binary-fixnum.rkt 14:15 (vector-length v) -- vector-length
+TR opt: binary-fixnum.rkt 14:2 (bitwise-and (vector-length v) 1) -- binary fixnum
 
 END
+""
 
 #lang typed/scheme
 #:optimize

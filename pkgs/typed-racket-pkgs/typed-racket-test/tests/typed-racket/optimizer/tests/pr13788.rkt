@@ -1,6 +1,9 @@
-#;
+#;#;
 #<<END
-TR opt: pr13788.rkt 10:0 (vector-length (vector 1 2 3)) -- known-length vector-length
+TR opt: pr13788.rkt 13:0 (vector-length (vector 1 2 3)) -- known-length vector-length
+
+END
+#<<END
 3
 
 END

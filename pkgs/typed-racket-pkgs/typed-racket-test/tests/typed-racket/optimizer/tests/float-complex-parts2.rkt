@@ -1,33 +1,36 @@
-#;
+#;#;
 #<<END
-TR opt: float-complex-parts2.rkt 43:14 1.0+2.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 43:23 2.0+4.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 43:11 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
-TR opt: float-complex-parts2.rkt 43:14 1.0+2.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 43:23 2.0+4.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 43:11 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
-TR opt: float-complex-parts2.rkt 43:0 (real-part (+ 1.0+2.0i 2.0+4.0i)) -- complex accessor elimination
-TR opt: float-complex-parts2.rkt 44:23 1.0+2.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 44:32 2.0+4.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 44:20 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
-TR opt: float-complex-parts2.rkt 44:23 1.0+2.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 44:32 2.0+4.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 44:20 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
-TR opt: float-complex-parts2.rkt 44:0 (unsafe-flreal-part (+ 1.0+2.0i 2.0+4.0i)) -- complex accessor elimination
-TR opt: float-complex-parts2.rkt 45:14 1.0+2.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 45:23 2.0+4.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 45:11 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
-TR opt: float-complex-parts2.rkt 45:14 1.0+2.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 45:23 2.0+4.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 45:11 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
-TR opt: float-complex-parts2.rkt 45:0 (imag-part (+ 1.0+2.0i 2.0+4.0i)) -- complex accessor elimination
-TR opt: float-complex-parts2.rkt 46:23 1.0+2.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 46:32 2.0+4.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 46:20 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
-TR opt: float-complex-parts2.rkt 46:23 1.0+2.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 46:32 2.0+4.0i -- unboxed literal
-TR opt: float-complex-parts2.rkt 46:20 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
-TR opt: float-complex-parts2.rkt 46:0 (unsafe-flimag-part (+ 1.0+2.0i 2.0+4.0i)) -- complex accessor elimination
+TR opt: float-complex-parts2.rkt 34:14 1.0+2.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 34:23 2.0+4.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 34:11 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
+TR opt: float-complex-parts2.rkt 34:14 1.0+2.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 34:23 2.0+4.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 34:11 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
+TR opt: float-complex-parts2.rkt 34:0 (real-part (+ 1.0+2.0i 2.0+4.0i)) -- complex accessor elimination
+TR opt: float-complex-parts2.rkt 35:23 1.0+2.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 35:32 2.0+4.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 35:20 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
+TR opt: float-complex-parts2.rkt 35:23 1.0+2.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 35:32 2.0+4.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 35:20 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
+TR opt: float-complex-parts2.rkt 35:0 (unsafe-flreal-part (+ 1.0+2.0i 2.0+4.0i)) -- complex accessor elimination
+TR opt: float-complex-parts2.rkt 36:14 1.0+2.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 36:23 2.0+4.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 36:11 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
+TR opt: float-complex-parts2.rkt 36:14 1.0+2.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 36:23 2.0+4.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 36:11 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
+TR opt: float-complex-parts2.rkt 36:0 (imag-part (+ 1.0+2.0i 2.0+4.0i)) -- complex accessor elimination
+TR opt: float-complex-parts2.rkt 37:23 1.0+2.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 37:32 2.0+4.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 37:20 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
+TR opt: float-complex-parts2.rkt 37:23 1.0+2.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 37:32 2.0+4.0i -- unboxed literal
+TR opt: float-complex-parts2.rkt 37:20 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
+TR opt: float-complex-parts2.rkt 37:0 (unsafe-flimag-part (+ 1.0+2.0i 2.0+4.0i)) -- complex accessor elimination
+
+END
+#<<END
 3.0
 3.0
 6.0

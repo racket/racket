@@ -1,6 +1,9 @@
-#;
+#;#;
 #<<END
-TR opt: simple-pair.rkt 11:0 (car (cons 1 2)) -- pair
+TR opt: simple-pair.rkt 14:0 (car (cons 1 2)) -- pair
+
+END
+#<<END
 1
 
 END

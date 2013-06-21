@@ -1,8 +1,9 @@
-#;
+#;#;
 #<<END
-TR opt: sqrt.rkt 12:2 (sqrt x) -- unary float
+TR opt: sqrt.rkt 13:2 (sqrt x) -- unary float
 
 END
+""
 
 #lang typed/scheme
 #:optimize

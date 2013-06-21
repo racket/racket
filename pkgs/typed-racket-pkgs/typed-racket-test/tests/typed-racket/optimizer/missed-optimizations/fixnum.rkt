@@ -1,19 +1,22 @@
-#;
+#;#;
 #<<END
-TR opt: fixnum.rkt 36:10 (* x y) -- fixnum bounded expr
-TR missed opt: fixnum.rkt 39:0 (+ (ann z Fixnum) 234) -- out of fixnum range
-TR missed opt: fixnum.rkt 40:0 (* (ann x Index) (ann y Index)) -- out of fixnum range
-TR opt: fixnum.rkt 43:3 (+ 300 301) -- fixnum bounded expr
-TR opt: fixnum.rkt 43:15 (+ 301 302) -- fixnum bounded expr
-TR missed opt: fixnum.rkt 43:0 (+ (+ 300 301) (+ 301 302)) -- out of fixnum range
-TR opt: fixnum.rkt 43:3 (+ 300 301) -- fixnum bounded expr
-TR opt: fixnum.rkt 43:15 (+ 301 302) -- fixnum bounded expr
-TR opt: fixnum.rkt 43:3 (+ 300 301) -- fixnum bounded expr
-TR opt: fixnum.rkt 43:15 (+ 301 302) -- fixnum bounded expr
-TR opt: fixnum.rkt 44:5 (+ 300 301) -- fixnum bounded expr
-TR opt: fixnum.rkt 44:17 (+ 301 302) -- fixnum bounded expr
-TR opt: fixnum.rkt 44:5 (+ 300 301) -- fixnum bounded expr
-TR opt: fixnum.rkt 44:17 (+ 301 302) -- fixnum bounded expr
+TR opt: fixnum.rkt 33:10 (* x y) -- fixnum bounded expr
+TR missed opt: fixnum.rkt 36:0 (+ (ann z Fixnum) 234) -- out of fixnum range
+TR missed opt: fixnum.rkt 37:0 (* (ann x Index) (ann y Index)) -- out of fixnum range
+TR opt: fixnum.rkt 40:3 (+ 300 301) -- fixnum bounded expr
+TR opt: fixnum.rkt 40:15 (+ 301 302) -- fixnum bounded expr
+TR missed opt: fixnum.rkt 40:0 (+ (+ 300 301) (+ 301 302)) -- out of fixnum range
+TR opt: fixnum.rkt 40:3 (+ 300 301) -- fixnum bounded expr
+TR opt: fixnum.rkt 40:15 (+ 301 302) -- fixnum bounded expr
+TR opt: fixnum.rkt 40:3 (+ 300 301) -- fixnum bounded expr
+TR opt: fixnum.rkt 40:15 (+ 301 302) -- fixnum bounded expr
+TR opt: fixnum.rkt 41:5 (+ 300 301) -- fixnum bounded expr
+TR opt: fixnum.rkt 41:17 (+ 301 302) -- fixnum bounded expr
+TR opt: fixnum.rkt 41:5 (+ 300 301) -- fixnum bounded expr
+TR opt: fixnum.rkt 41:17 (+ 301 302) -- fixnum bounded expr
+
+END
+#<<END
 468
 234
 234

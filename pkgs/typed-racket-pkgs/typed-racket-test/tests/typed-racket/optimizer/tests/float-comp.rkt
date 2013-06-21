@@ -1,6 +1,9 @@
-#;
+#;#;
 #<<END
-TR opt: float-comp.rkt 11:0 (< 1.0 2.0) -- binary float comp
+TR opt: float-comp.rkt 14:0 (< 1.0 2.0) -- binary float comp
+
+END
+#<<END
 #t
 
 END

@@ -1,6 +1,9 @@
-#;
+#;#;
 #<<END
-TR opt: rational-literal.rkt 9:0 (+ 3/4 1.2) -- binary float
+TR opt: rational-literal.rkt 12:0 (+ 3/4 1.2) -- binary float
+
+END
+#<<END
 1.95
 
 END
