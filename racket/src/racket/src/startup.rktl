@@ -407,7 +407,7 @@
 
   (define-values (user-links-path) (find-system-path 'links-file))
   (define-values (user-links-cache) (make-hasheq))
-  (define-values (user-links-timestamp) -inf.0)
+  (define-values (user-links-stamp) #f)
 
   (define-values (links-path) (find-links-path!
                                ;; This thunk is called once per place, and the result
@@ -423,7 +423,43 @@
                                    (and d
                                         (build-path d "links.rktd"))))))
   (define-values (links-cache) (make-hasheq))
-  (define-values (links-timestamp) -inf.0)
+  (define-values (links-stamp) #f)
+
+  (define-values (file->stamp)
+    (lambda (path)
+      ;; We'd prefer to do something lighter than read the file every time!
+      ;; Using just the file's modification date almost works, but 1-second
+      ;; granularity isn't fine enough. To do this right, probably Racket needs
+      ;; to provide more support from the OS's filesystem (along the lines of
+      ;; inotify, but the interface varies among platforms).
+      (call-with-continuation-prompt
+       (lambda ()
+         (with-continuation-mark
+             exception-handler-key
+             (lambda (exn)
+               (if (exn:fail:filesystem? exn)
+                   (abort-current-continuation 
+                    (default-continuation-prompt-tag)
+                    (lambda () #f))
+                   (lambda () (raise exn))))
+           (let ([p (open-input-file path)])
+             (dynamic-wind
+                 void
+                 (lambda ()
+                   (let ([bstr (read-bytes 8192 p)])
+                     (if (and (bytes? bstr)
+                              ((bytes-length bstr) . >= . 8192))
+                         (apply
+                          bytes-append
+                          (cons
+                           bstr
+                           (let loop ()
+                             (let ([bstr (read-bytes 8192 p)])
+                               (if (eof-object? bstr)
+                                   null
+                                   (cons bstr (loop)))))))
+                         bstr)))
+                 (lambda () (close-input-port p)))))))))
 
   (define-values (get-linked-collections)
     (lambda (user?)
@@ -445,10 +481,10 @@
                          (if user?
                              (begin
                                (set! user-links-cache (make-hasheq))
-                               (set! user-links-timestamp ts))
+                               (set! user-links-stamp ts))
                              (begin
                                (set! links-cache (make-hasheq))
-                               (set! links-timestamp ts))))
+                               (set! links-stamp ts))))
                        (if (exn:fail? exn)
                            (esc (make-hasheq))
                            ;; re-raise the exception (which is probably a break)
@@ -456,12 +492,10 @@
                  (with-continuation-mark
                      exception-handler-key
                      (make-handler #f)
-                   (let ([ts (file-or-directory-modify-seconds (if user?
-                                                                   user-links-path
-                                                                   links-path)
-                                                               #f 
-                                                               (lambda () -inf.0))])
-                     (if (ts . > . (if user? user-links-timestamp links-timestamp))
+                   (let ([ts (file->stamp (if user?
+                                              user-links-path
+                                              links-path))])
+                     (if (not (equal? ts (if user? user-links-stamp links-stamp)))
                          (with-continuation-mark
                              exception-handler-key
                              (make-handler ts)
@@ -532,14 +566,14 @@
                                  (hash-for-each
                                   ht
                                   (lambda (k v) (hash-set! ht k (reverse v))))
-                                 ;; save table & timestamp:
+                                 ;; save table & file content:
                                  (if user?
                                      (begin
                                        (set! user-links-cache ht)
-                                       (set! user-links-timestamp ts))
+                                       (set! user-links-stamp ts))
                                      (begin
                                        (set! links-cache ht)
-                                       (set! links-timestamp ts)))
+                                       (set! links-stamp ts)))
                                  ht))))
                          (if user?
                              user-links-cache
