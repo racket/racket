@@ -1,9 +1,8 @@
 #;#;
 #<<END
-TR opt: in-vector.rkt 9:0 #%module-begin -- in-vector
-TR info: in-vector.rkt 12:7 display -- hidden parameter
-TR info: in-vector.rkt 12:7 display -- hidden parameter
-
+TR opt: in-vector.rkt 8:0 #%module-begin -- in-vector
+TR info: in-vector.rkt 11:7 display -- hidden parameter
+TR info: in-vector.rkt 11:7 display -- hidden parameter
 END
 "123"
 #lang typed/scheme

@@ -21,7 +21,8 @@
       (lambda ()
         (displayln "#;#;")
         (displayln "#<<END")
-        (displayln new-tr-log)
+        (for ((entry new-tr-log))
+          (displayln entry))
         (displayln "END")
         (if (regexp-match "\n" new-output)
             (begin

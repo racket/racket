@@ -13,7 +13,6 @@ TR opt: known-length-lists.rkt 51:0 (list-ref l 2) -- known-length list op
 TR opt: known-length-lists.rkt 52:0 (list-tail l 0) -- known-length list op
 TR opt: known-length-lists.rkt 53:0 (list-tail l 1) -- known-length list op
 TR opt: known-length-lists.rkt 54:0 (list-tail l 2) -- known-length list op
-
 END
 #<<END
 '(1 2 3)

@@ -19,7 +19,6 @@ TR missed opt: precision-loss.rkt 52:14 (* 2.0 (* (r 3/4) 2/3)) -- all args floa
 TR info: precision-loss.rkt 52:14 (* 2.0 (* (r 3/4) 2/3)) -- exact real arith
 TR missed opt: precision-loss.rkt 51:0 (* (* (r 3/4) 2/3) (car (list (* 2.0 (* (r 3/4) 2/3)))) 2.0) -- all args float-arg-expr, result not Float -- caused by: 51:3 (* (r 3/4) 2/3), 52:3 (car (list (* 2.0 (* (r 3/4) 2/3))))
 TR info: precision-loss.rkt 51:0 (* (* (r 3/4) 2/3) (car (list (* 2.0 (* (r 3/4) 2/3)))) 2.0) -- exact real arith
-
 END
 #<<END
 2.5

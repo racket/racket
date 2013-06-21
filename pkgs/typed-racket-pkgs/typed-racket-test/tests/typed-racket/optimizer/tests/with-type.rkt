@@ -1,7 +1,6 @@
 #;#;
 #<<END
-TR opt: with-type.rkt 17:18 (#%app + x val) -- binary float
-
+TR opt: with-type.rkt 16:18 (#%app + x val) -- binary float
 END
 #<<END
 34.6

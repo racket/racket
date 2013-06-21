@@ -1,7 +1,6 @@
 #;#;
 #<<END
-TR opt: vector-chaperone2.rkt 16:10 (vector-ref v i) -- vector partial bounds checking elimination
-
+TR opt: vector-chaperone2.rkt 15:10 (vector-ref v i) -- vector partial bounds checking elimination
 END
 #<<END
 'b

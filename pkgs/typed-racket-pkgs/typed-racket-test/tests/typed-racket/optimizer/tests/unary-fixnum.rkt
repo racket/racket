@@ -1,8 +1,7 @@
 #;#;
 #<<END
-TR opt: unary-fixnum.rkt 14:0 (bitwise-not 4) -- unary fixnum
-TR opt: unary-fixnum.rkt 15:0 (- (ann 2 Nonnegative-Fixnum)) -- unary fixnum
-
+TR opt: unary-fixnum.rkt 16:0 (bitwise-not 4) -- unary fixnum
+TR opt: unary-fixnum.rkt 17:0 (- (ann 2 Nonnegative-Fixnum)) -- unary fixnum
 END
 #<<END
 -5

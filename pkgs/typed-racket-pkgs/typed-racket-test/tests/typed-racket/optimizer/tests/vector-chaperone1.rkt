@@ -1,6 +1,5 @@
 #;#;
 #<<END
-
 END
 ""
 #lang racket

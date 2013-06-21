@@ -1,20 +1,19 @@
 #;#;
 #<<END
-TR opt: bounds-check.rkt 35:2 (vector-ref v i) -- vector partial bounds checking elimination
-TR opt: bounds-check.rkt 38:2 (vector-set! v i n) -- vector partial bounds checking elimination
-TR opt: bounds-check.rkt 41:2 (vector-ref v i) -- vector partial bounds checking elimination
-TR opt: bounds-check.rkt 44:2 (vector-set! v i n) -- vector partial bounds checking elimination
-TR info: bounds-check.rkt 47:1 displayln -- hidden parameter
-TR info: bounds-check.rkt 49:1 displayln -- hidden parameter
-TR info: bounds-check.rkt 51:1 displayln -- hidden parameter
-TR opt: bounds-check.rkt 56:2 (flvector-ref v i) -- flvector partial bounds checking elimination
-TR opt: bounds-check.rkt 59:2 (flvector-set! v i n) -- flvector partial bounds checking elimination
-TR opt: bounds-check.rkt 62:2 (flvector-ref v i) -- flvector partial bounds checking elimination
-TR opt: bounds-check.rkt 65:2 (flvector-set! v i n) -- flvector partial bounds checking elimination
-TR info: bounds-check.rkt 68:1 displayln -- hidden parameter
-TR info: bounds-check.rkt 70:1 displayln -- hidden parameter
-TR info: bounds-check.rkt 72:1 displayln -- hidden parameter
-
+TR opt: bounds-check.rkt 34:2 (vector-ref v i) -- vector partial bounds checking elimination
+TR opt: bounds-check.rkt 37:2 (vector-set! v i n) -- vector partial bounds checking elimination
+TR opt: bounds-check.rkt 40:2 (vector-ref v i) -- vector partial bounds checking elimination
+TR opt: bounds-check.rkt 43:2 (vector-set! v i n) -- vector partial bounds checking elimination
+TR info: bounds-check.rkt 46:1 displayln -- hidden parameter
+TR info: bounds-check.rkt 48:1 displayln -- hidden parameter
+TR info: bounds-check.rkt 50:1 displayln -- hidden parameter
+TR opt: bounds-check.rkt 55:2 (flvector-ref v i) -- flvector partial bounds checking elimination
+TR opt: bounds-check.rkt 58:2 (flvector-set! v i n) -- flvector partial bounds checking elimination
+TR opt: bounds-check.rkt 61:2 (flvector-ref v i) -- flvector partial bounds checking elimination
+TR opt: bounds-check.rkt 64:2 (flvector-set! v i n) -- flvector partial bounds checking elimination
+TR info: bounds-check.rkt 67:1 displayln -- hidden parameter
+TR info: bounds-check.rkt 69:1 displayln -- hidden parameter
+TR info: bounds-check.rkt 71:1 displayln -- hidden parameter
 END
 #<<END
 3

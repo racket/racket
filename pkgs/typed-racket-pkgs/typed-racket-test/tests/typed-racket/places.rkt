@@ -1,7 +1,7 @@
 #lang racket
 
 (require racket/place typed-racket/optimizer/logging
-         unstable/open-place syntax/modcode)
+         unstable/open-place syntax/modcode data/queue)
 (provide start-worker dr serialize-exn deserialize-exn s-exn? generate-log/place verbose?)
 
 (define verbose? (make-parameter #f))
@@ -78,13 +78,13 @@
     (parameterize [(use-compiled-file-paths orig-use-compiled-file-paths)
                    (current-load/use-compiled orig-load/use-compiled)]
       (orig-load/use-compiled path name)))
-  (define tr-log-output (open-output-string))
+  (define tr-logs (make-queue))
 
   (define regular-output
     (with-output-to-string
       (lambda ()
-        (with-tr-logging-to-port
-          tr-log-output
+        (with-tr-logging-to-queue
+          tr-logs
           (thunk
             (parameterize ([current-namespace (make-base-empty-namespace)]
                            [current-load/use-compiled test-load/use-compiled])
@@ -92,4 +92,4 @@
               (namespace-attach-module orig-namespace 'racket)
               (namespace-attach-module orig-namespace 'typed-racket/core)
               (dynamic-require file #f)))))))
-  (list (get-output-string tr-log-output) regular-output))
+  (list (queue->list tr-logs) regular-output))

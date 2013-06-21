@@ -1,9 +1,8 @@
 #;#;
 #<<END
-TR info: structs.rkt 16:11 pt -- struct constructor
-TR opt: structs.rkt 17:0 (pt-x a) -- struct ref
-TR opt: structs.rkt 18:0 (set-pt-y! a 5) -- struct set
-
+TR info: structs.rkt 15:11 pt -- struct constructor
+TR opt: structs.rkt 16:0 (pt-x a) -- struct ref
+TR opt: structs.rkt 17:0 (set-pt-y! a 5) -- struct set
 END
 #<<END
 3

@@ -19,7 +19,8 @@
         (with-input-from-file (build-path dir name)
           (lambda () ; from the test file
             (read-line) ; skip the #;#;
-            (values (read) (read)))))
+            (values (for/list ((l (in-lines (open-input-string (read))))) l)
+                    (read)))))
 
       (check-equal? log expected-log)
       (check-equal? output expected-output))))

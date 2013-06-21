@@ -1,8 +1,7 @@
 #;#;
 #<<END
-TR opt: case-lambda-dead-branch.rkt 14:5 (x y) -- dead case-lambda branch
-TR opt: case-lambda-dead-branch.rkt 20:5 (x y) -- dead case-lambda branch
-
+TR opt: case-lambda-dead-branch.rkt 13:5 (x y) -- dead case-lambda branch
+TR opt: case-lambda-dead-branch.rkt 19:5 (x y) -- dead case-lambda branch
 END
 ""
 #lang typed/racket
