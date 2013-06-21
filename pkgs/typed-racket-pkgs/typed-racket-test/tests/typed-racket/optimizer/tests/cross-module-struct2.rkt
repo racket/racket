@@ -1,8 +1,9 @@
 #;
-(
-TR opt: cross-module-struct2.rkt 11:0 (x-x a) -- struct ref
+#<<END
+TR opt: cross-module-struct2.rkt 12:0 (x-x a) -- struct ref
 1
-)
+
+END
 
 #lang typed/scheme #:optimize
 

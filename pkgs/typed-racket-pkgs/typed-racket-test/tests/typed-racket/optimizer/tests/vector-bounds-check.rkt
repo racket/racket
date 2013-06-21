@@ -1,10 +1,11 @@
 #;
-(
-TR opt: vector-bounds-check.rkt 25:0 (vector-ref (make-my-vector) 0) -- vector partial bounds checking elimination
-TR opt: vector-bounds-check.rkt 26:0 (flvector-ref (make-my-flvector) 0) -- flvector partial bounds checking elimination
+#<<END
+TR opt: vector-bounds-check.rkt 26:0 (vector-ref (make-my-vector) 0) -- vector partial bounds checking elimination
+TR opt: vector-bounds-check.rkt 27:0 (flvector-ref (make-my-flvector) 0) -- flvector partial bounds checking elimination
 1.0
 1.0
-)
+
+END
 
 #lang typed/racket
 (require racket/flonum)

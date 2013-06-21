@@ -1,11 +1,12 @@
 #;
-(
-TR opt: vector-ref-set-ref.rkt 15:0 (vector-ref x 0) -- vector
-TR opt: vector-ref-set-ref.rkt 16:0 (vector-set! x 1 "2") -- vector
-TR opt: vector-ref-set-ref.rkt 17:0 (vector-ref x 1) -- vector
+#<<END
+TR opt: vector-ref-set-ref.rkt 16:0 (vector-ref x 0) -- vector
+TR opt: vector-ref-set-ref.rkt 17:0 (vector-set! x 1 "2") -- vector
+TR opt: vector-ref-set-ref.rkt 18:0 (vector-ref x 1) -- vector
 1
 "2"
-)
+
+END
 
 #lang typed/scheme
 #:optimize

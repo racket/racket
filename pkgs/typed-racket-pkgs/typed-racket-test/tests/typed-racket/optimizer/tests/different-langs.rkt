@@ -1,7 +1,9 @@
 #;
-(
-TR info: different-langs.rkt 10:0 (/ 1 2) -- exact real arith
-1/2)
+#<<END
+TR info: different-langs.rkt 12:0 (/ 1 2) -- exact real arith
+1/2
+
+END
 
 #lang typed/scheme
 #:optimize

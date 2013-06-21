@@ -1,10 +1,11 @@
 #;
-(
-TR opt: annotations.rkt 10:10 (+ 1.0 2.0) -- binary float
-TR opt: annotations.rkt 13:10 (+ 1.0 2.0) -- binary float
-TR opt: annotations.rkt 16:10 (+ 1.0 2.0) -- binary float
-TR opt: annotations.rkt 18:15 (+ 1.0 2.0) -- binary float
-)
+#<<END
+TR opt: annotations.rkt 11:10 (+ 1.0 2.0) -- binary float
+TR opt: annotations.rkt 14:10 (+ 1.0 2.0) -- binary float
+TR opt: annotations.rkt 17:10 (+ 1.0 2.0) -- binary float
+TR opt: annotations.rkt 19:15 (+ 1.0 2.0) -- binary float
+
+END
 #lang typed/racket #:optimize
 
 (define a (+ 1.0 2.0))

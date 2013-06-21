@@ -1,8 +1,9 @@
 #;
-(
-TR opt: with-type.rkt 13:18 (#%app + x val) -- binary float
+#<<END
+TR opt: with-type.rkt 14:18 (#%app + x val) -- binary float
 34.6
-)
+
+END
 
 #lang racket
 

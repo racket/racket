@@ -1,18 +1,18 @@
 #;
-(
-TR opt: known-length-lists.rkt 39:0 (length l) -- known-length list length
-TR opt: known-length-lists.rkt 40:0 (list-ref l i) -- known-length list op
-TR opt: known-length-lists.rkt 41:0 (list-ref l j) -- known-length list op
-TR opt: known-length-lists.rkt 42:0 (list-ref l k) -- known-length list op
-TR opt: known-length-lists.rkt 43:0 (list-tail l i) -- known-length list op
-TR opt: known-length-lists.rkt 44:0 (list-tail l j) -- known-length list op
-TR opt: known-length-lists.rkt 45:0 (list-tail l k) -- known-length list op
-TR opt: known-length-lists.rkt 46:0 (list-ref l 0) -- known-length list op
-TR opt: known-length-lists.rkt 47:0 (list-ref l 1) -- known-length list op
-TR opt: known-length-lists.rkt 48:0 (list-ref l 2) -- known-length list op
-TR opt: known-length-lists.rkt 49:0 (list-tail l 0) -- known-length list op
-TR opt: known-length-lists.rkt 50:0 (list-tail l 1) -- known-length list op
-TR opt: known-length-lists.rkt 51:0 (list-tail l 2) -- known-length list op
+#<<END
+TR opt: known-length-lists.rkt 40:0 (length l) -- known-length list length
+TR opt: known-length-lists.rkt 41:0 (list-ref l i) -- known-length list op
+TR opt: known-length-lists.rkt 42:0 (list-ref l j) -- known-length list op
+TR opt: known-length-lists.rkt 43:0 (list-ref l k) -- known-length list op
+TR opt: known-length-lists.rkt 44:0 (list-tail l i) -- known-length list op
+TR opt: known-length-lists.rkt 45:0 (list-tail l j) -- known-length list op
+TR opt: known-length-lists.rkt 46:0 (list-tail l k) -- known-length list op
+TR opt: known-length-lists.rkt 47:0 (list-ref l 0) -- known-length list op
+TR opt: known-length-lists.rkt 48:0 (list-ref l 1) -- known-length list op
+TR opt: known-length-lists.rkt 49:0 (list-ref l 2) -- known-length list op
+TR opt: known-length-lists.rkt 50:0 (list-tail l 0) -- known-length list op
+TR opt: known-length-lists.rkt 51:0 (list-tail l 1) -- known-length list op
+TR opt: known-length-lists.rkt 52:0 (list-tail l 2) -- known-length list op
 '(1 2 3)
 3
 1
@@ -27,7 +27,8 @@ TR opt: known-length-lists.rkt 51:0 (list-tail l 2) -- known-length list op
 '(1 2 3)
 '(2 3)
 '(3)
-)
+
+END
 
 #lang typed/racket
 

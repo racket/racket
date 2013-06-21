@@ -1,11 +1,12 @@
 #;
-(
-TR opt: box.rkt 17:0 (unbox x) -- box
-TR opt: box.rkt 18:0 (set-box! x 2) -- box
-TR opt: box.rkt 19:0 (unbox x) -- box
+#<<END
+TR opt: box.rkt 18:0 (unbox x) -- box
+TR opt: box.rkt 19:0 (set-box! x 2) -- box
+TR opt: box.rkt 20:0 (unbox x) -- box
 1
 2
-)
+
+END
 
 #lang typed/scheme
 #:optimize

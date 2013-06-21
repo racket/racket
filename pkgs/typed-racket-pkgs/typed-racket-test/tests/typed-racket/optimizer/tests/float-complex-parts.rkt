@@ -1,15 +1,16 @@
 #;
-(
-TR opt: float-complex-parts.rkt 17:11 1.0+2.0i -- unboxed literal
-TR opt: float-complex-parts.rkt 17:0 (real-part 1.0+2.0i) -- complex accessor elimination
+#<<END
 TR opt: float-complex-parts.rkt 18:11 1.0+2.0i -- unboxed literal
-TR opt: float-complex-parts.rkt 18:0 (imag-part 1.0+2.0i) -- complex accessor elimination
+TR opt: float-complex-parts.rkt 18:0 (real-part 1.0+2.0i) -- complex accessor elimination
 TR opt: float-complex-parts.rkt 19:11 1.0+2.0i -- unboxed literal
-TR opt: float-complex-parts.rkt 19:0 (real-part 1.0+2.0i) -- complex accessor elimination
+TR opt: float-complex-parts.rkt 19:0 (imag-part 1.0+2.0i) -- complex accessor elimination
+TR opt: float-complex-parts.rkt 20:11 1.0+2.0i -- unboxed literal
+TR opt: float-complex-parts.rkt 20:0 (real-part 1.0+2.0i) -- complex accessor elimination
 1.0
 2.0
 1.0
-)
+
+END
 
 #lang typed/scheme
 #:optimize

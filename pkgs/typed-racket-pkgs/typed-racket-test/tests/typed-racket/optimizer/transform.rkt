@@ -1,6 +1,6 @@
 #lang racket
 
-(require "run.rkt")
+(require "run.rkt" "../send-places.rkt")
 
 ;; Assuming that only the log format changed, update test files to the
 ;; new format.
@@ -19,9 +19,9 @@
     (with-output-to-file (build-path dir file) #:exists 'truncate
       (lambda ()
         (displayln "#;")
-        (displayln "(")
+        (displayln "#<<END")
         (display new-log)
-        (display ")")
+        (display "\nEND")
         (display rest)))))
 
 ;; proc returns the list of tests to be run on each file
@@ -30,6 +30,7 @@
         #:when (test-file? name))
     (transform name dir)))
 
+(start-workers)
 (cond [(= (vector-length (current-command-line-arguments)) 0)
        (transform-dir tests-dir)
        (transform-dir missed-optimizations-dir)]
