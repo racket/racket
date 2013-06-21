@@ -1,24 +1,24 @@
 #;#;
 #<<END
 TR info: precision-loss.rkt 39:3 (* 3/4 2/3) -- exact real arith
+TR info: precision-loss.rkt 43:3 (- 3/4) -- exact real arith
+TR info: precision-loss.rkt 45:39 (+ 1/4 3/4) -- exact real arith
+TR info: precision-loss.rkt 45:39 (+ 1/4 3/4) -- exact real arith
+TR info: precision-loss.rkt 51:0 (* (* (r 3/4) 2/3) (car (list (* 2.0 (* (r 3/4) 2/3)))) 2.0) -- exact real arith
+TR info: precision-loss.rkt 51:3 (* (r 3/4) 2/3) -- exact real arith
+TR info: precision-loss.rkt 52:14 (* 2.0 (* (r 3/4) 2/3)) -- exact real arith
+TR info: precision-loss.rkt 52:21 (* (r 3/4) 2/3) -- exact real arith
 TR missed opt: precision-loss.rkt 39:0 (+ (* 3/4 2/3) 2.0) -- exact ops inside float expr -- caused by: 39:3 (* 3/4 2/3)
+TR missed opt: precision-loss.rkt 43:0 (+ (- 3/4) 2.0) -- exact ops inside float expr -- caused by: 43:3 (- 3/4)
+TR missed opt: precision-loss.rkt 45:0 (+ (vector-ref (quote #(2/3 1/2 3/4)) (assert (+ 1/4 3/4) exact-integer?)) 2.0) -- all args float-arg-expr, result not Float -- caused by: 45:3 (vector-ref (quote #(2/3 1/2 3/4)) (assert (+ 1/4 3/4) exact-integer?))
+TR missed opt: precision-loss.rkt 51:0 (* (* (r 3/4) 2/3) (car (list (* 2.0 (* (r 3/4) 2/3)))) 2.0) -- all args float-arg-expr, result not Float -- caused by: 51:3 (* (r 3/4) 2/3), 52:3 (car (list (* 2.0 (* (r 3/4) 2/3))))
+TR missed opt: precision-loss.rkt 51:3 (* (r 3/4) 2/3) -- all args float-arg-expr, result not Float -- caused by: 51:6 (r 3/4), 51:14 2/3
+TR missed opt: precision-loss.rkt 52:14 (* 2.0 (* (r 3/4) 2/3)) -- all args float-arg-expr, result not Float -- caused by: 52:21 (* (r 3/4) 2/3)
+TR missed opt: precision-loss.rkt 52:21 (* (r 3/4) 2/3) -- all args float-arg-expr, result not Float -- caused by: 52:24 (r 3/4), 52:32 2/3
 TR opt: precision-loss.rkt 39:0 (+ (* 3/4 2/3) 2.0) -- binary float
 TR opt: precision-loss.rkt 41:0 (+ 3/4 2.0) -- binary float
-TR info: precision-loss.rkt 43:3 (- 3/4) -- exact real arith
-TR missed opt: precision-loss.rkt 43:0 (+ (- 3/4) 2.0) -- exact ops inside float expr -- caused by: 43:3 (- 3/4)
 TR opt: precision-loss.rkt 43:0 (+ (- 3/4) 2.0) -- binary float
-TR info: precision-loss.rkt 45:39 (+ 1/4 3/4) -- exact real arith
-TR missed opt: precision-loss.rkt 45:0 (+ (vector-ref (quote #(2/3 1/2 3/4)) (assert (+ 1/4 3/4) exact-integer?)) 2.0) -- all args float-arg-expr, result not Float -- caused by: 45:3 (vector-ref (quote #(2/3 1/2 3/4)) (assert (+ 1/4 3/4) exact-integer?))
-TR info: precision-loss.rkt 45:39 (+ 1/4 3/4) -- exact real arith
-TR missed opt: precision-loss.rkt 51:3 (* (r 3/4) 2/3) -- all args float-arg-expr, result not Float -- caused by: 51:6 (r 3/4), 51:14 2/3
-TR info: precision-loss.rkt 51:3 (* (r 3/4) 2/3) -- exact real arith
 TR opt: precision-loss.rkt 52:3 (car (list (* 2.0 (* (r 3/4) 2/3)))) -- pair
-TR missed opt: precision-loss.rkt 52:21 (* (r 3/4) 2/3) -- all args float-arg-expr, result not Float -- caused by: 52:24 (r 3/4), 52:32 2/3
-TR info: precision-loss.rkt 52:21 (* (r 3/4) 2/3) -- exact real arith
-TR missed opt: precision-loss.rkt 52:14 (* 2.0 (* (r 3/4) 2/3)) -- all args float-arg-expr, result not Float -- caused by: 52:21 (* (r 3/4) 2/3)
-TR info: precision-loss.rkt 52:14 (* 2.0 (* (r 3/4) 2/3)) -- exact real arith
-TR missed opt: precision-loss.rkt 51:0 (* (* (r 3/4) 2/3) (car (list (* 2.0 (* (r 3/4) 2/3)))) 2.0) -- all args float-arg-expr, result not Float -- caused by: 51:3 (* (r 3/4) 2/3), 52:3 (car (list (* 2.0 (* (r 3/4) 2/3))))
-TR info: precision-loss.rkt 51:0 (* (* (r 3/4) 2/3) (car (list (* 2.0 (* (r 3/4) 2/3)))) 2.0) -- exact real arith
 END
 #<<END
 2.5

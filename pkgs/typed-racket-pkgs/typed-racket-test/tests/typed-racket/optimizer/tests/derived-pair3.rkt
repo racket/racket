@@ -1,5 +1,29 @@
 #;#;
 #<<END
+TR opt: derived-pair3.rkt 100:0 (cdadar (cons (cons 1 (cons (cons 2 3) 4)) 5)) -- pair
+TR opt: derived-pair3.rkt 100:0 (cdadar (cons (cons 1 (cons (cons 2 3) 4)) 5)) -- pair
+TR opt: derived-pair3.rkt 100:0 (cdadar (cons (cons 1 (cons (cons 2 3) 4)) 5)) -- pair
+TR opt: derived-pair3.rkt 100:0 (cdadar (cons (cons 1 (cons (cons 2 3) 4)) 5)) -- pair
+TR opt: derived-pair3.rkt 101:0 (cdaddr (cons 1 (cons 2 (cons (cons 3 4) 5)))) -- pair
+TR opt: derived-pair3.rkt 101:0 (cdaddr (cons 1 (cons 2 (cons (cons 3 4) 5)))) -- pair
+TR opt: derived-pair3.rkt 101:0 (cdaddr (cons 1 (cons 2 (cons (cons 3 4) 5)))) -- pair
+TR opt: derived-pair3.rkt 101:0 (cdaddr (cons 1 (cons 2 (cons (cons 3 4) 5)))) -- pair
+TR opt: derived-pair3.rkt 102:0 (cddaar (cons (cons (cons 1 (cons 2 3)) 4) 5)) -- pair
+TR opt: derived-pair3.rkt 102:0 (cddaar (cons (cons (cons 1 (cons 2 3)) 4) 5)) -- pair
+TR opt: derived-pair3.rkt 102:0 (cddaar (cons (cons (cons 1 (cons 2 3)) 4) 5)) -- pair
+TR opt: derived-pair3.rkt 102:0 (cddaar (cons (cons (cons 1 (cons 2 3)) 4) 5)) -- pair
+TR opt: derived-pair3.rkt 103:0 (cddadr (cons 1 (cons (cons 2 (cons 3 4)) 5))) -- pair
+TR opt: derived-pair3.rkt 103:0 (cddadr (cons 1 (cons (cons 2 (cons 3 4)) 5))) -- pair
+TR opt: derived-pair3.rkt 103:0 (cddadr (cons 1 (cons (cons 2 (cons 3 4)) 5))) -- pair
+TR opt: derived-pair3.rkt 103:0 (cddadr (cons 1 (cons (cons 2 (cons 3 4)) 5))) -- pair
+TR opt: derived-pair3.rkt 104:0 (cdddar (cons (cons 1 (cons 2 (cons 3 4))) 5)) -- pair
+TR opt: derived-pair3.rkt 104:0 (cdddar (cons (cons 1 (cons 2 (cons 3 4))) 5)) -- pair
+TR opt: derived-pair3.rkt 104:0 (cdddar (cons (cons 1 (cons 2 (cons 3 4))) 5)) -- pair
+TR opt: derived-pair3.rkt 104:0 (cdddar (cons (cons 1 (cons 2 (cons 3 4))) 5)) -- pair
+TR opt: derived-pair3.rkt 105:0 (cddddr (cons 1 (cons 2 (cons 3 (cons 4 5))))) -- pair
+TR opt: derived-pair3.rkt 105:0 (cddddr (cons 1 (cons 2 (cons 3 (cons 4 5))))) -- pair
+TR opt: derived-pair3.rkt 105:0 (cddddr (cons 1 (cons 2 (cons 3 (cons 4 5))))) -- pair
+TR opt: derived-pair3.rkt 105:0 (cddddr (cons 1 (cons 2 (cons 3 (cons 4 5))))) -- pair
 TR opt: derived-pair3.rkt 90:0 (caaaar (cons (cons (cons (cons 1 2) 3) 4) 5)) -- pair
 TR opt: derived-pair3.rkt 90:0 (caaaar (cons (cons (cons (cons 1 2) 3) 4) 5)) -- pair
 TR opt: derived-pair3.rkt 90:0 (caaaar (cons (cons (cons (cons 1 2) 3) 4) 5)) -- pair
@@ -40,30 +64,6 @@ TR opt: derived-pair3.rkt 99:0 (cdaadr (cons 1 (cons (cons (cons 2 3) 4) 5))) --
 TR opt: derived-pair3.rkt 99:0 (cdaadr (cons 1 (cons (cons (cons 2 3) 4) 5))) -- pair
 TR opt: derived-pair3.rkt 99:0 (cdaadr (cons 1 (cons (cons (cons 2 3) 4) 5))) -- pair
 TR opt: derived-pair3.rkt 99:0 (cdaadr (cons 1 (cons (cons (cons 2 3) 4) 5))) -- pair
-TR opt: derived-pair3.rkt 100:0 (cdadar (cons (cons 1 (cons (cons 2 3) 4)) 5)) -- pair
-TR opt: derived-pair3.rkt 100:0 (cdadar (cons (cons 1 (cons (cons 2 3) 4)) 5)) -- pair
-TR opt: derived-pair3.rkt 100:0 (cdadar (cons (cons 1 (cons (cons 2 3) 4)) 5)) -- pair
-TR opt: derived-pair3.rkt 100:0 (cdadar (cons (cons 1 (cons (cons 2 3) 4)) 5)) -- pair
-TR opt: derived-pair3.rkt 101:0 (cdaddr (cons 1 (cons 2 (cons (cons 3 4) 5)))) -- pair
-TR opt: derived-pair3.rkt 101:0 (cdaddr (cons 1 (cons 2 (cons (cons 3 4) 5)))) -- pair
-TR opt: derived-pair3.rkt 101:0 (cdaddr (cons 1 (cons 2 (cons (cons 3 4) 5)))) -- pair
-TR opt: derived-pair3.rkt 101:0 (cdaddr (cons 1 (cons 2 (cons (cons 3 4) 5)))) -- pair
-TR opt: derived-pair3.rkt 102:0 (cddaar (cons (cons (cons 1 (cons 2 3)) 4) 5)) -- pair
-TR opt: derived-pair3.rkt 102:0 (cddaar (cons (cons (cons 1 (cons 2 3)) 4) 5)) -- pair
-TR opt: derived-pair3.rkt 102:0 (cddaar (cons (cons (cons 1 (cons 2 3)) 4) 5)) -- pair
-TR opt: derived-pair3.rkt 102:0 (cddaar (cons (cons (cons 1 (cons 2 3)) 4) 5)) -- pair
-TR opt: derived-pair3.rkt 103:0 (cddadr (cons 1 (cons (cons 2 (cons 3 4)) 5))) -- pair
-TR opt: derived-pair3.rkt 103:0 (cddadr (cons 1 (cons (cons 2 (cons 3 4)) 5))) -- pair
-TR opt: derived-pair3.rkt 103:0 (cddadr (cons 1 (cons (cons 2 (cons 3 4)) 5))) -- pair
-TR opt: derived-pair3.rkt 103:0 (cddadr (cons 1 (cons (cons 2 (cons 3 4)) 5))) -- pair
-TR opt: derived-pair3.rkt 104:0 (cdddar (cons (cons 1 (cons 2 (cons 3 4))) 5)) -- pair
-TR opt: derived-pair3.rkt 104:0 (cdddar (cons (cons 1 (cons 2 (cons 3 4))) 5)) -- pair
-TR opt: derived-pair3.rkt 104:0 (cdddar (cons (cons 1 (cons 2 (cons 3 4))) 5)) -- pair
-TR opt: derived-pair3.rkt 104:0 (cdddar (cons (cons 1 (cons 2 (cons 3 4))) 5)) -- pair
-TR opt: derived-pair3.rkt 105:0 (cddddr (cons 1 (cons 2 (cons 3 (cons 4 5))))) -- pair
-TR opt: derived-pair3.rkt 105:0 (cddddr (cons 1 (cons 2 (cons 3 (cons 4 5))))) -- pair
-TR opt: derived-pair3.rkt 105:0 (cddddr (cons 1 (cons 2 (cons 3 (cons 4 5))))) -- pair
-TR opt: derived-pair3.rkt 105:0 (cddddr (cons 1 (cons 2 (cons 3 (cons 4 5))))) -- pair
 END
 #<<END
 1

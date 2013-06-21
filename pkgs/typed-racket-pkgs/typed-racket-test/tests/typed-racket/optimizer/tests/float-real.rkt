@@ -1,13 +1,13 @@
 #;#;
 #<<END
-TR opt: float-real.rkt 21:0 (+ 2.3 (ann 3 Positive-Real)) -- binary float
-TR missed opt: float-real.rkt 22:15 (* (ann 2 Integer) 3.2) -- all args float-arg-expr, result not Float -- caused by: 22:23 2
 TR info: float-real.rkt 22:15 (* (ann 2 Integer) 3.2) -- exact real arith
-TR opt: float-real.rkt 22:0 (+ 2.3 (assert (* (ann 2 Integer) 3.2) positive?)) -- binary float
-TR missed opt: float-real.rkt 23:7 (* (ann 2 Integer) 3.1) -- all args float-arg-expr, result not Float -- caused by: 23:15 2
-TR info: float-real.rkt 23:7 (* (ann 2 Integer) 3.1) -- exact real arith
-TR missed opt: float-real.rkt 23:0 (* 2.3 (* (ann 2 Integer) 3.1)) -- all args float-arg-expr, result not Float -- caused by: 23:7 (* (ann 2 Integer) 3.1)
 TR info: float-real.rkt 23:0 (* 2.3 (* (ann 2 Integer) 3.1)) -- exact real arith
+TR info: float-real.rkt 23:7 (* (ann 2 Integer) 3.1) -- exact real arith
+TR missed opt: float-real.rkt 22:15 (* (ann 2 Integer) 3.2) -- all args float-arg-expr, result not Float -- caused by: 22:23 2
+TR missed opt: float-real.rkt 23:0 (* 2.3 (* (ann 2 Integer) 3.1)) -- all args float-arg-expr, result not Float -- caused by: 23:7 (* (ann 2 Integer) 3.1)
+TR missed opt: float-real.rkt 23:7 (* (ann 2 Integer) 3.1) -- all args float-arg-expr, result not Float -- caused by: 23:15 2
+TR opt: float-real.rkt 21:0 (+ 2.3 (ann 3 Positive-Real)) -- binary float
+TR opt: float-real.rkt 22:0 (+ 2.3 (assert (* (ann 2 Integer) 3.2) positive?)) -- binary float
 END
 #<<END
 5.3

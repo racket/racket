@@ -92,4 +92,4 @@
               (namespace-attach-module orig-namespace 'racket)
               (namespace-attach-module orig-namespace 'typed-racket/core)
               (dynamic-require file #f)))))))
-  (list (queue->list tr-logs) regular-output))
+  (list (sort (queue->list tr-logs) string<?) regular-output))
