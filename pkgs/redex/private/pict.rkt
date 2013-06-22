@@ -179,7 +179,7 @@
 (define current-label-extra-space (make-parameter 0))
 (define reduction-relation-rule-separation (make-parameter 4))
 
-(define ((rule-picts->pict/horizontal left-column-align) rps)
+(define ((rule-picts->pict/horizontal left-column-align side-conditions-same-line?) rps)
   (let* ([sep 2]
          [max-rhs (apply max
                          0
@@ -208,11 +208,17 @@
                       [label (hbl-append (blank (label-space) 0) (rp->pict-label rp))]
                       [sep (blank 4)])
                   (append 
-                   (list lhs arrow rhs label
-                         (blank) (blank)
-                         (let ([sc (rp->side-condition-pict rp max-w)])
-                           (inset sc (min 0 (- max-rhs (pict-width sc))) 0 0 0))
-                         (blank))
+                   (if side-conditions-same-line?
+                       (list lhs arrow 
+                             (hbl-append rhs
+                                         (let ([sc (rp->side-condition-pict rp max-w)])
+                                           (inset sc (min 0 (- max-rhs (pict-width sc))) 0 0 0)))
+                             label)
+                       (list lhs arrow rhs label
+                             (blank) (blank)
+                             (let ([sc (rp->side-condition-pict rp max-w)])
+                               (inset sc (min 0 (- max-rhs (pict-width sc))) 0 0 0))
+                             (blank)))
                    (if (= len i)
                        '()
                        (list sep (blank) (blank) (blank))))))))
@@ -425,9 +431,11 @@
     [(vertical-overlapping-side-conditions)
      rule-picts->pict/vertical-overlapping-side-conditions]
     [(horizontal-left-align)
-     (rule-picts->pict/horizontal ltl-superimpose)]
+     (rule-picts->pict/horizontal ltl-superimpose #f)]
+    [(horizontal-side-conditions-same-line)
+     (rule-picts->pict/horizontal rtl-superimpose #t)]
     [else ;; horizontal
-     (rule-picts->pict/horizontal rtl-superimpose)]))
+     (rule-picts->pict/horizontal rtl-superimpose #f)]))
 
 (define (mk-arrow-pict sz style)
   (let ([cache (make-hash)])

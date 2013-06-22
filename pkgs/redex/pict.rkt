@@ -8,11 +8,12 @@
          texpict/mrpict)
 
 (define reduction-rule-style/c
-  (symbols 'compact-vertical
-           'vertical 
-           'vertical-overlapping-side-conditions
-           'horizontal-left-align
-           'horizontal))
+  (or/c 'vertical 
+        'compact-vertical
+        'vertical-overlapping-side-conditions
+        'horizontal
+        'horizontal-left-align
+        'horizontal-side-conditions-same-line))
 
 (provide reduction-rule-style/c render-term term->pict
          term->pict/pretty-write

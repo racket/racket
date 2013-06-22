@@ -2803,7 +2803,9 @@ variant, the side-conditions don't contribute to the width of the
 pict, but are just overlaid on the second line of each rule.  The
 @racket['horizontal-left-align] style is like the @racket['horizontal]
 style, but the left-hand sides of the rules are aligned on the left,
-instead of on the right.
+instead of on the right. The @racket[''horizontal-side-conditions-same-line]
+is like @racket['horizontal], except that side-conditions
+are on the same lines as the rule, instead of on their own line below.
 
 }
 
@@ -2811,11 +2813,12 @@ instead of on the right.
 
 A contract equivalent to
 
-@racketblock[
-(symbols 'vertical 
-         'compact-vertical
-         'vertical-overlapping-side-conditions
-         'horizontal)
+@racketblock[(or/c 'vertical 
+                   'compact-vertical
+                   'vertical-overlapping-side-conditions
+                   'horizontal
+                   'horizontal-left-align
+                   'horizontal-side-conditions-same-line)
 ]}
 
 @defparam[arrow-space space natural-number/c]{
