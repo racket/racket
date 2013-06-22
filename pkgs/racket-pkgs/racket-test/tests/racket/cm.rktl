@@ -137,12 +137,12 @@
 ;; ----------------------------------------
 
 ;; test `file-stamp-in-paths'
-(test (file-or-directory-modify-seconds (build-path (collection-path "file") 
+(test (file-or-directory-modify-seconds (build-path (path-only (collection-file-path "zip.rkt" "file"))
                                                     "compiled"
-                                                    "gif_rkt.zo"))
+                                                    "zip_rkt.zo"))
       car
       (file-stamp-in-collection
-       (build-path (collection-path "file") "gif.rkt")))
+       (collection-file-path "zip.rkt" "file")))
 ;; check bytecode without a source:
 (let ([f (build-path dir "compiled" "nosrc_rkt.zo")])
   (with-output-to-file f #:exists 'truncate (lambda () (write (compile #'(module nosrc racket/base)))))
@@ -152,11 +152,10 @@
          (build-path dir "nosrc.rkt")
          (list dir))))
 ;; setup/main doesn't have a .zo:
-(test (file-or-directory-modify-seconds (build-path (collection-path "setup") 
-                                                    "main.rkt"))
+(test (file-or-directory-modify-seconds (collection-file-path "main.rkt" "setup"))
       car
       (file-stamp-in-collection
-       (build-path (collection-path "setup") "main.rkt")))
+       (collection-file-path "main.rkt" "setup")))
 
 ;; ----------------------------------------
 

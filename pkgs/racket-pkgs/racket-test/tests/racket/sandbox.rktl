@@ -307,7 +307,7 @@
    --top--
    (let* ([tmp       (make-temporary-file "sandboxtest~a" 'directory)]
           [strpath   (lambda xs (path->string (apply build-path xs)))]
-          [racketlib (strpath (collection-path "racket"))]
+          [racketlib (strpath (path-only (collection-file-path "main.rkt" "racket")))]
           [list-lib  (strpath racketlib "list.rkt")]
           [list-zo   (strpath racketlib "compiled" "list_rkt.zo")]
           [test-lib  (strpath tmp "sandbox-test.rkt")]

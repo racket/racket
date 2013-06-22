@@ -59,12 +59,14 @@
       (module-path-index-join #f #f)
       (build-path (current-directory) "only.rkt"))
 
+;; The "mzlib" and "ffi" collections are chosen to exist only in main "collects",
+;; but that's fragile.
 (let ([mzlib (collection-path "mzlib")]
-      [syntax (collection-path "syntax")])
+      [ffi (collection-path "ffi")])
   (test-rmp (build-path mzlib "x.rkt") '(lib "x.ss") #f)
   (test-rmp (build-path mzlib "x.rkt") '(lib "x.ss" "mzlib") #f)
-  (test-rmp (build-path syntax "x.rkt") '(lib "x.ss" "syntax") #f)
-  (test-rmp (build-path syntax "private" "x.rkt") '(lib "x.ss" "syntax" "private") #f)
+  (test-rmp (build-path ffi "x.rkt") '(lib "x.ss" "ffi") #f)
+  (test-rmp (build-path ffi "unsafe" "x.rkt") '(lib "x.ss" "ffi" "unsafe") #f)
   (test-rmp (build-path (current-directory) "x.rkt") `(file ,(path->string (build-path (current-directory) "x.ss"))) #f)
   (test-rmp (build-path (current-directory) "x.rkt") (build-path (current-directory) "x.ss") #f)
   (test-rmp (build-path (current-directory) "x.rkt") (build-path "x.ss") #f)
