@@ -1351,7 +1351,7 @@
       (λ (kmap)
         (let* ([map (λ (key func) 
                       (send kmap map-function key func))]
-               [map-meta (λ (key func mask-control?)
+               [map-meta (λ (key func)
                            (send-map-function-meta kmap key func
                                                    (regexp-match has-control-regexp key)))]
                [add (λ (name func)
