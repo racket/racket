@@ -54,7 +54,8 @@
         (define p* (build-path path p))
         (define prm (list path p 
                           (if (places)
-                              (run-in-other-place p* error?)
+                              (delay/thread
+                                (run-in-other-place p* error?))
                               (delay 
                                 (parameterize ([read-accept-reader #t]
                                                [current-load-relative-directory path]
@@ -96,14 +97,18 @@
   (define shootout (collection-path "tests" "racket" "benchmarks" "shootout" "typed"))
   (define common (collection-path "tests" "racket" "benchmarks" "common" "typed"))
   (define (mk dir)
-    (make-test-suite (path->string dir)
-                     (for/list ([file (in-list (directory-list dir))]
-                                #:when (scheme-file? file))
-                       (test-suite (path->string file)
-                                   (check-not-exn (λ ()
-                                     (get-module-code (build-path dir file)
-                                       #:choose (lambda (src zo so) 'src))))))))
-  (test-suite "compiling"
+    (let ((promised-results
+            (for/hash ([file (in-list (directory-list dir))]
+                        #:when (scheme-file? file))
+              (values (path->string file)
+                      (delay/thread (compile-path (build-path dir file)))))))
+      (make-test-suite (path->string dir)
+        (for/list ([(name results) promised-results])
+           (test-suite name
+              (check-not-exn (λ () (force results))))))))
+
+
+  (test-suite "Compiling Benchmark tests"
               (mk shootout)
               (mk common)))
 
