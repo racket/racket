@@ -165,30 +165,32 @@
         table)
       
       (define/private (on-this-platform? cs)
-        (let* ([splits (map (λ (x) (all-but-last (split-out #\: x))) (split-out #\; (string->list cs)))]
-               [has-key? (λ (k) (ormap (λ (x) (member (list k) x)) splits))])
-          (cond
-            [(eq? (system-type) 'windows)
-             (cond
-               [(or (regexp-match #rx"a:c" cs)
-                    (regexp-match #rx"c:m" cs))
-                #f]
-               [(or (has-key? #\a) (has-key? #\d))
-                #f]
-               [else #t])]
-            [(eq? (system-type) 'macosx)
-             (cond
-               [(has-key? #\m)
-                #f]
-               [else #t])]
-            [(eq? (system-type) 'unix)
-             (cond
-               [(or (has-key? #\a) (has-key? #\d))
-                #f]
-               [else #t])]
-            [else 
-             ;; just in case new platforms come along .... 
-             #t])))
+        (define splits
+          (for/list ([x (in-list (split-out #\; (string->list cs)))])
+            (all-but-last (split-out #\: x))))
+        (define (has-key? k) (ormap (λ (x) (member (list k) x)) splits))
+        (cond
+          [(eq? (system-type) 'windows)
+           (cond
+             [(or (regexp-match #rx"a:c" cs)
+                  (regexp-match #rx"c:m" cs))
+              #f]
+             [(or (has-key? #\a) (has-key? #\d))
+              #f]
+             [else #t])]
+          [(eq? (system-type) 'macosx)
+           (cond
+             [(has-key? #\m)
+              #f]
+             [else #t])]
+          [(eq? (system-type) 'unix)
+           (cond
+             [(or (has-key? #\a) (has-key? #\d))
+              #f]
+             [else #t])]
+          [else 
+           ;; just in case new platforms come along .... 
+           #t]))
       
       (define/private (all-but-last l)
         (cond
@@ -962,29 +964,30 @@
               (define (meet s t)
                 (substring s 0 (string-prefix-length s t 0)))
               (λ (text event)
-                (let ([pos (send text get-start-position)])
-                  (when (= pos (send text get-end-position))
-                    (let ([slash (send text find-string "\\" 'backward pos (max 0 (- pos biggest 1)))])
-                      (when slash
-                        (define entered (send text get-text slash pos))
-                        (define completions
-                          (filter (λ (shortcut) (string-prefix? entered (first shortcut)))
-                                  tex-shortcut-table))
-                        (unless (empty? completions)
-                          (define-values (replacement partial?)
-                            (let ([complete-match 
-                                   (findf (λ (shortcut) (equal? entered (first shortcut)))
-                                          completions)])
-                              (if complete-match
-                                  (values (second complete-match) #f)
-                                  (if (= 1 (length completions))
-                                      (values (second (first completions)) #f)
-                                      (let ([tex-names (map first completions)])
-                                        (values (foldl meet (first tex-names) (rest tex-names)) #t))))))
-                          (send text begin-edit-sequence)
-                          (send text delete (if partial? slash (- slash 1)) pos)
-                          (send text insert replacement)
-                          (send text end-edit-sequence))))))))]
+                (define pos (send text get-start-position))
+                (when (= pos (send text get-end-position))
+                  (define slash (send text find-string "\\" 'backward pos (max 0 (- pos biggest 1))))
+                  (when slash
+                    (define entered (send text get-text slash pos))
+                    (define completions
+                      (filter (λ (shortcut) (string-prefix? entered (first shortcut)))
+                              tex-shortcut-table))
+                    (unless (empty? completions)
+                      (define-values (replacement partial?)
+                        (let ([complete-match 
+                               (findf (λ (shortcut) (equal? entered (first shortcut)))
+                                      completions)])
+                          (if complete-match
+                              (values (second complete-match) #f)
+                              (if (= 1 (length completions))
+                                  (values (second (first completions)) #f)
+                                  (let ([tex-names (map first completions)])
+                                    (values (foldl meet (first tex-names) (rest tex-names))
+                                            #t))))))
+                      (send text begin-edit-sequence)
+                      (send text delete (if partial? slash (- slash 1)) pos)
+                      (send text insert replacement)
+                      (send text end-edit-sequence))))))]
            
            [greek-letters "αβγδεζηθι κλμνξοπρςστυφχψω"]
            [Greek-letters "ΑΒΓΔΕΖΗΘΙ ΚΛΜΝΞΟΠΡ ΣΤΥΦΧΨΩ"]
