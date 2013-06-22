@@ -2,7 +2,7 @@
 
 (require racket/place typed-racket/optimizer/logging
          unstable/open-place syntax/modcode data/queue)
-(provide start-worker dr serialize-exn deserialize-exn s-exn? generate-log/place verbose?)
+(provide start-worker dr serialize-exn deserialize-exn s-exn? generate-log/place compile-path/place verbose?)
 
 (define verbose? (make-parameter #f))
 
@@ -50,6 +50,12 @@
            (define lg (generate-log/place name dir))
            (place-channel-put res lg))
          (loop)]
+        [(vector 'compile path res)
+         (with-handlers ([exn:fail? 
+                          (λ (e) (place-channel-put res (serialize-exn e)))])
+            (compile-path/place path)
+            (place-channel-put res (void)))
+         (loop)]
         [(vector p* res error?) 
          (define-values (path p b) (split-path p*))
          (with-handlers ([exn? (λ (e) (place-channel-put res (serialize-exn e)))])
@@ -62,6 +68,12 @@
              (dr p)
              (place-channel-put res #t)))
          (loop)]))))
+
+(define (compile-path/place path)
+  (get-module-code
+    path
+    #:choose (lambda (src zo so) 'src)))
+
 
 (define-namespace-anchor anchor)
 
