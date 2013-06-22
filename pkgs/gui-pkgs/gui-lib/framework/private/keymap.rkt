@@ -320,16 +320,17 @@
   ;;;;;;;                                                     ;;;;;;;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
-  (define (make-meta-prefix-list key)
-    (list (if (regexp-match #rx"(?:^|:)c:" key)
+  (define (make-meta-prefix-list key [mask-control? #f])
+    (list (if mask-control?
               (string-append "m:" key)
               (string-append "~c:m:" key))
           (string-append "ESC;" key)))
   
-  (define send-map-function-meta
-    (λ (keymap key func)
-      (for-each (λ (key) (send keymap map-function key func))
-                (make-meta-prefix-list key))))
+  (define (send-map-function-meta keymap key func [mask-control? #f])
+    (for ([key (in-list (make-meta-prefix-list key mask-control?))])
+      (send keymap map-function key func)))
+  
+  (define has-control-regexp #rx"(?:^|:)c:")
   
   (define add-to-right-button-menu (make-parameter void))
   (define add-to-right-button-menu/before (make-parameter void))
@@ -1041,7 +1042,8 @@
         (let* ([map (λ (key func) 
                       (send kmap map-function key func))]
                [map-meta (λ (key func)
-                           (send-map-function-meta kmap key func))]
+                           (send-map-function-meta kmap key func
+                                                   (regexp-match has-control-regexp key)))]
                [add (λ (name func)
                       (send kmap add-function name func))]
                [add-m (λ (name func)
@@ -1346,8 +1348,9 @@
       (λ (kmap)
         (let* ([map (λ (key func) 
                       (send kmap map-function key func))]
-               [map-meta (λ (key func)
-                           (send-map-function-meta kmap key func))]
+               [map-meta (λ (key func mask-control?)
+                           (send-map-function-meta kmap key func
+                                                   (regexp-match has-control-regexp key)))]
                [add (λ (name func)
                       (send kmap add-function name func))]
                [add-m (λ (name func)
@@ -1413,7 +1416,8 @@
         (let* ([map (λ (key func) 
                       (send kmap map-function key func))]
                [map-meta (λ (key func)
-                           (send-map-function-meta kmap key func))]
+                           (send-map-function-meta kmap key func 
+                                                   (regexp-match has-control-regexp key)))]
                [add (λ (name func)
                       (send kmap add-function name func))]
                [add-m (λ (name func)

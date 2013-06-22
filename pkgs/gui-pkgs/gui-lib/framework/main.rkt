@@ -1168,10 +1168,14 @@
 
  (proc-doc/names
   keymap:make-meta-prefix-list
-  (string? . -> . (listof string?))
-  (key)
+  (->* (string?) (boolean?) (listof string?))
+  ((key)
+   ((mask-control? #f)))
   @{This prefixes a key with all of the different meta prefixes and returns a
-    list of the prefixed strings.
+    list of the prefixed strings. If @racket[mask-control?] is @racket[#t],
+    then the result strings include @racket["~c:"] in them 
+    (see @racket[keymap:send-map-function-meta]) for a fuller discussion of this
+    boolean).
     
     Takes a keymap, a base key specification, and a function name; it prefixes
     the base key with all ``meta'' combination prefixes, and installs the new
@@ -1181,8 +1185,9 @@
 
  (proc-doc/names
   keymap:send-map-function-meta
-  ((is-a?/c keymap%) string? string? . -> . void?)
-  (keymap key func)
+  (->* ((is-a?/c keymap%) string? string?) (boolean?) void?)
+  ((keymap key func)
+   ((mask-control? #f)))
   @{@index{Meta} Most keyboard and mouse mappings are inserted into a keymap by
     calling the keymap's @method[keymap% map-function] method.  However,
     ``meta'' combinations require special attention.  The @racket["m:"] prefix
@@ -1191,7 +1196,16 @@
     combinations can also be accessed by using ``ESC'' as a prefix.
     
     This procedure binds all of the key-bindings obtained by prefixing
-    @racket[key] with a meta-prefix to @racket[func] in @racket[keymap].})
+    @racket[key] with a meta-prefix to @racket[func] in @racket[keymap].
+    
+    If @racket[mask-control?] is @racket[#t],
+    then the result strings include @racket["~c:"] in them.
+    This is important under Windows where international keyboards
+    often require characters that are unmodified on US keyboards to
+    be typed with the AltGr key; such keys come into the system as
+    having both the control and the meta modified applied to them and, 
+    generally speaking, keybindings should not change the behavior of
+    those keys.})
 
  (proc-doc/names
   keymap:setup-editor
