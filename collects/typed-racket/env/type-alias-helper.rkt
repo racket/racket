@@ -31,8 +31,14 @@
 ;;   (vertex Identifier Boolean Option<Integer> Option<Integer> Listof<Id>)
 ;;
 ;; interp. a vertex in a graph, we only use this for Tarjan's algorithm
-(struct vertex (id stack? index lowlink adjacent)
-        #:mutable #:transparent)
+;;   id       - identifier (labels vertices)
+;;   stack?   - whether this vertex is on the stack (for speed)
+;;   index    - index tracked in Tarjan's algorithm
+;;   lowlink  - see index
+;;   adjacent - list of adjacent vertices
+(struct vertex (id [stack? #:mutable] [index #:mutable]
+                   [lowlink #:mutable] adjacent)
+        #:transparent)
 
 ;; Dict<Id, (List Type Listof<Id>)> -> Listof<Listof<Id>>
 ;; Find strongly connected type aliases in order to
@@ -53,7 +59,7 @@
       (set! index (add1 index))
       (enqueue-front! stack vtx)
       (set-vertex-stack?! vtx #t)
-      (for ([successor-id (vertex-adjacent vtx)])
+      (for ([successor-id (in-list (vertex-adjacent vtx))])
         (define successor (dict-ref vertices successor-id))
         (cond [(not (vertex-index successor))
                (strongly-connected successor)
@@ -67,7 +73,7 @@
       ;; sets a result component if this was a root vertex
       (when (= (vertex-lowlink vtx) (vertex-index vtx))
         (define new-scc
-          (for/list ([elem stack]
+          (for/list ([elem (in-queue stack)]
                      #:final (equal? vtx elem))
             (dequeue! stack)
             (set-vertex-stack?! vtx #f)
@@ -162,8 +168,7 @@
     [((Poly: names body)) (check body)]
     [((PolyDots: names body)) (check body)]
     [(_) #t])
-  (define productive (check type))
-  (unless productive
+  (unless (check type)
     (tc-error/stx
      id
      "Recursive types are not allowed directly inside their definition")))
@@ -173,7 +178,7 @@
 ;; Given the syntaxes representing type alias definitions, return
 ;; the information needed to register them later
 (define (get-type-alias-info type-aliases)
-  (for/lists (_1 _2) ([type-alias type-aliases])
+  (for/lists (_1 _2) ([type-alias (in-list type-aliases)])
     (define-values (id name-id type-stx args) (parse-type-alias type-alias))
     ;; Register type alias names with a dummy value so that it's in
     ;; scope for the registration later.
@@ -219,7 +224,7 @@
   ;; A singleton component can be either a self-cycle or a node that
   ;; that does not participate in cycles, so we disambiguate
   (define acyclic-singletons
-    (for/list ([component components]
+    (for/list ([component (in-list components)]
                #:when (= (length component) 1)
                #:unless (has-self-cycle? component))
       (car component)))
@@ -229,7 +234,7 @@
   ;; Note that the connected component algorithm returns results
   ;; in topologically sorted order, so we want to go through in the
   ;; reverse order of that to avoid unbound type aliases.
-  (for ([id (reverse acyclic-singletons)])
+  (for ([id (in-list (reverse acyclic-singletons))])
     (define type-stx (cadr (dict-ref type-alias-map id)))
     (register-resolved-type-alias id (parse-type type-stx)))
 
