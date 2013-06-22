@@ -465,7 +465,7 @@
                       (namespace-require modspec)
                       (for ([submod (in-list (module-language-settings-submodules-to-run settings))])
                         (define submod-spec `(submod ,modspec ,@submod))
-                        (when (module-declared? submod-spec #t)
+                        (when (module-declared? submod-spec)
                           (dynamic-require submod-spec #f))))))))
           (current-namespace (module->namespace modspec))
           (check-interactive-language))
