@@ -299,6 +299,9 @@
   ;(printf "before adding type names~n")
   (let ((names (map name-of-struct struct-defs))
         (type-vars (map type-vars-of-struct struct-defs)))
+    (for ([name names])
+      (register-resolved-type-alias
+       name (make-Name name name null #f #t)))
     (for-each register-type-name names)
     (for-each add-constant-variance! names type-vars))
   ;(printf "after adding type names~n")

@@ -102,21 +102,20 @@
 ;; n is a Name
 (def-type F ([n symbol?]) [#:frees (single-free-var n) empty-free-vars] [#:fold-rhs #:base])
 
-;; id is an Identifier
-;; This will always resolve to a struct
-(def-type Name ([id identifier?]) [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
-
-;; id is an Identifier, deps is a Listof<Identifier>
+;; Name, an indirection of a type through the environment
 ;;
 ;; interp.
-;; A type name, potentially recursive or mutually recursive
+;; A type name, potentially recursive or mutually recursive or pointing
+;; to a type for a struct type
 ;; id is the name stored in the environment
 ;; orig-id is the name to use for printing
-;; deps are the other aliases this depends on
-;; args are the type parameters for this type
-(def-type RecName ([id identifier?] [orig-id identifier]
-                   [deps (listof identifier?)]
-                   [args (or/c #f (listof identifier?))])
+;; deps are the other aliases this depends on, if any
+;; args are the type parameters for this type (or #f if none)
+;; struct? indicates if this maps to a struct type
+(def-type Name ([id identifier?] [orig-id identifier?]
+                [deps (listof identifier?)]
+                [args (or/c #f (listof identifier?))]
+                [struct? boolean?])
   [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
 
 ;; rator is a type
@@ -126,10 +125,7 @@
   [#:intern (cons (Rep-seq rator) (map Rep-seq rands))]
   [#:frees (λ (f)
               (match rator 
-                ((Name: n)
-                 (instantiate-frees n (map f rands)))
-                ;; FIXME: is this right?
-                ((RecName: n _ _ _)
+                ((Name: n _ _ _ _)
                  (instantiate-frees n (map f rands)))
                 (else (f (resolve-app rator rands stx)))))]
 

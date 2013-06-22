@@ -8,7 +8,8 @@
          (rep type-rep object-rep free-variance)
          (private parse-type syntax-properties)
          (types abbrev utils union resolve substitute type-table)
-         (env global-env type-env-structs type-name-env tvar-env)
+         (env global-env type-env-structs type-alias-env
+              type-name-env tvar-env)
          (utils tc-utils)
          (typecheck def-binding)
          (for-syntax syntax/parse racket/base)
@@ -78,6 +79,11 @@
                                  ((or (Poly? parent) (Mu? parent) (Struct? parent))
                                   parent)
                                  (else
+                                  (displayln #'v.par)
+                                  (displayln (Struct? (lookup-type-name #'v.par)))
+                                  (displayln (parse-type #'v.par))
+                                  (displayln (Name? parent))
+                                  (displayln parent)
                                   (tc-error/stx #'v.par "parent type not a valid structure name: ~a"
                                                 (syntax->datum #'v.par)))))])
                 (values #'v.name parent0 parent))
@@ -130,6 +136,13 @@
 (define/cond-contract (register-sty! sty names desc)
   (c:-> Struct? struct-names? struct-desc? void?)
 
+  ;; a type alias needs to be registered here too, to ensure
+  ;; that parse-type will map the identifier to this Name type
+  (register-resolved-type-alias
+   (struct-names-type-name names)
+   (make-Name (struct-names-type-name names)
+              (struct-names-type-name names)
+              null #f #t))
   (register-type-name (struct-names-type-name names)
                       (make-Poly (struct-desc-tvars desc) sty)))
 
@@ -151,8 +164,13 @@
   ;; the base-type, with free type variables
   (define poly-base
     (if (null? tvars)
-        (make-Name (struct-names-type-name names))
-        (make-App (make-Name (struct-names-type-name names)) (map make-F tvars) #f)))
+        (make-Name (struct-names-type-name names)
+                   (struct-names-type-name names)
+                   null #f #t)
+        (make-App (make-Name (struct-names-type-name names)
+                             (struct-names-type-name names)
+                             null #f #t)
+                  (map make-F tvars) #f)))
 
   ;; is this structure covariant in *all* arguments?
   (define covariant?
@@ -293,7 +311,8 @@
      (c:-> identifier? (c:or/c #f identifier?) (c:listof identifier?)
            (c:listof Type/c) (c:or/c #f identifier?)
            c:any/c)
-  (define parent-type (and parent (resolve-name (make-Name parent))))
+  (define parent-type
+    (and parent (resolve-name (make-Name parent parent null #f #t))))
   (define parent-tys (map fld-t (get-flds parent-type)))
 
   (define names (get-struct-names nm fld-names #f))

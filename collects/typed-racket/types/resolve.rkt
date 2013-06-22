@@ -28,8 +28,8 @@
 
 (define (resolve-name t)
   (match t
-    [(Name: n) (let ([t (lookup-type-name n)])
-                 (if (Type/c? t) t #f))]
+    [(Name: n _ _ _ _) (let ([t (lookup-type-name n)])
+                         (if (Type/c? t) t #f))]
     [_ (int-err "resolve-name: not a name ~a" t)]))
 
 (define already-resolving? (make-parameter #f))
@@ -42,7 +42,7 @@
        (unless (= n (length rands))
          (tc-error "wrong number of arguments to polymorphic type: expected ~a and got ~a"
                    n (length rands)))]
-      [(Name: n)
+      [(Name: n _ _ _ #t)
        (when (and (current-poly-struct)
                   (free-identifier=? n (poly-name (current-poly-struct))))
         (define num-rands (length rands))
@@ -59,7 +59,7 @@
                           " does not match the given number:"
                           " expected " num-poly
                           ", given " num-rands))))]
-      [(RecName: _ _ _ args)
+      [(Name: _ _ _ args #f)
        (cond [args
               (define num-rands (length rands))
               (define num-args (length args))
@@ -114,10 +114,9 @@
                  [already-resolving? #t])
     (resolve-app-check-error rator rands stx)
     (match rator
-      [(Name: _)
+      [(Name: _ _ _ _ _)
        (let ([r (resolve-name rator)])
          (and r (resolve-app r rands stx)))]
-      [(RecName: _ _ _ _) (resolve-app (resolve-once rator) rands stx)]
       [(Poly: _ _) (instantiate-poly rator rands)]
       [(Mu: _ _) (resolve-app (unfold rator) rands stx)]
       [(App: r r* s) (resolve-app (resolve-app r r* s) rands stx)]
@@ -125,7 +124,7 @@
 
 
 (define (needs-resolving? t)
-  (or (Mu? t) (App? t) (Name? t) (RecName? t)))
+  (or (Mu? t) (App? t) (Name? t)))
 
 (define resolver-cache (make-hasheq))
 
@@ -137,8 +136,7 @@
                   [(Mu: _ _) (unfold t)]
                   [(App: r r* s)
                    (resolve-app r r* s)]
-                  [(Name: _) (resolve-name t)]
-                  [(RecName: n _ _ _) (lookup-type-alias n values)])])
+                  [(Name: _ _ _ _ _) (resolve-name t)])])
         (when (and r* (not (currently-subtyping?)))
           (hash-set! resolver-cache seq r*))
         r*)))

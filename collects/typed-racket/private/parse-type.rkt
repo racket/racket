@@ -370,11 +370,6 @@
               (set-box! alias-box (cons #'id (unbox alias-box))))
             (add-disappeared-use #'id)
             t)]
-         ;; if it's a type name, we just use the name
-         [(lookup-type-name #'id (lambda () #f))
-          (add-disappeared-use #'id)
-          ;(printf "found a type name ~a\n" #'id)
-          (make-Name #'id)]
          [(free-identifier=? #'id #'t:->)
           (tc-error/delayed "Incorrect use of -> type constructor")
           Err]
@@ -401,8 +396,7 @@
           [args (parse-types #'(arg args ...))])
          (resolve-app-check-error rator args stx)
          (match rator
-           [(Name: _) (make-App rator args stx)]
-           [(RecName: _ _ _ _) (make-App rator args stx)]
+           [(Name: _ _ _ _ _) (make-App rator args stx)]
            [(Poly: _ _) (instantiate-poly rator args)]
            [(Mu: _ _) (loop (unfold rator) args)]
            [(Error:) Err]

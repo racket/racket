@@ -269,12 +269,12 @@
         ;; Applications of a potentially polymorphically
         ;; recursive type constructor turns into a contract
         ;; function application.
-        [(App: (and rator (RecName: stx _ _ _)) rands _)
+        [(App: (and rator (Name: stx _ _ _ #f)) rands _)
          #`(#,(t->c rator) #,@(map t->c rands))]
         ;; A recursive name depends on other type aliases,
         ;; possibly in mutual recursion. The contract will recur
         ;; on all dependencies as a conservative approximation.
-        [(RecName: stx _ deps args)
+        [(Name: stx _ deps args #f)
          ;; Type -> Syntax
          ;; Construct a contract function that corresponds to
          ;; a type operator, where the argument to the function
@@ -323,7 +323,8 @@
                                       (current-contract-kind)))]
                              ...)
                       n*))])]
-        [(or (App: _ _ _) (Name: _)) (t->c (resolve-once ty))]
+        [(or (App: _ _ _) (Name: _ _ _ _ #t))
+         (t->c (resolve-once ty))]
         ;; any/c doesn't provide protection in positive position
         [(Univ:)
          (cond [(from-typed? typed-side)

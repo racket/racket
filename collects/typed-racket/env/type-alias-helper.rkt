@@ -4,7 +4,7 @@
 
 (require "../utils/utils.rkt"
          (utils tc-utils)
-         (env type-alias-env)
+         (env type-alias-env type-name-env)
          (rep type-rep)
          (private parse-type)
          (typecheck internal-forms)
@@ -153,7 +153,7 @@
 (define (check-type-alias-contractive id type)
   (define/match (check type)
     [((Union: elems)) (andmap check elems)]
-    [((RecName: _ orig-id _ _))
+    [((Name: _ orig-id _ _ _))
      (and (not (free-identifier=? orig-id id))
           (check (resolve-once type)))]
     [((App: rator rands stx))
@@ -178,7 +178,7 @@
     ;; Register type alias names with a dummy value so that it's in
     ;; scope for the registration later.
     (register-resolved-type-alias id Err)
-    (register-resolved-type-alias
+    (register-type-name
      name-id
      (if args
          (make-Poly (map syntax-e args) Err)
@@ -238,7 +238,7 @@
         #:unless (member id acyclic-singletons))
     (match-define (list rec-name _ args) record)
     (define deps (dict-ref type-alias-dependency-map id))
-    (register-resolved-type-alias id (make-RecName rec-name id deps args)))
+    (register-resolved-type-alias id (make-Name rec-name id deps args #f)))
   (for ([(id record) (in-dict type-alias-map)]
         #:unless (member id acyclic-singletons))
     (match-define (list rec-name type-stx _) record)
@@ -254,7 +254,7 @@
       (parameterize ([current-check-polymorphic-recursion
                       maybe-type-params])
         (parse-type type-stx)))
-    (register-resolved-type-alias rec-name type)
+    (register-type-name rec-name type)
     (check-type-alias-contractive id type)))
 
 ;; Syntax -> Syntax Syntax Syntax Option<Integer>
