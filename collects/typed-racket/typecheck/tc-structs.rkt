@@ -236,25 +236,13 @@
          null
          (register-struct-bindings! sty names desc si)))))
 
+;; Listof<Parsed-Struct> -> Void
+;; Refines the variance of struct types in the name environment
 (define (refine-struct-variance! parsed-structs)
   (define stys (map parsed-struct-sty parsed-structs))
   (define tvarss (map (compose struct-desc-tvars parsed-struct-desc) parsed-structs))
-  (let loop ()
-    (define sames
-      (for/list ((sty (in-list stys)) (tvars (in-list tvarss)))
-        (cond
-          ((null? tvars) #t)
-          (else
-            (define name (Struct-name sty))
-            (define free-vars (free-vars-hash (free-vars* sty)))
-            (define variance (map (λ (v) (hash-ref free-vars v Constant)) tvars))
-            (define old-variance (lookup-type-variance name))
-
-            (register-type-variance! name variance)
-            (equal? variance old-variance)))))
-    (unless (andmap values sames)
-      (loop))))
-
+  (define names (map Struct-name stys))
+  (refine-variance! names stys tvarss))
 
 ;; check and register types for a define struct
 ;; tc/struct : Listof[identifier] (U identifier (list identifier identifier))

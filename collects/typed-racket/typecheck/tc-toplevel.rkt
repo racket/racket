@@ -80,13 +80,6 @@
        ;; Not polymorphic
        null])))
 
-(define (add-constant-variance! name vars)
-  (unless (null? vars)
-    (register-type-variance! name (map (lambda (_) Constant) vars))))
-
-
-
-
 ;; syntax? -> (listof def-binding?)
 (define (tc-toplevel/pass1 form)
   (parameterize ([current-orig-stx form])

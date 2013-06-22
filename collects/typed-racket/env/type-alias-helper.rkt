@@ -239,23 +239,31 @@
     (match-define (list rec-name _ args) record)
     (define deps (dict-ref type-alias-dependency-map id))
     (register-resolved-type-alias id (make-Name rec-name id deps args #f)))
-  (for ([(id record) (in-dict type-alias-map)]
-        #:unless (member id acyclic-singletons))
-    (match-define (list rec-name type-stx _) record)
-    ;; FIXME: this code does a redundant parse
-    (define pre-type (parse-type type-stx))
-    (define maybe-type-params
-      (match pre-type
-        [(Poly-names: names _) names]
-        [_ #f]))
-    (define type
-      ;; make sure to reject the type if it uses polymorphic
-      ;; recursion (see resolve.rkt)
-      (parameterize ([current-check-polymorphic-recursion
-                      maybe-type-params])
-        (parse-type type-stx)))
-    (register-type-name rec-name type)
-    (check-type-alias-contractive id type)))
+
+  (define-values (names-to-refine types-to-refine tvarss)
+    (for/lists (_1 _2 _3)
+               ([(id record) (in-dict type-alias-map)]
+                #:unless (member id acyclic-singletons))
+      (match-define (list rec-name type-stx args) record)
+      ;; FIXME: this code does a redundant parse
+      (define pre-type (parse-type type-stx))
+      (define maybe-type-params
+        (match pre-type
+          [(Poly-names: names _) names]
+          [_ #f]))
+      (define type
+        ;; make sure to reject the type if it uses polymorphic
+        ;; recursion (see resolve.rkt)
+        (parameterize ([current-check-polymorphic-recursion
+                        maybe-type-params])
+          (parse-type type-stx)))
+      (register-type-name rec-name type)
+      (add-constant-variance! rec-name args)
+      (check-type-alias-contractive id type)
+      (values rec-name type args)))
+
+  ;; Finally, do a last pass to refine the variance
+  (refine-variance! names-to-refine types-to-refine tvarss))
 
 ;; Syntax -> Syntax Syntax Syntax Option<Integer>
 ;; Parse a type alias internal declaration
