@@ -3,7 +3,7 @@
 (require rackunit rackunit/text-ui racket/file
          mzlib/etc racket/port
          compiler/compiler racket/promise
-         racket/match mzlib/compile
+         racket/match syntax/modcode
          racket/promise
          "unit-tests/all-tests.rkt"
          "unit-tests/test-utils.rkt"
@@ -29,8 +29,6 @@
                          [else (error 'exn-pred "bad argument" e)]))))
    args))
 
-(define (cfile file)
-  ((compile-zos #f) (list file) 'auto))
 
 (define (exn-pred p)
   (let ([sexp (with-handlers
@@ -95,25 +93,19 @@
               (fail-tests)))
 
 (define (compile-benchmarks)
-  (define (find dir)
-    (for/list ([d (directory-list dir)]
-               #:when (scheme-file? d))
-      d))
   (define shootout (collection-path "tests" "racket" "benchmarks" "shootout" "typed"))
   (define common (collection-path "tests" "racket" "benchmarks" "common" "typed"))
-  (define (mk path)
-    (make-test-suite (path->string path)
-                     (for/list ([p (find path)])
-                       (parameterize ([current-load-relative-directory
-                                       (path->complete-path path)]
-                                      [current-directory path])
-                         (test-suite (path->string p)
-                                     (check-not-exn (λ () (cfile (build-path path p)))))))))
+  (define (mk dir)
+    (make-test-suite (path->string dir)
+                     (for/list ([file (in-list (directory-list dir))]
+                                #:when (scheme-file? file))
+                       (test-suite (path->string file)
+                                   (check-not-exn (λ ()
+                                     (get-module-code (build-path dir file)
+                                       #:choose (lambda (src zo so) 'src))))))))
   (test-suite "compiling"
               (mk shootout)
-              (delete-directory/files (build-path shootout "compiled"))
-              (mk common)
-              (delete-directory/files (build-path common "compiled"))))
+              (mk common)))
 
 
 (define (just-one p*)
