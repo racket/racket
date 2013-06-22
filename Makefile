@@ -16,14 +16,6 @@
 #
 #  client = build core, create an installer with $(PKGS) with the help
 #           of $(SERVER); result is recorded in "bundle/installer.txt"
-#
-# Some smaller steps:
-#
-#  server-from-core = the part of `server' after the core is built,
-#                     which is useful if you want to run `configure',
-#                     etc., manually
-#
-#  client-from-core = the part of `client' after the core is built
 
 # ------------------------------------------------------------
 # In-place build
@@ -84,6 +76,13 @@ RELEASE_MODE =
 DIST_NAME = Racket
 DIST_DIR = racket
 
+# Configuration of clients to run for a build farm:
+FARM_CONFIG = build/farm-config.rktd
+
+# A command to run after the server has started; normally set by
+# the `farm' target:
+SERVE_DURING_CMD =
+
 # ------------------------------------------------------------
 # Helpers
 
@@ -136,7 +135,6 @@ server-from-core:
 build-from-local:
 	$(MAKE) local-catalog
 	$(MAKE) local-build
-	$(MAKE) packages-from-local
 
 # Set up a local catalog (useful on its own):
 local-catalog:
@@ -195,7 +193,7 @@ built-catalog:
 # Run a catalog server to provide pre-built packages, as well
 # as the copy of the server's "collects" tree:
 built-catalog-server:
-	$(RACKET) -l distro-build/serve-catalog
+	$(RACKET) -l distro-build/serve-catalog $(SERVE_DURING_CMD)
 
 # Demonstrate how a catalog server for binary packages works,
 # which involves creating package archives in "binary" mode
@@ -207,12 +205,18 @@ binary-catalog-server:
 
 # ------------------------------------------------------------
 # On each supported platform:
+#
+# The `client' and `win32-client' targets are also used by
+# `distro-buid/drive-clients', which is in turn run by the
+# `farm' target.
+#
+# For a non-Windows machine, if "build/drive" exists, then
+# keep the "build/user" directory on the grounds that the
+# client is the same as the server.
 
 client:
+	if [ ! -d build/drive ] ; then rm -rf build/user ; fi
 	$(MAKE) core
-	$(MAKE) client-from-core
-
-client-from-core:
 	$(MAKE) distro-build-from-server
 	$(MAKE) bundle-from-server
 	$(MAKE) installer-from-bundle
@@ -220,10 +224,8 @@ client-from-core:
 COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" RELEASE_MODE=$(RELEASE_MODE) DIST_NAME="$(DIST_NAME)" DIST_DIR=$(DIST_DIR)
 
 win32-client:
+	IF EXIST build\user cmd /c rmdir /S /Q build\user
 	$(MAKE) win32-core $(COPY_ARGS)
-	$(MAKE) win32-client-from-core $(COPY_ARGS)
-
-win32-client-from-core:
 	$(MAKE) win32-distro-build-from-server $(COPY_ARGS)
 	$(MAKE) win32-bundle-from-server $(COPY_ARGS)
 	$(MAKE) win32-installer-from-bundle $(COPY_ARGS)
@@ -244,10 +246,12 @@ bundle-from-server:
 	$(RACKET) -l distro-build/unpack-collects http://$(SERVER):9440/
 	bundle/racket/bin/raco pkg install $(REMOTE_INST_AUTO) $(PKGS) $(REQUIRED_PKGS)
 
+UPLOAD = --upload http://$(SERVER):9440/
+
 # Create an installer from the build (with installed packages) that's
 # in "bundle/racket":
 installer-from-bundle:
-	$(RACKET) -l distro-build/installer $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_DIR)
+	$(RACKET) -l- distro-build/installer $(UPLOAD) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_DIR)
 
 win32-distro-build-from-server:
 	$(WIN32_RACO) pkg install $(REMOTE_USER_AUTO) distro-build
@@ -266,4 +270,22 @@ win32-bundle-from-server:
 	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(PKGS)
 
 win32-installer-from-bundle:
-	$(WIN32_RACKET) -l distro-build/installer $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_DIR)
+	$(WIN32_RACKET) -l- distro-build/installer $(UPLOAD) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_DIR)
+
+# ------------------------------------------------------------
+# On each supported platform:
+
+DRIVE_ARGS = $(RELEASE_MODE) "$(FARM_CONFIG)" $(SERVER) "$(PKGS)" "$(DIST_NAME)" $(DIST_DIR)
+DRIVE_CMD = $(RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS)
+
+# Full server build and clients drive, based on `FARM_CONFIG':
+farm:
+	$(MAKE) server SERVE_DURING_CMD="$(DRIVE_CMD)"
+
+# Server is already built; start it and drive clients:
+built-farm:
+	$(MAKE) built-catalog-server SERVE_DURING_CMD="$(DRIVE_CMD)"
+
+# Just the clients, assuming server is already running:
+drive-clients:
+	$(DRIVE_CMD)

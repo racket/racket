@@ -2,15 +2,21 @@
 (require racket/cmdline
          "installer-sh.rkt"
          "installer-dmg.rkt"
-         "installer-exe.rkt")
+         "installer-exe.rkt"
+         net/url
+         racket/file
+         racket/path)
 
 (define release? #f)
+(define upload-to #f)
 
 (define-values (short-human-name human-name dir-name)
   (command-line
    #:once-each
    [("--release") "Create a release installer"
     (set! release? #t)]
+   [("--upload") url "Upload installer"
+    (set! upload-to url)]
    #:args
    (human-name dir-name)
    (values human-name
@@ -29,3 +35,14 @@
  (build-path "bundle" "installer.txt")
  #:exists 'truncate/replace
  (lambda (o) (fprintf o "~a\n" installer-file)))
+
+(when upload-to
+  (printf "Upload ~a to ~a\n" installer-file upload-to)
+  (define i
+    (put-pure-port
+     (string->url (format "~aupload/~a"
+                          upload-to
+                          (path->string (file-name-from-path installer-file))))
+     (file->bytes installer-file)))
+  (unless (equal? (read i) #t)
+    (error "file upload failed")))

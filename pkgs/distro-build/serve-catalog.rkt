@@ -5,16 +5,20 @@
          web-server/http/request-structs
          net/url
          racket/format
-         racket/cmdline)
+         racket/cmdline
+         racket/file
+         racket/path
+         racket/system)
 
 (define from-dir "built")
 
-(command-line
- #:once-each
- [("--mode") dir "Serve package archives from <dir> subdirectory"
-  (set! from-dir dir)]
- #:args ()
- (void))
+(define during-cmd-line
+  (command-line
+   #:once-each
+   [("--mode") dir "Serve package archives from <dir> subdirectory"
+    (set! from-dir dir)]
+   #:args during-cmd
+   during-cmd))
 
 
 (define build-dir (path->complete-path "build"))
@@ -64,18 +68,49 @@
 (define (write-info req pkg-name)
   (response/sexpr (pkg-name->info req pkg-name)))
 
+(define (receive-file req filename)
+  (unless (relative-path? filename)
+    (error "upload path name must be relative"))
+  (define dir (build-path build-dir "installers"))
+  (make-directory* dir)
+  (call-with-output-file (build-path dir filename)
+    #:exists 'truncate/replace
+    (lambda (o)
+      (write-bytes (request-post-data/raw req) o)))
+  (response/sexpr #t))
+
 (define-values (dispatch main-url)
   (dispatch-rules
-   [("pkg" (string-arg)) write-info]))
+   [("pkg" (string-arg)) write-info]
+   [("upload" (string-arg)) #:method "put" receive-file]))
 
-(serve/servlet
- dispatch
- #:command-line? #t
- #:listen-ip #f
- #:extra-files-paths
- (cons
-  (build-path build-dir "origin")
-  (for/list ([d (in-list dirs)])
-    (path->complete-path (build-path d "pkgs"))))
- #:servlet-regexp #rx""
- #:port 9440)
+(define (go)
+  (serve/servlet
+   dispatch
+   #:command-line? #t
+   #:listen-ip #f
+   #:extra-files-paths
+   (cons
+    (build-path build-dir "origin")
+    (for/list ([d (in-list dirs)])
+      (path->complete-path (build-path d "pkgs"))))
+   #:servlet-regexp #rx""
+   #:port 9440))
+
+(if (null? during-cmd-line)
+    ;; Just run server:
+    (go)
+    ;; Run server in a background thread, finish by 
+    ;; running given command:
+    (let ([t (thread go)])
+      (sync (system-idle-evt)) ; try to wait until server is ready
+      (unless (apply system*
+                     (let ([exe (car during-cmd-line)])
+                       (if (and (relative-path? exe)
+                                (not (path-only exe)))
+                           (find-executable-path exe)
+                           exe))
+                     (cdr during-cmd-line))
+        (error 'server-catalog
+               "command failed: ~s" 
+               during-cmd-line))))

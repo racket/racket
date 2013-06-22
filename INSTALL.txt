@@ -1,3 +1,13 @@
+Quick Instrctions
+=================
+
+On Unix of Mac OS X, `make' (or `make in-place') creates a build in
+the "racket" directory.
+
+The build includes (via links) all packages that are in the "pkgs"
+directory.
+
+
 Building Racket
 ===============
 
@@ -9,16 +19,23 @@ Racket distribution.
 
 On Unix and Mac OS X, you can build Racket plus the included packages
 with `make in-place' (or just `make'). The resulting build is in the
-"racket" subdirectory.  For now, you need to have `git' installed for
+"racket" subdirectory. For now, you need to have `git' installed for
 downloading native-library packages. If you want more control over the
 process, see below.
 
 On Windows, you must first clone "git://github.com/plt/libs.git"
-as "build/native-pkgs". Then, you can use `nmake win32-in-place'.
+as "build/native-pkgs". Then, you can use `nmake win32-in-place',
+as long as you're using Microsoft Visual Studio 9.0 (2008).
 
+
+Building Racket Pieces
+======================
+
+Instead of just using `make in-place', you can take more control over
+the build.
 
 Building Core Racket
-====================
+--------------------
 
 Instead of using the top-level makefile, you can go into "racket/src"
 and follow the "README" there, which gives you more configuration
@@ -28,9 +45,13 @@ If you don't want any special configuration and you just want the core
 build, you can use `make core' (or `nmake win32-core') with the
 top-level makefile.
 
+(The Racket core does not require additional native libraries to run,
+but under Windows, encoding-conversion, extflonum, and SSL
+functionality is hobbled until native libraries from the
+`racket-win32-i386' or `racket-win32-x86_64' package are installed.)
 
 Installing Packages
-===================
+-------------------
 
 In the near future, after you've built the core, you can install
 packages via a package-catalog server (ignoring the content of
@@ -38,7 +59,7 @@ packages via a package-catalog server (ignoring the content of
 
 
 Linking Packages for Development Mode
-=====================================
+-------------------------------------
 
 Aside from the issue of native-library packages, using all of the
 packages in "pkgs" corresponds to a build that is like the main Racket
@@ -49,10 +70,11 @@ reinstalling packages).
 
 The `pkg-links' target of the makefile links (or re-links) packages
 from "pkgs" into the "racket" build. (The `in-place' target of the
-makefile uses `pkg-links'.) Packages are linked using installation
-scope, so that the links affect only the build in the "racket"
-directory. Use the `pkg-links' target whenever the set of native
-packages or packages in "pkgs" changes. Packages are linked with the
+makefile uses `pkg-links'.) Make the `pkg-links' target whenever the
+set of native packages or packages in "pkgs" changes.
+
+Packages are linked using installation scope, so that the links affect
+only the build in the "racket" directory. Packages are linked with the
 `--no-setup' flag (effectively), which means that a `raco setup' is
 needed after installing links.
 
@@ -71,25 +93,8 @@ as
 When you have a "build/native-pkgs" directory, then the `pkg-links'
 makefile target also links relavant native packages.
 
-You need a "racket" build before linking packages. So, to get set up:
-
- git clone git://github.com/mflatt/racket.git plt
- cd plt
- git checkout pkg
-
- make core
-
- # Mac OS X:
- make native-from-git
- # Windows:
- git clone git://github.com/plt/libs.git build/native-pkgs
-
- make pkg-links
- racket/bin/raco setup
-
-
 Trying Packages Locally
-=======================
+-----------------------
 
 Suppose that you've built core "racket" and you want to see what
 it looks like to install individual packages.
@@ -116,11 +121,6 @@ To remove the package, try
 
 The `--auto' flag undoes automatic installs from `--deps search-auto'.
 
-If you try out packages in this way, clean out all package
-installations before trying to create installers (as described in the
-next section), because the distribution-bundle process expects a core
-build in "racket" that has no installed packages.
-
 
 Building Installers
 ===================
@@ -134,6 +134,47 @@ machines, each of which contacts the server machine to obtain
 pre-built packages. The server can act as a client, naturally, to
 create an installer for the server's platform.
 
+Running Build Farms
+-------------------
+
+The `farm' target of the makefile will do everything to generate
+installers: build a server on the current machine, run clients on
+hosts specified via FARM_CONFIG, and start/stop VirtualBox virtual
+machines that implement clients.
+
+See
+
+  pkgs/distro-build/drive-clients.rkt
+
+for a description of the farm-configuration file and requirements on
+client hosts.
+
+If "my-farm-config.rktd" is a configuration file, then
+
+ make farm FARM_CONFIG=my-farm-config.rktd PKGS="..."
+
+drives the build farm, and the resulting installers are in
+"build/installers".
+
+The default FARM_CONFIG path is "build/farm-config.rktd", so you could
+put your configuration file there and omit the `FARM_CONFIG' argument
+to `make'. Similarly, you can omit `PKGS' to use the default specified
+in the Makefile.
+
+A configuration file can specify the packages to include, host address
+of the server, distribution name, and installer directory, but default
+can be provided as `make' arguments via `PKGS', `SERVER', `DIST_NAME'
+and `DIST_DIR', respectively. Note that a sets of packages specified
+in a configure file affects the clients, but it does not affect the
+packages prepared by the server; only `PKGS' affects the server (and
+the client's packages must be a subset of the server's packages).
+
+Separate Server and Clients
+---------------------------
+
+Instead of using the `farm' makefile target and a farm configuration
+file, you can run server and client processes manually.
+
 Roughly, the steps are
 
  1. On the server machine:
@@ -146,6 +187,13 @@ Roughly, the steps are
 
     Add `RELEASE_MODE=--release' to the `client' line to build
     a "release" installer, as opposed to a snapshot installer.
+
+    Add `DIST_NAME="..."' to the `client' line to give an installer a
+    different human-readable distribution name, instead of "Racket".
+
+    Add `DIST_DIR="..."' to the `client' line to make the installer
+    use a different directory name on installation, instead of
+    "racket".
 
 In more detail:
 
@@ -191,13 +239,25 @@ In more detail:
      Alternatively, use the `client' target, which combines `core' and
      `client-from-core' (i.e., steps 2a and 2b).
 
-     To create a release installer, provide `RELEASE_MODE' as
-     "--release". A release installer has slightly different defaults
-     that are suitable for infrequently updated release installations,
-     as opposed to ferquently updated snapshot installations.
-
      On Windows, you need NSIS installed, either in the usual location
      or with `makensis' in your command-line path.
 
+     To create a release installer, provide `RELEASE_MODE' as
+     "--release" to `make'. A release installer has slightly different
+     defaults that are suitable for infrequently updated release
+     installations, as opposed to ferquently updated snapshot
+     installations.
+
+     To change the human-readable name of the distribution as embedded
+     in the installer, provide `DIST_NAME' to `make'. The default
+     distribution name is "Racket". Whatever name you pick, the Racket
+     version number is automatically added for various contexts.
+
+     To change the directory name for Unix installation, as well as
+     the base name of the installer file for all platforms, provide
+     `DIST_DIR' to `make'. The default is "racket".
+
 On each client, step 2b produces a "bundle/installer.txt" file that
-contains the path to the generated installer.
+contains the path to the generated installer, but the installer is
+also uploaded to the server, which leaves the installer in a
+"build/installers" directory.
