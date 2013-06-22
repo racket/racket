@@ -321,7 +321,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
   (define (make-meta-prefix-list key)
-    (list (string-append "~c:m:" key)
+    (list (if (regexp-match #rx"(?:^|:)c:" key)
+              (string-append "m:" key)
+              (string-append "~c:m:" key))
           (string-append "ESC;" key)))
   
   (define send-map-function-meta
