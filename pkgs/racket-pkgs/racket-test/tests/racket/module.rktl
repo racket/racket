@@ -488,7 +488,7 @@
   (check '(relative-in (lib "racket/main.rkt") "string.rkt"))
   (check '(relative-in (lib "racket") "string.rkt"))
   (check '(relative-in (lib "main.rkt" "racket") "string.rkt"))
-  (check `(relative-in ,(collection-file-path "delay.rkt" "racket") "string.rkt"))
+  (check `(relative-in ,(collection-file-path "promise.rkt" "racket") "string.rkt"))
   (check '(relative-in racket (relative-in "private/reqprov.rkt" "../string.rkt"))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
