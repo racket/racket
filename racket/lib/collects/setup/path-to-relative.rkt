@@ -7,7 +7,8 @@
          (only-in planet/config [CACHE-DIR find-planet-dir]))
 
 (provide make-path->relative-string
-         path->relative-string/library)
+         path->relative-string/library
+         path->relative-string/setup)
 
 (define (make-path->relative-string
          dirs [default (lambda (x) (if (path? x) (path->string x) x))])
@@ -47,4 +48,10 @@
   (make-path->relative-string
    (list (cons find-collects-dir      "<collects>/")
          (cons find-user-collects-dir "<user-collects>/")
+         (cons find-planet-dir        "<planet>/"))))
+
+(define path->relative-string/setup
+  (make-path->relative-string
+   (list (cons find-collects-dir      "")
+         (cons find-user-collects-dir "<user>/")
          (cons find-planet-dir        "<planet>/"))))

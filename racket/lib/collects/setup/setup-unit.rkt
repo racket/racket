@@ -214,7 +214,7 @@
            (error name-sym
                   "'name' result from collection ~e is not a string: ~e"
                   path x)))))
-    (define path-name (path->relative-string/setup path))
+    (define path-name (path->relative-string/setup/pkg path))
     (when (info 'compile-subcollections (lambda () #f))
       (setup-printf "WARNING"
                     "ignoring `compile-subcollections' entry in info ~a"
@@ -635,7 +635,7 @@
         (unless printed?
           (set! printed? #t)
           (setup-printf "deleting" "in ~a"
-                        (path->relative-string/setup (cc-path cc)))))
+                        (path->relative-string/setup/pkg (cc-path cc)))))
       (for ([path paths])
         (define full-path (build-path (cc-path cc) path))
         (when (or (file-exists? full-path) (directory-exists? full-path))
@@ -683,7 +683,7 @@
            (define dep (build-path dir mode-dir (path-add-suffix name #".dep")))
            (when (and (file-exists? dep) (file-exists? zo))
              (set! did-something? #t)
-             (setup-printf "deleting" "~a" (path->relative-string/setup zo))
+             (setup-printf "deleting" "~a" (path->relative-string/setup/pkg zo))
              (delete-file/record-dependency zo dependencies)
              (delete-file/record-dependency dep dependencies))))
         (when did-something? (loop dependencies)))
@@ -832,7 +832,7 @@
          (lambda (p where)
             (set! gcs 2)
             (setup-fprintf p #f " in ~a"
-                           (path->relative-string/setup
+                           (path->relative-string/setup/pkg
                             (path->complete-path where (cc-path cc)))))
          (lambda ()
            (define dir  (cc-path cc))
@@ -1047,7 +1047,7 @@
           (define-values [base name dir?] (split-path info-path))
           (make-directory* base)
           (define p info-path)
-          (setup-printf "updating" "~a" (path->relative-string/setup p))
+          (setup-printf "updating" "~a" (path->relative-string/setup/pkg p))
           (when (verbose)
             (define ht0 (hash-ref ht-orig info-path))
             (when ht0

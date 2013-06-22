@@ -5,7 +5,7 @@
 (require setup/path-to-relative)
 
 (let ([missing   "/some/inexistent/path"]
-      [collects  (build-path (collection-path "racket") "foo.rkt")]
+      [collects  (build-path (path-only (collection-file-path "main.rkt" "racket")) "foo.rkt")]
       [relative  "some/path"])
   (define (test-both path/str expected-str [lib-expected expected-str])
     (define str  (if (string? path/str) path/str (path->string path/str)))

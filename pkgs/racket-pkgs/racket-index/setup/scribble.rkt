@@ -210,7 +210,7 @@
           (setup-printf
            "removing"
            "~a (documentation directory)"
-           (path->relative-string/setup p))
+           (path->relative-string/setup/pkg p))
           (delete-directory/files p)))))
 
   (define (can-build*? docs) (can-build? only-dirs docs))
@@ -423,7 +423,7 @@
                      (unless one?
                        (setup-printf
                         "WARNING" "undefined tag in ~a:"
-                        (path->relative-string/setup
+                        (path->relative-string/setup/pkg
                          (doc-src-file (info-doc info))))
                        (set! one? #t))
                      (setup-printf #f " ~s" k)))])
@@ -497,7 +497,7 @@
                            (if workerid (format "~a " workerid) "")
                            (if (info-rendered? i) "re-rendering" "rendering") )
                           "~a"
-                          (path->relative-string/setup (doc-src-file (info-doc i)))))
+                          (path->relative-string/setup/pkg (doc-src-file (info-doc i)))))
           (define (update-info info response)
             (match response 
               [#f (set-info-failed?! info #t)]
@@ -851,7 +851,7 @@
                        "running")]
          [else "skipping"]))
        "~a"
-       (path->relative-string/setup (doc-src-file doc))))
+       (path->relative-string/setup/pkg (doc-src-file doc))))
     
     (when force-out-of-date?
       (for ([p (in-list info-out-files)])
@@ -982,7 +982,7 @@
                    (if workerid (format "~a " workerid) "")
                    (if move? "moving" "syncing"))
                   "~a"
-                  (path->relative-string/setup src-dir))
+                  (path->relative-string/setup/pkg src-dir))
 
     (when move?
       (when (directory-exists? dest-dir)

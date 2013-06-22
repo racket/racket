@@ -5,9 +5,9 @@
          "../dirs.rkt"
          "../path-to-relative.rkt")
 
-(provide path->relative-string/setup)
+(provide path->relative-string/setup/pkg)
 
-(define path->relative-string/setup
+(define path->relative-string/setup/pkg
   (make-path->relative-string
    (list (cons find-collects-dir      "<collects>/")
          (cons find-user-collects-dir "<user>/")
