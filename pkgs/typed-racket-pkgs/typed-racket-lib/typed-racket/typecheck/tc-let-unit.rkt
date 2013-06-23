@@ -116,31 +116,61 @@
         [(var) (add-scoped-tvars b (lookup-scoped-tvars #'var))]
         [_ (void)]))
 
-    (let loop ([names names] [exprs exprs] [flat-names orig-flat-names] [clauses clauses])
+    ;; First look at the clauses that do not bind the letrec names
+    (define-values (remaining-names remaining-exprs remaining-clauses
+                    env-names env-types)
+      (let loop ([remaining-names '()]
+                 [remaining-exprs '()]
+                 [remaining-clauses '()]
+                 [env-names '()]
+                 [env-types '()]
+                 [names names] [exprs exprs] [clauses clauses]
+                 [flat-names orig-flat-names])
+        (cond
+          [(null? names)
+           (values remaining-names remaining-exprs remaining-clauses
+                   env-names env-types)]
+          ;; if none of the names bound in the letrec are free vars of this rhs
+          [(not (ormap (lambda (n) (s:member n flat-names bound-identifier=?))
+                       (free-vars (car exprs))))
+           ;; then check this expression separately
+           (define cur-names (car names))
+           (define types
+             (match (get-type/infer cur-names (car exprs)
+                                    (lambda (e) (tc-expr/maybe-expected/t e (car names)))
+                                    tc-expr/check)
+               [(tc-results: ts) ts]))
+           (with-lexical-env/extend cur-names types
+            (loop remaining-names remaining-exprs remaining-clauses
+                  (cons cur-names env-names)
+                  (cons types env-types)
+                  (cdr names) (cdr exprs) (cdr clauses)
+                  (remove* cur-names flat-names bound-identifier=?)))]
+          ;; otherwise, we need to process these in the next pass
+          [else
+           (loop (cons (car names) remaining-names)
+                 (cons (car exprs) remaining-exprs)
+                 (cons (car clauses) remaining-clauses)
+                 env-names env-types
+                 (cdr names) (cdr exprs) (cdr clauses)
+                 flat-names)])))
+
+    (with-lexical-env/extend env-names env-types
       (cond
         ;; after everything, check the body expressions
-        [(null? names)
+        [(null? remaining-names)
          (do-check void null null null form null body null expected #:abstract orig-flat-names)]
-        ;; if none of the names bound in the letrec are free vars of this rhs
-        [(not (ormap (lambda (n) (member n flat-names bound-identifier=?))
-                     (free-vars (car exprs))))
-         ;; then check this expression separately
-         (with-lexical-env/extend
-          (list (car names))
-          (list (match (get-type/infer (car names) (car exprs) (lambda (e) (tc-expr/maybe-expected/t e (car names)))
-                                       tc-expr/check)
-                  [(tc-results: ts) ts]))
-          (loop (cdr names) (cdr exprs) (apply append (cdr names)) (cdr clauses)))]
         [else
+         (define flat-names (apply append remaining-names))
          (do-check (lambda (stx e t) (tc-expr/check e t))
-                   names
+                   remaining-names
                    ;; compute set of variables that can't be undefined. see below.
                    (let-values
                     ([(safe-bindings _)
                       (for/fold ([safe-bindings              '()] ; includes transitively-safe
                                  [transitively-safe-bindings '()])
-                          ([names  (in-list names)]
-                           [clause (in-list clauses)])
+                          ([names  (in-list remaining-names)]
+                           [clause (in-list remaining-clauses)])
                         (case (safe-letrec-values-clause? clause transitively-safe-bindings flat-names)
                           ;; transitively safe -> safe to mention in a subsequent rhs
                           [(transitively-safe) (values (append names safe-bindings)
@@ -156,10 +186,10 @@
                                                    l)
                                            types-from-user
                                            (map (λ (x) (Un x -Undefined)) types-from-user)))))
-                         names))
+                         remaining-names))
                    ;; types the user gave. check against that to error if we could get undefined
-                   (map (λ (l) (ret (map get-type l))) names)
-                   form exprs body clauses expected)]))))
+                   (map (λ (l) (ret (map get-type l))) remaining-names)
+                   form remaining-exprs body remaining-clauses expected)]))))
 
 ;; determines whether any of the variables bound in the given clause can have an undefined value
 ;; in this case, we cannot trust the type the user gave us and must union it with undefined
