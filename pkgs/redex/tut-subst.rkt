@@ -6,7 +6,13 @@ The substitution function in this file has been designed
 to work with any expression language so long as the only
 binding form is λ and the shape of λ terms is:
   
-      (λ (x t) ... e)
+      (λ (x any) ... e)
+
+(for types) or
+
+      (λ x ... e)
+
+for untyped.
 
 |#
 
@@ -38,6 +44,11 @@ binding form is λ and the shape of λ terms is:
        (define-values (new-xs new-inactive new-active new-replacements)
          (adjust-active-inactive xs fvs-inactive fvs-active replacements))
        `(λ ,@(map (λ (x t) `(,x ,t)) new-xs ts)
+          ,(loop body new-inactive new-active new-replacements))]
+      [`(λ ,(? symbol? xs) ... ,body)
+       (define-values (new-xs new-inactive new-active new-replacements)
+         (adjust-active-inactive xs fvs-inactive fvs-active replacements))
+       `(λ ,@new-xs
           ,(loop body new-inactive new-active new-replacements))]
       [(? x? x)
        (cond
