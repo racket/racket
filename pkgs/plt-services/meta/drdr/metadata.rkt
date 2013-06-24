@@ -18,13 +18,18 @@
            [(rktl)                 '(racket "-f" *)]
            [else                   #f])))
   (define (replace-* s)
-    (if (eq? '* s)
-        (path->string* a-path)
-        s))
+    (cond
+      [(eq? '* s)
+       (path->string* a-path)]
+      [(not (string? s))
+       (format "~a" s)]
+      [else
+       s]))
   (match (get-prop a-path 'drdr:command-line default-cmd)
     [#f #f]
     [(? list? l)
-     (map replace-* l)]))
+     (cons (first l)
+           (map replace-* (rest l)))]))
 
 (define (path-timeout a-path)
   (get-prop a-path 'drdr:timeout #f))
@@ -46,15 +51,7 @@
 ;;; Property lookup
 (provide props-cache)
 (define props-cache (make-hasheq))
-(define (get-prop og-a-fs-path prop [def #f] #:as-string? [as-string? #f])
-  (define a-fs-path 
-    (match (explode-path og-a-fs-path)
-      [(list* "racket" "lib" (and cp (list* "collects" _)))
-       (apply build-path cp)]
-      [(list* "pkgs" _ cp)
-       (apply build-path (list* "collects" cp))]
-      [_
-       og-a-fs-path]))
+(define (get-prop a-fs-path prop [def #f] #:as-string? [as-string? #f])
   (define rev (current-rev))
   (define a-path
     (substring
@@ -66,21 +63,19 @@
                (lambda ()
                  (define tmp-file (make-temporary-file "props~a.rkt" #f (current-temporary-directory)))
                  (and
-                  ; Checkout the props file
+                  ;; Checkout the props file
                   (scm-export-file
                    rev
                    (plt-repository)
-                   "collects/meta/props" 
+                   "pkgs/plt-services/meta/props"
                    tmp-file)
-                  ; Dynamic require it
+                  ;; Dynamic require it
                   (begin0
                     (with-handlers ([exn? (λ (x) #f)])
                       (dynamic-require `(file ,(path->string tmp-file))
                                        'get-prop))
                     (delete-file tmp-file))))))
-  #;(unless props:get-prop
-     (error 'get-prop "Could not load props file for ~e" (current-rev)))
-  ; XXX get-prop is stupid and errors when a-path is invalid rather than returning def
+  ;; XXX get-prop is stupid and errors when a-path is invalid rather than returning def
   (with-handlers ([exn? (lambda (x) def)])
     (props:get-prop a-path prop def
                     #:as-string? as-string?)))
