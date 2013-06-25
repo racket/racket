@@ -16,6 +16,7 @@
                     setup/getinfo
                     setup/pack
                     setup/unpack
+                    setup/link
                     compiler/compiler
                     launcher/launcher
                     compiler/sig
@@ -921,6 +922,41 @@ v
   Returns a path to the installation's @filepath{etc} directory, which
   contains configuration and package information---including
   configuration of some of the other directories (see @secref["config-file"]).}
+
+@defproc[(find-links-file) path?]{
+  Returns a path to the installation's @tech[#:doc
+  reference-doc]{collection links file}.  The file indicated by the
+  returned path may or may not exist.}
+
+@defproc[(get-links-search-files) path?]{
+  Returns a list of paths to installation @tech[#:doc
+  reference-doc]{collection links files} that are search in
+  order. (Normally, the result includes the result of
+  @racket[(find-links-files)], which is where new installation-wide
+  links are installed by @exec{raco link} or @racket[links].) The
+  files indicated by the returned paths may or may not exist.}
+
+@defproc[(find-pkg-dir) path?]{
+  Returns a path to the directory containing packages with
+  installation scope; the directory indicated by the returned path may
+  or may not exist.}
+
+@defproc[(find-user-pkg-dir) path?]{
+  Returns a path to the directory containing packages with
+  user- and version-specific scope; the directory indicated by
+  the returned path may or may not exist.}
+
+@defproc[(find-shared-pkg-dir) path?]{
+  Returns a path to the directory containing packages with
+  user-specific, all-version scope; the directory indicated by the
+  returned path may or may not exist.}
+
+@defproc[(get-pkg-search-dirs) (listof path?)]{
+  Returns a list of paths to the directories containing packages in
+  installation scope.  (Normally, the result includes the result of
+  @racket[(find-pkg-dir)], which is where new packages are installed
+  by @exec{raco pkg install}.) The directories indicated by the returned
+  paths may or may not exist.}
 
 @defproc[(find-doc-dir) (or/c path? #f)]{
   Returns a path to the installation's @filepath{doc} directory.

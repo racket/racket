@@ -415,22 +415,67 @@
                                                  "links.rktd"))
   (define-values (shared-links-cache) (make-hasheq))
   (define-values (shared-links-stamp) #f)
-  
-  (define-values (links-path) (find-links-path!
-                               ;; This thunk is called once per place, and the result
-                               ;; is remembered for later invocations. Otherwise, the
-                               ;; search for the config file can trip over filesystem
-                               ;; restrictions imposed by security guards.
-                               (lambda ()
-                                 (let ([d (let ([c (find-system-path 'config-dir)])
-                                            (if (absolute-path? c)
-                                                c
-                                                (parameterize ([current-directory (find-system-path 'orig-dir)])
-                                                  (find-executable-path (find-system-path 'exec-file) c))))])
-                                   (and d
-                                        (build-path d "links.rktd"))))))
-  (define-values (links-cache) (make-hasheq))
-  (define-values (links-stamp) #f)
+
+  (define-values (find-config-dir)
+    (lambda ()
+      (let ([c (find-system-path 'config-dir)])
+        (if (complete-path? c)
+            c
+            (or (and (relative-path? c)
+                     (parameterize ([current-directory (find-system-path 'orig-dir)])
+                       (find-executable-path (find-system-path 'exec-file) c)))
+                (let ([exec (path->complete-path 
+                             (find-executable-path (find-system-path 'exec-file))
+                             (find-system-path 'orig-dir))])
+                  (let-values ([(base name dir?) (split-path exec)])
+                    (path->complete-path c base))))))))
+
+  (define-values (get-config-table)
+    (lambda (d)
+      (let ([p (build-path d "config.rktd")])
+        (or (and (file-exists? p)
+                 (call-with-input-file p read))
+            #hash()))))
+
+  (define-values (coerce-to-path)
+    (lambda (p)
+      (cond
+       [(string? p) (string->path p)]
+       [(bytes? p) (bytes->path p)]
+       [else p])))
+
+  (define-values (add-config-search)
+    (lambda (ht key orig-l)
+      (let ([l (hash-ref ht key #f)])
+        (if l
+            (let loop ([l l])
+              (cond
+               [(null? l) null]
+               [(not (car l)) (append orig-l (loop (cdr l)))]
+               [else (cons (coerce-to-path (car l)) (loop (cdr l)))]))
+            orig-l))))
+
+  (define-values (links-paths) (find-links-path!
+                                ;; This thunk is called once per place, and the result
+                                ;; is remembered for later invocations. Otherwise, the
+                                ;; search for the config file can trip over filesystem
+                                ;; restrictions imposed by security guards.
+                                (lambda ()
+                                  (let* ([d (find-config-dir)]
+                                         [ht (get-config-table d)]
+                                         [lf (or (hash-ref ht 'links-file #f)
+                                                 (build-path (or
+                                                              (coerce-to-path (hash-ref ht 'lib-dir #f))
+                                                              (build-path d 'up "lib"))
+                                                             "links.rktd"))])
+                                    (list->vector
+                                     (add-config-search
+                                      ht
+                                      'links-search-files
+                                      (list lf)))))))
+                                    
+  (define-values (links-caches) (make-vector (vector-length links-paths) (make-hasheq)))
+  (define-values (links-stamps) (make-vector (vector-length links-paths) #f))
 
   (define-values (file->stamp)
     (lambda (path)
@@ -469,7 +514,7 @@
                  (lambda () (close-input-port p)))))))))
 
   (define-values (get-linked-collections)
-    (lambda (user? shared?)
+    (lambda (user? shared? ii)
       (call/ec (lambda (esc)
                  (define-values (make-handler)
                    (lambda (ts)
@@ -477,13 +522,13 @@
                        (if (exn:fail? exn)
                            (let ([l (current-logger)])
                              (when (log-level? l 'error)
-                               (log-message l 'error 
+                               (log-message l 'error
                                             (format
                                              "error reading collection links file ~s: ~a"
                                              (cond
                                               [user? user-links-path]
                                               [shared? shared-links-path]
-                                              [else links-path])
+                                              [else (vector-ref links-paths ii)])
                                              (exn-message exn))
                                             (current-continuation-marks))))
                            (void))
@@ -496,8 +541,8 @@
                            (set! shared-links-cache (make-hasheq))
                            (set! shared-links-stamp ts)]
                           [else
-                           (set! links-cache (make-hasheq))
-                           (set! links-stamp ts)]))
+                           (vector-set! links-caches ii (make-hasheq))
+                           (vector-set! links-stamps ii ts)]))
                        (if (exn:fail? exn)
                            (esc (make-hasheq))
                            ;; re-raise the exception (which is probably a break)
@@ -508,12 +553,12 @@
                    (let* ([a-links-path (cond
                                          [user? user-links-path]
                                          [shared? shared-links-path]
-                                         [else links-path])]
+                                         [else (vector-ref links-paths ii)])]
                           [ts (file->stamp a-links-path)])
                      (if (not (equal? ts (cond
                                           [user? user-links-stamp]
                                           [shared? shared-links-stamp]
-                                          [else links-stamp])))
+                                          [else (vector-ref links-stamps ii)])))
                          (with-continuation-mark
                              exception-handler-key
                              (make-handler ts)
@@ -590,13 +635,13 @@
                                    (set! shared-links-cache ht)
                                    (set! shared-links-stamp ts)]
                                   [else
-                                   (set! links-cache ht)
-                                   (set! links-stamp ts)])
+                                   (vector-set! links-caches ii ht)
+                                   (vector-set! links-stamps ii ts)])
                                  ht))))
                          (cond
                           [user? user-links-cache]
                           [shared? shared-links-cache]
-                          [else links-cache]))))))))
+                          [else (vector-ref links-caches ii)]))))))))
 
   (define-values (normalize-collection-reference)
     (lambda (collection collection-path)
@@ -631,18 +676,22 @@
                             ;; list of paths and (box path)s:
                             (if (and links? (use-user-specific-search-paths))
                                 (append
-                                 (let ([ht (get-linked-collections #t #f)])
+                                 (let ([ht (get-linked-collections #t #f 0)])
                                    (append (hash-ref ht sym null)
                                            (hash-ref ht #f null)))
-                                 (let ([ht (get-linked-collections #f #t)])
+                                 (let ([ht (get-linked-collections #f #t 0)])
                                    (append (hash-ref ht sym null)
                                            (hash-ref ht #f null))))
                                 null)
                             ;; list of paths and (box path)s:
-                            (if (and links? links-path)
-                                (let ([ht (get-linked-collections #f #f)])
-                                  (append (hash-ref ht sym null)
-                                          (hash-ref ht #f null)))
+                            (if links?
+                                (let loop ([ii 0])
+                                  (if (ii . >= . (vector-length links-paths))
+                                      null
+                                      (let ([ht (get-linked-collections #f #f ii)])
+                                        (append (hash-ref ht sym null)
+                                                (hash-ref ht #f null)
+                                                (loop (add1 ii))))))
                                 null)
                             ;; list of paths:
                             (current-library-collection-paths)))])
@@ -795,39 +844,42 @@
      [(extra-collects-dirs) (find-library-collection-paths extra-collects-dirs null)]
      [(extra-collects-dirs post-collects-dirs)
       (let ([user-too? (use-user-specific-search-paths)]
-	    [cons-if (lambda (f r) (if f (cons f r) r))])
-	(path-list-string->path-list
-	 (if user-too?
+            [cons-if (lambda (f r) (if f (cons f r) r))])
+        (path-list-string->path-list
+         (if user-too?
              (let ([c (environment-variables-ref (current-environment-variables)
                                                  #"PLTCOLLECTS")])
                (if c
                    (bytes->string/locale c #\?)
                    ""))
-	     "")
-	 (cons-if
-	  (and user-too?
-	       (build-path (find-system-path 'addon-dir)
-			   (version)
-			   "collects"))
-	  (let loop ([l (append
-			 extra-collects-dirs
-			 (list (find-system-path 'collects-dir))
-                         post-collects-dirs)])
-	    (if (null? l)
-		null
-		(let* ([collects-path (car l)]
-		       [v
-			(cond
-			 [(complete-path? collects-path) collects-path]
-			 [(absolute-path? collects-path)
-			  (path->complete-path collects-path
-					       (find-executable-path (find-system-path 'exec-file) #f #t))]
-			 [else
-			  (find-executable-path (find-system-path 'exec-file) collects-path #t)])])
-		  (if v
-		      (cons (simplify-path (path->complete-path v (current-directory)))
-			    (loop (cdr l)))
-		      (loop (cdr l)))))))))]))
+             "")
+         (add-config-search
+          (get-config-table (find-config-dir))
+          'collects-search-dirs
+          (cons-if
+           (and user-too?
+                (build-path (find-system-path 'addon-dir)
+                            (version)
+                            "collects"))
+           (let loop ([l (append
+                          extra-collects-dirs
+                          (list (find-system-path 'collects-dir))
+                          post-collects-dirs)])
+             (if (null? l)
+                 null
+                 (let* ([collects-path (car l)]
+                        [v
+                         (cond
+                          [(complete-path? collects-path) collects-path]
+                          [(absolute-path? collects-path)
+                           (path->complete-path collects-path
+                                                (find-executable-path (find-system-path 'exec-file) #f #t))]
+                          [else
+                           (find-executable-path (find-system-path 'exec-file) collects-path #t)])])
+                   (if v
+                       (cons (simplify-path (path->complete-path v (current-directory)))
+                             (loop (cdr l)))
+                       (loop (cdr l))))))))))]))
 
   ;; used for the -k command-line argument:
   (define (embedded-load start end str)

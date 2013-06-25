@@ -1,5 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual
+          "common.rkt"
           (for-label racket/base
                      racket/contract
                      setup/dirs))
@@ -11,8 +12,6 @@ selected at install time, or its location can be changed via the
 @envvar{PLTCONFIGDIR} directory or @DFlag{config}/@Flag{G}
 command-line flag. Use @racket[find-config-dir] to locate the
 configuration directory.
-
-
 
 Modify the @filepath{config.rktd} file as described below to configure
 other directories, but use the @racketmodname[setup/dirs] library (which
@@ -27,36 +26,49 @@ symbolic keys:
 
  @item{@racket['doc-dir] --- a path, string, or byte string for the
        main documentation directory. The value defaults to a
-       @filepath{doc} sibling directory of the main collection
-       directory's parent.}
+       @filepath{doc} sibling directory of the configuration directory.}
 
  @item{@racket['lib-dir] --- a path, string, or byte string for the
-       main library directory; it defaults to the parent of the main
-       collection directory.}
+       main library directory; it defaults to a @filepath{lib} sibling
+       directory of the configuration directory.}
+
+ @item{@racket['lib-search-dirs] --- a list of paths, strings, byte
+       strings, or @racket[#f] representing the search path for
+       directories containing foreign libraries; each @racket[#f] in
+       the list, if any, is replaced with the default search path,
+       which is the user- and version-specific @filepath{lib}
+       directory followed by the main library directory.}
 
  @item{@racket['dll-dir] --- a path, string, or byte string for a
        directory containing Unix shared libraries for the main
        executable; it defaults to the main library directory.}
 
- @item{@racket['include-dir] --- a path, string, or byte string for
-       the main directory containing C header files; it defaults to an
-       @filepath{include} sibling directory of the main library
-       directory.}
+ @item{@racket['links-file] --- a path, string, or byte string for the
+       @tech[#:doc reference-doc]{collection links file}; it defaults
+       to a @filepath{links.rktd} file in the main library directory.}
+
+ @item{@racket['links-search-files] --- like @racket['lib-search-dirs],
+       but for @tech[#:doc reference-doc]{collection links file}.}
+
+ @item{@racket['pkg-dir] --- a path, string, or byte string for
+       packages that have installation scope; it defaults to the main
+       library directory.}
+
+ @item{@racket['pkg-search-dirs] --- like @racket['lib-search-dirs],
+       but for packages in installation scope.}
 
  @item{@racket['bin-dir] --- a path, string, or byte string for the
        main directory containing executables; it defaults to a
        @filepath{bin} sibling directory of the main library
        directory.}
 
- @item{@racket['doc-search-dirs] --- a path, string, byte string, or
-       @racket[#f] representing the search path for documentation;
-       each @racket[#f] in the list, if any, is replaced with the
-       default search path, which is the user- and version-specific
-       @filepath{doc} directory followed by the main documentation
-       directory.}
+ @item{@racket['doc-search-dirs] --- like @racket['lib-search-dirs],
+       but for directories containing documentation.}
 
- @item{@racket['lib-search-dirs] --- like @racket[doc-search-dirs],
-       but for directories containing foreign libraries.}
+ @item{@racket['include-dir] --- a path, string, or byte string for
+       the main directory containing C header files; it defaults to an
+       @filepath{include} sibling directory of the main library
+       directory.}
 
  @item{@racket['include-search-dirs] --- like
        @racket[doc-search-dirs], but for directories containing C

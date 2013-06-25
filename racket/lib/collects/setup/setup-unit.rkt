@@ -61,7 +61,9 @@
 
   (define name-str (setup-program-name))
   (define name-sym (string->symbol name-str))
-  (define main-collects-dir (find-collects-dir))
+  (define main-collects-dir (simple-form-path (find-collects-dir)))
+  (define main-collects-dirs (for/hash ([p (in-list (get-main-collects-search-dirs))])
+                               (values (simple-form-path p) #t)))
   (define mode-dir
     (if (compile-mode)
       (build-path "compiled" (compile-mode))
@@ -69,9 +71,9 @@
 
   (unless (make-user)
     (current-library-collection-paths
-     (if (member main-collects-dir (current-library-collection-paths))
-       (list main-collects-dir)
-       '())))
+     (for/list ([p (current-library-collection-paths)]
+                #:when (hash-ref main-collects-dirs p #f))
+       p)))
 
   (current-library-collection-paths
    (map simple-form-path (current-library-collection-paths)))
@@ -340,7 +342,7 @@
     (collection-cc! (list collection)
                     #:info-root cp
                     #:path (build-path cp collection)
-                    #:main? (equal? cp main-collects-dir)))
+                    #:main? (hash-ref main-collects-dirs cp #f)))
   (let ()
     (define info-root (find-lib-dir))
     (define info-path (build-path info-root "info-cache.rktd"))
@@ -1026,7 +1028,7 @@
       (for ([c (in-list (current-library-collection-paths))])
         (when (and (directory-exists? c)
                    (not (and (avoid-main-installation)
-                             (equal? c main-collects-dir))))
+                             (hash-ref main-collects-dirs c #f))))
           (define info-path (build-path c "info-domain" "compiled" "cache.rktd"))
           (when (file-exists? info-path)
             (get-info-ht c info-path 'relative))))

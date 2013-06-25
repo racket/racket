@@ -111,20 +111,17 @@
          (λ (ip) (copy-port ip op)))))))
 
 (define (pkg-dir config?)
-  (build-path (case (current-pkg-scope)
-               [(installation) (if config?
-                                   (find-config-dir)
-                                   (find-lib-dir))]
-               [(user)
-                (build-path (find-system-path 'addon-dir) (current-pkg-scope-version))]
-               [(shared)
-                (find-system-path 'addon-dir)]
-               [else (error "unknown package scope")])
-              "pkgs"))
+  (case (current-pkg-scope)
+    [(installation) (if config?
+                        (find-config-dir)
+                        (find-pkg-dir))]
+    [(user) (find-user-pkg-dir (current-pkg-scope-version))]
+    [(shared) (find-shared-pkg-dir)]
+    [else (error "unknown package scope")]))
 (define (pkg-config-file)
   (build-path (pkg-dir #t) "config.rktd"))
 (define (pkg-db-file)
-  (build-path (pkg-dir #t) "pkgs.rktd"))
+  (build-path (pkg-dir #f) "pkgs.rktd"))
 (define (pkg-installed-dir)
   (pkg-dir #f))
 (define (pkg-lock-file)
@@ -262,7 +259,7 @@
   (if (or (eq? mode held-mode)
           (eq? 'exclusive held-mode))
       (t)
-      (let ([d (pkg-dir #t)])
+      (let ([d (pkg-dir #f)])
         (unless read-only? (make-directory* d))
         (if (directory-exists? d)
             ;; If the directory exists, assume that a lock file is
@@ -411,15 +408,40 @@
 (define (read-pkg-db)
   (if (current-no-pkg-db)
       #hash()
-      (let ([the-db (read-file-hash (pkg-db-file))])
-        ;; compatibility: map 'pnr to 'catalog:
-        (for/hash ([(k v) (in-hash the-db)])
-          (values k
-                  (if (eq? 'pnr (car (pkg-info-orig-pkg v)))
-                      ;; note: legacy 'pnr entry cannot be a single-collection package
-                      (struct-copy pkg-info v
-                                   [orig-pkg `(catalog ,(cadr (pkg-info-orig-pkg v)))])
-                      v))))))
+      (read-pkg-db-file (pkg-db-file))))
+
+(define (read-pkg-db-file file)
+  (let ([the-db (read-file-hash file)])
+    ;; compatibility: map 'pnr to 'catalog:
+    (for/hash ([(k v) (in-hash the-db)])
+      (values k
+              (if (eq? 'pnr (car (pkg-info-orig-pkg v)))
+                  ;; note: legacy 'pnr entry cannot be a single-collection package
+                  (struct-copy pkg-info v
+                               [orig-pkg `(catalog ,(cadr (pkg-info-orig-pkg v)))])
+                  v)))))
+
+;; read all packages in this scope or wider
+(define (merge-pkg-dbs [scope (current-pkg-scope)])
+  (define (merge-next-pkg-dbs scope)
+    (parameterize ([current-pkg-scope scope])
+      (with-pkg-lock/read-only (merge-pkg-dbs scope))))
+  (case scope
+    [(installation)
+     (for*/hash ([dir (in-list (get-pkg-search-dirs))]
+                 [file (in-value (build-path dir "pkgs.rktd"))]
+                 #:when (file-exists? file)
+                 [(k v) (read-pkg-db-file file)])
+       (values k v))]
+    [(shared)
+     (define db (read-pkg-db))
+     (for/fold ([ht (merge-next-pkg-dbs 'installation)]) ([(v k) (in-hash db)])
+       (hash-set ht k v))]
+    [(user)
+     (define db (read-pkg-db))
+     (for/fold ([ht (merge-next-pkg-dbs 'shared)]) ([(v k) (in-hash db)])
+       (hash-set ht k v))]))
+    
 
 (define (package-info pkg-name [fail? #t])
   (define db (read-pkg-db))
@@ -988,30 +1010,7 @@
          descs)
   (define download-printf (if quiet? void printf))
   (define check-sums? (not ignore-checksums?))
-  (define db (read-pkg-db))
-  (define db+with-dbs
-    (let ([with-sys-wide (lambda (t)
-                           (parameterize ([current-pkg-scope 'installation])
-                             (t)))]
-          [with-vers-spec (lambda (t)
-                            (parameterize ([current-pkg-scope 'user])
-                              (t)))]
-          [with-vers-all (lambda (t)
-                            (parameterize ([current-pkg-scope 'shared])
-                              (t)))]
-          [with-current (lambda (t) (t))])
-      (case (current-pkg-scope)
-       [(installation)
-        (list (cons db with-current))]
-       [(user)
-        (list (cons (with-sys-wide read-pkg-db) with-sys-wide)
-              (cons db with-current)
-              (cons (with-vers-all read-pkg-db) with-vers-all))]
-       [(shared)
-        (list (cons (with-sys-wide read-pkg-db) with-sys-wide)
-              (cons (with-vers-spec read-pkg-db) with-vers-spec)
-              (cons db with-current))]
-       [else (error "unknown package scope")])))
+  (define all-db (merge-pkg-dbs))
   (define (install-package/outer infos desc info)
     (match-define (pkg-desc pkg type orig-name auto?) desc)
     (match-define
@@ -1025,7 +1024,7 @@
       (for/hash ([i (in-list infos)])
         (values (install-info-name i) (install-info-directory i))))
     (cond
-      [(and (not updating?) (package-info pkg-name #f))
+      [(and (not updating?) (hash-ref all-db pkg-name #f))
        (clean!)
        (pkg-error "package is already installed\n  package: ~a" pkg-name)]
       [(and
@@ -1084,7 +1083,7 @@
                                 (or (equal? name "racket")
                                     (not (dependency-this-platform? dep))
                                     (hash-ref simultaneous-installs name #f)
-                                    (hash-has-key? db name)))
+                                    (hash-has-key? all-db name)))
                              deps)))
           (and (not (empty? unsatisfied-deps))
                unsatisfied-deps)))
@@ -1418,28 +1417,45 @@
 (define (pkg-show indent #:directory? [dir? #f])
   (let ()
     (define db (read-pkg-db))
-    (define pkgs (sort (hash-keys db) string-ci<=?))
+    (define all-db (if (eq? (current-pkg-scope) 'installation)
+                       (merge-pkg-dbs)
+                       db))
+    (define has-const? (not (equal? all-db db)))
+    (define pkgs (sort (hash-keys all-db) string-ci<=?))
     (if (null? pkgs)
         (printf " [none]\n")
         (table-display
          (list*
-          (list* (format "~aPackage[*=auto]" indent) "Checksum" "Source"
-                 (if dir?
-                   (list "Directory")
-                   empty))
+          (append
+           (list (format "~aPackage[*=auto~a]" 
+                         indent
+                         (if has-const?
+                             "; .=constant"
+                             ""))
+                 "Checksum"
+                 "Source")
+           (if dir?
+               (list "Directory")
+               empty))
           (for/list ([pkg (in-list pkgs)])
-            (match-define (pkg-info orig-pkg checksum auto?) (hash-ref db pkg))
-            (list* (format "~a~a~a"
+            (match-define (pkg-info orig-pkg checksum auto?) (hash-ref all-db pkg))
+            (append
+             (list (format "~a~a~a~a"
                            indent
                            pkg
                            (if auto?
-                             "*"
-                             ""))
+                               "*"
+                               "")
+                           (if (and has-const?
+                                    (not (equal? (hash-ref all-db pkg)
+                                                 (hash-ref db pkg #f))))
+                               "."
+                               ""))
                    (format "~a" checksum)
-                   (format "~a" orig-pkg)
-                   (if dir?
-                     (list (~a (pkg-directory* pkg)))
-                     empty))))))))
+                   (format "~a" orig-pkg))
+             (if dir?
+                 (list (~a (pkg-directory* pkg)))
+                 empty))))))))
 
 (define (installed-pkg-table #:scope [given-scope #f])
   (parameterize ([current-pkg-scope 

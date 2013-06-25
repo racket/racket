@@ -56,8 +56,9 @@
                  (wrap 
                   (hash-ref (force config-table) key #f)))))
 
+(define-config config:collects-search-dirs 'collects-search-dirs to-path)
 (define-config config:doc-dir 'doc-dir to-path)
-(define-config config:doc-search-dirs 'doc-search-dir to-path)
+(define-config config:doc-search-dirs 'doc-search-dirs to-path)
 (define-config config:dll-dir 'dll-dir to-path)
 (define-config config:lib-dir 'lib-dir to-path)
 (define-config config:lib-search-dirs 'lib-search-dirs to-path)
@@ -65,6 +66,10 @@
 (define-config config:include-search-dirs 'include-search-dirs to-path)
 (define-config config:bin-dir 'bin-dir to-path)
 (define-config config:man-dir 'man-dir to-path)
+(define-config config:links-file 'links-file to-path)
+(define-config config:links-search-files 'links-search-files to-path)
+(define-config config:pkg-dir 'pkg-dir to-path)
+(define-config config:pkg-search-dirs 'pkg-search-dirs to-path)
 (define-config config:cgc-suffix 'cgc-suffix values)
 (define-config config:3m-suffix '3m-suffix values)
 (define-config config:absolute-installation? 'absolute-installation? (lambda (x) (and x #t)))
@@ -84,10 +89,14 @@
   (delay (find-main-collects)))
 
 (provide find-collects-dir
+         get-main-collects-search-dirs
          find-user-collects-dir
          get-collects-search-dirs)
 (define (find-collects-dir)
   (force main-collects-dir))
+(define (get-main-collects-search-dirs)
+  (combine-search (force config:collects-search-dirs)
+                  (list (find-collects-dir))))
 (define user-collects-dir
   (delay (build-path (system-path* 'addon-dir) (version) "collects")))
 (define (find-user-collects-dir)
@@ -110,10 +119,14 @@
          [else (cons (car l) (loop (cdr l)))]))
       default))
 (define (cons-user u r)
-  (if (use-user-specific-search-paths) (cons u r) r))
+  (if (and u (use-user-specific-search-paths))
+      (cons u r)
+      r))
+(define (get-false) #f)
+(define (chain-to f) f)
 
 (define-syntax define-finder
-  (syntax-rules ()
+  (syntax-rules (get-false chain-to)
     [(_ provide config:id id user-id config:search-id search-id default)
      (begin
        (define-finder provide config:id id user-id default)
@@ -130,16 +143,28 @@
          (combine-search (force config:search-id)
                          (extra (extra-search-dir)
                                 (cons-user (user-id) (single (id)))))))]
-    [(_ provide config:id id user-id default)
+    [(_ provide config:id id get-false (chain-to get-default))
      (begin
-       (provide id user-id)
+       (provide id)
+       (define dir
+         (delay
+           (or (force config:id) (get-default))))
+       (define (id)
+         (force dir)))]
+    [(_ provide config:id id get-false default)
+     (begin
+       (provide id)
        (define dir
          (delay
            (or (force config:id)
-               (let ([p (find-collects-dir)])
-                 (and p (simplify-path (build-path p 'up 'up default)))))))
+               (let ([p (find-config-dir)])
+                 (and p (simplify-path (build-path p 'up default)))))))
        (define (id)
-         (force dir))
+         (force dir)))]
+    [(_ provide config:id id user-id default)
+     (begin
+       (define-finder provide config:id id get-false default)
+       (provide user-id)
        (define user-dir
          (delay (build-path (system-path* 'addon-dir) (version) default)))
        (define (user-id)
@@ -288,3 +313,37 @@
            #f)])))
 (define (find-dll-dir)
   (force dll-dir))
+
+;; ----------------------------------------
+;; Links files
+
+(provide find-links-file
+         get-links-search-files)
+
+(define (find-links-file)
+  (or (force config:links-file)
+      (build-path (find-lib-dir) "links.rktd")))
+(define (get-links-search-files)
+  (combine-search (force config:links-search-files)
+                  (list (find-links-file))))
+
+;; ----------------------------------------
+;; Packages
+
+(define-finder provide
+  config:pkg-dir
+  find-pkg-dir
+  get-false
+  config:pkg-search-dirs
+  get-pkg-search-dirs
+  (chain-to (lambda () (build-path (find-lib-dir) "pkgs"))))
+
+(provide find-user-pkg-dir
+         find-shared-pkg-dir)
+(define (find-user-pkg-dir [vers (version)])
+  (build-path (find-system-path 'addon-dir)
+              vers
+              "pkgs"))
+(define (find-shared-pkg-dir)
+  (build-path (find-system-path 'addon-dir)
+              "pkgs"))

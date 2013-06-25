@@ -31,16 +31,7 @@
                        (if shared?
                            (build-path (find-system-path 'addon-dir) "links.rktd")
                            (build-path (find-system-path 'addon-dir) (version) "links.rktd"))
-                       (let ([d (find-config-dir)])
-                         (if d
-                             (build-path d "links.rktd")
-                             (if (or name
-                                     (pair? dirs)
-                                     repair?
-                                     remove?)
-                                 (error 'links
-                                        "cannot find installation configuration path")
-                                 #f))))))
+                       (find-links-file))))
 
   (define need-repair? #f)
 

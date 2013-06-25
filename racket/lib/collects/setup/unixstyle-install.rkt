@@ -440,6 +440,7 @@
   ;; grab paths before we change them
   (define bindir      (dir: 'bin))
   (define librktdir   (dir: 'librkt))
+  (define configdir   (dir: 'config))
   (define (remove-dest p)
     (let ([pfx (and (< destdirlen (string-length p))
                     (substring p 0 destdirlen))])
@@ -451,7 +452,7 @@
   ;; only when DESTDIR is present, so we're installing to a directory that
   ;; has only our binaries
   (fix-executables bindir librktdir)
-  (unless origtree? (write-config librktdir)))
+  (unless origtree? (write-config configdir)))
 
 ;; --------------------------------------------------------------------------
 

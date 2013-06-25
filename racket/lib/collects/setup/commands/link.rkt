@@ -1,6 +1,7 @@
 #lang scheme/base
 (require racket/cmdline
          raco/command-name
+         setup/dirs
          "../link.rkt")
 
 (define link-file (make-parameter #f))
@@ -101,7 +102,13 @@
   (printf "User-specific, all-version links:\n")
   (void (links #:user? #t #:shared? #t #:show? #t))
   (printf "Installation links:\n")
-  (void (links #:user? #f #:show? #t)))
+  (void (links #:user? #f #:show? #t))
+  (let ([p (filter file-exists?
+                   (remove (find-links-file) (get-links-search-files)))])
+    (unless (null? p)
+      (printf "Installation constant links:\n")
+      (for ([f (in-list p)])
+        (void (links #:file f #:show? #t))))))
 
 (when (and (remove-mode)
            (null? l1)
