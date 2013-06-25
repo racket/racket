@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define single-collection "frtime")
+(define collection "frtime")
 
 (define name "FrTime")
 

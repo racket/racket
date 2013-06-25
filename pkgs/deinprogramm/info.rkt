@@ -5,3 +5,4 @@
 
 ;; We need a multi-collection package because
 ;; "deinprogramm/info.rkt" uses `string-constants'
+(define collection 'multi)

@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define single-collection "unstable")
+(define collection "unstable")
 
 (define scribblings
   '(("scribblings/unstable.scrbl" (multi-page) (experimental))))

@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define single-collection "contract-profile")
+(define collection "contract-profile")

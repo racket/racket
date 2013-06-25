@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define single-collection "trace")
+(define collection "trace")
 
 (define name "Calltrace")
 

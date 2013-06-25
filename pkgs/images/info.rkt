@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define single-collection "images")
+(define collection "images")
 
 (define deps '("typed-racket-lib"))
 (define build-deps '("racket-doc"

@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define single-collection "icons")
+(define collection "icons")

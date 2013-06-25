@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define single-collection "algol60")
+(define collection "algol60")
 (define build-deps '("drracket"))
 
 (define tools '(("tool.rkt")))

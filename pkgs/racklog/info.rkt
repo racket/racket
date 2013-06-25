@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define single-collection "racklog")
+(define collection "racklog")
 
 (define scribblings
   '(("racklog.scrbl" (multi-page) (tool))))

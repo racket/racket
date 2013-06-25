@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define single-collection "plot")
+(define collection "plot")
 
 (define scribblings '(["scribblings/plot.scrbl" (multi-page) (gui-library)]))
 

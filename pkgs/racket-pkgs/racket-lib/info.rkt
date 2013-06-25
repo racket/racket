@@ -1,5 +1,7 @@
 #lang setup/infotab
 
+(define collection 'multi)
+
 (define deps
   '(("racket-win32-i386" #:platform "win32\\i386")
     ("racket-win32-x86_64" #:platform "win32\\x86_64")

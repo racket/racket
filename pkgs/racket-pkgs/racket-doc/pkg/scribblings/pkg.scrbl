@@ -83,18 +83,39 @@ name as the package. The @tech{checksum} is typically left implicit.
 The package directory can contain a file named @filepath{info.rkt}
 to declare other metadata (see @secref["metadata"]).
 
-A @tech{package} is a @deftech{multi-collection package} by default;
-each directory within the package is a @gtech{collection} that is
-provided by the package. If a @tech{package} has an
-@filepath{info.rkt} file that defines @racketidfont{single-collection}
-as a string, then the package is a @deftech{single-collection
-package}; in that case, the package directory doubles as
-@gtech{collection} named by @racketidfont{single-collection}.
+[@bold{The following paragraph and itemization is intentionally wrong.}
+Currently, if a package has no @filepath{info.rkt} file or no
+@racketidfont{collection} definition, it is treated as
+@tech{multi-collection package}. Also,
+@racketidfont{single-collection} is supported for temporary backward
+compatibility. The documentation from here on reflects the planned
+behavior.]
+
+A @tech{package} can be a @tech{single-collection package} or a
+@tech{multi-collection package}:
+
+@itemlist[
+
+ @item{A @deftech{single-collection package}'s directory doubles as a
+       @gtech{collection} directory. By default, the package name also
+       doubles as the collection name, but if the package has an
+       @filepath{info.rkt} file that defines @racketidfont{collection} to a
+       string, then the string is used as the name of the package's
+       collection.}
+
+ @item{A @deftech{multi-collection package}'s directory contains
+       subdirectories, each of which is a @gtech{collection} that is
+       provided by the package (where the directory name is used as
+       the collection name). A @tech{multi-collection package} must
+       have an @filepath{info.rkt} file that defines
+       @racketidfont{collection} as @racket['multi].}
+
+]
 
 More generally, a @deftech{package source} identifies a @tech{package}
 representation. Each package source type has a different way of
 storing the @tech{checksum} and providing the package content (usually
-with @tech{multi-collection package} and @tech{single-collection
+with @tech{single-collection package} and @tech{multi-collection
 package} variants). The valid @tech{package source} types are:
 
 @itemlist[
@@ -291,7 +312,7 @@ sub-sub-commands:
   @item{@DFlag{link} --- Implies @exec{--type dir} (and overrides any specified type),
         and links the existing directory as an installed package. The package is identified
         as a @tech{single-collection package} or a @tech{multi-collection package} at the
-        time that it is installed, and that categorization does not change even if the @schemeidfont{single-collection}
+        time that it is installed, and that categorization does not change even if the @schemeidfont{collection}
         definition in @filepath{info.rkt} is changed (i.e., he package must be removed and re-installed
         for the change to take effect).}
 
@@ -522,16 +543,16 @@ Optionally, enter your directory and create a basic @filepath{info.rkt} file:
 @commandline{echo "(define deps (list))" >> info.rkt}
 
 The @filepath{info.rkt} file is not necessary for a
-@tech{multi-collection package} with no dependencies, but you may wish
-to create it to simplify adding dependencies in the future.  For a
-@tech{single-collection package}, you must create an
-@filepath{info.rkt} file, and you must give the collection a name,
-@nonterm{collect}:
+@tech{single-collection package} with no dependencies, but you may
+wish to create it to simplify adding dependencies in the future.  For
+a @tech{multi-collection package}, you must create an
+@filepath{info.rkt} file and define @racketidfont{collection} as
+@racket['multi]:
 
-@commandline{echo '(define single-collection "@nonterm{collect}")' >> info.rkt}
+@commandline{echo "(define collection 'multi)" >> info.rkt}
 
 Note that in the case of a @tech{multi-collection package}, the
-@filepath{info.rkt} is for the package, not for a collection;
+@filepath{info.rkt} file is for the package, not for a collection;
 definitions such as @racket[scribblings] or @racket[raco-commands]
 work only in a collection's @filepath{info.rkt}. For a
 @tech{single-collection package}, the @filepath{info.rkt} file serves
@@ -706,6 +727,22 @@ For example, a basic @filepath{info.rkt} file might be
 The following @filepath{info.rkt} fields are used by the package manager:
 
 @itemlist[
+
+ @item{@racketidfont{collection} --- either @racket['multi] to
+       implement a @tech{multi-collection package} or a string or
+       @racket['same-as-pkg] to implement a @tech{single-collection
+       package}. If @racketidfont{collection} is defined as a string,
+       then the string is used as the name of the collection
+       implemented by the package. If @racketidfont{collection} is
+       defined as @racket['same-as-pkg], then the package name is used
+       as the package's collection name.
+
+       Beware that omitting @racketidfont{collection} or defining it
+       as @racket['same-as-pkg] means that a package's content
+       effectively changes with the package's name. A package's
+       content should normally be independent of the package's name,
+       and so defining @racketidfont{collection} to a string is
+       preferable for a @tech{single-collection package}.}
 
  @item{@racketidfont{version} --- a @tech{version} string. The default
        @tech{version} of a package is @racket["0.0"].}

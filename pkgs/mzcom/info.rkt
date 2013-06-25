@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define single-collection "mzcom")
+(define collection "mzcom")
 
 (define post-install-collection "installer.rkt")
 

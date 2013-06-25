@@ -1,5 +1,7 @@
 #lang setup/infotab
 
+(define collection 'multi)
+
 (define deps '("racket-index"))
 (define build-deps '("web-server"
                      "gui"

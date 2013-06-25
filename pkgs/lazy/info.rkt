@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define single-collection "lazy")
+(define collection "lazy")
 
 (define scribblings '(("lazy.scrbl" () (experimental 50))))
 

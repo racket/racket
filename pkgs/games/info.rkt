@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define single-collection "games")
+(define collection "games")
 
 (define scribblings '(("scribblings/games.scrbl" (multi-page) (gui-library))))
 

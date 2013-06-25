@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define single-collection "sgl")
+(define collection "sgl")
 
 (define compile-omit-paths '("examples"))
 

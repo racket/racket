@@ -1,5 +1,7 @@
 #lang setup/infotab
 
+(define collection 'multi)
+
 (define deps '("gui-lib"
                "racket-index"
                "racket-doc"

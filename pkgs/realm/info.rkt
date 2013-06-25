@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define single-collection "realm")
+(define collection "realm")
 
 (define name "Realm of Racket Source Code")
 

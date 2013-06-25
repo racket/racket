@@ -1,5 +1,7 @@
 #lang setup/infotab
 
+(define collection 'multi)
+
 (define build-deps '("srfi-lib"
                      "racket-doc"
                      "r5rs-doc"

@@ -655,7 +655,11 @@
         ;; just given pkgs:
         in-pkgs))
   (define setup-collects
-    (get-setup-collects (filter-map pkg-directory* pkgs)
+    (get-setup-collects (filter-map (lambda (p)
+                                      (define dir (pkg-directory* p))
+                                      (and dir
+                                           (cons p dir)))
+                                    pkgs)
                         metadata-ns))
   (unless force?
     (define pkgs-set (list->set pkgs))
@@ -1239,7 +1243,8 @@
               final-pkg-dir]
              [else
               pkg-dir]))
-         (define single-collect (pkg-single-collection final-pkg-dir 
+         (define single-collect (pkg-single-collection final-pkg-dir
+                                                       #:name pkg-name
                                                        #:namespace metadata-ns))
          (log-pkg-debug "creating ~alink to ~e" 
                         (if single-collect "single-collection " "") 
@@ -1261,7 +1266,10 @@
       (stage-package/info (pkg-desc-source v) (pkg-desc-type v) (pkg-desc-name v) 
                           check-sums? download-printf
                           metadata-ns)))
-  (define setup-collects (get-setup-collects (map install-info-directory
+  (define setup-collects (get-setup-collects (map (lambda (i)
+                                                    (cons
+                                                     (install-info-name i)
+                                                     (install-info-directory i)))
                                                   (append old-infos infos))
                                              metadata-ns))
   (define do-its
@@ -1272,17 +1280,42 @@
   (for-each (λ (t) (t)) do-its)
   setup-collects)
 
-(define (pkg-single-collection dir #:namespace [metadata-ns (make-metadata-namespace)])
+(define (pkg-single-collection dir 
+                               #:name [pkg-name (let-values ([(base name dir?) (split-path dir)])
+                                                  (path-element->string name))]
+                               #:namespace [metadata-ns (make-metadata-namespace)])
   (define i (get-pkg-info dir metadata-ns))
-  (and i (let ([s (i 'single-collection (lambda () #f))])
-           (and (string? s) 
-                s))))
+  (and i
+       (or
+        (let ([s (i 'collection
+                    ;; default will change from 'multi to 'use-pkg-name:
+                    (lambda () 'multix))])
+          (unless (or (string? s)
+                      (eq? s 'multi)
+                      (eq? s 'use-pkg-name))
+            (log-error (format (~a "bad `collection' definition in \"info.rkt\n"
+                                   "  path: ~a\n"
+                                   "  found: ~e\n"
+                                   "  expected: (or/c string? 'multi 'use-pkg-name)")
+                               (build-path dir "info.rkt")
+                               s)))
+          (or (and (string? s) 
+                   s)
+              (and (eq? s 'use-pkg-name)
+                   pkg-name)))
+        ;; temporary backward compatubilty, to be removed when the
+        ;; default changes to 'multi
+        (let ([s (i 'single-collection (lambda () #f))])
+          (and (string? s) 
+               s)))))
 
-(define (get-setup-collects pkg-directories metadata-ns)
+(define (get-setup-collects pkg-names+directories metadata-ns)
   (maybe-append
-   (for/list ([pkg-dir (in-list pkg-directories)])
+   (for/list ([pkg-name+dir (in-list pkg-names+directories)])
+     (define pkg-name (car pkg-name+dir))
+     (define pkg-dir (cdr pkg-name+dir))
      (define single-collect
-       (pkg-single-collection pkg-dir #:namespace metadata-ns))
+       (pkg-single-collection pkg-dir #:name pkg-name #:namespace metadata-ns))
      (or (and single-collect (list single-collect))
          (get-metadata metadata-ns pkg-dir
                        'setup-collects (lambda () (package-collections
@@ -1566,7 +1599,7 @@
               (apply zip pkg/complete (directory-list))))]
          ['plt
           (define dest pkg/complete)
-          (when (pkg-single-collection dir)
+          (when (pkg-single-collection pkg-name dir)
             (pkg-error (~a "single-collection package not supported in .plt format\n"
                            "  directory: ~a")
                        dir))
@@ -1948,7 +1981,7 @@
 (define (directory->module-paths dir pkg-name metadata-ns)
   (define dummy (build-path dir "dummy.rkt"))
   (define compiled (string->path-element "compiled"))
-  (define single-collect (pkg-single-collection dir #:namespace metadata-ns))
+  (define single-collect (pkg-single-collection dir pkg-name #:namespace metadata-ns))
   (define (try-path s f)
     (define mp
       `(lib ,(apply ~a
@@ -2200,5 +2233,6 @@
                 any/c))]
   [pkg-single-collection
    (->* (path-string?)
-        (#:namespace namespace?)
+        (#:name string?
+                #:namespace namespace?)
         (or/c #f string?))]))
