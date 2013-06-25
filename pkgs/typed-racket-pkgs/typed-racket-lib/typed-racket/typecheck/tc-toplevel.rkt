@@ -422,8 +422,19 @@
      (begin0 (values #f result)
              (report-all-errors))]
     [_
+     ;; Handle type aliases
      (when ((internal-syntax-pred define-type-alias-internal) form)
        ((compose register-type-alias parse-type-alias) form))
+     ;; Handle struct definitions
+     (when ((internal-syntax-pred define-typed-struct-internal) form)
+       (define name (name-of-struct form))
+       (define tvars (type-vars-of-struct form))
+       (register-type-name name)
+       (add-constant-variance! name tvars)
+       (define parsed (parse-define-struct-internal form))
+       (register-parsed-struct-sty! parsed)
+       (refine-struct-variance! (list parsed))
+       (register-parsed-struct-bindings! parsed))
      (tc-toplevel/pass1 form)
      (begin0 (values #f (tc-toplevel/pass2 form))
              (report-all-errors))]))
