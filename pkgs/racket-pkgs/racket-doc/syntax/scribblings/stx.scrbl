@@ -1,5 +1,7 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label syntax/stx))
+@(require "common.rkt"
+          (for-label racket/include
+                     syntax/stx))
 
 @(require scribble/eval)
 @(define stx-eval (make-base-eval))

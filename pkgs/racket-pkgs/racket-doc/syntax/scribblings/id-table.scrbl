@@ -15,7 +15,7 @@ are available in both mutable and immutable variants.
 
 A free-identifier table is a dictionary whose keys are compared using
 @racket[free-identifier=?]. Free-identifier tables implement the
-dictionary interface of @racket[racket/dict], so all of the
+dictionary interface of @racketmodname[racket/dict], so all of the
 appropriate generic functions (@racket[dict-ref], @racket[dict-map],
 etc) can be used on free-identifier tables.
 
@@ -170,7 +170,7 @@ the contract accepts only mutable identifier tables.
 
 A bound-identifier table is a dictionary whose keys are compared using
 @racket[bound-identifier=?]. Bound-identifier tables implement the
-dictionary interface of @racket[racket/dict], so all of the
+dictionary interface of @racketmodname[racket/dict], so all of the
 appropriate generic functions (@racket[dict-ref], @racket[dict-map],
 etc) can be used on bound-identifier tables.
 

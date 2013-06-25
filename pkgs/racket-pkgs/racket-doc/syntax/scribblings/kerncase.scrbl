@@ -17,7 +17,7 @@
 
 A syntactic form like @racket[syntax-case*], except that the literals
 are built-in as the names of the primitive Racket forms as
-exported by @racketmodname[scheme/base], including 
+exported by @racketmodname[racket/base], including
 @racket[letrec-syntaxes+values]; see @secref[#:doc refman
 "fully-expanded"].
 

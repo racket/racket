@@ -50,7 +50,7 @@ reflects a date in UTC.}
                  [time-zone-offset exact-integer?])
                 #:inspector #f]{
 
-Represents a date. The @racket[second] field reaches @racket[60] only
+Represents a date. The @racket[_second] field reaches @racket[60] only
 for leap seconds. The @racket[week-day] field is @racket[0] for
 Sunday, @racket[1] for Monday, etc. The @racket[year-day] field is
 @racket[0] for January 1, @racket[1] for January 2, @|etc|; the
