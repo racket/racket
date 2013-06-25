@@ -576,7 +576,23 @@ This file defines two sorts of primitives. All of them are provided into any mod
                         [dtsi (quasisyntax/loc stx
                                 (dtsi* (vars.vars ...) nm (fs ...)
                                        #,@mutable?))])
-            #'(begin d-s dtsi)))]))
+            (if (eq? (syntax-local-context) 'top-level)
+                ;; Use `eval` at top-level to avoid an unbound id error
+                ;; from dtsi trying to look at the d-s bindings.
+                #'(begin (eval (quote-syntax d-s))
+                         ;; It is important here that the object under the
+                         ;; eval is a quasiquoted literal in order
+                         ;; for #%top-interaction to get the lexical
+                         ;; information for TR's actual #%top-interaction.
+                         ;; This effectively lets us invoke the type-checker
+                         ;; dynamically.
+                         ;;
+                         ;; The quote-syntax is also important because we want
+                         ;; the `dtsi` to have the lexical information from
+                         ;; this module. This ensures that the `dtsi` macro
+                         ;; is actually bound to its definition above.
+                         (eval `(#%top-interaction . ,(quote-syntax dtsi))))
+                #'(begin d-s dtsi))))]))
    (lambda (stx)
      (syntax-parse stx
        [(_ vars:maybe-type-vars nm:struct-name/new (fs:fld-spec ...)
@@ -593,7 +609,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                        nm.old-spec (fs ...)
                                        #:maker #,cname
                                        #,@mutable?))])
-            #'(begin d-s dtsi)))]))))
+            ;; see comment above
+            (if (eq? (syntax-local-context) 'top-level)
+                #'(begin (eval (quote-syntax d-s))
+                         (eval `(#%top-interaction . ,(quote-syntax dtsi))))
+                #'(begin d-s dtsi))))]))))
 
 
 ;Copied from racket/private/define-struct
