@@ -592,6 +592,53 @@
   (test 'ok 'ok (foo)))
 
 ;; ----------------------------------------
+
+(test '(+ 1 2)
+      'local-transformer-expand/expr
+      (let-syntax ([m (lambda (stx)
+                        (define e (local-transformer-expand #'(+ 1 2) 'expression (list #'#%app)))
+                        #`(quote #,e))])
+        (m)))
+
+(test '(define-values (x) '3)
+      'local-transformer-expand/top-level
+      (let-syntax ([m (lambda (stx)
+                        (define e (local-transformer-expand #'(define x 3) 'top-level null))
+                        #`(quote #,e))])
+        (m)))
+
+(module check-transformer-lift racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base)))
+  (provide e d)
+  (begin-for-syntax
+   (define-syntax (n stx)
+     (syntax-local-lift-expression #'5)
+     #'ok))
+  (define e
+    (let-syntax ([m (lambda (stx)
+                      (define e (local-transformer-expand #'(n) 'expression (list #'#%app)))
+                      #`(quote #,e))])
+      (m)))
+  (define d
+    (let-syntax ([m (lambda (stx)
+                      (define e (local-transformer-expand/capture-lifts #'(n) 'top-level (list #'#%app)))
+                      #`(quote #,e))])
+      (m))))
+
+(require syntax/datum)
+(test #t
+      'local-transformer-expand/lift
+      (datum-case (dynamic-require ''check-transformer-lift 'e) (let-values ok)
+        [(let-values (((lifted) 5)) ok) #t]
+        [x (datum x)]))
+(test #t
+      'local-transformer-expand/lift
+      (datum-case (dynamic-require ''check-transformer-lift 'd) (begin define-values ok)
+        [(begin (define-values (lifted) 5) ok) #t]
+        [x (datum x)]))
+
+;; ----------------------------------------
 ;; Check `#%variable-reference' expansion to make sure
 ;;  a lexically bound identifier is made consistent with
 ;;  its binding

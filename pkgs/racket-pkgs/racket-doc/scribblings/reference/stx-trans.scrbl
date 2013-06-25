@@ -313,13 +313,14 @@ avoids quadratic expansion times when local expansions are nested.
 
 
 @defproc[(local-transformer-expand [stx syntax?]
-                       [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
+                       [context-v (or/c 'expression 'top-level list?)]
                        [stop-ids (or/c (listof identifier?) #f)]
                        [intdef-ctx (or/c internal-definition-context? #f) #f])
          syntax?]{
 
 Like @racket[local-expand], but @racket[stx] is expanded as a
-transformer expression instead of a run-time expression, and any
+transformer expression instead of a run-time expression.
+For @racket['expression] expansion, any
 lifted expressions---from calls to
 @racket[syntax-local-lift-expression] during the expansion of
 @racket[stx]---are captured into a @racket[let-values] form in the
@@ -345,7 +346,7 @@ expressions are not expanded, but instead left as provided in the
 
 
 @defproc[(local-transformer-expand/capture-lifts [stx syntax?]
-                       [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
+                       [context-v (or/c 'expression 'top-level list?)]
                        [stop-ids (or/c (listof identifier?) #f)]
                        [intdef-ctx (or/c internal-definition-context? #f) #f]
                        [lift-ctx any/c (gensym 'lifts)])

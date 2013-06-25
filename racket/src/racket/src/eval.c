@@ -4799,19 +4799,22 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
 
   if (for_expr)
     kind = 0; /* expression */
-  else if (SAME_OBJ(argv[1], module_symbol))
+  else if (!for_stx && SAME_OBJ(argv[1], module_symbol))
     kind = SCHEME_MODULE_BEGIN_FRAME; /* name is backwards compared to symbol! */
-  else if (SAME_OBJ(argv[1], module_begin_symbol))
+  else if (!for_stx && SAME_OBJ(argv[1], module_begin_symbol))
     kind = SCHEME_MODULE_FRAME; /* name is backwards compared to symbol! */
-  else if (SAME_OBJ(argv[1], top_level_symbol))
+  else if (SAME_OBJ(argv[1], top_level_symbol)) {
     kind = SCHEME_TOPLEVEL_FRAME;
-  else if (SAME_OBJ(argv[1], expression_symbol))
+    if (catch_lifts < 0) catch_lifts = 0;
+  } else if (SAME_OBJ(argv[1], expression_symbol))
     kind = 0;
   else if (scheme_proper_list_length(argv[1]) > 0)
     kind = SCHEME_INTDEF_FRAME;
   else  {
     scheme_wrong_contract(name,
-                          "(or/c 'expression 'module 'module-begin 'top-level (and/c pair? list?))",
+                          (for_stx
+                           ? "(or/c 'expression 'top-level (and/c pair? list?))"
+                           : "(or/c 'expression 'module 'module-begin 'top-level (and/c pair? list?))"),
                           1, argc, argv);
     return NULL;
   }
