@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require racket/unit
          racket/class
          "browser-sig.rkt"
@@ -7,7 +7,7 @@
          "private/bullet.rkt"
          net/url
          net/url-sig
-         racket/gui
+         racket/gui/base
          mred/mred-unit
          mred/mred-sig
          browser/external)
@@ -32,7 +32,7 @@
     post-url))
 
 (define url-delta (make-object style-delta% 'change-underline #t))
-(send url-delta set-delta-foreground "blue")
+(void (send url-delta set-delta-foreground "blue"))
 
 (define html-text-mixin
   (mixin ((class->interface text%)) (html-text<%>)
