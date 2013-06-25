@@ -1910,7 +1910,6 @@ MZ_EXTERN void scheme_set_collects_path(Scheme_Object *p);
 MZ_EXTERN void scheme_set_config_path(Scheme_Object *p);
 MZ_EXTERN void scheme_set_original_dir(Scheme_Object *d);
 MZ_EXTERN void scheme_set_addon_dir(Scheme_Object *p);
-MZ_EXTERN void scheme_set_links_file(Scheme_Object *p);
 MZ_EXTERN void scheme_set_command_line_arguments(Scheme_Object *vec);
 MZ_EXTERN void scheme_set_compiled_file_paths(Scheme_Object *list);
 MZ_EXTERN void scheme_set_compiled_file_roots(Scheme_Object *list);

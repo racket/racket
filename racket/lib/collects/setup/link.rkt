@@ -10,6 +10,7 @@
                #:file [in-file #f]
                #:name [name #f]
                #:version-regexp [version-regexp #f]
+               #:shared? [shared? #f]
                #:root? [root? #f]
                #:remove? [remove? #f]
                #:show? [show? #f]
@@ -26,8 +27,10 @@
     (check-name name))
 
   (define file (or in-file
-                   (if user?
-                       (find-system-path 'links-file)
+                   (if (or user? shared?)
+                       (if shared?
+                           (build-path (find-system-path 'addon-dir) "links.rktd")
+                           (build-path (find-system-path 'addon-dir) (version) "links.rktd"))
                        (let ([d (find-config-dir)])
                          (if d
                              (build-path d "links.rktd")

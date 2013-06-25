@@ -917,6 +917,11 @@ v
   which means that this result is not sensitive to the value of the 
   @racket[use-user-specific-search-paths] parameter.}
 
+@defproc[(find-config-dir) path?]{
+  Returns a path to the installation's @filepath{etc} directory, which
+  contains configuration and package information---including
+  configuration of some of the other directories (see @secref["config-file"]).}
+
 @defproc[(find-doc-dir) (or/c path? #f)]{
   Returns a path to the installation's @filepath{doc} directory.
   The result is @racket[#f] if no such directory is available.}

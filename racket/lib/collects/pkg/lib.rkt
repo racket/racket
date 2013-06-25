@@ -130,12 +130,6 @@
 (define (pkg-lock-file)
   (make-lock-file-name (pkg-db-file)))
 
-(define (link-version-regexp)
-  (case (current-pkg-scope)
-   [(installation shared) #f]
-   [(user) (regexp (regexp-quote (version)))]
-   [else (error "unknown package scope")]))
-
 (define (make-metadata-namespace)
   (make-base-empty-namespace))
 
@@ -593,13 +587,13 @@
      (links pkg-dir
             #:remove? #t
             #:user? (not (eq? (current-pkg-scope) 'installation))
-            #:version-regexp (link-version-regexp)
+            #:shared? (eq? (current-pkg-scope) 'shared)
             #:root? (not (sc-pkg-info? pi)))]
     [_
      (links pkg-dir
             #:remove? #t
             #:user? (not (eq? (current-pkg-scope) 'installation))
-            #:version-regexp (link-version-regexp)
+            #:shared? (eq? (current-pkg-scope) 'shared)
             #:root? (not (sc-pkg-info? pi)))
      (delete-directory/files pkg-dir)]))
 
@@ -1254,7 +1248,7 @@
          (links final-pkg-dir
                 #:name single-collect
                 #:user? (not (eq? 'installation (current-pkg-scope)))
-                #:version-regexp (link-version-regexp)
+                #:shared? (eq? 'shared (current-pkg-scope))
                 #:root? (not single-collect))
          (define this-pkg-info
            (if single-collect

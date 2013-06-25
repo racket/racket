@@ -753,7 +753,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
   Scheme_Object *collects_path = NULL, *collects_extra = NULL, *addon_dir = NULL;
   Scheme_Object *config_path = NULL;
   char *compiled_paths = NULL;
-  Scheme_Object *links_file = NULL;
 #ifndef NO_FILE_SYSTEM_UTILS
   Scheme_Object *collects_paths_l, *collects_paths_r;
 #endif
@@ -1033,8 +1032,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-A";
     else if (!strcmp("--config", argv[0]))
       argv[0] = "-G";
-    else if (!strcmp("--links", argv[0]))
-      argv[0] = "-C";
 # ifdef CMDLINE_STDIO_FLAG
     else if (!strcmp("--stdio", argv[0]))
       argv[0] = "-z";
@@ -1117,17 +1114,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  argv++;
 	  --argc;
 	  addon_dir = check_make_path(prog, real_switch, argv[0]);
-          was_config_flag = 1;
-	  break;
-	case 'C':
-	  if (argc < 2) {
-	    PRINTF("%s: missing path after %s switch\n", 
-		   prog, real_switch);
-	    goto show_need_help;
-	  }
-	  argv++;
-	  --argc;
-	  links_file = check_make_path(prog, real_switch, argv[0]);
           was_config_flag = 1;
 	  break;
 	case 'U':
@@ -1452,6 +1438,16 @@ static int run_from_cmd_line(int argc, char *_argv[],
   }
   scheme_set_collects_path(collects_path);
 
+# ifdef GETENV_FUNCTION
+  if (!config_path) {
+    char *s;
+    s = getenv("PLTCONFIGDIR");
+    if (s) {
+      s = scheme_expand_filename(s, -1, NULL, NULL, 0);
+      if (s) config_path = scheme_make_path(s);
+    }
+  }
+# endif
   if (!config_path)
     config_path = scheme_make_path(scheme_configdir XFORM_OK_PLUS _configdir_offset);   
   else
@@ -1519,24 +1515,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
   if (addon_dir) {
     addon_dir = scheme_path_to_complete_path(addon_dir, NULL);
     scheme_set_addon_dir(addon_dir);
-  }
-#endif /* NO_FILE_SYSTEM_UTILS */
-
-#ifndef NO_FILE_SYSTEM_UTILS
-  /* Setup path for "links" file: */
-# ifdef GETENV_FUNCTION
-  if (!links_file) {
-    char *s;
-    s = getenv("PLTLINKSFILE");
-    if (s) {
-      s = scheme_expand_filename(s, -1, NULL, NULL, 0);
-      if (s) links_file = scheme_make_path(s);
-    }
-  }
-# endif
-  if (links_file) {
-    links_file = scheme_path_to_complete_path(links_file, NULL);
-    scheme_set_links_file(links_file);
   }
 #endif /* NO_FILE_SYSTEM_UTILS */
 
@@ -1633,7 +1611,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -G <dir>, --config <dir> : Main configuration directory at <dir>\n"
 	 "  -A <dir>, --addon <dir> : Addon directory at <dir>\n"
          "  -R <paths>, --compiled <paths> : Set compiled-file search roots to <paths>\n"
-	 "  -C <file>, --links <file> : User-specific collection links at <file>\n"
 	 "  -U, --no-user-path : Ignore user-specific collects, etc.\n"
 	 "  -N <file>, --name <file> : Sets `(find-system-path 'run-file)' to <file>\n"
 # ifdef CMDLINE_STDIO_FLAG

@@ -340,8 +340,8 @@
     (collection-cc! (list collection)
                     #:info-root cp
                     #:path (build-path cp collection)
-                    #:main? (equal? cp (find-collects-dir))))
-  (let ([main-collects (find-collects-dir)])
+                    #:main? (equal? cp main-collects-dir)))
+  (let ()
     (define info-root (find-lib-dir))
     (define info-path (build-path info-root "info-cache.rktd"))
     (define (cc! col #:path path)
@@ -372,15 +372,16 @@
                       #:info-path info-path
                       #:info-path-mode 'abs-in-relative
                       #:omit-root 'dir))
-    (for ([c+p (in-list (links #:with-path? #t))])
-      (cc! (list (string->path (car c+p)))
-           #:path (cdr c+p)))
-    (for ([cp (in-list (links #:root? #t))]
-          #:when (directory-exists? cp)
-          [collection (directory-list cp)]
-          #:unless (skip-collection-directory? collection)
-          #:when (directory-exists? (build-path cp collection)))
-      (cc! (list collection) #:path (build-path cp collection))))
+    (for ([shared? (in-list '(#t #f))])
+      (for ([c+p (in-list (links #:shared? shared? #:with-path? #t))])
+        (cc! (list (string->path (car c+p)))
+             #:path (cdr c+p)))
+      (for ([cp (in-list (links #:shared? shared? #:root? #t))]
+            #:when (directory-exists? cp)
+            [collection (directory-list cp)]
+            #:unless (skip-collection-directory? collection)
+            #:when (directory-exists? (build-path cp collection)))
+        (cc! (list collection) #:path (build-path cp collection)))))
 
   ;; `all-collections' lists all top-level collections (not from Planet):
   (define all-collections
@@ -841,7 +842,7 @@
            (compile-directory-zos dir info
                                   #:omit-root (cc-omit-root cc)
                                   #:managed-compile-zo caching-managed-compile-zo
-                                  #:skip-path (and (avoid-main-installation) (find-collects-dir))
+                                  #:skip-path (and (avoid-main-installation) main-collects-dir)
                                   #:skip-doc-sources? (not make-docs?))))))
     (if (eq? 0 gcs)
         0
@@ -1025,7 +1026,7 @@
       (for ([c (in-list (current-library-collection-paths))])
         (when (and (directory-exists? c)
                    (not (and (avoid-main-installation)
-                             (equal? c (find-collects-dir)))))
+                             (equal? c main-collects-dir))))
           (define info-path (build-path c "info-domain" "compiled" "cache.rktd"))
           (when (file-exists? info-path)
             (get-info-ht c info-path 'relative))))

@@ -1,19 +1,23 @@
 #lang scribble/doc
 @(require scribble/manual
           (for-label racket/base
-                     racket/contract))
+                     racket/contract
+                     setup/dirs))
 
 @title[#:tag "config-file"]{Installation Configuration and Search Paths}
 
-A configuration directory path is built into the Racket executable as
-selected at install time. Use @racket[find-system-path 'config-dir] to
-locate the configuration directory.
+A configuration-directory path is built into the Racket executable as
+selected at install time, or its location can be changed via the
+@envvar{PLTCONFIGDIR} directory or @DFlag{config}/@Flag{G}
+command-line flag. Use @racket[find-config-dir] to locate the
+configuration directory.
 
-Other directories and attributes of an installation can be configured
-through files in the configuration directory. Instead of trying to
-read configuraion files directly, however, use the
-@racketmodname[setup/dirs] library, which combines information from
-the configuration files and other sources.
+
+
+Modify the @filepath{config.rktd} file as described below to configure
+other directories, but use the @racketmodname[setup/dirs] library (which
+combines information from the configuration files and other sources)
+to locate configured directories.
 
 A @filepath{config.rktd} file in the configuration directory should
 contain a @racket[read]able hash table with any of the following

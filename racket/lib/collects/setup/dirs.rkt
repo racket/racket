@@ -9,16 +9,7 @@
 ;; "config"
 
 (define config-dir
-  (delay (let ([c (find-system-path 'config-dir)])
-           (if (absolute-path? c)
-               c
-               (or (parameterize ([current-directory (find-system-path 'orig-dir)])
-                     (find-executable-path (find-system-path 'exec-file) c))
-                   ;; This is a bad configuration, but avoid producing #f:
-                   (begin
-                     (log-error "missing configuration directory: ~a" c)
-                     (path->complete-path (find-system-path 'config-dir)
-                                          (find-system-path 'orig-dir))))))))
+  (delay (complete-path (find-system-path 'config-dir))))
     
 (define (find-config-dir)
   (force config-dir))

@@ -85,23 +85,27 @@ by @racket[kind], which must be one of the following:
 
   ]}
 
- @item{@indexed-racket['links-file] --- the user-specific
- @tech{collection links file} for specifying the location of library
- @tech{collections}. This file is specified by the
- @indexed-envvar{PLTLINKSFILE} environment variable, and it can be
- overridden by the @DFlag{links} or @Flag{C} command-line flag.  If no
+ @item{@indexed-racket['config-dir] --- a directory for
+ the installation's configuration, packages, and extensions.
+ This directory is specified by the
+ @indexed-envvar{PLTCONFIGDIR} environment variable, and it can be
+ overridden by the @DFlag{config} or @Flag{G} command-line flag.  If no
  environment variable or flag is specified, or if the value is not a
- legal path name, then this file defaults to @filepath{links.rktd} in
- the directory reported by @racket[(find-system-path 'addon-dir)].}
+ legal path name, then this directory defaults to an
+ @filepath{etc} directory relative to the current executable.
+ If the result of @racket[(find-system-path 'config-dir)] is a
+ relative path, it is relative to the current executable.
+ The directory might not exist.}
 
- @item{@indexed-racket['addon-dir] --- a directory for installing
- user-specific Racket extensions. This directory is specified by the
+ @item{@indexed-racket['addon-dir] --- a directory for
+ user-specific Racket configuration, packages, and extension.
+ This directory is specified by the
  @indexed-envvar{PLTADDONDIR} environment variable, and it can be
  overridden by the @DFlag{addon} or @Flag{A} command-line flag.  If no
  environment variable or flag is specified, or if the value is not a
  legal path name, then this directory defaults to
  @filepath{Library/Racket} in the user's home directory on Mac
- OS X and @racket['pref-dir] otherwise.  This directory might not
+ OS X and @racket['pref-dir] otherwise.  The directory might not
  exist.}
 
  @item{@indexed-racket['doc-dir] --- the standard directory for

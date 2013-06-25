@@ -1,3 +1,16 @@
+Version 5.3.900.2
+Changed link-file handling to separate "user" and "shared" modes;
+ removed 'links-file mode for find-system-path, PLTLINKSFILE
+ environment variable, and -C command-line argument
+raco link: -u/--user mode installs a version-specific link,
+ added -s/--shared for user-specific, all-version links
+Added PLTCONFIGDIR
+
+Version 5.3.900.1
+Reorganized collections into packages
+Added 'config-dir mode for find-system-path
+setup/dirs: added find-config-dir
+
 Version 5.3.4.11
 Added current-directory-for-user, srcloc->string
 Fixed is-a? so that it always signals an error when its second

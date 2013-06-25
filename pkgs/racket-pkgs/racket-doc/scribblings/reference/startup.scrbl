@@ -285,11 +285,6 @@ flags:
         @nonterm{dir} : Sets the directory that is returned by
         @racket[(find-system-path 'addon-dir)].}
 
-  @item{@FlagFirst{C} @nonterm{file} or @DFlagFirst{links}
-        @nonterm{file} : Sets the user-specific @tech{collection links file} path
-        that is returned by @racket[(find-system-path 'links-file)];
-        see also @secref["links-file"].}
-
   @item{@FlagFirst{U} or @DFlagFirst{no-user-path} : Omits
         user-specific paths in the search for collections, C
         libraries, etc. by initializing the

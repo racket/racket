@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "mz.rkt")
+@(require "mz.rkt"
+          (for-label setup/dirs))
 
 @title[#:tag "collects"]{Libraries and Collections}
 
@@ -63,11 +64,11 @@ resolver}, as specified by the @racket[current-module-name-resolver]
 parameter.
 
 For the default @tech{module name resolver}, the search path for
-collections is determined by the content of @racket[(find-system-path
-'links-file)] (if it exists) and the
+collections is determined by the content of the @tech{collection links files}
+and the
 @racket[current-library-collection-paths] parameter. The collection
 links and then list of paths in
-@racket[current-library-collection-paths] is searched from first to
+@racket[current-library-collection-paths] are searched from first to
 last to locate the first that contains @racket[_rel-string]. In other
 words, the filesystem tree for each element in the link table and
 search path is spliced together with the filesystem trees of other
@@ -196,20 +197,23 @@ The @deftech{collection links files} are used by
 default @tech{module name resolver} to locate collections before
 trying the @racket[(current-library-collection-paths)] search
 path, but only if the @racket[use-collection-link-paths] parameter is set to
-@racket[#t]. Furthermore, a user-specific @tech{collection links file} takes
-precedence over an installation-wide @tech{collection links file}, but
-the user-specific @tech{collection links file} is used only the
+@racket[#t]. Furthermore, a user- and version-specific @tech{collection links file} takes
+precedence over a user-specific and all-version @tech{collection links file},
+which in turn takes precedence over an installation-wide @tech{collection links file}.
+The user-specific @tech{collection links files} are used only if the
 @racket[use-user-specific-search-paths] parameter is set to
 @racket[#t].
 
-The path of the user-specific @tech{collection links file} is by
-@racket[(find-system-path 'links-file)], while an installation-wide
-@tech{collection links file} is @filepath{links.rktd} in the
-@filepath{config} collection within the installation's main collection
-directory. Each @tech{collection links file} is cached by Racket, but
-the file is re-read if its timestamp changes.
+The path of the user- and version-specific @tech{collection links file} is
+@racket[(build-path (find-system-path 'addon-dir) (version) "links.rktd")].
+The path of the user-specific and all-version @tech{collection links file} is
+@racket[(build-path (find-system-path 'addon-dir) "links.rktd")].
+The path of the installation-wide @tech{collection links file} is
+@racket[(build-path (find-config-dir) "links.rktd")].
+Each @tech{collection links file} is cached by Racket, but
+the file is re-read if its content changes.
 
-Each @tech{collection links file} is @racket[read] with default reader
+A @tech{collection links file} is @racket[read] with default reader
 parameter settings to obtain a list. Every element of the list must be
 a link specification with one of the forms @racket[(list _string
 _path)], @racket[(list _string _path _regexp)], @racket[(list 'root

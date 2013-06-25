@@ -825,8 +825,6 @@
                    (or (not can-run?)
                        ;; Need to rebuild if output file is older than input:
                        (my-time . >= . src-time)
-                       ;; Need to rebuild if database is out of sync:
-                       (provides-time . >= . info-out-time)
                        ;; But we can use in/out information if they're already built;
                        ;; this is mostly useful if we interrupt setup-plt after
                        ;; it runs some documents without rendering them:
@@ -887,7 +885,8 @@
                        ;; maybe info is up-to-date but not rendered doc:
                        (not (my-time . >= . src-time))))
               #f 
-              #f
+              ;; Need to write if database is out of sync:
+              (provides-time . < . info-out-time)
               vers
               #f
               #f))))

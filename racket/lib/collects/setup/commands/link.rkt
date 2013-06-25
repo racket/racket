@@ -12,6 +12,7 @@
 (define show-mode (make-parameter #f))
 (define install-only (make-parameter #f))
 (define user-only (make-parameter #f))
+(define user-shared (make-parameter #f))
 
 (define link-symbol (string->symbol (short-program+command-name)))
 
@@ -36,8 +37,11 @@
    [("-r" "--remove") "Remove links for the specified directories"
     (remove-mode #t)]
    #:once-any
-   [("-u" "--user") "Adjust/list user-specific links"
+   [("-u" "--user") "Adjust/list user-specific, version-specific links"
     (user-only #t)]
+   [("-s" "--shared") "Adjust/list user-specific links"
+    (user-only #t)
+    (user-shared #t)]
    [("-i" "--installation") "Adjust/list installation-wide links"
     (install-only #t)]
    [("-f" "--file") file "Select an alternate link file"
@@ -54,21 +58,23 @@
   (raise-user-error link-symbol
                     "expected a single directory for `--name' mode"))
 
-(define show-both?
+(define show-all?
   (and (null? dirs)
        (show-mode)
        (not (user-only))
+       (not (user-shared))
        (not (install-only))
        (not (link-file))))
 
-(when show-both?
-  (printf "User links:\n"))
+(when show-all?
+  (printf "User-specific, version-specific links:\n"))
 
-(define (go user?)
+(define (go user? shared?)
   (apply links
          dirs
          #:root? (root-mode)
          #:user? user?
+         #:shared? shared?
          #:file (link-file)
          #:name (link-name)
          #:version-regexp (link-version)
@@ -79,15 +85,21 @@
          #:repair? (repair-mode)))
 
 (define l1
-  (go (not (install-only))))
+  (go (not (install-only))
+      (user-shared)))
 (define l2
   (if (and (not (or (user-only)
+                    (user-shared)
                     (install-only)))
            (remove-mode))
-      (go #f)
+      (append
+       (go #f #f)
+       (go #t #t))
       null))
 
-(when show-both?
+(when show-all?
+  (printf "User-specific, all-version links:\n")
+  (void (links #:user? #t #:shared? #t #:show? #t))
   (printf "Installation links:\n")
   (void (links #:user? #f #:show? #t)))
 
