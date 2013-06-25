@@ -679,6 +679,21 @@ static Scheme_Object *read_quote_syntax(Scheme_Object *obj)
 
 #define BOOL(x) (x ? scheme_true : scheme_false)
 
+static int not_relative_path(Scheme_Object *p)
+{
+  Scheme_Object *dir, *rel_p;
+  
+  dir = scheme_get_param(scheme_current_config(),
+                         MZCONFIG_WRITE_DIRECTORY);
+  if (SCHEME_TRUEP(dir)) {
+    rel_p = scheme_extract_relative_to(p, dir);
+    if (SAME_OBJ(rel_p, p))
+      return 1;
+  }
+  
+  return 0;
+}
+
 static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
 {
   Scheme_Closure_Data *data;
@@ -695,8 +710,12 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
 	 paths, symbols, and strings: */
       Scheme_Object *src;
       src = SCHEME_VEC_ELS(name)[1];
-      if (!SCHEME_PATHP(src)
-	  && !SCHEME_PATHP(src)
+      if ((!SCHEME_PATHP(src)
+           /* If MZCONFIG_WRITE_DIRECTORY, drop any non-relative path
+              (which might happen due to function inlining, for example)
+              to avoid embedding absolute paths in bytecode files: */
+           || not_relative_path(src))
+	  && !SCHEME_CHAR_STRINGP(src)
 	  && !SCHEME_SYMBOLP(src)) {
 	/* Just keep the name */
 	name = SCHEME_VEC_ELS(name)[0];
