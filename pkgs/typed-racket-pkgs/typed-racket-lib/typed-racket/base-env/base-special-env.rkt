@@ -1,6 +1,7 @@
 #lang racket/base
 
-;; this file cheats to define types for unexported variables that are expanded into by Racket macros
+;; this file cheats to define types for unexported variables
+;; that are expanded into by Racket macros
 (require
  "../utils/utils.rkt"
  racket/promise
@@ -12,7 +13,8 @@
  (env init-envs)
  (except-in (rep filter-rep object-rep type-rep) make-arr)
  (rename-in (types abbrev numeric-tower union) [make-arr* make-arr])
- (for-syntax racket/base syntax/parse (only-in racket/syntax syntax-local-eval)))
+ (for-syntax racket/base syntax/parse
+             (only-in racket/syntax syntax-local-eval)))
 
 (define (make-template-identifier what where)
   (let ([name (module-path-index-resolve (module-path-index-join where #f))])
@@ -146,7 +148,8 @@
    (-> (-Syntax Univ) (Un))]
   ;; from the expansion of `make-temp-file`
   [(make-template-identifier 'make-temporary-file/proc 'racket/file)
-   (->opt [-String (Un -Pathlike (-val 'directory) (-val #f)) (-opt -Pathlike)] -Path)]
+   (->opt [-String (Un -Pathlike (-val 'directory) (-val #f)) (-opt -Pathlike)]
+          -Path)]
   ;; from the (lifted) portion of the expansion of keyword lambdas
   [(make-template-identifier 'make-required 'racket/private/kw)
    (-> Univ Univ Univ Univ Univ)]

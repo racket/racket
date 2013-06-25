@@ -765,11 +765,11 @@
 
 ;Section 14.2.5
 ;racket/file
-[copy-directory/files (-> -Pathlike -Pathlike -Void)]
-[delete-directory/files (-> -Pathlike -Void)]
+[copy-directory/files (->key -Pathlike -Pathlike  #:keep-modify-seconds? Univ #f -Void)]
+[delete-directory/files (->key -Pathlike #:must-exist? Univ #f -Void)]
 
-[find-files (->opt (-> -Path Univ) [(-opt -Pathlike)] (-lst -Path))]
-[pathlist-closure (-> (-lst -Pathlike) (-lst -Path))]
+[find-files (->optkey (-> -Path Univ) [(-opt -Pathlike)] #:follow-links? Univ #f (-lst -Path))]
+[pathlist-closure (->key (-lst -Pathlike) #:follow-links? Univ #f (-lst -Path))]
 
 [fold-files
  (-poly
