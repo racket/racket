@@ -1,6 +1,6 @@
 
 (module embed-sig mzscheme
-  (require mzlib/unit)
+  (require racket/unit)
   (provide compiler:embed^)
 
   (define-signature compiler:embed^
