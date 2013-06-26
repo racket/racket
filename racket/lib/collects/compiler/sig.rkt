@@ -1,7 +1,7 @@
 
 #lang mzscheme
 
-(require mzlib/unit)
+(require racket/unit)
 
 (provide compiler:option^
          compiler^)

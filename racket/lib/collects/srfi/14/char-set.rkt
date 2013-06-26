@@ -4,7 +4,7 @@
 ;;  the code and tests are a lot better than they would be.
 
 (module char-set mzscheme
-  (require mzlib/integer-set
+  (require data/integer-set
            racket/contract)
 
   ;; Data defn ----------------------------------------
@@ -237,15 +237,15 @@
     (case-lambda
      [(cs char1) 
       (let ([v (char->integer char1)])
-        (make-char-set (difference (char-set-set cs)
-                                   (make-integer-set (list (cons v v))))))]
+        (make-char-set (subtract (char-set-set cs)
+                                 (make-integer-set (list (cons v v))))))]
      [(cs . more)
       (fold-set char-set-delete cs more)]))
 
    (define (char-set-complement cs)
      (make-char-set
-      (difference (complement (char-set-set cs) 0 #x10FFFF)
-                  (make-range #xD800 #xDFFF))))
+      (subtract (complement (char-set-set cs) 0 #x10FFFF)
+                (make-range #xD800 #xDFFF))))
 
   (define-syntax define-set-op
     (syntax-rules ()
@@ -264,10 +264,10 @@
   (define char-set-difference
     (case-lambda
      [(cs1 cs2)
-      (make-char-set (difference (char-set-set cs1) (char-set-set cs2)))]
+      (make-char-set (subtract (char-set-set cs1) (char-set-set cs2)))]
      [(cs1 . more)
       (fold-set char-set-difference cs1 more)]))
-  (define-set-op char-set-xor xor char-set:empty)
+  (define-set-op char-set-xor symmetric-difference char-set:empty)
 
   (define char-set-diff+intersection
     (case-lambda

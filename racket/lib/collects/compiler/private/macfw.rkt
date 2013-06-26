@@ -1,7 +1,8 @@
 (module macfw mzscheme
   (require "mach-o.rkt"
-           mzlib/string
-           mzlib/process)
+           racket/string
+           (only racket/base regexp-quote)
+           racket/system)
 
   (provide update-framework-path
            get-current-framework-path

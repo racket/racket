@@ -1,6 +1,6 @@
 
 (module thread mzscheme
-  (require "kw.rkt" "contract.rkt" racket/engine)
+  (require mzlib/kw mzlib/contract racket/engine)
 
   (provide run-server
            consumer-thread

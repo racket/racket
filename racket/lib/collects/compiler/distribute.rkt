@@ -2,7 +2,7 @@
   (require scheme/file
            scheme/path
            setup/dirs
-           mzlib/list
+           racket/list
            setup/variant
            dynext/filename-version
            "private/macfw.rkt"

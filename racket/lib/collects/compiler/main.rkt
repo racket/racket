@@ -25,7 +25,7 @@
          "compiler.rkt")
 
 ;; Read argv array for arguments and input file name
-(require mzlib/cmdline
+(require racket/cmdline
          dynext/file
          dynext/compile
          dynext/link

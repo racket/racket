@@ -2,7 +2,7 @@
   (require mzlib/contract
            syntax/stx)
   
-  (require mzlib/list)
+  (require racket/list)
 
   (define (syntax->string c)
     (let* ([s (open-output-string)]

@@ -6,7 +6,7 @@ Various common pieces of code that both the client and server need to access
 |#
   
   (require (only-in racket/path path-only)
-           mzlib/port
+           racket/port
            racket/file
            setup/getinfo
            (prefix-in srfi1: srfi/1)

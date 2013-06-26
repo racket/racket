@@ -4,7 +4,7 @@
   (require (only racket/base sort)
            compatibility/mlist
 	   "pconvert-prop.rkt"
-           "class.rkt")
+           racket/class)
   
   (provide show-sharing
            constructor-style-printing

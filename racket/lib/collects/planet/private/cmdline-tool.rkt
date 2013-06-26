@@ -11,7 +11,6 @@ PLANNED FEATURES:
            racket/file
            racket/match
            raco/command-name
-           (only-in mzlib/string read-from-string)
            
            "../config.rkt"
            "planet-shared.rkt"
@@ -22,6 +21,11 @@ PLANNED FEATURES:
   (define erase? (make-parameter #f))
   (define displayer (make-parameter (λ () (show-installed-packages))))
   (define quiet-unlink? (make-parameter #f))
+
+  (define (read-from-string str)
+    (read
+      (if (bytes? str) (open-input-bytes str) (open-input-string str))))
+
   
   (define (start raco?)
 

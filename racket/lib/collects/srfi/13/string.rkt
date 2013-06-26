@@ -88,10 +88,9 @@
 #lang mzscheme
 
 (require srfi/optional
+         (only racket/base lambda)
          srfi/8/receive
-         srfi/14/char-set
-         mzlib/etc ; for opt-lambda (instead of let-optionals*)
-         )
+         srfi/14/char-set)
 (provide
  ;; String procedures:
  string-map string-map!
@@ -397,7 +396,7 @@
 ;; chars over from the chunk buffers.
 
 (define string-unfold
-  (opt-lambda (p f g seed (base "") (make-final (lambda (x) "")))
+  (lambda (p f g seed (base "") (make-final (lambda (x) "")))
     (check-arg procedure? p 'string-unfold)
     (check-arg procedure? f 'string-unfold)
     (check-arg procedure? g 'string-unfold)
@@ -445,7 +444,7 @@
             ans))))))
 
 (define string-unfold-right
-  (opt-lambda (p f g seed (base "") (make-final (lambda (x) "")))
+  (lambda (p f g seed (base "") (make-final (lambda (x) "")))
     (check-arg string? base 'string-unfold-right)
     (check-arg procedure? make-final 'string-unfold-right)
     (let lp ((chunks '())             ; Previously filled chunks
@@ -897,7 +896,7 @@
 ;; Hash
 
 (define string-hash
-  (opt-lambda (s (bound 0) . rest)
+  (lambda (s (bound 0) . rest)
     (check-arg (lambda (x)
                  (and (integer? x)
                       (exact? x)
@@ -913,7 +912,7 @@
         (apply substring/shared s rest))))))
 
 (define string-hash-ci
-  (opt-lambda (s (bound 0) . rest)
+  (lambda (s (bound 0) . rest)
     (check-arg (lambda (x)
                  (and (integer? x)
                       (exact? x)
@@ -1031,21 +1030,21 @@
 
 
 (define string-trim
-  (opt-lambda (s (criterion char-set:whitespace) . rest)
+  (lambda (s (criterion char-set:whitespace) . rest)
     (let-string-start+end (start end) 'string-trim s rest
       (cond ((string-skip s criterion start end)
              => (lambda (i) (%substring/shared s i end)))
             (else "")))))
 
 (define string-trim-right
-  (opt-lambda (s (criterion char-set:whitespace) . rest)
+  (lambda (s (criterion char-set:whitespace) . rest)
     (let-string-start+end (start end) 'string-trim-right s rest
       (cond ((string-skip-right s criterion start end)
              => (lambda (i) (%substring/shared s 0 (+ 1 i))))
             (else "")))))
 
 (define string-trim-both
-  (opt-lambda (s (criterion char-set:whitespace) . rest)
+  (lambda (s (criterion char-set:whitespace) . rest)
     (let-string-start+end (start end) 'string-trim-both s rest
       (cond ((string-skip s criterion start end)
              => (lambda (i)
@@ -1053,7 +1052,7 @@
             (else "")))))
 
 (define string-pad-right
-  (opt-lambda (s n (char #\space) . rest)
+  (lambda (s n (char #\space) . rest)
     (check-arg char? char 'string-pad-right)
     (let-string-start+end (start end) 'string-pad-right s rest
       (check-arg (lambda (n) (and (integer? n) (exact? n) (<= 0 n)))
@@ -1066,7 +1065,7 @@
             ans))))))
 
 (define string-pad
-  (opt-lambda (s n (char #\space) . rest)
+  (lambda (s n (char #\space) . rest)
     (check-arg char? char 'string-pad)
     (let-string-start+end (start end) 'string-pad s rest
       (check-arg (lambda (n) (and (integer? n) (exact? n) (<= 0 n)))
@@ -1454,7 +1453,7 @@
 ;; for speed.
 
 (define string-kmp-partial-search
-  (opt-lambda (pat rv s i (c= char=?) (p-start 0) . start+end)
+  (lambda (pat rv s i (c= char=?) (p-start 0) . start+end)
     (check-arg procedure? c= 'string-kmp-partial-search)
     (check-arg vector? rv 'string-kmp-partial-search)
     (check-arg (lambda (x)
@@ -1609,7 +1608,7 @@
 ;;       (cons (substring final-string 0 end) string-list)))
 
 (define string-concatenate-reverse
-  (opt-lambda (string-list (final "") (end (string-length final)))
+  (lambda (string-list (final "") (end (string-length final)))
     (check-arg string? final 'string-concatenate-reverse)
     (check-arg (lambda (x)
                  (and (integer? x) (exact? x) (<= 0 x (string-length final))))
@@ -1622,7 +1621,7 @@
       (%finish-string-concatenate-reverse len string-list final end))))
 
 (define string-concatenate-reverse/shared
-  (opt-lambda (string-list (final "") (end (string-length final)))
+  (lambda (string-list (final "") (end (string-length final)))
     (check-arg string? final 'string-concatenate-reverse/shared)
     (check-arg (lambda (x)
                  (and (integer? x) (exact? x) (<= 0 x (string-length final))))
@@ -1686,7 +1685,7 @@
 ;; (string-tokenize "hello, world") => ("hello," "world")
 
 (define string-tokenize
-  (opt-lambda (s (token-chars char-set:graphic) . rest)
+  (lambda (s (token-chars char-set:graphic) . rest)
     (check-arg char-set? token-chars 'string-tokenize)
     (let-string-start+end (start end) 'string-tokenize s rest
       (let lp ((i end) (ans '()))
@@ -1842,7 +1841,7 @@
 ;; STRING-CONCATENATE is less efficient.
 
 (define string-join
-  (opt-lambda (strings (delim " ") (grammar 'infix))
+  (lambda (strings (delim " ") (grammar 'infix))
     (check-arg string? delim 'string-join)
     (let ((buildit (lambda (lis final)
                      (let recur ((lis lis))

@@ -1,7 +1,7 @@
 
 (module include mzscheme
   (require-for-syntax syntax/stx
-		      "private/increader.rkt"
+		      racket/private/increader
 		      "cm-accomplice.rkt")
   (require mzlib/etc)
 

@@ -1,6 +1,6 @@
 (module setup-go mzscheme
   (require "setup-cmdline.rkt"
-           mzlib/unit
+           racket/unit
 
            "option-sig.rkt"
            "setup-unit.rkt"

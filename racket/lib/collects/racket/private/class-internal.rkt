@@ -1,6 +1,5 @@
 #lang racket/base
 (require (for-syntax racket/base)
-         mzlib/etc
          racket/contract/base
          racket/contract/combinator
          (only-in racket/contract/region current-contract-region)
@@ -2455,9 +2454,9 @@
                                   (vector-set! super-methods index method)
                                   (vector-set! int-methods index (vector method))
                                   (vector-set! beta-methods index (vector))
-                                  (vector-set! inner-projs index identity)
+                                  (vector-set! inner-projs index values)
                                   (vector-set! dynamic-idxs index 0)
-                                  (vector-set! dynamic-projs index (vector identity)))
+                                  (vector-set! dynamic-projs index (vector values)))
                                 (append new-augonly-indices new-final-indices
                                         new-abstract-indices new-normal-indices)
                                 new-methods)
@@ -2517,7 +2516,7 @@
                                     (let ([v (list->vector (append (vector->list (vector-ref beta-methods index))
                                                                    (list #f)))])
                                       ;; Since this starts a new part of the chain, reset the projection.
-                                      (vector-set! inner-projs index identity)
+                                      (vector-set! inner-projs index values)
                                       (vector-set! beta-methods index v))))
                                 augonly-names)
                       ;; Mark final methods:
@@ -3114,7 +3113,7 @@ An example
                            [old-int-vec (vector-ref int-methods i)])
                       (vector-set! dynamic-idxs i new-idx)
                       (vector-copy! new-proj-vec 0 old-proj-vec)
-                      (vector-set! new-proj-vec new-idx identity)
+                      (vector-set! new-proj-vec new-idx values)
                       (vector-set! dynamic-projs i new-proj-vec)
                       (vector-copy! new-int-vec 0 old-int-vec)
                       ;; Just copy over the last entry here.  We'll
@@ -4760,7 +4759,7 @@ An example
                              "class" c)))
 
 (define object->vector
-  (opt-lambda (in-o [opaque-v '...])
+  (lambda (in-o [opaque-v '...])
     (unless (object? in-o)
       (raise-argument-error 'object->vector "object?" in-o))
     (let ([o in-o])

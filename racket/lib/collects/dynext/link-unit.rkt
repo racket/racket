@@ -1,7 +1,6 @@
 (module link-unit mzscheme
-  (require mzlib/unit
-           mzlib/process
-           mzlib/sendevent
+  (require racket/unit
+           racket/system
            "private/dirs.rkt"
            "private/stdio.rkt"
            "private/cmdargs.rkt"

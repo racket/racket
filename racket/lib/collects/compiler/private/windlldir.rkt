@@ -1,5 +1,5 @@
 (module windlldir mzscheme
-  (require mzlib/port
+  (require racket/port
            "winutf16.rkt")
 
   (provide update-dll-dir

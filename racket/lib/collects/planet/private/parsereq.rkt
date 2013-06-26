@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require mzlib/match
+(require racket/match
          "short-syntax-helpers.rkt"
          "data.rkt")
 
@@ -52,7 +52,7 @@
 ;; maps the given require spec to a planet package request structure
 (define (spec->req spec stx)
   (match (cdr spec)
-    [(file-name pkg-spec path ...)
+    [(list file-name pkg-spec path ...)
      (unless (string? file-name)
        (raise-syntax-error #f (format "File name: expected a string, received: ~s" file-name) stx))
      (unless (andmap string? path)
@@ -63,7 +63,7 @@
      (make-request (pkg-spec->full-pkg-spec pkg-spec stx)
                    file-name
                    path)]
-    [((? (lambda (x) (or (symbol? x) (string? x))) s))
+    [(list (? (lambda (x) (or (symbol? x) (string? x))) s))
      (let ([str (if (symbol? s) (symbol->string s) s)])
        (define (yell msg) (λ (str) (raise-syntax-error #f (format msg str) stx)))
        (let* ([pkg-spec/tail (short-pkg-string->spec str yell)]
@@ -101,12 +101,12 @@
     (fail* (format "Invalid PLaneT package specifier: ~e" spec)))
   
   (match spec
-    [((? string? owner) (? string? package) ver-spec ...)
-     (match-let ([(maj min-lo min-hi) (version->bounds ver-spec fail*)])
+    [(list (? string? owner) (? string? package) ver-spec ...)
+     (match-let ([(list maj min-lo min-hi) (version->bounds ver-spec fail*)])
        (pkg package maj min-lo min-hi (list owner)))]
-    [((? (o not string?) owner) _ ...)
+    [(list (? (o not string?) owner) _ ...)
      (fail* (format "Expected string [package owner] in first position, received: ~e" owner))]
-    [(_ (? (o not string?) pkg) _ ...)
+    [(list _ (? (o not string?) pkg) _ ...)
      (fail* (format "Expected string [package name] in second position, received: ~e" pkg))]
     [_ (fail)]))
 
@@ -117,37 +117,37 @@
 ;;  be in a list by itself, because that's slightly more convenient for the above fn]
 (define (version->bounds spec-list fail)
   (match spec-list
-    [() (list #f 0 #f)]
+    [(list) (list #f 0 #f)]
     [(? number? maj) (version->bounds (list maj))]
-    [((? number? maj)) (list maj 0 #f)]
-    [((? number? maj) min-spec)
+    [(list (? number? maj)) (list maj 0 #f)]
+    [(list (? number? maj) min-spec)
      (let ((pkg (lambda (min max) (list maj min max))))
        (match min-spec
          [(? number? min)                 (pkg min #f)]
-         [((? number? lo) (? number? hi)) (pkg lo  hi)]
-         [('= (? number? min))            (pkg min min)]
-         [('+ (? number? min))            (pkg min #f)]
-         [('- (? number? min))            (pkg 0   min)]
+         [(list (? number? lo) (? number? hi)) (pkg lo  hi)]
+         [(list '= (? number? min))            (pkg min min)]
+         [(list '+ (? number? min))            (pkg min #f)]
+         [(list '- (? number? min))            (pkg 0   min)]
          
          ;; failure cases
          [(? (o/and (o not number?) 
                     (o/or (o not list?)
                           (λ (x) (not (= (length x) 2))))))
           (fail (format "Expected number or version range specifier for minor version specification, received: ~e" min-spec))]
-         [((? (λ (x) 
-                (and (not (number? x))
-                     (not (memq x '(= + -)))))
-              range)
+         [(list (? (λ (x) 
+                     (and (not (number? x))
+                          (not (memq x '(= + -)))))
+                   range)
            _)
           (fail (format "Illegal range specifier in minor version specification. Legal range specifiers are numbers, =, +, -; given: ~e" range))]
-         [(_ (? (o not number?) bnd))
+         [(list _ (? (o not number?) bnd))
           (fail (format "Expected number as range bound in minor version specification, given: ~e" bnd))]
          [_ (fail (format "Illegal minor version specification: ~e" min-spec))]))]
     
     ;; failure cases
     [(? (o/and (o not number?) (o not list?)) v)
      (fail (format "Version specification expected number or sequence, received: ~e" v))]
-    [((? (o not number?) maj) _ ...)
+    [(list (? (o not number?) maj) _ ...)
      (fail (format "Version specification expected number for major version, received: ~e" maj))]
     [_  (fail "Invalid version specification")]))
 

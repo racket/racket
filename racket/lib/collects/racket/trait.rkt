@@ -1,8 +1,9 @@
 (module trait mzscheme
-  (require mzlib/class
-           mzlib/list
-           mzlib/struct)
-  (require-for-syntax mzlib/list
+  (require racket/class
+           racket/list
+           (only racket/base sort filter struct-copy))
+  (require-for-syntax racket/list
+                      (only racket/base filter)
                       syntax/stx
                       syntax/boundmap
                       syntax/kerncase
@@ -657,8 +658,8 @@
       (validate-trait
        'trait-alias
        (make-trait
-        (cons (copy-struct method m
-                           [method-name new-name])
+        (cons (struct-copy method m
+                           [name new-name])
               (trait-methods t))
         (trait-fields t)))))
 
@@ -673,11 +674,11 @@
        'trait-rename
        (make-trait
         (map (lambda (m)
-               (copy-struct method m
-                            [method-name (rename (method-name m))]
-                            [method-need-inherit (map rename (method-need-inherit m))]
-                            [method-need-super (map rename (method-need-super m))]
-                            [method-need-inner (map rename (method-need-inner m))]))
+               (struct-copy method m
+                            [name (rename (method-name m))]
+                            [need-inherit (map rename (method-need-inherit m))]
+                            [need-super (map rename (method-need-super m))]
+                            [need-inner (map rename (method-need-inner m))]))
              (trait-methods t))
         (trait-fields t)))))
 
@@ -692,12 +693,12 @@
        'trait-rename
        (make-trait
         (map (lambda (m)
-               (copy-struct method m
-                            [method-need-field (map rename (method-need-field m))]))
+               (struct-copy method m
+                            [need-field (map rename (method-need-field m))]))
              (trait-methods t))
         (map (lambda (f)
-               (copy-struct feeld f
-                            [feeld-name (rename (feeld-name f))]))
+               (struct-copy feeld f
+                            [name (rename (feeld-name f))]))
              (trait-fields t))))))
 
   (define-syntax define-trait-alias

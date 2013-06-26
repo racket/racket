@@ -1,5 +1,5 @@
 (module compiler mzscheme
-  (require mzlib/unit)
+  (require racket/unit)
 
   (require "sig.rkt")
 
