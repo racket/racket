@@ -2,4 +2,4 @@
 
 (define collection 'multi)
 
-(define deps '("r5rs-lib"))
+(define deps '("r5rs-lib" "compatibility-lib"))
