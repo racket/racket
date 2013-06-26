@@ -1,9 +1,9 @@
 (module localization mzscheme
   
   (require mzlib/contract
-           mzlib/file
-           mzlib/runtime-path
-           mzlib/string
+           racket/file
+           (only racket/runtime-path define-runtime-path)
+           racket/string racket/format
            syntax/modread)
   
   (provide/contract (current-language (parameter/c symbol?))
@@ -55,7 +55,7 @@
   (define (make-name bundle-specifier)
     (string->symbol
      (string-append "srfi-29:"
-                    (expr->string bundle-specifier))))
+                    (~v bundle-specifier))))
   
   (define (declare-bundle! bundle-specifier bundle-assoc-list)
     (hash-table-put! *localization-bundles* bundle-specifier bundle-assoc-list))

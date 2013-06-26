@@ -1,5 +1,5 @@
 (module link mzscheme
-  (require mzlib/unit)
+  (require racket/unit)
 
   (require "link-sig.rkt"
            "link-unit.rkt")

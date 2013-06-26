@@ -1,5 +1,5 @@
 #lang racket/base
-(require mzlib/port)
+(require racket/port)
 
 (provide update-config-dir
          get-current-config-dir)

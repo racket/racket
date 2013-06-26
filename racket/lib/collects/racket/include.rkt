@@ -2,7 +2,7 @@
 
 (require (for-syntax racket/base
                      syntax/path-spec
-                     mzlib/private/increader
+                     "private/increader.rkt"
                      compiler/cm-accomplice))
 
 (provide include

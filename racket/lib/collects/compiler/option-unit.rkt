@@ -1,6 +1,6 @@
 #lang mzscheme
 
-(require mzlib/unit)
+(require racket/unit)
 (require "sig.rkt")
 
 (provide compiler:option@)

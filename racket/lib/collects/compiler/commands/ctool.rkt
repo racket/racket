@@ -8,7 +8,7 @@
 (require (prefix-in compiler:option: "../option.rkt")
          "../compiler.rkt"
          raco/command-name
-         mzlib/cmdline
+         racket/cmdline
          dynext/file
          dynext/compile
          dynext/link

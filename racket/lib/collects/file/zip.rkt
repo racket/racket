@@ -1,7 +1,8 @@
 ;; A modification of Dave Herman's zip module
 
 (module zip mzscheme
-  (require mzlib/deflate racket/file mzlib/kw)
+  (require file/gzip racket/file
+           (only racket/base define))
 
   ;; ===========================================================================
   ;; DATA DEFINITIONS
@@ -246,7 +247,7 @@
   ;; zip-write : (listof relative-path) ->
   ;; writes a zip file to current-output-port
   (provide zip->output)
-  (define/kw (zip->output files #:optional [out (current-output-port)])
+  (define (zip->output files [out (current-output-port)])
     (parameterize ([current-output-port out])
       (let* ([seekable? (seekable-port? (current-output-port))]
              [headers ; note: Racket's `map' is always left-to-right

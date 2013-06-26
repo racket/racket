@@ -1,10 +1,11 @@
 
 (module bundle-dist mzscheme
-  (require mzlib/etc
-	   mzlib/file
-	   mzlib/process
-	   mzlib/zip
-	   mzlib/tar)
+  (require racket/file
+           (only racket/base lambda)
+           racket/path
+	   racket/system
+	   file/zip
+	   file/tar)
 
   (provide bundle-put-file-extension+style+filters
 	   bundle-directory)
@@ -61,7 +62,7 @@
 	      (lambda () (delete-directory/files temp-dir))))))
 
   (define bundle-directory
-    (opt-lambda (target dir [for-exe? #f])
+    (lambda (target dir [for-exe? #f])
       (let ([target (add-suffix target (bundle-file-suffix))])
 	(case (system-type)
 	  [(macosx)

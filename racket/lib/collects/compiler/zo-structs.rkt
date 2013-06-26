@@ -1,6 +1,5 @@
 #lang scheme/base
-(require mzlib/etc 
-         scheme/match
+(require scheme/match
          scheme/contract
          scheme/list
          racket/set)

@@ -1,7 +1,7 @@
 (module xform mzscheme
-  (require mzlib/list
-	   mzlib/etc
-	   mzlib/process)
+  (require racket/list
+           (only racket/base sort filter remove let)
+	   racket/system)
   
   (provide xform)
   
@@ -17,7 +17,7 @@
     (parameterize ([current-output-port (current-output-port)] ; because we mutate these...
                    [error-escape-handler (error-escape-handler)]
                    [current-inspector (current-inspector)])
-      (begin-with-definitions
+      (let ()
         (define power-inspector (current-inspector))
         (current-inspector (make-inspector))
         

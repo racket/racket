@@ -3,7 +3,7 @@
 
 #lang scheme/base
 
-(require mzlib/file "main-collects.rkt" "dirs.rkt")
+(require racket/file "main-collects.rkt" "dirs.rkt")
 
 (define (make-copy)
   (let* ([tmpdir (find-system-path 'temp-dir)]
