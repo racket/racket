@@ -1,8 +1,17 @@
+# Note: this file is mostly meaningless, since the toplevel directory
+# will not exist after a repository split.  The same holds for .mailmap
+# (which some people can decide if they want to thin it out or not
+# include it) and for ".gitattributes" (which is probably irrelevant
+# except maybe for the core repo).
+
+# These are likely bogus
 /build/
 /bundle/
 
+# Everything below makes sense on any package repository, so it's stuff
+# that should be put into each such repository
+
 compiled/
-doc/
 
 # common backups, autosaves, lock files, OS meta-files
 *~

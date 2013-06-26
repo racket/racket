@@ -7,5 +7,9 @@
 */SGC
 */*.user
 
+# DevStudio generated files
+*/gracket.ncb
+*/gracket.suo
+
 rbuildmode.obj
 rbuildmode.exe
