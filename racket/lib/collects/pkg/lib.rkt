@@ -1599,7 +1599,7 @@
               (apply zip pkg/complete (directory-list))))]
          ['plt
           (define dest pkg/complete)
-          (when (pkg-single-collection pkg-name dir)
+          (when (pkg-single-collection #:name pkg-name dir)
             (pkg-error (~a "single-collection package not supported in .plt format\n"
                            "  directory: ~a")
                        dir))
@@ -1981,7 +1981,7 @@
 (define (directory->module-paths dir pkg-name metadata-ns)
   (define dummy (build-path dir "dummy.rkt"))
   (define compiled (string->path-element "compiled"))
-  (define single-collect (pkg-single-collection dir pkg-name #:namespace metadata-ns))
+  (define single-collect (pkg-single-collection dir #:name pkg-name #:namespace metadata-ns))
   (define (try-path s f)
     (define mp
       `(lib ,(apply ~a
