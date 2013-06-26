@@ -6,6 +6,7 @@
 (define build-deps '("web-server"
                      "gui"
                      "draw"
+                     "sandbox-lib"
                      "pict"
                      "parser-tools"
                      "slideshow"
