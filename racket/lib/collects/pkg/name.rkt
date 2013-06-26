@@ -106,8 +106,3 @@
 (define (package-source->name s)
   (define-values (name type) (package-source->name+type s #f))
   name)
-
-(module+ test
-  (require (submod "..") rackunit)
-  (check-equal? (package-source->name "http://")
-                #f))

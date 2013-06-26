@@ -38,6 +38,8 @@
   (check-equal-values? (package-source->name+type "fish" 'dir) (values "fish" 'dir))
   (check-equal-values? (package-source->name+type "fish!/" 'dir) (values #f 'dir))
 
+  (check-equal? (package-source->name "http://") #f))
+
   (check-equal-values? (package-source->name+type "http://racket-lang.org/fish.plt" #f) (values "fish" 'file-url))
   (check-equal-values? (package-source->name+type "https://racket-lang.org/fish.plt" #f) (values "fish" 'file-url))
   (check-equal-values? (package-source->name+type "http://racket-lang.org/fish.tar.gz" #f) (values "fish" 'file-url))
