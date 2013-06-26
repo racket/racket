@@ -17,4 +17,5 @@
                      "profile"
                      "syntax-color"
                      "scribble"
+                     "compatibility-lib"
                      "future-visualizer"))
