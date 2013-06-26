@@ -6685,9 +6685,10 @@ static Scheme_Object *strip_lexical_context(Scheme_Object *stx)
   }
 #endif
   
-  if (SCHEME_STXP(stx))
+  if (SCHEME_STXP(stx)) {
+    stx = scheme_stx_taint_disarm(stx, NULL);
     v = SCHEME_STX_VAL(stx);
-  else
+  } else
     v = stx;
 
   if (SCHEME_PAIRP(v)) {
@@ -6713,11 +6714,18 @@ static Scheme_Object *strip_lexical_context(Scheme_Object *stx)
   return v;
 }
 
+static void check_not_tainted(Scheme_Object *orig)
+{
+  if (scheme_stx_is_tainted(orig))
+    scheme_wrong_syntax(NULL, orig, NULL,
+			"cannot expand module body tainted by macro expansion");
+}
+
 static Scheme_Object *do_annotate_submodules_k(void);
 
 Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase, int incl_star)
 {
-  Scheme_Object *a, *d, *v;
+  Scheme_Object *a, *d, *v, *fm2;
   int changed = 0;
 
 #ifdef DO_STACK_CHECK
@@ -6731,11 +6739,20 @@ Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase, int incl_sta
   }
 #endif
 
+  if (SCHEME_STXP(fm))
+    check_not_tainted(fm);
+
   if (!SCHEME_STX_PAIRP(fm))
     return fm;
 
-  a = SCHEME_STX_CAR(fm);
+  if (SCHEME_STXP(fm))
+    fm2 = scheme_stx_taint_disarm(fm, NULL);
+  else
+    fm2 = fm;
+
+  a = SCHEME_STX_CAR(fm2);
   if (SCHEME_STX_PAIRP(a)) {
+    a = scheme_stx_taint_disarm(a, NULL);
     v = SCHEME_STX_CAR(a);
     if (SCHEME_STX_SYMBOLP(v)) {
       if (scheme_stx_module_eq3(scheme_module_stx, v, 
@@ -6773,7 +6790,7 @@ Scheme_Object *do_annotate_submodules(Scheme_Object *fm, int phase, int incl_sta
     }
   }
 
-  v = SCHEME_STX_CDR(fm);
+  v = SCHEME_STX_CDR(fm2);
   d = do_annotate_submodules(v, phase, incl_star);
 
   if (!changed && SAME_OBJ(v, d))
@@ -6826,11 +6843,17 @@ static Scheme_Object *rebuild_with_phase_shift(Scheme_Object *orig, Scheme_Objec
                                                Scheme_Object *ps)
 {
   if (!a) {
-    a = SCHEME_STX_CAR(orig);
+    a = orig;
+    if (SCHEME_STXP(a))
+      a = scheme_stx_taint_disarm(a, NULL);
+    a = SCHEME_STX_CAR(a);
     a = scheme_add_rename(a, ps);
   }
   if (!d) {
-    d = SCHEME_STX_CDR(orig);
+    d = orig;
+    if (SCHEME_STXP(d))
+      d = scheme_stx_taint_disarm(d, NULL);
+    d = SCHEME_STX_CDR(d);
     d = phase_shift_tail(d, ps);
   }
 
@@ -6838,6 +6861,8 @@ static Scheme_Object *rebuild_with_phase_shift(Scheme_Object *orig, Scheme_Objec
 
   if (SCHEME_PAIRP(orig))
     return a;
+
+  check_not_tainted(orig);
 
   orig = scheme_add_rename(orig, ps);
   return scheme_datum_to_syntax(a, orig, orig, 0, 2);
@@ -6861,12 +6886,16 @@ static Scheme_Object *phase_shift_skip_submodules(Scheme_Object *fm, Scheme_Obje
 #endif
 
   if (phase == -1) {
-    /* at top: */
-    v0 = SCHEME_STX_CDR(fm);
+    /* at top, so this is a `module[*]' form: */
+    v0 = fm;
+    if (SCHEME_STXP(v0))
+      v0 = scheme_stx_taint_disarm(v0, NULL);
+    v0 = SCHEME_STX_CDR(v0);
     v1 = SCHEME_STX_CDR(v0);
     v2 = SCHEME_STX_CDR(v1);
     v3 = SCHEME_STX_CAR(v2);
-    v4 = SCHEME_STX_CDR(v3);
+    v4 = scheme_stx_taint_disarm(v3, NULL);
+    v4 = SCHEME_STX_CDR(v4);
 
     naya = phase_shift_skip_submodules(v4, ps, 0);
     if (SAME_OBJ(naya, v4)) {
@@ -6881,9 +6910,14 @@ static Scheme_Object *phase_shift_skip_submodules(Scheme_Object *fm, Scheme_Obje
   } else if (SCHEME_STX_NULLP(fm)) {
     return fm;
   } else {
-    v1 = SCHEME_STX_CAR(fm);
+    v0 = fm;
+    if (SCHEME_STXP(v0))
+      v0 = scheme_stx_taint_disarm(v0, NULL);
+    v1 = SCHEME_STX_CAR(v0);
     
     if (SCHEME_STX_PAIRP(v1)) {
+      if (SCHEME_STXP(v1))
+        v1 = scheme_stx_taint_disarm(v1, NULL);  
       v2 = SCHEME_STX_CAR(v1);
       if (SCHEME_STX_SYMBOLP(v2)) {
         if (scheme_stx_module_eq_x(scheme_module_stx, v2, phase)

@@ -854,5 +854,29 @@
 (test 'ok dynamic-require '(submod 'check-module-meta-2 main) 'v)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check an interaciton of submodules and taints
+
+(module m racket
+  (module q racket
+    (provide (except-out (all-from-out racket)
+                         #%module-begin)
+             (rename-out [module-begin #%module-begin]))
+    (define-syntax (module-begin stx)
+      (syntax-case stx ()
+        [(_ . r)
+         (local-expand #`(#%module-begin . r) 'module-begin null)])))
+
+  (module p (submod ".." q)
+    (module n racket
+      (provide #%module-begin)
+      (define-syntax (#%module-begin stx)
+        (define (arm p)
+          (syntax-property (syntax-arm p) 'taint-mode 'opaque))
+        (with-syntax ([mod #'(module m racket/base (add1 0))])
+          (arm #'(#%plain-module-begin (begin-for-syntax mod))))))
+
+    (module m (submod ".." n))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
