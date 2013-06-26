@@ -1255,8 +1255,8 @@ than specified in the contract above, it is returned as-is.}
   which is applied onto the path to get the result, or the result
   itself.
 
-  Note that this function can be a non-string only if @racket[default]
-  is given, and it does not return a string.
+  Note that this function can return a non-string only if
+  @racket[default] is given and it does not return a string.
 }
 
 @defproc[(path->relative-string/setup
@@ -1275,8 +1275,8 @@ than specified in the contract above, it is returned as-is.}
   which is applied onto the path to get the result, or the result
   itself.
 
-  Note that this function can be a non-string only if @racket[default]
-  is given, and it does not return a string.
+  Note that this function can return a non-string only if
+  @racket[default] is given and does not return a string.
 }
 
 @defproc[(make-path->relative-string
