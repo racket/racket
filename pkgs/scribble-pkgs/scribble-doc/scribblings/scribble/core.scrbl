@@ -8,7 +8,8 @@
                      setup/main-collects
                      scriblib/render-cond
                      xml/xexpr
-                     net/url-structs))
+                     net/url-structs
+                     (only-in scribble/html-render render-mixin)))
 
 @title[#:tag "core"]{Structures And Processing}
 
@@ -907,7 +908,21 @@ When @racket[tag] is a part tag and the content of the element is
 @racket[null], then the hyperlink uses the target part's number and/or
 title as the content. In that case, if the section number is preceded
 by a word, the word starts in uppercase if the element's style includes a
-@racket['uppercase] property.}
+@racket['uppercase] property.
+
+The following symbol is recognized as a @tech{style property}:
+
+@itemize[
+
+ @item{@racket['indirect-link] --- For HTML output, treats the link as
+       ``external''. When rendering to HTML and the
+       @method[render-mixin set-external-tag-path] method is called to
+       provide an external-link URL, then the resolution of the
+       hyperlink can be deferred until the link is clicked (or, in
+       some cases, patched by JavaScript when the documentation is
+       viewed in a browser).}
+
+]}
 
 
 @defstruct[(index-element element) ([tag tag?]
@@ -1479,6 +1494,34 @@ Like @racket[latex-defaults], but use for the
 
 For a @racket[part] that corresponds to an HTML page, adds content to
 the @tt{<head>} tag.}
+
+
+@defstruct[part-link-redirect ([url url?])]{
+
+As a @tech{style property} on a @tech{part}, causes hyperiinks to the
+part to be redirected to @racket[url] instead of the rendered part.}
+
+@defstruct[link-resource ([path path-string?])]{
+
+As a @tech{style property} on an @racket[element], causes the elements
+to be rendered as a hyperlink to (a copy of) @racket[path].
+
+The file indicated by @racket[path] is referenced in place when
+@racket[render<%>] is instantiated with
+@racketidfont{refer-to-existing-files} as true. Otherwise, it is
+copied to the destination directory and potentially renamed to avoid
+conflicts.}
+
+
+@defstruct[install-resource ([path path-string?])]{
+
+Like @racket[link-resource], but makes @racket[path] accessible in the
+destination without rendering a hyperlink.
+
+This @tech{style property} is useful only when @racket[render<%>] is
+instantiated with @racketidfont{refer-to-existing-files} as
+@racket[#f], and only when @racket[path] does not match then name of
+any other file that is copied by the renderer to the destination.}
 
 @; ----------------------------------------
 

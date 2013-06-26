@@ -522,10 +522,16 @@ with a word (e.g., ``section''), then the word is capitalized.}
                   [#:doc module-path (or/c module-path? #f) #f]
                   [#:tag-prefixes prefixes (or/c (listof string?) #f) #f]
                   [#:underline? underline? any/c #t]
+                  [#:indirect? indirect? any/c #f]
                   [pre-content pre-content?] ...) element?]{
 
 Like @racket[secref], but the link label is the @tech{decode}d
-@racket[pre-content] instead of the target section's name.}
+@racket[pre-content] instead of the target section's name.
+
+In addition to @racket[secref]'s arguments, @racket[seclink] supports
+a @racket[indirect?] argument. When @racket[indirect?] is true, then
+the section hyperlink's resolution in HTML is potentially delayed; see
+@racket['indirect-link] for @racket[link-element].}
 
 
 @defproc[(other-doc [module-path module-path?]

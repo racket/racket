@@ -86,8 +86,7 @@ by @racket[kind], which must be one of the following:
   ]}
 
  @item{@indexed-racket['config-dir] --- a directory for
- the installation's configuration, packages, and extensions.
- This directory is specified by the
+ the installation's configuration. This directory is specified by the
  @indexed-envvar{PLTCONFIGDIR} environment variable, and it can be
  overridden by the @DFlag{config} or @Flag{G} command-line flag.  If no
  environment variable or flag is specified, or if the value is not a
@@ -772,7 +771,8 @@ Displays each element of @racket[lst] to @racket[path], adding
 @racket[exists-flag] arguments are the same as for
 @racket[open-output-file].}
 
-@defproc[(copy-directory/files [src path-string?] [dest path-string?]) 
+@defproc[(copy-directory/files [src path-string?] [dest path-string?]
+                               [#:keep-modify-seconds? keep-modify-seconds? #f])
          void?]{
 
 Copies the file or directory @racket[src] to @racket[dest], raising
@@ -780,19 +780,35 @@ Copies the file or directory @racket[src] to @racket[dest], raising
 copied, possibly because @racket[dest] exists already. If @racket[src]
 is a directory, the copy applies recursively to the directory's
 content. If a source is a link, the target of the link is copied
-rather than the link itself.}
+rather than the link itself.
 
-@defproc[(delete-directory/files [path path-string?])
+If @racket[keep-modify-seconds?] is @racket[#f]false, then file copies
+keep only the properties kept by @racket[copy-file], If
+@racket[keep-modify-seconds?] is true, then each file copy also keeps
+the modification date of the original.}
+
+
+@defproc[(delete-directory/files [path path-string?]
+                                 [#:must-exist? must-exist? #t])
          void?]{
 
 Deletes the file or directory specified by @racket[path], raising
 @racket[exn:fail:filesystem] if the file or directory cannot be
 deleted. If @racket[path] is a directory, then
 @racket[delete-directory/files] is first applied to each file and
-directory in @racket[path] before the directory is deleted.}
+directory in @racket[path] before the directory is deleted.
+
+If @racket[must-exist?] is true, then @racket[exn:fail:filesystem] is
+raised if @racket[path] does not exist. If @racket[must-exist?] is
+false, then @racket[delete-directory/files] succeeds if @racket[path]
+does not exist (but a failure is possible if @racket[path] initially
+exists and is removed by another thread or process before 
+@racket[delete-directory/files] deletes it).}
+
 
 @defproc[(find-files [predicate (path? . -> . any/c)]
-                     [start-path (or/c path-string? #f) #f])
+                     [start-path (or/c path-string? #f) #f]
+                     [#:follow-links? follow-links? #f])
          (listof path?)]{
 
 Traverses the filesystem starting at @racket[start-path] and creates a
@@ -812,8 +828,10 @@ paths in the former case and relative paths in the latter.  Another
 difference is that @racket[predicate] is not called for the current
 directory when @racket[start-path] is @racket[#f].
 
-The @racket[find-files] traversal follows soft links. To avoid
-following links, use the more general @racket[fold-files] procedure.
+If @racket[follow-links?] is true, the @racket[find-files] traversal
+follows links, and links are not included in the result. If
+@racket[follow-links?] is @racket[#f], then links are not followed,
+and links are included in the result.
 
 If @racket[start-path] does not refer to an existing file or
 directory, then @racket[predicate] will be called exactly once with
@@ -822,7 +840,8 @@ directory, then @racket[predicate] will be called exactly once with
 The @racket[find-files] procedure raises and exception if it encounters 
 a directory for which @racket[directory-list] fails.}
 
-@defproc[(pathlist-closure [path-list (listof path-string?)])
+@defproc[(pathlist-closure [path-list (listof path-string?)]
+                           [#:follow-links? follow-links? #f])
          (listof path?)]{
 
 Given a list of paths, either absolute or relative to the current
@@ -840,7 +859,12 @@ directory, returns a list such that
  @item{ancestor directories appear before their descendants in the
        result list.}
 
-]}
+]
+
+If @racket[follow-links?] is true, then the traversal of directories
+and files follows links, and the link paths are not included in the
+result. If @racket[follow-links?] is @racket[#f], then he result list
+includes paths to link and the links are not followed.}
 
 
 @defproc[(fold-files [proc (or/c (path? (or/c 'file 'dir 'link) any/c 

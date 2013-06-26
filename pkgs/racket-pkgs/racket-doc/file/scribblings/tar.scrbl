@@ -7,9 +7,12 @@
 utilities to create archive files in USTAR format, like the archive
 that the Unix utility @exec{pax} generates.  The USTAR format imposes
 limits on path lengths.  The resulting archives contain only
-directories and files (symbolic links are followed), and owner
+directories, files, and symbolic links, and owner
 information is not preserved; the owner that is stored in the archive
-is always ``root.''}
+is always ``root.''
+
+Symbolic links (on Unix and Mac OS X) are not followed, and the path
+in a link must be less than 100 bytes.}
 
 @defproc[(tar [tar-file path-string?][path path-string?] ...) 
          exact-nonnegative-integer?]{

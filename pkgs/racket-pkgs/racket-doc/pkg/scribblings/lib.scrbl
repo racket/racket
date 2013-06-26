@@ -156,7 +156,7 @@ Implements the @racket[create] command.
 Unless @racket[quiet?] is true, information about the output is repotred to the current output port.}
 
 
-@defproc[(pkg-install      [names (listof string?)]
+@defproc[(pkg-install      [descs (listof pkg-desc?)]
                            [#:dep-behavior dep-behavior
                                            (or/c #f 'fail 'force 'search-ask 'search-auto)
                                            #f]
@@ -291,16 +291,21 @@ same form as from @racket[get-all-pkg-details-from-catalogs].}
 
 
 @defproc[(pkg-single-collection [dir path-string?]
-                                [#:namespace ns namespace? (make-base-namespapce)])
+                                [#:name name string? @elem{... from @racket[dir] ...}]
+                                [#:namespace namespace namespace? (make-base-namespapce)])
          (or/c #f string?)]{
 
-Returns @racket[#f] if @racket[dir] represents a @tech{multi-collection package},
-and returns a string for the collection contained by the package if @racket[dir]
-represents a @tech{single-collection package}.
+Returns a string for a collection name if @racket[dir] represents a
+@tech{single-collection package}, or returns @racket[#f] if @racket[dir]
+represents a @tech{multi-collection package}.
 
-Detecting a @tech{single-collection package} may involve loading an
-@filepath{info.rkt} file via @racket[getinfo/full], in which case
-@racket[namespace] is used.}
+For some single-collection packages, the package's single collection
+is the package name; if the package name is different from the
+directory name, supply @racket[name].
+
+Determining a single-collection package's collection name may require
+loading an @filepath{info.rkt} file, in which case @racket[namespace]
+is passed on to @racket[get-info/full].}
 
 
 @defproc[(get-pkg-content [desc pkg-desc?]

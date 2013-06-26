@@ -306,8 +306,10 @@ sub-sub-commands:
 
   @item{@DFlag{ignore-checksums} --- Ignores errors verifying package @tech{checksums} (unsafe).}
 
- @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
-       environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
+  @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
+        environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
+
+  @item{@DFlag{skip-installed} --- Ignore a @nonterm{pkg-source} if a corresponding package is already installed.}
 
   @item{@DFlag{link} --- Implies @exec{--type dir} (and overrides any specified type),
         and links the existing directory as an installed package. The package is identified
@@ -327,6 +329,9 @@ sub-sub-commands:
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
+ 
+ @item{@DFlag{catalog} @nonterm{catalog} --- Use @nonterm{catalog} instead of of the currently configured 
+       @tech{package catalogs}.}
  ]
 }
 

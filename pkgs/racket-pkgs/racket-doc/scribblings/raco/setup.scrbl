@@ -918,6 +918,17 @@ v
   which means that this result is not sensitive to the value of the 
   @racket[use-user-specific-search-paths] parameter.}
 
+@defproc[(get-main-collects-search-dirs) (listof path?)]{
+  Returns a list of paths to installation @filepath{collects}
+  directories, including the result of @racket[find-collects-dir].
+  These directories are normally included in the result of
+  @racket[(current-library-collection-paths)], but a
+  @envvar{PLTCOLLECTS} setting or change to the parameter may cause
+  them to be omitted. Any other path in
+  @racket[(current-library-collection-paths)] is treated as
+  user-specific. The dierctories indicated by the returned paths may
+  or may not exist.}
+
 @defproc[(find-config-dir) path?]{
   Returns a path to the installation's @filepath{etc} directory, which
   contains configuration and package information---including
@@ -1098,43 +1109,48 @@ v
 
 @defproc[(find-relevant-directories
           (syms (listof symbol?))
-          (mode (or/c 'preferred 'all-available 'no-planet) 'preferred)) (listof path?)]{
+          (mode (or/c 'preferred 'all-available 'no-planet 'no-user) 'preferred)) 
+         (listof path?)]{
 
-   Returns a list of paths identifying installed directories (i.e.,
-   collections and installed @|PLaneT| packages) whose
+   Returns a list of paths identifying
+   collections and installed @|PLaneT| packages whose
    @filepath{info.rkt} file defines one or more of the given
    symbols. The result is based on a cache that is computed by
    @exec{raco setup}.
+
    Note that the cache may be out of date by the time you call
-   @racket[get-info/full], so do not assume that it won't return
-   @racket[#f].
+   @racket[get-info/full], so do not assume that every returned
+   directory's @filepath{info.rkt} file will supply one of the
+   requested sybols.
 
    The result is in a canonical order (sorted lexicographically by
    directory name), and the paths it returns are suitable for
    providing to @racket[get-info/full].
 
    If @racket[mode] is specified, it must be either
-   @racket['preferred] (the default), @racket['all-available], or @racket[no-planet]. If
-   @racket[mode] is @racket['all-available], @racket[find-relevant-collections]
-   returns all installed directories whose info files contain the
-   specified symbols---for instance, all installed PLaneT packages
-   will be searched if @racket['all-available] is specified. If @racket[mode]
-   is @racket['preferred], then only a subset of ``preferred''
-   packages will be searched: only the directory
-   containing the most recent version of any PLaneT package will be
-   returned. If @racket[mode] is @racket['no-planet], then only  PLaneT
-   packages are not included in the search.
+   @racket['preferred] (the default), @racket['all-available],
+   @racket['no-planet], or @racket['no-user]. If @racket[mode] is
+   @racket['all-available], @racket[find-relevant-collections] returns
+   all installed directories whose info files contain the specified
+   symbols---for instance, all versions of all installed PLaneT
+   packages will be searched if @racket['all-available] is
+   specified. If @racket[mode] is @racket['preferred], then only a
+   subset of ``preferred'' packages will be searched: only the
+   directory containing the most recent version of any PLaneT package
+   will be returned. If @racket[mode] is @racket['no-planet], then
+   PLaneT packages are not included in the search. If @racket[mode] is
+   @racket['no-user], then only installation-wide directories are
+   search, which means omitting @|PLaneT| package directories.
 
-   No matter what @racket[mode] is specified, if more than one
-   collection has the same name, @racket[find-relevant-directories]
-   will only search the one that occurs first in a search that through
-   the directories of @racket[current-library-collection-paths].
    Collection links from the installation-wide @tech[#:doc
-   reference-doc]{collection links file} are cached with the
-   installation's main @filepath{collects} directory, and links from
-   the user-specific @tech[#:doc reference-doc]{collection links file}
-   are cached with the user-specific directory @racket[(build-path
-   (find-system-path 'addon-dir) (version) "collects")].}
+   reference-doc]{collection links file} or packages with installation
+   scope are cached with the installation's main @filepath{lib}
+   directory, and links from the user-specific @tech[#:doc
+   reference-doc]{collection links file} and packages are cached with
+   the user-specific directory @racket[(build-path (find-system-path
+   'addon-dir) "collects")] for all-version cases, and in @racket[(build-path
+   (find-system-path 'addon-dir) (version) "collects")] for
+   version-specific cases.}
 
 @defproc[(find-relevant-directory-records
           [syms (listof symbol?)]

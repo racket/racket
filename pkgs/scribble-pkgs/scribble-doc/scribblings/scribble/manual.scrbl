@@ -421,12 +421,20 @@ because the @"@"-reader would drop comments within the
 @; ------------------------------------------------------------------------
 @subsection{Code Fonts and Styles}
 
-@defform*[((racketmodname datum)
-           (racketmodname ((unsyntax (racket unsyntax)) expr)))]{
+@defform*[((racketmodname datum maybe-indirect)
+           (racketmodname ((unsyntax (racket unsyntax)) expr maybe-indirect)))
+          #:grammar ([maybe-indirect code:blank
+                                    #:indirect])]{
+
 Like @racket[racket], but typeset as a module path. If @racket[datum]
 is an identifier or @racket[expr] produces a symbol, then it is
 hyperlinked to the module path's definition as created by
-@racket[defmodule].}
+@racket[defmodule].
+
+If @racket[#:indirect] is specified, then the hyperlink is given the
+@racket['indirect-link] @tech{style property}, which makes the
+hyperlink's resolution in HTML potentially delayed; see
+@racket['indirect-link] for @racket[link-element].}
 
 @defform[(racketmodlink datum pre-content-expr ...)]{
 Like @racket[racketmod], but separating the module path to link
