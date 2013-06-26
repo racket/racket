@@ -1289,7 +1289,7 @@
        (or
         (let ([s (i 'collection
                     ;; default will change from 'multi to 'use-pkg-name:
-                    (lambda () 'multix))])
+                    (lambda () 'multi))])
           (unless (or (string? s)
                       (eq? s 'multi)
                       (eq? s 'use-pkg-name))
