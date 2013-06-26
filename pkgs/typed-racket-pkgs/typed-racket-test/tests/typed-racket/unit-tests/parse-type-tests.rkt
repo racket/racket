@@ -221,6 +221,12 @@
       ((Class #:row-var r) -> (Class #:row-var r)))
     (-polyrow (r) (list '(x y z) '(f) '(m n))
       (t:-> (make-Class r null null null)
-            (make-Class r null null null)))]))
+            (make-Class r null null null)))]
+   ;; Class types cannot use a row variable that doesn't constrain
+   ;; all of its members to be absent in the row
+   [FAIL (All (r #:row (init x))
+           ((Class #:row-var r (init y)) -> (Class #:row-var r)))]
+   [FAIL (All (r #:row (init x y z) (field f) m n)
+           ((Class #:row-var r a b c) -> (Class #:row-var r)))]))
 
 ;; FIXME - add tests for parse-values-type, parse-tc-results

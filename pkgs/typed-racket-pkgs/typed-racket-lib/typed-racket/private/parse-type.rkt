@@ -9,9 +9,8 @@
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: (contract-req))
          syntax/parse unstable/sequence
-         (env tvar-env type-name-env type-alias-env lexical-env index-env)
-         (only-in racket/class init init-field field)
-         (for-template (only-in racket/class init init-field field))
+         (env tvar-env type-name-env type-alias-env
+              lexical-env index-env row-constraint-env)
          (only-in racket/list flatten)
          racket/dict
          racket/format
@@ -90,6 +89,8 @@
     [((~and kw t:All) (var:id #:row) . t:all-body)
      (add-disappeared-use #'kw)
      (define var* (syntax-e #'var))
+     ;; When we're inferring the row constraints, there
+     ;; should be no need to extend the constraint environment
      (define body-type
        (extend-tvars (list var*) (parse-type #'t.type)))
      (make-PolyRow
@@ -100,11 +101,13 @@
     [((~and kw t:All) (var:id #:row constr:row-constraints) . t:all-body)
      (add-disappeared-use #'kw)
      (define var* (syntax-e #'var))
-     (extend-tvars (list var*)
-       (make-PolyRow
-        (list var*)
-        (attribute constr.constraints)
-        (parse-type #'t.type)))]
+     (define constraints (attribute constr.constraints))
+     (extend-row-constraints (list var*) (list constraints)
+       (extend-tvars (list var*)
+         (make-PolyRow
+          (list var*)
+          constraints
+          (parse-type #'t.type))))]
     [(t:All (_:id ...) _ _ _ ...) (tc-error "All: too many forms in body of All type")]
     [(t:All . rest) (tc-error "All: bad syntax")]))
 
@@ -624,10 +627,30 @@
                 ([parent-type parent-types])
         (merge-with-parent-type row-var parent-type fields methods)))
 
+     ;; check constraints on row var for consistency with class
+     (when (and row-var (has-row-constraints? (F-n row-var)))
+       (define constraints (lookup-row-constraints (F-n row-var)))
+       (check-constraints given-inits (car constraints))
+       (check-constraints fields (cadr constraints))
+       (check-constraints methods (caddr constraints)))
+
      (define class-type
        (make-Class row-var given-inits fields methods))
 
      class-type]))
+
+;; check-constraints : Dict<Name, _> Listof<Name> -> Void
+;; helper to check if the constraints are consistent with the type
+(define (check-constraints type-table constraint-names)
+  (define names-from-type (dict-keys type-table))
+  (define conflicting-name
+    (for/or ([m (in-list names-from-type)])
+      (and (not (memq m constraint-names))
+           m)))
+  (when conflicting-name
+    (tc-error (~a "class type cannot contain member "
+                  conflicting-name
+                  " because it conflicts with the row variable constraints"))))
 
 (define (parse-tc-results stx)
   (syntax-parse stx #:literal-sets (parse-type-literals)
