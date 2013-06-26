@@ -17,10 +17,12 @@
          odbc-data-source)
 
 (lazy-require
- ["../../main.rkt" (postgresql-connect
-                    mysql-connect
-                    sqlite3-connect
-                    odbc-connect)])
+ [db/sqlite3 (sqlite3-connect)])
+
+(lazy-require
+ [db (postgresql-connect
+      mysql-connect
+      odbc-connect)])
 
 #|
 DSN v0.1 format

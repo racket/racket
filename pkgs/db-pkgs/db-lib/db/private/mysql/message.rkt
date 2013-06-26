@@ -6,8 +6,8 @@ Based on protocol documentation here:
 #lang racket/base
 (require racket/match
          racket/port
-         "../generic/sql-data.rkt"
-         "../generic/interfaces.rkt"
+         db/private/generic/sql-data
+         db/private/generic/interfaces
          "../../util/private/geometry.rkt")
 (provide write-packet
          parse-packet

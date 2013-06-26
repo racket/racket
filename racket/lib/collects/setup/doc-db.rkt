@@ -1,5 +1,6 @@
 #lang racket/base
-(require db
+(require db/base
+         db/sqlite3
          racket/format
          racket/serialize
          "main-doc.rkt")

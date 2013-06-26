@@ -4,10 +4,10 @@
          racket/match
          (prefix-in srfi: srfi/19)
          json
-         "../generic/interfaces.rkt"
-         "../generic/common.rkt"
-         "../generic/sql-data.rkt"
-         "../generic/sql-convert.rkt"
+         db/private/generic/interfaces
+         db/private/generic/common
+         db/private/generic/sql-data
+         db/private/generic/sql-convert
          "../../util/datetime.rkt"
          "../../util/geometry.rkt"
          "../../util/postgresql.rkt"

@@ -2,7 +2,7 @@
 (require racket/contract/base
          racket/match
          (prefix-in srfi: srfi/19)
-         "../private/generic/sql-data.rkt")
+         db/private/generic/sql-data)
 
 (define (sql-datetime->srfi-date datetime)
   (match datetime

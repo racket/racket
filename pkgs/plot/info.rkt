@@ -8,6 +8,7 @@
 (define deps '("typed-racket-more"
                "base"
                "compatibility-lib"
+               "db-lib"
                "draw-lib"
                "gui-lib"
                "pict-lib"

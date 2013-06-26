@@ -1,9 +1,9 @@
 #lang racket/base
 (require racket/class
          racket/match
-         "../generic/interfaces.rkt"
-         "../generic/common.rkt"
-         "../generic/sql-data.rkt"
+         db/private/generic/interfaces
+         db/private/generic/common
+         db/private/generic/sql-data
          "../../util/private/geometry.rkt"
          (only-in "message.rkt" field-dvec->typeid field-dvec->flags))
 (provide dbsystem

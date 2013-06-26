@@ -4,10 +4,10 @@
          openssl
          openssl/sha1
          unstable/error
-         "../generic/interfaces.rkt"
-         "../generic/common.rkt"
-         "../generic/prepared.rkt"
-         "../generic/sql-data.rkt"
+         db/private/generic/interfaces
+         db/private/generic/common
+         db/private/generic/prepared
+         db/private/generic/sql-data
          "message.rkt"
          "dbsystem.rkt")
 (provide connection%

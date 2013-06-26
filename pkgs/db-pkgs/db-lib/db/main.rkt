@@ -1,8 +1,8 @@
 #lang racket/base
 (require racket/lazy-require
          racket/contract/base
-         "base.rkt")
-(provide (all-from-out "base.rkt"))
+         db/base)
+(provide (all-from-out db/base))
 
 (lazy-require
  ["private/postgresql/main.rkt"
@@ -13,7 +13,7 @@
   (mysql-connect
    mysql-guess-socket-path
    mysql-password-hash)]
- ["private/sqlite3/main.rkt"
+ [db/private/sqlite3/main
   (sqlite3-connect
    sqlite3-available?)]
  ["private/odbc/main.rkt"

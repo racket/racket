@@ -4,10 +4,10 @@
          file/md5
          openssl
          unstable/error
-         "../generic/interfaces.rkt"
-         "../generic/common.rkt"
-         "../generic/sql-data.rkt"
-         "../generic/prepared.rkt"
+         db/private/generic/interfaces
+         db/private/generic/common
+         db/private/generic/sql-data
+         db/private/generic/prepared
          "message.rkt"
          "dbsystem.rkt")
 (provide connection%

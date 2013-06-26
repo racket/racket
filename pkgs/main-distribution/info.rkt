@@ -8,6 +8,7 @@
                "contract-profile"
                "data-lib"
                "datalog"
+               "db"
                "deinprogramm"
                "draw"
                "draw-doc"

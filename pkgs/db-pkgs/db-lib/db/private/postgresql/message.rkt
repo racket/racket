@@ -1,8 +1,8 @@
 #lang racket/base
 (require (for-syntax racket/base)
          racket/match
-         "../generic/interfaces.rkt"
-         "../generic/sql-data.rkt")
+         db/private/generic/interfaces
+         db/private/generic/sql-data)
 (provide write-message
          parse-server-message
 

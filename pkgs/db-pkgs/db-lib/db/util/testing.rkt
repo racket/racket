@@ -2,8 +2,8 @@
 (require racket/contract
          racket/class
          ffi/unsafe/atomic
-         "../private/generic/interfaces.rkt"
-         "../private/generic/common.rkt")
+         db/private/generic/interfaces
+         db/private/generic/common)
 
 (define high-latency-connection%
   (class* locking% (connection<%>)

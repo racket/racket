@@ -2,8 +2,8 @@
 (require racket/class
          racket/tcp
          openssl
-         "../generic/interfaces.rkt"
-         "../generic/common.rkt"
+         db/private/generic/interfaces
+         db/private/generic/common
          unstable/socket
          "connection.rkt")
 (provide postgresql-connect

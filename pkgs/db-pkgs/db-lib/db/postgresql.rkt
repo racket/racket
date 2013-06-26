@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/contract/base
          openssl
-         "base.rkt"
+         db/base
          "private/postgresql/main.rkt")
 
 ;; FIXME: Contracts duplicated at main.rkt

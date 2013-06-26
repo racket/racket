@@ -1,8 +1,8 @@
 #lang racket/base
 (require racket/class
-         "../generic/interfaces.rkt"
-         "../generic/common.rkt"
-         "../generic/place-client.rkt"
+         db/private/generic/interfaces
+         db/private/generic/common
+         db/private/generic/place-client
          "connection.rkt"
          "dbsystem.rkt"
          "ffi.rkt")

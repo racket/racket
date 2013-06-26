@@ -5,11 +5,11 @@
          ffi/unsafe
          ffi/unsafe/atomic
          unstable/error
-         "../generic/interfaces.rkt"
-         "../generic/common.rkt"
-         "../generic/prepared.rkt"
-         "../generic/sql-data.rkt"
-         "../generic/sql-convert.rkt"
+         db/private/generic/interfaces
+         db/private/generic/common
+         db/private/generic/prepared
+         db/private/generic/sql-data
+         db/private/generic/sql-convert
          "ffi.rkt"
          "ffi-constants.rkt"
          "dbsystem.rkt")

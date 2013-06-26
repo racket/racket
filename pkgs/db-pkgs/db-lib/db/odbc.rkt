@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/contract/base
-         "base.rkt"
+         db/base
          "private/odbc/main.rkt")
 
 ;; FIXME: Contracts duplicated at main.rkt

@@ -30,9 +30,8 @@ where <connect-spec> ::= (list 'sqlite3 path/sym mode-sym delay-num limit-num)
     (loop)))
 
 (lazy-require
- ["../sqlite3/main.rkt" (sqlite3-connect)]
- ["../odbc/main.rkt" (odbc-connect
-                      odbc-driver-connect)])
+ [db/private/sqlite3/main (sqlite3-connect)]
+ [db/private/odbc/main (odbc-connect odbc-driver-connect)])
 
 (define (serve client-chan)
   (match (place-channel-get client-chan)
