@@ -289,11 +289,12 @@
                      (recursive-sc-use (if (from-typed? typed-side) typed-n* untyped-n*)))])]
         [(Instance: (? Mu? t))
          (t->sc (make-Instance (resolve-once t)))]
-        [(Instance: (Class: _ _ _ (list (list names functions) ...)))
+        [(Instance: (Class: _ _ _ (list (list names functions) ...) _))
          (object/sc (map (λ (n sc) (member-spec 'method n sc)) names (map t->sc/method functions)))]
         [(Class: _ (list (list by-name-inits by-name-init-tys _) ...)
                  fields
-                 (list (list names functions) ...))
+                 (list (list names functions) ...)
+                 _)
          (class/sc (append
                      (map (λ (n sc) (member-spec 'method n sc))
                           names (map t->sc/method functions))

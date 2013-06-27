@@ -91,6 +91,18 @@
     [(PolyDots-names: ns b) `(make-PolyDots (list ,@(map sub ns)) ,(sub b))]
     [(PolyRow-names: ns c b) `(make-PolyRow (list ,@(map sub ns))
                                             (quote ,c) ,(sub b))]
+    [(Class: row inits fields methods augments)
+     ;; FIXME: there's probably a better way to do this
+     (define (convert members [inits? #f])
+       (for/list ([m members])
+         `(list (quote ,(car m))
+                ,(sub (cadr m))
+                ,@(if inits? (cddr m) '()))))
+     `(make-Class ,(sub row)
+                  (list ,@(convert inits #t))
+                  (list ,@(convert fields))
+                  (list ,@(convert methods))
+                  (list ,@(convert augments)))]
     [(arr: dom rng rest drest kws)
      `(make-arr ,(sub dom) ,(sub rng) ,(sub rest) ,(sub drest) ,(sub kws))]
     [(TypeFilter: t p i)

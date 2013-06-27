@@ -826,5 +826,116 @@
     (define (f cls)
       (class: cls (super-new)
         (field [x 5])))
-    (inst f #:row (field [x Integer])))))
+    (inst f #:row (field [x Integer])))
+
+   ;; Check simple use of pubment
+   (check-ok
+    (define c%
+      (class: object%
+        (super-new)
+        (: m (Integer -> Integer))
+        (define/pubment (m x) 0)))
+    (send (new c%) m 3))
+
+   ;; Local calls to pubment method
+   (check-ok
+    (define c%
+      (class: object%
+        (super-new)
+        (: m (Integer -> Integer))
+        (define/pubment (m x) 0)
+        (: n (-> Number))
+        (define/public (n) (m 5))))
+    (send (new c%) n))
+
+   ;; Inheritance with augment
+   (check-ok
+    (define c%
+      (class: object%
+        (super-new)
+        (: m (Integer -> Integer))
+        (define/pubment (m x) 0)))
+    (define d%
+      (class: c%
+        (super-new)
+        (define/augment (m x)
+          (+ 1 x))))
+    (send (new c%) m 5))
+
+   ;; Pubment with inner
+   (check-ok
+    (define c%
+      (class: object%
+        (super-new)
+        (: m (Integer -> Integer))
+        (define/pubment (m x)
+          (inner 0 m x))))
+    (define d%
+      (class: c%
+        (super-new)
+        (define/augment (m x)
+          (+ 1 x))))
+    (send (new c%) m 0))
+
+   ;; Fail, bad inner default
+   (check-err
+    (define c%
+      (class: object%
+        (super-new)
+        (: m (Integer -> Integer))
+        (define/pubment (m x)
+          (inner "foo" m x)))))
+
+   ;; Fail, wrong number of arguments to inner
+   (check-err
+    (define c%
+      (class: object%
+        (super-new)
+        (: m (Integer -> Integer))
+        (define/pubment (m x)
+          (inner 3 m)))))
+
+   ;; Fail, bad augment type
+   (check-err
+    (define c%
+      (class: object%
+        (super-new)
+        (: m (Integer -> Integer))
+        (define/pubment (m x)
+          (inner 0 m x))))
+    (define d%
+      (class: c%
+        (super-new)
+        (define/augment (m x) "bad type"))))
+
+   ;; Fail, cannot augment non-augmentable method
+   (check-err
+    (define c%
+      (class: object%
+        (super-new)
+        (: m (Integer -> Integer))
+        (define/public (m x) 0)))
+    (define d%
+      (class: c%
+        (super-new)
+        (define/augment (m x) 1))))
+
+   ;; Pubment with separate internal/external names
+   (check-ok
+    (define c%
+      (class: object%
+        (super-new)
+        (: m (Integer -> Integer))
+        (pubment [n m])
+        (define n (λ (x) 0))))
+    (send (new c%) m 0))
+
+   ;; Pubment with expected class type
+   (check-ok
+    (: c% (Class (augment [m (Natural -> Natural)])))
+    (define c%
+      (class: object%
+        (super-new)
+        (define/pubment (m x) 0)))
+    (send (new c%) m 3))))
 

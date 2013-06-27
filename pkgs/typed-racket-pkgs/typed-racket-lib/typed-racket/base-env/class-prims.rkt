@@ -263,7 +263,9 @@
                     (override #,@(dict-ref name-dict #'override '()))
                     (private #,@(dict-ref name-dict #'private '()))
                     (private-field #,@private-fields)
-                    (inherit #,@(dict-ref name-dict #'inherit '()))))
+                    (inherit #,@(dict-ref name-dict #'inherit '()))
+                    (augment #,@(dict-ref name-dict #'augment '()))
+                    (pubment #,@(dict-ref name-dict #'pubment '()))))
               (class #,annotated-super
                 #,@(map clause-stx clauses)
                 #,@(map non-clause-stx annotated-methods)
@@ -289,11 +291,12 @@
         #:literals (define-values super-new)
         ;; if it's a method definition for a declared method, then
         ;; mark it as something to type-check
-        ;; FIXME: this needs to track augments, etc.
         [(define-values (id) . rst)
          #:when (memf (λ (n) (free-identifier=? #'id n))
                       (append (stx-map stx-car (dict-ref name-dict #'public '()))
+                              (stx-map stx-car (dict-ref name-dict #'pubment '()))
                               (stx-map stx-car (dict-ref name-dict #'override '()))
+                              (stx-map stx-car (dict-ref name-dict #'augment '()))
                               (dict-ref name-dict #'private '())))
          (values (cons (non-clause (syntax-property stx
                                                     'tr:class:method
@@ -342,7 +345,8 @@
   ;; set!-transformers to the appropriate accessors, which lets
   ;; us figure out the accessor identifiers.
   (define (make-locals-table name-dict private-field-names)
-    (define public-names (stx-map stx-car (dict-ref name-dict #'public '())))
+    (define public-names
+      (stx-map stx-car (dict-ref name-dict #'public '())))
     (define override-names
       (stx-map stx-car (dict-ref name-dict #'override '())))
     (define private-names (dict-ref name-dict #'private '()))
@@ -353,6 +357,9 @@
       (stx-map stx-car (dict-ref name-dict #'init '())))
     (define inherit-names
       (stx-map stx-car (dict-ref name-dict #'inherit '())))
+    (define augment-names
+      (append (stx-map stx-car (dict-ref name-dict #'pubment '()))
+              (stx-map stx-car (dict-ref name-dict #'augment '()))))
     (syntax-property
      #`(let-values ([(#,@public-names)
                      (values #,@(map (λ (stx) #`(λ () (#,stx)))
@@ -374,7 +381,10 @@
                                      inherit-names))]
                     [(#,@override-names)
                      (values #,@(map (λ (stx) #`(λ () (#,stx) (super #,stx)))
-                                     override-names))])
+                                     override-names))]
+                    [(#,@augment-names)
+                     (values #,@(map (λ (stx) #`(λ () (#,stx) (inner #f #,stx)))
+                                     augment-names))])
          (void))
      'tr:class:local-table #t)))
 

@@ -577,16 +577,8 @@
                        (subtype* s-out t-out))]
          [((Param: in out) t)
           (subtype* A0 (cl->* (-> out) (-> in -Void)) t)]
-         [((Instance: t) (Instance: t*))
-          (subtype* A0 t t*)]
-         [((Class: _ '() fields (list (and s  (list names  meths )) ...))
-           (Class: _ '() fields (list (and s* (list names* meths*)) ...)))
-          (for/fold ([A A0])
-                    ([n (in-list names*)] [m (in-list meths*)] #:break (not A))
-                    (and A (cond [(assq n s) => (lambda (spec) (subtype* A (cadr spec) m))]
-                                 [else #f])))]
-         [((Instance: (Class: _ _ field-map method-map))
-           (Instance: (Class: _ _ field-map* method-map*)))
+         [((Instance: (Class: _ _ field-map method-map augment-map))
+           (Instance: (Class: _ _ field-map* method-map* augment-map*)))
           (define (subtype-clause? map map*)
             (match-define (list (and s (list names types)) ...) map)
             (match-define (list (and s* (list names* types*)) ...) map*)
@@ -595,10 +587,13 @@
               (and A (cond [(assq n s) =>
                             (lambda (spec) (subtype* A (cadr spec) m))]
                            [else #f]))))
-          (and (subtype-clause? method-map method-map*)
+          (and ;; Note that augment/public doesn't matter for object
+               ;; subtyping, so these mappings can be merged
+               (subtype-clause? (append method-map augment-map)
+                                (append method-map* augment-map*))
                (subtype-clause? field-map field-map*))]
-         [((Class: row inits fields methods)
-           (Class: row* inits* fields* methods*))
+         [((Class: row inits fields methods augments)
+           (Class: row* inits* fields* methods* augments*))
           ;; check that each of inits, fields, methods, etc. are
           ;; equal by sorting and checking type equality
           (define (equal-clause? clause clause* [inits? #f])
@@ -630,7 +625,9 @@
                    (equal? row row*))
                (equal-clause? inits inits* #t)
                (equal-clause? fields fields*)
-               (equal-clause? methods methods*))]
+               ;; augment/public distinction is important here
+               (equal-clause? methods methods*)
+               (equal-clause? augments augments*))]
          ;; otherwise, not a subtype
          [(_ _) #f])))
      (when (null? A)
