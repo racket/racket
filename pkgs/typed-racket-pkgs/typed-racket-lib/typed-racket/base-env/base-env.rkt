@@ -962,7 +962,7 @@
 [struct-type? (make-pred-ty (make-StructTypeTop))]
 
 ;; Section 6.2 (Classes)
-[object% (make-Class #f null null null)]
+[object% (make-Class #f null null null null)]
 
 ;; Section 9.1
 [exn:misc:match? (-> Univ B)]

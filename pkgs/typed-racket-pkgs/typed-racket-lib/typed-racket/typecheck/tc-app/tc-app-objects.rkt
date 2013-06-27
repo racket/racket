@@ -47,7 +47,7 @@
                        (list (syntax-e name) arg)))
   (match (resolve (tc-expr/t cl))
     [(Union: '()) (ret (Un))]
-    [(and c (Class: _ inits fields _))
+    [(and c (Class: _ inits fields _ _))
      (define init-names (map car inits))
      (for ([given-name given-names]
            #:unless (memq given-name init-names))
@@ -83,7 +83,7 @@
                    "expected a symbolic method name, but got ~a" meth))
   (match obj-type
     ;; FIXME: handle unions and mu?
-    [(tc-result1: (and ty (Instance: (Class: _ _ (list fields ...) _))))
+    [(tc-result1: (and ty (Instance: (Class: _ _ (list fields ...) _ _))))
      (cond [(assq maybe-meth-sym fields) =>
             (λ (field-entry) (ret (cadr field-entry)))]
            [else

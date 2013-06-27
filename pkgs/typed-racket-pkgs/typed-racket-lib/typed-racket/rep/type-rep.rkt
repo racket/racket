@@ -32,7 +32,7 @@
          remove-dups
          sub-f sub-o sub-pe
          (rename-out [Class:* Class:]
-                     [*Class make-Class]
+                     [Class* make-Class]
                      [Mu:* Mu:]
                      [Poly:* Poly:]
                      [PolyDots:* PolyDots:]
@@ -246,7 +246,7 @@
 ;; constraints are row absence constraints, represented
 ;; as a set for each of init, field, methods
 (def-type PolyRow (constraints body) #:no-provide
-  [#:contract (->i ([constraints (list/c list? list? list?)]
+  [#:contract (->i ([constraints (list/c list? list? list? list?)]
                     [body (scope-depth 1)])
                    (#:syntax [stx (or/c #f syntax?)])
                    [result PolyRow?])]
@@ -458,67 +458,51 @@
 ;; A Row used in type instantiation
 ;; For now, this should not appear in user code. It's used
 ;; internally to perform row instantiations
-;;
-;; FIXME: should Classes just use this?
-;;
 (def-type Row ([inits (listof (list/c symbol? Type/c boolean?))]
                [fields (listof (list/c symbol? Type/c))]
-               [methods (listof (list/c symbol? Function?))])
+               [methods (listof (list/c symbol? Function?))]
+               [augments (listof (list/c symbol? Function?))])
   [#:frees (λ (f) (combine-frees
                    (map f (append (map cadr inits)
                                   (map cadr fields)
-                                  (map cadr methods)))))]
-  [#:fold-rhs (match (list inits fields methods)
+                                  (map cadr methods)
+                                  (map cadr augments)))))]
+  [#:fold-rhs (match (list inits fields methods augments)
                 [(list
                   (list (list init-names init-tys reqd) ___)
                   (list (list fname fty) ___)
-                  (list (list mname mty) ___))
+                  (list (list mname mty) ___)
+                  (list (list aname aty) ___))
                  (*Row
                   (map list
                        init-names
                        (map type-rec-id init-tys)
                        reqd)
                   (map list fname (map type-rec-id fty))
-                  (map list mname (map type-rec-id mty)))])])
+                  (map list mname (map type-rec-id mty))
+                  (map list aname (map type-rec-id aty)))])])
 
-;; row : Option<(U F Row)>
-;; name-inits    : (Listof (Tuple Symbol Type Boolean))
-;; fields        : (Listof (Tuple Symbol Type))
-;; methods       : (Listof (Tuple Symbol Function))
+;; row-ext : Option<(U F B Row)>
+;; row     : Row
 ;;
-;; interp. The first field represents a row variable.
-;;         The second field represents the named
-;;         initialization argument types.
-;;         The remainder are the types for public fields and
-;;         public methods, respectively.
+;; interp. The first field represents a row extension
+;;         The second field represents the concrete row
+;;         that the class starts with
 ;;
-(def-type Class ([row (or/c #f F? B? Row?)]
-                 [inits (listof (list/c symbol? Type/c boolean?))]
-                 [fields (listof (list/c symbol? Type/c))]
-                 [methods (listof (list/c symbol? Function?))])
+(def-type Class ([row-ext (or/c #f F? B? Row?)]
+                 [row Row?])
   #:no-provide
   [#:frees (λ (f) (combine-frees
                    ;; FIXME: is this correct?
-                   `(,@(or (and (F? row) (list (f row)))
+                   `(,@(or (and (F? row-ext) (list (f row-ext)))
                            '())
-                     ,@(map f (append (map cadr inits)
-                                      (map cadr fields)
-                                      (map cadr methods))))))]
+                     ,(f row))))]
   [#:key 'class]
-  [#:fold-rhs (match (list row inits fields methods)
-                [(list
-                  row
-                  (list (list init-names init-tys reqd) ___)
-                  (list (list fname fty) ___)
-                  (list (list mname mty) ___))
+  [#:fold-rhs (match (list row-ext row)
+                [(list row-ext row)
                  (*Class
-                  (and row (type-rec-id row))
-                  (map list
-                       init-names
-                       (map type-rec-id init-tys)
-                       reqd)
-                  (map list fname (map type-rec-id fty))
-                  (map list mname (map type-rec-id mty)))])])
+                  (and row-ext (type-rec-id row-ext))
+                  (type-rec-id row))])])
 
 ;; cls : Class
 (def-type Instance ([cls Type/c]) [#:key 'instance])
@@ -920,6 +904,12 @@
                          (PolyRow-body* fresh-syms t)))
                  (list nps freshp constrp bp)))])))
 
+;; Class*
+;; This is a custom constructor for Class types that
+;; doesn't require writing make-Row everywhere
+(define (Class* row-var inits fields methods augments)
+  (*Class row-var (*Row inits fields methods augments)))
+
 ;; Class:*
 ;; This match expander replaces the built-in matching with
 ;; a version that will merge the members inside the substituted row
@@ -928,25 +918,30 @@
 ;; helper function for the expansion of Class:*
 ;; just does the merging
 (define (merge-class/row class-type)
-  (define row (Class-row class-type))
-  (define inits (Class-inits class-type))
-  (define fields (Class-fields class-type))
-  (define methods (Class-methods class-type))
+  (define row (Class-row-ext class-type))
+  (define class-row (Class-row class-type))
+  (define inits (Row-inits class-row))
+  (define fields (Row-fields class-row))
+  (define methods (Row-methods class-row))
+  (define augments (Row-augments class-row))
   (cond [(and row (Row? row))
          (define row-inits (Row-inits row))
          (define row-fields (Row-fields row))
          (define row-methods (Row-methods row))
+         (define row-augments (Row-augments row))
          (list row
                (append inits row-inits)
                (append fields row-fields)
-               (append methods row-methods))]
-        [else (list row inits fields methods)]))
+               (append methods row-methods)
+               (append augments row-augments))]
+        [else (list row inits fields methods augments)]))
 
 (define-match-expander Class:*
   (λ (stx)
     (syntax-case stx ()
-      [(_ row-pat inits-pat fields-pat methods-pat)
+      [(_ row-pat inits-pat fields-pat methods-pat augments-pat)
        #'(? Class?
             (app merge-class/row
-                 (list row-pat inits-pat fields-pat methods-pat)))])))
+                 (list row-pat inits-pat fields-pat
+                       methods-pat augments-pat)))])))
 

@@ -526,10 +526,10 @@
 
 ;;; Utilities for (Class ...) type parsing
 
-;; process-class-clauses : Option<F> Syntax FieldDict MethodDict
-;;                         -> Option<Id> FieldDict MethodDict
+;; process-class-clauses : Option<F> Syntax FieldDict MethodDict AugmentDict
+;;                         -> Option<Id> FieldDict MethodDict AugmentDict
 ;; Merges #:implements class type and the current class clauses appropriately
-(define (merge-with-parent-type row-var stx fields methods)
+(define (merge-with-parent-type row-var stx fields methods augments)
   ;; (Listof Symbol) Dict Dict String -> (Values Dict Dict)
   ;; check for duplicates in a class clause
   (define (check-duplicate-clause names super-names types super-types err-msg)
@@ -551,19 +551,22 @@
   (define parent-type (parse-type stx))
   (define (match-parent-type parent-type)
     (match parent-type
-      [(Class: row-var _ fields methods)
-       (values row-var fields methods)]
+      [(Class: row-var _ fields methods augments)
+       (values row-var fields methods augments)]
       [(? Mu?)
        (match-parent-type (unfold parent-type))]
       [_ (tc-error "expected a class type for #:implements clause, got ~a"
                    parent-type)]))
-  (define-values (super-row-var super-fields super-methods)
+  (define-values (super-row-var super-fields
+                  super-methods super-augments)
     (match-parent-type parent-type))
 
   (match-define (list (list field-names _) ...) fields)
   (match-define (list (list method-names _) ...) methods)
+  (match-define (list (list augment-names _) ...) augments)
   (match-define (list (list super-field-names _) ...) super-fields)
   (match-define (list (list super-method-names _) ...) super-methods)
+  (match-define (list (list super-augment-names _) ...) super-augments)
 
   ;; if any duplicates are found between this class and the superclass
   ;; type, then raise an error
@@ -573,10 +576,15 @@
      fields super-fields
      "field or init-field name ~a conflicts with #:implements clause"))
   (define-values (checked-methods checked-super-methods)
-   (check-duplicate-clause
-    method-names super-method-names
-    methods super-methods
-    "method name ~a conflicts with #:implements clause"))
+    (check-duplicate-clause
+     method-names super-method-names
+     methods super-methods
+     "method name ~a conflicts with #:implements clause"))
+  (define-values (checked-augments checked-super-augments)
+    (check-duplicate-clause
+     augment-names super-augment-names
+     augments super-augments
+     "augmentable method name ~a conflicts with #:implements clause"))
 
   ;; it is an error for both the extending type and extended type
   ;; to have row variables
@@ -587,7 +595,17 @@
   ;; then append the super types if there were no errors
   (define merged-fields (append checked-super-fields checked-fields))
   (define merged-methods (append checked-super-methods checked-methods))
-  (values (or row-var super-row-var) merged-fields merged-methods))
+  (define merged-augments (append checked-super-augments checked-augments))
+
+  ;; make sure augments and methods are disjoint
+  (define maybe-dup (check-duplicate (append (dict-keys merged-methods)
+                                             (dict-keys merged-augments))))
+  (when maybe-dup
+    (tc-error (~a "method name " maybe-dup " conflicts with"
+                  " another method name or augmentable method name")))
+
+  (values (or row-var super-row-var) merged-fields
+          merged-methods merged-augments))
 
 ;; Syntax -> Type
 ;; Parse a (Object ...) type
@@ -602,7 +620,7 @@
      (define methods (map list
                           (stx-map syntax-e #'clause.method-names)
                           (stx-map parse-type #'clause.method-types)))
-     (make-Instance (make-Class #f null fields methods))]))
+     (make-Instance (make-Class #f null fields methods null))]))
 
 ;; Syntax -> Type
 ;; Parse a (Class ...) type
@@ -615,27 +633,31 @@
      (define given-inits (attribute clause.inits))
      (define given-fields (attribute clause.fields))
      (define given-methods (attribute clause.methods))
+     (define given-augments (attribute clause.augments))
      (define given-row-var
        (and (attribute clause.row-var)
             (parse-type (attribute clause.row-var))))
 
      ;; merge with all given parent types, erroring if needed
-     (define-values (row-var fields methods)
+     (define-values (row-var fields methods augments)
       (for/fold ([row-var given-row-var]
                  [fields given-fields]
-                 [methods given-methods])
+                 [methods given-methods]
+                 [augments given-augments])
                 ([parent-type parent-types])
-        (merge-with-parent-type row-var parent-type fields methods)))
+        (merge-with-parent-type row-var parent-type fields
+                                methods augments)))
 
      ;; check constraints on row var for consistency with class
      (when (and row-var (has-row-constraints? (F-n row-var)))
        (define constraints (lookup-row-constraints (F-n row-var)))
        (check-constraints given-inits (car constraints))
        (check-constraints fields (cadr constraints))
-       (check-constraints methods (caddr constraints)))
+       (check-constraints methods (caddr constraints))
+       (check-constraints augments (cadddr constraints)))
 
      (define class-type
-       (make-Class row-var given-inits fields methods))
+       (make-Class row-var given-inits fields methods augments))
 
      class-type]))
 

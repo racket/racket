@@ -28,7 +28,7 @@
 ;; Data definitions
 ;;
 ;; A RowConstraint is a
-;;   List(List<Sym>, List<Sym>, List<Sym>)
+;;   List(List<Sym>, List<Sym>, List<Sym>, List<Sym>)
 
 ;; Syntax -> Syntax
 ;; Turn into datums and then flatten
@@ -37,16 +37,18 @@
 
 ;; Syntax classes for rows
 (define-splicing-syntax-class row-constraints
-  #:literals (init init-field field)
+  #:literals (init init-field field augment)
   (pattern (~seq (~or (init iname:id ...)
                       (init-field ifname:id ...)
                       (field fname:id ...)
+                      (augment aname:id ...)
                       mname:id)
                  ...)
             #:attr init-names (flatten/datum #'((iname ...) ...))
             #:attr init-field-names (flatten/datum #'((ifname ...) ...))
             #:attr field-names (flatten/datum #'((fname ...) ...))
             #:attr method-names (syntax->datum #'(mname ...))
+            #:attr augment-names (flatten/datum #'((aname ...) ...))
             #:attr all-field-names (append (attribute init-field-names)
                                            (attribute field-names))
             #:attr all-init-names (append (attribute init-field-names)
@@ -57,19 +59,25 @@
             #:fail-when
             (check-duplicate (attribute all-field-names))
             "duplicate field or init-field clause"
+            #:fail-when
+            (check-duplicate (append (attribute method-names)
+                                     (attribute augment-names)))
+            "duplicate method or augmentable method clause"
             #:attr constraints
             (list (attribute all-init-names)
                   (attribute all-field-names)
-                  (attribute method-names))))
+                  (attribute method-names)
+                  (attribute augment-names))))
 
 ;; Row RowConstraints (Symbol -> Void) -> Void
 ;; Check if the given row satisfies the absence constraints
 ;; on the row variable or not. Call the fail thunk if it
 ;; doesn't.
 (define (check-row-constraints row constraints fail)
-  (match-define (list init-absents field-absents method-absents)
+  (match-define (list init-absents field-absents
+                      method-absents augment-absents)
                 constraints)
-  (match-define (Row: inits fields methods) row)
+  (match-define (Row: inits fields methods augments) row)
   ;; check a given clause type (e.g., init, field)
   (define (check-clauses row-dict absence-set)
     (for ([(name _) (in-dict row-dict)])
@@ -77,7 +85,8 @@
         (fail name))))
   (check-clauses inits init-absents)
   (check-clauses fields field-absents)
-  (check-clauses methods method-absents))
+  (check-clauses methods method-absents)
+  (check-clauses augments augment-absents))
 
 ;; Row types are similar to class types
 (define-splicing-syntax-class (row-clauses parse-type)
@@ -87,9 +96,11 @@
            #:attr inits (apply append (attribute clause.init-entries))
            #:attr fields (apply append (attribute clause.field-entries))
            #:attr methods (apply append (attribute clause.method-entries))
+           #:attr augments (apply append (attribute clause.augment-entries))
            #:attr row (make-Row (attribute inits)
                                 (attribute fields)
-                                (attribute methods))
+                                (attribute methods)
+                                (attribute augments))
            #:fail-when
            (check-duplicate (map first (attribute inits)))
            "duplicate init or init-field clause"
@@ -97,45 +108,51 @@
            (check-duplicate (map first (attribute fields)))
            "duplicate field or init-field clause"
            #:fail-when
-           (check-duplicate (map first (attribute methods)))
-           "duplicate method clause"))
+           (check-duplicate (map first (append (attribute methods)
+                                               (attribute augments))))
+           "duplicate method or augmentable method clause"))
 
 ;; Type -> RowConstraint
 ;; Infer constraints on a row for a row polymorphic function
 (define (infer-row-constraints type)
-  (define constraints (list null null null))
+  (define constraints (list null null null null))
   ;; Crawl the type tree and mutate constraints when a
   ;; class type with row variable is found.
   (define (inf type)
     (type-case
      (#:Type inf #:Filter (sub-f inf) #:Object (sub-o inf))
      type
-     [#:Class row inits fields methods
+     [#:Class row inits fields methods augments
       (cond
        [(and row (F? row))
-        (match-define (list init-cs field-cs method-cs) constraints)
+        (match-define (list init-cs field-cs method-cs augment-cs)
+                      constraints)
         (set! constraints
               (list (append (dict-keys inits) init-cs)
                     (append (dict-keys fields) field-cs)
-                    (append (dict-keys methods) method-cs)))
-        (make-Class row inits fields methods)]
+                    (append (dict-keys methods) method-cs)
+                    (append (dict-keys augments) augment-cs)))
+        (make-Class row inits fields methods augments)]
        [else
         (match-define (list (list init-names init-tys init-reqds) ...) inits)
         (match-define (list (list field-names field-tys) ...) fields)
         (match-define (list (list method-names method-tys) ...) methods)
+        (match-define (list (list augment-names augment-tys) ...) augments)
         (make-Class
          (and row (inf row))
          (map list init-names (map inf init-tys) init-reqds)
          (map list field-names (map inf field-tys))
-         (map list method-names (map inf method-tys)))])]))
+         (map list method-names (map inf method-tys))
+         (map list augment-names (map inf augment-tys)))])]))
   (inf type)
   (map remove-duplicates constraints))
 
 ;; infer-row : RowConstraints Type -> Row
 ;; Infer a row based on a class type and row constraints
 (define (infer-row constraints class-type)
-  (match-define (list init-cs field-cs method-cs) constraints)
-  (match-define (Class: _ inits fields methods)
+  (match-define (list init-cs field-cs method-cs augment-cs)
+                constraints)
+  (match-define (Class: _ inits fields methods augments)
                 (resolve class-type))
   (define (dict-remove* dict keys)
     (for/fold ([dict dict])
@@ -143,7 +160,8 @@
       (dict-remove dict key)))
   (make-Row (dict-remove* inits init-cs)
             (dict-remove* fields field-cs)
-            (dict-remove* methods method-cs)))
+            (dict-remove* methods method-cs)
+            (dict-remove* augments augment-cs)))
 
 ;; Syntax -> Syntax
 ;; removes two levels of nesting
@@ -177,7 +195,7 @@
 (define-splicing-syntax-class (class-type-clauses parse-type)
   #:description "Class type clause"
   #:attributes (row-var extends-types
-                inits fields methods)
+                inits fields methods augments)
   (pattern (~seq (~or (~optional (~seq #:row-var row-var:id))
                       (~seq #:implements extends-type:expr)
                       (~var clause (type-clause parse-type)))
@@ -185,6 +203,7 @@
            #:attr inits (apply append (attribute clause.init-entries))
            #:attr fields (apply append (attribute clause.field-entries))
            #:attr methods (apply append (attribute clause.method-entries))
+           #:attr augments (apply append (attribute clause.augment-entries))
            #:with extends-types #'(extends-type ...)
            #:fail-when
            (check-duplicate (map first (attribute inits)))
@@ -193,8 +212,9 @@
            (check-duplicate (map first (attribute fields)))
            "duplicate field or init-field clause"
            #:fail-when
-           (check-duplicate (map first (attribute methods)))
-           "duplicate method clause"))
+           (check-duplicate (map first (append (attribute methods)
+                                               (attribute augments))))
+           "duplicate method or augmentable method clause"))
 
 ;; Stx Stx Listof<Boolean> (Stx -> Type) -> Listof<(List Symbol Type Boolean)>
 ;; Construct init entries for a dictionary for the class type
@@ -207,18 +227,20 @@
           optional?)))
 
 ;; Stx Stx (Stx -> Type) -> Listof<(List Symbol Type)>
-;; Construct field entries for a class type dictionary
-(define (make-field-entries labels types parse-type)
+;; Construct field/augment entries for a class type dictionary
+(define (make-field/augment-entries labels types parse-type)
   (for/list ([label (in-syntax labels)]
              [type (in-syntax types)])
     (list (syntax-e label) (parse-type type))))
 
 (define-syntax-class (type-clause parse-type)
-  #:attributes (init-entries field-entries method-entries)
-  #:literals (init init-field field)
+  #:attributes (init-entries field-entries
+                method-entries augment-entries)
+  #:literals (init init-field field augment)
   (pattern (~or (init init-clause:init-type ...)
                 (init-field init-field-clause:init-type ...)
                 (field field-clause:field-or-method-type ...)
+                (augment augment-clause:field-or-method-type ...)
                 method-clause:field-or-method-type)
            #:attr init-entries
            (append (if (attribute init-clause)
@@ -237,13 +259,13 @@
                        null))
            #:attr field-entries
            (append (if (attribute field-clause)
-                       (make-field-entries
+                       (make-field/augment-entries
                         #'(field-clause.label ...)
                         #'(field-clause.type ...)
                         parse-type)
                        null)
                    (if (attribute init-field-clause)
-                       (make-field-entries
+                       (make-field/augment-entries
                         #'(init-field-clause.label ...)
                         #'(init-field-clause.type ...)
                         parse-type)
@@ -252,6 +274,13 @@
            (if (attribute method-clause)
                (list (list (syntax-e #'method-clause.label)
                            (parse-type #'method-clause.type)))
+               null)
+           #:attr augment-entries
+           (if (attribute augment-clause)
+               (make-field/augment-entries
+                #'(augment-clause.label ...)
+                #'(augment-clause.type ...)
+                parse-type)
                null)))
 
 (define-syntax-class init-type
