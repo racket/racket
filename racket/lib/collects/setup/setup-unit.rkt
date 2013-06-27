@@ -354,16 +354,17 @@
                       #:info-path-mode 'abs-in-relative
                       #:omit-root 'dir
                       #:main? #t))
-    (for ([c+p (in-list (links #:user? #f #:with-path? #t))])
-      (cc! (list (string->path (car c+p)))
-           #:path (cdr c+p)))
-    (for ([cp (in-list (links #:root? #t #:user? #f))]
-          #:when (directory-exists? cp)
-          [collection (directory-list cp)]
-          #:unless (skip-collection-directory? collection)
-          #:when (directory-exists? (build-path cp collection)))
-      (cc! (list collection)
-           #:path (build-path cp collection))))
+    (when (member (find-links-file) (get-links-search-files))
+      (for ([c+p (in-list (links #:user? #f #:with-path? #t))])
+        (cc! (list (string->path (car c+p)))
+             #:path (cdr c+p)))
+      (for ([cp (in-list (links #:root? #t #:user? #f))]
+            #:when (directory-exists? cp)
+            [collection (directory-list cp)]
+            #:unless (skip-collection-directory? collection)
+            #:when (directory-exists? (build-path cp collection)))
+        (cc! (list collection)
+             #:path (build-path cp collection)))))
   (when (make-user)
     (define info-root (find-user-lib-dir))
     (define info-path (build-path info-root "info-cache.rktd"))

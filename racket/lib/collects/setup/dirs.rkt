@@ -157,8 +157,8 @@
        (define dir
          (delay
            (or (force config:id)
-               (let ([p (find-config-dir)])
-                 (and p (simplify-path (build-path p 'up default)))))))
+               (let ([p (find-collects-dir)])
+                 (and p (simplify-path (build-path p 'up 'up default)))))))
        (define (id)
          (force dir)))]
     [(_ provide config:id id user-id default)

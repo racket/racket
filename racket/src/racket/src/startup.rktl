@@ -440,10 +440,35 @@
   (define-values (coerce-to-path)
     (lambda (p)
       (cond
-       [(string? p) (string->path p)]
-       [(bytes? p) (bytes->path p)]
+       [(string? p) (collects-relative-path->complete-path (string->path p))]
+       [(bytes? p) (collects-relative-path->complete-path (bytes->path p))]
+       [(path? p) (collects-relative-path->complete-path p)]
        [else p])))
 
+  (define-values (collects-relative-path->complete-path)
+    (lambda (p)
+      (cond
+       [(complete-path? p) p]
+       [else
+        (path->complete-path
+         p
+         (or (exe-relative-path->complete-path (find-system-path 'collects-dir))
+             (find-system-path 'orig-dir)))])))
+
+  (define-values (exe-relative-path->complete-path)
+    (lambda (collects-path)
+      (cond
+       [(complete-path? collects-path) collects-path]
+       [(absolute-path? collects-path)
+        ;; This happens only under Windows; add a drive
+        ;;  specification to make the path complete
+        (path->complete-path collects-path
+                             (path->complete-path
+                              (find-executable-path (find-system-path 'exec-file) #f #t)
+                              (find-system-path 'orig-dir)))]
+       [else
+        (find-executable-path (find-system-path 'exec-file) collects-path #t)])))
+  
   (define-values (add-config-search)
     (lambda (ht key orig-l)
       (let ([l (hash-ref ht key #f)])
@@ -463,11 +488,11 @@
                                 (lambda ()
                                   (let* ([d (find-config-dir)]
                                          [ht (get-config-table d)]
-                                         [lf (or (hash-ref ht 'links-file #f)
-                                                 (build-path (or
-                                                              (coerce-to-path (hash-ref ht 'lib-dir #f))
-                                                              (build-path d 'up "lib"))
-                                                             "links.rktd"))])
+                                         [lf (coerce-to-path
+                                              (or (hash-ref ht 'links-file #f)
+                                                  (build-path (or (hash-ref ht 'lib-dir #f)
+                                                                  'up)
+                                                              "links.rktd")))])
                                     (list->vector
                                      (add-config-search
                                       ht
@@ -837,7 +862,7 @@
 
   (define-values (load/use-compiled)
     (lambda (f) ((current-load/use-compiled) f #f)))
-    
+      
   (define-values (find-library-collection-paths)
     (case-lambda
      [() (find-library-collection-paths null null)]
@@ -868,14 +893,7 @@
              (if (null? l)
                  null
                  (let* ([collects-path (car l)]
-                        [v
-                         (cond
-                          [(complete-path? collects-path) collects-path]
-                          [(absolute-path? collects-path)
-                           (path->complete-path collects-path
-                                                (find-executable-path (find-system-path 'exec-file) #f #t))]
-                          [else
-                           (find-executable-path (find-system-path 'exec-file) collects-path #t)])])
+                        [v (exe-relative-path->complete-path collects-path)])
                    (if v
                        (cons (simplify-path (path->complete-path v (current-directory)))
                              (loop (cdr l)))

@@ -6,9 +6,9 @@ raco link: -u/--user mode installs a version-specific link,
  added -s/--shared for user-specific, all-version links
 Added PLTCONFIGDIR
 Added links-file and links-search-dirs to config, enabling
- a search path of installation-wide link files
-setup/dir: default paths found relative to the config directory,
- instead of the main collection directory
+ a search path of installation-wide link files, as well
+ as pkgs-dir and pkgs-search-dirs
+Removed -C/--links command-line flag
 
 Version 5.3.900.1
 Reorganized collections into packages

@@ -8,6 +8,11 @@ set DEVENV=devenv
 for %%X in (vcexpress.exe) do (set VCEXP=%%~$PATH:X)
 if defined VCEXP set DEVENV=%VCEXP%
 
+if not exist ..\..\etc  mkdir ..\..\etc
+if not exist ..\..\doc  mkdir ..\..\doc
+
+if not defined BUILD_CONFIG set BUILD_CONFIG=..\..\etc
+
 cd racket
 "%DEVENV%" racket.sln /Build "Release|%BUILDMODE%"
 if errorlevel 1 exit /B 1
@@ -17,7 +22,7 @@ if errorlevel 1 exit /B 1
 cd ..
 
 cd gc2
-..\..\..\racketcgc %SELF_RACKET_FLAGS% -cu make.rkt
+..\..\..\racketcgc -G ..\%BUILD_CONFIG% -cu make.rkt
 if errorlevel 1 exit /B 1
 cd ..
 
@@ -35,7 +40,7 @@ if errorlevel 1 exit /B 1
 cd ..
 
 cd mzcom
-..\..\..\racket %SELF_RACKET_FLAGS% -cu xform.rkt
+..\..\..\racket -G ..\%BUILD_CONFIG -cu xform.rkt
 if errorlevel 1 exit /B 1
 cd ..
 
@@ -44,11 +49,6 @@ cd mzcom
 if errorlevel 1 exit /B 1
 cd ..
 
-..\..\racket -l racket/kernel/init -e "(if (directory-exists? \"../../etc\") (void) (make-directory \"../../etc\"))"
-if errorlevel 1 exit /B 1
-..\..\racket -l racket/kernel/init -e "(if (directory-exists? \"../../doc\") (void) (make-directory \"../../doc\"))"
-if errorlevel 1 exit /B 1
-
 copy ..\COPYING-libscheme.txt ..\..\lib\
 if errorlevel 1 exit /B 1
 copy ..\COPYING_LESSER.txt ..\..\lib\
@@ -56,5 +56,5 @@ if errorlevel 1 exit /B 1
 copy ..\COPYING.txt ..\..\lib\
 if errorlevel 1 exit /B 1
 
-..\..\racket -N "raco setup" %SELF_RACKET_FLAGS% -l- setup %PLT_SETUP_OPTIONS%
+..\..\racket -G %BUILD_CONFIG% -N "raco setup" %SELF_RACKET_FLAGS% -l- setup %PLT_SETUP_OPTIONS%
 if errorlevel 1 exit /B 1

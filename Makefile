@@ -39,15 +39,23 @@ win32-in-place:
 # ------------------------------------------------------------
 # Core build
 
+# During this step, we use a configuration file that indicates
+# an empty set of link files, so that any installation-wide
+# links or packages are ignored during the core build.
+
 core:
+	mkdir -p build/config
+	echo '#hash((links-search-files . ()))' > build/config/config.rktd
 	mkdir -p racket/src/build
 	$(MAKE) racket/src/build/Makefile
 	cd racket/src/build; $(MAKE) reconfigure
-	cd racket/src/build; $(MAKE) SELF_RACKET_FLAGS="-G ."
-	cd racket/src/build; $(MAKE) install SELF_RACKET_FLAGS="-G ."
+	cd racket/src/build; $(MAKE) SELF_RACKET_FLAGS="-G `cd ../../../build/config; pwd`"
+	cd racket/src/build; $(MAKE) install SELF_RACKET_FLAGS="-G `cd ../../../build/config; pwd`"
 
 win32-core:
-	cmd /c racket\src\worksp\build-at racket\src\worksp
+	IF NOT EXIST build\config cmd /c mkdir mkdir -p build\config
+	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
+	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config
 
 racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
 	cd racket/src/build; ../configure

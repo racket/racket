@@ -943,7 +943,7 @@ v
   Returns a list of paths to installation @tech[#:doc
   reference-doc]{collection links files} that are search in
   order. (Normally, the result includes the result of
-  @racket[(find-links-files)], which is where new installation-wide
+  @racket[(find-links-file)], which is where new installation-wide
   links are installed by @exec{raco link} or @racket[links].) The
   files indicated by the returned paths may or may not exist.}
 

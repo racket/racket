@@ -281,6 +281,10 @@ flags:
         argument is parsed in the same way as @envvar{PLTCOMPILEDROOTS}
         (see @racket[current-compiled-file-roots]).}
 
+  @item{@FlagFirst{G} @nonterm{dir} or @DFlagFirst{config}
+        @nonterm{dir} : Sets the directory that is returned by
+        @racket[(find-system-path 'config-dir)].}
+
   @item{@FlagFirst{A} @nonterm{dir} or @DFlagFirst{addon}
         @nonterm{dir} : Sets the directory that is returned by
         @racket[(find-system-path 'addon-dir)].}
