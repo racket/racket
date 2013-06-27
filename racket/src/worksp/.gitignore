@@ -8,8 +8,8 @@
 */*.user
 
 # DevStudio generated files
-*/gracket.ncb
-*/gracket.suo
+*/*.ncb
+*/*.suo
 
 rbuildmode.obj
 rbuildmode.exe
