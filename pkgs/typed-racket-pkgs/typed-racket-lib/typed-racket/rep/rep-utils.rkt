@@ -125,7 +125,7 @@
                                       [(f) #'(if (Rep? f) (Rep-seq f) f)]
                                       [(fields ...) #'(list (if (Rep? fields) (Rep-seq fields) fields) ...)])]))
                ;; expression that when given a "get free-variables"
-               ;; function, combines the results in the expected pashion.
+               ;; function, combines the results in the expected fashion.
                (~optional [#:frees frees:frees-pat]
                           #:defaults
                           ([frees.f1 (combiner #'Rep-free-vars #'flds.fields)]
