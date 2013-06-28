@@ -212,7 +212,7 @@
 ;;; The SRFI discussion record contains more discussion on this topic.
 
 ;; JBC, 2003-10-20: some of the names provided by list.rkt are prefixed
-;; with an s: to avoid colliding with mzscheme.  The wrapper 1.rkt
+;; with an s: to avoid colliding with racket.  The wrapper 1.rkt
 ;; changes their names back to the non-prefixed form.
 
 #lang scheme/base

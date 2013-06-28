@@ -1,7 +1,7 @@
 
 /* Example dynamically-loaded Racket extension, but not a good one.
 
-   For example extensions, see plt/collects/mzscheme/examples. */
+   For example extensions, see plt/pkgs/mzscheme/mzscheme/examples. */
 
 #include "escheme.h"
 #include <time.h>

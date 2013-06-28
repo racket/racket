@@ -2,7 +2,7 @@
 
 ;; Should be called with three command-line arguments:
 ;; 1. The include directory that should be created,
-;; 2. The location of the src/mzscheme directory,
+;; 2. The location of the src/racket directory,
 ;; 3. The location of mzconfig.
 
 ;; written in #%kernel because it's loaded with -c (ie, no compiled files)

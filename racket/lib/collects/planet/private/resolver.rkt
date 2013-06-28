@@ -449,7 +449,7 @@ See the scribble documentation on the planet/resolver module.
 
 ;; get/uninstalled-cache : pkg-getter
 ;; note: this does not yet work with minimum-required-version specifiers if you
-;; install a package and then use an older mzscheme
+;; install a package and then use an older racket
 (define (get/uninstalled-cache _ pkg-spec load? success-k failure-k)
   (let ([p (lookup-package pkg-spec (UNINSTALLED-PACKAGE-CACHE))])
     (if (and p (file-exists? (build-path (pkg-path p)

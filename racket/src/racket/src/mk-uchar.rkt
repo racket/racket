@@ -7,7 +7,7 @@
 ;; is used for string operations.
 
 ;; Run as
-;;   mzscheme mk-uchar.rkt
+;;   racket mk-uchar.rkt
 ;; in the script's directory, and have a copy of UnicodeData.txt, etc.
 ;; in the "Unicode" directory. The file schuchar.inc will be
 ;; overwritten.

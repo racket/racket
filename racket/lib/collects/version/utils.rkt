@@ -15,7 +15,7 @@
 
 ;; the following functions assume valid version string inputs
 
-;; returns a list of 4 integers (see src/mzscheme/src/schvers.h)
+;; returns a list of 4 integers (see src/racket/src/schvers.h)
 (define (version->list str)
   (define ver (map string->number (regexp-split #rx"[.]" str)))
   (case (length ver)

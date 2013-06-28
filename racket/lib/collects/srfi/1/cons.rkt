@@ -56,7 +56,7 @@
 ;;
 ;; (cons first (unfold not-pair? car cdr rest values))
 
-;; reprovided as mzscheme's list*
+;; reprovided as racket's list*
 ;; (define (cons* first . rest)
 ;;   (let recur ((x first) (rest rest))
 ;;     (if (pair? rest)

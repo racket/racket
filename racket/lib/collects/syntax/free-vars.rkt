@@ -1,5 +1,5 @@
 #lang racket/base
-;; this finds the free variables of fully-expanded mzscheme expressions
+;; this finds the free variables of fully-expanded racket expressions
 ;; adapted from code by mflatt
 
 (require syntax/kerncase

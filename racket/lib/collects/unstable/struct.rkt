@@ -47,7 +47,7 @@
 ;; Eli: You give a good point for this, but I'd prefer if the optimizer would
 ;;   detect these, so you'd get the same warnings for constructors too when you
 ;;   use `-W warning'.  (And then, if you really want these things to be
-;;   errors, then perhaps something at the mzscheme level should make it throw
+;;   errors, then perhaps something at the racket level should make it throw
 ;;   errors instead of warnings.)
 
 (define dummy-value (box 'dummy))

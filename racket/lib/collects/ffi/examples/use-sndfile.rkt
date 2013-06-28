@@ -30,7 +30,7 @@
                   ;(append data (reverse data))
                   (append data (reverse (map reverse data)))
                   `((artist "Eli") (comment "Comment") (title "Title")
-                                   (date "1/1/1999") (software "mzscheme")
+                                   (date "1/1/1999") (software "Racket")
                                    ,@meta))))
 
 
