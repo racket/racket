@@ -217,7 +217,7 @@ racket.multiboot : libracket.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@
 # ----------------------------------------
 
 DEF_COLLECTS_DIR = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../lib/collects; @PWD@`"'"'
-DEF_CONFIG_DIR = -DINITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../../etc; @PWD@`"'"'
+DEF_CONFIG_DIR = -DINITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../..; @PWD@`/etc"'"'
 DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 
 main.@LTO@: $(srcdir)/main.c $(srcdir)/include/scheme.h $(srcdir)/sconfig.h $(srcdir)/src/stypes.h $(srcdir)/cmdline.inc $(srcdir)/parse_cmdl.inc $(srcdir)/oskglue.inc
