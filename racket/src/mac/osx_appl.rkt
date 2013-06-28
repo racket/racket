@@ -11,8 +11,9 @@
 (module osx_appl mzscheme
 
   (require (lib "plist.rkt" "xml")
-	   mzlib/process
-	   mzlib/file)
+	   racket/system
+	   racket/file
+           racket/path)
 
   (define rez-path (or (getenv "REZ")
 		       "/Developer/Tools/Rez"))

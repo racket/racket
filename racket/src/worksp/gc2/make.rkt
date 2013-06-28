@@ -3,7 +3,7 @@
 (use-compiled-file-paths null)
 
 (require mzlib/restart
-         mzlib/process)
+         racket/system)
 
 (define (system- s)
   (eprintf "~a\n" s)

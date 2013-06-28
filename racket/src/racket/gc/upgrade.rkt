@@ -3,8 +3,7 @@
 (define new-dir "~/Desktop/gc6.7")
 (define really-git? #t)
 
-(require mzlib/file
-	 mzlib/process)
+(require racket/file racket/path racket/system)
 
 (define old (make-hash-table 'equal))
 (define new (make-hash-table 'equal))
