@@ -354,11 +354,11 @@
                       #:info-path-mode 'abs-in-relative
                       #:omit-root 'dir
                       #:main? #t))
-    (when (member (find-links-file) (get-links-search-files))
-      (for ([c+p (in-list (links #:user? #f #:with-path? #t))])
+    (for ([inst-links (in-list (get-links-search-files))])
+      (for ([c+p (in-list (links #:file inst-links #:with-path? #t))])
         (cc! (list (string->path (car c+p)))
              #:path (cdr c+p)))
-      (for ([cp (in-list (links #:root? #t #:user? #f))]
+      (for ([cp (in-list (links #:root? #t #:file inst-links))]
             #:when (directory-exists? cp)
             [collection (directory-list cp)]
             #:unless (skip-collection-directory? collection)

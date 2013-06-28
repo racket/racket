@@ -64,7 +64,7 @@ racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
 # Configuration options for building installers
 
 # Packages to include in a distribution:
-PKGS = drracket
+PKGS = main-distribution
 
 # Catalog for sources and native packages; use "local" to bootstrap
 # from package directories (in the same directory as this makefile)
@@ -117,17 +117,16 @@ REMOTE_USER_AUTO = --catalog http://$(SERVER):9440/ $(USER_AUTO_OPTIONS)
 REMOTE_INST_AUTO = --catalog http://$(SERVER):9440/ --scope installation --deps search-auto
 
 # ------------------------------------------------------------
-# Linking all packages (i.e., not an installer build)
+# Linking all packages (development mode; not an installer build)
 
 pkg-links:
-	$(PLAIN_RACKET) racket/src/link-all.rkt --platform build/native-pkgs
-	$(PLAIN_RACKET) racket/src/link-all.rkt pkgs
+	$(PLAIN_RACKET) -U -G build/config racket/src/link-all.rkt ++dir pkgs ++dir build/native-pkgs $(PKGS)
 
 win32-pkg-links:
 	$(MAKE) pkg-links PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
 
 # ------------------------------------------------------------
-# On a server platform:
+# On a server platform (for an installer build):
 
 server:
 	$(MAKE) core
@@ -212,7 +211,7 @@ binary-catalog-server:
 	$(RACKET) -l- distro-build/serve-catalog --mode binary
 
 # ------------------------------------------------------------
-# On each supported platform:
+# On each supported platform (for an installer build):
 #
 # The `client' and `win32-client' targets are also used by
 # `distro-buid/drive-clients', which is in turn run by the
@@ -281,7 +280,7 @@ win32-installer-from-bundle:
 	$(WIN32_RACKET) -l- distro-build/installer $(UPLOAD) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_DIR)
 
 # ------------------------------------------------------------
-# On each supported platform:
+# Drive installer build:
 
 DRIVE_ARGS = $(RELEASE_MODE) "$(FARM_CONFIG)" $(SERVER) "$(PKGS)" "$(DIST_NAME)" $(DIST_DIR)
 DRIVE_CMD = $(RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS)

@@ -68,8 +68,8 @@
 (define-config config:man-dir 'man-dir to-path)
 (define-config config:links-file 'links-file to-path)
 (define-config config:links-search-files 'links-search-files to-path)
-(define-config config:pkg-dir 'pkg-dir to-path)
-(define-config config:pkg-search-dirs 'pkg-search-dirs to-path)
+(define-config config:pkgs-dir 'pkgs-dir to-path)
+(define-config config:pkgs-search-dirs 'pkgs-search-dirs to-path)
 (define-config config:cgc-suffix 'cgc-suffix values)
 (define-config config:3m-suffix '3m-suffix values)
 (define-config config:absolute-installation? 'absolute-installation? (lambda (x) (and x #t)))
@@ -331,19 +331,19 @@
 ;; Packages
 
 (define-finder provide
-  config:pkg-dir
-  find-pkg-dir
+  config:pkgs-dir
+  find-pkgs-dir
   get-false
-  config:pkg-search-dirs
-  get-pkg-search-dirs
+  config:pkgs-search-dirs
+  get-pkgs-search-dirs
   (chain-to (lambda () (build-path (find-lib-dir) "pkgs"))))
 
-(provide find-user-pkg-dir
-         find-shared-pkg-dir)
-(define (find-user-pkg-dir [vers (version)])
+(provide find-user-pkgs-dir
+         find-shared-pkgs-dir)
+(define (find-user-pkgs-dir [vers (version)])
   (build-path (find-system-path 'addon-dir)
               vers
               "pkgs"))
-(define (find-shared-pkg-dir)
+(define (find-shared-pkgs-dir)
   (build-path (find-system-path 'addon-dir)
               "pkgs"))

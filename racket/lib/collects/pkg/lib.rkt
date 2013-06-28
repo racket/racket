@@ -111,13 +111,16 @@
          (λ (ip) (copy-port ip op)))))))
 
 (define (pkg-dir config?)
-  (case (current-pkg-scope)
-    [(installation) (if config?
-                        (find-config-dir)
-                        (find-pkg-dir))]
-    [(user) (find-user-pkg-dir (current-pkg-scope-version))]
-    [(shared) (find-shared-pkg-dir)]
-    [else (error "unknown package scope")]))
+  (define scope (current-pkg-scope))
+  (if (path? scope)
+      scope
+      (case scope
+        [(installation) (if config?
+                            (find-config-dir)
+                            (find-pkgs-dir))]
+        [(user) (find-user-pkgs-dir (current-pkg-scope-version))]
+        [(shared) (find-shared-pkgs-dir)]
+        [else (error "unknown package scope")])))
 (define (pkg-config-file)
   (build-path (pkg-dir #t) "config.rktd"))
 (define (pkg-db-file)
@@ -426,21 +429,23 @@
   (define (merge-next-pkg-dbs scope)
     (parameterize ([current-pkg-scope scope])
       (with-pkg-lock/read-only (merge-pkg-dbs scope))))
-  (case scope
-    [(installation)
-     (for*/hash ([dir (in-list (get-pkg-search-dirs))]
-                 [file (in-value (build-path dir "pkgs.rktd"))]
-                 #:when (file-exists? file)
-                 [(k v) (read-pkg-db-file file)])
-       (values k v))]
-    [(shared)
-     (define db (read-pkg-db))
-     (for/fold ([ht (merge-next-pkg-dbs 'installation)]) ([(v k) (in-hash db)])
-       (hash-set ht k v))]
-    [(user)
-     (define db (read-pkg-db))
-     (for/fold ([ht (merge-next-pkg-dbs 'shared)]) ([(v k) (in-hash db)])
-       (hash-set ht k v))]))
+  (if (path? scope)
+      (read-pkg-db)
+      (case scope
+        [(installation)
+         (for*/hash ([dir (in-list (get-pkgs-search-dirs))]
+                     [file (in-value (build-path dir "pkgs.rktd"))]
+                     #:when (file-exists? file)
+                     [(k v) (read-pkg-db-file file)])
+           (values k v))]
+        [(shared)
+         (define db (read-pkg-db))
+         (for/fold ([ht (merge-next-pkg-dbs 'installation)]) ([(v k) (in-hash db)])
+           (hash-set ht k v))]
+        [(user)
+         (define db (read-pkg-db))
+         (for/fold ([ht (merge-next-pkg-dbs 'shared)]) ([(v k) (in-hash db)])
+           (hash-set ht k v))])))
     
 
 (define (package-info pkg-name [fail? #t])
@@ -457,7 +462,10 @@
 ;; return the current scope as a string
 ;; -> (or/c "user" "shared" "installation")
 (define (current-scope->string)
-  (symbol->string (current-pkg-scope)))
+  (define scope (current-pkg-scope))
+  (cond
+   [(path? scope) (path->string scope)]
+   [else (symbol->string scope)]))
 
 ;; prints an error for packages that are not installed
 ;; pkg-name db -> void
@@ -538,8 +546,26 @@
   (struct-copy install-info if
                [checksum op]))
 
+(define (scope->links-file scope)
+  (and (path? scope)
+       (build-path scope "links.rktd")))
+
+(define (get-scope-list)
+  ;; Get a list of scopes suitable for searches with respect to
+  ;; the current scope
+  (define current-scope (current-pkg-scope))
+  (if (path? current-scope)
+      (list current-scope)
+      (member current-scope
+              (append '(user shared)
+                      (let ([main (find-pkgs-dir)])
+                        (for/list ([d (get-pkgs-search-dirs)])
+                          (if (equal? d main)
+                              'installation
+                              d)))))))
+
 (define (pkg-directory pkg-name)
-  (for/or ([scope (in-list '(user shared installation))])
+  (for/or ([scope (in-list (get-scope-list))])
     (parameterize ([current-pkg-scope scope])
       (with-pkg-lock/read-only
        (pkg-directory* pkg-name)))))
@@ -568,7 +594,7 @@
   (define p (explode given-p))
   (define (build-path* l)
     (if (null? l) 'same (apply build-path l)))
-  (for/fold ([pkg #f] [subpath #f]) ([scope (in-list '(user shared installation))]
+  (for/fold ([pkg #f] [subpath #f]) ([scope (in-list (get-scope-list))]
                                      #:when (not pkg))
     (parameterize ([current-pkg-scope scope])
       (with-pkg-lock/read-only
@@ -604,18 +630,25 @@
   (match-define (pkg-info orig-pkg checksum _) pi)
   (define pkg-dir (pkg-directory* pkg-name))
   (remove-from-pkg-db! pkg-name)
+  (define scope (current-pkg-scope))
+  (define user? (not (or (eq? scope 'installation)
+                         (path? scope))))
+  (define shared? (and user?
+                       (eq? (current-pkg-scope) 'shared)))
   (match orig-pkg
     [`(link ,_)
      (links pkg-dir
             #:remove? #t
-            #:user? (not (eq? (current-pkg-scope) 'installation))
-            #:shared? (eq? (current-pkg-scope) 'shared)
+            #:user? user?
+            #:shared? shared?
+            #:file (scope->links-file scope)
             #:root? (not (sc-pkg-info? pi)))]
     [_
      (links pkg-dir
             #:remove? #t
-            #:user? (not (eq? (current-pkg-scope) 'installation))
-            #:shared? (eq? (current-pkg-scope) 'shared)
+            #:user? user?
+            #:shared? shared?
+            #:file (scope->links-file scope)
             #:root? (not (sc-pkg-info? pi)))
      (delete-directory/files pkg-dir)]))
 
@@ -1249,10 +1282,13 @@
          (log-pkg-debug "creating ~alink to ~e" 
                         (if single-collect "single-collection " "") 
                         final-pkg-dir)
+         (define scope (current-pkg-scope))
          (links final-pkg-dir
                 #:name single-collect
-                #:user? (not (eq? 'installation (current-pkg-scope)))
-                #:shared? (eq? 'shared (current-pkg-scope))
+                #:user? (not (or (eq? 'installation scope)
+                                 (path? scope)))
+                #:shared? (eq? 'shared scope)
+                #:file (scope->links-file scope)
                 #:root? (not single-collect))
          (define this-pkg-info
            (if single-collect
@@ -1450,40 +1486,25 @@
 (define (pkg-show indent #:directory? [dir? #f])
   (let ()
     (define db (read-pkg-db))
-    (define all-db (if (eq? (current-pkg-scope) 'installation)
-                       (merge-pkg-dbs)
-                       db))
-    (define has-const? (not (equal? all-db db)))
-    (define pkgs (sort (hash-keys all-db) string-ci<=?))
+    (define pkgs (sort (hash-keys db) string-ci<=?))
     (if (null? pkgs)
         (printf " [none]\n")
         (table-display
          (list*
           (append
-           (list (format "~aPackage[*=auto~a]" 
-                         indent
-                         (if has-const?
-                             "; .=constant"
-                             ""))
+           (list (format "~aPackage[*=auto]" indent)
                  "Checksum"
                  "Source")
            (if dir?
                (list "Directory")
                empty))
           (for/list ([pkg (in-list pkgs)])
-            (match-define (pkg-info orig-pkg checksum auto?) (hash-ref all-db pkg))
+            (match-define (pkg-info orig-pkg checksum auto?) (hash-ref db pkg))
             (append
-             (list (format "~a~a~a~a"
+             (list (format "~a~a~a"
                            indent
                            pkg
-                           (if auto?
-                               "*"
-                               "")
-                           (if (and has-const?
-                                    (not (equal? (hash-ref all-db pkg)
-                                                 (hash-ref db pkg #f))))
-                               "."
-                               ""))
+                           (if auto? "*" ""))
                    (format "~a" checksum)
                    (format "~a" orig-pkg))
              (if dir?
@@ -2110,7 +2131,8 @@
   (or/c #f 'fail 'force 'search-ask 'search-auto))
 
 (define package-scope/c
-  (or/c 'installation 'user 'shared))
+  (or/c 'installation 'user 'shared
+        (and/c path? complete-path?)))
 
 (provide
  with-pkg-lock

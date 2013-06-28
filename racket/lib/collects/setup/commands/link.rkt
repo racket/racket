@@ -103,12 +103,11 @@
   (void (links #:user? #t #:shared? #t #:show? #t))
   (printf "Installation links:\n")
   (void (links #:user? #f #:show? #t))
-  (let ([p (filter file-exists?
-                   (remove (find-links-file) (get-links-search-files)))])
-    (unless (null? p)
-      (printf "Installation constant links:\n")
-      (for ([f (in-list p)])
-        (void (links #:file f #:show? #t))))))
+  (for ([f (in-list
+            (filter file-exists?
+                    (remove (find-links-file) (get-links-search-files))))])
+    (printf "Links from ~a:\n" f)
+    (void (links #:file f #:show? #t))))
 
 (when (and (remove-mode)
            (null? l1)

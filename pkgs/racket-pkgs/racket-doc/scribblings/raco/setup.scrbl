@@ -947,25 +947,25 @@ v
   links are installed by @exec{raco link} or @racket[links].) The
   files indicated by the returned paths may or may not exist.}
 
-@defproc[(find-pkg-dir) path?]{
+@defproc[(find-pkgs-dir) path?]{
   Returns a path to the directory containing packages with
   installation scope; the directory indicated by the returned path may
   or may not exist.}
 
-@defproc[(find-user-pkg-dir) path?]{
+@defproc[(find-user-pkgs-dir) path?]{
   Returns a path to the directory containing packages with
   user- and version-specific scope; the directory indicated by
   the returned path may or may not exist.}
 
-@defproc[(find-shared-pkg-dir) path?]{
+@defproc[(find-shared-pkgs-dir) path?]{
   Returns a path to the directory containing packages with
   user-specific, all-version scope; the directory indicated by the
   returned path may or may not exist.}
 
-@defproc[(get-pkg-search-dirs) (listof path?)]{
+@defproc[(get-pkgs-search-dirs) (listof path?)]{
   Returns a list of paths to the directories containing packages in
   installation scope.  (Normally, the result includes the result of
-  @racket[(find-pkg-dir)], which is where new packages are installed
+  @racket[(find-pkgs-dir)], which is where new packages are installed
   by @exec{raco pkg install}.) The directories indicated by the returned
   paths may or may not exist.}
 

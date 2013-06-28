@@ -259,8 +259,12 @@ that is, package installation makes the package visible only for the
 installing user and with the installing version of Racket. The
 @exec{installation} scope means that package installation makes the
 package visible to all users of the specific Racket installation that
-is used to install the package. Finally, the @exec{shared} scope means
+is used to install the package. The @exec{shared} scope means
 user-specific, but for all versions and installations of Racket.
+Finally, a directory path can be used as a package scope, in which case
+package operations affect the set of packages installations in the
+directory (and an installation can be configured to include the
+directory in its search path for installed packages).
 
 @; ----------------------------------------
 
@@ -329,6 +333,7 @@ sub-sub-commands:
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
+ @item{@DFlag{scope-dir} @nonterm{dir} --- Select @nonterm{dir} as the @tech{package scope}.}
  
  @item{@DFlag{catalog} @nonterm{catalog} --- Use @nonterm{catalog} instead of of the currently configured 
        @tech{package catalogs}.}
@@ -355,6 +360,7 @@ this command fails without installing any of the @nonterm{pkg}s
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
+ @item{@DFlag{scope-dir} @nonterm{dir} --- Selects @nonterm{dir} as the @tech{package scope}, the same as for @command-ref{install}.}
  ]
 }
 
@@ -375,6 +381,7 @@ removing any of the @nonterm{pkg}s.
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
+ @item{@DFlag{scope-dir} @nonterm{dir} --- Selects @nonterm{dir} as the @tech{package scope}, the same as for @command-ref{install}.}
  ]
 }
 
@@ -399,6 +406,7 @@ removing any of the @nonterm{pkg}s.
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
+ @item{@DFlag{scope-dir} @nonterm{dir} --- Shows only packages installed in @nonterm{dir}.}
  @item{@DFlag{version} @nonterm{vers} or @Flag{v} @nonterm{vers} --- Show only user-specific packages for Racket version @nonterm{vers}.}
  ]
 }

@@ -1,5 +1,5 @@
-Quick Instrctions
-=================
+Quick Instructions
+==================
 
 On Unix of Mac OS X, `make' (or `make in-place') creates a build in
 the "racket" directory.
@@ -26,6 +26,16 @@ process, see below.
 On Windows, you must first clone "git://github.com/plt/libs.git"
 as "build/native-pkgs". Then, you can use `nmake win32-in-place',
 as long as you're using Microsoft Visual Studio 9.0 (2008).
+
+To install a subset of the packages in "pkgs", supply `PKGS' value to
+`make'. For example,
+
+  make PKGS="gui-lib readline-lib"
+
+links only the "gui-lib" and "readline-lib" packages and their
+dependencies. The default value of `PKGS' is "main-distribution",
+which has all packages in "pkgs" among its dependencies. See "Linking
+Packages for Development Mode", below, for more information.
 
 
 Building Racket Pieces
@@ -57,7 +67,6 @@ In the near future, after you've built the core, you can install
 packages via a package-catalog server (ignoring the content of
 "pkgs"). That catalog server is not ready, yet.
 
-
 Linking Packages for Development Mode
 -------------------------------------
 
@@ -70,19 +79,26 @@ reinstalling packages).
 
 The `pkg-links' target of the makefile links (or re-links) packages
 from "pkgs" into the "racket" build. (The `in-place' target of the
-makefile uses `pkg-links'.) Make the `pkg-links' target whenever the
-set of native packages or packages in "pkgs" changes.
+makefile uses `pkg-links'.) By default, `pkg-links' starts with the
+"main-distribution" package and links all of its dependencies, which
+includes all of the packages in "pkgs". Specify a subset of the
+packages with `PKG="...."' as an argument to `make pkg-links'. Make
+the `pkg-links' target whenever the set of dependencies can change
+(or, for the default mode, when any native package or package in
+"pkgs" changes).
 
-Packages are linked using installation scope, so that the links affect
-only the build in the "racket" directory. Packages are linked with the
-`--no-setup' flag (effectively), which means that a `raco setup' is
-needed after installing links.
+Packages are linked in a database (at "racket/lib/devel-pkgs") that is
+added to the installation's search paths. As a result, the links
+affect only the build in the "racket" directory, and they are not
+mixed with any links that you specifically install in installation
+scope. Packages are linked with the `--no-setup' flag (effectively),
+which means that a `raco setup' is needed after installing links.
 
 Native-library packages provide (on Mac OS X and Windows) pre-built
 native libraries, such as Cario. Currently, the libraries must be
 downloaded from GitHub. On a non-Windows platform, the
 `native-from-git' makefile target clones/updates the native-library
-reposiroty from GitHub; otherwise, clone
+repository from GitHub; otherwise, clone
 
    git://github.com/plt/libs.git
 
@@ -96,8 +112,9 @@ makefile target also links relavant native packages.
 Trying Packages Locally
 -----------------------
 
-Suppose that you've built core "racket" and you want to see what
-it looks like to install individual packages.
+Suppose that you've built core "racket" and you want to see what it
+looks like to install individual packages as if provided by a server
+(i.e., not through development-mode links).
 
 Use `make local-catalog' to create a package catalog that provides
 mappings for all of the packages in "pkgs" as well as packages

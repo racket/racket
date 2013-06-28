@@ -4,4 +4,6 @@
 
 (define deps '("at-exp-lib"
                "draw-lib" 
-               "syntax-color-lib"))
+               "syntax-color-lib"
+               "sandbox-lib"
+               "rackunit-lib"))

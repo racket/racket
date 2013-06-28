@@ -53,11 +53,11 @@ directory:
  @item{@racket['links-search-files] --- like @racket['lib-search-dirs],
        but for @tech[#:doc reference-doc]{collection links file}.}
 
- @item{@racket['pkg-dir] --- a path, string, or byte string for
-       packages that have installation scope; it defaults to the main
-       library directory.}
+ @item{@racket['pkgs-dir] --- a path, string, or byte string for
+       packages that have installation scope; it defaults to
+       @filepath{pkgs} in the main library directory.}
 
- @item{@racket['pkg-search-dirs] --- like @racket['lib-search-dirs],
+ @item{@racket['pkgs-search-dirs] --- like @racket['lib-search-dirs],
        but for packages in installation scope.}
 
  @item{@racket['bin-dir] --- a path, string, or byte string for the

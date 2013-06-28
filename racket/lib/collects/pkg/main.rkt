@@ -3,6 +3,7 @@
          racket/function
          racket/list
          raco/command-name
+         setup/dirs
          net/url
          "name.rkt"
          "lib.rkt"
@@ -28,7 +29,7 @@
          (string->symbol (format "~a ~a" (short-program+command-name) cmd))
          args))
 
-(define (call-with-package-scope who given-scope installation shared user thunk)
+(define (call-with-package-scope who given-scope scope-dir installation shared user thunk)
   (define scope
     (case given-scope
       [(installation user shared) given-scope]
@@ -37,6 +38,7 @@
         [installation 'installation]
         [user 'user]
         [shared 'shared]
+        [scope-dir (path->complete-path scope-dir)]
         [else (default-pkg-scope)])]))
   (parameterize ([current-pkg-scope scope]
                  [current-pkg-error (pkg-error who)])
@@ -80,15 +82,16 @@
     "  installation: Install for all users of the Racket installation"
     "  user: Install as user- and version-specific"
     "  shared: Install as user-specific but shared for all Racket versions")]
-  [#:bool installation ("-i") "shorthand for `--scope installation'"]
-  [#:bool user ("-u") "shorthand for `--scope user'"]
-  [#:bool shared ("-s") "shorthand for `--scope shared'"]
+  [#:bool installation ("-i") "Shorthand for `--scope installation'"]
+  [#:bool user ("-u") "Shorthand for `--scope user'"]
+  [#:bool shared ("-s") "Shorthand for `--scope shared'"]
+  [(#:str dir #f) scope-dir () "Install for package scope <dir>"]
   #:once-each
   [(#:str catalog #f) catalog () "Use <catalog> instead of configured catalogs"]
   #:args pkg-source
   (call-with-package-scope
    'install
-   scope installation shared user
+   scope scope-dir installation shared user
    (lambda ()
      (unless (or (not name) (package-source->name name))
        ((current-pkg-error) (format "~e is an invalid package name" name)))
@@ -126,13 +129,14 @@
     "  installation: Update only for all users of the Racket installation"
     "  user: Update only user- and version-specific packages"
     "  shared: Update only user-specific packages for all Racket versions")]
-  [#:bool installation ("-i") "shorthand for `--scope installation'"]
-  [#:bool user ("-u") "shorthand for `--scope user'"]
-  [#:bool shared ("-s") "shorthand for `--scope shared'"]
+  [#:bool installation ("-i") "Shorthand for `--scope installation'"]
+  [#:bool user ("-u") "Shorthand for `--scope user'"]
+  [#:bool shared ("-s") "Shorthand for `--scope shared'"]
+  [(#:str dir #f) scope-dir () "Update for package scope <dir>"]
   #:args pkg
   (call-with-package-scope
    'update
-   scope installation shared user
+   scope scope-dir installation shared user
    (lambda ()
      (define setup-collects
        (with-pkg-lock
@@ -154,13 +158,14 @@
     "  installation: Remove packages for all users of the Racket installation"
     "  user: Remove user- and version-specific packages"
     "  shared: Remove user-specific packages for all Racket versions")]
-  [#:bool installation ("-i") "shorthand for `--scope installation'"]
-  [#:bool user ("-u") "shorthand for `--scope user'"]
-  [#:bool shared ("-s") "shorthand for `--scope shared'"]
+  [#:bool installation ("-i") "Shorthand for `--scope installation'"]
+  [#:bool user ("-u") "Shorthand for `--scope user'"]
+  [#:bool shared ("-s") "Shorthand for `--scope shared'"]
+  [(#:str dir #f) scope-dir () "Remove for package scope <dir>"]
   #:args pkg
   (call-with-package-scope
    'remove
-   scope installation shared user
+   scope scope-dir installation shared user
    (lambda ()
      (define setup-collects
        (with-pkg-lock
@@ -179,26 +184,37 @@
     "  user: Show only user- and version-specific"
     "  shared: Show only user-specific for all Racket versions")]
   [(#:str vers #f) version ("-v") "Show only user-specific for Racket <vers>"]
-  [#:bool installation ("-i") "shorthand for `--scope installation'"]
-  [#:bool user ("-u") "shorthand for `--scope user'"]
-  [#:bool shared ("-s") "shorthand for `--scope shared'"]
+  [#:bool installation ("-i") "Shorthand for `--scope installation'"]
+  [#:bool user ("-u") "Shorthand for `--scope user'"]
+  [#:bool shared ("-s") "Shorthand for `--scope shared'"]
+  [(#:str dir #f) scope-dir () "Show only for package scope <dir>"]
   #:args ()
   (define only-mode (case scope
                       [(installation user shared) scope]
                       [else
                        (cond
+                        [scope-dir (path->complete-path scope-dir)]
                         [installation 'installation]
                         [shared 'shared]
                         [user 'user]
                         [else (if version 'user #f)])]))
-  (for ([mode '(installation shared user)])
-    (when (or (eq? mode only-mode) (not only-mode))
+  (for ([mode (if only-mode
+                  (list only-mode)
+                  (append (let ([main (find-pkgs-dir)])
+                            (reverse
+                             (for/list ([d (get-pkgs-search-dirs)])
+                               (if (equal? d main)
+                                   'installation
+                                   d))))
+                          '(shared user)))])
+    (when (or (equal? mode only-mode) (not only-mode))
       (unless only-mode
         (printf "~a\n" (case mode
                          [(installation) "Installation-wide:"]
                          [(shared) "User-specific, all-version:"]
                          [(user) (format "User-specific, version-specific (~a):"
-                                         (or version (r:version)))])))
+                                         (or version (r:version)))]
+                         [else (format "~a:" mode)])))
       (parameterize ([current-pkg-scope mode]
                      [current-pkg-error (pkg-error 'show)]
                      [current-pkg-scope-version (or version (r:version))])
@@ -245,13 +261,13 @@
     "  installation: Operate on the installation-wide package configuration"
     "  user: Operate on the user-specific, version-specific package configuration"
     "  shared: Operate on the user-specific all-version package configuration")]
-  [#:bool installation ("-i") "shorthand for `--scope installation'"]
-  [#:bool user ("-u") "shorthand for `--scope user'"]
-  [#:bool shared ("-s") "shorthand for `--scope shared'"]
+  [#:bool installation ("-i") "Shorthand for `--scope installation'"]
+  [#:bool user ("-u") "Shorthand for `--scope user'"]
+  [#:bool shared ("-s") "Shorthand for `--scope shared'"]
   #:args key/val
   (call-with-package-scope
    'config
-   scope installation shared user
+   scope #f installation shared user
    (lambda ()
      (if set
          (with-pkg-lock
