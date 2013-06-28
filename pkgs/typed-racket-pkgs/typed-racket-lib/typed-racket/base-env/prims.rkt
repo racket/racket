@@ -581,13 +581,16 @@ This file defines two sorts of primitives. All of them are provided into any mod
                 ;; from dtsi trying to look at the d-s bindings.
                 #'(begin (eval (quote-syntax d-s))
                          ;; It is important here that the object under the
-                         ;; eval is a quasiquoted literal for the #%top-interaction
-                         ;; to get the lexical information for TR's actual
-                         ;; #%top-interaction. This effectively lets us invoke
-                         ;; the type-checker dynamically.
+                         ;; eval is a quasiquoted literal in order
+                         ;; for #%top-interaction to get the lexical
+                         ;; information for TR's actual #%top-interaction.
+                         ;; This effectively lets us invoke the type-checker
+                         ;; dynamically.
                          ;;
-                         ;; The unquoted part is also important because we want
-                         ;; the `dtsi` to have the lexical information from *here*.
+                         ;; The quote-syntax is also important because we want
+                         ;; the `dtsi` to have the lexical information from
+                         ;; this module. This ensures that the `dtsi` macro
+                         ;; is actually bound to its definition above.
                          (eval `(#%top-interaction . ,(quote-syntax dtsi))))
                 #'(begin d-s dtsi))))]))
    (lambda (stx)
