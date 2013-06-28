@@ -4,6 +4,7 @@
 
 (define deps '("base"
                "compatibility-lib"
+	       "net-lib"
                "sandbox-lib"
                "scribble-lib"
                "racket-index"))

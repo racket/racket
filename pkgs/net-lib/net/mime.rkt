@@ -28,7 +28,7 @@
 
 #lang racket/base
 
-(require racket/port "mime-util.rkt" "qp.rkt" "base64.rkt" "head.rkt")
+(require racket/port "mime-util.rkt" "qp.rkt" net/base64 net/head)
 
 (provide
  ;; -- exceptions raised --

@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/unit
-         "sendmail-sig.rkt" "sendmail.rkt")
+         "sendmail-sig.rkt" net/sendmail)
 
 (define-unit-from-context sendmail@ sendmail^)
 

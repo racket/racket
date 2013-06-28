@@ -10,6 +10,7 @@
                "draw-lib"
                "drracket"
                "gui-lib"
+	       "net-lib"
                "htdp"
                "math"
                "scribble-lib"

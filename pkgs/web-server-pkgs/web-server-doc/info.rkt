@@ -3,6 +3,7 @@
 (define collection 'multi)
 
 (define build-deps '("compatibility-lib"
+		     "net-lib"
                      "rackunit-lib"
                      "sandbox-lib"
                      "scribble-lib"

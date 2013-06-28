@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/unit
-         "qp-sig.rkt" "qp.rkt")
+         "qp-sig.rkt" net/qp)
 
 (define-unit-from-context qp@ qp^)
 

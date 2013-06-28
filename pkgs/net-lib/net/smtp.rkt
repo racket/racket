@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/tcp "base64.rkt")
+(require racket/tcp net/base64)
 
 (provide smtp-sending-server
          smtp-send-message

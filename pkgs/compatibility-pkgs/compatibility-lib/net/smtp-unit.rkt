@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/unit
-         "smtp-sig.rkt" "smtp.rkt")
+         "smtp-sig.rkt" net/smtp)
 
 (define-unit-from-context smtp@ smtp^)
 

@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/unit
-         "cgi-sig.rkt" "cgi.rkt")
+         "cgi-sig.rkt" net/cgi)
 
 (define-unit-from-context cgi@ cgi^)
 

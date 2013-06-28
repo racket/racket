@@ -12,8 +12,8 @@
                "syntax-color-lib"
                "base"
                "gui-lib"
+	       "net-lib"
                "sandbox-lib"
                "scribble-lib"
                "compatibility-lib"))
-
 (define implies '("distro-build"))

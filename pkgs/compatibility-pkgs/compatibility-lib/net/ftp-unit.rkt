@@ -5,7 +5,7 @@
 ;;   Micah Flatt
 ;;   06-06-2002
 (require racket/unit
-         "ftp-sig.rkt" "ftp.rkt")
+         "ftp-sig.rkt" net/ftp)
 
 (define-unit-from-context ftp@ ftp^)
 

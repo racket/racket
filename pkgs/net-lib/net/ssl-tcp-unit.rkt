@@ -1,6 +1,6 @@
 #lang racket/base
 (provide make-ssl-tcp@)
-(require racket/unit "tcp-sig.rkt" openssl/mzssl)
+(require racket/unit net/tcp-sig openssl/mzssl)
 
 (define (make-ssl-tcp@
          server-cert-file server-key-file server-root-cert-files

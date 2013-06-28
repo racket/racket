@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/unit
-         "mime-sig.rkt" "mime.rkt")
+         "mime-sig.rkt" net/mime)
 
 (define-unit-from-context mime@ mime^)
 

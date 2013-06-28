@@ -29,6 +29,7 @@
                "typed-racket-more"
                "trace"
                "macro-debugger"
+	       "net-lib"
                "srfi-lib"
                "srfi-doc"))
 (define build-deps '("at-exp-lib"

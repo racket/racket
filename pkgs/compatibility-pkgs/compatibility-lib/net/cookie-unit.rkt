@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/unit
          "cookie-sig.rkt"
-         "cookie.rkt")
+         net/cookie)
 
 (define-unit-from-context cookie@ cookie^)
 

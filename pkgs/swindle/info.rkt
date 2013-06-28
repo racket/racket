@@ -36,5 +36,6 @@
                "compatibility-lib"
                "drracket"
                "gui-lib"
+	       "net-lib"
                "string-constants-lib"))
 (define build-deps '("scribble-lib"))

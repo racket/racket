@@ -3,6 +3,7 @@
 (define collection 'multi)
 
 (define deps '("base"
+	       "net-lib"
                "draw-lib"
                "rackunit-lib"
                "typed-racket-lib"
