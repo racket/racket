@@ -1,5 +1,5 @@
 (module to-string mzscheme
-  (require mzlib/contract
+  (require racket/contract/base
            syntax/stx)
   
   (require racket/list)

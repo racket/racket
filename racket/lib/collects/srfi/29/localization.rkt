@@ -1,6 +1,6 @@
 (module localization mzscheme
   
-  (require mzlib/contract
+  (require racket/contract/base
            racket/file
            (only racket/runtime-path define-runtime-path)
            racket/string racket/format
@@ -10,7 +10,7 @@
                     (current-country (parameter/c symbol?))
                     (current-locale-details (parameter/c (listof symbol?)))
                     (declare-bundle! (-> (listof symbol?) (listof pair?) any))
-                    (load-bundle! (->* ((listof symbol?)) any/c any))
+                    (load-bundle! (->* ((listof symbol?)) #:rest any/c any))
                     (store-bundle! (-> (listof symbol?) any))
                     (localized-template (-> symbol? any/c any)))
   

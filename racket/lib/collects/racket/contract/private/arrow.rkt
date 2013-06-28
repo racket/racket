@@ -1,24 +1,5 @@
 #lang racket/base
 
-#|
-
-v4 todo:
-
-- add case-> to object-contract
-
-- test object-contract with keywords (both optional and mandatory)
-
-- change mzlib/contract to rewrite into scheme/contract (maybe?)
-
-- raise-syntax-errors
-  . multiple identical keywords syntax error, sort-keywords
-  . split-doms
-
-- note timing/size tests at the end of the file.
-
-|#
-
-
 (require "guts.rkt"
          "blame.rkt"
          "prop.rkt"
