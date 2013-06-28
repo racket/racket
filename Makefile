@@ -200,6 +200,7 @@ built-catalog:
 # Run a catalog server to provide pre-built packages, as well
 # as the copy of the server's "collects" tree:
 built-catalog-server:
+	if [ -d ".git" ]; then git update-server-info ; fi
 	$(RACKET) -l distro-build/serve-catalog $(SERVE_DURING_CMD)
 
 # Demonstrate how a catalog server for binary packages works,

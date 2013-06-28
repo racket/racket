@@ -90,10 +90,12 @@
    #:command-line? #t
    #:listen-ip #f
    #:extra-files-paths
-   (cons
-    (build-path build-dir "origin")
+   (append
+    (list (build-path build-dir "origin"))
     (for/list ([d (in-list dirs)])
-      (path->complete-path (build-path d "pkgs"))))
+      (path->complete-path (build-path d "pkgs")))
+    ;; for ".git":
+    (list (current-directory)))
    #:servlet-regexp #rx""
    #:port 9440))
 

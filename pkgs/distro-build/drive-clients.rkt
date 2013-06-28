@@ -88,7 +88,7 @@
 ;;   #:timeout <number> --- numbers of seconds to wait before declaring
 ;;                          failure; defaults to 30 minutes
 ;;   #:repo <string> --- the git repository for Racket; defaults to
-;;                       "git://github.com/plt/racket.git"
+;;                       "http://<server>:9440/.git"
 ;;
 ;; Machine-only keywords:
 ;;   #:name <string> --- defaults to host
@@ -406,7 +406,7 @@
   (define dist-dir (or (get-opt c '#:dist-dir)
                        default-dist-dir))
   (define repo (or (get-opt c '#:repo)
-                   "git://github.com/plt/racket.git"))
+                   (~a "http://" server ":9440/.git")))
   ((case (or (get-opt c '#:platform) 'unix)
      [(unix) unix-build]
      [else windows-build])
