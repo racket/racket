@@ -27,6 +27,7 @@
      $ "racket -e '(require pkg-test2)'" =exit> 1
      $ "raco pkg install test-pkgs/pkg-test2.zip" =exit> 1
      $ "raco pkg install test-pkgs/pkg-test1.zip" =exit> 0
+     $ "raco pkg show" =exit> 0
      $ "raco pkg install test-pkgs/pkg-test2.zip" =exit> 0
      $ "racket -e '(require pkg-test2)'" =exit> 0
      $ "racket -e '(require pkg-test2/contains-dep)'" =exit> 0

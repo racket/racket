@@ -440,11 +440,11 @@
            (values k v))]
         [(shared)
          (define db (read-pkg-db))
-         (for/fold ([ht (merge-next-pkg-dbs 'installation)]) ([(v k) (in-hash db)])
+         (for/fold ([ht (merge-next-pkg-dbs 'installation)]) ([(k v) (in-hash db)])
            (hash-set ht k v))]
         [(user)
          (define db (read-pkg-db))
-         (for/fold ([ht (merge-next-pkg-dbs 'shared)]) ([(v k) (in-hash db)])
+         (for/fold ([ht (merge-next-pkg-dbs 'shared)]) ([(k v) (in-hash db)])
            (hash-set ht k v))])))
     
 

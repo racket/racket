@@ -94,7 +94,8 @@
       $ "racket -e '(require pkg-test1/a)'" =exit> 1
       $ "racket -e '(require pkg/lib)' -e '(path->pkg \"test-pkgs/pkg-test1-linking\")'" =stdout> "\"pkg-test1-linking\"\n"
       $ "racket -e '(require pkg/lib)' -e '(path->pkg \"test-pkgs/pkg-test1-linking/README\")'" =stdout> "\"pkg-test1-linking\"\n"
-      $ "racket -e '(require pkg/lib)' -e '(path->pkg \"test-pkgs\")'" =stdout> "#f\n"
+      $ "racket -e '(require pkg/lib)' -e '(path->pkg \"test-pkgs\")'" =stdout> "\"racket-test\"\n"
+      $ "racket -e '(require pkg/lib)' -e '(path->pkg (collection-file-path \"main.rkt\" \"racket\"))'" =stdout> "#f\n"
       $ "cp test-pkgs/pkg-test1-staging/a.rkt test-pkgs/pkg-test1-linking/pkg-test1/a.rkt"
       $ "racket -e '(require pkg-test1/a)'"
       $ "rm -f test-pkgs/pkg-test1-linking/pkg-test1/a.rkt"
