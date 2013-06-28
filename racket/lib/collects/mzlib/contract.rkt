@@ -57,46 +57,144 @@
 ;; except the arrow contracts
 ;;
 
-(require racket/contract/private/base
-         racket/contract/private/misc
-         racket/contract/private/provide
-         racket/contract/private/guts
-         racket/contract/private/prop
-         racket/contract/private/blame
-         racket/contract/private/ds
-         racket/contract/private/opt
-         racket/contract/private/basic-opters
-         racket/contract/combinator)
+(require (prefix-in : racket/contract))
+(require (for-syntax racket/provide-transform racket/base))
+(define-syntax remove-prefix
+  (make-provide-transformer
+   (λ (stx ctxt)
+     (syntax-case stx ()
+       [(_ args ...)
+        (for/list ([arg (in-list (syntax->list #'(args ...)))])
+          (export arg 
+                  (string->symbol
+                   (regexp-replace #rx"^:" (symbol->string (syntax-e arg)) ""))
+                  0
+                  #f
+                  arg))]))))
 
-
-(define (build-flat-contract name pred) (make-predicate-contract name pred))
-
+(provide (remove-prefix
+          :define-contract-struct
+          :</c
+          :>/c
+          :blame-add-car-context
+          :blame-add-cdr-context
+          :blame-add-or-context
+          :chaperone-contract?
+          :contract-name
+          :contract-projection
+          :contract?
+          :false/c
+          :flat-contract
+          :flat-contract-predicate
+          :flat-contract?
+          :flat-named-contract
+          :impersonator-contract?
+          :make-none/c
+          :n->th
+          :natural-number/c
+          :printable/c
+          :raise-not-cons-blame-error
+          :promise/c
+          :or/c
+          :prompt-tag/c
+          :>=/c
+          :syntax/c
+          :any
+          :non-empty-listof
+          :any/c
+          :between/c
+          :cons/c
+          :integer-in
+          :symbols
+          :real-in
+          :list/c
+          :continuation-mark-key/c
+          :one-of/c
+          :procedure-arity-includes/c
+          :not/c
+          :flat-rec-contract
+          :flat-murec-contract
+          :=/c
+          :and/c
+          :parameter/c
+          :none/c
+          :<=/c
+          :listof
+          :contract
+          :current-contract-region
+          :recursive-contract
+          :provide/contract
+          :build-compound-type-name
+          :coerce-chaperone-contract
+          :coerce-chaperone-contracts
+          :coerce-contract
+          :coerce-contract/f
+          :coerce-contracts
+          :coerce-flat-contract
+          :coerce-flat-contracts
+          :contract-continuation-mark-key
+          :contract-first-order
+          :contract-first-order-passes?
+          :contract-stronger?
+          :eq-contract-val
+          :eq-contract?
+          :equal-contract-val
+          :equal-contract?
+          :has-contract?
+          :impersonator-prop:contracted
+          :prop:contracted
+          :value-contract
+          :define/subexpression-pos-prop
+          :define/final-prop
+          :blame-add-unknown-context
+          :blame-context
+          :blame-contract
+          :blame-fmt->-string
+          :blame-negative
+          :blame-original?
+          :blame-positive
+          :blame-replace-negative
+          :blame-source
+          :blame-swap
+          :blame-swapped?
+          :blame-update
+          :blame-value
+          :blame?
+          :current-blame-format
+          :exn:fail:contract:blame-object
+          :exn:fail:contract:blame?
+          :make-exn:fail:contract:blame
+          :raise-blame-error
+          :struct:exn:fail:contract:blame
+          :blame-add-context
+          :exn:fail:contract:blame
+          :build-chaperone-contract-property
+          :build-contract-property
+          :build-flat-contract-property
+          :chaperone-contract-property?
+          :contract-property?
+          :contract-struct-exercise
+          :contract-struct-generate
+          :flat-contract-property?
+          :make-chaperone-contract
+          :make-contract
+          :make-flat-contract
+          :prop:chaperone-contract
+          :prop:contract
+          :prop:flat-contract
+          :prop:opt-chaperone-contract
+          :prop:opt-chaperone-contract-get-test
+          :prop:opt-chaperone-contract?
+          :skip-projection-wrapper?
+          :opt/c
+          :define-opt/c))
 (provide 
- opt/c define-opt/c ;(all-from "private/contract-opt.rkt")
- (except-out (all-from-out racket/contract/private/ds)
-             contract-struct)
- 
- (all-from-out racket/contract/private/base
-               racket/contract/private/provide)
- (except-out (all-from-out racket/contract/private/misc)
-             check-between/c
-             string-len/c
-             check-unary-between/c)
- (rename-out [or/c union])
- (rename-out [string-len/c string/len])
- (except-out (all-from-out racket/contract/private/guts)
-             check-flat-contract
-             check-flat-named-contract
-             make-predicate-contract)
- (except-out (all-from-out racket/contract/private/blame)
-             make-blame)
- (except-out (all-from-out racket/contract/private/prop)
-             chaperone-contract-struct?
-             contract-struct-first-order
-             contract-struct-name
-             contract-struct-projection
-             contract-struct-stronger?
-             contract-struct?
-             flat-contract-struct?)
- (all-from-out racket/contract/combinator)
- build-flat-contract)
+ (rename-out [:or/c union])
+ (rename-out [:string-len/c string/len]))
+
+(define (build-flat-contract name pred) 
+  (:flat-contract (procedure-rename pred name)))
+(provide build-flat-contract)
+
+(require racket/contract/combinator)
+(provide (all-from-out racket/contract/combinator))
