@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "uri-codec.rkt")
+(require net/uri-codec)
 
 (provide
 

@@ -351,5 +351,3 @@
 
 (define (valid-path? v)
   (and (string? v) (rfc2109:value? v)))
-
-;;; cookie-unit.rkt ends here
