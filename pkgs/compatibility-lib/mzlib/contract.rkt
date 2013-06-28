@@ -76,9 +76,6 @@
           :define-contract-struct
           :</c
           :>/c
-          :blame-add-car-context
-          :blame-add-cdr-context
-          :blame-add-or-context
           :chaperone-contract?
           :contract-name
           :contract-projection
@@ -93,7 +90,6 @@
           :n->th
           :natural-number/c
           :printable/c
-          :raise-not-cons-blame-error
           :promise/c
           :or/c
           :prompt-tag/c
@@ -132,7 +128,6 @@
           :coerce-contracts
           :coerce-flat-contract
           :coerce-flat-contracts
-          :contract-continuation-mark-key
           :contract-first-order
           :contract-first-order-passes?
           :contract-stronger?
@@ -157,7 +152,6 @@
           :blame-source
           :blame-swap
           :blame-swapped?
-          :blame-update
           :blame-value
           :blame?
           :current-blame-format
