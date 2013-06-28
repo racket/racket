@@ -1,7 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual
           (for-label (except-in racket require)
-                     string-constants
                      setup/getinfo
                      (only-in setup/infotab require)))
 
@@ -31,8 +30,7 @@ grammar of @racket[_info-module]:
                  cons car cdr list list* reverse append
                  string-append path->string build-path
                  collection-path
-                 system-library-subpath
-                 require string-constant)
+                 system-library-subpath)
 [info-module (module info intotab-mod-path
                decl
                ...)]
@@ -41,25 +39,19 @@ grammar of @racket[_info-module]:
                   (lib "setup/infotab.rkt")
                   (lib "infotab.rkt" "setup")
                   (lib "infotab.ss" "setup")]
-[decl (define id info-expr)
-      (require allowed-path)]
+[decl (define id info-expr)]
 [info-expr (quote datum)
            (quasiquote datum)
            (info-primitive info-expr ...)
            id
            string
            number
-           boolean
-           (string-constant identifier)]
+           boolean]
 [info-primitive cons car cdr list
                 list* reverse append
                 string-append
                 path->string build-path collection-path
                 system-library-subpath]
-[allowed-path (lib "string-constant.ss" "string-constants")
-              (lib "string-constants/string-constant.ss")
-              string-constants/string-constant
-              string-constants]
 ]
 
 For example, the following declaration could be the @filepath{info.rkt}
@@ -79,8 +71,3 @@ As illustrated in this example, an @filepath{info.rkt} file can use
 language.
 
 See also @racket[get-info] from @racketmodname[setup/getinfo].
-
-@defform[(require module-path)]{
-
-Like @|racket:require|, but constrained to @racket[_allowed-path] as
-shown in the grammar above.}

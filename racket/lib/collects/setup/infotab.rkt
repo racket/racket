@@ -51,11 +51,10 @@
 
   (define-syntax (limited-require stx)
     (syntax-case stx ()
-      [(_ lib) (member (syntax->datum #'lib)
-                       '((lib "string-constant.ss" "string-constants")
-                         (lib "string-constants/string-constant.ss")
-                         string-constants/string-constant
-                         string-constants))
+      [(_ lib) 
+       (member (syntax->datum #'lib)
+               ;; No `require's are allowed, currently:
+               '())
        (syntax/loc stx (require lib))]))
 
   (provide (rename-out [info-module-begin #%module-begin])

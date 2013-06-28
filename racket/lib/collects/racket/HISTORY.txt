@@ -9,6 +9,7 @@ Added links-file and links-search-dirs to config, enabling
  a search path of installation-wide link files, as well
  as pkgs-dir and pkgs-search-dirs
 Removed -C/--links command-line flag
+setup/infotab: removed string-constants require as an allowed form
 
 Version 5.3.900.1
 Reorganized collections into packages

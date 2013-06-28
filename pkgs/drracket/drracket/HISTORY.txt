@@ -1,3 +1,9 @@
+
+  . An "info.rkt" spec for `textbook-pls' is appended with the results
+    for `get-textbook-pls' to allow access to `string-constants'. The
+    same is true for `drscheme-language-positions' and
+    `get-drscheme-language-positions'.
+
 ------------------------------
        Version 5.3.4
 ------------------------------

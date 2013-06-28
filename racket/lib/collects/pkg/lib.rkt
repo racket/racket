@@ -2018,8 +2018,21 @@
         (set-add s (collapse-module-path mp dummy))
         s))
   (parameterize ([current-directory dir])
-    (for/fold ([s (set)]) ([f (in-directory)])
+    (let loop ([s (set)] [f 'init] [check-zo? #f])
       (cond
+       [(eq? f 'init)
+        (for/fold ([s s]) ([f (directory-list)])
+          (loop s f check-zo?))]
+       [(directory-exists? f)
+        ;; Count ".zo" files toward the set of module paths only
+        ;; if an "info.rkt" in an 
+        (define sub-check-zo?
+          (or check-zo?
+              (let ([i (get-info/full f #:namespace metadata-ns)])
+                (and i
+                     (i 'assume-virtual-sources (lambda () #f))))))
+        (for/fold ([s s]) ([f (directory-list f #:build? #t)])
+          (loop s f sub-check-zo?))]
        [(not (file-exists? f)) s]
        [else
         (define-values (base name dir?) (split-path f))
@@ -2036,7 +2049,8 @@
             s]
            [(regexp-match? #rx#"[.](?:rkt|ss)$" bstr)
             (try-path s f)]
-           [(regexp-match? #rx#"_(?:rkt|ss)[.]zo$" (path-element->bytes name))
+           [(and check-zo?
+                 (regexp-match? #rx#"_(?:rkt|ss)[.]zo$" (path-element->bytes name)))
             (define-values (dir-base dir-name dir?) (split-path base))
             (cond
              [(eq? 'relative dir-base) s]

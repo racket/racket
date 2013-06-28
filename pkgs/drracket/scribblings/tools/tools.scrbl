@@ -325,7 +325,15 @@ This must be bound to a
   it is put into the ``Teaching Languages'' section
   of the dialog. Otherwise, it goes into the ``Other Languages''
   section of the dialog.
-}  
+}
+@item/cap[get-drscheme-language-positions]{
+This must be bound to a list that contains a module path followed
+  by a symbol. The module path and symbol are combined with
+  @racket[dynamic-require] to obtain a list that is appended
+  to the one from @racket[drscheme-language-positions], which
+  allows access to @racketmodname[string-constants] to specify
+  language positions.
+}
 @item/cap[drscheme-language-numbers]{
 This is optional. If
   present, it must be a list of a list of numbers. Each list

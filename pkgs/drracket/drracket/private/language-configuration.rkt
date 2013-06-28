@@ -1611,12 +1611,15 @@
     
     (define (add-info-specified-languages)
       (for-each add-info-specified-language
-                (find-relevant-directories '(drscheme-language-positions))))
+                (find-relevant-directories '(drscheme-language-positions
+                                             get-drscheme-language-positions))))
     
     (define (add-info-specified-language directory)
       (let ([info-proc (get-info/full directory)])
         (when info-proc
-          (let* ([lang-positions (info-proc 'drscheme-language-positions (λ () null))]
+          (let* ([lang-positions (append
+                                  (info-proc 'drscheme-language-positions (λ () null))
+                                  (indirect-info-field info-proc 'get-drscheme-language-positions directory))]
                  [lang-modules (info-proc 'drscheme-language-modules (λ () null))]
                  [numberss (info-proc 'drscheme-language-numbers 
                                       (λ ()
@@ -1740,6 +1743,21 @@
                  urls
                  reader-specs)
                 #:dialog-mixin frame:focus-table-mixin)])))))
+    
+    (define (indirect-info-field proc name info-dir)
+      (let ([mp (proc name (λ () #f))])
+        (if (not mp)
+            null
+            (if (and (list? mp)
+                     (= 2 (length mp))
+                     (module-path? (car mp))
+                     (symbol? (cadr mp)))
+                (parameterize ([current-load-relative-directory info-dir])
+                  (dynamic-require (car mp) (cadr mp)))
+                (error
+                 name
+                 "expected either #f or a list containing a module path and symbol, bot ~e"
+                 mp)))))
     
     (define (platform-independent-string->path str)
       (apply
@@ -2192,7 +2210,7 @@
         (for-each
          display-text-pl
          (sort
-          (apply append (map get-text-pls (find-relevant-directories '(textbook-pls))))
+          (apply append (map get-text-pls (find-relevant-directories '(textbook-pls get-textbook-pls))))
           (λ (x y)
             (cond
               [(string=? (cadr x) (string-constant how-to-design-programs))
@@ -2318,32 +2336,36 @@
       
       ;; get-text-pls : path -> (listof (list* string string (listof string))
       ;; gets the questions from an info.rkt file.
-      (define (get-text-pls info-filename)
-        (let ([proc (get-info/full info-filename)])
+      (define (get-text-pls info-dir)
+        (define (check-text-pls qs)
+          (unless (list? qs)
+            (error 'textbook-pls "expected a list, got ~e" qs))
+          (for-each 
+           (lambda (pr)
+             (unless (and (pair? pr)
+                          (pair? (cdr pr))
+                          (pair? (cddr pr))
+                          (list? (cdddr pr))
+                          (let ([icon-lst (car pr)])
+                            (and (list? icon-lst)
+                                 (not (null? icon-lst))
+                                 (andmap string? icon-lst)))
+                          (andmap string? (cdr pr)))
+               (error 
+                'textbook-pls
+                (string-append
+                 "expected a list of lists, with each inner list being at least three elements long"
+                 " and the first element of the inner list being a list of strings and the rest of"
+                 " the elements being strings, got ~e")
+                pr)))
+           qs)
+          qs)
+        (let ([proc (get-info/full info-dir)])
           (if proc
-              (let ([qs (proc 'textbook-pls (λ () '()))])
-                (unless (list? qs)
-                  (error 'splash-questions "expected a list, got ~e" qs))
-                (for-each 
-                 (lambda (pr)
-                   (unless (and (pair? pr)
-                                (pair? (cdr pr))
-                                (pair? (cddr pr))
-                                (list? (cdddr pr))
-                                (let ([icon-lst (car pr)])
-                                  (and (list? icon-lst)
-                                       (not (null? icon-lst))
-                                       (andmap string? icon-lst)))
-                                (andmap string? (cdr pr)))
-                     (error 
-                      'splash-questions
-                      (string-append
-                       "expected a list of lists, with each inner list being at least three elements long"
-                       " and the first element of the inner list being a list of strings and the rest of"
-                       " the elements being strings, got ~e")
-                      pr)))
-                 qs)
-                qs)
+              (append
+               (check-text-pls (proc 'textbook-pls (λ () '())))
+               (check-text-pls
+                (indirect-info-field proc 'get-textbook-pls info-dir)))
               '())))
       
       (define msgs '())
