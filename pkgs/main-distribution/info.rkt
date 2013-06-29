@@ -14,6 +14,7 @@
                "draw-doc"
                "draw-lib"
                "drracket"
+               "drracket-test"
                "eopl"
                "errortrace"
                "frtime"
