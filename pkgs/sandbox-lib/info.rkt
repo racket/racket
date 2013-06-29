@@ -2,4 +2,5 @@
 
 (define collection 'multi)
 
-(define deps '("errortrace-lib"))
+(define deps '("base"
+               "errortrace-lib"))
