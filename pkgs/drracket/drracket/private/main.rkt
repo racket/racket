@@ -109,15 +109,8 @@
                              (memq (cdr x) '(left top top-no-label right)))))
 
 (drr:set-default 'drracket:htdp:last-set-teachpacks
-                         '() 
-                         (λ (x)
-                           (and (list? x)
-                                (andmap (λ (x)
-                                          (and (list? x)
-                                               (pair? x)
-                                               (eq? (car x) 'lib)
-                                               (andmap string? (cdr x))))
-                                        x))))
+                 '() 
+                 (listof (cons/c 'lib (listof string?))))
 (drr:set-default 'drracket:defs/ints-horizontal #f boolean?)
 
 (drr:set-default 'drracket:child-only-memory-limit (* 1024 1024 128)

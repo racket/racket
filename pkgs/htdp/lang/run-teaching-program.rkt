@@ -98,12 +98,16 @@
 ;; syntax objects that require them (tagged
 ;; with stepper-skip-completely)
 (define (teachpacks->requires teachpacks)
-  (for/list ([tp (in-list teachpacks)])
-    (unless (file-exists? (build-path (apply collection-path (cddr tp))
-                                      (cadr tp)))
-      (error 'teachpack (missing-tp-message tp)))
-    (stepper-skip
-     (datum->syntax #f `(require ,tp)))))
+  (filter
+   values
+   (for/list ([tp (in-list teachpacks)])
+     (cond
+       [(file-exists? (build-path (apply collection-path (cddr tp))
+                                  (cadr tp)))
+        (stepper-skip
+         (datum->syntax #f `(require ,tp)))]
+       [else
+        (eprintf "~a\n" (missing-tp-message tp))]))))
 
 (define (missing-tp-message x)
   (let* ([m (regexp-match #rx"/([^/]*)$" (cadr x))]
