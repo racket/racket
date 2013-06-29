@@ -132,6 +132,7 @@
     [(#:dist-dir) (simple-string? val)]
     [(#:max-vm) (real? val)]
     [(#:server) (simple-string? val)]
+    [(#:host) (simple-string? val)]
     [(#:user) (simple-string? val)]
     [(#:port) (and (exact-integer? val) (<= 1 val 65535))]
     [(#:dir) (string? val)]
@@ -147,7 +148,6 @@
 (define (check-machine-keyword kw val)
   (case kw
     [(#:name) (string? val)]
-    [(#:host) (simple-string? val)]
     [else (check-group-keyword kw val)]))
 
 (define (check-config config)
