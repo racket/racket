@@ -4,3 +4,5 @@
 
 (define deps '("r6rs-lib"
                "r6rs-doc"))
+(define implies '("r6rs-lib"
+                  "r6rs-doc"))

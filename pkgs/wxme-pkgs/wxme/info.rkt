@@ -4,3 +4,4 @@
 
 (define deps '("wxme-lib"
                "gui-doc"))
+(define implies '("wxme-lib"))
