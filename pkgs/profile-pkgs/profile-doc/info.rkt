@@ -2,5 +2,7 @@
 
 (define collection 'multi)
 
-(define build-deps '("profile-lib"
+(define build-deps '("base"
+                     "scribble-lib"
+                     "profile-lib"
                      "racket-doc"))

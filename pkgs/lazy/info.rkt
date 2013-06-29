@@ -19,3 +19,8 @@
 
 (define drracket-tools '(("lazy-tool.rkt")))
 (define drracket-tool-names '("Lazy Racket"))
+(define deps '("base"
+               "drracket"
+               "htdp"
+               "string-constants-lib"))
+(define build-deps '("scribble-lib"))

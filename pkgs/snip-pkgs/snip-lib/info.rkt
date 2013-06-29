@@ -2,4 +2,5 @@
 
 (define collection 'multi)
 
-(define deps '("draw-lib"))
+(define deps '("base"
+               "draw-lib"))

@@ -2,6 +2,7 @@
 
 (define collection 'multi)
 
-(define deps '("readline-lib"
+(define deps '("base"
+               "readline-lib"
                "scribble-lib"
                "macro-debugger-text-lib"))

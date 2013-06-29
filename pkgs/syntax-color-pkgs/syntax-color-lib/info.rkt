@@ -2,4 +2,6 @@
 
 (define collection 'multi)
 
-(define deps '("parser-tools-lib" "unstable-options-lib"))
+(define deps '("base"
+               "compatibility-lib"
+               "parser-tools-lib" "unstable-options-lib"))

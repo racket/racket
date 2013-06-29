@@ -32,3 +32,9 @@
 (define tool-names '("Swindle"))
 (define tool-icons '(("swindle-icon.png" "swindle")))
 (define tool-urls  '("http://www.barzilay.org/Swindle/"))
+(define deps '("base"
+               "compatibility-lib"
+               "drracket"
+               "gui-lib"
+               "string-constants-lib"))
+(define build-deps '("scribble-lib"))

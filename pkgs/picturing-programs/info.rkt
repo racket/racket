@@ -2,4 +2,9 @@
 
 (define collection 'multi)
 
-(define deps '("htdp"))
+(define deps '("base"
+               "draw-lib"
+               "gui-lib"
+               "snip-lib"
+               "htdp"))
+(define build-deps '("scribble-lib"))

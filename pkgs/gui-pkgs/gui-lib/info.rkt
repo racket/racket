@@ -2,7 +2,10 @@
 
 (define collection 'multi)
 
-(define deps '("draw-lib"
+(define deps '("base"
+               "rackunit-lib"
+               "syntax-color-lib"
+               "draw-lib"
                "snip-lib"
                "wxme-lib"
                "pict-lib"
@@ -15,3 +18,4 @@
                ("gui-x86_64-macosx" #:platform "x86_64-macosx")
                ("gui-win32-i386" #:platform "win32\\i386")
                ("gui-win32-x86_64" #:platform "win32\\x86_64")))
+(define build-deps '("at-exp-lib"))

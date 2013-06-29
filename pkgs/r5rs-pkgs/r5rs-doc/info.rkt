@@ -2,6 +2,8 @@
 
 (define collection 'multi)
 
-(define build-deps '("r5rs-lib"
+(define build-deps '("scribble-lib"
+                     "r5rs-lib"
                      "compatibility-lib"
                      "racket-doc"))
+(define deps '("base"))

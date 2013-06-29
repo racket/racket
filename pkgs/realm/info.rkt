@@ -16,3 +16,6 @@
     ))
 
 ; (define scribblings '(("htdp.scrbl")))
+(define deps '("base"
+               "htdp"))
+(define build-deps '("rackunit-lib"))

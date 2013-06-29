@@ -2,4 +2,6 @@
 
 (define collection 'multi)
 
-(define deps '("draw-lib" "snip-lib"))
+(define deps '("base"
+               "compatibility-lib"
+               "draw-lib" "snip-lib"))

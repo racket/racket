@@ -2,5 +2,9 @@
 
 (define collection 'multi)
 
-(define deps '("slideshow-lib"))
+(define deps '("base"
+               "compatibility-lib"
+               "gui-lib"
+               "pict-lib"
+               "slideshow-lib"))
 (define implies '("slideshow-lib"))

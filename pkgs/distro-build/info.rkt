@@ -2,6 +2,7 @@
 
 (define collection "distro-build")
 
-(define deps '("at-exp-lib"
+(define deps '("base"
+               "at-exp-lib"
                "web-server-lib"
                "scribble-lib"))

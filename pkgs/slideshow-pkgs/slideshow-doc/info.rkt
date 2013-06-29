@@ -2,5 +2,9 @@
 
 (define collection 'multi)
 
-(define build-deps '("slideshow-lib"
+(define build-deps '("base"
+                     "gui-lib"
+                     "pict-lib"
+                     "scribble-lib"
+                     "slideshow-lib"
                      "racket-doc"))

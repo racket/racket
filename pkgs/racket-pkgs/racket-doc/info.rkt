@@ -2,8 +2,17 @@
 
 (define collection 'multi)
 
-(define deps '("racket-index"))
-(define build-deps '("web-server"
+(define deps '("base"
+               "compatibility-lib"
+               "sandbox-lib"
+               "scribble-lib"
+               "racket-index"))
+(define build-deps '("at-exp-lib"
+                     "data-lib"
+                     "pconvert-lib"
+                     "rackunit-lib"
+                     "unstable-contract-lib"
+                     "web-server"
                      "gui"
                      "draw"
                      "sandbox-lib"

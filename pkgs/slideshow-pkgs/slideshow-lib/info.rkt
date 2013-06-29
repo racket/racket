@@ -2,4 +2,8 @@
 
 (define collection 'multi)
 
-(define deps '("gui-lib"))
+(define deps '("base"
+               "compatibility-lib"
+               "draw-lib"
+               "pict-lib"
+               "gui-lib"))

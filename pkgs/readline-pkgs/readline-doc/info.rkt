@@ -2,5 +2,7 @@
 
 (define collection 'multi)
 
-(define build-deps '("readline-lib"
+(define build-deps '("scribble-lib"
+                     "readline-lib"
                      "racket-doc"))
+(define deps '("base"))

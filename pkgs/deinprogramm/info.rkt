@@ -2,7 +2,16 @@
 
 (define collection "deinprogramm")
 
-(define deps '("drracket"
+(define deps '("base"
+               "compatibility-lib"
+               "errortrace-lib"
+               "gui-lib"
+               "pconvert-lib"
+               "srfi-lib"
+               "string-constants-lib"
+               "trace"
+               "wxme-lib"
+               "drracket"
                "htdp"))
 
 (define name "DeinProgramm")
@@ -20,3 +29,5 @@
 
 (define get-textbook-pls
   '("textbook-pls-spec.rkt" textbook-pls))
+(define build-deps '("at-exp-lib"
+                     "scribble-lib"))

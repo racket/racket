@@ -8,3 +8,8 @@
 
 (define scribblings '(("scribblings/plai.scrbl" (multi-page) (teaching -20))))
 (define release-notes (list (list "PLAI" "HISTORY.txt")))
+(define deps '("base"
+               "gui-lib"
+               "sandbox-lib"
+               "web-server-lib"))
+(define build-deps '("scribble-lib"))

@@ -1,4 +1,8 @@
 #lang setup/infotab
 
 (define collection 'multi)
-(define deps '("compatibility-lib"))
+(define deps '("base"
+               "gui-lib"
+               "sandbox-lib"
+               "scribble-lib"
+               "compatibility-lib"))

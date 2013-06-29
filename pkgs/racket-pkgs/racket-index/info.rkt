@@ -2,4 +2,5 @@
 
 (define collection 'multi)
 
-(define deps '("scribble-lib"))
+(define deps '("base"
+               "scribble-lib"))

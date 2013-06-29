@@ -2,5 +2,7 @@
 
 (define collection 'multi)
 
-(define build-deps '("r6rs-lib"
+(define build-deps '("base"
+                     "scribble-lib"
+                     "r6rs-lib"
                      "racket-doc"))

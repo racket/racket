@@ -2,4 +2,5 @@
 
 (define collection 'multi)
 
-(define deps '("data-lib"))
+(define deps '("base"
+               "data-lib"))

@@ -4,5 +4,8 @@
 
 (define name "Calltrace")
 
-(define deps '())
-(define build-deps '("racket-doc"))
+(define deps '("base"
+               "compatibility-lib"
+               ))
+(define build-deps '("scribble-lib"
+                     "racket-doc"))
