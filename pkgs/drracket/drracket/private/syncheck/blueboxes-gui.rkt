@@ -21,6 +21,7 @@
 (define sc-read-more... (string-constant sc-read-more...))
 
 (preferences:set-default 'drracket:syncheck:contracts-locked? #f boolean?)
+(preferences:set-default 'drracket:syncheck:show-blueboxes? #t boolean?)
 
 (define corner-radius 48)
 (define blue-box-color (make-object color% #xE8 #xE8 #xFF))
@@ -129,66 +130,67 @@
     (inherit get-dc get-client-size get-editor
              horizontal-inset vertical-inset)
     (define/override (on-paint)
-      (define e (get-editor))
-      (when e
-        (define dc (get-dc))
-        (define-values (cw ch) (get-client-size))
-        (define the-strs (send e get-current-strs))
-        (cond
-          [(and (send e get-show-docs?) the-strs)
-           (define hi (horizontal-inset))
-           (define vi (vertical-inset))
-           (define font (send dc get-font))
-           (define pen (send dc get-pen))
-           (define brush (send dc get-brush))
-           (define smoothing (send dc get-smoothing))
-           (define std (send (send e get-style-list) find-named-style "Standard"))
-           (when std (send dc set-font (send std get-font)))
-           (define-values (box-width box-height label-overlap?)
-             (get-blue-box-size dc (send e get-style-list) the-strs))
-           (send dc set-brush blue-box-color 'solid)
-           (send dc set-pen "black" 1 'transparent)
-           (send dc draw-rectangle (- cw box-width) 0 box-width box-height)
-           (send dc set-smoothing 'aligned)
-           
-           ;; most of the time (unless the user is
-           ;; resizing the window) we don't really 
-           ;; need a new clipping region, so just
-           ;; make a cache of size 1, keyed by the
-           ;; client width, height, and vertical and 
-           ;; horizontal insets.
-           (unless (and (equal? cw docs-ec-last-cw)
-                        (equal? ch docs-ec-last-ch)
-                        (equal? hi docs-ec-last-hi)
-                        (equal? vi docs-ec-last-vi))
-             (set! docs-ec-last-cw cw)
-             (set! docs-ec-last-ch ch)
-             (set! docs-ec-last-hi hi)
-             (set! docs-ec-last-vi vi)
-             (define rgn1 (new region%))
-             (define rgn2 (new region%))
-             (define rgn3 (new region%))
-             (define rgn4 (new region%))
-             (send rgn1 set-rectangle 0 0 cw vi)
-             (send rgn2 set-rectangle (- cw hi) 0 hi ch)
-             (send rgn3 set-rectangle 0 (- ch vi) cw vi)
-             (send rgn4 set-rectangle 0 0 hi ch)
-             (send rgn1 union rgn2)
-             (send rgn1 union rgn3)
-             (send rgn1 union rgn4)
-             (set! docs-ec-clipping-region rgn1))
-           
-           (define old-region (send dc get-clipping-region))
-           (send dc set-clipping-region docs-ec-clipping-region)
-           (draw-blue-box-shadow dc (- cw box-width) 0 box-width box-height)
-           
-           (send dc set-clipping-region old-region)
-           (send dc set-pen pen)
-           (send dc set-brush brush)
-           (send dc set-font font)
-           (send dc set-smoothing smoothing)]
-          [the-strs
-           (draw-closed dc cw 0)]))
+      (when (preferences:get 'drracket:syncheck:show-blueboxes?)
+        (define e (get-editor))
+        (when e
+          (define dc (get-dc))
+          (define-values (cw ch) (get-client-size))
+          (define the-strs (send e get-current-strs))
+          (cond
+            [(and (send e get-show-docs?) the-strs)
+             (define hi (horizontal-inset))
+             (define vi (vertical-inset))
+             (define font (send dc get-font))
+             (define pen (send dc get-pen))
+             (define brush (send dc get-brush))
+             (define smoothing (send dc get-smoothing))
+             (define std (send (send e get-style-list) find-named-style "Standard"))
+             (when std (send dc set-font (send std get-font)))
+             (define-values (box-width box-height label-overlap?)
+               (get-blue-box-size dc (send e get-style-list) the-strs))
+             (send dc set-brush blue-box-color 'solid)
+             (send dc set-pen "black" 1 'transparent)
+             (send dc draw-rectangle (- cw box-width) 0 box-width box-height)
+             (send dc set-smoothing 'aligned)
+             
+             ;; most of the time (unless the user is
+             ;; resizing the window) we don't really 
+             ;; need a new clipping region, so just
+             ;; make a cache of size 1, keyed by the
+             ;; client width, height, and vertical and 
+             ;; horizontal insets.
+             (unless (and (equal? cw docs-ec-last-cw)
+                          (equal? ch docs-ec-last-ch)
+                          (equal? hi docs-ec-last-hi)
+                          (equal? vi docs-ec-last-vi))
+               (set! docs-ec-last-cw cw)
+               (set! docs-ec-last-ch ch)
+               (set! docs-ec-last-hi hi)
+               (set! docs-ec-last-vi vi)
+               (define rgn1 (new region%))
+               (define rgn2 (new region%))
+               (define rgn3 (new region%))
+               (define rgn4 (new region%))
+               (send rgn1 set-rectangle 0 0 cw vi)
+               (send rgn2 set-rectangle (- cw hi) 0 hi ch)
+               (send rgn3 set-rectangle 0 (- ch vi) cw vi)
+               (send rgn4 set-rectangle 0 0 hi ch)
+               (send rgn1 union rgn2)
+               (send rgn1 union rgn3)
+               (send rgn1 union rgn4)
+               (set! docs-ec-clipping-region rgn1))
+             
+             (define old-region (send dc get-clipping-region))
+             (send dc set-clipping-region docs-ec-clipping-region)
+             (draw-blue-box-shadow dc (- cw box-width) 0 box-width box-height)
+             
+             (send dc set-clipping-region old-region)
+             (send dc set-pen pen)
+             (send dc set-brush brush)
+             (send dc set-font font)
+             (send dc set-smoothing smoothing)]
+            [the-strs
+             (draw-closed dc cw 0)])))
       (super on-paint))
     (super-new)))
 
@@ -280,6 +282,12 @@
             [the-strs
              (define size (+ corner-radius shadow-size))
              (invalidate-bitmap-cache (max 0 (- br size)) (max 0 bt) size size)]))))
+    
+    (define pref-changed-callback (λ (x y) (invalidate-blue-box-region)))
+    (preferences:add-callback
+     'drracket:syncheck:show-blueboxes?
+     pref-changed-callback
+     #t)
 
     (define bx (box 0))
     (define by (box 0))
@@ -303,25 +311,26 @@
     
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (super on-paint before? dc left top right bottom dx dy draw-caret)
-      (define-values (br bt bmp-x bmp-y) (get-box-upper-right-and-lock-coordinates))
-      (when (and (not before?) br bt)
-        (define canvas (get-canvas))
-        (define hi (send canvas horizontal-inset))
-        (define vi (send canvas vertical-inset))
-        (cond
-          [(get-show-docs?)
-           (draw-open dc dx dy 
-                      (get-style-list)
-                      the-strs
-                      br bt bmp-x bmp-y
-                      mouse-in-blue-box?
-                      mouse-in-lock-icon?
-                      mouse-in-read-more?
-                      locked?
-                      
-                      left top right bottom)]
-          [the-strs
-           (draw-closed dc (+ dx br) (+ dy bt))])))
+      (when (preferences:get 'drracket:syncheck:show-blueboxes?)
+        (define-values (br bt bmp-x bmp-y) (get-box-upper-right-and-lock-coordinates))
+        (when (and (not before?) br bt)
+          (define canvas (get-canvas))
+          (define hi (send canvas horizontal-inset))
+          (define vi (send canvas vertical-inset))
+          (cond
+            [(get-show-docs?)
+             (draw-open dc dx dy 
+                        (get-style-list)
+                        the-strs
+                        br bt bmp-x bmp-y
+                        mouse-in-blue-box?
+                        mouse-in-lock-icon?
+                        mouse-in-read-more?
+                        locked?
+                        
+                        left top right bottom)]
+            [the-strs
+             (draw-closed dc (+ dx br) (+ dy bt))]))))
     
     ;; get-box-upper-right-and-lock-coordinates 
     ;;   : (or/c (-> (values #f #f #f #f)
@@ -769,8 +778,12 @@
   (new brush%
        [gradient
         (new radial-gradient%
-             [x0 (+ corner-radius shadow-size)] [y0 (+ corner-radius shadow-size)] [r0 corner-radius]
-             [x1 (+ corner-radius shadow-size)] [y1 (+ corner-radius shadow-size)] [r1 (+ shadow-size corner-radius)]
+             [x0 (+ corner-radius shadow-size)] 
+             [y0 (+ corner-radius shadow-size)]
+             [r0 corner-radius]
+             [x1 (+ corner-radius shadow-size)]
+             [y1 (+ corner-radius shadow-size)]
+             [r1 (+ shadow-size corner-radius)]
              [stops (list (list 0 (make-object color% 0 0 0 0))
                           (list 0 shadow-start-color)
                           (list 1 shadow-end-color))])]))

@@ -91,7 +91,10 @@ If the namespace does not, they are colored the unbound color.
 (define (syncheck-add-to-online-expansion-prefs-panel vp)
   (preferences:add-check vp
                          'drracket:syncheck:show-arrows?
-                         (string-constant show-arrows-on-mouseover)))
+                         (string-constant show-arrows-on-mouseover))
+  (preferences:add-check vp
+                         'drracket:syncheck:show-blueboxes?
+                         (string-constant show-blueboxes)))
 
 (define (syncheck-add-to-preferences-panel parent)
   (color-prefs:build-color-selection-panel parent
@@ -212,7 +215,8 @@ If the namespace does not, they are colored the unbound color.
     (define-struct (var-arrow arrow)
       (start-text start-pos-left start-pos-right
                   end-text end-pos-left end-pos-right
-                  actual? level require-arrow? name-dup?) ;; level is one of 'lexical, 'top-level, 'import
+                  actual? level require-arrow? name-dup?)
+      ;; level is one of 'lexical, 'top-level, 'import
       #:transparent)
     (define-struct (tail-arrow arrow) (from-text from-pos to-text to-pos) #:transparent)
     
@@ -251,9 +255,12 @@ If the namespace does not, they are colored the unbound color.
           (send the-brush-list find-or-create-brush "orchid" 'solid)
           (send the-brush-list find-or-create-brush templ-color 'solid)))
     
-    (define (get-tail-pen white-on-black?) (send the-pen-list find-or-create-pen "orchid" 1 'solid))
-    (define (get-tacked-tail-brush white-on-black?) (send the-brush-list find-or-create-brush "orchid" 'solid))
-    (define (get-untacked-brush white-on-black?) (send the-brush-list find-or-create-brush "WHITE" 'solid))
+    (define (get-tail-pen white-on-black?) 
+      (send the-pen-list find-or-create-pen "orchid" 1 'solid))
+    (define (get-tacked-tail-brush white-on-black?)
+      (send the-brush-list find-or-create-brush "orchid" 'solid))
+    (define (get-untacked-brush white-on-black?)
+      (send the-brush-list find-or-create-brush "WHITE" 'solid))
         
     ;; clearing-text-mixin : (mixin text%)
     ;; overrides methods that make sure the arrows go away appropriately.
@@ -396,7 +403,8 @@ If the namespace does not, they are colored the unbound color.
             (define definition-targets (make-hash))
             
             
-            ;; bindings-table : hash-table[(list text number number) -o> (setof (list text number number))]
+            ;; bindings-table : hash-table[(list text number number)
+            ;;                             -o> (setof (list text number number))]
             ;; this is a private field
             (define bindings-table (make-hash))
             
@@ -486,15 +494,18 @@ If the namespace does not, they are colored the unbound color.
             (define/private (find-char-box text left-pos right-pos)
               (send text position-location left-pos xlb ylb #t)
               (send text position-location right-pos xrb yrb #f)
-              (let*-values ([(xl-off yl-off) (send text editor-location-to-dc-location (unbox xlb) (unbox ylb))]
-                            [(xl yl) (dc-location-to-editor-location xl-off yl-off)]
-                            [(xr-off yr-off) (send text editor-location-to-dc-location (unbox xrb) (unbox yrb))]
-                            [(xr yr) (dc-location-to-editor-location xr-off yr-off)])
-                (values 
-                 xl
-                 yl
-                 xr 
-                 yr)))
+              (define-values (xl-off yl-off) 
+                (send text editor-location-to-dc-location (unbox xlb) (unbox ylb)))
+              (define-values (xl yl)
+                (dc-location-to-editor-location xl-off yl-off))
+              (define-values (xr-off yr-off)
+                (send text editor-location-to-dc-location (unbox xrb) (unbox yrb)))
+              (define-values (xr yr) (dc-location-to-editor-location xr-off yr-off))
+              (values 
+               xl
+               yl
+               xr 
+               yr))
             
             (define/private (get-arrow-poss arrow)
               (cond
