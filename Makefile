@@ -75,7 +75,7 @@ SRC_CATALOG = local
 # server):
 SERVER = localhost
 
-# Set to "--release" to created release-mode installers (as opposed to
+# Set to "--release" to create release-mode installers (as opposed to
 # snapshot installers):
 RELEASE_MODE =
 
@@ -86,6 +86,10 @@ DIST_DIR = racket
 
 # Configuration of clients to run for a build farm:
 FARM_CONFIG = build/farm-config.rktd
+
+# Set to "--clean" to flush client directories in a build farm
+# (except as overriding in the `FARM_CONFIG' file):
+CLEAN_MODE =
 
 # A command to run after the server has started; normally set by
 # the `farm' target:
@@ -283,7 +287,7 @@ win32-installer-from-bundle:
 # ------------------------------------------------------------
 # Drive installer build:
 
-DRIVE_ARGS = $(RELEASE_MODE) "$(FARM_CONFIG)" $(SERVER) "$(PKGS)" "$(DIST_NAME)" $(DIST_DIR)
+DRIVE_ARGS = $(RELEASE_MODE) $(CLEAN_MODE) "$(FARM_CONFIG)" $(SERVER) "$(PKGS)" "$(DIST_NAME)" $(DIST_DIR)
 DRIVE_CMD = $(RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS)
 
 # Full server build and clients drive, based on `FARM_CONFIG':

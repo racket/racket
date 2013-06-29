@@ -89,6 +89,7 @@
 ;;                          failure; defaults to 30 minutes
 ;;   #:repo <string> --- the git repository for Racket; defaults to
 ;;                       "http://<server>:9440/.git"
+;;   #:clean? <boolean> --- override default cleaning mode
 ;;
 ;; Machine-only keywords:
 ;;   #:name <string> --- defaults to host
@@ -106,12 +107,15 @@
 ;; ----------------------------------------
 
 (define release? #f)
+(define default-clean? #f)
 
 (define-values (config-file default-server default-pkgs default-dist-name default-dist-dir)
   (command-line
    #:once-each
    [("--release") "Create release-mode installers"
     (set! release? #t)]
+   [("--clean") "Erase client directories before building"
+    (set! default-clean? #t)]
    #:args (config-file server pkgs dist-name dist-dir)
    (values config-file server pkgs dist-name dist-dir)))
 
@@ -143,6 +147,7 @@
     [(#:timeout) (real? val)]
     [(#:j) (exact-positive-integer? val)]
     [(#:repo) (string? val)]
+    [(#:clean?) (boolean? val)]
     [else #f]))
 
 (define (check-machine-keyword kw val)
@@ -221,8 +226,8 @@
             (hash-set opts (car c) (cadr c)))]
      [else opts])))
 
-(define (get-opt opts kw)
-  (hash-ref opts kw #f))
+(define (get-opt opts kw [default #f])
+  (hash-ref opts kw default))
 
 (define (get-content c)
   (let loop ([c (cdr c)])
@@ -335,12 +340,13 @@
 
 (define (ssh-script host port user . cmds)
   (for/and ([cmd (in-list cmds)])
-    (apply system*/show ssh 
-           "-p" (~a port)
-           (if user 
-               (~a user "@" host)
-               host)
-           cmd)))
+    (or (not cmd)
+        (apply system*/show ssh 
+               "-p" (~a port)
+               (if user 
+                   (~a user "@" host)
+                   host)
+               cmd))))
 
 (define (q s)
   (~a "\"" s "\""))
@@ -352,7 +358,7 @@
       " DIST_DIR=" dist-dir
       " RELEASE_MODE=" (if release? "--release" (q ""))))
 
-(define (unix-build c host port user server repo
+(define (unix-build c host port user server repo clean?
                     pkgs dist-name dist-dir)
   (define dir (or (get-opt c '#:dir)
                   "build/plt"))
@@ -361,6 +367,8 @@
   (define j (or (get-opt c '#:j) 1))
   (ssh-script
    host port user
+   (and clean?
+        (sh "rm -rf  " (q dir)))
    (sh "if [ ! -d " (q dir) " ] ; then"
        " git clone " (q repo) " " (q dir) " ; "
        "fi")
@@ -370,7 +378,7 @@
        "make -j " j " client"
        (client-args server pkgs dist-name dist-dir))))
 
-(define (windows-build c host port user server repo
+(define (windows-build c host port user server repo clean?
                        pkgs dist-name dist-dir)
   (define dir (or (get-opt c '#:dir)
                   "build\\plt"))
@@ -383,6 +391,8 @@
     (list "cmd" "/c" (apply ~a args)))
   (ssh-script
    host port user
+   (and clean?
+        (cmd "IF EXIST " (q dir) " rmdir /S /Q " (q dir)))
    (cmd "IF NOT EXIST " (q dir) " git clone " (q repo) " " (q dir))
    (cmd "cd " (q dir)
         " && git pull")
@@ -407,10 +417,14 @@
                        default-dist-dir))
   (define repo (or (get-opt c '#:repo)
                    (~a "http://" server ":9440/.git")))
+  (define clean? (let ([v (get-opt c '#:clean? 'none)])
+                   (if (eq? v 'none)
+                       default-clean?
+                       v)))
   ((case (or (get-opt c '#:platform) 'unix)
      [(unix) unix-build]
      [else windows-build])
-   c host port user server repo
+   c host port user server repo clean?
    pkgs dist-name dist-dir))
 
 ;; ----------------------------------------
