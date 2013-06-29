@@ -13,7 +13,7 @@ add this test:
 |#
 
 (require "private/drracket-test-util.rkt"
-         tests/utils/gui
+         "private/gui.rkt"
          mzlib/class
          mzlib/pretty
          mred

@@ -15,7 +15,7 @@ the settings above should match r5rs
 
 
 (require "private/drracket-test-util.rkt"
-         tests/utils/gui
+         "private/gui.rkt"
          mred
          framework
          (prefix-in fw: framework))

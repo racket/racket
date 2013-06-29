@@ -3,7 +3,7 @@
   (require mred
            mzlib/class
            "private/drracket-test-util.rkt"
-           tests/utils/gui
+           "private/gui.rkt"
            framework
            mzlib/pretty)
   

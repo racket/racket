@@ -5,7 +5,7 @@
          scheme/gui/base
          scheme/class
          scheme/contract
-         "../../utils/gui.rkt")
+         "gui.rkt")
 
   (provide/contract 
    [use-get/put-dialog (-> (-> any) path? void?)]

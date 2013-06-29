@@ -3,7 +3,7 @@
   (require "private/drracket-test-util.rkt"
            drracket/private/syncheck/local-member-names
            string-constants/string-constant
-           tests/utils/gui
+           "private/gui.rkt"
            racket/path
            racket/class
            racket/list
