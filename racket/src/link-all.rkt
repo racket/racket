@@ -90,9 +90,6 @@
          [(directory-exists? src-f)
           (loop src-f)])))))
 
-;; Like `found', but just the packages we want
-(define wanted (make-hash))
-
 (define all-pkgs
   (let loop ([all-pkgs pkgs] [pkgs pkgs])
     (define new-pkgs
