@@ -30,7 +30,8 @@
          "private/omitted-paths.rkt"
          "parallel-build.rkt"
          "private/cc-struct.rkt"
-         "link.rkt")
+         "link.rkt"
+         "private/pkg-deps.rkt")
 
 (define-namespace-anchor anchor)
 
@@ -1563,6 +1564,27 @@
                                        (bytes->path-element (bytes-append #"man" (filename-extension n)))
                                        n))))
 
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;       Package-dependency checking         ;;
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define (do-check-package-dependencies)
+    (setup-printf #f (format "--- checking package dependencies ---"))
+    (check-package-dependencies (map cc-path ccs-to-compile)
+                                (map cc-collection ccs-to-compile)
+                                ;; If "test" or "scribblings" is this collection's name,
+                                ;; then it's build-mode code, otherwise it's test mode:
+                                (let ([tests-path (string->path "tests")]
+                                      [scribblings-path (string->path "scribblings")])
+                                  (for/list ([cc (in-list ccs-to-compile)])
+                                    (if (or (member tests-path (cc-collection cc))
+                                            (member scribblings-path (cc-collection cc)))
+                                        'build
+                                        'run)))
+                                setup-printf setup-fprintf
+                                (fix-dependencies)
+                                (verbose)))
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; setup-unit Body                ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1600,5 +1622,8 @@
   
   (do-install-part 'general)
   (do-install-part 'post)
+
+  (when (check-dependencies)
+    (do-check-package-dependencies))
 
   (done))

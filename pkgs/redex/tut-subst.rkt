@@ -17,8 +17,7 @@ for untyped.
 |#
 
 (require racket/set racket/match
-         redex/reduction-semantics
-         rackunit)
+         redex/reduction-semantics)
 (provide subst/proc fvs)
 
 (define (subst/proc x? vars replacements body)

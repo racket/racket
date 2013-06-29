@@ -10,6 +10,7 @@ Added links-file and links-search-dirs to config, enabling
  as pkgs-dir and pkgs-search-dirs
 Removed -C/--links command-line flag
 setup/infotab: removed string-constants require as an allowed form
+raco setup: added --no-pkg-deps and --fix-pkg-deps
 
 Version 5.3.900.1
 Reorganized collections into packages

@@ -816,6 +816,18 @@ The following @filepath{info.rkt} fields are used by the package manager:
        @racketidfont{build-deps} when converting a package for
        @DFlag{binary} mode.}
 
+ @item{@racketidfont{implies} --- a list of strings and
+       @racket['core]. Each string refers to a package listed in the
+       @racketidfont{deps} and indicates that a dependency on the
+       current package counts as a dependency on named package; for
+       example, the @pkgname{gui} package is defined to ensure access
+       to all of the libraries provided by @pkgname{gui-lib}, so the
+       @filepath{info.rkt} file of @pkgname{gui} lists
+       @racket["gui-lib"] in @racketidfont{implies}. The special value
+       @racket['core] is intended for use by an appropriate
+       @pkgname{base} package to declare it as the representative of
+       core Racket libraries.}
+
  @item{@racketidfont{setup-collects} --- a list of path strings and/or
        lists of path strings, which are used as collection names to
        set up via @exec{raco setup} after the package is installed, or

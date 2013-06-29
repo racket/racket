@@ -78,10 +78,11 @@ catalogs}.}
 A structure type that is used to report installed-package information.}
 
 
-@defproc[(pkg-directory [name string?]) path-string?]{
+@defproc[(pkg-directory [name string?]) (or/c path-string? #f)]{
 
 Returns the directory that holds the installation of the installed
-(in any scope) package @racket[name].}
+(in any scope) package @racket[name], or @racket[#f] if no such package
+is installed.}
 
 
 @defproc[(path->pkg [path path-string?]) (or/c string? #f)]{
@@ -129,16 +130,25 @@ dependency.}
 
 
 @defproc[(pkg-stage [desc pkg-desc?]
-                        [#:checksum checksum (or/c #f string?) #f])
-         (values string? path? (or/c #f string?) boolean?)]{
+                    [#:checksum checksum (or/c #f string?) #f]
+                    [#:in-place? in-place? boolean? #f]
+                    [#:namespace namespace namespace? (make-base-namespace)])
+         (values string? path? (or/c #f string?) boolean? (listof module-path?))]{
 
-Locates the implementation of the package specified by @racket[desc] and
-downloads and unpacks it to a temporary directory (as needed).
+Locates the implementation of the package specified by @racket[desc]
+and downloads and unpacks it to a temporary directory (as needed).
+
+If @racket[desc] refers to an existing directory and
+@racket[in-place?]  is true, then the directory is used in place.
+
+The @racket[namespace] argument is passed along to
+@racket[get-info/full] when the package's @filepath{info.rkt} is
+loaded.
 
 The result is the package name, the directory containing the unpacked package content,
-the checksum (if any) for the unpacked package, and whether the
+the checksum (if any) for the unpacked package, whether the
 directory should be removed after the package content is no longer
-needed.}
+needed, and a list of module paths provided by the package.}
 
 
 @defproc[(pkg-config [set? boolean?] [keys/vals list?])
@@ -345,3 +355,19 @@ The results are as follows:
        @racket[get-info].}
 
 ]}
+
+@defproc[(extract-pkg-dependencies [info (symbol? (-> any/c) . -> . any/c)]
+                                   [#:build-deps? build-deps? boolean? #f]
+                                   [#:filter? filter? boolean? #f])
+         (listof (or/c string? (cons/c string? list?)))]{
+
+Returns packages dependencies reported by the @racket[info] procedure
+(normally produced by @racket[get-info]).
+
+If @racket[build-deps?] is true, then the result includes both
+run-time dependencies and build-time dependencies.
+
+If @racket[filter?] is true, then platform-specific dependencies are
+removed from the result list when they do not apply to the current
+platform, and other information is stripped so that the result list is
+always a list of strings.}

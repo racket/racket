@@ -134,6 +134,7 @@
    (with-fake-root
     (shelly-case
      "remote - fail"
+     $ "raco pkg config --set catalogs http://localhost:9990"
      $ "racket -e '(require pkg-test2)'" =exit> 1
      $ "raco pkg install --deps fail pkg-test2" =exit> 1
      $ "racket -e '(require pkg-test2)'" =exit> 1)))))

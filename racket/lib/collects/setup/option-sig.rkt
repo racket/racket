@@ -22,6 +22,8 @@
      avoid-main-installation
      make-tidy
      make-doc-index
+     check-dependencies
+     fix-dependencies
      call-install
      call-post-install
      pause-on-errors

@@ -102,22 +102,7 @@
           (error 'link-all "requested package not available: ~s" pkg-name))
         (define i (get-info/full dir))
         (define deps
-          (for/list ([dep (in-list (append (i 'deps (lambda () null))
-                                           (i 'build-deps (lambda () null))))]
-                     #:when
-                     (let ([platform (and (list? dep)
-                                          (member '#:platform dep))])
-                       (or (not platform)
-                           (let ([p (cadr platform)])
-                             (if (symbol? p)
-                                 (eq? p (system-type))
-                                 (let ([s (path->string (system-library-subpath #f))])
-                                   (if (regexp? p)
-                                       (regexp-match? p s)
-                                       (equal? p s))))))))
-            (if (pair? dep)
-                (car dep)
-                dep)))
+          (extract-pkg-dependencies i #:filter? #t))
         (set-union
          new-pkgs
          (for/set ([dep (in-list deps)]

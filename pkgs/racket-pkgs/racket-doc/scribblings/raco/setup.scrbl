@@ -166,6 +166,16 @@ flags:
  @item{@DFlag{avoid-main} --- refrain from any setup actions that
   affect the installation, as opposed to user-specific actions.}
 
+ @item{@DFlag{no-pkg-deps} or @Flag{K} --- refrain from checking whether dependencies among
+  libraries are properly reflected by package-level dependency
+  declarations. The check uses compiled bytecode and associated
+  @filepath{.dep} files, and it checks only files are setup against
+  only packages that include files that are setup.}
+
+ @item{@DFlag{fix-pkg-deps} --- attempt to correct dependency
+  mismatches by adjusting package @filepath{info.rkt} files (which makes
+  sense only for packages that are installed as links).}
+
  @item{@DFlag{mode} @nonterm{mode} --- use a @filepath{.zo} compiler
    other than the default compiler, and put the resulting
    @filepath{.zo} files in a subdirectory (of the usual place) named
@@ -176,16 +186,16 @@ flags:
    @racket[compile]; see the @filepath{errortrace} collection for an
    example.}
 
- @item{@DFlag{verbose} or @Flag{v} --- More verboase output about
+ @item{@DFlag{verbose} or @Flag{v} --- more verbose output about
    @exec{raco setup} actions.}
 
- @item{@DFlag{make-verbose} or @Flag{m} --- More verboase output about
+ @item{@DFlag{make-verbose} or @Flag{m} --- more verbose output about
    dependency checks.}
 
- @item{@DFlag{compiler-verbose} or @Flag{r} --- Even more verbose
+ @item{@DFlag{compiler-verbose} or @Flag{r} --- even more verbose
    output about dependency checks and compilation.}
 
- @item{@DFlag{pause} or @Flag{p} --- Pause for user input if any
+ @item{@DFlag{pause} or @Flag{p} --- pause for user input if any
   errors are reported (so that a user has time to inspect output that
   might otherwise disappear when the @exec{raco setup} process ends).}
 

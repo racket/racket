@@ -36,18 +36,21 @@
    (shelly-install "remote/URL/http package (directory)"
                    "http://localhost:9999/pkg-test1/")
 
-   (shelly-case
-    "fails due to unrecognized scheme"
-    $ "raco pkg install magic://download" =exit> 1)
-   (shelly-case
-    "local directory name fails because not inferred as such (inferred as package name)"
-    $ "raco pkg install test-pkgs" =exit> 1)
-   (shelly-case
-    "local file name with bad suffix and not a package name or directory"
-    $ "raco pkg install tests-install.rkt" =exit> 1)
-   (shelly-case
-    "not a valid (inferred) package name"
-    $ "raco pkg install 1+2" =exit> 1)
+   (with-fake-root
+    (shelly-begin
+     $ "raco pkg config --set catalogs http://localhost:9990 http://localhost:9991"
+     (shelly-case
+      "fails due to unrecognized scheme"
+      $ "raco pkg install magic://download" =exit> 1)
+     (shelly-case
+      "local directory name fails because not inferred as such (inferred as package name)"
+      $ "raco pkg install test-pkgs" =exit> 1)
+     (shelly-case
+      "local file name with bad suffix and not a package name or directory"
+      $ "raco pkg install tests-install.rkt" =exit> 1)
+     (shelly-case
+      "not a valid (inferred) package name"
+      $ "raco pkg install 1+2" =exit> 1)))
 
    (shelly-case
     "local file fails because called a directory"

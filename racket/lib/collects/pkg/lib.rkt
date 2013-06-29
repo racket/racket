@@ -581,7 +581,8 @@
            [_
             (build-path (pkg-installed-dir) pkg-name)]))))
 
-(define (path->pkg+subpath given-p)
+(define (path->pkg+subpath given-p
+                           #:cache [cache #f])
   (define (explode p)
     (explode-path
      (normal-case-path
@@ -596,31 +597,44 @@
     (if (null? l) 'same (apply build-path l)))
   (for/fold ([pkg #f] [subpath #f]) ([scope (in-list (get-scope-list))]
                                      #:when (not pkg))
-    (parameterize ([current-pkg-scope scope])
-      (with-pkg-lock/read-only
-       (define d (explode (pkg-installed-dir)))
-       (cond
-        [(sub-path? < p d)
-         ;; Under the installation mode's package directory.
-         ;; We assume that no one else writes there, so the
-         ;; next path element is the package name.
-         (define len (length d))
-         (values (path-element->string (list-ref p len))
-                 (build-path* (list-tail p (add1 len))))]
-        [else
-         ;; Maybe it's a linked package
-         (for/fold ([pkg #f] [subpath #f]) ([(k v) (in-hash (read-pkg-db))]
-                                            #:when (not pkg))
-           (match (pkg-info-orig-pkg v)
-             [`(link ,orig-pkg-dir)
-              (define e (explode orig-pkg-dir))
-              (if (sub-path? <= p e)
-                  (values k (build-path* (list-tail p (length e))))
-                  (values #f #f))]
-             [else (values #f #f)]))])))))
+    (define d (or (and cache
+                       (hash-ref cache `(dir ,scope) #f))
+                  (parameterize ([current-pkg-scope scope])
+                    (with-pkg-lock/read-only
+                     (define d (explode (pkg-installed-dir)))
+                     (when cache (hash-set! cache `(dir ,scope) d))
+                     d))))
+    (define (read-pkg-db/cached)
+      (or (and cache
+               (hash-ref cache `(db ,scope) #f))
+          (parameterize ([current-pkg-scope scope])
+            (with-pkg-lock/read-only
+             (define db (read-pkg-db))
+             (when cache (hash-set! cache `(db ,scope) db))
+             db))))
+    (cond
+     [(sub-path? < p d)
+      ;; Under the installation mode's package directory.
+      ;; We assume that no one else writes there, so the
+      ;; next path element is the package name.
+      (define len (length d))
+      (values (path-element->string (list-ref p len))
+              (build-path* (list-tail p (add1 len))))]
+     [else
+      ;; Maybe it's a linked package
+      (for/fold ([pkg #f] [subpath #f]) ([(k v) (in-hash (read-pkg-db/cached))]
+                                         #:when (not pkg))
+        (match (pkg-info-orig-pkg v)
+          [`(link ,orig-pkg-dir)
+           (define e (explode orig-pkg-dir))
+           (if (sub-path? <= p e)
+               (values k (build-path* (list-tail p (length e))))
+               (values #f #f))]
+          [else (values #f #f)]))])))
 
-(define (path->pkg given-p)
-  (define-values (pkg rest) (path->pkg+subpath given-p))
+(define (path->pkg given-p #:cache [cache #f])
+  (define-values (pkg rest)
+    (path->pkg+subpath given-p #:cache cache))
   pkg)
 
 (define ((remove-package quiet?) pkg-name)
@@ -729,14 +743,16 @@
          c)))
 
 ;; Downloads a package (if needed) and unpacks it (if needed) into a  
-;; temporary directory. 
+;; temporary directory.
 (define (stage-package/info pkg
                             given-type
                             given-pkg-name
                             #:given-checksum [given-checksum #f]
                             check-sums?
                             download-printf
-                            metadata-ns)
+                            metadata-ns
+                            #:in-place? [in-place? #f]
+                            #:in-place-clean? [in-place-clean? #f])
   (define-values (inferred-pkg-name type) 
     (if (path? pkg)
         (package-source->name+type (path->string pkg)
@@ -804,19 +820,25 @@
               (λ ()
                  (download-printf "Downloading ~a\n" (url->string new-url))
                  (download-file! new-url tmp.tgz)
+                 (define staged? #f)
                  (dynamic-wind
                      void
                      (λ ()
                         (untar tmp.tgz tmp-dir #:strip-components 1)
-                        (stage-package/info (path->string package-path)
-                                            'dir
-                                            pkg-name
-                                            #:given-checksum checksum
-                                            check-sums?
-                                            download-printf
-                                            metadata-ns))
+                        (begin0
+                         (stage-package/info (path->string package-path)
+                                             'dir
+                                             pkg-name
+                                             #:given-checksum checksum
+                                             check-sums?
+                                             download-printf
+                                             metadata-ns
+                                             #:in-place? #t
+                                             #:in-place-clean? #t)
+                         (set! staged? #t)))
                      (λ ()
-                        (delete-directory/files tmp-dir))))
+                        (unless staged?
+                          (delete-directory/files tmp-dir)))))
               (λ ()
                  (delete-directory/files tmp.tgz)))]
          [_
@@ -937,6 +959,7 @@
     (define pkg-dir
       (make-temporary-file (string-append "~a-" pkg-name)
                            'directory))
+    (define staged? #t)
     (dynamic-wind
         void
         (λ ()
@@ -961,19 +984,24 @@
              [x
               (pkg-error "invalid package format\n  given: ~a" x)])
 
-           (update-install-info-checksum
-            (update-install-info-orig-pkg
-             (stage-package/info pkg-dir
-                                 'dir
-                                 pkg-name
-                                 #:given-checksum checksum
-                                 check-sums?
-                                 download-printf
-                                 metadata-ns)
-             `(file ,(simple-form-path* pkg)))
-            checksum))
+           (begin0
+            (update-install-info-checksum
+             (update-install-info-orig-pkg
+              (stage-package/info pkg-dir
+                                  'dir
+                                  pkg-name
+                                  #:given-checksum checksum
+                                  check-sums?
+                                  download-printf
+                                  metadata-ns
+                                  #:in-place? #t
+                                  #:in-place-clean? #t)
+              `(file ,(simple-form-path* pkg)))
+             checksum)
+            (set! staged? #t)))
         (λ ()
-           (delete-directory/files pkg-dir)))]
+           (unless staged?
+             (delete-directory/files pkg-dir))))]
    [(or (eq? type 'dir)
         (eq? type 'link))
     (unless (directory-exists? pkg)
@@ -988,14 +1016,18 @@
                       (directory->module-paths pkg pkg-name metadata-ns))]
        [else
         (define pkg-dir
-          (make-temporary-file "pkg~a" 'directory))
-        (delete-directory pkg-dir)
-        (make-parent-directory* pkg-dir)
-        (copy-directory/files pkg pkg-dir #:keep-modify-seconds? #t)
+          (if in-place?
+              pkg
+              (let ([pkg-dir (make-temporary-file "pkg~a" 'directory)])
+                (delete-directory pkg-dir)
+                (make-parent-directory* pkg-dir)
+                (copy-directory/files pkg pkg-dir #:keep-modify-seconds? #t)
+                pkg-dir)))
         (install-info pkg-name
                       `(dir ,(simple-form-path* pkg))
                       pkg-dir
-                      #t #f
+                      (or (not in-place?) in-place-clean?) 
+                      #f
                       (directory->module-paths pkg-dir pkg-name metadata-ns))]))]
    [(eq? type 'name)
     (define catalog-info (package-catalog-lookup pkg #f))
@@ -1021,18 +1053,22 @@
     (pkg-error "cannot infer package source type\n  source: ~a" pkg)]))
 
 (define (pkg-stage desc
-                   #:checksum [checksum #f])
+                   #:namespace [metadata-ns (make-metadata-namespace)] 
+                   #:checksum [checksum #f]
+                   #:in-place? [in-place? #f])
   (define i (stage-package/info (pkg-desc-source desc)
                                 (pkg-desc-type desc)
                                 (pkg-desc-name desc)
                                 #:given-checksum checksum 
                                 #t
                                 void
-                                (make-metadata-namespace)))
+                                metadata-ns
+                                #:in-place? in-place?))
   (values (install-info-name i)
           (install-info-directory i)
           (install-info-checksum i)
-          (install-info-clean? i)))
+          (install-info-clean? i)
+          (install-info-module-paths i)))
 
 (define (install-packages
          #:old-infos [old-infos empty]
@@ -1048,6 +1084,7 @@
   (define download-printf (if quiet? void printf))
   (define check-sums? (not ignore-checksums?))
   (define all-db (merge-pkg-dbs))
+  (define path-pkg-cache (make-hash))
   (define (install-package/outer infos desc info)
     (match-define (pkg-desc pkg type orig-name auto?) desc)
     (match-define
@@ -1085,9 +1122,9 @@
                                                                       (path-replace-suffix name #".ss")
                                                                       #".zo"))))))
                  (or (not updating?)
-                     (not (equal? pkg-name (path->pkg f)))))
+                     (not (equal? pkg-name (path->pkg f #:cache path-pkg-cache)))))
             ;; This module is already installed
-            (cons (path->pkg f) mp)]
+            (cons (path->pkg f #:cache path-pkg-cache) mp)]
            [else
             ;; Compare with simultaneous installs
             (for/or ([other-pkg-info (in-list infos)]
@@ -1974,27 +2011,35 @@
           ht
           (hash-set ht k v)))))
 
-(define (extract-dependencies get-info)
+(define (extract-pkg-dependencies get-info
+                                  #:build-deps? [build-deps? #t]
+                                  #:filter? [filter? #f])
   (define v (if get-info
                 (get-info 'deps (lambda () empty))
                 empty))
   ((check-dependencies 'deps) v)
-  (define v2 (if get-info
-                (get-info 'build-deps (lambda () empty))
-                empty))
+  (define v2 (if (and get-info build-deps?)
+                 (get-info 'build-deps (lambda () empty))
+                 empty))
   ((check-dependencies 'build-deps) v2)
-  (append v v2))
+  (define all-v (append v v2))
+  (if filter?
+      (for/list ([dep (in-list all-v)]
+                 #:when (dependency-this-platform? dep))
+        (if (pair? dep)
+            (car dep)
+            dep))
+      all-v))
 
 (define (get-pkg-content desc 
-                         #:extract-info [extract-info extract-dependencies])
-  (define-values (pkg-name dir cksum clean?) (pkg-stage desc))
-  (define metadata-ns (make-metadata-namespace))
+                         #:namespace [metadata-ns (make-metadata-namespace)]
+                         #:extract-info [extract-info extract-pkg-dependencies])
+  (define-values (pkg-name dir cksum clean? module-paths) 
+    (pkg-stage desc #:in-place? #t #:namespace metadata-ns))
   (define get-info (get-info/full dir #:namespace metadata-ns))
-  (define module-paths
-    (set->list (directory->module-paths dir pkg-name metadata-ns)))
   (begin0
    (values cksum
-           module-paths
+           (set->list module-paths)
            (extract-info get-info))
    (when clean?
      (delete-directory/files dir))))
@@ -2164,11 +2209,15 @@
   [current-pkg-catalogs
    (parameter/c (or/c #f (listof url?)))]
   [pkg-directory
-   (-> string? path-string?)]
+   (-> string? (or/c path-string? #f))]
   [path->pkg
-   (-> path-string? (or/c #f string?))]
+   (->* (path-string?)
+        (#:cache (or/c #f (and/c hash? (not/c immutable?))))
+        (or/c #f string?))]
   [path->pkg+subpath
-   (-> path-string? (values (or/c #f string?) (or/c #f 'same path?)))]
+   (->* (path-string?)
+        (#:cache (or/c #f (and/c hash? (not/c immutable?))))
+        (values (or/c #f string?) (or/c #f 'same path?)))]
   [pkg-desc 
    (-> string? 
        (or/c #f 'file 'dir 'link 'file-url 'dir-url 'github 'name) 
@@ -2235,11 +2284,14 @@
         (#:scope (or/c #f package-scope/c))
         (hash/c string? pkg-info?))]
   [pkg-stage (->* (pkg-desc?)
-                  (#:checksum (or/c #f string?))
+                  (#:namespace namespace?
+                               #:checksum (or/c #f string?)
+                               #:in-place? boolean?)
                   (values string?
                           path?
                           (or/c #f string?)
-                          boolean?))]
+                          boolean?
+                          (listof module-path?)))]
   [pkg-config-catalogs
    (-> (listof string?))]
   [pkg-catalog-update-local
@@ -2263,10 +2315,16 @@
    (->* (pkg-desc?)
         (#:extract-info (-> (or/c #f
                                   ((symbol?) ((-> any)) . ->* . any))
-                            any/c))
+                            any/c)
+                        #:namespace namespace?)
         (values (or/c #f string?)
                 (listof module-path?)
                 any/c))]
+  [extract-pkg-dependencies
+   (->* ((symbol? (-> any/c) . -> . any/c))
+        (#:build-deps? boolean?
+                       #:filter? boolean?)
+        (listof (or/c string? (cons/c string? list?))))]
   [pkg-single-collection
    (->* (path-string?)
         (#:name string?
