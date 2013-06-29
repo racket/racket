@@ -126,7 +126,8 @@
                  get-canvas)
       
         ;; require-depth-ht : hash[(list snip snip) -o> (listof integer)]
-        ;; maps parent/child snips (ie, those that match up to modules that require each other) to phase differences
+        ;; maps parent/child snips (ie, those that match up to modules 
+        ;; that require each other) to phase differences
         (define require-depth-ht (make-hash))
         
         (define name-length 'long)
@@ -183,7 +184,8 @@
         
         (define/public (begin-adding-connections)
           (when max-lines
-            (error 'begin-adding-connections "already in begin-adding-connections/end-adding-connections sequence"))
+            (error 'begin-adding-connections
+                   "already in begin-adding-connections/end-adding-connections sequence"))
           (set! max-lines 0)
           (begin-edit-sequence)
           (let loop ()
@@ -196,7 +198,8 @@
         
         (define/public (end-adding-connections)
           (unless max-lines
-            (error 'end-adding-connections "not in begin-adding-connections/end-adding-connections sequence"))
+            (error 'end-adding-connections
+                   "not in begin-adding-connections/end-adding-connections sequence"))
           
           (unless (zero? max-lines)
             (let loop ([snip (find-first-snip)])
@@ -775,7 +778,8 @@
                               [(3) 1]))
                  (callback
                   (λ (x y)
-                    ;; note: the preference drracket:module-browser:name-length is also used for the View|Show Module Browser version of the module browser
+                    ;; note: the preference drracket:module-browser:name-length is also used for 
+                    ;; the View|Show Module Browser version of the module browser
                     ;; here we just treat any pref value except '3' as if it were for the long names.
                     (let ([selection (send module-browser-name-length-choice get-selection)])
                       (preferences:set 'drracket:module-browser:name-length (+ 2 selection))
@@ -809,11 +813,13 @@
                     (let loop ([snip (send pasteboard find-first-snip)])
                       (when snip
                         (when (is-a? snip boxed-word-snip<%>)
-                          (send snip set-found! (and reg (regexp-match reg (path->string (send snip get-filename))))))
+                          (send snip set-found! 
+                                (and reg (regexp-match reg (path->string (send snip get-filename))))))
                         (loop (send snip next))))
                     (send pasteboard end-edit-sequence))]))
           
-          (send lib-paths-checkbox set-value (not (memq 'lib (preferences:get 'drracket:module-browser:hide-paths))))
+          (send lib-paths-checkbox set-value
+                (not (memq 'lib (preferences:get 'drracket:module-browser:hide-paths))))
           (set! update-label
                 (λ (s)
                   (if (and s (not (null? s)))
