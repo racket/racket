@@ -2296,8 +2296,10 @@
     (define/public-final (get-allow-edits) allow-edits?)
     
     (define/public-final (send-eof-to-in-port) 
+      (when box-input (new-box-input (send box-input get-editor)))
       (channel-put read-chan (cons eof (position->line-col-pos unread-start-point))))
     (define/public-final (send-eof-to-box-in-port) 
+      (when box-input (new-box-input (send box-input get-editor)))
       (channel-put box-read-chan (cons eof (position->line-col-pos unread-start-point))))
     (define/public-final (clear-input-port) (channel-put clear-input-chan (void)))
     (define/public-final (clear-box-input-port) (channel-put box-clear-input-chan (void)))

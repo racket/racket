@@ -118,7 +118,7 @@ add this test:
 
 
 (define (reading-test)
-  (define (do-input-test program input expected-transcript)
+  (define (do-input-test program input expected-transcript [eof? #f])
     (do-execute drs-frame)
     (type-in-interactions drs-frame program)
     (let ([before-newline-pos (send interactions-text last-position)])
@@ -129,6 +129,10 @@ add this test:
             "input box didn't appear")
       
       (type-string input)
+      (when eof?
+        (queue-callback/res
+         (λ ()
+           (send interactions-text send-eof-to-box-in-port))))
       (wait-for-computation drs-frame)
       (let ([got-value
              (fetch-output drs-frame 
@@ -144,6 +148,7 @@ add this test:
                    expected-transcript got-value program input)))))
   
   (clear-definitions drs-frame)
+  
   (do-input-test "(read-char)" "a\n" "a\n#\\a")
   (do-input-test "(read-char)" "λ\n" "λ\n#\\λ")
   (do-input-test "(read-line)" "abcdef\n" "abcdef\n\"abcdef\"") 
@@ -184,7 +189,10 @@ add this test:
                   "(read-bytes-avail!* bs2)"
                   "(list b bs0 bs1 bs2))\n")
    "ab\n"
-   "ab\n(97 #\"b\" #\"\\n\" #\"\\2\")"))
+   "ab\n(97 #\"b\" #\"\\n\" #\"\\2\")")
+  
+  (do-input-test "(read-char)" "" "#<eof>" #t)
+  (do-input-test "(read-char)(read-char)" "a" "a#\\a\n#<eof>" #t))
 
 (define drs-frame #f)
 (define interactions-text #f)
