@@ -24,6 +24,7 @@
          fix? verbose?)
   ;; Tables
   (define missing (make-hash))
+  (define skip-pkgs (make-hash))
   (define pkg-internal-deps (make-hash)) ; dependencies available for a package's own use
   (define pkg-immediate-deps (make-hash)) ; save immediate dependencies
   (define pkg-external-deps (make-hash)) ; dependencies made available though `implies'
@@ -66,16 +67,21 @@
       (get-pkg-content (pkg-desc (if (path? dir) (path->string dir) dir) 'dir pkg #f)
                        #:namespace metadata-ns
                        #:extract-info (lambda (i)
-                                        (if i
+                                        (if (and i
+                                                 (or (i 'deps (lambda () #f))
+                                                     (i 'build-deps (lambda () #f))))
                                             (cons
                                              (extract-pkg-dependencies i 
                                                                        #:build-deps? #f 
                                                                        #:filter? #t)
                                              (extract-pkg-dependencies i 
                                                                        #:filter? #t))
-                                            (cons '() '())))))
-    (define deps (cdr deps+build-deps))
-    (define runtime-deps (list->set (car deps+build-deps)))
+                                            #f))))
+    (unless deps+build-deps
+      (hash-set! skip-pkgs pkg #t)
+      (setup-printf #f "package declares no dependencies: ~s" pkg))
+    (define deps (if deps+build-deps (cdr deps+build-deps) '()))
+    (define runtime-deps (if deps+build-deps (list->set (car deps+build-deps)) (set)))
     (define implies 
       (list->set (let ([i (get-info/full dir #:namespace metadata-ns)])
                    (if i
@@ -170,7 +176,7 @@
                       (string-append
                        " declared accesses, counting `implies'\n"
                        "  for package: ~s\n"
-                       "  packages:~a"
+                       "  packages:~a\n"
                        "  packages for build:~a")
                       pkg
                       (make-list (car (hash-ref pkg-internal-deps pkg)))
@@ -196,20 +202,19 @@
                                            'run))
                                      mode))
                       (hash))
-        (when verbose?
-          (setup-fprintf (current-error-port) #f 
-                         (string-append
-                          " found undeclared dependency:\n"
-                          "  mode: ~s\n"
-                          "  for package: ~s\n"
-                          "  on package: ~s\n"
-                          "  dependent source: ~a\n"
-                          "  used module: ~s")
-                         mode
-                         pkg
-                         src-pkg
-                         f
-                         mod)))))
+        (setup-fprintf (current-error-port) #f 
+                       (string-append
+                        "found undeclared dependency:\n"
+                        "  mode: ~s\n"
+                        "  for package: ~s\n"
+                        "  on package: ~s\n"
+                        "  dependent source: ~a\n"
+                        "  used module: ~s")
+                       mode
+                       pkg
+                       src-pkg
+                       f
+                       mod))))
 
   ;; For each collection, set up package info:
   (for ([path (in-list paths)])
@@ -226,7 +231,8 @@
     (define dir (build-path path "compiled"))
     (when (directory-exists? dir)
       (define pkg (path->pkg dir #:cache path-cache))
-      (when pkg
+      (when (and pkg
+                 (not (hash-ref skip-pkgs pkg #f)))
         (for ([f (directory-list dir)])
           ;; A ".dep" file triggers a check:
           (when (regexp-match? #rx#"[.]dep$" (path-element->bytes f))
@@ -283,6 +289,9 @@
                                (module-compiled-submodules mod-code #f))))))))))))
 
   ;; Report result summary and (optionally) repair:
+  (unless (zero? (hash-count missing))
+    (setup-fprintf (current-error-port) #f 
+                   "--- summary of missing dependencies ---"))
   (for ([pkg (in-list (sort (hash-keys missing) string<?))])
     (define pkgs (hash-ref missing pkg))
     (define modes '(run build))

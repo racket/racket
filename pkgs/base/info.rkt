@@ -8,4 +8,5 @@
 
 (define collection 'multi)
 
+(define deps '())
 (define implies '(core))
