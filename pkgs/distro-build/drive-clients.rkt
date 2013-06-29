@@ -388,7 +388,7 @@
         " && git pull")
    (cmd "cd " (q dir)
         " && \"c:\\Program Files" (if (= bits 64) " (x86)" "") "\\Microsoft Visual Studio 9.0\\vc\\vcvarsall.bat\""
-        " " (if (= bits 64) "x64" "x86")
+        " " vc
         " && nmake win32-client" (client-args server pkgs dist-name dist-dir))))
 
 (define (client-build c)
