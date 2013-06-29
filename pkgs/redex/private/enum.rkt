@@ -29,32 +29,32 @@
 (struct name-ref (name) #:transparent)
 (struct mismatch-ref (name) #:transparent)
 
-(struct unimplemented (msg) #:transparent)
 (struct named-pats (names map) #:transparent
         ) ;; listof symbol and hash symbol -o> (or named, mismatched, named-repeat, mismatch-repeat)
 
 (define enum-ith decode)
 
 (define (lang-enumerators lang)
-  (let ([l-enums (make-hash)])
-    (let-values ([(fin-lang rec-lang)
-                  (sep-lang lang)])
-      (for-each
-       (λ (nt)
-          (hash-set! l-enums
-                     (nt-name nt)
-                     (enumerate-rhss (nt-rhs nt)
-                                     l-enums)))
-       fin-lang)
-      (for-each
-       (λ (nt)
-          (hash-set! l-enums
-                     (nt-name nt)
-                     (thunk/enum +inf.f
-                                 (λ ()
-                                    (enumerate-rhss (nt-rhs nt)
-                                                    l-enums)))))
-       rec-lang))
+  (define l-enums (make-hash))
+  (define (enumerate-lang cur-lang enum-f)
+    (for-each
+     (λ (nt)
+        (hash-set! l-enums
+                   (nt-name nt)
+                   (with-handlers ([exn:fail? fail/enum])
+                     (enum-f (nt-rhs nt)
+                             l-enums))))
+     cur-lang))
+  (let-values ([(fin-lang rec-lang)
+                (sep-lang lang)])
+    (enumerate-lang fin-lang
+                    enumerate-rhss)
+    (enumerate-lang rec-lang
+                    (λ (rhs enums)
+                       (thunk/enum +inf.f
+                                   (λ ()
+                                      (enumerate-rhss rhs enums)))))
+
     (lang-enum l-enums)))
 
 (define (pat-enumerator l-enum pat)
@@ -169,9 +169,9 @@
           (rec p2))]
      [`(hide-hole ,p) (rec p)]
      [`(side-condition ,p ,g ,e) ;; error
-      (unsupported/enum pat)]
+      (unsupported pat)]
      [`(cross ,s)
-      (unsupported/enum pat)] ;; error
+      (unsupported pat)] ;; error
      [`(list ,sub-pats ...)
       (ormap (λ (sub-pat)
                 (match sub-pat
@@ -313,8 +313,9 @@
                   [`(repeat ,pat #f #f)
                    (loop pat named-pats)]
                   [`(repeat ,pat ,name ,mismatch)
+                   (error 'unimplemented)
                    (loop pat
-                         (add-unimplemented name "named/mismatched repeat" named-pats))]
+                         (unimplemented "named/mismatched repeat"))]
                   [else (loop sub-pat named-pats)]))
              named-pats
              sub-pats)]
@@ -344,10 +345,6 @@
          nps]
         [else
          (add-named-pats name (named name pat) nps)]))
-(define (add-unimplemented name msg nps)
-  (add-named-pats name
-                  (unimplemented msg)
-                  nps))
 
 (define (add-mismatch n pat nps)
   (cond [(member-named-pats n nps)
@@ -386,9 +383,7 @@
                                     [(mismatch? val)
                                      (mismatch (mismatch-name val)
                                                (reverse
-                                                (mismatch-val val)))]
-                                    [(unimplemented? val)
-                                     val]))))
+                                                (mismatch-val val)))]))))
                (hash)
                (hash->list (named-pats-map nps)))))
 
@@ -400,6 +395,7 @@
                     (equal? (named-name cur)
                             n)))
              (assoc-named n (cdr l)))]))
+
 
 (define (enum-names pat nps nt-enums)
   (let rec ([nps nps]
@@ -466,9 +462,6 @@
                                 (hash-set env
                                           name
                                           terms))))))]
-                   [(unimplemented? cur)
-                    (error/enum 'unimplemented
-                                (unimplemented-msg cur))]
                    [else (error 'unexpected "expected name, mismatch or unimplemented, got: ~a in ~a" cur nps)]))])))
 
 (define (pat/enum-with-names pat nt-enums named-terms)
@@ -490,9 +483,9 @@
       (except/enum var/enum s)]
      [`(variable-prefix ,s)
       ;; todo
-      (error/enum 'unimplemented "var-prefix")]
+      (error 'unimplemented "var-prefix")]
      [`variable-not-otherwise-mentioned
-      (error/enum 'unimplemented "var-not-mentioned")] ;; error
+      (error 'unimplemented "var-not-mentioned")] ;; error
      [`hole
       (const/enum the-hole)]
      [`(nt ,id)
@@ -515,9 +508,9 @@
      [`(hide-hole ,p)
       (loop p)]
      [`(side-condition ,p ,g ,e)
-      (unsupported/enum pat)]
+      (unsupported pat)]
      [`(cross ,s)
-      (unsupported/enum pat)]
+      (unsupported pat)]
      [`(list ,sub-pats ...)
       ;; enum-list
       (list/enum
@@ -538,9 +531,9 @@
                    (list/enum
                     (build-list n (const (loop pat)))))))]
              [`(repeat ,pat ,name #f)
-              (error/enum 'unimplemented "named-repeat")]
+              (error 'unimplemented "named-repeat")]
              [`(repeat ,pat #f ,mismatch)
-              (error/enum 'unimplemented "mismatch-repeat")]
+              (error 'unimplemented "mismatch-repeat")]
              [else (loop sub-pat)]))
         sub-pats))]
      [(? (compose not pair?)) 
@@ -718,3 +711,9 @@
 (define (map-repeat f r)
   (repeat (repeat-n r)
           (map f (repeat-terms r))))
+
+(define (unsupported pat)
+  (error 'generate-term "#:i-th does not support ~s patterns" pat))
+
+(define (unimplemented pat)
+  (error 'generate-term "#:i-th does not yet support ~s patterns" pat))
