@@ -70,8 +70,10 @@
 ;;                          defaults to `server' command-line argument
 ;;   #:dist-name <string> --- the distribution name; defaults to the
 ;;                            `dist-name' command-line argument
-;;   #:dist-dir <string> --- the distribution's installation directory;
-;;                           defaults to `dist-dir' command-line argument
+;;   #:dist-dir <string*> --- the distribution's installation directory;
+;;                            defaults to `dist-dir' command-line argument
+;;   #:dist-suffix <string*> --- a suffix for the installer's name, usually
+;;                               used for an OS variant; defaults to ""
 ;;   #:max-vm <real> --- max number of VMs allowed to run with this
 ;;                       machine, counting the machine; defaults to 1
 ;;   #:port <integer> --- ssh port for the client; defaults to 22
@@ -135,6 +137,7 @@
     [(#:pkgs) (and (list? val) (andmap simple-string? val))]
     [(#:dist-name) (string? val)]
     [(#:dist-dir) (simple-string? val)]
+    [(#:dist-suffix) (simple-string? val)]
     [(#:max-vm) (real? val)]
     [(#:server) (simple-string? val)]
     [(#:host) (simple-string? val)]
@@ -353,15 +356,16 @@
 (define (q s)
   (~a "\"" s "\""))
 
-(define (client-args server pkgs dist-name dist-dir)
+(define (client-args server pkgs dist-name dist-dir dist-suffix)
   (~a " SERVER=" server
       " PKGS=" (q pkgs)
       " DIST_NAME=" (q dist-name)
       " DIST_DIR=" dist-dir
+      " DIST_SUFFIX=" (q dist-suffix)
       " RELEASE_MODE=" (if release? "--release" (q ""))))
 
 (define (unix-build c host port user server repo clean?
-                    pkgs dist-name dist-dir)
+                    pkgs dist-name dist-dir dist-suffix)
   (define dir (or (get-opt c '#:dir)
                   "build/plt"))
   (define (sh . args) 
@@ -378,12 +382,12 @@
        "git pull")
    (sh "cd " (q dir) " ; "
        "make -j " j " client"
-       (client-args server pkgs dist-name dist-dir)
+       (client-args server pkgs dist-name dist-dir dist-suffix)
        " CORE_CONFIGURE_ARGS=" (q (apply ~a #:separator " "
                                          (get-opt c '#:configure null))))))
 
 (define (windows-build c host port user server repo clean?
-                       pkgs dist-name dist-dir)
+                       pkgs dist-name dist-dir dist-suffix)
   (define dir (or (get-opt c '#:dir)
                   "build\\plt"))
   (define bits (or (get-opt c '#:bits) 64))
@@ -403,7 +407,7 @@
    (cmd "cd " (q dir)
         " && \"c:\\Program Files" (if (= bits 64) " (x86)" "") "\\Microsoft Visual Studio 9.0\\vc\\vcvarsall.bat\""
         " " vc
-        " && nmake win32-client" (client-args server pkgs dist-name dist-dir))))
+        " && nmake win32-client" (client-args server pkgs dist-name dist-dir dist-suffix))))
 
 (define (client-build c)
   (define host (or (get-opt c '#:host)
@@ -419,6 +423,7 @@
                         default-dist-name))
   (define dist-dir (or (get-opt c '#:dist-dir)
                        default-dist-dir))
+  (define dist-suffix (get-opt c '#:dist-suffix ""))
   (define repo (or (get-opt c '#:repo)
                    (~a "http://" server ":9440/.git")))
   (define clean? (let ([v (get-opt c '#:clean? 'none)])
@@ -429,7 +434,7 @@
      [(unix) unix-build]
      [else windows-build])
    c host port user server repo clean?
-   pkgs dist-name dist-dir))
+   pkgs dist-name dist-dir dist-suffix))
 
 ;; ----------------------------------------
 

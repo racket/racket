@@ -397,14 +397,14 @@ SectionEnd
   (parameterize ([current-directory "bundle"])
     (system* makensis "/V3" "installer.nsi")))
 
-(define (installer-exe human-name dir-name release?)
+(define (installer-exe human-name dir-name release? dist-suffix)
   (define makensis (or (find-executable-path "makensis.exe")
                        (try-exe "c:\\Program Files\\NSIS\\makensis.exe")
                        (try-exe "c:\\Program Files (x86)\\NSIS\\makensis.exe")
                        (error 'installer-exe "cannot find \"makensis.exe\"")))
   (define platform (let-values ([(base name dir?) (split-path (system-library-subpath #f))])
                      (path->string name)))
-  (define exe-path (format "bundle/~a-~a-win32.exe" dir-name platform))
+  (define exe-path (format "bundle/~a-~a-win32~a.exe" dir-name platform dist-suffix))
   (nsis-generate exe-path
                  human-name
                  (version)

@@ -10,7 +10,7 @@
 (define release? #f)
 (define upload-to #f)
 
-(define-values (short-human-name human-name dir-name)
+(define-values (short-human-name human-name dir-name dist-suffix)
   (command-line
    #:once-each
    [("--release") "Create a release installer"
@@ -18,18 +18,21 @@
    [("--upload") url "Upload installer"
     (set! upload-to url)]
    #:args
-   (human-name dir-name)
+   (human-name dir-name dist-suffix)
    (values human-name
            (format "~a v~a" human-name (version))
            (if release?
                dir-name
-               (format "~a-~a" dir-name (version))))))
+               (format "~a-~a" dir-name (version)))
+           (if (string=? dist-suffix "")
+               ""
+               (string-append "-" dist-suffix)))))
 
 (define installer-file
   (case (system-type)
-    [(unix) (installer-sh human-name dir-name release?)]
-    [(macosx) (installer-dmg human-name dir-name)]
-    [(windows) (installer-exe short-human-name dir-name release?)]))
+    [(unix) (installer-sh human-name dir-name release? dist-suffix)]
+    [(macosx) (installer-dmg human-name dir-name dist-suffix)]
+    [(windows) (installer-exe short-human-name dir-name release? dist-suffix)]))
 
 (call-with-output-file*
  (build-path "bundle" "installer.txt")

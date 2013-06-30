@@ -85,6 +85,9 @@ RELEASE_MODE =
 # generated installers:
 DIST_NAME = Racket
 DIST_DIR = racket
+# An extra suffix for the installer name, usually used to specify
+# a variant of an OS
+DIST_SUFFIX = 
 
 # Configuration of clients to run for a build farm:
 FARM_CONFIG = build/farm-config.rktd
@@ -235,7 +238,7 @@ client:
 	$(MAKE) bundle-from-server
 	$(MAKE) installer-from-bundle
 
-COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" RELEASE_MODE=$(RELEASE_MODE) DIST_NAME="$(DIST_NAME)" DIST_DIR=$(DIST_DIR)
+COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" RELEASE_MODE=$(RELEASE_MODE) DIST_NAME="$(DIST_NAME)" DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX)
 
 win32-client:
 	IF EXIST build\user cmd /c rmdir /S /Q build\user
@@ -265,7 +268,7 @@ UPLOAD = --upload http://$(SERVER):9440/
 # Create an installer from the build (with installed packages) that's
 # in "bundle/racket":
 installer-from-bundle:
-	$(RACKET) -l- distro-build/installer $(UPLOAD) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_DIR)
+	$(RACKET) -l- distro-build/installer $(UPLOAD) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_DIR) "$(DIST_SUFFIX)"
 
 win32-distro-build-from-server:
 	$(WIN32_RACO) pkg install $(REMOTE_USER_AUTO) distro-build
@@ -284,7 +287,7 @@ win32-bundle-from-server:
 	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(PKGS)
 
 win32-installer-from-bundle:
-	$(WIN32_RACKET) -l- distro-build/installer $(UPLOAD) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_DIR)
+	$(WIN32_RACKET) -l- distro-build/installer $(UPLOAD) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_DIR) "$(DIST_SUFFIX)"
 
 # ------------------------------------------------------------
 # Drive installer build:
