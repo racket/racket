@@ -7,7 +7,10 @@
 (define release-notes (list (list "Redex" "HISTORY.txt")))
 
 (define compile-omit-paths '("tests"))
-(define deps '("base"
+(define deps '("profile-lib"
+               "rackunit-lib"
+               "slideshow-lib"
+               "base"
                "compatibility-lib"
                "data-lib"
                "draw-lib"

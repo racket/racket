@@ -5,7 +5,8 @@
 (define scribblings '(["scribblings/plot.scrbl" (multi-page) (gui-library)]))
 
 (define compile-omit-paths '("tests"))
-(define deps '("base"
+(define deps '("typed-racket-more"
+               "base"
                "compatibility-lib"
                "draw-lib"
                "gui-lib"

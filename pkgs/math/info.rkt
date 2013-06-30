@@ -5,7 +5,8 @@
 (define scribblings '(["scribblings/math.scrbl" (multi-page)]))
 
 (define compile-omit-paths '("tests"))
-(define deps '("base"
+(define deps '("r6rs-lib"
+               "base"
                "typed-racket-lib"
                "typed-racket-more"))
 (define build-deps '("at-exp-lib"

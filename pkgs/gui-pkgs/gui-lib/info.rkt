@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 
-(define deps '("base"
+(define deps '("data-lib"
+               "base"
                "rackunit-lib"
                "syntax-color-lib"
                "draw-lib"

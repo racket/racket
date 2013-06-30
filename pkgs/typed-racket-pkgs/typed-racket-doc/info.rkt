@@ -2,7 +2,10 @@
 
 (define collection 'multi)
 
-(define build-deps '("at-exp-lib"
+(define build-deps '("compatibility-lib"
+                     "r6rs-lib"
+                     "sandbox-lib"
+                     "at-exp-lib"
                      "scribble-lib"
                      "typed-racket-lib"
                      "racket-doc"))

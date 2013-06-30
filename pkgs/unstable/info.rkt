@@ -11,7 +11,8 @@
                "redex"
                "scribble-lib"
                "slideshow-lib"))
-(define build-deps '("at-exp-lib"
+(define build-deps '("plot"
+                     "at-exp-lib"
                      "compatibility-lib"
                      "macro-debugger"
                      "racket-doc"
