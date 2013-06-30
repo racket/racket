@@ -80,6 +80,7 @@
 ;;   #:vbox <string> --- Virtual Box machine name; if provided the
 ;;                       virtual machine is started and stopped as needed
 ;;   #:platform <symbol> --- 'windows or 'unix, defaults to 'unix
+;;   #:configure (<string> ...) --- arguments to `configure'
 ;;   #:bits <integer> --- 32 or 64, affects Visual Studio path
 ;;   #:vc <string*> --- "x86" or "x64" to select the Visual C build mode;
 ;;                     default depends on bits
@@ -142,6 +143,7 @@
     [(#:dir) (string? val)]
     [(#:vbox) (string? val)]
     [(#:platform) (memq val '(unix windows))]
+    [(#:configure) (and (list? val) (andmap string? val))]
     [(#:bits) (or (equal? val 32) (equal? val 64))]
     [(#:vc) (or (equal? val "x86") (equal? val "x64"))]
     [(#:timeout) (real? val)]
@@ -376,7 +378,9 @@
        "git pull")
    (sh "cd " (q dir) " ; "
        "make -j " j " client"
-       (client-args server pkgs dist-name dist-dir))))
+       (client-args server pkgs dist-name dist-dir)
+       " CORE_CONFIGURE_ARGS=" (q (apply ~a #:separator " "
+                                         (get-opt c '#:configure null))))))
 
 (define (windows-build c host port user server repo clean?
                        pkgs dist-name dist-dir)

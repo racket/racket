@@ -43,6 +43,8 @@ win32-in-place:
 # an empty set of link files, so that any installation-wide
 # links or packages are ignored during the core build.
 
+CORE_CONFIGURE_ARGS = 
+
 core:
 	mkdir -p build/config
 	echo '#hash((links-search-files . ()))' > build/config/config.rktd
@@ -58,7 +60,7 @@ win32-core:
 	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config
 
 racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
-	cd racket/src/build; ../configure
+	cd racket/src/build; ../configure $(CORE_CONFIGURE_ARGS)
 
 # ------------------------------------------------------------
 # Configuration options for building installers
