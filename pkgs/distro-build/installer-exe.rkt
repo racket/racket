@@ -404,7 +404,7 @@ SectionEnd
                        (error 'installer-exe "cannot find \"makensis.exe\"")))
   (define platform (let-values ([(base name dir?) (split-path (system-library-subpath #f))])
                      (path->string name)))
-  (define exe-path (format "bundle/~a-win32-~a.exe" dir-name platform))
+  (define exe-path (format "bundle/~a-~a-win32.exe" dir-name platform))
   (nsis-generate exe-path
                  human-name
                  (version)
