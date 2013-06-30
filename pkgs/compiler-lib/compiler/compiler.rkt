@@ -1,7 +1,7 @@
 (module compiler racket/base
   (require racket/unit)
 
-  (require "sig.rkt")
+  (require compiler/sig)
 
   (require dynext/compile-sig)
   (require dynext/link-sig)
@@ -13,7 +13,7 @@
 
   (require "option.rkt")
 
-  (require "compiler-unit.rkt")
+  (require compiler/compiler-unit)
 
   (define-values/invoke-unit/infer compiler@)
 

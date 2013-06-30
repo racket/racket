@@ -5,6 +5,7 @@
 (define build-deps '("base"
                      "compatibility-lib"
                      "rackunit-lib"
+                     "compiler-lib"
                      "redex"
                      "sandbox-lib"
                      "unstable"))

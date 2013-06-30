@@ -2,7 +2,7 @@
 
 (require dynext/compile
          setup/dirs
-         (prefix-in xform: "private/xform.rkt"))
+         (prefix-in xform: compiler/private/xform))
 
 (provide xform)
 

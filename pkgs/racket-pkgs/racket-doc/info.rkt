@@ -6,6 +6,7 @@
                "compatibility-lib"
 	       "net-lib"
                "sandbox-lib"
+               "compiler-lib"
                "scribble-lib"
                "racket-index"))
 (define build-deps '("at-exp-lib"

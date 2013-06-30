@@ -21,7 +21,7 @@
 
 (error-print-width 512)
 
-(require (prefix-in compiler:option: "option.rkt")
+(require (prefix-in compiler:option: compiler/option)
          "compiler.rkt")
 
 ;; Read argv array for arguments and input file name

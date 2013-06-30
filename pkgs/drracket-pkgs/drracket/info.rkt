@@ -3,6 +3,7 @@
 (define collection 'multi)
 
 (define deps '("data-lib"
+               "compiler-lib"
                "base"
                "compatibility-lib"
                "draw-lib"

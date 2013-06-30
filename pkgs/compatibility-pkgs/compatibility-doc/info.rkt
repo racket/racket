@@ -5,5 +5,6 @@
                "compatibility-lib"
                "pconvert-lib"
                "sandbox-lib"
+	       "compiler-lib"
                "gui-lib"
                "racket-doc"))

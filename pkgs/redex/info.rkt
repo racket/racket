@@ -11,6 +11,7 @@
                "rackunit-lib"
                "slideshow-lib"
                "base"
+               "compiler-lib"
                "compatibility-lib"
                "data-lib"
                "draw-lib"
