@@ -1,7 +1,7 @@
 
-(module bundle-dist mzscheme
+(module bundle-dist racket/base
   (require racket/file
-           (only racket/base lambda)
+           (only-in racket/base lambda)
            racket/path
 	   racket/system
 	   file/zip
@@ -80,8 +80,8 @@
 			 "-mode" "555" 
 			 "-volname" (path->string
 				     (path-replace-suffix (file-name-from-path target) #""))
-			 "-srcfolder" (path->string (expand-path (path->complete-path dir)))
-			 (path->string (expand-path (path->complete-path target))))])
+			 "-srcfolder" (path->string (cleanse-path (path->complete-path dir)))
+			 (path->string (cleanse-path (path->complete-path target))))])
 		((list-ref p 4) 'wait)
 		(unless (eq? ((list-ref p 4) 'status) 'done-ok)
 		  (error 'bundle-directory

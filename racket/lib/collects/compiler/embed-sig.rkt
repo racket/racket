@@ -1,5 +1,5 @@
 
-(module embed-sig mzscheme
+(module embed-sig racket/base
   (require racket/unit)
   (provide compiler:embed^)
 
