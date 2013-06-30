@@ -472,10 +472,13 @@
     (for ([cc (in-list collections-to-compile)])
       (hash-set! ht cc #t))
     (define (lookup-children-ccs! cc children)
-      (for ([child (in-list children)])
-        (for ([cc (in-list (collection->ccs (append (cc-collection cc) (list child))))])
-          (hash-set! ht cc #t)))
-      null)
+      (apply
+       append
+       (for/list ([child (in-list children)])
+         (for/list ([cc (in-list (collection->ccs (append (cc-collection cc) (list child))))]
+                    #:unless (hash-ref ht cc #f))
+           (hash-set! ht cc #t)
+           cc))))
     (collection-closure collections-to-compile lookup-children-ccs!)
     (for/list ([v (in-hash-keys ht)]) v))
 

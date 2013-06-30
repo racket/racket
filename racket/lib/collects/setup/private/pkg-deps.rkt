@@ -184,6 +184,7 @@
   
   ;; ----------------------------------------
   ;; Check use of `mod' (in `mode') from `pkg' by file `f':
+  (define reported (make-hash))
   (define (check mod mode pkg f)
     (define src-pkg (or (hash-ref mod-pkg mod #f)
                         'core))
@@ -202,19 +203,22 @@
                                            'run))
                                      mode))
                       (hash))
-        (setup-fprintf (current-error-port) #f 
-                       (string-append
-                        "found undeclared dependency:\n"
-                        "  mode: ~s\n"
-                        "  for package: ~s\n"
-                        "  on package: ~s\n"
-                        "  dependent source: ~a\n"
-                        "  used module: ~s")
-                       mode
-                       pkg
-                       src-pkg
-                       f
-                       mod))))
+        (define key (list pkg src-pkg (path-replace-suffix f #"") mod))
+        (unless (hash-ref reported key #f)
+          (hash-set! reported key #t)
+          (setup-fprintf (current-error-port) #f 
+                         (string-append
+                          "found undeclared dependency:\n"
+                          "  mode: ~s\n"
+                          "  for package: ~s\n"
+                          "  on package: ~s\n"
+                          "  dependent source: ~a\n"
+                          "  used module: ~s")
+                         mode
+                         pkg
+                         src-pkg
+                         f
+                         mod)))))
 
   ;; For each collection, set up package info:
   (for ([path (in-list paths)])
@@ -243,13 +247,6 @@
                       (regexp-match? #rx#"_scrbl[.]dep$" (path-element->bytes f)))
                   'build
                   'run))
-            ;; Treat everything in ".dep" as 'build mode...
-            (for ([dep (in-list deps)])
-              (when (and (pair? dep)
-                         (eq? 'collects (car dep)))
-                (define path-strs (map bytes->string/utf-8 (cdr dep)))
-                (define mod `(lib ,(string-join path-strs "/")))
-                (check mod 'build pkg f)))
             ;; Look at the actual module for 'run mode (dropping
             ;; submodules like `test'):
             (when (eq? mode 'run)
@@ -286,7 +283,14 @@
                     (for-each loop
                               (append
                                (module-compiled-submodules mod-code #t)
-                               (module-compiled-submodules mod-code #f))))))))))))
+                               (module-compiled-submodules mod-code #f)))))))
+            ;; Treat everything in ".dep" as 'build mode...
+            (for ([dep (in-list deps)])
+              (when (and (pair? dep)
+                         (eq? 'collects (car dep)))
+                (define path-strs (map bytes->string/utf-8 (cdr dep)))
+                (define mod `(lib ,(string-join path-strs "/")))
+                (check mod 'build pkg f))))))))
 
   ;; Report result summary and (optionally) repair:
   (unless (zero? (hash-count missing))
