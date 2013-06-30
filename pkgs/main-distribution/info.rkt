@@ -4,8 +4,7 @@
 ;; Lots of room for improvement...
 (define deps '("algol60"
                "at-exp-lib"
-               "compatibility-lib"
-               "compatibility-doc"
+               "compatibility"
                "contract-profile"
                "data-lib"
                "datalog"
