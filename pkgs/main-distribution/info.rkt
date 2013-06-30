@@ -5,6 +5,7 @@
 (define deps '("algol60"
                "at-exp-lib"
                "compatibility-lib"
+               "compatibility-doc"
                "contract-profile"
                "data-lib"
                "datalog"
