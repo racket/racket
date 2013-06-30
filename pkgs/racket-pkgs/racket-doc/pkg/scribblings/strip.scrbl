@@ -6,7 +6,7 @@
 
 A package, especially in a repository format, normally provides module
 implementations and documentation in source form. Such @deftech{source
-packages} can work with multiple Racket versions, and modules are
+packages} may work with multiple Racket versions, and modules are
 compiled to bytecode and documentation is rendered when the package is
 installed.
 
@@ -14,9 +14,9 @@ A @deftech{binary package} provides only compiled bytecode and
 rendered documentation, instead of package and documentation
 sources. Since compiled bytecode is specific to a version of Racket, a
 @tech{binary package} is specific to a version of Racket. The benefit
-of a binary package is that it can have less dependencies (e.g., on
+of a binary package is that it can have fewer dependencies (e.g., on
 Scribble to implement the documentation or on other
-packages whose documentation is referenced) and it can install
+packages whose documentation is referenced) and it can be installed
 faster. A drawback of a binary package is that it is version-specific
 and the source code may be less immediately accessible to other
 programmers.
