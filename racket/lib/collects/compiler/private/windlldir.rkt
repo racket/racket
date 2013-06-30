@@ -1,4 +1,4 @@
-(module windlldir mzscheme
+(module windlldir racket/base
   (require racket/port
            "winutf16.rkt")
 

@@ -1,9 +1,9 @@
-(module compile mzscheme
-  (require racket/unit)
+#lang racket/base
+(require racket/unit)
 
-  (require "compile-sig.rkt"
-           "compile-unit.rkt")
+(require "compile-sig.rkt"
+         "compile-unit.rkt")
 
-  (define-values/invoke-unit/infer dynext:compile@)
+(define-values/invoke-unit/infer dynext:compile@)
 
-  (provide-signature-elements dynext:compile^))
+(provide-signature-elements dynext:compile^)

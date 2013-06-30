@@ -251,7 +251,7 @@
 ;; (MagickAnimateImages morph)
 
 ;; (let ([x (test (MagickWriteImageBlob w))])
-;;   (with-output-to-file "~/tmp/x" (lambda () (display x)) 'truncate)
+;;   (with-output-to-file "~/tmp/x" (lambda () (display x)) #:exists 'truncate)
 ;;   (let ([ww (NewMagickWand)])
 ;;     (test (MagickReadImageBlob ww x))
 ;;     (MagickDisplayImage ww)))

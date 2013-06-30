@@ -3,13 +3,13 @@
 ;; Since Mike Sperber looked carefully at this module,
 ;;  the code and tests are a lot better than they would be.
 
-(module char-set mzscheme
+(module char-set racket/base
   (require data/integer-set
            racket/contract)
 
   ;; Data defn ----------------------------------------
 
-  (define-struct char-set (set/thunk))
+  (define-struct char-set (set/thunk) #:mutable)
 
   (define (fold-set op init l)
     (if (null? l)

@@ -1,7 +1,7 @@
-(module dynext mzscheme
+#lang racket/base
 
-  (require "compile.rkt" "link.rkt" "file.rkt")
+(require "compile.rkt" "link.rkt" "file.rkt")
 
-  (provide (all-from "compile.rkt")
-           (all-from "link.rkt")
-           (all-from "file.rkt")))
+(provide (all-from-out "compile.rkt")
+         (all-from-out "link.rkt")
+         (all-from-out "file.rkt"))

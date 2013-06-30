@@ -1,18 +1,16 @@
-(module trait mzscheme
+(module trait racket/base
   (require racket/class
-           racket/list
-           (only racket/base sort filter struct-copy))
-  (require-for-syntax racket/list
-                      (only racket/base filter)
+           racket/list)
+  (require (for-syntax racket/list racket/base
                       syntax/stx
                       syntax/boundmap
                       syntax/kerncase
                       ;; This should be part of a public expand-time API
                       ;;  exported by the class system:
-                      (only "private/classidmap.rkt"
-                            generate-class-expand-context))
+                      (only-in "private/classidmap.rkt"
+                               generate-class-expand-context)))
   
-  (provide (rename :trait trait)
+  (provide (rename-out [:trait trait])
            trait?
            trait->mixin
            trait-sum 
@@ -172,7 +170,7 @@
                             "bad syntax"
                             e))]
                       [(id . rest)
-                       (ormap (lambda (x) (module-identifier=? x #'id))
+                       (ormap (lambda (x) (free-identifier=? x #'id))
                               (syntax->list
                                #'(public public-final pubment
                                          override override-final augment augment-final augride overment
@@ -216,13 +214,13 @@
           [(null? l) (apply values results)]
           [else
            (let ([kw (stx-car (car l))])
-             (if (or (module-identifier=? kw #'define-values)
-                     (module-identifier=? kw #'field))
+             (if (or (free-identifier=? kw #'define-values)
+                     (free-identifier=? kw #'field))
                  (loop (cdr l) results)
                  (loop (cdr l)
                        (let iloop ([mapping keyword-mapping]
                                    [results results])
-                         (if (ormap (lambda (x) (module-identifier=? kw x))
+                         (if (ormap (lambda (x) (free-identifier=? kw x))
                                     (car mapping))
                              (cons (append (stx->list (stx-cdr (car l)))
                                            (car results))
@@ -518,23 +516,23 @@
   
   (define (validate-trait who t)
     ;; Methods:
-    (let ([ht (make-hash-table)])
+    (let ([ht (make-hasheq)])
       ;; Build up table and check for duplicates:
       (for-each (lambda (m)
                   (let* ([name (method-name m)]
                          [key (member-name-key-hash-code name)])
-                    (let ([l (hash-table-get ht key null)])
+                    (let ([l (hash-ref ht key null)])
                       (when (ormap (lambda (n) (member-name-key=? (car n) name))
                                    l)
                         (raise-mismatch-error
                          who
                          "result would include multiple declarations of a method: " 
                          name))
-                      (hash-table-put! ht key (cons (cons name m) l)))))
+                      (hash-set! ht key (cons (cons name m) l)))))
                 (trait-methods t))
       ;; Check consistency of expectations and provisions:
       (let* ([find (lambda (name)
-                     (let ([l (hash-table-get ht (member-name-key-hash-code name) null)])
+                     (let ([l (hash-ref ht (member-name-key-hash-code name) null)])
                        (ormap (lambda (n) 
                                 (and (member-name-key=? (car n) name)
                                      (cdr n)))
@@ -567,19 +565,19 @@
                               (method-need-inner m)))
                   (trait-methods t))))
     ;; Fields:
-    (let ([ht (make-hash-table)])
+    (let ([ht (make-hasheq)])
       ;; Build up table and check for duplicates:
       (for-each (lambda (f)
                   (let* ([name (feeld-name f)]
                          [key (member-name-key-hash-code name)])
-                    (let ([l (hash-table-get ht key null)])
+                    (let ([l (hash-ref ht key null)])
                       (when (ormap (lambda (n) (member-name-key=? (car n) name))
                                    l)
                         (raise-mismatch-error
                          who
                          "result would include multiple declarations of a field: " 
                          name))
-                      (hash-table-put! ht key (cons (cons name f) l)))))
+                      (hash-set! ht key (cons (cons name f) l)))))
                 (trait-fields t)))
     ;; Return validated trait:
     t)

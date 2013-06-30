@@ -1,9 +1,9 @@
-(module file mzscheme
-  (require racket/unit)
+#lang racket/base
+(require racket/unit)
 
-  (require "file-sig.rkt"
-           "file-unit.rkt")
+(require "file-sig.rkt"
+         "file-unit.rkt")
 
-  (define-values/invoke-unit/infer dynext:file@)
+(define-values/invoke-unit/infer dynext:file@)
 
-  (provide-signature-elements dynext:file^))
+(provide-signature-elements dynext:file^)

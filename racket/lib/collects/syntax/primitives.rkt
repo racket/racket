@@ -1,5 +1,5 @@
 
-(module primitives mzscheme
+(module primitives racket/base
   
   ;; The following primitives either invoke functions, or
   ;;  install functions that can be used later.

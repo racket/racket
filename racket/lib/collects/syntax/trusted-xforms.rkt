@@ -1,2 +1,2 @@
-(module trusted-xforms mzscheme
+(module trusted-xforms racket/base
   (require racket/class))

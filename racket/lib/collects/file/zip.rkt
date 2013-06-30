@@ -1,8 +1,7 @@
 ;; A modification of Dave Herman's zip module
 
-(module zip mzscheme
-  (require file/gzip racket/file
-           (only racket/base define))
+(module zip racket/base
+  (require file/gzip racket/file)
 
   ;; ===========================================================================
   ;; DATA DEFINITIONS

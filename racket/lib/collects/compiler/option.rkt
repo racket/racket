@@ -1,4 +1,4 @@
-(module option mzscheme
+(module option racket/base
   (require racket/unit)
 
   (require "sig.rkt"

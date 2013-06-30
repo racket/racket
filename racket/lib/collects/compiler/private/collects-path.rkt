@@ -1,5 +1,4 @@
-
-(module collects-path mzscheme
+(module collects-path racket/base
 
   (provide collects-path->bytes
 	   check-collects-path
@@ -54,4 +53,4 @@
 	      (file-position out libpos)
 	      (write-bytes collects-path-bytes out)
 	      (write-bytes #"\0\0" out)))
-	  'update)))))
+	  #:exists 'update)))))

@@ -1,4 +1,4 @@
-(module compiler mzscheme
+(module compiler racket/base
   (require racket/unit)
 
   (require "sig.rkt")

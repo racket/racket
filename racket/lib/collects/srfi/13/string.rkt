@@ -85,10 +85,9 @@
 
 ;;; Are you still here? Cool, keep reading it gets better:
 
-#lang mzscheme
+#lang s-exp racket/base
 
 (require srfi/optional
-         (only racket/base lambda)
          srfi/8/receive
          srfi/14/char-set)
 (provide
@@ -174,7 +173,7 @@
 ;; Returns three values: rest start end
 
 (define (string-parse-start+end proc s args)
-  (if (not (string? s)) (error proc "Non-string value ~a" s))
+  (when (not (string? s)) (error proc "Non-string value ~a" s))
   (let ((slen (string-length s)))
     (if (pair? args)
 
@@ -433,7 +432,7 @@
             (let ((j (- j i)))
               (%string-copy! ans j chunk 0 i) ; Install CHUNK[0,I).
               (let lp ((j j) (chunks chunks)) ; Install CHUNKS.
-                (if (pair? chunks)
+                (when (pair? chunks)
                   (let* ((chunk  (car chunks))
                          (chunks (cdr chunks))
                          (chunk-len (string-length chunk))
@@ -1393,21 +1392,21 @@
                                                           pattern args))))
                   (let* ((rvlen (- end start))
                          (rv (make-vector rvlen -1)))
-                    (if (> rvlen 0)
+                    (when (> rvlen 0)
                       (let ((rvlen-1 (- rvlen 1))
                             (c0 (string-ref pattern start)))
 
                         ;; Here's the main loop. We have set rv[0] ... rv[i].
                         ;; K = I + START -- it is the corresponding index into PATTERN.
                         (let lp1 ((i 0) (j -1) (k start))
-                          (if (< i rvlen-1)
+                          (when (< i rvlen-1)
                             ;; lp2 invariant:
                             ;;   pat[(k-j) .. k-1] matches pat[start .. start+j-1]
                             ;;   or j = -1.
                             (let lp2 ((j j))
                               (cond ((= j -1)
                                      (let ((i1 (+ 1 i)))
-                                       (if (not (c= (string-ref pattern (+ k 1)) c0))
+                                       (when (not (c= (string-ref pattern (+ k 1)) c0))
                                          (vector-set! rv i1 0))
                                        (lp1 i1 0 (+ k 1))))
                                     ;; pat[(k-j) .. k] matches pat[start..start+j].
@@ -1569,7 +1568,7 @@
 
           (else (let ((ans (make-string nchars)))
                   (let lp ((strings first) (i 0))
-                    (if (pair? strings)
+                    (when (pair? strings)
                       (let* ((s (car strings))
                              (slen (string-length s)))
                         (%string-copy! ans i s 0 slen)
@@ -1588,7 +1587,7 @@
                     ((not (pair? strings)) i)))
          (ans (make-string total)))
     (let lp ((i 0) (strings strings))
-      (if (pair? strings)
+      (when (pair? strings)
         (let* ((s (car strings))
                (slen (string-length s)))
           (%string-copy! ans i s 0 slen)
@@ -1649,7 +1648,7 @@
   (let ((ans (make-string (+ end len))))
     (%string-copy! ans len final 0 end)
     (let lp ((i len) (lis string-list))
-      (if (pair? lis)
+      (when (pair? lis)
         (let* ((s   (car lis))
                (lis (cdr lis))
                (slen (string-length s))

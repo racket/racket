@@ -1,6 +1,7 @@
 
 (module old-rp '#%kernel
-  (#%require (for-syntax '#%kernel "stx.rkt" "small-scheme.rkt" "stxcase-scheme.rkt"))
+  (#%require (for-syntax '#%kernel racket/private/stx racket/private/small-scheme
+			 racket/private/stxcase-scheme))
 
   (#%provide require require-for-syntax require-for-template require-for-label
              provide provide-for-syntax provide-for-label)

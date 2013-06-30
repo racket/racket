@@ -1,20 +1,46 @@
 
 (module old-procs '#%kernel
-  (#%require "small-scheme.rkt"
-             "more-scheme.rkt"
-             "define.rkt"
-             "member.rkt")
+  (#%require racket/private/small-scheme
+             racket/private/more-scheme
+             racket/private/define
+             racket/private/member
+	     (only racket/private/misc collection-path collection-file-path))
 
   (#%provide make-namespace
              free-identifier=?*
              namespace-transformer-require
              transcript-on
              transcript-off
+	     (rename new:collection-path collection-path)
+	     (rename new:collection-file-path collection-file-path)
              make-hash-table
              make-immutable-hash-table
              hash-table?)
 
   (define reflect-var #f)
+
+  (define new:collection-path
+    (let ([collection-path (lambda (collection . collections)
+                             (apply collection-path
+                                    (lambda (s)
+                                      (raise
+                                       (exn:fail:filesystem
+                                        (string-append "collection-path: " s)
+                                        (current-continuation-marks))))
+                                    collection collections))])
+      collection-path))
+
+  (define new:collection-file-path
+    (let ([collection-file-path (lambda (file-name collection . collections)
+                                  (apply collection-file-path
+                                         (lambda (s)
+                                           (raise
+                                            (exn:fail:filesystem
+                                             (string-append "collection-file-path: " s)
+                                             (current-continuation-marks))))
+                                         file-name collection collections))])
+      collection-file-path))
+
   
   (define make-namespace
     (case-lambda

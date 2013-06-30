@@ -1,4 +1,4 @@
-#lang mzscheme
+#lang s-exp scheme/base
 (require "dirs.rkt" "path-relativize.rkt")
 
 (provide path->main-doc-relative

@@ -446,9 +446,9 @@
                                          (if (path? module-path)
                                              (path->complete-path module-path)
                                              module-path)])
-                                    (syntax-case (expand `(,#'module m mzscheme
-                                                            (require (only ,module-path)
-                                                                     mzlib/runtime-path)
+                                    (syntax-case (expand `(,#'module m racket/base
+                                                            (#%require (only ,module-path)
+								       racket/runtime-path)
                                                             (runtime-paths ,module-path))) (quote)
                                       [(_ m mz (#%mb rfs req (quote (spec ...))))
                                        (syntax->datum #'(spec ...))]

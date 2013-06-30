@@ -8,7 +8,7 @@
 
 |#
 
-(module osx_appl mzscheme
+(module osx_appl racket/base
 
   (require (lib "plist.rkt" "xml")
 	   racket/system

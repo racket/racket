@@ -1,5 +1,4 @@
-
-(module embed mzscheme
+(module embed racket/base
   (require compiler/embed)
   (define mzc:create-embedding-executable create-embedding-executable)
   (define mzc:embedding-executable-add-suffix embedding-executable-add-suffix)

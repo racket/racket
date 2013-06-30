@@ -1,4 +1,4 @@
-(module setup-go mzscheme
+(module setup-go scheme/base
   (require "setup-cmdline.rkt"
            racket/unit
 

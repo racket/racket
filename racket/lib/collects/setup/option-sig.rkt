@@ -1,5 +1,4 @@
-
-(module option-sig mzscheme
+(module option-sig scheme/base
   (require racket/unit)
   
   (provide setup-option^)

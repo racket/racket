@@ -1,6 +1,5 @@
-(module xform-mod mzscheme
-  (require (lib "xform.rkt" "compiler" "private")
-	   racket/cmdline)
+(module xform-mod racket/base
+  (require compiler/private/xform racket/cmdline)
 
   (define precompiling-header? (getenv "XFORM_PRECOMP"))
   (define precompiled-header (getenv "XFORM_USE_PRECOMP"))

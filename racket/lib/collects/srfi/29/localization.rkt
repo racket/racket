@@ -1,10 +1,11 @@
-(module localization mzscheme
+(module localization racket/base
   
   (require racket/contract/base
            racket/file
-           (only racket/runtime-path define-runtime-path)
+           (only-in racket/runtime-path define-runtime-path)
            racket/string racket/format
-           syntax/modread)
+           syntax/modread
+	   (for-syntax racket/base))
   
   (provide/contract (current-language (parameter/c symbol?))
                     (current-country (parameter/c symbol?))
@@ -41,7 +42,7 @@
   
   ;; The association list in which bundles will be stored
   (define *localization-bundles*
-    (make-hash-table 'equal))
+    (make-hash))
   
   (define current-language
     (make-parameter (get-from-locale 'language)))
@@ -58,11 +59,11 @@
                     (~v bundle-specifier))))
   
   (define (declare-bundle! bundle-specifier bundle-assoc-list)
-    (hash-table-put! *localization-bundles* bundle-specifier bundle-assoc-list))
+    (hash-set! *localization-bundles* bundle-specifier bundle-assoc-list))
   
   (define (store-bundle! bundle-specifier)
     (put-preferences (list (make-name bundle-specifier))
-                     (list (hash-table-get *localization-bundles* bundle-specifier)))
+                     (list (hash-ref *localization-bundles* bundle-specifier)))
     #t)
   
   (define (load-bundle-from-preference! bundle-specifier)
@@ -123,7 +124,7 @@
                                 (current-language)
                                 (current-country))))
       (and (not (null? specifier))
-           (let ((bundle (hash-table-get *localization-bundles* specifier #f)))
+           (let ((bundle (hash-ref *localization-bundles* specifier #f)))
              (cond ((and bundle (assq template-name bundle)) => cdr)
                    ((null? (cdr specifier)) #f)
                    (else (loop (rdc specifier))))))))

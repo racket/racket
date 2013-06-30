@@ -1,4 +1,4 @@
-(module modread mzscheme
+(module modread racket/base
   (require racket/contract/base)
   
   (provide with-module-reading-parameterization)
@@ -53,7 +53,7 @@
                (unless (eq? (syntax-e #'nm) expected-module)
                  (raise-wrong-module-name filename expected-module
                                           (syntax-e #'nm))))
-             (datum->syntax-object exp
+             (datum->syntax exp
                                    (cons (namespace-module-identifier)
                                          (cdr (syntax-e exp)))
                                    exp

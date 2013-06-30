@@ -1,5 +1,4 @@
-
-(module cmdargs mzscheme
+(module cmdargs scheme/base
 
   (provide split-command-line-args)
 

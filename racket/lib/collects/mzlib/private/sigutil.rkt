@@ -1,4 +1,3 @@
-
 (module sigutil mzscheme
   ;; Used by unitsig.rkt
   ;; (needs an overhaul, too)

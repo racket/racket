@@ -1,4 +1,4 @@
-(module winsubsys mzscheme
+(module winsubsys racket/base
   (provide set-subsystem)
   
   (define DF_NewHeaderOffset #x3C)

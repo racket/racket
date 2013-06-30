@@ -2,8 +2,9 @@
 ;; mzscheme's `#%module-begin'
 
 (module stxmz-body '#%kernel
-  (#%require "define.rkt"
-             (for-syntax '#%kernel "stx.rkt"))
+  ;; These could probably change to just be `(require racket/base)`.
+  (#%require racket/private/define
+             (for-syntax '#%kernel racket/private/stx))
 
   ;; So that expansions print the way the Racket programmer expects:
   (#%require (rename '#%kernel #%plain-module-begin #%module-begin))
@@ -16,7 +17,7 @@
 	   (list* (quote-syntax #%plain-module-begin)
                   (datum->syntax
 		   stx
-                   (list (quote-syntax #%require) '(for-syntax scheme/mzscheme)))
+                   (list (quote-syntax #%require) '(for-syntax mzscheme)))
 		  (stx-cdr stx))
 	   stx)
 	  (raise-syntax-error #f "bad syntax" stx))))

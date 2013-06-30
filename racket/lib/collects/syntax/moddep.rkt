@@ -1,13 +1,13 @@
-(module moddep mzscheme
+(module moddep scheme/base
   (require "modread.rkt"
            "modcode.rkt"
            "modcollapse.rkt"
            "modresolve.rkt")
 
-  (provide (all-from "modread.rkt")
-           (all-from "modcode.rkt")
-           (all-from "modcollapse.rkt")
-           (all-from "modresolve.rkt")
+  (provide (all-from-out "modread.rkt")
+           (all-from-out "modcode.rkt")
+           (all-from-out "modcollapse.rkt")
+           (all-from-out "modresolve.rkt")
            show-import-tree)
 
   (define (show-import-tree module-path)

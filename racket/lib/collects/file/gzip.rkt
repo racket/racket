@@ -12,11 +12,11 @@
 ;; LGPL-compatible license.  I (Eli Barzilay) have tried to contact the
 ;; author, but no reply yet.
 
-(module deflate mzscheme
+(module deflate racket/base
 
   (provide deflate gzip-through-ports gzip)
 
-  (require mzlib/unit200)
+  (require mzlib/unit200 (for-syntax racket/base))
 
   (define (vector-ref* v i)
     (let ([r (vector-ref v i)])
@@ -880,7 +880,7 @@
 ;;  */
 
 ;; /* Data structure describing a single value and its code string. */
-(define-struct ct_data (freq code dad len))
+(define-struct ct_data (freq code dad len) #:mutable)
 ;;    union {
 ;;        ush  freq;       ;; /* frequency count */
 ;;        ush  code;       ;; /* bit string */
@@ -930,7 +930,8 @@
    extra_base;    ;; /* base index for extra_bits */
    elems;         ;; /* max number of elements in the tree */
    max_length;    ;; /* max bit length for the codes */
-   max_code));    ;; /* largest code with non zero frequency */
+   max_code);    ;; /* largest code with non zero frequency */
+  #:mutable)
 
 (define l_desc (make-tree_desc
                 dyn_ltree static_ltree extra_lbits
@@ -2213,7 +2214,7 @@
     (dynamic-wind
      void
      (lambda ()
-       (let ([o (open-output-file outfile 'truncate/replace)])
+       (let ([o (open-output-file outfile #:exists 'truncate/replace)])
          (dynamic-wind
           void
           (lambda ()

@@ -84,7 +84,6 @@
 ;; Readers:
 (map (lambda (r) (go r #f #f))
      '(s-exp/lang/reader
-       mzscheme/lang/reader
        scheme/base/lang/reader
        scheme/private/provider/lang/reader
        racket/base/lang/reader

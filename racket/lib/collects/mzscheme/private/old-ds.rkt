@@ -1,8 +1,8 @@
 
 (module old-ds '#%kernel
-  (#%require "define-struct.rkt"
+  (#%require racket/private/define-struct
              (for-syntax '#%kernel
-                         "stxcase-scheme.rkt"))
+                         racket/private/stxcase-scheme))
 
   (#%provide define-struct let-struct old-datum)
   

@@ -1,5 +1,6 @@
-(module boundmap mzscheme
+(module boundmap racket/base
   (require racket/contract/base
+	   (for-syntax racket/base)
            "private/boundmap.rkt")
   
   (define-syntax provide/contract*

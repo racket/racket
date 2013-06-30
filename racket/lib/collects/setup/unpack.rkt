@@ -7,8 +7,7 @@
          racket/bool
          net/base64
          setup/getinfo
-         "dirs.rkt"
-         (only-in mzscheme make-namespace))
+         "dirs.rkt")
 
 (provide unpack
          fold-plt-archive)
@@ -276,7 +275,7 @@
                       (eq? #\L (read-char p))
                       (eq? #\T (read-char p)))
            (error "not an unpackable distribution archive"))
-         (let* ([n (make-namespace)]
+         (let* ([n (make-base-namespace)]
                 [info (let ([orig (current-namespace)])
                         (parameterize ([current-namespace n])
                           (namespace-require '(lib "mzlib/unit200.ss"))
