@@ -137,7 +137,7 @@
     (define-language L
       [Cv (name n variable-not-otherwise-mentioned)])
     (test (redex-match L Cv (term ())) #f)
-    (test (pair? (redex-match L Cv (term x))) #f))
+    (test (pair? (redex-match L Cv (term x))) #t))
   
   (let ()
     (define-language lang
