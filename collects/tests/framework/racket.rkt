@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require "test-suite-utils.rkt")
+(require "test-suite-utils.rkt"
+         (for-syntax racket/base))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -92,6 +93,37 @@
 (test-magic-square-bracket 'local2 "(local [" "(local [(")
 (test-magic-square-bracket 'local2 "(local [(define x 1)] " "(local [(define x 1)] (")
 
+
+(define (test-insert-close-paren/proc line
+                                      pos char flash? fixup? smart-skip
+                                      before after)
+  (test
+   (string->symbol (format "line ~a: ~s"
+                           line
+                           `(test-insert-close-paren ,pos ,char ,flash? ,fixup? ',smart-skip
+                                                     ,before ,after)))
+   (λ (x) (equal? x after))
+   (λ ()
+     (queue-sexp-to-mred
+      `(let ()
+         (define f (new frame% [label ""]))
+         (define t (new racket:text%))
+         (define ec (new editor-canvas% [parent f] [editor t]))
+         (send t insert ,before)
+         (send t set-position ,pos)
+         (send t insert-close-paren ,pos ,char ,flash? ,fixup? ',smart-skip)
+         (send t get-text))))))
+(define-syntax (test-insert-close-paren stx)
+  (syntax-case stx ()
+    [(_ . args)
+     (with-syntax ([line (syntax-line stx)])
+       #'(test-insert-close-paren/proc line . args))]))
+
+(test-insert-close-paren 0 #\] #t #t 'adjacent "" "]")
+(test-insert-close-paren 0 #\] #t #t #f "" "]")
+(test-insert-close-paren 1 #\] #t #t #f "(" "()")
+(test-insert-close-paren 1 #\] #f #f #f "(" "(]")
+(test-insert-close-paren 0 #\] #t #t 'forward "" "]")
 
 ;; tests what happens when a given key/s is/are typed in an editor with initial
 ;;       text and cursor position, under different settings of the auto-parentheses and

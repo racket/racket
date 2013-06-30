@@ -1,4 +1,11 @@
 ------------------------------
+       Version 5.3.6
+------------------------------
+
+  . fixes various bugs surrounding square bracket (especially relevant
+    for windows users with non-US keyboards)
+
+------------------------------
        Version 5.3.3
 ------------------------------
 

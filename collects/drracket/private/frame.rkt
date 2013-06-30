@@ -278,7 +278,7 @@
          help/bug-report
          setup/unpack
          mrlib/terminal
-         pkg
+         (prefix-in pkg: pkg)
          (submod "." install-pkg))
 (provide frame@)
 (define-unit frame@  
@@ -455,8 +455,8 @@
                      #:title (string-constant install-pkg-dialog-title)
                      (λ (cust parent) 
                        (define action (case (car res)
-                                        [(install) install]
-                                        [(update) update]))
+                                        [(install) pkg:install]
+                                        [(update) pkg:update]))
                        (apply action (cdr res)))))))])
         (super file-menu:between-open-and-revert file-menu))
       
