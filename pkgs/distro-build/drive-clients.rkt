@@ -264,40 +264,45 @@
 
 ;; ----------------------------------------
 
+(define stop? #f)
+
 (define (limit-and-report-failure c timeout-factor thunk)
-  (define cust (make-custodian))
-  (define timeout (or (get-opt c '#:timeout)
-                      (* 30 60)))
-  (define orig-thread (current-thread))
-  (parameterize ([current-custodian cust])
-    (thread (lambda ()
-              (sleep (* timeout-factor timeout))
-              ;; try nice interrupt, first:
-              (break-thread orig-thread)
-              (sleep 1)
-              ;; force quit:
-              (custodian-shutdown-all cust)))
-    (with-handlers ([exn? (lambda (exn)
-                            (log-error "~a failed..." (client-name c))
-                            (log-error (exn-message exn)))])
-      (thunk)))
-  (custodian-shutdown-all cust))
+  (unless stop?
+    (define cust (make-custodian))
+    (define timeout (or (get-opt c '#:timeout)
+                        (* 30 60)))
+    (define orig-thread (current-thread))
+    (parameterize ([current-custodian cust])
+      (thread (lambda ()
+                (sleep (* timeout-factor timeout))
+                ;; try nice interrupt, first:
+                (break-thread orig-thread)
+                (sleep 1)
+                ;; force quit:
+                (custodian-shutdown-all cust)))
+      (with-handlers ([exn? (lambda (exn)
+                              (when (exn:break? exn) (set! stop? #t))
+                              (log-error "~a failed..." (client-name c))
+                              (log-error (exn-message exn)))])
+        (thunk)))
+    (custodian-shutdown-all cust)))
 
 (define (client-thread c sequential? thunk)
-  (define log-dir (build-path "build" "drive"))
-  (define log-file (build-path log-dir (client-name c)))
-  (make-directory* log-dir)
-  (printf "Logging build: ~a\n" log-file)
-  (define (go)
-    (define p (open-output-file log-file
-                                #:exists 'truncate/replace))
-    (file-stream-buffer-mode p 'line)
-    (parameterize ([current-output-port p]
-                   [current-error-port p])
-      (thunk)))
-  (cond
-   [sequential? (go) (thread void)]
-   [else (thread go)]))
+  (unless stop?
+    (define log-dir (build-path "build" "drive"))
+    (define log-file (build-path log-dir (client-name c)))
+    (make-directory* log-dir)
+    (printf "Logging build: ~a\n" log-file)
+    (define (go)
+      (define p (open-output-file log-file
+                                  #:exists 'truncate/replace))
+      (file-stream-buffer-mode p 'line)
+      (parameterize ([current-output-port p]
+                     [current-error-port p])
+        (thunk)))
+    (cond
+     [sequential? (go) (thread void)]
+     [else (thread go)])))
 
 ;; ----------------------------------------
 
@@ -305,35 +310,36 @@
  (let loop ([config config]
             [mode 'sequential]
             [opts (hasheq)])
-   (case (farm-config-tag config)
-     [(parallel sequential)
-      (define new-opts (merge-options opts config))
-      (define ts
-        (map (lambda (c) (loop c
-                               (farm-config-tag config)
-                               new-opts))
-             (get-content config)))
-      (define (wait)
-        (for ([t (in-list ts)])
-          (sync t)))
-      (cond
-       [(eq? mode 'sequential) (wait) (thread void)]
-       [else (thread wait)])]
-     [else 
-      (define c (merge-options opts config))
-      (client-thread
-       c
-       (eq? mode 'sequential)
-       (lambda ()
-         (limit-and-report-failure
-          c 2
-          (lambda ()
-            ;; start client, if a VM:
-            (start-client c (or (get-opt c '#:max-vm) 1))
-            ;; catch failure in build step proper, so we
-            ;; can more likely stop the client:
-            (limit-and-report-failure
-             c 1
-             (lambda () (client-build c)))
-            ;; stop client, if a VM:
-            (stop-client c)))))])))
+   (unless stop?
+     (case (farm-config-tag config)
+       [(parallel sequential)
+        (define new-opts (merge-options opts config))
+        (define ts
+          (map (lambda (c) (loop c
+                                 (farm-config-tag config)
+                                 new-opts))
+               (get-content config)))
+        (define (wait)
+          (for ([t (in-list ts)])
+            (sync t)))
+        (cond
+         [(eq? mode 'sequential) (wait) (thread void)]
+         [else (thread wait)])]
+       [else 
+        (define c (merge-options opts config))
+        (client-thread
+         c
+         (eq? mode 'sequential)
+         (lambda ()
+           (limit-and-report-failure
+            c 2
+            (lambda ()
+              ;; start client, if a VM:
+              (start-client c (or (get-opt c '#:max-vm) 1))
+              ;; catch failure in build step proper, so we
+              ;; can more likely stop the client:
+              (limit-and-report-failure
+               c 1
+               (lambda () (client-build c)))
+              ;; stop client, if a VM:
+              (stop-client c)))))]))))
