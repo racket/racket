@@ -301,20 +301,29 @@
 
 (define (read-pkg-cfg/def k)
   (define c (read-pkg-cfg))
-  (hash-ref c k
-            (λ ()
-              (match k
-                ["catalogs"
-                 (list "https://pkg.racket-lang.org"
-                       "https://planet-compat.racket-lang.org")]))))
+  (define (get-default)
+    (match k
+      ['catalogs
+       (list "https://pkg.racket-lang.org"
+             "https://planet-compat.racket-lang.org")]
+      [_ #f]))
+  (define v (hash-ref c k get-default))
+  (match k
+    ['catalogs
+     ;; Replace "" with default URLs:
+     (apply append (for/list ([i (in-list v)])
+                     (if (not i)
+                         (get-default)
+                         (list i))))]
+    [_ v]))
 
 (define (pkg-config-catalogs)
   (with-pkg-lock/read-only
-   (read-pkg-cfg/def "catalogs")))
+   (read-pkg-cfg/def 'catalogs)))
 
 (define (pkg-catalogs)
   (or (current-pkg-catalogs)
-      (map string->url (read-pkg-cfg/def "catalogs"))))
+      (map string->url (read-pkg-cfg/def 'catalogs))))
 
 (define (db-path? p)
   (regexp-match? #rx"[.]sqlite$" (path->bytes p)))
@@ -540,7 +549,7 @@
   (parameterize ([current-pkg-scope 'installation])
     (with-pkg-lock/read-only
      (define cfg (read-pkg-cfg))
-     (hash-ref cfg "default-scope" "user"))))
+     (hash-ref cfg 'default-scope "user"))))
 
 (struct pkg-info (orig-pkg checksum auto?) #:prefab)
 (struct sc-pkg-info pkg-info (collect) #:prefab) ; a pkg with a single collection
@@ -1588,7 +1597,7 @@
     [config:set
      (match key+vals
        [(list* (and key "catalogs") val)
-        (update-pkg-cfg! "catalogs" val)]
+        (update-pkg-cfg! 'catalogs val)]
        [(list (and key "default-scope") val)
         (unless (member val '("installation" "user" "shared"))
           (pkg-error (~a "invliad value for config key\n"
@@ -1598,7 +1607,7 @@
                      key
                      val))
         (if (eq? 'installation (current-pkg-scope))
-            (update-pkg-cfg! "default-scope" val)
+            (update-pkg-cfg! 'default-scope val)
             (pkg-error (~a "config key makes sense only with --installation/-i\n"
                            "  config key: ~a\n"
                            "  given value: ~a")
@@ -1613,7 +1622,7 @@
        [(list key)
         (match key
           ["catalogs"
-           (for ([s (in-list (read-pkg-cfg/def "catalogs"))])
+           (for ([s (in-list (read-pkg-cfg/def 'catalogs))])
              (printf "~a\n" s))]
           ["default-scope"
            (if (eq? 'installation (current-pkg-scope))

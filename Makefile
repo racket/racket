@@ -82,6 +82,11 @@ PKGS = main-distribution plt-services
 # a URL (spaces allowed).
 SRC_CATALOG = local
 
+# A URL embedded in documentation for remote searches, where a Racket
+# version and search key are added as query fields to the URL, and ""
+# is replaced by default:
+DOC_SEARCH = 
+
 # Server for built packages (i.e., the host where you'll run the
 # server):
 SERVER = localhost
@@ -101,6 +106,11 @@ DIST_SUFFIX =
 # A human-readable description (spaces allowed) of the generated
 # installer, usually describing a platform:
 DIST_DESC =
+
+# Package catalog URLs (individually quoted as needed, separated by
+# spaces) to install as the initial configuration in generated
+# installers, where "" is replaced by the default configuration:
+DIST_CATALOGS_q = ""
 
 # Configuration of clients to run for a build farm, normally
 # implemented with `#lang distro-build/farm':
@@ -142,6 +152,7 @@ LOCAL_USER_AUTO = --catalog build/local/catalog $(USER_AUTO_OPTIONS)
 SOURCE_USER_AUTO_q = --catalog "$(SRC_CATALOG)" $(USER_AUTO_OPTIONS)
 REMOTE_USER_AUTO = --catalog http://$(SERVER):9440/ $(USER_AUTO_OPTIONS)
 REMOTE_INST_AUTO = --catalog http://$(SERVER):9440/ --scope installation --deps search-auto
+BUNDLE_CONFIG = bundle/racket/etc/config.rktd
 
 # ------------------------------------------------------------
 # Linking all packages (development mode; not an installer build)
@@ -193,8 +204,12 @@ local-source-catalog:
 # Clear out a package build in "build/user", and then install
 # packages:
 local-build:
-	rm -rf build/user
+	$(MAKE) fresh-user
 	$(MAKE) packages-from-local
+
+fresh-user:
+	rm -rf build/user
+	$(RACKET) $(DISTBLD)/set-config.rkt racket/etc/config.rktd "$(DOC_SEARCH)" ""
 
 # Install packages from the source copies in this directory. The
 # packages are installed in user scope, but we set the add-on
@@ -209,6 +224,7 @@ packages-from-local:
 # `build-from-local'), where the source catalog is specified as
 # `SRC_CATALOG':
 build-from-catalog:
+	$(MAKE) fresh-user
 	$(RACO) pkg install $(SOURCE_USER_AUTO_q) $(PKGS) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
 	$(RACO) setup --avoid-main
 
@@ -283,6 +299,7 @@ bundle-from-server:
 	$(RACKET) -l setup/unixstyle-install bundle racket bundle/racket
 	$(RACKET) -l distro-build/unpack-collects http://$(SERVER):9440/
 	bundle/racket/bin/raco pkg install $(REMOTE_INST_AUTO) $(PKGS) $(REQUIRED_PKGS)
+	$(RACKET) -l distro-build/set-config $(BUNDLE_CONFIG) "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 
 UPLOAD_q = --upload http://$(SERVER):9440/ --desc "$(DIST_DESC)"
 DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"
@@ -307,6 +324,7 @@ win32-bundle-from-server:
 	$(WIN32_RACKET) -l distro-build/unpack-collects http://$(SERVER):9440/
 	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(REQUIRED_PKGS)
 	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(PKGS)
+	$(WIN32_RACKET) -l distro-build/set-config $(BUNDLE_CONFIG) "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 
 win32-installer-from-bundle:
 	$(WIN32_RACKET) -l- distro-build/installer $(DIST_ARGS_q)
@@ -314,7 +332,8 @@ win32-installer-from-bundle:
 # ------------------------------------------------------------
 # Drive installer build:
 
-DRIVE_ARGS_q = $(RELEASE_MODE) $(CLEAN_MODE) "$(FARM_CONFIG)" "$(FARM_MODE)" $(SERVER) "$(PKGS)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
+DRIVE_ARGS_q = $(RELEASE_MODE) $(CLEAN_MODE) "$(FARM_CONFIG)" "$(FARM_MODE)" \
+               $(SERVER) "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
 DRIVE_CMD_q = $(RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS_q)
 
 # Full server build and clients drive, based on `FARM_CONFIG':

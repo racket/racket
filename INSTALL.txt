@@ -183,13 +183,14 @@ on to your farm-configuration module (accessible via the
 default `#:clean?' configration for a client #t instead of #f.
 
 A configuration file can specify the packages to include, host address
-of the server, distribution name, and installer directory, but defaults
-can be provided as `make' arguments via `PKGS', `SERVER', `DIST_NAME',
-`DIST_BASE', and `DIST_DIR', respectively. Note that a sets of
+of the server, distribution name, installer directory, and
+documentation search URL, but defaults can be provided as `make'
+arguments via `PKGS', `SERVER', `DIST_NAME', `DIST_BASE', and
+`DIST_DIR', `DOC_SEARCH', respectively. Note that a sets of
 packages specified in a configure file affects the clients, but it
-does not affect the packages prepared by the server; only `PKGS'
-affects the server (and the client's packages must be a subset of the
-server's packages).
+does not affect the packages prepared by the server; only `PKGS' and
+`DOC_SEARCH' affect the server (and the client's packages must be
+a subset of the server's packages).
 
 For each installer written to "build/installers", the installer's name
 is
@@ -215,10 +216,17 @@ Roughly, the steps are
  1. On the server machine:
       make server PKGS="..."
 
+    Add `DOC_SEARCH="..."' to the `server' line to build documentation
+    so that it redirects to the given URL when a remote search is
+    necessary.
+
  2. On each client machine:
       make client SERVER=... PKGS="..."
     or
       nmake win32-client SERVER=... PKGS="..."
+
+    Add `DOC_SEARCH="..."' to the `client' line, if needed;
+    normally, it should be the same as for the `server' line.
 
     Add `RELEASE_MODE=--release' to the `client' line to build
     a "release" installer, as opposed to a snapshot installer.
@@ -241,6 +249,11 @@ Roughly, the steps are
     description, which is used as a key in the generated table of
     installer files.
 
+    Add `DIST_CATALOGS_q='...'' to the `client' line to declare a
+    space-separated sequence of catalog URLs to set an installation's
+    initial package catalog URLs. Use the empty string in place of a
+    URL to indicate that te default path should be spliced.
+
 In more detail:
 
  1a. Build "racket" on a server.
@@ -258,6 +271,10 @@ In more detail:
 
      The `PKGS' variable of the makefile determines which packages are
      built for potential inclusion in a distribution.
+
+     The `DOC_SEARCH' variable of the makefile determine a URL that is
+     embedded in rendered documentation for cases where a remote
+     search is needed (because other documentation is not installed).
 
      The `SRC_CATALOG' variable determines the catalog that is used to
      get package sources and native-library packages, but a value of
@@ -280,7 +297,10 @@ In more detail:
      The `client' (or `win32-client') target of the makefile will do
      that. Provide `SERVER' as the hostname of the server machine, and
      provide the same `PKGS' (or a subset) as in step 1b if you want a
-     different set than the ones listed in the makefile.
+     different set than the ones listed in the makefile. Similarly,
+     `DOC_SEARCH' normally should be the same as in step 1b, but for a
+     client, it affects future documentation builds in the
+     installation.
 
      Alternatively, use the `client' target, which combines `core' and
      `client-from-core' (i.e., steps 2a and 2b).
@@ -313,6 +333,14 @@ In more detail:
      To set the description string for the installer, provide
      `DIST_DESC' to `make'. The description string is recorded
      alongside the installer.
+
+     To set the initial package catalogs URLs for an installation,
+     provide `DIST_CATALOGS_q' to `make'. Separate multiple URLs with
+     a space, and use an empty string in place of a URL to indicate
+     that the default catalogs should be used. The "_q" in the
+     variable name indicates that its value can include double quotes
+     (but not single quotes) --- which are needed to specify an empty
+     string, for example.
 
 On each client, step 2b produces a "bundle/installer.txt" file that
 contains the path to the generated installer on one line, followed by

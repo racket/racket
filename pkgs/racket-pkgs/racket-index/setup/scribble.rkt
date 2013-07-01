@@ -28,7 +28,7 @@
          racket/place
          pkg/lib
          pkg/strip
-         (only-in net/url url->string path->url)
+         (prefix-in u: net/url)
          (prefix-in html: scribble/html-render)
          (prefix-in latex: scribble/latex-render)
          (prefix-in contract: scribble/contract-render))
@@ -614,7 +614,7 @@
                                         (std-path "scribble-common.js")
                                         (cons local-redirect-file "../local-redirect/local-redirect.js")))
                                 (list (cons local-redirect-file 
-                                            (url->string (path->url local-redirect-file)))))]
+                                            (u:url->string (u:path->url local-redirect-file)))))]
                ;; For main-directory, non-start files, up-path is #t, which makes the
                ;; "up" link go to the (user's) start page using cookies. For other files,
                ;; 
@@ -635,7 +635,14 @@
           ;; for all links external to the document, but also install the
           ;; "local-redirect.js" hook:
           (send r set-external-tag-path 
-                (format "http://pkg-docs.racket-lang.org?version=~a" (version)))
+                (u:url->string
+                 (let ([u (u:string->url (get-doc-search-url))])
+                   (struct-copy
+                    u:url
+                    u
+                    [query
+                     (cons (cons 'version (version))
+                           (u:url-query u))]))))
           (send r add-extra-script-file local-redirect-file))
         ;; Result is the renderer:
         r)))
@@ -1011,8 +1018,8 @@
     ;; and fix up the path if there is a reference:
     (define js-path (if (doc-under-main? doc)
                         "../local-redirect"
-                        (url->string (path->url (build-path (find-user-doc-dir)
-                                                            "local-redirect")))))
+                        (u:url->string (u:path->url (build-path (find-user-doc-dir)
+                                                                "local-redirect")))))
     (for ([p (in-directory dest-dir)])
       (when (regexp-match? #rx#"[.]html$" (path->bytes p))
         (fixup-local-redirect-reference p js-path)))

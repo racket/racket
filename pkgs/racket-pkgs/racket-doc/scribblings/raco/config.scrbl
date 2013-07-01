@@ -75,7 +75,15 @@ directory:
 
  @item{@racket['include-search-dirs] --- like
        @racket[doc-search-dirs], but for directories containing C
-       header files}
+       header files.}
+
+ @item{@racket['doc-search-url] --- a URL string that is augmented
+       with version and search-tag queries to form a remote
+       documentation reference.}
+
+ @item{@racket['catalogs] --- a list of URL strings used as the search
+       path for resolving package names; an @racket[#f] in the list
+       is replaced with the default search path.}
 
  @item{@racket['absolute-installation?] --- a boolean that is
        @racket[#t] if the installation uses absolute path names,

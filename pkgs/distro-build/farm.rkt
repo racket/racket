@@ -93,6 +93,12 @@
 ;;                              `PKGS' in the makfile (or, more genereally,
 ;;                              the `pkgs' command-line argument to
 ;;                              `distro-build/drive-clients')
+;;   #:doc-search <string> --- URL to install as the configuration
+;;                             for remote documentation searches in
+;;                             generated installers; "" is replaced
+;;                             with the PLT default; defaults to the
+;;                             `DOC_SEARCH' makefile variable or the
+;;                             `doc-search' argument
 ;;   #:dist-name <string> --- the distribution name; defaults to the
 ;;                            `DIST_NAME' makefile variable or `dist-name'
 ;;                            command-line argument
@@ -106,6 +112,11 @@
 ;;                               used for an OS variant; defaults to the
 ;;                               `DIST_SUFFIX' makefile variable or the
 ;;                               `dist-suffix' command-line argument
+;;   #:dist-catalogs '(<string> ...) --- catalog URLs to install as the
+;;                                       initial catalog configuration in
+;;                                       generated installed, where ""
+;;                                       is replaced with the PLT default
+;;                                       catalogs
 ;;   #:max-vm <real> --- max number of VMs allowed to run with this
 ;;                       machine, counting the machine; defaults to 1
 ;;   #:vbox <string> --- Virtual Box machine name; if provided the
@@ -284,10 +295,12 @@
 (define (check-group-keyword kw val)
   (case kw
     [(#:pkgs) (and (list? val) (andmap simple-string? val))]
+    [(#:doc-search) (string? val)]
     [(#:dist-name) (string? val)]
     [(#:dist-base) (simple-string? val)]
     [(#:dist-dir) (simple-string? val)]
     [(#:dist-suffix) (simple-string? val)]
+    [(#:dist-catalogs) (and (list? val) (andmap string? val))]
     [(#:max-vm) (real? val)]
     [(#:server) (simple-string? val)]
     [(#:host) (simple-string? val)]

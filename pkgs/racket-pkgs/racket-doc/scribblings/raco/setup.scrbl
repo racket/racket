@@ -1062,6 +1062,10 @@ v
   Returns a path to the user's man-page directory; the directory
   indicated by the returned path may or may not exist.}
 
+@defproc[(get-doc-search-url) string?]{
+  Returns a string that is used by the documentation system, augmented
+  with a version and search-key query, for remote documentation links.}
+
 @defthing[absolute-installation? boolean?]{
   A binary boolean flag that is true if this installation is using
   absolute path names.}

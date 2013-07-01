@@ -18,7 +18,7 @@
 (define default-clean? #f)
 
 (define-values (config-file config-mode
-                            default-server default-pkgs 
+                            default-server default-pkgs default-doc-search
                             default-dist-name default-dist-base default-dist-dir)
   (command-line
    #:once-each
@@ -27,10 +27,10 @@
    [("--clean") "Erase client directories before building"
     (set! default-clean? #t)]
    #:args (config-file config-mode 
-                       server pkgs 
+                       server pkgs doc-search
                        dist-name dist-base dist-dir)
-   (values config-file config-mode 
-           server pkgs 
+   (values config-file config-mode
+           server pkgs doc-search
            dist-name dist-base dist-dir)))
 
 (define config (parameterize ([current-mode config-mode])
@@ -168,18 +168,55 @@
 (define (q s)
   (~a "\"" s "\""))
 
-(define (client-args desc server pkgs dist-name dist-base dist-dir dist-suffix)
+(define (qq l kind)
+  (case kind
+    [(unix) (~a "'"
+                (apply ~a #:separator " " (map q l))
+                "'")]
+    [(windows) (~a "\""
+                   (apply 
+                    ~a #:separator " " 
+                    (for/list ([i (in-list l)])
+                      (~a "\\\""
+                          i
+                          ;; A backslash is literal unless followed by a
+                          ;; quote. If `i' ends in backslashes, they
+                          ;; must be doubled, because the \" added to
+                          ;; the end will make them treated as escapes.
+                          (let ([m (regexp-match #rx"\\\\*$" i)])
+                            (car m))
+                          "\\\"")))
+                   "\"")]))
+
+(define (client-args c server kind)
+  (define desc (client-name c))
+  (define pkgs (let ([l (get-opt c '#:pkgs)])
+                 (if l
+                     (apply ~a #:separator " " l)
+                     default-pkgs)))
+  (define doc-search (get-opt c '#:doc-search 
+                              default-doc-search))
+  (define dist-name (or (get-opt c '#:dist-name)
+                        default-dist-name))
+  (define dist-base (or (get-opt c '#:dist-base)
+                        default-dist-base))
+  (define dist-dir (or (get-opt c '#:dist-dir)
+                       default-dist-dir))
+  (define dist-suffix (get-opt c '#:dist-suffix ""))
+  (define dist-catalogs (get-opt c '#:dist-catalogs '("")))
+  (define pull? (get-opt c '#:pull? #t))
   (~a " SERVER=" server
       " PKGS=" (q pkgs)
+      " DOC_SEARCH=" (q doc-search)
       " DIST_DESC=" (q desc)
       " DIST_NAME=" (q dist-name)
       " DIST_BASE=" dist-base
       " DIST_DIR=" dist-dir
       " DIST_SUFFIX=" (q dist-suffix)
+      " DIST_CATALOGS_q=" (qq dist-catalogs kind)
       " RELEASE_MODE=" (if release? "--release" (q ""))))
 
-(define (unix-build c host port user server repo clean? pull?
-                    pkgs dist-name dist-base dist-dir dist-suffix)
+(define (unix-build c host port user server repo clean? pull?)
   (define dir (or (get-opt c '#:dir)
                   "build/plt"))
   (define (sh . args) 
@@ -197,14 +234,11 @@
             "git pull"))
    (sh "cd " (q dir) " ; "
        "make -j " j " client"
-       (client-args (client-name c)
-                    server pkgs 
-                    dist-name dist-base dist-dir dist-suffix)
+       (client-args c server 'unix)
        " CORE_CONFIGURE_ARGS=" (q (apply ~a #:separator " "
                                          (get-opt c '#:configure null))))))
 
-(define (windows-build c host port user server repo clean? pull?
-                       pkgs dist-name dist-base dist-dir dist-suffix)
+(define (windows-build c host port user server repo clean? pull?)
   (define dir (or (get-opt c '#:dir)
                   "build\\plt"))
   (define bits (or (get-opt c '#:bits) 64))
@@ -226,9 +260,7 @@
         " && \"c:\\Program Files" (if (= bits 64) " (x86)" "") "\\Microsoft Visual Studio 9.0\\vc\\vcvarsall.bat\""
         " " vc
         " && nmake win32-client" 
-        (client-args (client-name c)
-                     server pkgs 
-                     dist-name dist-base dist-dir dist-suffix))))
+        (client-args c server 'windows))))
 
 (define (client-build c)
   (define host (or (get-opt c '#:host)
@@ -238,17 +270,6 @@
   (define user (get-opt c '#:user))
   (define server (or (get-opt c '#:server)
                      default-server))
-  (define pkgs (let ([l (get-opt c '#:pkgs)])
-                 (if l
-                     (apply ~a #:separator " " l)
-                     default-pkgs)))
-  (define dist-name (or (get-opt c '#:dist-name)
-                        default-dist-name))
-  (define dist-base (or (get-opt c '#:dist-base)
-                        default-dist-base))
-  (define dist-dir (or (get-opt c '#:dist-dir)
-                       default-dist-dir))
-  (define dist-suffix (get-opt c '#:dist-suffix ""))
   (define repo (or (get-opt c '#:repo)
                    (~a "http://" server ":9440/.git")))
   (define clean? (let ([v (get-opt c '#:clean? 'none)])
@@ -259,8 +280,7 @@
   ((case (or (get-opt c '#:platform) 'unix)
      [(unix) unix-build]
      [else windows-build])
-   c host port user server repo clean? pull?
-   pkgs dist-name dist-base dist-dir dist-suffix))
+   c host port user server repo clean? pull?))
 
 ;; ----------------------------------------
 
