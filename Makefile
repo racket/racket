@@ -65,12 +65,21 @@ racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
 # ------------------------------------------------------------
 # Configuration options for building installers
 
-# Packages to include in a distribution:
+# On variable definitions: Spaces are allowed where noted and
+# disallowed otherwise. If a variable name ends in "_q", then it means
+# that the variable can expand to include double-quote marks. If a
+# variable's name ends in "_qq", then it expands to a combination of
+# single-quote and double-quote marks. If a variable's name does not
+# end in "_q" or "_qq", don't use any quote marks on the right-hand
+# side of its definition.
+
+# Packages (separated by spaces) to include in a distribution:
 PKGS = main-distribution plt-services
 
 # Catalog for sources and native packages; use "local" to bootstrap
 # from package directories (in the same directory as this makefile)
-# plus the GitHub repository of raw native libraries.
+# plus the GitHub repository of raw native libraries. Otherwise, it's
+# a URL (spaces allowed).
 SRC_CATALOG = local
 
 # Server for built packages (i.e., the host where you'll run the
@@ -81,16 +90,16 @@ SERVER = localhost
 # snapshot installers):
 RELEASE_MODE =
 
-# Human-readable name, installation name base, and installation
-# directory name (Unix) for the generated installers:
+# Human-readable name (spaces allowed), installation name base, and
+# Unix installation directory name for the generated installers:
 DIST_NAME = Racket
 DIST_BASE = racket
 DIST_DIR = racket
 # An extra suffix for the installer name, usually used to specify
 # a variant of an OS:
 DIST_SUFFIX = 
-# A human-readable description of the generated installer, usually
-# describing a platform:
+# A human-readable description (spaces allowed) of the generated
+# installer, usually describing a platform:
 DIST_DESC =
 
 # Configuration of clients to run for a build farm, normally
@@ -107,7 +116,7 @@ CLEAN_MODE =
 
 # A command to run after the server has started; normally set by
 # the `farm' target:
-SERVE_DURING_CMD =
+SERVE_DURING_CMD_qq =
 
 # ------------------------------------------------------------
 # Helpers
@@ -130,7 +139,7 @@ WIN32_RACKET = racket\racket -A "$(ADDON)"
 WIN32_RACO = racket\racket -A "$(ADDON)" -N raco -l- raco
 USER_AUTO_OPTIONS = --scope user --skip-installed --deps search-auto
 LOCAL_USER_AUTO = --catalog build/local/catalog $(USER_AUTO_OPTIONS)
-SOURCE_USER_AUTO = --catalog "$(SRC_CATALOG)" $(USER_AUTO_OPTIONS)
+SOURCE_USER_AUTO_q = --catalog "$(SRC_CATALOG)" $(USER_AUTO_OPTIONS)
 REMOTE_USER_AUTO = --catalog http://$(SERVER):9440/ $(USER_AUTO_OPTIONS)
 REMOTE_INST_AUTO = --catalog http://$(SERVER):9440/ --scope installation --deps search-auto
 
@@ -200,7 +209,7 @@ packages-from-local:
 # `build-from-local'), where the source catalog is specified as
 # `SRC_CATALOG':
 build-from-catalog:
-	$(RACO) pkg install $(SOURCE_USER_AUTO) $(PKGS) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
+	$(RACO) pkg install $(SOURCE_USER_AUTO_q) $(PKGS) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
 	$(RACO) setup --avoid-main
 
 # Although a client will build its own "collects", pack up the
@@ -219,7 +228,7 @@ built-catalog:
 # as the copy of the server's "collects" tree:
 built-catalog-server:
 	if [ -d ".git" ]; then git update-server-info ; fi
-	$(RACKET) -l distro-build/serve-catalog $(SERVE_DURING_CMD)
+	$(RACKET) -l distro-build/serve-catalog $(SERVE_DURING_CMD_qq)
 
 # Demonstrate how a catalog server for binary packages works,
 # which involves creating package archives in "binary" mode
@@ -275,13 +284,13 @@ bundle-from-server:
 	$(RACKET) -l distro-build/unpack-collects http://$(SERVER):9440/
 	bundle/racket/bin/raco pkg install $(REMOTE_INST_AUTO) $(PKGS) $(REQUIRED_PKGS)
 
-UPLOAD = --upload http://$(SERVER):9440/ --desc "$(DIST_DESC)"
-DIST_ARGS = $(UPLOAD) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"
+UPLOAD_q = --upload http://$(SERVER):9440/ --desc "$(DIST_DESC)"
+DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"
 
 # Create an installer from the build (with installed packages) that's
 # in "bundle/racket":
 installer-from-bundle:
-	$(RACKET) -l- distro-build/installer $(DIST_ARGS)
+	$(RACKET) -l- distro-build/installer $(DIST_ARGS_q)
 
 win32-distro-build-from-server:
 	$(WIN32_RACO) pkg install $(REMOTE_USER_AUTO) distro-build
@@ -300,21 +309,21 @@ win32-bundle-from-server:
 	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(PKGS)
 
 win32-installer-from-bundle:
-	$(WIN32_RACKET) -l- distro-build/installer $(DIST_ARGS)
+	$(WIN32_RACKET) -l- distro-build/installer $(DIST_ARGS_q)
 
 # ------------------------------------------------------------
 # Drive installer build:
 
-DRIVE_ARGS = $(RELEASE_MODE) $(CLEAN_MODE) "$(FARM_CONFIG)" "$(FARM_MODE)" $(SERVER) "$(PKGS)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
-DRIVE_CMD = $(RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS)
+DRIVE_ARGS_q = $(RELEASE_MODE) $(CLEAN_MODE) "$(FARM_CONFIG)" "$(FARM_MODE)" $(SERVER) "$(PKGS)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
+DRIVE_CMD_q = $(RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS_q)
 
 # Full server build and clients drive, based on `FARM_CONFIG':
 farm:
-	$(MAKE) server SERVE_DURING_CMD="$(DRIVE_CMD)"
+	$(MAKE) server SERVE_DURING_CMD_qq='$(DRIVE_CMD_q)'
 
 # Server is already built; start it and drive clients:
 built-farm:
-	$(MAKE) built-catalog-server SERVE_DURING_CMD="$(DRIVE_CMD)"
+	$(MAKE) built-catalog-server SERVE_DURING_CMD_qq='$(DRIVE_CMD_q)'
 
 # Just the clients, assuming server is already running:
 drive-clients:
