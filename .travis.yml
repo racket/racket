@@ -1,0 +1,11 @@
+language: c
+compiler:
+  - gcc
+  - clang
+# Change this to your needs
+script:
+  - make PKGS="racket-test"
+  - ./racket/bin/racket -f pkgs/racket-pkgs/racket-test/tests/racket/quiet.rktl
+  - ./racket/bin/racket pkgs/racket-pkgs/racket-test/tests/json/json.rkt
+  - ./racket/bin/raco test pkgs/racket-pkgs/racket-test/tests/xml/test.rkt
+
