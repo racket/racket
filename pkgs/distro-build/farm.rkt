@@ -120,9 +120,14 @@
 ;;   #:timeout <number> --- numbers of seconds to wait before declaring
 ;;                          failure; defaults to 30 minutes
 ;;   #:clean? <boolean> --- if true, then the build process on the client
-;;                          machine starts by removing <dir>; the default
-;;                          is #f, but the `--clean' command-line flag
-;;                          changes the default to #t
+;;                          machine starts by removing <dir>; set this
+;;                          to #f for a shared repo checkout; the default
+;;                          is determined by the `CLEAN_MODE' makefile
+;;                          variable or `--clean' command-line flag
+;;   #:pull? <boolean> --- if true, then the build process on the client
+;;                         machine starts by a `git pull' in <dir>; set
+;;                         to #f, for example, for a repo checkout that is
+;;                         shared with server; the default is #t
 ;;
 ;; Machine-only keywords:
 ;;   #:name <string> --- defaults to host; this string is recorded as
@@ -298,6 +303,7 @@
     [(#:j) (exact-positive-integer? val)]
     [(#:repo) (string? val)]
     [(#:clean?) (boolean? val)]
+    [(#:pull?) (boolean? val)]
     [else #f]))
 
 (define (check-machine-keyword kw val)

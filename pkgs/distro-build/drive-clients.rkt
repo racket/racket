@@ -178,7 +178,7 @@
       " DIST_SUFFIX=" (q dist-suffix)
       " RELEASE_MODE=" (if release? "--release" (q ""))))
 
-(define (unix-build c host port user server repo clean?
+(define (unix-build c host port user server repo clean? pull?
                     pkgs dist-name dist-base dist-dir dist-suffix)
   (define dir (or (get-opt c '#:dir)
                   "build/plt"))
@@ -192,8 +192,9 @@
    (sh "if [ ! -d " (q dir) " ] ; then"
        " git clone " (q repo) " " (q dir) " ; "
        "fi")
-   (sh "cd " (q dir) " ; "
-       "git pull")
+   (and pull?
+        (sh "cd " (q dir) " ; "
+            "git pull"))
    (sh "cd " (q dir) " ; "
        "make -j " j " client"
        (client-args (client-name c)
@@ -202,7 +203,7 @@
        " CORE_CONFIGURE_ARGS=" (q (apply ~a #:separator " "
                                          (get-opt c '#:configure null))))))
 
-(define (windows-build c host port user server repo clean?
+(define (windows-build c host port user server repo clean? pull?
                        pkgs dist-name dist-base dist-dir dist-suffix)
   (define dir (or (get-opt c '#:dir)
                   "build\\plt"))
@@ -218,8 +219,9 @@
    (and clean?
         (cmd "IF EXIST " (q dir) " rmdir /S /Q " (q dir)))
    (cmd "IF NOT EXIST " (q dir) " git clone " (q repo) " " (q dir))
-   (cmd "cd " (q dir)
-        " && git pull")
+   (and pull?
+        (cmd "cd " (q dir)
+             " && git pull"))
    (cmd "cd " (q dir)
         " && \"c:\\Program Files" (if (= bits 64) " (x86)" "") "\\Microsoft Visual Studio 9.0\\vc\\vcvarsall.bat\""
         " " vc
@@ -251,10 +253,11 @@
                    (if (eq? v 'none)
                        default-clean?
                        v)))
+  (define pull? (get-opt c '#:pull? #t))
   ((case (or (get-opt c '#:platform) 'unix)
      [(unix) unix-build]
      [else windows-build])
-   c host port user server repo clean?
+   c host port user server repo clean? pull?
    pkgs dist-name dist-base dist-dir dist-suffix))
 
 ;; ----------------------------------------
@@ -305,7 +308,7 @@
       (define new-opts (merge-options opts config))
       (define ts
         (map (lambda (c) (loop c
-                               (car config)
+                               (farm-config-tag config)
                                new-opts))
              (get-content config)))
       (define (wait)
