@@ -741,11 +741,11 @@
     [(flip? atomic-shape)
      (let ([bitmap (flip-shape atomic-shape)]
            [flipped? (flip-flipped? atomic-shape)])
-       (make-flip flipped?
+       (make-flip flipped? 
                   (make-ibitmap (ibitmap-raw-bitmap bitmap)
                                 (bring-between (if flipped? 
-                                                   (+ (ibitmap-angle bitmap) θ)
-                                                   (- (ibitmap-angle bitmap) θ))
+                                                   (- (ibitmap-angle bitmap) θ)
+                                                   (+ (ibitmap-angle bitmap) θ))
                                                360)
                                 (ibitmap-x-scale bitmap)
                                 (ibitmap-y-scale bitmap)

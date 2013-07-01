@@ -921,12 +921,35 @@ has been moved out).
          (send dc set-smoothing (mode-color->smoothing mode color))
          (send dc draw-path path dx dy)))]
     [(flip? np-atomic-shape) 
-     (let ([bm (get-rendered-bitmap np-atomic-shape)]) 
-       (send dc set-smoothing 'smoothed)
-       (send dc draw-bitmap 
-             bm
-             (- dx (/ (send bm get-width) 2))
-             (- dy (/ (send bm get-height) 2))))]
+     (cond
+       [(flip-flipped? np-atomic-shape)
+        (define key (get-bitmap-cache-key np-atomic-shape))
+        (define bm (lookup/calc-rendered-bitmap np-atomic-shape key))
+        (send dc set-smoothing 'smoothed)
+        (send dc draw-bitmap 
+              bm
+              (- dx (/ (send bm get-width) 2))
+              (- dy (/ (send bm get-height) 2)))]
+       [else
+        (define transformation (send dc get-transformation))
+        (define bitmap (flip-shape np-atomic-shape))
+        (define bitmap-obj (ibitmap-raw-bitmap bitmap))
+         
+        (define θ (degrees->radians (ibitmap-angle bitmap)))
+        
+        (send dc translate dx dy)
+        (send dc rotate θ)
+        
+        (define bw (send bitmap-obj get-width))
+        (define bh (send bitmap-obj get-height))
+  
+        (send dc translate (- (/ bw 2)) (- (/ bh 2)))
+        (send dc set-scale (ibitmap-x-scale bitmap) (ibitmap-y-scale bitmap))
+        
+        (send dc draw-bitmap bitmap-obj 0 0)
+        
+        (send dc set-transformation transformation)
+        bitmap-obj])]
     [(text? np-atomic-shape)
      (let ([θ (degrees->radians (text-angle np-atomic-shape))]
            [font (send dc get-font)])
@@ -995,16 +1018,12 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 |#
 
 
-(define (get-rendered-bitmap flip-bitmap)
-  (let ([key (get-bitmap-cache-key flip-bitmap)])
-    (lookup/calc-rendered-bitmap flip-bitmap key)))
-
 (define (get-bitmap-cache-key flip-bitmap)
-  (let ([bm (flip-shape flip-bitmap)])
-    (list (flip-flipped? flip-bitmap)
-          (ibitmap-x-scale bm)
-          (ibitmap-y-scale bm)
-          (ibitmap-angle bm))))
+  (define bm (flip-shape flip-bitmap))
+  (list (flip-flipped? flip-bitmap)
+        (ibitmap-x-scale bm)
+        (ibitmap-y-scale bm)
+        (ibitmap-angle bm)))
 
 (define (lookup/calc-rendered-bitmap flip-bitmap key)
   (let ([bitmap (flip-shape flip-bitmap)])
@@ -1279,7 +1298,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          make-overlay overlay? overlay-top overlay-bottom
          make-translate translate? translate-dx translate-dy translate-shape
          make-scale scale? scale-x scale-y scale-shape
-	 make-crop crop? crop-points crop-shape
+         make-crop crop? crop-points crop-shape
          make-ellipse ellipse? ellipse-width ellipse-height ellipse-angle ellipse-mode ellipse-color
          make-text text? text-string text-angle text-y-scale text-color
          text-angle text-size text-face text-family text-style text-weight text-underline
