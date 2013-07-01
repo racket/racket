@@ -443,6 +443,12 @@
       (: m (-> Integer))
       (define/public (m) (x))))
 
+   ;; fails, ill-typed private method implementation
+   (check-err
+    (class: object% (super-new)
+      (: x (-> Integer))
+      (define/private (x) "bad result")))
+
    ;; test optional init arg
    (check-ok
     (: c% (Class (init [x Integer #:optional])))
