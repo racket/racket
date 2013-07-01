@@ -238,8 +238,10 @@
   (define user (get-opt c '#:user))
   (define server (or (get-opt c '#:server)
                      default-server))
-  (define pkgs (or (get-opt c '#:pkgs)
-                   default-pkgs))
+  (define pkgs (let ([l (get-opt c '#:pkgs)])
+                 (if l
+                     (apply ~a #:separator " " l)
+                     default-pkgs)))
   (define dist-name (or (get-opt c '#:dist-name)
                         default-dist-name))
   (define dist-base (or (get-opt c '#:dist-base)
