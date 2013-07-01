@@ -90,6 +90,16 @@
          [(directory-exists? src-f)
           (loop src-f)])))))
 
+(define metadata-ns (make-base-namespace))
+(define (get-pkg-info pkg-dir)
+  (parameterize ([current-namespace metadata-ns])
+    ;; with compiled files on:
+    (dynamic-require 'setup/infotab/lang/reader #f)
+    (dynamic-require 'setup/infotab 0))
+  ;; without compiled files:
+  (parameterize ([use-compiled-file-paths '()])
+    (get-info/full pkg-dir #:namespace metadata-ns)))
+
 (define all-pkgs
   (let loop ([all-pkgs pkgs] [pkgs pkgs])
     (define new-pkgs
@@ -97,7 +107,7 @@
         (define dir (hash-ref found pkg-name #f))
         (unless dir
           (error 'link-all "requested package not available: ~s" pkg-name))
-        (define i (get-info/full dir))
+        (define i (get-pkg-info dir))
         (define deps
           (extract-pkg-dependencies i #:filter? #t))
         (set-union

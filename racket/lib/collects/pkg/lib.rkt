@@ -2073,7 +2073,7 @@
         ;; if an "info.rkt" in an 
         (define sub-check-zo?
           (or check-zo?
-              (let ([i (get-info/full f #:namespace metadata-ns)])
+              (let ([i (get-pkg-info f metadata-ns)])
                 (and i
                      (i 'assume-virtual-sources (lambda () #f))))))
         (for/fold ([s s]) ([f (directory-list f #:build? #t)])
