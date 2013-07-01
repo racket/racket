@@ -58,10 +58,14 @@
 
 @defmodule[#:require-form beginner-require 2htdp/image]
 
-The image teachpack provides a number of basic image construction functions, along with
-combinators for building more complex images out of existing images. Basic images include
-various polygons, ellipses and circles, and text, as well as bitmaps (typically bitmaps 
-come about via the @onscreen{Insert Image...} menu item in DrRacket).
+The image teachpack provides a number of basic image construction
+functions, along with combinators for building more complex images out of
+existing images. Basic images include various polygons, ellipses and
+circles, and text, as well as bitmaps.@margin-note*{In the context of this
+documentation, a @defterm{bitmap} denotes a special form of
+@racket[image?], namely a collection of pixels associated with an image. It
+does not refer to the @racket[bitmap%] class. Typically such image-bitmaps
+come about via the @onscreen{Insert Image...} menu item in DrRacket}
 Existing images can be rotated, scaled, flipped, and overlaid on top of each other.
 
 @section{Basic Images}
