@@ -69,9 +69,9 @@
   (system/show "chmod" "+x" dest)
   (delete-file tmp-tgz))
 
-(define (installer-sh human-name dir-name release? dist-suffix)
+(define (installer-sh human-name base-name dir-name release? dist-suffix)
   (define sh-path (format "bundle/~a-~a~a.sh" 
-                          dir-name 
+                          base-name 
                           (system-library-subpath #f) 
                           dist-suffix))
   (generate-installer-sh "bundle/racket" sh-path

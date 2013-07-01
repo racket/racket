@@ -108,9 +108,9 @@
   (system*/show hdiutil "detach" mnt)
   (delete-directory mnt))
 
-(define (installer-dmg human-name dir-name dist-suffix)
+(define (installer-dmg human-name base-name dist-suffix)
   (define dmg-name (format "bundle/~a-~a~a.dmg"
-                           dir-name
+                           base-name
                            (system-library-subpath #f)
                            dist-suffix))
   (make-dmg human-name "bundle/racket" dmg-name bg-image)

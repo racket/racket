@@ -68,6 +68,27 @@
 (define (write-info req pkg-name)
   (response/sexpr (pkg-name->info req pkg-name)))
 
+(define (record-installer dir filename desc)
+  (when desc
+    (define table-file (build-path dir "table.rktd"))
+    (call-with-file-lock/timeout 
+     #:max-delay 2
+     table-file
+     'exclusive
+     (lambda ()
+       (define t (hash-set
+                  (if (file-exists? table-file)
+                      (call-with-input-file* table-file read)
+                      (hash))
+                  desc
+                  filename))
+       (call-with-output-file table-file
+         #:exists 'truncate/replace
+         (lambda (o) 
+           (write t o)
+           (newline o))))
+     void)))
+
 (define (receive-file req filename)
   (unless (relative-path? filename)
     (error "upload path name must be relative"))
@@ -77,6 +98,11 @@
     #:exists 'truncate/replace
     (lambda (o)
       (write-bytes (request-post-data/raw req) o)))
+  (define desc
+    (for/or ([h (in-list (request-headers/raw req))])
+      (and (equal? (header-field h) #"Description")
+           (bytes->string/utf-8 (header-value h)))))
+  (record-installer dir filename desc)
   (response/sexpr #t))
 
 (define-values (dispatch main-url)

@@ -161,38 +161,43 @@ machines that implement clients.
 
 See
 
-  pkgs/distro-build/drive-clients.rkt
+  pkgs/distro-build/farm.rkt
 
-for a description of the farm-configuration file and requirements on
+for a description of the farm-configuration module and requirements on
 client hosts.
 
-If "my-farm-config.rktd" is a configuration file, then
+If "my-farm-config.rkt" is a configuration module, then
 
- make farm FARM_CONFIG=my-farm-config.rktd PKGS="..."
+ make farm FARM_CONFIG=my-farm-config.rkt PKGS="..."
 
 drives the build farm, and the resulting installers are in
-"build/installers".
+"build/installers", with a hash table mapping descriptions to
+installer filenames in "build/installer/table.rktd".
 
-The default FARM_CONFIG path is "build/farm-config.rktd", so you could
+The default FARM_CONFIG path is "build/farm-config.rkt", so you could
 put your configuration file there and omit the `FARM_CONFIG' argument
 to `make'. Similarly, you can omit `PKGS' to use the default specified
-in the Makefile.
+in the Makefile. Supply `FARM_MODE="..."' to pass a configuration mode
+on to your farm-configuration module (accessible via the
+`current-mode' parameter). Supply `CLEAN_MODE="--clean"' to make the
+default `#:clean?' configration for a client #t instead of #f.
 
 A configuration file can specify the packages to include, host address
-of the server, distribution name, and installer directory, but default
-can be provided as `make' arguments via `PKGS', `SERVER', `DIST_NAME'
-and `DIST_DIR', respectively. Note that a sets of packages specified
-in a configure file affects the clients, but it does not affect the
-packages prepared by the server; only `PKGS' affects the server (and
-the client's packages must be a subset of the server's packages).
+of the server, distribution name, and installer directory, but defaults
+can be provided as `make' arguments via `PKGS', `SERVER', `DIST_NAME',
+`DIST_BASE', and `DIST_DIR', respectively. Note that a sets of
+packages specified in a configure file affects the clients, but it
+does not affect the packages prepared by the server; only `PKGS'
+affects the server (and the client's packages must be a subset of the
+server's packages).
 
 For each installer written to "build/installers", the installer's name
 is
 
- <dist-name>-<version>-<platform>-<dist-suffix>.<ext>
+ <dist-base>-<version>-<platform>-<dist-suffix>.<ext>
 
-where <dist-name> defaults to "racket" (but can be set via
-`DIST_NAME'), <platform> is from `(system-library-subpath #f)' but
+where <dist-base> defaults to "racket" (but can be set via
+`DIST_BASE'), <platform> is from `(system-library-subpath #f)' but
 normalizing the Windows results to "i386-win32" and "x86_63-win32",
 -<dist-suffix> is omitted unless a `#:dist-suffix' string is specified
 for the client in the farm configuration, and <ext> is
@@ -221,13 +226,20 @@ Roughly, the steps are
     Add `DIST_NAME="..."' to the `client' line to give an installer a
     different human-readable distribution name, instead of "Racket".
 
+    Add `DIST_BASE="..."' to the `client' line to adjust the installer
+    name's prefix, instead of starting with "racket".
+
     Add `DIST_DIR="..."' to the `client' line to make the installer
-    use a different directory name on installation, instead of
+    use a different directory name on installation on Unix, instead of
     "racket".
 
     Add `DIST_SUFFIX="..."' to the `client' line to add a suffix
     string for the installer's name, such as an identifier for a
     particular variant of Linux.
+
+    Add `DIST_DESC="..."' to the `client' line to set the installer's
+    description, which is used as a key in the generated table of
+    installer files.
 
 In more detail:
 
@@ -287,16 +299,24 @@ In more detail:
      distribution name is "Racket". Whatever name you pick, the Racket
      version number is automatically added for various contexts.
 
-     To change the directory name for Unix installation, as well as
-     the base name of the installer file for all platforms, provide
+     To change the base name of the installer file, provide `DIST_BASE
+     to `make'. The default is "racket".
+
+     To change the directory name for Unix installation, provide
      `DIST_DIR' to `make'. The default is "racket".
 
      To add an extra piece to the installer's name, such as an
-     identifier for a variant of Linux, provide `DIST_SUFFIX to
+     identifier for a variant of Linux, provide `DIST_SUFFIX' to
      `make'. The default is "", which omits the prefix and its
      preceding hyphen.
 
+     To set the description string for the installer, provide
+     `DIST_DESC' to `make'. The description string is recorded
+     alongside the installer.
+
 On each client, step 2b produces a "bundle/installer.txt" file that
-contains the path to the generated installer, but the installer is
-also uploaded to the server, which leaves the installer in a
-"build/installers" directory.
+contains the path to the generated installer on one line, followed by
+the description on a second line. The installer is also uploaded to
+the server, which leaves the installer in a "build/installers"
+directory and records a mapping from the installer's description to
+its filename in "build/installers/table.rktd".

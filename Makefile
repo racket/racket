@@ -81,19 +81,28 @@ SERVER = localhost
 # snapshot installers):
 RELEASE_MODE =
 
-# Human-readable name and installation-directory name for the
-# generated installers:
+# Human-readable name, installation name base, and installation
+# directory name (Unix) for the generated installers:
 DIST_NAME = Racket
+DIST_BASE = racket
 DIST_DIR = racket
 # An extra suffix for the installer name, usually used to specify
-# a variant of an OS
+# a variant of an OS:
 DIST_SUFFIX = 
+# A human-readable description of the generated installer, usually
+# describing a platform:
+DIST_DESC =
 
-# Configuration of clients to run for a build farm:
-FARM_CONFIG = build/farm-config.rktd
+# Configuration of clients to run for a build farm, normally
+# implemented with `#lang distro-build/farm':
+FARM_CONFIG = build/farm-config.rkt
+
+# A mode that is made available to the farm-configuration module
+# through the `current-mode' parameter:
+FARM_MODE = default
 
 # Set to "--clean" to flush client directories in a build farm
-# (except as overriding in the `FARM_CONFIG' file):
+# (except as overridden in the `FARM_CONFIG' module):
 CLEAN_MODE =
 
 # A command to run after the server has started; normally set by
@@ -238,7 +247,10 @@ client:
 	$(MAKE) bundle-from-server
 	$(MAKE) installer-from-bundle
 
-COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" RELEASE_MODE=$(RELEASE_MODE) DIST_NAME="$(DIST_NAME)" DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX)
+COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" RELEASE_MODE=$(RELEASE_MODE) \
+            DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
+            DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) \
+            DIST_DESC="$(DIST_DESC)"
 
 win32-client:
 	IF EXIST build\user cmd /c rmdir /S /Q build\user
@@ -263,12 +275,13 @@ bundle-from-server:
 	$(RACKET) -l distro-build/unpack-collects http://$(SERVER):9440/
 	bundle/racket/bin/raco pkg install $(REMOTE_INST_AUTO) $(PKGS) $(REQUIRED_PKGS)
 
-UPLOAD = --upload http://$(SERVER):9440/
+UPLOAD = --upload http://$(SERVER):9440/ --desc "$(DIST_DESC)"
+DIST_ARGS = $(UPLOAD) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"
 
 # Create an installer from the build (with installed packages) that's
 # in "bundle/racket":
 installer-from-bundle:
-	$(RACKET) -l- distro-build/installer $(UPLOAD) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_DIR) "$(DIST_SUFFIX)"
+	$(RACKET) -l- distro-build/installer $(DIST_ARGS)
 
 win32-distro-build-from-server:
 	$(WIN32_RACO) pkg install $(REMOTE_USER_AUTO) distro-build
@@ -287,12 +300,12 @@ win32-bundle-from-server:
 	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(PKGS)
 
 win32-installer-from-bundle:
-	$(WIN32_RACKET) -l- distro-build/installer $(UPLOAD) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_DIR) "$(DIST_SUFFIX)"
+	$(WIN32_RACKET) -l- distro-build/installer $(DIST_ARGS)
 
 # ------------------------------------------------------------
 # Drive installer build:
 
-DRIVE_ARGS = $(RELEASE_MODE) $(CLEAN_MODE) "$(FARM_CONFIG)" $(SERVER) "$(PKGS)" "$(DIST_NAME)" $(DIST_DIR)
+DRIVE_ARGS = $(RELEASE_MODE) $(CLEAN_MODE) "$(FARM_CONFIG)" "$(FARM_MODE)" $(SERVER) "$(PKGS)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
 DRIVE_CMD = $(RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS)
 
 # Full server build and clients drive, based on `FARM_CONFIG':

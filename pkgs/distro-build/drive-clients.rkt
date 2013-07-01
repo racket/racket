@@ -1,245 +1,57 @@
 #lang racket/base
-
-;; Each client is built by running commands via `ssh', where the
-;; client's host (and optional port and/or user) indicate the ssh
-;; target. Each client machine must be set up with a public-key
-;; authenticaion, because a direct `ssh' is expected to work without a
-;; password prompt.
-;;
-;; On the client machine, all work is performed with a git clone at a
-;; specified directory that defaults to "build/plt" (Unix, Mac OS X)
-;; or "build\\plt" (Windows).
-;;
-;; If a build fails for a machine, building continues on other
-;; machines.  Success for a given machine means that its installer
-;; ends up in "build/installers" (and failure for a machine means no
-;; installer).
-;; 
-;; Machine Requirements
-;; --------------------
-;;
-;; Each Unix or Mac OS X client needs the following available:
-;;
-;;   * ssh server with public-key authentication
-;;   * git
-;;   * gcc, make, etc.
-;;
-;; Each Windows client needs the following:
-;;
-;;   * git
-;;   * Microsoft Visual Studio 9.0 (2008), installed in the
-;;     default folder:
-;;      C:\Program Files\Microsoft Visual Studio 9.0       (32-bit host)
-;;      C:\Program Files (x86)\Microsoft Visual Studio 9.0 (64-bit host)
-;;   * Nullsoft Scriptable Install System (NSIS), installed in the
-;;     default folder:
-;;      C:\Program Files\NSIS\makensis.exe
-;;      or  C:\Program Files (x86)\NSIS\makensis.exe
-;;     or instaled so that `makensis' in in yur PATH.
-;;
-;; Farm Configuration
-;; -------------------
-;;
-;; A farm configuration file is `read' to obtain a configuration. The
-;; file must have a single S-expression that matches the <config>
-;; grammar:
-;; 
-;;    <config> = (machine <keyword> <val> ... ...)
-;;             | (<group-kind> <keyword> <val> ... ... <config> ...)
-;; 
-;;    <group-kind> = parallel | sequential
-;;
-;; Normally, a configuration file start with "(<group-kind> ...)", since
-;; the configuration otherwise specifies only one client machine.
-;;
-;; A `<keyword> <val> ... ...' sequence specifies options as
-;; keyword--value pairs. The available options are listed below. The
-;; options of a group are propagated to all machines in the group,
-;; except at overridden at a machine or nested group.
-;;
-;; A <group-kind> specifies whether the machines within a group are
-;; run sequentially or in parallel. Note that the default`#:max-vm'
-;; setting is 1, so a parallel configuration of virtual machines will
-;; fail (for some machines) unless `#:max-vm' is increased.
-;;
-;; Machine/group keywords (where <string*> means no spaces, etc.):
-;;
-;;   #:pkgs (<string*> ...) --- packages to install; defaults to
-;;                              the `pkgs' command-line argument
-;;   #:server <string*> --- the address of the server from the client;
-;;                          defaults to `server' command-line argument
-;;   #:dist-name <string> --- the distribution name; defaults to the
-;;                            `dist-name' command-line argument
-;;   #:dist-dir <string*> --- the distribution's installation directory;
-;;                            defaults to `dist-dir' command-line argument
-;;   #:dist-suffix <string*> --- a suffix for the installer's name, usually
-;;                               used for an OS variant; defaults to ""
-;;   #:max-vm <real> --- max number of VMs allowed to run with this
-;;                       machine, counting the machine; defaults to 1
-;;   #:port <integer> --- ssh port for the client; defaults to 22
-;;   #:user <string*> --- ssh user for the client; defaults to current user
-;;   #:dir <string> --- defaults to "build/plt" or "build\\plt"
-;;   #:vbox <string> --- Virtual Box machine name; if provided the
-;;                       virtual machine is started and stopped as needed
-;;   #:platform <symbol> --- 'windows or 'unix, defaults to 'unix
-;;   #:configure (<string> ...) --- arguments to `configure'
-;;   #:bits <integer> --- 32 or 64, affects Visual Studio path
-;;   #:vc <string*> --- "x86" or "x64" to select the Visual C build mode;
-;;                     default depends on bits
-;;   #:j <integer> --- parallelism for `make' on Unix and Mac OS X;
-;;                     defaults to 1
-;;   #:timeout <number> --- numbers of seconds to wait before declaring
-;;                          failure; defaults to 30 minutes
-;;   #:repo <string> --- the git repository for Racket; defaults to
-;;                       "http://<server>:9440/.git"
-;;   #:clean? <boolean> --- override default cleaning mode
-;;
-;; Machine-only keywords:
-;;   #:name <string> --- defaults to host
-;;   #:host <string*> --- defaults to "localhost"
-
-;; ----------------------------------------
-
 (require racket/cmdline
          racket/system
          racket/port
          racket/format
          racket/file
-         racket/string)
+         racket/string
+         (only-in "farm.rkt"
+                  current-mode
+                  farm-config?
+                  farm-config-tag farm-config-options farm-config-content))
+
+;; See "farm.rkt" for an overview.
 
 ;; ----------------------------------------
 
 (define release? #f)
 (define default-clean? #f)
 
-(define-values (config-file default-server default-pkgs default-dist-name default-dist-dir)
+(define-values (config-file config-mode
+                            default-server default-pkgs 
+                            default-dist-name default-dist-base default-dist-dir)
   (command-line
    #:once-each
    [("--release") "Create release-mode installers"
     (set! release? #t)]
    [("--clean") "Erase client directories before building"
     (set! default-clean? #t)]
-   #:args (config-file server pkgs dist-name dist-dir)
-   (values config-file server pkgs dist-name dist-dir)))
+   #:args (config-file config-mode 
+                       server pkgs 
+                       dist-name dist-base dist-dir)
+   (values config-file config-mode 
+           server pkgs 
+           dist-name dist-base dist-dir)))
 
-(define config (call-with-input-file* config-file read))
+(define config (parameterize ([current-mode config-mode])
+                 (dynamic-require (path->complete-path config-file) 'farm-config)))
 
-;; ----------------------------------------
-
-(define (simple-string? s)
-  (and (string? s)
-       ;; No spaces, quotes, or other things that could
-       ;; break a command-line, path, or URL construction:
-       (regexp-match #rx"^[-a-zA-A0-9.]*$" s)))
-
-(define (check-group-keyword kw val)
-  (case kw
-    [(#:pkgs) (and (list? val) (andmap simple-string? val))]
-    [(#:dist-name) (string? val)]
-    [(#:dist-dir) (simple-string? val)]
-    [(#:dist-suffix) (simple-string? val)]
-    [(#:max-vm) (real? val)]
-    [(#:server) (simple-string? val)]
-    [(#:host) (simple-string? val)]
-    [(#:user) (simple-string? val)]
-    [(#:port) (and (exact-integer? val) (<= 1 val 65535))]
-    [(#:dir) (string? val)]
-    [(#:vbox) (string? val)]
-    [(#:platform) (memq val '(unix windows))]
-    [(#:configure) (and (list? val) (andmap string? val))]
-    [(#:bits) (or (equal? val 32) (equal? val 64))]
-    [(#:vc) (or (equal? val "x86") (equal? val "x64"))]
-    [(#:timeout) (real? val)]
-    [(#:j) (exact-positive-integer? val)]
-    [(#:repo) (string? val)]
-    [(#:clean?) (boolean? val)]
-    [else #f]))
-
-(define (check-machine-keyword kw val)
-  (case kw
-    [(#:name) (string? val)]
-    [else (check-group-keyword kw val)]))
-
-(define (check-config config)
-  (define (bad-format msg . rest)
-    (raise-user-error 'drive-clients
-                      "~a"
-                      (apply ~a "bad configuration"
-                             "\n " msg
-                             (if config-file
-                                 (~a "\n  config file: "
-                                     config-file)
-                                 "")
-                             rest)))
-  (unless (list? config)
-    (bad-format (if config-file
-                    "does not `read' as a list"
-                    "not a list")))
-  (let loop ([config config])
-    (unless (list? config)
-      (bad-format "not a list"
-                  (format "\n  given: ~e" config)))
-    (cond
-     [(and (pair? config)
-           (or (eq? 'parallel (car config))
-               (eq? 'sequential (car config))))
-      (let gloop ([group (cdr config)])
-        (cond
-         [(keyword? (car group))
-          (unless (pair? (cdr group))
-            (bad-format "missing value after group keyword"
-                        (format "\n  keyword: ~e" (car group))))
-          (unless (check-group-keyword (car group) (cadr group))
-            (bad-format "bad value for keyword in group"
-                        (format "\n  keyword: ~e\n  value: ~e"
-                                (car group)
-                                (cadr group))))
-          (gloop (cddr group))]
-         [else (for-each loop group)]))]
-     [(and (pair? config)
-           (eq? 'machine (car config)))
-      (let loop ([client (cdr config)])
-        (cond
-         [(null? client) (void)]
-         [(keyword? (car client))
-          (unless (pair? (cdr client))
-            (bad-format "machine spec missing value after keyword"
-                        (format "\n  keyword: ~e" (car client))))
-          (unless (check-machine-keyword (car client) (cadr client))
-            (bad-format "bad value for keyword in machine spec"
-                        (format "\n  keyword: ~e\n  value: ~e"
-                                (car client)
-                                (cadr client))))
-          (loop (cddr client))]
-         [else
-          (bad-format "bad machine spec; expected a keyword"
-                      (format "\n  found: ~e" (car client)))]))]
-     [else 
-      (bad-format "bad format (does not start with 'machine, 'parallel, or 'sequential)"
-                  (format "\n  found: ~e" config))])))
-
-(check-config config)
+(unless (farm-config? config)
+  (error 'drive-clients 
+         "configuration module did not provide a farm-configuration value: ~e"
+         config))
 
 ;; ----------------------------------------
 
 (define (merge-options opts c)
-  (let loop ([c (cdr c)] [opts opts])
-    (cond
-     [(and (pair? c)
-           (keyword? (car c)))
-      (loop (cddr c)
-            (hash-set opts (car c) (cadr c)))]
-     [else opts])))
+  (for/fold ([opts opts]) ([(k v) (in-hash (farm-config-options c))])
+    (hash-set opts k v)))
 
 (define (get-opt opts kw [default #f])
   (hash-ref opts kw default))
 
 (define (get-content c)
-  (let loop ([c (cdr c)])
-    (if (and (pair? c)
-             (keyword? (car c)))
-        (loop (cddr c))
-        c)))
+  (farm-config-content c))
 
 (define (client-name opts)
   (or (get-opt opts '#:name)
@@ -356,16 +168,18 @@
 (define (q s)
   (~a "\"" s "\""))
 
-(define (client-args server pkgs dist-name dist-dir dist-suffix)
+(define (client-args desc server pkgs dist-name dist-base dist-dir dist-suffix)
   (~a " SERVER=" server
       " PKGS=" (q pkgs)
+      " DIST_DESC=" (q desc)
       " DIST_NAME=" (q dist-name)
+      " DIST_BASE=" dist-base
       " DIST_DIR=" dist-dir
       " DIST_SUFFIX=" (q dist-suffix)
       " RELEASE_MODE=" (if release? "--release" (q ""))))
 
 (define (unix-build c host port user server repo clean?
-                    pkgs dist-name dist-dir dist-suffix)
+                    pkgs dist-name dist-base dist-dir dist-suffix)
   (define dir (or (get-opt c '#:dir)
                   "build/plt"))
   (define (sh . args) 
@@ -382,12 +196,14 @@
        "git pull")
    (sh "cd " (q dir) " ; "
        "make -j " j " client"
-       (client-args server pkgs dist-name dist-dir dist-suffix)
+       (client-args (client-name c)
+                    server pkgs 
+                    dist-name dist-base dist-dir dist-suffix)
        " CORE_CONFIGURE_ARGS=" (q (apply ~a #:separator " "
                                          (get-opt c '#:configure null))))))
 
 (define (windows-build c host port user server repo clean?
-                       pkgs dist-name dist-dir dist-suffix)
+                       pkgs dist-name dist-base dist-dir dist-suffix)
   (define dir (or (get-opt c '#:dir)
                   "build\\plt"))
   (define bits (or (get-opt c '#:bits) 64))
@@ -407,7 +223,10 @@
    (cmd "cd " (q dir)
         " && \"c:\\Program Files" (if (= bits 64) " (x86)" "") "\\Microsoft Visual Studio 9.0\\vc\\vcvarsall.bat\""
         " " vc
-        " && nmake win32-client" (client-args server pkgs dist-name dist-dir dist-suffix))))
+        " && nmake win32-client" 
+        (client-args (client-name c)
+                     server pkgs 
+                     dist-name dist-base dist-dir dist-suffix))))
 
 (define (client-build c)
   (define host (or (get-opt c '#:host)
@@ -421,6 +240,8 @@
                    default-pkgs))
   (define dist-name (or (get-opt c '#:dist-name)
                         default-dist-name))
+  (define dist-base (or (get-opt c '#:dist-base)
+                        default-dist-base))
   (define dist-dir (or (get-opt c '#:dist-dir)
                        default-dist-dir))
   (define dist-suffix (get-opt c '#:dist-suffix ""))
@@ -434,7 +255,7 @@
      [(unix) unix-build]
      [else windows-build])
    c host port user server repo clean?
-   pkgs dist-name dist-dir dist-suffix))
+   pkgs dist-name dist-base dist-dir dist-suffix))
 
 ;; ----------------------------------------
 
@@ -479,7 +300,7 @@
  (let loop ([config config]
             [mode 'sequential]
             [opts (hasheq)])
-   (case (car config)
+   (case (farm-config-tag config)
      [(parallel sequential)
       (define new-opts (merge-options opts config))
       (define ts
