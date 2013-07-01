@@ -66,7 +66,7 @@ racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
 # Configuration options for building installers
 
 # Packages to include in a distribution:
-PKGS = main-distribution
+PKGS = main-distribution plt-services
 
 # Catalog for sources and native packages; use "local" to bootstrap
 # from package directories (in the same directory as this makefile)

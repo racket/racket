@@ -1,7 +1,5 @@
 #lang setup/infotab
 
-;; List enough to reach all packages in "pkgs".
-;; Lots of room for improvement...
 (define deps '("algol60"
                "at-exp-lib"
                "compatibility"
@@ -9,7 +7,6 @@
                "data-lib"
                "datalog"
                "deinprogramm"
-               "distro-build"
                "draw"
                "draw-doc"
                "draw-lib"
@@ -41,7 +38,6 @@
                "picturing-programs"
                "plai"
                "plot"
-               "plt-services"
                "preprocessor"
                "profile"
                "r5rs"
