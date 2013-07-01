@@ -3,4 +3,4 @@ compiler:
   - gcc
   - clang
 # Change this to your needs
-script: cd racket/src; mkdir build; cd build ; ../configure; make
+script: cd racket/src; mkdir build; cd build ; ../configure; make; make install
