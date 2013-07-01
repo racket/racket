@@ -280,6 +280,7 @@
   (case kw
     [(#:pkgs) (and (list? val) (andmap simple-string? val))]
     [(#:dist-name) (string? val)]
+    [(#:dist-base) (simple-string? val)]
     [(#:dist-dir) (simple-string? val)]
     [(#:dist-suffix) (simple-string? val)]
     [(#:max-vm) (real? val)]
