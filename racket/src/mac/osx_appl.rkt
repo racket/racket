@@ -61,7 +61,7 @@
       (call-with-output-file info-plist-path
 	(lambda (port)
 	  (write-plist info-plist port))
-	'truncate)))
+	#:exists 'truncate)))
 
   (define (create-app dest-path app-name icon-src-name pkg-info-string info-plist)
     (let* ([app-path (build-path dest-path 
@@ -73,7 +73,7 @@
 	(call-with-output-file pkg-info-path
 	  (lambda (port)
 	    (fprintf port pkg-info-string))
-	  'truncate))
+	  #:exists 'truncate))
       (let* ([contents-path (build-path app-path "Contents")])
 	(write-info contents-path info-plist)
 	(let* ([icns-src (build-path plthome "src" "mac" "icon" (path-replace-suffix icon-src-name #".icns"))]
