@@ -86,6 +86,12 @@
                     "pkg-test1 pkg-test3"
                     $ "racket -e '(require pkg-test3)'")
 
+   (shelly-install "redundant packages ignored" "test-pkgs/pkg-test1/ test-pkgs/pkg-test1/"
+                   $ "racket -e '(require pkg-test1)'")
+   (shelly-case
+    "conflicting package names disallowed"
+    $ "raco pkg install  test-pkgs/pkg-test1/ test-pkgs/pkg-test1.zip" =exit> 1)
+
    (with-fake-root
     (shelly-case
      "linking local directory"

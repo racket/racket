@@ -24,6 +24,9 @@
                 $ "raco pkg remove not-there" =exit> 1)
    (shelly-install "remove test"
                    "test-pkgs/pkg-test1.zip")
+   (shelly-install "remove test with immediately redundant package name"
+                   "test-pkgs/pkg-test1.zip"
+                   "pkg-test1 pkg-test1")
    (shelly-install "remove of dep fails"
                    "test-pkgs/pkg-test1.zip"
                    $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1 +[a-f0-9]+ +\\(file .+tests/pkg/test-pkgs/pkg-test1.zip\\)\n"

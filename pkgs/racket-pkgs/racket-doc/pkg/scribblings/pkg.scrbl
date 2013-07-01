@@ -284,7 +284,7 @@ sub-sub-commands:
 @itemlist[
 
 @item{@command/toc{install} @nonterm{option} ... @nonterm{pkg-source} ... 
- --- Installs the given @tech{package sources} with the given
+ --- Installs the given @tech{package sources} (eliminating exact-duplicate @nonterm{pkg-source}s) with the given
  @nonterm{option}s:
 
  @itemlist[
@@ -365,7 +365,7 @@ this command fails without installing any of the @nonterm{pkg}s
 }
 
 @item{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
---- Attempts to remove the given packages. If a package is the dependency
+--- Attempts to remove the given packages. By default, if a package is the dependency
 of another package that is not listed, this command fails without 
 removing any of the @nonterm{pkg}s.
 

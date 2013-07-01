@@ -58,6 +58,13 @@
                      (exn-message x)))
 
 (struct pkg-desc (source type name auto?))
+(define (pkg-desc=? a b)
+  (define (->list a)
+    (list (pkg-desc-source a)
+          (pkg-desc-type a)
+          (pkg-desc-name a)
+          (pkg-desc-auto? a)))
+  (equal? (->list a) (->list b)))
 
 (define (path->bytes* pkg)
   (cond
@@ -700,7 +707,7 @@
                 (loop still-drop
                       (set-union keep delta)))))
         ;; just given pkgs:
-        in-pkgs))
+        (remove-duplicates in-pkgs)))
   (define setup-collects
     (get-setup-collects (filter-map (lambda (p)
                                       (define dir (pkg-directory* p))
@@ -1339,6 +1346,20 @@
       (stage-package/info (pkg-desc-source v) (pkg-desc-type v) (pkg-desc-name v) 
                           check-sums? download-printf
                           metadata-ns)))
+  ;; For the top-level call, we need to double-check that all provided packages
+  ;; were distinct:
+  (for/fold ([ht (hash)]) ([i (in-list infos)]
+                           [desc (in-list descs)])
+    (define name (install-info-name i))
+    (when (hash-ref ht name #f)
+      (pkg-error (~a "given package sources have the same package name\n"
+                     "  package name: ~a\n"
+                     "  package source: ~a\n"
+                     "  package source: ~a")
+                 name
+                 (pkg-desc-source (hash-ref ht name #f))
+                 (pkg-desc-source desc)))
+    (hash-set ht name desc))
   (define setup-collects (get-setup-collects (map (lambda (i)
                                                     (cons
                                                      (install-info-name i)
@@ -1415,12 +1436,27 @@
                      #:dep-behavior [dep-behavior #f]
                      #:updating? [updating? #f]
                      #:quiet? [quiet? #f])
+  (define new-descs
+    (remove-duplicates
+     (if (not skip-installed?)
+         descs
+         (let ([db (read-pkg-db)])
+           (filter (lambda (d)
+                     (define pkg-name
+                       (or (pkg-desc-name d)
+                           (let-values ([(name type)
+                                         (package-source->name+type (pkg-desc-source d) 
+                                                                    (pkg-desc-type d))])
+                             name)))
+                     (not (hash-ref db pkg-name #f)))
+                   descs)))
+     pkg-desc=?))
   (with-handlers* ([vector?
                     (match-lambda
                      [(vector updating? new-infos deps more-pre-succeed)
                       (pkg-install
                        #:old-infos new-infos
-                       #:old-auto+pkgs (append old-descs descs)
+                       #:old-auto+pkgs (append old-descs new-descs)
                        #:force? force
                        #:ignore-checksums? ignore-checksums?
                        #:dep-behavior dep-behavior
@@ -1438,18 +1474,7 @@
      #:pre-succeed pre-succeed
      #:updating? updating?
      #:quiet? quiet?
-     (if (not skip-installed?)
-         descs
-         (let ([db (read-pkg-db)])
-           (filter (lambda (d)
-                     (define pkg-name
-                       (or (pkg-desc-name d)
-                           (let-values ([(name type)
-                                         (package-source->name+type (pkg-desc-source d) 
-                                                                    (pkg-desc-type d))])
-                             name)))
-                     (not (hash-ref db pkg-name #f)))
-                   descs))))))
+     new-descs)))
 
 (define (update-is-possible? pkg-name)
   (match-define (pkg-info orig-pkg checksum _)
