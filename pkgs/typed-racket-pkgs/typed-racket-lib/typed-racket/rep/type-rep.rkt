@@ -907,7 +907,13 @@
 ;; Class*
 ;; This is a custom constructor for Class types that
 ;; doesn't require writing make-Row everywhere
-(define (Class* row-var inits fields methods augments)
+(define/cond-contract (Class* row-var inits fields methods augments)
+  (-> (or/c F? B? Row? #f)
+      (listof (list/c symbol? Type/c boolean?))
+      (listof (list/c symbol? Type/c))
+      (listof (list/c symbol? Function?))
+      (listof (list/c symbol? Function?))
+      Class?)
   (*Class row-var (*Row inits fields methods augments)))
 
 ;; Class:*
