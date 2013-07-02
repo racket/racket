@@ -324,6 +324,52 @@ And then put three of them together to form the Koch snowflake.
                      (rotate -60 (koch-curve 5)))
                     (flip-vertical (koch-curve 5)))]
 
+@section[#:tag "rotate-center"]{Rotating and Image Centers}
+
+When rotating an image, some times the image looks best when it
+rotates around a point that is not the center of the image. The 
+@racket[rotate] function, however, just rotates the image as
+a whole, effectively rotating it around its center.
+
+For example, imagine a game where the hero is represented
+as a triangle:
+@image-interaction[(define (hero α) 
+                     (triangle 30 "solid" (color 255 0 0 α)))
+                   (hero 255)]
+rotating the hero at the prompt looks reasonable:
+@image-interaction[(rotate 10 (hero 255))
+                   (rotate 20 (hero 255))
+                   (rotate 30 (hero 255))]
+but if the hero has to appear to spin in place, then it will not look
+right, as you can kind of see if we use α-blending to represent
+old positions of the hero:
+@image-interaction[(overlay (rotate 0  (hero 255))
+                            (rotate 10 (hero 125))
+                            (rotate 20 (hero 100))
+                            (rotate 30 (hero  75))
+                            (rotate 40 (hero  50))
+                            (rotate 50 (hero  25)))]
+What we'd really want is for the hero to appear to rotate around
+the centroid of the triangle. To achieve this effect, we can put
+the hero onto a transparent rectangle such that the center of the whole
+image is the centroid of the triangle:
+@image-interaction[(define (hero-on-blank α)
+                     (define the-hero (hero α))
+                     (define w (image-width the-hero))
+                     (define h (image-height the-hero))
+                     (define d (max w h))
+                     (define dx (/ w 2))   ; centroid
+                     (define dy (* 2/3 h)) ; centroid
+                     (define blank  (rectangle (* 2 d) (* 2 d) "solid" (color 255 255 255 0)))
+                     (place-image/align the-hero (- d dx) (- d dy) "left" "top" blank))]
+and now the rotating hero looks reasonable:
+@image-interaction[(overlay (rotate 0  (hero-on-blank 255))
+                            (rotate 10 (hero-on-blank 125))
+                            (rotate 20 (hero-on-blank 100))
+                            (rotate 30 (hero-on-blank  75))
+                            (rotate 40 (hero-on-blank  50))
+                            (rotate 50 (hero-on-blank  25)))]
+
 @section[#:tag "nitty-gritty"]{The Nitty Gritty of Pixels, Pens, and Lines}
 
 The image library treats coordinates as if they are in the upper-left corner 

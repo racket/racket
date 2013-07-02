@@ -1144,7 +1144,7 @@ the parts that fit onto @racket[scene].
 
 @defproc[(rotate [angle angle?] [image image?]) image?]{
   Rotates @racket[image] by @racket[angle] degrees in a counter-clockwise direction.
-
+          
           @image-examples[(rotate 45 (ellipse 60 20 "solid" "olivedrab"))
                           (rotate 5 (rectangle 50 50 "outline" "black"))
                           (rotate 45
@@ -1153,11 +1153,13 @@ the parts that fit onto @racket[scene].
                                    (rectangle 40 20 "solid" "darkseagreen")
                                    (rectangle 20 100 "solid" "darkseagreen")))]
           
+          See also @seclink["rotate-center"].
+          
 }
 
 @defproc[(scale [factor (and/c real? positive?)] [image image?]) image?]{
 
-  Scales @racket[image] by @racket[factor]. 
+  Scales @racket[image] by @racket[factor].
   
   The pen sizes are also scaled and thus draw thicker (or thinner)
   lines than the original image, unless the pen was size 
