@@ -423,6 +423,13 @@ as precisely those values to which @racket[pred] produces
 @racket[#t].  @racket[pred] must have type @racket[(Any -> Boolean)].
 Opaque types must be required lexically before they are used.
 
+@ex[(require/typed racket/base
+                   [#:opaque Evt evt?]
+                   [alarm-evt (Real -> Evt)]
+                   [sync (Evt -> Any)])
+    evt?
+    (sync (alarm-evt (+ 100 (current-inexact-milliseconds))))]
+
 In all cases, the identifiers are protected with @rtech{contracts} which
 enforce the specified types.  If this contract fails, the module
 @racket[m] is blamed.
@@ -449,6 +456,15 @@ so we need to use @racket[case->].}
 
 @defform[(require/typed/provide m rt-clause ...)]{
 Similar to @racket[require/typed], but also provides the imported identifiers.
+Uses outside of a module top-level raise an error.
+
+@ex[(module evts typed/racket
+      (require/typed/provide racket/base
+                             [#:opaque Evt evt?]
+                             [alarm-evt (Real -> Evt)]
+                             [sync (Evt -> Any)]))
+    (require 'evts)
+    (sync (alarm-evt (+ 100 (current-inexact-milliseconds))))]
 }
 
 @section{Other Forms}
