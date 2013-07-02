@@ -117,17 +117,22 @@
 
 (define-syntax (commands stx)
   (syntax-parse stx
-    [(_ main-doc:expr c:command ...)
+    [(_ main-doc:expr export-prefix:id c:command ...)
+     (with-syntax ([(export-names ...)
+                    (map (λ (x) (string->symbol (format "~a~a"
+                                                        (syntax-e #'export-prefix)
+                                                        (syntax-e x))))
+                         (syntax->list #'(c.name ...)))])
      (syntax/loc stx
        (begin
          c.function ...
-         (provide c.name ...)
+         (provide export-names ...)
          (module+ main
            c.variables ...
            (svn-style-command-line
             #:program (short-program+command-name)
             #:argv (current-command-line-arguments)
             main-doc
-            c.command-line ...))))]))
+            c.command-line ...)))))]))
 
 (provide commands)

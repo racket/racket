@@ -7,7 +7,7 @@
          string-constants
          net/url
          pkg/lib
-         (prefix-in pkg: pkg)
+         pkg
          (prefix-in db: pkg/db)
          "common.rkt")
 
@@ -180,7 +180,7 @@
                             (string-constant install-pkg-abort-install))
                         (lambda ()
                           (apply
-                           (if first-inst pkg:update pkg:install)
+                           (if first-inst pkg-update pkg-install)
                            #:scope (and first-inst
                                         (car first-inst))
                            names)))
@@ -201,7 +201,7 @@
                           (string-constant install-pkg-abort-remove)
                           (lambda ()
                             (apply
-                             pkg:remove
+                             pkg-remove
                              #:scope scope
                              names)))
                          (set-box! s #f)

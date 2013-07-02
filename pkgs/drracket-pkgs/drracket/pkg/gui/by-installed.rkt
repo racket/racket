@@ -3,7 +3,7 @@
          racket/gui/base
          racket/format
          pkg/lib
-         (prefix-in pkg: pkg)
+         pkg
          string-constants
          "common.rkt")
 
@@ -87,7 +87,7 @@
                           (string-constant install-pkg-abort-remove)
                           (lambda ()
                             (apply
-                             pkg:remove
+                             pkg-remove
                              #:scope scope
                              names)))
                          (reset-installed-list!)))]))
@@ -104,7 +104,7 @@
                         (string-constant install-pkg-abort-update)
                         (lambda ()
                           (apply
-                           pkg:update
+                           pkg-update
                            #:scope scope
                            names)))
                        (reset-installed-list!))]))

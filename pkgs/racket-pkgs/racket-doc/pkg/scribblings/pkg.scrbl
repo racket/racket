@@ -521,14 +521,14 @@ The @racketmodname[pkg] module provides a programmatic interface
 to the command sub-sub-commands.
 
 @deftogether[
- (@defthing[install procedure?]             
-  @defthing[update procedure?]             
-  @defthing[remove procedure?]             
-  @defthing[show procedure?]             
-  @defthing[config procedure?]
-  @defthing[create procedure?]
-  @defthing[catalog-show procedure?]
-  @defthing[catalog-copy procedure?])             
+ (@defthing[pkg-install procedure?]             
+  @defthing[pkg-update procedure?]             
+  @defthing[pkg-remove procedure?]             
+  @defthing[pkg-show procedure?]             
+  @defthing[pkg-config procedure?]
+  @defthing[pkg-create procedure?]
+  @defthing[pkg-catalog-show procedure?]
+  @defthing[pkg-catalog-copy procedure?])             
 ]{
  Duplicates the @seclink["cmdline"]{command line interface}. 
 

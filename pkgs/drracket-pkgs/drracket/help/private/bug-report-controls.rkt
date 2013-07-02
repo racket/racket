@@ -7,7 +7,7 @@
          setup/dirs
          setup/link
          framework
-         (prefix-in pkg: pkg)
+         pkg
          (for-syntax racket/base
                      racket/list)
          "buginfo.rkt"
@@ -450,7 +450,7 @@
   (parameterize ([current-output-port pkg-info-sp])
     (with-handlers ([exn:fail? (lambda (exn)
                                  (printf "ERROR:\n~a" (exn-message exn)))])
-      (pkg:show)))
+      (pkg-show)))
   (send (send pkg-info get-editor)
         insert
         (get-output-string pkg-info-sp))

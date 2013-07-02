@@ -8,7 +8,7 @@
   (define s (url->string url))
   (define l (pkg-config-catalogs))
   (unless (member s l)
-    (apply config #:set #t
+    (apply pkg-config #:set #t
            "catalogs"
            (append l (list s)))))
 
