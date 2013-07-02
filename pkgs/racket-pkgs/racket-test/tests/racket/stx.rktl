@@ -494,33 +494,33 @@
       identifier-binding* #'#%pmb)
 
 (let ([b (identifier-binding
-          (syntax-case (expand #'(module m scheme/base
-                                   (require (only-in (lib "lang/htdp-intermediate.rkt") [cons bcons]))
-                                   bcons)) ()
-            [(mod m mz (#%mod-beg run-conf req (app call-with-values (lambda () cons) print)))
-             (let ([s (syntax cons)])
-               (test 'bcons syntax-e s)
+          (syntax-case (expand #'(module m racket/base
+                                   (require (only-in scheme/base [make-base-namespace s-mbn]))
+                                   s-mbn)) ()
+            [(mod m mz (#%mod-beg run-conf req (app call-with-values (lambda () make-base-namespace) print)))
+             (let ([s (syntax make-base-namespace)])
+               (test 's-mbn syntax-e s)
                s)]))])
   (let-values ([(real real-base) (module-path-index-split (car b))]
                [(nominal nominal-base) (module-path-index-split (caddr b))])
-    (test '"teachprims.rkt" values real)
-    (test 'beginner-cons cadr b)
-    (test '(lib "lang/htdp-intermediate.rkt") values nominal)
-    (test 'cons cadddr b)))
+    (test '"private/namespace.rkt" values real)
+    (test 'make-base-namespace cadr b)
+    (test 'scheme/base values nominal)
+    (test 'make-base-namespace cadddr b)))
 
 (let ([b (identifier-binding
-          (syntax-case (expand #'(module m (lib "lang/htdp-intermediate.rkt")
-                                   cons)) ()
-            [(mod m beg (#%mod-beg (app call-w-vals (lam () cons) prnt)))
-             (let ([s (syntax cons)])
-               (test 'cons syntax-e s)
+          (syntax-case (expand #'(module m scheme/base
+                                   make-base-namespace)) ()
+            [(mod m beg (#%mod-beg run-conf (app call-w-vals (lam () make-base-namespace) prnt)))
+             (let ([s (syntax make-base-namespace)])
+               (test 'make-base-namespace syntax-e s)
                s)]))])
   (let-values ([(real real-base) (module-path-index-split (car b))]
                [(nominal nominal-base) (module-path-index-split (caddr b))])
-    (test '"teachprims.rkt" values real)
-    (test 'beginner-cons cadr b)
-    (test '(lib "lang/htdp-intermediate.rkt") values nominal)
-    (test 'cons cadddr b)))
+    (test '"private/namespace.rkt" values real)
+    (test 'make-base-namespace cadr b)
+    (test 'scheme/base values nominal)
+    (test 'make-base-namespace cadddr b)))
 
 (let ()
   (define (check wrap)

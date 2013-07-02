@@ -2,8 +2,14 @@
 (Section 'fixnum)
 (require scheme/fixnum
          scheme/unsafe/ops
-         (prefix-in r6: rnrs/arithmetic/fixnums-6)
          "for-util.rkt")
+
+(define 64-bit? (fixnum? (expt 2 33)))
+
+(define (fixnum-width) (if 64-bit? 63 31))
+(define (least-fixnum) (if 64-bit? (- (expt 2 62)) -1073741824))
+(define (greatest-fixnum) (if 64-bit? (- (expt 2 62) 1) +1073741823))
+
 
 (define unary-table 
   (list (list fxnot unsafe-fxnot)
@@ -89,7 +95,7 @@
         (test #t same-results (list-ref line 0) (list-ref line 1) (list i j))))))
 
 (define (same-results/extremum)
-  (let ([interesting-values (list (r6:least-fixnum) -1 0 1 (r6:greatest-fixnum))])
+  (let ([interesting-values (list (least-fixnum) -1 0 1 (greatest-fixnum))])
     (for ([line (in-list unary-table)])
       (for ([i (in-list interesting-values)])
         (test #t same-results (list-ref line 0) (list-ref line 1) (list i))))
@@ -105,7 +111,7 @@
   (for ([ignore (in-range 0 800)])
     (let ([i (random-fixnum)]
           [j (random-fixnum)]
-          [k (inexact->exact (floor (* (random) (+ 1 (r6:fixnum-width)))))]
+          [k (inexact->exact (floor (* (random) (+ 1 (fixnum-width)))))]
           [more-fixnums (build-list (random 20) (λ (i) (random-fixnum)))])
       (for ([line (in-list unary-table)])
         (test #t same-results (list-ref line 0) (list-ref line 1) (list i)))
@@ -121,7 +127,7 @@
         (test #t same-results (list-ref line 0) (list-ref line 1) more-fixnums)))))
 
 (define (random-fixnum)
-  (inexact->exact (floor (+ (r6:least-fixnum) (* (random) (+ (- (r6:greatest-fixnum) (r6:least-fixnum)) 1))))))
+  (inexact->exact (floor (+ (least-fixnum) (* (random) (+ (- (greatest-fixnum) (least-fixnum)) 1))))))
 
 ;; check the arities
 (for-each (λ (x) (apply check-arity x)) table)
