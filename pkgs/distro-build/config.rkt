@@ -10,11 +10,15 @@
 ;; and/or `DOC_SEARCH' configuration from the makefile.
 ;;
 ;; The site configuration file otherwise describes and configures
-;; client machines.  Each client is built by running commands via
-;; `ssh', where the client's host (and optional port and/or user)
-;; indicate the ssh target. Each client machine must be set up with a
-;; public-key authenticaion, because a direct `ssh' is expected to
-;; work without a password prompt.
+;; client machines hierarchically, where configuration options
+;; propagate down the hierarchy when they are not overridden more
+;; locally.
+;;
+;; Each client is built by running commands via `ssh', where the
+;; client's host (and optional port and/or user) indicate the ssh
+;; target. Each client machine must be set up with a public-key
+;; authenticaion, because a direct `ssh' is expected to work without a
+;; password prompt.
 ;;
 ;; On the client machine, all work is performed with a git clone at a
 ;; specified directory. The directory defaults to "build/plt" (Unix,
@@ -232,7 +236,7 @@
          extract-options)
 
 (module reader syntax/module-reader
-  distro-build/site)
+  distro-build/config)
 
 (struct site-config (tag options content))
 
