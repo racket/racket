@@ -26,7 +26,9 @@
                  (if (file-exists? p)
                      (call-with-input-file* 
                       p
-                      (lambda (in) (read in)))
+                      (lambda (in) 
+                        (parameterize ([current-readtable (make-readtable #f)]) 
+                          (read in))))
                      #hash()))
                #hash()))))
 
