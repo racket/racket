@@ -883,6 +883,9 @@
 (test (round-numbers (rotate -90 (ellipse 200 400 'solid 'purple)))
       =>
       (round-numbers (rotate 90 (ellipse 200 400 'solid 'purple))))
+(test (round-numbers (rotate (+ 360 360 90) (ellipse 200 400 'solid 'purple)))
+      =>
+      (round-numbers (rotate 90 (ellipse 200 400 'solid 'purple))))
 
 (test (equal~? (rectangle 100 10 'solid 'red)
                (rotate 90 (rectangle 10 100 'solid 'red))

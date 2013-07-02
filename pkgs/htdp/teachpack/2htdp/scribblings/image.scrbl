@@ -381,7 +381,8 @@ They all construct a triangle oriented as follows:
                           [outline-mode (or/c 'outline "outline")]
                           [pen-or-color (or/c pen? image-color?)])
             image?])]{
- Creates a triangle where the side length a, angle B, and, side length c given by @racket[side-length-a],
+ Creates a triangle where the side length a, angle B, and, 
+ side length c given by @racket[side-length-a],
  @racket[angle-b], and, @racket[side-length-c] respectively.
  See above for a diagram showing where which sides and which angles are which.
  
@@ -404,7 +405,8 @@ They all construct a triangle oriented as follows:
                           [outline-mode (or/c 'outline "outline")]
                           [pen-or-color (or/c pen? image-color?)])
             image?])]{
- Creates a triangle where the side length a, side length b, and, angle c given by @racket[side-length-a],
+ Creates a triangle where the side length a, side length b, and,
+ angle c given by @racket[side-length-a],
  @racket[side-length-b], and, @racket[angle-c] respectively.
  See above for a diagram showing where which sides and which angles are which.
  
@@ -532,7 +534,8 @@ They all construct a triangle oriented as follows:
             image?])]{
                  
 Constructs a four sided polygon with all equal sides and thus where opposite angles are equal to each
-other. The top and bottom pair of angles is @racket[angle] and the left and right are @racket[(- 180 angle)].
+other. The top and bottom pair of angles is @racket[angle]
+and the left and right are @racket[(- 180 angle)].
 
 @mode/color-and-nitty-text
 
@@ -701,7 +704,8 @@ the @racket[point-count] argument determines how many points the star has.
   
   }
 
-@defproc[(overlay/align [x-place x-place?] [y-place y-place?] [i1 image?] [i2 image?] [is image?] ...) image?]{
+@defproc[(overlay/align [x-place x-place?] [y-place y-place?] [i1 image?] [i2 image?] [is image?] ...)
+         image?]{
   Overlays all of its image arguments, much like the @racket[overlay] function, but using
   @racket[x-place] and @racket[y-place] to determine where the images are lined up. For example, if
   @racket[x-place] and @racket[y-place] are both @racket["middle"], then the images are lined up
@@ -740,11 +744,12 @@ the @racket[point-count] argument determines how many points the star has.
                    (circle 30 'solid (color 200 0 0 127)))]
 }
 
-@defproc[(overlay/align/offset [x-place x-place?] [y-place y-place?] [i1 image?] [x real?] [y real?] [i2 image?])
+@defproc[(overlay/align/offset [x-place x-place?] [y-place y-place?] 
+                               [i1 image?] [x real?] [y real?] [i2 image?])
          image?]{
-  Overlays image @racket[i1] on top of @racket[i2], using @racket[x-place] and @racket[y-place] as the 
-  starting points for the overlaying, and then adjusts @racket[i2] by @racket[x] to the right and
-  @racket[y] pixels down. 
+  Overlays image @racket[i1] on top of @racket[i2], using @racket[x-place] and @racket[y-place] 
+  as the starting points for the overlaying, and then adjusts @racket[i2] by @racket[x] to the 
+  right and @racket[y] pixels down. 
   
   This function combines the capabilities of @racket[overlay/align] and @racket[overlay/offset].
   
@@ -815,7 +820,9 @@ the @racket[point-count] argument determines how many points the star has.
   
   }
 
-@defproc[(underlay/align [x-place x-place?] [y-place y-place?] [i1 image?] [i2 image?] [is image?] ...) image?]{
+@defproc[(underlay/align [x-place x-place?] [y-place y-place?] [i1 image?] [i2 image?]
+                         [is image?] ...)
+         image?]{
   Underlays all of its image arguments, much like the @racket[underlay] function, but using
   @racket[x-place] and @racket[y-place] to determine where the images are lined up. For example, if
   @racket[x-place] and @racket[y-place] are both @racket["middle"], then the images are lined up
@@ -854,11 +861,14 @@ the @racket[point-count] argument determines how many points the star has.
                                                    (circle 10 "solid" "navy")))]
 }
 
-@defproc[(underlay/align/offset [x-place x-place?] [y-place y-place?] [i1 image?] [x real?] [y real?] [i2 image?])
+@defproc[(underlay/align/offset [x-place x-place?] [y-place y-place?] 
+                                [i1 image?]
+                                [x real?] [y real?]
+                                [i2 image?])
          image?]{
-  Underlays image @racket[i1] underneath @racket[i2], using @racket[x-place] and @racket[y-place] as the 
-  starting points for the combination, and then adjusts @racket[i2] by @racket[x] to the right and
-  @racket[y] pixels down. 
+  Underlays image @racket[i1] underneath @racket[i2], using @racket[x-place] and @racket[y-place]
+  as the starting points for the combination, and then adjusts @racket[i2] by @racket[x] to the 
+  right and @racket[y] pixels down. 
   
   This function combines the capabilities of @racket[underlay/align] and @racket[underlay/offset].
   
@@ -1038,7 +1048,12 @@ a black outline.
                      8 14
                      (rectangle 24 24 "solid" "goldenrod")))))]
 }
-@defproc[(place-image/align [image image?] [x real?] [y real?] [x-place x-place?] [y-place y-place?][scene image?])
+@defproc[(place-image/align [image image?]
+                            [x real?]
+                            [y real?]
+                            [x-place x-place?]
+                            [y-place y-place?]
+                            [scene image?])
          image?]{
 
  Like @racket[place-image], but uses @racket[image]'s @racket[x-place] and
@@ -1177,7 +1192,10 @@ the parts that fit onto @racket[scene].
   
 }
 
-@defproc[(scale/xy [x-factor (and/c real? positive?)] [y-factor (and/c real? positive?)] [image image?]) image?]{
+@defproc[(scale/xy [x-factor (and/c real? positive?)] 
+                   [y-factor (and/c real? positive?)]
+                   [image image?])
+         image?]{
   Scales @racket[image] by @racket[x-factor] horizontally and by 
   @racket[y-factor] vertically. 
   
@@ -1315,7 +1333,8 @@ See also the @racketmodname[2htdp/planetcute] library.
                              [width (and/c real? (not/c negative?))]
                              [height (and/c real? (not/c negative?))])
          image?]{
-  Constructs a bitmap from the given @racket[colors], with the given @racket[width] and @racket[height].
+  Constructs a bitmap from the given @racket[colors], 
+  with the given @racket[width] and @racket[height].
 
   @image-examples[(scale
                    40
@@ -1481,7 +1500,8 @@ This section lists predicates for the basic structures provided by the image lib
 @racket["pinhole"], or
 @racket['pinhole].
 
-Using @racket["pinhole"] or @racket['pinhole] is only allowed when all of the image arguments have @seclink["pinholes"]{pinholes}.
+Using @racket["pinhole"] or @racket['pinhole] is only allowed when all of the 
+image arguments have @seclink["pinholes"]{pinholes}.
 
 See also @racket[image-baseline] for more discussion of baselines.
 
@@ -1501,14 +1521,20 @@ See also @racket[image-baseline] for more discussion of baselines.
   @racket["pinhole"], or
   @racket['pinhole].
 
-  Using @racket["pinhole"] or @racket['pinhole] is only allowed when all of the image arguments have @seclink["pinholes"]{pinholes}.
+  Using @racket["pinhole"] or @racket['pinhole] is only allowed when all of the image 
+  arguments have @seclink["pinholes"]{pinholes}.
 
 }
 
 @defproc[(angle? [x any/c]) boolean?]{
   Determines if @racket[x] is an angle, namely
-  a real number between @racket[0] (inclusive)
-  and @racket[360] (exclusive).
+  a real number (except not @racket[+inf.0], @racket[-inf.0] or
+  @racket[+nan.0]). 
+  
+  Angles are in degrees, so 0 is
+  the same as 360, 90 means rotating one
+  quarter of the way around a circle, and 180
+  is halfway around a circle.
 }
 
 @defproc[(side-count? [x any/c]) boolean?]{
@@ -1592,8 +1618,10 @@ See @secref["nitty-gritty"] for more details about pixels.
 
 When images are @racket[overlay]'d, @racket[underlay]'d (or the variants of those functions),
 placed @racket[beside], or @racket[above] each other, 
-the pinhole of the resulting image is the pinhole of the first image argument passed to the combining
-operation. When images are combined with @racket[place-image] (or the variants of @racket[place-image]), 
+the pinhole of the resulting image is the pinhole of 
+the first image argument passed to the combining
+operation. When images are combined with @racket[place-image]
+(or the variants of @racket[place-image]), 
 then the scene argument's pinhole is preserved.
 
 @defproc[(center-pinhole [image image?]) image?]{

@@ -187,9 +187,7 @@
                 (angle? arg)
                 'angle\ in\ degrees
                 i arg)
-     (if (< arg 0)
-         (+ arg 360)
-         arg)]
+     (angle->proper-range arg)]
     [(color)
      (check-arg fn-name (or (image-color? arg) (pen? arg)) 'image-color-or-pen i arg)
      ;; return either a string, color, or a pen,
@@ -295,9 +293,6 @@
   (or (and (member arg '(solid outline "solid" "outline")) #t)
       (and (integer? arg)
            (<= 0 arg 255))))
-(define (angle? arg)
-  (and (real? arg)
-       (< -360 arg 360)))
 (define (side-count? i)
   (and (integer? i)
        (3 . <= .  i)))
@@ -331,3 +326,21 @@
      (check-arg fn-name (image-color? color) 'image-color i color)]
     [(eq? mode 'outline)
      (void)]))
+
+(define (angle? arg)
+  (and (real? arg)
+       (not (or (= arg +inf.0)
+                (= arg -inf.0)
+                (equal? arg +nan.0)))))
+                               
+(define (angle->proper-range α)
+  (+ (modulo (round α) 360)
+     (- α (round α))))
+
+(module+ test
+  (require rackunit)
+  (check-equal? (angle->proper-range 1) 1)
+  (check-equal? (angle->proper-range 361) 1)
+  (check-equal? (angle->proper-range 0.5) 0.5)
+  (check-equal? (angle->proper-range -1) 359)
+  (check-equal? (angle->proper-range -1.5) 358.5))
