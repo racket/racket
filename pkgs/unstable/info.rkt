@@ -21,4 +21,6 @@
                      "unstable-contract-lib"
                      "unstable-list-lib"
                      "unstable-options-lib"
+                     "unstable-debug-lib"
+                     "unstable-pretty-lib"
                      "unstable-parameter-group-lib"))
