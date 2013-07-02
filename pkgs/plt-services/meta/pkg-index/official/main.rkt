@@ -104,7 +104,7 @@
    [else basic-start]))
 
 (define (page/rss req)
-  (define ps 
+  (define ps
     (sort (map package-info (package-list))
           >
           #:key (λ (i) (package-ref i 'last-updated))))
@@ -113,9 +113,9 @@
     (format "~aZ" (format-time t)))
   (response/xexpr
    #:mime-type #"application/atom+xml"
-   `(feed 
+   `(feed
      ([xmlns "http://www.w3.org/2005/Atom"])
-     (title ,(cdata #f #f (format "<![CDATA[~a]]>" 
+     (title ,(cdata #f #f (format "<![CDATA[~a]]>"
                                   "Racket Package Updates")))
      (link ([href "https://pkg.racket-lang.org/rss"]
             [rel "self"]))
@@ -124,7 +124,7 @@
      (id "https://pkg.racket-lang.org/")
      ,@(for/list ([i (in-list ps)])
          (define p (hash-ref i 'name))
-         (define this-url 
+         (define this-url
            (format "https://pkg.racket-lang.org~a"
                    (main-url page/info p)))
          (define lu (atom-format-time (package-ref i 'last-updated)))
@@ -137,12 +137,12 @@
            (updated ,lu)
            (author (name ,n) (email ,a))
            (id ,this-url)
-           (content 
+           (content
             ([type "html"])
             ,(cdata #f #f
                     (format "<![CDATA[~a]]>"
                             (xexpr->string
-                             `(p 
+                             `(p
                                ,(format "~a package updated on ~a."
                                         p lu)))))))))))
 
@@ -232,7 +232,7 @@
                                 empty)
                             " | "
                             (a ([href ,(main-url page/rss)]) "rss")
-                            
+
                             ;;" | "
                             ;;(a ([href ,(main-url page/logout)]) "logout")
                             ))]
@@ -550,7 +550,7 @@
     (unless (or (not pkg) (equal? new-pkg pkg))
       (package-remove! pkg))
 
-    (update-checksum #t new-pkg)
+    (thread (λ () (update-checksum #t new-pkg)))
 
     (define new-tag
       (request-binding/string pkg-req "tag" #f))
@@ -738,9 +738,11 @@
            ""))))))
 
 (define (page/manage/update req)
-  (update-checksums
-   #t
-   (package-list/mine req))
+  (thread
+   (λ ()
+     (update-checksums
+      #t
+      (package-list/mine req))))
   (redirect-to (main-url page/manage)))
 
 (define (update-checksums force? pkgs)
@@ -799,7 +801,7 @@
   (define u (current-user req #t))
   (when (curation-administrator? u)
     (define i (package-info pkg))
-    (package-info-set! 
+    (package-info-set!
      pkg
      (hash-set i 'ring (+ dir (package-ref i 'ring)))))
   (redirect-to (main-url page/curate)))
@@ -872,10 +874,10 @@
                           blacktriangle)
                       `blacktriangle))
                (td ,p)
-               (td ,author)               
+               (td ,author)
                (td ([sorttable_customkey ,(number->string lu)])
                    ,(format-time lu))
-               (td 
+               (td
                 ,@(for/list ([c (in-list conflicts)])
                     `(span ,c " "))))))))]
     [else
@@ -898,6 +900,11 @@
                   [the-alarm
                    (alarm-evt (+ (current-inexact-milliseconds)
                                  (* 1000 (* 24 60 60))))])
+         (define (tprintf fmt arg)
+           (printf "[~a] ~a: ~a"
+                   (date->string (seconds->date (current-seconds)) #t)
+                   (length pkg*ts)
+                   (format fmt arg)))
          (apply
           sync
           (handle-evt the-alarm
@@ -905,13 +912,13 @@
                         (for ([pkg*t (in-list pkg*ts)])
                           (match-define (cons pkg t) pkg*t)
                           (when (thread-running? t)
-                            (printf "~a checksum thread stalled\n" pkg)
+                            (tprintf "~a checksum thread stalled\n" pkg)
                             (kill-thread t)))))
           (for/list ([pkg*t (in-list pkg*ts)])
             (match-define (cons pkg t) pkg*t)
             (handle-evt t
                         (λ _
-                          (printf "~a thread finished\n" pkg)
+                          (tprintf "~a thread finished\n" pkg)
                           (loop (remove pkg*t pkg*ts) the-alarm)))))))))
   (serve/servlet
    main-dispatch
