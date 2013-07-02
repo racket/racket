@@ -343,7 +343,7 @@
                                   this%-inherit-internals
                                   this%-override-internals
                                   local-augment-table local-inner-table
-                                  augments
+                                  augments super-augments
                                   this%-pubment-internals
                                   this%-augment-internals
                                   local-private-table private-method-types
@@ -431,7 +431,8 @@
                 "override method")
   (check-exists super-augment-names this%-augment-names
                 "augment method")
-  (check-exists super-method-names this%-inherit-names
+  (check-exists (set-union super-method-names super-augment-names)
+                this%-inherit-names
                 "inherited method")
   (check-absent super-field-names this%-field-names "public field")
   (check-absent super-method-names this%-public-names "public method")
@@ -477,7 +478,8 @@
                                    super-types
                                    inherit-names override-names
                                    local-augment-table local-inner-table
-                                   augments pubment-names augment-names
+                                   augments super-augments
+                                   pubment-names augment-names
                                    local-private-table
                                    private-types private-methods
                                    self-id init-args-id
@@ -523,10 +525,15 @@
                  [else (make-Univ)]))))
 
   (define method-types (make-method-types method-names methods))
-  (define inherit-types (make-method-types inherit-names super-types))
+  (define inherit-types
+    (make-method-types
+     inherit-names
+     (append super-types super-augments)))
   (define augment-types (make-method-types augment-names augments))
-  (define inner-types (make-method-types (set-union pubment-names augment-names)
-                                         augments #:inner? #t))
+  (define inner-types
+    (make-method-types
+     (set-union pubment-names augment-names)
+     augments #:inner? #t))
 
   ;; construct field accessor types
   (define (make-field-types field-names type-map #:private? [private? #f])
