@@ -35,6 +35,7 @@
           make-ThreadCellTop
           make-Ephemeron
           make-CustodianBox
+          make-Evt
           make-HeterogeneousVector
           make-Continuation-Mark-Keyof
           make-Continuation-Mark-KeyTop
@@ -285,6 +286,41 @@
 [empty? (make-pred-ty (-val null))]
 [empty (-val null)]
 
+;; Section 10.2.1
+[evt? (make-pred-ty (make-Evt Univ))]
+[sync (-poly (a) (->* '() (make-Evt a) a))]
+[sync/timeout
+ (-poly (a b)
+   (cl->*
+    (->* (list (-val #f)) (make-Evt a) a)
+    (->* (list -NonNegReal) (make-Evt a) (-opt a))
+    (->* (list (-> b)) (make-Evt a) (Un a b))))]
+[sync/enable-break (-poly (a) (->* '() (make-Evt a) a))]
+[sync/timeout/enable-break
+ (-poly (a b)
+   (cl->*
+    (->* (list (-val #f)) (make-Evt a) a)
+    (->* (list -NonNegReal) (make-Evt a) (-opt a))
+    (->* (list (-> b)) (make-Evt a) (Un a b))))]
+[choice-evt (-poly (a) (->* '() (make-Evt a) (make-Evt a)))]
+[wrap-evt (-poly (a b) (-> (make-Evt a) (-> a b) (make-Evt b)))]
+[handle-evt (-poly (a b) (-> (make-Evt a) (-> a b) (make-Evt b)))]
+[guard-evt (-poly (a) (-> (-> (make-Evt a)) (make-Evt a)))]
+[nack-guard-evt
+ (-poly (a)
+   (-> (-> (make-Evt -Void) (make-Evt a))
+       (make-Evt a)))]
+[poll-guard-evt
+ (-poly (a) (-> (-> -Boolean (make-Evt a)) (make-Evt a)))]
+[always-evt (-mu x (make-Evt x))]
+[never-evt (make-Evt (Un))]
+[system-idle-evt (-> (make-Evt -Void))]
+[alarm-evt (-> -NonNegReal (-mu x (make-Evt x)))]
+[handle-evt? (make-pred-ty (make-Evt Univ))]
+[current-evt-pseudo-random-generator
+ (-Param -Pseudo-Random-Generator -Pseudo-Random-Generator)]
+
+;; Section 10.2.2
 [make-channel (-poly (a) (-> (-channel a)))]
 [channel? (make-pred-ty (make-ChannelTop))]
 [channel-get (-poly (a) ((-channel a) . -> . a))]
@@ -2181,8 +2217,6 @@
  (-> (make-HeterogeneousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)) -Pseudo-Random-Generator)]
 [vector->pseudo-random-generator!
  (-> -Pseudo-Random-Generator (make-HeterogeneousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)) -Void)]
-
-[current-evt-pseudo-random-generator (-Param -Pseudo-Random-Generator -Pseudo-Random-Generator)]
 
 ;Section 9.6
 [break-enabled (cl->* (-> B) (-> B -Void))]

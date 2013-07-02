@@ -87,15 +87,12 @@
 (define -Listof (-poly (list-elem) (make-Listof list-elem)))
 
 (define -Boolean (Un (-val #t) (-val #f)))
-(define -Symbol (make-Base 'Symbol #'symbol? symbol? #'-Symbol))
 (define -Undefined
   (make-Base 'Undefined
              #'(lambda (x) (equal? (letrec ([y y]) y) x)) ; initial value of letrec bindings
              (lambda (x) (equal? (letrec ([y y]) y) x))
              #'-Undefined))
 (define -Bytes (make-Base 'Bytes #'bytes? bytes? #'-Bytes))
-(define -String (make-Base 'String #'string? string? #'-String))
-
 
 (define -Base-Regexp (make-Base 'Base-Regexp
                            #'(and/c regexp? (not/c pregexp?))

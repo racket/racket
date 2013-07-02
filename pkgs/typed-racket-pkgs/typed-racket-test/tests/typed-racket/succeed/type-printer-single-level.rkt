@@ -28,11 +28,11 @@
               (string-append "(U Integer String)\n[can expand further: String Integer]"
                              "(Foo -> Foo)\n[can expand further: Foo]"
                              "(Number -> Integer)\n[can expand further: Integer Number]"
-                             "((U 0 1 Byte-Larger-Than-One Positive-Index-Not-Byte "
+                             "((U String 0 1 Byte-Larger-Than-One Positive-Index-Not-Byte "
                              "Positive-Fixnum-Not-Index Negative-Fixnum "
-                             "Positive-Integer-Not-Fixnum Negative-Integer-Not-Fixnum String) "
-                             "-> (U 0 1 Byte-Larger-Than-One Positive-Index-Not-Byte "
+                             "Positive-Integer-Not-Fixnum Negative-Integer-Not-Fixnum) "
+                             "-> (U String 0 1 Byte-Larger-Than-One Positive-Index-Not-Byte "
                              "Positive-Fixnum-Not-Index Negative-Fixnum "
-                             "Positive-Integer-Not-Fixnum Negative-Integer-Not-Fixnum "
-                             "String))\n"))
+                             "Positive-Integer-Not-Fixnum Negative-Integer-Not-Fixnum"
+                             "))\n"))
 

@@ -29,6 +29,11 @@
 (define -Char (make-Base 'Char #'char? char? #'-Char #f))
 (define (make-Listof elem) (-mu list-rec (simple-Un (-val null) (make-Pair elem list-rec))))
 (define (make-MListof elem) (-mu list-rec (simple-Un (-val null) (make-MPair elem list-rec))))
+
+;; Needed for evt checking in subtype.rkt
+(define -Symbol (make-Base 'Symbol #'symbol? symbol? #'-Symbol #f))
+(define -String (make-Base 'String #'string? string? #'-String #f))
+
 ;; Void is needed for Params
 (define -Void (make-Base 'Void #'void? void? #'-Void #f))
 

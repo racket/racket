@@ -607,6 +607,29 @@
            (cg e e*)]
           [((Set: a) (Set: a*))
            (cg a a*)]
+          [((Evt: a) (Evt: a*))
+           (cg a a*)]
+          [((Base: 'Semaphore _ _ _ _) (Evt: t))
+           (cg S t)]
+          [((Base: 'Output-Port _ _ _ _) (Evt: t))
+           (cg S t)]
+          [((Base: 'Input-Port _ _ _ _) (Evt: t))
+           (cg S t)]
+          [((Base: 'TCP-Listener _ _ _ _) (Evt: t))
+           (cg S t)]
+          [((Base: 'Thread _ _ _ _) (Evt: t))
+           (cg S t)]
+          [((Base: 'Subprocess _ _ _ _) (Evt: t))
+           (cg S t)]
+          [((Base: 'Will-Executor _ _ _ _) (Evt: t))
+           (cg S t)]
+          [((Base: 'LogReceiver _ _ _ _) (Evt: t ))
+           (cg (make-HeterogeneousVector
+                   (list -Symbol -String Univ
+                         (Un (-val #f) -Symbol)))
+               t)]
+          [((CustodianBox: t) (Evt: t*)) (cg S t*)]
+          [((Channel: t) (Evt: t*)) (cg t t*)]
           ;; we assume all HTs are mutable at the moment
           [((Hashtable: s1 s2) (Hashtable: t1 t2))
            ;; for mutable hash tables, both are invariant

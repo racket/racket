@@ -176,6 +176,32 @@
    [(make-Prompt-Tagof t1 t2) (make-Prompt-Tagof t2 t1)]
    [(make-Continuation-Mark-Keyof t1) (make-Continuation-Mark-Keyof t2)]
 
+   ;; evts
+   [(make-Evt t1) (make-Evt t2)]
+   [FAIL (make-Evt -Byte) (make-Evt -String)]
+   [-Semaphore (make-Evt -Semaphore)]
+   [FAIL -Semaphore (make-Evt -Int)]
+   [-Output-Port (make-Evt -Output-Port)]
+   [FAIL -Output-Port (make-Evt -Int)]
+   [-Input-Port (make-Evt -Input-Port)]
+   [FAIL -Input-Port (make-Evt -Int)]
+   [-TCP-Listener (make-Evt -TCP-Listener)]
+   [FAIL -TCP-Listener (make-Evt -Int)]
+   [-Thread (make-Evt -Thread)]
+   [FAIL -Thread (make-Evt -Int)]
+   [-Subprocess (make-Evt -Subprocess)]
+   [FAIL -Subprocess (make-Evt -Int)]
+   [-Will-Executor (make-Evt -Will-Executor)]
+   [FAIL -Will-Executor (make-Evt -Int)]
+   [(make-CustodianBox -String) (make-Evt (make-CustodianBox -String))]
+   [FAIL (make-CustodianBox -String) (make-Evt -String)]
+   [(-channel -String) (make-Evt -String)]
+   [FAIL (-channel -String) (make-Evt -Int)]
+   [-Log-Receiver (make-Evt (make-HeterogeneousVector
+                             (list -Symbol -String Univ
+                                   (Un (-val #f) -Symbol))))]
+   [FAIL -Log-Receiver (make-Evt -Int)]
+
    [(-val 5) (-seq -Nat)]
    [(-val 5) (-seq -Byte)]
    [-Index (-seq -Index)]

@@ -325,6 +325,7 @@
     [(Ephemeron: e) (fp "(Ephemeronof ~a)" e)]
     [(CustodianBox: e) (fp "(CustodianBoxof ~a)" e)]
     [(Set: e) (fp "(Setof ~a)" e)]
+    [(Evt: r) (fp "(Evtof ~a)" r)]
     [(Union: elems) (fp "~a" (cons 'U (print-union type ignored-names)))]
     [(Pair: l r) (fp "(Pairof ~a ~a)" l r)]
     [(ListDots: dty dbound)

@@ -364,6 +364,13 @@ type @racket[_t] on each iteration.}
 
 @defform[(Ephemeronof t)]{An @rtech{ephemeron} whose value is of type @racket[t].}
 
+@defform[(Evtof t)]{A @rtech{synchronizable event} whose @rtech{synchronization result}
+  is of type @racket[t].
+
+  @ex[always-evt
+      (system-idle-evt)
+      (ann (thread (λ () (displayln "hello world"))) (Evtof Thread))]
+}
 
 @section{Syntax Objects}
 
