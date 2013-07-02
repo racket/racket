@@ -5,7 +5,7 @@
 (define deps '("base"
 	       "net-lib"
                "compatibility-lib"
-               "scribble-lib"
+               "scribble-text-lib"
                "unstable-list-lib"
                "unstable-contract-lib"
                "parser-tools-lib"))
