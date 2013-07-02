@@ -329,7 +329,8 @@ And then put three of them together to form the Koch snowflake.
 When rotating an image, some times the image looks best when it
 rotates around a point that is not the center of the image. The 
 @racket[rotate] function, however, just rotates the image as
-a whole, effectively rotating it around its center.
+a whole, effectively rotating it around the center of its
+bounding box.
 
 For example, imagine a game where the hero is represented
 as a triangle:
