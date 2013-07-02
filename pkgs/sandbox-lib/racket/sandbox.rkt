@@ -925,10 +925,18 @@
      `(,@(map (lambda (p) `(read-bytecode ,p))
               (append
                (current-library-collection-paths)
-               (links #:root? #t #:user? #f)
+               (apply append
+                      (for/list ([f (get-links-search-files)]
+                                 #:when (file-exists? f))
+                        (links #:root? #t #:file f)))
                (links #:root? #t #:user? #t)
-               (map cdr (links #:user? #f #:with-path? #t))
-               (map cdr (links #:user? #t #:with-path? #t))))
+               (links #:root? #t #:shared? #t)
+               (apply append
+                      (for/list ([f (get-links-search-files)]
+                                 #:when (file-exists? f))
+                        (map cdr (links #:file f #:with-path? #t))))
+               (map cdr (links #:user? #t #:with-path? #t))
+               (map cdr (links #:shared? #t #:with-path? #t))))
        (read-bytecode ,(PLANET-BASE-DIR))
        (exists ,(find-system-path 'addon-dir))
        (read ,(build-path (find-system-path 'addon-dir) "links.rktd"))
