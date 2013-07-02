@@ -5,13 +5,13 @@
          racket/format
          racket/file
          racket/string
-         (only-in "farm.rkt"
+         (only-in "config.rkt"
                   current-mode
-                  farm-config?
-                  farm-config-tag farm-config-options farm-config-content)
+                  site-config?
+                  site-config-tag site-config-options site-config-content)
          "url-options.rkt")
 
-;; See "farm.rkt" for an overview.
+;; See "config.rkt" for an overview.
 
 ;; ----------------------------------------
 
@@ -35,24 +35,24 @@
            dist-name dist-base dist-dir)))
 
 (define config (parameterize ([current-mode config-mode])
-                 (dynamic-require (path->complete-path config-file) 'farm-config)))
+                 (dynamic-require (path->complete-path config-file) 'site-config)))
 
-(unless (farm-config? config)
+(unless (site-config? config)
   (error 'drive-clients 
-         "configuration module did not provide a farm-configuration value: ~e"
+         "configuration module did not provide a site-configuration value: ~e"
          config))
 
 ;; ----------------------------------------
 
 (define (merge-options opts c)
-  (for/fold ([opts opts]) ([(k v) (in-hash (farm-config-options c))])
+  (for/fold ([opts opts]) ([(k v) (in-hash (site-config-options c))])
     (hash-set opts k v)))
 
 (define (get-opt opts kw [default #f])
   (hash-ref opts kw default))
 
 (define (get-content c)
-  (farm-config-content c))
+  (site-config-content c))
 
 (define (client-name opts)
   (or (get-opt opts '#:name)
@@ -333,12 +333,12 @@
             [mode 'sequential]
             [opts (hasheq)])
    (unless stop?
-     (case (farm-config-tag config)
+     (case (site-config-tag config)
        [(parallel sequential)
         (define new-opts (merge-options opts config))
         (define ts
           (map (lambda (c) (loop c
-                                 (farm-config-tag config)
+                                 (site-config-tag config)
                                  new-opts))
                (get-content config)))
         (define (wait)

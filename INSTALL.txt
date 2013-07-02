@@ -154,30 +154,30 @@ create an installer for the server's platform.
 Running Build Farms
 -------------------
 
-The `farm' target of the makefile will do everything to generate
+The `installers' target of the makefile will do everything to generate
 installers: build a server on the current machine, run clients on
-hosts specified via FARM_CONFIG, and start/stop VirtualBox virtual
-machines that implement clients.
+hosts specified via CONFIG, and start/stop VirtualBox virtual machines
+that act as client machines.
 
 See
 
-  pkgs/distro-build/farm.rkt
+  pkgs/distro-build/config.rkt
 
-for a description of the farm-configuration module and requirements on
+for a description of the site-configuration module and requirements on
 client hosts.
 
-If "my-farm-config.rkt" is a configuration module, then
+If "my-site-config.rkt" is a configuration module, then
 
- make farm CONFIG=my-farm-config.rkt
+ make installers CONFIG=my-site-config.rkt
 
 drives the build farm, and the resulting installers are in
 "build/installers", with a hash table mapping descriptions to
 installer filenames in "build/installer/table.rktd".
 
-The default CONFIG path is "build/farm-config.rkt", so you could put
+The default CONFIG path is "build/site-config.rkt", so you could put
 your configuration file there and omit the `CONFIG' argument to
 `make'. Supply `CONFIG_MODE=...' to pass a configuration mode on to
-your farm-configuration module (accessible via the `current-mode'
+your site-configuration module (accessible via the `current-mode'
 parameter). Supply `CLEAN_MODE=--clean' to make the default
 `#:clean?' configration for a client #t instead of #f.
 
@@ -185,7 +185,7 @@ A configuration file can specify the packages to include, host address
 of the server, distribution name, installer directory, and
 documentation search URL, but defaults can be provided as `make'
 arguments via `PKGS', `SERVER', `DIST_NAME', `DIST_BASE', and
-`DIST_DIR', `DOC_SEARCH', respectively. The farm configuration's
+`DIST_DIR', `DOC_SEARCH', respectively. The site configuration's
 top-level options for packages and documentation search URL are used
 to configure the set of packages that are available to client
 machines to include in installers.
@@ -199,15 +199,15 @@ where <dist-base> defaults to "racket" (but can be set via
 `DIST_BASE'), <platform> is from `(system-library-subpath #f)' but
 normalizing the Windows results to "i386-win32" and "x86_63-win32",
 -<dist-suffix> is omitted unless a `#:dist-suffix' string is specified
-for the client in the farm configuration, and <ext> is
+for the client in the site configuration, and <ext> is
 platform-specific: ".sh" for Unix, ".dmg" for Mac Os X, and ".exe" for
 Windows.
 
 Separate Server and Clients
 ---------------------------
 
-Instead of using the `farm' makefile target and a farm configuration
-file, you can run server and client processes manually.
+Instead of using the `installers' makefile target and a site
+configuration file, you can run server and client processes manually.
 
 Roughly, the steps are
 

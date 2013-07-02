@@ -1,15 +1,15 @@
 #lang racket/base
 
-;; A build farm is normally run via the `farm' target of the Racket
-;; repository's top-level makefile. That target, in turn, uses the
-;; `distro-build/drive-clients' module.
+;; A build farm is normally run via the `installers' target of the
+;; Racket repository's top-level makefile. That target, in turn, uses
+;; the `distro-build/drive-clients' module.
 ;;
 ;; The server machine first prepares packages for installation on
-;; clients.  The farm configuration's top-level entry is consulted for
+;; clients.  The site configuration's top-level entry is consulted for
 ;; a `#:pkgs' and/or `#:doc-search' option, which overrides any `PKGS'
 ;; and/or `DOC_SEARCH' configuration from the makefile.
 ;;
-;; The farm configuration file otherwise describes and configures
+;; The site configuration file otherwise describes and configures
 ;; client machines.  Each client is built by running commands via
 ;; `ssh', where the client's host (and optional port and/or user)
 ;; indicate the ssh target. Each client machine must be set up with a
@@ -52,11 +52,11 @@
 ;;      or  C:\Program Files (x86)\NSIS\makensis.exe
 ;;     or instaled so that `makensis' in in yur PATH.
 ;;
-;; Farm Configuration
+;; Site Configuration
 ;; -------------------
 ;;
-;; A farm configuration module is normally wriiten in the
-;; `distro-build/farm' language. The configuration describes
+;; A site configuration module is normally wriiten in the
+;; `distro-build/config' language. The configuration describes
 ;; individual machines, and groups them with `parallel' or
 ;; `sequential' to indicate whether the machine's builds should run
 ;; sequentially or in parallel.  Options specified at `parallel' or
@@ -64,7 +64,7 @@
 ;;
 ;; For example, a configuration module might look like this:
 ;;
-;;     #lang distro-build/farm
+;;     #lang distro-build/config
 ;;    
 ;;     (sequential
 ;;      #:pkgs '("drracket")
@@ -85,7 +85,7 @@
 ;;       #:bits 64))
 ;;
 ;;
-;; Farm-configuration keywords (where <string*> means no spaces, etc.):
+;; Site-configuration keywords (where <string*> means no spaces, etc.):
 ;;
 ;;   #:host <string*> --- defaults to "localhost"
 ;;   #:port <integer> --- ssh port for the client; defaults to 22
@@ -168,40 +168,40 @@
 ;;                       generated table of installer links, for example)
 ;;
 ;;
-;; More precisely, the `distro-build/farm' language is like
+;; More precisely, the `distro-build/config' language is like
 ;; `racket/base' except that the module body must have exactly one
 ;; expression (plus any number of definitions, etc.) that produces a
-;; farm-configuration value. The value is exported as `farm-config'
-;; from the module. Any module can act as a farm-configuration module
-;; a long as it exports `farm-config' as a farm-configuration value.
+;; site-configuration value. The value is exported as `site-config'
+;; from the module. Any module can act as a site-configuration module
+;; a long as it exports `site-config' as a site-configuration value.
 ;;
-;; The `distro-build/farm' language also adds the following functions
+;; The `distro-build/config' language also adds the following functions
 ;; to `racket/base':
 ;;
-;;  (machine <opt-kw> <opt-val> ... ...) -> farm-config?
-;;    Produces a farm configuration based on the given keyword-based
+;;  (machine <opt-kw> <opt-val> ... ...) -> site-config?
+;;    Produces a site configuration based on the given keyword-based
 ;;    options. The support keyword arguments are described above.
 ;;
 ;;  (sequential <opt-kw> <opt-val> ... ... config ...)
-;;    -> farm-config?
-;;     config : farm-config?
-;;    Produces a farm configuration that runs each `config'
+;;    -> site-config?
+;;     config : site-config?
+;;    Produces a site configuration that runs each `config'
 ;;    sequentially. The support keyword arguments are described above.
 ;;
 ;;  (parallel <opt-kw> <opt-val> ... ... config ...)
-;;    -> farm-config?
-;;     config : farm-config?
-;;    Produces a farm configuration that runs each `config' in
+;;    -> site-config?
+;;     config : site-config?
+;;    Produces a site configuration that runs each `config' in
 ;;    parallel. The support keyword arguments are described above.
 ;;
-;;  (farm-config? v) -> boolean?
-;;  (farm-config-tag config) -> (or/c 'machine 'sequential 'parallel)
-;;     config : farm-config?
-;;  (farm-config-options config) -> (hash/c keyword? any/c)
-;;     config : farm-config?
-;;  (farm-config-content config) -> (listof farm-config?)
-;;     config : farm-config?
-;;   Farm configuation inspection
+;;  (site-config? v) -> boolean?
+;;  (site-config-tag config) -> (or/c 'machine 'sequential 'parallel)
+;;     config : site-config?
+;;  (site-config-options config) -> (hash/c keyword? any/c)
+;;     config : site-config?
+;;  (site-config-content config) -> (listof site-config?)
+;;     config : site-config?
+;;   Site configuation inspection
 ;;
 ;;  (current-mode) -> string?
 ;;  (current-mode s) -> void?
@@ -210,7 +210,7 @@
 ;;   configuration, normally as provided via the makefile's
 ;;   `CONFIG_MODE' variable. The default mode is "default". The
 ;;   interpretation of modes is completely up to the
-;;   farm configuration file.
+;;   site configuration file.
 
 ;; ----------------------------------------
 
@@ -224,32 +224,32 @@
          sequential
          parallel
          machine
-         farm-config?
-         farm-config-tag
-         farm-config-options
-         farm-config-content
+         site-config?
+         site-config-tag
+         site-config-options
+         site-config-content
          current-mode
          extract-options)
 
 (module reader syntax/module-reader
-  distro-build/farm)
+  distro-build/site)
 
-(struct farm-config (tag options content))
+(struct site-config (tag options content))
 
 (define-syntax-rule (module-begin form ...)
-  (#%plain-module-begin (farm-begin #f form ...)))
+  (#%plain-module-begin (site-begin #f form ...)))
 
-(define-syntax (farm-begin stx)
+(define-syntax (site-begin stx)
   (syntax-case stx ()
     [(_ #t) #'(begin)]
     [(_ #f)
-     (raise-syntax-error 'farm
-                         "did not find an expression for the farm configuration")]
+     (raise-syntax-error 'site
+                         "did not find an expression for the site configuration")]
     [(_ found? next . rest) 
      (let ([expanded (local-expand #'next 'module (kernel-form-identifier-list))])
        (syntax-case expanded (begin)
          [(begin next1 ...)
-          #`(farm-begin found? next1 ... . rest)]
+          #`(site-begin found? next1 ... . rest)]
          [(id . _)
           (and (identifier? #'id)
                (ormap (lambda (kw) (free-identifier=? #'id kw))
@@ -262,24 +262,24 @@
                                        module*
                                        #%require
                                        #%provide))))
-          #`(begin #,expanded (farm-begin found? . rest))]
+          #`(begin #,expanded (site-begin found? . rest))]
          [_else
           (if (syntax-e #'found?)
-              (raise-syntax-error 'farm
+              (raise-syntax-error 'site
                                   "found second top-level expression"
                                   #'next)
               #`(begin
-                 (provide farm-config)
-                 (define farm-config (let ([v #,expanded])
-                                       (unless (farm-config? v)
-                                         (error 'farm
-                                                (~a "expression did not produce a farm configuration\n"
+                 (provide site-config)
+                 (define site-config (let ([v #,expanded])
+                                       (unless (site-config? v)
+                                         (error 'site
+                                                (~a "expression did not produce a site configuration\n"
                                                     "  result: ~e\n"
                                                     "  expression: ~.s")
                                                 v
                                                 'next))
                                        v))
-                 (farm-begin
+                 (site-begin
                   #t
                   . rest)))]))]))
 
@@ -300,7 +300,7 @@
                   check-machine-keyword 'machine))))
 
 (define (constructor kws kw-vals subs check tag)
-  (farm-config
+  (site-config
    tag
    (for/hash ([kw (in-list kws)]
               [val (in-list kw-vals)])
@@ -319,8 +319,8 @@
               val))
      (values kw val))
    (for/list ([sub subs])
-     (unless (farm-config? sub)
-       (raise-argument-error tag "farm-config?" sub))
+     (unless (site-config? sub)
+       (raise-argument-error tag "site-config?" sub))
      sub)))
 
 (define (check-group-keyword kw val)
@@ -368,7 +368,7 @@
   (or
    (and (file-exists? config-file)
         (parameterize ([current-mode config-mode])
-          (farm-config-options 
-           (dynamic-require (path->complete-path config-file) 'farm-config))))
+          (site-config-options 
+           (dynamic-require (path->complete-path config-file) 'site-config))))
    (hash)))
 

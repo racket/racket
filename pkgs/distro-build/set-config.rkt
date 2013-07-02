@@ -2,7 +2,7 @@
 (require racket/cmdline
          racket/file
          racket/path
-         (only-in "farm.rkt" extract-options)
+         (only-in "config.rkt" extract-options)
          "url-options.rkt")
 
 (define-values (dest-config-file config-file config-mode default-doc-search default-catalogs)

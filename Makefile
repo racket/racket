@@ -113,10 +113,10 @@ DIST_DESC =
 DIST_CATALOGS_q = ""
 
 # Configuration of clients to run for a build farm, normally
-# implemented with `#lang distro-build/farm':
-CONFIG = build/farm-config.rkt
+# implemented with `#lang distro-build/config':
+CONFIG = build/site.rkt
 
-# A mode that is made available to the farm-configuration module
+# A mode that is made available to the site-configuration module
 # through the `current-mode' parameter:
 CONFIG_MODE = default
 
@@ -125,7 +125,7 @@ CONFIG_MODE = default
 CLEAN_MODE =
 
 # A command to run after the server has started; normally set by
-# the `farm' target:
+# the `installers' target:
 SERVE_DURING_CMD_qq =
 
 # ------------------------------------------------------------
@@ -266,7 +266,7 @@ binary-catalog-server:
 #
 # The `client' and `win32-client' targets are also used by
 # `distro-buid/drive-clients', which is in turn run by the
-# `farm' target.
+# `installers' target.
 #
 # For a non-Windows machine, if "build/drive" exists, then
 # keep the "build/user" directory on the grounds that the
@@ -340,18 +340,18 @@ win32-installer-from-bundle:
 	$(WIN32_RACKET) -l- distro-build/installer $(DIST_ARGS_q)
 
 # ------------------------------------------------------------
-# Drive installer build:
+# Drive installer build across server and clients:
 
 DRIVE_ARGS_q = $(RELEASE_MODE) $(CLEAN_MODE) "$(CONFIG)" "$(CONFIG_MODE)" \
                $(SERVER) "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
 DRIVE_CMD_q = $(RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS_q)
 
 # Full server build and clients drive, based on `CONFIG':
-farm:
+installers:
 	$(MAKE) server SERVE_DURING_CMD_qq='$(DRIVE_CMD_q)'
 
 # Server is already built; start it and drive clients:
-built-farm:
+installers-from-built:
 	$(MAKE) built-catalog-server SERVE_DURING_CMD_qq='$(DRIVE_CMD_q)'
 
 # Just the clients, assuming server is already running:

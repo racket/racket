@@ -17,6 +17,6 @@
       (let ([v (hash-ref config '#:dist-base-url #f)])
         (and v
              (list (url->string
-                    (combine-url/relative (string->url v) "catalog"))
+                    (combine-url/relative (string->url v) "catalog/"))
                    "")))
       default-catalogs))
