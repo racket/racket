@@ -35,6 +35,7 @@
           make-ThreadCellTop
           make-Ephemeron
           make-CustodianBox
+          make-Evt
           make-HeterogeneousVector
           make-Continuation-Mark-Keyof
           make-Continuation-Mark-KeyTop
@@ -285,6 +286,49 @@
 [empty? (make-pred-ty (-val null))]
 [empty (-val null)]
 
+;; Section 10.2.1
+[evt? (make-pred-ty (make-Evt Univ))]
+[sync (-polydots (b a)
+        (cl->*
+         (-> (make-Evt b) b)
+         (->... '() ((make-Evt a) a) Univ)))]
+[sync/timeout
+ (-polydots (c b a)
+   (cl->*
+    (-> (-opt (Un -NonNegReal (-> b))) (make-Evt c) (-opt (Un b c)))
+    (->... (list (-opt (Un -NonNegReal (-> Univ)))) ((make-Evt a) a) Univ)))]
+[sync/enable-break
+ (-polydots (b a)
+   (cl->*
+    (-> (make-Evt b) b)
+    (->... '() ((make-Evt a) a) Univ)))]
+[sync/timeout/enable-break
+ (-polydots (c b a)
+   (cl->*
+    (-> (-opt (Un -NonNegReal (-> b))) (make-Evt c) (-opt (Un b c)))
+    (->... (list (-opt -NonNegReal)) ((make-Evt a) a) Univ)))]
+[choice-evt
+ (-polydots (b a)
+   (cl->*
+    (-> (make-Evt b) (make-Evt b))
+    (->... '() ((make-Evt a) a) (make-Evt Univ))))]
+;; wrap-evt and handle-evt missing
+[guard-evt (-poly (a) (-> (-> (make-Evt a)) (make-Evt a)))]
+[nack-guard-evt
+ (-poly (a)
+   (-> (-> (make-Evt -Void) (make-Evt a))
+       (make-Evt a)))]
+[poll-guard-evt
+ (-poly (a) (-> (-> -Boolean (make-Evt a)) (make-Evt a)))]
+[always-evt (-mu x (make-Evt x))]
+[never-evt (make-Evt (Un))]
+[system-idle-evt (-> (make-Evt -Void))]
+[alarm-evt (-> -NonNegReal (-mu x (make-Evt x)))]
+;; handle-evt? missing
+[current-evt-pseudo-random-generator
+ (-Param -Pseudo-Random-Generator -Pseudo-Random-Generator)]
+
+;; Section 10.2.2
 [make-channel (-poly (a) (-> (-channel a)))]
 [channel? (make-pred-ty (make-ChannelTop))]
 [channel-get (-poly (a) ((-channel a) . -> . a))]
@@ -2181,8 +2225,6 @@
  (-> (make-HeterogeneousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)) -Pseudo-Random-Generator)]
 [vector->pseudo-random-generator!
  (-> -Pseudo-Random-Generator (make-HeterogeneousVector (list -PosInt -PosInt -PosInt -PosInt -PosInt -PosInt)) -Void)]
-
-[current-evt-pseudo-random-generator (-Param -Pseudo-Random-Generator -Pseudo-Random-Generator)]
 
 ;Section 9.6
 [break-enabled (cl->* (-> B) (-> B -Void))]

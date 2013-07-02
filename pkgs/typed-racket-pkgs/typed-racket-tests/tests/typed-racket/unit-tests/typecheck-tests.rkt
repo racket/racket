@@ -1436,6 +1436,21 @@
                 (let: ((lr : Log-Receiver (make-log-receiver l 'error)))
                  (log-message l 'error "Message" 'value))) -Void)
 
+        ;Events
+        (tc-e (sync (make-semaphore)) -Semaphore)
+        (tc-e (sync (tcp-listen 5555)) -TCP-Listener)
+        (tc-e (sync (thread (λ () 0))) -Thread)
+        (tc-e (sync (make-will-executor)) -Will-Executor)
+        (tc-e (sync (make-custodian-box (current-custodian) 0))
+              (make-CustodianBox (-val 0)))
+        (tc-e (sync ((inst make-channel String))) -String)
+        (tc-e (sync always-evt) (-mu x (make-Evt x)))
+        (tc-e (sync never-evt) -Bottom)
+        (tc-e (sync never-evt always-evt) Univ)
+        (tc-e (sync (system-idle-evt)) -Void)
+        (tc-e (sync (choice-evt (system-idle-evt))) -Void)
+        (tc-e (sync/timeout 100 always-evt never-evt) Univ)
+
         ;Semaphores
         (tc-e (make-semaphore) -Semaphore)
         (tc-e (let: ((s : Semaphore (make-semaphore 3)))
