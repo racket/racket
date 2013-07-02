@@ -115,7 +115,8 @@
         (loop (image-bb x))
         (loop (image-normalized? x)))]
       [(object? x)
-       ;; add a random number here to hack around the way Eli's tester treats two errors as a passing test
+       ;; add a random number here to hack around the way Eli's 
+       ;; tester treats two errors as a passing test
        (error 'round-numbers/proc "cannot handle objects ~a" (random))]
       [(let-values ([(a b) (struct-info x)]) a)
        =>
@@ -316,6 +317,21 @@
 (test (rectangle 10 10 'solid (make-color 0 0 0))
       =>
       (rectangle 10 10 'solid 'black))
+
+(test (overlay (rectangle 10 10 'solid "blue")
+               (rectangle 10 10 'solid "transparent"))
+      =>
+      (rectangle 10 10 'solid "blue"))
+
+(test (overlay (rectangle 10 10 'solid 'transparent)
+               (rectangle 10 10 'solid "blue"))
+      =>
+      (rectangle 10 10 'solid "blue"))
+
+(test (overlay (rectangle 10 10 'solid "blue")
+               (rectangle 10 10 'solid "transparent"))
+      =>
+      (rectangle 10 10 'solid "blue"))
 
 ;; test zero sized image equalities
 
@@ -796,7 +812,8 @@
       =>
       (make-translate 125 150 (make-ellipse 50 100 0 255 "blue")))
 
-(test (normalize-shape (make-translate 10 20 (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue)))))
+(test (normalize-shape 
+       (make-translate 10 20 (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue)))))
       =>
       (make-translate 135 170 (make-ellipse 50 100 0 255 "blue")))
 
@@ -2364,7 +2381,8 @@
     (lambda (p)
       (display (convert i 'png-bytes) p))
     #:exists 'truncate)
-  (define i2 (rotate 0 (read-bitmap tmpfile))) ;; add rotate to be sure we get an image so that equal? works properly
+  ;; add rotate to be sure we get an image so that equal? works properly
+  (define i2 (rotate 0 (read-bitmap tmpfile))) 
   (delete-file tmpfile)
   (test (image-width i2) => 30)
   (test (image-height i2) => 30)
@@ -2438,7 +2456,8 @@
     (let loop ([obj obj])
       (when (struct? obj)
         (let ([stuff (vector->list (struct->vector obj))])
-          (unless (member (car stuff) '(struct:flip struct:translate struct:scale)) ;; skip these because normalization eliminates them
+           ;; skip these because normalization eliminates them
+          (unless (member (car stuff) '(struct:flip struct:translate struct:scale))
             (hash-set! counts (car stuff) (+ 1 (hash-ref counts (car stuff) 0))))
           (for-each loop (cdr stuff)))))
     (sort (hash-map counts list) string<=? #:key (λ (x) (symbol->string (car x))))))
@@ -2552,6 +2571,7 @@ This was found by the first redex check above:
         (max 0 (min (image-height i) (+ (* 10 2) 12))) 
         (+ (* 10 1) 7) (+ (* 10 1) 2)
         i))
-raises an exception crop: expected <number that is between 0 than the width (-1)> as first argument, given: 0
+raises an exception crop: expected <number that is between 0 than the width (-1)> 
+as first argument, given: 0
 
 |#

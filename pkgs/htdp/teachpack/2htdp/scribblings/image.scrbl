@@ -1435,8 +1435,9 @@ This section lists predicates for the basic structures provided by the image lib
   are also allowed, and are the same colors as in the previous sentence.
   If a string or symbol color name is not recognized, black is used in its place.
   
-  The complete list of colors is available in the documentation for
-  @racket[color-database<%>].
+  The complete list of colors is the same as the colors allowed in
+  @racket[color-database<%>], plus the color @racket["transparent"], a transparent
+  color.
 
 }
 

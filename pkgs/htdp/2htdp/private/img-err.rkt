@@ -203,13 +203,14 @@
        [(color? arg) arg]
        [(pen? arg) arg]
        [else
-        (let* ([color-str
-                (if (symbol? arg)
-                    (symbol->string arg)
-                    arg)])
-          (if (send the-color-database find-color color-str)
-              color-str
-              "black"))])]
+        (define color-str
+          (if (symbol? arg)
+              (symbol->string arg)
+              arg))
+        (cond
+          [(equal? color-str "transparent") "transparent"]
+          [(send the-color-database find-color color-str) color-str]
+          [else "black"])])]
     [(color-list)
      (check-arg fn-name (and (list? arg) (andmap image-color? arg)) 'color-list i arg)
      arg]

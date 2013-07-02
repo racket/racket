@@ -958,6 +958,7 @@ has been moved out).
        (let ([color (get-color-arg (text-color np-atomic-shape))])
          (send dc set-text-foreground 
                (cond
+                 [(equal? color "transparent") transparent-color]
                  [(string? color)
                   (or (send the-color-database find-color color)
                       (send the-color-database find-color "black"))]
@@ -1195,9 +1196,11 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 
 (define (get-color-arg color [extra-alpha 255])
   (cond
+    [(equal? color "transparent") transparent-color]
     [(string? color) 
-     (define color-obj (or (send the-color-database find-color color)
-                           (send the-color-database find-color "black")))
+     (define color-obj 
+       (or (send the-color-database find-color color)
+           (send the-color-database find-color "black")))
      (make-object color%
        (send color-obj red)
        (send color-obj green)
@@ -1211,6 +1214,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
        (* (/ (color-alpha color) 255)
           (/ extra-alpha 255)))]))
 
+(define transparent-color (make-object color% 255 255 255 0))
 
 (define (pen->pen-obj/cache pen)
   (send the-pen-list find-or-create-pen 
@@ -1343,3 +1347,4 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 (provide get-shape get-bb get-pinhole get-normalized? get-normalized-shape)
 
 (provide np-atomic-shape? atomic-shape? simple-shape? cn-or-simple-shape? normalized-shape?)
+
