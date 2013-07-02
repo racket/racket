@@ -5,7 +5,7 @@
   (define DF_SubsystemOffset #x5C)
   
   (define (set-subsystem file subsys)
-    (let-values ([(in out) (open-input-output-file file 'update)])
+    (let-values ([(in out) (open-input-output-file file #:exists 'update)])
       (file-position in DF_NewHeaderOffset)
       (let ([offset (integer-bytes->integer (read-bytes 4 in) #f #f)])
         (file-position out (+ offset DF_SubsystemOffset))

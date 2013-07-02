@@ -8,7 +8,8 @@
          (only-in "farm.rkt"
                   current-mode
                   farm-config?
-                  farm-config-tag farm-config-options farm-config-content))
+                  farm-config-tag farm-config-options farm-config-content)
+         "url-options.rkt")
 
 ;; See "farm.rkt" for an overview.
 
@@ -194,8 +195,7 @@
                  (if l
                      (apply ~a #:separator " " l)
                      default-pkgs)))
-  (define doc-search (get-opt c '#:doc-search 
-                              default-doc-search))
+  (define doc-search (choose-doc-search c default-doc-search))
   (define dist-name (or (get-opt c '#:dist-name)
                         default-dist-name))
   (define dist-base (or (get-opt c '#:dist-base)
@@ -203,7 +203,7 @@
   (define dist-dir (or (get-opt c '#:dist-dir)
                        default-dist-dir))
   (define dist-suffix (get-opt c '#:dist-suffix ""))
-  (define dist-catalogs (get-opt c '#:dist-catalogs '("")))
+  (define dist-catalogs (choose-catalogs c '("")))
   (define pull? (get-opt c '#:pull? #t))
   (~a " SERVER=" server
       " PKGS=" (q pkgs)
@@ -220,7 +220,9 @@
   (define dir (or (get-opt c '#:dir)
                   "build/plt"))
   (define (sh . args) 
-    (list "/bin/sh" "-c" (~a "'" (apply ~a args) "'")))
+    (list "/bin/sh" "-c" (~a "'" 
+                             (regexp-replace* #rx"'" (apply ~a args) "'\"'\"'")
+                             "'")))
   (define j (or (get-opt c '#:j) 1))
   (ssh-script
    host port user

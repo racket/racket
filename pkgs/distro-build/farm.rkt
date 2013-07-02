@@ -4,11 +4,17 @@
 ;; repository's top-level makefile. That target, in turn, uses the
 ;; `distro-build/drive-clients' module.
 ;;
-;; Each client is built by running commands via `ssh', where the
-;; client's host (and optional port and/or user) indicate the ssh
-;; target. Each client machine must be set up with a public-key
-;; authenticaion, because a direct `ssh' is expected to work without a
-;; password prompt.
+;; The server machine first prepares packages for installation on
+;; clients.  The farm configuration's top-level entry is consulted for
+;; a `#:pkgs' and/or `#:doc-search' option, which overrides any `PKGS'
+;; and/or `DOC_SEARCH' configuration from the makefile.
+;;
+;; The farm configuration file otherwise describes and configures
+;; client machines.  Each client is built by running commands via
+;; `ssh', where the client's host (and optional port and/or user)
+;; indicate the ssh target. Each client machine must be set up with a
+;; public-key authenticaion, because a direct `ssh' is expected to
+;; work without a password prompt.
 ;;
 ;; On the client machine, all work is performed with a git clone at a
 ;; specified directory. The directory defaults to "build/plt" (Unix,
@@ -54,13 +60,14 @@
 ;; individual machines, and groups them with `parallel' or
 ;; `sequential' to indicate whether the machine's builds should run
 ;; sequentially or in parallel.  Options specified at `parallel' or
-;; `sequential' are propagated to eachmachine in the group.
+;; `sequential' are propagated to each machine in the group.
 ;;
 ;; For example, a configuration module might look like this:
 ;;
 ;;     #lang distro-build/farm
 ;;    
 ;;     (sequential
+;;      #:pkgs '("drracket")
 ;;      #:server "192.168.56.1"
 ;;      (machine
 ;;       #:desc "Linux (32-bit, Precise Pangolin)"
@@ -90,33 +97,47 @@
 ;;   #:repo <string> --- the git repository for Racket; defaults to
 ;;                       "http://<server>:9440/.git"
 ;;   #:pkgs '(<string*> ...) --- packages to install; defaults to
-;;                              `PKGS' in the makfile (or, more genereally,
+;;                              `PKGS' in the makefile (or, particularly,
 ;;                              the `pkgs' command-line argument to
 ;;                              `distro-build/drive-clients')
+;;   #:dist-base-url <string> --- a URL that is used to construct
+;;                                a default for #:doc-search and
+;;                                #:dist-catalogs, where the
+;;                                constructed values are consistent
+;;                                with converting a build server's
+;;                                content into a download site; since
+;;                                URLs are constructed via relative
+;;                                paths, this URL normally should end
+;;                                with a slash
 ;;   #:doc-search <string> --- URL to install as the configuration
 ;;                             for remote documentation searches in
 ;;                             generated installers; "" is replaced
-;;                             with the PLT default; defaults to the
-;;                             `DOC_SEARCH' makefile variable or the
-;;                             `doc-search' argument
+;;                             with the PLT default; defaults to
+;;                             #:dist-base-url (if present) extended
+;;                             with "doc/search.html", or the
+;;                             `DOC_SEARCH' makefile variable (or the
+;;                             `doc-search' argument)
 ;;   #:dist-name <string> --- the distribution name; defaults to the
-;;                            `DIST_NAME' makefile variable or `dist-name'
-;;                            command-line argument
+;;                            `DIST_NAME' makefile variable (or the
+;;                            `dist-name' command-line argument)
 ;;   #:dist-base <string*> --- the distribution's installater name prefix;
 ;;                             defaults to the `DIST_BASE' makefile variable
-;;                             or the `dist-base' command-line argument
+;;                             (or the `dist-base' command-line argument)
 ;;   #:dist-dir <string*> --- the distribution's installation directory;
 ;;                            defaults to the `DIST_DIR' makefile variable
-;;                            or the `dist-dir' command-line argument
+;;                            (or the `dist-dir' command-line argument)
 ;;   #:dist-suffix <string*> --- a suffix for the installer's name, usually
 ;;                               used for an OS variant; defaults to the
-;;                               `DIST_SUFFIX' makefile variable or the
-;;                               `dist-suffix' command-line argument
+;;                               `DIST_SUFFIX' makefile variable (or the
+;;                               `dist-suffix' command-line argument)
 ;;   #:dist-catalogs '(<string> ...) --- catalog URLs to install as the
-;;                                       initial catalog configuration in
-;;                                       generated installed, where ""
-;;                                       is replaced with the PLT default
-;;                                       catalogs
+;;                                       initial catalog configuration
+;;                                       in generated installed, where
+;;                                       "" is replaced with the PLT
+;;                                       default catalogs; defaults to
+;;                                       #:dist-base-url (if present)
+;;                                       extended with "catalogs" in a
+;;                                       list followed by ""
 ;;   #:max-vm <real> --- max number of VMs allowed to run with this
 ;;                       machine, counting the machine; defaults to 1
 ;;   #:vbox <string> --- Virtual Box machine name; if provided the
@@ -134,13 +155,14 @@
 ;;                          machine starts by removing <dir>; set this
 ;;                          to #f for a shared repo checkout; the default
 ;;                          is determined by the `CLEAN_MODE' makefile
-;;                          variable or `--clean' command-line flag
+;;                          variable (or `--clean' command-line flag)
 ;;   #:pull? <boolean> --- if true, then the build process on the client
 ;;                         machine starts by a `git pull' in <dir>; set
 ;;                         to #f, for example, for a repo checkout that is
 ;;                         shared with server; the default is #t
 ;;
 ;; Machine-only keywords:
+;;
 ;;   #:name <string> --- defaults to host; this string is recorded as
 ;;                       a description of the installer (for use in a
 ;;                       generated table of installer links, for example)
@@ -185,8 +207,10 @@
 ;;  (current-mode s) -> void?
 ;;     s : string?
 ;;   A parameter whose value is the user's requested mode for this
-;;   configuration. The default mode is "default". The interpretation
-;;   of modes is completely up to the farm-configuration file.
+;;   configuration, normally as provided via the makefile's
+;;   `CONFIG_MODE' variable. The default mode is "default". The
+;;   interpretation of modes is completely up to the
+;;   farm configuration file.
 
 ;; ----------------------------------------
 
@@ -204,7 +228,8 @@
          farm-config-tag
          farm-config-options
          farm-config-content
-         current-mode)
+         current-mode
+         extract-options)
 
 (module reader syntax/module-reader
   distro-build/farm)
@@ -279,10 +304,16 @@
    tag
    (for/hash ([kw (in-list kws)]
               [val (in-list kw-vals)])
+     (define r (check kw val))
+     (when (eq? r 'bad-keyword)
+       (error tag
+              (~a "unrecognized keyword for option\n"
+                  "  keyword: ~s")
+              kw))
      (unless (check kw val)
        (error tag
               (~a "bad value for keyword\n"
-                  "  keyword: ~s"
+                  "  keyword: ~s\n"
                   "  value: ~e")
               kw
               val))
@@ -301,6 +332,7 @@
     [(#:dist-dir) (simple-string? val)]
     [(#:dist-suffix) (simple-string? val)]
     [(#:dist-catalogs) (and (list? val) (andmap string? val))]
+    [(#:dist-base-url) (string? val)]
     [(#:max-vm) (real? val)]
     [(#:server) (simple-string? val)]
     [(#:host) (simple-string? val)]
@@ -317,7 +349,7 @@
     [(#:repo) (string? val)]
     [(#:clean?) (boolean? val)]
     [(#:pull?) (boolean? val)]
-    [else #f]))
+    [else 'bad-keyword]))
 
 (define (check-machine-keyword kw val)
   (case kw
@@ -331,3 +363,12 @@
        (regexp-match #rx"^[-a-zA-A0-9.]*$" s)))
 
 (define current-mode (make-parameter "default"))
+
+(define (extract-options config-file config-mode)
+  (or
+   (and (file-exists? config-file)
+        (parameterize ([current-mode config-mode])
+          (farm-config-options 
+           (dynamic-require (path->complete-path config-file) 'farm-config))))
+   (hash)))
+

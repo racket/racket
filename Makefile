@@ -55,7 +55,7 @@ core:
 	cd racket/src/build; $(MAKE) install SELF_RACKET_FLAGS="-G `cd ../../../build/config; pwd`"
 
 win32-core:
-	IF NOT EXIST build\config cmd /c mkdir mkdir -p build\config
+	IF NOT EXIST build\config cmd /c mkdir -p build\config
 	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
 	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config
 
@@ -114,14 +114,14 @@ DIST_CATALOGS_q = ""
 
 # Configuration of clients to run for a build farm, normally
 # implemented with `#lang distro-build/farm':
-FARM_CONFIG = build/farm-config.rkt
+CONFIG = build/farm-config.rkt
 
 # A mode that is made available to the farm-configuration module
 # through the `current-mode' parameter:
-FARM_MODE = default
+CONFIG_MODE = default
 
 # Set to "--clean" to flush client directories in a build farm
-# (except as overridden in the `FARM_CONFIG' module):
+# (except as overridden in the `CONFIG' module):
 CLEAN_MODE =
 
 # A command to run after the server has started; normally set by
@@ -152,6 +152,7 @@ LOCAL_USER_AUTO = --catalog build/local/catalog $(USER_AUTO_OPTIONS)
 SOURCE_USER_AUTO_q = --catalog "$(SRC_CATALOG)" $(USER_AUTO_OPTIONS)
 REMOTE_USER_AUTO = --catalog http://$(SERVER):9440/ $(USER_AUTO_OPTIONS)
 REMOTE_INST_AUTO = --catalog http://$(SERVER):9440/ --scope installation --deps search-auto
+CONFIG_MODE_q = "$(CONFIG)" "$(CONFIG_MODE)"
 BUNDLE_CONFIG = bundle/racket/etc/config.rktd
 
 # ------------------------------------------------------------
@@ -209,7 +210,9 @@ local-build:
 
 fresh-user:
 	rm -rf build/user
-	$(RACKET) $(DISTBLD)/set-config.rkt racket/etc/config.rktd "$(DOC_SEARCH)" ""
+
+set-config:
+	$(RACKET) -l distro-build/set-config racket/etc/config.rktd $(CONFIG_MODE_q) "$(DOC_SEARCH)" ""
 
 # Install packages from the source copies in this directory. The
 # packages are installed in user scope, but we set the add-on
@@ -217,7 +220,9 @@ fresh-user:
 # current user's installation (and to a large degree we're insulated
 # from it):
 packages-from-local:
-	$(RACO) pkg install $(LOCAL_USER_AUTO) $(PKGS) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
+	$(RACO) pkg install $(LOCAL_USER_AUTO) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
+	$(MAKE) set-config
+	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(LOCAL_USER_AUTO)
 	$(RACO) setup --avoid-main
 
 # Install packages from a source catalog (as an alternative to
@@ -225,7 +230,9 @@ packages-from-local:
 # `SRC_CATALOG':
 build-from-catalog:
 	$(MAKE) fresh-user
-	$(RACO) pkg install $(SOURCE_USER_AUTO_q) $(PKGS) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
+	$(RACO) pkg install $(SOURCE_USER_AUTO_q) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
+	$(MAKE) set-config
+	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(CONFIG_MODE)" "$(PKGS)" $(SOURCE_USER_AUTO_q)
 	$(RACO) setup --avoid-main
 
 # Although a client will build its own "collects", pack up the
@@ -270,6 +277,7 @@ client:
 	$(MAKE) core
 	$(MAKE) distro-build-from-server
 	$(MAKE) bundle-from-server
+	$(MAKE) bundle-config
 	$(MAKE) installer-from-bundle
 
 COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" RELEASE_MODE=$(RELEASE_MODE) \
@@ -282,6 +290,7 @@ win32-client:
 	$(MAKE) win32-core $(COPY_ARGS)
 	$(MAKE) win32-distro-build-from-server $(COPY_ARGS)
 	$(MAKE) win32-bundle-from-server $(COPY_ARGS)
+	$(WIN32_RACKET) -l distro-build/set-config $(BUNDLE_CONFIG) $(CONFIG_MODE_q) "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 	$(MAKE) win32-installer-from-bundle $(COPY_ARGS)
 
 # Install the "distro-build" package from the server into
@@ -299,7 +308,9 @@ bundle-from-server:
 	$(RACKET) -l setup/unixstyle-install bundle racket bundle/racket
 	$(RACKET) -l distro-build/unpack-collects http://$(SERVER):9440/
 	bundle/racket/bin/raco pkg install $(REMOTE_INST_AUTO) $(PKGS) $(REQUIRED_PKGS)
-	$(RACKET) -l distro-build/set-config $(BUNDLE_CONFIG) "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
+
+bundle-config:
+	$(RACKET) -l distro-build/set-config $(BUNDLE_CONFIG) $(CONFIG_MODE_q) "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 
 UPLOAD_q = --upload http://$(SERVER):9440/ --desc "$(DIST_DESC)"
 DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"
@@ -324,7 +335,6 @@ win32-bundle-from-server:
 	$(WIN32_RACKET) -l distro-build/unpack-collects http://$(SERVER):9440/
 	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(REQUIRED_PKGS)
 	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(PKGS)
-	$(WIN32_RACKET) -l distro-build/set-config $(BUNDLE_CONFIG) "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 
 win32-installer-from-bundle:
 	$(WIN32_RACKET) -l- distro-build/installer $(DIST_ARGS_q)
@@ -332,11 +342,11 @@ win32-installer-from-bundle:
 # ------------------------------------------------------------
 # Drive installer build:
 
-DRIVE_ARGS_q = $(RELEASE_MODE) $(CLEAN_MODE) "$(FARM_CONFIG)" "$(FARM_MODE)" \
+DRIVE_ARGS_q = $(RELEASE_MODE) $(CLEAN_MODE) "$(CONFIG)" "$(CONFIG_MODE)" \
                $(SERVER) "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
 DRIVE_CMD_q = $(RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS_q)
 
-# Full server build and clients drive, based on `FARM_CONFIG':
+# Full server build and clients drive, based on `CONFIG':
 farm:
 	$(MAKE) server SERVE_DURING_CMD_qq='$(DRIVE_CMD_q)'
 

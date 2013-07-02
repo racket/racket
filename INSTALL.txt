@@ -168,29 +168,27 @@ client hosts.
 
 If "my-farm-config.rkt" is a configuration module, then
 
- make farm FARM_CONFIG=my-farm-config.rkt PKGS="..."
+ make farm CONFIG=my-farm-config.rkt
 
 drives the build farm, and the resulting installers are in
 "build/installers", with a hash table mapping descriptions to
 installer filenames in "build/installer/table.rktd".
 
-The default FARM_CONFIG path is "build/farm-config.rkt", so you could
-put your configuration file there and omit the `FARM_CONFIG' argument
-to `make'. Similarly, you can omit `PKGS' to use the default specified
-in the Makefile. Supply `FARM_MODE="..."' to pass a configuration mode
-on to your farm-configuration module (accessible via the
-`current-mode' parameter). Supply `CLEAN_MODE="--clean"' to make the
-default `#:clean?' configration for a client #t instead of #f.
+The default CONFIG path is "build/farm-config.rkt", so you could put
+your configuration file there and omit the `CONFIG' argument to
+`make'. Supply `CONFIG_MODE=...' to pass a configuration mode on to
+your farm-configuration module (accessible via the `current-mode'
+parameter). Supply `CLEAN_MODE=--clean' to make the default
+`#:clean?' configration for a client #t instead of #f.
 
 A configuration file can specify the packages to include, host address
 of the server, distribution name, installer directory, and
 documentation search URL, but defaults can be provided as `make'
 arguments via `PKGS', `SERVER', `DIST_NAME', `DIST_BASE', and
-`DIST_DIR', `DOC_SEARCH', respectively. Note that a sets of
-packages specified in a configure file affects the clients, but it
-does not affect the packages prepared by the server; only `PKGS' and
-`DOC_SEARCH' affect the server (and the client's packages must be
-a subset of the server's packages).
+`DIST_DIR', `DOC_SEARCH', respectively. The farm configuration's
+top-level options for packages and documentation search URL are used
+to configure the set of packages that are available to client
+machines to include in installers.
 
 For each installer written to "build/installers", the installer's name
 is

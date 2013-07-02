@@ -1,17 +1,25 @@
 #lang racket/base
 (require racket/cmdline
          racket/file
-         racket/path)
+         racket/path
+         (only-in "farm.rkt" extract-options)
+         "url-options.rkt")
 
-(define-values (config-file doc-search catalogs)
+(define-values (dest-config-file config-file config-mode default-doc-search default-catalogs)
   (command-line
    #:args
-   (config-file doc-search . catalog)
-   (values config-file doc-search catalog)))
+   (dest-config-file config-file config-mode doc-search . catalog)
+   (values dest-config-file config-file config-mode doc-search catalog)))
+
+(define config (extract-options config-file config-mode))
+
+(define doc-search (choose-doc-search config default-doc-search))
+
+(define catalogs (choose-catalogs config default-catalogs))
 
 (define orig
-  (if (file-exists? config-file)
-      (call-with-input-file* config-file read)
+  (if (file-exists? dest-config-file)
+      (call-with-input-file* dest-config-file read)
       (hash)))
 
 (let* ([table orig]
@@ -27,8 +35,8 @@
                                   #f
                                   c))))])
   (unless (equal? table orig)
-    (make-directory* (path-only config-file))
-    (call-with-output-file config-file
+    (make-directory* (path-only dest-config-file))
+    (call-with-output-file dest-config-file
       #:exists 'truncate
       (lambda (o)
         (write table o)
