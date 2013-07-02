@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/cmdline
          racket/string
-         (only-in "site.rkt" extract-options))
+         (only-in "config.rkt" extract-options))
 
 (define-values (config-file config-mode default-pkgs flags)
   (command-line

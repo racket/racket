@@ -3,7 +3,7 @@
          racket/file
          net/url
          "download-page.rkt"
-         (only-in "site.rkt" extract-options))
+         (only-in "config.rkt" extract-options))
 
 (define build-dir (build-path "build"))
 (define dest-dir (build-path build-dir "site"))
