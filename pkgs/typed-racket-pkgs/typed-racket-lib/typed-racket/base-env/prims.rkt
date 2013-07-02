@@ -174,10 +174,34 @@ This file defines two sorts of primitives. All of them are provided into any mod
            #,(ignore #'(require/contract nm.spec hidden cnt* lib))))]))
   (values (r/t-maker #t) (r/t-maker #f))))
 
-(define-syntax-rule (require/typed/provide lib [nm t] ...)
-  (begin
-    (require/typed lib [nm t] ...)
-    (provide nm ...)))
+(define-syntax (require/typed/provide stx)
+  (unless (memq (syntax-local-context) '(module module-begin))
+    (raise-syntax-error 'require/typed/provide
+                        "can only be used at module top-level"))
+  (syntax-parse stx
+    [(_ lib) #'(begin)]
+    [(_ lib [r:id t] other-clause ...)
+     #'(begin (require/typed lib [r t])
+              (provide r)
+              (require/typed/provide lib other-clause ...))]
+    [(_ lib (~and clause [#:struct name:id ([f:id (~datum :) t] ...)
+                                   option ...])
+        other-clause ...)
+     #'(begin (require/typed lib clause)
+              (provide (struct-out name))
+              (require/typed/provide lib other-clause ...))]
+    [(_ lib (~and clause [#:struct (name:id parent:id)
+                                   ([f:id (~datum :) t] ...)
+                                   option ...])
+        other-clause ...)
+     #'(begin (require/typed lib clause)
+              (provide (struct-out name))
+              (require/typed/provide lib other-clause ...))]
+    [(_ lib (~and clause [#:opaque t:id pred:id])
+        other-clause ...)
+     #'(begin (require/typed lib clause)
+              (provide t pred)
+              (require/typed/provide lib other-clause ...))]))
 
 (define-syntax require-typed-struct/provide
   (syntax-rules ()
