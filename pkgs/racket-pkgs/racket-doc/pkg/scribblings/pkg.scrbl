@@ -329,7 +329,7 @@ sub-sub-commands:
    @item{@exec{shared} --- Install packages as user-specific, but for all Racket versions.}
   ]
   The default package scope is normally @exec{user}, but it can be configured with
-  @command-ref{config}@exec{ -i --set default-scope @nonterm{scope}}.}
+  @command-ref{config}@exec{ --set default-scope @nonterm{scope}}.}
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
@@ -449,7 +449,11 @@ View and modify configuration of the package manager itself, with the following 
 
  @itemlist[
  @item{@DFlag{set} --- Sets an option, rather than printing it.}
- @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
+ @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.
+                                         A configuration value set at @exec{installation} scope serves
+                                         as the default value at @exec{shared} scope, and
+                                         a configuration value set at @exec{shared} scope serves
+                                         as the default value at @exec{user} scope.}
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
@@ -459,8 +463,10 @@ View and modify configuration of the package manager itself, with the following 
  @itemlist[
   @item{@exec{catalogs} --- A list of URLs for @tech{package catalogs}.}
   @item{@exec{default-scope} --- Either @exec{installation}, @exec{user}, or @exec{shared}.
-        This configuration option exists only with the @exec{installation} scope
-        (i.e., it's an installation-wide configuration of the default @tech{package scope} for @exec{raco pkg} commands).}
+        The value of this key at @exec{user} scope (possibly defaulting from
+        @exec{shared} or @exec{installation} scope) is
+        the default @tech{package scope} for all @exec{raco pkg} commands
+        (even @command{config}, which is consistent but potentially confusing).}
  ]
 }
 

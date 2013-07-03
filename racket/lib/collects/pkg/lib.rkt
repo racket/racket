@@ -25,6 +25,7 @@
          racket/format
          version/utils
          syntax/modcollapse
+         syntax/modread
          "name.rkt"
          "util.rkt"
          "strip.rkt"
@@ -299,32 +300,6 @@
   (and (for/and ([v (in-list lists)]) (not (eq? v 'all)))
        (apply append lists)))
 
-(define (read-pkg-cfg/def k)
-  (define c (read-pkg-cfg))
-  (define (get-default)
-    (match k
-      ['catalogs
-       (list "https://pkg.racket-lang.org"
-             "https://planet-compat.racket-lang.org")]
-      [_ #f]))
-  (define v (hash-ref c k get-default))
-  (match k
-    ['catalogs
-     ;; Replace "" with default URLs:
-     (apply append (for/list ([i (in-list v)])
-                     (if (not i)
-                         (get-default)
-                         (list i))))]
-    [_ v]))
-
-(define (pkg-config-catalogs)
-  (with-pkg-lock/read-only
-   (read-pkg-cfg/def 'catalogs)))
-
-(define (pkg-catalogs)
-  (or (current-pkg-catalogs)
-      (map string->url (read-pkg-cfg/def 'catalogs))))
-
 (define (db-path? p)
   (regexp-match? #rx"[.]sqlite$" (path->bytes p)))
 
@@ -414,15 +389,18 @@
                                   (log-exn x "reading file hash") 
                                   (hash))])
       (if (file-exists? file) ; don't complain if the file is missing
-          (file->value file)
+          (with-module-reading-parameterization
+           (lambda ()
+             (file->value file)))
           (hash))))
   the-db)
              
 (define (write-file-hash! file new-db)
   (make-parent-directory* file)
-  (with-output-to-file file
-    #:exists 'replace
-    (λ () (write new-db))))
+  (call-with-output-file* 
+   file
+   #:exists 'replace
+   (λ (o) (write new-db o) (newline o))))
 
 (define (read-pkg-db)
   (if (current-no-pkg-db)
@@ -533,12 +511,50 @@
   (write-file-hash!
    (pkg-db-file)
    (hash-remove (read-pkg-db) pkg-name)))
-(define (read-pkg-cfg)
-  (read-file-hash (pkg-config-file)))
+
+(define (read-pkg-cfg/def k)
+  ;; Lock is held for the current scope, but if
+  ;; the key is not found in the current scope,
+  ;; get the next scope's lock and try there,
+  ;; etc.
+  (define (get-default)
+    (match k
+      ['catalogs
+       (list "https://pkg.racket-lang.org"
+             "https://planet-compat.racket-lang.org")]
+      ['default-scope "user"]
+      [_ #f]))
+  (define c (read-file-hash (pkg-config-file)))
+  (define v (hash-ref c k 'none))
+  (cond
+   [(eq? v 'none)
+    ;; Default from enclosing scope or hard-wired default:
+    (define s (current-pkg-scope))
+    (if (eq? s 'installation)
+        ;; Hard-wided:
+        (get-default)
+        ;; Enclosing:
+        (parameterize ([current-pkg-scope (if (eq? s 'user)
+                                              'shared
+                                              'installation)])
+          (read-pkg-cfg/def k)))]
+   [else
+    (match k
+      ['catalogs
+       (if (member #f v)
+           ;; Replace #f with default URLs:
+           (apply append (for/list ([i (in-list v)])
+                           (if (not i)
+                               (get-default)
+                               (list i))))
+           v)]
+      [_ v])]))
+
 (define (update-pkg-cfg! key val)
-  (write-file-hash!
-   (pkg-config-file)
-   (hash-set (read-pkg-cfg) key val)))
+  (define f (pkg-config-file))
+  (write-file-hash! 
+   f
+   (hash-set (read-file-hash f) key val)))
 
 (define (default-pkg-scope)
   (match (default-pkg-scope-as-string)
@@ -546,10 +562,15 @@
     ["shared" 'shared]
     [else 'user]))
 (define (default-pkg-scope-as-string)
-  (parameterize ([current-pkg-scope 'installation])
-    (with-pkg-lock/read-only
-     (define cfg (read-pkg-cfg))
-     (hash-ref cfg 'default-scope "user"))))
+  (read-pkg-cfg/def 'default-scope))
+
+(define (pkg-config-catalogs)
+  (with-pkg-lock/read-only
+   (read-pkg-cfg/def 'catalogs)))
+
+(define (pkg-catalogs)
+  (or (current-pkg-catalogs)
+      (map string->url (read-pkg-cfg/def 'catalogs))))
 
 (struct pkg-info (orig-pkg checksum auto?) #:prefab)
 (struct sc-pkg-info pkg-info (collect) #:prefab) ; a pkg with a single collection
@@ -1600,19 +1621,13 @@
         (update-pkg-cfg! 'catalogs val)]
        [(list (and key "default-scope") val)
         (unless (member val '("installation" "user" "shared"))
-          (pkg-error (~a "invliad value for config key\n"
+          (pkg-error (~a "invalid value for config key\n"
                          "  config key: ~a\n"
                          "  given value: ~a\n"
                          "  valid values: installation, user, or shared")
                      key
                      val))
-        (if (eq? 'installation (current-pkg-scope))
-            (update-pkg-cfg! 'default-scope val)
-            (pkg-error (~a "config key makes sense only with --installation/-i\n"
-                           "  config key: ~a\n"
-                           "  given value: ~a")
-                       key
-                       val))]
+        (update-pkg-cfg! 'default-scope val)]
        [(list key)
         (pkg-error "unsupported config key\n  key: ~e" key)]
        [(list)
@@ -1625,11 +1640,7 @@
            (for ([s (in-list (read-pkg-cfg/def 'catalogs))])
              (printf "~a\n" s))]
           ["default-scope"
-           (if (eq? 'installation (current-pkg-scope))
-               (printf "~a\n" (default-pkg-scope-as-string))
-               (pkg-error (~a "config key makes sense only with --installation/-i\n"
-                           "  config key: ~a")
-                          key))]
+           (printf "~a\n" (read-pkg-cfg/def 'default-scope))]
           [_
            (pkg-error "unsupported config key\n  key: ~e" key)])]
        [(list)
