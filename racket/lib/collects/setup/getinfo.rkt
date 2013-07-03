@@ -253,7 +253,7 @@
  (get-info/full ((path-string?) (#:namespace (or/c namespace? #f)) . ->* . (or/c info? boolean?)))
  (find-relevant-directories
   (->* [(listof symbol?)]
-       [(lambda (x) (memq x '(preferred all-available no-planet no-user)))]
+       [(or/c 'preferred 'all-available 'no-planet 'no-user)]
        (listof path?)))
  (struct directory-record
          ([maj integer?]
@@ -263,5 +263,5 @@
           [syms (listof symbol?)]))
  (find-relevant-directory-records
   (->* [(listof symbol?)]
-       [(or/c 'preferred 'all-available 'no-planet)]
+       [(or/c 'preferred 'all-available 'no-planet 'no-user)]
        (listof directory-record?))))

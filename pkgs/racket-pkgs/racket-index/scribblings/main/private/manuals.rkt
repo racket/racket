@@ -29,17 +29,12 @@
                     (if sep? (cons (mk-sep lbl) l) l))]))))
 
 (define (get-docs all? tag)
-  (let* ([recs (find-relevant-directory-records (list tag) 'all-available)]
+  (let* ([recs (find-relevant-directory-records (list tag) (if all? 'all-available 'no-user))]
          [infos (map get-info/full (map directory-record-path recs))]
-         [main-dirs (parameterize ([current-library-collection-paths
-                                    (list (find-collects-dir))])
-                      (for/hash ([k (in-list (find-relevant-directories (list tag) 'no-planet))])
-                        (values k #t)))]
          [docs (append-map
                 (lambda (i rec)
                   (define dir (directory-record-path rec))
-                  (define s (and (or all? (hash-ref main-dirs dir #f))
-                                 i
+                  (define s (and i
                                  (i tag)))
                   (if (not s)
                     null
