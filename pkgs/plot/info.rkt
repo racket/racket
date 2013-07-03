@@ -14,6 +14,7 @@
                "snip-lib"
                "typed-racket-lib"
                "unstable"
+               "unstable-flonum-lib"
                "unstable-contract-lib"
                "unstable-latent-contract-lib"
                "unstable-parameter-group-lib"))

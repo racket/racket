@@ -8,4 +8,5 @@
                      "compiler-lib"
                      "redex"
                      "sandbox-lib"
+                     "unstable-flonum-lib"
                      "unstable"))
