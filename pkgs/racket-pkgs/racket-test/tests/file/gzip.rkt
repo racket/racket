@@ -73,7 +73,7 @@
 
 (define (test-big-file)
   (define big-file
-    (build-path (collection-path "drracket/private") "unit.rkt"))
+    (collection-file-path "contract-test.rktl" "tests/racket"))
   ;; should be around 6 times smaller
   (id* (file->bytes big-file) 4))
 
