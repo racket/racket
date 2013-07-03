@@ -479,7 +479,7 @@ color in it:
                     (rectangle 100 100 'solid (make-color 1 1 1 50))
                     (rectangle 100 100 'solid (make-color 2 2 2 50)))]
 To understand why, we must look more carefully at how alpha blending
-and image equality work. Image equality is straightforward: two images
+and image equality work. Image equality's definition is straightforward: two images
 are equality if they are both drawn the same. That is, image equality
 is defined by simply drawing the two shapes on a white background and
 then comparing all of the pixels for the two drawings

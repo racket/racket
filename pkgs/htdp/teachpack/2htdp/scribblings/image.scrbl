@@ -1600,6 +1600,12 @@ Two images are @racket[equal?] if they draw exactly the same way at their curren
 (not necessarily at all sizes) and, if there are pinholes, the pinholes are
 in the same place.
 
+This can lead to some counter-intuitive results. For example, two completely shapes that
+are the same size and are drawn with the transparent color are equal:
+@image-examples[(equal? (circle 30 "solid" "transparent")
+                        (square 60 "solid" "transparent"))]
+See also @secref["nitty-gritty-alpha"].
+
 @section[#:tag "pinholes"]{Pinholes}
 
 A pinhole is an optional property of an image that identifies a point somewhere
