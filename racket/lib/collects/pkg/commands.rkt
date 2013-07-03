@@ -117,16 +117,17 @@
 
 (define-syntax (commands stx)
   (syntax-parse stx
-    [(_ main-doc:expr export-prefix:id c:command ...)
+    [(_ main-doc:expr export-format:str c:command ...)
      (with-syntax ([(export-names ...)
-                    (map (λ (x) (string->symbol (format "~a~a"
-                                                        (syntax-e #'export-prefix)
-                                                        (syntax-e x))))
+                    (map (λ (x) 
+                           #`[#,x
+                              #,(string->symbol (format (syntax-e #'export-format)
+                                                        (syntax-e x)))])
                          (syntax->list #'(c.name ...)))])
      (syntax/loc stx
        (begin
          c.function ...
-         (provide export-names ...)
+         (provide (rename-out export-names ...))
          (module+ main
            c.variables ...
            (svn-style-command-line

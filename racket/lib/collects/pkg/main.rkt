@@ -51,7 +51,7 @@
 
 (commands
  "This tool is used for managing installed packages."
- pkg-
+ "pkg-~a-command"
  [install
   "Install packages"
   #:once-each

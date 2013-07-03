@@ -120,8 +120,8 @@
                           [(update) (string-constant install-pkg-abort-update)])
                         (lambda ()
                           (define action (case (car res)
-                                           [(install) pkg-install]
-                                           [(update) pkg-update]))
+                                           [(install) pkg-install-command]
+                                           [(update) pkg-update-command]))
                           (apply action (cdr res))))
                        (reset-installed-pkgs!))]))
 
@@ -199,7 +199,7 @@
                                                   (in-terminal
                                                    (lambda ()
                                                      (define scope (selected-scope))
-                                                     (pkg-config #:scope 'installation #:set #t "default-scope" (~a scope))
+                                                     (pkg-config-command #:scope 'installation #:set #t "default-scope" (~a scope))
                                                      (printf "Default scope successfully changed to ~a" scope)))
                                                   (adjust-all))]))
     (define inferred-scope-msg-parent (new horizontal-panel% 

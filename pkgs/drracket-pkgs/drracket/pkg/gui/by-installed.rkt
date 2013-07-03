@@ -87,7 +87,7 @@
                           (string-constant install-pkg-abort-remove)
                           (lambda ()
                             (apply
-                             pkg-remove
+                             pkg-remove-command
                              #:scope scope
                              names)))
                          (reset-installed-list!)))]))
@@ -104,7 +104,7 @@
                         (string-constant install-pkg-abort-update)
                         (lambda ()
                           (apply
-                           pkg-update
+                           pkg-update-command
                            #:scope scope
                            names)))
                        (reset-installed-list!))]))

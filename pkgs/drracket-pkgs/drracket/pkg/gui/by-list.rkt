@@ -180,7 +180,7 @@
                             (string-constant install-pkg-abort-install))
                         (lambda ()
                           (apply
-                           (if first-inst pkg-update pkg-install)
+                           (if first-inst pkg-update-command pkg-install-command)
                            #:scope (and first-inst
                                         (car first-inst))
                            names)))
