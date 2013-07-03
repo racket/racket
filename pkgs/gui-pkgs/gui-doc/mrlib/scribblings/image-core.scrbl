@@ -13,8 +13,8 @@ up an image.
 
 @defproc[(render-image [image image?]
                        [dc (is-a?/c dc<%>)]
-                       [dx number?]
-                       [dy number?])
+                       [dx real?]
+                       [dy real?])
          void?]{
   Draws @racket[image] in @racket[dc] at the position (@racket[dx],@racket[dy]).
 }
