@@ -352,16 +352,16 @@ old positions of the hero:
                             (rotate 50 (hero  25)))]
 What we'd really want is for the hero to appear to rotate around
 the centroid of the triangle. To achieve this effect, we can put
-the hero onto a transparent rectangle such that the center of the whole
-image is the centroid of the triangle:
+the hero onto a transparent circle such that the center of the whole
+image lines up with the centroid of the triangle:
 @image-interaction[(define (hero-on-blank α)
                      (define the-hero (hero α))
                      (define w (image-width the-hero))
                      (define h (image-height the-hero))
                      (define d (max w h))
-                     (define dx (/ w 2))   ; centroid
-                     (define dy (* 2/3 h)) ; centroid
-                     (define blank  (rectangle (* 2 d) (* 2 d) "solid" (color 255 255 255 0)))
+                     (define dx (/ w 2))   (code:comment "centroid x offset")
+                     (define dy (* 2/3 h)) (code:comment "centroid y offset")
+                     (define blank  (circle d "solid" (color 255 255 255 0)))
                      (place-image/align the-hero (- d dx) (- d dy) "left" "top" blank))]
 and now the rotating hero looks reasonable:
 @image-interaction[(overlay (rotate 0  (hero-on-blank 255))
