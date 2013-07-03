@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label "../turtles.rkt" "../turtle-examples.rkt"))
+@(require "common.rkt" (for-label graphics/turtles graphics/turtle-examples))
 
 @title{Traditional Turtles}
 

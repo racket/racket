@@ -1,9 +1,9 @@
 #lang scribble/doc
 @(require "common.rkt"
-          (for-label "../graphics.rkt"
-                     "../graphics-sig.rkt"
-                     "../graphics-unit.rkt"
-                     "../graphics-posn-less-unit.rkt"))
+          (for-label graphics/graphics
+                     graphics/graphics-sig
+                     graphics/graphics-unit
+                     graphics/graphics-posn-less-unit))
 
 @title{Graphics: Legacy Library}
 
