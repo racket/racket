@@ -136,7 +136,7 @@ proven again reachable through only weak references.
 
 A will executor can be used as a @tech{synchronizable event} (see @secref["sync"]).
 A will executor is @tech{ready for synchronization} when
-@racket[will-execute] would not block; @resultItself{will executor}.}
+@racket[will-execute] would not block; @resultItself{will executor}.
 
 
 @defproc[(make-will-executor) will-executor?]{
