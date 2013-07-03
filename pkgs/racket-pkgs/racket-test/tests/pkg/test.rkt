@@ -4,7 +4,7 @@
          "shelly.rkt"
          "util.rkt"
          racket/port
-         (only-in pkg config))
+         (only-in pkg pkg-config-command))
 
 ;; By making these syntax-time includes, it made it so they would be
 ;; rebuilt and register as real dependencies.
@@ -34,7 +34,7 @@
     (error "Set the PLT_PKG_NOSETUP environment variable before running these tests\n")))
 
 (unless (equal? "user\n" (with-output-to-string
-                           (lambda () (config #:installation #t "default-scope"))))
+                           (lambda () (pkg-config-command #:installation #t "default-scope"))))
   (error "Run this test suite with `user' default package scope"))
 
 (run-tests

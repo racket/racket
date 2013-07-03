@@ -1,7 +1,8 @@
 #lang racket/base
 
   (require rackunit
-           racket/file)
+           racket/file
+           pkg/db)
 
   (define (pkg<? a b)
     (if (string=? (pkg-name a) (pkg-name b))
@@ -74,17 +75,17 @@
                                                        '("p8" "8.0")
                                                        '("p9" #:version "9.0")
                                                        '("p10" #:platform #rx"linux")
-                                                       '("p11" #:platform 'windows)
-                                                       '("p12" #:version "1.2" #:platform 'macosx)
-                                                       '("p13" #:platform 'unix #:version "1.3.2")
+                                                       '("p11" #:platform windows)
+                                                       '("p12" #:version "1.2" #:platform macosx)
+                                                       '("p13" #:platform unix #:version "1.3.2")
                                                        '("p14" #:platform "")))
     (check-equal? (sort (get-pkg-dependencies "p1" "http://a" "123")
                         string<?
                         #:key car)
                   '(("p10" #:platform #rx"linux")
-                    ("p11" #:platform 'windows)
-                    ("p12" #:version "1.2" #:platform 'macosx)
-                    ("p13" #:version "1.3.2" #:platform 'unix)
+                    ("p11" #:platform windows)
+                    ("p12" #:version "1.2" #:platform macosx)
+                    ("p13" #:version "1.3.2" #:platform unix)
                     ("p14" #:platform "")
                     ("p7")
                     ("p8" #:version "8.0")
@@ -98,4 +99,4 @@
                   (list
                    (pkg "p1" "http://a" "github:a" "adam" "123" "the first package")))
 
-    (delete-file (current-pkg-catalog-file))
+    (delete-file (current-pkg-catalog-file)))
