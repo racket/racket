@@ -1,11 +1,23 @@
 language: c
+env:
+  - PATH=./racket/bin:$PATH
 compiler:
   - gcc
   - clang
-# Change this to your needs
+# Just run tests for the core
 script:
   - make PKGS="racket-test"
-  - ./racket/bin/racket -f pkgs/racket-pkgs/racket-test/tests/racket/quiet.rktl
-  - ./racket/bin/racket pkgs/racket-pkgs/racket-test/tests/json/json.rkt
-  - ./racket/bin/raco test pkgs/racket-pkgs/racket-test/tests/xml/test.rkt
+  - racket -f pkgs/racket-pkgs/racket-test/tests/racket/quiet.rktl
+  - racket pkgs/racket-pkgs/racket-test/tests/json/json.rkt
+  - racket pkgs/racket-pkgs/racket-test/tests/file/main.rkt
+  - racket pkgs/racket-pkgs/racket-test/tests/net/head.rkt
+  - racket pkgs/racket-pkgs/racket-test/tests/net/uri-codec.rkt
+  - racket pkgs/racket-pkgs/racket-test/tests/openssl/basic.rkt
+  - racket pkgs/racket-pkgs/racket-test/tests/openssl/https.rkt
+  - racket pkgs/racket-pkgs/racket-test/tests/match/plt-match-tests.rkt
+  - racket pkgs/racket-pkgs/racket-test/tests/db/all-tests.rkt
+  - raco test pkgs/racket-pkgs/racket-test/tests/xml/test.rkt
+notifications:
+  irc: "chat.freenode.net#racket"
+  email: samth@racket-lang.org
 
