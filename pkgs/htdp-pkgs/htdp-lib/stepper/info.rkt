@@ -6,5 +6,4 @@
 
 (define drracket-tool-icons (list '("stepper-32x32.png" "icons")))
 
-(define scribblings '(("scribblings/stepper.scrbl")))
 (define release-notes (list (list "Stepper" "HISTORY.txt")))

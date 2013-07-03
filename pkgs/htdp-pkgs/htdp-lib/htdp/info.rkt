@@ -5,4 +5,3 @@
   '("hangman-world.rkt" "hangman-world-play.rkt"
     "tests"))
 
-(define scribblings '(("htdp.scrbl")))
