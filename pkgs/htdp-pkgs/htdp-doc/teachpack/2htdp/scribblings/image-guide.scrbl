@@ -4,7 +4,10 @@
                      (except-in lang/htdp-beginner posn make-posn posn? posn-x posn-y image?)
                      lang/posn
                      (only-in racket/base foldl)
-                     (except-in racket/gui/base make-color make-pen))
+                     (except-in racket/gui/base make-color make-pen)
+                     file/convertible
+                     pict/convert
+                     (only-in mrlib/image-core render-image))
           "shared.rkt"
           "img-eval.rkt"
           scribble/decode
@@ -370,6 +373,17 @@ and now the rotating hero looks reasonable:
                             (rotate 30 (hero-on-blank  75))
                             (rotate 40 (hero-on-blank  50))
                             (rotate 50 (hero-on-blank  25)))]
+
+@section{Image Interoperability}
+
+Images can connect to other libraries.  Specifically:
+@itemlist[@item{images are @racket[snip%] objects, so can
+                be @method[text% insert]ed into @racket[text%]
+                and @racket[pasteboard%] objects}
+           @item{they implement the @racket[convert] protocol for @racket['png-bytes]}
+           @item{they implement the @racket[pict-convert] protocol, and}
+           @item{there is a low-level interface for drawing directly into
+                 a @racket[dc<%>] object: @racket[render-image].}]
 
 @section[#:tag "nitty-gritty"]{The Nitty Gritty of Pixels, Pens, and Lines}
 

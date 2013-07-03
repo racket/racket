@@ -10,6 +10,6 @@
     "gui-lib"
     "htdp-lib"
     "sandbox-lib"
-    ))
+    "pict-lib"))
 (define build-deps '(#;"at-exp-lib"
                      #;"rackunit-lib"))
