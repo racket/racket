@@ -1,5 +1,7 @@
 #lang setup/infotab
 
+(define collection 'multi)
+
 (define deps '("pkg-z"))
 (define build-deps '("pkg-y"))
 

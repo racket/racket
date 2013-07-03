@@ -1409,29 +1409,22 @@
                                                   (path-element->string name))]
                                #:namespace [metadata-ns (make-metadata-namespace)])
   (define i (get-pkg-info dir metadata-ns))
-  (and i
-       (or
-        (let ([s (i 'collection
-                    ;; default will change from 'multi to 'use-pkg-name:
-                    (lambda () 'multi))])
-          (unless (or (string? s)
-                      (eq? s 'multi)
-                      (eq? s 'use-pkg-name))
-            (log-error (format (~a "bad `collection' definition in \"info.rkt\n"
-                                   "  path: ~a\n"
-                                   "  found: ~e\n"
-                                   "  expected: (or/c string? 'multi 'use-pkg-name)")
-                               (build-path dir "info.rkt")
-                               s)))
-          (or (and (string? s) 
-                   s)
-              (and (eq? s 'use-pkg-name)
-                   pkg-name)))
-        ;; temporary backward compatubilty, to be removed when the
-        ;; default changes to 'multi
-        (let ([s (i 'single-collection (lambda () #f))])
-          (and (string? s) 
-               s)))))
+  (if (not i)
+      pkg-name
+      (let ([s (i 'collection (lambda () 'use-pkg-name))])
+        (unless (or (string? s)
+                    (eq? s 'multi)
+                    (eq? s 'use-pkg-name))
+          (log-error (format (~a "bad `collection' definition in \"info.rkt\n"
+                                 "  path: ~a\n"
+                                 "  found: ~e\n"
+                                 "  expected: (or/c string? 'multi 'use-pkg-name)")
+                             (build-path dir "info.rkt")
+                             s)))
+        (or (and (string? s)
+                 s)
+            (and (eq? s 'use-pkg-name)
+                 pkg-name)))))
 
 (define (get-setup-collects pkg-names+directories metadata-ns)
   (maybe-append

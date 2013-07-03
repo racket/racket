@@ -15,5 +15,6 @@
 	       "net-lib"
                "sandbox-lib"
                "scribble-lib"
-               "compatibility-lib"))
+               "compatibility-lib"
+               "racket-test"))
 (define implies '("distro-build"))

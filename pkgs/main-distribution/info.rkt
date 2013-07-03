@@ -1,5 +1,7 @@
 #lang setup/infotab
 
+(define collection 'multi)
+
 (define deps '("algol60"
                "at-exp-lib"
                "compatibility"

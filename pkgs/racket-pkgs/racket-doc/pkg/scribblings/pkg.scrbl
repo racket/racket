@@ -83,14 +83,6 @@ name as the package. The @tech{checksum} is typically left implicit.
 The package directory can contain a file named @filepath{info.rkt}
 to declare other metadata (see @secref["metadata"]).
 
-[@bold{The following paragraph and itemization is intentionally wrong.}
-Currently, if a package has no @filepath{info.rkt} file or no
-@racketidfont{collection} definition, it is treated as
-@tech{multi-collection package}. Also,
-@racketidfont{single-collection} is supported for temporary backward
-compatibility. The documentation from here on reflects the planned
-behavior.]
-
 A @tech{package} can be a @tech{single-collection package} or a
 @tech{multi-collection package}:
 

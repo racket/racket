@@ -35,17 +35,14 @@
                     "pkg-x-platform1" "pkg-x-platform2")))
   
   (define (create-package name)
-    (define pkg-name name)
-    (define dir (build-path pkgs-dir pkg-name))
-    (make-directory* dir)
-    (define coll-dir (build-path dir name))
+    (define coll-dir (build-path pkgs-dir name))
     (make-directory* coll-dir)
     (call-with-output-file*
      (build-path coll-dir "main.rkt")
      (lambda (o) 
        (displayln "#lang racket/base" o)))
     (parameterize ([db:current-pkg-catalog-file db])
-      (db:set-pkg! pkg-name "local" "author@place" (path->string dir) "123456" "")))
+      (db:set-pkg! name "local" "author@place" (path->string coll-dir) "123456" "")))
 
   (create-package "pkg-x")
   (create-package "pkg-x-unix")

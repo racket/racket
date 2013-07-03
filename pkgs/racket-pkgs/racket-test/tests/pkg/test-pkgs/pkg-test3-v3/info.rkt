@@ -1,3 +1,3 @@
 #lang setup/infotab
-(define single-collection "pkg-test3")
 
+(define collection "pkg-test3")

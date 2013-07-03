@@ -121,9 +121,10 @@
       $ "cp -r test-pkgs/pkg-test3 test-pkgs/pkg-test3-linking"
       $ "racket -e '(require pkg-test3)'" =exit> 1
       $ "raco pkg install --link test-pkgs/pkg-test1 test-pkgs/pkg-test3-linking"
-      $ "racket -e '(require pkg-test3)'"
-      $ "raco pkg remove pkg-test1 pkg-test3-linking"
+      $ "racket -e '(require pkg-test3-linking)'"
       $ "racket -e '(require pkg-test3)'" =exit> 1
+      $ "raco pkg remove pkg-test1 pkg-test3-linking"
+      $ "racket -e '(require pkg-test3-linking)'" =exit> 1
       (finally
        $ "rm -r test-pkgs/pkg-test3-linking"))))
 
@@ -132,6 +133,13 @@
      "remote/name package, doesn't work when no package there"
      $ "raco pkg config --set catalogs http://localhost:9990"
      $ "raco pkg install pkg-test1-not-there" =exit> 1))
+
+   (with-fake-root
+    (shelly-case
+     "implicitly single-collection"
+     $ "racket -e '(require pkg-c/c)'" =exit> 1
+     $ "raco pkg install --link test-pkgs/pkg-c"
+     $ "racket -e '(require pkg-c/c)'" =stdout> "'c\n"))
 
    (with-fake-root
     (shelly-case
