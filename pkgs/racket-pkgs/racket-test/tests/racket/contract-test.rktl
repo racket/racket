@@ -3268,10 +3268,14 @@
           (regexp-match (regexp-quote "|x y|: 123456789") (exn-message x)))))
 
   ;; test to make sure the collects directories are appropriately prefixed
-  #; ;; FIXME -- currently broken by the package system
   (contract-error-test
    '->i-contract-error-test3
-    #'(contract symbol? "not a symbol" 'pos 'neg 'not-a-symbol #'here)
+   '(contract symbol? "not a symbol" 'pos 'neg 'not-a-symbol 
+              (datum->syntax
+               #f
+               'here
+               (vector (collection-file-path "base.rkt" "racket")
+                       1 1 1 1)))
     (lambda (x)
       (and (exn:fail:contract:blame? x)
            (let ([msg (exn-message x)])
