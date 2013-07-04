@@ -951,7 +951,7 @@
                     (set! all-ok? #t)
                     (for ([i l])
                       (match i
-                        [(list (and a (or (? bytes?) (list 'info (? bytes?) ...)))
+                        [(list (and a (or (? bytes?) (list (or 'info 'lib) (? bytes?) ...)))
                                (list (? symbol? b) ...) c (? integer? d) (? integer? e))
                          (define p (if (bytes? a) (bytes->path a) a))
                          ;; Check that the path is suitably absolute or relative:
@@ -959,8 +959,9 @@
                            (case info-path-mode
                              [(relative abs-in-relative)
                               (or (and (list? p)
-                                       (main-lib-relative->path
-                                        (info-relative->path p)))
+                                       (if (eq? (car p) 'info)
+                                           (info-relative->path p)
+                                           (main-lib-relative->path p)))
                                   (and (complete-path? p)
                                        ;; `c' must be `(lib ...)'
                                        (list? c)
