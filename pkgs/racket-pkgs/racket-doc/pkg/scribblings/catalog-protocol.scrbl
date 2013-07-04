@@ -68,7 +68,7 @@ information about packages:
               @secref["metadata"].}
 
         @item{@racket['modules] --- a list of module paths for modules
-              that are provided by th package; each module path should
+              that are provided by the package; each module path should
               be normalized in the sense of
               @racket[collapse-module-path].}
 
@@ -77,8 +77,8 @@ information about packages:
  @item{@litchar{pkgs} path element: Obtains a list of package names
        that are mapped by the @tech{package catalog}.  An HTTP request for a remote URL
        should respond with a @racket[read]-able list of strings. A
-       path in a local directory formed by adding @filepath{pkg} and
-       @nonterm{package} should refer to a file that similarly
+       path in a local directory formed by adding @filepath{pkgs}
+       should refer to a file that similarly
        contains a @racket[read]-able list of strings.
 
        This URL/path form is used by @command-ref{catalog-copy} and
@@ -92,7 +92,7 @@ information about packages:
        package names to package details. An HTTP request for a remote
        URL should respond with a @racket[read]-able hash table mapping
        strings to hash tables. A path in a local directory formed by
-       adding @filepath{pkg} and @nonterm{package} should refer to a
+       adding @filepath{pkgs-all} should refer to a
        file that similarly contains a @racket[read]-able hash table.
 
        This URL/path form is a shortcut for a @litchar{pkgs} URL/path
