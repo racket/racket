@@ -6,7 +6,6 @@
          (only-in "config.rkt" extract-options))
 
 (define build-dir (build-path "build"))
-(define dest-dir (build-path build-dir "site"))
 
 (define built-dir (build-path build-dir "built"))
 (define native-dir (build-path build-dir "native"))
@@ -22,6 +21,12 @@
    (values config-file config-mode)))
 
 (define config (extract-options config-file config-mode))
+
+(define dest-dir (hash-ref config
+                           '#:site-dest
+                           (build-path build-dir "site")))
+
+(printf "Assembling site as ~a\n" dest-dir)
 
 (define (copy dir [build-dir build-dir])
   (make-directory* dest-dir)

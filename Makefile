@@ -169,7 +169,15 @@ win32-pkg-links:
 
 server:
 	$(MAKE) core
+	$(MAKE) stamp
 	$(MAKE) server-from-core
+
+stamp:
+	if [ -d ".git" ] ; then $(MAKE) stamp-from-git ; else $(MAKE) stamp-from-date ; fi
+stamp-from-git:
+	echo `date +"%Y%m%d"`-`git log -1 --pretty=format:%h` > build/stamp.txt
+stamp-from-date:
+	date +"%Y%m%d" > build/stamp.txt
 
 server-from-core:
 	if [ "$(EEAPP)" = '' ] ; then $(MAKE) build-from-local ; else $(MAKE) build-from-catalog ; fi
@@ -357,3 +365,22 @@ installers-from-built:
 # Just the clients, assuming server is already running:
 drive-clients:
 	$(DRIVE_CMD)
+
+# ------------------------------------------------------------
+# Create installers, then assemble as a web site:
+
+site:
+	$(MAKE) installers
+	$(MAKE) site-from-installers
+
+site-from-installers:
+	$(RACKET) -l- distro-build/assemble-site $(CONFIG_MODE_q)
+
+# Make an extra installers page:
+PAGE_DEST = build/index.html
+INSTALLERS_URL = site/
+DOWNLOAD_PAGE_ARGS = --dest $(PAGE_DEST) \
+                     --at "$(INSTALLERS_URL)" \
+                     build/installers/table.rktd
+site-page:
+	$(RACKET) -l- distro-build/download-page $(DOWNLOAD_PAGE_ARGS)

@@ -32,7 +32,7 @@
     (keyword-apply make-download-page
                    (map car args)
                    (map cdr args)
-                   table-file)))
+                   (list table-file))))
 
 (define (make-download-page table-file
                             #:dest [dest "index.html"]

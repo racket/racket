@@ -164,6 +164,8 @@
 ;;                         machine starts by a `git pull' in <dir>; set
 ;;                         to #f, for example, for a repo checkout that is
 ;;                         shared with server; the default is #t
+;;   #:site-dest <path-string> --- destination for completed build; the default
+;;                                 is "build/site"
 ;;
 ;; Machine-only keywords:
 ;;
@@ -233,6 +235,7 @@
          site-config-options
          site-config-content
          current-mode
+         current-stamp
          extract-options)
 
 (module reader syntax/module-reader
@@ -353,6 +356,7 @@
     [(#:repo) (string? val)]
     [(#:clean?) (boolean? val)]
     [(#:pull?) (boolean? val)]
+    [(#:site-dest) (path-string? val)]
     [else 'bad-keyword]))
 
 (define (check-machine-keyword kw val)
@@ -367,6 +371,15 @@
        (regexp-match #rx"^[-a-zA-A0-9.]*$" s)))
 
 (define current-mode (make-parameter "default"))
+
+(define current-stamp
+  (let* ([f (build-path "build" "stamp.txt")]
+         [s (and (file-exists? f)
+                 (call-with-input-file* f read-line))])
+    (lambda ()
+      (if (string? s)
+          s
+          "now"))))
 
 (define (extract-options config-file config-mode)
   (or

@@ -55,48 +55,53 @@
                 "attach" "-readwrite" "-noverify" "-noautoopen"
                 "-mountpoint" mnt dmg)
   (define mnt-name (let-values ([(base name dir?) (split-path mnt)]) (path->string name)))
-  ;; see also https://github.com/andreyvit/yoursway-create-dmg
+  ;; See also https://github.com/andreyvit/yoursway-create-dmg
+  ;; First, give Finder a chance to see the new disk:
   (define script
     @~a{
-	tell application "Finder"
-	  -- look for a single disk with the mount point as its name
-	  -- (maybe this works only on newer osx versions?)
-	  set myDisks to every disk
-	  set theDMGDisk to ""
-	  repeat with d in myDisks
-	    if name of d = "@mnt-name"
-	      if theDMGDisk = ""
-	        set theDMGDisk to d
-	      else
-	        error "Too many attached DMGs found!"
-	      end if
-	    end if
-	  end repeat
-	  if theDMGDisk = "" then error "Attached DMG not found!"
-	  -- found a single matching disk, continue
-	  tell theDMGDisk
-	    open
-	    set current view of container window to icon view
-	    set toolbar visible of container window to false
-	    set statusbar visible of container window to false
-	    set bounds of container window to {320, 160, 1000, 540}
-	    set theViewOptions to the icon view options of container window
-	    set arrangement of theViewOptions to not arranged
-	    set icon size of theViewOptions to 128
-	    set text size of theViewOptions to 16
-	    set background picture of theViewOptions to file "@bg"
-	    make new alias file at container window to POSIX file "/Applications" with properties {name:"Applications"}
-	    set position of item "@volname" of container window to {170, 180}
-	    set position of item "@bg" of container window to {900, 180}
-	    set position of item "Applications" of container window to {500, 180}
-	    set name of file "@bg" to ".@bg"
-	    close
-	    open
-	    update without registering applications
-	    delay 5
-	    close
-	  end tell
-	end tell
+        tell application "Finder"
+          -- look for a single disk with the mount point as its name
+          -- (maybe this works only on newer osx versions?)
+          set theDMGDisk to ""
+          repeat while theDMGDisk = ""
+            set myDisks to every disk
+            repeat with d in myDisks
+              if name of d = "@mnt-name"
+                if theDMGDisk = ""
+                  set theDMGDisk to d
+                else
+                  error "Too many attached DMGs found!"
+                end if
+              end if
+            end repeat
+            -- not found? maybe Finder wasn't ready
+            if theDMGDisk = "" then delay 1
+          end repeat
+          if theDMGDisk = "" then error "Attached DMG not found!"
+          -- found a single matching disk, continue
+          tell theDMGDisk
+            open
+            set current view of container window to icon view
+            set toolbar visible of container window to false
+            set statusbar visible of container window to false
+            set bounds of container window to {320, 160, 1000, 540}
+            set theViewOptions to the icon view options of container window
+            set arrangement of theViewOptions to not arranged
+            set icon size of theViewOptions to 128
+            set text size of theViewOptions to 16
+            set background picture of theViewOptions to file "@bg"
+            make new alias file at container window to POSIX file "/Applications" with properties {name:"Applications"}
+            set position of item "@volname" of container window to {170, 180}
+            set position of item "@bg" of container window to {900, 180}
+            set position of item "Applications" of container window to {500, 180}
+            set name of file "@bg" to ".@bg"
+            close
+            open
+            update without registering applications
+            delay 5
+            close
+          end tell
+        end tell
      })
   (printf "~a\n" script)
   (parameterize ([current-input-port (open-input-string script)])
