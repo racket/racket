@@ -12,8 +12,8 @@
                     setup/main-collects
                     setup/path-to-relative
                     setup/xref scribble/xref
-                    ;; setup/infotab -- no bindings from this are used
-                    setup/getinfo
+                    ;; info -- no bindings from this are used
+                    (only-in info)
                     setup/pack
                     setup/unpack
                     setup/link
@@ -1109,7 +1109,7 @@ v
    The @racket[get-info/full] function returns @racket[#f] if there is
    no @filepath{info.rkt} (or @filepath{info.ss}) file in the directory. If there is a
    @filepath{info.rkt} (or @filepath{info.ss}) file that has the wrong shape (i.e., not a module
-   using @racketmodname[setup/infotab] or @racket[(lib "infotab.rkt" "setup")]),
+   using @racketmodname[info] or @racketmodname[setup/infotab]),
    or if the @filepath{info.rkt} file fails to load, then an exception
    is raised. If the @filepath{info.rkt} file loaded, @racket[get-info/full]
    returns the @racket[get-info] file. If the @filepath{info.rkt} file does not exist, 

@@ -219,10 +219,10 @@
           Module Language: invalid language specification
           Interactions disabled}
       #t)
-(test @t{#lang setup/infotab}
+(test @t{#lang info}
       #f
       ;; test the complete buffer, to make sure that there is no error
-      "\nInteractions disabled: setup/infotab does not support a REPL (no #%top-interaction)"
+      "\nInteractions disabled: info does not support a REPL (no #%top-interaction)"
       #t)
 
 ;; test racket/load behavior

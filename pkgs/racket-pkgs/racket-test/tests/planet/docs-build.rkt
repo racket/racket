@@ -7,7 +7,7 @@
 (define files
   '(("info.rkt"
      #<<--
-#lang setup/infotab
+#lang info
 
 (define name "planet-docs-test")
 (define scribblings '(("docs.scrbl")))

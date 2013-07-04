@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define release-notes '(("Racket core" "HISTORY.txt"
                          -100

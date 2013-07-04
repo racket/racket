@@ -17,7 +17,7 @@
   (call-with-output-file*
    (build-path pkg-x-dir "info.rkt")
    (lambda (o) 
-     (displayln "#lang setup/infotab" o)
+     (displayln "#lang info" o)
      (write `(define deps '(("pkg-x-windows" #:platform windows)
                             ("pkg-x-unix" #:platform unix)
                             ("pkg-x-macosx" #:platform macosx)

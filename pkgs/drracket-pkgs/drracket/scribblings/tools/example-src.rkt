@@ -35,7 +35,7 @@
 (define files
   (list (list "info.rkt"
               (retain-src
-               setup/infotab
+               info
                (define drracket-tools (list (list "tool.rkt")))))
         (list "tool.rkt"
               (retain-src

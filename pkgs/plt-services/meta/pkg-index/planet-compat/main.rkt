@@ -337,7 +337,7 @@
                 (call-with-output-file*
                     (build-path pkg-dir "info.rkt")
                   (lambda (o)
-                    (fprintf o "#lang setup/infotab\n")
+                    (fprintf o "#lang info\n")
                     (write `(define deps ',deps) o)))))
 
 

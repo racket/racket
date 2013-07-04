@@ -182,14 +182,14 @@
 
 (with-output-to-file (build-path c1-dir "info.rkt")
   (lambda ()
-    (printf "#lang setup/infotab\n(define compile-omit-paths '(\"b1.rkt\"))\n")))
+    (printf "#lang info\n(define compile-omit-paths '(\"b1.rkt\"))\n")))
 (with-output-to-file (build-path c1-dir "b1.rkt")
   (lambda ()
     (printf "#lang racket/base\n'b1\n")))
 
 (with-output-to-file (build-path another-c1-dir "info.rkt")
   (lambda ()
-    (printf "#lang setup/infotab\n(define compile-omit-paths '(\"b2.rkt\"))\n")))
+    (printf "#lang info\n(define compile-omit-paths '(\"b2.rkt\"))\n")))
 (with-output-to-file (build-path another-c1-dir "b2.rkt")
   (lambda ()
     (printf "#lang racket/base\n'b2\n")))

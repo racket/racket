@@ -203,7 +203,7 @@ using 'system' to call out to the tool and then reading its results, etc.
 (define files
   '(("info.rkt"
      #<<--
-#lang setup/infotab
+#lang info
 
 (define name "the-name")
 (define blurb

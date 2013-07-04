@@ -94,8 +94,8 @@
 (define (get-pkg-info pkg-dir)
   (parameterize ([current-namespace metadata-ns])
     ;; with compiled files on:
-    (dynamic-require 'setup/infotab/lang/reader #f)
-    (dynamic-require 'setup/infotab 0))
+    (dynamic-require '(submod info reader) #f)
+    (dynamic-require 'info 0))
   ;; without compiled files:
   (parameterize ([use-compiled-file-paths '()])
     (get-info/full pkg-dir #:namespace metadata-ns)))

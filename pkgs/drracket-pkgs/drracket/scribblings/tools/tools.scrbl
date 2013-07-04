@@ -172,7 +172,7 @@ DrRacket continues to start up, without the tool.
 For example, if the @File{info.rkt} file in a collection
 contains:
 @racketmod[
-setup/infotab
+info
 (define drracket-name "Tool Name")
 (define drracket-tools (list (list "tool.rkt")))
 ]
@@ -379,7 +379,7 @@ The lists must have the same length.
 As an example, the @italic{Essentials of Programming Languages}
 language specification's @File{info.rkt} used to look like this:
 @racketmod[
-setup/infotab
+info
 (require string-constants)
 (define name "EoPL Support")
 (define drscheme-language-modules

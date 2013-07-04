@@ -27,7 +27,8 @@
 ;; Another would be to force all info files to use `#lang' which means
 ;; that we'll be able to query their module-language via the
 ;; `get-info' protocol.
-(require (prefix-in !!!HACK!!! setup/infotab/lang/reader))
+(require (prefix-in !!!HACK!!! setup/infotab/lang/reader)
+         (prefix-in !!!HACK!!!2 (submod info reader)))
 
 ;; get-info/full : path -> info/#f
 (define (get-info/full dir #:namespace [ns #f])
@@ -43,7 +44,9 @@
     (parameterize ([current-reader-guard
                     (lambda (x)
                       (if (or (eq? x 'setup/infotab/lang/reader)
-                              (equal? x '(submod setup/infotab reader)))
+                              (eq? x 'info/lang/reader)
+                              (equal? x '(submod setup/infotab reader))
+                              (equal? x '(submod info reader)))
                         x
                         (err "has illegal #lang or #reader")))])
       (with-input-from-file file
@@ -59,7 +62,9 @@
                     '(lib "infotab.ss" "setup")
                     '(lib "setup/infotab.rkt")
                     '(lib "setup/infotab.ss")
-                    'setup/infotab)
+                    '(lib "main.rkt" "info")
+                    'setup/infotab
+                    'info)
                 expr ...)
           ;; No need to set a reader-guard, since we checked it
           ;; above (a guard will see other uses of #lang for stuff

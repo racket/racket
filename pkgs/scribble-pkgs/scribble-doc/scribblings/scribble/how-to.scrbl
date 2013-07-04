@@ -56,7 +56,7 @@ To document a collection or @|PLaneT| package:
         here's a suitable complete module:
 
         @racketmod[
-          setup/infotab
+          info
           (define scribblings '(("manual.scrbl" ())))
         ]}
 

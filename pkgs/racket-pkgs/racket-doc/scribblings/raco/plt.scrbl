@@ -128,7 +128,7 @@ For example, the @filepath{info.rkt} file in the @filepath{sirmail} collection
 might contain the following @racket[info] declaration:
 
 @racketmod[
-setup/infotab
+info
 (define name "SirMail")
 (define mred-launcher-libraries (list "sirmail.rkt"))
 (define mred-launcher-names (list "SirMail"))

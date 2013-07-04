@@ -550,8 +550,8 @@ select its name, @nonterm{package}:
 Optionally, enter your directory and create a basic @filepath{info.rkt} file:
 
 @commandline{cd @nonterm{package}}
-@commandline{echo "#lang setup/infotab" > info.rkt}
-@commandline{echo "(define deps (list))" >> info.rkt}
+@commandline{echo "#lang info" > info.rkt}
+@commandline{echo "(define deps (list \"base\"))" >> info.rkt}
 
 The @filepath{info.rkt} file is not necessary for a
 @tech{single-collection package} with no dependencies, but you may
@@ -725,12 +725,12 @@ PLT curation.}
 
 Package metadata, including dependencies on other packages, is reported
 by an @filepath{info.rkt} module within the package. This module must be
-implemented in the @racketmodname[setup/infotab] language.
+implemented in the @racketmodname[info] language.
 
 For example, a basic @filepath{info.rkt} file might be
 
 @codeblock{
-#lang setup/infotab
+#lang info
 (define version "1.0")
 (define deps (list _package-source-string ...))
 }

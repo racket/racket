@@ -715,7 +715,7 @@ compiled during installation; it is a good idea to add it.
 An example info.rkt file looks like this:
 
 @racketmod[
-setup/infotab
+info
 (define name "My Application")
 (define blurb
   '("My application runs 60% faster on 20% less peanut "

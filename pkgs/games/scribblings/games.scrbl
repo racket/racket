@@ -22,7 +22,7 @@ installed as sub-collections of the @filepath{games} collection (see
 
 The game-starting console inspects the sub-collections of the
 @filepath{games} collection. If a sub-collection has an
-@filepath{info.rkt} module (see @racketmodname[setup/infotab]), the
+@filepath{info.rkt} module (see @racketmodname[info]), the
 following fields of the collection's @filepath{info.rkt} file are used:
 
 @itemize[

@@ -340,7 +340,7 @@
       (call-with-output-file* 
        info-path
        (lambda (o)
-         (displayln "#lang setup/infotab" o))))
+         (displayln "#lang info" o))))
     (define stx (call-with-input-file* 
                  info-path
                  (lambda (i)
