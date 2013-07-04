@@ -5,4 +5,3 @@
 (define deps '("base"
                "r5rs-lib"
                "compatibility-lib"))
-(define build-deps '("scribble-lib"))
