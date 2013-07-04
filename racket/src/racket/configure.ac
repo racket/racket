@@ -49,6 +49,7 @@ AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of libtool;
 AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default for Unix)], , enable_libffi=default)
 
 AC_ARG_ENABLE(sdk,     [  --enable-sdk=<path>     use Mac OS X 10.4 SDK directory])
+AC_ARG_ENABLE(sdk,     [  --enable-sdk6=<path>    use Mac OS X 10.6 SDK directory])
 AC_ARG_ENABLE(xonx,    [  --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS X])
 AC_ARG_ENABLE(libfw,   [  --enable-libfw          install Mac OS X frameworks to /Library/Frameworks])
 AC_ARG_ENABLE(libfw,   [  --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks])
@@ -302,7 +303,13 @@ show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
 show_explicitly_enabled "${enable_userfw}" "Frameworks-to-user"
 
 if test "${enable_sdk}" != "" ; then
-   echo "=== Using Mac OS X SDK directory ${enable_sdk}"
+   if test "${enable_sdk6}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk and --enable-sdk6"
+   fi
+   echo "=== Using Mac OS X 10.4 SDK directory ${enable_sdk}"
+fi
+if test "${enable_sdk6}" != "" ; then
+   echo "=== Using Mac OS X 10.6 SDK directory ${enable_sdk6}"
 fi
 
 if test "${enable_racket}" != "" ; then
@@ -670,6 +677,12 @@ case "$host_os" in
       fi
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS} ${PREFLAGS}"'"'
       need_cc_in_extras=yes
+    fi
+    
+    if test "${enable_sdk6}" != "" ; then 
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS} ${PREFLAGS}"'"'
     fi
     
     case "$host_cpu" in
