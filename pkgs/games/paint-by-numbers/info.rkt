@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define game "paint-by-numbers.rkt")
 (define game-set "Puzzle Games")

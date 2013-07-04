@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define game "chat-noir-unit.rkt")
 (define game-set "Puzzle Games")

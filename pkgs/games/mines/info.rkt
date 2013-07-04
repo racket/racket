@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define name "Minesweeper")
 (define game-set "Puzzle Games")

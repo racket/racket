@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define tools '(("time-keystrokes.rkt")))
 (define tool-names '("Time Keystrokes"))

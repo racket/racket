@@ -1,3 +1,3 @@
-#lang setup/infotab
+#lang info
 
 (define scribblings '(("bug-report.scrbl")))

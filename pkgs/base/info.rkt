@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 ;; The "base" package exists only as a way to declare dependencies
 ;; on the current Racket core. If the core gets smaller in the

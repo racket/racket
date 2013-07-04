@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 ;; This package holds infrastructure that is used to drive
 ;; builds and other services and that is not part of a

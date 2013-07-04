@@ -1,5 +1,5 @@
 ;;; Written by Eli Barzilay: Maze is Life!  (eli@barzilay.org)
-#lang setup/infotab
+#lang info
 
 (define collection "swindle")
 

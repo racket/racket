@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define collection "honu")
 (define deps '("macro-debugger"

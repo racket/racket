@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define drracket-tools '(["tool.rkt"]))
 (define drracket-tool-names '("Macro Stepper"))

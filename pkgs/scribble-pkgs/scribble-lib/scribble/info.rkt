@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define mzscheme-launcher-names '("scribble"))
 (define mzscheme-launcher-libraries '("run.rkt"))

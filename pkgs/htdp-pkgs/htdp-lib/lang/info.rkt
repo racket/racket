@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define name "HtDP Languages")
 (define tools (list "htdp-langs.rkt"))

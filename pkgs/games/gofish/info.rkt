@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define name "Go Fish")
 (define game "gofish.rkt")

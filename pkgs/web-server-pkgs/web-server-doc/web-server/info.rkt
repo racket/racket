@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define scribblings
   '(("scribblings/web-server.scrbl" (multi-page) (tool 100))

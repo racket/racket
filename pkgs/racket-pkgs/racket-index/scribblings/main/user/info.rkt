@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define scribblings
   '(("start.scrbl" (user-doc-root depends-all no-depend-on) (omit))

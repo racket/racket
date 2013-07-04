@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define version '(400))
 (define post-install-collection "installer.rkt")

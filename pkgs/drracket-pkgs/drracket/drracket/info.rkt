@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 ;(define tools      '("sprof.rkt"))
 ;(define tool-names '("Sampling Profiler"))

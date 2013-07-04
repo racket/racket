@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define tools '(("debug-tool.rkt")))
 (define tool-names '("Graphical Debugger"))

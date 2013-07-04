@@ -1,3 +1,3 @@
-#lang setup/infotab
+#lang info
 
 (define name "Reduction Semantics examples")

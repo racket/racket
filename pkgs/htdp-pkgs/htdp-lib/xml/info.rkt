@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 ;; the XML tool has been moved to the stepper collection, so that the
 ;; stepper can create xml snips.  See collects/stepper/tool.rkt for (a

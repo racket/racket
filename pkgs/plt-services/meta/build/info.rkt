@@ -1,2 +1,2 @@
-#lang setup/infotab
+#lang info
 (define compile-omit-paths 'all)

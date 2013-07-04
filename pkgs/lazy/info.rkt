@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define collection "lazy")
 

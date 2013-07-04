@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define drracket-tools '(("stepper+xml-tool.rkt")))
 

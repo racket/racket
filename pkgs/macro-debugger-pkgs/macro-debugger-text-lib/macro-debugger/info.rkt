@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define raco-commands
   '(("check-requires"

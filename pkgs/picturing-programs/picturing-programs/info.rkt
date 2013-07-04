@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
   (define categories '(media))
   (define can-be-loaded-with 'all)
   (define required-core-version "5.0.0.1")

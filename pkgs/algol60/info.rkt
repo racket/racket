@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define collection "algol60")
 (define build-deps '("scribble-lib"

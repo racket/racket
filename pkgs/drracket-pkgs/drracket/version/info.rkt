@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define tools (list "tool.rkt"))
 (define tool-names (list "Version"))

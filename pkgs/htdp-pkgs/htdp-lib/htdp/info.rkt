@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define name "HtDP Teachpacks")
 (define compile-omit-paths
