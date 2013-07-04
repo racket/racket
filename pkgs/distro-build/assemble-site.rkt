@@ -39,8 +39,8 @@
 
 (define (build-catalog built-dir)
   (printf "Building catalog from ~a\n" built-dir)
-  (let ([c-dir (build-path built-dir "pkgs")]
-        [d-dir (build-path dest-dir "pkgs")])
+  (let ([c-dir (build-path built-dir pkgs-dir)]
+        [d-dir (build-path dest-dir pkgs-dir)])
     (make-directory* d-dir)
     (for ([f (directory-list c-dir)])
       (define c (build-path c-dir f))
@@ -59,7 +59,7 @@
                                base-url
                                (path->string 
                                 (build-path
-                                 "pkgs"
+                                 pkgs-dir
                                  (path-add-suffix f #".zip")))))))
       (call-with-output-file* 
        (build-path d-dir f)
@@ -69,6 +69,26 @@
 
 (build-catalog built-dir)
 (build-catalog native-dir)
+(let ([l (directory-list (build-path dest-dir catalog-dir "pkg"))])
+  ;; Write list of packages:
+  (define sl (map path-element->string l))
+  (call-with-output-file*
+   (build-path dest-dir catalog-dir "pkgs")
+   (lambda (o)
+     (write sl o)
+     (newline o)))
+  ;; Write hash table of package details:
+  (define dht
+    (for/hash ([f (in-list l)])
+      (values (path-element->string f)
+              (call-with-input-file*
+               (build-path dest-dir catalog-dir "pkg" f)
+               read))))
+  (call-with-output-file*
+   (build-path dest-dir catalog-dir "pkgs-all")
+   (lambda (o)
+     (write dht o)
+     (newline o))))
 
 (copy installers-dir)
 
