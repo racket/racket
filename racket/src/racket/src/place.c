@@ -2760,7 +2760,7 @@ Scheme_Object *scheme_places_deserialize(Scheme_Object *so, void *msg_memory)
   if (new_so) return new_so;
 
   /* small messages are deemed to be < 1k, this could be tuned in either direction */
-  if (GC_message_objects_size(msg_memory) < 1024) {
+  if (GC_message_small_objects_size(msg_memory, 1024)) {
     new_so = do_places_deep_copy(so, mzPDC_UNCOPY, 1, NULL, NULL);
     GC_dispose_short_message_allocator(msg_memory);
     /* from this point, we must return immediately, so that any

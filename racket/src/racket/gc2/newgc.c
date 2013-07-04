@@ -1215,8 +1215,10 @@ inline static void gen0_free_mpage(NewGC *gc, mpage *page) {
 #ifdef MZ_GC_STRESS_TESTING
 # define GC_TRIGGER_COUNT 100
 static int stress_counter = 0;
+int scheme_gc_slow_path_started = 0;
 static int TAKE_SLOW_PATH()
 {
+  if (!scheme_gc_slow_path_started) return 0;
   stress_counter++;
   if (stress_counter > GC_TRIGGER_COUNT)
     return 1;
@@ -1315,8 +1317,7 @@ inline static void *allocate(const size_t request_size, const int type)
   uintptr_t newptr;
 
 #ifdef MZ_GC_STRESS_TESTING
-  stress_counter++;
-  if (stress_counter > GC_TRIGGER_COUNT) {
+  if (TAKE_SLOW_PATH()) {
     NewGC *gc = GC_get_GC();
     if (!gc->dumping_avoid_collection) {
       stress_counter = 0;
@@ -1675,15 +1676,13 @@ void GC_adopt_message_allocator(void *param) {
   gc_if_needed_account_alloc_size(gc, 0);
 }
 
-intptr_t GC_message_objects_size(void *param) {
+int GC_message_small_objects_size(void *param, intptr_t up_to) {
   MsgMemory *msgm = (MsgMemory *) param;
-  if (!msgm) { return sizeof(param); }
-  if (msgm->big_pages && msgm->size < 1024) {
-    printf("Error: message allocators with big pages should be bigger than %" PRIdPTR "!\n",
-	   msgm->size);
-    exit(1);
-  }
-  return msgm->size;
+  if (!msgm) return 1;
+  if (msgm->size > up_to) return 0;
+  if (msgm->big_pages) return 0;
+  if (msgm->pages && msgm->pages->next) return 0;
+  return 1;
 }
 
 intptr_t GC_message_allocator_size(void *param) {
@@ -1695,26 +1694,21 @@ intptr_t GC_message_allocator_size(void *param) {
 
 void GC_dispose_short_message_allocator(void *param) {
   NewGC *gc = GC_get_GC();
-  mpage *tmp;
   MsgMemory *msgm = (MsgMemory *) param;
   
-  if (msgm->big_pages)
-  { 
+  if (msgm->big_pages) { 
     printf("Error: short disposable message allocators should not have big objects!\n");
-    exit(1);
+    abort();
   }
 
-  if (msgm->pages)
-  {
-    tmp = msgm->pages;
-
-    if (tmp->next)
-    { 
+  if (msgm->pages) {
+    if (msgm->pages->next) { 
       printf("Error: short disposable message allocators should not have more than one page!\n");
-      exit(1);
+      abort();
     }
-    free_orphaned_page(gc, tmp);
+    free_orphaned_page(gc, msgm->pages);
   }
+
   free(msgm);
 }
 
@@ -1873,7 +1867,7 @@ inline static int marked(NewGC *gc, const void *p)
       break;
     default:
       fprintf(stderr, "ABORTING! INVALID SIZE_CLASS %i\n", page->size_class);
-      exit(EXIT_FAILURE);
+      abort();
   }
 }
 
@@ -2515,7 +2509,7 @@ inline static int page_mmu_type(mpage *page) {
       return MMU_BIG_MED;
     default: /* BIG PAGE size_class 2 or 3 */
       printf("Error Page class %i doesn't exist\n", page->size_class);
-      exit(1);
+      abort();
   }
 }
 

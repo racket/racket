@@ -539,9 +539,11 @@ GC2_EXTERN intptr_t GC_is_place();
    Otherwise returns 0;
 */
 
-GC2_EXTERN intptr_t GC_message_objects_size(void *msg_memory);
+  GC2_EXTERN int GC_message_small_objects_size(void *msg_memory, intptr_t up_to);
 /*
- Returns the total size of all objects allocated by the message allocator
+ Determines whether the message qualifies as short and whether the
+ total size of all objects allocated by the  message allocator is less
+ than `up_to'
  */
 
 GC2_EXTERN intptr_t GC_message_allocator_size(void *msg_memory);
