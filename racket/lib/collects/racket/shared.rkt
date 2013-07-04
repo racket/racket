@@ -17,5 +17,5 @@
   (lambda (stx)
     (define make-check-cdr #f)
     ;; Include the implementation.
-    ;; See private/shared-body.rkt.
-    (include "private/shared-body.rkt")))
+    ;; See private/shared-body.rktl.
+    (include "private/shared-body.rktl")))
