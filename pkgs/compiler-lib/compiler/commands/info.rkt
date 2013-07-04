@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define raco-commands
   '(("make" compiler/commands/make "compile source to bytecode" 100)
