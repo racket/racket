@@ -302,9 +302,6 @@ sub-sub-commands:
 
   @item{@DFlag{ignore-checksums} --- Ignores errors verifying package @tech{checksums} (unsafe).}
 
-  @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
-        environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
-
   @item{@DFlag{skip-installed} --- Ignore a @nonterm{pkg-source} if a corresponding package is already installed.}
 
   @item{@DFlag{link} --- Implies @exec{--type dir} (and overrides any specified type),
@@ -329,6 +326,11 @@ sub-sub-commands:
  
  @item{@DFlag{catalog} @nonterm{catalog} --- Use @nonterm{catalog} instead of of the currently configured 
        @tech{package catalogs}.}
+
+  @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
+        environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
+
+  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Install and setup with @nonterm{n} parallel jobs.}
  ]
 }
 
@@ -347,12 +349,13 @@ this command fails without installing any of the @nonterm{pkg}s
  @item{@DFlag{deps} @nonterm{behavior} --- Same as for @command-ref{install}.}
  @item{@DFlag{all} or @Flag{a} --- Update all packages, if no packages are given in the argument list.}
  @item{@DFlag{update-deps} --- Checks the named packages, and their dependencies (transitively) for updates.}
- @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Selects @nonterm{dir} as the @tech{package scope}, the same as for @command-ref{install}.}
+ @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
+ @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  ]
 }
 
@@ -366,7 +369,6 @@ removing any of the @nonterm{pkg}s.
 
  @itemlist[
  @item{@DFlag{force} --- Ignore dependencies when removing packages.}
- @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{auto} --- Remove packages that were installed by the @exec{search-auto} or @exec{search-ask}
                         dependency behavior and are no longer required.}
  @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
@@ -374,6 +376,8 @@ removing any of the @nonterm{pkg}s.
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Selects @nonterm{dir} as the @tech{package scope}, the same as for @command-ref{install}.}
+ @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
+ @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  ]
 }
 

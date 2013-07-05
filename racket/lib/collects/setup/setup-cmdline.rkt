@@ -33,8 +33,8 @@
      #:program long-name
      #:argv argv
      #:once-each
-     [("-j" "--workers") workers "Use <#> parallel-workers"
-      (add-flags `((parallel-workers ,(string->number workers))))]
+     [("-j" "--jobs" "--workers") n "Use <n> parallel jobs"
+      (add-flags `((parallel-workers ,(string->number n))))]
      [("--only") "Set up only specified <collection>s"
       (add-flags '((make-only #t)))]
      #:multi

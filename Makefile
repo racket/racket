@@ -69,7 +69,7 @@ core:
 win32-core:
 	IF NOT EXIST build\config cmd /c mkdir -p build\config
 	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
-	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config
+	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(PLT_SETUP_OPTIONS)
 
 racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
 	cd racket/src/build; ../configure $(CONFIGURE_ARGS_qq)
@@ -159,11 +159,12 @@ RACKET = racket/bin/racket -A "$(ADDON)"
 RACO = racket/bin/racket -A "$(ADDON)" -N raco -l- raco
 WIN32_RACKET = racket\racket -A "$(ADDON)"
 WIN32_RACO = racket\racket -A "$(ADDON)" -N raco -l- raco
-USER_AUTO_OPTIONS = --scope user --skip-installed --deps search-auto
+X_AUTO_OPTIONS = --skip-installed --deps search-auto $(PLT_SETUP_OPTIONS)
+USER_AUTO_OPTIONS = --scope user $(X_AUTO_OPTIONS)
 LOCAL_USER_AUTO = --catalog build/local/catalog $(USER_AUTO_OPTIONS)
 SOURCE_USER_AUTO_q = --catalog "$(SRC_CATALOG)" $(USER_AUTO_OPTIONS)
 REMOTE_USER_AUTO = --catalog http://$(SERVER):9440/ $(USER_AUTO_OPTIONS)
-REMOTE_INST_AUTO = --catalog http://$(SERVER):9440/ --scope installation --deps search-auto
+REMOTE_INST_AUTO = --catalog http://$(SERVER):9440/ --scope installation $(X_AUTO_OPTIONS)
 CONFIG_MODE_q = "$(CONFIG)" "$(CONFIG_MODE)"
 BUNDLE_CONFIG = bundle/racket/etc/config.rktd
 
@@ -306,7 +307,7 @@ client:
 COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" RELEASE_MODE=$(RELEASE_MODE) \
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
             DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) \
-            DIST_DESC="$(DIST_DESC)"
+            DIST_DESC="$(DIST_DESC)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)"
 
 win32-client:
 	IF EXIST build\user cmd /c rmdir /S /Q build\user

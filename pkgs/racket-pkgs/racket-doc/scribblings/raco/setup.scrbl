@@ -95,9 +95,10 @@ flags:
 
 @itemize[
 
- @item{@DFlag{workers} @nonterm{n} or @Flag{j} @nonterm{n} --- use up
+ @item{@DFlag{jobs} @nonterm{n}, @DFlag{workers} @nonterm{n}, 
+   or @Flag{j} @nonterm{n} --- use up
    to @nonterm{n} parallel processes.  By default, @exec{raco setup}
-   uses @racket[(processor-count)] processors, which typically uses
+   uses @racket[(processor-count)] jobs, which typically uses
    all of the machine's processing cores.}
 
  @item{@DFlag{only} --- restrict setup to specified collections and

@@ -10,7 +10,7 @@
          "commands.rkt"
          (prefix-in setup: setup/setup))
 
-(define (setup no-setup? setup-collects)
+(define (setup no-setup? setup-collects jobs)
   (unless (or no-setup?
               (not (member (getenv "PLT_PKG_NOSETUP") '(#f ""))))
     (define installation? (eq? 'installation (current-pkg-scope)))
@@ -22,7 +22,8 @@
                                (if (list? s) s (list s)))
                              setup-collects))
      #:tidy? #t
-     #:make-doc-index? #t)))
+     #:make-doc-index? #t
+     #:jobs jobs)))
 
 (define ((pkg-error cmd) . args)
   (apply raise-user-error
@@ -61,8 +62,6 @@
     "if not specified, the type is inferred syntactically")]
   [(#:str name #f) name ("-n") ("Name of package, instead of inferred"
                                 "(makes sense only when a single <pkg-source> is given)")]
-  [#:bool no-setup () ("Don't run `raco setup' after changing packages"
-                       "(generally not a good idea)")]
   #:once-each
   [(#:sym mode [fail force search-ask search-auto] #f) deps ()
    ("Specify the behavior for dependencies, with <mode> as one of"
@@ -89,6 +88,9 @@
   [(#:str dir #f) scope-dir () "Install for package scope <dir>"]
   #:once-each
   [(#:str catalog #f) catalog () "Use <catalog> instead of configured catalogs"]
+  [#:bool no-setup () ("Don't run `raco setup' after changing packages (generally"
+                       "not a good idea)")]
+  [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"]
   #:args pkg-source
   (call-with-package-scope
    'install
@@ -106,12 +108,10 @@
                        #:skip-installed? skip-installed
                        (for/list ([p (in-list pkg-source)])
                          (pkg-desc p (or (and link 'link) type) name #f))))))
-     (setup no-setup setup-collects)))]
+     (setup no-setup setup-collects jobs)))]
  [update
   "Update packages"
   #:once-each
-  [#:bool no-setup () ("Don't run `raco setup' after changing packages"
-                       "(generally not a good idea)")]
   [#:bool all ("-a") ("Update all packages;"
                       "only if no packages are given on the command line")]
   [(#:sym mode [fail force search-ask search-auto] #f) deps ()
@@ -134,6 +134,10 @@
   [#:bool user ("-u") "Shorthand for `--scope user'"]
   [#:bool shared ("-s") "Shorthand for `--scope shared'"]
   [(#:str dir #f) scope-dir () "Update for package scope <dir>"]
+  #:once-each
+  [#:bool no-setup () ("Don't run `raco setup' after changing packages (generally"
+                       "not a good idea)")]
+  [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"]
   #:args pkg
   (call-with-package-scope
    'update
@@ -145,12 +149,10 @@
                     #:all? all
                     #:dep-behavior deps
                     #:deps? update-deps)))
-     (setup no-setup setup-collects)))]
+     (setup no-setup setup-collects jobs)))]
  [remove
   "Remove packages"
   #:once-each
-  [#:bool no-setup () ("Don't run `raco setup' after changing packages"
-                       "(generally not a good idea)")]
   [#:bool force () "Force removal of packages"]
   [#:bool auto () "Remove automatically installed packages with no dependencies"]
   #:once-any
@@ -163,6 +165,10 @@
   [#:bool user ("-u") "Shorthand for `--scope user'"]
   [#:bool shared ("-s") "Shorthand for `--scope shared'"]
   [(#:str dir #f) scope-dir () "Remove for package scope <dir>"]
+  #:once-each
+  [#:bool no-setup () ("Don't run `raco setup' after changing packages (generally"
+                       "not a good idea)")]
+  [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"]
   #:args pkg
   (call-with-package-scope
    'remove
@@ -173,7 +179,7 @@
         (pkg-remove pkg
                     #:auto? auto
                     #:force? force)))
-     (setup no-setup setup-collects)))]
+     (setup no-setup setup-collects jobs)))]
  [show
   "Show information about installed packages"
   #:once-each

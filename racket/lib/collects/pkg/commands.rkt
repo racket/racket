@@ -24,6 +24,18 @@
                                (format " ~a" s)))))
   s)
 
+(define ((string->num what) str)
+  (define n (string->number str))
+  (unless (exact-nonnegative-integer? n)
+    (raise-user-error (string->symbol 
+                       (format "~a ~a" 
+                               (short-program+command-name)
+                               (current-svn-style-command)))
+                      "invalid <~a> number: ~a"
+                      what
+                      str))
+  n)
+
 (begin-for-syntax
   (define symbol->keyword
     (compose string->keyword symbol->string))
@@ -39,7 +51,10 @@
              #:attr fun #'(string->option 'name '(opt ...))]
     [pattern (#:str name:id default:expr)
              #:attr (arg-val 1) (list #'name)
-             #:attr fun #'identity])
+             #:attr fun #'identity]
+    [pattern (#:num name:id default:expr)
+             #:attr (arg-val 1) (list #'name)
+             #:attr fun #'(string->num 'name)])
 
   (define-syntax-class option
     #:attributes (command-line variable (param 1) (call 1))
