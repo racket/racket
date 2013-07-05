@@ -994,6 +994,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/net/main.rkt" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/net/stress" responsible (jay)
 "pkgs/racket-pkgs/racket-test/tests/net/stress/websocket.rkt" drdr:random #t
+"pkgs/racket-pkgs/racket-test/tests/net/url.rkt" drdr:command-line (racket *)
 "pkgs/racket-pkgs/racket-test/tests/net/url-port.rkt" responsible (jay)
 "pkgs/racket-pkgs/racket-test/tests/net/websocket" responsible (jay)
 "pkgs/racket-pkgs/racket-test/tests/net/websocket/example.rkt" drdr:command-line #f

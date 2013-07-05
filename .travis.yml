@@ -12,10 +12,14 @@ script:
   - racket pkgs/racket-pkgs/racket-test/tests/file/main.rkt
   - racket pkgs/racket-pkgs/racket-test/tests/net/head.rkt
   - racket pkgs/racket-pkgs/racket-test/tests/net/uri-codec.rkt
+  - racket pkgs/racket-pkgs/racket-test/tests/net/url.rkt
+  - racket pkgs/racket-pkgs/racket-test/tests/net/url-port.rkt
+  - racket pkgs/racket-pkgs/racket-test/tests/net/encoders.rkt
   - racket pkgs/racket-pkgs/racket-test/tests/openssl/basic.rkt
   - racket pkgs/racket-pkgs/racket-test/tests/openssl/https.rkt
   - racket pkgs/racket-pkgs/racket-test/tests/match/plt-match-tests.rkt
   - racket pkgs/racket-pkgs/racket-test/tests/db/all-tests.rkt
+  - racket pkgs/racket-pkgs/racket-test/tests/zo-path.rkt
   - raco test pkgs/racket-pkgs/racket-test/tests/xml/test.rkt
 notifications:
   irc: "chat.freenode.net#racket"
