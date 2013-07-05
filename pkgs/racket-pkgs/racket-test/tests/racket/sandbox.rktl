@@ -579,34 +579,30 @@
    --top--
    (getenv "PEAR") => #f
 
-  ;; tests for specials
+   ;; tests for specials
    --top--
-  ;; these are conditional so that we can run
-  ;; the tests even when htdp or r5rs is not available
-   (when (collection-file-path "lang.rkt" "r5rs" #:fail (lambda (s) #f))
-     (t    
-      --top--
-      (make-evaluator! '(special r5rs) "(define x (eq? 'x 'X))")
-      --eval--
-      x => #t
-      --top--
-      (make-base-evaluator! "(define l null)")
-      --eval--
-      (cond [null? l 0]) => 0
-      (last-pair l) =err> "last-pair: undefined"))
-   
-   (when (collection-file-path "htdp-beginner.rkt" "lang" #:fail (lambda (s) #f))
-     (t
-      --top--
-      (make-evaluator! '(special beginner)
-                       (make-prog "(define l null)" "(define x 3.5)"))
-      --eval--
-      (cond [null? l 0]) =err> "no open parenthesis"
-      --top--
-      (eq? (ev "6") (ev "(sub1 (* 2 3.5))"))
-      (eq? (ev "6") (ev "(sub1 (* 2 x))"))))))
+   ;; these are conditional so that we can run
+   ;; the tests even when htdp or r5rs is not available
+   (when (collection-file-path "lang.rkt" "r5rs" #:fail (λ (s) #f))
+     (t --top--
+        (make-evaluator! '(special r5rs) "(define x (eq? 'x 'X))")
+        --eval--
+        x => #t
+        --top--
+        (make-base-evaluator! "(define l null)")
+        --eval--
+        (cond [null? l 0]) => 0
+        (last-pair l) =err> "last-pair: undefined"))
 
-
+   (when (collection-file-path "htdp-beginner.rkt" "lang" #:fail (λ (s) #f))
+     (t --top--
+        (make-evaluator! '(special beginner)
+                         (make-prog "(define l null)" "(define x 3.5)"))
+        --eval--
+        (cond [null? l 0]) =err> "no open parenthesis"
+        --top--
+        (eq? (ev "6") (ev "(sub1 (* 2 3.5))"))
+        (eq? (ev "6") (ev "(sub1 (* 2 x))"))))))
 
 (parameterize ([current-module-declare-name (make-resolved-module-path 'junk)])
   (define (avoid-module-declare-name)
