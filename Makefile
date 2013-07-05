@@ -11,11 +11,15 @@
 #
 #  core = build in "racket" only (i.e., first step of `in-place')
 #
-#  server = build core, build packages listed in $(PKGS), start 
-#           server at port 9440
+#  server = build core, build packages listed in $(PKGS) or specified
+#           via $(CONFIG), start server at port 9440
 #
 #  client = build core, create an installer with $(PKGS) with the help
 #           of $(SERVER); result is recorded in "bundle/installer.txt"
+#
+#  installers = `server' plus `client' via $(CONFIG)
+
+DEFAULT_PKGS = main-distribution plt-services
 
 # ------------------------------------------------------------
 # In-place build
@@ -74,7 +78,6 @@ racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
 # side of its definition.
 
 # Packages (separated by spaces) to include in a distribution:
-DEFAULT_PKGS = main-distribution plt-services
 PKGS = $(DEFAULT_PKGS)
 
 # Catalog for sources and native packages; use "local" to bootstrap
@@ -380,11 +383,12 @@ site:
 site-from-installers:
 	$(RACKET) -l- distro-build/assemble-site $(CONFIG_MODE_q)
 
-# Make an extra installers page:
-PAGE_DEST = build/index.html
-INSTALLERS_URL = site/
-DOWNLOAD_PAGE_ARGS = --dest $(PAGE_DEST) \
-                     --at "$(INSTALLERS_URL)" \
-                     build/installers/table.rktd
-site-page:
-	$(RACKET) -l- distro-build/download-page $(DOWNLOAD_PAGE_ARGS)
+# ------------------------------------------------------------
+# Create a snapshot site:
+
+snapshot-site:
+	$(MAKE) site
+	$(MAKE) snapshot-at-site
+
+snapshot-at-site:
+	$(RACKET) -l- distro-build/manage-snapshots $(CONFIG_MODE_q)

@@ -164,8 +164,11 @@
 ;;                         machine starts by a `git pull' in <dir>; set
 ;;                         to #f, for example, for a repo checkout that is
 ;;                         shared with server; the default is #t
-;;   #:site-dest <path-string> --- destination for completed build; the default
-;;                                 is "build/site"
+;;   #:site-dest <path-string> --- destination for completed build, used
+;;                                 by the `site' makefile target; the
+;;                                 default is "build/site"
+;;   #:max-snapshots <number> --- number of snapshots to keep, used by
+;;                                the `snapshot-site' makefile target
 ;;
 ;; Machine-only keywords:
 ;;
@@ -217,6 +220,10 @@
 ;;   `CONFIG_MODE' variable. The default mode is "default". The
 ;;   interpretation of modes is completely up to the
 ;;   site configuration file.
+;;
+;;  (current-stamp) -> string?
+;;   Returns a string to identifiy the current build, normally a
+;;   combination of the date and a git commit hash.
 
 ;; ----------------------------------------
 
@@ -357,6 +364,7 @@
     [(#:clean?) (boolean? val)]
     [(#:pull?) (boolean? val)]
     [(#:site-dest) (path-string? val)]
+    [(#:max-snapshots) (real? val)]
     [else 'bad-keyword]))
 
 (define (check-machine-keyword kw val)

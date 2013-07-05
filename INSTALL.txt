@@ -212,6 +212,57 @@ for the client in the site configuration, and <ext> is
 platform-specific: ".sh" for Unix, ".dmg" for Mac Os X, and ".exe" for
 Windows.
 
+Generating Installer Web Sites
+------------------------------
+
+The `site' target of the makefile uses the `installers' target to
+generate a set of installers, and then it combines the installers,
+packages, and a package catalog into a directory that is suitable for
+access via a web server.
+
+Supply the same `CONFIG=...' and `CONFIG_MODE=...' arguments for
+`site' as for `installers'. The configuration file should have a
+`#:dist-base-url' entry for the URL where installers and packages will
+be made available; the `installers' target uses `#:dist-base-url' to
+embed suitable configuration into the installers. Specifically,
+installers are configured to access pre-built packages and
+documentation from the site indicated by `#:dist-base-url'.
+
+Note that `#:dist-base-url' should almost always end with "/", since
+others URLs will be constructed as relative to `#:dist-base-url'.
+
+The site is generated as "build/site" but default. A `#:site-dest'
+entry in the configuration file can select an alternate destination.
+
+Use the `site-from-installers' makefile target to perform the part of
+`site' that happens after `installers' (i.e., to generate a `site'
+from an already-generated set of installers).
+
+Managing Snapshot Web Sites
+---------------------------
+
+The `snapshot-site' makefile target uses `site' (so supply the same
+`CONFIG=...' and `CONFIG_MODE=...' arguments), and then treats the
+resulting site as a snapshot with additional snapshot-management
+tasks.
+
+For snapshot management, the destination of the files generated for
+`site' (as specified by `#:site-dest') should be within a directory of
+snapshots. The configuration file can use `(current-stamp)' to get a
+string that represents the current build, and then use the string both
+for `#:dist-base-url' and `#:site-dest'. Normally, the stamp string is
+a combination of the date and git commit hash.
+
+Snapshot management includes creating an "index.html" file in the
+snapshots directory (essentially a copy of the snapshot's own
+"index.html") and pruning snapshot subdirectories to keep the number
+of snapshots at the amount specified by `#:max-snapshots'
+configuration-file entry (with a default value of 5).
+
+Use the `snapshot-at-site' makefile target to perform the part of
+`snapshot-site that happens after `site (i.e., to manage snapshots
+around an already-generated site).
+
 Separate Server and Clients
 ---------------------------
 

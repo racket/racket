@@ -38,7 +38,8 @@
                             #:dest [dest "index.html"]
                             #:installers-url [installers-url "./"]
                             #:title [title "Racket Downloads"]
-                            #:git-clone [git-clone #f])
+                            #:git-clone [git-clone #f]
+                            #:post-content [post-content null])
 
   (define table (call-with-input-file table-file read))
 
@@ -94,6 +95,7 @@
                    `((p
                       (div (span ([class "detail"]) "Repository: " (span ([class "path"]) ,origin)))
                       (div (span ([class "detail"]) "Commit: " (span ([class "checksum"]) ,stamp))))))
-                 null)))
+                 null)
+           ,@post-content))
         o)
        (void)))))
