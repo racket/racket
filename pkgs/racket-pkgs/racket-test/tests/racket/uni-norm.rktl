@@ -17,21 +17,16 @@
 (define (get-test-file)
   (define name "NormalizationTest.txt")
   (define base "http://www.unicode.org/Public/5.0.0/ucd/")
-  (define (existing)
-    (let loop ([dirs (list (current-load-relative-directory)
-                           (current-directory))])
-      (and (pair? dirs)
-           (let ([path (build-path (car dirs) name)])
-             (if (file-exists? path) path (loop (cdr dirs)))))))
-  (define (get-it)
-    (parameterize ([current-input-port
-                    (get-pure-port (string->url (string-append base name)))])
-      (with-output-to-file name
-        (lambda () (copy-port (current-input-port) (current-output-port)))
-        #:exists 'truncate)))
-  (or (existing)
-      (begin (get-it) (existing))
-      (error "file not found: ~s" (string-append base name))))
+  (define here (current-load-relative-directory))
+  (or (for/or ([dir (list here (current-directory))])
+        (define path (build-path dir name))
+        (and (file-exists? path) path))
+      (let ([path (build-path here name)])
+        (with-output-to-file path
+          (lambda ()
+            (copy-port (get-pure-port (string->url (string-append base name)))
+                       (current-output-port))))
+        path)))
 
 (printf "Reading tests...\n")
 (define test-strings
