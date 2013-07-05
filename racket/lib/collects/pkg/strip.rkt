@@ -197,8 +197,8 @@
     ;; convert:
     (define new-content
       (match content
-        [`(module info info (#%module-begin . ,defns))
-         `(module info info
+        [`(module info ,info-lib (#%module-begin . ,defns))
+         `(module info ,info-lib
             (#%module-begin
              (define assume-virtual-sources '())
              . ,(filter values
