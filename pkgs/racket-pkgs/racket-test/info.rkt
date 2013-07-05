@@ -7,7 +7,9 @@
                "sandbox-lib"
                "compatibility-lib"
                "pconvert-lib"
-                ;; for `pkg` tests
+               ;; for `net` tests
+               "net-lib"
+               ;; for `pkg` tests
                "web-server-lib"
                "rackunit-lib"
                ;; for `json` tests
