@@ -1410,7 +1410,7 @@ put_unwind_info (struct dwarf_cursor *c, unw_proc_info_t *pi)
   if (!c->pi_valid)
     return;
 
-  if (pi->unwind_info);
+  if (pi->unwind_info)
     {
       /* free (pi->unwind_info); */
       pi->unwind_info = NULL;

@@ -92,6 +92,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 #define ARRAY_SIZE(a)	(sizeof (a) / sizeof ((a)[0]))
 
+#define UNWI_OBJ(fn)	  UNW_PASTE(UNW_PREFIX,UNW_PASTE(I,fn))
+#define UNWI_ARCH_OBJ(fn) UNW_PASTE(UNW_PASTE(UNW_PASTE(_UI,UNW_TARGET),_), fn)
+
+#ifndef UW_NO_SYNC
+
 /* Make it easy to write thread-safe code which may or may not be
    linked against libpthread.  The macros below can be used
    unconditionally and if -lpthread is around, they'll call the
@@ -152,9 +157,6 @@ cmpxchg_ptr (void *addr, void *old, void *new)
 #endif
 #define atomic_read(ptr)	(*(ptr))
 
-#define UNWI_OBJ(fn)	  UNW_PASTE(UNW_PREFIX,UNW_PASTE(I,fn))
-#define UNWI_ARCH_OBJ(fn) UNW_PASTE(UNW_PASTE(UNW_PASTE(_UI,UNW_TARGET),_), fn)
-
 #define unwi_full_mask    UNWI_ARCH_OBJ(full_mask)
 
 /* Type of a mask that can be used to inhibit preemption.  At the
@@ -178,6 +180,11 @@ do {						\
   mutex_unlock (l);				\
   sigprocmask (SIG_SETMASK, &(m), NULL);	\
 } while (0)
+
+#else  /* UW_NO_SYNC */
+# define atomic_read(ptr)	(*(ptr))
+typedef int intrmask_t;
+#endif /* UW_NO_SYNC */
 
 #define GET_MEMORY(mem, size_in_bytes)				    \
 do {									    \

@@ -473,9 +473,9 @@ struct jit_local_state {
 #define	jit_arg_p()	        (_jitl.nextarg_geti++)
 #define jit_arg_reg(p)          (jit_arg_reg_order[p])
 # ifdef _WIN64
-static const int const jit_arg_reg_order[] = { _ECX, _EDX, JIT_R(8), JIT_R(9) };
+static const int jit_arg_reg_order[] = { _ECX, _EDX, JIT_R(8), JIT_R(9) };
 # else
-static const int const jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
+static const int jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
 # endif
 #else
 #define	jit_arg_c()		((_jitl.framesize += sizeof(int)) - sizeof(int))
