@@ -883,7 +883,10 @@
         (when (or no-specific-collections?
                   (member "racket" x-specific-collections))
           (for/fold ([gcs 0]) ([cc (in-list (collection->ccs (list (string->path "racket"))))])
-            (compile-cc cc 0)))
+            (when (and (cc-main? cc)
+                       (member (cc-info-root cc)
+                               (current-library-collection-paths)))
+              (compile-cc cc 0))))
         (managed-compile-zo (collection-file-path "parallel-build-worker.rkt" "setup"))
         (with-specified-mode
           (lambda ()
