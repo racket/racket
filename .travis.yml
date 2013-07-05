@@ -6,7 +6,7 @@ compiler:
   - clang
 # Just run tests for the core
 script:
-  - make PKGS="racket-test"
+  - make CPUS="2" PKGS="racket-test"
   - racket -f pkgs/racket-pkgs/racket-test/tests/racket/quiet.rktl
   - racket pkgs/racket-pkgs/racket-test/tests/json/json.rkt
   - racket pkgs/racket-pkgs/racket-test/tests/file/main.rkt
