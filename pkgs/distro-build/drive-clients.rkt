@@ -237,7 +237,7 @@
    (sh "cd " (q dir) " ; "
        "make -j " j " client"
        (client-args c server 'unix)
-       " PLT_SETUP_OPTIONS=\"-j " j "\""
+       " JOB_OPTIONS=\"-j " j "\""
        " CONFIGURE_ARGS_qq=" (qq (get-opt c '#:configure null) 'unix))))
 
 (define (windows-build c host port user server repo clean? pull?)
@@ -263,7 +263,7 @@
         " && \"c:\\Program Files" (if (= bits 64) " (x86)" "") "\\Microsoft Visual Studio 9.0\\vc\\vcvarsall.bat\""
         " " vc
         " && nmake win32-client" 
-       " PLT_SETUP_OPTIONS=\"-j " j "\""
+       " JOB_OPTIONS=\"-j " j "\""
         (client-args c server 'windows))))
 
 (define (client-build c)

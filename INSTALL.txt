@@ -44,7 +44,7 @@ makefile and the `raco setup' part, use
 
  make CPUS=<n>
 
-which recurs with `make -j <n> PLT_SETUP_OPTIONS="-j <n>"'.
+which recurs with `make -j <n> JOB_OPTIONS="-j <n>"'.
 
 
 Building Racket Pieces
@@ -73,6 +73,10 @@ On Unix or Mac OS X, you can use `make in-place' and still set
 `configure' options by supplying `CONFIGURE_ARGS_qq'. (The `_qq'
 suffix on the variable name is a convention that indicates that
 single- and double-quote marks are allowed in the value.)
+
+On all platforms, `JOB_OPTIONS' as a makefile variable and
+`PLT_SETUP_OPTIONS' as an environment variable are passed on to the
+`raco setup' that is used to build core libraries.
 
 Installing Packages
 -------------------
@@ -414,3 +418,7 @@ the description on a second line. The installer is also uploaded to
 the server, which leaves the installer in a "build/installers"
 directory and records a mapping from the installer's description to
 its filename in "build/installers/table.rktd".
+
+If you provide `JOB_OPTIONS=...' for either a client or server build,
+the options are used both for `raco setup' and `raco pkg
+install'. Normally, `JOB_OPTIONS' is used to control parallelism.

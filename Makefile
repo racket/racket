@@ -35,18 +35,18 @@ in-place:
 	if [ "$(CPUS)" = "" ] ; then $(MAKE) plain-in-place ; else $(MAKE) cpus-in-place ; fi
 
 cpus-in-place:
-	$(MAKE) -j $(CPUS) plain-in-place PLT_SETUP_OPTIONS="-j $(CPUS)"
+	$(MAKE) -j $(CPUS) plain-in-place JOB_OPTIONS="-j $(CPUS)"
 
 plain-in-place:
 	$(MAKE) core
 	if $(MACOSX_CHECK) ; then $(MAKE) native-from-git ; fi
 	$(MAKE) pkg-links
-	$(PLAIN_RACKET) -N raco -l- raco setup $(PLT_SETUP_OPTIONS)
+	$(PLAIN_RACKET) -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 win32-in-place:
 	$(MAKE) win32-core
 	$(MAKE) win32-pkg-links
-	$(WIN32_PLAIN_RACKET) -N raco -l- raco setup $(PLT_SETUP_OPTIONS)
+	$(WIN32_PLAIN_RACKET) -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 # ------------------------------------------------------------
 # Core build
@@ -57,19 +57,21 @@ win32-in-place:
 
 CONFIGURE_ARGS_qq = 
 
+SELF_FLAGS_qq = SELF_RACKET_FLAGS="-G `cd ../../../build/config; pwd`"
+
 core:
 	mkdir -p build/config
 	echo '#hash((links-search-files . ()))' > build/config/config.rktd
 	mkdir -p racket/src/build
 	$(MAKE) racket/src/build/Makefile
 	cd racket/src/build; $(MAKE) reconfigure
-	cd racket/src/build; $(MAKE) SELF_RACKET_FLAGS="-G `cd ../../../build/config; pwd`"
-	cd racket/src/build; $(MAKE) install SELF_RACKET_FLAGS="-G `cd ../../../build/config; pwd`"
+	cd racket/src/build; $(MAKE) $(SELF_FLAGS_qq)
+	cd racket/src/build; $(MAKE) install $(SELF_FLAGS_qq) PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)"
 
 win32-core:
 	IF NOT EXIST build\config cmd /c mkdir -p build\config
 	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
-	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(PLT_SETUP_OPTIONS)
+	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
 	cd racket/src/build; ../configure $(CONFIGURE_ARGS_qq)
@@ -136,6 +138,10 @@ CONFIG_MODE = default
 # (except as overridden in the `CONFIG' module):
 CLEAN_MODE =
 
+# Determines the number of parallel jobs used for package and
+# setup operations:
+JOB_OPTIONS =
+
 # A command to run after the server has started; normally set by
 # the `installers' target:
 SERVE_DURING_CMD_qq =
@@ -159,7 +165,7 @@ RACKET = racket/bin/racket -A "$(ADDON)"
 RACO = racket/bin/racket -A "$(ADDON)" -N raco -l- raco
 WIN32_RACKET = racket\racket -A "$(ADDON)"
 WIN32_RACO = racket\racket -A "$(ADDON)" -N raco -l- raco
-X_AUTO_OPTIONS = --skip-installed --deps search-auto $(PLT_SETUP_OPTIONS)
+X_AUTO_OPTIONS = --skip-installed --deps search-auto $(JOB_OPTIONS)
 USER_AUTO_OPTIONS = --scope user $(X_AUTO_OPTIONS)
 LOCAL_USER_AUTO = --catalog build/local/catalog $(USER_AUTO_OPTIONS)
 SOURCE_USER_AUTO_q = --catalog "$(SRC_CATALOG)" $(USER_AUTO_OPTIONS)
@@ -247,7 +253,7 @@ packages-from-local:
 	$(RACO) pkg install $(LOCAL_USER_AUTO) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
 	$(MAKE) set-config
 	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(LOCAL_USER_AUTO)
-	$(RACO) setup --avoid-main
+	$(RACO) setup --avoid-main $(JOB_OPTIONS)
 
 # Install packages from a source catalog (as an alternative to
 # `build-from-local'), where the source catalog is specified as
@@ -257,7 +263,7 @@ build-from-catalog:
 	$(RACO) pkg install $(SOURCE_USER_AUTO_q) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
 	$(MAKE) set-config
 	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(CONFIG_MODE)" "$(PKGS)" $(SOURCE_USER_AUTO_q)
-	$(RACO) setup --avoid-main
+	$(RACO) setup --avoid-main $(JOB_OPTIONS)
 
 # Although a client will build its own "collects", pack up the
 # server's version to be used by each client, so that every client has
@@ -307,7 +313,7 @@ client:
 COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" RELEASE_MODE=$(RELEASE_MODE) \
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
             DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) \
-            DIST_DESC="$(DIST_DESC)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)"
+            DIST_DESC="$(DIST_DESC)" JOB_OPTIONS="$(JOB_OPTIONS)"
 
 win32-client:
 	IF EXIST build\user cmd /c rmdir /S /Q build\user

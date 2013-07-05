@@ -302,6 +302,6 @@
       (exit 1)))
 
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree)
-  (setup-fprintf (current-output-port) #f "--- parallel build using ~a processes ---" worker-count)
+  (setup-fprintf (current-output-port) #f "--- parallel build using ~a jobs ---" worker-count)
   (define collects-queue (make-object collects-queue% collects-tree setup-fprintf append-error '()))
   (parallel-build collects-queue worker-count))
