@@ -101,7 +101,6 @@
 (define (domain-mismatches f-stx args-stx ty doms rests drests rngs arg-tys tail-ty tail-bound
                            #:expected [expected #f] #:return [return -Bottom]
                            #:msg-thunk [msg-thunk (lambda (dom) dom)])
-
   (define arguments-str
     (stringify-domain arg-tys
                       (if (not tail-bound) tail-ty #f)
@@ -155,7 +154,9 @@
                        (if (null? pdoms)
                            (values doms rngs rests drests)
                            (values pdoms prngs prests pdrests))])
-           (if (= (length pdoms) 1)
+           (if ;; only use `tc/funapp1` if `tail-ty` was *not* provided
+               ;; since it either won't error correctly or produces a poor error
+               (and (not tail-ty) (= (length pdoms) 1))
                ;; if we narrowed down the possible cases to a single one, have
                ;; tc/funapp1 generate a better error message
                (begin (tc/funapp1 f-stx args-stx
