@@ -29,9 +29,7 @@
 ;; ----------------------------------------------------------------------------
 ;; Generation: Racket -> JSON
 
-(provide write-json)
-(define (write-json x [o (current-output-port)] #:function [name 'write-json]
-                    #:null [jsnull (json-null)] #:encode [enc 'control])
+(define (write-json* who x o jsnull enc)
   (define (escape m)
     (define ch (string-ref m 0))
     (define r
@@ -56,7 +54,7 @@
     (case enc
       [(control) #rx"[\0-\37\\\"\177]"]
       [(all)     #rx"[\0-\37\\\"\177-\U10FFFF]"]
-      [else (raise-type-error name "encoding symbol" enc)]))
+      [else (raise-type-error who "encoding symbol" enc)]))
   (define (write-json-string str)
     (write-bytes #"\"" o)
     (write-string (regexp-replace* rx-to-encode str escape) o)
@@ -78,28 +76,31 @@
            (define first? #t)
            (for ([(k v) (in-hash x)])
              (unless (symbol? k)
-               (raise-type-error name "legal JSON key value" k))
+               (raise-type-error who "legal JSON key value" k))
              (if first? (set! first? #f) (write-bytes #"," o))
              (write (symbol->string k) o) ; no `printf' => proper escapes
              (write-bytes #":" o)
              (loop v))
            (write-bytes #"}" o)]
-          [else (raise-type-error name "legal JSON value" x)]))
+          [else (raise-type-error who "legal JSON value" x)]))
   (void))
+
+(provide write-json)
+(define (write-json x [o (current-output-port)]
+                    #:null [jsnull (json-null)] #:encode [enc 'control])
+  (write-json* 'write-json x o jsnull enc))
 
 ;; ----------------------------------------------------------------------------
 ;; Parsing: JSON -> Racket
 
 (require syntax/readerr)
 
-(provide read-json)
-(define (read-json [i (current-input-port)] #:null [jsnull (json-null)]
-                   #:function [name 'read-json])
+(define (read-json* who i jsnull)
   ;; Follows the specification (eg, at json.org) -- no extensions.
   ;;
   (define (err fmt . args)
     (define-values [l c p] (port-next-location i))
-    (raise-read-error (format "~a: ~a" name (apply format fmt args))
+    (raise-read-error (format "~a: ~a" who (apply format fmt args))
                       (object-name i) l c p #f))
   (define (skip-whitespace) (regexp-match? #px#"^\\s*" i))
   ;;
@@ -177,23 +178,27 @@
   ;;
   (read-json #t))
 
+(provide read-json)
+(define (read-json [i (current-input-port)] #:null [jsnull (json-null)])
+  (read-json* 'read-json i jsnull))
+
 ;; ----------------------------------------------------------------------------
 ;; Convenience functions
 
 (provide jsexpr->string jsexpr->bytes)
 (define (jsexpr->string x #:null [jsnull (json-null)] #:encode [enc 'control])
   (define o (open-output-string))
-  (write-json x o #:null jsnull #:encode enc #:function 'jsexpr->string)
+  (write-json* 'jsexpr->string x o jsnull enc)
   (get-output-string o))
 (define (jsexpr->bytes x #:null [jsnull (json-null)] #:encode [enc 'control])
   (define o (open-output-bytes))
-  (write-json x o #:null jsnull #:encode enc #:function 'jsexpr->bytes)
+  (write-json* 'jsexpr->bytes x o jsnull enc)
   (get-output-bytes o))
 
 (provide string->jsexpr bytes->jsexpr)
 (define (string->jsexpr str #:null [jsnull (json-null)])
   (unless (string? str) (raise-type-error 'string->jsexpr "string" str))
-  (read-json (open-input-string str) #:null jsnull #:function 'string->jsexpr))
+  (read-json* 'string->jsexpr (open-input-string str) jsnull))
 (define (bytes->jsexpr str #:null [jsnull (json-null)])
   (unless (bytes? str) (raise-type-error 'bytes->jsexpr "bytes" str))
-  (read-json (open-input-bytes str) #:null jsnull #:function 'bytes->jsexpr))
+  (read-json* 'bytes->jsexpr (open-input-bytes str) jsnull))
