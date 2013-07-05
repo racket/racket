@@ -502,6 +502,8 @@
   (define-values (links-caches) (make-vector (vector-length links-paths) (make-hasheq)))
   (define-values (links-stamps) (make-vector (vector-length links-paths) #f))
 
+  (define-values (stamp-prompt-tag) (make-continuation-prompt-tag 'stamp))
+
   (define-values (file->stamp)
     (lambda (path)
       ;; We'd prefer to do something lighter than read the file every time!
@@ -514,11 +516,11 @@
          (with-continuation-mark
              exception-handler-key
              (lambda (exn)
-               (if (exn:fail:filesystem? exn)
-                   (abort-current-continuation 
-                    (default-continuation-prompt-tag)
-                    (lambda () #f))
-                   (lambda () (raise exn))))
+               (abort-current-continuation 
+                stamp-prompt-tag
+                (if (exn:fail:filesystem? exn)
+                    (lambda () #f)
+                    (lambda () (raise exn)))))
            (let ([p (open-input-file path)])
              (dynamic-wind
                  void
@@ -536,7 +538,8 @@
                                    null
                                    (cons bstr (loop)))))))
                          bstr)))
-                 (lambda () (close-input-port p)))))))))
+                 (lambda () (close-input-port p))))))
+       stamp-prompt-tag)))
 
   (define-values (get-linked-collections)
     (lambda (user? shared? ii)
