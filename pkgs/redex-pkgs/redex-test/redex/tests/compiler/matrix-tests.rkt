@@ -1,8 +1,8 @@
 #lang racket
 (require redex)
 (require racket/set)
-(require "../../private/compiler/match.rkt")
-(require "../../private/compiler/redextomatrix.rkt")
+(require redex/private/compiler/match
+         redex/private/compiler/redextomatrix)
 
 (define the-hole (term hole))
 (define no-context #f)

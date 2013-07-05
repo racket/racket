@@ -1,10 +1,10 @@
 #lang racket
 
-(require "../reduction-semantics.rkt"
-         "../private/jdg-gen.rkt"
-         "../private/generate-term.rkt"
+(require redex/reduction-semantics
+         redex/private/jdg-gen
+         redex/private/generate-term
          "test-util.rkt"
-         (only-in "../private/pat-unify.rkt"
+         (only-in redex/private/pat-unify
                   bound
                   lvar))
 

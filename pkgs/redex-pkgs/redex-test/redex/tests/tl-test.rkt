@@ -1,10 +1,10 @@
 #lang racket
-  (require "../reduction-semantics.rkt"
-           "test-util.rkt"
-           (only-in "../private/matcher.rkt" make-bindings make-bind)
+  (require "test-util.rkt"
+           redex/reduction-semantics
+           (only-in redex/private/matcher make-bindings make-bind)
            racket/match
            racket/trace
-           "../private/struct.rkt")
+           redex/private/struct)
   
   (reset-count)
 

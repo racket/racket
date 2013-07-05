@@ -1,7 +1,7 @@
 #lang scheme
 
-(require "../private/matcher.rkt"
-         "../private/lang-struct.rkt"
+(require redex/private/matcher
+         redex/private/lang-struct
          (for-syntax syntax/parse setup/path-to-relative)
          setup/path-to-relative
          racket/runtime-path)

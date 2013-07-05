@@ -1,6 +1,6 @@
 #lang scheme
 
-(require "../private/keyword-macros.rkt"
+(require redex/private/keyword-macros
          "test-util.rkt")
 
 (reset-count)

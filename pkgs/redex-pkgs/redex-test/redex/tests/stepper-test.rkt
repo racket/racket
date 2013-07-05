@@ -3,9 +3,9 @@
 (require framework
          racket/class
          "test-util.rkt"
-         "../reduction-semantics.rkt"
-         "../private/stepper.rkt"
-         "../private/size-snip.rkt")
+         redex/reduction-semantics
+         redex/private/stepper
+         redex/private/size-snip)
 
 (reset-count)
 

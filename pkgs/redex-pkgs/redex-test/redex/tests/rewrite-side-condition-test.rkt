@@ -1,7 +1,7 @@
 #lang racket/base
-(require (for-syntax "../private/rewrite-side-conditions.rkt"
+(require (for-syntax redex/private/rewrite-side-conditions
                      racket/base)
-         "../private/term.rkt" ;; to get bindings for 'in-hole' etc
+         redex/private/term ;; to get bindings for 'in-hole' etc
          rackunit)
 
 (define-syntax (rsc stx)

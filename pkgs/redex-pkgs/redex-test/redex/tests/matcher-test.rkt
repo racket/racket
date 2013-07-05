@@ -1,7 +1,7 @@
 #lang racket/base
 
-(require "../private/matcher.rkt"
-         "../private/lang-struct.rkt"
+(require redex/private/matcher
+         redex/private/lang-struct
          (only-in "test-util.rkt" equal/bindings?)
          (for-syntax racket/base)
          racket/list)

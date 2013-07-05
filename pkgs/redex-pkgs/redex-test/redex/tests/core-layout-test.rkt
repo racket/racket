@@ -1,7 +1,7 @@
 #lang racket/base
 
-(require "../private/core-layout.rkt"
-         "../private/loc-wrapper.rkt"
+(require redex/private/core-layout
+         redex/private/loc-wrapper
          "lw-test-util.rkt"
          "test-util.rkt")
 

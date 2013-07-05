@@ -6,8 +6,8 @@
          (for-syntax racket/base)
          racket/class
          racket/promise
-         "../pict.rkt"
-         "../reduction-semantics.rkt")
+         redex/pict
+         redex/reduction-semantics)
 
 (provide btest done show-bitmap-test-gui?)
 

@@ -1,8 +1,8 @@
 #lang racket
 
 (require "test-util.rkt"
-         "../private/error.rkt"
-         "../private/defined-checks.rkt")
+         redex/private/error
+         redex/private/defined-checks)
 
 (reset-count)
 

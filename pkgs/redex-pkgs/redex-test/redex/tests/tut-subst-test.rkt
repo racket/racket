@@ -1,6 +1,6 @@
 #lang racket/base
 (require redex/reduction-semantics 
-         "../tut-subst.rkt"
+         redex/tut-subst
          racket/set)
 
 (define (an-x? x) (memq x '(a b c x y z z2 z2 q)))

@@ -1,9 +1,9 @@
 #lang racket
 
-(require (for-syntax "../private/rewrite-side-conditions.rkt")
-         "../private/pat-unify.rkt"
-         "../reduction-semantics.rkt"
-         "../private/jdg-gen.rkt"
+(require (for-syntax redex/private/rewrite-side-conditions)
+         redex/private/pat-unify
+         redex/reduction-semantics
+         redex/private/jdg-gen
          rackunit)
 
 (provide env-equal?)

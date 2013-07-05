@@ -1,14 +1,14 @@
 #lang racket
 
 (require "test-util.rkt"
-         "../private/reduction-semantics.rkt"
-         "../private/judgment-form.rkt"
-         "../private/matcher.rkt"
-         "../private/term.rkt"
-         "../private/rg.rkt"
-         "../private/generate-term.rkt"
-         "../private/keyword-macros.rkt"
-         "../private/error.rkt")
+         redex/private/reduction-semantics
+         redex/private/judgment-form
+         redex/private/matcher
+         redex/private/term
+         redex/private/rg
+         redex/private/generate-term
+         redex/private/keyword-macros
+         redex/private/error)
 
 (define-namespace-anchor nsa)
 (define ns (namespace-anchor->namespace nsa))

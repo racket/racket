@@ -5,8 +5,8 @@
   ;; for testing functions that aren't easily extraced
   ;; from the pict.rkt library
   
-  (require "../reduction-semantics.rkt"
-           "../pict.rkt")
+  (require redex/reduction-semantics
+           redex/pict)
   
   (require texpict/mrpict mred/mred mzlib/class)
   

@@ -1,11 +1,11 @@
 #lang racket
-(require (only-in redex term))
-(require "../../private/lang-struct.rkt"
-         "../../private/matcher.rkt"
+(require (only-in redex term)
+         redex/private/lang-struct
+         redex/private/matcher
+         redex/private/compiler/match
+         redex/private/compiler/redextomatrix
          (only-in "../test-util.rkt" equal/bindings?)
          mzlib/list)
-(require "../../private/compiler/match.rkt")
-(require "../../private/compiler/redextomatrix.rkt")
 
 (define (make-test-mtch a b c) (make-mtch a (build-flat-context b) c))
 

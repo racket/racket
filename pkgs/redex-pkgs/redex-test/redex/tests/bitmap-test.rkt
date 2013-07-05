@@ -1,6 +1,6 @@
 #lang racket
 (require "bitmap-test-util.rkt"
-         "../main.rkt"
+         redex/pict redex/reduction-semantics
          pict)
 
 ;; tests: 

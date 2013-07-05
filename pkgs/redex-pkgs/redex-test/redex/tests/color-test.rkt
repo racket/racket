@@ -10,8 +10,8 @@ In the other window, you expect to see the currently unreducted terms in green a
 
 |#
 
-(require "../reduction-semantics.rkt"
-         "../gui.rkt"
+(require redex/reduction-semantics
+         redex/gui
          racket/gui/base
          racket/class)
 

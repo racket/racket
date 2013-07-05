@@ -17,7 +17,6 @@
          racket/list
          racket/set
          data/union-find
-         mzlib/etc
          (rename-in racket/match (match match:)))
 
 (require (for-syntax syntax/name
@@ -291,7 +290,7 @@
     [(form-name pat ...)
      (raise-syntax-error #f "expected a judgment form name" stx #'form-name)]))
 
-(define-syntax-set (do-reduction-relation)
+(define-syntax (do-reduction-relation stx)
   (define (do-reduction-relation/proc stx)
     (syntax-case stx ()
       [(_ orig-stx id orig-reduction-relation allow-zero-rules? lang . w/domain-args)
@@ -900,7 +899,9 @@
            [(null? stxs) '()]
            [else 
             (cons (format " ~s" (syntax->datum (car stxs)))
-                  (loop (cdr stxs)))])))))
+                  (loop (cdr stxs)))]))))
+  
+  (do-reduction-relation/proc stx))
 
 (define (build-rewrite-proc/leaf side-conditions-rewritten 
                                  build-really-matched 

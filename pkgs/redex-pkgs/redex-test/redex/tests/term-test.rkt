@@ -1,7 +1,7 @@
 (module term-test scheme
-  (require "../private/term.rkt"
-           "../private/lang-struct.rkt"
-           "../private/matcher.rkt"
+  (require redex/private/term
+           redex/private/lang-struct
+           redex/private/matcher
            "test-util.rkt")
   
   (reset-count)

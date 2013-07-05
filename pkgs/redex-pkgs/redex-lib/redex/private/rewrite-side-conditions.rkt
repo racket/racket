@@ -1,12 +1,11 @@
 #lang racket/base
 
-  (require mzlib/list
-           "underscore-allowed.rkt")
-  (require "term.rkt"
+  (require "underscore-allowed.rkt"
+           "term.rkt"
            "term-fn.rkt"
            setup/path-to-relative
            (for-template
-            mzscheme
+            racket/base
             "term.rkt"
             "matcher.rkt"))
   
