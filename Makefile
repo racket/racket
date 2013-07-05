@@ -29,7 +29,15 @@ WIN32_PLAIN_RACKET = racket\racket
 
 MACOSX_CHECK = $(PLAIN_RACKET) -I racket/base -e '(case (system-type) [(macosx) (exit 0)] [else (exit 1)])'
 
+CPUS = 
+
 in-place:
+	if [ "$(CPUS)" = "" ] ; then $(MAKE) plain-in-place ; else $(MAKE) cpus-in-place ; fi
+
+cpus-in-place:
+	$(MAKE) -j $(CPUS) plain-in-place PLT_SETUP_OPTIONS="-j $(CPUS)"
+
+plain-in-place:
 	$(MAKE) core
 	if $(MACOSX_CHECK) ; then $(MAKE) native-from-git ; fi
 	$(MAKE) pkg-links

@@ -151,8 +151,8 @@
 ;;   #:bits <integer> --- 32 or 64, affects Visual Studio path
 ;;   #:vc <string*> --- "x86" or "x64" to select the Visual C build mode;
 ;;                     default depends on bits
-;;   #:j <integer> --- parallelism for `make' on Unix and Mac OS X;
-;;                     defaults to 1
+;;   #:j <integer> --- parallelism for `make' on Unix and Mac OS X and
+;;                     for `raco setup' on all platforms; defaults to 1
 ;;   #:timeout <number> --- numbers of seconds to wait before declaring
 ;;                          failure; defaults to 30 minutes
 ;;   #:clean? <boolean> --- if true, then the build process on the client

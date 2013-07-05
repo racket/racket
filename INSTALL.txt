@@ -38,6 +38,14 @@ dependencies. The default value of `PKGS' reaches all packages in
 Mode", below, for more information on package links and the way that
 `PKGS' is remembered for future `make in-place's.
 
+Note that `make -j <n>' controls parallelism for the makefile part of
+a build, but not for the `raco setup' part. To control both the
+makefile and the `raco setup' part, use
+
+ make CPUS=<n>
+
+which recurs with `make -j <n> PLT_SETUP_OPTIONS="-j <n>"'.
+
 
 Building Racket Pieces
 ======================
