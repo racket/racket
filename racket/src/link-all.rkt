@@ -8,24 +8,57 @@
          setup/getinfo
          pkg/lib)
 
-(define config-file-path (build-path "racket" "etc" "config.rktd"))
+(define config-dir-path (build-path "racket" "etc"))
+(define config-file-path (build-path config-dir-path "config.rktd"))
 (define devel-pkgs-dir (build-path "racket" "lib" "devel-pkgs"))
 
 (define only-platform? #f)
+(define sticky? #f)
+(define keep-old? #f)
 
 (define dirs null)
 
-(define pkgs
+(define cmdline-pkgs
   (command-line
    #:once-each
    [("--platform") "Only packages whose names match the platform name"
     (set! only-platform? #t)]
+   [("--sticky") a b "Record choice if <a> =/= <b>, use recorded if <a> == <b>"
+    (set! sticky? #t)
+    (set! keep-old? (equal? a b))]
    #:multi
    [("++dir") dir "Use packages in <dir>"
     (set! dirs (cons dir dirs))]
    #:args
    pkg
    (list->set pkg)))
+
+(define pkgs-choice-path (build-path config-dir-path "link-pkgs.rktd"))
+
+(define-values (pkgs keeping?)
+  (if (and keep-old?
+           (file-exists? pkgs-choice-path))
+      (values
+       (list->set
+        (call-with-input-file* pkgs-choice-path read))
+       #t)
+      (values cmdline-pkgs #f)))
+
+(printf "Linking packages~a:\n"
+        (if keeping?
+            (format " (using packages choice from ~a)" pkgs-choice-path)
+            ""))
+(for ([p (in-set pkgs)])
+  (printf "  ~a\n" p))
+(when sticky?
+  (unless (or keeping? keep-old?)
+    (printf "Recording packages choice in ~a\n" pkgs-choice-path)
+    (call-with-output-file*
+     pkgs-choice-path
+     #:exists 'truncate/replace
+     (lambda (o)
+       (write (set->list pkgs) o)
+       (newline o)))))
 
 (define devel-pkgs-bytes
   (path->bytes (path->complete-path devel-pkgs-dir)))

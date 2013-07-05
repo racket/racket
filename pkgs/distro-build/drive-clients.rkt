@@ -237,8 +237,7 @@
    (sh "cd " (q dir) " ; "
        "make -j " j " client"
        (client-args c server 'unix)
-       " CORE_CONFIGURE_ARGS=" (q (apply ~a #:separator " "
-                                         (get-opt c '#:configure null))))))
+       " CONFIGURE_ARGS_qq=" (qq (get-opt c '#:configure null)))))
 
 (define (windows-build c host port user server repo clean? pull?)
   (define dir (or (get-opt c '#:dir)

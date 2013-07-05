@@ -35,7 +35,8 @@ To install a subset of the packages in "pkgs", supply `PKGS' value to
 links only the "gui-lib" and "readline-lib" packages and their
 dependencies. The default value of `PKGS' reaches all packages in
 "pkgs" among its dependencies. See "Linking Packages for Development
-Mode", below, for more information.
+Mode", below, for more information on package links and the way that
+`PKGS' is remembered for future `make in-place's.
 
 
 Building Racket Pieces
@@ -60,6 +61,11 @@ but under Windows, encoding-conversion, extflonum, and SSL
 functionality is hobbled until native libraries from the
 `racket-win32-i386' or `racket-win32-x86_64' package are installed.)
 
+On Unix or Mac OS X, you can use `make in-place' and still set
+`configure' options by supplying `CONFIGURE_ARGS_qq'. (The `_qq'
+suffix on the variable name is a convention that indicates that
+single- and double-quote marks are allowed in the value.)
+
 Installing Packages
 -------------------
 
@@ -70,22 +76,28 @@ packages via a package-catalog server (ignoring the content of
 Linking Packages for Development Mode
 -------------------------------------
 
-Aside from the issue of native-library packages, using all of the
-packages in "pkgs" corresponds to a build that is like the main Racket
-distribution. Furthermore, if you install all of those packages with
-`raco pkg install -i --link ...', then you can edit libraries or
-update via `git pull' plus `raco setup' (as opposed to updating or
-reinstalling packages).
+Aside from the issue of native-library packages, using the
+"main-distribution" package corresponds to a build that is like the
+main Racket distribution. Furthermore, if you install all of those
+packages with `raco pkg install -i --link ...', then you can edit
+libraries or update via `git pull' plus `raco setup' (as opposed to
+updating or reinstalling packages).
 
 The `pkg-links' target of the makefile links (or re-links) packages
 from "pkgs" into the "racket" build. (The `in-place' target of the
 makefile uses `pkg-links'.) By default, `pkg-links' starts with the
 "main-distribution" and "plt-services" packages and links all of their
 dependencies, which includes all of the packages in "pkgs". Specify a
-subset of the packages with `PKG="...."' as an argument to `make
+subset of the packages with `PKGS="...."' as an argument to `make
 pkg-links'. Make the `pkg-links' target whenever the set of
-dependencies can change (or, for the default mode, when any native
-package or package in "pkgs" changes).
+dependencies can change.
+
+When you supply `PKGS=' with a value that is not the default value,
+then the set of packages is recorded in "racket/etc/pkg-links.rktd"
+and used for any future `make pkg-links' where `PKGS' is the
+default. So, you can supply a `PKGS=' and it sticks for future builds,
+but you must manually delete "racket/etc/pkg-links.rktd" to get
+back to the default configuration.
 
 Packages are linked in a database (at "racket/lib/devel-pkgs") that is
 added to the installation's search paths. As a result, the links
@@ -105,9 +117,6 @@ repository from GitHub; otherwise, clone
 as
  
    build/native-pkgs
-
-When you have a "build/native-pkgs" directory, then the `pkg-links'
-makefile target also links relavant native packages.
 
 Trying Packages Locally
 -----------------------

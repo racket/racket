@@ -43,7 +43,7 @@ win32-in-place:
 # an empty set of link files, so that any installation-wide
 # links or packages are ignored during the core build.
 
-CORE_CONFIGURE_ARGS = 
+CONFIGURE_ARGS_qq = 
 
 core:
 	mkdir -p build/config
@@ -60,7 +60,7 @@ win32-core:
 	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config
 
 racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
-	cd racket/src/build; ../configure $(CORE_CONFIGURE_ARGS)
+	cd racket/src/build; ../configure $(CONFIGURE_ARGS_qq)
 
 # ------------------------------------------------------------
 # Configuration options for building installers
@@ -74,7 +74,8 @@ racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
 # side of its definition.
 
 # Packages (separated by spaces) to include in a distribution:
-PKGS = main-distribution plt-services
+DEFAULT_PKGS = main-distribution plt-services
+PKGS = $(DEFAULT_PKGS)
 
 # Catalog for sources and native packages; use "local" to bootstrap
 # from package directories (in the same directory as this makefile)
@@ -158,8 +159,11 @@ BUNDLE_CONFIG = bundle/racket/etc/config.rktd
 # ------------------------------------------------------------
 # Linking all packages (development mode; not an installer build)
 
+LINK_ALL = -U -G build/config racket/src/link-all.rkt ++dir pkgs ++dir build/native-pkgs
+LINK_PKG_SPECS = --sticky "$(PKGS)" "$(DEFAULT_PKGS)"
+
 pkg-links:
-	$(PLAIN_RACKET) -U -G build/config racket/src/link-all.rkt ++dir pkgs ++dir build/native-pkgs $(PKGS)
+	$(PLAIN_RACKET) $(LINK_ALL) $(LINK_PKG_SPECS) $(PKGS)
 
 win32-pkg-links:
 	$(MAKE) pkg-links PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
