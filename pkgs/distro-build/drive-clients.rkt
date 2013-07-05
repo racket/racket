@@ -48,8 +48,14 @@
   (for/fold ([opts opts]) ([(k v) (in-hash (site-config-options c))])
     (hash-set opts k v)))
 
-(define (get-opt opts kw [default #f])
-  (hash-ref opts kw default))
+(define (get-opt opts kw [default #f] #:localhost [localhost-default default])
+  (hash-ref opts kw (cond
+                     [(equal? default localhost-default) default]
+                     [(and (equal? "localhost" (get-opt opts '#:host "localhost"))
+                           (equal? #f (get-opt opts '#:user #f))
+                           (equal? #f (get-opt opts '#:dir #f)))
+                      localhost-default]
+                     [else default])))
 
 (define (get-content c)
   (site-config-content c))
@@ -58,6 +64,12 @@
   (or (get-opt opts '#:name)
       (get-opt opts '#:host)
       "localhost"))
+
+(define (get-path-opt opt key default #:localhost [localhost-default default])
+  (define d (get-opt opt key default #:localhost localhost-default))
+  (if (path? d)
+      (path->string d)
+      d))
 
 ;; ----------------------------------------
 ;; Managing VirtualBox machines
@@ -156,15 +168,26 @@
 (define scp (find-executable-path "scp"))
 (define ssh (find-executable-path "ssh"))
 
-(define (ssh-script host port user . cmds)
+(define (ssh-script host port user kind . cmds)
   (for/and ([cmd (in-list cmds)])
     (or (not cmd)
-        (apply system*/show ssh 
-               "-p" (~a port)
-               (if user 
-                   (~a user "@" host)
-                   host)
-               cmd))))
+        (if (and (equal? host "localhost")
+                 (not user))
+            (apply system*/show cmd)
+            (apply system*/show ssh 
+                   "-p" (~a port)
+                   (if user 
+                       (~a user "@" host)
+                       host)
+                   (if (eq? kind 'unix)
+                       ;; ssh needs an extra level of quoting
+                       ;;  relative to sh:
+                       (for/list ([arg (in-list cmd)])
+                         (~a "'" 
+                             (regexp-replace* #rx"'" arg "'\"'\"'")
+                             "'"))
+                       ;; windows quiting built into `cmd' aready
+                       cmd))))))
 
 (define (q s)
   (~a "\"" s "\""))
@@ -204,7 +227,6 @@
                        default-dist-dir))
   (define dist-suffix (get-opt c '#:dist-suffix ""))
   (define dist-catalogs (choose-catalogs c '("")))
-  (define pull? (get-opt c '#:pull? #t))
   (~a " SERVER=" server
       " PKGS=" (q pkgs)
       " DOC_SEARCH=" (q doc-search)
@@ -217,15 +239,13 @@
       " RELEASE_MODE=" (if release? "--release" (q ""))))
 
 (define (unix-build c host port user server repo clean? pull?)
-  (define dir (or (get-opt c '#:dir)
-                  "build/plt"))
-  (define (sh . args) 
-    (list "/bin/sh" "-c" (~a "'" 
-                             (regexp-replace* #rx"'" (apply ~a args) "'\"'\"'")
-                             "'")))
+  (define dir (get-path-opt c '#:dir "build/plt" #:localhost (current-directory)))
+  (define (sh . args)
+    (list "/bin/sh" "-c" (apply ~a args)))
   (define j (or (get-opt c '#:j) 1))
   (ssh-script
    host port user
+   'unix
    (and clean?
         (sh "rm -rf  " (q dir)))
    (sh "if [ ! -d " (q dir) " ] ; then"
@@ -241,8 +261,7 @@
        " CONFIGURE_ARGS_qq=" (qq (get-opt c '#:configure null) 'unix))))
 
 (define (windows-build c host port user server repo clean? pull?)
-  (define dir (or (get-opt c '#:dir)
-                  "build\\plt"))
+  (define dir (get-path-opt c '#:dir "build\\plt" #:localhost (current-directory)))
   (define bits (or (get-opt c '#:bits) 64))
   (define vc (or (get-opt c '#:vc)
                  (if (= bits 32)
@@ -253,6 +272,7 @@
     (list "cmd" "/c" (apply ~a args)))
   (ssh-script
    host port user
+   'windows
    (and clean?
         (cmd "IF EXIST " (q dir) " rmdir /S /Q " (q dir)))
    (cmd "IF NOT EXIST " (q dir) " git clone " (q repo) " " (q dir))
@@ -276,11 +296,8 @@
                      default-server))
   (define repo (or (get-opt c '#:repo)
                    (~a "http://" server ":9440/.git")))
-  (define clean? (let ([v (get-opt c '#:clean? 'none)])
-                   (if (eq? v 'none)
-                       default-clean?
-                       v)))
-  (define pull? (get-opt c '#:pull? #t))
+  (define clean? (get-opt c '#:clean? default-clean? #:localhost #f))
+  (define pull? (get-opt c '#:pull? #t #:localhost #f))
   ((case (or (get-opt c '#:platform) 'unix)
      [(unix) unix-build]
      [else windows-build])

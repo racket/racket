@@ -126,8 +126,8 @@ DIST_DESC =
 # installers, where "" is replaced by the default configuration:
 DIST_CATALOGS_q = ""
 
-# Configuration of clients to run for a build farm, normally
-# implemented with `#lang distro-build/config':
+# Configuration module that describes a build, normally implemented
+# with `#lang distro-build/config':
 CONFIG = build/site.rkt
 
 # A mode that is made available to the site-configuration module
@@ -190,9 +190,14 @@ win32-pkg-links:
 # On a server platform (for an installer build):
 
 server:
+	$(MAKE) build/site.rkt
 	$(MAKE) core
 	$(MAKE) stamp
 	$(MAKE) server-from-core
+
+build/site.rkt:
+	echo "#lang distro-build/config" > build/site.rkt
+	echo "(machine)" >> build/site.rkt
 
 stamp:
 	if [ -d ".git" ] ; then $(MAKE) stamp-from-git ; else $(MAKE) stamp-from-date ; fi
@@ -222,7 +227,7 @@ local-catalog:
 native-from-git:
 	mkdir -p build
 	if [ ! -d build/native-pkgs ]; then cd build; git clone git://github.com/plt/libs.git native-pkgs ; fi
-	cd build/native-pkgs; git pull
+	cd build/native-pkgs; if [ -d ".git" ]; then git pull ; fi
 
 # Create packages and a catalog for all native libraries:
 native-catalog:
@@ -320,7 +325,7 @@ win32-client:
 	$(MAKE) win32-core $(COPY_ARGS)
 	$(MAKE) win32-distro-build-from-server $(COPY_ARGS)
 	$(MAKE) win32-bundle-from-server $(COPY_ARGS)
-	$(WIN32_RACKET) -l distro-build/set-config $(BUNDLE_CONFIG) $(CONFIG_MODE_q) "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
+	$(WIN32_RACKET) -l distro-build/set-config $(BUNDLE_CONFIG) "" "" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 	$(MAKE) win32-installer-from-bundle $(COPY_ARGS)
 
 # Install the "distro-build" package from the server into
@@ -340,7 +345,7 @@ bundle-from-server:
 	bundle/racket/bin/raco pkg install $(REMOTE_INST_AUTO) $(PKGS) $(REQUIRED_PKGS)
 
 bundle-config:
-	$(RACKET) -l distro-build/set-config $(BUNDLE_CONFIG) $(CONFIG_MODE_q) "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
+	$(RACKET) -l distro-build/set-config $(BUNDLE_CONFIG) "" "" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 
 UPLOAD_q = --upload http://$(SERVER):9440/ --desc "$(DIST_DESC)"
 DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"

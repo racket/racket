@@ -11,7 +11,9 @@
    (dest-config-file config-file config-mode doc-search . catalog)
    (values dest-config-file config-file config-mode doc-search catalog)))
 
-(define config (extract-options config-file config-mode))
+(define config (if (equal? config-file "")
+                   (hash)
+                   (extract-options config-file config-mode)))
 
 (define doc-search (choose-doc-search config default-doc-search))
 
