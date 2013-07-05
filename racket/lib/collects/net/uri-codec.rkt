@@ -172,16 +172,16 @@ See more in PR8831.
     (if (null? l) '()
         (let* ([c (car l)] [l (cdr l)]
                [hex (and (equal? #\% c) (pair? l) (pair? (cdr l))
-                         (string->number (string (car l) (cadr l)) 16))])
-          (if hex
-              (cons hex (internal-decode (cddr l)))
-              (append (if (char<? c max-ascii)
-                          (list (vector-ref table (char->integer c)))
-                          ;; This should probably error, but strings to be decoded
-                          ;; might come from misbehaving sources; maybe it's better
-                          ;; to add some parameter for a permissive mode
-                          (bytes->list (string->bytes/utf-8 (string c))))
-                      (internal-decode l))))))
+                         (string->number (string (car l) (cadr l)) 16))]
+               [rest (internal-decode (if hex (cddr l) l))])
+          (cond [hex (cons hex rest)]
+                [(char<? c max-ascii) (cons (vector-ref table (char->integer c))
+                                            rest)]
+                ;; This should probably error, but strings to be decoded
+                ;; might come from misbehaving sources; maybe it's
+                ;; better to add some parameter for a permissive mode
+                [else (append (bytes->list (string->bytes/utf-8 (string c)))
+                              (internal-decode l))]))))
   (bytes->string/utf-8 (apply bytes (internal-decode (string->list str)))))
 
 ;; Utility for defining codecs
