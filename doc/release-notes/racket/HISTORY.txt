@@ -1,3 +1,6 @@
+Version 5.3.6
+gc: fix bug triggered by allocation during gc-notification
+
 Version 5.3.4, April 2013
 racket/udp: added multicast support: udp-multicast-join-group!,
  udp-multicast-leave-group!, udp-multicast-interface,
