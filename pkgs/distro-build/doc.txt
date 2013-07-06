@@ -1,0 +1,369 @@
+Site Configuration Modules
+==========================
+
+A build farm is normally run via the `installers', `site', or
+`snapshot-site' target of the Racket repository's top-level
+makefile. Each of those targets uses `installers', which expects a
+`CONFIG=...' argument to specify a configuration module file (or uses
+"build/site.rkt" as the default).
+
+A site configuration module starts `#lang distro-build/config' and
+uses keywords to specify various options for the configuration. This
+format is described is detail further below; for now, it's enough to
+know that there are various options, each of which is associated with
+a keyword.
+
+The machine where `make installers' is run is the server machine.
+The server machine first prepares packages for installation on
+clients.  The site configuration's top-level entry is consulted for
+a `#:pkgs' and/or `#:doc-search' option, which overrides any `PKGS'
+and/or `DOC_SEARCH' configuration from the makefile.
+
+The site configuration file otherwise describes and configures
+client machines hierarchically, where configuration options
+propagate down the hierarchy when they are not overridden more
+locally.
+
+Each client is normally built by running commands via `ssh', where
+the client's host, `#:host' (with and optional `#:port' and/or
+`#:user') indicate the ssh target. Each client machine must be set
+up with a public-key authentication, because a direct `ssh' is
+expected to work without a password prompt. An exception is when
+the host is "localhost" and user is #f, in which case a shell is
+used directly instead of `ssh'.
+
+On the client machine, all work is performed at a specified
+directory as specified by `#:dir'. The directory defaults to
+"build/plt" (Unix, Mac OS X) or "build\\plt" (Windows), except when
+the host is "localhost" and the client is #f, in which case the
+current directory (i.e., the server's directory) is used.
+
+Normally, the client directory is a git clone:
+
+  - If the directory exists already on a client machine (and the
+    machine is not configured for "clean" mode), then if the directory
+    contains a ".git" subdirectory, it is assumed to be a git clone
+    and updated with `git pull'. The `git pull' operation can be
+    disabled by specifying `#:pull?' as #f, and it defaults to #f
+    in the case that `#:dir' is not specified, the host is
+    "localhost", and the user is #f.
+
+  - If the directory does not exist, a git repository is
+    cloned. The repository can be specified with `#:repo'. By
+    default, the server is used as the source git repository (so
+    that the server and client are in sync), which means that the
+    server's directory must be a git clone.
+
+Note that neither ssh nor git turn out to be needed when the host
+is "localhost", the user is #f, and the directory is not specified
+(which corresponds to the defaults in all cases).
+
+If a build fails for a machine, building continues on other
+machines.  Success for a given machine means that its installer
+ends up in "build/installers" (and failure for a machine means no
+installer) as recorded in the "table.rktd" file.
+
+To use the `site' makefile target, the configuration file must at
+least provide a `#:dist-base-url' value, which is a URL at which the
+site will be made available. To use the `snapshot-sire' makefile
+target, then `#:site-dest' will need to be specified, normally as a
+path that ends with the value produced by `(current-stamp)'.
+
+Machine Requirements
+--------------------
+
+Each Unix or Mac OS X client needs the following available:
+
+  * ssh server with public-key authentication (except "localhost")
+  * git (unless the working directory is ready)
+  * gcc, make, etc.
+
+Each Windows client needs the following:
+
+  * ssh server with public-key authentication
+  * git (unless the working directory is ready)
+  * Microsoft Visual Studio 9.0 (2008), installed in the
+    default folder:
+     C:\Program Files\Microsoft Visual Studio 9.0       (32-bit host)
+     C:\Program Files (x86)\Microsoft Visual Studio 9.0 (64-bit host)
+  * Nullsoft Scriptable Install System (NSIS), installed in the
+    default folder:
+     C:\Program Files\NSIS\makensis.exe
+     or  C:\Program Files (x86)\NSIS\makensis.exe
+    or installed so that `makensis' in your PATH.
+
+Site Configuration
+-------------------
+
+A site configuration module is normally written in the
+`distro-build/config' language. The configuration describes individual
+machines, and groups them with `parallel' or `sequential' to indicate
+whether the machine's builds should run sequentially or in parallel.
+Options specified at `parallel' or `sequential' are propagated to each
+machine in the group.
+
+Site-configuration keywords (where <string*> means no spaces, etc.):
+
+  #:host <string*> --- defaults to "localhost"
+
+  #:port <integer> --- ssh port for the client; defaults to 22
+
+  #:user <string*/false> --- ssh user for the client; defaults to #f,
+    which means the current user
+
+  #:dir <path-string> --- defaults to "build/plt" or "build\\plt", or
+    to the current directory if the host is "localhost" and the user
+    is #f
+
+  #:server <string*> --- the address of the server as accessed by the
+    client; defaults to the `SERVER' makefile variable
+
+  #:repo <string> --- the git repository for Racket; defaults to
+    "http://<server>:9440/.git"
+
+  #:pkgs '(<string*> ...) --- packages to install; defaults to the
+    `PKGS' makefile variable
+
+  #:dist-base-url <string> --- a URL that is used to construct a
+    default for `#:doc-search' and `#:dist-catalogs', where the
+    constructed values are consistent with converting a build server's
+    content into a download site; since URLs are constructed via
+    relative paths, this URL normally should end with a slash
+
+  #:doc-search <string> --- URL to install as the configuration for
+    remote documentation searches in generated installers; "" is
+    replaced with the PLT default; defaults to #:dist-base-url (if
+    present) extended with "doc/search.html", or the `DOC_SEARCH'
+    makefile variable
+
+  #:dist-name <string> --- the distribution name; defaults to the
+    `DIST_NAME' makefile variable
+
+  #:dist-base <string*> --- the distribution's installater name prefix;
+    defaults to the `DIST_BASE' makefile variable
+
+  #:dist-dir <string*> --- the distribution's installation directory;
+    defaults to the `DIST_DIR' makefile variable
+
+  #:dist-suffix <string*> --- a suffix for the installer's name,
+    usually used for an OS variant; defaults to the `DIST_SUFFIX'
+    makefile variable
+
+  #:dist-catalogs '(<string> ...) --- catalog URLs to install as the
+    initial catalog configuration in generated installed, where "" is
+    replaced with the PLT default catalogs; defaults to
+    `#:dist-base-url' (if present) extended with "catalogs" in a list
+    followed by ""
+
+  #:max-vm <real> --- max number of VMs allowed to run with this
+    machine, counting the machine; defaults to 1
+
+  #:vbox <string> --- Virtual Box machine name; if provided the
+    virtual machine is started and stopped on the server as needed
+
+  #:platform <symbol> --- 'windows or 'unix, defaults to 'unix
+
+  #:configure '(<string> ...) --- arguments to `configure'
+
+  #:bits <integer> --- 32 or 64, affects Visual Studio path
+
+  #:vc <string*> --- "x86" or "x64" to select the Visual C build mode;
+    default depends on `#:bits'
+
+  #:j <integer> --- parallelism for `make' on Unix and Mac OS X and
+    for `raco setup' on all platforms; defaults to 1
+
+  #:timeout <number> --- numbers of seconds to wait before declaring
+    failure; defaults to 30 minutes
+
+  #:clean? <boolean> --- if true, then the build process on the client
+    machine starts by removing <dir>; set this to #f for a shared repo
+    checkout; the default is determined by the `CLEAN_MODE' makefile
+    variable, unless `#:host' is "localhost", `#:user' is #f, and
+    `#:dir' is not specified, in which case the default is #f
+
+  #:pull? <boolean> --- if true, then the build process on the client
+    machine starts by a `git pull' in `#:dir'; set to #f, for example,
+    for a repo checkout that is shared with server; the default is #t,
+    unless `#:host' is "localhost", `#:user' is #f, and `#:dir' is not
+    specified, in which case the default is #f
+
+  #:site-dest <path-string> --- destination for completed build, used
+    by the `site' and `snapshot-site' makefile targets; the default is
+    "build/site"
+
+  #:max-snapshots <number> --- number of snapshots to keep, used by
+    the `snapshot-site' makefile target
+
+Machine-only keywords:
+
+  #:name <string> --- defaults to host; this string is recorded as a
+    description of the installer (for use in a generated table of
+    installer links, for example)
+
+More precisely, the `distro-build/config' language is like
+`racket/base' except that the module body must have exactly one
+expression (plus any number of definitions, etc.) that produces a
+site-configuration value. The value is exported as `site-config'
+from the module. Any module can act as a site-configuration module
+a long as it exports `site-config' as a site-configuration value.
+
+The `distro-build/config' language also adds the following functions
+to `racket/base':
+
+ (machine <opt-kw> <opt-val> ... ...) -> site-config?
+   Produces a site configuration based on the given keyword-based
+   options. The support keyword arguments are described above.
+
+ (sequential <opt-kw> <opt-val> ... ... config ...)
+   -> site-config?
+    config : site-config?
+   Produces a site configuration that runs each `config'
+   sequentially. The support keyword arguments are described above.
+
+ (parallel <opt-kw> <opt-val> ... ... config ...)
+   -> site-config?
+    config : site-config?
+   Produces a site configuration that runs each `config' in
+   parallel. The support keyword arguments are described above.
+
+ (site-config? v) -> boolean?
+ (site-config-tag config) -> (or/c 'machine 'sequential 'parallel)
+    config : site-config?
+ (site-config-options config) -> (hash/c keyword? any/c)
+    config : site-config?
+ (site-config-content config) -> (listof site-config?)
+    config : site-config?
+  Site configuation inspection
+
+ (current-mode) -> string?
+ (current-mode s) -> void?
+    s : string?
+  A parameter whose value is the user's requested mode for this
+  configuration, normally as provided via the makefile's
+  `CONFIG_MODE' variable. The default mode is "default". The
+  interpretation of modes is completely up to the
+  site configuration file.
+
+ (current-stamp) -> string?
+  Returns a string to identify the current build, normally a
+  combination of the date and a git commit hash.
+
+Examples
+--------
+
+** Single Installer **
+
+The simplest possible configuration file is
+
+  #lang distro-build/config
+  (machine)
+
+In fact, this configuration file is created automatically as
+"build/site.rkt" (if the file does not exist already) and used as the
+default configuration. With this configuration,
+
+  make installers
+
+creates an installer in "build/installers" for the platform that is
+used to create the installer.
+
+** Installer Web Page ***
+
+To make a web page that serves both a minimal installer and packages,
+create a "site.rkt" file with
+
+ #lang distro-build/config
+
+ (sequential
+  ;; The packages that will be available:
+  #:pkgs '("main-distribution")
+  ;; FIXME: the URL where the installer and packages will be:
+  #:dist-base-url "http://my-server.domain/snapshot/"
+  (machine
+   ;; FIXME: the way the installer is described on the web page:
+   #:name "Minimal Racket | My Platform" 
+   ;; The packages in this installer:
+   #:pkgs '()))
+
+then
+
+ make site CONFIG=site.rkt
+
+creates a "build/site" directory that you can move to your web server's
+"snapshot" directory, so that "build/site/index.html" is the main
+page, and so on.
+
+** Accumulated Shapshots Web Page **
+
+To make a web site that provides some number (5, by default) of
+snapshots, use `(current-stamp)' when constructing the
+`#:dist-base-url' value. Also, use `(current-stamp)' as the directory
+for assembling the "site":
+
+ #lang distro-build/config
+ (sequential
+  ;; The packages that will be available:
+  #:pkgs '("gui-lib")
+  ;; FIXME: the URL where the installer and packages will be:
+  #:dist-base-url (string-append "http://my-server.domain/snapshots/"
+                                 (current-stamp) "/")
+  ;; The local directory where a snapshot is written
+  #:site-dest (build-path "build/site" (current-stamp))
+  (machine
+   ;; FIXME: the way the installer is described on the web page:
+   #:name "Minimal Racket | My Platform" 
+   ;; The packages in this installer:
+   #:pkgs '()))
+
+Then,
+
+  make snapshot-site CONFIG=site.rkt
+
+creates a "build/site" directory that you can move to your web
+server's "snapshots" directory, so that "build/site/index.html" is the
+main page that initially points to "build/site/<stamp>/index.html",
+and so on. To make a newer snapshot, update the git repository, leave
+"build/site" in place, and run
+
+  make snapshot-site CONFIG=site.rkt
+
+again. The new installers will go into a new <stamp> subdirectory, and
+the main "index.html" file will be rewritten to point to them.
+ 
+** Multiple Platforms **
+
+A configuration module that drives multiple clients to build
+installers might look like this:
+
+    #lang distro-build/config
+   
+    (sequential
+     #:pkgs '("drracket")
+     (machine
+      #:desc "Linux (32-bit, Precise Pangolin)"
+      #:name "Ubuntu 32"
+      #:vbox "Ubuntu 12.04"
+      #:host "192.168.56.102"
+      #:server "192.168.56.1")
+     (machine
+      #:desc "Windows (64-bit)"
+      #:name "Windows 64"
+      #:host "10.0.0.7"
+      #:server "10.0.0.1"
+      #:dir "c:\\Users\\racket\\build\\plt"
+      #:platform 'windows
+      #:bits 64))
+
+The configuration describes using the hosts "192.168.56.1" and
+"192.168.56.103" for Linux and Windows builds, respectively, which are
+run one at a time. Furthermore, the Linux machine runs in VirtualBox
+on the server machine (in a virtual machine named "Ubuntu 12.04").
+
+With this configuration file in "site.rkt",
+
+  make installers CONFIG=site.rkt
+
+produces two installers, both in "build/installers", and a hash table
+in "table.rktd" that maps "Linux (32-bit, Precise Pangolin)" to the
+Linux installer and "Windows (64-bit)" to the Windows installer.
