@@ -870,7 +870,7 @@
 
   (define (make-zo-step)
     (define (partition-cct name cct)
-      (partition (lambda (x) (not (string=? (cc-name (car x)) name))) cct))
+      (partition (lambda (x) (not (regexp-match? name (cc-name (car x))))) cct))
     (define (move-to where names cct)
       (for/fold ([cct cct]) ([name (in-list (reverse names))])
         (define-values [diff same] (partition-cct name cct))
@@ -891,8 +891,8 @@
         (with-specified-mode
           (lambda ()
             (define cct
-              (move-to 'beginning (list "compiler" "raco" "racket" "images")
-                       (move-to 'end (list "drracket" "drscheme")
+              (move-to 'beginning (list #rx"/compiler$" #rx"/raco$" #rx"/racket$" #rx"<pkgs>/images/")
+                       (move-to 'end (list #rx"<pkgs>/drracket")
                                 (sort-collections-tree
                                  (collection-tree-map top-level-plt-collects)))))
             (iterate-cct (lambda (cc)
