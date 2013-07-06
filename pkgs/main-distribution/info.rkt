@@ -21,6 +21,7 @@
                "future-visualizer-typed"
                "games"
                "gui"
+               "gui-test"
                "honu"
                "htdp"
                "html"
