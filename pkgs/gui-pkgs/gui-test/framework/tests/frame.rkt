@@ -99,8 +99,7 @@
   (define (test-open name class-expression)
     (let* ([test-file-contents "test"]
            [tmp-file-name "framework-tmp"]
-           [tmp-file (build-path (collection-path "tests" "framework")
-                                 tmp-file-name)])
+           [tmp-file (collection-file-path tmp-file-name "framework" "tests")])
       (test
        name
        (lambda (x)

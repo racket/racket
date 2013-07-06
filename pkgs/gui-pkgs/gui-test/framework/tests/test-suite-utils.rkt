@@ -107,7 +107,7 @@
   (when load-framework-automatically?
     (queue-sexp-to-mred
      '(begin (eval '(require framework))
-             (eval '(require tests/utils/gui))))))
+             (eval '(require framework/tests/private/gui))))))
 
 (define load-framework-automatically
   (case-lambda

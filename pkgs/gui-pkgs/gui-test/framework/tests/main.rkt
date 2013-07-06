@@ -12,8 +12,7 @@
     (build-path base (string-append (path-element->string name) ".save"))))
 
 (define-values (all-files interactive-files)
-  (let* ([files (call-with-input-file
-                    (build-path (collection-path "tests" "framework") "README")
+  (let* ([files (call-with-input-file (collection-file-path "README" "framework" "tests")
                   read)]
          [files (map (lambda (x)
                        (cond [(symbol? x) (symbol->string x)]
@@ -85,7 +84,7 @@
                                               (exn->str exn)
                                               exn)))])
            (debug-printf schedule "beginning ~a test suite\n" x)
-           (dynamic-require `(lib ,x "tests" "framework") #f)
+           (dynamic-require `(lib ,x "framework" "tests") #f)
            (set! jumped-out-tests (remq x jumped-out-tests))
            (debug-printf schedule "PASSED ~a test suite\n" x)))
        (lambda ()
