@@ -119,7 +119,7 @@ scope. Packages are linked with the `--no-setup' flag (effectively),
 which means that a `raco setup' is needed after installing links.
 
 Native-library packages provide (on Mac OS X and Windows) pre-built
-native libraries, such as Cario. Currently, the libraries must be
+native libraries, such as Cairo. Currently, the libraries must be
 downloaded from GitHub. On a non-Windows platform, the
 `native-from-git' makefile target clones/updates the native-library
 repository from GitHub; otherwise, clone
@@ -196,7 +196,7 @@ configuration file there and omit the `CONFIG' argument to
 `make'. Supply `CONFIG_MODE=...' to pass a configuration mode on to
 your site-configuration module (accessible via the `current-mode'
 parameter). Supply `CLEAN_MODE=--clean' to make the default `#:clean?'
-configration for a client #t instead of #f.
+configuration for a client #t instead of #f.
 
 A configuration file can specify the packages to include, host address
 of the server, distribution name, installer directory, and
@@ -318,7 +318,7 @@ Roughly, the steps are
     Add `DIST_CATALOGS_q='...'' to the `client' line to declare a
     space-separated sequence of catalog URLs to set an installation's
     initial package catalog URLs. Use the empty string in place of a
-    URL to indicate that te default path should be spliced.
+    URL to indicate that the default path should be spliced.
 
 In more detail:
 
@@ -377,7 +377,7 @@ In more detail:
      To create a release installer, provide `RELEASE_MODE' as
      "--release" to `make'. A release installer has slightly different
      defaults that are suitable for infrequently updated release
-     installations, as opposed to ferquently updated snapshot
+     installations, as opposed to frequently updated snapshot
      installations.
 
      To change the human-readable name of the distribution as embedded
@@ -449,7 +449,7 @@ locally.
 Each client is normally built by running commands via `ssh', where
 the client's host, `#:host' (with and optional `#:port' and/or
 `#:user') indicate the ssh target. Each client machine must be set
-up with a public-key authenticaion, because a direct `ssh' is
+up with a public-key authentication, because a direct `ssh' is
 expected to work without a password prompt. An exception is when
 the host is "localhost" and user is #f, in which case a shell is
 used directly instead of `ssh'.
@@ -463,15 +463,15 @@ current directory (i.e., the server's directory) is used.
 Normally, the client directory is a git clone:
 
   - If the directory exists already on a client machine (and the
-    machine is not configured for "clean" mode), then if directory
-    contains a ".git" subdirectory, is assumed to be a a git clone
+    machine is not configured for "clean" mode), then if the directory
+    contains a ".git" subdirectory, it is assumed to be a git clone
     and updated with `git pull'. The `git pull' operation can be
     disabled by specifying `#:pull?' as #f, and it defaults to #f
     in the case that `#:dir' is not specified, the host is
     "localhost", and the user is #f.
 
   - If the directory does not exist, a git repository is
-    cloned. The respository can be specified with `#:repo'. By
+    cloned. The repository can be specified with `#:repo'. By
     default, the server is used as the source git repository (so
     that the server and client are in sync), which means that the
     server's directory must be a git clone.
@@ -512,7 +512,7 @@ Each Windows client needs the following:
     default folder:
      C:\Program Files\NSIS\makensis.exe
      or  C:\Program Files (x86)\NSIS\makensis.exe
-    or instaled so that `makensis' in your PATH.
+    or installed so that `makensis' in your PATH.
 
 Site Configuration
 -------------------
@@ -602,13 +602,13 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     machine starts by removing <dir>; set this to #f for a shared repo
     checkout; the default is determined by the `CLEAN_MODE' makefile
     variable, unless `#:host' is "localhost", `#:user' is #f, and
-    `#:dir' is not specified, in which casethe default is #f
+    `#:dir' is not specified, in which case the default is #f
 
   #:pull? <boolean> --- if true, then the build process on the client
     machine starts by a `git pull' in `#:dir'; set to #f, for example,
     for a repo checkout that is shared with server; the default is #t,
     unless `#:host' is "localhost", `#:user' is #f, and `#:dir' is not
-    specified, in which casethe default is #f
+    specified, in which case the default is #f
 
   #:site-dest <path-string> --- destination for completed build, used
     by the `site' and `snapshot-site' makefile targets; the default is
@@ -668,7 +668,7 @@ to `racket/base':
   site configuration file.
 
  (current-stamp) -> string?
-  Returns a string to identifiy the current build, normally a
+  Returns a string to identify the current build, normally a
   combination of the date and a git commit hash.
 
 Examples
