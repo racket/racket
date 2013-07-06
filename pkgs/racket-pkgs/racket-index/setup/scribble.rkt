@@ -824,7 +824,9 @@
                          stamp-time stamp-data 0
                          get-compiled-file-sha1))]
          [up-to-date?
-          (or (not src-zo)
+          (or (and (not src-zo)
+                   info-in-time
+                   info-out-time)
               (and (not force-out-of-date?)
                    info-out-time
                    info-in-time
