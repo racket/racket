@@ -177,9 +177,12 @@ See more in PR8831.
           (cond [hex (cons hex rest)]
                 [(char<? c max-ascii) (cons (vector-ref table (char->integer c))
                                             rest)]
-                ;; This should probably error, but strings to be decoded
-                ;; might come from misbehaving sources; maybe it's
-                ;; better to add some parameter for a permissive mode
+                ;; This should probably error, but strings to be decoded might
+                ;; come from misbehaving sources; maybe it's better to add some
+                ;; parameter for a permissive mode; one source of such bad URLs
+                ;; is user-defined strings where the string is entered directly
+                ;; and not properly encoded -- similar justification to
+                ;; browsers accepting unencoded chars in manually entered URLs.
                 [else (append (bytes->list (string->bytes/utf-8 (string c)))
                               (internal-decode l))]))))
   (bytes->string/utf-8 (apply bytes (internal-decode (string->list str)))))
