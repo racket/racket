@@ -3,6 +3,7 @@
 
 (provide tests)
 (module+ main (tests))
+(module+ test (tests))
 (define (tests)
   (define sepmode current-alist-separator-mode)
   (test (uri-decode "%Pq") => "%Pq"

@@ -33,6 +33,7 @@
 
 (provide tests)
 (module+ main (tests))
+(module+ test (tests))
 (define (tests)
   (define cop (open-output-string))
   (define-values [pasv1-thd pasv1-port] (tcp-serve* (current-output-port) DIRLIST))

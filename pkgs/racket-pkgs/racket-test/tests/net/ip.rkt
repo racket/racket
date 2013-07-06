@@ -9,6 +9,7 @@
 
 (provide tests)
 (module+ main (tests))
+(module+ test (tests))
 (define (tests)
   (test
    ;; ----------------------------------------

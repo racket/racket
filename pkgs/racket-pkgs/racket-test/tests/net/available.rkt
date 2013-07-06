@@ -25,3 +25,5 @@
 
 (module+ main
   (tcp-localhost-available?))
+(module+ test
+  (tcp-localhost-available?))

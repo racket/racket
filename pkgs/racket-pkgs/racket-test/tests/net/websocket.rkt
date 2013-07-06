@@ -13,6 +13,7 @@
 
 (provide tests)
 (module+ main (tests))
+(module+ test (tests))
 (define (tests)
   (test
    (for ([i (in-range RANDOM-K)])

@@ -123,6 +123,7 @@
 
 (provide tests)
 (module+ main (tests))
+(module+ test (tests))
 (define (tests)
   (test
    (run-tests "http" values #f)

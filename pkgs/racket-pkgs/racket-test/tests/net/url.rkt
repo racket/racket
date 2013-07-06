@@ -45,6 +45,7 @@
 
 (provide tests)
 (module+ main (test do (tests)))
+(module+ test (test do (tests)))
 (define (tests)
   (test
    ;; Test the current-proxy-servers parameter can be set

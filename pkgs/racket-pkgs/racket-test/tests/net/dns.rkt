@@ -99,6 +99,7 @@
 
 (provide tests)
 (module+ main (tests))
+(module+ test (tests))
 (define (tests)
   (test do (internal-tests)
            (nameserver-tests *google-dns*)
