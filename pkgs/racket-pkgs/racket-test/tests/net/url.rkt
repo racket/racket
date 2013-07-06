@@ -44,7 +44,7 @@
         => (->vec expected)))
 
 (provide tests)
-(module+ main (tests))
+(module+ main (test do (tests)))
 (define (tests)
   (test
    ;; Test the current-proxy-servers parameter can be set
@@ -254,9 +254,12 @@
   (test-s->u #("mailto" #f #f #f #f (#("robby@racket-lang.org")) () #f)
              "mailto:robby@racket-lang.org")
 
+  ;; The following two tests are not really correct: they rely on the URL
+  ;; decoding silently passing un-encoded text as is instead of barfing.  (Eg,
+  ;; using these URLs in a browser and then copy-pasting it from the address
+  ;; should get you a properly encoded string instead.)
   (test (string->url/vec "http://www.drscheme.org?bar=馨慧")
         #("http" #f "www.drscheme.org" #f #f () ((bar . "馨慧")) #f))
-
   (test (string->url/vec "http://www.drscheme.org?bár=é")
         => #("http" #f "www.drscheme.org" #f #f () ((bár . "é")) #f))
 
