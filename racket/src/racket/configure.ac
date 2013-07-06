@@ -579,6 +579,7 @@ case "$host_os" in
     DYN_CFLAGS="-fPIC"
     try_poll_syscall=yes
     try_epoll_syscall=yes
+    try_inotify_syscall=yes
     case "$host_cpu" in
       #Required for CentOS 4.6
       x86_64)
@@ -961,6 +962,26 @@ if test "${try_epoll_syscall}" = "yes" ; then
   AC_MSG_RESULT($use_epoll)
   if test "${use_epoll}" = "yes" ; then
      AC_DEFINE(HAVE_EPOLL_SYSCALL,1,[Have epoll])
+  fi
+fi
+
+if test "${try_inotify_syscall}" = "yes" ; then
+  [ msg="for inotify" ]
+  AC_MSG_CHECKING($msg)
+  AC_LINK_IFELSE(
+  [  #include <sys/inotify.h> ]
+    int main() {
+      int fd;
+      int wd;
+      fd = inotify_init();
+      wd = inotify_add_watch(fd, "/tmp", 
+                             (IN_CREATE | IN_DELETE | IN_DELETE_SELF
+                              | IN_MODIFY | IN_MOVE_SELF | IN_MOVED_TO));
+      return 0;
+    }, use_inotify=yes, use_inotify=no)
+  AC_MSG_RESULT($use_inotify)
+  if test "${use_inotify}" = "yes" ; then
+     AC_DEFINE(HAVE_INOTIFY_SYSCALL,1,[Have inotify])
   fi
 fi
 

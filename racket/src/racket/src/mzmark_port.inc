@@ -201,3 +201,28 @@ static int mark_read_write_evt_FIXUP(void *p, struct NewGC *gc) {
 #define mark_read_write_evt_IS_CONST_SIZE 1
 
 
+static int mark_filesystem_change_evt_SIZE(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Filesystem_Change_Evt));
+}
+
+static int mark_filesystem_change_evt_MARK(void *p, struct NewGC *gc) {
+  Scheme_Filesystem_Change_Evt *fc = (Scheme_Filesystem_Change_Evt *)p;
+  gcMARK2(fc->sema, gc);
+  gcMARK2(fc->mref, gc);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Filesystem_Change_Evt));
+}
+
+static int mark_filesystem_change_evt_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Filesystem_Change_Evt *fc = (Scheme_Filesystem_Change_Evt *)p;
+  gcFIXUP2(fc->sema, gc);
+  gcFIXUP2(fc->mref, gc);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Filesystem_Change_Evt));
+}
+
+#define mark_filesystem_change_evt_IS_ATOMIC 0
+#define mark_filesystem_change_evt_IS_CONST_SIZE 1
+
+

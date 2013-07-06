@@ -1379,6 +1379,93 @@
   (tcp-close l))
 
 ;;----------------------------------------------------------------------
+;; Filesystem-change events
+
+(test #f filesystem-change-evt? 'evt)
+
+(let ([dir (make-temporary-file "change~a" 'directory)])
+  (define known-file-supported?
+    (case (system-type)
+      [(macosx) #t]
+      [else #f]))
+  (define known-supported?
+    (or known-file-supported?
+        (case (system-type)
+          [(windows) #t]
+          [else #f])))
+  (define (check-supported evt file?)
+    (when (if file?
+              known-file-supported?
+              known-supported?)
+      (test #t filesystem-change-evt? evt)))
+
+  (define (check f1-name f2-name as-file? known-x-supported?)
+    (printf "checking ~s, ~s as ~a\n" f1-name f2-name (if as-file? "file" "dir"))
+    (define f1 (build-path dir f1-name))
+    (define f2 (build-path dir f2-name))
+
+    (define dir-e (filesystem-change-evt dir (lambda () #f)))
+    (check-supported dir-e #f)
+    (if as-file?
+        (call-with-output-file* f1 (lambda (o) (fprintf o "1\n")))
+        (make-directory f1))
+    (when dir-e
+      (test dir-e sync dir-e)
+      (test dir-e sync dir-e))
+    (if as-file?
+        (call-with-output-file* f2 (lambda (o) (fprintf o "2\n")))
+        (make-directory f2))
+
+    (define f1-e (filesystem-change-evt f1 (lambda () #f)))
+    (define f2-e (filesystem-change-evt f2 (lambda () #f)))
+    (check-supported f1-e #t)
+    (check-supported f2-e #t)
+    
+    (when f1-e
+      (test #f sync/timeout 0 f1-e)
+      (test #f sync/timeout 0 f2-e)
+      
+      (call-with-output-file (if as-file?
+                                 f1
+                                 (build-path f1 "x"))
+        #:exists 'append 
+        (lambda (o) (newline o)))
+      (test f1-e sync f1-e)
+      (when known-x-supported?
+        (test #f sync/timeout 0 f2-e))
+
+      (call-with-output-file (if as-file?
+                                 f2
+                                 (build-path f2 "y"))
+        #:exists 'append 
+        (lambda (o) (newline o)))
+      (test f2-e sync/timeout 0 f2-e)
+      (test f2-e sync f2-e)
+      (test f1-e sync f1-e)
+
+      (define f1-e2 (filesystem-change-evt f1 (lambda () #f)))
+      (when known-x-supported?
+        (test #f sync/timeout 0 f1-e2))
+      (test f1-e sync/timeout 0 f1-e)
+      (test f1-e sync f1-e)
+
+      (filesystem-change-evt-cancel f1-e2)
+      (test f1-e2 sync/timeout 0 f1-e2)
+
+      (define cust (make-custodian))
+      (define f1-e3 (parameterize ([current-custodian cust])
+                      (filesystem-change-evt f2 (lambda () #f))))
+      (when known-x-supported?
+        (test #f sync/timeout 0 f1-e3))
+      (custodian-shutdown-all cust)
+      (test f1-e3 sync/timeout 0 f1-e3)))
+
+  (check "f1" "f2" #t known-file-supported?)
+  (check "f1d" "f2d" #f known-supported?)
+
+  (delete-directory/files dir))
+
+;;----------------------------------------------------------------------
 ;; TCP
 
 (let ([do-once

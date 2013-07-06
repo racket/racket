@@ -474,6 +474,73 @@ Returns a list of all current root directories. Obtaining this list
 can be particularly slow on Windows.}
 
 @;------------------------------------------------------------------------
+@section[#:tag "filesystem-change"]{Detecting Filesystem Changes}
+
+Many operating systems provide notifications for filesystem changes,
+and those notifications are reflected in Racket by @tech{filesystem
+change events}.
+
+@defproc[(filesystem-change-evt? [v any/c]) boolean?]{
+
+Returns @racket[#f] if @racket[v] is a @tech{filesystem change
+event}, @racket[#f] otherwise.}
+
+
+@defproc*[([(filesystem-change-evt [path path-string?])
+            filesystem-change-evt?]
+           [(filesystem-change-evt [path path-string?]
+                                   [failure-thunk (-> any)])
+            any])]{
+
+Creates a @deftech{filesystem change event}, which is
+@tech{synchronizable event} that becomes @tech{ready for
+synchronization} after a change to @racket[path]:
+
+@itemlist[
+
+ @item{If @racket[path] refers to a file, the event becomes
+       @tech{ready for synchronization} when the file's content or
+       attributes change, or when the file is deleted.}
+
+ @item{If @racket[path] refers to a directory, the event becomes
+       @tech{ready for synchronization} if a file or subdirectory is
+       added, renamed, or removed within the directory.}
+
+]
+
+The event also becomes @tech{ready for synchronization} if
+it is passed to @racket[filesystem-change-evt-cancel].
+
+Finally, depending on the precision of information available from the
+operating system, the event may become @tech{ready for
+synchronization} under other circumstances. For example, on
+Windows, an event for a file becomes ready when any file changes
+within in the same directory as the file.
+
+If the current platform does not support filesystem-change
+notifications, then the @exnraise[exn:fail:unsupported] if
+@racket[failure-thunk] is not provided, or @racket[failure-thunk] is
+called in tail position if provided. Similarly, if there is any
+operating-system error when creating the event (such as a non-existent
+file), then the @exnraise[exn:fail:filesystem] or @racket[failure-thunk]
+is called.
+
+A @tech{filesystem change event} is placed under the management of the
+@tech{current custodian} when it is created. If the @tech{custodian}
+is shut down, @racket[filesystem-change-evt-cancel] is applied to the
+event.}
+
+
+@defproc[(filesystem-change-evt-cancel [evt filesystem-change-evt?])
+         void?]{
+
+Causes @racket[evt] to become immediately @tech{ready for
+synchronization}, whether it was ready or before not, and releases and
+resources (at the operating system level) for tracking filesystem
+changes.}
+
+
+@;------------------------------------------------------------------------
 @section[#:tag "runtime-path"]{Declaring Paths Needed at Run Time}
 
 @note-lib-only[racket/runtime-path]

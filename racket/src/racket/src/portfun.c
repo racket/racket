@@ -126,6 +126,10 @@ static Scheme_Object *port_counts_lines_p(int, Scheme_Object **args);
 static Scheme_Object *port_next_location(int, Scheme_Object **args);
 static Scheme_Object *set_port_next_location(int, Scheme_Object **args);
 
+static Scheme_Object *filesystem_change_evt(int, Scheme_Object **args);
+static Scheme_Object *filesystem_change_evt_p(int, Scheme_Object **args);
+static Scheme_Object *filesystem_change_evt_cancel(int, Scheme_Object **args);
+
 static Scheme_Object *sch_default_read_handler(void *ignore, int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_default_display_handler(int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_default_write_handler(int argc, Scheme_Object *argv[]);
@@ -259,6 +263,10 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY2("make-pipe",             sch_pipe,               0, 3, 2,  2, env);
   GLOBAL_PRIM_W_ARITY2("port-next-location",    port_next_location,     1, 1, 3,  3, env);
   GLOBAL_PRIM_W_ARITY("set-port-next-location!",  set_port_next_location, 4, 4, env);
+
+  GLOBAL_PRIM_W_ARITY("filesystem-change-evt",  filesystem_change_evt,   1, 2, env);
+  GLOBAL_NONCM_PRIM("filesystem-change-evt?",   filesystem_change_evt_p, 1, 1, env);
+  GLOBAL_NONCM_PRIM("filesystem-change-evt-cancel",  filesystem_change_evt_cancel, 1, 1, env);
 
   GLOBAL_NONCM_PRIM("read",                           read_f,                         0, 1, env);
   GLOBAL_NONCM_PRIM("read/recursive",                 read_recur_f,                   0, 4, env);
@@ -4316,6 +4324,40 @@ static Scheme_Object *set_port_next_location(int argc, Scheme_Object *argv[])
 
   scheme_set_port_location(argc, argv);
   
+  return scheme_void;
+}
+
+static Scheme_Object *filesystem_change_evt(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *e;
+
+  if (!SCHEME_PATH_STRINGP(argv[0]))
+    scheme_wrong_contract("filesystem-change-evt", "path-string?", 0, argc, argv);
+  if (argc > 1)
+    scheme_check_proc_arity("filesystem-change-evt", 0, 1, argc, argv);
+
+  e = scheme_filesystem_change_evt(argv[0], 0, (argc < 2));
+
+  if (!e)
+    return _scheme_tail_apply(argv[1], 0, NULL);
+  else
+    return e;
+}
+
+static Scheme_Object *filesystem_change_evt_p(int argc, Scheme_Object **argv)
+{
+  return (SAME_TYPE(scheme_filesystem_change_evt_type, SCHEME_TYPE(argv[0]))
+          ? scheme_true
+          : scheme_false);
+}
+
+static Scheme_Object *filesystem_change_evt_cancel(int argc, Scheme_Object **argv)
+{
+  if (!SAME_TYPE(scheme_filesystem_change_evt_type, SCHEME_TYPE(argv[0])))
+    scheme_wrong_contract("filesystem-change-evt-cancel", "filesystem-change-evt?", 0, argc, argv);
+
+  scheme_filesystem_change_evt_cancel(argv[0], NULL);
+
   return scheme_void;
 }
 

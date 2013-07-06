@@ -3876,6 +3876,12 @@ intptr_t scheme_redirect_get_or_peek_bytes(Scheme_Input_Port *orig_port,
                                            Scheme_Object *unless,
                                            Scheme_Schedule_Info *sinfo);
 
+Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int report_errs);
+void scheme_filesystem_change_evt_cancel(Scheme_Object *evt, void *ignored_data);
+
+int scheme_fd_regular_file(intptr_t fd, int dir_ok);
+void scheme_check_fd_semaphores(void);
+
 /*========================================================================*/
 /*                         memory debugging                               */
 /*========================================================================*/

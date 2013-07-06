@@ -4080,6 +4080,7 @@ case "$host_os" in
     DYN_CFLAGS="-fPIC"
     try_poll_syscall=yes
     try_epoll_syscall=yes
+    try_inotify_syscall=yes
     case "$host_cpu" in
       #Required for CentOS 4.6
       x86_64)
@@ -5468,6 +5469,61 @@ echo "${ECHO_T}$use_epoll" >&6; }
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_EPOLL_SYSCALL 1
+_ACEOF
+
+  fi
+fi
+
+if test "${try_inotify_syscall}" = "yes" ; then
+   msg="for inotify"
+  { echo "$as_me:$LINENO: checking $msg" >&5
+echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
+  cat >conftest.$ac_ext <<_ACEOF
+  #include <sys/inotify.h>
+    int main() {
+      int fd;
+      int wd;
+      fd = inotify_init();
+      wd = inotify_add_watch(fd, "/tmp",
+                             (IN_CREATE | IN_DELETE | IN_DELETE_SELF
+                              | IN_MODIFY | IN_MOVE_SELF | IN_MOVED_TO));
+      return 0;
+    }
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  use_inotify=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	use_inotify=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+  { echo "$as_me:$LINENO: result: $use_inotify" >&5
+echo "${ECHO_T}$use_inotify" >&6; }
+  if test "${use_inotify}" = "yes" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_INOTIFY_SYSCALL 1
 _ACEOF
 
   fi

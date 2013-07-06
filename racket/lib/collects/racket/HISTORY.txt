@@ -1,3 +1,7 @@
+Version 5.3.900.4
+Added filesystem-change-evt, filesystem-change-evt?, and
+ filesystem-change-evt-cancel
+
 Version 5.3.900.2
 Changed link-file handling to separate "user" and "shared" modes;
  removed 'links-file mode for find-system-path, PLTLINKSFILE

@@ -51,6 +51,9 @@
 # ifdef HAVE_POLL_SYSCALL
 #  include <poll.h>
 # endif
+# ifdef HAVE_INOTIFY_SYSCALL
+#  include <sys/inotify.h>
+# endif
 #endif
 #ifdef USE_ITIMER
 # include <sys/types.h>
@@ -443,6 +446,14 @@ static void rw_evt_wakeup(Scheme_Object *rww, void *fds);
 
 static int progress_evt_ready(Scheme_Object *rww, Scheme_Schedule_Info *sinfo);
 static int closed_evt_ready(Scheme_Object *rww, Scheme_Schedule_Info *sinfo);
+static int filesystem_change_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info *sinfo);
+
+#ifdef DOS_FILE_SYSTEM
+static void filesystem_change_evt_need_wakeup (Scheme_Object *port, void *fds);
+#else
+# define filesystem_change_evt_need_wakeup NULL
+#endif
+
 
 static Scheme_Object *
 _scheme_make_named_file_input_port(FILE *fp, Scheme_Object *name, int regfile);
@@ -482,6 +493,13 @@ THREAD_LOCAL_DECL(static char *read_string_byte_buffer);
 #define fail_err_symbol scheme_false
 
 #include "schwinfd.h"
+
+typedef struct Scheme_Filesystem_Change_Evt {
+  Scheme_Object so;
+  intptr_t fd;
+  Scheme_Object *sema;
+  Scheme_Custodian_Reference *mref;
+} Scheme_Filesystem_Change_Evt;
 
 /*========================================================================*/
 /*                             initialization                             */
@@ -627,6 +645,8 @@ void scheme_init_port_wait()
   scheme_add_evt(scheme_progress_evt_type, (Scheme_Ready_Fun)progress_evt_ready, NULL, NULL, 1);
   scheme_add_evt(scheme_write_evt_type, (Scheme_Ready_Fun)rw_evt_ready, rw_evt_wakeup, NULL, 1);
   scheme_add_evt(scheme_port_closed_evt_type, (Scheme_Ready_Fun)closed_evt_ready, NULL, NULL, 1);
+  scheme_add_evt(scheme_filesystem_change_evt_type, (Scheme_Ready_Fun)filesystem_change_evt_ready, 
+                 filesystem_change_evt_need_wakeup, NULL, 1);
 }
 
 void scheme_init_port_places(void)
@@ -5953,6 +5973,243 @@ Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv)
 }
 
 /*========================================================================*/
+/*                        filesystem change events                        */
+/*========================================================================*/
+
+Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int signal_errs)
+{
+  char *filename;
+  int ok = 0, errid = 0;
+  intptr_t fd;
+
+  filename = scheme_expand_string_filename(path,
+					   "filesystem-change-evt",
+					   NULL,
+					   SCHEME_GUARD_FILE_EXISTS);
+#if defined(HAVE_KQUEUE_SYSCALL)
+  do {
+    fd = open(filename, flags | MZ_BINARY, 0666);
+  } while ((fd == -1) && (errno == EINTR));
+  if (fd == -1)
+    errid = errno;
+  else
+    ok = 1;
+#elif defined(HAVE_INOTIFY_SYSCALL)
+  /* This implementation uses a file descriptor for every event,
+     instead of using a watch descriptor for every event. This could
+     be improved, but note that the kqueue() implementation needs a
+     file descriptor per event, anyway. */
+  fd = inotify_init();
+  if (fd == -1)
+    errid = errno;
+  else {
+    int wd;
+    wd = inotify_add_watch(fd, filename, 
+                           (IN_CREATE | IN_DELETE | IN_DELETE_SELF
+                            | IN_MODIFY | IN_MOVE_SELF | IN_MOVED_TO
+                            | IN_ATTRIB | IN_ONESHOT));
+    if (wd == -1) {
+      errid = errno;
+      scheme_close_file_fd(fd);
+    } else {
+      ok = 1;
+      fcntl(fd, F_SETFL, MZ_NONBLOCKING);
+    }
+  }
+#elif defined(DOS_FILE_SYSTEM)
+  {
+    HANDLE h;
+    char *try_filename = filename;
+    
+    while (1) {
+      h = FindFirstChangeNotification(try_filename, FALSE, 
+                                      (FILE_NOTIFY_CHANGE_FILE_NAME
+                                       | FILE_NOTIFY_CHANGE_DIR_NAME
+                                       | FILE_NOTIFY_CHANGE_SIZE
+                                       | FILE_NOTIFY_CHANGE_LAST_WRITE
+                                       | FILE_NOTIFY_CHANGE_ATTRIBUTES));
+      if (h == INVALID_HANDLE_VALUE) {
+        /* If `filename' refers to a file, then monitor its enclosing directory. */
+        errid = GetLastError();
+        if ((try_filename == filename) && scheme_file_exists(filename)) {
+          Scheme_Object *base, *name;
+          int is_dir;
+          name = scheme_split_path(filename, strlen(filename), &base, &is_dir, SCHEME_PLATFORM_PATH_KIND);
+          try_filename = scheme_expand_string_filename(base,
+                                                       "filesystem-change-evt",
+                                                       NULL,
+                                                       SCHEME_GUARD_FILE_EXISTS);
+        } else
+          break;
+      } else {
+        fd = (intptr_t)h;
+        ok = 1;
+        break;
+      }
+    }
+  }
+#else
+# define NO_FILESYSTEM_CHANGE_EVTS
+  ok = 0;
+  errid = -1;
+#endif
+
+  if (!ok) { 
+    if (signal_errs) {
+#ifdef NO_FILESYSTEM_CHANGE_EVTS
+      scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
+                       "filesystem-change-evt: " NOT_SUPPORTED_STR "\n"
+                       "  path: %q\n",
+                       filename);
+#else
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       "filesystem-change-evt: error generating event\n"
+                       "  path: %q\n"
+                       "  system error: %E",
+                       filename,
+                       errid);
+#endif
+    }
+    
+    return NULL;
+  }
+
+#if defined(NO_FILESYSTEM_CHANGE_EVTS)
+  return NULL;
+#elif defined(DOS_FILE_SYSTEM)
+  {
+    Scheme_Filesystem_Change_Evt *fc;
+    Scheme_Custodian_Reference *mref;
+
+    fc = MALLOC_ONE_TAGGED(Scheme_Filesystem_Change_Evt);
+    fc->so.type = scheme_filesystem_change_evt_type;
+    fc->fd = fd;
+
+    mref = scheme_add_managed(NULL, (Scheme_Object *)fc, scheme_filesystem_change_evt_cancel, NULL, 1);
+    fc->mref = mref;
+
+    return (Scheme_Object *)fc;
+  }
+#else
+  {
+    Scheme_Filesystem_Change_Evt *fc;
+    Scheme_Object *sema;
+    Scheme_Custodian_Reference *mref;
+
+    sema = scheme_fd_to_semaphore(fd, MZFD_CREATE_VNODE, 0);
+    if (!sema) {
+      const char *reason = "";
+
+#if defined(HAVE_KQUEUE_SYSCALL)
+      if (!scheme_fd_regular_file(fd, 1))
+        reason = ";\n not a regular file or directory";
+#endif
+
+      scheme_close_file_fd(fd);
+
+      if (signal_errs) {
+        scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                         "filesystem-change-evt: cannot generate event%s\n"
+                         "  path: %q",
+                         reason,
+                         filename);
+      }
+      return NULL;
+    }
+
+    fc = MALLOC_ONE_TAGGED(Scheme_Filesystem_Change_Evt);
+    fc->so.type = scheme_filesystem_change_evt_type;
+    fc->fd = fd;
+    fc->sema = sema;
+
+    mref = scheme_add_managed(NULL, (Scheme_Object *)fc, scheme_filesystem_change_evt_cancel, NULL, 1);
+    fc->mref = mref;
+
+    return (Scheme_Object *)fc;
+  }
+#endif
+}
+
+void scheme_filesystem_change_evt_cancel(Scheme_Object *evt, void *ignored_data)
+{
+#ifndef NO_FILESYSTEM_CHANGE_EVTS
+  Scheme_Filesystem_Change_Evt *fc = (Scheme_Filesystem_Change_Evt *)evt;
+
+  if (fc->mref) {
+# if defined(DOS_FILE_SYSTEM)
+    if (fc->fd) {
+      FindCloseChangeNotification((HANDLE)fc->fd);
+      fc->fd = 0;
+    }
+# else
+    (void)scheme_fd_to_semaphore(fc->fd, MZFD_REMOVE, 0);
+    scheme_close_file_fd(fc->fd);
+    scheme_post_sema_all(fc->sema);
+# endif
+    scheme_remove_managed(fc->mref, (Scheme_Object *)fc);
+    fc->mref = NULL;
+  }
+#endif
+}
+
+static int filesystem_change_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info *sinfo)
+{
+#ifndef NO_FILESYSTEM_CHANGE_EVTS
+  Scheme_Filesystem_Change_Evt *fc = (Scheme_Filesystem_Change_Evt *)evt;
+
+# if defined(DOS_FILE_SYSTEM)
+  if (fc->fd) {
+    if (WaitForSingleObject((HANDLE)fc->fd, 0) == WAIT_OBJECT_0) {
+      FindCloseChangeNotification((HANDLE)fc->fd);
+      fc->fd = 0;
+    }
+  }
+  
+  return !fc->fd;
+# else
+  if (scheme_try_plain_sema(fc->sema))
+    scheme_filesystem_change_evt_cancel((Scheme_Object *)fc, NULL);
+  else
+    scheme_check_fd_semaphores();
+  scheme_set_sync_target(sinfo, fc->sema, evt, NULL, 0, 1, NULL);
+# endif
+
+#endif
+
+  return 0;
+}
+
+#ifdef DOS_FILE_SYSTEM
+static void filesystem_change_evt_need_wakeup (Scheme_Object *evt, void *fds)
+{
+  Scheme_Filesystem_Change_Evt *fc = (Scheme_Filesystem_Change_Evt *)evt;
+
+  if (fc->fd)
+    scheme_add_fd_handle((void *)fc->fd, fds, 0);
+}
+#endif
+
+int scheme_fd_regular_file(intptr_t fd, int dir_ok)
+{
+#if defined(USE_FD_PORTS) && !defined(DOS_FILE_SYSTEM)
+  int ok;
+  struct stat buf;
+
+  do {
+    ok = fstat(fd, &buf);
+  } while ((ok == -1) && (errno == EINTR));
+
+  if (!S_ISREG(buf.st_mode)
+      && (!dir_ok || !S_ISDIR(buf.st_mode)))
+    return 0;
+  
+  return 1;
+#else
+  return 0;
+#endif
+}
+
+/*========================================================================*/
 /*                          FILE input ports                              */
 /*========================================================================*/
 
@@ -10861,6 +11118,8 @@ static void register_traversers(void)
 
   GC_REG_TRAV(scheme_subprocess_type, mark_subprocess);
   GC_REG_TRAV(scheme_write_evt_type, mark_read_write_evt);
+
+  GC_REG_TRAV(scheme_filesystem_change_evt_type, mark_filesystem_change_evt);
 }
 
 END_XFORM_SKIP;

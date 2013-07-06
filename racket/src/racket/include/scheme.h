@@ -2105,6 +2105,8 @@ extern Scheme_Extension_Table *scheme_extension_table;
 #define MZFD_CHECK_READ   3
 #define MZFD_CHECK_WRITE  4
 #define MZFD_REMOVE       5
+#define MZFD_CREATE_VNODE 6
+#define MZFD_CHECK_VNODE  7
 
 /*========================================================================*/
 

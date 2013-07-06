@@ -209,6 +209,7 @@ scheme_init_type ()
   set_name(scheme_struct_type_type, "<struct-type>");
   set_name(scheme_listener_type, "<tcp-listener>");
   set_name(scheme_tcp_accept_evt_type, "<tcp-accept-evt>");
+  set_name(scheme_filesystem_change_evt_type, "<filesystem-change-evt>");
   set_name(scheme_namespace_type, "<namespace>");
   set_name(scheme_config_type, "<parameterization>");
   set_name(scheme_will_executor_type, "<will-executor>");
@@ -613,7 +614,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_unix_path_type, bstring_obj);
   GC_REG_TRAV(scheme_windows_path_type, bstring_obj);
   GC_REG_TRAV(scheme_symbol_type, symbol_obj);
-#ifdef MZ_USE_PLACES  
+#ifdef MZ_USE_PLACES
   GC_REG_TRAV(scheme_serialized_symbol_type, bstring_obj);
   GC_REG_TRAV(scheme_serialized_keyword_type, bstring_obj);
   GC_REG_TRAV(scheme_place_dead_type, small_object);

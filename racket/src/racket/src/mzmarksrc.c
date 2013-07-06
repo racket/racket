@@ -1738,6 +1738,15 @@ mark_read_write_evt {
   gcBYTES_TO_WORDS(sizeof(Scheme_Read_Write_Evt));
 }
 
+mark_filesystem_change_evt {
+ mark:
+  Scheme_Filesystem_Change_Evt *fc = (Scheme_Filesystem_Change_Evt *)p;
+  gcMARK2(fc->sema, gc);
+  gcMARK2(fc->mref, gc);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Filesystem_Change_Evt));
+}
+
 END port;
 
 /**********************************************************************/

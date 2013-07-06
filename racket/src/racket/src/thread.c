@@ -3480,8 +3480,10 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
     return NULL;
 
 # ifdef HAVE_KQUEUE_SYSCALL
-  if (!is_socket)
-    return NULL; /* kqueue() might not work on devices, such as ttys */
+  if (!is_socket) {
+    if (!scheme_fd_regular_file(fd, 10))
+      return NULL; /* kqueue() might not work on devices, such as ttys */
+  }
   if (scheme_semaphore_fd_kqueue < 0) {
     scheme_semaphore_fd_kqueue = kqueue();
     if (scheme_semaphore_fd_kqueue < 0) {
@@ -3504,6 +3506,7 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
   v = scheme_hash_get(scheme_semaphore_fd_mapping, key);
   if (!v && ((mode == MZFD_CHECK_READ)
              || (mode == MZFD_CHECK_WRITE)
+             || (mode == MZFD_CHECK_VNODE)
              || (mode == MZFD_REMOVE)))
     return NULL;
 
@@ -3529,13 +3532,14 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
     scheme_hash_set(scheme_semaphore_fd_mapping, key, NULL);
 # ifdef HAVE_KQUEUE_SYSCALL
     {
-      GC_CAN_IGNORE struct kevent kev[2];
+      GC_CAN_IGNORE struct kevent kev[3];
       struct timespec timeout = {0, 0};
       int kr;
       EV_SET(kev, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-      EV_SET(&kev[1], fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+      EV_SET(&kev[1], fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+      EV_SET(&kev[2], fd, EVFILT_VNODE, EV_DELETE, 0, 0, NULL);
       do {
-        kr = kevent(scheme_semaphore_fd_kqueue, kev, 2, NULL, 0, &timeout);
+        kr = kevent(scheme_semaphore_fd_kqueue, kev, 3, NULL, 0, &timeout);
       } while ((kr == -1) && (errno == EINTR));
       log_kqueue_error("remove", kr);
     }
@@ -3552,10 +3556,13 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
 # endif
     s = NULL;
   } else if ((mode == MZFD_CHECK_READ)
-             || (mode == MZFD_CREATE_READ)) {
+             || (mode == MZFD_CREATE_READ)
+             || (mode == MZFD_CHECK_VNODE)
+             || (mode == MZFD_CREATE_VNODE)) {
     s = SCHEME_VEC_ELS(v)[0];
     if (SCHEME_FALSEP(s)) {
-      if (mode == MZFD_CREATE_READ) {
+      if ((mode == MZFD_CREATE_READ)
+          || (mode == MZFD_CREATE_VNODE)) {
         s = scheme_make_sema(0);
         SCHEME_VEC_ELS(v)[0] = s;
 # ifdef HAVE_KQUEUE_SYSCALL
@@ -3563,7 +3570,13 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
           GC_CAN_IGNORE struct kevent kev;
           struct timespec timeout = {0, 0};
           int kr;
-          EV_SET(&kev, fd, EVFILT_READ, EV_ADD | EV_ONESHOT, 0, 0, NULL);
+          if (mode == MZFD_CREATE_READ)
+            EV_SET(&kev, fd, EVFILT_READ, EV_ADD | EV_ONESHOT, 0, 0, NULL);
+          else
+            EV_SET(&kev, fd, EVFILT_VNODE, EV_ADD | EV_ONESHOT, 
+                   (NOTE_DELETE | NOTE_WRITE | NOTE_EXTEND 
+                    | NOTE_RENAME | NOTE_ATTRIB),
+                   0, NULL);
           do {
             kr = kevent(scheme_semaphore_fd_kqueue, &kev, 1, NULL, 0, &timeout);
           } while ((kr == -1) && (errno == EINTR));
@@ -3586,7 +3599,8 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
       } else
         s = NULL;
     }
-  } else {
+  } else if ((mode == MZFD_CHECK_WRITE)
+             || (mode == MZFD_CREATE_WRITE)) {
     s = SCHEME_VEC_ELS(v)[1];
     if (SCHEME_FALSEP(s)) {
       if (mode == MZFD_CREATE_WRITE) {
@@ -3650,7 +3664,7 @@ static int check_fd_semaphores()
       key = scheme_make_integer_value(kev.ident);
       v = scheme_hash_get(scheme_semaphore_fd_mapping, key);
       if (v) {
-        if (kev.filter == EVFILT_READ) {
+        if ((kev.filter == EVFILT_READ) || (kev.filter == EVFILT_VNODE)) {
           s = SCHEME_VEC_ELS(v)[0];
           if (!SCHEME_FALSEP(s)) {
             scheme_post_sema_all(s);
@@ -3847,6 +3861,11 @@ static int check_fd_semaphores()
 
   return hit;
 #endif
+}
+
+void scheme_check_fd_semaphores(void)
+{
+  (void)check_fd_semaphores();
 }
 
 typedef struct {
