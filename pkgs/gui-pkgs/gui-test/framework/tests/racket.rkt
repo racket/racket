@@ -130,7 +130,9 @@
 ;;       smart-skip-parentheses preferences   .nah.
 
 ;; test-auto-parens-behavior
-;;    : any string [or num (list num num)] [or char symbol 1string (list char) (list key-event%)] [or num (list num num)] string
+;;    : any string 
+;;      [or num (list num num)] [or char symbol 1string (list char) (list key-event%)]
+;;      [or num (list num num)] string
 (define (test-auto-parens-behavior which initial-text initial-pos keys final-text final-pos
                                    [auto-parens? #f])
   (test
@@ -188,9 +190,11 @@
                              initial-text (list initial-start-pos initial-end-pos) keys
                              (apply string-append final-pair)
                              (if (= 3 (length final-pair)) 
-                                 ; final-pair could actually be a triplet to indicate residual selection after insertion
-                                 (list (string-length (car final-pair)) (string-length (string-append (car final-pair)
-                                                                                                      (cadr final-pair))))
+                                 ; final-pair could actually be a triplet 
+                                 ; to indicate residual selection after insertion
+                                 (list (string-length (car final-pair))
+                                       (string-length (string-append (car final-pair)
+                                                                     (cadr final-pair))))
                                  (string-length (car final-pair)))
                              auto?))
    '("no-auto-parens" "with-auto-parens")
@@ -327,7 +331,7 @@
                            "\"abcd \\" "" ""
                            #\"
                            '(["\"abcd \\\"" ""]
-                             ["\"abcd \\\"" "\""])) ; this happens to insert double since string was not closed
+                             ["\"abcd \\\"" "\""])) ; this inserts double since string was not closed
 (test-parens-behavior/full 'double-quote-escaped-2
                            "\"abcd \\" "" "\""
                            #\"
@@ -432,16 +436,17 @@
                              '(escape #\))   ; '((new key-event% [key-code #\)] [meta-down #t]))
                              '(["(define before (list 1 2 3 4)" ""]
                                ["(define before (list 1 2 3 4)" ""]))
-  (test-parens-behavior/full 'meta-close-skip-2
-                             "#lang racket\n(define before+afters `([\"\" abc \"efg\""
-                             ""
-                             " 12345 xyz] [84])"
-                             '(escape #\))    ;'((new key-event% [key-code #\)] [meta-down #t]))
-                             '(["#lang racket\n(define before+afters `([\"\" abc \"efg\" 12345 xyz]" " [84])"]
-                               ["#lang racket\n(define before+afters `([\"\" abc \"efg\" 12345 xyz]" " [84])"]))
+  (test-parens-behavior/full
+   'meta-close-skip-2
+   "#lang racket\n(define before+afters `([\"\" abc \"efg\""
+   ""
+   " 12345 xyz] [84])"
+   '(escape #\))    ;'((new key-event% [key-code #\)] [meta-down #t]))
+   '(["#lang racket\n(define before+afters `([\"\" abc \"efg\" 12345 xyz]" " [84])"]
+     ["#lang racket\n(define before+afters `([\"\" abc \"efg\" 12345 xyz]" " [84])"]))
   (test-parens-behavior/full 'meta-close-skip-3
                              "(define before" "" " (list 1 2 3 4)"
                              '(escape #\))   ; '((new key-event% [key-code #\)] [meta-down #t]))
                              '(["(define before (list 1 2 3 4)" ""]
-                               ["(define before (list 1 2 3 4)" ""]))
-  )
+                               ["(define before (list 1 2 3 4)" ""])))
+
