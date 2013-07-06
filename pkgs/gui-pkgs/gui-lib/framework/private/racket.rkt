@@ -1311,14 +1311,14 @@
      'framework:tabify
      (lambda (k v) (set! tabify-pref v)))
     (define/private (racket-lexer-wrapper in offset mode)
-      (define-values (lexeme type paren start end backup-delta mode) 
+      (define-values (lexeme type paren start end backup-delta new-mode) 
         (module-lexer/waived in offset mode))
       (cond
         [(and (eq? type 'symbol)
               (get-keyword-type lexeme tabify-pref))
-         (values lexeme 'keyword paren start end backup-delta mode)]
+         (values lexeme 'keyword paren start end backup-delta new-mode)]
         [else
-         (values lexeme type paren start end backup-delta mode)]))
+         (values lexeme type paren start end backup-delta new-mode)]))
     
     (define/override (put-file text sup directory default-name)
       (parameterize ([finder:default-extension "rkt"]
