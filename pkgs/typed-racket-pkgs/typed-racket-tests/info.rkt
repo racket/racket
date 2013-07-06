@@ -6,7 +6,7 @@
                      "compatibility-lib"
                      "rackunit-lib"
                      "compiler-lib"
-                     "redex"
+                     "redex-lib"
                      "sandbox-lib"
                      "unstable-flonum-lib"
                      "unstable"))

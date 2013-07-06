@@ -8,7 +8,7 @@
                "draw-lib"
                "gui-lib"
                "pict-lib"
-               "redex"
+               "redex-lib"
                "scribble-lib"
                "slideshow-lib"))
 (define build-deps '("plot"
