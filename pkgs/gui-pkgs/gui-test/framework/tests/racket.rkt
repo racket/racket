@@ -94,14 +94,15 @@
 (test-magic-square-bracket 'local2 "(local [(define x 1)] " "(local [(define x 1)] (")
 
 
-(define (test-insert-close-paren/proc line
-                                      pos char flash? fixup? smart-skip
-                                      before after)
+(define (test-message-send/proc line before after pos msg . args)
+  (define (maybe-quote x)
+    (cond
+      [(or (number? x) (boolean? x) (string? x)) x]
+      [else `',x]))
   (test
    (string->symbol (format "line ~a: ~s"
                            line
-                           `(test-insert-close-paren ,pos ,char ,flash? ,fixup? ',smart-skip
-                                                     ,before ,after)))
+                           `(,msg ,@(map maybe-quote args))))
    (λ (x) (equal? x after))
    (λ ()
      (queue-sexp-to-mred
@@ -111,19 +112,24 @@
          (define ec (new editor-canvas% [parent f] [editor t]))
          (send t insert ,before)
          (send t set-position ,pos)
-         (send t insert-close-paren ,pos ,char ,flash? ,fixup? ',smart-skip)
+         (send t ,msg ,@(map maybe-quote args))
          (send t get-text))))))
-(define-syntax (test-insert-close-paren stx)
+(define-syntax (test-message-send stx)
   (syntax-case stx ()
-    [(_ . args)
+    [(_ before after pos mth . args)
      (with-syntax ([line (syntax-line stx)])
-       #'(test-insert-close-paren/proc line . args))]))
+       #'(test-message-send/proc line before after pos 'mth . args))]))
 
-(test-insert-close-paren 0 #\] #t #t 'adjacent "" "]")
-(test-insert-close-paren 0 #\] #t #t #f "" "]")
-(test-insert-close-paren 1 #\] #t #t #f "(" "()")
-(test-insert-close-paren 1 #\] #f #f #f "(" "(]")
-(test-insert-close-paren 0 #\] #t #t 'forward "" "]")
+(test-message-send ""  "]"  0 insert-close-paren 0 #\] #t #t 'adjacent)
+(test-message-send ""  "]"  0 insert-close-paren 0 #\] #t #t #f)
+(test-message-send "(" "()" 1 insert-close-paren 1 #\] #t #t #f)
+(test-message-send "(" "(]" 1 insert-close-paren 1 #\] #f #f #f)
+(test-message-send ""  "]"  0 insert-close-paren 0 #\] #t #t 'forward)
+
+(test-message-send "(1)" "1" 1 kill-enclosing-parens 1)
+(test-message-send "(1 2 3)" "1 2 3" 3 kill-enclosing-parens 3)
+(test-message-send "()" "" 1 kill-enclosing-parens 1)
+(test-message-send "(1\n 2\n 3)" "1\n2\n3" 1 kill-enclosing-parens 1) ;; test tabify call
 
 ;; tests what happens when a given key/s is/are typed in an editor with initial
 ;;       text and cursor position, under different settings of the auto-parentheses and

@@ -546,6 +546,7 @@
                     #f)]
                [last-para (and last
                                (position-paragraph last))])
+          (define sizing-dc (or (get-dc) (make-object bitmap-dc% (make-bitmap 1 1))))
           (letrec
               ([find-offset
                 (λ (start-pos)
@@ -568,7 +569,7 @@
                   (position-location start-pos start-x #f #t #t)
                   (position-location end-pos end-x #f #t #t)
                   (define-values (w _1 _2 _3)
-                    (send (get-dc) get-text-extent "x" 
+                    (send sizing-dc get-text-extent "x" 
                           (send (send (get-style-list)
                                       find-named-style "Standard")
                                 get-font)))
@@ -1141,17 +1142,17 @@
     
     (define/public (kill-enclosing-parens begin-inner)
       (begin-edit-sequence)
-      (let ([begin-outer (find-up-sexp begin-inner)])
-        (cond
-          [begin-outer
-            (let ([end-outer (get-forward-sexp begin-outer)])
-              (cond
-                [(and end-outer (> (- end-outer begin-outer) 2))
-                 (delete (- end-outer 1) end-outer)
-                 (delete begin-outer (+ begin-outer 1))
-                 (tabify-selection begin-outer (- end-outer 2))]
-                [else (bell)]))]
-          [else (bell)]))
+      (define begin-outer (find-up-sexp begin-inner))
+      (cond
+        [begin-outer
+          (define end-outer (get-forward-sexp begin-outer))
+          (cond
+            [(and end-outer (>= (- end-outer begin-outer) 2))
+             (delete (- end-outer 1) end-outer)
+             (delete begin-outer (+ begin-outer 1))
+             (tabify-selection begin-outer (- end-outer 2))]
+            [else (bell)])]
+        [else (bell)])
       (end-edit-sequence))
     
     ;; change the parens following the cursor from () to [] or vice versa
