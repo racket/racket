@@ -26,6 +26,12 @@
 
 (define snapshots-dir (build-path site-dir 'up))
 
+(define link-file (build-path snapshots-dir "current"))
+
+(when (link-exists? link-file)
+  (printf "Removing old \"current\" link\n")
+  (delete-file link-file))
+
 (define snapshots (for/list ([p (in-list (directory-list snapshots-dir))]
                              #:when (directory-exists? (build-path snapshots-dir p)))
                     (path-element->string p)))
@@ -50,3 +56,6 @@
                                         (a ((href ,(string-append current-snapshot
                                                                   "/index.html")))
                                            ,current-snapshot))))
+
+(printf "Creating \"current\" link\n")
+(make-file-or-directory-link current-snapshot link-file)
