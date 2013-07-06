@@ -298,7 +298,8 @@
       (comment ,(make-object color% 194 116 31) ,(string-constant scheme-mode-color-comment))
       (string ,constant-green ,(string-constant scheme-mode-color-string))
       (constant ,constant-green ,(string-constant scheme-mode-color-constant))
-      (hash-colon-keyword ,(make-object color% "brown") ,(string-constant scheme-mode-color-hash-colon-keyword))
+      (hash-colon-keyword ,(make-object color% "brown")
+                          ,(string-constant scheme-mode-color-hash-colon-keyword))
       (parenthesis ,(make-object color% "brown") ,(string-constant scheme-mode-color-parenthesis))
       (error ,(make-object color% "red") ,(string-constant scheme-mode-color-error))
       (other ,(make-object color% "black") ,(string-constant scheme-mode-color-other)))))
@@ -424,7 +425,8 @@
     (send style-list find-named-style "Matching Parenthesis Style")))
 
 (define text-mixin
-  (mixin (text:basic<%> mode:host-text<%> color:text<%> text:autocomplete<%> editor:keymap<%>) (-text<%>)
+  (mixin (text:basic<%> mode:host-text<%> color:text<%> text:autocomplete<%> editor:keymap<%>)
+         (-text<%>)
     (inherit begin-edit-sequence
              delete
              end-edit-sequence
@@ -522,7 +524,7 @@
                [last-pos (last-position)]
                [para (position-paragraph pos)]
                [is-tabbable? (and (> para 0)
-                                  (not (memq (classify-position (sub1 (paragraph-start-position para)))
+                                  (not (memq (classify-position (- (paragraph-start-position para) 1))
                                              '(comment string error))))]
                [end (if is-tabbable? (paragraph-start-position para) 0)]
                [limit (get-limit pos)]
@@ -641,7 +643,9 @@
               [(not contains)
                ;; Something went wrong matching. Should we get here?
                (do-indent 0)]
-              #;  ;; disable this to accommodate PLAI programs; return to this when a #lang capability is set up.
+              ;; disable this to accommodate PLAI programs; 
+              ;; return to this when a #lang capability is set up.
+              #; 
               [(curley-brace-sexp?)
                ;; when we are directly inside an sexp that uses {}s,
                ;; we indent in a more C-like fashion (to help Scribble)
@@ -656,7 +660,9 @@
                (define close-first-curley (get-forward-sexp first-curley))
                (define para (position-paragraph pos))
                (when (and close-first-curley
-                          (<= (paragraph-start-position para) close-first-curley (paragraph-end-position para)))
+                          (<= (paragraph-start-position para) 
+                              close-first-curley 
+                              (paragraph-end-position para)))
                  (set! containing-curleys (max 0 (- containing-curleys 1))))
                (do-indent (* containing-curleys 2))]
               [(not last) 
@@ -1305,13 +1311,14 @@
      'framework:tabify
      (lambda (k v) (set! tabify-pref v)))
     (define/private (racket-lexer-wrapper in offset mode)
-      (let-values (((lexeme type paren start end backup-delta mode) (module-lexer/waived in offset mode)))
-        (cond
-          ((and (eq? type 'symbol)
-                (get-keyword-type lexeme tabify-pref))
-           (values lexeme 'keyword paren start end backup-delta mode))
-          (else
-           (values lexeme type paren start end backup-delta mode)))))
+      (define-values (lexeme type paren start end backup-delta mode) 
+        (module-lexer/waived in offset mode))
+      (cond
+        [(and (eq? type 'symbol)
+              (get-keyword-type lexeme tabify-pref))
+         (values lexeme 'keyword paren start end backup-delta mode)]
+        [else
+         (values lexeme type paren start end backup-delta mode)]))
     
     (define/override (put-file text sup directory default-name)
       (parameterize ([finder:default-extension "rkt"]
@@ -1587,7 +1594,8 @@
          (send text classify-position (send text get-start-position)))
        (cond
          ; insert paren pair if it results valid parenthesis token...
-         [(member open-brace open-parens) (insert-brace-pair text open-brace close-brace 'parenthesis)]
+         [(member open-brace open-parens) 
+          (insert-brace-pair text open-brace close-brace 'parenthesis)]
          
          ; ASSUME: from here on, open-brace is either "  or  |
          [else
@@ -1626,9 +1634,9 @@
                   [else (define selection-length (- end-position start-position))
                         (insert-brace-pair text "\" \"" "\" \"")
                         (define cur-position (send text get-start-position))
-                        (send text set-position (- cur-position 1) (+ cur-position selection-length 1))])
-                ]
-               )]
+                        (send text set-position 
+                              (- cur-position 1)
+                              (+ cur-position selection-length 1))])])]
             [_  (insert-brace-pair text open-brace close-brace)]) ])]))
          
 
@@ -1788,16 +1796,16 @@
              (cond
                [backward-match
                 ;; there is an expression before this, at this layer
-                (let* ([before-whitespace-pos2 (send text skip-whitespace backward-match 'backward #t)]
-                       [backward-match2 (send text backward-match before-whitespace-pos2 0)])
-                  
-                  (cond
-                    [(member b-m-char '(#\( #\[ #\{))
-                     ;; found a "sibling" parenthesized sequence. use the parens it uses.
-                     (change-to 1 b-m-char)]
-                    [else
-                     ;; otherwise, we switch to (
-                     (change-to 2 #\()]))]
+                (define before-whitespace-pos2 
+                  (send text skip-whitespace backward-match 'backward #t))
+                (define backward-match2 (send text backward-match before-whitespace-pos2 0))
+                (cond
+                  [(member b-m-char '(#\( #\[ #\{))
+                   ;; found a "sibling" parenthesized sequence. use the parens it uses.
+                   (change-to 1 b-m-char)]
+                  [else
+                   ;; otherwise, we switch to (
+                   (change-to 2 #\()])]
                [(not (zero? before-whitespace-pos))
                 ;; this is the first thing in the sequence
                 ;; pop out one layer and look for a keyword.
@@ -2017,7 +2025,9 @@
                        [parent f]
                        [label #f]))))
     (define number-panel (new horizontal-panel% [parent f] [stretchable-height #f]))
-    (define number-label (new message% [parent number-panel] [label (string-constant skip-subexpressions)]))
+    (define number-label (new message% 
+                              [parent number-panel]
+                              [label (string-constant skip-subexpressions)]))
     (define number
       (keymap:call/text-keymap-initializer
        (λ ()
@@ -2045,7 +2055,8 @@
       (send f show #f))
     
     (define-values (ok-button cancel-button)
-      (gui-utils:ok/cancel-buttons bp confirm-callback cancel-callback (string-constant ok) (string-constant cancel)))
+      (gui-utils:ok/cancel-buttons bp confirm-callback cancel-callback 
+                                   (string-constant ok) (string-constant cancel)))
     (send tb focus)
     (send f show #t)
     answers)
@@ -2069,7 +2080,8 @@
                          [value (preferences:get 'framework:fixup-open-parens)]
                          [callback 
                           (λ (x y)
-                            (preferences:set 'framework:fixup-open-parens (send check-box get-value)))]))
+                            (preferences:set 'framework:fixup-open-parens 
+                                             (send check-box get-value)))]))
   (preferences:add-callback
    'framework:fixup-open-parens
    (λ (p v)
@@ -2085,7 +2097,8 @@
                            (cond
                              [(null? in) (sort out string<=?)]
                              [else (if (eq? wanted (cadr (car in))) 
-                                       (pick-out wanted (cdr in) (cons (format "~s" (car (car in))) out))
+                                       (pick-out wanted (cdr in) 
+                                                 (cons (format "~s" (car (car in))) out))
                                        (pick-out wanted (cdr in) out))]))])
         (values  (pick-out 'begin all-keywords null)
                  (pick-out 'define all-keywords null)
@@ -2123,13 +2136,14 @@
   (define delete-callback
     (λ (list-box)
       (λ (button command)
-        (let* ([selections (send list-box get-selections)]
-               [symbols (map (λ (x) (read (open-input-string (send list-box get-string x)))) selections)])
-          (for-each (λ (x) (send list-box delete x)) (reverse selections))
-          (let* ([pref (preferences:get 'framework:tabify)]
-                 [ht (car pref)])
-            (for-each (λ (x) (hash-remove! ht x)) symbols)
-            (preferences:set 'framework:tabify pref))))))
+        (define selections (send list-box get-selections))
+        (define symbols 
+          (map (λ (x) (read (open-input-string (send list-box get-string x)))) selections))
+        (for-each (λ (x) (send list-box delete x)) (reverse selections))
+        (define pref (preferences:get 'framework:tabify))
+        (define ht (car pref))
+        (for-each (λ (x) (hash-remove! ht x)) symbols)
+        (preferences:set 'framework:tabify pref))))
   (define main-panel (make-object horizontal-panel% p))
   (define make-column
     (λ (string symbol keywords bang-regexp)
