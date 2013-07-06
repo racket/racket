@@ -32,18 +32,21 @@
   (printf "Removing old \"current\" link\n")
   (delete-file link-file))
 
-(define snapshots (for/list ([p (in-list (directory-list snapshots-dir))]
-                             #:when (directory-exists? (build-path snapshots-dir p)))
-                    (path-element->string p)))
+(define (get-snapshots)
+  (for/list ([p (in-list (directory-list snapshots-dir))]
+             #:when (directory-exists? (build-path snapshots-dir p)))
+    (path-element->string p)))
 
 (define n (hash-ref config '#:max-snapshots 5))
-(when (n . < . (length snapshots))
-  (define remove-snapshots (remove
-                            current-snapshot
-                            (list-tail (sort snapshots string>?) n)))
-  (for ([s (in-list remove-snapshots)])
-    (printf "Removing snapshot ~a\n" s)
-    (delete-directory/files (build-path snapshots-dir s))))
+
+(let ([snapshots (get-snapshots)])
+  (when (n . < . (length snapshots))
+    (define remove-snapshots (remove
+                              current-snapshot
+                              (list-tail (sort snapshots string>?) n)))
+    (for ([s (in-list remove-snapshots)])
+      (printf "Removing snapshot ~a\n" s)
+      (delete-directory/files (build-path snapshots-dir s)))))
 
 (printf "Creating \"current\" link\n")
 (make-file-or-directory-link current-snapshot link-file)
@@ -58,4 +61,16 @@
                     #:post-content `((p "Snapshot ID: " 
                                         (a ((href ,(string-append current-snapshot
                                                                   "/index.html")))
-                                           ,current-snapshot))))
+                                           ,current-snapshot))
+                                     ,@(let ([snapshots (get-snapshots)])
+                                         (if ((length snapshots) . < . 2)
+                                             null
+                                             `((div ([class "detail"]) 
+                                                  "Other available snapshots:"
+                                                  ,@(for/list ([s (remove "current"
+                                                                          (remove current-snapshot
+                                                                                  (sort snapshots string>?)))])
+                                                      `(span ([class "detail"])
+                                                             nbsp
+                                                             (a ([href ,(string-append s "/index.html")])
+                                                                ,s)))))))))
