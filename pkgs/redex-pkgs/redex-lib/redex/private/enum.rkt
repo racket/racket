@@ -6,7 +6,8 @@
          racket/set
          "lang-struct.rkt"
          "match-a-pattern.rkt"
-         "enumerator.rkt")
+         "enumerator.rkt"
+         "recursive-lang.rkt")
 
 (provide 
  (contract-out
@@ -45,8 +46,7 @@
                      (enum-f (nt-rhs nt)
                              l-enums))))
      cur-lang))
-  (let-values ([(fin-lang rec-lang)
-                (sep-lang lang)])
+  (let-values ([(fin-lang rec-lang) (sep-lang lang)])
     (enumerate-lang fin-lang
                     enumerate-rhss)
     (enumerate-lang rec-lang
@@ -192,6 +192,7 @@
 ;; sep-lang : lang -> lang lang
 ;; topologically sorts non-terminals by dependency
 ;; sorts rhs's so that recursive ones go last
+#;
 (define (sep-lang lang)
   (define (filter-edges edges lang)
     (foldl
@@ -395,7 +396,6 @@
                     (equal? (named-name cur)
                             n)))
              (assoc-named n (cdr l)))]))
-
 
 (define (enum-names pat nps nt-enums)
   (let rec ([nps nps]
