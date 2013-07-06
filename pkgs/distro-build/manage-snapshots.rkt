@@ -45,10 +45,13 @@
     (printf "Removing snapshot ~a\n" s)
     (delete-directory/files (build-path snapshots-dir s))))
 
+(printf "Creating \"current\" link\n")
+(make-file-or-directory-link current-snapshot link-file)
+
 (make-download-page (build-path site-dir
                                 installers-dir
                                 "table.rktd")
-                    #:installers-url (string-append current-snapshot "/installers/")
+                    #:installers-url "current/installers/"
                     #:dest (build-path snapshots-dir
                                        "index.html")
                     #:git-clone (current-directory)
@@ -56,6 +59,3 @@
                                         (a ((href ,(string-append current-snapshot
                                                                   "/index.html")))
                                            ,current-snapshot))))
-
-(printf "Creating \"current\" link\n")
-(make-file-or-directory-link current-snapshot link-file)
