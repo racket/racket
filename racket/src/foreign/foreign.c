@@ -3369,6 +3369,11 @@ Scheme_Object *ffi_do_call(int argc, Scheme_Object *argv[], Scheme_Object *self)
                     nargs, ivals, avalues,
                     offsets, p);
 
+  /* Use `data' to make sure it's kept alive (as far as the GC is concerned)
+     until the foreign call returns: */
+  if ((void*)data == (void*)scheme_true)
+    scheme_signal_error("dummy test suceeded!?");
+
   if (save_errno != 0) save_errno_values(save_errno);
   ivals = NULL; /* no need now to hold on to this */
   for (i=0; i<nargs; i++) { avalues[i] = NULL; } /* no need for these refs */
