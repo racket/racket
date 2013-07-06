@@ -87,6 +87,8 @@ intptr_t mp_ac_freed;
 # define GC_LOCK_DEBUG(args) /* empty */
 #endif
 
+#define CHECK_PARK_UNUSED(gc) GC_ASSERT(!gc->park[0])
+
 /* the page type constants */
 enum {
   PAGE_TAGGED   = 0,
@@ -350,9 +352,7 @@ inline static void check_used_against_max(NewGC *gc, size_t len)
   page_count = size_to_apage_count(len);
   gc->used_pages += page_count;
 
-#if MZ_GC_BACKTRACE
   if (gc->dumping_avoid_collection) return;
-#endif
 
   if(gc->in_unsafe_allocation_mode) {
     if(gc->used_pages > gc->max_pages_in_heap)
@@ -1215,7 +1215,7 @@ inline static void gen0_free_mpage(NewGC *gc, mpage *page) {
 #ifdef MZ_GC_STRESS_TESTING
 # define GC_TRIGGER_COUNT 100
 static int stress_counter = 0;
-int scheme_gc_slow_path_started = 0;
+int scheme_gc_slow_path_started = 1;
 static int TAKE_SLOW_PATH()
 {
   if (!scheme_gc_slow_path_started) return 0;
@@ -1422,6 +1422,7 @@ void *GC_malloc_pair(void *car, void *cdr)
 
   if (TAKE_SLOW_PATH() || OVERFLOWS_GEN0(newptr)) {
     NewGC *gc = GC_get_GC();
+    CHECK_PARK_UNUSED(gc);
     gc->park[0] = car;
     gc->park[1] = cdr;
     pair = allocate(sizeof(Scheme_Simple_Object), PAGE_PAIR);
@@ -2855,7 +2856,8 @@ static NewGC *init_type_tags_worker(NewGC *inheritgc, NewGC *parentgc,
   }
   initialize_signal_handler(gc);
   GC_add_roots(&gc->park, (char *)&gc->park + sizeof(gc->park) + 1);
-  GC_add_roots(&gc->park_save, (char *)&gc->park_save + sizeof(gc->park_save) + 1);
+  GC_add_roots(&gc->park_fsave, (char *)&gc->park_fsave + sizeof(gc->park_fsave) + 1);
+  GC_add_roots(&gc->park_isave, (char *)&gc->park_isave + sizeof(gc->park_isave) + 1);
 
   return gc;
 }
@@ -4569,6 +4571,29 @@ void print_debug_stats(NewGC *gc) {
 }
 #endif
 
+static void park_for_inform_callback(NewGC *gc)
+{
+  /* Avoid nested collections, which would need
+     nested parking spaces: */
+  gc->dumping_avoid_collection++;
+
+  /* Inform might allocate, which might need park: */
+  gc->park_isave[0] = gc->park[0];
+  gc->park_isave[1] = gc->park[1];
+  gc->park[0] = NULL;
+  gc->park[1] = NULL;
+}
+
+static void unpark_for_inform_callback(NewGC *gc)
+{
+  gc->park[0] = gc->park_isave[0];
+  gc->park[1] = gc->park_isave[1];
+  gc->park_isave[0] = NULL;
+  gc->park_isave[1] = NULL;
+  
+  --gc->dumping_avoid_collection;
+}
+
 #if 0
 extern double scheme_get_inexact_milliseconds(void);
 # define TIME_DECLS() double start, task_start
@@ -4813,25 +4838,12 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
 #ifdef MZ_USE_PLACES
     is_master = (gc == MASTERGC);
 #endif
-    gc->dumping_avoid_collection++;
-
-    /* Inform might allocate, which might need park: */
-    gc->park_save[0] = gc->park[0];
-    gc->park_save[1] = gc->park[1];
-    gc->park[0] = NULL;
-    gc->park[1] = NULL;
-
+    park_for_inform_callback(gc);
     gc->GC_collect_inform_callback(is_master, gc->gc_full, 
                                    old_mem_use + old_gen0, gc->memory_in_use, 
                                    old_mem_allocated, mmu_memory_allocated(gc->mmu),
                                    gc->child_gc_total);
-
-    gc->park[0] = gc->park_save[0];
-    gc->park[1] = gc->park_save[1];
-    gc->park_save[0] = NULL;
-    gc->park_save[1] = NULL;
-
-    --gc->dumping_avoid_collection;
+    unpark_for_inform_callback(gc);
   }
 #ifdef MZ_USE_PLACES
   if (lmi) {
@@ -4863,8 +4875,8 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
     gc->running_finalizers = 1;
 
     /* Finalization might allocate, which might need park: */
-    gc->park_save[0] = gc->park[0];
-    gc->park_save[1] = gc->park[1];
+    gc->park_fsave[0] = gc->park[0];
+    gc->park_fsave[1] = gc->park[1];
     gc->park[0] = NULL;
     gc->park[1] = NULL;
 
@@ -4885,10 +4897,10 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
 #endif
     gc->running_finalizers = 0;
 
-    gc->park[0] = gc->park_save[0];
-    gc->park[1] = gc->park_save[1];
-    gc->park_save[0] = NULL;
-    gc->park_save[1] = NULL;
+    gc->park[0] = gc->park_fsave[0];
+    gc->park[1] = gc->park_fsave[1];
+    gc->park_fsave[0] = NULL;
+    gc->park_fsave[1] = NULL;
   } else
     next_gc_full = 0;
 
@@ -4905,10 +4917,12 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
       wait_if_master_in_progress(gc, &sub_lmi);
       if (sub_lmi.ran) {
         if (gc->GC_collect_inform_callback) {
+          park_for_inform_callback(gc);
           gc->GC_collect_inform_callback(1, sub_lmi.full,
                                          sub_lmi.pre_used, sub_lmi.post_used,
                                          sub_lmi.pre_admin, sub_lmi.post_admin,
                                          0);
+          unpark_for_inform_callback(gc);
         }
       }
     }

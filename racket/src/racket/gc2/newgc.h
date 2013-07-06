@@ -225,7 +225,8 @@ typedef struct NewGC {
   int num_fnls;
 
   void *park[2];
-  void *park_save[2];
+  void *park_fsave[2];
+  void *park_isave[2];
 
   unsigned short weak_array_tag;
   unsigned short weak_box_tag;

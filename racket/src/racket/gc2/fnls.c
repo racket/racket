@@ -67,6 +67,7 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
     return;
 
   /* Allcation might trigger GC, so we use park: */
+  CHECK_PARK_UNUSED(gc);
   gc->park[0] = p;
   gc->park[1] = data;
 

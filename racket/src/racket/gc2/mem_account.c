@@ -248,6 +248,7 @@ inline static uintptr_t custodian_usage(NewGC*gc, void *custodian)
 
   if(!gc->really_doing_accounting) {
     if (!gc->dumping_avoid_collection) {
+      CHECK_PARK_UNUSED(gc);
       gc->park[0] = custodian;
       gc->really_doing_accounting = 1;
       garbage_collect(gc, 1, 0, NULL);
@@ -502,6 +503,7 @@ inline static void BTC_add_account_hook(int type,void *c1,void *c2,uintptr_t b)
 
   if(!gc->really_doing_accounting) {
     if (!gc->dumping_avoid_collection) {
+      CHECK_PARK_UNUSED(gc);
       gc->park[0] = c1; 
       gc->park[1] = c2;
       gc->really_doing_accounting = 1;

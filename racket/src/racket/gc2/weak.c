@@ -87,6 +87,7 @@ void *GC_malloc_weak_array(size_t size_in_bytes, void *replace_val)
   GC_Weak_Array *w;
 
   /* Allcation might trigger GC, so we use park: */
+  CHECK_PARK_UNUSED(gc);
   gc->park[0] = replace_val;
 
   w = (GC_Weak_Array *)GC_malloc_one_tagged(size_in_bytes 
@@ -168,6 +169,7 @@ void *GC_malloc_weak_box(void *p, void **secondary, int soffset, int is_late)
   GC_Weak_Box *w;
 
   /* Allcation might trigger GC, so we use park: */
+  CHECK_PARK_UNUSED(gc);
   gc->park[0] = p;
   gc->park[1] = secondary;
 
@@ -282,6 +284,7 @@ void *GC_malloc_ephemeron(void *k, void *v)
   GC_Ephemeron *eph;
 
   /* Allcation might trigger GC, so we use park: */
+  CHECK_PARK_UNUSED(gc);
   gc->park[0] = k;
   gc->park[1] = v;
 
