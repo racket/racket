@@ -512,7 +512,7 @@
   (test 2.2t0 ptr-ref (ptr-add (extflvector->cpointer v) (ctype-sizeof _longdouble)) _longdouble))
 
 ;; Check a corner of UTF-16 conversion:
-(test "\U171D3" cast (cast "\U171D3" _string/utf-16 _pointer) _pointer _string/utf-16)
+(test "\U171D3" cast (cast "\U171D3" _string/utf-16 _gcpointer) _gcpointer _string/utf-16)
 
 ;; check async:
 (when test-async?
