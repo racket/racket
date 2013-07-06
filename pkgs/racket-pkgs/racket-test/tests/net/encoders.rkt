@@ -70,6 +70,7 @@
 
 (provide tests)
 (module+ main (tests))
+(module+ test (tests))
 (define (tests)
   (test
    do (check-same-all (lambda (i o) (qp-encode-stream i o))

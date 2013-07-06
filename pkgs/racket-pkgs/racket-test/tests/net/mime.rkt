@@ -35,6 +35,7 @@ EOS
 
 (provide tests)
 (module+ main (tests))
+(module+ test (tests))
 (define (tests)
   (define analyzed      (mime-analyze ip))
   (define our-entity    (message-entity analyzed))

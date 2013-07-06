@@ -5,6 +5,7 @@
 
 (provide tests)
 (module+ main (tests))
+(module+ test (tests))
 (define (tests)
   (define test-header
     (string-append "From: abc\r\nTo: field is\r\n continued\r\n"
