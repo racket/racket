@@ -35,7 +35,6 @@ EOS
 
 (provide tests)
 (module+ main (tests))
-(module+ test (tests))
 (define (tests)
   (define analyzed      (mime-analyze ip))
   (define our-entity    (message-entity analyzed))
@@ -60,3 +59,5 @@ EOS
          (open-input-string "Content-Type: multipart/mixed\r\n\r\n"))
         =error> missing-multipart-boundary-parameter?
         ))
+
+(module+ test (require (submod ".." main))) ; for raco test & drdr

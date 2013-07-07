@@ -9,7 +9,6 @@
 
 (provide tests)
 (module+ main (tests))
-(module+ test (tests))
 (define (tests)
   (putenv "REQUEST_METHOD" "GET")
   (test (test-bindings 'amp-or-semi "key1=value1&key2=value2;key3=value3")
@@ -22,3 +21,5 @@
         => '([key1 . "value1"] [key2 . "value2"])
         (test-bindings 'semi "key1=value1&key2=value2")
         => '([key1 . "value1&key2=value2"])))
+
+(module+ test (require (submod ".." main))) ; for raco test & drdr

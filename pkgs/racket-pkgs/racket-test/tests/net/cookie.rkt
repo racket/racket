@@ -5,7 +5,6 @@
 
 (provide tests)
 (module+ main (tests))
-(module+ test (tests))
 (define (tests)
   ;; cookie-test : (cookie -> cookie) string -> test
   (define (cookie-test fn expected)
@@ -97,3 +96,5 @@
     )
   
   (test do (tests)))
+
+(module+ test (require (submod ".." main))) ; for raco test & drdr

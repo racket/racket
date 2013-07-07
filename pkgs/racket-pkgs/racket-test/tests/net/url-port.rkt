@@ -123,7 +123,6 @@
 
 (provide tests)
 (module+ main (tests))
-(module+ test (tests))
 (define (tests)
   (test
    (run-tests "http" values #f)
@@ -133,3 +132,5 @@
                         (lambda (in out)
                           (ports->ssl-ports in out #:mode 'accept #:context ctx)))
               #t)))
+
+(module+ test (require (submod ".." main))) ; for raco test & drdr

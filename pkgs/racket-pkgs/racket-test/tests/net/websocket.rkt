@@ -13,7 +13,6 @@
 
 (provide tests)
 (module+ main (tests))
-(module+ test (tests))
 (define (tests)
   (test
    (for ([i (in-range RANDOM-K)])
@@ -94,3 +93,5 @@
                   (parameterize ([framing-mode 'old]) (test-echo-server))
                   #:failure-prefix "new"
                   (parameterize ([framing-mode 'new]) (test-echo-server)))))))
+
+(module+ test (require (submod ".." main))) ; for raco test & drdr

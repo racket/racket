@@ -9,7 +9,6 @@
 
 (provide tests)
 (module+ main (tests))
-(module+ test (tests))
 (define (tests)
   (test
    ;; ----------------------------------------
@@ -124,3 +123,5 @@
    (not ((bytes-of-length 5) "moogle"))
    ;; ----------------------------------------
    ))
+
+(module+ test (require (submod ".." main))) ; for raco test & drdr
