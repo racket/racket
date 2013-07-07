@@ -5986,6 +5986,8 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
 					   "filesystem-change-evt",
 					   NULL,
 					   SCHEME_GUARD_FILE_EXISTS);
+  fd = 0;
+
 #if defined(HAVE_KQUEUE_SYSCALL)
   do {
     fd = open(filename, flags | MZ_BINARY, 0666);
