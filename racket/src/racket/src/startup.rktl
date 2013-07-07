@@ -560,12 +560,6 @@
                       evt))))))
          stamp-prompt-tag)])))
   
-  (define-values (stamp=?)
-    (lambda (a b)
-      (if (and (pair? a) (pair? b))
-          (equal? (car a) (car b))
-          (equal? a b))))
-
   (define-values (no-file-stamp?)
     (lambda (a)
       (or (not a)
@@ -617,7 +611,7 @@
                                           [shared? shared-links-stamp]
                                           [else (vector-ref links-stamps ii)])]
                           [ts (file->stamp a-links-path a-links-stamp)])
-                     (if (not (stamp=? ts a-links-stamp))
+                     (if (not (equal? ts a-links-stamp))
                          (with-continuation-mark
                              exception-handler-key
                              (make-handler ts)

@@ -5976,6 +5976,11 @@ Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv)
 /*                        filesystem change events                        */
 /*========================================================================*/
 
+static void filesystem_change_evt_fnl(void *fc, void *data)
+{
+  scheme_filesystem_change_evt_cancel((Scheme_Object *)fc, NULL);
+}
+
 Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int signal_errs)
 {
   char *filename;
@@ -6089,6 +6094,7 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
 
     mref = scheme_add_managed(NULL, (Scheme_Object *)fc, scheme_filesystem_change_evt_cancel, NULL, 1);
     fc->mref = mref;
+    scheme_add_finalizer(fc, filesystem_change_evt_fnl, NULL);
 
     return (Scheme_Object *)fc;
   }
@@ -6127,6 +6133,8 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
     mref = scheme_add_managed(NULL, (Scheme_Object *)fc, scheme_filesystem_change_evt_cancel, NULL, 1);
     fc->mref = mref;
 
+    scheme_add_finalizer(fc, filesystem_change_evt_fnl, NULL);
+
     return (Scheme_Object *)fc;
   }
 #endif
@@ -6161,10 +6169,8 @@ static int filesystem_change_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info 
 
 # if defined(DOS_FILE_SYSTEM)
   if (fc->fd) {
-    if (WaitForSingleObject((HANDLE)fc->fd, 0) == WAIT_OBJECT_0) {
-      FindCloseChangeNotification((HANDLE)fc->fd);
-      fc->fd = 0;
-    }
+    if (WaitForSingleObject((HANDLE)fc->fd, 0) == WAIT_OBJECT_0)
+      scheme_filesystem_change_evt_cancel((Scheme_Object *)fc, NULL);
   }
   
   return !fc->fd;
