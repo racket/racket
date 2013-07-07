@@ -23,5 +23,8 @@ script:
   - raco test pkgs/racket-pkgs/racket-test/tests/xml/test.rkt
 notifications:
   irc: "chat.freenode.net#racket"
-  email: samth@racket-lang.org
+  email: 
+    recipients: 
+      - samth@racket-lang.org
+    on_success: always
 
