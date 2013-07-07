@@ -38,6 +38,9 @@
 </head>
 
 <style>
+
+  #topcontent { background: url(img/loud.png) center center no-repeat;  }
+
   .btn,.drawer {margin-bottom:10px;}
   .drawer { text-align: center; }
   h1.lead { border-bottom: 1px dotted #ccc; margin-bottom: 30px; }
@@ -92,42 +95,45 @@
 
 .codesnip { display: none }
 .codesnip.active { display: block}
+
+#growboxes { margin-top: 10pt; }
+.panetitle { color: red; font-size: 120%; margin-bottom: 4pt }
+
 </style>
 
 <body>
 
 
-  <div class="navbar" gumby-fixed="top" id="nav1">
-    <div class="row">
-      <a class="toggle" gumby-trigger="#nav1 > .row > ul" href="#"><i class="icon-menu"></i></a>
-      <h1 class="three columns logo">
-        <a href="">
-          <img src="img/logo.png" />
-        </a>
-      </h1>
-      <ul class="push_two nine columns">
-        <li><a href="https://pkg.racket-lang.org">Packages</a></li>
-        <li><a href="http://docs.racket-lang.org">Documentation</a></li>
-        <li><a href="#">Community</a></li>
-        <li><a href="#">Learning</a></li>
-        <li><a href="#">Blog</a></li>
-        <li>
-          <button class="medium metro default btn icon-left entypo icon-install">
-            <a href="#">Download</a>
-          </button>
-        </li>
+<div class="navbar" gumby-fixed="top" id="nav1">
+  <div class="row">
+    <a class="toggle" gumby-trigger="#nav1 > .row > ul" href="#"><i class="icon-menu"></i></a>
+    <h1 class="three columns logo">
+      <a href="">
+        <img src="img/logo.png" />
+      </a>
+    </h1>
+    <ul class="push_two nine columns">
+      <li><a href="https://pkg.racket-lang.org">Packages</a></li>
+      <li><a href="http://docs.racket-lang.org">Documentation</a></li>
+      <li><a href="#">Community</a></li>
+      <li><a href="#">Learning</a></li>
+      <li><a href="#">Blog</a></li>
+      <li>
+        <button class="medium metro default btn icon-left entypo icon-install">
+          <a href="#">Download</a>
+        </button>
+      </li>
     </ul>
   </div>
- </div>
+</div>
 
-  <div class="modal" id="modal1">
-
-    <div class="content unique_lines codesnip active">
-      <a class="close switch" gumby-trigger="|#modal1"><i class="icon-cancel" /></i></a>
-      <div class="row">
-        <div class="ten columns centered center-text">
-          <h4>Unique Lines</h4>
-
+<div class="modal" id="modal1">
+  <div class="content unique_lines codesnip active">
+    <a class="close switch" gumby-trigger="|#modal1"><i class="icon-cancel" ></i></a>
+    <div class="row">
+      <div class="ten columns centered center-text">
+	<h4>Unique Lines</h4>
+	
 <pre style="font-size: 140%; font-family: 'Inconsolata';">
 #lang <a href="http://docs.racket-lang.org/reference/index.html" class="codemodpath" rel="nofollow">racket</a>
 <span class="codecomment">;; Report each unique line from stdin</span>
@@ -214,25 +220,38 @@ documentation, so click on them for more information.
                                                Quickly</h3></div>
 </div>
 
-    <div class="row">
-      <div class="eight columns centered"        
-           style="font-size: 140%; position: relative;
-                  font-family: 'Inconsolata';">
-        <a href="#" class="toggle" gumby-trigger=".unique_lines|.echo_server">
-        <img class="halign"  src="img/prev.png" style="position:
-                  absolute; top: 50%; left: -20%; margin-top: -25px">
-        </a>
-        <a href="#" class="toggle" gumby-trigger=".unique_lines|.echo_server">
-          <img class="halign" src="img/next.png"
-               style="position: absolute; top: 50%; right: -20%;
-                                                        margin-top:
-                                                        -25px">
-        </a>
 
-         <p class="metro primary btn"
-                 style="position: absolute; top: -10%; right: 0%;" >
-            <a href="#" class="switch" gumby-trigger="#modal1"> <i class="icon-help"></i></a>
-          </button>
+ <!-- The other version of the buttons: -->
+      <!-- <div class="eight columns centered"         -->
+      <!--      style="font-size: 140%; position: relative; -->
+      <!--             font-family: 'Inconsolata';"> -->
+      <!--   <a href="#" class="toggle" gumby-trigger=".unique_lines|.echo_server"> -->
+      <!--   <img class="halign"  src="img/prev.png" style="position: -->
+      <!--             absolute; top: 50%; left: -20%; margin-top: -25px"> -->
+      <!--   </a> -->
+      <!--   <a href="#" class="toggle" gumby-trigger=".unique_lines|.echo_server"> -->
+      <!--     <img class="halign" src="img/next.png" -->
+      <!--          style="position: absolute; top: 50%; right: -20%; -->
+      <!--                                                   margin-top: -->
+      <!--                                                   -25px"> -->
+      <!--   </a> -->
+
+
+
+
+  <div class="row">
+    <section class="fourteen columns">
+      <div class="valign row">
+	<a href="#" class="toggle" style="width: 50px" gumby-trigger=".unique_lines|.echo_server">
+          <img src="img/prev.png">
+	</a>
+	
+	<div class="" style="font-size: 140%; font-family: 'Inconsolata';">
+        <!-- <p class="metro primary btn" -->
+        <!--    style="position: absolute; top: -10%; right: 0%;" > -->
+        <!--   <a href="#" class="switch" gumby-trigger="#modal1"> <i class="icon-help"></i></a> -->
+        <!-- </p> -->
+
 <pre id="unique_lines" class="codesnip active unique_lines">
 #lang <a href="http://docs.racket-lang.org/reference/index.html" class="codemodpath" rel="nofollow">racket</a>
 <span class="codecomment">;; Report each unique line from stdin</span>
@@ -258,16 +277,56 @@ documentation, so click on them for more information.
                       <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/port-ops.html#(def._((quote._~23~25kernel)._close-output-port))" class="codelinkimportid" rel="nofollow">close-output-port</a> <span class="codeid">out</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span>
   <span class="codeparenthesis">(</span><span class="codeid">echo-server</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span>
 </pre>
-        </div>
-    </div>
+
+        <a href="#" style="width: 50px" class="toggle" gumby-trigger=".unique_lines|.echo_server">
+          <img src="img/next.png">
+        </a>
+  </div></div></section></div>
+
 
 <div class="row">
-<p class="ten columns centered" style="font-size: 120%; margin-top: 10pt">
+<p class="ten columns centered" style="font-size: 120%; margin-top: 10pt; ">
 <a href="http://docs.racket-lang.org/quick/">Draw more pictures</a> or
 <a href="http://docs.racket-lang.org/more/">build a web server from scratch</a>.  Racket includes both
 <a href="http://docs.racket-lang.org/">batteries</a> and a <a href="http://docs.racket-lang.org/drracket/">programming environment</a>,
 so <a href="http://docs.racket-lang.org/getting-started/">get started</a>!
 </p>
+</div>
+
+<!-- below code snippets -->
+
+<div class="row" id="growboxes">
+
+<div class="four columns">
+<div class="panetitle">Grow your Program</div><p>Racket's
+<a href="http://docs.racket-lang.org/guide/intro.html#(part._.Interacting_with_.Racket)">interactive mode</a>
+encourages experimentation, and quick scripts easily compose into
+larger systems.  Small scripts and large systems both benefit from
+<a href="http://docs.racket-lang.org/guide/performance.html">native-code JIT compilation</a>.
+When a system gets too big to keep in your head, you can add
+<a href="http://docs.racket-lang.org/ts-guide/index.html">static types</a>.</p>
+</div>
+
+<div class="four columns">
+<div class="panetitle">Grow your Language</div><p><a href="http://docs.racket-lang.org/guide/languages.html">Extend Racket</a> whenever you need to.
+Mold it to better suit your tasks without sacrificing
+<a href="http://docs.racket-lang.org/guide/dialects.html">interoperability</a> with existing
+libraries and without having to modify the
+<a href="http://docs.racket-lang.org/guide/intro.html">tool chain</a>.  When less is more, you can
+remove parts of a language or start over and build a new one.</p>
+</div>
+
+<div class="four columns">
+
+<div class="panetitle">Grow your Skills</div><p>Whether you're just <a href="http://htdp.org/">starting out</a>, want to know more about
+programming language <a href="http://www.plai.org/">applications</a> or <a href="http://redex.racket-lang.org/">models</a>,
+looking to <a href="http://docs.racket-lang.org/continue/">expand your horizons</a>, or ready to dive into
+<a href="learning.html">research</a>, Racket can help you become a better programmer
+and system builder.</p>
+</div>
+</div>
+
+
 </div>
 
   <!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
