@@ -16,7 +16,7 @@
     (test lib-expected path->relative-string/library path))
   (test-both missing  missing)
   (test-both relative relative)
-  (test-both collects "racket/foo.rkt" "<collects>/racket/foo.rkt")
+  (test-both collects "<collects>/racket/foo.rkt" "<collects>/racket/foo.rkt")
   (err/rt-test (path->relative-string/setup #f))
   (err/rt-test (path->relative-string/setup #"bleh"))
   (err/rt-test (path->relative-string/setup 'bleh)))

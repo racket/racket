@@ -56,7 +56,9 @@
              (cons find-planet-dir        "<planet>/"))))
     (define (make-default cache default)
       (lambda (x)        
-        (define-values (pkg sub) (path->pkg+subpath x #:cache cache))
+        (define-values (pkg sub) (if (complete-path? x)
+                                     (path->pkg+subpath x #:cache cache)
+                                     (values #f #f)))
         (cond
          [pkg
           (apply string-append 
