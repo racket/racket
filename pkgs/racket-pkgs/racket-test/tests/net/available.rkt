@@ -25,5 +25,5 @@
 
 (module+ main
   (tcp-localhost-available?))
-(module+ test
-  (tcp-localhost-available?))
+
+(module+ test (require (submod ".." main))) ; for raco test & drdr

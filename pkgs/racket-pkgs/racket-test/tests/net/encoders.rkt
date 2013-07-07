@@ -70,7 +70,6 @@
 
 (provide tests)
 (module+ main (tests))
-(module+ test (tests))
 (define (tests)
   (test
    do (check-same-all (lambda (i o) (qp-encode-stream i o))
@@ -109,3 +108,5 @@ Use this to compare base64 encode/decode against the unix utilities
     (and (equal? en (base64-encode* bstr))
          (equal? (base64-decode en) (base64-decode* en)))))
 |#
+
+(module+ test (require (submod ".." main))) ; for raco test & drdr

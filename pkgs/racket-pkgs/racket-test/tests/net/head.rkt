@@ -5,7 +5,6 @@
 
 (provide tests)
 (module+ main (tests))
-(module+ test (tests))
 (define (tests)
   (define test-header
     (string-append "From: abc\r\nTo: field is\r\n continued\r\n"
@@ -93,3 +92,5 @@
    => #"From: abc\r\nTo: field is\r\n continued\r\nAnother: zoo\r\n continued\r\nAthird: data\r\n\r\n"
 
    ))
+
+(module+ test (require (submod ".." main))) ; for raco test & drdr

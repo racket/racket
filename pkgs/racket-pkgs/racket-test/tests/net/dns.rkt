@@ -99,9 +99,10 @@
 
 (provide tests)
 (module+ main (tests))
-(module+ test (tests))
 (define (tests)
   (test do (internal-tests)
            (nameserver-tests *google-dns*)
            (nameserver-tests *google-dns-2*)
            (let ([ns (dns-find-nameserver)]) (when ns (nameserver-tests ns)))))
+
+(module+ test (require (submod ".." main))) ; for raco test & drdr

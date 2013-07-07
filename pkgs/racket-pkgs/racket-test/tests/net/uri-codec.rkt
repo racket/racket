@@ -3,7 +3,6 @@
 
 (provide tests)
 (module+ main (tests))
-(module+ test (tests))
 (define (tests)
   (define sepmode current-alist-separator-mode)
   (test (uri-decode "%Pq") => "%Pq"
@@ -147,3 +146,5 @@
    => '([key1 . "value 1"] [key2 . "value 2"])
 
    ))
+
+(module+ test (require (submod ".." main))) ; for raco test & drdr

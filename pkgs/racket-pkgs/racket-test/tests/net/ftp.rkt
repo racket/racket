@@ -33,7 +33,6 @@
 
 (provide tests)
 (module+ main (tests))
-(module+ test (tests))
 (define (tests)
   (define cop (open-output-string))
   (define-values [pasv1-thd pasv1-port] (tcp-serve* (current-output-port) DIRLIST))
@@ -280,3 +279,5 @@
      RNTO test2
      QUIT
      @||})
+
+(module+ test (require (submod ".." main))) ; for raco test & drdr
