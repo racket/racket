@@ -9,7 +9,8 @@
     (call-with-default-reading-parameterization
      (lambda ()
        (parameterize ([read-accept-reader #t]
-                      [read-accept-lang #t])
+                      [read-accept-lang #t]
+                      [read-accept-compiled #t])
          (thunk)))))
 
   (define (raise-wrong-module-name filename expected-name name)

@@ -317,7 +317,7 @@
 "(read-square-bracket-as-paren #t)"
 "(read-curly-brace-as-paren #t)"
 "(read-accept-box #t)"
-"(read-accept-compiled #t)"
+"(read-accept-compiled #f)"
 "(read-accept-bar-quote #t)"
 "(read-accept-graph #t)"
 "(read-decimal-as-inexact #t)"
