@@ -46,7 +46,8 @@
     (define dest-sum (build-path (path->complete-path dest-dir) sum-file))
     (unless (and (file-exists? dest-zip)
                  (file-exists? dest-sum)
-                 (equal? src-sha1 (call-with-input-file* dest-sum read)))
+                 (equal? (list (version) src-sha1)
+                         (call-with-input-file* dest-sum read)))
       (printf "packing ~a\n" zip-file)
       (define tmp-dir (make-temporary-file "~a-pkg" 'directory))
       (generate-stripped-directory 'binary pkg-src-dir tmp-dir)
@@ -58,7 +59,7 @@
        dest-sum
        #:exists 'truncate/replace
        (lambda (o)
-         (write src-sha1 o)
+         (write (list (version) src-sha1) o)
          (newline o))))
     
     (define (write-catalog-entry catalog-dir)
