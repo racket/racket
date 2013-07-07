@@ -260,12 +260,6 @@ A @tech{parameter} that (along with @racket[read-accept-reader] controls
 whether @litchar{#lang} and @litchar{#!} are allowed for selecting a
 parser. See @secref["parse-reader"] for more information.}
 
-@defparam[current-reader-guard proc (any/c . -> . any)]{
-
-A parameter whose value converts or rejects (by raising an exception)
-a module-path datum following @litchar{#reader}. See
-@secref["parse-reader"] for more information.}
-
 
 @defparam[current-readtable readtable (or/c readtable? #f)]{
 
@@ -273,6 +267,19 @@ A parameter whose value determines a readtable that
 adjusts the parsing of S-expression input, where @racket[#f] implies the
 default behavior. See @secref["readtables"] for more information.}
 
+
+@defproc[(call-with-default-reading-parameterizations [thunk (-> any)])
+         any]{
+
+Calls @racket[thunk] in @tech{tail position} of a @racket[parameterize]
+to set all reader @tech{parameters} above to their default values.}
+
+
+@defparam[current-reader-guard proc (any/c . -> . any)]{
+
+A parameter whose value converts or rejects (by raising an exception)
+a module-path datum following @litchar{#reader}. See
+@secref["parse-reader"] for more information.}
 
 @defparam[read-on-demand-source mode (or/c #f #t (and/c path? complete-path?))]{
 

@@ -14,4 +14,5 @@ building blocks and local-database support.
 @local-table-of-contents[]
 
 @include-section["lib.scrbl"]
+@include-section["path.scrbl"]
 @include-section["db.scrbl"]

@@ -236,4 +236,5 @@
              find-library-collection-paths
              bytes-environment-variable-name?
              string-environment-variable-name?
-             getenv putenv))
+             getenv putenv
+             call-with-default-reading-parameterization))

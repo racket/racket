@@ -5,6 +5,7 @@
                      racket/contract
                      racket/future
                      racket/promise
+                     racket/file
                      compiler/cm
                      compiler/cm-accomplice
                      setup/parallel-build))
@@ -366,24 +367,13 @@ available (i.e., the suffix on @racket[p] is replaced by
 @filepath{.dep} to locate dependency information). The result is
 @racket[#f] if @racket[p] cannot be opened.}
 
+
 @defproc[(with-compile-output [p path-string?] [proc ([port input-port?] [tmp-path path?]  . -> . any)]) any]{
 
-Opens a temporary path for writing and calls @racket[proc] passing the 
-resulting @racket[port] and @racket[tmp-path].  Once @racket[proc]
-returns, @racket[with-compile-output] renames @racket[tmp-path] to 
-@racket[p] and arranges to delete @racket[temp-path] if there's an
-exception.  Breaks are managed so that the @racket[port] is reliably
-closed and the @racket[tmp-path] file is reliably deleted if there's a
-break. The result of @racket[proc] is the result of the
-@racket[with-compile-output] call.
+A wrapper on @racket[call-with-atomic-output-file] that passes along
+any security guard put in place by
+@racket[make-compilation-manager-load/use-compiled-handler], etc.}
 
-Windows prevents programs from overwriting files that are open. As a result,
-@racket[with-compile-output] calls to @racket[rename-file-or-directory] will
-fail if the destination file argument is an open file. Windows, however, does 
-allow you to rename an open file. To avoid overwriting open files
-windows, @racket[with-compile-output] creates a second temporary file
-@racket[tmp-path2], renames @racket[p] to @racket[tmp-path2], renames
-@racket[tmp-path] to @racket[p], and finally deletes @racket[tmp-path2].}
 
 @defparam[parallel-lock-client proc 
                                (or/c #f

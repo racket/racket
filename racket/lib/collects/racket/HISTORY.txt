@@ -1,3 +1,9 @@
+Version 5.3.900.5
+Added call-with-default-reading-parameterization
+racket/file: added call-with-atomic-output-file
+pkg/path: added, re-exported by pkg/lib
+setup/path-to-relative: added <pkg> results
+
 Version 5.3.900.4
 Added filesystem-change-evt, filesystem-change-evt?, and
  filesystem-change-evt-cancel

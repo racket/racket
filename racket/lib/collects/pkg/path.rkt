@@ -1,0 +1,131 @@
+#lang racket/base
+(require setup/dirs)
+
+(provide (struct-out pkg-info)
+         (struct-out sc-pkg-info)
+         get-pkgs-dir
+         read-pkgs-db
+         read-pkg-file-hash
+         path->pkg+subpath
+         path->pkg)
+
+(struct pkg-info (orig-pkg checksum auto?) #:prefab)
+(struct sc-pkg-info pkg-info (collect) #:prefab) ; a pkg with a single collection
+
+(define (check-scope who scope)
+  (unless (or (eq? scope 'user)
+              (eq? scope 'shared)
+              (eq? scope 'installation)
+              (and (path? scope)
+                   (complete-path? scope)))
+    (raise-argument-error 
+     who 
+     "(or/c 'user 'shared 'installation (and/c path? complete-path?))"
+     scope)))
+
+(define (get-pkgs-dir scope [user-version (version)])
+  (check-scope 'get-pkgs-dir scope)
+  (unless (string? user-version)
+    (raise-argument-error 'get-pkgs-dir "string?" user-version))
+  (if (path? scope)
+      scope
+      (case scope
+        [(installation) (find-pkgs-dir)]
+        [(user) (find-user-pkgs-dir user-version)]
+        [(shared) (find-shared-pkgs-dir)]
+        [else (error "unknown package scope")])))
+
+(define (read-pkg-file-hash file)
+  (with-handlers ([exn:fail? (lambda (x) 
+                               (log-error (string-append
+                                           "error reading package file hash\n"
+                                           "  error: ~s")
+                                          (exn-message x))
+                               (hash))])
+    (if (file-exists? file) ; don't complain if the file is missing
+        (call-with-input-file*
+         file
+         (lambda (i)
+           (call-with-default-reading-parameterization
+            (lambda ()
+              (define ht (read i))
+              (unless (hash? ht) (error "content is not a hash"))
+              ht))))
+        (hash))))
+
+(define (read-pkgs-db scope)
+  (check-scope 'read-pkgs-db scope)
+  (let ([db (read-pkg-file-hash 
+             (build-path (get-pkgs-dir scope) "pkgs.rktd"))])
+    ;; compatibility: map 'pnr to 'catalog:
+    (for/hash ([(k v) (in-hash db)])
+      (values k
+              (if (eq? 'pnr (car (pkg-info-orig-pkg v)))
+                  ;; note: legacy 'pnr entry cannot be a single-collection package
+                  (struct-copy pkg-info v
+                               [orig-pkg `(catalog ,(cadr (pkg-info-orig-pkg v)))])
+                  v)))))
+
+(define (path->pkg+subpath* who given-p cache)
+  (unless (path-string? given-p)
+    (raise-argument-error who "path-string?" given-p))
+  (unless (or (not cache)
+              (and (hash? cache)
+                   (not (immutable? cache))))
+    (raise-argument-error who "(or/c #f (and/c hash? (not/c immutable?)))" cache))
+  (define (explode p)
+    (explode-path
+     (normal-case-path
+      (simplify-path (path->complete-path p)))))
+  (define (sub-path? < p d)
+    (and ((length d) . <= . (length p))
+         (for/and ([de (in-list d)]
+                   [pe (in-list p)])
+           (equal? de pe))))
+  (define p (explode given-p))
+  (define (build-path* l)
+    (if (null? l) 'same (apply build-path l)))
+  (for/fold ([pkg #f] [subpath #f]) ([scope (in-list (list* 'user 'shared 
+                                                            (get-pkgs-search-dirs)))]
+                                     #:when (not pkg))
+    (define d (or (and cache
+                       (hash-ref cache `(dir ,scope) #f))
+                  (let ([d (explode (get-pkgs-dir scope))])
+                    (when cache (hash-set! cache `(dir ,scope) d))
+                    d)))
+    (define (read-pkg-db/cached)
+      (or (and cache
+               (hash-ref cache `(db ,scope) #f))
+          (let ([db (read-pkgs-db scope)])
+            (when cache (hash-set! cache `(db ,scope) db))
+            db)))
+    (cond
+     [(sub-path? < p d)
+      ;; Under the installation mode's package directory.
+      ;; We assume that no one else writes there, so the
+      ;; next path element is the package name.
+      (define len (length d))
+      (values (path-element->string (list-ref p len))
+              (build-path* (list-tail p (add1 len))))]
+     [else
+      ;; Maybe it's a linked package
+      (for/fold ([pkg #f] [subpath #f]) ([(k v) (in-hash (read-pkg-db/cached))]
+                                         #:when (not pkg))
+        (define orig (pkg-info-orig-pkg v))
+        (if (and (pair? orig)
+                 (or (eq? 'link (car orig))
+                     (eq? 'static-link (car orig))))
+            (let ([orig-pkg-dir (cadr orig)])
+              (define e (explode orig-pkg-dir))
+              (if (sub-path? <= p e)
+                  (values k (build-path* (list-tail p (length e))))
+                  (values #f #f)))
+            (values #f #f)))])))
+
+(define (path->pkg+subpath given-p #:cache [cache #f])
+  (path->pkg+subpath* 'path->pkg+subpath given-p cache))
+
+(define (path->pkg given-p #:cache [cache #f])
+  (define-values (pkg rest)
+    (path->pkg+subpath* path->pkg given-p cache))
+  pkg)

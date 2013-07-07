@@ -235,38 +235,12 @@
   (try-delete-file zo-name)
   (trace-printf "failure"))
 
-;; with-compile-output : path (output-port -> alpha) -> alpha
-;;  Open a temporary path for writing, automatically renames after,
-;;  and arranges to delete path if there's
-;;  an exception. Breaks are managed so that the port is reliably
-;;  closed and the file is reliably deleted if there's a break
+;; with-compile-output : path (output-port path -> alpha) -> alpha
 (define (with-compile-output path proc)
-  (let ([bp (current-break-parameterization)]
-        [tmp-path (with-compiler-security-guard (make-temporary-file "tmp~a" #f (path-only path)))]
-        [ok? #f])
-    (dynamic-wind
-     void
-     (lambda ()
-       (begin0
-         (let ([out (with-compiler-security-guard (open-output-file tmp-path #:exists 'truncate/replace))])
-           (dynamic-wind
-            void
-            (lambda ()
-              (call-with-break-parameterization bp (lambda () (proc out tmp-path))))
-            (lambda ()
-              (with-compiler-security-guard (close-output-port out)))))
-         (set! ok? #t)))
-     (lambda ()
-       (with-compiler-security-guard
-        (if ok?
-            (if (eq? (system-type) 'windows)
-                (let ([tmp-path2 (make-temporary-file "tmp~a" #f (path-only path))])
-                  (with-handlers ([exn:fail:filesystem? void])
-                    (rename-file-or-directory path tmp-path2 #t))
-                  (rename-file-or-directory tmp-path path #t)
-                  (try-delete-file tmp-path2))
-                (rename-file-or-directory tmp-path path #t))
-            (try-delete-file tmp-path)))))))
+  (call-with-atomic-output-file 
+   path
+   #:security-guard (pick-security-guard)
+   proc))
 
 (define-syntax-rule
   (with-compiler-security-guard expr)

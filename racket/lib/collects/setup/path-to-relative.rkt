@@ -3,15 +3,18 @@
 ;; intended for use in racket/contract, so don't try to add contracts!
 ;; (and try to generally minimize dependencies)
 
-(require "dirs.rkt" "path-relativize.rkt"
-         (only-in planet/config [CACHE-DIR find-planet-dir]))
+(require "dirs.rkt" 
+         "path-relativize.rkt"
+         (only-in planet/config [CACHE-DIR find-planet-dir])
+         pkg/path)
 
 (provide make-path->relative-string
          path->relative-string/library
          path->relative-string/setup)
 
-(define (make-path->relative-string
-         dirs [default (lambda (x) (if (path? x) (path->string x) x))])
+(define default-default (lambda (x) (if (path? x) (path->string x) x)))
+
+(define (make-path->relative-string dirs [default default-default])
   (unless (and (list? dirs)
                (andmap (lambda (x)
                          (and (pair? x)
@@ -45,13 +48,30 @@
   path->relative-string)
 
 (define path->relative-string/library
-  (make-path->relative-string
-   (list (cons find-collects-dir      "<collects>/")
-         (cons find-user-collects-dir "<user-collects>/")
-         (cons find-planet-dir        "<planet>/"))))
+  (let ()
+    (define p->r
+      (make-path->relative-string
+       (list (cons find-collects-dir      "<collects>/")
+             (cons find-user-collects-dir "<user>/")
+             (cons find-planet-dir        "<planet>/"))))
+    (define (make-default cache default)
+      (lambda (x)        
+        (define-values (pkg sub) (path->pkg+subpath x #:cache cache))
+        (cond
+         [pkg
+          (apply string-append 
+                 "<pkgs>" "/" pkg
+                 (if (eq? sub 'same)
+                     null
+                     (let loop ([l (explode-path sub)])
+                       (cond
+                        [(null? l) null]
+                        [else (list* "/" 
+                                     (path-element->string (car l))
+                                     (loop (cdr l)))]))))]
+         [(path? x) (path->string x)]
+         [else (if (procedure? default) (default x) default)])))
+    (lambda (x [default default-default] #:cache [cache #f])
+      (p->r x (make-default cache default)))))
 
-(define path->relative-string/setup
-  (make-path->relative-string
-   (list (cons find-collects-dir      "")
-         (cons find-user-collects-dir "<user>/")
-         (cons find-planet-dir        "<planet>/"))))
+(define path->relative-string/setup path->relative-string/library)

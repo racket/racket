@@ -29,6 +29,7 @@
          "name.rkt"
          "util.rkt"
          "strip.rkt"
+         "path.rkt"
          (prefix-in db: "db.rkt"))
 
 (define current-pkg-scope
@@ -120,15 +121,10 @@
 
 (define (pkg-dir config?)
   (define scope (current-pkg-scope))
-  (if (path? scope)
-      scope
-      (case scope
-        [(installation) (if config?
-                            (find-config-dir)
-                            (find-pkgs-dir))]
-        [(user) (find-user-pkgs-dir (current-pkg-scope-version))]
-        [(shared) (find-shared-pkgs-dir)]
-        [else (error "unknown package scope")])))
+  (if (and config?
+           (eq? scope 'installation))
+      (find-config-dir)
+      (get-pkgs-dir scope (current-pkg-scope-version))))
 (define (pkg-config-file)
   (build-path (pkg-dir #t) "config.rktd"))
 (define (pkg-db-file)
@@ -383,40 +379,16 @@
      (package-url->checksum pkg-url-str 
                             #:download-printf download-printf)]))
 
-(define (read-file-hash file)
-  (define the-db
-    (with-handlers ([exn:fail? (λ (x) 
-                                  (log-exn x "reading file hash") 
-                                  (hash))])
-      (if (file-exists? file) ; don't complain if the file is missing
-          (with-module-reading-parameterization
-           (lambda ()
-             (file->value file)))
-          (hash))))
-  the-db)
-             
 (define (write-file-hash! file new-db)
   (make-parent-directory* file)
-  (call-with-output-file* 
+  (call-with-atomic-output-file
    file
-   #:exists 'replace
-   (λ (o) (write new-db o) (newline o))))
+   (λ (o tmp-path) (write new-db o) (newline o))))
 
 (define (read-pkg-db)
   (if (current-no-pkg-db)
       #hash()
-      (read-pkg-db-file (pkg-db-file))))
-
-(define (read-pkg-db-file file)
-  (let ([the-db (read-file-hash file)])
-    ;; compatibility: map 'pnr to 'catalog:
-    (for/hash ([(k v) (in-hash the-db)])
-      (values k
-              (if (eq? 'pnr (car (pkg-info-orig-pkg v)))
-                  ;; note: legacy 'pnr entry cannot be a single-collection package
-                  (struct-copy pkg-info v
-                               [orig-pkg `(catalog ,(cadr (pkg-info-orig-pkg v)))])
-                  v)))))
+      (read-pkgs-db (current-pkg-scope))))
 
 ;; read all packages in this scope or wider
 (define (merge-pkg-dbs [scope (current-pkg-scope)])
@@ -428,16 +400,14 @@
       (case scope
         [(installation)
          (for*/hash ([dir (in-list (get-pkgs-search-dirs))]
-                     [file (in-value (build-path dir "pkgs.rktd"))]
-                     #:when (file-exists? file)
-                     [(k v) (read-pkg-db-file file)])
+                     [(k v) (read-pkgs-db dir)])
            (values k v))]
         [(shared)
-         (define db (read-pkg-db))
+         (define db (read-pkgs-db 'shared))
          (for/fold ([ht (merge-next-pkg-dbs 'installation)]) ([(k v) (in-hash db)])
            (hash-set ht k v))]
         [(user)
-         (define db (read-pkg-db))
+         (define db (read-pkgs-db 'user))
          (for/fold ([ht (merge-next-pkg-dbs 'shared)]) ([(k v) (in-hash db)])
            (hash-set ht k v))])))
     
@@ -524,7 +494,7 @@
              "https://planet-compat.racket-lang.org")]
       ['default-scope "user"]
       [_ #f]))
-  (define c (read-file-hash (pkg-config-file)))
+  (define c (read-pkg-file-hash (pkg-config-file)))
   (define v (hash-ref c k 'none))
   (cond
    [(eq? v 'none)
@@ -554,7 +524,7 @@
   (define f (pkg-config-file))
   (write-file-hash! 
    f
-   (hash-set (read-file-hash f) key val)))
+   (hash-set (read-pkg-file-hash f) key val)))
 
 (define (default-pkg-scope)
   (match (default-pkg-scope-as-string)
@@ -572,8 +542,6 @@
   (or (current-pkg-catalogs)
       (map string->url (read-pkg-cfg/def 'catalogs))))
 
-(struct pkg-info (orig-pkg checksum auto?) #:prefab)
-(struct sc-pkg-info pkg-info (collect) #:prefab) ; a pkg with a single collection
 (struct install-info (name orig-pkg directory clean? checksum module-paths))
 
 (define (update-install-info-orig-pkg if op)
@@ -617,62 +585,6 @@
             orig-pkg-dir]
            [_
             (build-path (pkg-installed-dir) pkg-name)]))))
-
-(define (path->pkg+subpath given-p
-                           #:cache [cache #f])
-  (define (explode p)
-    (explode-path
-     (normal-case-path
-      (simple-form-path p))))
-  (define (sub-path? < p d)
-    (and ((length d) . <= . (length p))
-         (for/and ([de (in-list d)]
-                   [pe (in-list p)])
-           (equal? de pe))))
-  (define p (explode given-p))
-  (define (build-path* l)
-    (if (null? l) 'same (apply build-path l)))
-  (for/fold ([pkg #f] [subpath #f]) ([scope (in-list (get-scope-list))]
-                                     #:when (not pkg))
-    (define d (or (and cache
-                       (hash-ref cache `(dir ,scope) #f))
-                  (parameterize ([current-pkg-scope scope])
-                    (with-pkg-lock/read-only
-                     (define d (explode (pkg-installed-dir)))
-                     (when cache (hash-set! cache `(dir ,scope) d))
-                     d))))
-    (define (read-pkg-db/cached)
-      (or (and cache
-               (hash-ref cache `(db ,scope) #f))
-          (parameterize ([current-pkg-scope scope])
-            (with-pkg-lock/read-only
-             (define db (read-pkg-db))
-             (when cache (hash-set! cache `(db ,scope) db))
-             db))))
-    (cond
-     [(sub-path? < p d)
-      ;; Under the installation mode's package directory.
-      ;; We assume that no one else writes there, so the
-      ;; next path element is the package name.
-      (define len (length d))
-      (values (path-element->string (list-ref p len))
-              (build-path* (list-tail p (add1 len))))]
-     [else
-      ;; Maybe it's a linked package
-      (for/fold ([pkg #f] [subpath #f]) ([(k v) (in-hash (read-pkg-db/cached))]
-                                         #:when (not pkg))
-        (match (pkg-info-orig-pkg v)
-          [`(,(or 'link 'static-link) ,orig-pkg-dir)
-           (define e (explode orig-pkg-dir))
-           (if (sub-path? <= p e)
-               (values k (build-path* (list-tail p (length e))))
-               (values #f #f))]
-          [else (values #f #f)]))])))
-
-(define (path->pkg given-p #:cache [cache #f])
-  (define-values (pkg rest)
-    (path->pkg+subpath given-p #:cache cache))
-  pkg)
 
 (define ((remove-package quiet?) pkg-name)
   (unless quiet?
@@ -2236,10 +2148,9 @@
         (and/c path? complete-path?)))
 
 (provide
+ (all-from-out "path.rkt")
  with-pkg-lock
  with-pkg-lock/read-only
- (struct-out pkg-info)
- (struct-out sc-pkg-info)
  pkg-desc?
  (contract-out
   [current-pkg-scope
@@ -2252,14 +2163,6 @@
    (parameter/c (or/c #f (listof url?)))]
   [pkg-directory
    (-> string? (or/c path-string? #f))]
-  [path->pkg
-   (->* (path-string?)
-        (#:cache (or/c #f (and/c hash? (not/c immutable?))))
-        (or/c #f string?))]
-  [path->pkg+subpath
-   (->* (path-string?)
-        (#:cache (or/c #f (and/c hash? (not/c immutable?))))
-        (values (or/c #f string?) (or/c #f 'same path?)))]
   [pkg-desc 
    (-> string? 
        (or/c #f 'file 'dir 'link 'static-link 'file-url 'dir-url 'github 'name) 

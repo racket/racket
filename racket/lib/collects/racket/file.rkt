@@ -15,6 +15,8 @@
          make-lock-file-name
          call-with-file-lock/timeout
 
+         call-with-atomic-output-file
+
          fold-files
          find-files
          pathlist-closure
@@ -169,6 +171,56 @@
                   (close-output-port (open-output-file name)))
               name)))))
     make-temporary-file))
+
+;;  Open a temporary path for writing, automatically renames after,
+;;  and arranges to delete path if there's an exception. Uses the an
+;;  extra rename dance as needed under Windows to ensure that any
+;;  existing readers of the file do not prevent updating the
+;;  file. Breaks are managed so that the port is reliably closed and
+;;  the file is reliably deleted if there's a break.
+(define (call-with-atomic-output-file path 
+                                      proc
+                                      #:security-guard [guard #f])
+  (unless (path-string? path)
+    (raise-argument-error 'call-with-atomic-output-file "path-string?" path))
+  (unless (and (procedure? proc)
+               (procedure-arity-includes? proc 2))
+    (raise-argument-error 'call-with-atomic-output-file "(procedure-arity-includes/c 2)" proc))
+  (unless (or (not guard)
+              (security-guard? guard))
+    (raise-argument-error 'call-with-atomic-output-file "(or/c #f security-guard?)" guard))
+  (define (try-delete-file path [noisy? #t])
+    ;; Attempt to delete, but give up if it doesn't work:
+    (with-handlers ([exn:fail:filesystem? void])
+      (delete-file path)))
+  (let ([bp (current-break-parameterization)]
+        [tmp-path (parameterize ([current-security-guard (or guard (current-security-guard))])
+                    (make-temporary-file "tmp~a" #f (path-only path)))]
+        [ok? #f])
+    (dynamic-wind
+     void
+     (lambda ()
+       (begin0
+         (let ([out (parameterize ([current-security-guard (or guard (current-security-guard))])
+                      (open-output-file tmp-path #:exists 'truncate/replace))])
+           (dynamic-wind
+            void
+            (lambda ()
+              (call-with-break-parameterization bp (lambda () (proc out tmp-path))))
+            (lambda ()
+              (close-output-port out))))
+         (set! ok? #t)))
+     (lambda ()
+       (parameterize ([current-security-guard (or guard (current-security-guard))])
+         (if ok?
+             (if (eq? (system-type) 'windows)
+                 (let ([tmp-path2 (make-temporary-file "tmp~a" #f (path-only path))])
+                   (with-handlers ([exn:fail:filesystem? void])
+                     (rename-file-or-directory path tmp-path2 #t))
+                   (rename-file-or-directory tmp-path path #t)
+                   (try-delete-file tmp-path2))
+                 (rename-file-or-directory tmp-path path #t))
+             (try-delete-file tmp-path)))))))
 
 (define (with-pref-params thunk)
   (parameterize ([read-case-sensitive #f]

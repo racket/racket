@@ -272,7 +272,7 @@ If @racket[new] exists and is replaced, the replacement is atomic
 on Unix and Mac OS X, but it is not guaranteed to be atomic on
 Windows. Furthermore, if @racket[new] exists and is opened by any
 process for reading or writing, then attempting to replace it will
-typically fail on Windows.
+typically fail on Windows. See also @racket[call-with-atomic-output-file].
 
 If @racket[old] is a link, the link is renamed rather than the
 destination of the link, and it counts as a file for replacing any
@@ -1038,6 +1038,33 @@ writing when the pathname is returned. The client program calling
 desired access and flags (probably using the @racket['truncate] flag;
 see @racket[open-output-file]) and to delete it when it is no longer
 needed.}
+
+@defproc[(call-with-atomic-output-file [file path-string?] 
+                                       [proc ([port input-port?] [tmp-path path?]  . -> . any)]
+                                       [#:security-guard security-guard (or/c #f security-guard?) #f])
+         any]{
+
+Opens a temporary file for writing in the same directory as
+@racket[file], calls @racket[proc] to write to the temporary file, and
+then atomically moves the temporary file in place of @racket[proc].
+The atomic move simply uses @racket[rename-file-or-directory] on Unix
+and Mac OS X, but it uses an extra rename step (see below) on Windows
+to avoid problems due to concurrent readers of @racket[file].
+
+The @racket[proc] function is called with an output port for the
+temporary file, plus the path of the temporary file. The result of
+@racket[proc] is the result of @racket[call-with-atomic-output].
+
+The @racket[call-with-atomic-output] function arranges to delete
+temporary files on exceptions.
+
+Windows prevents programs from deleting or replacing files that are
+open, but it allows renaming of open files. Therefore, on Windows,
+@racket[call-with-atomic-output-file] creates a second temporary file
+@racket[_extra-tmp-file], renames @racket[file] to
+@racket[_extra-tmp-file], renames the temporary file written by
+@racket[proc] to @racket[p], and finally deletes
+@racket[_extra-tmp-file].}
 
 
 @defproc[(get-preference [name symbol?]

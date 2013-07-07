@@ -13,7 +13,7 @@
 
 @defmodule[pkg/lib]{The @racketmodname[pkg/lib] library provides
 building blocks on which the @racket[pkg] library and @exec{raco pkg}
-commands are built.}
+commands are built. It re-exports the bindings of @racketmodname[pkg/path].}
 
 
 @deftogether[(
@@ -68,27 +68,11 @@ Returns a list of URL strings for the user's configured @tech{package
 catalogs}.}
 
 
-@defstruct[pkg-info ([orig-pkg (or/c (list/c 'catalog string?)
-                                     (list/c 'url string?)
-                                     (list/c 'link string?)
-                                     (list/c 'static-link string?))]
-                     [checksum (or/c #f string?)]
-                     [auto? boolean?])
-                     #:prefab]{
-
-A structure type that is used to report installed-package information.}
-
-
 @defproc[(pkg-directory [name string?]) (or/c path-string? #f)]{
 
 Returns the directory that holds the installation of the installed
 (in any scope) package @racket[name], or @racket[#f] if no such package
 is installed.}
-
-
-@defproc[(path->pkg [path path-string?]) (or/c string? #f)]{
-
-Returns the installed package containing @racket[path], if any.}
 
 
 @defproc[(default-pkg-scope) (or/c 'installation 'user 'shared

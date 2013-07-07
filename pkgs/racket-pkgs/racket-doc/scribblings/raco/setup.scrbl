@@ -1271,19 +1271,26 @@ than specified in the contract above, it is returned as-is.}
 @defproc[(path->relative-string/library
           [path path-string?]
           [default (or/c (-> path-string? any/c) any/c)
-                   (lambda (x) (if (path? x) (path->string x) x))])
+                   (lambda (x) (if (path? x) (path->string x) x))]
+          [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
          any/c]{
   Produces a string suitable for display in error messages.  If the path
+  is an absolute one that is inside a package, the
+  result is a string that begins with @racket["<pkgs>/"]. If the path
   is an absolute one that is inside the @filepath{collects} tree, the
-  result will be a string that begins with @racket["<collects>/"].
+  result is a string that begins with @racket["<collects>/"].
   Similarly, a path in the user-specific collects results in a prefix of
   @racket["<user-collects>/"], and a @PLaneT path results in
   @racket["<planet>/"].
 
+  If @racket[cache] is not @racket[#f], it is used as a cache argument
+  for @racket[pkg->path] to speed up detection and conversion of
+  package paths.
+
   If the path is not absolute, or if it is not in any of these, it is
   returned as-is (converted to a string if needed).  If @racket[default]
   is given, it specifies the return value instead: it can be a procedure
-  which is applied onto the path to get the result, or the result
+  that is applied onto the path to get the result, or the result
   itself.
 
   Note that this function can return a non-string only if
@@ -1293,22 +1300,13 @@ than specified in the contract above, it is returned as-is.}
 @defproc[(path->relative-string/setup
           [path path-string?]
           [default (or/c (-> path-string? any/c) any/c)
-                   (lambda (x) (if (path? x) (path->string x) x))])
-         any]{
-  Similar to @racket[path->relative-string/library], but more suited for
-  output during compilation: @filepath{collects} paths are shown with no
-  prefix, and in the user-specific collects with just a
-  @racket["<user>"] prefix.
+                   (lambda (x) (if (path? x) (path->string x) x))]
+          [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
+         any/c]{
 
-  If the path is not absolute, or if it is not in any of these, it is
-  returned as-is (converted to a string if needed).  If @racket[default]
-  is given, it specifies the return value instead: it can be a procedure
-  which is applied onto the path to get the result, or the result
-  itself.
+The same as @racket[path->relative-string/library], for backward
+compatibility.}
 
-  Note that this function can return a non-string only if
-  @racket[default] is given and does not return a string.
-}
 
 @defproc[(make-path->relative-string
           [dirs (listof (cons (-> path?) string?))]
@@ -1319,7 +1317,7 @@ than specified in the contract above, it is returned as-is.}
   @racket[path->relative-string/library] and
   @racket[path->relative-string/setup].
 
-  @racket[dirs] determines the prefix substitutions.  It should be an
+  The @racket[dirs] argument determines the prefix substitutions.  It must be an
   association list mapping a path-producing thunk to a prefix string for
   paths in the specified path.
 

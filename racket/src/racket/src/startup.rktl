@@ -193,7 +193,8 @@
              path-list-string->path-list
              find-executable-path
              load/use-compiled
-             embedded-load)
+             embedded-load
+             call-with-default-reading-parameterization)
 
   (define-values (path-string?)
     (lambda (s)
@@ -366,6 +367,30 @@
 		(cons-path default (cadr m) (loop (caddr m)))
 		(cons-path default s null)))))))
 
+  ;; ------------------------------ Reading ------------------------------
+  
+  (define (call-with-default-reading-parameterization thunk)
+    (if (and (procedure? thunk)
+             (procedure-arity-includes? thunk 0))
+        (parameterize ([read-case-sensitive #t]
+                       [read-square-bracket-as-paren #t]
+                       [read-curly-brace-as-paren #t]
+                       [read-accept-box #t]
+                       [read-accept-compiled #t]
+                       [read-accept-bar-quote #t]
+                       [read-accept-graph #t]
+                       [read-decimal-as-inexact #t]
+                       [read-accept-dot #t]
+                       [read-accept-infix-dot #t]
+                       [read-accept-quasiquote #t]
+                       [read-accept-reader #f]
+                       [read-accept-lang #t]
+                       [current-readtable #f])
+          (thunk))
+        (raise-argument-error 'call-with-default-reading-parameterization
+                              "(procedure-arity-includes/c 0)"
+                              thunk)))
+
   ;; ------------------------------ Collections ------------------------------
 
   (define-values (-check-relpath)
@@ -434,7 +459,9 @@
     (lambda (d)
       (let ([p (build-path d "config.rktd")])
         (or (and (file-exists? p)
-                 (call-with-input-file p read))
+                 (with-input-from-file p
+                   (lambda ()
+                     (call-with-default-reading-parameterization read))))
             #hash()))))
 
   (define-values (coerce-to-path)
@@ -615,95 +642,83 @@
                          (with-continuation-mark
                              exception-handler-key
                              (make-handler ts)
-                           (parameterize ([read-case-sensitive #t]
-                                          [read-square-bracket-as-paren #t]
-                                          [read-curly-brace-as-paren #t]
-                                          [read-accept-box #t]
-                                          [read-accept-compiled #t]
-                                          [read-accept-bar-quote #t]
-                                          [read-accept-graph #t]
-                                          [read-decimal-as-inexact #t]
-                                          [read-accept-dot #t]
-                                          [read-accept-infix-dot #t]
-                                          [read-accept-quasiquote #t]
-                                          [read-accept-reader #t]
-                                          [read-accept-lang #f]
-                                          [current-readtable #f])
-                             (let ([v (if (no-file-stamp? ts)
-                                          null
-                                          (let ([p (open-input-file a-links-path 'binary)])
-                                            (dynamic-wind
-                                                void
-                                                (lambda () 
-                                                  (begin0
-                                                   (read p)
-                                                   (unless (eof-object? (read p))
-                                                     (error "expected a single S-expression"))))
-                                                (lambda () (close-input-port p)))))])
-                               (unless (and (list? v)
-                                            (andmap (lambda (p)
-                                                      (and (list? p)
-                                                           (or (= 2 (length p))
-                                                               (= 3 (length p)))
-                                                           (or (string? (car p))
-                                                               (eq? 'root (car p))
-                                                               (eq? 'static-root (car p)))
-                                                           (path-string? (cadr p))
-                                                           (or (null? (cddr p))
-                                                               (regexp? (caddr p)))))
-                                                    v))
-                                 (error "ill-formed content"))
-                               (let ([ht (make-hasheq)]
-                                     [dir (let-values ([(base name dir?) (split-path a-links-path)])
-                                            base)])
-                                 (for-each
-                                  (lambda (p)
-                                    (when (or (null? (cddr p))
-                                              (regexp-match? (caddr p) (version)))
-                                      (let ([dir (simplify-path
-                                                  (path->complete-path (cadr p) dir))])
-                                        (cond
-                                         [(eq? (car p) 'static-root)
-                                          ;; multi-collection, constant content:
-                                          (for-each
-                                           (lambda (sub)
-                                             (when (directory-exists? (build-path dir sub))
-                                               (let ([k (string->symbol (path->string sub))])
-                                                 (hash-set! ht k (cons dir (hash-ref ht k null))))))
-                                           (directory-list dir))]
-                                         [(eq? (car p) 'root)
-                                          ;; multi-collection, dynamic content:
-                                          ;; Add directory to the #f mapping, and also
-                                          ;; add to every existing table element (to keep
-                                          ;; the choices in order)
-                                          (unless (hash-ref ht #f #f)
-                                            (hash-set! ht #f null))
-                                          (hash-for-each
-                                           ht
-                                           (lambda (k v)
-                                             (hash-set! ht k (cons dir v))))]
-                                         [else
-                                          ;; single collection:
-                                          (let ([s (string->symbol (car p))])
-                                            (hash-set! ht s (cons (box dir)
-                                                                  (hash-ref ht s null))))]))))
-                                  v)
-                                 ;; reverse all lists:
-                                 (hash-for-each
-                                  ht
-                                  (lambda (k v) (hash-set! ht k (reverse v))))
-                                 ;; save table & file content:
-                                 (cond
-                                  [user?
-                                   (set! user-links-cache ht)
-                                   (set! user-links-stamp ts)]
-                                  [shared?
-                                   (set! shared-links-cache ht)
-                                   (set! shared-links-stamp ts)]
-                                  [else
-                                   (vector-set! links-caches ii ht)
-                                   (vector-set! links-stamps ii ts)])
-                                 ht))))
+                           (call-with-default-reading-parameterization
+                            (lambda ()
+                              (let ([v (if (no-file-stamp? ts)
+                                           null
+                                           (let ([p (open-input-file a-links-path 'binary)])
+                                             (dynamic-wind
+                                                 void
+                                                 (lambda () 
+                                                   (begin0
+                                                    (read p)
+                                                    (unless (eof-object? (read p))
+                                                      (error "expected a single S-expression"))))
+                                                 (lambda () (close-input-port p)))))])
+                                (unless (and (list? v)
+                                             (andmap (lambda (p)
+                                                       (and (list? p)
+                                                            (or (= 2 (length p))
+                                                                (= 3 (length p)))
+                                                            (or (string? (car p))
+                                                                (eq? 'root (car p))
+                                                                (eq? 'static-root (car p)))
+                                                            (path-string? (cadr p))
+                                                            (or (null? (cddr p))
+                                                                (regexp? (caddr p)))))
+                                                     v))
+                                  (error "ill-formed content"))
+                                (let ([ht (make-hasheq)]
+                                      [dir (let-values ([(base name dir?) (split-path a-links-path)])
+                                             base)])
+                                  (for-each
+                                   (lambda (p)
+                                     (when (or (null? (cddr p))
+                                               (regexp-match? (caddr p) (version)))
+                                       (let ([dir (simplify-path
+                                                   (path->complete-path (cadr p) dir))])
+                                         (cond
+                                          [(eq? (car p) 'static-root)
+                                           ;; multi-collection, constant content:
+                                           (for-each
+                                            (lambda (sub)
+                                              (when (directory-exists? (build-path dir sub))
+                                                (let ([k (string->symbol (path->string sub))])
+                                                  (hash-set! ht k (cons dir (hash-ref ht k null))))))
+                                            (directory-list dir))]
+                                          [(eq? (car p) 'root)
+                                           ;; multi-collection, dynamic content:
+                                           ;; Add directory to the #f mapping, and also
+                                           ;; add to every existing table element (to keep
+                                           ;; the choices in order)
+                                           (unless (hash-ref ht #f #f)
+                                             (hash-set! ht #f null))
+                                           (hash-for-each
+                                            ht
+                                            (lambda (k v)
+                                              (hash-set! ht k (cons dir v))))]
+                                          [else
+                                           ;; single collection:
+                                           (let ([s (string->symbol (car p))])
+                                             (hash-set! ht s (cons (box dir)
+                                                                   (hash-ref ht s null))))]))))
+                                   v)
+                                  ;; reverse all lists:
+                                  (hash-for-each
+                                   ht
+                                   (lambda (k v) (hash-set! ht k (reverse v))))
+                                  ;; save table & file content:
+                                  (cond
+                                   [user?
+                                    (set! user-links-cache ht)
+                                    (set! user-links-stamp ts)]
+                                   [shared?
+                                    (set! shared-links-cache ht)
+                                    (set! shared-links-stamp ts)]
+                                   [else
+                                    (vector-set! links-caches ii ht)
+                                    (vector-set! links-stamps ii ts)])
+                                  ht)))))
                          (cond
                           [user? user-links-cache]
                           [shared? shared-links-cache]

@@ -26,7 +26,6 @@
          "main-collects.rkt"
          "path-to-relative.rkt"
          "path-relativize.rkt"
-         "private/setup-relative.rkt"
          "private/omitted-paths.rkt"
          "parallel-build.rkt"
          "private/cc-struct.rkt"
@@ -219,7 +218,7 @@
            (error name-sym
                   "'name' result from collection ~e is not a string: ~e"
                   path x)))))
-    (define path-name (path->relative-string/setup/pkg path #:cache pkg-path-cache))
+    (define path-name (path->relative-string/setup path #:cache pkg-path-cache))
     (when (info 'compile-subcollections (lambda () #f))
       (setup-printf "WARNING"
                     "ignoring `compile-subcollections' entry in info ~a"
@@ -645,8 +644,8 @@
         (unless printed?
           (set! printed? #t)
           (setup-printf "deleting" "in ~a"
-                        (path->relative-string/setup/pkg (cc-path cc) 
-                                                         #:cache pkg-path-cache))))
+                        (path->relative-string/setup (cc-path cc) 
+                                                     #:cache pkg-path-cache))))
       (for ([path paths])
         (define full-path (build-path (cc-path cc) path))
         (when (or (file-exists? full-path) (directory-exists? full-path))
@@ -694,7 +693,7 @@
            (define dep (build-path dir mode-dir (path-add-suffix name #".dep")))
            (when (and (file-exists? dep) (file-exists? zo))
              (set! did-something? #t)
-             (setup-printf "deleting" "~a" (path->relative-string/setup/pkg zo #:cache pkg-path-cache))
+             (setup-printf "deleting" "~a" (path->relative-string/setup zo #:cache pkg-path-cache))
              (delete-file/record-dependency zo dependencies)
              (delete-file/record-dependency dep dependencies))))
         (when did-something? (loop dependencies)))
@@ -843,7 +842,7 @@
          (lambda (p where)
             (set! gcs 2)
             (setup-fprintf p #f " in ~a"
-                           (path->relative-string/setup/pkg
+                           (path->relative-string/setup
                             (path->complete-path where (cc-path cc))
                             #:cache pkg-path-cache)))
          (lambda ()
@@ -1063,7 +1062,7 @@
           (define-values [base name dir?] (split-path info-path))
           (make-directory* base)
           (define p info-path)
-          (setup-printf "updating" "~a" (path->relative-string/setup/pkg 
+          (setup-printf "updating" "~a" (path->relative-string/setup
                                          p
                                          #:cache pkg-path-cache))
           (when (verbose)

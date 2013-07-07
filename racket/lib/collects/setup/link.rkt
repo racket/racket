@@ -163,25 +163,18 @@
     (let ([dir (let-values ([(base name dir?) (split-path file)])
                  base)])
       (make-directory* dir)
-      (let ([tmp (make-temporary-file "links~a.rktd" 
-                                      #f 
-                                      dir)])
-        (with-output-to-file tmp
-          #:exists 'truncate
-          (lambda ()
-            (printf "(")
-            (let loop ([l new-table] [prefix ""])
-              (cond
-               [(null? l) (printf ")\n")]
-               [else
-                (printf "~a~s" prefix (car l))
-                (unless (null? (cdr l)) (newline))
-                (loop (cdr l) " ")]))))
-        (with-handlers ([exn:fail? (lambda (exn)
-                                     (with-handlers ([exn:fail? void])
-                                       (delete-file tmp))
-                                     (raise exn))])
-          (rename-file-or-directory tmp file #t)))))
+      (call-with-atomic-output-file
+       file
+       (lambda (o tmp-path)
+         (parameterize ([current-output-port o])
+           (printf "(")
+           (let loop ([l new-table] [prefix ""])
+             (cond
+              [(null? l) (printf ")\n")]
+              [else
+               (printf "~a~s" prefix (car l))
+               (unless (null? (cdr l)) (newline))
+               (loop (cdr l) " ")])))))))
 
   (when show?
     (for ([e (in-list new-table)])
