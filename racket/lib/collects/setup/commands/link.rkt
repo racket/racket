@@ -7,6 +7,7 @@
 (define link-file (make-parameter #f))
 (define link-name (make-parameter #f))
 (define root-mode (make-parameter #f))
+(define static-root-mode (make-parameter #f))
 (define link-version (make-parameter #f))
 (define remove-mode (make-parameter #f))
 (define repair-mode (make-parameter #f))
@@ -28,6 +29,9 @@
     (link-name name)]
    [("-d" "--root") "Treat <dir> as a collection root"
     (root-mode #t)]
+   [("-D" "--static-root") "Treat <dir> as a static collection root"
+    (root-mode #t)
+    (static-root-mode #t)]
    #:once-each
    [("-x" "--version-regexp") regexp "Set the version pregexp"
     (with-handlers ([exn:fail:contract? (lambda (exn)
@@ -74,6 +78,7 @@
   (apply links
          dirs
          #:root? (root-mode)
+         #:static-root? (static-root-mode)
          #:user? user?
          #:shared? shared?
          #:file (link-file)

@@ -70,7 +70,8 @@ catalogs}.}
 
 @defstruct[pkg-info ([orig-pkg (or/c (list/c 'catalog string?)
                                      (list/c 'url string?)
-                                     (list/c 'link string?))]
+                                     (list/c 'link string?)
+                                     (list/c 'static-link string?))]
                      [checksum (or/c #f string?)]
                      [auto? boolean?])
                      #:prefab]{
@@ -117,7 +118,8 @@ scope}.}
 @deftogether[(
 @defproc[(pkg-desc? [v any/c]) boolean?]
 @defproc[(pkg-desc [name string?]
-                   [type (or/c #f 'file 'dir 'link 'file-url 'dir-url 'github 'name)]
+                   [type (or/c #f 'file 'dir 'link 'static-link 
+                               'file-url 'dir-url 'github 'name)]
                    [checksum (or/c string? #f)]
                    [auto? boolean?])
          pkg-desc?]

@@ -174,7 +174,7 @@
                   (define auto? (is-auto? name))
                   (printf "Adding ~a~a as ~a\n" name (if auto? "*" "") dir)
                   (pkg-desc (path->string dir)
-                            'link
+                            'static-link
                             #f
                             auto?)))))
 

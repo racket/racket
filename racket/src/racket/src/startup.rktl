@@ -505,42 +505,72 @@
   (define-values (stamp-prompt-tag) (make-continuation-prompt-tag 'stamp))
 
   (define-values (file->stamp)
-    (lambda (path)
-      ;; We'd prefer to do something lighter than read the file every time!
-      ;; Using just the file's modification date almost works, but 1-second
-      ;; granularity isn't fine enough. To do this right, probably Racket needs
-      ;; to provide more support from the OS's filesystem (along the lines of
-      ;; inotify, but the interface varies among platforms).
-      (call-with-continuation-prompt
-       (lambda ()
-         (with-continuation-mark
-             exception-handler-key
-             (lambda (exn)
-               (abort-current-continuation 
-                stamp-prompt-tag
-                (if (exn:fail:filesystem? exn)
-                    (lambda () #f)
-                    (lambda () (raise exn)))))
-           (let ([p (open-input-file path)])
-             (dynamic-wind
-                 void
-                 (lambda ()
-                   (let ([bstr (read-bytes 8192 p)])
-                     (if (and (bytes? bstr)
-                              ((bytes-length bstr) . >= . 8192))
-                         (apply
-                          bytes-append
-                          (cons
-                           bstr
-                           (let loop ()
-                             (let ([bstr (read-bytes 8192 p)])
-                               (if (eof-object? bstr)
-                                   null
-                                   (cons bstr (loop)))))))
-                         bstr)))
-                 (lambda () (close-input-port p))))))
-       stamp-prompt-tag)))
+    (lambda (path old-stamp)
+      ;; Using just the file's modification date almost works as a stamp,
+      ;; but 1-second granularity isn't fine enough. A stamp is therefore
+      ;; the file content paired with a filesystem-change event (where
+      ;; supported), and the event lets us recycle the old stamp almost
+      ;; always.
+      (cond
+       [(and old-stamp
+             (cdr old-stamp)
+             (not (sync/timeout 0 (cdr old-stamp))))
+        old-stamp]
+       [else
+        (call-with-continuation-prompt
+         (lambda ()
+           (with-continuation-mark
+               exception-handler-key
+               (lambda (exn)
+                 (abort-current-continuation 
+                  stamp-prompt-tag
+                  (if (exn:fail:filesystem? exn)
+                      (lambda () #f)
+                      (lambda () (raise exn)))))
+             (let ([dir-evt
+                    (let loop ([path path])
+                      (let-values ([(base name dir?) (split-path path)])
+                        (and (path? base)
+                             (if (directory-exists? base)
+                                 (filesystem-change-evt base (lambda () #f))
+                                 (loop base)))))])
+               (if (not (file-exists? path))
+                   (cons #f dir-evt)
+                   (let ([evt (filesystem-change-evt path (lambda () #f))])
+                     (when dir-evt (filesystem-change-evt-cancel dir-evt))
+                     (cons
+                      (let ([p (open-input-file path)])
+                        (dynamic-wind
+                            void
+                            (lambda ()
+                              (let ([bstr (read-bytes 8192 p)])
+                                (if (and (bytes? bstr)
+                                         ((bytes-length bstr) . >= . 8192))
+                                    (apply
+                                     bytes-append
+                                     (cons
+                                      bstr
+                                      (let loop ()
+                                        (let ([bstr (read-bytes 8192 p)])
+                                          (if (eof-object? bstr)
+                                              null
+                                              (cons bstr (loop)))))))
+                                    bstr)))
+                            (lambda () (close-input-port p))))
+                      evt))))))
+         stamp-prompt-tag)])))
+  
+  (define-values (stamp=?)
+    (lambda (a b)
+      (if (and (pair? a) (pair? b))
+          (equal? (car a) (car b))
+          (equal? a b))))
 
+  (define-values (no-file-stamp?)
+    (lambda (a)
+      (or (not a)
+          (not (car a)))))
+  
   (define-values (get-linked-collections)
     (lambda (user? shared? ii)
       (call/ec (lambda (esc)
@@ -582,11 +612,12 @@
                                          [user? user-links-path]
                                          [shared? shared-links-path]
                                          [else (vector-ref links-paths ii)])]
-                          [ts (file->stamp a-links-path)])
-                     (if (not (equal? ts (cond
+                          [a-links-stamp (cond
                                           [user? user-links-stamp]
                                           [shared? shared-links-stamp]
-                                          [else (vector-ref links-stamps ii)])))
+                                          [else (vector-ref links-stamps ii)])]
+                          [ts (file->stamp a-links-path a-links-stamp)])
+                     (if (not (stamp=? ts a-links-stamp))
                          (with-continuation-mark
                              exception-handler-key
                              (make-handler ts)
@@ -604,22 +635,25 @@
                                           [read-accept-reader #t]
                                           [read-accept-lang #f]
                                           [current-readtable #f])
-                             (let ([v (let ([p (open-input-file a-links-path 'binary)])
-                                        (dynamic-wind
-                                            void
-                                            (lambda () 
-                                              (begin0
-                                               (read p)
-                                               (unless (eof-object? (read p))
-                                                 (error "expected a single S-expression"))))
-                                            (lambda () (close-input-port p))))])
+                             (let ([v (if (no-file-stamp? ts)
+                                          null
+                                          (let ([p (open-input-file a-links-path 'binary)])
+                                            (dynamic-wind
+                                                void
+                                                (lambda () 
+                                                  (begin0
+                                                   (read p)
+                                                   (unless (eof-object? (read p))
+                                                     (error "expected a single S-expression"))))
+                                                (lambda () (close-input-port p)))))])
                                (unless (and (list? v)
                                             (andmap (lambda (p)
                                                       (and (list? p)
                                                            (or (= 2 (length p))
                                                                (= 3 (length p)))
                                                            (or (string? (car p))
-                                                               (eq? 'root (car p)))
+                                                               (eq? 'root (car p))
+                                                               (eq? 'static-root (car p)))
                                                            (path-string? (cadr p))
                                                            (or (null? (cddr p))
                                                                (regexp? (caddr p)))))
@@ -634,21 +668,31 @@
                                               (regexp-match? (caddr p) (version)))
                                       (let ([dir (simplify-path
                                                   (path->complete-path (cadr p) dir))])
-                                        (if (symbol? (car p))
-                                            ;; add to every table element (to keep
-                                            ;; the choices in order); need a better
-                                            ;; data structure
-                                            (begin
-                                              (unless (hash-ref ht #f #f)
-                                                (hash-set! ht #f null))
-                                              (hash-for-each
-                                               ht
-                                               (lambda (k v)
-                                                 (hash-set! ht k (cons dir v)))))
-                                            ;; single collection:
-                                            (let ([s (string->symbol (car p))])
-                                              (hash-set! ht s (cons (box dir)
-                                                                    (hash-ref ht s null))))))))
+                                        (cond
+                                         [(eq? (car p) 'static-root)
+                                          ;; multi-collection, constant content:
+                                          (for-each
+                                           (lambda (sub)
+                                             (when (directory-exists? (build-path dir sub))
+                                               (let ([k (string->symbol (path->string sub))])
+                                                 (hash-set! ht k (cons dir (hash-ref ht k null))))))
+                                           (directory-list dir))]
+                                         [(eq? (car p) 'root)
+                                          ;; multi-collection, dynamic content:
+                                          ;; Add directory to the #f mapping, and also
+                                          ;; add to every existing table element (to keep
+                                          ;; the choices in order)
+                                          (unless (hash-ref ht #f #f)
+                                            (hash-set! ht #f null))
+                                          (hash-for-each
+                                           ht
+                                           (lambda (k v)
+                                             (hash-set! ht k (cons dir v))))]
+                                         [else
+                                          ;; single collection:
+                                          (let ([s (string->symbol (car p))])
+                                            (hash-set! ht s (cons (box dir)
+                                                                  (hash-ref ht s null))))]))))
                                   v)
                                  ;; reverse all lists:
                                  (hash-for-each

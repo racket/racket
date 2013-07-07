@@ -12,6 +12,7 @@
                #:version-regexp [version-regexp #f]
                #:shared? [shared? #f]
                #:root? [root? #f]
+               #:static-root? [static-root? #f]
                #:remove? [remove? #f]
                #:show? [show? #f]
                #:repair? [repair? #f]
@@ -67,8 +68,9 @@
                                (content-error "entry is a not a 2- or 3-element list: " e))
                            #:when 
                            (or (or (string? (car e))
-                                   (eq? 'root (car e)))
-                               (content-error "entry's first element is not a string or 'root: " e))
+                                   (eq? 'root (car e))
+                                   (eq? 'static-root (car e)))
+                               (content-error "entry's first element is not a string, 'root, or 'static-root: " e))
                            #:when 
                            (or (path-string? (cadr e))
                                (content-error "entry's second element is not a path string: " e))
@@ -115,7 +117,9 @@
                                             (path->complete-path d))
                                            #:more-than-root? #t))]
               [a-name (if root?
-                          'root
+                          (if static-root?
+                              'static-root
+                              'root)
                           (and d
                                (or name
                                    (let-values ([(base name dir?) (split-path dp)])
@@ -136,7 +140,8 @@
                            (and name
                                 (not (equal? (car e) name)))
                            (and root?
-                                (not (eq? (car e) 'root)))
+                                (not (or (eq? (car e) 'root)
+                                         (eq? (car e) 'static-root))))
                            (and version-regexp
                                 (pair? (cddr e))
                                 (not (equal? (caddr e) version-regexp)))))
@@ -181,7 +186,8 @@
   (when show?
     (for ([e (in-list new-table)])
       (printf " ~a~s  path: ~s~a\n"
-              (if (eq? (car e) 'root)
+              (if (or (eq? (car e) 'root)
+                      (eq? (car e) 'static-root))
                   ""
                   "collection: ")
               (car e)
@@ -197,7 +203,8 @@
       (if root?
           ;; Return root paths:
           (for/list ([e (in-list new-table)]
-                     #:when (eq? 'root (car e))
+                     #:when (or (eq? 'root (car e))
+                                (eq? 'static-root (car e)))
 		     #:when (or (null? (cddr e))
 				(regexp-match? (caddr e) (version))))
             (simplify (cadr e)))

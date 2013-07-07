@@ -311,6 +311,13 @@ sub-sub-commands:
         definition in @filepath{info.rkt} is changed (i.e., he package must be removed and re-installed
         for the change to take effect).}
 
+  @item{@DFlag{static-link} --- Implies @DFlag{link}, and also indicates that subdirectories
+        of the given directory will not change for each given directory that implements a
+        @tech{multi-collection package}.}
+
+  @item{@DFlag{skip-installed} --- Ignore any @nonterm{pkg-source}
+        whose name corresponds to an already-installed package.}
+
  @item{@DFlag{scope} @nonterm{scope} --- Selects the @tech{package scope} for installation, where @nonterm{scope} is one of
   @itemlist[
    @item{@exec{installation} --- Install packages for all users of a Racket installation, rather than user-specific.}
@@ -925,12 +932,13 @@ requires reinstallation of all packages every version change.)
 
 @subsection{Where and how are packages installed?}
 
-User-specific and Racket-version-specific packages are in @racket[(build-path
-(find-system-path 'addon-dir) (version) "pkgs")], user-specific and
-all-version packages are in @racket[(build-path (find-system-path
-'addon-dir) "pkgs")], and installation-wide packages are in
-@racket[(build-path (find-lib-dir) "pkgs")]. They are linked as
-collection roots with @exec{raco link}.
+User-specific and Racket-version-specific packages are in
+@racket[(build-path (find-system-path 'addon-dir) (version) "pkgs")],
+user-specific and all-version packages are in @racket[(build-path
+(find-system-path 'addon-dir) "pkgs")], and installation-wide packages
+are in @racket[(build-path (find-lib-dir) "pkgs")]. They are linked as
+collections (for single-collection packages) collection roots (for
+multi-collection packages) with @exec{raco link}.
 
 @subsection{How are user-specific and installation-wide @tech{package scopes}
 related for conflict checking?}

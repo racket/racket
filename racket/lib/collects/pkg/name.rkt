@@ -95,7 +95,9 @@
     (define name (extract-archive-name name+ext))
     (values name 'file)]
    [(if type
-        (or (eq? type 'dir) (eq? type 'link))
+        (or (eq? type 'dir) 
+            (eq? type 'link)
+            (eq? type 'static-link))
         (path-string? s))
     (define-values (base name dir?) (split-path s))
     (define dir-name (and (path? name) (path->string name)))

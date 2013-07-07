@@ -74,7 +74,10 @@
     "  search-auto: like 'search-ask' but does not ask for permission to install")]
   [#:bool force () "Ignores conflicts"]
   [#:bool ignore-checksums () "Ignores checksums"]
+  #:once-any
   [#:bool link () ("Link a directory package source in place")]
+  [#:bool static-link () ("Link in place, promising collections do not change")]
+  #:once-each
   [#:bool skip-installed () ("Skip a <pkg-source> if already installed")]
   #:once-any
   [(#:sym scope [installation user shared] #f) scope ()
@@ -107,7 +110,10 @@
                        #:ignore-checksums? ignore-checksums
                        #:skip-installed? skip-installed
                        (for/list ([p (in-list pkg-source)])
-                         (pkg-desc p (or (and link 'link) type) name #f))))))
+                         (define a-type (or (and link 'link) 
+                                            (and static-link 'static-link)
+                                            type))
+                         (pkg-desc p a-type name #f))))))
      (setup no-setup setup-collects jobs)))]
  [update
   "Update packages"

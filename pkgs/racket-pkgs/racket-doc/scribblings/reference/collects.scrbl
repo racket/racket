@@ -217,12 +217,16 @@ A @tech{collection links file} is @racket[read] with default reader
 parameter settings to obtain a list. Every element of the list must be
 a link specification with one of the forms @racket[(list _string
 _path)], @racket[(list _string _path _regexp)], @racket[(list 'root
-_path)], or @racket[(list 'root _regexp)]. A @racket[_string] names a
+_path)], @racket[(list 'root _path _regexp)], @racket[(list 'static-root
+_path)], @racket[(list 'static-root _path _regexp)]. A @racket[_string] names a
 top-level @tech{collection}, in which case @racket[_path] is a path
 that can be used as the collection's path (directly, as opposed to a
 subdirectory of @racket[_path] named by @racket[_string]). A
 @racket['root] entry, in contrast, acts like an path in
-@racket[(current-library-collection-paths)]. If @racket[_path] is a
+@racket[(current-library-collection-paths)].  A
+@racket['static-root] entry is like a @racket['root] entry, but
+where the immediate content of the directory is assumed not to change unless the
+@tech{collection links file} changes. If @racket[_path] is a
 relative path, it is relative to the directory containing the
 @tech{collection links file}. If @racket[_regexp] is specified in a
 link, then the link is used only if @racket[(regexp-match?  _regexp

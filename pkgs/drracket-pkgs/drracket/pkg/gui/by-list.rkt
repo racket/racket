@@ -234,7 +234,9 @@
       (send install-button enable (and (pair? sels)
                                        (or (and all-installed?
                                                 (not (for/or ([p (in-list sels)])
-                                                       (eq? 'link (car (pkg-info-orig-pkg (cdr p)))))))
+                                                       (define kind (car (pkg-info-orig-pkg (cdr p))))
+                                                       (or (eq? 'link kind)
+                                                           (eq? 'static-link kind)))))
                                            none-installed?)))
       (send install-button set-label (if all-installed?
                                          (string-constant install-pkg-update)
@@ -462,6 +464,7 @@
                     (case (car (pkg-info-orig-pkg info))
                       [(catalog) ""]
                       [(link) "="]
+                      [(static-link) "="]
                       [(url) "@"]))]))
             (for/list ([p list-pkgs]) (->label-string (db:pkg-name p)))
             (for/list ([p list-pkgs]) (->label-string (db:pkg-author p)))

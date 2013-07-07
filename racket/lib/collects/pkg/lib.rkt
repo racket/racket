@@ -613,7 +613,7 @@
        (let ()
          (match-define (pkg-info orig-pkg checksum _) info)
          (match orig-pkg
-           [`(link ,orig-pkg-dir)
+           [`(,(or 'link 'static-link) ,orig-pkg-dir)
             orig-pkg-dir]
            [_
             (build-path (pkg-installed-dir) pkg-name)]))))
@@ -662,7 +662,7 @@
       (for/fold ([pkg #f] [subpath #f]) ([(k v) (in-hash (read-pkg-db/cached))]
                                          #:when (not pkg))
         (match (pkg-info-orig-pkg v)
-          [`(link ,orig-pkg-dir)
+          [`(,(or 'link 'static-link) ,orig-pkg-dir)
            (define e (explode orig-pkg-dir))
            (if (sub-path? <= p e)
                (values k (build-path* (list-tail p (length e))))
@@ -687,7 +687,7 @@
   (define shared? (and user?
                        (eq? (current-pkg-scope) 'shared)))
   (match orig-pkg
-    [`(link ,_)
+    [`(,(or 'link 'static-link) ,_)
      (links pkg-dir
             #:remove? #t
             #:user? user?
@@ -1040,14 +1040,16 @@
            (unless staged?
              (delete-directory/files pkg-dir))))]
    [(or (eq? type 'dir)
-        (eq? type 'link))
+        (eq? type 'link)
+        (eq? type 'static-link))
     (unless (directory-exists? pkg)
       (pkg-error "no such directory\n  path: ~a" pkg))
     (let ([pkg (directory-path-no-slash pkg)])
       (cond
-       [(eq? type 'link)
+       [(or (eq? type 'link)
+            (eq? type 'static-link))
         (install-info pkg-name
-                      `(link ,(simple-form-path* pkg))
+                      `(,type ,(simple-form-path* pkg))
                       pkg
                       #f #f
                       (directory->module-paths pkg pkg-name metadata-ns))]
@@ -1363,7 +1365,9 @@
                                  (path? scope)))
                 #:shared? (eq? 'shared scope)
                 #:file (scope->links-file scope)
-                #:root? (not single-collect))
+                #:root? (not single-collect)
+                #:static-root? (and (pair? orig-pkg)
+                                    (eq? 'static-link (car orig-pkg))))
          (define this-pkg-info
            (if single-collect
                (sc-pkg-info orig-pkg checksum auto? single-collect)
@@ -1503,13 +1507,13 @@
   (match-define (pkg-info orig-pkg checksum _)
                 (package-info pkg-name))
   (define ty (first orig-pkg))
-  (not (member ty '(link dir file))))
+  (not (member ty '(link static-link dir file))))
 
 (define ((update-package download-printf) pkg-name)
   (match-define (pkg-info orig-pkg checksum auto?)
                 (package-info pkg-name))
   (match orig-pkg
-    [`(link ,_)
+    [`(,(or 'link 'static-link) ,_)
      (pkg-error (~a "cannot update linked packages\n"
                     "  package name: ~a\n"
                     "  package source: ~a")
@@ -2258,7 +2262,7 @@
         (values (or/c #f string?) (or/c #f 'same path?)))]
   [pkg-desc 
    (-> string? 
-       (or/c #f 'file 'dir 'link 'file-url 'dir-url 'github 'name) 
+       (or/c #f 'file 'dir 'link 'static-link 'file-url 'dir-url 'github 'name) 
        (or/c string? #f) 
        boolean?
        pkg-desc?)]
