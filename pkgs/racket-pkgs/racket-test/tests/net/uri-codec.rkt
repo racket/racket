@@ -7,6 +7,7 @@
   (define sepmode current-alist-separator-mode)
   (test (uri-decode "%Pq") => "%Pq"
         (uri-decode "%P")  => "%P"
+        (uri-decode "λ")   => "λ"
 
         (alist->form-urlencoded '([a . "hel+lo \u7238"]))
         => "a=hel%2Blo+%E7%88%B8"
