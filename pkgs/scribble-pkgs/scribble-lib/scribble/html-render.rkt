@@ -259,9 +259,12 @@
     (define (path->relative p)
       (let ([p (path->main-doc-relative p)])
         (if (path? p)
-          (let ([p (path->collects-relative p)])
+          (let ([p (path->root-relative p)])
             (if (path? p)
-              (path->root-relative p)
+              (let ([p (path->collects-relative p)])
+                (if (path? p)
+                    p
+                    (intern-taglet p)))
               (intern-taglet p)))
           (intern-taglet p))))
 
