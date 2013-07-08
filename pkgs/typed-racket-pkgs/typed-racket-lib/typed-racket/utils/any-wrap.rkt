@@ -43,11 +43,13 @@
       (when skipped? (fail s));  "Opaque struct type!"
       (apply chaperone-struct s (extract-functions type)))
 
+    (define (base-val? e)
+      (or (number? e) (string? e) (char? e) (symbol? e)
+          (null? e) (regexp? e) (eq? undef e) (path? e)
+          (regexp? e) (keyword? e) (bytes? e) (boolean? e) (void? e)))
+  
     (match v
-      [(? (lambda (e)
-            (or (number? e) (string? e) (char? e) (symbol? e)
-                (null? e) (regexp? e) (eq? undef e) (path? e)
-                (regexp? e) (keyword? e) (bytes? e) (boolean? e) (void? e))))
+      [(? base-val?)
        v]
       [(cons x y) (cons (t x) (t y))]
       [(? vector? (? immutable?))
@@ -56,13 +58,15 @@
         (for/vector #:length (vector-length v)
                     ([i (in-vector v)]) (t i)))]
       [(? box? (? immutable?)) (box-immutable (t (unbox v)))]
-      ;; fixme -- handling keys
+      ;; fixme -- handling keys properly makes it not a chaperone
       ;; [(? hasheq? (? immutable?))
       ;;  (for/hasheq ([(k v) (in-hash v)]) (values k v))]
       ;; [(? hasheqv? (? immutable?))
       ;;  (for/hasheqv ([(k v) (in-hash v)]) (values k v))]
 
-      [(? hash? (? immutable?))
+      [(? (λ (e) 
+            (and (hash? e) (immutable? e) 
+                 (not (hash-eqv? e)) (not (hash-eq? e)))))
        (for/hash ([(k v) (in-hash v)]) (values (t k) (t v)))]
       [(? vector?) (chaperone-vector v
                                      (lambda (v i e) (t e))
@@ -71,8 +75,12 @@
                                (lambda (v e) (t e))
                                (lambda (v e) (fail v)))]
       [(? hash?) (chaperone-hash v
-                                 (lambda (h k) (values k (lambda (h k v) (t v)))) ;; ref
-                                 (lambda (h k n) (if (immutable? v) (values k n) (fail v))) ;; set
+                                 (lambda (h k)
+                                   (values k (lambda (h k v) (t v)))) ;; ref
+                                 (lambda (h k n)
+                                   (if (immutable? v) 
+                                       (values k n)
+                                       (fail v))) ;; set
                                  (lambda (h v) v) ;; remove
                                  (lambda (h k) (t k)))] ;; key
       [(? evt?) (chaperone-evt v (lambda (e) (values e t)))]
