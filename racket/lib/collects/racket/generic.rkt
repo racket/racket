@@ -3,7 +3,7 @@
          racket/contract/combinator
          (rename-in "private/generic.rkt"
                     [define-generics define-generics/pre])
-         (for-syntax racket/base racket/local racket/syntax))
+         (for-syntax racket/base racket/local racket/syntax syntax/stx))
 
 ;; Convenience layer on top of racket/private/generic.
 ;; To avoid circular dependencies, racket/private/generic cannot use
@@ -14,40 +14,64 @@
 
 (provide define-generics define/generic)
 
+(begin-for-syntax
+
+  (define (parse stx methods table defaults)
+    (syntax-case stx ()
+      [(#:defined-table name . args)
+       (identifier? #'name)
+       (if table
+           (wrong-syntax (stx-car stx)
+                         "duplicate #:defined-table specification")
+           (parse #'args methods #'name defaults))]
+      [(#:defined-table . other)
+       (wrong-syntax (stx-car stx) "invalid #:defined-table specification")]
+      [(#:defaults ([pred defn ...] ...) . args)
+       (if defaults
+           (wrong-syntax (stx-car stx) "duplicate #:defaults specification")
+           (parse #'args methods table #'([pred defn ...] ...)))]
+      [(#:defaults . other)
+       (wrong-syntax (stx-car stx) "invalid #:defaults specification")]
+      [(kw . args)
+       (keyword? (syntax-e #'kw))
+       (wrong-syntax #'kw "invalid keyword argument")]
+      [((_ . _) . args)
+       (if methods
+           (wrong-syntax (stx-car stx) "duplicate methods list specification")
+           (let loop ([methods (list (stx-car stx))] [stx #'args])
+             (syntax-case stx ()
+               [((_ . _) . args) (loop (cons (stx-car stx) methods) #'args)]
+               [_ (parse stx (reverse methods) table defaults)])))]
+      [(other . args)
+       (wrong-syntax #'other
+                     "expected a method identifier with formal arguments")]
+      [() (values (or methods '())
+                  (or table (generate-temporary 'table))
+                  (or defaults '()))]
+      [other
+       (wrong-syntax #'other
+                     "expected a list of arguments with no dotted tail")])))
+
 (define-syntax (define-generics stx) ; allows out-of-order / optional kw args
-  (syntax-case stx () ; can't use syntax-parse, since it depends on us
-    [(_ name (generic . generics-args) ... #:defaults defaults)
-     #'(define-generics name
-         #:defined-table defined-table
-         (generic . generics-args) ...
-         #:defaults defaults)]
-    [(_ name #:defined-table defined-table (generic . generics-args) ...)
-     #'(define-generics name
-         #:defined-table defined-table
-         (generic . generics-args) ...
-         #:defaults ())]
-    [(_ name (generic . generics-args) ...)
-     #'(define-generics name
-         #:defined-table defined-table
-         (generic . generics-args) ...
-         #:defaults ())]
-    [(_ name
-       #:defined-table defined-table
-       (generic . generics-args) ...
-       #:defaults defaults)
-     (local [(define name-str (symbol->string (syntax-e #'name)))
-             (define (id . strs)
-               (datum->syntax
-                #'name (string->symbol (apply string-append strs)) #'name))]
-      (with-syntax ([name? (id name-str "?")]
-                    [gen:name (id "gen:" name-str)])
-       #'(define-generics/pre (name gen:name prop:name name?
-                                    #:defined-table defined-table
-                                    #:defaults defaults
-                                    ;; the following are not public
+  (syntax-case stx ()
+    [(_ name . rest)
+     (parameterize ([current-syntax-context stx])
+       (unless (identifier? #'name)
+         (wrong-syntax #'name "expected an identifier"))
+       (define-values (methods table defaults)
+         (parse #'rest #f #f #f))
+       (define/with-syntax [default ...] defaults)
+       (define/with-syntax [method ...] methods)
+       (define/with-syntax pred-name (format-id #'name "~a?" #'name))
+       (define/with-syntax gen-name (format-id #'name "gen:~a" #'name))
+       (define/with-syntax prop-name (generate-temporary #'name))
+       (define/with-syntax table-name table)
+       #'(define-generics/pre (name gen-name prop-name pred-name
+                                    #:defined-table table-name
+                                    #:defaults [default ...]
                                     #:prop-defined-already? #f
                                     #:define-contract define-generics-contract)
-           (generic . generics-args) ...)))]))
+           method ...))]))
 
 ;; generate a contract combinator for instances of a generic interface
 (define-syntax (define-generics-contract stx)
