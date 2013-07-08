@@ -14,11 +14,12 @@
 ;; provide a backwards compatible interface (just in case)
 ;; i.e., exporting prop:ordered-dict as opposed to using a
 ;;       generated hidden property.
-(define-generics (ordered-dict gen:ordered-dict prop:ordered-dict ordered-dict?
-                               #:defined-table dict-def-table
-                               #:defaults ()
-                               ;; private version needs all kw args, in order
-                               #:define-contract #f)
+(define-primitive-generics
+  (ordered-dict gen:ordered-dict prop:ordered-dict ordered-dict?
+                #:defined-table dict-def-table
+                #:defaults ()
+                ;; private version needs all kw args, in order
+                #:define-contract #f)
   (dict-iterate-least ordered-dict)
   (dict-iterate-greatest ordered-dict)
   (dict-iterate-least/>? ordered-dict key)

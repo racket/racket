@@ -10,8 +10,8 @@
 (define-for-syntax (keyword-stx? v)
   (keyword? (syntax->datum v)))
 
-(provide define-generics define/generic)
-(define-syntax (define-generics stx)
+(provide define-primitive-generics define/generic)
+(define-syntax (define-primitive-generics stx)
   (syntax-case stx () ; can't use syntax-parse, since it depends on us
     ;; keyword arguments must _all_ be provided _in_order_. For the
     ;; user-facing version of `define-generics', see racket/generic.

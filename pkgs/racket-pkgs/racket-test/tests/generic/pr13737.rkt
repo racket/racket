@@ -20,10 +20,11 @@
 (let ()
   (local-require racket/private/generic)
 
-  (define-generics (foo gen:foo prop:foo foo?
-                        #:defined-table dummy
-                        #:defaults ([number? (define (meth foo #:kw kw) kw)])
-                        #:define-contract #f)
+  (define-primitive-generics
+    (foo gen:foo prop:foo foo?
+         #:defined-table dummy
+         #:defaults ([number? (define (meth foo #:kw kw) kw)])
+         #:define-contract #f)
     (meth foo #:kw kw))
 
   (check-equal? (meth 3 #:kw 5) 5))

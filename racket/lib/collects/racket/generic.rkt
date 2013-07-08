@@ -1,8 +1,7 @@
 #lang racket/base
 (require racket/contract/base
          racket/contract/combinator
-         (rename-in "private/generic.rkt"
-                    [define-generics define-generics/pre])
+         "private/generic.rkt"
          (for-syntax racket/base racket/local racket/syntax syntax/stx))
 
 ;; Convenience layer on top of racket/private/generic.
@@ -66,10 +65,11 @@
        (define/with-syntax gen-name (format-id #'name "gen:~a" #'name))
        (define/with-syntax prop-name (generate-temporary #'name))
        (define/with-syntax table-name table)
-       #'(define-generics/pre (name gen-name prop-name pred-name
-                                    #:defined-table table-name
-                                    #:defaults [default ...]
-                                    #:define-contract define-generics-contract)
+       #'(define-primitive-generics
+           (name gen-name prop-name pred-name
+                 #:defined-table table-name
+                 #:defaults [default ...]
+                 #:define-contract define-generics-contract)
            method ...))]))
 
 ;; generate a contract combinator for instances of a generic interface
