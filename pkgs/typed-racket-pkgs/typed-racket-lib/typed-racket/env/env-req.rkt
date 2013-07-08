@@ -8,7 +8,7 @@
   (parameterize ([current-namespace ns])
     (for ([m (in-list to-require)]
           #:when m)
-      (dynamic-require (collapse-module-path '(submod "." #%type-decl) m)
+      (dynamic-require (module-path-index-join '(submod "." #%type-decl) m)
                        #f))))
 
 (provide add-mod! do-requires)

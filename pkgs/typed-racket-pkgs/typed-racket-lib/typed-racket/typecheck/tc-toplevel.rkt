@@ -392,7 +392,8 @@
                    (match a
                      [(list from to)
                       #`(add-alias (quote-syntax #,from) (quote-syntax #,to))]))))
-          (begin-for-syntax (add-mod! (quote-module-path))))
+          (begin-for-syntax (add-mod! (variable-reference->module-path-index
+                                       (#%variable-reference)))))
       #`(begin
           #,(if (null? (syntax-e #'(new-provs ...)))
                 #'(begin)
