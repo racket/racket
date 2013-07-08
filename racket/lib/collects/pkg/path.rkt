@@ -6,8 +6,9 @@
          get-pkgs-dir
          read-pkgs-db
          read-pkg-file-hash
+         path->pkg
          path->pkg+subpath
-         path->pkg)
+         path->pkg+subpath+collect)
 
 (struct pkg-info (orig-pkg checksum auto?) #:prefab)
 (struct sc-pkg-info pkg-info (collect) #:prefab) ; a pkg with a single collection
@@ -66,7 +67,7 @@
                                [orig-pkg `(catalog ,(cadr (pkg-info-orig-pkg v)))])
                   v)))))
 
-(define (path->pkg+subpath* who given-p cache)
+(define (path->pkg+subpath+collect* who given-p cache want-collect?)
   (unless (path-string? given-p)
     (raise-argument-error who "path-string?" given-p))
   (unless (or (not cache)
@@ -85,9 +86,10 @@
   (define p (explode given-p))
   (define (build-path* l)
     (if (null? l) 'same (apply build-path l)))
-  (for/fold ([pkg #f] [subpath #f]) ([scope (in-list (list* 'user 'shared 
-                                                            (get-pkgs-search-dirs)))]
-                                     #:when (not pkg))
+  (for/fold ([pkg #f] [subpath #f] [collect #f])
+      ([scope (in-list (list* 'user 'shared 
+                              (get-pkgs-search-dirs)))]
+       #:when (not pkg))
     (define d (or (and cache
                        (hash-ref cache `(dir ,scope) #f))
                   (let ([d (explode (get-pkgs-dir scope))])
@@ -105,12 +107,17 @@
       ;; We assume that no one else writes there, so the
       ;; next path element is the package name.
       (define len (length d))
-      (values (path-element->string (list-ref p len))
-              (build-path* (list-tail p (add1 len))))]
+      (define pkg-name (path-element->string (list-ref p len)))
+      (values pkg-name
+              (build-path* (list-tail p (add1 len)))
+              (and want-collect?
+                   (let ([i (hash-ref (read-pkg-db/cached) pkg-name #f)])
+                     (and i (sc-pkg-info? i) (sc-pkg-info-collect i)))))]
      [else
       ;; Maybe it's a linked package
-      (for/fold ([pkg #f] [subpath #f]) ([(k v) (in-hash (read-pkg-db/cached))]
-                                         #:when (not pkg))
+      (for/fold ([pkg #f] [subpath #f] [collect #f])
+          ([(k v) (in-hash (read-pkg-db/cached))]
+           #:when (not pkg))
         (define orig (pkg-info-orig-pkg v))
         (if (and (pair? orig)
                  (or (eq? 'link (car orig))
@@ -118,14 +125,21 @@
             (let ([orig-pkg-dir (cadr orig)])
               (define e (explode orig-pkg-dir))
               (if (sub-path? <= p e)
-                  (values k (build-path* (list-tail p (length e))))
-                  (values #f #f)))
-            (values #f #f)))])))
+                  (values k
+                          (build-path* (list-tail p (length e)))
+                          (and (sc-pkg-info? v) (sc-pkg-info-collect v)))
+                  (values #f #f #f)))
+            (values #f #f #f)))])))
+
+(define (path->pkg+subpath+collect given-p #:cache [cache #f])
+  (path->pkg+subpath+collect* 'path->pkg+subpath+collect given-p cache #t))
 
 (define (path->pkg+subpath given-p #:cache [cache #f])
-  (path->pkg+subpath* 'path->pkg+subpath given-p cache))
+  (define-values (pkg rest rest2)
+    (path->pkg+subpath+collect* 'path->pkg+subpath given-p cache #f))
+  (values pkg rest))
 
 (define (path->pkg given-p #:cache [cache #f])
-  (define-values (pkg rest)
-    (path->pkg+subpath* path->pkg given-p cache))
+  (define-values (pkg rest rest2)
+    (path->pkg+subpath+collect* path->pkg given-p cache #f))
   pkg)

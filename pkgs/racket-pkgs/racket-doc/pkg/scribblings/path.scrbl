@@ -44,6 +44,14 @@ Like @racket[path->pkg], but returns a second value that represents
 the remainder of @racket[path] within the package's directory.}
 
 
+@defproc[(path->pkg+subpath+collect [path path-string?])
+         (values (or/c string? #f) (or/c path? 'same #f) (or/c string? #f))]{
+
+Like @racket[path->pkg+subpath], but returns a third value for a
+collection name if the package is a single-collection package,
+@racket[#f] otherwise.}
+
+
 @defproc[(get-pkgs-dir [scope (or/c 'installation 'user 'shared
                                      (and/c path? complete-path?))]
                        [user-version string? (version)])
