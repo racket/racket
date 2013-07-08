@@ -52,7 +52,7 @@
   .modal h2, .modal .btn { margin: 10px 0 0px; }
   .parallax { height: 300px; width: 100%; background:
   url(img/img_parallax_demo.jpg); }
-  .navbar { background: black }
+  .navbar { background: rgb(245,245,245) }
   pre { color: black }
   p {color: black}
 
@@ -105,22 +105,18 @@
 <body>
 
 
-<div class="navbar" gumby-fixed="top" id="nav1">
+<div class="navbar" gumby-fixed="top" id="nav1" style="border-bottom: 1px solid black">
   <div class="row">
     <a class="toggle" gumby-trigger="#nav1 > .row > ul" href="#"><i class="icon-menu"></i></a>
-    <h1 class="three columns logo">
-      <a href="">
-        <img src="img/logo.png" />
+      <a class="five columns logo" href="">
+        <img class="logo" src="img/logo.png" />
       </a>
-    </h1>
-    <ul class="push_two nine columns">
+    <ul class="five columns">
       <li><a href="https://pkg.racket-lang.org">Packages</a></li>
       <li><a href="http://docs.racket-lang.org">Documentation</a></li>
-      <li><a href="#">Community</a></li>
-      <li><a href="#">Learning</a></li>
-      <li><a href="#">Blog</a></li>
+      <li><a href="http://blog.racket-lang.org">Blog</a></li>
       <li>
-        <button class="medium metro default btn icon-left entypo icon-install">
+        <button class="medium metro info btn icon-left entypo icon-install">
           <a href="#">Download</a>
         </button>
       </li>
@@ -368,43 +364,47 @@ and system builder.</p>
 </div>
 </div>
 
-<div class=row>
+<div class="row">
 <div class="five columns">
 <div class="panetitle">For getting started</div>
-<div class="parlistitem"><a href="http://docs.racket-lang.org/quick/"><strong>Quick</strong>:
+<p><a href="http://docs.racket-lang.org/quick/"><strong>Quick</strong>:
     An Introduction to Racket with
     Pictures</a>
     gives you a taste of Racket.
-</div>
+</p>
 
-<div class="parlistitem"><a href="http://docs.racket-lang.org/more/"><strong>More</strong>:
+<p><a href="http://docs.racket-lang.org/more/"><strong>More</strong>:
     Systems Programming with Racket</a>
     dives
     much deeper and much faster, showing how to build a complete
-    continuation-based web server.</div>
+    continuation-based web server.</p>
 
-<div class="parlistitem"><a href="http://docs.racket-lang.org/guide/"><strong>Guide</strong>:
+<p><a href="http://docs.racket-lang.org/guide/"><strong>Guide</strong>:
     Racket</a> starts with a tutorial on Racket basics, and then it
-    describes the rest of the Racket language.</div>
+    describes the rest of the Racket language.
+</p>
 </div>
+
 <div class="five columns push_two">
 <div class="panetitle">For experienced Racketeers</div>
-<div class="parlistitem">
+<p>
   <a href="http://docs.racket-lang.org/reference/"><strong>Reference</strong>:
     Racket</a> provides comprehensive coverage of all of Racket.
-</div>
+</p>
 
-<div class="parlistitem"><a href="http://docs.racket-lang.org/continue/"><strong>Continue</strong>:
+<p><a href="http://docs.racket-lang.org/continue/"><strong>Continue</strong>:
     Web Applications in Racket</a>
   describes how to use the
     Racket <a href="http://docs.racket-lang.org/web-server/">web
     server</a> to build dynamic web applications.
-</div>
+</p>
 
-<div class="parlistitem"><a href="http://docs.racket-lang.org/pkg/"><strong>Package
+<p><a href="http://docs.racket-lang.org/pkg/"><strong>Package
     Management</strong></a> explains how to install
     <a href="https://pkg.racket-lang.org">packages</a>, and how to
-    build and distribute your own.</div>
+    build and distribute your own.</p>
+</div>
+
 </div>
 </div>
 </div>
@@ -485,7 +485,13 @@ and system builder.</p>
 
 
 <div class="four columns">
-<div class="panetitle">News</div>
+<div class="panetitle">News & Events</div>
+
+<p><a href="http://con.racket-lang.org/">RacketCon</a> — the annual
+  Racket meeting, coming up in September.  Previously
+  in <a href="http://con.racket-lang.org/2012">2012</a>
+  and <a href="http://con.racket-lang.org/2012">2011</a>.</p>
+
 <p><a href="http://blog.racket-lang.org/">Blog</a>
   — announcements, helpful hints, and thoughtful rants.</p>
 <p><a href="http://twitter.com/#!/racketlang">Twitter</a>
@@ -501,7 +507,12 @@ Chat in the <tt style="background-color: #d8d8e8;"><big><strong>#racket</strong>
 <a href="http://freenode.net"><tt>freenode.net</tt></a> — an informal
 discussion channel for all things related to Racket.
 (<a href="https://botbot.me/freenode/racket/">Browse the logs</a>.)</p>
+
+<p><a href="http://racket-lang.org/people.html">People</a>   —
+The people behind Racket.</p>
 </div>
+
+
 
 <div class="four columns">
 <div class="panetitle">Contributing</div>
