@@ -12,7 +12,7 @@
          file/convertible
          mzlib/runtime-path
          setup/main-doc
-         setup/main-collects
+         setup/collects
          setup/dirs
          net/url
          net/uri-codec
@@ -259,7 +259,7 @@
     (define (path->relative p)
       (let ([p (path->main-doc-relative p)])
         (if (path? p)
-          (let ([p (path->main-collects-relative p)])
+          (let ([p (path->collects-relative p)])
             (if (path? p)
               (path->root-relative p)
               (intern-taglet p)))
@@ -274,7 +274,7 @@
                        p)])
             (if (path? p)
                 p
-                (main-collects-relative->path p)))))
+                (collects-relative->path p)))))
     
     ;; ----------------------------------------
 
@@ -711,14 +711,14 @@
                                      (let ([v (html-defaults-prefix-path defaults)])
                                        (if (bytes? v)
                                            v
-                                           (main-collects-relative->path v))))
+                                           (collects-relative->path v))))
                                 scribble-prefix-html)]
                [style-file (or style-file 
                                (and defaults
                                     (let ([v (html-defaults-style-path defaults)])
                                       (if (bytes? v)
                                           v
-                                          (main-collects-relative->path v))))
+                                          (collects-relative->path v))))
                                scribble-style-css)]
                [script-file (or script-file scribble-js)]
                [title (cond [(part-title-content d)
@@ -1097,7 +1097,7 @@
                         [width ,(number->string w)]
                         [height ,(number->string h)])))))]
         [(image-element? e)
-         (let* ([src (main-collects-relative->path (image-element-path e))]
+         (let* ([src (collects-relative->path (image-element-path e))]
                 [suffixes (image-element-suffixes e)]
                 [scale (image-element-scale e)]
                 [to-num

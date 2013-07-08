@@ -1,5 +1,5 @@
 #lang scheme/base
-(require setup/main-collects
+(require setup/collects
          racket/contract/base
          scribble/core
          scribble/base
@@ -52,7 +52,7 @@
 
 (define sigplan-extras
   (let ([abs (lambda (s)
-               (path->main-collects-relative
+               (path->collects-relative
                 (collection-file-path s "scribble" "sigplan")))])
     (list
      (make-css-addition (abs "sigplan.css"))

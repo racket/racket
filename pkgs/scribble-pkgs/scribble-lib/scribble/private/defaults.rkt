@@ -1,7 +1,7 @@
 #lang scheme/base
 (require scribble/core
          scribble/latex-properties
-         setup/main-collects)
+         setup/collects)
 
 (provide scribble-file
          downloaded-file
@@ -13,7 +13,7 @@
       (cons new properties)))
 
 (define (scribble-file s)
-  (path->main-collects-relative (collection-file-path s "scribble")))
+  (path->collects-relative (collection-file-path s "scribble")))
 
 (define (downloaded-file s)
   (build-path (find-system-path 'addon-dir) s))

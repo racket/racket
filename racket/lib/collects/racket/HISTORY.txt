@@ -3,6 +3,11 @@ Added call-with-default-reading-parameterization
 racket/file: added call-with-atomic-output-file
 pkg/path: added, re-exported by pkg/lib
 setup/path-to-relative: added <pkg> results
+racket/runtime-path: special handling for paths that
+ correspond to collection-file-path results, instead of
+ paths that are relative to the main "collects"
+scribble: same change as for racket/runtime-path related
+ to "collects"-relative paths
 
 Version 5.3.900.4
 Added filesystem-change-evt, filesystem-change-evt?, and

@@ -6,7 +6,7 @@
          (prefix-in s/b: scribble/base)
          scribble/decode
          "../private/defaults.rkt"
-         setup/main-collects
+         setup/collects
          scribble/html-properties
          scribble/latex-properties
          scribble/latex-prefix
@@ -38,7 +38,7 @@
 
 (define cls-file
   (let ([p (scribble-file "lncs/llncs.cls")])
-    (if (file-exists? (main-collects-relative->path p))
+    (if (file-exists? (collects-relative->path p))
         p
         (downloaded-file "llncs.cls"))))
 
@@ -52,7 +52,7 @@
 
 (define lncs-extras
   (let ([abs (lambda (s)
-               (path->main-collects-relative
+               (path->collects-relative
                 (collection-file-path s "scribble" "lncs")))])
     (list
      (make-css-addition (abs "lncs.css"))

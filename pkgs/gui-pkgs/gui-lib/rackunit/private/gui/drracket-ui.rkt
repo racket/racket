@@ -1,6 +1,5 @@
 #lang racket/base
-(require mzlib/etc
-         "drracket-link.rkt")
+(require "drracket-link.rkt")
 
 ;; Procedures which *may* be overridden by DrRacket to do useful things.
 ;; Or they may not be.
@@ -49,7 +48,7 @@
                           (not (regexp-match?
                                 (regexp-quote
                                  (path->string
-                                  (this-expression-source-directory)))
+                                  (collection-path "rackunit" "private" "gui")))
                                 (path->string src)))))))
             srclocs)))
 

@@ -139,6 +139,10 @@
                        (module-path-index-join p base))))]
               [else (error 'runtime-path "unknown form: ~.s" p)])))
          paths)))
+
+(define (path-of p)
+  (let-values ([(base name dir?) (split-path p)])
+    base))
   
 (define-for-syntax (register-ext-files var-ref paths)
   (let ([modname (variable-reference->resolved-module-path var-ref)])
@@ -147,7 +151,7 @@
 
 (define-syntax (-define-runtime-path stx)
   (syntax-case stx ()
-    [(_ orig-stx (id ...) expr to-list to-values)
+    [(_ orig-stx (id ...) expr to-list to-values need-dir?)
      (let ([ids (syntax->list #'(id ...))])
        (unless (memq (syntax-local-context) '(module module-begin top-level))
          (raise-syntax-error #f "allowed only at the top level" #'orig-stx))
@@ -167,11 +171,14 @@
        #`(begin
            (define-values (id ...)
              (let-values ([(id ...) expr])
-               (let ([get-dir (lambda ()
-                                #,(datum->syntax
-                                   #'orig-stx
-                                   `(,#'this-expression-source-directory)
-                                   #'orig-stx))])
+               (let ([get-dir #,(if (syntax-e #'need-dir?)
+                                    #`(lambda ()
+                                        (path-of
+                                         #,(datum->syntax
+                                            #'orig-stx
+                                            `(,#'this-expression-source-file)
+                                            #'orig-stx)))
+                                    #'void)])
                  (apply to-values (resolve-paths (#%variable-reference)
                                                  get-dir
                                                  (to-list id ...))))))
@@ -183,19 +190,19 @@
 
 (define-syntax (define-runtime-path stx)
   (syntax-case stx ()
-    [(_ id expr) #`(-define-runtime-path #,stx (id) expr list values)]))
+    [(_ id expr) #`(-define-runtime-path #,stx (id) expr list values #t)]))
 
 (define-syntax (define-runtime-paths stx)
   (syntax-case stx ()
-    [(_ (id ...) expr) #`(-define-runtime-path #,stx (id ...) expr list values)]))
+    [(_ (id ...) expr) #`(-define-runtime-path #,stx (id ...) expr list values #t)]))
 
 (define-syntax (define-runtime-path-list stx)
   (syntax-case stx ()
-    [(_ id expr) #`(-define-runtime-path #,stx (id) expr values list)]))
+    [(_ id expr) #`(-define-runtime-path #,stx (id) expr values list #t)]))
 
 (define-syntax (define-runtime-module-path-index stx)
   (syntax-case stx ()
-    [(_ id expr) #`(-define-runtime-path #,stx (id) `(module ,expr ,(#%variable-reference)) list values)]))
+    [(_ id expr) #`(-define-runtime-path #,stx (id) `(module ,expr ,(#%variable-reference)) list values #f)]))
 
 (define-syntax (runtime-paths stx)
   (syntax-case stx ()

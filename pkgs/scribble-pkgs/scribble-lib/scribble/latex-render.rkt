@@ -7,7 +7,7 @@
          racket/port
          racket/string
          racket/list
-         setup/main-collects
+         setup/collects
          file/convertible)
 (provide render-mixin
          make-render-part-mixin)
@@ -76,14 +76,14 @@
                                    (let ([v (latex-defaults-prefix defaults)])
                                      (cond
                                       [(bytes? v) v]
-                                      [else (main-collects-relative->path v)])))
+                                      [else (collects-relative->path v)])))
                               scribble-prefix-tex)]
              [style-file (or style-file 
                              (and defaults
                                   (let ([v (latex-defaults-style defaults)])
                                     (cond
                                      [(bytes? v) v]
-                                     [else (main-collects-relative->path v)])))
+                                     [else (collects-relative->path v)])))
                              scribble-style-tex)]
              [all-style-files (cons scribble-tex
                                     (append (extract-part-style-files
@@ -330,7 +330,7 @@
                                   (check-render)
                                   (let ([fn (install-file
                                              (select-suffix 
-                                              (main-collects-relative->path
+                                              (collects-relative->path
                                                (image-element-path e))
                                               (image-element-suffixes e) 
                                               '(".pdf" ".ps" ".png")))])

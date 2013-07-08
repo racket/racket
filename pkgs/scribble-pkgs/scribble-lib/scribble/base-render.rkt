@@ -6,7 +6,7 @@
          mzlib/serialize
          scheme/file
          scheme/path
-         setup/main-collects
+         setup/collects
          setup/path-relativize
          file/convertible
          net/url-structs
@@ -142,7 +142,7 @@
               (for/list ([(k v) (in-hash ht)])
                 (cons v (if (or (bytes? k) (url? k))
                             k 
-                            (main-collects-relative->path k))))
+                            (collects-relative->path k))))
               <
               #:key car))))
 
@@ -751,7 +751,7 @@
                                (style-properties (part-style d)))])
             (when extras
               (for ([fn (in-list (auto-extra-files-paths extras))])
-                (install-file (main-collects-relative->path fn)
+                (install-file (collects-relative->path fn)
                               #:private-name? #f)))))))
 
     (define/public (render ds fns ri)

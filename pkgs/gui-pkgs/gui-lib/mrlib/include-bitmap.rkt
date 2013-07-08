@@ -31,7 +31,7 @@
        (with-syntax ([content content]
                      [c-file (path->main-collects-relative c-file)])
          (syntax/loc stx
-           (get-or-load-bitmap content 'c-file type))))]))
+           (get-or-load-bitmap content 'path-spec type))))]))
 
 (define-syntax (include-bitmap/relative-to stx)
   (syntax-case stx ()

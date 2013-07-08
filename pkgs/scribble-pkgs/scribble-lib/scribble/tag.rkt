@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/contract/base
          syntax/modcollapse
-         setup/main-collects
+         setup/collects
          scribble/core
          ;; Needed to normalize planet version numbers:
          (only-in planet/resolver get-planet-module-path/pkg)
@@ -66,7 +66,7 @@
                    (module-path-index-resolve mod))])
           (if (path? rp)
               (intern-taglet 
-               (path->main-collects-relative rp))
+               (path->collects-relative rp))
               rp))
         (let ([p (if (and (pair? p)
                           (eq? (car p) 'planet))

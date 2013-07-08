@@ -77,7 +77,7 @@
               (define (get-docs)
                 (list (quote-syntax (req ... ...))
                       (quote-syntax (expr ...))
-                      (quote-syntax/keep-srcloc doc-body))))))
+                      (quote-syntax/keep-srcloc #:source 'doc doc-body))))))
         ;; normal mode: return an identifier that holds the document:
         (with-syntax ([((id d) ...) #'doc-body])
           #'(begin-for-syntax

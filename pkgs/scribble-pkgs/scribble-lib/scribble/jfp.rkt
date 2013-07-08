@@ -1,5 +1,5 @@
 #lang scheme/base
-(require setup/main-collects
+(require setup/collects
          scribble/core
          (except-in scribble/base author)
          scribble/decode
@@ -13,7 +13,7 @@
 
 (define jfp-extras
   (let ([abs (lambda (s)
-               (path->main-collects-relative
+               (path->collects-relative
                 (collection-file-path s "scribble" "jfp")))])
     (list
      (make-css-addition (abs "jfp.css"))

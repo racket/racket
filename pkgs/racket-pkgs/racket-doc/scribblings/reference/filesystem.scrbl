@@ -657,10 +657,9 @@ follows from the @racket[define-runtime-path] syntactic form:
 ]
 
 In the latter two cases, the path is normally preserved in
-(platform-specific) byte form. If it is is within the result of
-@racket[find-collects-dir], however, it the path is recorded relative
-to @racket[(find-collects-dir)], and it is reconstructed using
-@racket[(find-collects-dir)] at run time.
+(platform-specific) byte form, but if the enclosing path corresponds to a
+result of @racket[collection-file-path], then the path is record as
+relative to the corresponding module path.
 
 Examples:
 

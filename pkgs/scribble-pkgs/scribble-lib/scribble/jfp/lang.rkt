@@ -2,7 +2,7 @@
 (require scribble/doclang
          (except-in scribble/base author)
          scribble/jfp
-         setup/main-collects
+         setup/collects
          "../private/defaults.rkt"
          net/ftp
          racket/file
@@ -26,7 +26,7 @@
 
 (define cls-file
   (let ([p (scribble-file "jfp/jfp1.cls")])
-    (if (file-exists? (main-collects-relative->path p))
+    (if (file-exists? (collects-relative->path p))
         p
         (downloaded-file "jfp1.cls"))))
 
