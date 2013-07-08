@@ -285,7 +285,7 @@
        (begin (quote-syntax (define-type-alias-internal nm rec-nm ty args))
               (#%plain-app values)))
      (values #'nm #'rec-nm #'ty (syntax-e #'args))]
-    ;; this version if for `let`-like bodies
+    ;; this version is for `let`-like bodies
     [(begin (quote-syntax (define-type-alias-internal nm rec-nm ty args))
             (#%plain-app values))
      (values #'nm #'rec-nm #'ty (syntax-e #'args))]
