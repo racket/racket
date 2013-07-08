@@ -61,16 +61,25 @@
          (parse #'rest #f #f #f))
        (define/with-syntax [default ...] defaults)
        (define/with-syntax [method ...] methods)
+       (define/with-syntax [method-name ...] (map stx-car methods))
+       (define/with-syntax [method-index ...]
+         (for/list ([method (in-list methods)]
+                    [index (in-naturals 0)])
+           index))
        (define/with-syntax pred-name (format-id #'name "~a?" #'name))
        (define/with-syntax gen-name (format-id #'name "gen:~a" #'name))
        (define/with-syntax prop-name (generate-temporary #'name))
+       (define/with-syntax get-name (generate-temporary #'name))
        (define/with-syntax table-name table)
-       #'(define-primitive-generics
-           (name gen-name prop-name pred-name
-                 #:defined-table table-name
-                 #:defaults [default ...]
-                 #:define-contract define-generics-contract)
-           method ...))]))
+       #'(begin
+           (define-primitive-generics
+             (name gen-name prop-name get-name pred-name
+                   #:defined-table table-name
+                   #:defaults [default ...])
+             method ...)
+           (define-generics-contract name pred-name get-name
+             [method-name method-index]
+             ...)))]))
 
 ;; generate a contract combinator for instances of a generic interface
 (define-syntax (define-generics-contract stx)

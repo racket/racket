@@ -15,11 +15,9 @@
 ;; i.e., exporting prop:ordered-dict as opposed to using a
 ;;       generated hidden property.
 (define-primitive-generics
-  (ordered-dict gen:ordered-dict prop:ordered-dict ordered-dict?
+  (ordered-dict gen:ordered-dict prop:ordered-dict ordered-methods ordered-dict?
                 #:defined-table dict-def-table
-                #:defaults ()
-                ;; private version needs all kw args, in order
-                #:define-contract #f)
+                #:defaults ())
   (dict-iterate-least ordered-dict)
   (dict-iterate-greatest ordered-dict)
   (dict-iterate-least/>? ordered-dict key)

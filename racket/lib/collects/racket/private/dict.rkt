@@ -3,11 +3,9 @@
 (require racket/private/generic ; to avoid circular dependencies
          (for-syntax racket/base))
 
-(define-primitive-generics (dict gen:dict prop:dict dict?
+(define-primitive-generics (dict gen:dict prop:dict dict-methods dict?
                                  #:defined-table dict-def-table
-                                 #:defaults ()
-                                 ;; private version needs all kw args, in order
-                                 #:define-contract #f)
+                                 #:defaults ())
   (dict-ref  dict key [default])
   (dict-set! dict key val)
   (dict-set  dict key val)

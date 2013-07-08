@@ -20,21 +20,17 @@
     ;; that is used to define the `name`, `prop:name`, and `name?`
     ;; identifiers. We have it here so that we can use it to match
     ;; the method header's self argument.
-    [(_ (header name prop:name name?
+    [(_ (header name prop:name get-generics name?
                 #:defined-table defined-table
                 #:defaults
                 ([pred? impl ...]
                  ;; TODO fallthrough?
-                 ...)
-                ;; Passed in by `define-generics` in racket/generic.
-                ;; This enables us to cut the dependency on racket/contract
-                ;; for users of this private module. Pass in #f
-                ;; to avoid defining a contract.
-                #:define-contract define-generics-contract)
+                 ...))
         (generic . generic-args) ...)
      (and (identifier? #'header)
           (identifier? #'name)
           (identifier? #'prop:name)
+          (identifier? #'get-generics)
           (identifier? #'name?)
           (identifier? #'defined-table)
           (let ([generics (syntax->list #'(generic ...))])
@@ -114,10 +110,6 @@
                              #'id]
                             [()
                              #'()])))]
-                     ;; if we're the ones defining the struct property,
-                     ;; generate a new id, otherwise use the struct property
-                     ;; accessor that we were passed
-                     [get-generics (generate-temporary 'get-generics)]
                      ;; for each generic method, builds a cond clause to do the
                      ;; predicate dispatch found in method-impl-list
                      [((cond-impl ...) ...) marked-generics]
@@ -176,12 +168,6 @@
                (for/hash ([name (in-list '(#,@(map syntax->datum generics)))]
                           [gen (in-vector (get-generics this))])
                  (values name (not (not gen)))))
-             ;; Define the contract that goes with this generic interface
-             #,@(if (syntax-e #'define-generics-contract)
-                    (list #'(define-generics-contract header name? get-generics
-                             (generic generic-idx) ...))
-                    ;; don't define a contract when given #f
-                    '())
              ;; Define default implementations
              #,@method-impl-list
              ;; Define generic functions
