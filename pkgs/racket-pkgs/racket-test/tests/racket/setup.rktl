@@ -2,6 +2,8 @@
 
 (Section 'setup)
 
+;; ----------------------------------------
+
 (require setup/path-to-relative)
 
 (let ([missing   "/some/inexistent/path"]
@@ -21,7 +23,20 @@
   (err/rt-test (path->relative-string/setup #"bleh"))
   (err/rt-test (path->relative-string/setup 'bleh)))
 
+;; ----------------------------------------
+
+(require setup/collects)
+
+(for ([i '([("main.rkt" "racket") (lib "racket/main.rkt")]
+           [("reader.rkt" "scribble") (lib "scribble/reader.rkt")])])
+  (test (cadr i) path->module-path (apply collection-file-path (car i))))
+(test "a/b" path->module-path "a/b")
+(test (find-system-path 'temp-dir) path->module-path (find-system-path 'temp-dir))
+
+;; ----------------------------------------
+
 (require compiler/find-exe)
+
 (let ()
   (define tmpdir (make-temporary-file "tmp~a" 'directory (current-directory)))
   (define tmppath (build-path tmpdir "tmp.rkt"))
@@ -34,5 +49,6 @@
   (test #t system* exec-path "-l" "raco" "make" "-j" "2" (path->string relpath))
   (delete-directory/files tmpdir))
 
+;; ----------------------------------------
 
 (report-errs)
