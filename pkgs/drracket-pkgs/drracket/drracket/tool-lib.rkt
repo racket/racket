@@ -31,6 +31,7 @@ all of the names in the tools library, for use defining keybindings
                   racket/base scribble/manual
                   scribblings/tools/doc-util
                   (for-label errortrace/errortrace-key
+                             racket/place
                              racket/pretty 
                              mzlib/pconvert
                              syntax/toplevel)))
