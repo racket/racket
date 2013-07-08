@@ -194,7 +194,7 @@
 (def-type Set ([elem Type/c])
   [#:key 'set])
 
-;; name is a Symbol (not a Name or RecName)
+;; name is a Symbol (not a Name)
 ;; contract is used when generating contracts from types
 ;; predicate is used to check (at compile-time) whether a value belongs
 ;; to that base type. This is used to check for subtyping between value

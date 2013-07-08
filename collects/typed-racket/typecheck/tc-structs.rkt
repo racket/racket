@@ -79,11 +79,6 @@
                                  ((or (Poly? parent) (Mu? parent) (Struct? parent))
                                   parent)
                                  (else
-                                  (displayln #'v.par)
-                                  (displayln (Struct? (lookup-type-name #'v.par)))
-                                  (displayln (parse-type #'v.par))
-                                  (displayln (Name? parent))
-                                  (displayln parent)
                                   (tc-error/stx #'v.par "parent type not a valid structure name: ~a"
                                                 (syntax->datum #'v.par)))))])
                 (values #'v.name parent0 parent))
@@ -138,12 +133,11 @@
 
   ;; a type alias needs to be registered here too, to ensure
   ;; that parse-type will map the identifier to this Name type
+  (define type-name (struct-names-type-name names))
   (register-resolved-type-alias
-   (struct-names-type-name names)
-   (make-Name (struct-names-type-name names)
-              (struct-names-type-name names)
-              null #f #t))
-  (register-type-name (struct-names-type-name names)
+   type-name
+   (make-Name type-name type-name null #f #t))
+  (register-type-name type-name
                       (make-Poly (struct-desc-tvars desc) sty)))
 
 
@@ -162,15 +156,14 @@
 
 
   ;; the base-type, with free type variables
+  (define name-type
+    (make-Name (struct-names-type-name names)
+               (struct-names-type-name names)
+               null #f #t))
   (define poly-base
     (if (null? tvars)
-        (make-Name (struct-names-type-name names)
-                   (struct-names-type-name names)
-                   null #f #t)
-        (make-App (make-Name (struct-names-type-name names)
-                             (struct-names-type-name names)
-                             null #f #t)
-                  (map make-F tvars) #f)))
+        name-type
+        (make-App name-type (map make-F tvars) #f)))
 
   ;; is this structure covariant in *all* arguments?
   (define covariant?

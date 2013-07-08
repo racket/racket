@@ -461,6 +461,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 ;; Syntax classes for `define-type-alias`
 (begin-for-syntax
  (define-syntax-class type-alias-rest
+   #:literals (All)
    #:attributes (args)
    (pattern (All (arg:id ...) rest)
             #:with args #'(arg ...))
@@ -481,7 +482,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                (ignore #'(begin (define-syntax tname stx-err-fun)
                                 (define-syntax rec-tname stx-err-fun)))
                #'(begin))
-         #,(internal (quasisyntax/loc stx
+         #,(internal (syntax/loc stx
                        (define-type-alias-internal tname rec-tname rest
                          rest.args))))]
     [(_ (tname:id args:id ...) rest)
