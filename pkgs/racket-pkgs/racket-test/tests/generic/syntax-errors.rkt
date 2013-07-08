@@ -72,7 +72,20 @@
      (define stream-first car)
      (define stream-rest cdr)
      (define stream-empty? null?)])
-   #:defined-table stream-table))
+   #:defined-table stream-table)
+
+ (define-generics stream
+   (stream-first stream)
+   (stream-rest stream)
+   (stream-empty? stream)
+   #:defaults
+   ([box?
+     (define/generic first stream-first)
+     (define/generic rest stream-rest)
+     (define/generic empty? stream-empty?)
+     (define stream-first (compose first unbox))
+     (define stream-rest (compose rest unbox))
+     (define stream-empty? (compose empty? unbox))])))
 
 (check-bad-syntax
 

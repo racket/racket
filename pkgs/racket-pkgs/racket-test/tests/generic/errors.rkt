@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/generic unstable/macro-testing)
+(require racket/generic racket/engine unstable/macro-testing)
 
 (module+ test
   (require rackunit)
@@ -40,4 +40,16 @@
                                   #:methods gen:foobar
                                   [(define foo 0)])
                           'ignore))))
+  (check-exn #rx"foo: not implemented for 5"
+             (lambda () (let ()
+                          (define-generics foobar
+                            [foo foobar x]
+                            #:defaults ([number?]))
+                          ;; a failing implementation may loop forever,
+                          ;; due to self-reference to the generic method foo,
+                          ;; so using an engine here to limit the time.
+                          (define e (engine (lambda (suspend?) (foo 5 6))))
+                          ;; 1000 ms should be far more than enough.
+                          (or (engine-run 1000 e)
+                              (error "computation did not terminate")))))
   )
