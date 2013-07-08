@@ -20,15 +20,9 @@
 (let ()
   (local-require racket/private/generic)
 
-  (define-values (prop:foo foo? foo-accessor)
-    (make-struct-type-property
-     'foo
-     #f))
-
   (define-generics (foo gen:foo prop:foo foo?
                         #:defined-table dummy
                         #:defaults ([number? (define (meth foo #:kw kw) kw)])
-                        #:prop-defined-already? foo-accessor
                         #:define-contract #f)
     (meth foo #:kw kw))
 

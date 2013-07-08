@@ -2,13 +2,11 @@
 
 (require racket/private/generic
          (rename-in "private/for.rkt"
-                    [stream-ref    stream-get-generics]
-                    [stream-empty? -stream-empty?]
-                    [stream-first  -stream-first]
-                    [stream-rest   -stream-rest])
+                    [stream-ref stream-get-generics])
          "private/sequence.rkt"
          (only-in "private/stream-cons.rkt"
-                  stream-cons))
+                  stream-cons)
+         (for-syntax racket/base))
 
 (provide empty-stream
          stream-cons
@@ -18,9 +16,9 @@
          ;; the original sequence functions will work fine
          ;; for the dispatch. (the method table layout is
          ;; identical)
-         (rename-out [-stream-empty? stream-empty?]
-                     [-stream-first  stream-first]
-                     [-stream-rest   stream-rest])
+         stream-empty?
+         stream-first
+         stream-rest
          prop:stream
          in-stream
 
@@ -39,16 +37,11 @@
          stream-add-between
          stream-count)
 
-(define-generics (-stream gen:stream prop:stream stream?
-                          #:defined-table defined-table
-                          #:defaults ()
-                          #:prop-defined-already? stream-get-generics
-                          #:define-contract #f)
-  ;; These three are never used for the reasons explained above.
-  ;; We still need the headers for clients who extend racket/stream.
-  (stream-empty? -stream)
-  (stream-first -stream)
-  (stream-rest -stream))
+(define-syntax gen:stream
+  (list (quote-syntax prop:stream)
+        (quote-syntax stream-empty?)
+        (quote-syntax stream-first)
+        (quote-syntax stream-rest)))
 
 (define-syntax stream
   (syntax-rules ()
@@ -63,9 +56,9 @@
 (define (stream-length s)
   (unless (stream? s) (raise-argument-error 'stream-length "stream?" s))
   (let loop ([s s] [len 0])
-    (if (-stream-empty? s)
+    (if (stream-empty? s)
         len
-        (loop (-stream-rest s) (add1 len)))))
+        (loop (stream-rest s) (add1 len)))))
 
 (define (stream-ref st i)
   (unless (stream? st) (raise-argument-error 'stream-ref "stream?" st))
@@ -73,15 +66,15 @@
     (raise-argument-error 'stream-ref "exact-nonnegative-integer?" i))
   (let loop ([n i] [s st])
     (cond
-     [(-stream-empty? s)
+     [(stream-empty? s)
       (raise-arguments-error 'stream-ref
                              "stream ended before index"
                              "index" i
                              "stream" st)]
      [(zero? n)
-      (-stream-first s)]
+      (stream-first s)]
      [else
-      (loop (sub1 n) (-stream-rest s))])))
+      (loop (sub1 n) (stream-rest s))])))
 
 (define (stream-tail st i)
   (unless (stream? st) (raise-argument-error 'stream-tail "stream?" st))
@@ -90,13 +83,13 @@
   (let loop ([n i] [s st])
     (cond
      [(zero? n) s]
-     [(-stream-empty? s)
+     [(stream-empty? s)
       (raise-arguments-error 'stream-tail
                              "stream ended before index"
                              "index" i
                              "stream" st)]
      [else
-      (loop (sub1 n) (-stream-rest s))])))
+      (loop (sub1 n) (stream-rest s))])))
 
 (define (stream-append . l)
   (for ([s (in-list l)])
@@ -107,19 +100,19 @@
   (cond
    [(null? l) empty-stream]
    [(null? (cdr l)) (car l)]
-   [(-stream-empty? (car l)) (streams-append (cdr l))]
+   [(stream-empty? (car l)) (streams-append (cdr l))]
    [else
     (make-do-stream (lambda () #f)
-                    (lambda () (-stream-first (car l)))
-                    (lambda () (streams-append (cons (-stream-rest (car l)) (cdr l)))))]))
+                    (lambda () (stream-first (car l)))
+                    (lambda () (streams-append (cons (stream-rest (car l)) (cdr l)))))]))
 
 (define (stream-map f s)
   (unless (procedure? f) (raise-argument-error 'stream-map "procedure?" f))
   (unless (stream? s) (raise-argument-error 'stream-map "stream?" s))
   (let loop ([s s])
-    (if (-stream-empty? s)
+    (if (stream-empty? s)
       empty-stream
-      (stream-cons (f (-stream-first s)) (loop (-stream-rest s))))))
+      (stream-cons (f (stream-first s)) (loop (stream-rest s))))))
 
 (define (stream-andmap f s)
   (unless (procedure? f) (raise-argument-error 'stream-andmap "procedure?" f))
@@ -150,7 +143,7 @@
   (unless (procedure? f) (raise-argument-error 'stream-filter "procedure?" f))
   (unless (stream? s) (raise-argument-error 'stream-filter "stream?" s))
   (cond
-   [(-stream-empty? s) empty-stream]
+   [(stream-empty? s) empty-stream]
    [else
     (let ([done? #f]
           [empty? #f]
@@ -160,13 +153,13 @@
         (unless done?
           (let loop ([s s])
             (cond
-             [(-stream-empty? s)
+             [(stream-empty? s)
               (set! done? #t)
               (set! empty? #t)]
-             [(f (-stream-first s))
-              (set! fst (-stream-first s))
-              (set! rst (stream-filter f (-stream-rest s)))]
-             [else (loop (-stream-rest s))]))
+             [(f (stream-first s))
+              (set! fst (stream-first s))
+              (set! rst (stream-filter f (stream-rest s)))]
+             [else (loop (stream-rest s))]))
           (set! done? #t)))
       (make-do-stream (lambda () (force!) empty?)
                       (lambda () (force!) fst)
@@ -175,11 +168,11 @@
 (define (stream-add-between s e)
   (unless (stream? s)
     (raise-argument-error 'stream-add-between "stream?" s))
-  (if (-stream-empty? s)
+  (if (stream-empty? s)
       empty-stream
       (stream-cons
-       (-stream-first s)
-       (let loop ([s (-stream-rest s)])
-         (cond [(-stream-empty? s) empty-stream]
-               [else (stream-cons e (stream-cons (-stream-first s)
-                                                 (loop (-stream-rest s))))])))))
+       (stream-first s)
+       (let loop ([s (stream-rest s)])
+         (cond [(stream-empty? s) empty-stream]
+               [else (stream-cons e (stream-cons (stream-first s)
+                                                 (loop (stream-rest s))))])))))

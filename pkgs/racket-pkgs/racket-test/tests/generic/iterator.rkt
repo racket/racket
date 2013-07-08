@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/private/generic racket/sequence)
+(require racket/private/generic racket/sequence (for-syntax racket/base))
 
 ;; This was designed as a higher-level interface on top of sequences,
 ;; but it turns out streams can do all that already (including state),
@@ -31,14 +31,29 @@
                               (lambda (v) #t)
                               (lambda (t v) #t))))))))))
 
-(define-generics (iterator gen:iterator prop:iterator iterator?
-                           #:defined-table dummy
-                           #:defaults ()
-                           #:prop-defined-already? iterator-accessor
-                           #:define-contract #f)
-  (iterator-first     iterator)
-  (iterator-rest      iterator)
-  (iterator-continue? iterator))
+(define (iterator-first i)
+  (unless (iterator? i)
+    (raise-argument-error 'iterator-first "iterator?" i))
+  (define proc (vector-ref (iterator-accessor i) 0))
+  (proc i))
+
+(define (iterator-rest i)
+  (unless (iterator? i)
+    (raise-argument-error 'iterator-rest "iterator?" i))
+  (define proc (vector-ref (iterator-accessor i) 1))
+  (proc i))
+
+(define (iterator-continue? i)
+  (unless (iterator? i)
+    (raise-argument-error 'iterator-continue? "iterator?" i))
+  (define proc (vector-ref (iterator-accessor i) 2))
+  (proc i))
+
+(define-syntax gen:iterator
+  (list (quote-syntax prop:iterator)
+        (quote-syntax iterator-first)
+        (quote-syntax iterator-rest)
+        (quote-syntax iterator-continue?)))
 
 (struct list-iterator (l)
         #:methods gen:iterator

@@ -69,7 +69,6 @@
        #'(define-generics/pre (name gen-name prop-name pred-name
                                     #:defined-table table-name
                                     #:defaults [default ...]
-                                    #:prop-defined-already? #f
                                     #:define-contract define-generics-contract)
            method ...))]))
 

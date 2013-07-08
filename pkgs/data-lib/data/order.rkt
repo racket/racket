@@ -18,7 +18,6 @@
                                #:defined-table dict-def-table
                                #:defaults ()
                                ;; private version needs all kw args, in order
-                               #:prop-defined-already? #f
                                #:define-contract #f)
   (dict-iterate-least ordered-dict)
   (dict-iterate-greatest ordered-dict)
