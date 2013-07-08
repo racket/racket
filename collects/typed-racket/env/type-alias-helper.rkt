@@ -127,15 +127,21 @@
           (cons #'e (list #'f))
           (cons #'f (list))))
 
-  (define (equal?/id x y)
-    (if (and (identifier? x) (identifier? y))
-        (free-identifier=? x y)
-        (equal?/recur x y equal?/id)))
+  ;; helper function for the tests below
+  ;; ignores order of ids in the components
+  (define (equal-id-sets? x y)
+    (define (id-lsts->id-sets id-lsts)
+      (for/list ([id-lst id-lsts])
+        (for/fold ([id-tbl (make-immutable-free-id-table)])
+                  ([id id-lst])
+          (free-id-table-set id-tbl id #t))))
+    (equal? (id-lsts->id-sets x)
+            (id-lsts->id-sets y)))
 
-  (define-binary-check (check-equal?/id equal?/id actual expected))
+  (define-binary-check (check-equal?/id equal-id-sets? actual expected))
 
   (check-equal?/id (find-strongly-connected-type-aliases example-1)
-                   (list (list #'x) (list #'y)))
+                   (list (list #'y) (list #'x)))
   (check-equal?/id (find-strongly-connected-type-aliases example-2)
                    (list (list #'x #'y)))
   (check-equal?/id (find-strongly-connected-type-aliases example-3)
