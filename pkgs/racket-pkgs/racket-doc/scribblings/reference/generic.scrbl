@@ -16,21 +16,20 @@ using a @racket[define-generics] form. Method implementations for
 a structure type are defined using the @racket[#:methods] keyword
 (see @secref["define-struct"]).
 
-@defform/subs[(define-generics id [#:defined-table defined-table-id]
-                [method-id . kw-formals*]
-                ...
-                maybe-defaults)
-              ([kw-formals* (arg* ...)
+@defform/subs[(define-generics id
+                generics-opt ...
+                [method-id . kw-formals*] ...
+                generics-opt ...)
+              ([generics-opt
+                (code:line #:defined-table defined-table-id)
+                (code:line #:defaults ([pred? method-impl ...] ...))]
+               [kw-formals* (arg* ...)
                             (arg* ...+ . rest-id)
                             rest-id]
                [arg* arg-id
                      [arg-id]
                      (code:line keyword arg-id)
-                     (code:line keyword [arg-id])]
-               [maybe-defaults (code:line)
-                               (code:line #:defaults ([pred?
-                                                       method-impl ...]
-                                                      ...))])]{
+                     (code:line keyword [arg-id])])]{
 
 Defines 
 
@@ -59,7 +58,11 @@ by-position argument that is @racket[free-identifier=?] to
 @racket[id]. That argument is used in the generic definition to
 locate the specialization.
 
-When @racket[defined-table-id] is provided, it is defined as a
+Keyword options to @racket[define-generics] may be provided both before and
+after the list of methods, but not in the middle.
+
+The @racket[#:defined-table] option may be provided at most once.
+When it is provided, @racket[defined-table-id] is defined as a
 procedure that takes an instance of the generics and returns an
 immutable @tech{hash table} that maps symbols corresponding to method
 names to booleans representing whether or not that method is
@@ -67,7 +70,8 @@ implemented by the instance. This table is intended for use by
 higher-level APIs to adapt their behavior depending on method
 availability.
 
-When @racket[maybe-defaults] is provided, each generic function
+The @racket[#:defaults] option may be provided at most once.
+When it is provided, each generic function
 uses @racket[pred?]s to dispatch to the given default implementations,
 @racket[method-impl]s, if dispatching to the generic method table fails.
 The syntax of the @racket[method-impl]s is the same as the methods
