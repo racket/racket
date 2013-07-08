@@ -93,8 +93,8 @@
               (define (check-argument given-type arg-name)
                 (define ok?
                   (if (F? given-type)
-                      (type-equal? given-type (make-F arg-name))
-                      (not (member arg-name (fv given-type)))))
+                      (type-equal? given-type (make-F (syntax-e arg-name)))
+                      (not (member (syntax-e arg-name) (fv given-type)))))
                 (unless ok?
                   (tc-error (~a "Recursive type " rator " cannot be applied at"
                                 " a different type in its recursive invocation"))))
