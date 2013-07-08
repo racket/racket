@@ -95,12 +95,12 @@
   (define-generics table
     (get idx [default]))
   =error>
-  "No required by-position generic argument"
+  #px"generic(s group)? name.+required,? (by-position|positional) argument"
 
   (define-generics table
     (get idx [table] [default]))
   =error>
-  "No required by-position generic argument")
+  #px"generic(s group)? name.+required,? (by-position|positional) argument")
 
 
  (local [(define-generics printable

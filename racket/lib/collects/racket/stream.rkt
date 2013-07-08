@@ -6,6 +6,7 @@
          "private/sequence.rkt"
          (only-in "private/stream-cons.rkt"
                   stream-cons)
+         "private/generic-methods.rkt"
          (for-syntax racket/base))
 
 (provide empty-stream
@@ -38,10 +39,10 @@
          stream-count)
 
 (define-syntax gen:stream
-  (list (quote-syntax prop:stream)
-        (quote-syntax stream-empty?)
-        (quote-syntax stream-first)
-        (quote-syntax stream-rest)))
+  (make-generic-info (quote-syntax prop:stream)
+                     (list (quote-syntax stream-empty?)
+                           (quote-syntax stream-first)
+                           (quote-syntax stream-rest))))
 
 (define-syntax stream
   (syntax-rules ()

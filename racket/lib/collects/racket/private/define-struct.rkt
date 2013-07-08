@@ -3,6 +3,7 @@
 
 (module define-struct '#%kernel
   (#%require "small-scheme.rkt" "define.rkt" "../stxparam.rkt"
+             "generic-methods.rkt"
              (for-syntax '#%kernel "define.rkt"
                          "procedure-alias.rkt"
                          "member.rkt"
@@ -14,7 +15,6 @@
              define-struct/derived
              struct-field-index
              struct-copy
-             define/generic
              (for-syntax
               (rename checked-struct-info-rec? checked-struct-info?)))
 
@@ -115,10 +115,6 @@
     (unless (symbol? what)
       (raise-argument-error name "symbol?" what))
     what)
-
-  (define-syntax-parameter define/generic
-    (lambda (stx)
-      (raise-syntax-error 'define/generic "only allowed inside methods" stx)))
 
   (define-syntax (define-struct* stx)
     (syntax-case stx ()
@@ -287,61 +283,23 @@
                 nongen?)]
          [(eq? '#:methods (syntax-e (car p)))
           ;; #:methods gen:foo [(define (meth1 x ...) e ...) ...]
-          ;; `gen:foo' is bound to (prop:foo generic ...)
-          (define (build-method-table gen specs mthds) ; mthds is syntax
-            (with-syntax ([(generic ...)
-                           specs]
-                          [(mthd-generic ...)
-                           (map (λ (g) (datum->syntax mthds (syntax->datum g)))
-                                specs)])
-              (quasisyntax/loc gen
-                (let ([mthd-generic #f]
-                      ...)
-                  (syntax-parameterize
-                   ([define/generic
-                      (lambda (stx)
-                        (syntax-case stx (mthd-generic ...)
-                          [(_ new-name mthd-generic)
-                           (syntax/loc stx
-                             (define new-name generic))]
-                          ...
-                          [(_ new-name method-name)
-                           (raise-syntax-error 'define/generic
-                             (format "~.s not a method of ~.s"
-                                     (syntax->datum #'method-name)
-                                     '#,gen)
-                             stx
-                             #'method-name)]))])
-                   (let ()
-                     #,@mthds
-                     (vector mthd-generic ...)))))))
-          (define gen:foo (cadr p))
-          (define (bad-generics)
-            (raise-syntax-error #f
-                                "not a name for a generics group"
-                                gen:foo gen:foo))
-          (unless (and (identifier? gen:foo)
-                       ;; at the top-level, it's not possible to check
-                       ;; if this `gen:foo` is bound, so we give up on the
-                       ;; error message in that case
-                       (or (eq? (syntax-local-context) 'top-level)
-                           (identifier-binding gen:foo)))
-            (bad-generics))
-          (define gen:foo-val (syntax-local-value gen:foo))
-          (unless (and (list? gen:foo-val)
-                       (>= (length gen:foo-val) 1))
-            (bad-generics))
-          (define prop:foo    (car gen:foo-val))
-          (define meth-specs  (cdr gen:foo-val))
-          (unless (and (identifier? prop:foo)
-                       (list? meth-specs)
-                       (andmap identifier? meth-specs))
-            (bad-generics))
-          (define meths       (caddr p))
-          (loop (cons #'#:property
-                      (cons prop:foo
-                            (cons (build-method-table gen:foo meth-specs meths)
-                                  (cdddr p)))) ; post #:generics args
+          (check-exprs 2 p "argument")
+          (define gen-id (cadr p))
+          (define gen-defs (caddr p))
+          (define args (cdddr p))
+          (define gen-val
+            (and (identifier? gen-id)
+                 (syntax-local-value gen-id (lambda () #f))))
+          (unless (generic-info? gen-val)
+            (bad "the first argument to the "
+                 (car p)
+                 " is not a name for a generics group"))
+          (loop (list* #'#:property
+                       (quasisyntax/loc gen-id
+                         (generic-property #,gen-id))
+                       (quasisyntax/loc gen-id
+                         (generic-method-table #,gen-id #,@gen-defs))
+                       args)
                 config
                 nongen?)]
          [(eq? '#:inspector (syntax-e (car p)))

@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require racket/private/generic racket/sequence (for-syntax racket/base))
+(require racket/private/generic-methods
+         racket/sequence
+         (for-syntax racket/base))
 
 ;; This was designed as a higher-level interface on top of sequences,
 ;; but it turns out streams can do all that already (including state),
@@ -50,10 +52,10 @@
   (proc i))
 
 (define-syntax gen:iterator
-  (list (quote-syntax prop:iterator)
-        (quote-syntax iterator-first)
-        (quote-syntax iterator-rest)
-        (quote-syntax iterator-continue?)))
+  (make-generic-info (quote-syntax prop:iterator)
+                     (list (quote-syntax iterator-first)
+                           (quote-syntax iterator-rest)
+                           (quote-syntax iterator-continue?))))
 
 (struct list-iterator (l)
         #:methods gen:iterator

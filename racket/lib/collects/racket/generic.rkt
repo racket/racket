@@ -71,8 +71,10 @@
        (define/with-syntax prop-name (generate-temporary #'name))
        (define/with-syntax get-name (generate-temporary #'name))
        (define/with-syntax table-name table)
+       (define/with-syntax original stx)
        #'(begin
-           (define-primitive-generics
+           (define-primitive-generics/derived
+             original
              (name gen-name prop-name get-name pred-name
                    #:defined-table table-name
                    #:defaults [default ...])

@@ -6,7 +6,7 @@
   ;; `define-generics' to build these generic interfaces. Thus we must
   ;; forge them.
 
-  (#%require (for-syntax '#%kernel))
+  (#%require (for-syntax '#%kernel) "generic-methods.rkt")
 
   (#%provide gen:equal+hash gen:custom-write)
 
@@ -37,10 +37,10 @@
   (define (hash2-proc x h) (equal-secondary-hash-code x))
 
   (define-syntax gen:equal+hash
-    (list (quote-syntax prop:gen:equal+hash)
-          (quote-syntax equal-proc)
-          (quote-syntax hash-proc)
-          (quote-syntax hash2-proc)))
+    (make-generic-info (quote-syntax prop:gen:equal+hash)
+                       (list (quote-syntax equal-proc)
+                             (quote-syntax hash-proc)
+                             (quote-syntax hash2-proc))))
 
 
   (define-values (prop:gen:custom-write gen:custom-write? gen:custom-write-acc)
@@ -66,7 +66,7 @@
       [else (error 'write-proc "internal error; should not happen")]))
 
   (define-syntax gen:custom-write
-    (list (quote-syntax prop:gen:custom-write)
-          (quote-syntax write-proc)))
+    (make-generic-info (quote-syntax prop:gen:custom-write)
+                       (list (quote-syntax write-proc))))
 
   )
