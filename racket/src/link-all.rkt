@@ -14,8 +14,8 @@
 (define devel-pkgs-dir (build-path "racket" "lib" devel-pkgs-rel-dir))
 
 (define only-platform? #f)
-(define sticky? #f)
-(define keep-old? #f)
+(define save? #f)
+(define restore? #f)
 
 (define dirs null)
 
@@ -24,9 +24,11 @@
    #:once-each
    [("--platform") "Only packages whose names match the platform name"
     (set! only-platform? #t)]
-   [("--sticky") a b "Record choice if <a> =/= <b>, use recorded if <a> == <b>"
-    (set! sticky? #t)
-    (set! keep-old? (equal? a b))]
+   #:once-any
+   [("--save") "Save package choices"
+    (set! save? #t)]
+   [("--restore") "Use saved package choices, if any"
+    (set! restore? #t)]
    #:multi
    [("++dir") dir "Use packages in <dir>"
     (set! dirs (cons dir dirs))]
@@ -37,7 +39,7 @@
 (define pkgs-choice-path (build-path config-dir-path "link-pkgs.rktd"))
 
 (define-values (pkgs keeping?)
-  (if (and keep-old?
+  (if (and restore?
            (file-exists? pkgs-choice-path))
       (values
        (list->set
@@ -51,8 +53,8 @@
             ""))
 (for ([p (in-set pkgs)])
   (printf "  ~a\n" p))
-(when sticky?
-  (unless (or keeping? keep-old?)
+(when save?
+  (unless keeping?
     (printf "Recording packages choice in ~a\n" pkgs-choice-path)
     (call-with-output-file*
      pkgs-choice-path

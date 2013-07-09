@@ -35,8 +35,9 @@ To install a subset of the packages in "pkgs", supply `PKGS' value to
 links only the "gui-lib" and "readline-lib" packages and their
 dependencies. The default value of `PKGS' reaches all packages in
 "pkgs" among its dependencies. See "Linking Packages for Development
-Mode", below, for more information on package links and the way that
-`PKGS' is remembered for future `make in-place's.
+Mode", below, for more information on package links and using `again'
+or `LINK_MODE' to use remembered `PKGS' values from previous `make
+in-place's.
 
 Note that `make -j <n>' controls parallelism for the makefile part of
 a build, but not for the `raco setup' part. To control both the
@@ -104,13 +105,6 @@ subset of the packages with `PKGS="...."' as an argument to `make
 pkg-links'. Make the `pkg-links' target whenever the set of
 dependencies can change.
 
-When you supply `PKGS=' with a value that is not the default value,
-then the set of packages is recorded in "racket/etc/pkg-links.rktd"
-and used for any future `make pkg-links' where `PKGS' is the
-default. So, you can supply a `PKGS=' and it sticks for future builds,
-but you must manually delete "racket/etc/pkg-links.rktd" to get
-back to the default configuration.
-
 Packages are linked in a database (at "racket/lib/devel-pkgs") that is
 added to the installation's search paths. As a result, the links
 affect only the build in the "racket" directory, and they are not
@@ -129,6 +123,15 @@ repository from GitHub; otherwise, clone
 as
  
    build/native-pkgs
+
+By default, the `PKGS' value is remembered by `pkg-links', but a
+previously remembered value is not used. Supply `LINK_MODE=--restore'
+as an argument to to `make' to use the previously remembered `PKGS'
+value, if any. The `again' (or `win32-again') makefile target is the
+same as `in-place' (or `win32-in-place'), but with
+`LINK_MODE=--restore'. To suppress remembering a `PKGS' value, supply
+`LINK_MODE='; the `PKGS' value is saved by default because
+`LINK_MODE=--save' is the default.
 
 Trying Packages Locally
 -----------------------

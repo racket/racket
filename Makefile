@@ -40,13 +40,21 @@ cpus-in-place:
 plain-in-place:
 	$(MAKE) core
 	if $(MACOSX_CHECK) ; then $(MAKE) native-from-git ; fi
-	$(MAKE) pkg-links
+	$(MAKE) pkg-links LINK_MODE="$(LINK_MODE)"
 	$(PLAIN_RACKET) -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 win32-in-place:
 	$(MAKE) win32-core
-	$(MAKE) win32-pkg-links
+	$(MAKE) win32-pkg-links PKGS="$(PKGS)" LINK_MODE="$(LINK_MODE)"
 	$(WIN32_PLAIN_RACKET) -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+
+again:
+	$(MAKE) LINK_MODE="--restore"
+
+IN_PLACE_COPY_ARGS = JOB_OPTIONS="$(JOB_OPTIONS)" PLT_SETUP_OPTIONS="$(PLT_SETUP_OPTIONS)"
+
+win32-again:
+	$(MAKE) LINK_MODE="--restore" $(IN_PLACE_COPY_ARGS)
 
 # ------------------------------------------------------------
 # Core build
@@ -178,13 +186,13 @@ BUNDLE_CONFIG = bundle/racket/etc/config.rktd
 # Linking all packages (development mode; not an installer build)
 
 LINK_ALL = -U -G build/config racket/src/link-all.rkt ++dir pkgs ++dir build/native-pkgs
-LINK_PKG_SPECS = --sticky "$(PKGS)" "$(DEFAULT_PKGS)"
+LINK_MODE = --save
 
 pkg-links:
-	$(PLAIN_RACKET) $(LINK_ALL) $(LINK_PKG_SPECS) $(PKGS)
+	$(PLAIN_RACKET) $(LINK_ALL) $(LINK_MODE) $(PKGS) $(REQUIRED_PKGS)
 
 win32-pkg-links:
-	$(MAKE) pkg-links PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
+	$(MAKE) pkg-links PLAIN_RACKET="$(WIN32_PLAIN_RACKET)" LINK_MODE="$(LINK_MODE)" PKGS="$(PKGS)"
 
 # ------------------------------------------------------------
 # On a server platform (for an installer build):
