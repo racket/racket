@@ -653,6 +653,7 @@
      (define methods (map list
                           (stx-map syntax-e #'clause.method-names)
                           (stx-map parse-type #'clause.method-types)))
+     (check-function-types methods)
      (make-Instance (make-Class #f null fields methods null))]))
 
 ;; Syntax -> Type
@@ -670,6 +671,9 @@
      (define given-row-var
        (and (attribute clause.row-var)
             (parse-type (attribute clause.row-var))))
+
+     (check-function-types given-methods)
+     (check-function-types given-augments)
 
      ;; merge with all given parent types, erroring if needed
      (define-values (row-var fields methods augments)
@@ -693,6 +697,24 @@
        (make-Class row-var given-inits fields methods augments))
 
      class-type]))
+
+;; check-function-types : Dict<Name, Type> -> Void
+;; ensure all types recorded in the dictionary are function types
+(define (check-function-types method-types)
+  ;; TODO: this function should probably go in a utility
+  ;;       module since it's duplicated elsewhere
+  (define (function-type? type)
+    (match (resolve type)
+      [(? Function?) #t]
+      [(Poly: _ body) (function-type? body)]
+      [(PolyDots: _ body) (function-type? body)]
+      [(PolyRow: _ _ body) (function-type? body)]
+      [_ #f]))
+  (for ([(id pre-type) (in-dict method-types)])
+    (define type (car pre-type))
+    (unless (function-type? type)
+      (tc-error "method ~a must have a function type, given ~a"
+                id type))))
 
 ;; check-constraints : Dict<Name, _> Listof<Name> -> Void
 ;; helper to check if the constraints are consistent with the type
