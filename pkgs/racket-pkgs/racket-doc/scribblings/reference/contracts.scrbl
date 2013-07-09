@@ -2306,6 +2306,12 @@ search tree invariant. Removing the @racket[-opt/c] also
 makes a binary search tree contract, but one that is
 (approximately) 20 times slower.}
 
+@defthing[contract-continuation-mark-key continuation-mark-key?]{
+Key used by continuation marks that are present during contract checking.
+The value of these marks are the blame objects that correspond to the contract
+currently being checked.
+}
+
 @section{@racketmodname[racket/contract/base]}
 
 @defmodule[racket/contract/base]

@@ -2,7 +2,6 @@
 
 (require racket/list unstable/list racket/match racket/set racket/format
          racket/contract
-         (only-in racket/contract/private/guts contract-continuation-mark-key)
          profile/sampler profile/utils profile/analyzer
          "dot.rkt" "utils.rkt" "boundary-view.rkt")
 

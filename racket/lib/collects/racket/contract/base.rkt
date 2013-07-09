@@ -48,4 +48,5 @@
  ;; from private/guts.rkt
  has-contract?
  value-contract
+ contract-continuation-mark-key
  )
