@@ -1636,6 +1636,11 @@
                      (All (A B ...) (A B ... -> (values A B ... B))))
               (-polydots (a b) ((list a) (b b) . ->... . (make-ValuesDots (list (-result a)) b 'b)))]
         [tc-e/t (ann (ann 'x Symbol) Symbol) -Symbol]
+
+        [tc-err (lambda (x) x)
+                #:expected (ret (-poly (a) (cl->* (t:-> a a) (t:-> a a a))))]
+        [tc-err (plambda: (A) ((x : A)) x)
+                #:expected (ret (list -Symbol -Symbol))]
         )
   (test-suite
    "check-type tests"
