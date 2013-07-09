@@ -9,7 +9,7 @@
 ;; "config"
 
 (define config-dir
-  (delay (complete-path (find-system-path 'config-dir))))
+  (delay (complete-path-from-exe (find-system-path 'config-dir))))
     
 (define (find-config-dir)
   (force config-dir))
@@ -39,6 +39,13 @@
         [else l]))
 
 (define (complete-path p)
+  (cond [(complete-path? p) p]
+        [else
+         (path->complete-path
+          p
+          (find-main-collects))]))
+
+(define (complete-path-from-exe p)
   (cond [(complete-path? p) p]
         [(absolute-path? p) (exe-relative p)]
         [else

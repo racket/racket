@@ -582,7 +582,7 @@
          (match-define (pkg-info orig-pkg checksum _) info)
          (match orig-pkg
            [`(,(or 'link 'static-link) ,orig-pkg-dir)
-            orig-pkg-dir]
+            (path->complete-path orig-pkg-dir (pkg-installed-dir))]
            [_
             (build-path (pkg-installed-dir) pkg-name)]))))
 
@@ -961,7 +961,10 @@
        [(or (eq? type 'link)
             (eq? type 'static-link))
         (install-info pkg-name
-                      `(,type ,(simple-form-path* pkg))
+                      `(,type ,(path->string
+                                (find-relative-path (pkg-installed-dir)
+                                                    (simple-form-path pkg)
+                                                    #:more-than-root? #t)))
                       pkg
                       #f #f
                       (directory->module-paths pkg pkg-name metadata-ns))]

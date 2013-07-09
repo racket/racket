@@ -115,6 +115,7 @@
                      (and i (sc-pkg-info? i) (sc-pkg-info-collect i)))))]
      [else
       ;; Maybe it's a linked package
+      (define pkgs-dir (get-pkgs-dir scope))
       (for/fold ([pkg #f] [subpath #f] [collect #f])
           ([(k v) (in-hash (read-pkg-db/cached))]
            #:when (not pkg))
@@ -122,7 +123,7 @@
         (if (and (pair? orig)
                  (or (eq? 'link (car orig))
                      (eq? 'static-link (car orig))))
-            (let ([orig-pkg-dir (cadr orig)])
+            (let ([orig-pkg-dir (simplify-path (path->complete-path (cadr orig) pkgs-dir) #f)])
               (define e (explode orig-pkg-dir))
               (if (sub-path? <= p e)
                   (values k

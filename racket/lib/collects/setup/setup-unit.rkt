@@ -964,9 +964,8 @@
                                        (if (eq? (car p) 'info)
                                            (info-relative->path p)
                                            (main-lib-relative->path p)))
-                                  (and (complete-path? p)
-                                       ;; `c' must be `(lib ...)'
-                                       (list? c)
+                                   ;; `c' must be `(lib ...)'
+                                  (and (list? c)
                                        (pair? c)
                                        (eq? 'lib (car c))
                                        (pair? (cdr c))
@@ -1031,7 +1030,10 @@
                       ;; Try relative to `lib':
                       (let ([p (path->main-lib-relative (cc-path cc))])
                         (if (path? p)
-                            (path->bytes p)
+                            ;; Fall back to relative (with ".."s) to info root:
+                            (path->bytes (find-relative-path (cc-info-root cc)
+                                                             p
+                                                             #:more-than-root? #t))
                             p))]
                      [else (path->bytes (cc-path cc))])
                    (cons (domain) (cc-shadowing-policy cc)))))

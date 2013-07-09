@@ -10,7 +10,8 @@
 
 (define config-dir-path (build-path "racket" "etc"))
 (define config-file-path (build-path config-dir-path "config.rktd"))
-(define devel-pkgs-dir (build-path "racket" "lib" "devel-pkgs"))
+(define devel-pkgs-rel-dir (build-path "devel-pkgs"))
+(define devel-pkgs-dir (build-path "racket" "lib" devel-pkgs-rel-dir))
 
 (define only-platform? #f)
 (define sticky? #f)
@@ -61,19 +62,20 @@
        (newline o)))))
 
 (define devel-pkgs-bytes
-  (path->bytes (path->complete-path devel-pkgs-dir)))
+  (path->bytes (build-path 'up devel-pkgs-rel-dir)))
 (define devel-links-bytes
-  (path->bytes (path->complete-path (build-path devel-pkgs-dir "links.rktd"))))
+  (path->bytes (build-path 'up devel-pkgs-rel-dir "links.rktd")))
 
 (when (file-exists? config-file-path)
   (call-with-input-file*
    config-file-path
    (lambda (i)
      (define r (read i))
-     (define (check what id bytes)
+     (define (check what id bytes alt-path)
        (define l (hash-ref r id #f))
        (unless (and (list? l)
-                  (member bytes l))
+                    (or (member bytes l)
+                        (member (path->bytes (path->complete-path alt-path)) l)))
          (error 'link-all
                 (~a "config file exists, but does not have a definition of `~a' that includes development ~a\n"
                     "  config file: ~a\n"
@@ -85,10 +87,12 @@
                 bytes)))
      (check "packages"
             'pkgs-search-dirs
-            devel-pkgs-bytes)
+            devel-pkgs-bytes
+            devel-pkgs-dir)
      (check "links"
             'links-search-files
-            devel-links-bytes))))
+            devel-links-bytes
+            (build-path devel-pkgs-dir "links.rktd")))))
 
 ;; found: maps each available package name to a directory
 (define found (make-hash))
