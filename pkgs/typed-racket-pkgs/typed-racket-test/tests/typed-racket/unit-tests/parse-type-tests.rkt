@@ -157,6 +157,8 @@
    [FAIL (Class [x UNBOUND])]
    [FAIL (Class [x Number #:random-keyword])]
    [FAIL (Class (random-clause [x Number]))]
+   [FAIL (Class [m Number])]
+   [FAIL (Class (augment [m Number]))]
    ;; test duplicates
    [FAIL (Class [x Number] [x Number])]
    [FAIL (Class (init [x Number]) (init [x Number]))]
@@ -225,6 +227,7 @@
    [FAIL (Object [x Number] [x Number])]
    [FAIL (Object (field [x Number]) (field [x Number]))]
    [FAIL (Object [x Number] [x Number])]
+   [FAIL (Object [m Number])]
    ;; Test row polymorphic types
    [(All (r #:row) ((Class #:row-var r) -> (Class #:row-var r)))
     (-polyrow (r) (list null null null null)
