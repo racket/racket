@@ -1,0 +1,289 @@
+#lang racket/base
+(require (for-syntax racket/base)
+         racket/match)
+
+(provide test/no-error
+         test/spec-passed
+         test/spec-passed/result
+         test/spec-failed
+         test/pos-blame
+         test/neg-blame
+         test/well-formed
+         test ctest ctest/rewrite
+         
+         current-contract-namespace
+         make-basic-contract-namespace
+         make-full-contract-namespace
+         
+         contract-syntax-error-test
+         contract-error-test
+         
+         contract-eval
+         contract-compile
+         contract-expand-once
+         
+         rewrite-to-add-opt/c)
+
+(define test-cases 0)
+(define failures 0)
+
+(define (test expected fun arg1 . args)
+  (set! test-cases (+ test-cases 1))
+  ;(printf "\n\nexpected ~s\n" arg1)
+  (define result
+    (cond
+      [(procedure? fun) (apply fun arg1 args)]
+      [else arg1]))
+  (unless (equal? result expected)
+    (set! failures (+ failures 1))
+    (eprintf "FAILED ~s\n       got ~s\n  expected ~s\n"
+            fun
+            result
+            expected)))
+
+(define (test-an-error name thunk sexp predicate?)
+  (set! test-cases (+ test-cases 1))
+  (define exn
+    (with-handlers ((exn:fail? values))
+      (thunk)
+      'no-exn-raised))
+  (unless (predicate? exn)
+    (set! failures (+ failures 1))
+    (printf "~s\n" (list name thunk sexp predicate?))
+    (eprintf "FAILED ~s\n" name)))
+
+(define current-contract-namespace (make-parameter 'current-contract-namespace-not-initialized))
+(define (make-basic-contract-namespace . addons)
+  (define n (make-base-namespace))
+  (parameterize ([current-namespace n])
+    (namespace-require 'racket/contract/base)
+    (namespace-require '(only racket/contract/private/blame exn:fail:contract:blame?))
+    (for ([addon (in-list addons)])
+      (namespace-require addon)))
+  n)
+(define (make-full-contract-namespace . addons)
+  (apply make-basic-contract-namespace 
+         'racket/contract
+         'racket/class
+         'racket/set
+         addons))
+
+(define (contract-eval x)
+  (parameterize ([current-namespace (current-contract-namespace)])
+    (eval x)))
+
+(define (contract-compile x)
+  (parameterize ([current-namespace (current-contract-namespace)])
+    (compile x)))
+
+(define (contract-expand-once x)
+  (parameterize ([current-namespace (current-contract-namespace)])
+    (expand-once x)))
+
+(define-syntax (ctest stx)
+  (syntax-case stx ()
+    [(_ a ...)
+     (syntax (contract-eval `(,test a ...)))]))
+
+(define-syntax (ctest-no-error stx)
+  (syntax-case stx ()
+    [(_ name e)
+     (syntax
+      (ctest
+       #t
+       name
+       (with-handlers ([exn:fail? (lambda (x) `(exn ,(exn-message x)))])
+         e
+         #t)))]))
+
+(define (contract-error-test name exp exn-ok?)
+  (test #t
+        name
+        (contract-eval `(with-handlers ((exn:fail? (λ (x) (and (,exn-ok? x) #t)))) ,exp))))
+
+(define (contract-syntax-error-test name exp [reg #rx""])
+  (test #t
+        name
+        (contract-eval `(with-handlers ((exn:fail:syntax?
+                                         (lambda (x) (and (regexp-match ,reg (exn-message x)) #t))))
+                          (eval ',exp)))))
+
+;; test/spec-passed : symbol sexp -> void
+;; tests a passing specification
+(define (test/spec-passed name expression)
+  (parameterize ([compile-enforce-module-constants #f])
+    (contract-eval
+     `(,test
+       (void)
+       (let ([for-each-eval (lambda (l) (for-each eval l))]) for-each-eval)
+       (list ',expression '(void))))
+    (let ([new-expression (rewrite-out expression)])
+      (when new-expression
+        (contract-eval
+         `(,test
+           (void)
+           (let ([for-each-eval (lambda (l) (for-each eval l))]) for-each-eval)
+           (list ',new-expression '(void)))))))
+  
+  (let/ec k
+    (contract-eval
+     `(,test (void)
+             (let ([for-each-eval (lambda (l) (for-each (λ (x) (eval x)) l))])
+               for-each-eval)
+             (list ',(rewrite-to-add-opt/c expression k) '(void))))))
+
+(define (test/spec-passed/result name expression result)
+  (parameterize ([compile-enforce-module-constants #f])
+    (contract-eval `(,test ',result eval ',expression))
+    (let/ec k
+      (contract-eval
+       `(,test
+         ',result
+         eval
+         ',(rewrite-to-add-opt/c expression k))))
+    (let ([new-expression (rewrite-out expression)])
+      (when new-expression
+        (contract-eval
+         `(,test
+           ',result
+           eval
+           ',new-expression))))))
+
+;; rewrites `provide/contract' to use `contract-out'
+(define (rewrite-out orig-exp)
+  (define rewrote? #f)
+  (define maybe-rewritten?
+    (let loop ([exp orig-exp])
+      (match exp
+        [`(module ,modname ,lang ,bodies ...)
+         (define at-beginning '())
+         (define at-end '())
+         
+         ;; remove (and save) the provide/contract & contract-out
+         ;; declarations, switching their senses
+         (define removed-bodies
+           (apply
+            append
+            (for/list ([body (in-list bodies)])
+              (match body
+                [`(provide/contract . ,args)
+                 (set! rewrote? #t)
+                 (set! at-beginning (cons `(provide (contract-out . ,args))
+                                          at-beginning))
+                 (list)]
+                [`(provide (contract-out . ,args))
+                 (set! rewrote? #t)
+                 (set! at-end (cons `(provide/contract . ,args)
+                                    at-end))
+                 (list)]
+                [else
+                 (list body)]))))
+         
+         ;; insert the provide/contract (rewrite to contract-out) after the
+         ;; first require that has 'contract' in it
+         (define inserted-bodies
+           (if (equal? lang 'racket)
+               (append (reverse at-beginning)
+                       removed-bodies)
+               (apply
+                append
+                (for/list ([body (in-list removed-bodies)])
+                  (match body
+                    [`(require . ,(? (λ (l)
+                                       (for/or ([x (in-list l)])
+                                         (and (symbol? x)
+                                              (regexp-match #rx"contract" (symbol->string x)))))))
+                     (cons body (reverse at-beginning))]
+                    [else
+                     (list body)])))))
+         
+         `(module ,modname ,lang 
+            (void) ;; always insert this to work around bug in 'provide'
+            ,@inserted-bodies ,@(reverse at-end))]
+        [(? list?)
+         (map loop exp)]
+        [else exp])))
+  
+  (and rewrote? maybe-rewritten?))
+
+;; rewrites `contract' to use opt/c. If there is a module definition in there, we skip that test.
+(define (rewrite-to-add-opt/c exp k)
+  (let loop ([exp exp])
+    (cond
+      [(null? exp) null]
+      [(list? exp)
+       (case (car exp)
+         [(contract) `(contract (opt/c ,(loop (cadr exp))) ,@(map loop (cddr exp)))]
+         [(module) (k #f)]
+         [else (map loop exp)])]
+      [(pair? exp) (cons (loop (car exp))
+                         (loop (cdr exp)))]
+      [else exp])))
+
+;; blame : (or/c 'pos 'neg string?)
+;;   if blame is a string, expect to find the string (format "blaming: ~a" blame) in the exn message
+(define (test/spec-failed name expression blame)
+  (let ()
+    (define (has-proper-blame? msg)
+      (define reg
+        (cond
+          [(eq? blame 'pos) #rx"blaming: pos"]
+          [(eq? blame 'neg) #rx"blaming: neg"]
+          [(string? blame) (string-append "blaming: " (regexp-quote blame))]
+          [else #f]))
+      
+      (when reg
+        (unless (regexp-match? reg msg)
+          (eprintf "ACK!! ~s ~s\n" blame msg)
+          (custodian-shutdown-all (current-custodian))))
+      (and reg (regexp-match? reg msg)))
+    (contract-eval
+     `(,test-an-error
+       ',name
+       (lambda () ,expression)
+       ',expression
+       (lambda (exn)
+         (and (exn:fail:contract:blame? exn)
+              (,has-proper-blame? (exn-message exn))))))
+    (let/ec k
+      (let ([rewritten (rewrite-to-add-opt/c expression k)])
+        (contract-eval
+         `(,test-an-error
+           ',name
+           (lambda () ,rewritten)
+           ',rewritten
+           (lambda (exn)
+             (and (exn:fail:contract:blame? exn)
+                  (,has-proper-blame? (exn-message exn))))))))))
+
+(define (test/pos-blame name expression) (test/spec-failed name expression 'pos))
+(define (test/neg-blame name expression) (test/spec-failed name expression 'neg))
+
+(define-syntax (ctest/rewrite stx)
+  (syntax-case stx ()
+    [(_ expected name expression)
+     #'(begin
+         (contract-eval `(,test expected name expression))
+         (let/ec k
+           (contract-eval `(,test expected 
+                                  ',(string->symbol (format "~a+opt/c" name))
+                                  ,(rewrite-to-add-opt/c 'expression k)))))]))
+
+(define (test/well-formed stx)
+  (contract-eval
+   `(,test (void)
+           (let ([expand/ret-void (lambda (x) (expand x) (void))]) expand/ret-void)
+           ,stx)))
+
+(define (test/no-error sexp)
+  (contract-eval
+   `(,test (void)
+           eval
+           '(begin ,sexp (void))))
+  (let/ec k
+    (contract-eval
+     `(,test (void)
+             eval
+             '(begin ,(rewrite-to-add-opt/c sexp k) (void))))))
+
+
