@@ -110,19 +110,18 @@ _raco_help() {
   COMPREPLY=( $(compgen -W "$_raco_cmds" -- "$cur") )
 }
 
-_racket_collects_dirs=()
+_racket_collects=()
 
 _complete_collects() {
   local cur="$1"
-  if [[ "${#_racket_collects_dirs[@]}" -eq 0 ]]; then
-    _racket_collects_dirs=(
-      $( $_racket_cmd -e \
-           '(for-each displayln (current-library-collection-paths))' )
+  if [[ "${#_racket_collects[@]}" -eq 0 ]]; then
+    _racket_collects=(
+      $( $_racket_cmd -e '(require meta/contrib/completion/list-collects)' )
     )
   fi
   local wordlist=""
-  for dir in "${_racket_collects_dirs[@]}"; do
-    wordlist="$wordlist $(for x in $(compgen -d "$dir/"); do basename "$x"; done)"
+  for dir in "${_racket_collects[@]}"; do
+    wordlist="$wordlist $dir"
   done
   COMPREPLY=( $(compgen -W "$wordlist" -- "$cur") )
 }
