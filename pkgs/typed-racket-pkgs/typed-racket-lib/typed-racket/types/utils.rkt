@@ -83,7 +83,8 @@
 
 (provide/cond-contract
  [unfold (Mu? . -> . Type/c)]
- [instantiate-poly ((or/c Poly? PolyDots?) (listof Type/c) . -> . Type/c)]
+ [instantiate-poly ((or/c Poly? PolyDots? PolyRow?) (listof Type/c)
+                    . -> . Type/c)]
  [instantiate-poly-dotted
   (PolyDots? (listof Type/c) Type/c symbol? . -> . Type/c)] 
  [fv (Rep? . -> . (listof symbol?))]
