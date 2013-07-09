@@ -288,7 +288,7 @@
       [(letrec-values ([(name ...) expr] ...) . body)
        (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body form expected)]
       ;; other
-      [_ (tc-error/expr #:return (ret expected) "cannot typecheck unknown form : ~a\n" (syntax->datum form))]
+      [_ (int-err "cannot typecheck unknown form : ~a" (syntax->datum form))]
       )))
 
 ;; type check form in the current type environment
@@ -389,9 +389,7 @@
        (begin (tc-exprs (syntax->list #'es))
               (tc-expr #'e))]
       ;; other
-      [_
-       (printf "~s\n" (continuation-mark-set->context (current-continuation-marks)))
-       (tc-error/expr #:return (ret (Un)) "cannot typecheck unknown form : ~a\n" (syntax->datum form))]))
+      [_ (int-err "cannot typecheck unknown form : ~a" (syntax->datum form))]))
 
   (parameterize ([current-orig-stx form])
     ;(printf "form: ~a\n" (syntax->datum form))
