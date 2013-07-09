@@ -26,5 +26,6 @@ notifications:
   email: 
     recipients: 
       - samth@racket-lang.org
+      - robby@racket-lang.org
     on_success: always
 
