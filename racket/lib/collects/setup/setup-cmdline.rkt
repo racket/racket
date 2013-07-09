@@ -78,9 +78,9 @@
       (add-flags '((make-planet #f)))]
      [("--avoid-main") "Do not make main-installation files"
       (add-flags '((avoid-main-installation #t)))]
-     [("--no-pkg-deps") "Do not check package dependencies"
+     [("-K" "--no-pkg-deps") "Do not check package dependencies"
       (add-flags '((check-dependencies #f)))]
-     [("-K" "--fix-pkg-deps") "Auto-repair package-dependency declarations"
+     [("--fix-pkg-deps") "Auto-repair package-dependency declarations"
       (add-flags '((check-dependencies #t)
                    (fix-dependencies #t)))]
      [("--mode") mode "Select a compilation mode"
