@@ -10,6 +10,7 @@
          (submod "custom-write.rkt" test)
          (submod "defaults.rkt" test)
          (submod "errors.rkt" test)
+         (submod "fallbacks.rkt" test)
          "syntax-errors.rkt"
          "base-interfaces.rkt"
          "contract.rkt"
