@@ -186,7 +186,7 @@
                                super-methods super-augments))
           (values super-inits super-fields super-methods super-augments)]
          [(tc-result1: t)
-          (tc-error/expr "expected a superclass but got ~a" t
+          (tc-error/expr "expected a superclass but got value of type ~a" t
                          #:stx #'cls.superclass-expr)
           ;; FIXME: is this the right thing to do?
           (values null null null null)]))
@@ -994,8 +994,11 @@
      (define annotated-self-param
        (type-ascription-property #'self-param self-type))
      #`(let-values ([(#,(syntax-property #'meth-name 'type-label method-type))
-                     (#%plain-lambda (#,annotated-self-param id ...)
-                       body ...)])
+                     ;; attach source location to the lambda in order to
+                     ;; obtain better error messages for arity errors
+                     #,(quasisyntax/loc stx
+                         (#%plain-lambda (#,annotated-self-param id ...)
+                                         body ...))])
          m)]
     [(let-values ([(meth-name:id)
                    (let-values (((core:id)
@@ -1005,9 +1008,11 @@
        m)
      #`(let-values ([(#,(syntax-property #'meth-name 'type-label method-type))
                      #,(syntax-property
-                        #'(let-values (((core)
-                                        (#%plain-lambda (param ...)
-                                                        core-body ...)))
+                        #`(let-values (((core)
+                                        ;; see comment above
+                                        #,(quasisyntax/loc stx
+                                           (#%plain-lambda (param ...)
+                                                           core-body ...))))
                             method-body ...)
                         'kw-lambda #t)])
          m)]
