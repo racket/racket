@@ -59,7 +59,7 @@
       (enqueue-front! stack vtx)
       (set-vertex-stack?! vtx #t)
       (for ([successor-id (in-list (vertex-adjacent vtx))])
-        (define successor (dict-ref vertices successor-id))
+        (define successor (free-id-table-ref vertices successor-id))
         (cond [(not (vertex-index successor))
                (strongly-connected successor)
                (set-vertex-lowlink! vtx
