@@ -129,3 +129,29 @@
    (stream-empty? stream)
    #:defaults
    ([])))
+
+(check-good-syntax
+  (define-generics foo (bar foo))
+  (define-generics foo (bar x foo))
+  (define-generics foo (bar foo x))
+  (define-generics foo (bar foo [x]))
+  (define-generics foo (bar foo x y))
+  (define-generics foo (bar foo x [y]))
+  (define-generics foo (bar foo [x] [y]))
+  (define-generics foo (bar foo x #:k z y))
+  (define-generics foo (bar foo x #:k z [y]))
+  (define-generics foo (bar foo [x] #:k z [y]))
+  (define-generics foo (bar foo x #:k [z] y))
+  (define-generics foo (bar foo x #:k [z] [y]))
+  (define-generics foo (bar foo [x] #:k [z] [y]))
+  (define-generics foo (bar foo [x] #:k z [y] #:j w))
+  (define-generics foo (bar foo [x] #:k z [y] #:j [w]))
+  (define-generics foo (bar foo [x] #:k [z] [y] #:j w))
+  (define-generics foo (bar foo [x] #:k [z] [y] #:j [w])))
+
+(check-bad-syntax
+  (define-generics foo (bar))
+  (define-generics foo (bar x))
+  (define-generics foo (bar [foo]))
+  (define-generics foo (bar [x] foo))
+  (define-generics foo (bar foo [x] y)))
