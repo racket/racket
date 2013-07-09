@@ -965,15 +965,25 @@
                                            (info-relative->path p)
                                            (main-lib-relative->path p)))
                                    ;; `c' must be `(lib ...)'
-                                  (and (list? c)
+                                  (and (or (relative-path? p)
+                                           ;; Keep a complete path only if it could not be
+                                           ;; made relative:
+                                           (and (complete-path? p)
+                                                (complete-path?
+                                                 (find-relative-path info-root
+                                                                     p
+                                                                     #:more-than-root? #t))))
+                                       (list? c)
                                        (pair? c)
                                        (eq? 'lib (car c))
                                        (pair? (cdr c))
                                        (andmap string? (cdr c))
-                                       ;; path must match some cc:
-                                       (for/or ([cc (in-list all-collections-closure)])
-                                         (equal? p (cc-path cc)))
-                                       p))]
+                                       (let ([p (simplify-path (path->complete-path p info-root))])
+                                         (and
+                                          ;; path must match some cc:
+                                          (for/or ([cc (in-list all-collections-closure)])
+                                            (equal? p (cc-path cc)))
+                                          p))))]
                              [(abs)
                               (and (complete-path? p) p)]))
                          (if (and dir
