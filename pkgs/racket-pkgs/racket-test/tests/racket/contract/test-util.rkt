@@ -1,6 +1,5 @@
 #lang racket/base
-(require (for-syntax racket/base)
-         racket/match)
+(require (for-syntax racket/base))
 
 (provide test/no-error
          test/spec-passed
@@ -154,8 +153,13 @@
   (define rewrote? #f)
   (define maybe-rewritten?
     (let loop ([exp orig-exp])
-      (match exp
-        [`(module ,modname ,lang ,bodies ...)
+      (cond
+        [(and (list? exp)
+              (>= (length exp) 3)
+              (eq? (car exp) 'module))
+         (define modname (list-ref exp 1))
+         (define lang (list-ref exp 2))
+         (define bodies (list-tail exp 3))
          (define at-beginning '())
          (define at-end '())
          
@@ -165,13 +169,21 @@
            (apply
             append
             (for/list ([body (in-list bodies)])
-              (match body
-                [`(provide/contract . ,args)
+              (cond
+                [(and (pair? body)
+                      (eq? (car body) 'provide/contract))
+                 (define args (cdr body))
                  (set! rewrote? #t)
                  (set! at-beginning (cons `(provide (contract-out . ,args))
                                           at-beginning))
                  (list)]
-                [`(provide (contract-out . ,args))
+                [(and (list? body)
+                      (= 2 (length body))
+                      (eq? (car body) 'provide)
+                      (let ([sub-part (list-ref body 1)])
+                        (and (pair? sub-part)
+                             (eq? (car sub-part) 'contract-out))))
+                 (define args (cdr (list-ref body 1)))
                  (set! rewrote? #t)
                  (set! at-end (cons `(provide/contract . ,args)
                                     at-end))
@@ -188,19 +200,21 @@
                (apply
                 append
                 (for/list ([body (in-list removed-bodies)])
-                  (match body
-                    [`(require . ,(? (λ (l)
-                                       (for/or ([x (in-list l)])
-                                         (and (symbol? x)
-                                              (regexp-match #rx"contract" (symbol->string x)))))))
+                  (define (good-thing? l)
+                    (for/or ([x (in-list l)])
+                      (and (symbol? x)
+                           (regexp-match #rx"contract" (symbol->string x)))))
+                  (cond
+                    [(and (pair? body)
+                          (eq? (car body) 'require)
+                          (good-thing? (cdr body)))
                      (cons body (reverse at-beginning))]
                     [else
                      (list body)])))))
-         
          `(module ,modname ,lang 
             (void) ;; always insert this to work around bug in 'provide'
             ,@inserted-bodies ,@(reverse at-end))]
-        [(? list?)
+        [(list? exp)
          (map loop exp)]
         [else exp])))
   
