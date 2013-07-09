@@ -46,10 +46,9 @@
 ;;
 ;; Returns the components in topologically sorted order
 (define (find-strongly-connected-type-aliases dep-map)
-  (define vertex-map
-    (make-free-id-table
-     (for/hash ([(id adjacent) (in-dict dep-map)])
-       (values id (vertex id #f #f #f adjacent)))))
+  (define vertex-map (make-free-id-table))
+  (for ([(id adjacent) (in-dict dep-map)])
+    (free-id-table-set! vertex-map id (vertex id #f #f #f adjacent)))
   ;; Implements Tarjan's algorithm. See Wikipedia
   ;; http://en.wikipedia.org/wiki/Tarjan's_strongly_connected_components_algorithm
   (define (tarjan vertices)
