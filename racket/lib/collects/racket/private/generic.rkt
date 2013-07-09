@@ -29,9 +29,13 @@
 (define-syntax (define-primitive-generics/derived stx)
   (syntax-case stx ()
     [(_ original
-        (self-name generic-name property-name accessor-name predicate-name
-                   #:defined-table supported-name
-                   #:defaults ([default-pred default-defn ...] ...))
+        (self-name generic-name
+                   property-name
+                   accessor-name
+                   predicate-name
+                   supported-name)
+        #:defaults ([default-pred default-defn ...] ...)
+        #:fallbacks [fallback-defn ...]
         [method-name . method-signature]
         ...)
      (parameterize ([current-syntax-context #'original])
@@ -53,6 +57,8 @@
          (generate-temporaries #'(default-pred ...)))
        (define/with-syntax (default-impl-name ...)
          (generate-temporaries #'(default-pred ...)))
+       (define/with-syntax fallback-name
+         (generate-temporary #'self-name))
        #'(begin
            (define-syntax generic-name
              (make-generic-info (quote-syntax property-name)
@@ -85,6 +91,8 @@
            (define default-impl-name
              (generic-method-table generic-name default-defn ...))
            ...
+           (define fallback-name
+             (generic-method-table generic-name fallback-defn ...))
            (define-generic-support supported-name
                                    self-name
                                    [method-name ...]
@@ -94,7 +102,8 @@
              method-name
              method-signature
              self-name
-             (vector-ref (table-name self-name 'method-name) 'method-index)
+             (or (vector-ref (table-name self-name 'method-name) 'method-index)
+                 (vector-ref fallback-name 'method-index))
              original)
            ...))]))
 

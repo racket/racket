@@ -15,22 +15,28 @@
 
 (begin-for-syntax
 
-  (define (parse stx methods table defaults)
+  (define (parse stx methods table defaults fallbacks)
     (syntax-case stx ()
       [(#:defined-table name . args)
        (identifier? #'name)
        (if table
            (wrong-syntax (stx-car stx)
                          "duplicate #:defined-table specification")
-           (parse #'args methods #'name defaults))]
+           (parse #'args methods #'name defaults fallbacks))]
       [(#:defined-table . other)
        (wrong-syntax (stx-car stx) "invalid #:defined-table specification")]
       [(#:defaults ([pred defn ...] ...) . args)
        (if defaults
            (wrong-syntax (stx-car stx) "duplicate #:defaults specification")
-           (parse #'args methods table #'([pred defn ...] ...)))]
+           (parse #'args methods table #'([pred defn ...] ...) fallbacks))]
       [(#:defaults . other)
        (wrong-syntax (stx-car stx) "invalid #:defaults specification")]
+      [(#:fallbacks [fallback ...] . args)
+       (if fallbacks
+           (wrong-syntax (stx-car stx) "duplicate #:fallbacks specification")
+           (parse #'args methods table defaults #'[fallback ...]))]
+      [(#:fallbacks . other)
+       (wrong-syntax (stx-car stx) "invalid #:fallbacks specification")]
       [(kw . args)
        (keyword? (syntax-e #'kw))
        (wrong-syntax #'kw "invalid keyword argument")]
@@ -40,13 +46,14 @@
            (let loop ([methods (list (stx-car stx))] [stx #'args])
              (syntax-case stx ()
                [((_ . _) . args) (loop (cons (stx-car stx) methods) #'args)]
-               [_ (parse stx (reverse methods) table defaults)])))]
+               [_ (parse stx (reverse methods) table defaults fallbacks)])))]
       [(other . args)
        (wrong-syntax #'other
                      "expected a method identifier with formal arguments")]
       [() (values (or methods '())
                   (or table (generate-temporary 'table))
-                  (or defaults '()))]
+                  (or defaults '())
+                  (or fallbacks '()))]
       [other
        (wrong-syntax #'other
                      "expected a list of arguments with no dotted tail")])))
@@ -57,9 +64,10 @@
      (parameterize ([current-syntax-context stx])
        (unless (identifier? #'name)
          (wrong-syntax #'name "expected an identifier"))
-       (define-values (methods table defaults)
-         (parse #'rest #f #f #f))
+       (define-values (methods table defaults fallbacks)
+         (parse #'rest #f #f #f #f))
        (define/with-syntax [default ...] defaults)
+       (define/with-syntax [fallback ...] fallbacks)
        (define/with-syntax [method ...] methods)
        (define/with-syntax [method-name ...] (map stx-car methods))
        (define/with-syntax [method-index ...]
@@ -75,9 +83,9 @@
        #'(begin
            (define-primitive-generics/derived
              original
-             (name gen-name prop-name get-name pred-name
-                   #:defined-table table-name
-                   #:defaults [default ...])
+             (name gen-name prop-name get-name pred-name table-name)
+             #:defaults [default ...]
+             #:fallbacks [fallback ...]
              method ...)
            (define-generics-contract name pred-name get-name
              [method-name method-index]

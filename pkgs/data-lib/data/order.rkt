@@ -15,9 +15,13 @@
 ;; i.e., exporting prop:ordered-dict as opposed to using a
 ;;       generated hidden property.
 (define-primitive-generics
-  (ordered-dict gen:ordered-dict prop:ordered-dict ordered-methods ordered-dict?
-                #:defined-table dict-def-table
-                #:defaults ())
+  (ordered-dict gen:ordered-dict
+                prop:ordered-dict
+                ordered-methods
+                ordered-dict?
+                dict-def-table)
+  #:defaults ()
+  #:fallbacks ()
   (dict-iterate-least ordered-dict)
   (dict-iterate-greatest ordered-dict)
   (dict-iterate-least/>? ordered-dict key)

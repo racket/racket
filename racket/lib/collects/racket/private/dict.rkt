@@ -3,9 +3,10 @@
 (require racket/private/generic ; to avoid circular dependencies
          (for-syntax racket/base))
 
-(define-primitive-generics (dict gen:dict prop:dict dict-methods dict?
-                                 #:defined-table dict-def-table
-                                 #:defaults ())
+(define-primitive-generics
+  (dict gen:dict prop:dict dict-methods dict? dict-def-table)
+  #:defaults ()
+  #:fallbacks ()
   (dict-ref  dict key [default])
   (dict-set! dict key val)
   (dict-set  dict key val)
