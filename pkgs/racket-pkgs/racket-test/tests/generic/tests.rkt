@@ -18,5 +18,6 @@
          "empty-interface.rkt"
          "top-level.rkt"
          "pr13737.rkt"
+         "marked.rkt"
          "methods.rkt")
 
