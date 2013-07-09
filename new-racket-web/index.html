@@ -55,6 +55,7 @@
   .navbar { background: rgb(245,245,245) }
   pre { color: black }
   p {color: black}
+  code { font-family: 'Inconsolata'}
 
 
 .codecomment {
@@ -171,28 +172,28 @@ documentation, so click on them for more information.
 </div>
 
 
-    <div class="content echo_server codesnip">
+    <div class="content web_scraper codesnip">
       <a class="close switch" gumby-trigger="|#modal1"><i class="icon-cancel" /></i></a>
       <div class="row">
         <div class="ten columns centered center-text">
-          <h4>Echo server</h4>
+          <h4>Web scraper</h4>
         <pre style="font-size: 140%; font-family: 'Inconsolata';">
-#lang <a href="http://docs.racket-lang.org/reference/index.html" class="codemodpath" rel="nofollow">racket</a>  <span class="codecomment">; An echo server</span>
-<span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/define.html#(form._((lib._racket/private/base..rkt)._define))" class="codelinkimportform" rel="nofollow">define</a> <span class="codeid">listener</span> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/tcp.html#(def._((lib._racket/tcp..rkt)._tcp-listen))" class="codelinkimportid" rel="nofollow">tcp-listen</a> <span class="codeconstant">12345</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span>
-<span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/let.html#(form._((lib._racket/private/letstx-scheme..rkt)._let))" class="codelinkimportform" rel="nofollow">let</a> <span class="codeid">echo-server</span> <span class="codeparenthesis">(</span><span class="codeparenthesis">)</span>
-  <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/define.html#(form._((quote._~23~25kernel)._define-values))" class="codelinkimportform" rel="nofollow">define-values</a> <span class="codeparenthesis">(</span><span class="codeid">in</span> <span class="codeid">out</span><span class="codeparenthesis">)</span> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/tcp.html#(def._((lib._racket/tcp..rkt)._tcp-accept))" class="codelinkimportid" rel="nofollow">tcp-accept</a> <span class="codeid">listener</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span>
-  <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/threads.html#(def._((quote._~23~25kernel)._thread))" class="codelinkimportid" rel="nofollow">thread</a> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/lambda.html#(form._((lib._racket/private/base..rkt)._lambda))" class="codelinkimportform" rel="nofollow">lambda</a> <span class="codeparenthesis">(</span><span class="codeparenthesis">)</span> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/port-lib.html#(def._((lib._racket/port..rkt)._copy-port))" class="codelinkimportid" rel="nofollow">copy-port</a> <span class="codeid">in</span> <span class="codeid">out</span><span class="codeparenthesis">)</span>
-                      <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/port-ops.html#(def._((quote._~23~25kernel)._close-output-port))" class="codelinkimportid" rel="nofollow">close-output-port</a> <span class="codeid">out</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span>
-  <span class="codeparenthesis">(</span><span class="codeid">echo-server</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span>
+#lang <a href="http://docs.racket-lang.org/reference/index.html" class="codemodpath" rel="nofollow">racket</a> <span class="codecomment">; Simple web scraper</span>
+<span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/require.html#(form._((lib._racket/private/base..rkt)._require))" class="codelinkimportform" rel="nofollow">require</a> <a href="http://docs.racket-lang.org/net/url.html" class="codemodpath" rel="nofollow">net/url</a> <a href="http://docs.racket-lang.org/net/uri-codec.html" class="codemodpath" rel="nofollow">net/uri-codec</a><span class="codeparenthesis">)</span>
+<span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/define.html#(form._((lib._racket/private/base..rkt)._define))" class="codelinkimportform" rel="nofollow">define</a> <span class="codeparenthesis">(</span><span class="codeid">let-me-google-that-for-you</span> <span class="codeid">str</span><span class="codeparenthesis">)</span>
+  <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/let.html#(form._((lib._racket/private/letstx-scheme..rkt)._let*))" class="codelinkimportform" rel="nofollow">let*</a> <span class="codeparenthesis">(</span><span class="codeparenthesis">[</span><span class="codeid">g</span> <span class="codestring">"http://www.google.com/search?q="</span><span class="codeparenthesis">]</span>
+         <span class="codeparenthesis">[</span><span class="codeid">u</span> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/strings.html#(def._((quote._~23~25kernel)._string-append))" class="codelinkimportid" rel="nofollow">string-append</a> <span class="codeid">g</span> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/net/uri-codec.html#(def._((lib._net/uri-codec..rkt)._uri-encode))" class="codelinkimportid" rel="nofollow">uri-encode</a> <span class="codeid">str</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span><span class="codeparenthesis">]</span>
+         <span class="codeparenthesis">[</span><span class="codeid">rx</span> <span class="codestring">#rx"(?&lt;=&lt;h3 class=\"r\"&gt;).*?(?=&lt;/h3&gt;)"</span><span class="codeparenthesis">]</span><span class="codeparenthesis">)</span>
+    <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/regexp.html#(def._((lib._racket/private/base..rkt)._regexp-match*))" class="codelinkimportid" rel="nofollow">regexp-match*</a> <span class="codeid">rx</span> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/net/url.html#(def._((lib._net/url..rkt)._get-pure-port))" class="codelinkimportid" rel="nofollow">get-pure-port</a> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/net/url.html#(def._((lib._net/url..rkt)._string-~3eurl))" class="codelinkimportid" rel="nofollow">string-&gt;url</a> <span class="codeid">u</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span>
         </pre>
         </div>
       </div>
       <div class="row">
         <div class="ten columns centered center-text">
         <p>
-Racket makes it easy to use TCP sockets and spawn threads to handle
-them. This program starts a server at TCP port 12345 that echos
-anything a client sends back to the client.</p>
+Add a call to <code>let-me-google-that-for-you</code> to get a list of search
+results.
+</p>
 
 <p>
 To run the example, install Racket, start DrRacket, paste the example
@@ -247,11 +248,11 @@ computing and from databases to charts.
       <!-- <div class="eight columns centered"         -->
       <!--      style="font-size: 140%; position: relative; -->
       <!--             font-family: 'Inconsolata';"> -->
-      <!--   <a href="#" class="toggle" gumby-trigger=".unique_lines|.echo_server"> -->
+      <!--   <a href="#" class="toggle" gumby-trigger=".unique_lines|.web_scraper"> -->
       <!--   <img class="halign"  src="img/prev.png" style="position: -->
       <!--             absolute; top: 50%; left: -20%; margin-top: -25px"> -->
       <!--   </a> -->
-      <!--   <a href="#" class="toggle" gumby-trigger=".unique_lines|.echo_server"> -->
+      <!--   <a href="#" class="toggle" gumby-trigger=".unique_lines|.web_scraper"> -->
       <!--     <img class="halign" src="img/next.png" -->
       <!--          style="position: absolute; top: 50%; right: -20%; -->
       <!--                                                   margin-top: -->
@@ -264,7 +265,7 @@ computing and from databases to charts.
   <div class="row">
     <div class="one columns">
       <a href="#" class="toggle" 
-         gumby-trigger=".unique_lines|.echo_server">
+         gumby-trigger=".unique_lines|.web_scraper">
         <img src="img/prev.png"  style="margin-top: 50px; width: 50px">
       </a>
     </div>
@@ -291,19 +292,19 @@ computing and from databases to charts.
 
 
 
-        <pre class="codesnip echo_server">
-#lang <a href="http://docs.racket-lang.org/reference/index.html" class="codemodpath" rel="nofollow">racket</a>  <span class="codecomment">; An echo server</span>
-<span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/define.html#(form._((lib._racket/private/base..rkt)._define))" class="codelinkimportform" rel="nofollow">define</a> <span class="codeid">listener</span> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/tcp.html#(def._((lib._racket/tcp..rkt)._tcp-listen))" class="codelinkimportid" rel="nofollow">tcp-listen</a> <span class="codeconstant">12345</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span>
-<span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/let.html#(form._((lib._racket/private/letstx-scheme..rkt)._let))" class="codelinkimportform" rel="nofollow">let</a> <span class="codeid">echo-server</span> <span class="codeparenthesis">(</span><span class="codeparenthesis">)</span>
-  <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/define.html#(form._((quote._~23~25kernel)._define-values))" class="codelinkimportform" rel="nofollow">define-values</a> <span class="codeparenthesis">(</span><span class="codeid">in</span> <span class="codeid">out</span><span class="codeparenthesis">)</span> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/tcp.html#(def._((lib._racket/tcp..rkt)._tcp-accept))" class="codelinkimportid" rel="nofollow">tcp-accept</a> <span class="codeid">listener</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span>
-  <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/threads.html#(def._((quote._~23~25kernel)._thread))" class="codelinkimportid" rel="nofollow">thread</a> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/lambda.html#(form._((lib._racket/private/base..rkt)._lambda))" class="codelinkimportform" rel="nofollow">lambda</a> <span class="codeparenthesis">(</span><span class="codeparenthesis">)</span> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/port-lib.html#(def._((lib._racket/port..rkt)._copy-port))" class="codelinkimportid" rel="nofollow">copy-port</a> <span class="codeid">in</span> <span class="codeid">out</span><span class="codeparenthesis">)</span>
-                      <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/port-ops.html#(def._((quote._~23~25kernel)._close-output-port))" class="codelinkimportid" rel="nofollow">close-output-port</a> <span class="codeid">out</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span>
-  <span class="codeparenthesis">(</span><span class="codeid">echo-server</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span>
+        <pre class="codesnip web_scraper">
+#lang <a href="http://docs.racket-lang.org/reference/index.html" class="codemodpath" rel="nofollow">racket</a> <span class="codecomment">; Simple web scraper</span>
+<span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/require.html#(form._((lib._racket/private/base..rkt)._require))" class="codelinkimportform" rel="nofollow">require</a> <a href="http://docs.racket-lang.org/net/url.html" class="codemodpath" rel="nofollow">net/url</a> <a href="http://docs.racket-lang.org/net/uri-codec.html" class="codemodpath" rel="nofollow">net/uri-codec</a><span class="codeparenthesis">)</span>
+<span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/define.html#(form._((lib._racket/private/base..rkt)._define))" class="codelinkimportform" rel="nofollow">define</a> <span class="codeparenthesis">(</span><span class="codeid">let-me-google-that-for-you</span> <span class="codeid">str</span><span class="codeparenthesis">)</span>
+  <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/let.html#(form._((lib._racket/private/letstx-scheme..rkt)._let*))" class="codelinkimportform" rel="nofollow">let*</a> <span class="codeparenthesis">(</span><span class="codeparenthesis">[</span><span class="codeid">g</span> <span class="codestring">"http://www.google.com/search?q="</span><span class="codeparenthesis">]</span>
+         <span class="codeparenthesis">[</span><span class="codeid">u</span> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/strings.html#(def._((quote._~23~25kernel)._string-append))" class="codelinkimportid" rel="nofollow">string-append</a> <span class="codeid">g</span> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/net/uri-codec.html#(def._((lib._net/uri-codec..rkt)._uri-encode))" class="codelinkimportid" rel="nofollow">uri-encode</a> <span class="codeid">str</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span><span class="codeparenthesis">]</span>
+         <span class="codeparenthesis">[</span><span class="codeid">rx</span> <span class="codestring">#rx"(?&lt;=&lt;h3 class=\"r\"&gt;).*?(?=&lt;/h3&gt;)"</span><span class="codeparenthesis">]</span><span class="codeparenthesis">)</span>
+    <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/regexp.html#(def._((lib._racket/private/base..rkt)._regexp-match*))" class="codelinkimportid" rel="nofollow">regexp-match*</a> <span class="codeid">rx</span> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/net/url.html#(def._((lib._net/url..rkt)._get-pure-port))" class="codelinkimportid" rel="nofollow">get-pure-port</a> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/net/url.html#(def._((lib._net/url..rkt)._string-~3eurl))" class="codelinkimportid" rel="nofollow">string-&gt;url</a> <span class="codeid">u</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span>
 </pre>
 </div>
 
     <div class="one columns">
-      <a href="#"  class="toggle" gumby-trigger=".unique_lines|.echo_server">
+      <a href="#"  class="toggle" gumby-trigger=".unique_lines|.web_scraper">
         <img src="img/next.png" style="width: 50px; margin-top: 50px;">
           </a>
     </div>
