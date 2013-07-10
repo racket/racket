@@ -16,7 +16,7 @@
 
   (provide deflate gzip-through-ports gzip)
 
-  (require mzlib/unit200 (for-syntax racket/base))
+  (require (for-syntax racket/base))
 
   (define (vector-ref* v i)
     (let ([r (vector-ref v i)])
@@ -197,11 +197,7 @@
  ;;  multiply invoked), so we pack it up into a unit to
  ;;  invoke each time we need it.
 
- (define code
-   (unit
-     (import)
-     (export)
-
+ (define (code)
 
 ;; /* ===========================================================================
 ;;  * Local data used by the "longest match" routines.
@@ -2227,17 +2223,17 @@
           (lambda () (close-output-port o)))))
      (lambda () (close-input-port i)))))
 
-(list gzip gzip-through-ports deflate)))
+(list gzip gzip-through-ports deflate))
 
 (define gzip
   (case-lambda
    [(infile) (gzip infile (string-append infile ".gz"))]
-   [(infile outfile) ((car (invoke-unit code)) infile outfile)]))
+   [(infile outfile) ((car (code)) infile outfile)]))
 
 (define (gzip-through-ports in out origname time_stamp)
-  ((cadr (invoke-unit code)) in out origname time_stamp))
+  ((cadr (code)) in out origname time_stamp))
 
 (define (deflate in out)
-  ((caddr (invoke-unit code)) in out))
+  ((caddr (code)) in out))
 
 )
