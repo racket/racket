@@ -14,7 +14,7 @@ exec "$exe" "$0" "$@"
 (define output-dir (current-directory))
 (define distribute? #f)
 (define warn? #t)
-(define extra-file #f)
+(define extra-files '())
 
 (command-line
  #:once-any
@@ -39,9 +39,10 @@ exec "$exe" "$0" "$@"
   "distribute resulting content"
   "  (will only work with the right access to the servers)"
   (set! distribute? #t)]
+ #:multi
  [("-e" "--extra") extra
   "extra file to render more content"
-  (set! extra-file extra)]
+  (set! extra-files (cons extra extra-files))]
  #:help-labels
  " ** Note: set $KNOWN_MIRRORS_FILE to a file if you want to poll mirror"
  "          links (see top comment in \"download/mirror-link.rkt\").")
@@ -70,8 +71,10 @@ exec "$exe" "$0" "$@"
 
 (printf "Building ~a content...\n" build-mode)
 (parameterize ([url-roots (and (eq? 'web build-mode) sites)])
-  (when (and extra-file (file-exists? extra-file))
-    (dynamic-require `(file ,extra-file) #f))
+  (for ([extra (in-list extra-files)])
+    (if (file-exists? extra)
+      (dynamic-require `(file ,extra) #f)
+      (printf "  ignoring missing extra file: ~a\n" extra)))
   (parameterize ([current-directory output-dir])
     (render-all)
     (when distribute?
