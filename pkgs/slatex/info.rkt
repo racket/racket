@@ -13,3 +13,7 @@
 (define deps '("base"
                "compatibility-lib"))
 (define build-deps '("scribble-lib"))
+
+;; Make slatex.sty easier to find (for adding to TEXINPUTS)
+;; by copying it to the "lib" directory:
+(define copy-foreign-libs '("slatex.sty"))
