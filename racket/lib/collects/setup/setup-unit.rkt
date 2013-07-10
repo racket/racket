@@ -120,6 +120,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define errors null)
+  (define exit-code 0)
   (define (append-error cc desc exn out err type)
     (set! errors (cons (list cc desc exn out err type) errors)))
   (define (handle-error cc desc exn out err type)
@@ -155,7 +156,7 @@
         (eprintf "INSTALLATION FAILED.\nPress Enter to continue...\n")
         (read-line))
       (exit 1))
-    (exit 0))
+    (exit exit-code))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;               Archive Unpacking               ;;
@@ -1594,20 +1595,21 @@
 
   (define (do-check-package-dependencies)
     (setup-printf #f (format "--- checking package dependencies ---"))
-    (check-package-dependencies (map cc-path ccs-to-compile)
-                                (map cc-collection ccs-to-compile)
-                                ;; If "test" or "scribblings" is this collection's name,
-                                ;; then it's build-mode code, otherwise it's test mode:
-                                (let ([tests-path (string->path "tests")]
-                                      [scribblings-path (string->path "scribblings")])
-                                  (for/list ([cc (in-list ccs-to-compile)])
-                                    (if (or (member tests-path (cc-collection cc))
-                                            (member scribblings-path (cc-collection cc)))
-                                        'build
-                                        'run)))
-                                setup-printf setup-fprintf
-                                (fix-dependencies)
-                                (verbose)))
+    (unless (check-package-dependencies (map cc-path ccs-to-compile)
+                                        (map cc-collection ccs-to-compile)
+                                        ;; If "test" or "scribblings" is this collection's name,
+                                        ;; then it's build-mode code, otherwise it's test mode:
+                                        (let ([tests-path (string->path "tests")]
+                                              [scribblings-path (string->path "scribblings")])
+                                          (for/list ([cc (in-list ccs-to-compile)])
+                                            (if (or (member tests-path (cc-collection cc))
+                                                    (member scribblings-path (cc-collection cc)))
+                                                'build
+                                                'run)))
+                                        setup-printf setup-fprintf
+                                        (fix-dependencies)
+                                        (verbose))
+      (set! exit-code 1)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; setup-unit Body                ;;

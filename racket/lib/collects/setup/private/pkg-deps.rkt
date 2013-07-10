@@ -32,6 +32,15 @@
   (define mod-pkg (make-hash))
   (define path-cache (make-hash))
   (define metadata-ns (make-base-namespace))
+
+  ;; ----------------------------------------
+  ;; printinf helpers:
+  (define (setup-printf* task s . args)
+    (for ([s (string-split (apply format s args) "\n")])
+      (setup-printf task s)))
+  (define (setup-fprintf* o task s . args)
+    (for ([s (string-split (apply format s args) "\n")])
+      (setup-fprintf o task s)))
   
   ;; ----------------------------------------
   ;; Find the canonical representative for a set of external dependencies:
@@ -91,13 +100,13 @@
     (for ([i (in-set implies)])
       (unless (eq? i 'core)
         (unless (set-member? runtime-deps i)
-          (setup-fprintf (current-error-port) #f 
-                         (string-append
-                          "implied package is not declared as a dependency:\n"
-                          " in package: ~s\n"
-                          " implied package: ~s\n")
-                         pkg
-                         i))))
+          (setup-fprintf* (current-error-port) #f 
+                          (string-append
+                           "implied package is not declared as a dependency:\n"
+                           " in package: ~s\n"
+                           " implied package: ~s\n")
+                          pkg
+                          i))))
     (for ([mod (in-list mods)])
       (hash-set! mod-pkg mod pkg))
     ;; Save immediate dependencies, initialize external dependencies:
@@ -172,15 +181,15 @@
            string-append
            (for/list ([k (in-set s)])
              (format "\n   ~s" k))))
-        (setup-printf #f 
-                      (string-append
-                       " declared accesses, counting `implies'\n"
-                       "  for package: ~s\n"
-                       "  packages:~a\n"
-                       "  packages for build:~a")
-                      pkg
-                      (make-list (car (hash-ref pkg-internal-deps pkg)))
-                      (make-list (cadr (hash-ref pkg-internal-deps pkg)))))))
+        (setup-printf* #f 
+                       (string-append
+                        " declared accesses, counting `implies'\n"
+                        "  for package: ~s\n"
+                        "  packages:~a\n"
+                        "  packages for build:~a")
+                       pkg
+                       (make-list (car (hash-ref pkg-internal-deps pkg)))
+                       (make-list (cadr (hash-ref pkg-internal-deps pkg)))))))
   
   ;; ----------------------------------------
   ;; Check use of `mod' (in `mode') from `pkg' by file `f':
@@ -206,19 +215,19 @@
         (define key (list pkg src-pkg (path-replace-suffix f #"") mod))
         (unless (hash-ref reported key #f)
           (hash-set! reported key #t)
-          (setup-fprintf (current-error-port) #f 
-                         (string-append
-                          "found undeclared dependency:\n"
-                          "  mode: ~s\n"
-                          "  for package: ~s\n"
-                          "  on package: ~s\n"
-                          "  dependent source: ~a\n"
-                          "  used module: ~s")
-                         mode
-                         pkg
-                         src-pkg
-                         f
-                         mod)))))
+          (setup-fprintf* (current-error-port) #f 
+                          (string-append
+                           "found undeclared dependency:\n"
+                           "  mode: ~s\n"
+                           "  for package: ~s\n"
+                           "  on package: ~s\n"
+                           "  dependent source: ~a\n"
+                           "  used module: ~s")
+                          mode
+                          pkg
+                          src-pkg
+                          f
+                          mod)))))
 
   ;; For each collection, set up package info:
   (for ([path (in-list paths)])
@@ -307,7 +316,7 @@
                            core-pkg
                            pkg))
                      string<?)))
-    (apply setup-fprintf (current-error-port) #f 
+    (apply setup-fprintf* (current-error-port) #f 
            (apply
             string-append
             "undeclared dependency detected\n"
@@ -332,7 +341,8 @@
       (define info-path (build-path (pkg-directory pkg) "info.rkt"))
       (setup-printf #f "repairing ~s..." info-path)
       (fix-info-deps-definition info-path 'deps (car pkgss))
-      (fix-info-deps-definition info-path 'build-deps (cadr pkgss)))))
+      (fix-info-deps-definition info-path 'build-deps (cadr pkgss))))
+  (zero? (hash-count missing)))
 
 (define (fix-info-deps-definition info-path deps-id pkgs)
   (unless (null? pkgs)
