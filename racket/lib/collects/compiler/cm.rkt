@@ -3,7 +3,6 @@
          syntax/modresolve
          syntax/modread
          setup/dirs
-	 unstable/file
          racket/file
          racket/list
          racket/path
@@ -426,7 +425,7 @@
 
   ;; Write the code and dependencies:
   (when code
-    (with-compiler-security-guard (make-directory*/ignore-exists-exn code-dir))
+    (with-compiler-security-guard (make-directory* code-dir))
     (with-compile-output zo-name
       (lambda (out tmp-name)
         (with-handlers ([exn:fail?

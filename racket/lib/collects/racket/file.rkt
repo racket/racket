@@ -94,7 +94,8 @@
                (not (directory-exists? base)))
       (make-directory* base))
     (unless (directory-exists? dir)
-      (make-directory dir))))
+      (with-handlers ([exn:fail:filesystem:exists? void])
+        (make-directory dir)))))
 
 (define-syntax (make-temporary-file stx)
   (with-syntax ([app (datum->syntax stx #'#%app stx)])

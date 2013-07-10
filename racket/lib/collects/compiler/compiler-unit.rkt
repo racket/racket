@@ -18,7 +18,7 @@
          syntax/moddep
 
          scheme/file
-         mzlib/compile ; gets compile-file
+         compiler/compile-file
          compiler/cm
          setup/getinfo
          setup/main-collects

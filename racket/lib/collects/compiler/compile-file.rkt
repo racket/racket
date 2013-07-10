@@ -1,15 +1,14 @@
 #lang racket/base
 (require racket/function
          racket/path
-         racket/file
-         unstable/file)
+         racket/file)
 (provide compile-file)
 
 (define compile-file
   (case-lambda
     [(src)
      (define cdir (build-path (path-only src) "compiled"))
-     (make-directory*/ignore-exists-exn cdir)
+     (make-directory* cdir)
      (compile-file src (build-path cdir (path-add-suffix (file-name-from-path src) #".zo")))]
     [(src dest) 
      (compile-file src dest values)]

@@ -996,7 +996,8 @@ paths disappear during the scan, then an exception is raised.}
 @defproc[(make-directory* [path path-string?]) void?]{
 
 Creates directory specified by @racket[path], creating intermediate
-directories as necessary.}
+directories as necessary, and never failing if @racket[path] exists
+already.}
 
 
 @defproc[(make-temporary-file [template string? "rkttmp~a"]

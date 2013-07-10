@@ -23,7 +23,6 @@
          scribble/private/run-pdflatex
          setup/xref
          scribble/xref
-         unstable/file
          racket/place
          pkg/lib
          pkg/strip
@@ -1103,7 +1102,7 @@
     (unless latex-dest
       (let ([dir (doc-dest-dir doc)])
         (if (not (directory-exists? dir))
-            (make-directory*/ignore-exists-exn dir)
+            (make-directory* dir)
             (for ([f (directory-list dir)]
                   #:when
                   (and (file-exists? f)
@@ -1225,7 +1224,7 @@
   (let* ([filename (sxref-path latex-dest doc name)])
     (prep! filename)
     (when (verbose) (printf " [Caching to disk ~a]\n" filename))
-    (make-directory*/ignore-exists-exn (doc-dest-dir doc))
+    (make-directory* (doc-dest-dir doc))
     (with-compile-output 
      filename 
      (lambda (out tmp-filename)
@@ -1242,7 +1241,7 @@
   (when (and (doc-pkg? doc)
              (not (doc-under-main? doc))
              (not latex-dest))
-    (make-directory*/ignore-exists-exn (doc-dest-dir doc))
+    (make-directory* (doc-dest-dir doc))
     (with-compile-output
      (sxref-path latex-dest doc "provides.sxref")
      (lambda (out tmp-filename)
