@@ -3,7 +3,7 @@
 (require scribble/manual
          scribble/decode
          scribble/struct
-         setup/main-collects)
+         setup/collects)
 (provide (all-from-out scribble/manual)
          selflink
          gametitle gametitle* play-margin-note
@@ -27,7 +27,7 @@
          (make-element
           "noborder"
           (list
-           (image (path->main-collects-relative
+           (image (path->collects-relative
                    (build-path (collection-path "games" subcol)
                                (format "~a.png" subcol))))))
          " " (onscreen name) " --- " subtitle))
