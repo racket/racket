@@ -111,7 +111,7 @@
          set-announcements-file!)
 
 (require racket/list racket/file version/utils racket/runtime-path
-         "release-info.rkt")
+         racket/promise "release-info.rkt")
 
 ;; ----------------------------------------------------------------------------
 ;; Mirror information
@@ -204,8 +204,17 @@
             [else (loop (cdr l) (add1 n))])))
   (λ (x y) (< (num-of x) (num-of y))))
 
+;; use this to avoid parsing the installers until generation starts
+(define-syntax-rule (define-lazy name expr)
+  (begin (define p (lazy expr))
+         (define-syntax name
+           (syntax-id-rules (set!)
+             [(set! _ x)      (error 'name "unmodifiable binding")]
+             [(_ x (... ...)) ((force p) x (... ...))]
+             [_               (force p)]))))
+
 ;; sorted by version (newest first), and then by -installer-orders-
-(define all-installers
+(define-lazy all-installers
   (sort
    (call-with-input-file installers-data parse-installers)
    (let ([fns `([,(λ (i)
@@ -220,11 +229,11 @@
            (let* ([get (caar fns)] [<? (cdar fns)] [x1 (get i1)] [x2 (get i2)])
              (or (<? x1 x2) (and (equal? x1 x2) (loop (cdr fns)))))))))))
 
-(define all-releases ; still sorted from newest to oldest
+(define-lazy all-releases ; still sorted from newest to oldest
   (remove-duplicates (map installer-release all-installers)))
-(define all-packages ; also sorted
+(define-lazy all-packages ; also sorted
   (remove-duplicates (map installer-package all-installers)))
-(define current-release (car all-releases))
+(define-lazy current-release (car all-releases))
 
 (define package->name
   (let ([t (make-hasheq)])

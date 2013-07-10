@@ -1,8 +1,9 @@
 #lang racket/base
 
-(require racket/system racket/port racket/match racket/runtime-path)
+(require racket/system racket/port racket/match racket/runtime-path
+         racket/promise)
 
-(define-runtime-path THIS-GIT "../../../../.git")
+(define-runtime-path THIS-GIT "../../../../../.git")
 
 (define (warn fmt . xs)
   (eprintf "Warning: ~a\a\n" (apply format fmt xs))
@@ -10,14 +11,15 @@
   (sleep 1)
   #f)
 
-(define git
-  (let* ([exe (or (find-executable-path "git")
-                  (warn "no `git' executable => no release info"))]
-         [try (λ (dir) (and dir (directory-exists? dir) dir))]
-         [dir (and exe (or (ormap try (list (getenv "GIT_DIR") THIS-GIT))
-                           (warn "no git dir found => no release info\n  (~a)"
-                                 "set $GIT_DIR to a racket repo .git dir")))]
-         [nowhere (open-output-nowhere)])
+(define git*
+  (lazy
+    (define exe (or (find-executable-path "git")
+                    (warn "no `git' executable => no release info")))
+    (define (try dir) (and dir (directory-exists? dir) dir))
+    (define dir (and exe (or (ormap try (list (getenv "GIT_DIR") THIS-GIT))
+                             (warn "no git dir found => no release info\n  (~a)"
+                                   "set $GIT_DIR to a racket repo .git dir"))))
+    (define nowhere (open-output-nowhere))
     (and dir (λ args (define o (open-output-string))
                      (parameterize ([current-directory dir]
                                     [current-output-port o]
@@ -27,6 +29,7 @@
 
 (provide get-version-tag-info)
 (define (get-version-tag-info version)
+  (define git (force git*))
   (let/ec return
     (unless git (return #f))
     (define (bad . args) (apply warn args) (return #f))
