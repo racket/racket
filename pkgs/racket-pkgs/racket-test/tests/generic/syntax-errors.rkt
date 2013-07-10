@@ -154,4 +154,15 @@
   (define-generics foo (bar x))
   (define-generics foo (bar [foo]))
   (define-generics foo (bar [x] foo))
-  (define-generics foo (bar foo [x] y)))
+  (define-generics foo (bar foo [x] y))
+
+  (define-generics stream
+    (stream-first stream)
+    (stream-rest stream)
+    (stream-empty? stream)
+    #:defaults
+    ([list?
+      (define/generic super not-a-stream-method)
+      (define stream-first  first)
+      (define stream-rest   rest)
+      (define stream-empty? empty?)])))
