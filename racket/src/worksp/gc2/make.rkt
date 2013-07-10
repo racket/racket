@@ -2,8 +2,7 @@
 
 (use-compiled-file-paths null)
 
-(require mzlib/restart
-         racket/system)
+(require racket/system)
 
 (define (system- s)
   (eprintf "~a\n" s)
@@ -106,37 +105,42 @@
 			      (if (file-exists? deps)
 				  (with-input-from-file deps read)
 				  null))))))
-      (unless (parameterize ([use-compiled-file-paths (list "compiled")])
-	       (restart-mzscheme #() (lambda (x) x)
-				 (list->vector 
-				  (append
-				   (list "-u"
-					 "../../racket/gc2/xform.rkt"
-					 "--setup"
-					 ".")
-				   (if objdest
-				       (if use-precomp
-					   (list "--precompiled" use-precomp)
-					   null)
-				       (list "--precompile"))
-				   (if indirect?
-				       '("--indirect")
-				       null)
-				   (list
-				    "--depends"
-				    "--cpp"
-				    (format "~a /MT /E ~a ~a ~a" 
-					    cl.exe
-					    common-cpp-defs
-					    expand-extra-flags 
-					    includes)
-				    "-o"
-				    dest
-				    src)))
-				 void))
+      (define success? #f)
+      (sync
+       (thread
+        (lambda ()
+          (parameterize ([use-compiled-file-paths (list "compiled")]
+                         [current-namespace (make-base-namespace)]
+                         [current-command-line-arguments
+                          (list->vector 
+                           (append
+                            (list "--setup"
+                                  ".")
+                            (if objdest
+                                (if use-precomp
+                                    (list "--precompiled" use-precomp)
+                                    null)
+                                (list "--precompile"))
+                            (if indirect?
+                                '("--indirect")
+                                null)
+                            (list
+                             "--depends"
+                             "--cpp"
+                             (format "~a /MT /E ~a ~a ~a" 
+                                     cl.exe
+                                     common-cpp-defs
+                                     expand-extra-flags 
+                                     includes)
+                             "-o"
+                             dest
+                             src)))])
+            (dynamic-require "../../racket/gc2/xform.rkt" #f)
+            (set! success? #t)))))
+      (unless success? 
         (when (file-exists? dest)
-	  (delete-file dest))
-	(error "error xforming")))
+          (delete-file dest))
+        (error "error xforming")))
     (when objdest
       (c-compile dest objdest null (string-append
 				    extra-compile-flags
