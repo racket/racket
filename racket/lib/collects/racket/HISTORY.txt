@@ -1,5 +1,7 @@
 Version 5.3.900.6
 Added identifier-binding-symbol
+Changed ".plt" file unpacking to require certain literal S-expression
+ patterns, instead of evaluating S-expressions from the archive
 
 Version 5.3.900.5
 Added call-with-default-reading-parameterization

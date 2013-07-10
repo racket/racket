@@ -14,7 +14,7 @@
 
 ;; Test via mzc interface
 
-(define mzc (build-path (find-console-bin-dir) "mzc"))
+(define raco (build-path (find-console-bin-dir) "raco"))
 
 (define (make-x-plt-str mod)
   (path->string (build-path (find-system-path 'temp-dir) (format "x~a.plt" mod))))
@@ -38,12 +38,12 @@
   (lambda () (printf "BANANA\n")))
 
 (parameterize ([current-directory (find-system-path 'temp-dir)])
-  (system* mzc "--plt" x-plt-str "packed")
-  (system* mzc "--plt" x-replace-plt-str "--replace" "packed")
+  (system* raco "pack" x-plt-str "packed")
+  (system* raco "pack" "--replace" x-replace-plt-str "packed")
   (make-directory "collects")
   (rename-file-or-directory "packed" "collects/packed")
-  (system* mzc "--plt" x-user-collect-plt-str "--at-plt" "collects")
-  (system* mzc "--plt" x-collect-plt-str "--at-plt" "--all-users" "collects")
+  (system* raco "pack" "--at-plt" x-user-collect-plt-str "collects")
+  (system* raco "pack" "--at-plt" "--all-users" x-collect-plt-str "collects")
   (rename-file-or-directory "collects/packed" "packed")
   (delete-directory "collects"))
 
@@ -88,7 +88,7 @@
   (test 'BANANA with-input-from-file (build-path (collection-path "packed") "banana") read)
   
   (when pack-plt
-    (system* mzc "--collection-plt" pack-plt flag "packed"))
+    (system* raco "pack" flag "--collect" pack-plt "packed"))
   
   (delete-directory/files (build-path dir "packed")))
 

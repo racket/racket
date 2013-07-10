@@ -2,7 +2,8 @@
 @(require scribble/manual 
           "common.rkt" 
           (for-label racket/base
-                     setup/pack))
+                     setup/pack
+                     racket/contract/base))
 
 @title[#:tag "plt"]{@exec{raco pack}: Packing Library Collections}
 
@@ -165,105 +166,90 @@ The raw format is
     @litchar{PLT} are the first three characters.}
 
   @item{
-    A procedure that takes a symbol and a failure thunk and returns
-    information about archive for recognized symbols and calls the
-    failure thunk for unrecognized symbols. The information symbols
-    are:
+    An S-expression matching
+
+    @racketblock[
+                            (lambda (request failure)
+                              (case request
+                                [(name) _name]
+                                [(unpacker) (@#,racket[quote] mzscheme)]
+                                [(requires) (@#,racket[quote] _requires)]
+                                [(conflicts) (@#,racket[quote] _conflicts)]
+                                [(plt-relative?) _plt-relative?]
+                                [(plt-home-relative?) _plt-home-relative?]
+                                [(test-plt-dirs) _test-dirs]
+                                [else (failure)]))
+     ]
+
+    where the @racket[_name], @racket[_requires], @|etc|, meta-variables
+    stand for S-expressions as follows:
     
     @itemize[
       @item{
-        @racket['name] --- a human-readable string describing the archive's
+        @racket[_name] --- a human-readable string describing the archive's
         contents. This name is used only for printing messages to the
         user during unpacking.}
 
       @item{
-        @racket['unpacker] --- a symbol indicating the expected unpacking
-        environment. Currently, the only allowed value is @racket['mzscheme].}
-
-      @item{
-        @racket['requires] --- collections required to be installed before
+        @racket[_requires] --- a list of collections required to be installed before
         unpacking the archive, which associated versions; see the
         documentation of @racket[pack] for details.}
 
      @item{
-        @racket['conflicts] --- collections required @emph{not} to be installed
+        @racket[_conflicts] --- a list of collections required @emph{not} to be installed
         before unpacking the archive.}
 
      @item{
-        @racket['plt-relative?] --- a boolean; if true, then the archive's
+        @racket[_plt-relative?] --- a boolean; if true, then the archive's
         content should be unpacked relative to the plt add-ons directory.}
 
      @item{
-        @racket['plt-home-relative?] --- a boolean; if true and if
+        @racket[_plt-home-relative?] --- a boolean; if true and if
         @racket['plt-relative?] is true, then the archive's content should be
         unpacked relative to the Racket installation.}
 
      @item{
-        @racket['test-plt-dirs] --- @racket[#f] or a list of path strings;
-        in the latter case, a true value of @racket['plt-home-relative?] is
+        @racket[_test-plt-dirs] --- @racket[#f] or a @racket['_paths] where 
+        @racket[_paths] is a list of path strings;
+        in the latter case, a true value of @racket[_plt-home-relative?] is
         cancelled if any of the directories in the list (relative to the
         Racket installation) is unwritable by the user.}
    ]
 
-   The procedure is extracted from the archive using the @racket[read]
-   and @racket[eval] procedures in a fresh namespace.  }
+    The S-expression is extracted from the archive
+    using @racket[read] (and the result is @emph{not}
+    @racket[eval]uated).}
 
  @item{
-   An old-style, unsigned unit using @racket[(lib mzlib/unit200)] that
-   drives the unpacking process. The unit accepts two imports: a path
-   string for the parent of the main @filepath{collects} directory and
-   an @racket[unmztar] procedure. The remainder of the unpacking
-   process consists of invoking this unit. It is expected that the
-   unit will call @racket[unmztar] procedure to unpack directories and
-   files that are defined in the input archive after this unit. The
-   result of invoking the unit must be a list of collection paths
-   (where each collection path is a list of strings); once the archive
-   is unpacked, @exec{raco setup} will compile and setup the specified
-   collections.
+   An S-expression matching
 
-   The @racket[unmztar] procedure takes one argument: a filter
-   procedure. The filter procedure is called for each directory and
-   file to be unpacked. It is called with three arguments:
+                @racketblock[
+                         (unit (import main-collects-parent-dir mzuntar) 
+                               (export)
+                               (mzuntar void)
+                               (@#,racket[quote] _collections))
+                 ]
 
-   @itemize[
-      @item{
-        @racket['dir], @racket['file], @racket['file-replace] 
-        --- indicates whether the item to be
-        unpacked is a directory, a file, or a file to be replaced, }
+    where @racket[_collections] is a list of collection paths
+    (where each collection path is a list of strings); once the archive
+    is unpacked, @exec{raco setup} will compile and setup the specified
+    collections.
 
-      @item{
-        a relative path string --- the pathname of the directory or file
-        to be unpacked, relative to the unpack directory, and}
+     The S-expression is extracted from the archive
+     using @racket[read] (and the result is @emph{not}
+     @racket[eval]uated).}
 
-      @item{
-        a path string for the unpack directory (which can vary for a
-        Racket-relative install when elements of the archive start with
-        @racket["collects"], @racket["lib"], etc.).}
-   ]
-   
-   If the filter procedure returns @racket[#f] for a directory or file, the
-   directory or file is not unpacked. If the filter procedure returns
-   @racket[#t] and the directory or file for @racket['dir] or @racket['file]
-   already exists, it is not created. (The file for @racket[file-replace]
-   need not exist already.)
+]
 
-   When a directory is unpacked, intermediate directories are created
-   as necessary to create the specified directory. When a file is
-   unpacked, the directory must already exist.
-
-   The unit is extracted from the archive using @racket[read] and
-   @racket[eval].}  ]
-
-Assuming that the unpacking unit calls the @racket[unmztar] procedure, the
-archive should continue with @tech{unpackables}. @tech{Unpackables} are
-extracted until the end-of-file is found (as indicated by an @litchar{=}
-in the base64-encoded input archive).
+The archive continues with @tech{unpackables}. @tech{Unpackables} are
+extracted until the end-of-file is found (as indicated by an
+@litchar{=} in the base64-encoded input archive).
 
 An @deftech{unpackable} is one of the following:
 
 @itemize[
    @item{
-     The symbol @racket['dir] followed by a list. The @racket[build-path]
+     The symbol @racket['dir] followed by a list S-expression. The @racket[build-path]
      procedure will be applied to the list to obtain a relative path for
      the directory (and the relative path is combined with the target
      directory path to get a complete path).
@@ -358,7 +344,7 @@ making @filepath{.plt} archives.}
                            (path-string? . -> . boolean?) std-filter]
             [#:encode? encode? boolean? #t]
             [#:file-mode file-mode-sym symbol? 'file]
-            [#:unpack-unit unit200-expr any/c #f]
+            [#:unpack-unit unpack-spec any/c #f]
             [#:collections collection-list (listof path-string?) null]
             [#:plt-relative? plt-relative? any/c #f]
             [#:at-plt-home? at-plt-home? any/c #f]
@@ -395,11 +381,11 @@ making @filepath{.plt} archives.}
   archive. The default is @racket['file].
 
   The @racket[#:unpack-unit] argument is usually
-  @racket[#f]. Otherwise, it must be an S-expression for a
-  @racket[mzlib/unit200]-style unit that performs the work of
-  unpacking; see @secref["format-of-.plt-archives"] more information
-  about the unit. If the @racket[#:unpack-unit] argument is
-  @racket[#f], an appropriate unpacking unit is generated.
+  @racket[#f]. Otherwise, it must be an S-expression for the
+  S-expression that describes unpacking; see
+  @secref["format-of-.plt-archives"] more information about the
+  unit. If the @racket[#:unpack-unit] argument is @racket[#f], an
+  appropriate S-expression is generated.
 
   The @racket[#:collections] argument is a list of collection paths to be
   compiled after the archive is unpacked. The default is the @racket[null].
@@ -454,7 +440,7 @@ making @filepath{.plt} archives.}
           [filter (path-string? . -> . boolean?) std-filter]
           [encode? boolean? #t]
           [file-mode symbol? 'file]
-          [unpack-unit boolean? #f]
+          [unpack-unit any/c #f]
           [plt-relative? boolean? #t]
           [requires (listof (listof path-string?)
                             (listof exact-integer?)) null]
