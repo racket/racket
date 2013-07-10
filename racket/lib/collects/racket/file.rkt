@@ -1,5 +1,6 @@
 #lang racket/base
 (require "path.rkt"
+         setup/dirs
          (for-syntax racket/base
                      setup/path-to-relative))
 
@@ -410,12 +411,14 @@
                                         (expand-user-path "~/.plt-scheme/plt-prefs.ss")])])
                                 (if (file-exists? alt-f)
                                     (values alt-f #f)
-                                    ;; Last chance: check for a "defaults" collection:
-                                    ;; (error here in case there's no "defaults"
-                                    ;;  bails out through above `with-handlers')
+                                    ;; Last chance: check for a "racket-prefs.rtkd" file
+                                    ;; in the configuration directory:
                                     (values
-                                     (collection-file-path "racket-prefs.rktd"
-                                                           "defaults")
+                                     (let ([f (build-path (find-config-dir) "racket-prefs.rktd")])
+                                       (if (file-exists? f)
+                                           f
+                                           ;; Trigger a filesystem error:
+                                           (call-with-input-file* f void)))
                                      #f))))))])
         (let ([prefs (with-pref-params
                       (lambda ()

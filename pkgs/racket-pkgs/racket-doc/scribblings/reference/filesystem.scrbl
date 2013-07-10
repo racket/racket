@@ -1088,9 +1088,9 @@ Extracts a preference value from the file designated by
 is provided and is not @racket[#f].  In the former case, if the
 preference file doesn't exist, @racket[get-preferences] attempts to
 read an @elemref["old-prefs"]{old preferences file}, and then a
-@filepath{racket-prefs.rktd} file in the @filepath{defaults}
-collection, instead. If none of those files exists, the preference set
-is empty.
+@filepath{racket-prefs.rktd} file in the configuration directory
+(as reported by @racket[find-config-dir]), instead. If none of those
+files exists, the preference set is empty.
 
 The preference file should contain a list of symbol--value lists
 written with the default parameter settings.  Keys
