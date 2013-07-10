@@ -1,5 +1,6 @@
 #lang racket/base
-(require (for-syntax racket/base))
+(require (for-syntax racket/base)
+         "test-util.rkt")
 (define-syntax (this-dir stx)
   (define src (syntax-source stx))
   (cond
@@ -67,3 +68,12 @@
 (for ([file (in-list files-to-run)])
   (printf "RUNNING: ~a ~s\n" (car file) (cadr file))
   (dynamic-require (build-path (this-dir) (car file)) #f))
+
+(fprintf (if (zero? failures)
+             (current-output-port)
+             (current-error-port))
+         "ran ~a tests, ~a\n"
+         test-cases
+         (cond
+           [(zero? failures) "all passed"]
+           [else (format "~a failed" failures)]))

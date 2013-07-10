@@ -12,7 +12,7 @@
           [(x) (set! c (+ c 1)) #t]))))
 
   (ctest/rewrite 1
-                 'tail-arrow
+                 tail-arrow
                  (let ([c (counter)])
                    (letrec ([f
                              (contract (-> any/c c)
@@ -23,7 +23,7 @@
                    (c)))
   
   (ctest/rewrite 1
-                 'tail-unconstrained-domain-arrow
+                 tail-unconstrained-domain-arrow
                  (let ([c (counter)])
                    (letrec ([f
                              (contract (unconstrained-domain-> c)
@@ -34,7 +34,7 @@
                    (c)))
   
   (ctest/rewrite 2
-                 'tail-multiple-value-arrow
+                 tail-multiple-value-arrow
                  (let ([c (counter)])
                    (letrec ([f
                              (contract (-> any/c (values c c))
@@ -45,7 +45,7 @@
                    (c)))
   
   (ctest/rewrite 2
-                 'tail-arrow-star
+                 tail-arrow-star
                  (let ([c (counter)])
                    (letrec ([f
                              (contract (->* (any/c) () (values c c))
@@ -57,7 +57,7 @@
   
   
   (ctest/rewrite 1
-                 'case->-regular
+                 case->-regular
                  (let ([c (counter)])
                    (letrec ([f
                              (contract (case-> (-> any/c c)
@@ -71,7 +71,7 @@
                    (c)))
   
   (ctest/rewrite 1
-                 'case->-rest-args
+                 case->-rest-args
                  (let ([c (counter)])
                    (letrec ([f
                              (contract (case-> (-> any/c #:rest any/c c)
@@ -85,7 +85,7 @@
                    (c)))
   
   (ctest/rewrite '(1)
-                 'mut-rec-with-any/c
+                 mut-rec-with-any/c
                  (let ()
                    (define f
                      (contract (-> number? any/c)

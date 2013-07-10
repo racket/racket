@@ -21,7 +21,9 @@
          contract-compile
          contract-expand-once
          
-         rewrite-to-add-opt/c)
+         rewrite-to-add-opt/c
+         
+         test-cases failures)
 
 (define test-cases 0)
 (define failures 0)
@@ -67,9 +69,14 @@
          'racket/set
          addons))
 
-(define (contract-eval x)
+(define (contract-eval x #:test-case-name [test-case #f])
+  (with-handlers ((exn:fail? (λ (x)
+                               (when test-case
+                                 (eprintf "exception raised while running test case ~a\n"
+                                          test-case))
+                               (raise x))))
   (parameterize ([current-namespace (current-contract-namespace)])
-    (eval x)))
+    (eval x))))
 
 (define (contract-compile x)
   (parameterize ([current-namespace (current-contract-namespace)])
@@ -98,12 +105,14 @@
 (define (contract-error-test name exp exn-ok?)
   (test #t
         name
-        (contract-eval `(with-handlers ((exn:fail? (λ (x) (and (,exn-ok? x) #t)))) ,exp))))
+        (contract-eval #:test-case-name name
+                       `(with-handlers ((exn:fail? (λ (x) (and (,exn-ok? x) #t)))) ,exp))))
 
 (define (contract-syntax-error-test name exp [reg #rx""])
   (test #t
         name
-        (contract-eval `(with-handlers ((exn:fail:syntax?
+        (contract-eval #:test-case-name name
+                       `(with-handlers ((exn:fail:syntax?
                                          (lambda (x) (and (regexp-match ,reg (exn-message x)) #t))))
                           (eval ',exp)))))
 
@@ -112,6 +121,7 @@
 (define (test/spec-passed name expression)
   (parameterize ([compile-enforce-module-constants #f])
     (contract-eval
+     #:test-case-name name
      `(,test
        (void)
        (let ([for-each-eval (lambda (l) (for-each eval l))]) for-each-eval)
@@ -119,6 +129,7 @@
     (let ([new-expression (rewrite-out expression)])
       (when new-expression
         (contract-eval
+         #:test-case-name (format "~a rewrite-out" name)
          `(,test
            (void)
            (let ([for-each-eval (lambda (l) (for-each eval l))]) for-each-eval)
@@ -126,6 +137,7 @@
   
   (let/ec k
     (contract-eval
+     #:test-case-name (format "~a rewrite-to-add-opt/c" name)
      `(,test (void)
              (let ([for-each-eval (lambda (l) (for-each (λ (x) (eval x)) l))])
                for-each-eval)
@@ -133,9 +145,10 @@
 
 (define (test/spec-passed/result name expression result)
   (parameterize ([compile-enforce-module-constants #f])
-    (contract-eval `(,test ',result eval ',expression))
+    (contract-eval #:test-case-name name `(,test ',result eval ',expression))
     (let/ec k
       (contract-eval
+       #:test-case-name (format "~a rewrite-to-add-opt/c" name)
        `(,test
          ',result
          eval
@@ -143,6 +156,7 @@
     (let ([new-expression (rewrite-out expression)])
       (when new-expression
         (contract-eval
+         #:test-case-name (format "~a rewrite-out" name)
          `(,test
            ',result
            eval
@@ -252,6 +266,7 @@
           (custodian-shutdown-all (current-custodian))))
       (and reg (regexp-match? reg msg)))
     (contract-eval
+     #:test-case-name name
      `(,test-an-error
        ',name
        (lambda () ,expression)
@@ -262,6 +277,7 @@
     (let/ec k
       (let ([rewritten (rewrite-to-add-opt/c expression k)])
         (contract-eval
+         #:test-case-name (format "~a rewrite-to-add-opt/c" name)
          `(,test-an-error
            ',name
            (lambda () ,rewritten)
@@ -277,11 +293,14 @@
   (syntax-case stx ()
     [(_ expected name expression)
      #'(begin
-         (contract-eval `(,test expected name expression))
+         (contract-eval #:test-case-name 'name `(,test expected 'name expression))
          (let/ec k
-           (contract-eval `(,test expected 
-                                  ',(string->symbol (format "~a+opt/c" name))
-                                  ,(rewrite-to-add-opt/c 'expression k)))))]))
+           (let ([new-name '#,(string->symbol (format "~a+opt/c" 'name))])
+             (contract-eval
+              #:test-case-name new-name
+              `(,test expected 
+                      ',new-name
+                      ,(rewrite-to-add-opt/c 'expression k))))))]))
 
 (define (test/well-formed stx)
   (contract-eval
@@ -299,5 +318,3 @@
      `(,test (void)
              eval
              '(begin ,(rewrite-to-add-opt/c sexp k) (void))))))
-
-
