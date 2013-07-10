@@ -8,7 +8,6 @@
 (load-in-sandbox "vector.rktl")
 (load-in-sandbox "function.rktl")
 (load-in-sandbox "dict.rktl")
-(load-in-sandbox "contract-test.rktl")
 (load-in-sandbox "fixnum.rktl")
 (load-in-sandbox "flonum.rktl")
 
