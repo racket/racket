@@ -19,11 +19,11 @@ exec "$exe" "$0" "$@"
 (command-line
  #:once-any
  [("-l" "--local")
-  "create content that is viewable in the build directory"
+  "local mode: create content that is viewable in the build directory"
   "  (all links are relative) "
   (set! build-mode 'local)]
  [("-w" "--web")
-  "create content that is viewable on the Racket web pages"
+  "web mode: create content that is viewable on the Racket web pages"
   (set! build-mode 'web)]
  #:once-each
  [("-o" "--output") dir
@@ -52,20 +52,21 @@ exec "$exe" "$0" "$@"
 (let ([build (file-or-directory-identity output-dir)])
   (let loop ([dir here])
     (if (equal? build (file-or-directory-identity dir))
-      (raise-user-error 'build "might clobber sources, refusing to build")
+      (raise-user-error 'build
+                        "might clobber sources, refusing to build (use `-o')")
       (let-values ([(base name dir?) (split-path dir)])
         (when base (loop base))))))
 
 (parameterize ([current-directory output-dir])
-  (let ([paths (sort (map path->string (directory-list)) string<?)])
-    (when (pair? paths)
-      (if (or (not warn?)
-              (begin (printf "Directory not empty, these will be deleted: ~a.\n"
-                             (string-join paths ", "))
-                     (printf "Continue? ") (flush-output)
-                     (regexp-match? #rx" *[yY]" (read-line))))
-        (for-each delete-directory/files paths)
-        (raise-user-error 'build "Aborting.")))))
+  (define paths (sort (map path->string (directory-list)) string<?))
+  (when (pair? paths)
+    (if (or (not warn?)
+            (begin (printf "Directory not empty, these will be deleted: ~a.\n"
+                           (string-join paths ", "))
+                   (printf "Continue? ") (flush-output)
+                   (regexp-match? #rx" *[yY]" (read-line))))
+      (for-each delete-directory/files paths)
+      (raise-user-error 'build "Aborting."))))
 
 (printf "Building ~a content...\n" build-mode)
 (parameterize ([url-roots (and (eq? 'web build-mode) sites)])
