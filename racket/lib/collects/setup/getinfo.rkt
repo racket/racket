@@ -165,7 +165,7 @@
                              (if (and (relative-path? p) root-dir)
                                  ;; `raco setup' doesn't generate relative paths anyway,
                                  ;; but it's ok to support them:
-                                 (build-path root-dir p)
+                                 (simplify-path (build-path root-dir p))
                                  p))
                            (if (eq? (car pathbytes) 'info)
                                (info-relative->path pathbytes)
