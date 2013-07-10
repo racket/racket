@@ -201,7 +201,9 @@
     (define main-doc-dir (find-doc-dir))
     (define expected (for/set ([doc (in-list main-docs)])
                        (doc-dest-dir doc)))
-    (for ([i (in-list (directory-list main-doc-dir))])
+    (for ([i (in-list (if (directory-exists? main-doc-dir)
+                          (directory-list main-doc-dir)
+                          null))])
       (define p (build-path main-doc-dir i))
       (when (directory-exists? p)
         (unless (set-member? expected (build-path p))
@@ -613,13 +615,20 @@
                                         (cons local-redirect-file "../local-redirect/local-redirect.js")))
                                 (list (cons local-redirect-file 
                                             (u:url->string (u:path->url local-redirect-file)))))]
-               ;; For main-directory, non-start files, up-path is #t, which makes the
-               ;; "up" link go to the (user's) start page using cookies. For other files,
-               ;; 
-               [up-path     (and (not root?)
-                                 (if main?
-                                     #t
-                                     (build-path (find-user-doc-dir) "index.html")))]
+
+               [up-path (cond
+                         [root? #f] ; no up from root
+                         [main?
+                          ;; #t make the "up" link go to the (user's) start page
+                          ;; using cookies:
+                          #t]
+                         [allow-indirect?
+                          ;; building a package, so also rely on cookies in this
+                          ;; case:
+                          #t]
+                         [else
+                          ;; user-installed and not a package, so hard link is ok:
+                          (build-path (find-user-doc-dir) "index.html")])]
 
                ;; In cross-reference information, use paths that are relative
                ;; to the target rendering directory for documentation that might

@@ -9,10 +9,12 @@
 
 (define built-dir (build-path build-dir "built"))
 (define native-dir (build-path build-dir "native"))
+(define docs-dir (build-path build-dir "docs"))
 
 (define installers-dir (build-path "installers"))
 (define pkgs-dir (build-path "pkgs"))
 (define catalog-dir (build-path "catalog"))
+(define doc-dir (build-path "doc"))
 
 (define-values (config-file config-mode)
   (command-line
@@ -92,10 +94,16 @@
 
 (copy installers-dir)
 
+(define doc-path (build-path docs-dir doc-dir))
+(when (directory-exists? doc-path)
+  (copy doc-dir docs-dir))
+
 (make-download-page (build-path build-dir
                                 installers-dir
                                 "table.rktd")
                     #:installers-url "installers/"
+                    #:docs-url (and (directory-exists? doc-path)
+                                    "doc/index.html")
                     #:dest (build-path dest-dir
                                        "index.html")
                     #:git-clone (current-directory))

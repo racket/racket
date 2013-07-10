@@ -37,6 +37,7 @@
 (define (make-download-page table-file
                             #:dest [dest "index.html"]
                             #:installers-url [installers-url "./"]
+                            #:docs-url [docs-url #f]
                             #:title [title "Racket Downloads"]
                             #:git-clone [git-clone #f]
                             #:post-content [post-content null])
@@ -65,17 +66,26 @@
         `(html
           (head (title ,title)
                 (style ,(~a " .detail { font-size: small; }"
-                            " .checksum, .path { font-family: monospace }")))
+                            " .checksum, .path { font-family: monospace; }"
+                            " a { text-decoration: none; }")))
           (body
            (h2 ,title)
            (table
             ,@(for/list ([key (in-list (sort (hash-keys table) string<?))])
                 (define inst (hash-ref table key))
-                `(tr (td (a ((href ,(url->string
+                `(tr (td (a ((class "installer")
+                             (href ,(url->string
                                      (combine-url/relative
                                       (string->url installers-url)
                                       inst))))
                             ,key))
+                     (td nbsp)
+                     (td (span ([class "detail"])
+                               ,(~r (/ (file-size (build-path (path-only table-file)
+                                                              inst))
+                                       (* 1024 1024))
+                                    #:precision 1)
+                               " MB"))
                      (td nbsp)
                      (td (span ([class "detail"])
                                "SHA1: "
@@ -84,6 +94,9 @@
                                        (build-path (path-only table-file)
                                                    inst)
                                        sha1)))))))
+           ,@(if docs-url
+                 `((p (a ((href ,docs-url)) "Documentation")))
+                 null)
            ,@(if git-clone
                  (let ([git (find-executable-path "git")])
                    (define origin (let ([s (system*/string git "remote" "show" "origin")])

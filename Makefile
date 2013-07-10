@@ -204,6 +204,7 @@ server:
 	$(MAKE) server-from-core
 
 build/site.rkt:
+	mkdir -p build
 	echo "#lang distro-build/config" > build/site.rkt
 	echo "(machine)" >> build/site.rkt
 
@@ -391,6 +392,7 @@ DRIVE_CMD_q = $(RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS_q)
 
 # Full server build and clients drive, based on `CONFIG':
 installers:
+	rm -rf build/installers
 	$(MAKE) server SERVE_DURING_CMD_qq='$(DRIVE_CMD_q)'
 
 # Server is already built; start it and drive clients:
@@ -408,7 +410,11 @@ site:
 	$(MAKE) installers
 	$(MAKE) site-from-installers
 
+DOC_CATALOGS = build/built/catalog build/native/catalog
+
 site-from-installers:
+	rm -rf build/docs
+	$(RACKET) -l- distro-build/install-for-docs build/docs $(CONFIG_MODE_q) "$(PKGS)" $(DOC_CATALOGS)
 	$(RACKET) -l- distro-build/assemble-site $(CONFIG_MODE_q)
 
 # ------------------------------------------------------------

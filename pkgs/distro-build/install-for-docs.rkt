@@ -1,0 +1,55 @@
+#lang racket/base
+(require racket/cmdline
+         racket/file
+         racket/string
+         racket/system
+         compiler/find-exe
+         (only-in "config.rkt" extract-options))
+
+(define-values (dir config-file config-mode default-pkgs catalogs)
+  (command-line
+   #:args
+   (dir config-file config-mode default-pkgs . catalog)
+   (values dir config-file config-mode default-pkgs catalog)))
+
+(define pkgs
+  (or (hash-ref (extract-options config-file config-mode)
+                '#:pkgs
+                #f)
+      (string-split default-pkgs)))
+
+(define (build-path/s . a)
+  (path->string (path->complete-path (apply build-path dir a))))
+(define (build-path/f . a)
+  (string-append "file://" 
+                 (path->string (path->complete-path (apply build-path a)))))
+
+(define ht
+  (hash 'doc-dir (build-path/s "doc")
+        'lib-dir (build-path/s "lib")
+        'dll-dir (build-path/s "lib")
+        'links-file (build-path/s "lib" "links.rktd")
+        'pkgs-dir (build-path/s "lib" "pkgs")
+        'bin-dir (build-path/s "bin")
+        'include-dir (build-path/s "include")
+        'catalogs (map build-path/f catalogs)))
+
+(make-directory* (build-path dir "etc"))
+
+(call-with-output-file*
+ (build-path dir "etc" "config.rktd")
+ #:exists 'truncate/replace
+ (lambda (o)
+   (write ht o)
+   (newline o)))
+
+(printf "Running `raco pkg install' for packages:\n")
+(for ([pkg (in-list pkgs)])
+  (printf "  ~a\n" pkg))
+(unless (apply system* (find-exe) 
+               "-G" "build/docs/etc" "-l-" 
+               "raco" "pkg" "install"
+               "-i" "--deps" "search-auto"
+               pkgs)
+  (error "install failed"))
+

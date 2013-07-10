@@ -313,16 +313,20 @@
     (define timeout (or (get-opt c '#:timeout)
                         (* 30 60)))
     (define orig-thread (current-thread))
+    (define timeout? #f)
     (parameterize ([current-custodian cust])
       (thread (lambda ()
                 (sleep (* timeout-factor timeout))
                 ;; try nice interrupt, first:
+                (set! timeout? #t)
                 (break-thread orig-thread)
                 (sleep 1)
                 ;; force quit:
                 (custodian-shutdown-all cust)))
       (with-handlers ([exn? (lambda (exn)
-                              (when (exn:break? exn) (set! stop? #t))
+                              (when (exn:break? exn) 
+                                (unless timeout?
+                                  (set! stop? #t)))
                               (log-error "~a failed..." (client-name c))
                               (log-error (exn-message exn)))])
         (thunk)))
