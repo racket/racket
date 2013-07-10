@@ -84,6 +84,29 @@
 (define (make-wrapped n)
   (wrapped n))
 
+(struct generic-wrapped [numeric]
+  #:transparent
+  #:methods gen:numeric
+  [(define/generic numeric-decrement decrement)
+   (define/generic numeric-zero? is-zero?)
+   (define/generic numeric-even? is-even?)
+   (define/generic numeric-odd? is-odd?)
+   (define (decrement n)
+     (generic-wrapped
+       (numeric-decrement
+         (generic-wrapped-numeric n))))
+   (define (is-zero? n)
+     (numeric-zero?
+       (generic-wrapped-numeric n)))
+   (define (is-even? n)
+     (numeric-even?
+       (generic-wrapped-numeric n)))
+   (define (is-odd? n)
+     (numeric-odd?
+       (generic-wrapped-numeric n)))])
+(define (make-generic-wrapped n)
+  (generic-wrapped (make-peano n)))
+
 (module+ test
   (require rackunit rackunit/text-ui)
 
@@ -106,4 +129,5 @@
       (tests "peano" make-peano)
       (tests "binary" make-binary)
       (tests "parity" make-parity)
-      (tests "wrapped" make-wrapped))))
+      (tests "wrapped" make-wrapped)
+      (tests "generic-wrapped" make-generic-wrapped))))

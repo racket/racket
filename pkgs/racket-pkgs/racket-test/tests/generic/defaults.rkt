@@ -62,3 +62,56 @@
 
   (check-true (to-bool my-a))
   (check-false (to-bool my-b)))
+
+(define-generics nested-stream
+  (nested-stream-first  nested-stream)
+  (nested-stream-rest   nested-stream)
+  (nested-stream-empty? nested-stream)
+  #:defaults
+  ;; list of streams, yield elements of substreams
+  ([(lambda (los) (and (list? los) (andmap nested-stream? los)))
+    (define/generic super-first  nested-stream-first)
+    (define/generic super-rest   nested-stream-rest)
+    (define/generic super-empty? nested-stream-empty?)
+    (define (nested-stream-first los)
+      (when (stream-empty? los)
+        (error 'empty!))
+      (if (super-empty? (first los))
+          (super-first (rest los))
+          (super-first (first los))))
+    (define (nested-stream-rest los)
+      (when (stream-empty? los)
+        (error 'empty!))
+      (if (super-empty? (first los))
+          (super-rest (rest los))
+          (cons (super-rest (first los)) (rest los))))
+    (define (nested-stream-empty? los)
+      (or (empty? los)
+          (and (super-empty? (first los))
+               (super-empty? (rest los)))))]
+   ;; base case, flat list
+   [list?
+    (define nested-stream-first  first)
+    (define nested-stream-rest   rest)
+    (define nested-stream-empty? empty?)]))
+
+(module+ test
+  (define (nested-stream->list ns)
+    (if (nested-stream-empty? ns)
+        '()
+        (cons (nested-stream-first ns)
+              (nested-stream->list (nested-stream-rest ns)))))
+
+  (define ns1 '())
+  (define ns2 '(() ()))
+  (define ns3 '((1 2 3) (4 5 6)))
+  (define ns4 '((1 2 3) (4 5 6) ()))
+  (define ns5 '((1 (2 (3)) (4 (5 (6))))))
+  (define ns6 '(() (4 (5 (6)))))
+
+  (check-equal? (nested-stream->list ns1) '())
+  (check-equal? (nested-stream->list ns2) '())
+  (check-equal? (nested-stream->list ns3) '(1 2 3 4 5 6))
+  (check-equal? (nested-stream->list ns4) '(1 2 3 4 5 6))
+  (check-equal? (nested-stream->list ns5) '(1 2 3 4 5 6))
+  (check-equal? (nested-stream->list ns6) '(4 5 6)))

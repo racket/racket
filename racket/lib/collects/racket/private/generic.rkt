@@ -53,12 +53,21 @@
        (define/with-syntax [method-index ...] method-indices)
        (define/with-syntax contract-str
          (format "~s" (syntax-e #'predicate-name)))
-       (define/with-syntax (default-pred-name ...)
-         (generate-temporaries #'(default-pred ...)))
-       (define/with-syntax (default-impl-name ...)
-         (generate-temporaries #'(default-pred ...)))
+       (define/with-syntax ([default-pred-name default-impl-name] ...)
+         (for/list ([pred-stx (in-list (syntax->list #'(default-pred ...)))]
+                    [i (in-naturals 0)])
+           (list (format-id (syntax-local-introduce #'self-name)
+                            "~a-default-pred~a"
+                            #'self-name
+                            i)
+                 (format-id (syntax-local-introduce #'self-name)
+                            "~a-default-impl~a"
+                            #'self-name
+                            i))))
        (define/with-syntax fallback-name
-         (generate-temporary #'self-name))
+         (format-id (syntax-local-introduce #'self-name)
+                    "~a-fallback"
+                    #'self-name))
        #'(begin
            (define-syntax generic-name
              (make-generic-info (quote-syntax property-name)
@@ -88,11 +97,6 @@
                [else (raise-argument-error who 'contract-str self-name)]))
            (define-values (default-pred-name ...)
              (values default-pred ...))
-           (define default-impl-name
-             (generic-method-table generic-name default-defn ...))
-           ...
-           (define fallback-name
-             (generic-method-table generic-name fallback-defn ...))
            (define-generic-support supported-name
                                    self-name
                                    [method-name ...]
@@ -105,7 +109,12 @@
              (or (vector-ref (table-name self-name 'method-name) 'method-index)
                  (vector-ref fallback-name 'method-index))
              original)
-           ...))]))
+           ...
+           (define default-impl-name
+             (generic-method-table generic-name default-defn ...))
+           ...
+           (define fallback-name
+             (generic-method-table generic-name fallback-defn ...))))]))
 
 (define-syntax (define-primitive-generics stx)
   (syntax-case stx ()
