@@ -1,4 +1,4 @@
-(module zo-compile mzscheme
+(module zo-compile racket/base
   (require "errortrace-lib.rkt")
   
   (provide zo-compile)

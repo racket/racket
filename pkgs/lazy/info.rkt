@@ -22,5 +22,6 @@
 (define deps '("base"
                "drracket"
                "htdp"
-               "string-constants-lib"))
+               "string-constants-lib"
+               "compatibility-lib"))
 (define build-deps '("scribble-lib"))

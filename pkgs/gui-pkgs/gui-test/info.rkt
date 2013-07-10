@@ -6,5 +6,6 @@
                "gui-lib"
                "rackunit-lib"
                "scribble-lib"
-               "pconvert-lib"))
+               "pconvert-lib"
+               "compatibility-lib"))
 (define build-deps '())
