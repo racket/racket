@@ -218,4 +218,19 @@ Same as @racket[(identifier-binding id-stx (sub1 (syntax-local-phase-level)))].}
 
 Same as @racket[(identifier-binding id-stx #f)].}
 
+
+@defproc[(identifier-binding-symbol [id-stx syntax?]
+                                    [phase-level (or/c exact-integer? #f)
+                                                 (syntax-local-phase-level)])
+         symbol?]{
+
+Like @racket[identifier-binding], but produces a symbol that
+corresponds to the binding. The symbol result is the same for any
+identifiers that are @racket[free-identifier=?].
+
+When @racket[identifier-binding] would produce a list, then the second
+element of that list is the result that
+@racket[identifier-binding-symbol] produces.}
+
+
 @close-eval[stx-eval]

@@ -88,6 +88,7 @@ static Scheme_Object *module_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_trans_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_templ_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_label_binding(int argc, Scheme_Object **argv);
+static Scheme_Object *module_binding_symbol(int argc, Scheme_Object **argv);
 static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv);
 static Scheme_Object *identifier_prune_to_module(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_src_module(int argc, Scheme_Object **argv);
@@ -445,6 +446,8 @@ void scheme_init_stx(Scheme_Env *env)
   GLOBAL_IMMED_PRIM("identifier-label-binding"         , module_label_binding      , 1, 1, env);
   GLOBAL_IMMED_PRIM("identifier-prune-lexical-context" , identifier_prune          , 1, 2, env);
   GLOBAL_IMMED_PRIM("identifier-prune-to-source-module", identifier_prune_to_module, 1, 1, env);
+
+  GLOBAL_IMMED_PRIM("identifier-binding-symbol"        , module_binding_symbol     , 1, 2, env);
 
   GLOBAL_NONCM_PRIM("syntax-source-module"             , syntax_src_module         , 1, 2, env);
 
@@ -2042,6 +2045,7 @@ static Scheme_Object *extract_module_free_id_binding(Scheme_Object *mrn,
   Scheme_Object *rename_insp;
 
   if (scheme_hash_get(free_id_recur, id)) {
+    *_sealed = 1;
     return id;
   }
   scheme_hash_set(free_id_recur, id, id);
@@ -3954,7 +3958,7 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
                       mrn ? SCHEME_INT_VAL(mrn->set_identity) : -1,
                       mrn ? mrn->kind : -1));
 
-      if (mrn && (!is_in_module || (mrn->kind != mzMOD_RENAME_TOPLEVEL)) 
+      if (mrn && (!is_in_module || (mrn->kind != mzMOD_RENAME_TOPLEVEL))
           && !skip_other_mods) {
 	if (mrn->kind != mzMOD_RENAME_TOPLEVEL)
 	  is_in_module = 1;
@@ -4041,7 +4045,7 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
           EXPLAIN(fprintf(stderr, "%d  search result: %p\n", depth, rename));
             	  
 	  if (rename) {
-            if (mrn->sealed < STX_SEAL_BOUND)
+            if ((mrn->sealed < STX_SEAL_BOUND) && is_in_module)
               mresult_depends_unsealed = 1;
 
 	    if (mrn->kind == mzMOD_RENAME_MARKED) {
@@ -4159,7 +4163,7 @@ static Scheme_Object *resolve_env(Scheme_Object *a, Scheme_Object *orig_phase,
               get_names[6] = (mrn->insp ? mrn->insp : mresult_insp);
             EXPLAIN(fprintf(stderr, "%d  mresult_insp %p %p\n", depth, mresult_insp, mrn->insp));
           } else {
-            if (mrn->sealed < STX_SEAL_ALL)
+            if ((mrn->sealed < STX_SEAL_ALL) && is_in_module)
               mresult_depends_unsealed = 1;
 	    mresult = scheme_false;
             mresult_skipped = -1;
@@ -6314,6 +6318,12 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
                                                          free_id_recur);
                       release_recur_table(free_id_recur);
                       if (!sealed) {
+                        free_id_recur = make_recur_table();
+                        extract_module_free_id_binding((Scheme_Object *)mrn,
+                                                       mrn->free_id_renames->keys[i],
+                                                       mrn->free_id_renames->vals[i],
+                                                       &sealed,
+                                                       free_id_recur);
                         scheme_signal_error("write: unsealed local-definition or module context"
                                             " found in syntax object");
                       }
@@ -8560,7 +8570,8 @@ static Scheme_Object *module_label_eq(int argc, Scheme_Object **argv)
   return do_module_eq("free-label-identifier=?", MZ_LABEL_PHASE, argc, argv);
 }
 
-static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **argv, Scheme_Object *dphase)
+static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **argv, 
+                                        Scheme_Object *dphase, int get_symbol)
 {
   Scheme_Object *a, *m, *nom_mod, *nom_a, *phase;
   Scheme_Object *src_phase_index, *mod_phase, *nominal_src_phase;
@@ -8601,6 +8612,14 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
                              NULL,
                              NULL);
 
+  if (get_symbol) {
+    if ((!m || SAME_OBJ(m, scheme_undefined)) && nom_a) 
+      a = nom_a;
+    if (SCHEME_STXP(a))
+      a = SCHEME_STX_VAL(a);
+    return a;
+  }
+
   if (!m)
     return scheme_false;
   else if (SAME_OBJ(m, scheme_undefined)) {
@@ -8616,22 +8635,27 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
 
 static Scheme_Object *module_binding(int argc, Scheme_Object **argv)
 {
-  return do_module_binding("identifier-binding", argc, argv, scheme_make_integer(0));
+  return do_module_binding("identifier-binding", argc, argv, scheme_make_integer(0), 0);
 }
 
 static Scheme_Object *module_trans_binding(int argc, Scheme_Object **argv)
 {
-  return do_module_binding("identifier-transformer-binding", argc, argv, scheme_make_integer(1));
+  return do_module_binding("identifier-transformer-binding", argc, argv, scheme_make_integer(1), 0);
 }
 
 static Scheme_Object *module_templ_binding(int argc, Scheme_Object **argv)
 {
-  return do_module_binding("identifier-template-binding", argc, argv, scheme_make_integer(-1));
+  return do_module_binding("identifier-template-binding", argc, argv, scheme_make_integer(-1), 0);
 }
 
 static Scheme_Object *module_label_binding(int argc, Scheme_Object **argv)
 {
-  return do_module_binding("identifier-label-binding", argc, argv, scheme_false);
+  return do_module_binding("identifier-label-binding", argc, argv, scheme_false, 0);
+}
+
+static Scheme_Object *module_binding_symbol(int argc, Scheme_Object **argv)
+{
+  return do_module_binding("identifier-binding-symbol", argc, argv, scheme_make_integer(0), 1);
 }
 
 static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv)

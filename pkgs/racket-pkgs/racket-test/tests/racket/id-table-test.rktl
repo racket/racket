@@ -328,4 +328,11 @@
 
     ))
 
+(let ()
+  (define-syntax name 'dummy)
+  (define-syntax alias (make-rename-transformer #'name))
+  (define table (make-free-id-table))
+  (free-id-table-set! table #'alias 0)
+  (test 0 free-id-table-ref table #'name))
+
 (report-errs)

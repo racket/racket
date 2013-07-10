@@ -402,10 +402,7 @@ Notes (FIXME?):
            bound-identifier=?)
 
 (define (free-identifier->symbol id phase)
-  (let ([binding (identifier-binding id phase)])
-    (if (pair? binding)
-        (cadr binding)
-        (syntax-e id))))
+  (identifier-binding-symbol id phase))
 
 (make-code free-id-table
            free-identifier->symbol
