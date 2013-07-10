@@ -143,4 +143,11 @@
                  (set! l (cons y l))))
               l)))))
 
+(let ()
+  (define-syntax name 'dummy)
+  (define-syntax alias (make-rename-transformer #'name))
+  (define table (make-free-identifier-mapping))
+  (free-identifier-mapping-put! table #'alias 0)
+  (test 0 free-identifier-mapping-get table #'name))
+
 (report-errs)

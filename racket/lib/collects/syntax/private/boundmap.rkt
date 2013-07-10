@@ -107,10 +107,7 @@
   (define-struct module-identifier-mapping (ht))
 
   (define (module-identifier->symbol id) 
-    (let ([binding (identifier-binding id)])
-      (if (pair? binding)
-          (cadr binding)
-          (syntax-e id))))
+    (identifier-binding-symbol id))
   
   (make-mapping-code
    module-identifier->symbol
