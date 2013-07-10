@@ -21,8 +21,11 @@
    (define (hash2-proc a h)
      (hash2 (tuple-ref a) h))])
 
-;; ok if these don't raise unbound id errors
-(write (tuple 5))
-(equal? (tuple 5) (tuple 5))
-(equal-hash-code (tuple 5))
-(equal-secondary-hash-code (tuple 5))
+(module+ test
+  (require rackunit racket/port)
+
+  ;; ok if these don't raise unbound id errors
+  (check-equal? (with-output-to-string (lambda () (write (tuple 5)))) "#0=#0#")
+  (check-equal? (tuple 5) (tuple 5))
+  (check-equal? (equal-hash-code (tuple 5)) 53)
+  (check-equal? (equal-secondary-hash-code (tuple 5)) 44))
