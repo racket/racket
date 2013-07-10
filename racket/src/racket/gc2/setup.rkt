@@ -15,11 +15,12 @@
 (use-compiled-file-paths null)
 
 (unless (with-handlers ([exn:fail:filesystem? (lambda (x) #f)])
-	  (collection-path "mzlib"))
+	  (collection-path "racket"))
   (let ([p (build-path (current-load-relative-directory)
 		       'up
 		       'up
 		       'up
+                       "lib"
 		       "collects")])
     (printf "Setting collection path: ~s\n" p)
     (current-library-collection-paths 
