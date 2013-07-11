@@ -964,5 +964,14 @@
       (class: object%
         (super-new)
         (define/pubment (m x) 0)))
-    (send (new c%) m 3))))
+    (send (new c%) m 3))
+
+   ;; fails, expected type not a class
+   (check-err #:exn #rx"Expected Number"
+     (: c% Number)
+     (define c%
+       (class: object%
+         (super-new)
+         (: x Integer)
+         (init-field x))))))
 

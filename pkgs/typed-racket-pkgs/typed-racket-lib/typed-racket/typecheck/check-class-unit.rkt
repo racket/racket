@@ -18,7 +18,7 @@
          (base-env class-prims)
          (env lexical-env)
          (types utils abbrev union subtype resolve)
-         (typecheck internal-forms)
+         (typecheck check-below internal-forms)
          (utils tc-utils)
          (rep type-rep)
          (for-template racket/base
@@ -158,12 +158,11 @@
 ;;  we know by this point that #'form is an actual typed
 ;;  class produced by class: due to the syntax property
 (define (check-class form [expected #f])
-  (match expected
-    [(tc-result1: (? Mu? type))
-     (check-class form (ret (unfold type)))]
+  (match (and expected (resolve expected))
     [(tc-result1: (and self-class-type (Class: _ _ _ _ _)))
      (do-check form #t self-class-type)]
-    [#f (do-check form #f #f)]))
+    [#f (do-check form #f #f)]
+    [_ (check-below (do-check form #f #f) expected)]))
 
 ;; Syntax Boolean Option<Type> -> Type
 ;; Do the actual type-checking
