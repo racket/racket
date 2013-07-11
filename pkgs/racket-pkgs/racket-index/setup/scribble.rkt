@@ -1002,6 +1002,9 @@
     (when move?
       (when (directory-exists? dest-dir)
         (delete-directory/files dest-dir))
+      (let-values ([(base name dir?) (split-path dest-dir)])
+        (when (and (path? base) (not (directory-exists? base)))
+          (make-directory* base)))
       (copy-directory/files src-dir dest-dir)
       (delete-directory/files src-dir))
     ;; Register provided-tag information with the database:
