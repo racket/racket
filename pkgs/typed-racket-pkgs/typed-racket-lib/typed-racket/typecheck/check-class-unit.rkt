@@ -161,6 +161,8 @@
   (match (and expected (resolve expected))
     [(tc-result1: (and self-class-type (Class: _ _ _ _ _)))
      (do-check form #t self-class-type)]
+    [(tc-result1: (Poly-names: ns body-type))
+     (check-class form (ret body-type))]
     [#f (do-check form #f #f)]
     [_ (check-below (do-check form #f #f) expected)]))
 
