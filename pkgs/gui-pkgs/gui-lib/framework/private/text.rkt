@@ -937,6 +937,7 @@
     
     (define aw (box 0.0))
     (define ah (box 0.0))
+    (define old-draw-the-line? #f)
     (define left-padding 0)
     
     (define/augment (on-change)
@@ -944,12 +945,21 @@
       (define old-aw (unbox aw))
       (define old-ah (unbox ah))
       (get-extent aw ah)
+      (define new-draw-the-line? (draw-the-line?))
       (define-values (left top right bottom) (get-padding))
       (unless (and (= old-aw (unbox aw)) 
                    (= old-ah (unbox ah))
-                   (= left left-padding))
+                   (= left left-padding)
+                   (equal? new-draw-the-line? old-draw-the-line?))
+        (set! old-draw-the-line? new-draw-the-line?)
         (set! left-padding left)
         (invalidate-bitmap-cache)))
+    
+    ;; pre: aw initialized to current value
+    (define/private (draw-the-line?)
+      (define x-pos (get-x-spot char-width))
+      (and x-pos
+           (< x-pos (- (unbox aw) 3))))
     
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (super on-paint before? dc left top right bottom dx dy draw-caret)
@@ -959,7 +969,7 @@
           (when x-pos
             (define old-pen (send dc get-pen))
             (send dc set-pen pen)
-            (when (< x-pos (- (unbox aw) 3))
+            (when (draw-the-line?)
               (send dc draw-line
                     (+ dx x-pos)
                     (+ dy top column-guide-mixin-pen-size)
