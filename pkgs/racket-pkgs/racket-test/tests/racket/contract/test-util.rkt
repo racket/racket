@@ -50,7 +50,6 @@
       'no-exn-raised))
   (unless (predicate? exn)
     (set! failures (+ failures 1))
-    (printf "~s\n" (list name thunk sexp predicate?))
     (eprintf "FAILED ~s\n" name)))
 
 (define current-contract-namespace (make-parameter 'current-contract-namespace-not-initialized))
@@ -251,40 +250,34 @@
 ;; blame : (or/c 'pos 'neg string?)
 ;;   if blame is a string, expect to find the string (format "blaming: ~a" blame) in the exn message
 (define (test/spec-failed name expression blame)
-  (let ()
-    (define (has-proper-blame? msg)
-      (define reg
-        (cond
-          [(eq? blame 'pos) #rx"blaming: pos"]
-          [(eq? blame 'neg) #rx"blaming: neg"]
-          [(string? blame) (string-append "blaming: " (regexp-quote blame))]
-          [else #f]))
-      
-      (when reg
-        (unless (regexp-match? reg msg)
-          (eprintf "ACK!! ~s ~s\n" blame msg)
-          (custodian-shutdown-all (current-custodian))))
-      (and reg (regexp-match? reg msg)))
-    (contract-eval
-     #:test-case-name name
-     `(,test-an-error
-       ',name
-       (lambda () ,expression)
-       ',expression
-       (lambda (exn)
-         (and (exn:fail:contract:blame? exn)
-              (,has-proper-blame? (exn-message exn))))))
-    (let/ec k
-      (let ([rewritten (rewrite-to-add-opt/c expression k)])
-        (contract-eval
-         #:test-case-name (format "~a rewrite-to-add-opt/c" name)
-         `(,test-an-error
-           ',name
-           (lambda () ,rewritten)
-           ',rewritten
-           (lambda (exn)
-             (and (exn:fail:contract:blame? exn)
-                  (,has-proper-blame? (exn-message exn))))))))))
+  (define (has-proper-blame? msg)
+    (define reg
+      (cond
+        [(eq? blame 'pos) #rx"blaming: pos"]
+        [(eq? blame 'neg) #rx"blaming: neg"]
+        [(string? blame) (string-append "blaming: " (regexp-quote blame))]
+        [else #f]))
+    (and reg (regexp-match? reg msg)))
+  (contract-eval
+   #:test-case-name name
+   `(,test-an-error
+     ',name
+     (lambda () ,expression)
+     ',expression
+     (lambda (exn)
+       (and (exn:fail:contract:blame? exn)
+            (,has-proper-blame? (exn-message exn))))))
+  (let/ec k
+    (let ([rewritten (rewrite-to-add-opt/c expression k)])
+      (contract-eval
+       #:test-case-name (format "~a rewrite-to-add-opt/c" name)
+       `(,test-an-error
+         ',(string->symbol (format "~a+opt/c" name))
+         (lambda () ,rewritten)
+         ',rewritten
+         (lambda (exn)
+           (and (exn:fail:contract:blame? exn)
+                (,has-proper-blame? (exn-message exn)))))))))
 
 (define (test/pos-blame name expression) (test/spec-failed name expression 'pos))
 (define (test/neg-blame name expression) (test/spec-failed name expression 'neg))
