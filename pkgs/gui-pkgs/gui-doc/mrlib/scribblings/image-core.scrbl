@@ -5,7 +5,7 @@
 
 @defmodule[mrlib/image-core]
 
-This library is the core part of the @racketmodname[2htdp/image] library that DrRacket
+This library is the core part of the @racketmodname[2htdp/image #:indirect] library that DrRacket
 links into the namespace of all languages that it runs. This ensures that minimal
 support for these images are the same in all languages, specifically including
 support for printing the images and constructing the core data structures making

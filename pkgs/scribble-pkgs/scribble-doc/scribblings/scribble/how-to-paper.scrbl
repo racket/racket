@@ -646,7 +646,7 @@ renders as
 
 Any value that is convertable to an image can be used directly within
 a Scribble document. Functions from the @racketmodname[pict]
-and @racketmodname[2htdp/image] libraries, for example, generate
+and @racketmodname[2htdp/image #:indirect] libraries, for example, generate
 images. For example,
 
 @sample|{

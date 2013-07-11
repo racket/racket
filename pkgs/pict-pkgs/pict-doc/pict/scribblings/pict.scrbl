@@ -20,7 +20,7 @@
 
 @defmodule*/no-declare[(pict)]{ The
 @racketmodname[pict] library is one of the standard Racket
-functional picture libraries (the other being @racketmodname[2htdp/image]).
+functional picture libraries (the other being @racketmodname[2htdp/image #:indirect]).
 This library was original designed for use with 
 @seclink[#:doc '(lib "scribblings/slideshow/slideshow.scrbl") "top"]{Slideshow},
 and is re-provided by the @racketmodname[slideshow] language.}

@@ -44,13 +44,16 @@ including the following:
        @racketmodname[racket], but statically typed; see
        @other-manual['(lib "typed-racket/scribblings/ts-guide.scrbl")]}
 
- @item{@racketmodname[lazy] --- like @racketmodname[racket/base], but
-       avoids evaluating an expression until its value is needed; see
-       @other-manual['(lib "lazy/lazy.scrbl")]}
+ @item{@racketmodname[lazy #:indirect] --- like
+       @racketmodname[racket/base], but avoids evaluating an
+       expression until its value is needed; see @seclink["top" #:doc
+       '(lib "lazy/lazy.scrbl") #:indirect? #t]{the Lazy Racket
+       documentation}.}
 
- @item{@racketmodname[frtime] --- changes evaluation in an even more
-       radical way to support reactive programming; see
-       @other-manual['(lib "frtime/scribblings/frtime.scrbl")]}
+ @item{@racketmodname[frtime #:indirect] --- changes evaluation in an
+       even more radical way to support reactive programming; see
+       @seclink["top" #:doc '(lib "frtime/scribblings/frtime.scrbl")
+       #:indirect? #t]{the FrTime documentation}.}
        
  @item{@racketmodname[scribble/base] --- a language, which looks more
        like Latex than Racket, for writing documentation; see

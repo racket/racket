@@ -20,7 +20,7 @@
 @deprecated[@racketmodname[racket/gui]]{This library will
   no longer be public in a future release; much of it will
   be available privately to continue to support the implementation
-  of @racket[htdp/image], but the other exported functions
+  of @racketmodname[htdp/image #:indirect], but the other exported functions
   here are not useful and have names that confusingly match
   unrelated other libraries.}
                                    

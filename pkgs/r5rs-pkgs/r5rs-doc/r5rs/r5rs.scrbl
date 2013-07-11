@@ -53,8 +53,10 @@ according to @|r5rs|:
 
  @item{DrRacket provides an @onscreen{R5RS} language, which can be
        selected via the @menuitem["Language" "Choose Language..."]
-       menu item. See @secref[#:doc drs-doc "choose-language"] in
-       @other-manual[drs-doc] for more information.}
+       menu item. See @seclink[#:doc drs-doc "choose-language"
+       #:indirect? #t]{@onscreen{Choose Language...}} in
+       @seclink["top" #:doc drs-doc #:indirect? #t]{the DrRacket
+       documentation} for more information.}
 
  @item{The @exec{plt-r5rs} executable runs an @|r5rs| program or
        provides a read-eval-print loop for evaluating @|r5rs|

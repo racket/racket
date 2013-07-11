@@ -7,7 +7,7 @@
 a simple tool for plotting data values to a device context.}
 
 @bold{This is an old library, kept only for compatibility.} You will
-undoubtedly want to use the @racketmodname[plot] library instead, which offers
+undoubtedly want to use the @racketmodname[plot #:indirect] library instead, which offers
 many more features and is actively maintained.
 
 @defstruct[data-set ([points (listof (is-a?/c point%))]

@@ -16,8 +16,7 @@
 
 The @filepath{syntax-color} collection provides the underlying data
 structures and some helpful utilities for the @racket[color:text<%>]
-class of the @other-manual['(lib
-"scribblings/framework/framework.scrbl")].
+class of @racketmodname[framework].
 
 @; ----------------------------------------------------------------------
 

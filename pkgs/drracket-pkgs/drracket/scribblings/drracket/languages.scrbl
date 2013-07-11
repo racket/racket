@@ -100,7 +100,7 @@ without a @hash-lang[] prefix:
   @racketmodname[mzlib/shared].}
 
  @item{The @as-index{@drlang{Swindle} language} starts with the same
-  bindings as @racketmodname[swindle], and evaluates the program like
+  bindings as @racketmodname[swindle #:indirect], and evaluates the program like
   @racket[load].}
 
 ]
@@ -358,11 +358,14 @@ by three calls to @racket[read-line].
 
 @section[#:tag "experimental-langs"]{Other Experimental Languages}
 
-For information on @onscreen{Lazy Racket}, see @other-manual['(lib "lazy/lazy.scrbl")].
+For information on @onscreen{Lazy Racket}, see @seclink["top" #:doc
+'(lib "lazy/lazy.scrbl") #:indirect? #t]{the Lazy Racket documentation}.
 
-For information on @onscreen{FrTime}, see @other-manual['(lib "frtime/scribblings/frtime.scrbl")].
+For information on @onscreen{FrTime}, see @seclink["top" #:doc '(lib
+"frtime/scribblings/frtime.scrbl") #:indirect? #t]{the FrTime documentation}.
 
-For information on @onscreen{Algol 60}, see @other-manual['(lib "algol60/algol60.scrbl")].
+For information on @onscreen{Algol 60}, see @seclink["top" #:doc '(lib
+"algol60/algol60.scrbl") #:indirect? #t]{the Algol60 documentation}.
 
 @; ----------------------------------------
 

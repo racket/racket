@@ -678,7 +678,7 @@ corresponds to the default @tech{module name resolver}.
     @tech{collection}, and @filepath{main.rkt} is the library file name.
 
     @examples[
-    (code:comment @#,t{the main @racketmodname[swindle] library:})
+    (code:comment @#,t{the main @racketmodname[swindle #:indirect] library:})
     (eval:alts (require (lib "swindle")) (void))
     (code:comment @#,t{the same:})
     (eval:alts (require (lib "swindle/main.rkt")) (void))]}
