@@ -6,7 +6,10 @@
          racket/string
          racket/list
          setup/getinfo
-         racket/file)
+         racket/file
+         racket/path
+         setup/dirs
+         setup/doc-db)
 
 (provide check-package-dependencies)
 
@@ -19,6 +22,7 @@
 (define (check-package-dependencies
          paths
          coll-paths
+         coll-main?s
          coll-modes
          setup-printf setup-fprintf
          fix? verbose?)
@@ -192,26 +196,33 @@
                        (make-list (cadr (hash-ref pkg-internal-deps pkg)))))))
   
   ;; ----------------------------------------
+  ;; Check use of `src-pkg' (in `mode') from `pkg':
+  (define (check-dep! pkg src-pkg mode)
+    (define flat-depss (hash-ref pkg-internal-deps pkg))
+    (or (set-member? (if (eq? mode 'run)
+                         (car flat-depss)
+                         (cadr flat-depss))
+                     src-pkg)
+        (begin
+          (hash-update! missing pkg
+                        (lambda (h)
+                          (hash-update h src-pkg
+                                       (lambda (old-mode)
+                                         (if (eq? mode old-mode)
+                                             mode
+                                             'run))
+                                       mode))
+                        (hash))
+          #f)))
+
+  ;; ----------------------------------------
   ;; Check use of `mod' (in `mode') from `pkg' by file `f':
   (define reported (make-hash))
-  (define (check mod mode pkg f)
+  (define (check-mod! mod mode pkg f)
     (define src-pkg (or (hash-ref mod-pkg mod #f)
                         'core))
     (when src-pkg
-      (define flat-depss (hash-ref pkg-internal-deps pkg))
-      (unless (set-member? (if (eq? mode 'run)
-                               (car flat-depss)
-                               (cadr flat-depss))
-                           src-pkg)
-        (hash-update! missing pkg
-                      (lambda (h)
-                        (hash-update h src-pkg
-                                     (lambda (old-mode)
-                                       (if (eq? mode old-mode)
-                                           mode
-                                           'run))
-                                     mode))
-                      (hash))
+      (unless (check-dep! pkg src-pkg mod)
         (define key (list pkg src-pkg (path-replace-suffix f #"") mod))
         (unless (hash-ref reported key #f)
           (hash-set! reported key #t)
@@ -229,16 +240,111 @@
                           f
                           mod)))))
 
+  
+  ;; ----------------------------------------
+  (define doc-pkgs (make-hash))
+  (define doc-reported (make-hash))
+  (define (check-doc! pkg dep dest-dir)
+    (define-values (base name dir?) (split-path dep))
+    (define src-pkg (hash-ref doc-pkgs base #f))
+    (when src-pkg
+      (unless (check-dep! pkg src-pkg 'build)
+        (define key (list base dest-dir))
+        (unless (hash-ref doc-reported key #f)
+          (define (get-name p)
+            (define-values (b n d?) (split-path p))
+            (path-element->string n))
+          (hash-set! doc-reported key #t)
+          (setup-fprintf* (current-error-port) #f 
+                          (string-append
+                           "found undeclared dependency:\n"
+                           "  mode: build (of documentation)\n"
+                           "  for package: ~s\n"
+                           "  on package: ~s\n"
+                           "  from document: ~s\n"
+                           "  to document: ~s")
+                          pkg
+                          src-pkg
+                          (get-name dest-dir)
+                          (get-name base))))))
+
+  ;; ----------------------------------------
+  (define (check-bytecode-deps f dir coll-path pkg)
+    (define zo-f (path-replace-suffix f #".zo"))
+    (when (file-exists? (build-path dir zo-f))
+      (define base (let ([m (regexp-match #rx#"^(.*)_[a-z]+[.]zo$"
+                                          (path-element->bytes zo-f))])
+                     (and m (bytes->string/utf-8 (cadr m)))))
+      (define in-mod `(lib ,(string-join 
+                             (append (map path-element->string coll-path) (list base))
+                             "/")))
+      (define mod-code (call-with-input-file*
+                        (build-path dir zo-f)
+                        (lambda (i)
+                          (parameterize ([read-accept-compiled #t])
+                            (read i)))))
+      ;; Recur to cover submodules:
+      (let loop ([mod-code mod-code])
+        (define name (module-compiled-name mod-code))
+        (unless (and (list? name)
+                     (memq (last name) build-only-submod-names))
+          ;; Check the module's imports:
+          (for* ([imports (in-list (module-compiled-imports mod-code))]
+                 [import (cdr imports)])
+            (define mod (let ([m (collapse-module-path-index import in-mod)])
+                          (if (and (pair? m)
+                                   (eq? (car m) 'submod))
+                              (cadr m)
+                              m)))
+            (when (and (pair? mod) (eq? 'lib (car mod)))
+              (check-mod! mod 'run pkg zo-f)))
+          ;; Recur for submodules:
+          (for-each loop
+                    (append
+                     (module-compiled-submodules mod-code #t)
+                     (module-compiled-submodules mod-code #f)))))))
+
+  ;; ----------------------------------------
+  (define main-db-file (build-path (find-doc-dir) "docindex.sqlite"))
+  (define user-db-file (build-path (find-user-doc-dir) "docindex.sqlite"))
+  (define (register-or-check-docs check? pkg path main?)
+    (define db-file (if main? main-db-file user-db-file))
+    (when (file-exists? db-file)
+      (let ([i (get-info/full path #:namespace metadata-ns)])
+        (define scribblings (if i
+                                (i 'scribblings (lambda () null))
+                                null))
+        (for ([s (in-list scribblings)])
+          (define src (path->complete-path (car s) path))
+          (define name (if ((length s) . > . 3)
+                           (list-ref s 3)
+                           (path-element->string
+                            (path-replace-suffix (file-name-from-path src) #""))))
+          (define dest-dir (if main?
+                               (build-path (find-doc-dir) name)
+                               (build-path path "doc" name)))
+          (cond
+           [check?
+            (for ([dep (in-list (doc-db-get-dependencies (build-path dest-dir "in.sxref") 
+                                                         db-file
+                                                         #:attach (if main? #f main-db-file)))])
+              (check-doc! pkg dep dest-dir))]
+           [else
+            (hash-set! doc-pkgs (path->directory-path dest-dir) pkg)])))))
+
   ;; For each collection, set up package info:
-  (for ([path (in-list paths)])
+  (for ([path (in-list paths)]
+        [coll-main? (in-list coll-main?s)])
     (define pkg (path->pkg path #:cache path-cache))
     (when pkg
-      (init-pkg-internals! pkg)))
+      (init-pkg-internals! pkg)
+      (register-or-check-docs #f pkg path coll-main?)))
 
   ;; For each collection, check its dependencies:
   (for ([path (in-list paths)]
         [coll-path (in-list coll-paths)]
-        [coll-mode (in-list coll-modes)])
+        [coll-mode (in-list coll-modes)]
+        [coll-main? (in-list coll-main?s)])
     (when verbose?
       (setup-printf #f " checking ~a" path))
     (define dir (build-path path "compiled"))
@@ -249,7 +355,6 @@
         (for ([f (directory-list dir)])
           ;; A ".dep" file triggers a check:
           (when (regexp-match? #rx#"[.]dep$" (path-element->bytes f))
-            (define deps (cddr (call-with-input-file* (build-path dir f) read)))
             ;; Decide whether the file is inherently 'build or 'run mode:
             (define mode
               (if (or (eq? coll-mode 'build)
@@ -260,47 +365,18 @@
             ;; submodules like `test'):
             (when (eq? mode 'run)
               ;; This is the slowest part, because we have to read the module ".zo"
-              (define zo-f (path-replace-suffix f #".zo"))
-              (when (file-exists? (build-path dir zo-f))
-                (define base (let ([m (regexp-match #rx#"^(.*)_[a-z]+[.]zo$"
-                                                    (path-element->bytes zo-f))])
-                               (and m (bytes->string/utf-8 (cadr m)))))
-                (define in-mod `(lib ,(string-join 
-                                       (append (map path-element->string coll-path) (list base))
-                                       "/")))
-                (define mod-code (call-with-input-file*
-                                  (build-path dir zo-f)
-                                  (lambda (i)
-                                    (parameterize ([read-accept-compiled #t])
-                                      (read i)))))
-                ;; Recur to cover submodules:
-                (let loop ([mod-code mod-code])
-                  (define name (module-compiled-name mod-code))
-                  (unless (and (list? name)
-                               (memq (last name) build-only-submod-names))
-                    ;; Check the module's imports:
-                    (for* ([imports (in-list (module-compiled-imports mod-code))]
-                           [import (cdr imports)])
-                      (define mod (let ([m (collapse-module-path-index import in-mod)])
-                                    (if (and (pair? m)
-                                             (eq? (car m) 'submod))
-                                        (cadr m)
-                                        m)))
-                      (when (and (pair? mod) (eq? 'lib (car mod)))
-                        (check mod 'run pkg zo-f)))
-                    ;; Recur for submodules:
-                    (for-each loop
-                              (append
-                               (module-compiled-submodules mod-code #t)
-                               (module-compiled-submodules mod-code #f)))))))
+              (check-bytecode-deps f dir coll-path pkg))
             ;; Treat everything in ".dep" as 'build mode...
+            (define deps (cddr (call-with-input-file* (build-path dir f) read)))
             (for ([dep (in-list deps)])
               (when (and (pair? dep)
                          (eq? 'collects (car dep)))
                 (define path-strs (map bytes->string/utf-8 (cdr dep)))
                 (define mod `(lib ,(string-join path-strs "/")))
-                (check mod 'build pkg f))))))))
-
+                (check-mod! mod 'build pkg f)))))
+        ;; Treat all (direct) documentation links as 'build mode:
+        (register-or-check-docs #t pkg path coll-main?))))
+  
   ;; Report result summary and (optionally) repair:
   (unless (zero? (hash-count missing))
     (setup-fprintf (current-error-port) #f 

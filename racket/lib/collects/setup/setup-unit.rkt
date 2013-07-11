@@ -1599,6 +1599,7 @@
     (setup-printf #f (format "--- checking package dependencies ---"))
     (unless (check-package-dependencies (map cc-path ccs-to-compile)
                                         (map cc-collection ccs-to-compile)
+                                        (map cc-main? ccs-to-compile)
                                         ;; If "test" or "scribblings" is this collection's name,
                                         ;; then it's build-mode code, otherwise it's test mode:
                                         (let ([tests-path (string->path "tests")]
@@ -1656,7 +1657,7 @@
   (do-install-part 'general)
   (do-install-part 'post)
 
-  (when (check-dependencies)
+  (when (and (check-dependencies) no-specific-collections?)
     (do-check-package-dependencies))
 
   (done))

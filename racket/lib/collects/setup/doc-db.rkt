@@ -348,16 +348,16 @@
                           " WHERE P.pathid = $1"
                           "   AND D.stag = P.stag"
                           " GROUP BY D.pathid")
-                   pathid)))
-     (if attach-db-path
-         ((rows->paths #t)
-          (query-rows db (~a "SELECT D.pathid "
-                             " FROM dependencies P, other.documented D"
-                             " WHERE P.pathid = $1"
-                             "   AND D.stag = P.stag"
-                             " GROUP BY D.pathid")
-                      pathid))
-         null))))
+                   pathid))
+      (if attach-db-path
+          ((rows->paths #t)
+           (query-rows db (~a "SELECT D.pathid "
+                              " FROM dependencies P, other.documented D"
+                              " WHERE P.pathid = $1"
+                              "   AND D.stag = P.stag"
+                              " GROUP BY D.pathid")
+                       pathid))
+          null)))))
 
 (define (doc-db-clean-files db-file ok-files)
   (call-with-database
