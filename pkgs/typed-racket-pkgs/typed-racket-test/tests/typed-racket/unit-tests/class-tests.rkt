@@ -8,14 +8,17 @@
 ;; FIXME: these tests are slow
 
 (require "test-utils.rkt"
-         rackunit)
+         rackunit
+         (for-syntax syntax/parse))
 
 (provide tests)
 (gen-test-main)
 
+(define test-error-port (make-parameter (open-output-nowhere)))
+
 (define-syntax-rule (run/tr-module e ...)
   (parameterize ([current-output-port (open-output-nowhere)]
-                 [current-error-port (open-output-nowhere)])
+                 [current-error-port (test-error-port)])
     (define ns (make-base-namespace))
     (eval (quote (module typed typed/racket
                    e ...))
@@ -25,8 +28,27 @@
 (define-syntax-rule (check-ok e ...)
   (begin (check-not-exn (thunk (run/tr-module e ...)))))
 
-(define-syntax-rule (check-err e ...)
-  (check-exn exn:fail:syntax? (thunk (run/tr-module e ...))))
+(define-syntax (check-err stx)
+  (syntax-parse stx
+    [(_ #:exn rx-or-pred e ...)
+     #'(parameterize ([test-error-port (open-output-string)])
+         (check-exn
+          (λ (exn)
+            (cond [(regexp? rx-or-pred)
+                   (and (exn:fail:syntax? exn)
+                        (or (regexp-match? rx-or-pred (exn-message exn))
+                            (regexp-match?
+                             rx-or-pred
+                             (get-output-string (test-error-port)))))]
+                  [(procedure? rx-or-pred)
+                   (and (exn:fail:syntax? exn)
+                        (rx-or-pred exn))]
+                  [else (error "expected predicate or regexp")]))
+          (thunk (run/tr-module e ...))))]
+    [(_ e ...)
+     #'(check-exn
+        exn:fail:syntax?
+        (thunk (run/tr-module e ...)))]))
 
 (define tests
   (test-suite
@@ -44,7 +66,7 @@
     (send (new c% [x 1]) m 5))
 
    ;; Fails, bad superclass expression
-   (check-err
+   (check-err #:exn #rx"expected a superclass but"
     (: d% (Class (init [x Integer])
                  [m (Integer -> Integer)]))
     (define d% (class: 5
@@ -71,12 +93,12 @@
                  (define/public (m x) (send this m 3)))))
 
    ;; Fails, send to missing method
-   (check-err
+   (check-err #:exn #rx"method z not understood"
     (: g% (Class (init [x Integer #:optional])
                  [m (Integer -> Integer)]))
     (define g% (class: object%
                  (super-new)
-                 (init x)
+                 (init [x 0])
                  (define/public (m x) (send this z)))))
 
    ;; Send to other methods
@@ -107,40 +129,38 @@
                  (define/public (m) (get-field n this)))))
 
    ;; fails, field's default value has wrong type
-   (check-err
+   (check-err #:exn #rx"Expected Integer, but got String"
     (class: object% (super-new)
       (: x Integer)
       (field [x "foo"])))
 
    ;; Fail, field access to missing field
-   (check-err
-    (: k% (Class (field [n Integer])
-                 [m (-> Integer)]))
+   (check-err #:exn #rx"expected an object with field n"
+    (: k% (Class [m (-> Integer)]))
     (define k% (class: object%
                  (super-new)
                  (define/public (m) (get-field n this)))))
 
    ;; Fail, conflict with parent field
-   (check-err
+   (check-err #:exn #rx"defines conflicting public field n"
     (: j% (Class (field [n Integer])
                  [m (-> Integer)]))
     (define j% (class: object%
                  (super-new)
                  (field [n 0])
                  (define/public (m) (get-field n this))))
-    (: l% (Class (field [n Integer])))
+    (: l% (Class (field [n Integer])
+                 [m (-> Integer)]))
     (define l% (class: j%
                  (field [n 17])
                  (super-new))))
 
    ;; Fail, conflict with parent method
-   (check-err
-    (: j% (Class (field [n Integer])
-                 [m (-> Integer)]))
+   (check-err #:exn #rx"defines conflicting public method m"
+    (: j% (Class [m (-> Integer)]))
     (define j% (class: object%
                  (super-new)
-                 (field [n 0])
-                 (define/public (m) (get-field n this))))
+                 (define/public (m) 15)))
     (: m% (Class [m (-> Integer)]))
     (define m% (class: j%
                  (super-new)
@@ -159,27 +179,33 @@
     (define n% (class: j% (super-new))))
 
    ;; should fail, too many methods
-   (check-err
+   (check-err #:exn #rx"unexpected public method m"
     (: o% (Class))
     (define o% (class: object%
                  (super-new)
                  (define/public (m) 0))))
 
    ;; same as previous
-   (check-err
+   (check-err #:exn #rx"unexpected public method n"
     (: c% (Class [m (Integer -> Integer)]))
     (define c% (class: object% (super-new)
                  (define/public (m x) (add1 x))
                  (define/public (n) 0))))
 
    ;; fails, too many inits
-   (check-err
+   (check-err #:exn #rx"unexpected initialization argument x"
+    (: c% (Class))
+    (define c% (class: object% (super-new)
+                 (init x))))
+
+   ;; fails, init should be optional but is mandatory
+   (check-err #:exn #rx"missing optional init argument str"
     (: c% (Class (init [str String #:optional])))
     (define c% (class: object% (super-new)
-                 (init str x))))
+                 (init str))))
 
    ;; fails, too many fields
-   (check-err
+   (check-err #:exn #rx"unexpected public field x"
     (: c% (Class (field [str String])))
     (define c% (class: object% (super-new)
                  (field [str "foo"] [x 0]))))
@@ -190,11 +216,11 @@
    ;;        we should still provide a better error message.
    ;;
    ;; fails, init with no type annotation
-   (check-err
+   (check-err #:exn #rx"x has no type annotation"
      (define c% (class: object% (super-new) (init x))))
 
    ;; fails, field with no type annotation
-   (check-err
+   (check-err #:exn #rx"unexpected public field x"
      (define c% (class: object% (super-new) (field [x 0]))))
 
    ;; Mixin on classes without row polymorphism
@@ -217,7 +243,7 @@
      (mixin arg-class%))
 
    ;; Fail, bad mixin
-   (check-err
+   (check-err #:exn #rx"missing public method n"
      (: mixin ((Class [m (-> Integer)])
                ->
                (Class [m (-> Integer)]
@@ -235,7 +261,7 @@
      (mixin arg-class%))
 
    ;; Fail, bad mixin argument
-   (check-err
+   (check-err #:exn #rx"Expected \\(Class \\(m \\(-> Integer\\)\\)\\)"
      (: mixin ((Class [m (-> Integer)])
                ->
                (Class [m (-> Integer)]
@@ -282,17 +308,19 @@
     (define d% (class: c% (super-new [x (+ 3 5)]))))
 
    ;; fails, missing super-new
-   (check-err
+   (check-err #:exn #rx"typed classes must call super-new"
     (: c% (Class (init [x Integer])))
     (define c% (class: object% (init x))))
 
    ;; fails, non-top-level super-new
-   (check-err
+   ;; FIXME: this case also spits out additional untyped identifier
+   ;;        errors which should be squelched maybe
+   (check-err #:exn #rx"typed classes must call super-new"
     (: c% (Class (init [x Integer])))
     (define c% (class: object% (let () (super-new)) (init x))))
 
    ;; fails, bad super-new argument
-   (check-err
+   (check-err #:exn #rx"Expected Integer, but got String"
     (: c% (Class (init [x Integer])))
     (define c% (class: object% (super-new) (init x)))
     (: d% (Class))
@@ -319,7 +347,7 @@
                  (define/override (m y) (* 2 y)))))
 
    ;; fails, superclass missing public for override
-   (check-err
+   (check-err #:exn #rx"missing override method m"
     (: d% (Class [m (Integer -> Integer)]))
     (define d% (class: object% (super-new)
                  (define/override (m y) (* 2 y)))))
@@ -330,13 +358,6 @@
                  [m (Integer -> Integer)]))
     (define c% (class: object% (super-new)
                  (field [x 0])
-                 (define/public (m y)
-                   (begin0 x (set! x (+ x 1)))))))
-
-   ;; fails, missing local field
-   (check-err
-    (: c% (Class [m (Integer -> Integer)]))
-    (define c% (class: object% (super-new)
                  (define/public (m y)
                    (begin0 x (set! x (+ x 1)))))))
 
@@ -362,22 +383,22 @@
                  (string-append f "z"))))
 
    ;; fails, bad top-level expression
-   (check-err
+   (check-err #:exn #rx"Expected Number, but got String"
     (: c% (Class [m (Integer -> Integer)]))
     (define c% (class: object% (super-new)
                  (define/public (m y) 0)
                  (+ "foo" 5))))
 
    ;; fails, ill-typed method call
-   (check-err
+   (check-err #:exn #rx"Expected Integer, but got String"
     (: c% (Class [m (Integer -> Integer)]))
     (define c% (class: object% (super-new)
                  (define/public (m y) 0)
                  (m "foo"))))
 
    ;; fails, ill-typed field access
-   (check-err
-    (: c% (Class [f String]))
+   (check-err #:exn #rx"Expected String, but got Positive-Byte"
+    (: c% (Class (field [f String])))
     (define c% (class: object% (super-new)
                  (field [f "foo"])
                  (set! f 5))))
@@ -400,7 +421,7 @@
         (field [y "foo"]))))
 
    ;; fails, bad private field set!
-   (check-err
+   (check-err #:exn #rx"Expected Integer, but got String"
     (class: object%
       (super-new)
       (: x Integer)
@@ -408,14 +429,14 @@
       (set! x "foo")))
 
    ;; fails, bad private field default
-   (check-err
+   (check-err #:exn #rx"Expected Integer, but got String"
     (class: object%
       (super-new)
       (: x Integer)
       (define x "foo")))
 
    ;; fails, private field needs type annotation
-   (check-err
+   (check-err #:exn #rx"Expected Nothing"
     (class: object%
       (super-new)
       (define x "foo")))
@@ -429,7 +450,7 @@
       (define/public (m) (x))))
 
    ;; fails, public and private types conflict
-   (check-err
+   (check-err #:exn #rx"Expected String, but got Integer"
     (class: object% (super-new)
       (: x (-> Integer))
       (define/private (x) 3)
@@ -437,14 +458,14 @@
       (define/public (m) (x))))
 
    ;; fails, not enough annotation on private
-   (check-err
+   (check-err #:exn #rx"Cannot apply expression of type Any"
     (class: object% (super-new)
       (define/private (x) 3)
       (: m (-> Integer))
       (define/public (m) (x))))
 
    ;; fails, ill-typed private method implementation
-   (check-err
+   (check-err #:exn #rx"Expected Integer, but got String"
     (class: object% (super-new)
       (: x (-> Integer))
       (define/private (x) "bad result")))
@@ -467,14 +488,14 @@
     (define d% (class: c% (super-new))))
 
    ;; fails, expected mandatory but got optional
-   (check-err
+   (check-err #:exn #rx"unexpected optional init argument x"
     (: c% (Class (init [x Integer])))
     (define c% (class: object% (super-new)
                  (: x Integer)
                  (init [x 0]))))
 
    ;; fails, mandatory init not provided
-   (check-err
+   (check-err #:exn #rx"value not provided for named init arg x"
     (define d% (class: object% (super-new)
                  (: x Integer)
                  (init x)))
