@@ -3,6 +3,7 @@
 (require "core.rkt"
          "private/render-utils.rkt"
          "html-properties.rkt"
+         "private/literal-anchor.rkt"
          scheme/class
          scheme/path
          scheme/file
@@ -118,8 +119,6 @@
            [v (regexp-replace* #rx#"\"" v #".'")]
            [v (regexp-replace* #rx#"[^-a-zA-Z0-9_!+*'()/.,]" v encode-bytes)])
       (bytes->string/utf-8 v))))
-
-(define-serializable-struct literal-anchor (string))
 
 (define (color->string c)
   (if (string? c)

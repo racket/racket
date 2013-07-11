@@ -230,6 +230,10 @@ and marshaled form of other modules. The transient nature of resolved
 names allows the module code to be loaded with a different resolved
 name than the name when it was compiled.
 
+Two @tech{module path index} values are @racket[equal?] when they have
+@racket[equal?] path and base values (even if they have different
+@tech{resolved} values).
+
 @defproc[(module-path-index? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a @tech{module path index},

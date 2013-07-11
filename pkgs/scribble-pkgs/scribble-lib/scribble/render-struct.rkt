@@ -3,4 +3,6 @@
 (require scheme/serialize)
 (provide (struct-out mobile-root))
 
-(define-serializable-struct mobile-root (path) #:mutable)
+(define-serializable-struct mobile-root (path) 
+  #:mutable 
+  #:transparent)

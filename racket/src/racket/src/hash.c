@@ -1487,6 +1487,18 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       o = SCHEME_PTR_VAL(o);
     }
     break;
+  case scheme_module_index_type:
+    {
+      Scheme_Modidx *midx = (Scheme_Modidx *)o;
+#     include "mzhashchk.inc"
+      hi->depth += 2;
+      k++;
+      k = (k << 3) + k;
+      k += equal_hash_key(midx->path, 0, hi);
+      o = midx->base;
+      break;
+    }
+    break;
   case scheme_place_bi_channel_type:
     {
       k += 7;
@@ -1911,6 +1923,16 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
     /* Needed for interning */
     o = SCHEME_PTR_VAL(o);
     goto top;
+  case scheme_module_index_type:
+    {
+      Scheme_Modidx *midx = (Scheme_Modidx *)o;
+      uintptr_t v1, v2;
+#     include "mzhashchk.inc"
+      hi->depth += 2;
+      v1 = equal_hash_key2(midx->path, hi);
+      v2 = equal_hash_key2(midx->base, hi);
+      return v1 + v2;
+    }
   case scheme_place_bi_channel_type:
     /* a bi channel has sendch and recvch, but
        sends are the same iff recvs are the same: */

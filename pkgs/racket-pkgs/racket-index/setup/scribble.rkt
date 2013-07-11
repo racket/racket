@@ -917,9 +917,22 @@
                         [dest-dir (pick-dest latex-dest doc)]
                         [fp (send renderer traverse (list v) (list dest-dir))]
                         [ci (send renderer collect (list v) (list dest-dir) fp)]
-                        [ri (send renderer resolve (list v) (list dest-dir) ci)]
+                        [ri (begin
+                              ;; It's ok if cross-reference information isn't available
+                              ;; at this point, but we can sometimes save another iteration
+                              ;; if the information is available at this pass.
+                              (xref-transfer-info renderer ci (make-collections-xref 
+                                                               #:quiet-fail? #t
+                                                               #:no-user? (main-doc? doc)
+                                                               #:doc-db (and latex-dest
+                                                                             (find-doc-db-path latex-dest #t))))
+                              (send renderer resolve (list v) (list dest-dir) ci))]
                         [out-vs (and info-out-time
-                                     (info-out-time . >= . src-time)
+                                     ;; Don't force a re-write of "out" just because the document
+                                     ;; is newer:
+                                     ;;   (info-out-time . >= . src-time)
+                                     ;; We check further belew whether the "out" content actually
+                                     ;; has changed to decide whether it must be written.
                                      (with-handlers ([exn:fail? (lambda (exn) #f)])
                                        (for/list ([info-out-file info-out-files])
                                          (let ([v (load-sxref info-out-file)])
@@ -930,20 +943,22 @@
                         [defss (send renderer get-defineds ci (add1 (doc-out-count doc)) v)]
                         [undef (send renderer get-external ri)]
                         [searches (resolve-info-searches ri)]
-                        [need-out-write?
-                         (or force-out-of-date?
-                             (not out-vs)
-                             (not (for/and ([out-v out-vs])
-                                    (equal? (list vers (doc-flags doc))
-                                            (car out-v))))
-                             (not (for/and ([sci scis]
-                                            [out-v out-vs])
-                                    (serialized=? sci (cadr out-v))))
-                             (not provides-time)
-                             (info-out-time . > . provides-time)
-                             (info-out-time . > . (current-seconds)))])
-                   (when (and (verbose) need-out-write?)
-                     (eprintf " [New out ~a]\n" (doc-src-file doc)))
+                        [need-out-write
+                         (or (and force-out-of-date? 'forced)
+                             (and (not out-vs) 'missing)
+                             (and (not (for/and ([out-v out-vs])
+                                         (equal? (list vers (doc-flags doc))
+                                                 (car out-v))))
+                                  'version/flags)
+                             (and (not (for/and ([sci scis]
+                                                 [out-v out-vs])
+                                         (serialized=? sci (cadr out-v))))
+                                  'content)
+                             (and (not provides-time) 'db-missing)
+                             (and (info-out-time . > . provides-time) 'db-older)
+                             (and (info-out-time . > . (current-seconds)) 'time-inversion))])
+                   (when (and (verbose) need-out-write)
+                     (printf " [New out (~a) ~a]\n" need-out-write (doc-src-file doc)))
                    (gc-point)
                    (let ([info
                           (make-info doc
@@ -953,16 +968,16 @@
                                      null ; no known deps, yet
                                      can-run?
                                      -inf.0
-                                     (if need-out-write?
+                                     (if need-out-write
                                          (/ (current-inexact-milliseconds) 1000)
                                          info-out-time)
                                      #t
                                      can-run?
-                                     need-out-write?
+                                     (and need-out-write #t)
                                      vers
                                      #f
                                      #f)])
-                     (when need-out-write?
+                     (when need-out-write
                        (render-time "xref-out" (write-out/info latex-dest info scis defss db-file lock))
                        (set-info-need-out-write?! info #f))
                      (when (info-need-in-write? info)

@@ -1,3 +1,6 @@
+Version 5.3.900.7
+Changed equal? to work on module path index values
+
 Version 5.3.900.6
 Added identifier-binding-symbol
 Changed ".plt" file unpacking to require certain literal S-expression

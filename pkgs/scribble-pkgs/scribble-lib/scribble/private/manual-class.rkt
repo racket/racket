@@ -15,6 +15,7 @@
          "manual-method.rkt"
          "manual-proc.rkt"
          "manual-vars.rkt"
+         "manual-class-struct.rkt"
          scheme/list
          (for-syntax scheme/base)
          (for-label scheme/base
@@ -55,9 +56,6 @@
             (list-ref b 6))
       (error 'scribble "no class/interface/mixin information for identifier: ~e"
              id))))
-
-(define-serializable-struct cls/intf
-  (name-element app-mixins super intfs methods))
 
 (define (make-inherited-table r d ri decl)
   (define start

@@ -48,17 +48,18 @@
                  null))
            null)))))
 
-(define ((dest->source done-ht) dest)
+(define ((dest->source done-ht quiet-fail?) dest)
   (if (hash-ref done-ht dest #f)
       (lambda () #f)
       (lambda ()
         (hash-set! done-ht dest #t)
         (with-handlers ([exn:fail? (lambda (exn)
-                                     (log-warning
-                                      "warning: ~a"
-                                      (if (exn? exn)
-                                          (exn-message exn)
-                                          (format "~e" exn)))
+                                     (unless quiet-fail?
+                                       (log-warning
+                                        "warning: ~a"
+                                        (if (exn? exn)
+                                            (exn-message exn)
+                                            (format "~e" exn))))
                                      #f)])
           (make-data+root
            ;; data to deserialize:
@@ -66,7 +67,7 @@
            ;; provide a root for deserialization:
            (path-only dest))))))
 
-(define (make-key->source db-path no-user?)
+(define (make-key->source db-path no-user? quiet-fail?)
   (define main-db (cons (or db-path
                             (build-path (find-doc-dir) "docindex.sqlite"))
                         ;; cache for a connection:
@@ -79,7 +80,7 @@
   (define forced-all? #f)
   (define (force-all)
     ;; force all documents
-    (define thunks (get-reader-thunks no-user? done-ht))
+    (define thunks (get-reader-thunks no-user? quiet-fail? done-ht))
     (set! forced-all? #t)
     (lambda () 
       ;; return a procedure so we can produce a list of results:
@@ -113,13 +114,13 @@
       (and dest
            (if (eq? dest #t)
                (force-all)
-               ((dest->source done-ht) dest)))]
+               ((dest->source done-ht quiet-fail?) dest)))]
      [else
       (unless forced-all?
         (force-all))])))
 
-(define (get-reader-thunks no-user? done-ht)
-  (map (dest->source done-ht)
+(define (get-reader-thunks no-user? quiet-fail? done-ht)
+  (map (dest->source done-ht quiet-fail?)
        (filter values (append (get-dests 'scribblings no-user?)
                               (get-dests 'rendered-scribblings no-user?)))))
 
@@ -131,8 +132,9 @@
              cached-xref)))
 
 (define (make-collections-xref #:no-user? [no-user? #f]
-                               #:doc-db [db-path #f])
+                               #:doc-db [db-path #f]
+                               #:quiet-fail? [quiet-fail? #f])
   (if (doc-db-available?)
       (load-xref null
-                 #:demand-source (make-key->source db-path no-user?))
-      (load-xref (get-reader-thunks no-user? (make-hash)))))
+                 #:demand-source (make-key->source db-path no-user? quiet-fail?))
+      (load-xref (get-reader-thunks no-user? quiet-fail? (make-hash)))))

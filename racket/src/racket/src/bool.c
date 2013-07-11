@@ -698,6 +698,17 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     obj1 = SCHEME_PTR_VAL(obj1);
     obj2 = SCHEME_PTR_VAL(obj2);
     goto top;
+  } else if (t1 == scheme_module_index_type) {
+    Scheme_Modidx *midx1, *midx2;
+#   include "mzeqchk.inc"
+    midx1 = (Scheme_Modidx *)obj1;
+    midx2 = (Scheme_Modidx *)obj2;
+    if (is_equal(midx1->path, midx2->path, eql)) {
+      obj1 = midx1->base;
+      obj2 = midx2->base;
+      goto top;
+    } else
+      return 0;
   } else if (t1 == scheme_place_bi_channel_type) {
     Scheme_Place_Bi_Channel *bc1, *bc2;
     bc1 = (Scheme_Place_Bi_Channel *)obj1;
