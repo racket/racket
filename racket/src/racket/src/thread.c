@@ -3507,7 +3507,8 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
   if (!v && ((mode == MZFD_CHECK_READ)
              || (mode == MZFD_CHECK_WRITE)
              || (mode == MZFD_CHECK_VNODE)
-             || (mode == MZFD_REMOVE)))
+             || (mode == MZFD_REMOVE)
+             || (mode == MZFD_REMOVE_VNODE)))
     return NULL;
 
   if (!v) {
@@ -3521,7 +3522,7 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
   e = MZ_GET_FDSET(scheme_semaphore_fd_set, 2);
 # endif
 
-  if (mode == MZFD_REMOVE) {
+  if ((mode == MZFD_REMOVE) || (mode == MZFD_REMOVE_VNODE)) {
     s = SCHEME_VEC_ELS(v)[0];
     if (!SCHEME_FALSEP(s))
       scheme_post_sema_all(s);
@@ -3532,14 +3533,24 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
     scheme_hash_set(scheme_semaphore_fd_mapping, key, NULL);
 # ifdef HAVE_KQUEUE_SYSCALL
     {
-      GC_CAN_IGNORE struct kevent kev[3];
+      GC_CAN_IGNORE struct kevent kev[2];
       struct timespec timeout = {0, 0};
-      int kr;
-      EV_SET(kev, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-      EV_SET(&kev[1], fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-      EV_SET(&kev[2], fd, EVFILT_VNODE, EV_DELETE, 0, 0, NULL);
+      int kr, pos = 0;
+      if (mode == MZFD_REMOVE_VNODE) {
+        EV_SET(&kev[pos], fd, EVFILT_VNODE, EV_DELETE, 0, 0, NULL);
+        pos++;
+      } else {
+        if (SCHEME_TRUEP(SCHEME_VEC_ELS(v)[0])) {
+          EV_SET(&kev[pos], fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+          pos++;
+        }
+        if (SCHEME_TRUEP(SCHEME_VEC_ELS(v)[1])) {
+          EV_SET(&kev[pos], fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+          pos++;
+        }
+      }
       do {
-        kr = kevent(scheme_semaphore_fd_kqueue, kev, 3, NULL, 0, &timeout);
+        kr = kevent(scheme_semaphore_fd_kqueue, kev, pos, NULL, 0, &timeout);
       } while ((kr == -1) && (errno == EINTR));
       log_kqueue_error("remove", kr);
     }

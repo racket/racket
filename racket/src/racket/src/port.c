@@ -6152,7 +6152,7 @@ void scheme_filesystem_change_evt_cancel(Scheme_Object *evt, void *ignored_data)
       fc->fd = 0;
     }
 # else
-    (void)scheme_fd_to_semaphore(fc->fd, MZFD_REMOVE, 0);
+    (void)scheme_fd_to_semaphore(fc->fd, MZFD_REMOVE_VNODE, 0);
     scheme_close_file_fd(fc->fd);
     scheme_post_sema_all(fc->sema);
 # endif

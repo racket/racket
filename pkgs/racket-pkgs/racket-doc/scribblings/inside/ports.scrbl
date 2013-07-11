@@ -800,8 +800,11 @@ is created, it remains findable via @cpp{scheme_fd_to_semaphore} for a
 particular read/write mode as long as @var{fd} has not become ready in
 the read/write mode since the creation of the semaphore, or unless
 @cpp{MZFD_REMOVE} has been used to remove the registered semaphore.
-The @var{is_socket} argument indicates whether @var{fd} is a socket
-or a filesystem descriptor (and the difference matters only for Windows).
+The @var{is_socket} argument indicates whether @var{fd} is a socket or
+a filesystem descriptor; the difference matters for Windows, and it
+matters for BSD-based platforms where sockets are always supported and
+other file descriptors are tested for whether they correspond to a
+directory or regular file.
 
 The @var{mode} argument is one of the following:
 
@@ -824,6 +827,19 @@ The @var{mode} argument is one of the following:
  @item{@cpp{MZFD_REMOVE} (= @cpp{5}) --- removes all recorded
        semaphores for @var{fd} (unregistering a poll with the
        operating system) and returns @cpp{NULL}.}
+
+ @item{@cpp{MZFD_CREATE_VNODE} (= @cpp{6}) --- creates or finds a
+       semaphore to reflect whether @var{fd} changes; on some
+       platforms, @cpp{MZFD_CREATE_VNODE} is the same as
+       @cpp{MZFD_CREATE_READ}; on other platforms, only one or the
+       other can be used on a given file descriptor.}
+
+ @item{@cpp{MZFD_CHECK_VNODE} (= @cpp{7}) --- like @cpp{MZFD_CHECK_READ},
+       but to find a semaphore recorded via @cpp{MZFD_CREATE_VNODE}.}
+
+ @item{@cpp{MZFD_REMOVE_VNODE} (= @cpp{8}) --- like @cpp{MZFD_REMOVE},
+       but to remove a semaphore recorded via @cpp{MZFD_CREATE_VNODE}.}
+
 ]}
 
 
