@@ -422,7 +422,7 @@ because the @"@"-reader would drop comments within the
 @subsection{Code Fonts and Styles}
 
 @defform*[((racketmodname datum maybe-indirect)
-           (racketmodname ((unsyntax (racket unsyntax)) expr maybe-indirect)))
+           (racketmodname ((unsyntax (racket unsyntax)) expr) maybe-indirect))
           #:grammar ([maybe-indirect code:blank
                                     #:indirect])]{
 
