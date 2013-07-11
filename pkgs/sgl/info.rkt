@@ -8,4 +8,7 @@
 (define deps '("base"
                "compatibility-lib"
                "gui-lib"))
-(define build-deps '("scribble-lib"))
+(define build-deps '("draw-doc"
+                     "gui-doc"
+                     "racket-doc"
+                     "scribble-lib"))

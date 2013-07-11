@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 
-(define build-deps '("at-exp-lib"
+(define build-deps '("syntax-color-doc"
+                     "at-exp-lib"
                      "draw-doc"
                      "draw-lib"
                      "scribble-lib"

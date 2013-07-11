@@ -33,5 +33,12 @@
 	       "net-lib"
                "srfi-lib"
                "srfi-doc"))
-(define build-deps '("at-exp-lib"
+(define build-deps '("compatibility-doc"
+                     "draw-doc"
+                     "errortrace-doc"
+                     "gui-doc"
+                     "pict-doc"
+                     "profile-doc"
+                     "r5rs-doc"
+                     "at-exp-lib"
                      "rackunit-lib"))

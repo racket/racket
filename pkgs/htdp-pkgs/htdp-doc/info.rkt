@@ -11,5 +11,11 @@
     "htdp-lib"
     "sandbox-lib"
     "pict-lib"))
-(define build-deps '(#;"at-exp-lib"
+(define build-deps '("compatibility-doc"
+                     "draw-doc"
+                     "drracket"
+                     "gui-doc"
+                     "pict-doc"
+                     "racket-doc"
+                     #;"at-exp-lib"
                      #;"rackunit-lib"))

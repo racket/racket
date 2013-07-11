@@ -1,7 +1,9 @@
 #lang info
 
 (define collection "algol60")
-(define build-deps '("scribble-lib"
+(define build-deps '("racket-doc"
+                     "scribble-doc"
+                     "scribble-lib"
                      "drracket"))
 
 (define tools '(("tool.rkt")))

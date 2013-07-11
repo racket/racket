@@ -12,4 +12,6 @@
                "gui-lib"
                "sandbox-lib"
                "web-server-lib"))
-(define build-deps '("scribble-lib"))
+(define build-deps '("racket-doc"
+                     "web-server-doc"
+                     "scribble-lib"))

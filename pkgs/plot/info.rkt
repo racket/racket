@@ -19,5 +19,12 @@
                "unstable-contract-lib"
                "unstable-latent-contract-lib"
                "unstable-parameter-group-lib"))
-(define build-deps '("scribble-lib"
+(define build-deps '("db-doc"
+                     "draw-doc"
+                     "gui-doc"
+                     "pict-doc"
+                     "racket-doc"
+                     "slideshow-doc"
+                     "srfi-doc"
+                     "scribble-lib"
                      "slideshow-lib"))

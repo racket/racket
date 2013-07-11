@@ -7,5 +7,6 @@
 (define scribblings '(("mzcom.scrbl" () (interop))))
 (define deps '("base"
                "compatibility-lib"))
-(define build-deps '("mysterx"
+(define build-deps '("racket-doc"
+                     "mysterx"
                      "scribble-lib"))

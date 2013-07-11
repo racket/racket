@@ -13,4 +13,7 @@
                "gui-lib"
                "pict-lib"
                "string-constants-lib"))
-(define build-deps '("scribble-lib"))
+(define build-deps '("draw-doc"
+                     "gui-doc"
+                     "racket-doc"
+                     "scribble-lib"))

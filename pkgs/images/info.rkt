@@ -9,7 +9,12 @@
                "unstable-latent-contract-lib"
                "unstable-parameter-group-lib"
                "typed-racket-lib"))
-(define build-deps '("pict-lib"
+(define build-deps '("draw-doc"
+                     "gui-doc"
+                     "pict-doc"
+                     "slideshow-doc"
+                     "typed-racket-doc"
+                     "pict-lib"
                      "scribble-lib"
                      "slideshow-lib"
                      "racket-doc"

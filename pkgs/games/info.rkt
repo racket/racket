@@ -17,5 +17,8 @@
                "sgl"
                "srfi-lib"
                "string-constants-lib"))
-(define build-deps '("pict-lib"
+(define build-deps '("draw-doc"
+                     "gui-doc"
+                     "racket-doc"
+                     "pict-lib"
                      "rackunit-lib"))

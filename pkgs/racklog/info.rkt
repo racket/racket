@@ -6,4 +6,5 @@
   '(("racklog.scrbl" (multi-page) (tool))))
 (define deps '("base"
                "datalog"))
-(define build-deps '("scribble-lib"))
+(define build-deps '("racket-doc"
+                     "scribble-lib"))

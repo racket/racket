@@ -2,5 +2,7 @@
 
 (define collection 'multi)
 (define deps '("base"))
-(define build-deps '("parser-tools-lib"
+(define build-deps '("racket-doc"
+                     "syntax-color-doc"
+                     "parser-tools-lib"
                      "scribble-lib"))

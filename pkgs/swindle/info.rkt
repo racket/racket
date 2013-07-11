@@ -38,4 +38,6 @@
                "gui-lib"
 	       "net-lib"
                "string-constants-lib"))
-(define build-deps '("scribble-lib"))
+(define build-deps '("compatibility-doc"
+                     "racket-doc"
+                     "scribble-lib"))

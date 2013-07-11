@@ -4,4 +4,5 @@
 (define deps '("base"
                "profile-lib"
                "unstable-list-lib"))
-(define build-deps '("scribble-lib"))
+(define build-deps '("racket-doc"
+                     "scribble-lib"))

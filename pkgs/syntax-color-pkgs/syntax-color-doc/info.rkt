@@ -2,7 +2,9 @@
 
 (define collection 'multi)
 
-(define build-deps '("gui-lib"
+(define build-deps '("gui-doc"
+                     "scribble-doc"
+                     "gui-lib"
                      "scribble-lib"
                      "racket-doc"
                      "syntax-color-lib"))

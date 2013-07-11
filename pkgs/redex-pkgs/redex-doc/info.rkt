@@ -3,7 +3,12 @@
 (define collection 'multi)
 
 (define deps '("base" "racket-doc"))
-(define build-deps '("at-exp-lib"
+(define build-deps '("draw-doc"
+                     "gui-doc"
+                     "htdp-doc"
+                     "pict-doc"
+                     "slideshow-doc"
+                     "at-exp-lib"
                      "scribble-lib"
                      "gui-lib"
                      "htdp-lib"

@@ -2,7 +2,11 @@
 
 (define collection 'multi)
 
-(define build-deps '("macro-debugger-text-lib"
+(define build-deps '("errortrace-doc"
+                     "macro-debugger"
+                     "profile-doc"
+                     "readline-doc"
+                     "macro-debugger-text-lib"
                      "profile-lib"
                      "readline-lib"
                      "xrepl-lib"

@@ -2,7 +2,9 @@
 
 (define collection 'multi)
 
-(define build-deps '("at-exp-lib"
+(define build-deps '("pict-doc"
+                     "typed-racket-doc"
+                     "at-exp-lib"
                      "base"
                      "compatibility-lib"
                      "draw-lib"
