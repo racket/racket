@@ -1,8 +1,16 @@
 #lang scribble/manual
 @(require "private/local-redirect.rkt")
 
-@title{Local Redirections}
+@;{
+ This document causes the redirection table to be built,
+ in addition to acting as a target to trigger a search-based
+ redirection.
+}
 
-This document causes the redirection table to be built.
+@title{Redirections}
+
+This page that is intended to redirect to the result of a search
+request. Since you're reading this, it seems that the redirection
+did not work.
 
 @(make-local-redirect #f)

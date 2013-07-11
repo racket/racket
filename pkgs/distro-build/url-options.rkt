@@ -9,7 +9,7 @@
       (let ([v (hash-ref config '#:dist-base-url #f)])
         (and v
              (url->string
-              (combine-url/relative (string->url v) "docs/search.html"))))
+              (combine-url/relative (string->url v) "docs/local-redirect/index.html"))))
       default-doc-search))
 
 (define (choose-catalogs config default-catalogs)

@@ -133,8 +133,8 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
   #:doc-search <string> --- URL to install as the configuration for
     remote documentation searches in generated installers; "" is
     replaced with the PLT default; defaults to #:dist-base-url (if
-    present) extended with "doc/search.html", or the `DOC_SEARCH'
-    makefile variable
+    present) extended with "doc/local-redirect/index.html", or the
+    `DOC_SEARCH' makefile variable
 
   #:dist-name <string> --- the distribution name; defaults to the
     `DIST_NAME' makefile variable
