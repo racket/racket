@@ -43,6 +43,13 @@
   (let ([c (contract-eval '(->i () () any))])
     (test #t (contract-eval 'contract-stronger?) c c))
 
+  (ctest #f contract-stronger? 
+         (->* () #:pre (zero? (random 10)) any) 
+         (->* () #:pre (zero? (random 10)) any))
+  (ctest #f contract-stronger? 
+         (->* () integer? #:post (zero? (random 10))) 
+         (->* () integer? #:post (zero? (random 10))))
+  
   (ctest #t contract-stronger? (or/c null? any/c) (or/c null? any/c))
   (ctest #f contract-stronger? (or/c null? any/c) (or/c boolean? any/c))
   (ctest #t contract-stronger? (or/c null? boolean?) (or/c null? boolean?))

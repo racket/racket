@@ -571,7 +571,15 @@
        (andmap contract-stronger? (base->-optional-kwds/c that) (base->-optional-kwds/c this))
        
        (= (length (base->-rngs/c that)) (length (base->-rngs/c this)))
-       (andmap contract-stronger? (base->-rngs/c this) (base->-rngs/c that))))
+       (andmap contract-stronger? (base->-rngs/c this) (base->-rngs/c that))
+       
+       ;; these procs might be based on state; only 
+       ;; allow stronger to be true when #:pre and
+       ;; #:post aren't specified at all
+       (not (base->-pre this))
+       (not (base->-pre that))
+       (not (base->-post this))
+       (not (base->-post that))))
 
 (define (->-generate ctc)
   (let ([doms-l (length (base->-doms/c ctc))])
