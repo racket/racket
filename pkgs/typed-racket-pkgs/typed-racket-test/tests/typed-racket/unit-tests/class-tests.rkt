@@ -973,5 +973,23 @@
        (class: object%
          (super-new)
          (: x Integer)
-         (init-field x))))))
+         (init-field x))))
+
+   ;; test polymorphic class
+   (check-ok
+     (: c% (All (A) (Class (init-field [x A]))))
+     (define c%
+       (class: object%
+         (super-new)
+         (init-field x)))
+     (new (inst c% Integer) [x 0]))
+
+   ;; fails due to ill-typed polymorphic class body
+   (check-err #:exn #rx"Expected A, but got Positive-Byte"
+     (: c% (All (A) (Class (init-field [x A]))))
+     (define c%
+       (class: object%
+         (super-new)
+         (init-field x)
+         (set! x 5))))))
 
