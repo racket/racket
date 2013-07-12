@@ -5,8 +5,7 @@
                      racket/class
                      racket/gui/base
                      unstable/gui/snip
-                     racket/contract
-                     plot))
+                     racket/contract))
 
 @title[#:tag "snip"]{Snip Utilities}
 @unstable[@author+email["Neil Toronto" "neil.toronto@gmail.com"]]
@@ -17,7 +16,7 @@
 A canvas that contains a single snip.
 
 Snips cannot be placed directly on dialogs, frames and panels.
-To use an interactive snip (such as one returned by @racket[plot-snip]) in a GUI,
+To use an interactive snip in a GUI,
 it must be inserted into an editor, which itself must be placed on a special canvas, which can be placed in a GUI container.
 To provide a seamless user experience, the editor should be enabled but not writable,
 not be able to receive focus, not have scrollbars, and other small details.
@@ -70,7 +69,8 @@ On subsequent calls, @method[snip-canvas% on-size] calls the snip's @method[snip
 
 When a @racket[snip-canvas%] instance is intended to wrap an existing @racket[snip%] instance, @racket[make-snip] should simply resize it and return it.
 
-Example: @racket[plot-frame] and @racket[plot3d-frame] create snips and call a function similar to the following to place them in a frame:
+Example: functions from @racketmodname[plot #:indirect]
+create snips and call a function similar to the following to place plots in a frame:
 @racketblock[
 (define (make-snip-frame snip w h label)
   (define (make-snip width height)

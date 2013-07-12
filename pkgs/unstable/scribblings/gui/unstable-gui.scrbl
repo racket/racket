@@ -17,6 +17,5 @@ unstable libraries.
 @include-section["pict.scrbl"]
 @include-section["slideshow.scrbl"]
 @include-section["pslide.scrbl"]
-@include-section["redex.scrbl"]
 @include-section["snip.scrbl"]
 @include-section["scribble.scrbl"]

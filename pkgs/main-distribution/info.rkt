@@ -76,6 +76,8 @@
                "unstable-list-lib"
                "unstable-options-lib"
                "unstable-parameter-group-lib"
+               "unstable-flonum-doc"
+               "unstable-redex"
                "web-server"
                "wxme"
                "xrepl"))

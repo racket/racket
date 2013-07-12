@@ -1,7 +1,7 @@
 #lang scribble/manual
 
 @(require scribble/eval
-          "utils.rkt"
+          unstable/scribblings/utils
           (for-label racket unstable/flonum racket/flonum))
 
 @(define the-eval (make-base-eval))
@@ -10,12 +10,10 @@
                                 [plot-bitmap  plot]
                                 [plot3d-bitmap  plot3d])))
 
-@title[#:tag "flonum"]{Flonums}
+@unstable-title[#:tag "flonum"]{Flonums}
 @unstable[@author+email["Neil Toronto" "ntoronto@racket-lang.org"]]
 
 @defmodule[unstable/flonum]
-
-
 
 @defproc[(flonum->bit-field [x flonum?]) (integer-in 0 (- (expt 2 64) 1))]{
 Returns the bits comprising @racket[x] as an integer.

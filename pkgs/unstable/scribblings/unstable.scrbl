@@ -1,10 +1,11 @@
 #lang scribble/doc
 @(require scribble/base
           scribble/manual
+          "utils.rkt"
           (for-syntax racket/base racket/path)
           (for-label scribble/base))
 
-@title[#:tag "unstable"]{Unstable: May Change Without Warning}
+@unstable-title[#:tag "unstable"]
 
 This manual documents some of the libraries available in the
 @racketidfont{unstable} collection. See also @other-doc['(lib
@@ -83,8 +84,6 @@ Keep documentation and tests up to date.
 @include-section["debug.scrbl"]
 @include-section["define.scrbl"]
 @include-section["error.scrbl"]
-@include-section["find.scrbl"]
-@include-section["flonum.scrbl"]
 @include-section["future.scrbl"]
 @include-section["function.scrbl"]
 @include-section["hash.scrbl"]

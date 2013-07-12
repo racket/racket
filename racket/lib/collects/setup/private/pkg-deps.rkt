@@ -222,7 +222,7 @@
     (define src-pkg (or (hash-ref mod-pkg mod #f)
                         'core))
     (when src-pkg
-      (unless (check-dep! pkg src-pkg mod)
+      (unless (check-dep! pkg src-pkg mode)
         (define key (list pkg src-pkg (path-replace-suffix f #"") mod))
         (unless (hash-ref reported key #f)
           (hash-set! reported key #t)

@@ -24,7 +24,8 @@ Parameter groups are parameter-like @italic{views} that represent multiple param
                  (list (param1) (param2))]
 
 Use parameter groups to conveniently set multiple parameters.
-For example, the @racketmodname[plot] library uses parameter groups to save and restore appearance-controlling parameters when it must draw plots within a thunk.
+For example, the @racketmodname[plot #:indirect] library uses parameter groups
+to save and restore appearance-controlling parameters when it must draw plots within a thunk.
 
 @defproc[(parameter-group? [v any/c]) boolean?]{
 Returns @racket[#t] when @racket[v] is a parameter group.

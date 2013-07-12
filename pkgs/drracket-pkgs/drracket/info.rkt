@@ -32,7 +32,8 @@
                "macro-debugger"
 	       "net-lib"
                "srfi-lib"
-               "srfi-doc"))
+               "srfi-doc"
+               "unstable"))
 (define build-deps '("compatibility-doc"
                      "draw-doc"
                      "errortrace-doc"

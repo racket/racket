@@ -1,12 +1,13 @@
 #lang scribble/manual
-@(require racket/stxparam scribble/base scribble/eval "../utils.rkt"
+@(require racket/stxparam scribble/base scribble/eval
+          unstable/scribblings/utils
           (for-syntax racket/base syntax/srcloc)
           (for-label racket/base racket/contract pict redex unstable/gui/redex))
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require redex/reduction-semantics redex/pict unstable/gui/redex pict))
 
-@title[#:tag "redex"]{Redex}
+@unstable-title[#:tag "redex"]{Redex}
 @unstable-header[]
 
 @defmodule[unstable/gui/redex]

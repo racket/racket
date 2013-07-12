@@ -207,9 +207,8 @@
               (when (and (string? (car e))
                          (or (null? (cddr e))
                              (regexp-match? (caddr e) (version))))
-                (hash-set! ht (car e) (cadr e))))
-            (hash-map ht (lambda (k p) 
-                           (if with-path?
-                               (cons k (simplify p))
-                               k)))))))
-
+                (hash-set! ht (if with-path?
+                                  (cons (car e) (simplify (cadr e)))
+                                  (car e))
+                           #t)))
+            (hash-keys ht)))))

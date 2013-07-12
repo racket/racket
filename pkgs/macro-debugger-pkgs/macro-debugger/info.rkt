@@ -5,11 +5,11 @@
 (define deps '("base"
                "compatibility-lib"
                "data-lib"
-               "drracket"
                "gui-lib"
                "images"
                "parser-tools-lib"
                "unstable-list-lib"
-               "macro-debugger-text-lib"))
+               "macro-debugger-text-lib"
+               "unstable"))
 (define build-deps '("scribble-lib"
                      "racket-doc"))
