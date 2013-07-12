@@ -535,13 +535,20 @@ the section hyperlink's resolution in HTML is potentially delayed; see
 
 
 @defproc[(other-doc [module-path module-path?]
-                    [#:underline? underline? any/c #t])
+                    [#:underline? underline? any/c #t]
+                    [#:indirect indirect (or/c #f content?) #f])
          element?]{
 
 Like @racket[secref] for the document's implicit @racket["top"]
 tag. Use this function to refer to a whole manual instead of
 @racket[secref], in case a special style in the future is used for
-manual titles.}
+manual titles.
+
+If @racket[indirect] is not @racket[#f], then the link's resolution in
+HTML can be delayed, like @racket[seclink] with @racket[#:indirect?
+#t].  The @racket[indirect] content is prefixed with ``the'' and
+suffixed with ``documentation'' to generate the rendered text of the
+link.}
 
 
 @defproc[(elemtag [t (or/c tag? string?)] [pre-content pre-content?] ...) element?]{

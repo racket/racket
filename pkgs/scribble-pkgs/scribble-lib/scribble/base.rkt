@@ -429,7 +429,8 @@
                #:rest (listof pre-content?)
                element?)]
  [other-doc (->* (module-path?)
-                 (#:underline? any/c)
+                 (#:underline? any/c
+                               #:indirect (or/c #f content?))
                  element?)])
 
 (define (elemtag t . body)
@@ -465,8 +466,13 @@
                      (decode-content s)
                      `(part ,(doc-prefix doc prefix tag))))
 
-(define (other-doc #:underline? [u? #t] doc)
-  (secref #:doc doc #:underline? u? "top"))
+(define (other-doc doc 
+                   #:underline? [u? #t]
+                   #:indirect [indirect #f])
+  (if indirect
+      (seclink "top" #:doc doc #:underline? u? #:indirect? #t
+               (list "the " indirect " documentation"))
+      (secref "top" #:doc doc #:underline? u?)))
 
 ;; ----------------------------------------
 

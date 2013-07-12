@@ -358,14 +358,14 @@ by three calls to @racket[read-line].
 
 @section[#:tag "experimental-langs"]{Other Experimental Languages}
 
-For information on @onscreen{Lazy Racket}, see @seclink["top" #:doc
-'(lib "lazy/lazy.scrbl") #:indirect? #t]{the Lazy Racket documentation}.
+For information on @onscreen{Lazy Racket}, see @other-doc['(lib
+"lazy/lazy.scrbl") #:indirect "Lazy Racket"].
 
-For information on @onscreen{FrTime}, see @seclink["top" #:doc '(lib
-"frtime/scribblings/frtime.scrbl") #:indirect? #t]{the FrTime documentation}.
+For information on @onscreen{FrTime}, see @other-doc['(lib
+"frtime/scribblings/frtime.scrbl") #:indirect "FrTime"].
 
-For information on @onscreen{Algol 60}, see @seclink["top" #:doc '(lib
-"algol60/algol60.scrbl") #:indirect? #t]{the Algol60 documentation}.
+For information on @onscreen{Algol 60}, see @other-doc['(lib
+"algol60/algol60.scrbl") #:indirect "Algol 60"].
 
 @; ----------------------------------------
 
