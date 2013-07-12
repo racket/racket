@@ -2,6 +2,7 @@
 @(require "utils.rkt" 
           (for-label scheme/match)
           (for-syntax racket/base)
+          scribble/eval
           scribble/racket)
 
 @(define-syntax _float*
@@ -13,6 +14,9 @@
    (begin
      (require (only-in (for-label ffi/unsafe) ->))
      (defidform -> . content)))
+
+@(define ffi-eval (make-base-eval))
+@(ffi-eval '(require ffi/unsafe))
 
 @title[#:tag "types" #:style 'toc]{C Types}
 
@@ -44,14 +48,28 @@ functions are @racket[#f], @racket[type] is returned.}
 @defproc[(ctype? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a @tech{C type}, @racket[#f]
-otherwise.}
+otherwise.
+
+@examples[#:eval ffi-eval
+  (ctype? _int)
+  (ctype? (_fun _int -> _int))
+  (ctype? #f)
+  (ctype? "foo")
+]}
 
 
 @defproc*[([(ctype-sizeof [type ctype?]) exact-nonnegative-integer?]
            [(ctype-alignof [type ctype?]) exact-nonnegative-integer?])]{
 
 Returns the size or alignment of a given @racket[type] for the current
-platform.}
+platform.
+
+@examples[#:eval ffi-eval
+  (ctype-sizeof _int)
+  (ctype-sizeof (_fun _int -> _int))
+  (ctype-alignof _int)
+  (ctype-alignof (_fun _int -> _int))
+]}
 
 
 @defproc[(ctype->layout [type ctype?])
@@ -69,7 +87,13 @@ type. It can be any of the following symbols:
 The result can also be a list, which describes a C struct whose
 element representations are provided in order within the
 list. Finally, the result can be a vector of size 2 containing an
-element representation followed by an exact-integer count.}
+element representation followed by an exact-integer count.
+
+@examples[#:eval ffi-eval
+  (ctype->layout _int)
+  (ctype->layout _void)
+  (ctype->layout (_fun _int -> _int))
+]}
 
 
 @defproc[(compiler-sizeof [sym (or/c symbol? (listof symbol?))]) exact-nonnegative-integer?]{
@@ -82,7 +106,12 @@ corresponding type according to the C @cpp{sizeof} operator for the
 current platform. The @racket[compiler-sizeof] operation should be
 used to gather information about the current platform, such as
 defining alias type like @racket[_int] to a known type like
-@racket[_int32].}
+@racket[_int32].
+
+@examples[#:eval ffi-eval
+  (compiler-sizeof 'int)
+  (compiler-sizeof '(long long))
+]}
 
 @; ----------------------------------------------------------------------
 
@@ -1351,7 +1380,15 @@ The @racket[basetype] argument specifies the base type to use.
 The @racket[unknown] argument specifies the result of converting an
 unknown integer from the foreign side: it can be a one-argument function
 to be applied on the integer, or a value to return instead.  The default
-is to throw an exception.}
+is to throw an exception.
+
+@examples[#:eval ffi-eval
+  (code:comment "example from snappy-c.h")
+  (define _snappy_status
+    (_enum '(ok = 0
+             invalid_input
+             buffer_too_small)))
+]}
 
 @defproc[(_bitmask [symbols (or symbol? list?)] [basetype ctype? _uint])
          ctype?]{
@@ -1360,4 +1397,34 @@ Similar to @racket[_enum], but the resulting mapping translates a list
 of symbols to a number and back, using @racket[bitwise-ior].  A single
 symbol is equivalent to a list containing just the symbol.  The
 default @racket[basetype] is @racket[_uint], since high bits are often
-used for flags.}
+used for flags.
+
+@examples[#:eval ffi-eval
+  (code:comment "example from curl.h")
+  (define _curl_global_flag
+    (_bitmask `(CURL_GLOBAL_SSL = 1
+                CURL_GLOBAL_WIN32 = 2
+                CURL_GLOBAL_ALL = 3
+                CURL_GLOBAL_NOTHING = 0
+                CURL_GLOBAL_DEFAULT = 3
+                CURL_GLOBAL_ACK_EINTR = 4)))
+  (code:comment "example from XOrg")
+  (define _Modifiers
+    (_bitmask '(ShiftMask = #b0000000000001
+                LockMask = #b0000000000010
+                ControlMask = #b0000000000100
+                Mod1Mask = #b0000000001000
+                Mod2Mask = #b0000000010000
+                Mod3Mask = #b0000000100000
+                Mod4Mask = #b0000001000000
+                Mod5Mask = #b0000010000000
+                Button1Mask = #b0000100000000
+                Button2Mask = #b0001000000000
+                Button3Mask = #b0010000000000
+                Button4Mask = #b0100000000000
+                Button5Mask = #b1000000000000
+                Any = #x8000)))
+]}
+
+@close-eval[ffi-eval]
+
