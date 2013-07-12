@@ -67,7 +67,7 @@
            ;; provide a root for deserialization:
            (path-only dest))))))
 
-(define (make-key->source db-path no-user? quiet-fail?)
+(define (make-key->source db-path no-user? quiet-fail? register-shutdown!)
   (define main-db (cons (or db-path
                             (build-path (find-doc-dir) "docindex.sqlite"))
                         ;; cache for a connection:
@@ -76,6 +76,15 @@
                        (cons (build-path (find-user-doc-dir) "docindex.sqlite")
                              ;; cache for a connection:
                              (box #f))))
+  (register-shutdown! (lambda ()
+                        (define (close p)
+                          (define c (unbox (cdr p)))
+                          (when c
+                            (if (box-cas! (cdr p) c #f)
+                                (doc-db-disconnect c)
+                                (close p))))
+                        (close main-db)
+                        (when user-db (close user-db))))
   (define done-ht (make-hash)) ; tracks already-loaded documents
   (define forced-all? #f)
   (define (force-all)
@@ -133,8 +142,10 @@
 
 (define (make-collections-xref #:no-user? [no-user? #f]
                                #:doc-db [db-path #f]
-                               #:quiet-fail? [quiet-fail? #f])
+                               #:quiet-fail? [quiet-fail? #f]
+                               #:register-shutdown! [register-shutdown! void])
   (if (doc-db-available?)
       (load-xref null
-                 #:demand-source (make-key->source db-path no-user? quiet-fail?))
+                 #:demand-source (make-key->source db-path no-user? quiet-fail?
+                                                   register-shutdown!))
       (load-xref (get-reader-thunks no-user? quiet-fail? (make-hash)))))

@@ -754,6 +754,19 @@
     (make-directory* base))
   p)
 
+(define (xref-transfer-db renderer ci doc latex-dest
+                          #:quiet-fail? [quiet-fail? #f])
+  (define shutdown void)
+  (define xref (make-collections-xref
+                #:quiet-fail? quiet-fail?
+                #:no-user? (main-doc? doc)
+                #:doc-db (and latex-dest
+                              (find-doc-db-path latex-dest #t))
+                #:register-shutdown! (lambda (s)
+                                       (set! shutdown s))))
+  (xref-transfer-info renderer ci xref)
+  shutdown)
+
 (define ((get-doc-info only-dirs latex-dest auto-main? auto-user?
                        with-record-error setup-printf workerid 
                        only-fast? force-out-of-date? lock)
@@ -917,16 +930,11 @@
                         [dest-dir (pick-dest latex-dest doc)]
                         [fp (send renderer traverse (list v) (list dest-dir))]
                         [ci (send renderer collect (list v) (list dest-dir) fp)]
-                        [ri (begin
-                              ;; It's ok if cross-reference information isn't available
-                              ;; at this point, but we can sometimes save another iteration
-                              ;; if the information is available at this pass.
-                              (xref-transfer-info renderer ci (make-collections-xref 
-                                                               #:quiet-fail? #t
-                                                               #:no-user? (main-doc? doc)
-                                                               #:doc-db (and latex-dest
-                                                                             (find-doc-db-path latex-dest #t))))
-                              (send renderer resolve (list v) (list dest-dir) ci))]
+                        ;; It's ok if cross-reference information isn't available
+                        ;; at this point, but we can sometimes save another iteration
+                        ;; if the information is available at this pass.
+                        [db-shutdown (xref-transfer-db renderer ci doc latex-dest #:quiet-fail? #t)]
+                        [ri (send renderer resolve (list v) (list dest-dir) ci)]
                         [out-vs (and info-out-time
                                      ;; Don't force a re-write of "out" just because the document
                                      ;; is newer:
@@ -993,6 +1001,7 @@
                          (let ([m (max aux-time src-time)])
                            (unless (equal? m +inf.0)
                              (file-or-directory-modify-seconds stamp-file m)))))
+                     (db-shutdown)
                      info))))
              (lambda () #f))
             #f))))
@@ -1161,12 +1170,8 @@
               [dest-dir (pick-dest latex-dest doc)]
               [fp (render-time "traverse" (send renderer traverse (list v) (list dest-dir)))]
               [ci (render-time "collect" (send renderer collect (list v) (list dest-dir) fp))]
-              [ri (begin 
-                    (xref-transfer-info renderer ci (make-collections-xref 
-                                                     #:no-user? (main-doc? doc)
-                                                     #:doc-db (and latex-dest
-                                                                   (find-doc-db-path latex-dest #t))))
-                    (render-time "resolve" (send renderer resolve (list v) (list dest-dir) ci)))]
+              [db-shutdown (xref-transfer-db renderer ci doc latex-dest)]
+              [ri (render-time "resolve" (send renderer resolve (list v) (list dest-dir) ci))]
               [scis (render-time "serialize" (send renderer serialize-infos ri (add1 (doc-out-count doc)) v))]
               [defss (render-time "defined" (send renderer get-defineds ci (add1 (doc-out-count doc)) v))]
               [undef (render-time "undefined" (send renderer get-external ri))]
@@ -1203,6 +1208,7 @@
            (let ([synced (build-path (doc-dest-dir doc) "synced.rktd")])
              (unless (file-exists? synced)
                (close-output-port (open-output-file synced)))))
+         (db-shutdown)
          (gc-point)
          (list in-delta? out-delta? undef searches))))
    (lambda () #f)))
