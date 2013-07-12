@@ -2046,7 +2046,7 @@ These predicates detect whether a value is a @tech{contract property},
 @subsection{Obligation Information in Check Syntax}
 
 @seclink[#:doc '(lib "scribblings/drracket/drracket.scrbl")
-"buttons"]{Check Syntax} in DrRacket shows obligation information for
+"buttons" #:indirect? #t]{Check Syntax} in DrRacket shows obligation information for
 contracts according to @racket[syntax-property]s that the contract combinators
 leave in the expanded form of the program. These properties indicate
 where contracts appear in the source and where the positive and negative

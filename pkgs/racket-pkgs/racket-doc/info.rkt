@@ -10,9 +10,7 @@
                "scribble-lib"
                "racket-index"))
 (define build-deps '("compatibility-doc"
-                     "drracket"
                      "errortrace-doc"
-                     "sgl"
                      "typed-racket-doc"
                      "unstable"
                      "at-exp-lib"

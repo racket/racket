@@ -44,11 +44,11 @@ interfaces (GUIs):
 
        See @racketmodname[2htdp/image #:indirect] for more information.}
 
- @item{The @racketmodname[sgl] library provides OpenGL for 3-D
+ @item{The @racketmodname[sgl #:indirect] library provides OpenGL for 3-D
        graphics. The context for rendering OpenGL can be a window or
        bitmap created with @racketmodname[racket/gui].
 
-       See @other-doc['(lib "sgl/scribblings/sgl.scrbl")] for more
+       See @other-doc['(lib "sgl/scribblings/sgl.scrbl") #:indirect "SGL"] for more
        information.}
 
 ]
