@@ -580,7 +580,7 @@ type. The following methods can be implemented:
      (alist (cons (cons key val) (alist-v dict))))
    (define (dict-remove dict key)
      (define al (alist-v dict))
-     (remove* (assoc key al) al))
+     (alist (remove* (filter (λ (p) (equal? (car p) key)) al) al)))
    (define (dict-count dict #:default [x #f])
      (or x
          (length (remove-duplicates (alist-v dict) #:key car))))]) (code:comment "etc. other methods")
@@ -588,6 +588,7 @@ type. The following methods can be implemented:
   (define d1 (alist '((1 . a) (2 . b))))
   (dict? d1)
   (dict-ref d1 1)
+  (dict-remove d1 1)
 ]
 
 }
