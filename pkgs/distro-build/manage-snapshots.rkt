@@ -55,6 +55,8 @@
                                 installers-dir
                                 "table.rktd")
                     #:installers-url "current/installers/"
+                    #:docs-url (and (directory-exists? (build-path site-dir "doc"))
+                                    "current/doc/index.html")
                     #:dest (build-path snapshots-dir
                                        "index.html")
                     #:git-clone (current-directory)
