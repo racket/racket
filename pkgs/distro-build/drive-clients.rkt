@@ -9,7 +9,8 @@
                   current-mode
                   site-config?
                   site-config-tag site-config-options site-config-content)
-         "url-options.rkt")
+         "url-options.rkt"
+         "display-time.rkt")
 
 ;; See "config.rkt" for an overview.
 
@@ -298,6 +299,7 @@
                    (~a "http://" server ":9440/.git")))
   (define clean? (get-opt c '#:clean? default-clean? #:localhost #f))
   (define pull? (get-opt c '#:pull? #t #:localhost #f))
+  (display-time)
   ((case (or (get-opt c '#:platform) 'unix)
      [(unix) unix-build]
      [else windows-build])
@@ -351,6 +353,8 @@
 
 ;; ----------------------------------------
 
+(display-time)
+
 (void
  (let loop ([config config]
             [mode 'sequential]
@@ -388,3 +392,5 @@
                (lambda () (client-build c)))
               ;; stop client, if a VM:
               (stop-client c)))))]))))
+
+(display-time)
