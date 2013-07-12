@@ -6,7 +6,7 @@
 @defmodule[net/sendurl]{Provides @racket[send-url] for opening a URL
 in the user's chosen web browser.}
 
-See also @racketmodname[browser/external], which requires
+See also @racketmodname[browser/external #:indirect], which requires
 @racket[racket/gui], but can prompt the user for a browser if no
 browser preference is set.
 
