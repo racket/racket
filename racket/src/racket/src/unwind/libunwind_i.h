@@ -826,7 +826,7 @@ static inline int
 dwarf_reads8 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 	      int8_t *val, void *arg)
 {
-  dwarf_misaligned_value_t *mvp = (void *) *addr;
+  dwarf_misaligned_value_t *mvp = (void *)safe_pointer(*addr);
 
   *val = mvp->s8;
   *addr += sizeof (mvp->s8);
@@ -837,7 +837,7 @@ static inline int
 dwarf_reads16 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 	       int16_t *val, void *arg)
 {
-  dwarf_misaligned_value_t *mvp = (void *) *addr;
+  dwarf_misaligned_value_t *mvp = (void *)safe_pointer(*addr);
 
   *val = mvp->s16;
   *addr += sizeof (mvp->s16);
@@ -848,7 +848,7 @@ static inline int
 dwarf_reads32 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 	       int32_t *val, void *arg)
 {
-  dwarf_misaligned_value_t *mvp = (void *) *addr;
+  dwarf_misaligned_value_t *mvp = (void *)safe_pointer(*addr);
 
   *val = mvp->s32;
   *addr += sizeof (mvp->s32);
@@ -859,7 +859,7 @@ static inline int
 dwarf_reads64 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 	       int64_t *val, void *arg)
 {
-  dwarf_misaligned_value_t *mvp = (void *) *addr;
+  dwarf_misaligned_value_t *mvp = (void *)safe_pointer(*addr);
 
   *val = mvp->s64;
   *addr += sizeof (mvp->s64);
@@ -870,7 +870,7 @@ static inline int
 dwarf_readu8 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 	      uint8_t *val, void *arg)
 {
-  dwarf_misaligned_value_t *mvp = (void *) *addr;
+  dwarf_misaligned_value_t *mvp = (void *)safe_pointer(*addr);
 
   *val = mvp->u8;
   *addr += sizeof (mvp->u8);
@@ -881,7 +881,7 @@ static inline int
 dwarf_readu16 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 	       uint16_t *val, void *arg)
 {
-  dwarf_misaligned_value_t *mvp = (void *) *addr;
+  dwarf_misaligned_value_t *mvp = (void *)safe_pointer(*addr);
 
   *val = mvp->u16;
   *addr += sizeof (mvp->u16);
@@ -892,7 +892,7 @@ static inline int
 dwarf_readu32 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 	       uint32_t *val, void *arg)
 {
-  dwarf_misaligned_value_t *mvp = (void *) *addr;
+  dwarf_misaligned_value_t *mvp = (void *)safe_pointer(*addr);
 
   *val = mvp->u32;
   *addr += sizeof (mvp->u32);
@@ -903,7 +903,7 @@ static inline int
 dwarf_readu64 (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 	       uint64_t *val, void *arg)
 {
-  dwarf_misaligned_value_t *mvp = (void *) *addr;
+  dwarf_misaligned_value_t *mvp = (void *)safe_pointer(*addr);
 
   *val = mvp->u64;
   *addr += sizeof (mvp->u64);
@@ -914,7 +914,7 @@ static inline int
 dwarf_readw (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
 	     unw_word_t *val, void *arg)
 {
-  dwarf_misaligned_value_t *mvp = (void *) *addr;
+  dwarf_misaligned_value_t *mvp = (void *)safe_pointer(*addr);
 
   *val = mvp->w;
   *addr += sizeof (mvp->w);
