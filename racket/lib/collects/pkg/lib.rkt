@@ -318,10 +318,12 @@
                        (list
                         (cons 'version (version))))]))
 
-(define (package-catalog-lookup pkg details?)
+(define (package-catalog-lookup pkg details? download-printf)
   (or
    (for/or ([i (in-list (pkg-catalogs))])
-     (log-pkg-debug "consulting catalog ~a" (url->string i))
+     (if download-printf
+         (download-printf "Resolving ~s via ~a\n" pkg (url->string i))
+         (log-pkg-debug "consulting catalog ~a" (url->string i)))
      (catalog-dispatch
       i
       ;; Server:
@@ -374,7 +376,7 @@
 (define (remote-package-checksum pkg download-printf)
   (match pkg
     [`(catalog ,pkg-name)
-     (hash-ref (package-catalog-lookup pkg-name #f) 'checksum)]
+     (hash-ref (package-catalog-lookup pkg-name #f download-printf) 'checksum)]
     [`(url ,pkg-url-str)
      (package-url->checksum pkg-url-str 
                             #:download-printf download-printf)]))
@@ -820,7 +822,7 @@
               (values package-path
                       'dir
                       (λ ()
-                         (download-printf "\tCloning remote directory ~a\n"
+                         (download-printf "Cloning remote directory ~a\n"
                                           (url->string pkg-url))
                          (make-directory* package-path)
                          (define manifest
@@ -845,6 +847,7 @@
               (values package-path
                       'file
                       (λ ()
+                         (download-printf "Downloading ~a\n" (url->string pkg-url))
                          (log-pkg-debug "\tAssuming URL names a file")
                          (download-file! pkg-url package-path)))]))
           (dynamic-wind
@@ -984,7 +987,7 @@
                       #f
                       (directory->module-paths pkg-dir pkg-name metadata-ns))]))]
    [(eq? type 'name)
-    (define catalog-info (package-catalog-lookup pkg #f))
+    (define catalog-info (package-catalog-lookup pkg #f download-printf))
     (define source (hash-ref catalog-info 'source))
     (define checksum (hash-ref catalog-info 'checksum))
     (define info (stage-package/info source
@@ -1024,6 +1027,24 @@
           (install-info-clean? i)
           (install-info-module-paths i)))
 
+(define (ask question)
+  (let loop ()
+    (printf question)
+    (printf " [Y/n/a/?] ")
+    (flush-output)
+    (match (read-line)
+      [(or "y" "Y" "")
+       'yes]
+      [(or "n" "N")
+       'no]
+      [(or "a" "A")
+       'always-yes]
+      [x
+       (eprintf "Invalid answer: ~a\n" x)
+       (eprintf " Answer nothing or `y' or `Y' for \"yes\", `n' or `N' for \"no\", or\n")
+       (eprintf " `a' or `A' for \"yes for all\".\n")
+       (loop)])))
+
 (define (install-packages
          #:old-infos [old-infos empty]
          #:old-descs [old-descs empty]
@@ -1034,6 +1055,8 @@
          #:skip-installed? [skip-installed? #f]
          #:force? [force? #f]
          #:quiet? [quiet? #f]
+         #:install-conversation [install-conversation #f]
+         #:update-conversation [update-conversation #f]
          descs)
   (define download-printf (if quiet? void printf))
   (define check-sums? (not ignore-checksums?))
@@ -1048,6 +1071,25 @@
     (define (clean!)
       (when clean?
         (delete-directory/files pkg-dir)))
+    (define (format-deps update-deps)
+      (format-list (for/list ([ud (in-list update-deps)])
+                     (format "~a (have ~a, need ~a)"
+                             (car ud)
+                             (caddr ud)
+                             (cadddr ud)))))
+    (define (show-dependencies deps update? auto? conversation)
+      (unless quiet?
+        (printf "The following ~a packages are listed as dependencies of ~a~a:~a\n"
+                (if update? "out-of-date" "uninstalled")
+                pkg-name
+                (if (or auto? (eq? conversation 'always-yes))
+                    (format "\nand they will be ~a~a"
+                            (if auto? "automatically " "")
+                            (if update? "updated" "installed"))
+                    "")
+                (if update?
+                    (format-deps deps)
+                    (format-list deps)))))
     (define simultaneous-installs
       (for/hash ([i (in-list infos)])
         (values (install-info-name i) (install-info-directory i))))
@@ -1130,32 +1172,20 @@
                        pkg
                        (format-list unsatisfied-deps))]
            ['search-auto
-            (printf (string-append
-                     "The following packages are listed as dependencies, but are not currently installed,\n"
-                     "so they will be automatically installed:\n"))
-            (printf "\t")
-            (for ([p (in-list unsatisfied-deps)])
-              (printf "~a " p))
-            (printf "\n")
-            (raise (vector updating? infos unsatisfied-deps void))]
+            (show-dependencies unsatisfied-deps #f #t install-conversation)
+            (raise (vector updating? infos unsatisfied-deps void 'always-yes update-conversation))]
            ['search-ask
-            (printf "The following packages are listed as dependencies, but are not currently installed:\n")
-            (printf "\t")
-            (for ([p (in-list unsatisfied-deps)])
-              (printf "~a " p))
-            (printf "\n")
-            (let loop ()
-              (printf "Would you like to install them via your package catalogs? [Yn] ")
-              (flush-output)
-              (match (read-line)
-                [(or "y" "Y" "")
-                 (raise (vector updating? infos unsatisfied-deps void))]
-                [(or "n" "N")
-                 (clean!)
-                 (pkg-error "missing dependencies\n  missing packages:~a" (format-list unsatisfied-deps))]
-                [x
-                 (eprintf "Invalid input: ~e\n" x)
-                 (loop)]))]))]
+            (show-dependencies unsatisfied-deps #f #f install-conversation)
+            (case (if (eq? install-conversation 'always-yes)
+                      'always-yes
+                      (ask "Would you like to install these dependencies?"))
+              [(yes)
+               (raise (vector updating? infos unsatisfied-deps void 'again update-conversation))]
+              [(always-yes)
+               (raise (vector updating? infos unsatisfied-deps void 'always-yes update-conversation))]
+              [(no)
+               (clean!)
+               (pkg-error "missing dependencies\n  missing packages:~a" (format-list unsatisfied-deps))])]))]
       [(and
         (not (eq? dep-behavior 'force))
         (let ()
@@ -1212,12 +1242,6 @@
                          (if multi? "ies" "y")
                          pkg
                          (format-deps update-deps)))
-            (define (format-deps update-deps)
-              (format-list (for/list ([ud (in-list update-deps)])
-                             (format "~a (have ~a, need ~a)"
-                                     (car ud)
-                                     (caddr ud)
-                                     (cadddr ud)))))
             ;; If there's a mismatch that we can't attempt to update, complain.
             (unless (andmap cadr update-deps)
               (report-mismatch (filter (compose not cadr) update-deps)))
@@ -1234,27 +1258,20 @@
                (clean!)
                (report-mismatch update-deps)]
               ['search-auto
-               (printf (string-append
-                        "The following packages are listed as dependencies, but are not at the required\n"
-                        "version, so they will be automatically updated:~a\n")
-                       (format-deps update-deps))
-               (raise (vector #t infos update-pkgs (make-pre-succeed)))]
+               (show-dependencies update-deps #t #t update-conversation)
+               (raise (vector #t infos update-pkgs (make-pre-succeed) install-conversation 'always-yes))]
               ['search-ask
-               (printf (~a "The following packages are listed as dependencies, but are not at the required\n"
-                           "versions:~a\n")
-                       (format-deps update-deps))
-               (let loop ()
-                 (printf "Would you like to update them via your package catalogs? [Yn] ")
-                 (flush-output)
-                 (match (read-line)
-                   [(or "y" "Y" "")
-                    (raise (vector #t infos update-pkgs (make-pre-succeed)))]
-                   [(or "n" "N")
-                    (clean!)
-                    (report-mismatch update-deps)]
-                   [x
-                    (eprintf "Invalid input: ~e\n" x)
-                    (loop)]))]))]
+               (show-dependencies update-deps #t #f update-conversation)
+               (case (if (eq? update-conversation 'always-yes)
+                         'always-yes
+                         (ask "Would you like to update these dependencies?"))
+                 [(yes)
+                  (raise (vector #t infos update-pkgs (make-pre-succeed) install-conversation 'again))]
+                 [(always-yes)
+                  (raise (vector #t infos update-pkgs (make-pre-succeed) install-conversation 'always-yes))]
+                 [(no)
+                  (clean!)
+                  (report-mismatch update-deps)])]))]
       [else
        (λ ()
          (define final-pkg-dir
@@ -1377,7 +1394,9 @@
                      #:pre-succeed [pre-succeed void]
                      #:dep-behavior [dep-behavior #f]
                      #:updating? [updating? #f]
-                     #:quiet? [quiet? #f])
+                     #:quiet? [quiet? #f]
+                     #:install-conversation [install-conversation #f]
+                     #:update-conversation [update-conversation #f])
   (define new-descs
     (remove-duplicates
      (if (not skip-installed?)
@@ -1395,7 +1414,7 @@
      pkg-desc=?))
   (with-handlers* ([vector?
                     (match-lambda
-                     [(vector updating? new-infos deps more-pre-succeed)
+                     [(vector updating? new-infos deps more-pre-succeed inst-conv updt-conv)
                       (pkg-install
                        #:old-infos new-infos
                        #:old-auto+pkgs (append old-descs new-descs)
@@ -1404,6 +1423,8 @@
                        #:dep-behavior dep-behavior
                        #:pre-succeed (lambda () (pre-succeed) (more-pre-succeed))
                        #:updating? updating?
+                       #:install-conversation inst-conv
+                       #:update-conversation updt-conv
                        (for/list ([dep (in-list deps)])
                          (pkg-desc dep #f #f #t)))])])
     (install-packages
@@ -1416,6 +1437,8 @@
      #:pre-succeed pre-succeed
      #:updating? updating?
      #:quiet? quiet?
+     #:install-conversation install-conversation
+     #:update-conversation update-conversation
      new-descs)))
 
 (define (update-is-possible? pkg-name)
@@ -1921,7 +1944,7 @@
 
 (define (get-pkg-details-from-catalogs name)
   (for/or ([i (in-list (pkg-catalogs))])
-    (package-catalog-lookup name #t)))
+    (package-catalog-lookup name #t #f)))
 
 (define (get-all-pkg-details-from-catalogs)
   (for/fold ([ht (hash)]) ([i (in-list (pkg-catalogs))])
