@@ -1049,7 +1049,8 @@
                      [else (path->bytes (cc-path cc))])
                    (cons (domain) (cc-shadowing-policy cc)))))
     ;; In "tidy" mode, make sure we check each "cache.rktd":
-    (when (make-tidy)
+    (when (or (make-tidy)
+              no-specific-collections?)
       (for ([c (in-list (current-library-collection-paths))])
         (when (and (directory-exists? c)
                    (not (and (avoid-main-installation)

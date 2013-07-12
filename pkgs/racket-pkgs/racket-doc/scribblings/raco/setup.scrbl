@@ -291,20 +291,30 @@ Optional @filepath{info.rkt} fields trigger additional actions by
      [doc (list src-string)
           (list src-string flags)
           (list src-string flags category)
-          (list src-string flags category name-string)
-          (list src-string flags category name-string out-k)]
+          (list src-string flags category name)
+          (list src-string flags category name out-k)
+          (list src-string flags category name out-k order-n)]
      [flags (list mode-symbol ...)]
      [category (list category-symbol)
                (list category-symbol sort-number)]
+     [name string
+           #f]
    ]
 
    A document's list optionally continues with information on how to
-   build the document. If a document's list contains a second item, it
-   must be a list of mode symbols (described below). If a document's
-   list contains a third item, it must be a list that categorizes the
-   document (described further below). If a document's list contains a
-   fourth item, it is a name to use for the generated documentation,
-   instead of defaulting to the source file's name (sans extension).
+   build the document. If a document's list contains a second item,
+   @racket[_flags], it must be a list of mode symbols (described
+   below). If a document's list contains a third item,
+   @racket[_category], it must be a list that categorizes the document
+   (described further below). If a document's list contains a fourth
+   item, @racket[_name], it is a name to use for the generated
+   documentation, instead of defaulting to the source file's name
+   (sans extension), where @racket[#f] means to use the default. If a
+   document's list contains a fifth item, @racket[_out-k], it is used
+   a hint for the number of files to use for the document's
+   cross-reference information; see below. If a document's list
+   contains a fourth item, @racket[_order-n], it is used a hint for
+   the order of rendering; see below.
 
    Each mode symbol in @racket[_flags] can be one of the following,
    where only @racket['multi-page] is commonly used:
@@ -415,7 +425,13 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    document's cross-reference information into multiple parts, which
    can reduce the time and memory use for resolving a cross-reference
    into the document. It must be a positive, exact integer, and the
-   default is @racket[1].}
+   default is @racket[1].
+
+   The @racket[_order-n] specification is a hint for ordering document
+   builds, since documentation references can be mutually recursive.
+   The order hint can be any real number.  The main Racket reference
+   is given a value of @racket[10], the search page is given a
+   value of @racket[-10], and the default is @racket[0].}
 
  @item{@as-index{@racketidfont{release-notes}} : @racket[(listof (cons/c string? (cons/c string? list?)))] ---
    A list of release-notes text files to link from the main documentation pages.
