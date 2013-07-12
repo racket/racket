@@ -12,7 +12,6 @@
 (define build-deps '("compatibility-doc"
                      "drracket"
                      "errortrace-doc"
-                     "htdp-doc"
                      "sgl"
                      "typed-racket-doc"
                      "unstable"

@@ -137,8 +137,8 @@ information about running @|r6rs| programs with Racket.
 
 The @|HtDP| textbook relies on pedagogic variants of Racket that
 smooth the introduction of programming concepts for new programmers.
-The languages are documented in @other-manual['(lib
-"scribblings/htdp-langs/htdp-langs.scrbl")].
+See @other-doc['(lib "scribblings/htdp-langs/htdp-langs.scrbl")
+#:indirect @list{@|HtDP| language}].
 
 The @|HtDP| languages are typically not used with @hash-lang[]
 prefixes, but are instead used within DrRacket by selecting the
