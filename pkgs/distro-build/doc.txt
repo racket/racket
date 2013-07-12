@@ -69,6 +69,11 @@ site will be made available. To use the `snapshot-sire' makefile
 target, then `#:site-dest' will need to be specified, normally as a
 path that ends with the value produced by `(current-stamp)'.
 
+Hint: When developing a configuration file, use an empty set of
+packages to a configuration that works as quickly as possible. Then,
+change the list of packages to the ones that you actually want in the
+installers.
+
 Machine Requirements
 --------------------
 
@@ -86,8 +91,8 @@ Each Windows client needs the following:
     default folder:
      C:\Program Files\Microsoft Visual Studio 9.0       (32-bit host)
      C:\Program Files (x86)\Microsoft Visual Studio 9.0 (64-bit host)
-  * Nullsoft Scriptable Install System (NSIS), installed in the
-    default folder:
+  * Nullsoft Scriptable Install System (NSIS) verstion 2.x, installed
+    in the default folder:
      C:\Program Files\NSIS\makensis.exe
      or  C:\Program Files (x86)\NSIS\makensis.exe
     or installed so that `makensis' in your PATH.
@@ -158,8 +163,9 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
   #:max-vm <real> --- max number of VMs allowed to run with this
     machine, counting the machine; defaults to 1
 
-  #:vbox <string> --- Virtual Box machine name; if provided the
-    virtual machine is started and stopped on the server as needed
+  #:vbox <string> --- Virtual Box machine name (as shown, for example,
+    in the Virtual Box GUI); if provided, the virtual machine is
+    started and stopped on the server as needed
 
   #:platform <symbol> --- 'windows or 'unix, defaults to 'unix
 
