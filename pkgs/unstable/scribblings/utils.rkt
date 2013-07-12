@@ -17,7 +17,8 @@ Place either @unstable or @unstable-header immediately after the
 (define (unstable-header)
   @para{This library is @emph{unstable};
         compatibility will not be maintained.
-        See @secref{unstable} for more information.})
+        See @secref["unstable" #:doc '(lib "unstable/scribblings/unstable.scrbl")]
+        for more information.})
 
 (define (addition name)
   @margin-note{The subsequent bindings were added by @|name|.})

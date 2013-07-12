@@ -3,7 +3,8 @@
 (define collection "unstable")
 
 (define scribblings
-  '(("scribblings/unstable.scrbl" (multi-page) (experimental))))
+  '(("scribblings/unstable.scrbl" (multi-page) (experimental))
+    ("scribblings/gui/unstable-gui.scrbl" (multi-page) (experimental))))
 (define deps '("base"
                "draw-lib"
                "gui-lib"

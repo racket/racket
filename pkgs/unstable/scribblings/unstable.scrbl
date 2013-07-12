@@ -7,7 +7,9 @@
 @title[#:tag "unstable"]{Unstable: May Change Without Warning}
 
 This manual documents some of the libraries available in the
-@racketidfont{unstable} collection.
+@racketidfont{unstable} collection. See also @other-doc['(lib
+"unstable/scribblings/gui/unstable-gui.scrbl") #:indirect "unstable
+GUI libraries"].
 
 The name @racketidfont{unstable} is intended as a warning that the
 @bold{interfaces} in particular are unstable. Developers of planet
@@ -107,25 +109,3 @@ Keep documentation and tests up to date.
 @include-section["../temp-c/scribblings/temp-c.scrbl"]
 @include-section["socket.scrbl"] ;; Unix Domain Sockets
 @include-section["2d.scrbl"]
-
-@;{--------}
-
-@;{
-  Include the "Unstable GUI libraries docs" if it is part of
-  the current distribution.
-}
-
-@(begin
-   ;; Include gui.scrbl if present.
-   (define-for-syntax here
-     (build-path (collection-path "unstable") "scribblings"))
-   (define-for-syntax gui-file
-     "gui.scrbl")
-   (define-syntax (if-gui-present stx)
-     (syntax-case stx ()
-       [(_ then else)
-        (if (file-exists? (build-path here gui-file))
-            #'then
-            #'else)])))
-
-@if-gui-present[(include-section "gui.scrbl") (begin)]
