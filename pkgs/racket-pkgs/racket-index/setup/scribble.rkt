@@ -56,9 +56,8 @@
                                   undef     ; unresolved requires
                                   searches 
                                   deps       ; (listof (cons <path-or-info> hash))
-                                  known-deps ; (listof (cons <path-or-info> hash))
                                   build?
-                                  prev-out-hash out-hash
+                                  out-hash
                                   start-time done-time
                                   need-run?
                                   need-in-write? need-out-write?
@@ -393,6 +392,7 @@
       (log-setup-info "determining dependencies")
       (for ([i infos])
         (hash-set! src->info (doc-src-file (info-doc i)) i))
+      (define quick-fix? #f)
       (for ([info infos] #:when (info-build? info))
         (let ([one? #f]
               [added? #f]
@@ -430,8 +430,30 @@
                       (printf " [Removed Dependency for ~a: ~a]\n"
                               (doc-name (info-doc info))
                               (doc-name (info-doc info))))))))
+          (define (add-dependency info i)
+            (cond
+             [((info-start-time info) . < . (info-done-time info))
+              ;; Although this dependency wasn't in the list, yet,
+              ;; the build actually happened after the dependency's "out.sxref"
+              ;; files were written, so they would have been used.
+              ;; Fix up the dependency list.
+              (when (verbose)
+                (printf " [Quick-add for ~a: ~a]\n"
+                        (doc-name (info-doc info))
+                        (doc-name (info-doc i))))
+              (hash-set! deps i #t)
+              (set-info-deps! info (cons (cons i (info-out-hash i))
+                                         (info-deps info)))
+              (set-info-need-in-write?! info #t)]
+             [else
+              (when (verbose)
+                (printf " [Adding for ~a: ~a]\n"
+                        (doc-name (info-doc info))
+                        (doc-name (info-doc i))))
+              (set! added? #t)
+              (hash-set! deps i #t)]))
+          ;; Add expected dependencies for an "all dependencies" doc:
           (when (or (memq 'depends-all (doc-flags (info-doc info))) all-main?)
-            ;; Add all as expected dependency:
             (when (verbose)
               (printf " [Adding all~a as dependencies for ~a]\n"
                       (if all-main? " main" "")
@@ -442,13 +464,9 @@
                          (not (hash-ref deps i #f))
                          (or (not all-main?) (doc-under-main? (info-doc i)))
                          (not (memq 'no-depend-on (doc-flags (info-doc i)))))
-                (when (verbose)
-                  (printf " [Adding for ~a: ~a]\n"
-                          (doc-name (info-doc info))
-                          (doc-name (info-doc i))))
-                (set! added? #t)
-                (hash-set! deps i #t))))
-          ;; Add definite dependencies based on referenced keys
+                (add-dependency info i))))
+          ;; Determine definite dependencies based on referenced keys, and also
+          ;; report missing links.
           (let ([not-found
                  (lambda (k)
                    (unless (or (memq 'depends-all (doc-flags (info-doc info)))
@@ -477,18 +495,16 @@
                 (define i (out-path->info found-dep infos out-path->info-cache))
                 (unless i
                   (error "failed to find info for path: ~s" found-dep))
+                ;; Record this known dependency:
                 (when (not (hash-ref known-deps i #f))
                   (hash-set! known-deps i #t))
-                ;; Record also in the expected-dependency list:
                 (when (not (hash-ref deps i #f))
-                  (set! added? #t)
-                  (when (verbose)
-                    (printf " [Adding for ~a: ~a]\n"
-                            (doc-name (info-doc info))
-                            (doc-name (info-doc i))))
-                  (hash-set! deps i #t)))
+                  ;; Record dependency in "expected", too, which triggers
+                  ;; a re-run if needed:
+                  (add-dependency info i)))
               (for ([s-key (in-list missing)])
                 (not-found s-key))))
+          ;; Check whether this document needs a re-run:
           (when (or 
                  ;; If we added anything (expected or known), then mark as needed to run:
                  (and added?
@@ -501,6 +517,12 @@
                                          (or (and (not (info? i2))
                                                   i2)
                                              (and (not (equal? (info-out-hash i2) (cdr p)))
+                                                  (if ((info-start-time info) . < . (info-done-time info))
+                                                      (begin
+                                                        ;; Actually used more recent:
+                                                        (set! quick-fix? #t)
+                                                        #f)
+                                                      #t)
                                                   i2)))
                                        (info-deps info))])
                         (and ch
@@ -510,16 +532,24 @@
                                        (if (info? ch)
                                            (doc-name (info-doc ch))
                                            ch)))))))
-            (define (key->dep i v) (cons i 
-                                         (if ((info-start-time info) . > . (info-done-time i))
-                                             ;; This document started after latest info was availale:
-                                             (info-out-hash i)
-                                             ;; Used info that was available at the start:
-                                             (info-prev-out-hash i))))
-            (set-info-known-deps! info (hash-map known-deps key->dep))
-            (set-info-deps! info (info-known-deps info))
+            (define (key->dep i v) (cons i (info-out-hash i)))
+            (set-info-deps! info (hash-map known-deps key->dep))
             (set-info-need-in-write?! info #t)
-            (set-info-need-run?! info #t))))
+            (set-info-need-run?! info #t))
+          (when (and quick-fix? (not (info-need-run? info)))
+            ;; Because the run was later enough, it actually used the latest
+            ;; "out.sxref" for all dependencies.
+            (set-info-deps! info (for/list ([dep (in-list (info-deps info))])
+                                   (cons (car dep)
+                                         (info-out-hash (car dep)))))
+            (set-info-need-in-write?! info #t))))
+      ;; Write out any "in.sxref" files that have been updated with dependency
+      ;; information, and where another run isn't needed:
+      (for ([info (in-list infos)])
+        (when (and (info-need-in-write? info)
+                   (not (info-need-run? info)))
+          (write-in/info latex-dest info no-lock)
+          (set-info-need-in-write?! info #f)))
       ;; Iterate, if any need to run:
       (when (and (ormap info-need-run? infos) (iter . < . 30))
         (log-setup-info "building")
@@ -538,8 +568,7 @@
                           "~a"
                           (path->relative-string/setup (doc-src-file (info-doc i)))))
           (define (prep-info! i)
-            (set-info-start-time! i (current-inexact-milliseconds))
-            (set-info-prev-out-hash! i (info-out-hash i)))
+            (set-info-start-time! i (current-inexact-milliseconds)))
           (define (update-info! info response)
             (match response 
               [#f (set-info-failed?! info #t)]
@@ -948,10 +977,9 @@
               ;; expected deps, in case we don't need to build:
               (map (lambda (p) (cons (rel->path (car p)) (cdr p)))
                    (list-ref v-in 1)) 
-              null ; known deps (none at this point)
               can-run?
-              out-hash out-hash
-              (current-inexact-milliseconds) -inf.0
+              out-hash
+              -inf.0 -inf.0
               (and can-run?
                    (or (memq 'always-run (doc-flags doc))
                        ;; maybe info is up-to-date but not rendered doc:
@@ -1011,10 +1039,8 @@
                           (make-info doc
                                      undef
                                      searches
-                                     null ; no deps, yet
-                                     null ; no known deps, yet
+                                     null ; haven't figured out deps, yet
                                      can-run?
-                                     #f ; prev-out-hash
                                      (and (not need-out-write)
                                           (get-info-out-hash doc latex-dest))
                                      start-time +inf.0
