@@ -13,7 +13,7 @@
   (let ()
     @plain[#:file "irc-logs/.htaccess"]{
       RewriteEngine on
-      RewriteRule ^(.*)$ http://pre.racket-lang.org@;
+      RewriteRule ^(.*)$ http://lambda.racket-lang.org@;
          /irc-logs/@||racket/@|"$1"| [P]
     }
     (λ (text) @a[href: "irc-logs/"]{@text})))
