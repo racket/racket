@@ -13,15 +13,21 @@
   (let ()
     @plain[#:file "irc-logs/.htaccess"]{
       RewriteEngine on
+      RewriteRule ^(racket(-dev)?/.*)$ http://lambda.racket-lang.org@;
+         /irc-logs/@|"$1"| [P,L]
+      @; For legacy links (should eventually be removed)
       RewriteRule ^(.*)$ http://lambda.racket-lang.org@;
-         /irc-logs/@||racket/@|"$1"| [P]
+         /irc-logs/racket/@|"$1"| [P,L]
     }
-    (λ (text) @a[href: "irc-logs/"]{@text})))
+    (λ (type . text) @a[href: `("irc-logs/" ,type "/")]{@text})))
 
 (provide irc-quick)
 (define (irc-quick)
+  (define (chan name) @TT{@big{@strong{#@name}}})
   @parlist[@strong{Discussion Channel}
-    @text{@irc-chat{Chat on IRC} in the @TT{@big{@strong{#racket}}} channel on
+    @text{@irc-chat{Chat on IRC} in the @chan{racket} channel on
       @a[href: "http://freenode.net"]{@tt{freenode.net}} — an informal
       discussion channel for all things related to Racket.
-      (@irc-logs{Browse the logs}.)}])
+      (@irc-logs['racket]{Browse the logs}.)
+      There is also @chan{racket-dev} (@irc-logs['racket-dev]{logs}), a channel
+      for notification bots.}])
