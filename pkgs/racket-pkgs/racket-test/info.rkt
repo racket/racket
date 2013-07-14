@@ -7,6 +7,7 @@
                "compiler-lib"
                "sandbox-lib"
                "compatibility-lib"
+               "planet-lib"
                "pconvert-lib"
                "eli-tester"
                ;; for `net` tests

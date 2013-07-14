@@ -3,6 +3,7 @@
 (define collection 'multi)
 
 (define deps '("base"
+               "planet-lib"
                "compatibility-lib"
 	       "net-lib"
                "sandbox-lib"

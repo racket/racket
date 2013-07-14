@@ -2,7 +2,7 @@
 
 (require racket/match
          "short-syntax-helpers.rkt"
-         "data.rkt")
+         planet/private/data)
 
 (provide (struct-out request)
          parse-package-string

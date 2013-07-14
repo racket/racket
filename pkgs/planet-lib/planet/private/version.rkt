@@ -4,7 +4,7 @@
          racket/match
          unstable/syntax
          racket/syntax
-         "../planet-archives.rkt")
+         planet/planet-archives)
 
 (provide this-package-version
          this-package-version-name

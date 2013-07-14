@@ -5,6 +5,7 @@
 (define deps '("base"
                "compatibility-lib"
                "scribble-text-lib"
+               "planet-lib"
 	       "net-lib"
                "at-exp-lib"
                "draw-lib" 

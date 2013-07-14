@@ -5,6 +5,7 @@
 (define deps '("data-lib"
                "compiler-lib"
                "base"
+               "planet-lib"
                "compatibility-lib"
                "draw-lib"
                "errortrace-lib"

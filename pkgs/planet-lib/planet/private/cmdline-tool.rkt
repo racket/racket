@@ -12,10 +12,10 @@ PLANNED FEATURES:
            racket/match
            raco/command-name
            
-           "../config.rkt"
-           "planet-shared.rkt"
-           "command.rkt"
-           "../util.rkt")
+           planet/config
+           planet/private/planet-shared
+           planet/util
+           planet/private/command)
   (provide start)
   
   (define erase? (make-parameter #f))

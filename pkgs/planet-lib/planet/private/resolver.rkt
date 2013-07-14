@@ -196,10 +196,10 @@ See the scribble documentation on the planet/resolver module.
          net/url
          net/head
 
-         "../config.rkt"
-         "planet-shared.rkt"
+         planet/config
+         planet/private/planet-shared
          "linkage.rkt"
-         "parsereq.rkt"
+         planet/private/parsereq
 
          "../terse-info.rkt"
          compiler/cm)

@@ -1,9 +1,9 @@
 #lang racket/base
 
-(require "config.rkt"
-         "planet-archives.rkt"
+(require planet/config
+         planet/planet-archives
          
-         "private/planet-shared.rkt"
+         planet/private/planet-shared
          "private/linkage.rkt"
          
          "private/resolver.rkt"
