@@ -3821,6 +3821,7 @@ void scheme_release_file_descriptor(void);
 
 void scheme_init_kqueue(void);
 void scheme_release_kqueue(void);
+void scheme_release_inotify(void);
 
 THREAD_LOCAL_DECL(extern struct mz_fd_set *scheme_semaphore_fd_set);
 THREAD_LOCAL_DECL(extern Scheme_Hash_Table *scheme_semaphore_fd_mapping);

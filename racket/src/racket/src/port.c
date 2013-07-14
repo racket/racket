@@ -448,7 +448,7 @@ static int progress_evt_ready(Scheme_Object *rww, Scheme_Schedule_Info *sinfo);
 static int closed_evt_ready(Scheme_Object *rww, Scheme_Schedule_Info *sinfo);
 static int filesystem_change_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info *sinfo);
 
-#ifdef DOS_FILE_SYSTEM
+#if defined(DOS_FILE_SYSTEM) || defined(HAVE_INOTIFY_SYSCALL)
 static void filesystem_change_evt_need_wakeup (Scheme_Object *port, void *fds);
 #else
 # define filesystem_change_evt_need_wakeup NULL
@@ -5976,14 +5976,20 @@ Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv)
 /*                        filesystem change events                        */
 /*========================================================================*/
 
-/* removed `defined(HAVE_INOTIFY_SYSCALL)' for now: */
-#if defined(HAVE_KQUEUE_SYSCALL) || defined(DOS_FILE_SYSTEM)
+#if defined(HAVE_KQUEUE_SYSCALL)                \
+  || defined(DOS_FILE_SYSTEM)                   \
+  || defined(HAVE_INOTIFY_SYSCALL)		\
+  || defined(FILESYSTEM_NEVER_CHANGES)
 # define HAVE_FILESYSTEM_CHANGE_EVTS
 #else
 # define NO_FILESYSTEM_CHANGE_EVTS
 #endif
 
-#ifndef NO_FILESYSTEM_CHANGE_EVTS
+#if defined(HAVE_INOTIFY_SYSCALL)
+# include "inotify.inc"
+#endif
+
+#if !defined(NO_FILESYSTEM_CHANGE_EVTS) && !defined(FILESYSTEM_NEVER_CHANGES)
 static void filesystem_change_evt_fnl(void *fc, void *data)
 {
   scheme_filesystem_change_evt_cancel((Scheme_Object *)fc, NULL);
@@ -6005,6 +6011,8 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
 #if defined(NO_FILESYSTEM_CHANGE_EVTS)
   ok = 0;
   errid = -1;
+#elif defined(FILESYSTEM_NEVER_CHANGES)
+  ok = 1;
 #elif defined(HAVE_KQUEUE_SYSCALL)
   do {
     fd = open(filename, flags | MZ_BINARY, 0666);
@@ -6014,26 +6022,16 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
   else
     ok = 1;
 #elif defined(HAVE_INOTIFY_SYSCALL)
-  /* This implementation uses a file descriptor for every event,
-     instead of using a watch descriptor for every event. This could
-     be improved, but note that the kqueue() implementation needs a
-     file descriptor per event, anyway. */
-  fd = inotify_init();
-  if (fd == -1)
-    errid = errno;
+  /* see "inotify.inc" */
+  mz_inotify_init();
+  if (!mz_inotify_ready())
+    errid = EAGAIN;
   else {
-    int wd;
-    wd = inotify_add_watch(fd, filename, 
-                           (IN_CREATE | IN_DELETE | IN_DELETE_SELF
-                            | IN_MODIFY | IN_MOVE_SELF | IN_MOVED_TO
-                            | IN_ATTRIB | IN_ONESHOT));
-    if (wd == -1) {
+    fd = mz_inotify_add(filename);
+    if (fd == -1)
       errid = errno;
-      scheme_close_file_fd(fd);
-    } else {
+    else
       ok = 1;
-      fcntl(fd, F_SETFL, MZ_NONBLOCKING);
-    }
   }
 #elif defined(DOS_FILE_SYSTEM)
   {
@@ -6091,7 +6089,16 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
 
 #if defined(NO_FILESYSTEM_CHANGE_EVTS)
   return NULL;
-#elif defined(DOS_FILE_SYSTEM)
+#elif defined(FILESYSTEM_NEVER_CHANGES)
+  {
+    Scheme_Filesystem_Change_Evt *fc;
+
+    fc = MALLOC_ONE_TAGGED(Scheme_Filesystem_Change_Evt);
+    fc->so.type = scheme_filesystem_change_evt_type;
+
+    return (Scheme_Object *)fc;
+  }
+#elif defined(DOS_FILE_SYSTEM) || defined(HAVE_INOTIFY_SYSCALL)
   {
     Scheme_Filesystem_Change_Evt *fc;
     Scheme_Custodian_Reference *mref;
@@ -6154,18 +6161,27 @@ void scheme_filesystem_change_evt_cancel(Scheme_Object *evt, void *ignored_data)
   Scheme_Filesystem_Change_Evt *fc = (Scheme_Filesystem_Change_Evt *)evt;
 
   if (fc->mref) {
-# if defined(DOS_FILE_SYSTEM)
+# if defined(FILESYSTEM_NEVER_CHANGES)
+    fc->mref = NULL;
+# else
+#  if defined(DOS_FILE_SYSTEM)
     if (fc->fd) {
       FindCloseChangeNotification((HANDLE)fc->fd);
       fc->fd = 0;
     }
-# else
+#  elif defined(HAVE_INOTIFY_SYSCALL)
+    if (fc->fd) {
+      mz_inotify_remove(fc->fd);
+      fc->fd = 0;
+    }
+#  else
     (void)scheme_fd_to_semaphore(fc->fd, MZFD_REMOVE_VNODE, 0);
     scheme_close_file_fd(fc->fd);
     scheme_post_sema_all(fc->sema);
-# endif
+#  endif
     scheme_remove_managed(fc->mref, (Scheme_Object *)fc);
     fc->mref = NULL;
+# endif
   }
 #endif
 }
@@ -6182,6 +6198,15 @@ static int filesystem_change_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info 
   }
   
   return !fc->fd;
+# elif defined(HAVE_INOTIFY_SYSCALL)
+  if (fc->fd) {
+    if (mz_inotify_poll(fc->fd))
+      scheme_filesystem_change_evt_cancel((Scheme_Object *)fc, NULL);
+  }
+  
+  return !fc->fd;
+# elif defined(FILESYSTEM_NEVER_CHANGES)
+  return fc->fd; /* = 0 */
 # else
   if (scheme_try_plain_sema(fc->sema))
     scheme_filesystem_change_evt_cancel((Scheme_Object *)fc, NULL);
@@ -6195,13 +6220,28 @@ static int filesystem_change_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info 
   return 0;
 }
 
-#ifdef DOS_FILE_SYSTEM
+#if defined(DOS_FILE_SYSTEM) || defined(HAVE_INOTIFY_SYSCALL)
 static void filesystem_change_evt_need_wakeup (Scheme_Object *evt, void *fds)
 {
   Scheme_Filesystem_Change_Evt *fc = (Scheme_Filesystem_Change_Evt *)evt;
 
-  if (fc->fd)
+  if (fc->fd) {
+#ifdef DOS_FILE_SYSTEM
     scheme_add_fd_handle((void *)fc->fd, fds, 0);
+#else
+    int fd;
+    fd = mz_inotify_fd();
+    if (fd >= 0) {
+      void *fds2;
+      fds2 = MZ_GET_FDSET(fds, 0);
+      MZ_FD_SET(fd, (fd_set *)fds2);
+      fds2 = MZ_GET_FDSET(fds, 2);
+      MZ_FD_SET(fd, (fd_set *)fds2);
+    } else if (fd == -2) {
+      scheme_cancel_sleep();
+    }
+#endif
+  }
 }
 #endif
 
@@ -6222,6 +6262,13 @@ int scheme_fd_regular_file(intptr_t fd, int dir_ok)
   return 1;
 #else
   return 0;
+#endif
+}
+
+void scheme_release_inotify()
+{
+#ifdef HAVE_INOTIFY_SYSCALL
+  mz_inotify_stop();
 #endif
 }
 
@@ -6378,7 +6425,7 @@ static CSI_proc get_csi(void)
   static int tried_csi = 0;
   static CSI_proc csi;
   
-  START_XFORM_SKIP;      
+  START_XFORM_SKIP;
   if (!tried_csi) {
     HMODULE hm;
     hm = LoadLibrary("kernel32.dll");

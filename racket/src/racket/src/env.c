@@ -624,6 +624,7 @@ void scheme_place_instance_destroy(int force)
   scheme_free_all_code();
   scheme_free_ghbn_data();
   scheme_release_kqueue();
+  scheme_release_inotify();
 }
 
 static void make_kernel_env(void)
