@@ -5976,10 +5976,19 @@ Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv)
 /*                        filesystem change events                        */
 /*========================================================================*/
 
+/* removed `defined(HAVE_INOTIFY_SYSCALL)' for now: */
+#if defined(HAVE_KQUEUE_SYSCALL) || defined(DOS_FILE_SYSTEM)
+# define HAVE_FILESYSTEM_CHANGE_EVTS
+#else
+# define NO_FILESYSTEM_CHANGE_EVTS
+#endif
+
+#ifndef NO_FILESYSTEM_CHANGE_EVTS
 static void filesystem_change_evt_fnl(void *fc, void *data)
 {
   scheme_filesystem_change_evt_cancel((Scheme_Object *)fc, NULL);
 }
+#endif
 
 Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int signal_errs)
 {
@@ -5993,7 +6002,10 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
 					   SCHEME_GUARD_FILE_EXISTS);
   fd = 0;
 
-#if defined(HAVE_KQUEUE_SYSCALL)
+#if defined(NO_FILESYSTEM_CHANGE_EVTS)
+  ok = 0;
+  errid = -1;
+#elif defined(HAVE_KQUEUE_SYSCALL)
   do {
     fd = open(filename, flags | MZ_BINARY, 0666);
   } while ((fd == -1) && (errno == EINTR));
@@ -6055,10 +6067,6 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
       }
     }
   }
-#else
-# define NO_FILESYSTEM_CHANGE_EVTS
-  ok = 0;
-  errid = -1;
 #endif
 
   if (!ok) { 
