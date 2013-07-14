@@ -198,9 +198,13 @@ break is sent (via @racket[break-thread]) to the created eventspace's
                                            (listof (or/c 'left 'middle 'right
                                                          'shift 'control 'alt 'meta 'caps)))]{
 
-Returns the current location of the mouse in screen coordinates,
-and returns a list of symbols for mouse buttons and modifier keys
-that are currently pressed.}
+@margin-note{On Mac OS X 10.5 and earlier, mouse-button information is
+not available, so the second result includes only symbols for modifier
+keys.}
+
+Returns the current location of the mouse in screen coordinates, and
+returns a list of symbols for mouse buttons and modifier keys that are
+currently pressed.}
 
 
 @defproc[(hide-cursor-until-moved) void?]{

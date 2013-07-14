@@ -200,7 +200,9 @@
 
 (define (get-current-mouse-state)
   (define posn (tell #:type _NSPoint NSEvent mouseLocation))
-  (define buttons (tell #:type _NSUInteger NSEvent pressedMouseButtons))
+  (define buttons (if (version-10.6-or-later?)
+                      (tell #:type _NSUInteger NSEvent pressedMouseButtons)
+                      0))
   (define mods (tell #:type _NSUInteger NSEvent modifierFlags))
   (define (maybe v mask sym)
     (if (zero? (bitwise-and v mask))
