@@ -232,4 +232,4 @@ reconfigure:
 	$(MAKE) Makefile
 
 Makefile: $(srcdir)/configure $(SRC_MAKEFILES)
-	$(srcdir)/configure
+	$(srcdir)/configure $(CONFIGURE_ARGS_qq)
