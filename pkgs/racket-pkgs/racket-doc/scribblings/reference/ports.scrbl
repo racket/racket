@@ -4,7 +4,7 @@
 @title[#:tag "ports" #:style 'toc]{Ports}
 
 @deftech{Ports} produce and/or consume bytes. An @deftech{input port}
-produces bytes, while an @deftech{output port} produces bytes (and
+produces bytes, while an @deftech{output port} consumes bytes (and
 some ports are both input ports and output ports). When an input port
 is provided to a character-based operation, the bytes are decoded to a
 character, and character-based output operations similarly encode the
