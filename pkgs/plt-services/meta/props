@@ -853,7 +853,6 @@ path/s is either such a string or a list of them.
 "pkgs/plt-services/meta" responsible (eli)
 "pkgs/plt-services/meta/build" drdr:command-line #f
 "pkgs/plt-services/meta/check-dists.rkt" drdr:timeout 1200
-"pkgs/plt-services/meta/contrib/completion/racket-completion.bash" responsible (samth sstrickl) drdr:command-line #f
 "pkgs/plt-services/meta/drdr" responsible (jay) drdr:command-line #f
 "pkgs/plt-services/meta/drdr2" responsible (jay) drdr:command-line #f
 "pkgs/plt-services/meta/images/mkheart.rkt" drdr:command-line #f
@@ -1373,6 +1372,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/syntax" responsible (stamourv mflatt)
 "pkgs/racket-pkgs/racket-test/tests/syntax-color" responsible (mflatt)
 "pkgs/racket-pkgs/racket-test/tests/test-engine" responsible (kathyg)
+"pkgs/shell-completion/racket-completion.bash" responsible (samth sstrickl) drdr:command-line #f
 "pkgs/typed-racket-pkgs/typed-racket-tests/tests/typed-racket" responsible (samth stamourv)
 "pkgs/typed-racket-pkgs/typed-racket-tests/tests/typed-racket/fail" drdr:command-line #f
 "pkgs/typed-racket-pkgs/typed-racket-tests/tests/typed-racket/fail/with-type3.rkt" responsible (sstrickl)

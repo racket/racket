@@ -59,6 +59,7 @@
                "schemeunit"
                "scribble"
                "sgl"
+               "shell-completion"
                "slatex"
                "slideshow"
                "snip"

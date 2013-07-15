@@ -116,7 +116,7 @@ _complete_collects() {
   local cur="$1"
   if [[ "${#_racket_collects[@]}" -eq 0 ]]; then
     _racket_collects=(
-      $( $_racket_cmd -e '(require meta/contrib/completion/list-collects)' )
+      $( $_racket_cmd -e '(require shell-completion/list-collects)' )
     )
   fi
   local wordlist=""
