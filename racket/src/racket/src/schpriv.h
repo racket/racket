@@ -3823,6 +3823,8 @@ void scheme_init_kqueue(void);
 void scheme_release_kqueue(void);
 void scheme_release_inotify(void);
 
+void scheme_fs_change_properties(int *_supported, int *_scalable, int *_low_latency, int *_file_level);
+
 THREAD_LOCAL_DECL(extern struct mz_fd_set *scheme_semaphore_fd_set);
 THREAD_LOCAL_DECL(extern Scheme_Hash_Table *scheme_semaphore_fd_mapping);
 

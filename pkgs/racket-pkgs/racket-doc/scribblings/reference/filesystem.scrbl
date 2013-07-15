@@ -528,7 +528,9 @@ is called.
 A @tech{filesystem change event} is placed under the management of the
 @tech{current custodian} when it is created. If the @tech{custodian}
 is shut down, @racket[filesystem-change-evt-cancel] is applied to the
-event.}
+event.
+
+See also @racket[system-type] in @racket['fs-change] mode.}
 
 
 @defproc[(filesystem-change-evt-cancel [evt filesystem-change-evt?])

@@ -352,7 +352,7 @@ static char *string_to_from_locale(int to_bytes,
 ROSYM static Scheme_Object *sys_symbol;
 ROSYM static Scheme_Object *link_symbol, *machine_symbol, *gc_symbol;
 ROSYM static Scheme_Object *so_suffix_symbol, *so_mode_symbol, *word_symbol;
-ROSYM static Scheme_Object *os_symbol;
+ROSYM static Scheme_Object *os_symbol, *fs_change_symbol;
 ROSYM static Scheme_Object *platform_3m_path, *platform_cgc_path;
 READ_ONLY static Scheme_Object *zero_length_char_string;
 READ_ONLY static Scheme_Object *zero_length_byte_string;
@@ -362,6 +362,8 @@ SHARED_OK static Scheme_Hash_Table *putenv_str_table;
 SHARED_OK static char *embedding_banner;
 SHARED_OK static Scheme_Object *vers_str;
 SHARED_OK static Scheme_Object *banner_str;
+
+SHARED_OK static Scheme_Object *fs_change_props;
 
 READ_ONLY static Scheme_Object *complete_symbol, *continues_symbol, *aborts_symbol, *error_symbol;
 
@@ -380,6 +382,7 @@ scheme_init_string (Scheme_Env *env)
   REGISTER_SO(so_mode_symbol);
   REGISTER_SO(word_symbol);
   REGISTER_SO(os_symbol);
+  REGISTER_SO(fs_change_symbol);
   link_symbol = scheme_intern_symbol("link");
   machine_symbol = scheme_intern_symbol("machine");
   gc_symbol = scheme_intern_symbol("gc");
@@ -387,6 +390,7 @@ scheme_init_string (Scheme_Env *env)
   so_mode_symbol = scheme_intern_symbol("so-mode");
   word_symbol = scheme_intern_symbol("word");
   os_symbol = scheme_intern_symbol("os");
+  fs_change_symbol = scheme_intern_symbol("fs-change");
 
   REGISTER_SO(zero_length_char_string);
   REGISTER_SO(zero_length_byte_string);
@@ -422,6 +426,31 @@ scheme_init_string (Scheme_Env *env)
   REGISTER_SO(embedding_banner);
   REGISTER_SO(vers_str);
   REGISTER_SO(banner_str);
+
+  REGISTER_SO(fs_change_props);
+  {
+    int supported, scalable, low_latency, file_level;
+    Scheme_Object *s;
+    scheme_fs_change_properties(&supported, &scalable, &low_latency, &file_level);
+    fs_change_props = scheme_make_vector(4, scheme_false);
+    if (supported) {
+      s = scheme_intern_symbol("supported");
+      SCHEME_VEC_ELS(fs_change_props)[0] = s;
+    }
+    if (scalable) {
+      s = scheme_intern_symbol("scalable");
+      SCHEME_VEC_ELS(fs_change_props)[1] = s;
+    }
+    if (low_latency) {
+      s = scheme_intern_symbol("low-latency");
+      SCHEME_VEC_ELS(fs_change_props)[2] = s;
+    }
+    if (file_level) {
+      s = scheme_intern_symbol("file-level");
+      SCHEME_VEC_ELS(fs_change_props)[3] = s;
+    }
+    SCHEME_SET_IMMUTABLE(fs_change_props);
+  }
 
   vers_str = scheme_make_utf8_string(scheme_version());
   SCHEME_SET_CHAR_STRING_IMMUTABLE(vers_str);
@@ -2711,8 +2740,12 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
       return scheme_make_integer(sizeof(void*)*8);
     }
 
+    if (SAME_OBJ(argv[0], fs_change_symbol)) {
+      return fs_change_props;
+    }
+
     if (!SAME_OBJ(argv[0], os_symbol)) {
-      scheme_wrong_contract("system-type", "(or/c 'os 'word 'link 'machine 'gc 'so-suffix 'so-mode 'word)", 0, argc, argv);
+      scheme_wrong_contract("system-type", "(or/c 'os 'word 'link 'machine 'gc 'so-suffix 'so-mode 'word 'fs-change)", 0, argc, argv);
       return NULL;
     }
   }

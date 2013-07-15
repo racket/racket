@@ -3,9 +3,10 @@
 
 @title[#:tag "runtime"]{Environment and Runtime Information}
 
-@defproc[(system-type [mode (or/c 'os 'word 'gc 'link 'so-suffix 'so-mode 'machine)
+@defproc[(system-type [mode (or/c 'os 'word 'gc 'link 'machine
+                                  'so-suffix 'so-mode 'fs-change)
                             'os])
-         (or/c symbol? string? bytes? exact-positive-integer?)]{
+         (or/c symbol? string? bytes? exact-positive-integer? vector?)]{
 
 Returns information about the operating system, build mode, or machine
 for a running Racket.
@@ -43,6 +44,10 @@ In @indexed-racket['link] mode, the possible symbol results are:
 Future ports of Racket may expand the list of @racket['os],
 @racket['gc], and @racket['link] results.
 
+In @indexed-racket['machine] mode, then the result is a string, which
+contains further details about the current machine in a
+platform-specific format.
+
 In @indexed-racket['so-suffix] mode, then the result is a byte string
 that represents the file extension used for shared objects on the
 current platform. The byte string starts with a period, so it is
@@ -53,9 +58,29 @@ if foreign libraries should be opened in ``local'' mode by default
 (as on most platforms) or @racket['global] if foreign libraries
 should be opened in ``global'' mode.
 
-In @indexed-racket['machine] mode, then the result is a string, which
-contains further details about the current machine in a
-platform-specific format.}
+In @indexed-racket['fs-change] mode, the result is an immutable vector
+of four elements. Each element is either @racket[#f] or a symbol,
+where a symbol indicates the presence of a property and @racket[#f]
+indicates the absence of a property. The possible symbols, in order,
+are:
+
+@itemize[
+@item{@indexed-racket['supported] --- @racket[filesystem-change-evt]
+ can produce a @tech{filesystem change event} to monitor filesystem changes;
+ if this symbol is not first in the vector, all other vector elements
+ are @racket[#f]}
+@item{@indexed-racket['scalable] --- resources consumed by a
+ @tech{filesystem change event} are effectively limited only by
+ available memory, as opposed to file-descriptor limits; this property
+ is @racket[#f] on Mac OS X and BSD variants of Unix}
+@item{@indexed-racket['low-latency] --- creation and checking of a
+ @tech{filesystem change event} is practically instantaneous; this
+ property is @racket[#f] on Linux}
+@item{@indexed-racket['file-level] --- a @tech{filesystem change
+ event} can track changes at the level of a file, as opposed to the
+ file's directory; this property is @racket[#f] on Windows}
+]
+}
 
 
 @defproc[(system-language+country) string?]{

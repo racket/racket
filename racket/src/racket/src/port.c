@@ -6272,6 +6272,33 @@ void scheme_release_inotify()
 #endif
 }
 
+void scheme_fs_change_properties(int *_supported, int *_scalable, int *_low_latency, int *_file_level)
+{
+#ifdef NO_FILESYSTEM_CHANGE_EVTS
+  *_supported = 0;
+  *_scalable = 0;
+  *_low_latency = 0;
+  *_file_level = 0;
+#else
+  *_supported = 1;
+# if defined(HAVE_KQUEUE_SYSCALL)  
+  *_scalable = 0;
+# else
+  *_scalable = 1;
+# endif
+# if defined(HAVE_INOTIFY_SYSCALL)
+  *_low_latency = 0;
+# else
+  *_low_latency = 1;
+# endif
+# if defined(DOS_FILE_SYSTEM)
+  *_file_level = 0;
+# else
+  *_file_level = 1;
+# endif
+#endif
+}
+
 /*========================================================================*/
 /*                          FILE input ports                              */
 /*========================================================================*/

@@ -1384,15 +1384,8 @@
 (test #f filesystem-change-evt? 'evt)
 
 (let ([dir (make-temporary-file "change~a" 'directory)])
-  (define known-file-supported?
-    (case (system-type)
-      [(macosx) #t]
-      [else #f]))
-  (define known-supported?
-    (or known-file-supported?
-        (case (system-type)
-          [(windows) #t]
-          [else #f])))
+  (define known-supported? (vector-ref (system-type 'fs-change) 0))
+  (define known-file-supported? (vector-ref (system-type 'fs-change) 3))
   (define (check-supported evt file?)
     (when (if file?
               known-file-supported?

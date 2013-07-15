@@ -1,5 +1,6 @@
 Version 5.3.900.7
 Changed equal? to work on module path index values
+Added 'fs-change mode to system-type
 
 Version 5.3.900.6
 Added identifier-binding-symbol
