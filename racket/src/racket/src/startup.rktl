@@ -555,15 +555,17 @@
                       (lambda () #f)
                       (lambda () (raise exn)))))
              (let ([dir-evt
-                    (let loop ([path path])
-                      (let-values ([(base name dir?) (split-path path)])
-                        (and (path? base)
-                             (if (directory-exists? base)
-                                 (filesystem-change-evt base (lambda () #f))
-                                 (loop base)))))])
+                    (and (vector-ref (system-type 'fs-change) 2) ; 'low-latency ?
+                         (let loop ([path path])
+                           (let-values ([(base name dir?) (split-path path)])
+                             (and (path? base)
+                                  (if (directory-exists? base)
+                                      (filesystem-change-evt base (lambda () #f))
+                                      (loop base))))))])
                (if (not (file-exists? path))
                    (cons #f dir-evt)
-                   (let ([evt (filesystem-change-evt path (lambda () #f))])
+                   (let ([evt (and (vector-ref (system-type 'fs-change) 2) ; 'low-latency ?
+                                   (filesystem-change-evt path (lambda () #f)))])
                      (when dir-evt (filesystem-change-evt-cancel dir-evt))
                      (cons
                       (let ([p (open-input-file path)])
