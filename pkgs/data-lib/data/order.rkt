@@ -22,6 +22,7 @@
                 dict-def-table)
   #:defaults ()
   #:fallbacks ()
+  #:derive-properties ()
   (dict-iterate-least ordered-dict)
   (dict-iterate-greatest ordered-dict)
   (dict-iterate-least/>? ordered-dict key)

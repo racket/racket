@@ -15,45 +15,54 @@
 
 (begin-for-syntax
 
-  (define (parse stx methods table defaults fallbacks)
+  (define (parse stx [options (hasheq)])
     (syntax-case stx ()
       [(#:defined-table name . args)
        (identifier? #'name)
-       (if table
+       (if (hash-ref options 'table #f)
            (wrong-syntax (stx-car stx)
                          "duplicate #:defined-table specification")
-           (parse #'args methods #'name defaults fallbacks))]
+           (parse #'args (hash-set options 'table #'name)))]
       [(#:defined-table . other)
        (wrong-syntax (stx-car stx) "invalid #:defined-table specification")]
       [(#:defaults ([pred defn ...] ...) . args)
-       (if defaults
+       (if (hash-ref options 'defaults #f)
            (wrong-syntax (stx-car stx) "duplicate #:defaults specification")
-           (parse #'args methods table #'([pred defn ...] ...) fallbacks))]
+           (parse #'args (hash-set options 'defaults #'([pred defn ...] ...))))]
       [(#:defaults . other)
        (wrong-syntax (stx-car stx) "invalid #:defaults specification")]
       [(#:fallbacks [fallback ...] . args)
-       (if fallbacks
+       (if (hash-ref options 'fallbacks #f)
            (wrong-syntax (stx-car stx) "duplicate #:fallbacks specification")
-           (parse #'args methods table defaults #'[fallback ...]))]
+           (parse #'args (hash-set options 'fallbacks #'[fallback ...])))]
       [(#:fallbacks . other)
        (wrong-syntax (stx-car stx) "invalid #:fallbacks specification")]
+      [(#:derive-property prop impl . args)
+       (parse #'args
+              (hash-set options
+                        'derived
+                        (cons (list #'prop #'impl)
+                              (hash-ref options 'derived '()))))]
+      [(#:derive-property . other)
+       (wrong-syntax (stx-car stx) "invalid #:derive-property specification")]
       [(kw . args)
        (keyword? (syntax-e #'kw))
        (wrong-syntax #'kw "invalid keyword argument")]
       [((_ . _) . args)
-       (if methods
+       (if (hash-ref options 'methods #f)
            (wrong-syntax (stx-car stx) "duplicate methods list specification")
            (let loop ([methods (list (stx-car stx))] [stx #'args])
              (syntax-case stx ()
                [((_ . _) . args) (loop (cons (stx-car stx) methods) #'args)]
-               [_ (parse stx (reverse methods) table defaults fallbacks)])))]
+               [_ (parse stx (hash-set options 'methods (reverse methods)))])))]
       [(other . args)
        (wrong-syntax #'other
                      "expected a method identifier with formal arguments")]
-      [() (values (or methods '())
-                  (or table (generate-temporary 'table))
-                  (or defaults '())
-                  (or fallbacks '()))]
+      [() (values (hash-ref options 'methods '())
+                  (hash-ref options 'table generate-temporary)
+                  (hash-ref options 'defaults '())
+                  (hash-ref options 'fallbacks '())
+                  (hash-ref options 'derived '()))]
       [other
        (wrong-syntax #'other
                      "expected a list of arguments with no dotted tail")])))
@@ -64,10 +73,11 @@
      (parameterize ([current-syntax-context stx])
        (unless (identifier? #'name)
          (wrong-syntax #'name "expected an identifier"))
-       (define-values (methods table defaults fallbacks)
-         (parse #'rest #f #f #f #f))
+       (define-values (methods table defaults fallbacks derived)
+         (parse #'rest))
        (define/with-syntax [default ...] defaults)
        (define/with-syntax [fallback ...] fallbacks)
+       (define/with-syntax [derive ...] derived)
        (define/with-syntax [method ...] methods)
        (define/with-syntax [method-name ...] (map stx-car methods))
        (define/with-syntax [method-index ...]
@@ -86,6 +96,7 @@
              (name gen-name prop-name get-name pred-name table-name)
              #:defaults [default ...]
              #:fallbacks [fallback ...]
+             #:derive-properties [derive ...]
              method ...)
            (define-generics-contract name pred-name get-name
              [method-name method-index]

@@ -24,6 +24,7 @@
     (foo gen:foo prop:foo foo-methods foo? dummy)
     #:defaults ([number? (define (meth foo #:kw kw) kw)])
     #:fallbacks ()
+    #:derive-properties ()
     (meth foo #:kw kw))
 
   (check-equal? (meth 3 #:kw 5) 5))

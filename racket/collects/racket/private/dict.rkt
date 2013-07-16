@@ -7,6 +7,7 @@
   (dict gen:dict prop:dict dict-methods dict? dict-def-table)
   #:defaults ()
   #:fallbacks ()
+  #:derive-properties ()
   (dict-ref  dict key [default])
   (dict-set! dict key val)
   (dict-set  dict key val)

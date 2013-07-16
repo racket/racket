@@ -36,6 +36,7 @@
                    supported-name)
         #:defaults ([default-pred default-defn ...] ...)
         #:fallbacks [fallback-defn ...]
+        #:derive-properties ([derived-prop derived-impl] ...)
         [method-name . method-signature]
         ...)
      (parameterize ([current-syntax-context #'original])
@@ -86,7 +87,16 @@
              ...
              x)
            (define-values (property-name prop:pred accessor-name)
-             (make-struct-type-property 'generic-name prop:guard '() #t))
+             (make-struct-type-property
+              'generic-name
+              prop:guard
+              (list
+               (cons derived-prop
+                     (lambda (impl)
+                       (let ([method-name (vector-ref impl 'method-index)] ...)
+                         derived-impl)))
+               ...)
+              #t))
            (define (predicate-name self-name)
              (or (prop:pred self-name) (default-pred-name self-name) ...))
            (define (table-name self-name [who 'table-name])

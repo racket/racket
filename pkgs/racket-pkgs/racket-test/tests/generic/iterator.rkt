@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/private/generic-methods
+(require racket/generic
          racket/sequence
          (for-syntax racket/base))
 
@@ -8,54 +8,25 @@
 ;; but it turns out streams can do all that already (including state),
 ;; making iterators redundant. Kept around as extra tests.
 
-
-(define-values (prop:iterator iterator? iterator-accessor)
-  (make-struct-type-property
-   'iterator
-   #f
-   ;; Iterators are automatically sequences, but don't have the full
-   ;; flexibility of sequences: they are their own initial state, and
-   ;; they can only look at their state to decide if iteration is over.
-   ;; Given that extra field can be added to the iterator, there is no
-   ;; loss of expressiveness.
-   (list (cons prop:sequence
-               (lambda (method-table) ; 3-vector
-                 (define iterator-first     (vector-ref method-table 0))
-                 (define iterator-rest      (vector-ref method-table 1))
-                 (define iterator-continue? (vector-ref method-table 2))
-                 (lambda (t)
-                   (make-do-sequence
-                    (lambda ()
-                      (values iterator-first
-                              iterator-rest ; needs to create a new struct
-                              t
-                              iterator-continue?
-                              (lambda (v) #t)
-                              (lambda (t v) #t))))))))))
-
-(define (iterator-first i)
-  (unless (iterator? i)
-    (raise-argument-error 'iterator-first "iterator?" i))
-  (define proc (vector-ref (iterator-accessor i) 0))
-  (proc i))
-
-(define (iterator-rest i)
-  (unless (iterator? i)
-    (raise-argument-error 'iterator-rest "iterator?" i))
-  (define proc (vector-ref (iterator-accessor i) 1))
-  (proc i))
-
-(define (iterator-continue? i)
-  (unless (iterator? i)
-    (raise-argument-error 'iterator-continue? "iterator?" i))
-  (define proc (vector-ref (iterator-accessor i) 2))
-  (proc i))
-
-(define-syntax gen:iterator
-  (make-generic-info (quote-syntax prop:iterator)
-                     (list (quote-syntax iterator-first)
-                           (quote-syntax iterator-rest)
-                           (quote-syntax iterator-continue?))))
+(define-generics iterator
+  (iterator-first iterator)
+  (iterator-rest iterator)
+  (iterator-continue? iterator)
+  ;; Iterators are automatically sequences, but don't have the full
+  ;; flexibility of sequences: they are their own initial state, and
+  ;; they can only look at their state to decide if iteration is over.
+  ;; Given that extra field can be added to the iterator, there is no
+  ;; loss of expressiveness.
+  #:derive-property prop:sequence
+  (lambda (t)
+    (make-do-sequence
+     (lambda ()
+       (values iterator-first
+               iterator-rest ; needs to create a new struct
+               t
+               iterator-continue?
+               (lambda (v) #t)
+               (lambda (t v) #t))))))
 
 (struct list-iterator (l)
         #:methods gen:iterator
