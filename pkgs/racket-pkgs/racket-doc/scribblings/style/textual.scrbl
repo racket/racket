@@ -349,7 +349,7 @@ Finally, in addition to regular alphanumeric characters, Racketeers use a
  define new languages.}  The use of ``#%'' to prefix names from the kernel
  language warns readers that these identifiers are extremely special and
  they need to watch out for subtleties. No other identifiers start with
- ``#'' and, in particular, all tokens starting with ``#%'' are keywords.
+ ``#'' and, in particular, all tokens starting with ``#:'' are keywords.
 
 @; -----------------------------------------------------------------------------
 @section{Graphical Syntax}
