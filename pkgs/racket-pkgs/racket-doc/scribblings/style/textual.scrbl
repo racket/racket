@@ -339,17 +339,17 @@ Finally, in addition to regular alphanumeric characters, Racketeers use a
  @row[symbol kind example]
  @row[?    "predicates and boolean-valued functions" boolean?]
  @row[!    "setters and field mutators"              set!]
- @row["#:" "keywords"                                #:dest-dir]
  @row[%    "classes"                                 game-state%]
  @row[<%>  "interfaces"                              dc<%>]
  @row[^    "unit signatures"                         game-context^]
  @row["@"  "units"                                   testing-context@]
  @row["#%" "kernel identifiers"                      #%app]
 ]
- The use of ``#%'' to prefix names from the kernel language warns readers
- that these identifiers are extremely special and they need to watch out
- for subtleties. Identifiers with this prefix are mostly used in modules
- that define new languages.
+ @margin-note*{Identifiers with this prefix are mostly used in modules that
+ define new languages.}  The use of ``#%'' to prefix names from the kernel
+ language warns readers that these identifiers are extremely special and
+ they need to watch out for subtleties. No other identifiers start with
+ ``#'' and, in particular, all tokens starting with ``#%'' are keywords.
 
 @; -----------------------------------------------------------------------------
 @section{Graphical Syntax}
