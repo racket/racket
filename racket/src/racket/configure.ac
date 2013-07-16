@@ -18,6 +18,12 @@
 # Note: we use CPPFLAGS for configure-time testing only because
 # it used to include C++ flags that we didn't want for Racket.
 # hence PREFLAGS, which is initialized to the original CPPFLAGS.
+#
+# CC_FOR_BUILD is used for the Boehm GC build. In contrast to some
+# other build processes, CC_FOR_BUILD needs to be consistent with CC
+# in terms of its platform selection, and so it receives CFLAGS,
+# PREFLAGS, and COMPFLAGS, too. If that doesn't work out, use
+# `--enable-sgc', instead.
 
 AC_INIT([Racket])
 AC_CONFIG_SRCDIR(racket/src/bignum.c)
@@ -688,6 +694,9 @@ case "$host_os" in
       fi
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS} ${PREFLAGS}"'"'
       need_cc_in_extras=yes
+      if test "$ORIG_CC_FOR_BUILD" = "" ; then
+        CC_FOR_BUILD="$CC"
+      fi
     fi
     
     if test "${enable_sdk6}" != "" ; then 
