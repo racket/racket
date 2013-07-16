@@ -309,6 +309,7 @@ void GC_set_post_propagate_hook(GC_Post_Propagate_Hook_Proc func) {
 /* OS-Level Memory Management Routines                                       */
 /*****************************************************************************/
 static void garbage_collect(NewGC*, int, int, Log_Master_Info*);
+static void collect_now(NewGC*, int);
 
 static void out_of_memory()
 {
@@ -352,20 +353,18 @@ inline static void check_used_against_max(NewGC *gc, size_t len)
   page_count = size_to_apage_count(len);
   gc->used_pages += page_count;
 
-  if (gc->dumping_avoid_collection) return;
-
-  if(gc->in_unsafe_allocation_mode) {
-    if(gc->used_pages > gc->max_pages_in_heap)
+  if (gc->in_unsafe_allocation_mode) {
+    if (gc->used_pages > gc->max_pages_in_heap)
       gc->unsafe_allocation_abort(gc);
-  } else {
-    if(gc->used_pages > gc->max_pages_for_use) {
-      garbage_collect(gc, 0, 0, NULL); /* hopefully this will free enough space */
-      if(gc->used_pages > gc->max_pages_for_use) {
-        garbage_collect(gc, 1, 0, NULL); /* hopefully *this* will free enough space */
-        if(gc->used_pages > gc->max_pages_for_use) {
+  } else if (!gc->avoid_collection) {
+    if (gc->used_pages > gc->max_pages_for_use) {
+      collect_now(gc, 0); /* hopefully this will free enough space */
+      if (gc->used_pages > gc->max_pages_for_use) {
+        collect_now(gc, 1); /* hopefully *this* will free enough space */
+        if (gc->used_pages > gc->max_pages_for_use) {
           /* too much memory allocated.
            * Inform the thunk and then die semi-gracefully */
-          if(GC_out_of_memory) {
+          if (GC_out_of_memory) {
             gc->used_pages -= page_count;
             GC_out_of_memory();
           }
@@ -914,17 +913,22 @@ static int check_master_wants_to_collect() {
 }
 #endif
 
-static inline void gc_if_needed_account_alloc_size(NewGC *gc, size_t allocate_size) {
-  if((gc->gen0.current_size + allocate_size) >= gc->gen0.max_size) {
+static void collect_now(NewGC *gc, int major)
+{
 #ifdef MZ_USE_PLACES 
-    if (postmaster_and_master_gc(gc)) {
+  if (postmaster_and_master_gc(gc))
       master_collect_initiate(gc);
-    } else
+  else
 #endif
-      {
-        if (!gc->dumping_avoid_collection)
-          garbage_collect(gc, 0, 0, NULL);
-      }
+    garbage_collect(gc, major, 0, NULL);
+}
+
+
+static inline void gc_if_needed_account_alloc_size(NewGC *gc, size_t allocate_size)
+{
+  if((gc->gen0.current_size + allocate_size) >= gc->gen0.max_size) {
+    if (!gc->avoid_collection)
+      collect_now(gc, 0);
   }
   gc->gen0.current_size += allocate_size;
 }
@@ -1171,8 +1175,8 @@ uintptr_t GC_make_jit_nursery_page(int count, uintptr_t *sz) {
   intptr_t size = count * THREAD_LOCAL_PAGE_SIZE;
 
   if((gc->gen0.current_size + size) >= gc->gen0.max_size) {
-    if (!gc->dumping_avoid_collection)
-      garbage_collect(gc, 0, 0, NULL);
+    if (!gc->avoid_collection)
+      collect_now(gc, 0);
   }
   gc->gen0.current_size += size;
 
@@ -1213,7 +1217,7 @@ inline static void gen0_free_mpage(NewGC *gc, mpage *page) {
 
 #define OVERFLOWS_GEN0(ptr) ((ptr) > GC_gen0_alloc_page_end)
 #ifdef MZ_GC_STRESS_TESTING
-# define GC_TRIGGER_COUNT 100
+# define GC_TRIGGER_COUNT 11
 static int stress_counter = 0;
 int scheme_gc_slow_path_started = 1;
 static int TAKE_SLOW_PATH()
@@ -1272,17 +1276,14 @@ inline static uintptr_t allocate_slowpath(NewGC *gc, size_t allocate_size, uintp
       ASSERT_VALID_INFOPTR(GC_gen0_alloc_page_ptr);
       GC_gen0_alloc_page_end    = NUM(gc->gen0.curr_alloc_page->addr) + GEN0_ALLOC_SIZE(gc->gen0.curr_alloc_page);
     }
-    /* WARNING: tries to avoid a collection, but
-       gen0_create_new_mpage() can cause a collection via
-       malloc_pages(), due to check_used_against_max() */
-    else if (gc->dumping_avoid_collection) {
+    else if (gc->avoid_collection)
       gen0_allocate_and_setup_new_page(gc);
-    } else {
+    else {
 #ifdef INSTRUMENT_PRIMITIVES 
       LOG_PRIM_START(((void*)garbage_collect));
 #endif
       
-      garbage_collect(gc, 0, 0, NULL);
+      collect_now(gc, 0);
 
 #ifdef INSTRUMENT_PRIMITIVES 
       LOG_PRIM_END(((void*)garbage_collect));
@@ -1319,9 +1320,9 @@ inline static void *allocate(const size_t request_size, const int type)
 #ifdef MZ_GC_STRESS_TESTING
   if (TAKE_SLOW_PATH()) {
     NewGC *gc = GC_get_GC();
-    if (!gc->dumping_avoid_collection) {
+    if (!gc->avoid_collection) {
       stress_counter = 0;
-      garbage_collect(gc, 0, 0, NULL);
+      collect_now(gc, 0);
     }
   }
 #endif
@@ -1582,7 +1583,7 @@ void GC_create_message_allocator() {
   GC_gen0_alloc_page_end   = 0;
 
   gc->in_unsafe_allocation_mode = 1;
-  gc->dumping_avoid_collection++;
+  gc->avoid_collection++;
 }
 
 void GC_report_unsent_message_delta(intptr_t amt)
@@ -1623,7 +1624,7 @@ void *GC_finish_message_allocator() {
   gc->saved_allocator = NULL;
 
   gc->in_unsafe_allocation_mode = 0;
-  gc->dumping_avoid_collection--;
+  gc->avoid_collection--;
 
   return (void *) msgm;
 }
@@ -2773,7 +2774,7 @@ static void NewGC_initialize(NewGC *newgc, NewGC *inheritgc, NewGC *parentgc) {
   if (inheritgc) {
     newgc->mark_table  = inheritgc->mark_table;
     newgc->fixup_table = inheritgc->fixup_table;
-    newgc->dumping_avoid_collection = inheritgc->dumping_avoid_collection - 1;
+    newgc->avoid_collection = 0;
 #ifdef MZ_USE_PLACES
     newgc->parent_gc = parentgc;
 #endif
@@ -2895,8 +2896,8 @@ void GC_construct_child_gc(struct NewGC *parent_gc, intptr_t limit) {
 void GC_destruct_child_gc() {
   NewGC *gc = GC_get_GC();
   int waiting = 0;
-  do {
 
+  do {
     mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
     GC_LOCK_DEBUG("MGCLOCK GC_destruct_child_gc\n");
     waiting = MASTERGC->major_places_gc;
@@ -2938,7 +2939,7 @@ void GC_switch_out_master_gc() {
 
     initialized = 1;
 
-    if (!gc->dumping_avoid_collection)
+    if (!gc->avoid_collection)
       garbage_collect(gc, 1, 1, NULL);
 
 #ifdef MZ_USE_PLACES
@@ -2948,7 +2949,6 @@ void GC_switch_out_master_gc() {
 #endif
  
     MASTERGC = gc;
-    MASTERGC->dumping_avoid_collection++;
 
     save_globals_to_gc(MASTERGC);
     GC_construct_child_gc(NULL, 0);
@@ -3001,27 +3001,22 @@ void GC_gcollect(void)
 {
   NewGC *gc = GC_get_GC();
 
-  if (gc->dumping_avoid_collection) return;
+  if (gc->avoid_collection) return;
 
-#ifdef MZ_USE_PLACES
-  if (postmaster_and_master_gc(gc))
-    master_collect_initiate(gc);
-  else
-#endif
-    garbage_collect(gc, 1, 0, NULL);
+  collect_now(gc, 1);
 }
 
 void GC_gcollect_minor(void)
 {
   NewGC *gc = GC_get_GC();
 
-  if (gc->dumping_avoid_collection) return;
+  if (gc->avoid_collection) return;
 
 #ifdef MZ_USE_PLACES
   if (postmaster_and_master_gc(gc)) return;
 #endif
 
-  garbage_collect(gc, 0, 0, NULL);
+  collect_now(gc, 0);
 }
 
 void GC_enable_collection(int on)
@@ -3029,9 +3024,9 @@ void GC_enable_collection(int on)
   NewGC *gc = GC_get_GC();
 
   if (on)
-    --gc->dumping_avoid_collection;
+    --gc->avoid_collection;
   else
-    gc->dumping_avoid_collection++;
+    gc->avoid_collection++;
 }
 
 void GC_register_traversers2(short tag, Size2_Proc size, Mark2_Proc mark,
@@ -3576,7 +3571,7 @@ void GC_dump_with_traces(int flags,
 
   reset_object_traces();
   if (for_each_found)
-    gc->dumping_avoid_collection++;
+    gc->avoid_collection++;
 
   /* Traverse tagged pages to count objects: */
   for (i = 0; i < MAX_DUMP_TAG; i++) {
@@ -3740,7 +3735,7 @@ void GC_dump_with_traces(int flags,
   }
 
   if (for_each_found)
-    --gc->dumping_avoid_collection;
+    --gc->avoid_collection;
 }
 
 void GC_dump(void)
@@ -4575,7 +4570,7 @@ static void park_for_inform_callback(NewGC *gc)
 {
   /* Avoid nested collections, which would need
      nested parking spaces: */
-  gc->dumping_avoid_collection++;
+  gc->avoid_collection++;
 
   /* Inform might allocate, which might need park: */
   gc->park_isave[0] = gc->park[0];
@@ -4591,7 +4586,7 @@ static void unpark_for_inform_callback(NewGC *gc)
   gc->park_isave[0] = NULL;
   gc->park_isave[1] = NULL;
   
-  --gc->dumping_avoid_collection;
+  --gc->avoid_collection;
 }
 
 #if 0

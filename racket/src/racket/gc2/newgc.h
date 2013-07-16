@@ -165,7 +165,7 @@ typedef struct NewGC {
 
   mpage *release_pages;
   uintptr_t stack_base;
-  int dumping_avoid_collection; /* dumping coutner flag */
+  int avoid_collection;
 
   unsigned char generations_available        :1;
   unsigned char in_unsafe_allocation_mode    :1;

@@ -94,7 +94,7 @@ static void print_traced_objects(int path_length_limit,
 
   memset(ditto, 0, sizeof(void*) * DITTO_BUFFER_SIZE);
 
-  GC_instance->dumping_avoid_collection++;
+  GC_instance->avoid_collection++;
   GCPRINT(GCOUTF, "Begin Trace\n");
   for (i = 0; i < found_object_count; i++) {
     void *p;
@@ -130,5 +130,5 @@ static void print_traced_objects(int path_length_limit,
     dp = (j % DITTO_BUFFER_SIZE);
   }
   GCPRINT(GCOUTF, "End Trace\n");
-  --GC_instance->dumping_avoid_collection;
+  --GC_instance->avoid_collection;
 }
