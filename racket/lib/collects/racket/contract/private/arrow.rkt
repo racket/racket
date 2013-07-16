@@ -2097,15 +2097,22 @@
     [(_ any/c ... any)
      (not (syntax-parameter-value #'making-a-method))
      ;; special case the (-> any/c ... any) contracts to be first-order checks only
-     (with-syntax ([dom-len (- (length (syntax->list stx)) 2)]
-                   [name (syntax->datum stx)])
-       #'(flat-named-contract 'name (λ (x) (and (procedure? x) (procedure-arity-includes? x dom-len #t)))))]
+     (let ([dom-len (- (length (syntax->list stx)) 2)])
+       #`(flat-named-contract 
+          '(-> #,@(build-list dom-len (λ (x) 'any/c)) any)
+          (λ (x) (procedure-arity-includes?/no-kwds x #,dom-len))))]
     [(_ any/c boolean?)
      ;; special case (-> any/c boolean?) to use predicate/c
      (not (syntax-parameter-value #'making-a-method))
      #'-predicate/c]
     [_
      #`(syntax-parameterize ((making-a-method #f)) #,(->/proc/main stx))]))
+
+(define (procedure-arity-includes?/no-kwds val dom-len)
+  (and (procedure? val)
+       (procedure-arity-includes? val dom-len)
+       (let-values ([(man opt) (procedure-keywords val)])
+         (null? man))))
 
 ;; this is to make the expanded versions a little easier to read
 (define-syntax (values/drop stx)

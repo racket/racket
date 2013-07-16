@@ -295,7 +295,23 @@
   
   (test/pos-blame
    'contract-arrow-non-function
+   '(contract (-> integer? any) 1 'pos 'neg))
+  
+  (test/pos-blame
+   'contract-any/c-arrow1
    '(contract (-> any/c any) 1 'pos 'neg))
+  
+  (test/spec-passed
+   'contract-any/c-arrow2
+   '(contract (-> any/c any) (λ (x) 1) 'pos 'neg))
+  
+  (test/pos-blame
+   'contract-any/c-arrow3
+   '(contract (-> any/c any) (λ (x y) x) 'pos 'neg))
+  
+  (test/pos-blame
+   'contract-any/c-arrow4
+   '(contract (-> any/c any) (λ (x #:y y) x) 'pos 'neg))
   
   (test/spec-passed
    'contract-arrow-all-kwds2
