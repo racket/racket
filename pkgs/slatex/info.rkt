@@ -16,5 +16,5 @@
                      "scribble-lib"))
 
 ;; Make slatex.sty easier to find (for adding to TEXINPUTS)
-;; by copying it to the "lib" directory:
-(define copy-foreign-libs '("slatex.sty"))
+;; by copying it to the "lib" directory. Same for rubber support:
+(define copy-foreign-libs '("slatex.sty" "slatex.py"))
