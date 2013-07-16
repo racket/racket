@@ -80,4 +80,5 @@
                "unstable-redex"
                "web-server"
                "wxme"
-               "xrepl"))
+               "xrepl"
+               "ds-store"))

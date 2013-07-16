@@ -5,4 +5,5 @@
 (define deps '("base"
                "at-exp-lib"
                "web-server-lib"
-               "scribble-lib"))
+               "scribble-lib"
+               "ds-store-lib"))
