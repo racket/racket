@@ -1,7 +1,9 @@
 #lang info
 
 (define collection "algol60")
-(define build-deps '("racket-doc"
+(define build-deps '("at-exp-lib"
+                     "rackunit-lib"
+                     "racket-doc"
                      "scribble-doc"
                      "scribble-lib"
                      "drracket"))

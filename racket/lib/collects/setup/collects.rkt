@@ -44,9 +44,16 @@
          ((length p) . >= . 3)
          (eq? 'collects (car p))
          (andmap bytes? (cdr p)))
+    (define fn (bytes->string/utf-8 (last p)))
+    (define coll (map bytes->string/utf-8 (drop-right (cdr p) 1)))
     (apply collection-file-path 
-           (bytes->string/utf-8 (last p))
-           (map bytes->string/utf-8 (drop-right (cdr p) 1)))]
+           fn
+           coll
+           #:fail (lambda (s)
+                    (define l (current-library-collection-paths))
+                    (build-path (apply build-path (if (pair? l) (first l) (current-directory)) 
+                                       coll)
+                                fn)))]
    [(path-string? p) p]
    [(bytes? p) p]
    [else (raise-argument-error

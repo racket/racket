@@ -24,5 +24,6 @@
                "htdp"
                "string-constants-lib"
                "compatibility-lib"))
-(define build-deps '("racket-doc"
+(define build-deps '("eli-tester"
+                     "racket-doc"
                      "scribble-lib"))

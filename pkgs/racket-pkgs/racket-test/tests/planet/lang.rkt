@@ -2,7 +2,7 @@
 
 (require planet/util
          scheme/runtime-path
-         "../eli-tester.rkt")
+         tests/eli-tester)
 
 (define-runtime-path here ".")
 (define (in-here path) (path->string (build-path here path)))

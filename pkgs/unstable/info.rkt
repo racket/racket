@@ -10,8 +10,14 @@
                "gui-lib"
                "pict-lib"
                "scribble-lib"
-               "slideshow-lib"))
-(define build-deps '("draw-doc"
+               "slideshow-lib"
+               "unstable-macro-testing-lib"))
+(define imples '("unstable-macro-testing-lib"))
+(define build-deps '("eli-tester"
+                     "racket-test"
+                     "srfi-lib"
+                     "syntax-color-lib"
+                     "draw-doc"
                      "gui-doc"
                      "pict-doc"
                      "slideshow-doc"

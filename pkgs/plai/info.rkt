@@ -12,6 +12,10 @@
                "gui-lib"
                "sandbox-lib"
                "web-server-lib"))
-(define build-deps '("racket-doc"
+(define build-deps '("at-exp-lib"
+                     "eli-tester"
+                     "pconvert-lib"
+                     "rackunit-lib"
+                     "racket-doc"
                      "web-server-doc"
                      "scribble-lib"))

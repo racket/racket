@@ -8,4 +8,9 @@
                "scribble-lib"
                "pconvert-lib"
                "compatibility-lib"))
-(define build-deps '())
+(define build-deps '("draw-lib"
+                     "racket-test"
+                     "sgl"
+                     "snip-lib"
+                     "wxme-lib"
+                     ))

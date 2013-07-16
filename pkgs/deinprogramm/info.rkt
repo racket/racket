@@ -29,6 +29,7 @@
 
 (define get-textbook-pls
   '("textbook-pls-spec.rkt" textbook-pls))
-(define build-deps '("racket-doc"
+(define build-deps '("rackunit-lib"
+                     "racket-doc"
                      "at-exp-lib"
                      "scribble-lib"))

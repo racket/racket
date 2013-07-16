@@ -12,7 +12,8 @@
                                       "pdf-slatex-launcher.rkt"))
 (define deps '("base"
                "compatibility-lib"))
-(define build-deps '("racket-doc"
+(define build-deps '("eli-tester"
+                     "racket-doc"
                      "scribble-lib"))
 
 ;; Make slatex.sty easier to find (for adding to TEXINPUTS)

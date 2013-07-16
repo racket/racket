@@ -8,4 +8,5 @@
                "pict-lib"
                "gui-lib"))
 (define build-deps '("scribble-lib"
-                     "racket-doc"))
+                     "racket-doc"
+                     "rackunit-lib"))

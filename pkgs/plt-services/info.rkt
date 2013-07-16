@@ -1,13 +1,19 @@
 #lang info
 
-;; This package holds infrastructure that is used to drive
+;; This package references infrastructure that is used to drive
 ;; builds and other services and that is not part of a
 ;; distribution.
 
 (define collection 'multi)
 
-(define deps '("distro-build"
-
+(define deps '(;; "Fake" dependencies to make them included
+               ;; in a default build:
+               "main-distribution-test"
+               "distro-build"
+               "honu"
+               
+               ;; Actual dependencies:
+               "eli-tester"
                "at-exp-lib"
                "syntax-color-lib"
                "base"
@@ -15,6 +21,4 @@
 	       "net-lib"
                "sandbox-lib"
                "scribble-lib"
-               "compatibility-lib"
-               "racket-test"))
-(define implies '("distro-build"))
+               "compatibility-lib"))

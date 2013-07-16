@@ -1,4 +1,4 @@
 #lang info
 
 (define deps
-  '("base" "db-lib" "db-doc" "db-test"))
+  '("base" "db-lib" "db-doc"))

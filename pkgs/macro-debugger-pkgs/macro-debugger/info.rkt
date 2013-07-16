@@ -11,5 +11,6 @@
                "unstable-list-lib"
                "macro-debugger-text-lib"
                "unstable"))
-(define build-deps '("scribble-lib"
+(define build-deps '("rackunit-lib"
+                     "scribble-lib"
                      "racket-doc"))
