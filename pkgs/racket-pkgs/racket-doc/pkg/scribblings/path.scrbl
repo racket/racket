@@ -32,19 +32,29 @@ A structure subtype that represents a package that is installed as
 single-collection.}
 
 
-@defproc[(path->pkg [path path-string?]) (or/c string? #f)]{
+@defproc[(path->pkg [path path-string?]
+                    [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
+         (or/c string? #f)]{
 
-Returns the installed package containing @racket[path], if any.}
+Returns the installed package containing @racket[path], if any.
+
+If @racket[cache] is not @racket[#f], then it is consulted and
+modified to cache installed-package information across calls to
+@racket[path->pkg] (with the assumption that the set of installed
+packages does not change across calls that receive the same
+@racket[cache]).}
 
 
-@defproc[(path->pkg+subpath [path path-string?])
+@defproc[(path->pkg+subpath [path path-string?]
+                            [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
          (values (or/c string? #f) (or/c path? 'same #f))]{
 
 Like @racket[path->pkg], but returns a second value that represents
 the remainder of @racket[path] within the package's directory.}
 
 
-@defproc[(path->pkg+subpath+collect [path path-string?])
+@defproc[(path->pkg+subpath+collect [path path-string?]
+                                    [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
          (values (or/c string? #f) (or/c path? 'same #f) (or/c string? #f))]{
 
 Like @racket[path->pkg+subpath], but returns a third value for a

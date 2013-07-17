@@ -1,15 +1,38 @@
 #lang racket/base
 (require racket/list
-         racket/string)
+         racket/string
+         pkg/path)
 
 (provide path->module-path
          path->collects-relative
          collects-relative->path)
 
-(define (path->spec p who mode)
+(define (path->spec p who mode cache)
   (unless (path-string? p)
     (raise-argument-error who "path-string?" p))
   (define simple-p (simplify-path (path->complete-path p) #f))
+  (define (make-result new-c-l file)
+    (let ([norm-file (regexp-replace #rx"[.]ss$" file ".rkt")])
+      (if (eq? mode 'module-path)
+          `(lib ,(string-join (append new-c-l (list norm-file))
+                              "/"))
+          `(collects ,@(map string->bytes/utf-8 new-c-l) ,(string->bytes/utf-8 norm-file)))))
+  (define (try-pkg)
+    (define-values (pkg subpath pkg-collect) 
+      (path->pkg+subpath+collect simple-p #:cache cache))
+    (cond
+     [pkg
+      (define p-l (map path-element->string (reverse (explode-path subpath))))
+      (define new-c-l (let ([l (reverse (cdr p-l))])
+                        (if pkg-collect
+                            (cons pkg-collect l)
+                            l)))
+      (define c-p (apply collection-file-path (car p-l) new-c-l
+                         #:fail (lambda (msg) #f)))
+      (and c-p
+           (equal? c-p simple-p)
+           (make-result new-c-l (car p-l)))]
+     [else #f]))
   (define p-l (reverse (explode-path simple-p)))
   (or (and ((length p-l) . > . 2)
            (regexp-match? #rx#"^[-a-zA-Z0-9_+%.]*$" (path-element->bytes (car p-l)))
@@ -23,20 +46,17 @@
                  (define c-p (apply collection-file-path file new-c-l #:fail (lambda (msg) #f)))
                  (if (and c-p
                           (equal? c-p simple-p))
-                     (let ([norm-file (regexp-replace #rx"[.]ss$" file ".rkt")])
-                       (if (eq? mode 'module-path)
-                           `(lib ,(string-join (append new-c-l (list norm-file))
-                                               "/"))
-                           `(collects ,@(map string->bytes/utf-8 new-c-l) ,(string->bytes/utf-8 norm-file))))
+                     (make-result new-c-l file)
                      (loop new-c-l (cdr p-l)))]
                 [else #f]))))
+      (try-pkg)
       p))
 
-(define (path->module-path p)
-  (path->spec p 'path->module-path 'module-path))
+(define (path->module-path p #:cache [cache #f])
+  (path->spec p 'path->module-path 'module-path cache))
 
-(define (path->collects-relative p)
-  (path->spec p 'path->collects-relative 'collects-relative))
+(define (path->collects-relative p #:cache [cache #f])
+  (path->spec p 'path->collects-relative 'collects-relative cache))
 
 (define (collects-relative->path p)
   (cond

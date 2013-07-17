@@ -28,7 +28,8 @@
                     (only-in ffi/unsafe ffi-lib)
                     racket/path
                     setup/collects
-                    syntax/modcollapse))
+                    syntax/modcollapse
+                    pkg/path))
 
 @(define-syntax-rule (local-module mod . body)
    (begin
@@ -1220,7 +1221,8 @@ display such paths (e.g., in error messages).
 
 @defmodule[setup/collects]
 
-@defproc[(path->collects-relative [path path-string?])
+@defproc[(path->collects-relative [path path-string?]
+                                  [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
          (or/c path-string? (cons/c 'collects (listof bytes?)))]{
 
 Checks whether @racket[path] (normalized by
@@ -1228,7 +1230,9 @@ Checks whether @racket[path] (normalized by
 @racket[#f] as its second argument) matches the result of
 @racket[collection-file-path]. If so, the result is a list starting
 with @racket['collects] and containing the relevant path elements as
-byte strings. If not, the path is returned as-is.}
+byte strings. If not, the path is returned as-is.
+
+The @racket[cache] argument is used with @racket[path->pkg], if needed.}
 
 @defproc[(collects-relative->path
           [rel (or/c path-string?
@@ -1239,7 +1243,8 @@ The inverse of @racket[path->collects-relative]: if @racket[rel]
 is a pair that starts with @racket['collects], then it is converted
 back to a path using @racket[collection-file-path].}
 
-@defproc[(path->module-path [path path-string?])
+@defproc[(path->module-path [path path-string?]
+                            [#:cache cache (or/c #f (and/c hash? (not/c imutable?)))])
          (or/c path-string? module-path?)]{
 
 Like @racket[path->collects-relative], but the result is either

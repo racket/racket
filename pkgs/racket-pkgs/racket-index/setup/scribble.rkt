@@ -433,10 +433,11 @@
                                    (doc-under-main? (info-doc d))
                                    all-main?))
                     (set! added? #t)
-                    (verbose/log
-                     (printf "Removed Dependency for ~a: ~a"
-                             (doc-name (info-doc info))
-                             (doc-name (info-doc info))))))))
+                    (verbose/log "Removed Dependency for ~a: ~a"
+                                 (doc-name (info-doc info))
+                                 (if i
+                                     (doc-name (info-doc i))
+                                     d))))))
           (define (add-dependency info i)
             (cond
              [((info-start-time info) . < . (info-done-time info))

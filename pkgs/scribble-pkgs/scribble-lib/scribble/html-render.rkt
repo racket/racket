@@ -255,12 +255,14 @@
              root-relative->path
              root-relative?)
 
+    (define path-cache (make-hash))
+
     (define (path->relative p)
       (let ([p (path->main-doc-relative p)])
         (if (path? p)
           (let ([p (path->root-relative p)])
             (if (path? p)
-              (let ([p (path->collects-relative p)])
+              (let ([p (path->collects-relative p #:cache path-cache)])
                 (if (path? p)
                     p
                     (intern-taglet p)))
