@@ -5,12 +5,14 @@
          racket/format
          racket/file
          racket/string
+         racket/path
          (only-in "config.rkt"
                   current-mode
                   site-config?
                   site-config-tag site-config-options site-config-content)
          "url-options.rkt"
-         "display-time.rkt")
+         "display-time.rkt"
+         "readme.rkt")
 
 ;; See "config.rkt" for an overview.
 
@@ -47,16 +49,23 @@
 
 (define (merge-options opts c)
   (for/fold ([opts opts]) ([(k v) (in-hash (site-config-options c))])
-    (hash-set opts k v)))
+    (if (eq? k '#:custom)
+        (hash-set opts
+                  '#:custom
+                  (let ([prev (hash-ref opts '#:custom (hash))])
+                    (for/fold ([prev prev]) ([(k2 v2) (in-hash v)])
+                      (hash-set prev k2 v2))))
+        (hash-set opts k v))))
 
 (define (get-opt opts kw [default #f] #:localhost [localhost-default default])
-  (hash-ref opts kw (cond
-                     [(equal? default localhost-default) default]
-                     [(and (equal? "localhost" (get-opt opts '#:host "localhost"))
-                           (equal? #f (get-opt opts '#:user #f))
-                           (equal? #f (get-opt opts '#:dir #f)))
-                      localhost-default]
-                     [else default])))
+  (hash-ref opts kw (lambda ()
+                      (cond
+                       [(equal? default localhost-default) default]
+                       [(and (equal? "localhost" (get-opt opts '#:host "localhost"))
+                             (equal? #f (get-opt opts '#:user #f))
+                             (equal? #f (get-opt opts '#:dir #f)))
+                        localhost-default]
+                       [else default]))))
 
 (define (get-content c)
   (site-config-content c))
@@ -213,7 +222,7 @@
                           "\\\"")))
                    "\"")]))
 
-(define (client-args c server kind)
+(define (client-args c server kind readme)
   (define desc (client-name c))
   (define pkgs (let ([l (get-opt c '#:pkgs)])
                  (if l
@@ -237,9 +246,10 @@
       " DIST_DIR=" dist-dir
       " DIST_SUFFIX=" (q dist-suffix)
       " DIST_CATALOGS_q=" (qq dist-catalogs kind)
-      " RELEASE_MODE=" (if release? "--release" (q ""))))
+      " RELEASE_MODE=" (if release? "--release" (q ""))
+      " README=" (q (file-name-from-path readme))))
 
-(define (unix-build c host port user server repo clean? pull?)
+(define (unix-build c host port user server repo clean? pull? readme)
   (define dir (get-path-opt c '#:dir "build/plt" #:localhost (current-directory)))
   (define (sh . args)
     (list "/bin/sh" "-c" (apply ~a args)))
@@ -257,11 +267,11 @@
             "git pull"))
    (sh "cd " (q dir) " ; "
        "make -j " j " client"
-       (client-args c server 'unix)
+       (client-args c server 'unix readme)
        " JOB_OPTIONS=\"-j " j "\""
        " CONFIGURE_ARGS_qq=" (qq (get-opt c '#:configure null) 'unix))))
 
-(define (windows-build c host port user server repo clean? pull?)
+(define (windows-build c host port user server repo clean? pull? readme)
   (define dir (get-path-opt c '#:dir "build\\plt" #:localhost (current-directory)))
   (define bits (or (get-opt c '#:bits) 64))
   (define vc (or (get-opt c '#:vc)
@@ -285,7 +295,7 @@
         " " vc
         " && nmake win32-client" 
        " JOB_OPTIONS=\"-j " j "\""
-        (client-args c server 'windows))))
+        (client-args c server 'windows readme))))
 
 (define (client-build c)
   (define host (or (get-opt c '#:host)
@@ -299,11 +309,34 @@
                    (~a "http://" server ":9440/.git")))
   (define clean? (get-opt c '#:clean? default-clean? #:localhost #f))
   (define pull? (get-opt c '#:pull? #t #:localhost #f))
+
+  (define readme-txt (let ([rdme (get-opt c '#:readme make-readme)])
+                       (if (string? rdme)
+                           rdme
+                           (rdme c))))
+  (make-directory* (build-path "build" "readmes"))
+  (define readme (make-temporary-file
+                  "README-~a"
+                  #f
+                  (build-path "build" "readmes")))
+  (call-with-output-file*
+   readme
+   #:exists 'truncate
+   (lambda (o)
+     (display readme-txt o)
+     (unless (regexp-match #rx"\n$" readme-txt)
+       ;; ensure a newline at the end:
+       (newline o))))
+
   (display-time)
-  ((case (or (get-opt c '#:platform) 'unix)
-     [(unix) unix-build]
-     [else windows-build])
-   c host port user server repo clean? pull?))
+  (begin0
+   
+   ((case (or (get-opt c '#:platform) 'unix)
+      [(unix) unix-build]
+      [else windows-build])
+    c host port user server repo clean? pull? readme)
+
+   (delete-file readme)))
 
 ;; ----------------------------------------
 

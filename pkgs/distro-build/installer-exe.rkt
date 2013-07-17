@@ -397,7 +397,7 @@ SectionEnd
   (parameterize ([current-directory "bundle"])
     (system* makensis "/V3" "installer.nsi")))
 
-(define (installer-exe human-name base-name release? dist-suffix)
+(define (installer-exe human-name base-name release? dist-suffix readme)
   (define makensis (or (find-executable-path "makensis.exe")
                        (try-exe "c:\\Program Files\\NSIS\\makensis.exe")
                        (try-exe "c:\\Program Files (x86)\\NSIS\\makensis.exe")
@@ -405,6 +405,13 @@ SectionEnd
   (define platform (let-values ([(base name dir?) (split-path (system-library-subpath #f))])
                      (path->string name)))
   (define exe-path (format "bundle/~a-~a-win32~a.exe" base-name platform dist-suffix))
+  (when readme
+    (call-with-output-file*
+     #:exists 'truncate
+     #:mode 'text
+     (build-path "bundle" "racket" "README.txt")
+     (lambda (o)
+       (display readme o))))
   (nsis-generate exe-path
                  human-name
                  (version)

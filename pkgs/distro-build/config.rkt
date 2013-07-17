@@ -139,6 +139,12 @@
     [(#:site-dest) (path-string? val)]
     [(#:pdf-doc?) (boolean? val)]
     [(#:max-snapshots) (real? val)]
+    [(#:readme) (or (string? val)
+                    (and (procedure? val)
+                         (procedure-arity-includes? val 1)))]
+    [(#:custom) (and (hash? val)
+                     (for/and ([k (in-hash-keys val)])
+                       (keyword? k)))]
     [else 'bad-keyword]))
 
 (define (check-machine-keyword kw val)

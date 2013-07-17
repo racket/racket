@@ -27,12 +27,18 @@
       (for/sum ([l (in-lines i)]) 1)
       (call-with-input-file* i count-lines)))
 
-(define (generate-installer-sh src-dir dest target-dir-name human-name release?)
+(define (generate-installer-sh src-dir dest target-dir-name human-name release? readme)
   (system/show "chmod"
                "-R" "g+w" src-dir)
   (define tmp-tgz (make-temporary-file "~a.tgz"))
   (delete-file tmp-tgz)
   (printf "Tarring to ~s\n" tmp-tgz)
+  (when readme
+    (call-with-output-file*
+     (build-path src-dir "README")
+     #:exists 'truncate
+     (lambda (o)
+       (display readme o))))
   (parameterize ([current-directory src-dir])
     (apply tar-gzip tmp-tgz (directory-list)))
   (define tree-size (system/read "du" "-hs" src-dir))
@@ -69,13 +75,14 @@
   (system/show "chmod" "+x" dest)
   (delete-file tmp-tgz))
 
-(define (installer-sh human-name base-name dir-name release? dist-suffix)
+(define (installer-sh human-name base-name dir-name release? dist-suffix readme)
   (define sh-path (format "bundle/~a-~a~a.sh" 
                           base-name 
                           (system-library-subpath #f) 
                           dist-suffix))
   (generate-installer-sh "bundle/racket" sh-path
                          dir-name human-name
-                         release?)
+                         release?
+                         readme)
   sh-path)
 

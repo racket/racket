@@ -134,6 +134,9 @@ DIST_DESC =
 # installers, where "" is replaced by the default configuration:
 DIST_CATALOGS_q = ""
 
+# A README file to download from the server for the client:
+README = README.txt
+
 # Configuration module that describes a build, normally implemented
 # with `#lang distro-build/config':
 CONFIG = build/site.rkt
@@ -327,7 +330,8 @@ client:
 COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" RELEASE_MODE=$(RELEASE_MODE) \
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
             DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) \
-            DIST_DESC="$(DIST_DESC)" JOB_OPTIONS="$(JOB_OPTIONS)"
+            DIST_DESC="$(DIST_DESC)" README="$(README)" \
+            JOB_OPTIONS="$(JOB_OPTIONS)"
 
 win32-client:
 	IF EXIST build\user cmd /c rmdir /S /Q build\user
@@ -356,7 +360,7 @@ bundle-from-server:
 bundle-config:
 	$(RACKET) -l distro-build/set-config $(BUNDLE_CONFIG) "" "" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 
-UPLOAD_q = --upload http://$(SERVER):9440/ --desc "$(DIST_DESC)"
+UPLOAD_q = --readme http://$(SERVER):9440/$(README) --upload http://$(SERVER):9440/ --desc "$(DIST_DESC)"
 DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"
 
 # Create an installer from the build (with installed packages) that's

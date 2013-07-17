@@ -18,7 +18,7 @@
   (unless (apply system* l)
     (error "failed")))
 
-(define (make-dmg volname src-dir dmg bg)
+(define (make-dmg volname src-dir dmg bg readme)
   (define tmp-dmg (make-temporary-file "~a.dmg"))
   (define work-dir
     (let-values ([(base name dir?) (split-path src-dir)])
@@ -29,6 +29,12 @@
   (printf "Copying ~a\n" src-dir)
   (copy-directory/files src-dir (build-path work-dir volname)
                         #:keep-modify-seconds? #t)
+  (when readme
+    (call-with-output-file*
+     (build-path work-dir volname "README.txt")
+     #:exists 'truncate
+     (lambda (o)
+       (display readme o))))
   (when bg
     (copy-file bg (build-path work-dir ".bg.png")))
   ;; The following command should work fine, but it looks like hdiutil in 10.4
@@ -93,10 +99,10 @@
   (when del?
     (delete-directory mnt)))
 
-(define (installer-dmg human-name base-name dist-suffix)
+(define (installer-dmg human-name base-name dist-suffix readme)
   (define dmg-name (format "bundle/~a-~a~a.dmg"
                            base-name
                            (system-library-subpath #f)
                            dist-suffix))
-  (make-dmg human-name "bundle/racket" dmg-name bg-image)
+  (make-dmg human-name "bundle/racket" dmg-name bg-image readme)
   dmg-name)

@@ -8,7 +8,8 @@
          racket/cmdline
          racket/file
          racket/path
-         racket/system)
+         racket/system
+         "readme.rkt")
 
 (define from-dir "built")
 
@@ -118,12 +119,24 @@
    #:extra-files-paths
    (append
     (list (build-path build-dir "origin"))
+    (list readmes-dir)
     (for/list ([d (in-list dirs)])
       (path->complete-path (build-path d "pkgs")))
     ;; for ".git":
     (list (current-directory)))
    #:servlet-regexp #rx""
    #:port 9440))
+
+(define readmes-dir (build-path build-dir "readmes"))
+(make-directory* readmes-dir)
+
+(define readme-file (build-path readmes-dir "README.txt"))
+(unless (file-exists? readme-file)
+  (printf "Generating default README\n")
+  (call-with-output-file*
+   readme-file
+   (lambda (o)
+     (display (make-readme (hash)) o))))
 
 (if (null? during-cmd-line)
     ;; Just run server:

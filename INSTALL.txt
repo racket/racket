@@ -328,6 +328,9 @@ Roughly, the steps are
     initial package catalog URLs. Use the empty string in place of a
     URL to indicate that the default path should be spliced.
 
+    Add `README="..."' to specify a file to download from the server
+    to use as the "README" file in the generated installer.
+
 In more detail:
 
  1a. Build "racket" on a server.
@@ -356,6 +359,11 @@ In more detail:
      downloaded directly from GitHub and all other packages are
      represented by directories in the makefile's directory. For now,
      "local" is the default.
+
+     The server provides README files from the "build/readmes"
+     directory. If "README.txt" does not exist when the sever is
+     started, when a default file is created (and clients download
+     "README.txt" by default).
 
      If you stop the server and want to restart it, use the
      `built-package-server' makefile target instead of starting over
@@ -415,6 +423,10 @@ In more detail:
      variable name indicates that its value can include double quotes
      (but not single quotes) --- which are needed to specify an empty
      string, for example.
+
+     To select a "README" file for the client, provide `README' to
+     `make'. The `README' value is used as a file name to download
+     from the server.
 
 On each client, step 2b produces a "bundle/installer.txt" file that
 contains the path to the generated installer on one line, followed by

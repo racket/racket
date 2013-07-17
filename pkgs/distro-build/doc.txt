@@ -160,6 +160,11 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     `#:dist-base-url' (if present) extended with "catalogs" in a list
     followed by ""
 
+  #:readme <string-or-procedure> --- the content of a "README" file
+    to include in installers, or a function that takes a hash table
+    for a configuration and returns a string; the default is the
+    `make-readme' function from `distro-build/readme'
+
   #:max-vm <real> --- max number of VMs allowed to run with this
     machine, counting the machine; defaults to 1
 
@@ -203,6 +208,13 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
 
   #:max-snapshots <number> --- number of snapshots to keep, used by
     the `snapshot-site' makefile target
+
+  #:custom <hash-table> --- a hash table mapping arbitrary keywords to
+    arbitrary values; when a value for `#:custom' is overriden in a
+    nested configuration, the new table is merged with the overriden
+    one; use such a table for additional configuration entries other
+    than the built-in ones, where additional entires may be useful to
+    a `#:readme' procedure
 
 Machine-only keywords:
 

@@ -6,11 +6,13 @@
          net/url
          racket/file
          racket/path
+         racket/port
          "display-time.rkt")
 
 (define release? #f)
 (define upload-to #f)
 (define upload-desc "")
+(define download-readme #f)
 
 (define-values (short-human-name human-name base-name dir-name dist-suffix)
   (command-line
@@ -21,6 +23,8 @@
     (set! upload-to url)]
    [("--desc") desc "Description to accompany upload"
     (set! upload-desc desc)]
+   [("--readme") readme "URL for README.txt to include"
+    (set! download-readme readme)]
    #:args
    (human-name base-name dir-name dist-suffix)
    (values human-name
@@ -35,11 +39,20 @@
 
 (display-time)
 
+(define readme
+  (and download-readme
+       (let ()
+         (printf "Downloading ~a\n" download-readme)
+         (define i (get-pure-port (string->url download-readme)))
+         (begin0
+          (port->string i)
+          (close-input-port i)))))
+
 (define installer-file
   (case (system-type)
-    [(unix) (installer-sh human-name base-name dir-name release? dist-suffix)]
-    [(macosx) (installer-dmg human-name base-name dist-suffix)]
-    [(windows) (installer-exe short-human-name base-name release? dist-suffix)]))
+    [(unix) (installer-sh human-name base-name dir-name release? dist-suffix readme)]
+    [(macosx) (installer-dmg human-name base-name dist-suffix readme)]
+    [(windows) (installer-exe short-human-name base-name release? dist-suffix readme)]))
 
 (call-with-output-file*
  (build-path "bundle" "installer.txt")
