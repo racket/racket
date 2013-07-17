@@ -34,6 +34,7 @@
                    accessor-name
                    predicate-name
                    supported-name)
+        #:fast-defaults ([fast-pred fast-defn ...] ...)
         #:defaults ([default-pred default-defn ...] ...)
         #:fallbacks [fallback-defn ...]
         #:derive-properties ([derived-prop derived-impl] ...)
@@ -54,21 +55,25 @@
        (define/with-syntax [method-index ...] method-indices)
        (define/with-syntax contract-str
          (format "~s" (syntax-e #'predicate-name)))
-       (define/with-syntax ([default-pred-name default-impl-name] ...)
-         (for/list ([pred-stx (in-list (syntax->list #'(default-pred ...)))]
-                    [i (in-naturals 0)])
-           (list (format-id (syntax-local-introduce #'self-name)
-                            "~a-default-pred~a"
-                            #'self-name
-                            i)
-                 (format-id (syntax-local-introduce #'self-name)
-                            "~a-default-impl~a"
-                            #'self-name
-                            i))))
+       (define/with-syntax (default-pred-name ...)
+         (generate-temporaries #'(default-pred ...)))
+       (define/with-syntax (default-impl-name ...)
+         (generate-temporaries #'(default-pred ...)))
+       (define/with-syntax (fast-pred-name ...)
+         (generate-temporaries #'(fast-pred ...)))
+       (define/with-syntax (fast-impl-name ...)
+         (generate-temporaries #'(fast-pred ...)))
        (define/with-syntax fallback-name
-         (format-id (syntax-local-introduce #'self-name)
-                    "~a-fallback"
-                    #'self-name))
+         (generate-temporary #'self-name))
+       (define/with-syntax forward-declaration
+         (if (eq? (syntax-local-context) 'top-level)
+             #'(define-syntaxes (fast-pred-name ...
+                                 fast-impl-name ...
+                                 default-pred-name ...
+                                 default-impl-name ...
+                                 fallback-name)
+                 (values))
+             #'(begin)))
        #'(begin
            (define-syntax generic-name
              (make-generic-info (quote-syntax property-name)
@@ -97,16 +102,25 @@
                          derived-impl)))
                ...)
               #t))
+           forward-declaration
            (define (predicate-name self-name)
-             (or (prop:pred self-name) (default-pred-name self-name) ...))
+             (or (fast-pred-name self-name)
+                 ...
+                 (prop:pred self-name)
+                 (default-pred-name self-name)
+                 ...))
            (define (table-name self-name [who 'table-name])
              (cond
+               [(fast-pred-name self-name) fast-impl-name]
+               ...
                [(prop:pred self-name) (accessor-name self-name)]
                [(default-pred-name self-name) default-impl-name]
                ...
                [else (raise-argument-error who 'contract-str self-name)]))
-           (define-values (default-pred-name ...)
-             (values default-pred ...))
+           (define fast-pred-name fast-pred)
+           ...
+           (define default-pred-name default-pred)
+           ...
            (define-generic-support supported-name
                                    self-name
                                    [method-name ...]
@@ -119,6 +133,9 @@
              (or (vector-ref (table-name self-name 'method-name) 'method-index)
                  (vector-ref fallback-name 'method-index))
              original)
+           ...
+           (define fast-impl-name
+             (generic-method-table generic-name fast-defn ...))
            ...
            (define default-impl-name
              (generic-method-table generic-name default-defn ...))

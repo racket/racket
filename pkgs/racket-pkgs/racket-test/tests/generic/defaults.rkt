@@ -7,13 +7,14 @@
   (stream-first stream)
   (stream-rest stream)
   (stream-empty? stream)
-  #:defaults
+  #:fast-defaults
   ([list?
     (define my-car car)
     (define stream-first my-car)
     (define stream-rest cdr)
-    (define stream-empty? null?)]
-   [s:stream?
+    (define stream-empty? null?)])
+  #:defaults
+  ([s:stream?
     (define stream-first s:stream-first)
     (define stream-rest s:stream-rest)
     (define stream-empty? s:stream-empty?)]))

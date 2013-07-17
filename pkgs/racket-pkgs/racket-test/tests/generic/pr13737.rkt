@@ -22,7 +22,8 @@
 
   (define-primitive-generics
     (foo gen:foo prop:foo foo-methods foo? dummy)
-    #:defaults ([number? (define (meth foo #:kw kw) kw)])
+    #:fast-defaults ([number? (define (meth foo #:kw kw) kw)])
+    #:defaults ()
     #:fallbacks ()
     #:derive-properties ()
     (meth foo #:kw kw))

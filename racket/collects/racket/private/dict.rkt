@@ -179,7 +179,7 @@
 
 (define-primitive-generics
   (dict gen:dict prop:gen:dict prop:gen:dict-methods dict? dict-def-table)
-  #:defaults
+  #:fast-defaults
   ([mutable-hash?
     (define dict-ref hash-ref)
     (define dict-set! hash-set!)
@@ -222,6 +222,7 @@
     (define dict-iterate-next assoc-iterate-next)
     (define dict-iterate-key assoc-iterate-key)
     (define dict-iterate-value assoc-iterate-value)])
+  #:defaults ()
   #:fallbacks ()
   #:derive-properties ()
   (dict-ref  dict key [default])

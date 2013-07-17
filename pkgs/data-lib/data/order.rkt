@@ -20,6 +20,7 @@
                 ordered-methods
                 ordered-dict?
                 dict-def-table)
+  #:fast-defaults ()
   #:defaults ()
   #:fallbacks ()
   #:derive-properties ()

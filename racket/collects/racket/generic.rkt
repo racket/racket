@@ -31,6 +31,16 @@
            (parse #'args (hash-set options 'defaults #'([pred defn ...] ...))))]
       [(#:defaults . other)
        (wrong-syntax (stx-car stx) "invalid #:defaults specification")]
+      [(#:fast-defaults ([pred defn ...] ...) . args)
+       (if (hash-ref options 'fast-defaults #f)
+           (wrong-syntax (stx-car stx)
+                         "duplicate #:fast-defaults specification")
+           (parse #'args
+                  (hash-set options
+                            'fast-defaults
+                            #'([pred defn ...] ...))))]
+      [(#:fast-defaults . other)
+       (wrong-syntax (stx-car stx) "invalid #:fast-defaults specification")]
       [(#:fallbacks [fallback ...] . args)
        (if (hash-ref options 'fallbacks #f)
            (wrong-syntax (stx-car stx) "duplicate #:fallbacks specification")
@@ -60,6 +70,7 @@
                      "expected a method identifier with formal arguments")]
       [() (values (hash-ref options 'methods '())
                   (hash-ref options 'table generate-temporary)
+                  (hash-ref options 'fast-defaults '())
                   (hash-ref options 'defaults '())
                   (hash-ref options 'fallbacks '())
                   (hash-ref options 'derived '()))]
@@ -73,8 +84,9 @@
      (parameterize ([current-syntax-context stx])
        (unless (identifier? #'name)
          (wrong-syntax #'name "expected an identifier"))
-       (define-values (methods table defaults fallbacks derived)
+       (define-values (methods table fast-defaults defaults fallbacks derived)
          (parse #'rest))
+       (define/with-syntax [fast-default ...] fast-defaults)
        (define/with-syntax [default ...] defaults)
        (define/with-syntax [fallback ...] fallbacks)
        (define/with-syntax [derive ...] derived)
@@ -94,6 +106,7 @@
            (define-primitive-generics/derived
              original
              (name gen-name prop-name get-name pred-name table-name)
+             #:fast-defaults [fast-default ...]
              #:defaults [default ...]
              #:fallbacks [fallback ...]
              #:derive-properties [derive ...]
