@@ -5,7 +5,8 @@
          "installer-exe.rkt"
          net/url
          racket/file
-         racket/path)
+         racket/path
+         "display-time.rkt")
 
 (define release? #f)
 (define upload-to #f)
@@ -32,6 +33,8 @@
                ""
                (string-append "-" dist-suffix)))))
 
+(display-time)
+
 (define installer-file
   (case (system-type)
     [(unix) (installer-sh human-name base-name dir-name release? dist-suffix)]
@@ -56,3 +59,5 @@
      (list (string-append "Description: " upload-desc))))
   (unless (equal? (read i) #t)
     (error "file upload failed")))
+
+(display-time)

@@ -196,7 +196,8 @@ If "my-site-config.rkt" is a configuration module, then
 
 drives the build farm, and the resulting installers are in
 "build/installers", with a hash table mapping descriptions to
-installer filenames in "build/installer/table.rktd".
+installer filenames in "build/installer/table.rktd". A log file
+for each client are written to "build/log".
 
 The default CONFIG path is "build/site.rkt", so you could put your
 configuration file there and omit the `CONFIG' argument to
@@ -232,8 +233,8 @@ Generating Installer Web Sites
 
 The `site' target of the makefile uses the `installers' target to
 generate a set of installers, and then it combines the installers,
-packages, and a package catalog into a directory that is suitable for
-access via a web server.
+packages, a package catalog, and log files into a directory that is
+suitable for access via a web server.
 
 Supply the same `CONFIG=...' and `CONFIG_MODE=...' arguments for
 `site' as for `installers'. The configuration file should have a

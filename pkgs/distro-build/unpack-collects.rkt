@@ -3,7 +3,8 @@
          racket/file
          racket/port
          net/url
-         file/untgz)
+         file/untgz
+         "display-time.rkt")
 
 (define dest-dir "bundle/racket")
 
@@ -18,6 +19,8 @@
     (combine-url/relative
      (string->url server)
      "collects.tgz"))))
+
+(display-time)
 
 (define lib-dir (build-path dest-dir "lib"))
 (make-directory* lib-dir)

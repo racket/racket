@@ -15,6 +15,7 @@
 (define pkgs-dir (build-path "pkgs"))
 (define catalog-dir (build-path "catalog"))
 (define doc-dir (build-path "doc"))
+(define log-dir (build-path "log"))
 
 (define-values (config-file config-mode)
   (command-line
@@ -91,6 +92,8 @@
    (lambda (o)
      (write dht o)
      (newline o))))
+
+(copy log-dir)
 
 (copy installers-dir)
 

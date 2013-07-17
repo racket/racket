@@ -319,6 +319,7 @@
     (parameterize ([current-custodian cust])
       (thread (lambda ()
                 (sleep (* timeout-factor timeout))
+                (printf "timeout for ~s\n" (client-name c))
                 ;; try nice interrupt, first:
                 (set! timeout? #t)
                 (break-thread orig-thread)
@@ -336,7 +337,7 @@
 
 (define (client-thread c sequential? thunk)
   (unless stop?
-    (define log-dir (build-path "build" "drive"))
+    (define log-dir (build-path "build" "log"))
     (define log-file (build-path log-dir (client-name c)))
     (make-directory* log-dir)
     (printf "Logging build: ~a\n" log-file)

@@ -19,6 +19,7 @@
      initialize-primitive-object
      'tree%
      object%
+     null
      '(leaves)
      null
      method-names
