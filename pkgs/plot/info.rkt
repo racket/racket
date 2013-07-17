@@ -14,7 +14,7 @@
                "pict-lib"
                "snip-lib"
                "typed-racket-lib"
-               "unstable"
+               "unstable-lib"
                "unstable-flonum-lib"
                "unstable-contract-lib"
                "unstable-latent-contract-lib"
@@ -27,4 +27,5 @@
                      "slideshow-doc"
                      "srfi-doc"
                      "scribble-lib"
-                     "slideshow-lib"))
+                     "slideshow-lib"
+                     "unstable-doc"))

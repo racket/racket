@@ -9,8 +9,9 @@
                "pict-lib"
                "redex-lib"
                "scribble-lib"
-               "unstable"))
+               "unstable-lib"))
 
 (define build-deps '("pict-doc"
                      "redex-doc"
-                     "racket-doc"))
+                     "racket-doc"
+                     "unstable-doc"))
