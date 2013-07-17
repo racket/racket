@@ -1,6 +1,7 @@
 #lang racket/base
 ;; stress tests for place-channels
-(require (prefix-in pp: "place-processes.rkt"))
+(require (prefix-in pp: "place-processes.rkt")
+         (prefix-in pu: "place-utils.rkt"))
 (require racket/place
          racket/path
          racket/system)
@@ -17,16 +18,18 @@
          (exact->inexact (/ B/sE (* 1024 1024)))
          'MB-per-second)))
 
-(define (processes-byte-message-test)
-  (let ([pl (pp:place/base
-             (bo ch)
-             (define message-size (* 4024 1024))
-             (define count 10)
-             (define fourk-b-message (make-bytes message-size 66))
-             (for ([i (in-range count)])
-               (place-channel-get ch)
-               (place-channel-put ch fourk-b-message)))])
+(pp:place/base 
+ byte-message
+ (bo ch)
+ (define message-size (* 4024 1024))
+ (define count 10)
+ (define fourk-b-message (make-bytes message-size 66))
+ (for ([i (in-range count)])
+   (place-channel-get ch)
+   (place-channel-put ch fourk-b-message)))
 
+(define (processes-byte-message-test)
+  (let ([pl (pp:dynamic-place (pu:here-submod byte-message) 'bo)])
     (define message-size (* 4024 1024))
     (define four-k-message (make-bytes message-size 65))
     (define count 10)
@@ -73,7 +76,9 @@ END
 
 
     (print-out "places" (/ (* 2 count message-size) (/ t2 1000)))
-    (place-wait pl)))
+    (place-wait pl))
+
+  (delete-file "pct1.rkt"))
 
 (define (cons-tree-test)
   (splat
@@ -108,7 +113,9 @@ END
     (printf "cons-tree ~a ~a ~a ~a\n" t1 t2 t3  (exact->inexact (/ t2 1000)))
     (print-out "cons-tree" (/ s (/ t2 1000)))
 
-    (place-wait pl)))
+    (place-wait pl))
+
+  (delete-file "pct1.rkt"))
 
 (define (current-executable-path) 
  (parameterize ([current-directory (find-system-path 'orig-dir)])

@@ -10,6 +10,7 @@
          barrier
          places-wait
          place/base
+         here-submod
          time-n)
 
 
@@ -36,29 +37,18 @@
 
 (define-syntax (place/base stx)
   (syntax-case stx ()
-    [(_ (name ch) body ...)
-      (begin
-        (define (splat txt fn)
-          (call-with-output-file fn #:exists 'replace
-              (lambda (out)
-                (write txt out))))
+    [(_ module-name (name ch) body ...)
+     #'(module module-name racket/base
+         (require racket/place)
+         (provide name)
+         (define (name ch)
+           body ...))]))
 
-        (define module-path (make-temporary-file "place-worker-~a.rkt" #f))
-        (define-values (base file-name isdir) (split-path module-path))
-        (define worker-syntax
-          (with-syntax ([module-name (datum->syntax #'name (string->symbol (path->string (path-replace-suffix file-name ""))))])
-            #'(module module-name racket/base
-                (require racket/place)
-                (provide name)
-                (define (name ch)
-                    body ...))))
-        (define module-path-str (path->string module-path))
-
-        (splat (syntax->datum worker-syntax) module-path-str)
-
-        (define place-syntax #`(dynamic-place #,module-path (quote name)))
-        ;(write (syntax->datum place-syntax)) (newline)
-        place-syntax)]))
+(define-syntax-rule (here-submod id)
+  `(submod ,(resolved-module-path-name
+             (variable-reference->resolved-module-path
+             (#%variable-reference)))
+           id))
 
 (define-syntax (time-n stx)
   (syntax-case stx ()

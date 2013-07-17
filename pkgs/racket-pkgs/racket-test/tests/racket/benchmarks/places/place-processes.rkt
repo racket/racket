@@ -54,7 +54,11 @@
       [(path? name)   (path->bytes name)]
       [(string? name) (string->bytes/locale name)]
       [(bytes? name)  name]
-      [else (raise 'module->path "expects a path or string")]))
+      [(and (list? name)
+            (= 3 (length name))
+            (eq? (car name) 'submod))
+       `(submod ,(module-name->bytes (cadr name)) ,(caddr name))]
+      [else (error 'module->path "expects a path or string")]))
   (define (current-executable-path) 
     (parameterize ([current-directory (find-system-path 'orig-dir)])
       (find-executable-path (find-system-path 'exec-file) #f)))
@@ -66,7 +70,12 @@
                                                           (find-system-path 'orig-dir))))))
   (define worker-cmdline-list (list (current-executable-path) "-X" (path->string (current-collects-path)) "-e" "(eval(read))"))
   (let-values ([(process-handle out in err) (apply subprocess #f #f (current-error-port) worker-cmdline-list)])
-    (send/msg `((dynamic-require (bytes->path ,(module-name->bytes module-name)) (quote ,func-name))) in)
+    (send/msg `((dynamic-require ,(let ([bstr (module-name->bytes module-name)])
+                                    (if (bytes? bstr)
+                                        `(bytes->path ,bstr)
+                                        `(list ',(car bstr) (bytes->path ,(cadr bstr)) ',(caddr bstr))))
+                                 (quote ,func-name))) 
+              in)
     (make-place-s (make-place-channel-s out in) process-handle err)))
 
 ;; kill a place
@@ -107,35 +116,15 @@
               (sub1 left-overs)
               new-result)))]))
 
-;; macro which lifts a place-worker body to module scope and provides it 
-;; (place/lambda (worker-name:identifier channel:identifier) body ...)
-;; returns syntax that creates a place 
 (define-syntax (place/base stx)
   (syntax-case stx ()
-    [(_ (name ch) body ...)
-      (begin
-        (define (splat txt fn)
-          (call-with-output-file fn #:exists 'replace
-              (lambda (out)
-                (write txt out))))
-
-        (define module-path-prefix (make-temporary-file "place-benchmark~a.rkt" #f (current-directory)))
-        (define-values (base file-name isdir) (split-path module-path-prefix))
-        (define worker-syntax
-          (with-syntax ([module-name (datum->syntax #'name (string->symbol (path->string (path-replace-suffix file-name ""))))])
-            #'(module module-name racket/base
-                (require "place-processes.rkt")
-                (provide name)
-                (define (name)
-                  (let ([ch (place-child-channel)])
-                    body ...)))))
-        (define module-path (path->string module-path-prefix))
-
-        (splat (syntax->datum worker-syntax) module-path)
-
-        (define place-syntax #`(dynamic-place #,module-path (quote name)))
-        ;(write (syntax->datum place-syntax))
-        place-syntax)]))
+    [(_ module-name (name ch) body ...)
+     #'(module module-name racket/base
+         (require "place-processes.rkt")
+         (provide name)
+         (define (name)
+           (let ([ch (place-child-channel)])
+             body ...)))]))
 
 (define-syntax (place/lambda stx)
   (syntax-case stx ()
