@@ -17,6 +17,14 @@
 
   (define (parse stx [options (hasheq)])
     (syntax-case stx ()
+      [(#:defined-predicate name . args)
+       (identifier? #'name)
+       (if (hash-ref options 'support #f)
+           (wrong-syntax (stx-car stx)
+                         "duplicate #:defined-predicate specification")
+           (parse #'args (hash-set options 'support #'name)))]
+      [(#:defined-predicate . other)
+       (wrong-syntax (stx-car stx) "invalid #:defined-predicate specification")]
       [(#:defined-table name . args)
        (identifier? #'name)
        (if (hash-ref options 'table #f)
@@ -69,7 +77,8 @@
        (wrong-syntax #'other
                      "expected a method identifier with formal arguments")]
       [() (values (hash-ref options 'methods '())
-                  (hash-ref options 'table generate-temporary)
+                  (hash-ref options 'support generate-temporary)
+                  (hash-ref options 'table #f)
                   (hash-ref options 'fast-defaults '())
                   (hash-ref options 'defaults '())
                   (hash-ref options 'fallbacks '())
@@ -84,9 +93,9 @@
      (parameterize ([current-syntax-context stx])
        (unless (identifier? #'name)
          (wrong-syntax #'name "expected an identifier"))
-       (define-values (methods table fast-defaults defaults fallbacks derived)
+       (define-values (methods support table fasts defaults fallbacks derived)
          (parse #'rest))
-       (define/with-syntax [fast-default ...] fast-defaults)
+       (define/with-syntax [fast-default ...] fasts)
        (define/with-syntax [default ...] defaults)
        (define/with-syntax [fallback ...] fallbacks)
        (define/with-syntax [derive ...] derived)
@@ -100,17 +109,25 @@
        (define/with-syntax gen-name (format-id #'name "gen:~a" #'name))
        (define/with-syntax prop-name (generate-temporary #'name))
        (define/with-syntax get-name (generate-temporary #'name))
-       (define/with-syntax table-name table)
+       (define/with-syntax support-name support)
        (define/with-syntax original stx)
+       (define/with-syntax table-defn
+         (if table
+             (with-syntax ([table-name table])
+               #'(define (table-name name)
+                   (for/hasheq ([sym (in-list '(method ...))])
+                     (values sym (support-name name sym)))))
+             #'(begin)))
        #'(begin
            (define-primitive-generics/derived
              original
-             (name gen-name prop-name get-name pred-name table-name)
+             (name gen-name prop-name get-name pred-name support-name)
              #:fast-defaults [fast-default ...]
              #:defaults [default ...]
              #:fallbacks [fallback ...]
              #:derive-properties [derive ...]
              method ...)
+           table-defn
            (define-generics-contract name pred-name get-name
              [method-name method-index]
              ...)))]))

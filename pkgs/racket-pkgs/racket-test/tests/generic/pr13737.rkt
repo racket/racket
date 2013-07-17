@@ -21,7 +21,7 @@
   (local-require racket/private/generic)
 
   (define-primitive-generics
-    (foo gen:foo prop:foo foo-methods foo? dummy)
+    (foo gen:foo prop:foo foo-methods foo? foo-supports?)
     #:fast-defaults ([number? (define (meth foo #:kw kw) kw)])
     #:defaults ()
     #:fallbacks ()

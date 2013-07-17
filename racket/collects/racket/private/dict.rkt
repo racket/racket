@@ -19,21 +19,21 @@
 (define (mutable-vector? v)
   (and (vector? v) (not (immutable? v))))
 
-(define (dict-supports? who d . whats)
-  (unless (dict? d)
-    (raise-argument-error who "dict?" d))
-  (define table (dict-def-table d))
-  (for/or ([what (in-list whats)])
-    (hash-ref table what #f)))
-
 (define (dict-mutable? d)
-  (dict-supports? 'dict-mutable? d 'dict-set!))
+  (unless (dict? d)
+    (raise-argument-error 'dict-mutable? "dict?" d))
+  (dict-supports? d 'dict-set!))
 
 (define (dict-can-remove-keys? d)
-  (dict-supports? 'dict-can-remove-keys? d 'dict-remove! 'dict-remove))
+  (unless (dict? d)
+    (raise-argument-error 'dict-can-remove-keys? "dict?" d))
+  (or (dict-supports? d 'dict-remove!)
+      (dict-supports? d 'dict-remove)))
 
 (define (dict-can-functional-set? d)
-  (dict-supports? 'dict-can-functional-set? d 'dict-set))
+  (unless (dict? d)
+    (raise-argument-error 'dict-can-functional-set? "dict?" d))
+  (dict-supports? d 'dict-set))
 
 (define (dict-has-key? d k)
   (define not-there (gensym))
@@ -178,7 +178,7 @@
        i)))
 
 (define-primitive-generics
-  (dict gen:dict prop:gen:dict prop:gen:dict-methods dict? dict-def-table)
+  (dict gen:dict prop:gen:dict prop:gen:dict-methods dict? dict-supports?)
   #:fast-defaults
   ([mutable-hash?
     (define dict-ref hash-ref)

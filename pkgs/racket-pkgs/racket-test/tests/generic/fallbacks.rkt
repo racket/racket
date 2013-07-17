@@ -3,7 +3,7 @@
 (require racket/generic)
 
 (define-generics numeric
-  #:defined-table numeric-support
+  #:defined-predicate numeric-supports?
   (decrement numeric)
   (is-zero? numeric)
   (is-even? numeric)
@@ -19,18 +19,15 @@
 
 (define (is-even?-fallback x)
   (cond
-    [(supports? x 'is-odd?) (not (is-odd? x))]
+    [(numeric-supports? x 'is-odd?) (not (is-odd? x))]
     [(is-zero? x) #true]
     [else (is-odd? (decrement x))]))
 
 (define (is-odd?-fallback x)
   (cond
-    [(supports? x 'is-even?) (not (is-even? x))]
+    [(numeric-supports? x 'is-even?) (not (is-even? x))]
     [(is-zero? x) #false]
     [else (is-even? (decrement x))]))
-
-(define (supports? x sym)
-  (hash-ref (numeric-support x) sym #f))
 
 (struct peano-zero []
   #:transparent

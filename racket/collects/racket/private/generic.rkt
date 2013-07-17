@@ -49,31 +49,43 @@
        (check-identifier! #'self-name)
        (define methods (syntax->list #'(method-name ...)))
        (for-each check-identifier! methods)
+
        (define n (length methods))
        (define method-indices (for/list ([i (in-range n)]) i))
+       (define fast-preds (syntax->list #'(fast-pred ...)))
+       (define default-preds (syntax->list #'(default-pred ...)))
+       (define (generate-methods . ignore) (generate-temporaries methods))
+       (define (transpose-methods names)
+         (map cdr (apply map list methods names)))
+
+       (define fasts-by-type (map generate-methods fast-preds))
+       (define fasts-by-method (transpose-methods fasts-by-type))
+       (define defaults-by-type (map generate-methods default-preds))
+       (define defaults-by-method (transpose-methods defaults-by-type))
+
        (define/with-syntax size n)
        (define/with-syntax [method-index ...] method-indices)
        (define/with-syntax contract-str
          (format "~s" (syntax-e #'predicate-name)))
        (define/with-syntax (default-pred-name ...)
-         (generate-temporaries #'(default-pred ...)))
-       (define/with-syntax (default-impl-name ...)
-         (generate-temporaries #'(default-pred ...)))
+         (generate-temporaries default-preds))
        (define/with-syntax (fast-pred-name ...)
-         (generate-temporaries #'(fast-pred ...)))
-       (define/with-syntax (fast-impl-name ...)
-         (generate-temporaries #'(fast-pred ...)))
-       (define/with-syntax fallback-name
-         (generate-temporary #'self-name))
+         (generate-temporaries fast-preds))
+       (define/with-syntax ([fast-by-method ...] ...) fasts-by-method)
+       (define/with-syntax ([fast-by-type ...] ...) fasts-by-type)
+       (define/with-syntax ([default-by-method ...] ...) defaults-by-method)
+       (define/with-syntax ([default-by-type ...] ...) defaults-by-type)
+       (define/with-syntax [fallback ...] (generate-methods))
        (define/with-syntax forward-declaration
          (if (eq? (syntax-local-context) 'top-level)
              #'(define-syntaxes (fast-pred-name ...
-                                 fast-impl-name ...
                                  default-pred-name ...
-                                 default-impl-name ...
-                                 fallback-name)
+                                 fast-by-method ... ...
+                                 default-by-method ... ...
+                                 fallback ...)
                  (values))
              #'(begin)))
+
        #'(begin
            (define-syntax generic-name
              (make-generic-info (quote-syntax property-name)
@@ -103,73 +115,77 @@
                ...)
               #t))
            forward-declaration
+           (define fast-pred-name fast-pred)
+           ...
+           (define default-pred-name default-pred)
+           ...
            (define (predicate-name self-name)
              (or (fast-pred-name self-name)
                  ...
                  (prop:pred self-name)
                  (default-pred-name self-name)
                  ...))
-           (define (table-name self-name [who 'table-name])
+           (define (supported-name self-name . syms)
+             (define (bad-sym sym)
+               (raise-argument-error 'supported-name
+                                     (format "~s" '(or/c 'method-name ...))
+                                     sym))
              (cond
-               [(fast-pred-name self-name) fast-impl-name]
+               [(fast-pred-name self-name)
+                (for/and ([sym (in-list syms)])
+                  (case sym
+                    [(method-name) (procedure? fast-by-type)]
+                    ...
+                    [else (bad-sym sym)]))]
                ...
-               [(prop:pred self-name) (accessor-name self-name)]
-               [(default-pred-name self-name) default-impl-name]
+               [(prop:pred self-name)
+                (define table (accessor-name self-name))
+                (for/and ([sym (in-list syms)])
+                  (case sym
+                    [(method-name)
+                     (procedure? (vector-ref table 'method-index))]
+                    ...
+                    [else (bad-sym sym)]))]
+               [(default-pred-name self-name)
+                (for/and ([sym (in-list syms)])
+                  (case sym
+                    [(method-name) (procedure? default-by-type)]
+                    ...
+                    [else (bad-sym sym)]))]
                ...
-               [else (raise-argument-error who 'contract-str self-name)]))
-           (define fast-pred-name fast-pred)
-           ...
-           (define default-pred-name default-pred)
-           ...
-           (define-generic-support supported-name
-                                   self-name
-                                   [method-name ...]
-                                   (table-name self-name 'supported-name)
-                                   original)
+               [else (raise-argument-error 'supported-name
+                                           'contract-str
+                                           self-name)]))
            (define-generic-method
              method-name
              method-signature
              self-name
-             (or (vector-ref (table-name self-name 'method-name) 'method-index)
-                 (vector-ref fallback-name 'method-index))
+             (or (cond
+                   [(fast-pred-name self-name) fast-by-method]
+                   ...
+                   [(prop:pred self-name)
+                    (vector-ref (accessor-name self-name) 'method-index)]
+                   [(default-pred-name self-name) default-by-method]
+                   ...
+                   [else (raise-argument-error 'method-name
+                                               'contract-str
+                                               self-name)])
+                 fallback)
              original)
            ...
-           (define fast-impl-name
-             (generic-method-table generic-name fast-defn ...))
+           (define-values (fast-by-type ...)
+             (generic-methods generic-name fast-defn ...))
            ...
-           (define default-impl-name
-             (generic-method-table generic-name default-defn ...))
+           (define-values (default-by-type ...)
+             (generic-methods generic-name default-defn ...))
            ...
-           (define fallback-name
-             (generic-method-table generic-name fallback-defn ...))))]))
+           (define-values (fallback ...)
+             (generic-methods generic-name fallback-defn ...))))]))
 
 (define-syntax (define-primitive-generics stx)
   (syntax-case stx ()
     [(_ . args)
      #`(define-primitive-generics/derived #,stx . args)]))
-
-(define-syntax (define-generic-support stx)
-  (syntax-case stx ()
-    [(_ supported-name
-        self-name
-        [method-name ...]
-        table
-        original)
-     (parameterize ([current-syntax-context #'original])
-       (check-identifier! #'supported-name)
-       (check-identifier! #'self-name)
-       (for-each check-identifier! (syntax->list #'(method-name ...)))
-       (define/with-syntax (index ...)
-         (for/list ([idx (in-naturals)]
-                    [stx (in-list (syntax->list #'(method-name ...)))])
-           idx))
-       #'(define (supported-name self-name)
-           (define v table)
-           (make-immutable-hasheqv
-             (list
-              (cons 'method-name
-                    (procedure? (vector-ref v 'index)))
-              ...))))]))
 
 (begin-for-syntax
 

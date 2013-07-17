@@ -6,6 +6,7 @@
 
   (#%provide define/generic
              generic-property
+             generic-methods
              generic-method-table
              (for-syntax generic-info?
                          make-generic-info
@@ -72,11 +73,11 @@
       [(_ gen)
        (generic-info-property (get-info 'generic-property stx #'gen))]))
 
-  (define-syntax (generic-method-table stx)
+  (define-syntax (generic-methods stx)
     (syntax-case stx ()
       [(_ gen def ...)
        (let ()
-         (define info (get-info 'generic-method-table stx #'gen))
+         (define info (get-info 'generic-methods stx #'gen))
          (define delta (syntax-local-make-delta-introducer #'gen))
          (define methods (map delta (generic-info-methods info)))
          (with-syntax ([(method ...) methods])
@@ -86,7 +87,12 @@
                    ([(method) (make-unimplemented 'method)] ...)
                    ()
                  def ...
-                 (vector (implementation method) ...))))))]))
+                 (values (implementation method) ...))))))]))
+
+  (define-syntax (generic-method-table stx)
+    (syntax-case stx ()
+      [(_ gen def ...)
+       #'(call-with-values (lambda () (generic-methods gen def ...)) vector)]))
 
   (define-syntax (define/generic stx)
     (define gen-id (syntax-parameter-value #'generic-method-context))
