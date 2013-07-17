@@ -40,6 +40,13 @@
 
 (define-logger setup)
 
+(define-syntax-rule (verbose/log format-str arg ...)
+  (begin
+    (when (verbose)
+      (printf (string-append " [" format-str "]\n")
+              arg ...))
+    (log-setup-debug format-str arg ...)))
+
 (define-serializable-struct doc (src-dir 
                                  src-spec
                                  src-file
@@ -426,10 +433,10 @@
                                    (doc-under-main? (info-doc d))
                                    all-main?))
                     (set! added? #t)
-                    (when (verbose)
-                      (printf " [Removed Dependency for ~a: ~a]\n"
-                              (doc-name (info-doc info))
-                              (doc-name (info-doc info))))))))
+                    (verbose/log
+                     (printf "Removed Dependency for ~a: ~a"
+                             (doc-name (info-doc info))
+                             (doc-name (info-doc info))))))))
           (define (add-dependency info i)
             (cond
              [((info-start-time info) . < . (info-done-time info))
@@ -437,27 +444,24 @@
               ;; the build actually happened after the dependency's "out.sxref"
               ;; files were written, so they would have been used.
               ;; Fix up the dependency list.
-              (when (verbose)
-                (printf " [Quick-add for ~a: ~a]\n"
-                        (doc-name (info-doc info))
-                        (doc-name (info-doc i))))
+              (verbose/log "Quick-add for ~a: ~a"
+                           (doc-name (info-doc info))
+                           (doc-name (info-doc i)))
               (hash-set! deps i #t)
               (set-info-deps! info (cons (cons i (info-out-hash i))
                                          (info-deps info)))
               (set-info-need-in-write?! info #t)]
              [else
-              (when (verbose)
-                (printf " [Adding for ~a: ~a]\n"
-                        (doc-name (info-doc info))
-                        (doc-name (info-doc i))))
+              (verbose/log "Adding for ~a: ~a"
+                           (doc-name (info-doc info))
+                           (doc-name (info-doc i)))
               (set! added? #t)
               (hash-set! deps i #t)]))
           ;; Add expected dependencies for an "all dependencies" doc:
           (when (or (memq 'depends-all (doc-flags (info-doc info))) all-main?)
-            (when (verbose)
-              (printf " [Adding all~a as dependencies for ~a]\n"
-                      (if all-main? " main" "")
-                      (doc-name (info-doc info))))
+            (verbose/log "Adding all~a as dependencies for ~a"
+                         (if all-main? " main" "")
+                         (doc-name (info-doc info)))
             (for ([i infos])
               (hash-set! known-deps i #t)
               (when (and (not (eq? i info))
@@ -508,9 +512,8 @@
           (when (or 
                  ;; If we added anything (expected or known), then mark as needed to run:
                  (and added?
-                      (when (verbose)
-                        (printf " [Rerun, since added dependencies for ~a]\n"
-                                (doc-name (info-doc info)))))
+                      (verbose/log "Rerun, since added dependencies for ~a"
+                                   (doc-name (info-doc info))))
                  ;; If any dependency change, then mark as needed to run:
                  (and (let ([ch (ormap (lambda (p)
                                          (define i2 (car p))
@@ -526,12 +529,11 @@
                                                   i2)))
                                        (info-deps info))])
                         (and ch
-                             (when (verbose)
-                               (printf " [Rerun, since dependency changed for ~a: ~a]\n"
-                                       (doc-name (info-doc info))
-                                       (if (info? ch)
-                                           (doc-name (info-doc ch))
-                                           ch)))))))
+                             (verbose/log "Rerun, since dependency changed for ~a: ~a"
+                                          (doc-name (info-doc info))
+                                          (if (info? ch)
+                                              (doc-name (info-doc ch))
+                                              ch))))))
             (define (key->dep i v) (cons i (info-out-hash i)))
             (set-info-deps! info (hash-map known-deps key->dep))
             (set-info-need-in-write?! info #t)
@@ -934,8 +936,8 @@
 
     (when (or (and (not up-to-date?) (not only-fast?))
               (verbose))
-      (when (and (verbose) out-of-date)
-        (printf " [Need run (~a) ~a]\n" out-of-date (doc-name doc)))
+      (when out-of-date
+        (verbose/log "Need run (~a) ~a" out-of-date (doc-name doc)))
       (setup-printf
        (string-append
         (if workerid (format "~a " workerid) "")
@@ -1032,8 +1034,8 @@
                                   'content)
                              (and (not provides-time) 'db-missing)
                              (and (info-out-time . > . provides-time) 'db-older))])
-                   (when (and (verbose) need-out-write)
-                     (printf " [New out (~a) ~a]\n" need-out-write (doc-name doc)))
+                   (when need-out-write
+                     (verbose/log "New out (~a) ~a" need-out-write (doc-name doc)))
                    (gc-point)
                    (let ([info
                           (make-info doc
@@ -1249,13 +1251,12 @@
                                          [ff-sci ff-scis])
                                  (serialized=? sci ff-sci)))]
               [db-file (find-db-file doc latex-dest)])
-         (when (verbose)
-           (printf " [~a~afor ~a]\n"
-                   (if in-delta? "New in " "")
-                   (cond [out-delta? "New out "]
-                         [in-delta? ""]
-                         [else "No change "])
-                   (doc-name doc)))
+         (verbose/log "~a~afor ~a"
+                      (if in-delta? "New in " "")
+                      (cond [out-delta? "New out "]
+                            [in-delta? ""]
+                            [else "No change "])
+                      (doc-name doc))
 
          (when (or in-delta?
                    (and info (info-need-in-write? info))
@@ -1325,7 +1326,7 @@
 (define (write- latex-dest vers doc name datas prep! final!)
   (let* ([filename (sxref-path latex-dest doc name)])
     (prep! filename)
-    (when (verbose) (printf " [Caching to disk ~a]\n" filename))
+    (verbose/log "Caching to disk ~a" filename)
     (make-directory* (doc-dest-dir doc))
     (with-compile-output 
      filename 
