@@ -434,12 +434,12 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    is given a value of @racket[10], the search page is given a
    value of @racket[-10], and the default is @racket[0].}
 
- @item{@as-index{@racketidfont{release-notes}} : @racket[(listof (cons/c string? (cons/c string? list?)))] ---
+ @item{@as-index{@racketidfont{release-note-files}} : @racket[(listof (cons/c string? (cons/c string? list?)))] ---
    A list of release-notes text files to link from the main documentation pages.
    Each note is itself represented as a list, and the list can specify auxiliary
    notes that are grouped with the main note.
 
-   A @racketidfont{release-notes} entry must be a value
+   A @racketidfont{release-note-files} entry must be a value
    that can be generated from an expression matching the following
    @racket[entry] grammar:
 

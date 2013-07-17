@@ -1,3 +1,3 @@
 #lang info
 
-(define release-notes '(("Typed Racket" "HISTORY.txt")))
+(define release-note-files '(("Typed Racket" "HISTORY.txt")))

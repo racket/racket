@@ -1,3 +1,3 @@
 #lang info
 
-(define release-notes (list (list "Teachpacks" "HISTORY.txt")))
+(define release-note-files (list (list "Teachpacks" "HISTORY.txt")))

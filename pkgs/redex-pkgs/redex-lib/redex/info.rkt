@@ -3,6 +3,6 @@
 (define collection "redex")
 
 (define name "PLT Redex")
-(define release-notes (list (list "Redex" "HISTORY.txt")))
+(define release-note-files (list (list "Redex" "HISTORY.txt")))
 
 
