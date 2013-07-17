@@ -57,6 +57,8 @@
                     #:installers-url "current/installers/"
                     #:docs-url (and (directory-exists? (build-path site-dir "doc"))
                                     "current/doc/index.html")
+                    #:pdf-docs-url (and (directory-exists? (build-path site-dir "pdf-doc"))
+                                        "current/pdf-doc/")
                     #:dest (build-path snapshots-dir
                                        "index.html")
                     #:git-clone (current-directory)

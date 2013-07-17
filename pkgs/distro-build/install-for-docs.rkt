@@ -4,7 +4,8 @@
          racket/string
          racket/system
          compiler/find-exe
-         (only-in "config.rkt" extract-options))
+         (only-in "config.rkt" extract-options)
+         "display-time.rkt")
 
 (define-values (dir config-file config-mode default-pkgs catalogs)
   (command-line
@@ -12,10 +13,10 @@
    (dir config-file config-mode default-pkgs . catalog)
    (values dir config-file config-mode default-pkgs catalog)))
 
+(define config (extract-options config-file config-mode))
+
 (define pkgs
-  (or (hash-ref (extract-options config-file config-mode)
-                '#:pkgs
-                #f)
+  (or (hash-ref config '#:pkgs #f)
       (string-split default-pkgs)))
 
 (define (build-path/s . a)
@@ -43,6 +44,7 @@
    (write ht o)
    (newline o)))
 
+(display-time)
 (printf "Running `raco pkg install' for packages:\n")
 (for ([pkg (in-list pkgs)])
   (printf "  ~a\n" pkg))
@@ -53,3 +55,12 @@
                pkgs)
   (error "install failed"))
 
+(when (hash-ref config '#:pdf-doc? #f)
+  (display-time)
+  (printf "Running `raco setup' PDF documentation:\n")
+  (unless (system* (find-exe) 
+                   "-G" "build/docs/etc" "-l-" 
+                   "raco" "setup" "--doc-pdf" "build/pdf-doc")
+    (error "PDF failed")))
+  
+(display-time)

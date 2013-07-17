@@ -38,6 +38,7 @@
                             #:dest [dest "index.html"]
                             #:installers-url [installers-url "./"]
                             #:docs-url [docs-url #f]
+                            #:pdf-docs-url [pdf-docs-url #f]
                             #:title [title "Racket Downloads"]
                             #:git-clone [git-clone #f]
                             #:post-content [post-content null])
@@ -95,7 +96,13 @@
                                                    inst)
                                        sha1)))))))
            ,@(if docs-url
-                 `((p (a ((href ,docs-url)) "Documentation")))
+                 `((p (a ((href ,docs-url)) "Documentation")
+                      ,@(if pdf-docs-url
+                            `(nbsp
+                              nbsp
+                              (span ([class "detail"])
+                                    (a ((href ,pdf-docs-url)) "[also available as PDF]")))
+                            null)))
                  null)
            ,@(if git-clone
                  (let ([git (find-executable-path "git")])

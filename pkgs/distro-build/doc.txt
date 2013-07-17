@@ -65,7 +65,7 @@ installer) as recorded in the "table.rktd" file.
 
 To use the `site' makefile target, the configuration file must at
 least provide a `#:dist-base-url' value, which is a URL at which the
-site will be made available. To use the `snapshot-sire' makefile
+site will be made available. To use the `snapshot-site' makefile
 target, then `#:site-dest' will need to be specified, normally as a
 path that ends with the value produced by `(current-stamp)'.
 
@@ -197,6 +197,9 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
   #:site-dest <path-string> --- destination for completed build, used
     by the `site' and `snapshot-site' makefile targets; the default is
     "build/site"
+
+  #:pdf-doc? <boolean> --- whether to build PDF documentation when
+    assembling a site; the default is #f
 
   #:max-snapshots <number> --- number of snapshots to keep, used by
     the `snapshot-site' makefile target

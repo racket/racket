@@ -137,6 +137,7 @@
     [(#:clean?) (boolean? val)]
     [(#:pull?) (boolean? val)]
     [(#:site-dest) (path-string? val)]
+    [(#:pdf-doc?) (boolean? val)]
     [(#:max-snapshots) (real? val)]
     [else 'bad-keyword]))
 

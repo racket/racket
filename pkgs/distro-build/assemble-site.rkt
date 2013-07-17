@@ -15,6 +15,7 @@
 (define pkgs-dir (build-path "pkgs"))
 (define catalog-dir (build-path "catalog"))
 (define doc-dir (build-path "doc"))
+(define pdf-doc-dir (build-path "pdf-doc"))
 (define log-dir (build-path "log"))
 
 (define-values (config-file config-mode)
@@ -100,6 +101,9 @@
 (define doc-path (build-path docs-dir doc-dir))
 (when (directory-exists? doc-path)
   (copy doc-dir docs-dir))
+(define pdf-doc-path (build-path build-dir pdf-doc-dir))
+(when (directory-exists? pdf-doc-path)
+  (copy pdf-doc-dir))
 
 (make-download-page (build-path build-dir
                                 installers-dir
@@ -107,6 +111,8 @@
                     #:installers-url "installers/"
                     #:docs-url (and (directory-exists? doc-path)
                                     "doc/index.html")
+                    #:pdf-docs-url (and (directory-exists? doc-path)
+                                        "pdf-doc/")
                     #:dest (build-path dest-dir
                                        "index.html")
                     #:git-clone (current-directory))
