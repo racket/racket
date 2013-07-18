@@ -6,7 +6,7 @@ compiler:
   - clang
 # Just run tests for the core
 script:
-  - make CPUS="2" PKGS="racket-test db-test"
+  - make CPUS="2" PKGS="db-test unstable-debug-lib unstable-flonum-lib unstable-macro-testing-lib compiler-lib sandbox-lib compatibility-lib pconvert-lib net-lib web-server-lib rackunit-lib at-exp-lib"
   - racket -f pkgs/racket-pkgs/racket-test/tests/racket/quiet.rktl
   - racket pkgs/racket-pkgs/racket-test/tests/racket/contract/all.rkt
   - raco test pkgs/racket-pkgs/racket-test/tests/json/json.rkt
