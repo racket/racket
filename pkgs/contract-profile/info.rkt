@@ -5,4 +5,6 @@
                "profile-lib"
                "unstable-list-lib"))
 (define build-deps '("racket-doc"
-                     "scribble-lib"))
+                     "scribble-lib"
+                     "rackunit-lib"
+                     "math"))
