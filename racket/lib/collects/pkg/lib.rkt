@@ -411,11 +411,10 @@
         [(user)
          (define db (read-pkgs-db 'user))
          (for/fold ([ht (merge-next-pkg-dbs 'shared)]) ([(k v) (in-hash db)])
-           (hash-set ht k v))])))
-    
+           (hash-set ht k v))])))    
 
-(define (package-info pkg-name [fail? #t])
-  (define db (read-pkg-db))
+(define (package-info pkg-name [fail? #t] #:db [given-db #f])
+  (define db (or given-db (read-pkg-db)))
   (define pi (hash-ref db pkg-name #f))
   (cond
     [pi
@@ -577,8 +576,8 @@
       (with-pkg-lock/read-only
        (pkg-directory* pkg-name)))))
 
-(define (pkg-directory* pkg-name)
-  (define info (package-info pkg-name #f))
+(define (pkg-directory* pkg-name #:db [db #f])
+  (define info (package-info pkg-name #f #:db db))
   (and info
        (let ()
          (match-define (pkg-info orig-pkg checksum _) info)
@@ -591,9 +590,10 @@
 (define ((remove-package quiet?) pkg-name)
   (unless quiet?
     (printf "Removing ~a\n" pkg-name))
-  (define pi (package-info pkg-name))
+  (define db (read-pkg-db))
+  (define pi (package-info pkg-name #:db db))
   (match-define (pkg-info orig-pkg checksum _) pi)
-  (define pkg-dir (pkg-directory* pkg-name))
+  (define pkg-dir (pkg-directory* pkg-name #:db db))
   (remove-from-pkg-db! pkg-name)
   (define scope (current-pkg-scope))
   (define user? (not (or (eq? scope 'installation)
@@ -642,7 +642,7 @@
                             init-drop)])
             (define deps
               (list->set
-               (append-map (package-dependencies metadata-ns)
+               (append-map (package-dependencies metadata-ns db)
                            (set->list keep))))
             (define still-drop (set-subtract drop deps))
             (define delta (set-subtract drop still-drop))
@@ -653,11 +653,8 @@
         ;; just given pkgs:
         (remove-duplicates in-pkgs)))
   (define setup-collects
-    (get-setup-collects (filter-map (lambda (p)
-                                      (define dir (pkg-directory* p))
-                                      (and dir
-                                           (cons p dir)))
-                                    pkgs)
+    (get-setup-collects pkgs
+                        db
                         metadata-ns))
   (unless force?
     (define pkgs-set (list->set pkgs))
@@ -668,7 +665,7 @@
       (set-intersect
        pkgs-set
        (list->set
-        (append-map (package-dependencies metadata-ns)
+        (append-map (package-dependencies metadata-ns db)
                     (set->list
                      remaining-pkg-db-set)))))    
     (unless (set-empty? deps-to-be-removed)
@@ -679,19 +676,24 @@
                    (λ (p)
                      (define ds
                        (filter (λ (dp)
-                                 (member p ((package-dependencies metadata-ns) dp)))
+                                 (member p ((package-dependencies metadata-ns db) dp)))
                                (set->list
                                 remaining-pkg-db-set)))
                      (~a p " (required by: " ds ")"))
                    (set->list deps-to-be-removed))))))
   (for-each (remove-package quiet?) pkgs)
-  ;; setup only collections that still exist:
-  (and setup-collects
-       (for/list ([c (in-list setup-collects)]
-                  #:when (apply collection-path
-                                (if (path-string? c) (list c) c)
-                                #:fail (lambda (s) #f)))
-         c)))
+  (cond
+   [(null? pkgs) 
+    ;; Did nothing, so no setup:
+    'skip]
+   [else
+    ;; setup only collections that still exist:
+    (and setup-collects
+         (for/list ([c (in-list setup-collects)]
+                    #:when (apply collection-path
+                                  (if (path-string? c) (list c) c)
+                                  #:fail (lambda (s) #f)))
+           c))]))
 
 ;; Downloads a package (if needed) and unpacks it (if needed) into a  
 ;; temporary directory.
@@ -1210,7 +1212,7 @@
                                                   'version (lambda () "0.0"))
                                     #f))]
                              [else
-                              (values (get-metadata metadata-ns (pkg-directory* name)
+                              (values (get-metadata metadata-ns (pkg-directory name)
                                                     'version (lambda () "0.0"))
                                       #t)]))
                           (define inst-vers (if (and this-platform?
@@ -1248,7 +1250,8 @@
             ;; Try updates:
             (define update-pkgs (map car update-deps))
             (define (make-pre-succeed)
-              (let ([to-update (filter-map (update-package download-printf) update-pkgs)])
+              (define db (read-pkg-db))
+              (let ([to-update (filter-map (update-package download-printf db) update-pkgs)])
                 (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))))
             (match (or dep-behavior
                        (if name?
@@ -1274,6 +1277,8 @@
                   (report-mismatch update-deps)])]))]
       [else
        (λ ()
+         (when updating?
+           (download-printf "Re-installing ~a\n" pkg-name))
          (define final-pkg-dir
            (cond
              [clean?
@@ -1286,7 +1291,7 @@
               pkg-dir]))
          (define single-collect (pkg-single-collection final-pkg-dir
                                                        #:name pkg-name
-                                                       #:namespace metadata-ns))
+                                                       #:namespace post-metadata-ns))
          (log-pkg-debug "creating ~alink to ~e" 
                         (if single-collect "single-collection " "") 
                         final-pkg-dir)
@@ -1326,19 +1331,33 @@
                  (pkg-desc-source (hash-ref ht name #f))
                  (pkg-desc-source desc)))
     (hash-set ht name desc))
-  (define setup-collects (get-setup-collects (map (lambda (i)
-                                                    (cons
-                                                     (install-info-name i)
-                                                     (install-info-directory i)))
-                                                  (append old-infos infos))
-                                             metadata-ns))
+
   (define do-its
     (map (curry install-package/outer (append old-infos infos))
          (append old-descs descs)
          (append old-infos infos)))
   (pre-succeed)
+
+  (define post-metadata-ns (make-metadata-namespace))
   (for-each (λ (t) (t)) do-its)
-  setup-collects)
+
+  (define setup-collects
+    (let ([db (read-pkg-db)])
+      (get-setup-collects ((if updating?
+                               (make-close-over-depending (read-pkg-db)
+                                                          post-metadata-ns)
+                               values)
+                           (map install-info-name
+                                (append old-infos infos)))
+                          db
+                          post-metadata-ns)))
+
+  (cond
+   [(null? do-its) 
+    ;; No actions, so no setup:
+    'skip]
+   [else
+    setup-collects]))
 
 (define (pkg-single-collection dir 
                                #:name [pkg-name (let-values ([(base name dir?) (split-path dir)])
@@ -1362,14 +1381,15 @@
             (and (eq? s 'use-pkg-name)
                  pkg-name)))))
 
-(define (get-setup-collects pkg-names+directories metadata-ns)
+(define (get-setup-collects pkg-names db metadata-ns)
   (maybe-append
-   (for/list ([pkg-name+dir (in-list pkg-names+directories)])
-     (define pkg-name (car pkg-name+dir))
-     (define pkg-dir (cdr pkg-name+dir))
+   (for/list ([pkg-name (in-list pkg-names)])
+     (define pkg-dir (pkg-directory* pkg-name #:db db))
      (define single-collect
-       (pkg-single-collection pkg-dir #:name pkg-name #:namespace metadata-ns))
-     (or (and single-collect (list single-collect))
+       (and pkg-dir
+            (pkg-single-collection pkg-dir #:name pkg-name #:namespace metadata-ns)))
+     (or (and (not pkg-dir) null)
+         (and single-collect (list single-collect))
          (get-metadata metadata-ns pkg-dir
                        'setup-collects (lambda () (package-collections
                                                    pkg-dir
@@ -1384,6 +1404,29 @@
                                                                (andmap path-string? c))))))
                                      (pkg-error "bad 'setup-collects value\n  value: ~e"
                                                 v))))))))
+
+(define ((make-close-over-depending db metadata-ns) l)
+  (define setup-pkgs (list->set l))
+  (define empty-set (set))
+  (define rev-pkg-deps
+    (for/fold ([rev (hash)]) ([pkg-name (in-hash-keys db)])
+      (for/fold ([rev rev]) ([dep (in-list ((package-dependencies metadata-ns db) pkg-name))])
+        (hash-update rev dep (lambda (v) (set-add v pkg-name)) empty-set))))
+  (let loop ([check setup-pkgs] [setup-pkgs setup-pkgs])
+    ;; Find all packages that depend on a package in `check':
+    (define new-check 
+      (set-subtract (for/fold ([new-check (set)]) ([pkg (in-set check)])
+                      (set-union new-check 
+                                 (hash-ref rev-pkg-deps pkg empty-set)))
+                    setup-pkgs))
+    (cond
+     [(set-empty? new-check)
+      ;; found fixed point:
+      (set->list setup-pkgs)]
+     [else
+      ;; more packages to setup and check:
+      (loop new-check
+            (set-union setup-pkgs new-check))])))
 
 (define (pkg-install descs
                      #:old-infos [old-infos empty]
@@ -1441,15 +1484,15 @@
      #:update-conversation update-conversation
      new-descs)))
 
-(define (update-is-possible? pkg-name)
+(define ((update-is-possible? db) pkg-name)
   (match-define (pkg-info orig-pkg checksum _)
-                (package-info pkg-name))
+                (package-info pkg-name #:db db))
   (define ty (first orig-pkg))
   (not (member ty '(link static-link dir file))))
 
-(define ((update-package download-printf) pkg-name)
+(define ((update-package download-printf db) pkg-name)
   (match-define (pkg-info orig-pkg checksum auto?)
-                (package-info pkg-name))
+                (package-info pkg-name #:db db))
   (match orig-pkg
     [`(,(or 'link 'static-link) ,_)
      (pkg-error (~a "cannot update linked packages\n"
@@ -1476,8 +1519,10 @@
           ;; preseved from install time:
           (pkg-desc orig-pkg-source #f pkg-name auto?))]))
 
-(define ((package-dependencies metadata-ns) pkg-name)  
-  (get-all-deps metadata-ns (pkg-directory* pkg-name)))
+(define ((package-dependencies metadata-ns db) pkg-name)  
+  (map dependency->name 
+       (filter dependency-this-platform?
+               (get-all-deps metadata-ns (pkg-directory* pkg-name #:db db)))))
 
 (define (pkg-update in-pkgs
                     #:all? [all? #f]
@@ -1486,23 +1531,26 @@
                     #:quiet? [quiet? #f])
   (define download-printf (if quiet? void printf))
   (define metadata-ns (make-metadata-namespace))
+  (define db (read-pkg-db))
   (define pkgs
     (cond
       [(and all? (empty? in-pkgs))
-       (filter update-is-possible? (hash-keys (read-pkg-db)))]
+       (filter (update-is-possible? db) (hash-keys db))]
       [deps?
        (append-map
-        (package-dependencies metadata-ns)
+        (package-dependencies metadata-ns db)
         in-pkgs)]
       [else
        in-pkgs]))
-  (define to-update (filter-map (update-package download-printf) pkgs))
+  (define to-update (filter-map (update-package download-printf db) pkgs))
   (cond
     [(empty? to-update)
      (printf "No updates available\n")
-     null]
+     'skip]
     [else
-     (printf "Updating: ~a\n" to-update)
+     (printf "Updating:\n")
+     (for ([u (in-list to-update)])
+       (printf "  ~a\n" (pkg-desc-name u)))
      (pkg-install
       #:updating? #t
       #:pre-succeed (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))
@@ -1535,7 +1583,7 @@
                    (format "~a" checksum)
                    (format "~a" orig-pkg))
              (if dir?
-                 (list (~a (pkg-directory* pkg)))
+                 (list (~a (pkg-directory* pkg #:db db)))
                  empty))))))))
 
 (define (installed-pkg-table #:scope [given-scope #f])
@@ -2212,13 +2260,13 @@
                         #:all? boolean?
                         #:deps? boolean?
                         #:quiet? boolean?)
-        (or/c #f (listof (or/c path-string? (non-empty-listof path-string?)))))]
+        (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-remove
    (->* ((listof string?))
         (#:auto? boolean?
                  #:force? boolean?
                  #:quiet? boolean?)
-        (or/c #f (listof (or/c path-string? (non-empty-listof path-string?)))))]
+        (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-show
    (->* (string?)
         (#:directory? boolean?)
@@ -2230,7 +2278,7 @@
                         #:ignore-checksums? boolean?
                         #:skip-installed? boolean?
                         #:quiet? boolean?)
-        (or/c #f (listof (or/c path-string? (non-empty-listof path-string?)))))]
+        (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-catalog-show
    (->* ((listof string?))
         (#:all? boolean?

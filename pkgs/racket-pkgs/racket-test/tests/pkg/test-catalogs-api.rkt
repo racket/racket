@@ -37,6 +37,7 @@
                 '((lib "data/empty-set.rkt")
                   (lib "pkg-test1/conflict.rkt")
                   (lib "pkg-test1/main.rkt")
+                  (lib "pkg-test1/number.rkt")
                   (lib "pkg-test1/update.rkt")))
   (check-equal? deps '())
 

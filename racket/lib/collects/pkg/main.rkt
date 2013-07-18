@@ -11,7 +11,8 @@
          (prefix-in setup: setup/setup))
 
 (define (setup no-setup? setup-collects jobs)
-  (unless (or no-setup?
+  (unless (or (eq? setup-collects 'skip)
+              no-setup?
               (not (member (getenv "PLT_PKG_NOSETUP") '(#f ""))))
     (define installation? (eq? 'installation (current-pkg-scope)))
     (setup:setup

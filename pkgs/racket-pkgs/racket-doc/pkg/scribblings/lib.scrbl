@@ -163,12 +163,15 @@ Unless @racket[quiet?] is true, information about the output is repotred to the 
                            [#:force? force? boolean? #f]
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
                            [#:quiet? boolean? quiet? #f])
-         (or/c #f (listof (or/c path-string?
-                                (non-empty-listof path-string?))))]{
+         (or/c 'skip
+               #f
+               (listof (or/c path-string?
+                             (non-empty-listof path-string?))))]{
 
 Implements the @racket[install] command. The result indicates which
-collections should be setup via @exec{raco setup}: @racket[#f] means
-all, and a list means only the indicated collections.
+collections should be setup via @exec{raco setup}: @racket['skip]
+means that no setup is needed, @racket[#f] means all, and a list means
+only the indicated collections.
 
 Status information and debugging details are mostly reported to a logger
 named @racket['pkg], but information that is especially relevant to a
@@ -185,8 +188,10 @@ The package lock must be held; see @racket[with-pkg-lock].}
                           [#:all? all? boolean? #f]
                           [#:deps? deps? boolean? #f]
                           [#:quiet? boolean? quiet? #f])
-        (or/c #f (listof (or/c path-string?
-                               (non-empty-listof path-string?))))]{
+        (or/c 'skip
+              #f
+              (listof (or/c path-string?
+                            (non-empty-listof path-string?))))]{
 
 Implements the @racket[update] command. The result is the same as for
 @racket[install-pkgs].
@@ -198,8 +203,10 @@ The package lock must be held; see @racket[with-pkg-lock].}
                           [#:auto? auto? boolean? #f]
                           [#:force? force? boolean? #f]
                           [#:quiet? boolean? quiet? #f])
-         (or/c #f (listof (or/c path-string? 
-                                (non-empty-listof path-string?))))]{
+         (or/c 'skip
+               #f
+               (listof (or/c path-string? 
+                             (non-empty-listof path-string?))))]{
 
 Implements the @racket[remove] command. The result is the same as for
 @racket[install-pkgs], indicating collects that should be setup

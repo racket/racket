@@ -46,7 +46,7 @@
     $ "mkdir -p test-pkgs/update-test"
     $ "cp -f test-pkgs/pkg-test3.zip test-pkgs/update-test/pkg-test3.zip"
     $ "cp -f test-pkgs/pkg-test3.zip.CHECKSUM test-pkgs/update-test/pkg-test3.zip.CHECKSUM"
-    (shelly-install* "remote packages can be updated, single-colelction to multi-collection"
+    (shelly-install* "remote packages can be updated, single-collection to multi-collection"
                      "test-pkgs/pkg-test1.zip http://localhost:9999/update-test/pkg-test3.zip"
                      "pkg-test1 pkg-test3"
                      $ "raco pkg update pkg-test3" =exit> 0 =stdout> "Downloading checksum\nNo updates available\n"
@@ -119,7 +119,7 @@
      "named remote packages can be update"
      "pkg-test1" "pkg-test1"
      ($ "raco pkg config --set catalogs http://localhost:9990")
-     ($ "raco pkg update pkg-test1" =exit> 0 =stdout> "No updates available\n"
+     ($ "raco pkg update pkg-test1" =exit> 0 =stdout> "Resolving \"pkg-test1\" via http://localhost:9990\nNo updates available\n"
         $ "racket -e '(require pkg-test1/update)'" =exit> 42
         $ "cp test-pkgs/pkg-test1-v2.zip test-pkgs/pkg-test1.zip"
         $ "cp test-pkgs/pkg-test1-v2.zip.CHECKSUM test-pkgs/pkg-test1.zip.CHECKSUM"
