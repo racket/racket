@@ -430,9 +430,11 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 
    The @racket[_order-n] specification is a hint for ordering document
    builds, since documentation references can be mutually recursive.
-   The order hint can be any real number.  The main Racket reference
-   is given a value of @racket[10], the search page is given a
-   value of @racket[-10], and the default is @racket[0].}
+   The order hint can be any real number. A value of @racket[-10] or
+   less disables running the document in parallel to other documents.
+   The main Racket reference is given a value of @racket[-11], the
+   search page is given a value of @racket[10], and the default is
+   @racket[0].}
 
  @item{@as-index{@racketidfont{release-note-files}} : @racket[(listof (cons/c string? (cons/c string? list?)))] ---
    A list of release-notes text files to link from the main documentation pages.

@@ -264,76 +264,81 @@
                     (loop)))))))
 
   (log-setup-info "getting document information")
+  (define (make-sequential-get-info only-fast?)
+    (get-doc-info only-dirs latex-dest auto-main? auto-user? 
+                  with-record-error setup-printf #f 
+                  only-fast? force-out-of-date?
+                  no-lock))
+  (define num-sequential (let loop ([docs docs])
+                           (cond
+                            [(null? docs) 0]
+                            [((doc-order-hint (car docs)) . > . -10) 0]
+                            [else
+                             (add1 (loop (cdr docs)))])))
   (define infos
     (and (ormap can-build*? docs)
          (filter 
           values
           (if ((min worker-count (length docs)) . < . 2)
               ;; non-parallel version:
-              (map (get-doc-info only-dirs latex-dest auto-main? auto-user? 
-                                 with-record-error setup-printf #f
-                                 #f force-out-of-date?
-                                 no-lock)
-                   docs)
+              (map (make-sequential-get-info #f) docs)
               ;; maybe parallel...
               (or
-               (let ([infos (map (get-doc-info only-dirs latex-dest auto-main? auto-user? 
-                                               with-record-error setup-printf #f 
-                                               ;; only-fast:
-                                               #t
-                                               force-out-of-date?
-                                               no-lock)
+               (let ([infos (map (make-sequential-get-info #t)
                                  docs)])
                  ;; check fast result
                  (and (andmap values infos)
                       infos))
                ;; parallel:
-               (parallel-do 
-                (min worker-count (length docs))
-                (lambda (workerid)
-                  (init-lock-ch!)
-                  (list workerid program-name (verbose) only-dirs latex-dest auto-main? auto-user?
-                        force-out-of-date? lock-ch))
-                (list-queue
-                 docs
-                 (lambda (x workerid) (s-exp->fasl (serialize x)))
-                 (lambda (work r outstr errstr) 
-                   (printf "~a" outstr)
-                   (printf "~a" errstr)
-                   (deserialize (fasl->s-exp r)))
-                 (lambda (work errmsg outstr errstr) 
-                   (parallel-do-error-handler setup-printf work errmsg outstr errstr)))
-                (define-worker (get-doc-info-worker workerid program-name verbosev only-dirs latex-dest 
-                                                    auto-main? auto-user? force-out-of-date? lock-ch)
-                  (define ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user? 
-                                               force-out-of-date? lock
+               (append
+                (map (make-sequential-get-info #f) 
+                     (take docs num-sequential))
+                (parallel-do 
+                 (min worker-count (length (list-tail docs num-sequential)))
+                 (lambda (workerid)
+                   (init-lock-ch!)
+                   (list workerid program-name (verbose) only-dirs latex-dest auto-main? auto-user?
+                         force-out-of-date? lock-ch))
+                 (list-queue
+                  (list-tail docs num-sequential)
+                  (lambda (x workerid) (s-exp->fasl (serialize x)))
+                  (lambda (work r outstr errstr) 
+                    (printf "~a" outstr)
+                    (printf "~a" errstr)
+                    (deserialize (fasl->s-exp r)))
+                  (lambda (work errmsg outstr errstr) 
+                    (parallel-do-error-handler setup-printf work errmsg outstr errstr)))
+                 (define-worker (get-doc-info-worker workerid program-name verbosev only-dirs latex-dest 
+                                                     auto-main? auto-user? force-out-of-date? lock-ch)
+                   (define ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user? 
+                                                force-out-of-date? lock
+                                                send/report) 
+                            doc)
+                     (define (setup-printf subpart formatstr . rest)
+                       (let ([task (if subpart
+                                       (format "~a: " subpart)
+                                       "")])
+                         (send/report
+                          (format "~a: ~a~a\n" program-name task (apply format formatstr rest)))))
+                     (define (with-record-error cc go fail-k)
+                       (with-handlers ([exn:fail?
+                                        (lambda (exn)
+                                          ((error-display-handler) (exn-message exn) exn)
+                                          (raise exn))])
+                         (go)))
+                     (s-exp->fasl (serialize 
+                                   ((get-doc-info only-dirs latex-dest auto-main? auto-user?  
+                                                  with-record-error setup-printf workerid
+                                                  #f force-out-of-date? lock)
+                                    (deserialize (fasl->s-exp doc))))))
+                   
+                   (verbose verbosev)
+                   (match-message-loop
+                    [doc (send/success 
+                          ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user? 
+                                               force-out-of-date? (lock-via-channel lock-ch)
                                                send/report) 
-                           doc)
-                    (define (setup-printf subpart formatstr . rest)
-                      (let ([task (if subpart
-                                      (format "~a: " subpart)
-                                      "")])
-                        (send/report
-                         (format "~a: ~a~a\n" program-name task (apply format formatstr rest)))))
-                    (define (with-record-error cc go fail-k)
-                      (with-handlers ([exn:fail?
-                                       (lambda (exn)
-                                         ((error-display-handler) (exn-message exn) exn)
-                                         (raise exn))])
-                        (go)))
-                    (s-exp->fasl (serialize 
-                                  ((get-doc-info only-dirs latex-dest auto-main? auto-user?  
-                                                 with-record-error setup-printf workerid
-                                                 #f force-out-of-date? lock)
-                                   (deserialize (fasl->s-exp doc))))))
-                  
-                  (verbose verbosev)
-                  (match-message-loop
-                   [doc (send/success 
-                         ((get-doc-info-local program-name only-dirs latex-dest auto-main? auto-user? 
-                                              force-out-of-date? (lock-via-channel lock-ch)
-                                              send/report) 
-                          doc))]))))))))
+                           doc))])))))))))
 
   (define (out-path->info path infos out-path->info-cache)
     (or (hash-ref out-path->info-cache path #f)
