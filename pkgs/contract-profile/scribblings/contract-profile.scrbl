@@ -5,7 +5,7 @@
 
 @title[#:tag "contract-profiling"]{Contract Profiling}
 
-@defmodule[profile/contract-profile]
+@defmodule[contract-profile]
 
 This module provides experimental support for contract profiling.
 
