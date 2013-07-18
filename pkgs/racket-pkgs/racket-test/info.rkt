@@ -20,7 +20,6 @@
                "at-exp-lib"
 
                "r5rs-lib"
-               "racket-doc"
                "scribble-lib"
                "scribble-text-lib"
                "syntax-color-lib"
