@@ -52,6 +52,8 @@
 
 (define no-arg (gensym))
 (define (assoc-ref d key [default no-arg])
+  (unless (assoc? d)
+    (raise-argument-error 'dict-ref "dict?" d))
   (cond
     [(assoc key d) => cdr]
     [(eq? default no-arg)
@@ -79,6 +81,8 @@
       (loop (cddr pairs)))))
 
 (define (assoc-set d key val)
+  (unless (assoc? d)
+    (raise-argument-error 'dict-set "dict?" d))
   (let loop ([xd d])
     (cond
      [(null? xd) (list (cons key val))]
@@ -113,6 +117,8 @@
     (dict-set d key (xform (dict-ref d key default)))]))
 
 (define (assoc-remove d key)
+  (unless (assoc? d)
+    (raise-argument-error 'dict-remove "dict?" d))
   (let loop ([xd d])
     (cond
      [(null? xd) null]
@@ -144,43 +150,59 @@
 
 (define vector-iterate-value vector-ref)
 
+(define (assoc-count d)
+  (unless (assoc? d)
+    (raise-argument-error 'dict-count "dict?" d))
+  (length d))
+
 (struct assoc-iter (head pos))
 
 (define (assoc-iterate-first d)
+  (unless (assoc? d)
+    (raise-argument-error 'dict-iterate-first "dict?" d))
   (if (null? d) #f (assoc-iter d d)))
 
 (define (assoc-iterate-next d i)
-  (if (and (assoc-iter? i)
-           (eq? d (assoc-iter-head i)))
-      (let ([pos (cdr (assoc-iter-pos i))])
-        (if (null? pos)
-            #f
-            (assoc-iter d pos)))
-      (raise-mismatch-error 
-       'dict-iterate-next
-       "invalid iteration position for association list: " 
-       i)))
+  (cond
+    [(and (assoc-iter? i)
+          (eq? d (assoc-iter-head i)))
+     (let ([pos (cdr (assoc-iter-pos i))])
+       (if (null? pos)
+           #f
+           (assoc-iter d pos)))]
+    [(assoc? d)
+     (raise-mismatch-error 
+      'dict-iterate-next
+      "invalid iteration position for association list: " 
+      i)]
+    [else (raise-argument-error 'dict-iterate-next "dict?" d)]))
 
 (define (assoc-iterate-key d i)
-  (if (and (assoc-iter? i) (eq? d (assoc-iter-head i)))
-      (caar (assoc-iter-pos i))
-      (raise-mismatch-error 
-       'dict-iterate-key
-       "invalid iteration position for association list: " 
-       i)))
+  (cond
+    [(and (assoc-iter? i) (eq? d (assoc-iter-head i)))
+     (caar (assoc-iter-pos i))]
+    [(assoc? d)
+     (raise-mismatch-error 
+      'dict-iterate-key
+      "invalid iteration position for association list: " 
+      i)]
+    [else (raise-argument-error 'dict-iterate-key "dict?" d)]))
 
 (define (assoc-iterate-value d i)
-  (if (and (assoc-iter? i) (eq? d (assoc-iter-head i)))
-      (cdar (assoc-iter-pos i))
-      (raise-mismatch-error 
-       'dict-iterate-value
-       "invalid iteration position for association list: " 
-       i)))
+  (cond
+    [(and (assoc-iter? i) (eq? d (assoc-iter-head i)))
+     (cdar (assoc-iter-pos i))]
+    [(assoc? d)
+     (raise-mismatch-error 
+      'dict-iterate-value
+      "invalid iteration position for association list: " 
+      i)]
+    [else (raise-argument-error 'dict-iterate-value "dict?" d)]))
 
 (define-primitive-generics
   (dict gen:dict prop:gen:dict prop:gen:dict-methods dict? dict-supports?)
   #:fast-defaults
-  ([mutable-hash?
+  ([mutable-hash? mutable-hash?
     (define dict-ref hash-ref)
     (define dict-set! hash-set!)
     (define dict-remove! hash-remove!)
@@ -189,7 +211,7 @@
     (define dict-iterate-next hash-iterate-next)
     (define dict-iterate-key hash-iterate-key)
     (define dict-iterate-value hash-iterate-value)]
-   [immutable-hash?
+   [immutable-hash? immutable-hash?
     (define dict-ref hash-ref)
     (define dict-set hash-set)
     (define dict-remove hash-remove)
@@ -198,7 +220,7 @@
     (define dict-iterate-next hash-iterate-next)
     (define dict-iterate-key hash-iterate-key)
     (define dict-iterate-value hash-iterate-value)]
-   [mutable-vector?
+   [mutable-vector? mutable-vector?
     (define dict-ref vector-ref-as-dict)
     (define dict-set! vector-set!)
     (define dict-count vector-length)
@@ -206,18 +228,18 @@
     (define dict-iterate-next vector-iterate-next)
     (define dict-iterate-key vector-iterate-key)
     (define dict-iterate-value vector-iterate-value)]
-   [immutable-vector?
+   [immutable-vector? immutable-vector?
     (define dict-ref vector-ref-as-dict)
     (define dict-count vector-length)
     (define dict-iterate-first vector-iterate-first)
     (define dict-iterate-next vector-iterate-next)
     (define dict-iterate-key vector-iterate-key)
     (define dict-iterate-value vector-iterate-value)]
-   [assoc?
+   [assoc? list?
     (define dict-ref assoc-ref)
     (define dict-set assoc-set)
     (define dict-remove assoc-remove)
-    (define dict-count length)
+    (define dict-count assoc-count)
     (define dict-iterate-first assoc-iterate-first)
     (define dict-iterate-next assoc-iterate-next)
     (define dict-iterate-key assoc-iterate-key)

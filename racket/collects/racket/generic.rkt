@@ -33,20 +33,54 @@
            (parse #'args (hash-set options 'table #'name)))]
       [(#:defined-table . other)
        (wrong-syntax (stx-car stx) "invalid #:defined-table specification")]
-      [(#:defaults ([pred defn ...] ...) . args)
+      [(#:defaults (clause ...) . args)
        (if (hash-ref options 'defaults #f)
            (wrong-syntax (stx-car stx) "duplicate #:defaults specification")
-           (parse #'args (hash-set options 'defaults #'([pred defn ...] ...))))]
+           (let loop ([defaults '()]
+                      [defns (hash-ref options 'defns '())]
+                      [clauses (reverse (syntax->list #'(clause ...)))])
+             (if (pair? clauses)
+                 (syntax-case (car clauses) ()
+                   [(pred #:dispatch disp defn ...)
+                    (loop (cons #'[pred disp defn ...] defaults)
+                          defns
+                          (cdr clauses))]
+                   [(pred defn ...)
+                    (with-syntax ([name (generate-temporary #'pred)])
+                      (loop (cons #'[name name defn ...] defaults)
+                            (cons #'(define name pred) defns)
+                            (cdr clauses)))]
+                   [clause
+                    (wrong-syntax #'clause "invalid #:defaults specification")])
+                 (parse #'args
+                        (hash-set* options 'defaults defaults 'defns defns)))))]
       [(#:defaults . other)
        (wrong-syntax (stx-car stx) "invalid #:defaults specification")]
-      [(#:fast-defaults ([pred defn ...] ...) . args)
+      [(#:fast-defaults (clause ...) . args)
        (if (hash-ref options 'fast-defaults #f)
            (wrong-syntax (stx-car stx)
                          "duplicate #:fast-defaults specification")
-           (parse #'args
-                  (hash-set options
-                            'fast-defaults
-                            #'([pred defn ...] ...))))]
+           (let loop ([fast-defaults '()]
+                      [defns (hash-ref options 'defns '())]
+                      [clauses (reverse (syntax->list #'(clause ...)))])
+             (if (pair? clauses)
+                 (syntax-case (car clauses) ()
+                   [(pred #:dispatch disp defn ...)
+                    (loop (cons #'[pred disp defn ...] fast-defaults)
+                          defns
+                          (cdr clauses))]
+                   [(pred defn ...)
+                    (with-syntax ([name (generate-temporary #'pred)])
+                      (loop (cons #'[name name defn ...] fast-defaults)
+                            (cons #'(define name pred) defns)
+                            (cdr clauses)))]
+                   [clause
+                    (wrong-syntax #'clause
+                                  "invalid #:fast-defaults specification")])
+                 (parse #'args
+                        (hash-set* options
+                                   'fast-defaults fast-defaults
+                                   'defns defns)))))]
       [(#:fast-defaults . other)
        (wrong-syntax (stx-car stx) "invalid #:fast-defaults specification")]
       [(#:fallbacks [fallback ...] . args)
@@ -77,6 +111,7 @@
        (wrong-syntax #'other
                      "expected a method identifier with formal arguments")]
       [() (values (hash-ref options 'methods '())
+                  (hash-ref options 'defns '())
                   (hash-ref options 'support generate-temporary)
                   (hash-ref options 'table #f)
                   (hash-ref options 'fast-defaults '())
@@ -93,8 +128,10 @@
      (parameterize ([current-syntax-context stx])
        (unless (identifier? #'name)
          (wrong-syntax #'name "expected an identifier"))
-       (define-values (methods support table fasts defaults fallbacks derived)
+       (define-values
+         (methods defns support table fasts defaults fallbacks derived)
          (parse #'rest))
+       (define/with-syntax [defn ...] defns)
        (define/with-syntax [fast-default ...] fasts)
        (define/with-syntax [default ...] defaults)
        (define/with-syntax [fallback ...] fallbacks)
@@ -119,6 +156,7 @@
                      (values sym (support-name name sym)))))
              #'(begin)))
        #'(begin
+           defn ...
            (define-primitive-generics/derived
              original
              (name gen-name prop-name get-name pred-name support-name)

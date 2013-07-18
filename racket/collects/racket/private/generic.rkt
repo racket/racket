@@ -34,8 +34,8 @@
                    accessor-name
                    predicate-name
                    supported-name)
-        #:fast-defaults ([fast-pred fast-defn ...] ...)
-        #:defaults ([default-pred default-defn ...] ...)
+        #:fast-defaults ([fast-pred fast-disp fast-defn ...] ...)
+        #:defaults ([default-pred default-disp default-defn ...] ...)
         #:fallbacks [fallback-defn ...]
         #:derive-properties ([derived-prop derived-impl] ...)
         [method-name . method-signature]
@@ -67,10 +67,14 @@
        (define/with-syntax [method-index ...] method-indices)
        (define/with-syntax contract-str
          (format "~s" (syntax-e #'predicate-name)))
-       (define/with-syntax (default-pred-name ...)
-         (generate-temporaries default-preds))
        (define/with-syntax (fast-pred-name ...)
          (generate-temporaries fast-preds))
+       (define/with-syntax (fast-disp-name ...)
+         (generate-temporaries #'(fast-disp ...)))
+       (define/with-syntax (default-pred-name ...)
+         (generate-temporaries default-preds))
+       (define/with-syntax (default-disp-name ...)
+         (generate-temporaries #'(default-disp ...)))
        (define/with-syntax ([fast-by-method ...] ...) fasts-by-method)
        (define/with-syntax ([fast-by-type ...] ...) fasts-by-type)
        (define/with-syntax ([default-by-method ...] ...) defaults-by-method)
@@ -79,7 +83,9 @@
        (define/with-syntax forward-declaration
          (if (eq? (syntax-local-context) 'top-level)
              #'(define-syntaxes (fast-pred-name ...
+                                 fast-disp-name ...
                                  default-pred-name ...
+                                 default-disp-name ...
                                  fast-by-method ... ...
                                  default-by-method ... ...
                                  fallback ...)
@@ -115,10 +121,10 @@
                ...)
               #t))
            forward-declaration
-           (define fast-pred-name fast-pred)
-           ...
-           (define default-pred-name default-pred)
-           ...
+           (define fast-pred-name fast-pred) ...
+           (define fast-disp-name fast-disp) ...
+           (define default-pred-name default-pred) ...
+           (define default-disp-name default-disp) ...
            (define (predicate-name self-name)
              (or (fast-pred-name self-name)
                  ...
@@ -161,11 +167,11 @@
              method-signature
              self-name
              (or (cond
-                   [(fast-pred-name self-name) fast-by-method]
+                   [(fast-disp-name self-name) fast-by-method]
                    ...
                    [(prop:pred self-name)
                     (vector-ref (accessor-name self-name) 'method-index)]
-                   [(default-pred-name self-name) default-by-method]
+                   [(default-disp-name self-name) default-by-method]
                    ...
                    [else (raise-argument-error 'method-name
                                                'contract-str
