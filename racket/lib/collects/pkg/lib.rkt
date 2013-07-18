@@ -2098,7 +2098,9 @@
           (loop s f check-zo?))]
        [(directory-exists? f)
         ;; Count ".zo" files toward the set of module paths only
-        ;; if an "info.rkt" in an 
+        ;; if an "info.rkt" in an enclosing directory says to
+        ;; assume virtual sources. Otherwise, the ".zo" file will
+        ;; be discarded by `raco setup'.
         (define sub-check-zo?
           (or check-zo?
               (let ([i (get-pkg-info f metadata-ns)])
@@ -2120,16 +2122,16 @@
             ;; splices may need their own "info.rkt"s, and
             ;; `raco setup' can handle that
             s]
-           [(regexp-match? #rx#"[.](?:rkt|ss)$" bstr)
+           [(regexp-match? #rx#"[.](?:rkt|ss|scrbl)$" bstr)
             (try-path s f)]
            [(and check-zo?
-                 (regexp-match? #rx#"_(?:rkt|ss)[.]zo$" (path-element->bytes name)))
+                 (regexp-match? #rx#"_(?:rkt|ss|scrbl)[.]zo$" (path-element->bytes name)))
             (define-values (dir-base dir-name dir?) (split-path base))
             (cond
              [(eq? 'relative dir-base) s]
              [(equal? dir-name compiled)
               (define bstr2 (regexp-replace
-                             #rx#"_(?:rkt|ss)[.]zo$"
+                             #rx#"_(?:rkt|ss|scrbl)[.]zo$"
                              (path-element->bytes name)
                              #".rkt"))
               (if (equal? #"info.rkt" bstr2)
