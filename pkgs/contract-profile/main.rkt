@@ -33,9 +33,8 @@
 
 (define (analyze-contract-samples contract-samples samples*)
   (define correlated (correlate-contract-samples contract-samples samples*))
-  (with-output-to-file cost-breakdown-file
-    #:exists 'replace
-    (lambda () (print-breakdown correlated)))
+  (with-output-to-report-file cost-breakdown-file
+                              (print-breakdown correlated))
   (module-graph-view correlated)
   (boundary-view correlated))
 
@@ -53,7 +52,7 @@
                  live-contract-samples all-blames regular-profile)
     correlated)
 
-  (define contract-ratio (/ n-contract-samples n-samples 1.0))
+  (define contract-ratio (/ n-contract-samples (max n-samples 1) 1.0))
   (printf "Running time is ~a% contracts\n"
           (~r (* 100 contract-ratio) #:precision 2))
   (printf "~a/~a samples\n" n-contract-samples n-samples)
@@ -171,23 +170,22 @@
       (values n typed?)))
 
   ;; graphviz output
-  (with-output-to-file module-graph-dot-file
-    #:exists 'replace
-    (lambda ()
-      (printf "digraph {\n")
-      (define nodes->names (for/hash ([n nodes]) (values n (gensym))))
-      (for ([n nodes])
-        (printf "~a[label=\"~a\"][color=\"~a\"]\n"
-                (hash-ref nodes->names n)
-                n
-                (if (hash-ref nodes->typed? n) "green" "red")))
-      (for ([(k v) (in-hash edge-samples)])
-        (match-define (cons pos neg) k)
-        (printf "~a -> ~a[label=\"~ams\"]\n"
-                (hash-ref nodes->names neg)
-                (hash-ref nodes->names pos)
-                (samples-time v)))
-      (printf "}\n")))
+  (with-output-to-report-file
+   module-graph-dot-file
+   (printf "digraph {\n")
+   (define nodes->names (for/hash ([n nodes]) (values n (gensym))))
+   (for ([n nodes])
+     (printf "~a[label=\"~a\"][color=\"~a\"]\n"
+             (hash-ref nodes->names n)
+             n
+             (if (hash-ref nodes->typed? n) "green" "red")))
+   (for ([(k v) (in-hash edge-samples)])
+     (match-define (cons pos neg) k)
+     (printf "~a -> ~a[label=\"~ams\"]\n"
+             (hash-ref nodes->names neg)
+             (hash-ref nodes->names pos)
+             (samples-time v)))
+   (printf "}\n"))
   ;; render, if graphviz is installed
   (render-dot module-graph-dot-file))
 

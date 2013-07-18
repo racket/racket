@@ -3,7 +3,7 @@
 ;; Graphviz support
 ;; inspired by redex/private/dot.rkt (can't use directly because it uses GUI)
 
-(require racket/system)
+(require racket/system "utils.rkt")
 
 (provide render-dot)
 
@@ -25,5 +25,5 @@
              dot-paths)))
 
 (define (render-dot input-file)
-  (when dot
+  (when (and dot (not (dry-run?)))
     (system (format "~a -Tpdf -O ~a" (path->string dot) input-file))))

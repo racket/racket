@@ -19,3 +19,13 @@
     (cadr s)))
 
 (define output-file-prefix "tmp-contract-profile-")
+
+
+;; for testing. don't generate output files
+(define dry-run? (make-parameter #f))
+
+(define-syntax-rule (with-output-to-report-file file body ...)
+  (unless (dry-run?)
+    (with-output-to-file file
+      #:exists 'replace
+      (lambda () body ...))))
