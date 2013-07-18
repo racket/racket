@@ -10,7 +10,6 @@
          racket/place/private/th-place
          racket/place/private/prop
          racket/private/streams
-         racket/lazy-require
 
 
          (for-syntax racket/base
@@ -34,7 +33,8 @@
          place*
          (rename-out [pl-place-enabled? place-enabled?])
          place-dead-evt
-         )
+         place-location?
+         prop:place-location)
 
 (define-syntax (define-pl-func stx)
   (syntax-case stx ()
@@ -47,8 +47,6 @@
              [(prop:place? p) ((prop:place-ref p) func-sym p args ...)]
              [(pl-place-enabled?) (pl-func p args ...)]
              [else (th-func p args ...)])))]))
-
-(lazy-require [racket/place/distributed (supervise-place-at)])
 
 (define (place-channel-put/get ch msg)
   (place-channel-put ch msg)
@@ -67,6 +65,16 @@
 (define-pl-func place-message-allowed? p)
 (define-pl-func place-dead-evt p)
 
+(define-values (prop:place-location place-location? place-location-ref)
+  (make-struct-type-property 'place-location
+                             (lambda (v info)
+                               (unless (and (procedure? v)
+                                            (procedure-arity-includes? v 4))
+                                 (raise-argument-error 'guard-for-prop:place-location
+                                                       "(procedure-arity-includes/c 4)"
+                                                       v))
+                               v)))
+
 (define place-break/opt
   (let ([place-break (lambda (p [kind #f]) (place-break p kind))])
     place-break))
@@ -81,11 +89,9 @@
 (define (dynamic-place module-path function #:at [node #f] #:named [named #f])
   (cond
     [node
-     (unless (collection-file-path "distributed.rkt" "racket" "place"
-                                   #:fail (lambda (x) #f))
-       (raise-arguments-error "dynamic-place" 
-                              "distributed places are not available"))
-     (supervise-place-at node module-path function #:named named)]
+     (unless (place-location? node)
+       (raise-argument-error 'dynamic-place "(or/c place-location? #f)" node))
+     ((place-location-ref node) node module-path function named)]
     [else
       (start-place 'dynamic-place module-path function
                    #f (current-output-port) (current-error-port))]))

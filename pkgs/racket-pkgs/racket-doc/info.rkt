@@ -35,4 +35,5 @@
                      "syntax-color"
                      "scribble"
                      "compatibility-lib"
-                     "future-visualizer"))
+                     "future-visualizer"
+                     "distributed-places-doc"))

@@ -812,10 +812,17 @@
       (super-new)
   )))
 
+(define place-location<%>
+  (interface* 
+   ()
+   ([prop:place-location
+     (lambda (remote-node place-path place-func named)
+       (supervise-place-at remote-node place-path place-func
+                           #:named named))])))
+
 (define remote-node%
   (backlink
-    (class*
-      object% (event-container<%> event<%>)
+    (class* object% (event-container<%> event<%> place-location<%>)
       (init-field host-name)
       (init-field listen-port)
       (init-field [cmdline-list #f])
@@ -1464,11 +1471,11 @@
                             #:use-current-ports use-current-ports))
 
 (define (supervise-place-at remote-node place-path place-func
-                                  ;#:initial-message [initial-message #f]
-                                  #:restart-on-exit [restart-on-exit #f]
-                                  #:named [named #f]
-                                  #:thunk [thunk #f])
-
+                            ;;#:initial-message [initial-message #f]
+                            #:restart-on-exit [restart-on-exit #f]
+                            #:named [named #f]
+                            #:thunk [thunk #f])
+  
   (send remote-node launch-place 
         (mk-place-creation-addr place-path place-func named thunk)
         #:restart-on-exit restart-on-exit

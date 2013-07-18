@@ -11,7 +11,8 @@
                      racket/place
                      racket/future
                      racket/flonum
-                     racket/fixnum))
+                     racket/fixnum
+                     (only-in racket/place/distributed create-place-node)))
 
 @; ----------------------------------------------------------------------
 
@@ -127,8 +128,10 @@ are simulated using @racket[thread].}
 
 
 @defproc[(dynamic-place [module-path (or/c module-path? path?)]
-                        [start-name symbol?])
-                        place?]{
+                        [start-name symbol?]
+                        [#:at location (or/c #f place-location?) #f]
+                        [#:named named any/c #f])
+         place?]{
 
  Creates a @tech{place} to run the procedure that is identified by
  @racket[module-path] and @racket[start-name]. The result is a
@@ -142,6 +145,9 @@ are simulated using @racket[thread].}
  argument, which is a @tech{place channel} that corresponds to the
  other end of communication for the @tech{place descriptor} returned
  by @racket[place].
+
+If @racket[location] is provided, it must be a @tech{place location},
+such as a distributed places node produced by @racket[create-place-node].
 
  When the @tech{place} is created, the initial @tech{exit handler}
  terminates the place, using the argument to the exit handler as the
@@ -356,5 +362,24 @@ messages:
        @racket[make-shared-bytes].}
 
 ]}
+
+@deftogether[(
+@defthing[prop:place-location struct-type-property?]
+@defproc[(place-location? [v any/c]) boolean?]
+)]{
+
+A @tech{structure type property} and associated predicate for
+implementations of @deftech{place locations}. The value of
+@racket[prop:place-location] must be a procedure of four arguments:
+the @tech{place location} itself, a module path, a symbol for the
+start function exported by the module, and a place name (which can be
+@racket[#f] for an anonymous place).
+
+A @tech{place location} can be passed as the @racket[#:at] argument to
+@racket[dynamic-place], which in turn simply calls the
+@racket[prop:place-location] value of the @tech{place location}.
+
+A distributed places note created with @racket[create-place-node]
+is an example of a @tech{place location}.}
 
 @;------------------------------------------------------------------------

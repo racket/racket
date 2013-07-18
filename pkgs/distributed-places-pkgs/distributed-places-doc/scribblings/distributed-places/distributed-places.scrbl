@@ -6,7 +6,7 @@
           racket/place/distributed
           racket/sandbox
           racket/class
-          (except-in "mz.rkt" log-message)
+          (only-in scribblings/reference/mz guidealso)
           (for-label (except-in racket/base log-message)
                      racket/place/define-remote-server
                      racket/place/distributed 
@@ -24,6 +24,8 @@
 
 
 @title[#:tag "distributed-places"]{Distributed Places}
+@author{Kevin Tew}
+
 @guidealso["distributed-places"]
 
 @defmodule[racket/place/distributed]
@@ -154,7 +156,8 @@ the @racket[remote-connection%] instance to respawn the place on the
 remote node should it exit or terminate at any time. It can also be a
 procedure of zero arguments to implement the restart procedure, or it
 can be an object that support a @racket[restart] method that takes a
-@tech{place} argument.}
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{place}
+argument.}
 
 @defproc[(spawn-node-supervise-place-at
            [hostname string?]
@@ -379,13 +382,15 @@ node's message router.
 
 @defclass[remote-node% object% (event-container<%>)]{
 
-  The @racket[node%] instance controls a distributed places node. It
-  launches compute places and routes inter-node place messages in the
-  distributed system.  This is the remote api to a distributed places
+  Like @racket[node%], but for the remote API to a distributed places
   node. Instances of @racket[remote-node%] are returned by
-  @racket[spawn-remote-racket-node],
-  @racket[spawn-node-supervise-dynamic-place-at], and
-  @racket[spawn-node-supervise-place-thunk-at].
+  @racket[create-place-node], @racket[spawn-remote-racket-node], and
+  @racket[spawn-node-supervise-place-at].
+
+  A @racket[remote-node%] is a @tech[#:doc '(lib
+  "scribblings/reference/reference.scrbl")]{place location} in the
+  sense of @racket[place-location?], which means that it can be
+  supplied as the @racket[#:at] argument to @racket[dynamic-place].
 
   @defconstructor[([listen-port tcp-listen-port? #f]
                    [restart-on-exit any/c #f])]{

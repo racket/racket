@@ -44,6 +44,7 @@
                "r5rs"
                "r6rs"
                "racket-doc"
+               "distributed-places-doc"
                "racket-index"
                "racket-lib"
                "racklog"
