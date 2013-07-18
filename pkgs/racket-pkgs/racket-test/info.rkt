@@ -2,14 +2,12 @@
 
 (define collection 'multi)
 (define deps '("unstable-debug-lib"
-               "unstable-flonum-lib"
                "unstable-macro-testing-lib"
                "compiler-lib"
                "sandbox-lib"
                "compatibility-lib"
                "planet-lib"
                "distributed-places-lib"
-               "pconvert-lib"
                "eli-tester"
                ;; for `net` tests
                "net-lib"
@@ -21,9 +19,10 @@
 
                "r5rs-lib"
                "scribble-lib"
-               "scribble-text-lib"
                "syntax-color-lib"
                "typed-racket-lib"
+
+               ;; for random testing:
                "redex-lib"))
 
 (define build-deps '("base"
