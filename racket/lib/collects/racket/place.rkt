@@ -81,7 +81,11 @@
 (define (dynamic-place module-path function #:at [node #f] #:named [named #f])
   (cond
     [node
-      (supervise-place-at node module-path function #:named named)]
+     (unless (collection-file-path "distributed.rkt" "racket" "place"
+                                   #:fail (lambda (x) #f))
+       (raise-arguments-error "dynamic-place" 
+                              "distributed places are not available"))
+     (supervise-place-at node module-path function #:named named)]
     [else
       (start-place 'dynamic-place module-path function
                    #f (current-output-port) (current-error-port))]))

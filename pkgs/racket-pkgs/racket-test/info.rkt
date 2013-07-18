@@ -8,6 +8,7 @@
                "sandbox-lib"
                "compatibility-lib"
                "planet-lib"
+               "distributed-places-lib"
                "pconvert-lib"
                "eli-tester"
                ;; for `net` tests

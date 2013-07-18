@@ -6,6 +6,7 @@
                "planet-lib"
                "compatibility-lib"
 	       "net-lib"
+               "distributed-places-lib"
                "sandbox-lib"
                "compiler-lib"
                "scribble-lib"
