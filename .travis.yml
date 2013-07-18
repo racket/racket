@@ -5,12 +5,14 @@ compiler:
   - gcc
   - clang
 # Just run tests for the core
+# Note: This is currently not well set-up because `racket-test`
+#  depends on lots of things. 
 script:
-  - make CPUS="2" PKGS="racket-test db-test"
-  - racket -f pkgs/racket-pkgs/racket-test/tests/racket/quiet.rktl
+  - make CPUS="2" PKGS="db-test unstable-debug-lib unstable-flonum-lib unstable-macro-testing-lib compiler-lib sandbox-lib compatibility-lib pconvert-lib net-lib web-server-lib rackunit-lib at-exp-lib"
+  # - racket -f pkgs/racket-pkgs/racket-test/tests/racket/quiet.rktl
   - racket pkgs/racket-pkgs/racket-test/tests/racket/contract/all.rkt
   - raco test pkgs/racket-pkgs/racket-test/tests/json/json.rkt
-  - raco test pkgs/racket-pkgs/racket-test/tests/file/main.rkt
+  # - raco test pkgs/racket-pkgs/racket-test/tests/file/main.rkt
   - raco test pkgs/racket-pkgs/racket-test/tests/net/head.rkt
   - raco test pkgs/racket-pkgs/racket-test/tests/net/uri-codec.rkt
   - raco test pkgs/racket-pkgs/racket-test/tests/net/url.rkt
