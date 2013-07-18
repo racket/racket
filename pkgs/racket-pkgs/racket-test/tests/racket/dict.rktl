@@ -8,7 +8,20 @@
 ;; Currently relying on the `map' an `for-each' to test `dict-iterate-...',
 ;; and custom hashes to test `prop:dict' use.
 
-(define (try-simple d mutable? can-remove? can-update? [orig-one 1])
+(define (try-simple d ordered? mutable? can-remove? can-update? [orig-one 1])
+
+  ;; Assuming that dictionaries with nondeterministic order, e.g. hash tables,
+  ;; will at least have some internal order to follow, and will only differ in
+  ;; whether they proceed left-to-right or right-to-left for each function.
+  (define test/order
+    (if ordered?
+        test
+        (lambda (expected name actual)
+          (let ([rev (reverse expected)])
+            (if (equal? rev actual)
+                (test rev name actual)
+                (test expected name actual))))))
+
   (test #t dict? d)
 
   (test 'one dict-ref d 1)
@@ -25,24 +38,24 @@
   (test can-remove? dict-can-remove-keys? d)
   (test can-update? dict-can-functional-set? d)
 
-  (test (dict-map d cons) 'dict->list (dict->list d))
-  (test (dict-map d (λ (k v) k)) 'dict-keys (dict-keys d))
-  (test (dict-map d (λ (k v) v)) 'dict-values (dict-values d))
+  (test/order (dict-map d cons) 'dict->list (dict->list d))
+  (test/order (dict-map d (λ (k v) k)) 'dict-keys (dict-keys d))
+  (test/order (dict-map d (λ (k v) v)) 'dict-values (dict-values d))
   
-  (test (dict-map d cons) 'in-dict
-        (for/list ([(k v) (in-dict d)])
-          (cons k v)))
-  (test (dict-map d cons) 'in-dict/keys/vals
-        (for/list ([k (in-dict-keys d)]
-                   [v (in-dict-values d)])
-          (cons k v)))
-  (test (dict-map d cons) 'in-dict-pairs
-        (for/list ([p (in-dict-pairs d)])
-          p))
+  (test/order (dict-map d cons) 'in-dict
+              (for/list ([(k v) (in-dict d)])
+                (cons k v)))
+  (test/order (dict-map d cons) 'in-dict/keys/vals
+              (for/list ([k (in-dict-keys d)]
+                         [v (in-dict-values d)])
+                (cons k v)))
+  (test/order (dict-map d cons) 'in-dict-pairs
+              (for/list ([p (in-dict-pairs d)])
+                p))
   
   (let ([l null])
     (dict-for-each d (lambda (k v) (set! l (cons (cons k v) l))))
-    (test (reverse l) dict-map d cons)
+    (test/order (reverse l) 'dict-for-each/map (dict-map d cons))
     (test (length l) dict-count d))
 
   (if (not can-remove?)
@@ -104,8 +117,8 @@
           (try-add d "ONE")
           (try-add d 'one)))))
 
-(try-simple (vector 'zero 'one 'two) #t #f #f)
-(try-simple #hash((1 . one) (#f . 7)) #f #t #t)
+(try-simple (vector 'zero 'one 'two) #t #t #f #f)
+(try-simple #hash((1 . one) (#f . 7)) #f #f #t #t)
 
 (let ([d (make-hasheq '((1 . one) (#f . 7)))])
   (test 'one dict-ref! d 1 (gensym))
@@ -114,11 +127,11 @@
   (test 'three dict-ref! d 3 (λ () 'three))
   (test 'three dict-ref d 3))
 
-(try-simple #hasheq((1 . one) (#f . 7)) #f #t #t)
-(try-simple (hash-copy #hash((1 . one) (#f . 7))) #t #t #f)
-(try-simple (hash-copy #hasheq((1 . one) (#f . 7))) #t #t #f)
-(try-simple '((0 . zero) (1 . one)) #f #t #t)
-(try-simple '((1 . one) (0 . zero)) #f #t #t)
+(try-simple #hasheq((1 . one) (#f . 7)) #f #f #t #t)
+(try-simple (hash-copy #hash((1 . one) (#f . 7))) #f #t #t #f)
+(try-simple (hash-copy #hasheq((1 . one) (#f . 7))) #f #t #t #f)
+(try-simple '((0 . zero) (1 . one)) #t #f #t #t)
+(try-simple '((1 . one) (0 . zero)) #t #f #t #t)
 (try-simple (let ([h (make-custom-hash (lambda (a b)
                                          (string=? (format "~a" a)
                                                    (format "~a" b)))
@@ -127,7 +140,7 @@
               (dict-set! h "1" 'one)
               (dict-set! h "2" 'two)
               h)
-            #t #t #f
+            #f #t #t #f
             "1")
 (try-simple (let* ([h (make-immutable-custom-hash 
                        (lambda (a b)
@@ -138,7 +151,7 @@
                    [h (dict-set h "1" 'one)]
                    [h (dict-set h "2" 'two)])
               h)
-            #f #t #t
+            #f #f #t #t
             "1")
 (let ([s1 (make-string 1 #\1)]
       [s2 (make-string 1 #\2)])
@@ -150,7 +163,7 @@
                 (dict-set! h s1 'one)
                 (dict-set! h s2 'two)
                 h)
-              #t #t #f
+              #f #t #t #f
               "1")
   ;; preserve from GC:
   (list s1 s2))

@@ -35,7 +35,7 @@
     (raise-argument-error 'dict-can-functional-set? "dict?" d))
   (dict-supports? d 'dict-set))
 
-(define (dict-has-key? d k)
+(define (fallback-has-key? d k)
   (define not-there (gensym))
   (not (eq? not-there (dict-ref d k not-there))))
 
@@ -63,7 +63,9 @@
     [(procedure? default) (default)]
     [else default]))
 
-(define (dict-ref! d key new)
+(define (fallback-ref! d key new)
+  (unless (dict-supports? d 'dict-set!)
+    (raise-argument-error 'dict-ref! "(dict-supports/c 'dict-set!)" d))
   (define not-there (gensym))
   (define v (dict-ref d key not-there))
   (if (eq? not-there v)
@@ -72,13 +74,21 @@
         n)
       v))
 
-(define (dict-set*! d . pairs)
-  (unless (even? (length pairs))
-    (error 'dict-set*! "expected an even number of association elements, but received an odd number: ~e" pairs))
-  (let loop ([pairs pairs])
-    (unless (null? pairs)
-      (dict-set! d (car pairs) (cadr pairs))
-      (loop (cddr pairs)))))
+(define (fallback-set*! d . pairs0)
+  (unless (dict-supports? d 'dict-set!)
+    (raise-argument-error 'dict-set*! "(dict-supports/c 'dict-set!)" d))
+  (let loop ([pairs pairs0])
+    (cond
+      [(null? pairs) (void)]
+      [(null? (cdr pairs))
+       (raise-arguments-error
+        'dict-set*!
+        "expected an even number of association elements, but received an odd number"
+        "association elements"
+        pairs0)]
+      [else
+       (dict-set! d (car pairs) (cadr pairs))
+       (loop (cddr pairs))])))
 
 (define (assoc-set d key val)
   (unless (assoc? d)
@@ -92,28 +102,43 @@
             (cons (cons key val) (cdr xd))
             (cons a (loop (cdr xd)))))])))
 
-(define (dict-set* d . pairs)
-    (unless (even? (length pairs))
-      (error 'dict-set* "expected an even number of association elements, but received an odd number: ~e" pairs))
-    (let loop ([d d]
-               [pairs pairs])
-      (if (null? pairs)
-          d
-          (loop (dict-set d (car pairs) (cadr pairs))
-                (cddr pairs)))))
+(define (fallback-set* d . pairs0)
+  (unless (dict-supports? d 'dict-set)
+    (raise-argument-error 'dict-set* "(dict-supports/c 'dict-set)" d))
+  (let loop ([d d]
+             [pairs pairs0])
+    (cond
+      [(null? pairs) d]
+      [(null? (cdr pairs))
+       (raise-arguments-error
+        'dict-set*
+        "expected an even number of association elements, but received an odd number"
+        "association elements"
+        pairs0)]
+      [else
+       (loop (dict-set d (car pairs) (cadr pairs))
+             (cddr pairs))])))
 
-(define dict-update!
+(define fallback-update!
   (case-lambda
    [(d key xform)
+    (unless (dict-supports? d 'dict-set!)
+      (raise-argument-error 'dict-update! "(dict-supports/c 'dict-set!)" d))
     (dict-set! d key (xform (dict-ref d key)))]
    [(d key xform default)
+    (unless (dict-supports? d 'dict-set!)
+      (raise-argument-error 'dict-update! "(dict-supports/c 'dict-set!)" d))
     (dict-set! d key (xform (dict-ref d key default)))]))
 
-(define dict-update
+(define fallback-update
   (case-lambda
    [(d key xform)
+    (unless (dict-supports? d 'dict-set)
+      (raise-argument-error 'dict-update "(dict-supports/c 'dict-set)" d))
     (dict-set d key (xform (dict-ref d key)))]
    [(d key xform default)
+    (unless (dict-supports? d 'dict-set)
+      (raise-argument-error 'dict-update "(dict-supports/c 'dict-set)" d))
     (dict-set d key (xform (dict-ref d key default)))]))
 
 (define (assoc-remove d key)
@@ -199,6 +224,103 @@
       i)]
     [else (raise-argument-error 'dict-iterate-value "dict?" d)]))
 
+(define (vector-has-key? vec key)
+  (and (exact-nonnegative-integer? key)
+       (< key (vector-length vec))))
+
+(define (vector-map-as-dict vec proc)
+  (unless (and (procedure? proc)
+               (procedure-arity-includes? proc 2))
+    (raise-argument-error 'dict-map "(procedure-arity-includes/c 2)" proc))
+  (for/list ([k (in-naturals)] [v (in-vector vec)])
+    (proc k v)))
+
+(define (vector-for-each vec proc)
+  (unless (and (procedure? proc)
+               (procedure-arity-includes? proc 2))
+    (raise-argument-error 'dict-for-each "(procedure-arity-includes/c 2)" proc))
+  (for ([k (in-naturals)] [v (in-vector vec)])
+    (proc k v)))
+
+(define (vector-keys vec)
+  (build-list (vector-length vec) values))
+
+(define (vector->assoc vec)
+  (for/list ([k (in-naturals)] [v (in-vector vec)])
+    (cons k v)))
+
+(define (vector-empty? vec)
+  (zero? (vector-length vec)))
+
+(define (assoc-has-key? d key)
+  (unless (assoc? d)
+    (raise-argument-error 'dict-has-key? "dict?" d))
+  (pair? (assoc key d)))
+
+(define (assoc-map d proc)
+  (for/list ([x (in-list d)])
+    (unless (pair? x)
+      (raise-argument-error 'dict-map "dict?" d))
+    (proc (car x) (cdr x))))
+
+(define (assoc-for-each d proc)
+  (for ([x (in-list d)])
+    (unless (pair? x)
+      (raise-argument-error 'dict-for-each "dict?" d))
+    (proc (car x) (cdr x))))
+
+(define (assoc-keys d)
+  (for/list ([x (in-list d)])
+    (unless (pair? x)
+      (raise-argument-error 'dict-keys "dict?" d))
+    (car x)))
+
+(define (assoc-values d)
+  (for/list ([x (in-list d)])
+    (unless (pair? x)
+      (raise-argument-error 'dict-values "dict?" d))
+    (cdr x)))
+
+(define (assoc-clear d) '())
+
+(define (fallback-clear d)
+  (unless (dict-supports? d 'dict-remove)
+    (raise-argument-error 'dict-clear "(dict-supports/c 'dict-remove)" d))
+  (for/fold ([d d]) ([k (in-dict-keys d)])
+    (dict-remove d k)))
+
+(define (fallback-clear! d)
+  (unless (dict-supports? d 'dict-remove!)
+    (raise-argument-error 'dict-clear! "(dict-supports/c 'dict-remove!)" d))
+  (let loop ()
+    (define i (dict-iterate-first d))
+    (when i
+      (dict-remove! d (dict-iterate-key d i))
+      (loop))))
+
+(define (fallback-empty? d)
+  (if (dict-iterate-first d) #t #f))
+
+(define (fallback-map d f)
+  (for/list ([(k v) (:in-dict d)])
+    (f k v)))
+
+(define (fallback-for-each d f)
+  (for ([(k v) (:in-dict d)])
+    (f k v)))
+
+(define (fallback-keys d)
+  (for/list ([k (:in-dict-keys d)])
+    k))
+
+(define (fallback-values d)
+  (for/list ([v (:in-dict-values d)])
+    v))
+
+(define (fallback->list d)
+  (for/list ([k*v (in-dict-pairs d)])
+    k*v))
+
 (define-primitive-generics
   (dict gen:dict prop:gen:dict prop:gen:dict-methods dict? dict-supports?)
   #:fast-defaults
@@ -210,7 +332,19 @@
     (define dict-iterate-first hash-iterate-first)
     (define dict-iterate-next hash-iterate-next)
     (define dict-iterate-key hash-iterate-key)
-    (define dict-iterate-value hash-iterate-value)]
+    (define dict-iterate-value hash-iterate-value)
+    (define dict-has-key? hash-has-key?)
+    (define dict-ref! hash-ref!)
+    (define dict-set*! hash-set*!)
+    (define dict-update! hash-update!)
+    (define dict-map hash-map)
+    (define dict-for-each hash-for-each)
+    (define dict-keys hash-keys)
+    (define dict-values hash-values)
+    (define dict->list hash->list)
+    (define dict-empty? hash-empty?)
+    (define dict-clear hash-clear)
+    (define dict-clear! hash-clear!)]
    [immutable-hash? immutable-hash?
     (define dict-ref hash-ref)
     (define dict-set hash-set)
@@ -219,7 +353,17 @@
     (define dict-iterate-first hash-iterate-first)
     (define dict-iterate-next hash-iterate-next)
     (define dict-iterate-key hash-iterate-key)
-    (define dict-iterate-value hash-iterate-value)]
+    (define dict-iterate-value hash-iterate-value)
+    (define dict-has-key? hash-has-key?)
+    (define dict-set* hash-set*)
+    (define dict-update hash-update)
+    (define dict-map hash-map)
+    (define dict-for-each hash-for-each)
+    (define dict-keys hash-keys)
+    (define dict-values hash-values)
+    (define dict->list hash->list)
+    (define dict-empty? hash-empty?)
+    (define dict-clear hash-clear)]
    [mutable-vector? mutable-vector?
     (define dict-ref vector-ref-as-dict)
     (define dict-set! vector-set!)
@@ -227,14 +371,28 @@
     (define dict-iterate-first vector-iterate-first)
     (define dict-iterate-next vector-iterate-next)
     (define dict-iterate-key vector-iterate-key)
-    (define dict-iterate-value vector-iterate-value)]
+    (define dict-iterate-value vector-iterate-value)
+    (define dict-has-key? vector-has-key?)
+    (define dict-map vector-map-as-dict)
+    (define dict-for-each vector-for-each)
+    (define dict-keys vector-keys)
+    (define dict-values vector->list)
+    (define dict->list vector->assoc)
+    (define dict-empty? vector-empty?)]
    [immutable-vector? immutable-vector?
     (define dict-ref vector-ref-as-dict)
     (define dict-count vector-length)
     (define dict-iterate-first vector-iterate-first)
     (define dict-iterate-next vector-iterate-next)
     (define dict-iterate-key vector-iterate-key)
-    (define dict-iterate-value vector-iterate-value)]
+    (define dict-iterate-value vector-iterate-value)
+    (define dict-has-key? vector-has-key?)
+    (define dict-map vector-map-as-dict)
+    (define dict-for-each vector-for-each)
+    (define dict-keys vector-keys)
+    (define dict-values vector->list)
+    (define dict->list vector->assoc)
+    (define dict-empty? vector-empty?)]
    [assoc? list?
     (define dict-ref assoc-ref)
     (define dict-set assoc-set)
@@ -243,9 +401,31 @@
     (define dict-iterate-first assoc-iterate-first)
     (define dict-iterate-next assoc-iterate-next)
     (define dict-iterate-key assoc-iterate-key)
-    (define dict-iterate-value assoc-iterate-value)])
+    (define dict-iterate-value assoc-iterate-value)
+    (define dict-has-key? assoc-has-key?)
+    (define dict-map assoc-map)
+    (define dict-for-each assoc-for-each)
+    (define dict-keys assoc-keys)
+    (define dict-values assoc-values)
+    (define dict->list values)
+    (define dict-empty? null?)
+    (define dict-clear assoc-clear)])
   #:defaults ()
-  #:fallbacks ()
+  #:fallbacks
+  [(define dict-has-key? fallback-has-key?)
+   (define dict-ref! fallback-ref!)
+   (define dict-set*! fallback-set*!)
+   (define dict-set* fallback-set*)
+   (define dict-update! fallback-update!)
+   (define dict-update fallback-update)
+   (define dict-map fallback-map)
+   (define dict-for-each fallback-for-each)
+   (define dict-keys fallback-keys)
+   (define dict-values fallback-values)
+   (define dict->list fallback->list)
+   (define dict-empty? fallback-empty?)
+   (define dict-clear fallback-clear)
+   (define dict-clear! fallback-clear!)]
   #:derive-properties ()
   (dict-ref  dict key [default])
   (dict-set! dict key val)
@@ -256,7 +436,21 @@
   (dict-iterate-first dict)
   (dict-iterate-next dict pos)
   (dict-iterate-key dict pos)
-  (dict-iterate-value dict pos))
+  (dict-iterate-value dict pos)
+  (dict-has-key? dict key)
+  (dict-ref! dict key default)
+  (dict-set*! dict . pairs)
+  (dict-set* dict . pairs)
+  (dict-update! dict key proc [default])
+  (dict-update dict key proc [default])
+  (dict-map dict proc)
+  (dict-for-each dict proc)
+  (dict-keys dict)
+  (dict-values dict)
+  (dict->list dict)
+  (dict-empty? dict)
+  (dict-clear dict)
+  (dict-clear! dict))
 
 (define (check-method who v i req? name arity [alt #f])
   (define m (vector-ref v i))
@@ -411,26 +605,6 @@
              val-true
              val+pos-true))))
 
-(define (dict-map d f)
-  (for/list ([(k v) (:in-dict d)])
-    (f k v)))
-
-(define (dict-for-each d f)
-  (for ([(k v) (:in-dict d)])
-    (f k v)))
-
-(define (dict-keys d)
-  (for/list ([k (:in-dict-keys d)])
-    k))
-
-(define (dict-values d)
-  (for/list ([v (:in-dict-values d)])
-    v))
-
-(define (dict->list d)
-  (for/list ([k*v (in-dict-pairs d)])
-    k*v))
-
 ;; ----------------------------------------
 
 (struct hash-box (key))
@@ -485,7 +659,104 @@
 (define (custom-hash-iterate-value d i)
   (hash-iterate-value (custom-hash-table d) i))
 
-(struct custom-hash (table make-box)
+(define (custom-hash-has-key? d key)
+  (hash-has-key? (custom-hash-table d) ((custom-hash-make-box d) key)))
+
+(define (custom-hash-ref! d key new)
+  (hash-ref! (custom-hash-table d) ((custom-hash-make-box d) key) new))
+
+(define (custom-hash-set*! d . pairs0)
+  (define table (custom-hash-table d))
+  (define make-box (custom-hash-make-box d))
+  (let loop ([pairs pairs0])
+    (cond
+      [(null? pairs) (void)]
+      [(null? (cdr pairs))
+       (raise-arguments-error
+        'dict-set*!
+        "expected an even number of association elements, but received an odd number"
+        "association elements"
+        pairs0)]
+      [else
+       (hash-set! table (make-box (car pairs)) (cadr pairs))
+       (loop (cddr pairs))])))
+
+(define (custom-hash-set* d . pairs0)
+  (define make-box (custom-hash-make-box d))
+  (let loop ([table (custom-hash-table d)]
+             [pairs pairs0])
+    (cond
+      [(null? pairs) (immutable-custom-hash table make-box)]
+      [(null? (cdr pairs))
+       (raise-arguments-error
+        'dict-set*
+        "expected an even number of association elements, but received an odd number"
+        "association elements"
+        pairs0)]
+      [else
+       (loop (hash-set table (make-box (car pairs)) (cadr pairs))
+             (cddr pairs))])))
+
+(define custom-hash-update!
+  (case-lambda
+    [(d key proc)
+     (define make-box (custom-hash-make-box d))
+     (hash-update! (custom-hash-table d) (make-box key) proc)]
+    [(d key proc new)
+     (define make-box (custom-hash-make-box d))
+     (hash-update! (custom-hash-table d) (make-box key) proc new)]))
+
+(define custom-hash-update
+  (case-lambda
+    [(d key proc)
+     (define make-box (custom-hash-make-box d))
+     (define table (hash-update (custom-hash-table d) (make-box key) proc))
+     (immutable-custom-hash table make-box)]
+    [(d key proc new)
+     (define make-box (custom-hash-make-box d))
+     (define table (hash-update (custom-hash-table d) (make-box key) proc new))
+     (immutable-custom-hash table make-box)]))
+
+(define (custom-hash-map d proc)
+  (hash-map (custom-hash-table d)
+            (lambda (boxed val)
+              (proc (hash-box-key boxed) val))))
+
+(define (custom-hash-for-each d proc)
+  (hash-for-each (custom-hash-table d)
+                 (lambda (boxed val)
+                   (proc (hash-box-key boxed) val))))
+
+;; custom-hash-keys, -values, and ->list:
+;; We use for/fold rather than for/list to save on the final reverse
+;; because the order is nondeterministic anyway.
+
+(define (custom-hash-keys d)
+  (for/fold ([keys '()]) ([boxed (in-hash-keys (custom-hash-table d))])
+    (cons (hash-box-key boxed) keys)))
+
+(define (custom-hash-values d)
+  (for/fold ([vals '()]) ([val (in-hash-values (custom-hash-table d))])
+    (cons val vals)))
+
+(define (custom-hash->list d)
+  (for/fold ([pairs '()]) ([(boxed val) (in-hash (custom-hash-table d))])
+    (cons (cons (hash-box-key boxed) val) pairs)))
+
+(define (custom-hash-empty? d)
+  (hash-empty? (custom-hash-table d)))
+
+(define (custom-hash-clear d)
+  (if (immutable-custom-hash? d)
+      (immutable-custom-hash (hash-clear (custom-hash-table d))
+                             (custom-hash-make-box d))
+      (custom-hash (hash-clear (custom-hash-table d))
+                   (custom-hash-make-box d))))
+
+(define (custom-hash-clear! d)
+  (set-custom-hash-table! d (hash-clear (custom-hash-table d))))
+
+(struct custom-hash ([table #:mutable] make-box)
   #:methods gen:dict
   [(define dict-ref custom-hash-ref)
    (define dict-set! custom-hash-set!)
@@ -494,7 +765,19 @@
    (define dict-iterate-first custom-hash-iterate-first)
    (define dict-iterate-next custom-hash-iterate-next)
    (define dict-iterate-key custom-hash-iterate-key)
-   (define dict-iterate-value custom-hash-iterate-value)]
+   (define dict-iterate-value custom-hash-iterate-value)
+   (define dict-has-key? custom-hash-has-key?)
+   (define dict-ref! custom-hash-ref!)
+   (define dict-set*! custom-hash-set*!)
+   (define dict-update! custom-hash-update!)
+   (define dict-map custom-hash-map)
+   (define dict-for-each custom-hash-for-each)
+   (define dict-keys custom-hash-keys)
+   (define dict-values custom-hash-values)
+   (define dict->list custom-hash->list)
+   (define dict-empty? custom-hash-empty?)
+   (define dict-clear custom-hash-clear)
+   (define dict-clear! custom-hash-clear!)]
   #:methods gen:equal+hash
   [(define (equal-proc a b recur)
      (and (recur (custom-hash-make-box a)
@@ -515,7 +798,17 @@
    (define dict-iterate-first custom-hash-iterate-first)
    (define dict-iterate-next custom-hash-iterate-next)
    (define dict-iterate-key custom-hash-iterate-key)
-   (define dict-iterate-value custom-hash-iterate-value)])
+   (define dict-iterate-value custom-hash-iterate-value)
+   (define dict-has-key? custom-hash-has-key?)
+   (define dict-set* custom-hash-set*)
+   (define dict-update custom-hash-update)
+   (define dict-map custom-hash-map)
+   (define dict-for-each custom-hash-for-each)
+   (define dict-keys custom-hash-keys)
+   (define dict-values custom-hash-values)
+   (define dict->list custom-hash->list)
+   (define dict-empty? custom-hash-empty?)
+   (define dict-clear custom-hash-clear)])
           
 (define-values (create-custom-hash 
                 create-immutable-custom-hash
@@ -592,6 +885,10 @@
          dict-keys
          dict-values
          dict->list
+         dict-clear
+         dict-clear!
+         dict-empty?
+         dict-supports?
          (rename-out [create-custom-hash make-custom-hash]
                      [create-immutable-custom-hash make-immutable-custom-hash])
          make-weak-custom-hash
