@@ -1289,6 +1289,21 @@ Extracts the length of an array. For a multidimensional array, the
 result is still a single number; extract an element to get
 a sub-array to get the length of the next dimension, and so on.}
 
+@defproc[(array-type [a array?]) ctype?]{
+
+Extracts the type of the array. For a multidimensional array, the
+result is the ctype of the nested array.}
+
+@defproc[(in-array [a array?]
+                  [start exact-nonnegative-integer? 0]
+                  [stop (or/c exact-integer? #f) #f]
+                  [step (and/c exact-integer? (not/c zero?)) 1])
+         sequence?]{
+  Returns a sequence equivalent to @racket[a] when no optional
+  arguments are supplied.
+
+  The optional arguments @racket[start], @racket[stop], and
+  @racket[step] are as in @racket[in-vector].}
 
 @defproc[(_array/list [type ctype?] [count exact-nonnegative-integer?] ...+)
          ctype?]{
