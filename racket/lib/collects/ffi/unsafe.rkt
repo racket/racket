@@ -1,7 +1,7 @@
 #lang racket/base
 
 ;; Foreign Racket interface
-(require '#%foreign setup/dirs racket/unsafe/ops
+(require '#%foreign setup/dirs racket/unsafe/ops racket/private/for
          (for-syntax racket/base racket/list syntax/stx
                      racket/struct-info))
 
@@ -998,8 +998,9 @@
 
 ;; (_array <type> <len> ...+)
 (provide _array
-         array? array-length array-ptr
-         (protect-out array-ref array-set!))
+         array? array-length array-ptr array-type
+         (protect-out array-ref array-set!)
+         (rename-out [*in-array in-array]))
 
 (define _array
   (case-lambda
@@ -1038,6 +1039,22 @@
         (if (null? is)
             (array-set! a i v)
             (loop (array-ref a (car is)) (cdr is)))))]))
+
+;; (in-aray array [start stop step])
+;; in-vector like sequence over array
+(define-:vector-like-gen :array-gen array-ref)
+
+(define-in-vector-like in-array
+  "array" array? array-length :array-gen)
+
+(define-sequence-syntax *in-array
+  (lambda () #'in-array)
+  (make-in-vector-like 'in-array
+                       "array"
+                       #'array?
+                       #'array-length
+                       #'in-array
+                       #'array-ref))
 
 ;; (_array/list <type> <len> ...+)
 ;; Like _list, but for arrays instead of pointers at the C level.

@@ -527,6 +527,23 @@
   (check (lambda (f) (f)) add1)
   (check (box 20) (lambda (x) 20)))
 
+;; check in-array
+(let ()
+  (define _t (_array _int 6))
+  (define ar (ptr-ref (malloc _t) _t))
+  (for ([i (array-length ar)])
+    (array-set! ar i (+ 10 i)))
+
+  (test '(10 11 12 13 14 15) values (for/list ([a (in-array ar)]) a))
+  (test '(11 12 13 14 15) values (for/list ([a (in-array ar 1)]) a))
+  (test '(11 12) values (for/list ([a (in-array ar 1 3)]) a))
+  (test '(10 12 14) values (for/list ([a (in-array ar 0 #f 2)]) a))
+
+  (define seq (in-array ar))
+  (test '(10 11 12 13 14 15) values (for/list ([a seq]) a))
+
+  (err/rt-test (in-array '(1 2 3)) exn:fail:contract?))
+
 ;; ----------------------------------------
 
 (report-errs)
