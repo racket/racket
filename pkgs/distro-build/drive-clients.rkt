@@ -18,7 +18,7 @@
 
 ;; ----------------------------------------
 
-(define release? #f)
+(define default-release? #f)
 (define default-clean? #f)
 
 (define-values (config-file config-mode
@@ -27,7 +27,7 @@
   (command-line
    #:once-each
    [("--release") "Create release-mode installers"
-    (set! release? #t)]
+    (set! default-release? #t)]
    [("--clean") "Erase client directories before building"
     (set! default-clean? #t)]
    #:args (config-file config-mode 
@@ -237,6 +237,8 @@
                        default-dist-dir))
   (define dist-suffix (get-opt c '#:dist-suffix ""))
   (define dist-catalogs (choose-catalogs c '("")))
+  (define release? (get-opt c '#:release? default-release?))
+  (define source? (get-opt c '#:source? #f))
   (~a " SERVER=" server
       " PKGS=" (q pkgs)
       " DOC_SEARCH=" (q doc-search)
@@ -247,6 +249,7 @@
       " DIST_SUFFIX=" (q dist-suffix)
       " DIST_CATALOGS_q=" (qq dist-catalogs kind)
       " RELEASE_MODE=" (if release? "--release" (q ""))
+      " SOURCE_MODE=" (if source? "--source" (q ""))
       " README=" (q (file-name-from-path readme))))
 
 (define (unix-build c host port user server repo clean? pull? readme)

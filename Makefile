@@ -118,6 +118,9 @@ SERVER = localhost
 # snapshot installers):
 RELEASE_MODE =
 
+# Set to "--source" to create a source "installer":
+SOURCE_MODE =
+
 # Human-readable name (spaces allowed), installation name base, and
 # Unix installation directory name for the generated installers:
 DIST_NAME = Racket
@@ -327,7 +330,8 @@ client:
 	$(MAKE) bundle-config
 	$(MAKE) installer-from-bundle
 
-COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" RELEASE_MODE=$(RELEASE_MODE) \
+COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" \
+	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) \
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
             DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) \
             DIST_DESC="$(DIST_DESC)" README="$(README)" \
@@ -356,12 +360,13 @@ bundle-from-server:
 	$(RACKET) -l setup/unixstyle-install bundle racket bundle/racket
 	$(RACKET) -l distro-build/unpack-collects http://$(SERVER):9440/
 	bundle/racket/bin/raco pkg install $(REMOTE_INST_AUTO) $(PKGS) $(REQUIRED_PKGS)
+	$(RACKET) -l setup/unixstyle-install post-adjust$(SOURCE_MODE) racket bundle/racket
 
 bundle-config:
 	$(RACKET) -l distro-build/set-config $(BUNDLE_CONFIG) "" "" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 
 UPLOAD_q = --readme http://$(SERVER):9440/$(README) --upload http://$(SERVER):9440/ --desc "$(DIST_DESC)"
-DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"
+DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"
 
 # Create an installer from the build (with installed packages) that's
 # in "bundle/racket":
@@ -374,7 +379,7 @@ win32-distro-build-from-server:
 win32-bundle:
 	IF EXIST bundle cmd /c rmdir /S /Q bundle
 	cmd /c mkdir bundle\racket
-	$(WIN32_RACKET) -l setup/unixstyle-install bundle racket bundle\racket
+	$(WIN32_RACKET) -l setup/unixstyle-install bundle$(SOURCE_MODE) racket bundle\racket
 	$(WIN32_RACKET) -l setup/winstrip bundle\racket
 	$(WIN32_RACKET) -l setup/winvers-change bundle\racket
 
@@ -390,7 +395,7 @@ win32-installer-from-bundle:
 # ------------------------------------------------------------
 # Drive installer build across server and clients:
 
-DRIVE_ARGS_q = $(RELEASE_MODE) $(CLEAN_MODE) "$(CONFIG)" "$(CONFIG_MODE)" \
+DRIVE_ARGS_q = $(RELEASE_MODE) $(SOURCE_MODE) $(CLEAN_MODE) "$(CONFIG)" "$(CONFIG_MODE)" \
                $(SERVER) "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
 DRIVE_CMD_q = $(RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS_q)
 

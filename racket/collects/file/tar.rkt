@@ -43,14 +43,16 @@
 
 (define 0-byte (char->integer #\0))
 
-(define ((tar-one-entry buf) path)
+(define ((tar-one-entry buf prefix) path)
   (let* ([link?   (link-exists? path)]
          [dir?    (and (not link?) (directory-exists? path))]
          [size    (if (or dir? link?) 0 (file-size path))]
          [p       0] ; write pointer
          [cksum   0]
          [cksum-p #f])
-    (define-values (file-name file-prefix) (split-tar-name path))
+    (define-values (file-name file-prefix) (split-tar-name (if prefix
+                                                               (build-path prefix path)
+                                                               path)))
     (define-syntax advance (syntax-rules () [(_ l) (set! p (+ p l))]))
     (define (write-block* len bts) ; no padding required
       (when bts
@@ -127,29 +129,36 @@
 ;; tar-write : (listof relative-path) ->
 ;; writes a tar file to current-output-port
 (provide tar->output)
-(define (tar->output files [out (current-output-port)])
+(define (tar->output files [out (current-output-port)]
+                     #:path-prefix [prefix #f])
   (parameterize ([current-output-port out])
-    (let* ([buf (new-block)] [entry (tar-one-entry buf)])
+    (let* ([buf (new-block)] [entry (tar-one-entry buf prefix)])
       (for-each entry files)
       ;; two null blocks end-marker
       (write-bytes buf) (write-bytes buf))))
 
 ;; tar : output-file paths ->
 (provide tar)
-(define (tar tar-file . paths)
+(define (tar tar-file
+             #:path-prefix [prefix #f]
+             . paths)
   (when (null? paths) (error 'tar "no paths specified"))
   (with-output-to-file tar-file
-    (lambda () (tar->output (pathlist-closure paths #:follow-links? #f)))))
+    (lambda () (tar->output (pathlist-closure paths #:follow-links? #f)
+                            #:path-prefix prefix))))
 
 ;; tar-gzip : output-file paths ->
 (provide tar-gzip)
-(define (tar-gzip tgz-file . paths)
+(define (tar-gzip tgz-file
+                  #:path-prefix [prefix #f]
+                  . paths)
   (when (null? paths) (error 'tar-gzip "no paths specified"))
   (with-output-to-file tgz-file
     (lambda ()
       (let-values ([(i o) (make-pipe)])
         (thread (lambda ()
-                  (tar->output (pathlist-closure paths #:follow-links? #f) o)
+                  (tar->output (pathlist-closure paths #:follow-links? #f) o
+                               #:path-prefix prefix)
                   (close-output-port o)))
         (gzip-through-ports
          i (current-output-port)

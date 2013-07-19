@@ -136,6 +136,8 @@
     [(#:repo) (string? val)]
     [(#:clean?) (boolean? val)]
     [(#:pull?) (boolean? val)]
+    [(#:release?) (boolean? val)]
+    [(#:source?) (boolean? val)]
     [(#:site-dest) (path-string? val)]
     [(#:pdf-doc?) (boolean? val)]
     [(#:max-snapshots) (real? val)]
