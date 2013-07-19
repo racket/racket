@@ -42,7 +42,7 @@ char *binary_type_hack = "bINARy tYPe:ezic";
    among embedding exectuables that have different collection
    paths. */
 char *_coldir = "coLLECTs dIRECTORy:" /* <- this tag stays, so we can find it again */
-                "../lib/collects"
+                "../collects"
                 "\0\0" /* <- 1st nul terminates path, 2nd terminates path list */
                 /* Pad with at least 1024 bytes: */
                 "****************************************************************"

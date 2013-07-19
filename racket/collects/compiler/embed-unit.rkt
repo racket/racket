@@ -1493,11 +1493,11 @@
                       (cond
                        [osx?
                         ;; default path in `gracket' is off by one:
-                        (set-collects-path dest-exe #"../../../lib/collects")]
+                        (set-collects-path dest-exe #"../../../collects")]
                        [(eq? 'windows (system-type))
                         (unless keep-exe?
                           ;; off by one in this case, too:
-                          (set-collects-path dest-exe #"lib/collects"))])])
+                          (set-collects-path dest-exe #"collects"))])])
                     (cond
                       [(and use-starter-info? osx?)
                        (finish-osx-mred dest full-cmdline exe keep-exe? relative?)]

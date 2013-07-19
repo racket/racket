@@ -52,7 +52,7 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv);
 
 #if WIN32
 # define DLL_RELATIVE_PATH L"."
-# define INITIAL_COLLECTS_DIRECTORY "collects"
+# define INITIAL_COLLECTS_DIRECTORY "../collects"
 #endif
 
 #ifndef INITIAL_CONFIG_DIRECTORY
