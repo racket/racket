@@ -2,6 +2,7 @@ Version 5.90.0.1
 Added "share" directory, moved "pkgs" there; moved "collects"
  back out of "lib"
 setup/dirs: added find-share-dir, find-user-share-dir
+ffi/unsafe: added array-type and in-array
 
 Version 5.3.900.7
 Changed equal? to work on module path index values
