@@ -26,12 +26,12 @@
 ;; of the old identifier.
 ;; This relies on the identifiers being bound at phase 0 in this module (which they are,
 ;; because we have a phase 0 require of "base-env.rkt").
+(initialize-type-names)
 (for ([pr (type-alias-env-map cons)])
   (let ([nm (car pr)]
         [ty (cdr pr)])
     (register-resolved-type-alias (datum->syntax #'here (syntax->datum nm)) ty)))
 
-(initialize-type-names)
 
 (define-syntax (run-one stx)
   (syntax-case stx ()
