@@ -446,14 +446,16 @@
                                          (if (path? module-path)
                                              (path->complete-path module-path)
                                              module-path)])
-                                    (syntax-case (expand `(,#'module m racket/base
-                                                            (#%require (only ,module-path)
-								       racket/runtime-path)
-                                                            (runtime-paths ,module-path))) (quote)
-                                      [(_ m mz (#%mb rfs req (quote (spec ...))))
+                                    (define e (expand `(,#'module m racket/kernel
+                                                         (#%require (only ,module-path)
+                                                                    racket/runtime-path)
+                                                         (runtime-paths ,module-path))))
+                                    (syntax-case e (quote)
+                                      [(_ m mz (#%mb req (quote (spec ...))))
                                        (syntax->datum #'(spec ...))]
                                       [_else (error 'create-empbedding-executable
-                                                    "expansion mismatch when getting external paths")]))))]
+                                                    "expansion mismatch when getting external paths: ~e"
+                                                    (syntax->datum e))]))))]
                            
                            [extra-runtime-paths (filter
                                                  values
