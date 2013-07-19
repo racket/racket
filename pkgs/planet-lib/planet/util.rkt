@@ -4,9 +4,9 @@
          planet/planet-archives
          
          planet/private/planet-shared
-         "private/linkage.rkt"
+         planet/private/linkage
          
-         "private/resolver.rkt"
+         planet/private/resolver
          "private/version.rkt"
          
          net/url
