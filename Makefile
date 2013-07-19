@@ -19,7 +19,9 @@
 #
 #  installers = `server' plus `client' via $(CONFIG)
 
-DEFAULT_PKGS = main-distribution plt-services
+# Packages (separated by spaces) to link in development mode or
+# to include in a distribution:
+PKGS = main-distribution plt-services
 
 # ------------------------------------------------------------
 # In-place build
@@ -28,6 +30,8 @@ PLAIN_RACKET = racket/bin/racket
 WIN32_PLAIN_RACKET = racket\racket
 
 MACOSX_CHECK = $(PLAIN_RACKET) -I racket/base -e '(case (system-type) [(macosx) (exit 0)] [else (exit 1)])'
+
+LINK_MODE = --save
 
 CPUS = 
 
@@ -94,9 +98,6 @@ racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
 # single-quote and double-quote marks. If a variable's name does not
 # end in "_q" or "_qq", don't use any quote marks on the right-hand
 # side of its definition.
-
-# Packages (separated by spaces) to include in a distribution:
-PKGS = $(DEFAULT_PKGS)
 
 # Catalog for sources and native packages; use "local" to bootstrap
 # from package directories (in the same directory as this makefile)
@@ -171,11 +172,11 @@ DISTRO_BUILD_PKGS = distro-build
 DISTBLD = pkgs/distro-build
 
 # Helper macros:
-ADDON = build/user
-RACKET = racket/bin/racket -A "$(ADDON)"
-RACO = racket/bin/racket -A "$(ADDON)" -N raco -l- raco
-WIN32_RACKET = racket\racket -A "$(ADDON)"
-WIN32_RACO = racket\racket -A "$(ADDON)" -N raco -l- raco
+USER_CONFIG = -G build/user/config -A build/user
+RACKET = racket/bin/racket $(USER_CONFIG)
+RACO = racket/bin/racket $(USER_CONFIG) -N raco -l- raco
+WIN32_RACKET = racket\racket $(USER_CONFIG)
+WIN32_RACO = racket\racket $(USER_CONFIG) -N raco -l- raco
 X_AUTO_OPTIONS = --skip-installed --deps search-auto $(JOB_OPTIONS)
 USER_AUTO_OPTIONS = --scope user $(X_AUTO_OPTIONS)
 LOCAL_USER_AUTO = --catalog build/local/catalog $(USER_AUTO_OPTIONS)
@@ -189,7 +190,6 @@ BUNDLE_CONFIG = bundle/racket/etc/config.rktd
 # Linking all packages (development mode; not an installer build)
 
 LINK_ALL = -U -G build/config racket/src/link-all.rkt ++dir pkgs ++dir build/native-pkgs
-LINK_MODE = --save
 
 pkg-links:
 	$(PLAIN_RACKET) $(LINK_ALL) $(LINK_MODE) $(PKGS) $(REQUIRED_PKGS)
@@ -315,12 +315,12 @@ binary-catalog-server:
 # `distro-buid/drive-clients', which is in turn run by the
 # `installers' target.
 #
-# For a non-Windows machine, if "build/drive" exists, then
+# For a non-Windows machine, if "build/log" exists, then
 # keep the "build/user" directory on the grounds that the
 # client is the same as the server.
 
 client:
-	if [ ! -d build/drive ] ; then rm -rf build/user ; fi
+	if [ ! -d build/log ] ; then rm -rf build/user ; fi
 	$(MAKE) core
 	$(MAKE) distro-build-from-server
 	$(MAKE) bundle-from-server

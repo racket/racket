@@ -28,9 +28,10 @@
 (define ht
   (hash 'doc-dir (build-path/s "doc")
         'lib-dir (build-path/s "lib")
+        'share-dir (build-path/s "share")
         'dll-dir (build-path/s "lib")
-        'links-file (build-path/s "lib" "links.rktd")
-        'pkgs-dir (build-path/s "lib" "pkgs")
+        'links-file (build-path/s "share" "links.rktd")
+        'pkgs-dir (build-path/s "share" "pkgs")
         'bin-dir (build-path/s "bin")
         'include-dir (build-path/s "include")
         'catalogs (map build-path/f catalogs)))

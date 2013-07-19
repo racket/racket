@@ -534,6 +534,15 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    but the original file is removed after it is copied (which makes sense
    for precompiled packages).}
 
+ @item{@indexed-racket[copy-shared-files] : @racket[(listof (and/c
+   path-string? relative-path?))] --- Files to copy into a
+   directory where shared files are found.}
+
+ @item{@indexed-racket[move-shared-files] : @racket[(listof (and/c
+   path-string? relative-path?))] --- Like @racket[copy-shared-files],
+   but the original file is removed after it is copied (which makes sense
+   for precompiled packages).}
+
  @item{@indexed-racket[copy-man-pages] : @racket[(listof (and/c
    path-string? relative-path? filename-extension))] --- Files to copy
    into a @tt{man} directory. The file suffix determines its category;
@@ -1020,6 +1029,19 @@ v
   libraries and other build information. The result is @racket[#f] if no such
   directory is available.}
 
+@defproc[(find-user-lib-dir) path?]{
+  Returns a path to a user-specific @filepath{lib} directory; the directory
+  indicated by the returned path may or may not exist.}
+
+@defproc[(find-share-dir) (or/c path? #f)]{ Returns a path to the
+  installation's @filepath{share} directory, which contains installed
+  packages and other platform-independent files. The result is
+  @racket[#f] if no such directory is available.}
+
+@defproc[(find-user-share-dir) path?]{
+  Returns a path to a user-specific @filepath{share} directory; the directory
+  indicated by the returned path may or may not exist.}
+
 @defproc[(find-dll-dir) (or/c path? #f)]{
   Returns a path to the directory that contains DLLs for use with the
   current executable (e.g., @filepath{libmzsch.dll} on Windows).
@@ -1027,12 +1049,8 @@ v
   specific directory is available (i.e., other than the platform's normal
   search path).}
 
-@defproc[(find-user-lib-dir) path?]{
-  Returns a path to a user-specific @filepath{lib} directory; the directory
-  indicated by the returned path may or may not exist.}
-
 @defproc[(get-lib-search-dirs) (listof path?)]{
-  Returns a list of paths to search for libraries. Unless it is
+  Returns a list of paths to search for foreign libraries. Unless it is
   configured otherwise, the result includes any non-@racket[#f] result of
   @racket[(find-lib-dir)], @racket[(find-dll-dir)],
   and @racket[(find-user-lib-dir)]---but the last is included only if the

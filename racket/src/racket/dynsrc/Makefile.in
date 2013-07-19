@@ -5,10 +5,14 @@
 # dynlink is a script that uses the right set of link commands
 DYNLINK = mzc --ld 
 
+PACKAGE = racket
+
 srcdir = @srcdir@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
 libpltdir = @libpltdir@
+sharepltdir = @sharepltdir@
 builddir = @builddir@
 
 MZSRC = $(srcdir)/../src

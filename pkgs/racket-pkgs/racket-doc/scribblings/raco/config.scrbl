@@ -27,12 +27,12 @@ directory:
 
  @item{@racket['doc-dir] --- a path, string, or byte string for the
        main documentation directory. The value defaults to a
-       @filepath{doc} sibling directory of the parent of the 
+       @filepath{doc} sibling directory of the
        main collection directory.}
 
  @item{@racket['lib-dir] --- a path, string, or byte string for the
-       main library directory; it defaults to the parent
-       directory of the main collection directory.}
+       main library directory; it defaults to a @filepath{lib}
+       sibling directory of the main collection directory.}
 
  @item{@racket['lib-search-dirs] --- a list of paths, strings, byte
        strings, or @racket[#f] representing the search path for
@@ -42,27 +42,32 @@ directory:
        directory followed by the main library directory.}
 
  @item{@racket['dll-dir] --- a path, string, or byte string for a
-       directory containing Unix shared libraries for the main
+       directory containing shared libraries for the main
        executable; it defaults to the main library directory.}
+
+ @item{@racket['share-dir] --- a path, string, or byte string for the
+       main shared-file directory, which normally includes installed packages;
+       it defaults to a @filepath{share} sibling directory of the main
+       collection directory.}
 
  @item{@racket['links-file] --- a path, string, or byte string for the
        @tech[#:doc reference-doc]{collection links file}; it defaults
-       to a @filepath{links.rktd} file in the parent of the main
-       collection directory.}
+       to a @filepath{links.rktd} file in the @filepath{share} sibling
+       of the main collection directory.}
 
  @item{@racket['links-search-files] --- like @racket['lib-search-dirs],
        but for @tech[#:doc reference-doc]{collection links file}.}
 
  @item{@racket['pkgs-dir] --- a path, string, or byte string for
        packages that have installation scope; it defaults to
-       @filepath{pkgs} in the main library directory.}
+       @filepath{pkgs} in the main shared-file directory.}
 
  @item{@racket['pkgs-search-dirs] --- like @racket['lib-search-dirs],
        but for packages in installation scope.}
 
  @item{@racket['bin-dir] --- a path, string, or byte string for the
        main directory containing executables; it defaults to a
-       @filepath{bin} sibling directory of the parent of the main collection
+       @filepath{bin} sibling directory of the main collection
        directory.}
 
  @item{@racket['doc-search-dirs] --- like @racket['lib-search-dirs],
@@ -70,7 +75,7 @@ directory:
 
  @item{@racket['include-dir] --- a path, string, or byte string for
        the main directory containing C header files; it defaults to an
-       @filepath{include} sibling directory of the main library
+       @filepath{include} sibling directory of the main collection
        directory.}
 
  @item{@racket['include-search-dirs] --- like

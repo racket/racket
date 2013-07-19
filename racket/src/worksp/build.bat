@@ -10,6 +10,7 @@ if defined VCEXP set DEVENV=%VCEXP%
 
 if not exist ..\..\etc  mkdir ..\..\etc
 if not exist ..\..\doc  mkdir ..\..\doc
+if not exist ..\..\share  mkdir ..\..\share
 
 if not defined BUILD_CONFIG set BUILD_CONFIG=..\..\etc
 
@@ -49,11 +50,11 @@ cd mzcom
 if errorlevel 1 exit /B 1
 cd ..
 
-copy ..\COPYING-libscheme.txt ..\..\lib\
+copy ..\COPYING-libscheme.txt ..\..\share\
 if errorlevel 1 exit /B 1
-copy ..\COPYING_LESSER.txt ..\..\lib\
+copy ..\COPYING_LESSER.txt ..\..\share\
 if errorlevel 1 exit /B 1
-copy ..\COPYING.txt ..\..\lib\
+copy ..\COPYING.txt ..\..\share\
 if errorlevel 1 exit /B 1
 
 ..\..\racket -G %BUILD_CONFIG% -N "raco setup" %SELF_RACKET_FLAGS% -l- setup %PLT_SETUP_OPTIONS%

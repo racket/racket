@@ -212,7 +212,6 @@ Function myTestInstDir
   IfFileExists "$INSTDIR\Racket.exe" racket_is_installed
   @(if auto-launch @~a{IfFileExists "$INSTDIR\${RKTLaunchProgram}.exe" racket_is_installed} "")
   IfFileExists "$INSTDIR\collects"     racket_is_installed
-  IfFileExists "$INSTDIR\lib\collects" racket_is_installed
   Goto racket_is_not_installed
   racket_is_installed:
     IfFileExists "${UNINSTEXE}" we_have_uninstall
@@ -320,7 +319,7 @@ Function un.myGUIInit
   IfFileExists "$INSTDIR\Racket.exe"   racket_is_installed_un
   IfFileExists "$INSTDIR\lib\GRacket.exe"  racket_is_installed_un
   @(if auto-launch @~a{IfFileExists "$INSTDIR\${RKTLaunchProgram}.exe" racket_is_installed_un} "")
-  IfFileExists "$INSTDIR\lib\collects" racket_is_installed_un
+  IfFileExists "$INSTDIR\collects" racket_is_installed_un
     MessageBox MB_YESNO "It does not appear that Racket is installed in '$INSTDIR'.$\r$\nContinue anyway (not recommended)?" /SD IDYES IDYES racket_is_installed_un
     Abort "Uninstall aborted by user"
   racket_is_installed_un:
@@ -336,6 +335,7 @@ Section "Uninstall"
     Delete "$INSTDIR\README*.*"
     RMDir /r "$INSTDIR\include"
     RMDir /r "$INSTDIR\lib"
+    RMDir /r "$INSTDIR\share"
     RMDir /r "$INSTDIR\etc"
     RMDir /r "$INSTDIR\doc"
     ;; these exist in Racket-Full installations

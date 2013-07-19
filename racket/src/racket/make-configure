@@ -8,10 +8,11 @@ echo "Creating $tgt from $src"
 if [ -e "$tgt" ]; then
   /bin/echo -n "overwriting $tgt, Ctrl-C to abort, enter to continue "; read R;
 fi
-autoconf "$src" | racket -qr "$0" > "$tgt"
+autoconf "$src" | racket "$0" > "$tgt"
 chmod +x "$tgt"
 exit 0
 |#
+#lang racket/base
 
 ;; When autoconf produces `configure', it includes many
 ;;  options that do not apply to Racket.  We want to
@@ -31,7 +32,7 @@ exit 0
 	 oldincludedir
 	 infodir
          htmldir
-         dvidir
+         ;; dvidir - converted to "collectsdir"
          pdfdir
          psdir
          localedir)))
@@ -62,6 +63,16 @@ exit 0
                   indent)
           (displayln l2))
         (loop #f)]
+       [(regexp-match #rx"dvidir" l)
+        ;; Hack: take over "dvidir" for "collectsdir":
+        (cond
+         [(equal? l "dvidir='${docdir}'")
+          (displayln "collectsdir='${exec_prefix}/share/${PACKAGE}/collects'")]
+         [(equal? l "  --dvidir=DIR           dvi documentation [DOCDIR]")
+          (displayln "  --collectsdir=DIR      collects documentation [EPREFIX/share/PACKAGE/collects]")]
+         [else
+          (displayln (regexp-replace* #rx"dvi" l "collects"))])
+        (loop in-subconfig?)]
        [else
         ;; Copy
         (displayln l)

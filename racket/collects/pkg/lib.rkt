@@ -2191,7 +2191,7 @@
   (define default (db:current-pkg-catalog-file))
   (if (file-exists? default)
       default
-      (let ([installation (build-path (find-lib-dir) "pkgs" (file-name-from-path default))])
+      (let ([installation (build-path (find-share-dir) "pkgs" (file-name-from-path default))])
         (if (file-exists? installation)
             installation
             default))))

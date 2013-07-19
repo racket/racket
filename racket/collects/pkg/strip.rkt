@@ -222,6 +222,8 @@
     [`(define build-deps . ,v) #f]
     [`(define copy-foreign-libs . ,v)
      `(define move-foreign-libs . ,v)]
+    [`(define copy-shared-files . ,v)
+     `(define move-shared-files . ,v)]
     [`(define copy-man-pages . ,v)
      `(define move-man-pages . ,v)]
     [_ defn]))

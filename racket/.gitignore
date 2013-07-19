@@ -3,6 +3,8 @@
 /include/
 /etc/
 /doc/
+/lib/
+/share/
 
 # Windows and OSX executables
 /*.app

@@ -71,6 +71,7 @@
 (define-config config:dll-dir 'dll-dir to-path)
 (define-config config:lib-dir 'lib-dir to-path)
 (define-config config:lib-search-dirs 'lib-search-dirs to-path)
+(define-config config:share-dir 'share-dir to-path)
 (define-config config:include-dir 'include-dir to-path)
 (define-config config:include-search-dirs 'include-search-dirs to-path)
 (define-config config:bin-dir 'bin-dir to-path)
@@ -171,7 +172,7 @@
          (delay
            (or (force config:id)
                (let ([p (find-collects-dir)])
-                 (and p (simplify-path (build-path p 'up 'up default)))))))
+                 (and p (simplify-path (build-path p 'up default)))))))
        (define (id)
          (force dir)))]
     [(_ provide config:id id user-id default)
@@ -228,6 +229,15 @@
   config:lib-search-dirs
   get-lib-search-dirs find-dll-dir
   "lib")
+
+;; ----------------------------------------
+;; "share"
+
+(define-finder provide
+  config:share-dir
+  find-share-dir
+  find-user-share-dir
+  "share")
 
 ;; ----------------------------------------
 ;; "man"
@@ -335,7 +345,7 @@
 
 (define (find-links-file)
   (or (force config:links-file)
-      (build-path (find-lib-dir) "links.rktd")))
+      (build-path (find-share-dir) "links.rktd")))
 (define (get-links-search-files)
   (combine-search (force config:links-search-files)
                   (list (find-links-file))))
@@ -349,7 +359,7 @@
   get-false
   config:pkgs-search-dirs
   get-pkgs-search-dirs
-  (chain-to (lambda () (build-path (find-lib-dir) "pkgs"))))
+  (chain-to (lambda () (build-path (find-share-dir) "pkgs"))))
 
 (provide find-user-pkgs-dir
          find-shared-pkgs-dir)

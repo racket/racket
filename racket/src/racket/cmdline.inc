@@ -24,9 +24,9 @@ char * volatile scheme_binary_type_hack = "bINARy tYPe:" INITIAL_BIN_TYPE GC_PRE
 
 #ifndef INITIAL_COLLECTS_DIRECTORY
 # ifdef DOS_FILE_SYSTEM
-#  define INITIAL_COLLECTS_DIRECTORY "lib/collects"
+#  define INITIAL_COLLECTS_DIRECTORY "collects"
 # else
-#  define INITIAL_COLLECTS_DIRECTORY "../lib/collects"
+#  define INITIAL_COLLECTS_DIRECTORY "../collects"
 # endif
 #endif
 

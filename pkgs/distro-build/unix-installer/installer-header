@@ -164,6 +164,7 @@ set_dirs() {
   libdir="$1/lib"
   incrktdir="$1/include/$TARGET"
   librktdir="$1/lib/$TARGET"
+  sharerktdir="$1/share/$TARGET"
   configdir="$1/etc/$TARGET"
   has_share="N"
   if test -d "$1/share"; then has_share="Y"; fi
@@ -227,8 +228,8 @@ unpack_installation() {
     | { cd "$INSTDIR"
         "$tar" xf - || failwith "problems during unpacking of binary archive."
       }
-  test -d "$INSTDIR/lib/collects" \
-    || failwith "unpack failed (could not find \"$T/lib/collects\")."
+  test -d "$INSTDIR/collects" \
+    || failwith "unpack failed (could not find \"$T/collects\")."
   echo "Done."
 }
 
@@ -328,6 +329,7 @@ unixstyle_install() {
       echo "Target Directories:"
       show_dir_var "[e] Executables  " "$bindir"
       show_dir_var "[o] Libraries    " "$librktdir"
+      show_dir_var "[s] Shared files " "$sharerktdir"
       show_dir_var "[c] Configuration" "$configdir"
       show_dir_var "[d] Documentation" "$docdir"
       show_dir_var "[l] C Libraries  " "$libdir"
@@ -351,6 +353,7 @@ unixstyle_install() {
       [lL]* ) read_dir libdir ;;
       [hH]* ) read_dir incrktdir ;;
       [oO]* ) read_dir librktdir ;;
+      [sS]* ) read_dir sharerktdir ;;
       [cC]* ) read_dir configdir ;;
       [mM]* ) read_dir mandir ;;
       ""    ) if test "$err" = "N"; then done="Y"
@@ -382,9 +385,9 @@ unixstyle_install() {
   unpack_installation "$tmp"
 
   cd "$where"
-  "$tmp/bin/racket" "$tmp/lib/collects/setup/unixstyle-install.rkt" \
-    "move" "$tmp" "$bindir" "$librktdir/collects" "$docdir" "$libdir" \
-    "$incrktdir" "$librktdir" "$configdir" "$mandir" \
+  "$tmp/bin/racket" "$tmp/collects/setup/unixstyle-install.rkt" \
+    "move" "$tmp" "$bindir" "$sharerktdir/collects" "$docdir" "$libdir" \
+    "$incrktdir" "$librktdir" "$sharerktdir" "$configdir" "$mandir" \
     || failwith "installation failed"
 
 }

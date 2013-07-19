@@ -128,12 +128,12 @@
 (define (populate-table! t)
   ;; Use the colls ht because a collection might be in multiple
   ;; collection paths, and we only want one
-  (define-values (path->main-lib-relative
-                  main-lib-relative->path)
-    (make-relativize find-lib-dir
-                     'lib
-                     'path->main-lib-relative
-                     'main-lib-relative->path))
+  (define-values (path->main-share-relative
+                  main-share-relative->path)
+    (make-relativize find-share-dir
+                     'share
+                     'path->main-share-relative
+                     'main-share-relative->path))
   (let ([colls (make-hash)])
     (for ([f+root-dir (reverse (table-paths t))])
       (let ([f (car f+root-dir)]
@@ -151,7 +151,7 @@
                            [else (error 'find-relevant-directories
                                         "bad info-domain cache file: ~a" f)]))])
             (match i
-              [(list (and pathbytes (or (? bytes?) (list (or 'info 'lib) (? bytes?) ...)))
+              [(list (and pathbytes (or (? bytes?) (list (or 'info 'share) (? bytes?) ...)))
                      (list (? symbol? fields) ...)
                      key ;; anything is okay here
                      (? integer? maj)
@@ -169,7 +169,7 @@
                                  p))
                            (if (eq? (car pathbytes) 'info)
                                (info-relative->path pathbytes)
-                               (main-lib-relative->path pathbytes)))
+                               (main-share-relative->path pathbytes)))
                        fields)])
                  (hash-set! colls key
                             ((table-insert t) root-dir new-item old-items)))]
@@ -219,8 +219,8 @@
            (filter
             values
             (if (eq? key 'no-user)
-                (list (find-lib-dir))
-                (list (find-lib-dir) (find-user-lib-dir))))))))
+                (list (find-share-dir))
+                (list (find-share-dir) (find-user-share-dir))))))))
   (when t
     (unless (equal? (table-paths t) search-path)
       (set-table-ht! t (make-hasheq))

@@ -2,16 +2,19 @@
 # Builds Racket and GRacket (if enabled), and
 #  drives the main install
 
+PACKAGE = racket
+
 srcdir = @srcdir@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
 bindir = @bindir@
 libdir = @libdir@
 includepltdir = @includepltdir@
 libpltdir = @libpltdir@
+sharepltdir = @sharepltdir@
 configdir = @etcpltdir@
 collectsdir = @collectsdir@
-datarootdir = @datarootdir@
 mandir = @mandir@
 docdir = @docdir@
 builddir = @builddir@
@@ -34,6 +37,7 @@ ALLDIRINFO = "$(DESTDIR)$(bindir)" \
              "$(DESTDIR)$(libdir)" \
              "$(DESTDIR)$(includepltdir)" \
              "$(DESTDIR)$(libpltdir)" \
+             "$(DESTDIR)$(sharepltdir)" \
              "$(DESTDIR)$(configdir)" \
              "$(DESTDIR)$(mandir)"
 
@@ -70,7 +74,8 @@ both:
 
 # Install (common) ----------------------------------------
 
-SETUP_ARGS = $(SELF_RACKET_FLAGS) -X @DIRCVTPRE@"$(DESTDIR)$(collectsdir)"@DIRCVTPOST@ -N "raco setup" -l- setup $(PLT_SETUP_OPTIONS) $(PLT_ISO) @INSTALL_SETUP_FLAGS@
+INST_CONFIG = -X @DIRCVTPRE@"$(DESTDIR)$(collectsdir)"@DIRCVTPOST@ -G @DIRCVTPRE@"$(DESTDIR)$(configdir)"@DIRCVTPOST@
+SETUP_ARGS = $(INST_CONFIG) $(SELF_RACKET_FLAGS) -N "raco setup" -l- setup $(PLT_SETUP_OPTIONS) $(PLT_ISO) @INSTALL_SETUP_FLAGS@
 
 # Pass compile and link flags to `make install' for use by any
 #  collection-setup actions that compile and link C code:
@@ -98,7 +103,7 @@ install-common-middle:
 install-common-last:
 	$(MAKE) fix-paths
 	$(MAKE) @MAKE_INSTALL_PKGSCOPE@-raco-pkg-default-scope
-	$(ICP) $(COPYING) "$(DESTDIR)$(libpltdir)"/
+	$(ICP) $(COPYING) "$(DESTDIR)$(sharepltdir)"/
 
 install-no:
 	$(NOOP)

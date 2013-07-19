@@ -197,6 +197,13 @@ if test "${mandir}" != '${prefix}/man' ; then
    unixstyle=yes
  fi
 fi
+if test "${docdir}" != '${datarootdir}/doc/${PACKAGE}' ; then
+  unixstyle=yes
+fi
+if test "${collectsdir}" != '${exec_prefix}/share/${PACKAGE}/collects' ; then
+  unixstyle=yes
+fi
+
 
 MAKE_COPYTREE=no
 if test "${unixstyle}" = "no" ; then
@@ -208,11 +215,13 @@ if test "${unixstyle}" = "no" ; then
   fi
   bindir='${prefix}/bin'
   libpltdir='${prefix}/lib'
+  sharepltdir='${prefix}/share'
   etcpltdir='${prefix}/etc'
   includepltdir='${prefix}/include'
   docdir='${prefix}/doc'
   mandir='${prefix}/man'
-  COLLECTS_PATH="../lib/collects"
+  collectsdir='${prefix}/collects'
+  COLLECTS_PATH="../collects"
   CONFIG_PATH="../etc"
   INSTALL_ORIG_TREE=yes
 else
@@ -220,17 +229,15 @@ else
     # Set prefix explicitly so we can use it during configure
     prefix="${ac_default_prefix}"
   fi
-  libpltdir="${libdir}/racket"
-  etcpltdir="${sysconfdir}/racket"
-  includepltdir="${includedir}/racket"
-  docdir="${datadir}/doc/racket"
+  libpltdir="${libdir}/"'${PACKAGE}'
+  sharepltdir="${datadir}/"'${PACKAGE}'
+  etcpltdir="${sysconfdir}/"'${PACKAGE}'
+  includepltdir="${includedir}/"'${PACKAGE}'
   MAKE_COPYTREE=copytree
   COLLECTS_PATH='${collectsdir}'
   CONFIG_PATH='${etcpltdir}'
   INSTALL_ORIG_TREE=no
 fi
-
-collectsdir="${libpltdir}/collects"
 
 ###### Make sure GRacket is really there ######
 
@@ -646,7 +653,7 @@ case "$host_os" in
     MZINSTALLTARGET=mingw-install
     MZINSTALLBINDIR="${MZINSTALLBINDIR}/.."
     EXE_SUFFIX=".exe"
-    COLLECTS_PATH="lib/collects"
+    COLLECTS_PATH="collects"
     CONFIG_PATH="lib"
     skip_iconv_check=yes
     check_for_mprotect=no
@@ -1513,6 +1520,7 @@ AC_SUBST(LTA)
 
 AC_SUBST(collectsdir)
 AC_SUBST(libpltdir)
+AC_SUBST(sharepltdir)
 AC_SUBST(etcpltdir)
 AC_SUBST(includepltdir)
 AC_SUBST(docdir)
@@ -1593,16 +1601,19 @@ if test "${inplacebuild}" = "yes" ; then
   fi
 else
   echo ">>> Installation targets:"
-  echo " executables   : ${bindir}/..."
-  echo " core docs     : ${docdir}/..."
-  echo " C libraries   : ${libdir}/..."
-  echo " C headers     : ${includepltdir}/..."
-  echo " libraries     : ${libpltdir}/..."
-  echo " configuration : ${etcpltdir}/..."
-  echo " man pages     : ${mandir}/..."
+  echo " executables        : ${bindir}/..."
+  echo " core docs          : ${docdir}/..."
+  echo " C libraries        : ${libdir}/..."
+  echo " C headers          : ${includepltdir}/..."
+  echo " platform libraries : ${libpltdir}/..."
+  echo " common libraries   : ${sharepltdir}/..."
+  echo " core collections   : ${collectsdir}/..."
+  echo " configuration      : ${etcpltdir}/..."
+  echo " man pages          : ${mandir}/..."
   echo "     where prefix = ${prefix}"
   echo "  and datarootdir = ${datarootdir}"
   if test "${unixstyle}" = "yes" ; then
     echo "  and exec_prefix = ${exec_prefix}"
+    echo "  and PACKAGE = racket"
   fi
 fi

@@ -13,7 +13,5 @@
 (when (file-exists? tgz-file)
   (delete-file tgz-file))
 
-(parameterize ([current-directory (build-path "racket/lib")])
+(parameterize ([current-directory (build-path "racket")])
   (tar-gzip tgz-file "collects"))
-
-     

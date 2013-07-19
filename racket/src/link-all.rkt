@@ -11,7 +11,7 @@
 (define config-dir-path (build-path "racket" "etc"))
 (define config-file-path (build-path config-dir-path "config.rktd"))
 (define devel-pkgs-rel-dir (build-path "devel-pkgs"))
-(define devel-pkgs-dir (build-path "racket" "lib" devel-pkgs-rel-dir))
+(define devel-pkgs-dir (build-path "racket" "share" devel-pkgs-rel-dir))
 
 (define only-platform? #f)
 (define save? #f)
@@ -64,9 +64,9 @@
        (newline o)))))
 
 (define devel-pkgs-bytes
-  (path->bytes (build-path 'up devel-pkgs-rel-dir)))
+  (path->bytes (build-path 'up "share" devel-pkgs-rel-dir)))
 (define devel-links-bytes
-  (path->bytes (build-path 'up devel-pkgs-rel-dir "links.rktd")))
+  (path->bytes (build-path 'up "share" devel-pkgs-rel-dir "links.rktd")))
 
 (when (file-exists? config-file-path)
   (call-with-input-file*

@@ -42,14 +42,15 @@
               (case name
                 [(includerkt) "include"]
                 [(librkt) "lib"]
+                [(sharerkt) "share"]
                 [(config) "etc"]
-                [(collects) (build-path "lib" "collects")]
+                [(collects) "collects"]
                 [else (symbol->string name)])))
 (define dirs (map (lambda (name) (list name 
                                        (if base-destdir
                                            (build-dest-arg name)
                                            (get-arg))))
-		  '(bin collects doc lib includerkt librkt config man #|src|#)))
+		  '(bin collects doc lib includerkt librkt sharerkt config man #|src|#)))
 
 (define (dir: name)
   (cadr (or (assq name dirs) (error 'getdir "unknown dir name: ~e" name))))
@@ -73,6 +74,7 @@
       ;; if shared libraries are used, then these files should be moved
       ;; independently, as if they had a level of #f
       [(lib)      1]
+      [(share)    1]
       [(etc)      1]
       [(man)      #f]
       [(src)      1]
@@ -290,7 +292,7 @@
 
 (define write-config
   (case-lambda
-    [()  (write-config #t (dir: 'config))]
+    [()  (write-config (dir: 'config))]
     [(configdir)
      (define (cpath . xs)
        (apply make-path configdir xs))
@@ -306,6 +308,7 @@
            (when (eq? 'shared (system-type 'link)) ; never true for now
              (printf "      (dll-dir . ~s)\n" (dir: 'lib)))
            (printf "      (lib-dir . ~s)\n" (dir: 'librkt))
+           (printf "      (share-dir . ~s)\n" (dir: 'sharerkt))
            (printf "      (include-dir . ~s)\n" (dir: 'includerkt))
            (printf "      (bin-dir . ~s)\n" (dir: 'bin))
            (printf "      (man-dir . ~s)\n" (dir: 'man))
@@ -393,9 +396,9 @@
 	;; All other platforms use "bin":
 	(do-tree "bin"      'bin))
     (do-tree "doc"      'doc #:missing 'skip) ; not included in text distros
-    ;; (do-tree ??? 'lib) ; shared stuff goes here
-    (do-tree "include"  'includerkt)
     (do-tree "lib"      'librkt)
+    (do-tree "include"  'includerkt)
+    (do-tree "share"    'sharerkt)
     (do-tree "etc"      'config)
     (do-tree "man"      'man)
     ;; (when (and (not (equal? (dir: 'src) "")) (directory-exists? "src"))
@@ -426,7 +429,7 @@
         (lambda (p) (regexp-match? #rx"^(?:[.].*|compiled)$" (basename p))))
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
     (set! yes-to-all? #t) ; non-interactive
-    (copytree "lib/collects" 'collects)
+    (copytree "collects" 'collects)
     (copytree "doc"      'doc)
     (copytree "man"      'man)
     (unless origtree? (write-config))))

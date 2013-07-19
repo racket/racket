@@ -637,7 +637,7 @@ oldincludedir
 docdir
 infodir
 htmldir
-dvidir
+collectsdir
 pdfdir
 psdir
 libdir
@@ -749,6 +749,7 @@ LTO
 LTA
 collectsdir
 libpltdir
+sharepltdir
 etcpltdir
 includepltdir
 COLLECTS_PATH
@@ -820,7 +821,7 @@ oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE}'
 infodir='${datarootdir}/info'
 htmldir='${docdir}'
-dvidir='${docdir}'
+collectsdir='${exec_prefix}/share/${PACKAGE}/collects'
 pdfdir='${docdir}'
 psdir='${docdir}'
 libdir='${exec_prefix}/lib'
@@ -895,10 +896,10 @@ do
   -docdir=* | --docdir=* | --docdi=* | --doc=* | --do=*)
     docdir=$ac_optarg ;;
 
-  -dvidir | --dvidir | --dvidi | --dvid | --dvi | --dv)
-    ac_prev=dvidir ;;
-  -dvidir=* | --dvidir=* | --dvidi=* | --dvid=* | --dvi=* | --dv=*)
-    dvidir=$ac_optarg ;;
+  -collectsdir | --collectsdir | --collectsdi | --collectsd | --collects | --dv)
+    ac_prev=collectsdir ;;
+  -collectsdir=* | --collectsdir=* | --collectsdi=* | --collectsd=* | --collects=* | --dv=*)
+    collectsdir=$ac_optarg ;;
 
   -enable-* | --enable-*)
     ac_feature=`expr "x$ac_option" : 'x-*enable-\([^=]*\)'`
@@ -1167,7 +1168,7 @@ fi
 # Be sure to have absolute directory names.
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
-		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
+		oldincludedir docdir infodir htmldir collectsdir pdfdir psdir \
 		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
@@ -1323,6 +1324,7 @@ Fine tuning of the installation directories:
   --datadir=DIR          read-only architecture-independent data [DATAROOTDIR]
   --mandir=DIR           man documentation [DATAROOTDIR/man]
   --docdir=DIR           documentation root [DATAROOTDIR/doc/PACKAGE]
+  --collectsdir=DIR      collects documentation [EPREFIX/share/PACKAGE/collects]
 _ACEOF
 
   cat <<\_ACEOF
@@ -2299,6 +2301,13 @@ if test "${mandir}" != '${prefix}/man' ; then
    unixstyle=yes
  fi
 fi
+if test "${docdir}" != '${datarootdir}/doc/${PACKAGE}' ; then
+  unixstyle=yes
+fi
+if test "${collectsdir}" != '${exec_prefix}/share/${PACKAGE}/collects' ; then
+  unixstyle=yes
+fi
+
 
 MAKE_COPYTREE=no
 if test "${unixstyle}" = "no" ; then
@@ -2310,11 +2319,13 @@ if test "${unixstyle}" = "no" ; then
   fi
   bindir='${prefix}/bin'
   libpltdir='${prefix}/lib'
+  sharepltdir='${prefix}/share'
   etcpltdir='${prefix}/etc'
   includepltdir='${prefix}/include'
   docdir='${prefix}/doc'
   mandir='${prefix}/man'
-  COLLECTS_PATH="../lib/collects"
+  collectsdir='${prefix}/collects'
+  COLLECTS_PATH="../collects"
   CONFIG_PATH="../etc"
   INSTALL_ORIG_TREE=yes
 else
@@ -2322,17 +2333,15 @@ else
     # Set prefix explicitly so we can use it during configure
     prefix="${ac_default_prefix}"
   fi
-  libpltdir="${libdir}/racket"
-  etcpltdir="${sysconfdir}/racket"
-  includepltdir="${includedir}/racket"
-  docdir="${datadir}/doc/racket"
+  libpltdir="${libdir}/"'${PACKAGE}'
+  sharepltdir="${datadir}/"'${PACKAGE}'
+  etcpltdir="${sysconfdir}/"'${PACKAGE}'
+  includepltdir="${includedir}/"'${PACKAGE}'
   MAKE_COPYTREE=copytree
   COLLECTS_PATH='${collectsdir}'
   CONFIG_PATH='${etcpltdir}'
   INSTALL_ORIG_TREE=no
 fi
-
-collectsdir="${libpltdir}/collects"
 
 ###### Make sure GRacket is really there ######
 
@@ -4147,7 +4156,7 @@ case "$host_os" in
     MZINSTALLTARGET=mingw-install
     MZINSTALLBINDIR="${MZINSTALLBINDIR}/.."
     EXE_SUFFIX=".exe"
-    COLLECTS_PATH="lib/collects"
+    COLLECTS_PATH="collects"
     CONFIG_PATH="lib"
     skip_iconv_check=yes
     check_for_mprotect=no
@@ -9244,6 +9253,7 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
+
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -9955,7 +9965,7 @@ oldincludedir!$oldincludedir$ac_delim
 docdir!$docdir$ac_delim
 infodir!$infodir$ac_delim
 htmldir!$htmldir$ac_delim
-dvidir!$dvidir$ac_delim
+collectsdir!$collectsdir$ac_delim
 pdfdir!$pdfdir$ac_delim
 psdir!$psdir$ac_delim
 libdir!$libdir$ac_delim
@@ -10108,6 +10118,7 @@ LTO!$LTO$ac_delim
 LTA!$LTA$ac_delim
 collectsdir!$collectsdir$ac_delim
 libpltdir!$libpltdir$ac_delim
+sharepltdir!$sharepltdir$ac_delim
 etcpltdir!$etcpltdir$ac_delim
 includepltdir!$includepltdir$ac_delim
 COLLECTS_PATH!$COLLECTS_PATH$ac_delim
@@ -10130,7 +10141,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 58; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 59; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -10753,16 +10764,19 @@ if test "${inplacebuild}" = "yes" ; then
   fi
 else
   echo ">>> Installation targets:"
-  echo " executables   : ${bindir}/..."
-  echo " core docs     : ${docdir}/..."
-  echo " C libraries   : ${libdir}/..."
-  echo " C headers     : ${includepltdir}/..."
-  echo " libraries     : ${libpltdir}/..."
-  echo " configuration : ${etcpltdir}/..."
-  echo " man pages     : ${mandir}/..."
+  echo " executables        : ${bindir}/..."
+  echo " core docs          : ${docdir}/..."
+  echo " C libraries        : ${libdir}/..."
+  echo " C headers          : ${includepltdir}/..."
+  echo " platform libraries : ${libpltdir}/..."
+  echo " common libraries   : ${sharepltdir}/..."
+  echo " core collections   : ${collectsdir}/..."
+  echo " configuration      : ${etcpltdir}/..."
+  echo " man pages          : ${mandir}/..."
   echo "     where prefix = ${prefix}"
   echo "  and datarootdir = ${datarootdir}"
   if test "${unixstyle}" = "yes" ; then
     echo "  and exec_prefix = ${exec_prefix}"
+    echo "  and PACKAGE = racket"
   fi
 fi

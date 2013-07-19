@@ -1,10 +1,14 @@
+PACKAGE = racket
+
 srcdir = @srcdir@
 builddir = @builddir@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
 bindir = @bindir@
 libdir = @libdir@
 libpltdir = @libpltdir@
+sharepltdir = @sharepltdir@
 collectsdir = @collectsdir@
 
 # for version.mak:
@@ -29,7 +33,7 @@ LIBFFI_INCLUDE_OFF =
 
 ARLIBFLAGS = @LDFLAGS@ $(LIBS)
 
-DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../lib/collects; @PWD@`"'"'
+DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; @PWD@`"'"'
 DEF_CONFIG_DIR = +D INITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../../..; @PWD@`/etc"'"'
 DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 

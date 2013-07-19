@@ -22,12 +22,9 @@
 
 (display-time)
 
-(define lib-dir (build-path dest-dir "lib"))
-(make-directory* lib-dir)
-
-(define collects-dir (build-path lib-dir "collects"))
+(define collects-dir (build-path dest-dir "collects"))
 (when (directory-exists? collects-dir)
   (delete-directory/files collects-dir))
 
 (untgz (open-input-bytes zip-content)
-       #:dest lib-dir)
+       #:dest dest-dir)

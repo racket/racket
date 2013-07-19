@@ -517,8 +517,8 @@
                                          [ht (get-config-table d)]
                                          [lf (coerce-to-path
                                               (or (hash-ref ht 'links-file #f)
-                                                  (build-path (or (hash-ref ht 'lib-dir #f)
-                                                                  'up)
+                                                  (build-path (or (hash-ref ht 'share-dir #f)
+                                                                  (build-path 'up "share"))
                                                               "links.rktd")))])
                                     (list->vector
                                      (add-config-search

@@ -10,5 +10,5 @@
                      "sandbox-lib"
                      "racket-doc"))
 
-;; Make honu.vim easier to find by copying it to the "lib" directory:
-(define copy-foreign-libs '("contrib/honu.vim"))
+;; Make honu.vim easier to find by copying it to the "share" directory:
+(define copy-shared-files '("contrib/honu.vim"))

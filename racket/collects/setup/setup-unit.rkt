@@ -108,6 +108,14 @@
     (make-path->relative-string
      (list (cons find-lib-dir "<lib>/"))))
 
+  (define path->relative-string/share
+    (make-path->relative-string
+     (list (cons find-share-dir "<share>/"))))
+
+  (define path->relative-string/man
+    (make-path->relative-string
+     (list (cons find-man-dir "<man>/"))))
+
   (define-values (path->main-lib-relative
                   main-lib-relative->path)
     (make-relativize find-lib-dir
@@ -347,7 +355,7 @@
                     #:path (build-path cp collection)
                     #:main? (hash-ref main-collects-dirs cp #f)))
   (let ()
-    (define info-root (find-lib-dir))
+    (define info-root (find-share-dir))
     (define info-path (build-path info-root "info-cache.rktd"))
     (define (cc! col #:path path)
       (collection-cc! col
@@ -369,7 +377,7 @@
         (cc! (list collection)
              #:path (build-path cp collection)))))
   (when (make-user)
-    (define info-root (find-user-lib-dir))
+    (define info-root (find-user-share-dir))
     (define info-path (build-path info-root "info-cache.rktd"))
     (define (cc! col #:path path)
       (collection-cc! col
@@ -705,8 +713,8 @@
             (with-output-to-file fn void #:exists 'truncate/replace))))
       (for ([p (current-library-collection-paths)])
         (check-one-info-domain (build-path p "info-domain" "compiled" "cache.rktd")))
-      (check-one-info-domain (build-path (find-lib-dir) "info-cache.rktd"))
-      (check-one-info-domain (build-path (find-user-lib-dir) "info-cache.rktd"))
+      (check-one-info-domain (build-path (find-share-dir) "info-cache.rktd"))
+      (check-one-info-domain (build-path (find-user-share-dir) "info-cache.rktd"))
       (setup-printf #f "deleting documentation databases")
       (for ([d (in-list (list (find-doc-dir) (find-user-doc-dir)))])
         (when d
@@ -1059,12 +1067,12 @@
           (when (file-exists? info-path)
             (get-info-ht c info-path 'relative))))
       (unless (avoid-main-installation)
-        (define info-root (find-lib-dir))
+        (define info-root (find-share-dir))
         (define info-path (build-path info-root "info-cache.rktd"))
         (when (file-exists? info-path)
           (get-info-ht info-root info-path 'abs-in-relative)))
       (when (make-user)
-        (define info-root (find-user-lib-dir))
+        (define info-root (find-user-share-dir))
         (define info-path (build-path info-root "info-cache.rktd"))
         (when (file-exists? info-path)
           (get-info-ht info-root info-path 'abs-in-relative))
@@ -1406,7 +1414,9 @@
                                move-tag
                                find-target-dir
                                find-user-target-dir
+                               path->relative-string/*
                                receipt-file
+                               receipt-at-dest?
                                check-entry
                                build-dest-path)
     (define (make-libs-step)
@@ -1425,9 +1435,11 @@
                               (define dir (if (cc-main? cc)
                                               (find-target-dir)
                                               (find-user-target-dir)))
-                              (define r-dir (if (cc-main? cc)
-                                                (find-lib-dir)
-                                                (find-user-lib-dir)))
+                              (define r-dir (if receipt-at-dest?
+                                                dir
+                                                (if (cc-main? cc)
+                                                    (find-lib-dir)
+                                                    (find-user-lib-dir))))
                               (define receipt-path (build-path r-dir receipt-file))
                               (make-directory* dir)
                               (make-directory* r-dir)
@@ -1444,7 +1456,7 @@
                                                      (same-content? src dest)))
                                 (unless already?
                                   (setup-printf "installing" (string-append what " ~a")
-                                                (path->relative-string/lib dest)))
+                                                (path->relative-string/* dest)))
                                 (hash-set!
                                  installed-libs
                                  (record-lib receipt-path lib-name (cc-collection cc) (cc-path cc))
@@ -1547,7 +1559,7 @@
                       (define lib-path (build-dest-path target-dir (bytes->path-element k)))
                       (when (file-exists? lib-path)
                         (setup-printf "deleting" (string-append what " ~a")
-                                      (path->relative-string/lib lib-path))
+                                      (path->relative-string/* lib-path))
                         (delete-file lib-path))
                       ht])))
       (unless (equal? ht ht2)
@@ -1564,7 +1576,23 @@
                          'move-foreign-libs
                          find-lib-dir
                          find-user-lib-dir
-                         "libs.rktd"
+                         path->relative-string/lib
+                         "libs.rktd" #t
+                         (lambda (l)
+                           (unless (list-of relative-path-string? l)
+                             (error "entry is not a list of relative path strings:" l)))
+                         build-path))
+
+  (define make-shares-step
+    (make-copy/move-step "shared file"
+                         "shared files"
+                         "Share Files Setup"
+                         'copy-shared-files
+                         'move-shared-files
+                         find-share-dir
+                         find-user-share-dir
+                         path->relative-string/share
+                         "shares.rktd" #t
                          (lambda (l)
                            (unless (list-of relative-path-string? l)
                              (error "entry is not a list of relative path strings:" l)))
@@ -1578,7 +1606,8 @@
                          'move-man-pages
                          find-man-dir
                          find-user-man-dir
-                         "mans.rktd"
+                         path->relative-string/man
+                         "mans.rktd" #f
                          (lambda (l)
                            (unless (list-of (lambda (p)
                                               (and (relative-path-string? p)

@@ -2,13 +2,18 @@
 # Makefile for racket
 #
 
+PACKAGE = racket
+
 srcdir = @srcdir@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
 bindir = @bindir@
 libdir = @libdir@
 includepltdir = @includepltdir@
 libpltdir = @libpltdir@
+etcpltdir = @etcpltdir@
+sharepltdir = @sharepltdir@
 collectsdir = @collectsdir@
 builddir = @builddir@
 
@@ -216,7 +221,7 @@ racket.multiboot : libracket.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@
 
 # ----------------------------------------
 
-DEF_COLLECTS_DIR = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../lib/collects; @PWD@`"'"'
+DEF_COLLECTS_DIR = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../collects; @PWD@`"'"'
 DEF_CONFIG_DIR = -DINITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../..; @PWD@`/etc"'"'
 DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 
