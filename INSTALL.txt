@@ -1,7 +1,7 @@
 Quick Instructions
 ==================
 
-On Unix of Mac OS X, `make' (or `make in-place') creates a build in
+On Unix or Mac OS X, `make' (or `make in-place') creates a build in
 the "racket" directory.
 
 The build includes (via links) all packages that are in the "pkgs"
