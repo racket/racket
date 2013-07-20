@@ -81,6 +81,14 @@
       (path->string d)
       d))
 
+(define (add-defaults c . l)
+  (let loop ([c c] [l l])
+    (cond
+     [(null? l) c]
+     [else (loop (hash-set c (car l) 
+                           (hash-ref c (car l) (lambda () (cadr l))))
+                 (cddr l))])))
+
 ;; ----------------------------------------
 ;; Managing VirtualBox machines
 
@@ -319,7 +327,9 @@
   (define readme-txt (let ([rdme (get-opt c '#:readme make-readme)])
                        (if (string? rdme)
                            rdme
-                           (rdme c))))
+                           (rdme (add-defaults c
+                                               '#:release? default-release?
+                                               '#:pkgs (string-split default-pkgs))))))
   (make-directory* (build-path "build" "readmes"))
   (define readme (make-temporary-file
                   "README-~a"
@@ -337,8 +347,8 @@
   (display-time)
   (begin0
    
-   ((case (or (get-opt c '#:platform) 'unix)
-      [(unix) unix-build]
+   ((case (or (get-opt c '#:platform) (system-type))
+      [(unix macosx) unix-build]
       [else windows-build])
     c host port user server repo clean? pull? readme)
 

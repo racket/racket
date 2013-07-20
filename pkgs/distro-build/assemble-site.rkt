@@ -33,7 +33,10 @@
 (printf "Assembling site as ~a\n" dest-dir)
 
 (define (copy dir [build-dir build-dir])
-  (make-directory* dest-dir)
+  (make-directory* (let-values ([(base name dir?) (split-path dir)])
+                     (if (path? base)
+                         (build-path dest-dir base)
+                         dest-dir)))
   (printf "Copying ~a\n" (build-path build-dir dir))
   (copy-directory/files (build-path build-dir dir)
                         (build-path dest-dir dir)
@@ -104,6 +107,8 @@
 (define pdf-doc-path (build-path build-dir pdf-doc-dir))
 (when (directory-exists? pdf-doc-path)
   (copy pdf-doc-dir))
+(copy "stamp.txt")
+(copy (build-path "origin" "collects.tgz"))
 
 (make-download-page (build-path build-dir
                                 installers-dir

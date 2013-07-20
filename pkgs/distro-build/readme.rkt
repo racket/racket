@@ -1,19 +1,52 @@
 #lang at-exp racket/base
-(require racket/format)
+(require racket/format
+         net/url
+         (only-in "config.rkt" current-stamp))
 
-(provide make-readme)
+(provide make-readme
+         make-source-notes
+         make-macosx-notes)
+
+(define (maybe-stamp config)
+  (if (hash-ref config '#:release? #f)
+      ""
+      @~a{ (@(current-stamp))}))
 
 (define (make-readme config)
   @~a{
       The Racket Programming Language
       ===============================
 
-      This is Racket...
+      This is the
+        @|(hash-ref config '#:name "Racket")|
+      distribution for version @(version)@(maybe-stamp config).@;
 
-      More Information
-      ----------------
+      @(if (hash-ref config '#:source? #f)
+           (string-append "\n" (make-source-notes config) "\n")
+           "")@;
+      @(if (and (not (hash-ref config '#:source? #f))
+                (eq? (hash-ref config '#:platform (system-type)) 'macosx))
+           (string-append "\n" (make-macosx-notes config) "\n")
+           "")@;
+      @(let* ([catalogs (filter
+                         (lambda (s) (not (equal? s "")))
+                         (or (hash-ref config '#:dist-catalogs #f)
+                             (let ([v (hash-ref config '#:dist-base-url #f)])
+                               (and v
+                                    (list (url->string
+                                           (combine-url/relative (string->url v) "catalog/")))))
+                             null))]
+              [s (if (= 1 (length catalogs)) "" "s")]
+              [is (if (= 1 (length catalogs)) "is" "are")])
+         (if (null? catalogs)
+             ""
+             @~a{@"\n"The distribution has been configured so that when you install or
+                 update packages, the package catalog@|s| at@;
+                 @(apply ~a (for/list ([catalog (in-list catalogs)])
+                              @~a{@"\n"  @|catalog|}))
+                 @|is| consulted, first.@"\n"}))@;
      
-      Visit us at
+      Visit
          http://racket-lang.org/ 
       for more Racket resources.
      
@@ -32,14 +65,21 @@
       that you must release the source code for the modified software.  See
       share/COPYING_LESSER.txt for more information.})
 
-(define macosx-notes
-  @~a{Install by dragging the enclosing Racket folder to your Applications folder
-      --- or wherever you like. You can move the Racket folder at any time, but do not
-      move applications or other files within the folder. If you want to use the
-      Racket command-line programs, then (optionally) add the path of the "bin"
-      subdirectory to your PATH environment variable.})
+(define (make-source-notes config)
 
-(define drracket-more-info
-  @~a{For Racket documentation, use DrRacket's `Help' menu, run the `Racket
-      Documentation' application (Windows or Mac OS X), or run `raco docs'
-      from a command line.})
+  @~a{This distribution provides source for the Racket run-time system;
+      for build and installation instructions, see "racket/src/README".
+      Besides the run-time system's source, the distribution provides
+      pre-built versions of the core Racket bytecode, as well as pre-built
+      versions of included packages and documentation --- which makes it
+      suitable for quick installation on a Unix platform for which
+      executable binaries are not already provided.})
+
+(define (make-macosx-notes config)
+  @~a{Install by dragging the enclosing
+        @|(hash-ref config '#:dist-name "Racket")| v@(version)
+      folder to your Applications folder --- or wherever you like. You can
+      move the folder at any time, but do not move applications or other
+      files within the folder. If you want to use the Racket command-line
+      programs, then (optionally) add the path of the "bin" subdirectory to
+      your PATH environment variable.})

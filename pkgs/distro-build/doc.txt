@@ -163,7 +163,7 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
   #:readme <string-or-procedure> --- the content of a "README" file
     to include in installers, or a function that takes a hash table
     for a configuration and returns a string; the default is the
-    `make-readme' function from `distro-build/readme'
+    `make-readme' function from `distro-build/readme' (see below)
 
   #:max-vm <real> --- max number of VMs allowed to run with this
     machine, counting the machine; defaults to 1
@@ -172,7 +172,8 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     in the Virtual Box GUI); if provided, the virtual machine is
     started and stopped on the server as needed
 
-  #:platform <symbol> --- 'windows or 'unix, defaults to 'unix
+  #:platform <symbol> --- 'windows, 'macosx, or 'unix; defaults to
+    `(system-type)'
 
   #:configure '(<string> ...) --- arguments to `configure'
 
@@ -203,9 +204,11 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     installers; the default is determined by the `RELEASE_MODE'
     makefile variable
 
-  #:source? <boolean> --- if true, then create a source archive (with
-    pre-build packages), instead of a platform-specific installer; the
-    default is #f
+  #:source? <boolean> --- if true, then create a kernel-source archive
+    (with pre-built packages), instead of a platform-specific
+    installer; a #t value works best when used with a Unix client
+    machine, since Unix clients typically have no native-library
+    packages; the default is #f
 
   #:site-dest <path-string> --- destination for completed build, used
     by the `site' and `snapshot-site' makefile targets; the default is
@@ -277,6 +280,26 @@ to `racket/base':
  (current-stamp) -> string?
   Returns a string to identify the current build, normally a
   combination of the date and a git commit hash.
+
+READMEs
+-------
+
+The `distro-build/readme' library provides functions for constructing
+a README file's content. Each function takes a hash table mapping
+configuration keywords to values.
+
+ (make-readme config) -> string
+    config : hash?
+  Produces basic "README" content, using information about the
+  distribution and the Racket license. The content is constructed
+  using `config' keywords such as `#:name', `#:platform',
+  `#:dist-name', and `#:dist-catalogs', and sometimes `current-stamp'.
+
+ (make-macosx-notes config) -> string
+    config : hash?
+  Produces "README" content to tell Mac OS X users how to install a
+  distirbution folder. This function is used by `make-readme' when
+  `#:platform' in `config' is 'macosx.
 
 Examples
 --------
