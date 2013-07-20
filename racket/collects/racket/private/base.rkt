@@ -26,7 +26,7 @@
                               regexp-replace*
                               new-apply-proc)
              struct
-             (all-from "hash.rkt")
+             (all-from-except "hash.rkt" paired-fold)
              (all-from "list.rkt")
              (all-from-except "string.rkt" 
                               -regexp-replace*)

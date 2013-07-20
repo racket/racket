@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/contract/base
-         "private/dict.rkt")
+         "private/dict.rkt"
+         "private/custom-hash.rkt")
 
 (define (dict-supports/c . syms)
   (if (null? syms)
@@ -276,6 +277,8 @@
          make-custom-hash
          make-immutable-custom-hash
          make-weak-custom-hash
+         make-custom-hash-types
+         define-custom-hash-types
 
          in-dict
          in-dict-keys

@@ -25,6 +25,8 @@ values. The following datatypes are all dictionaries:
 
 @note-lib[racket/dict]
 
+@section{Dictionary Predicates}
+
 @defproc[(dict? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a @tech{dictionary}, @racket[#f]
@@ -42,11 +44,32 @@ traversing the list.
 (dict? '((a . "apple") (b . "banana")))
 ]}
 
+@defproc[(dict-supports? [d dict?] [sym symbol?] ...) boolean?]{
+
+Returns @racket[#t] if @racket[d] implements all of the methods from
+@racket[gen:dict] named by the @racket[sym]s, or @racket[#f] otherwise.
+Fallback implementations do not affect the result; @racket[d] may support the
+given methods via fallback implementations yet produce @racket[#f].
+
+@examples[
+#:eval dict-eval
+(dict-supports? (hash 'a "apple") 'dict-set!)
+(dict-supports? (make-hash '((a . "apple") (b . "banana"))) 'dict-set!)
+(dict-supports? (make-hash '((b . "banana") (a . "apple"))) 'dict-remove!)
+(dict-supports? (vector "apple" "banana") 'dict-set!)
+(dict-supports? (vector 'a 'b) 'dict-remove!)
+(dict-supports? (vector 'a "apple") 'dict-set! 'dict-remove!)
+]
+
+}
+
 
 @defproc[(dict-mutable? [d dict?]) boolean?]{
 
-Returns @racket[#t] if @racket[d] is mutable via @racket[dict-set!]
-and maybe @racket[dict-remove!], @racket[#f] otherwise.
+Returns @racket[#t] if @racket[d] is mutable via @racket[dict-set!],
+@racket[#f] otherwise.
+
+Equivalent to @racket[(dict-supports? d 'dict-set!)].
 
 @examples[
 #:eval dict-eval
@@ -65,6 +88,9 @@ Returns @racket[#t] if @racket[d] supports removing mappings via
 @racket[dict-remove!] and/or @racket[dict-remove], @racket[#f]
 otherwise.
 
+Equivalent to
+@racket[(or (dict-supports? d 'dict-remove!) (dict-supports? d 'dict-remove))].
+
 @examples[
 #:eval dict-eval
 (dict-can-remove-keys? #hash((a . "apple")))
@@ -76,8 +102,9 @@ otherwise.
 @defproc[(dict-can-functional-set? [d dict?]) boolean?]{
 
 Returns @racket[#t] if @racket[d] supports functional update via
-@racket[dict-set] and maybe @racket[dict-remove], @racket[#f]
-otherwise.
+@racket[dict-set], @racket[#f] otherwise.
+
+Equivalent to @racket[(dict-supports? d 'dict-set)].
 
 @examples[
 #:eval dict-eval
@@ -87,115 +114,63 @@ otherwise.
 (dict-can-functional-set? '((a . "apple") (b . "banana")))
 ]}
 
+@section{Generic Dictionary Interface}
 
-@defproc[(dict-set! [dict (and/c dict? (not/c immutable?))]
-                    [key any/c]
-                    [v any/c]) void?]{
+@defidform[gen:dict]{
 
-Maps @racket[key] to @racket[v] in @racket[dict], overwriting any
-existing mapping for @racket[key]. The update can fail with a
-@racket[exn:fail:contract] exception if @racket[dict] is not mutable
-or if @racket[key] is not an allowed key for the dictionary (e.g., not
-an exact integer in the appropriate range when @racket[dict] is a
-@tech{vector}).
+A @tech{generic interface} (see @secref["struct-generics"]) that
+supplies dictionary method implementations for a structure type via the
+@racket[#:methods] option of @racket[struct] definitions.  This interface can
+be used to implement any of the methods documented as @secref["methods"] and
+@secref["fallbacks"].
 
-@examples[
-#:eval dict-eval
-(define h (make-hash))
-(dict-set! h 'a "apple")
-h
-(define v (vector #f #f #f))
-(dict-set! v 0 "apple")
-v
-]}
+@examples[#:eval dict-eval
+(struct alist (v)
+  #:methods gen:dict
+  [(define (dict-ref dict key
+                     [default (lambda () (error "key not found" key))])
+     (cond [(assoc key (alist-v dict)) => cdr]
+           [else (if (procedure? default) (default) default)]))
+   (define (dict-set dict key val)
+     (alist (cons (cons key val) (alist-v dict))))
+   (define (dict-remove dict key)
+     (define al (alist-v dict))
+     (alist (remove* (filter (λ (p) (equal? (car p) key)) al) al)))
+   (define (dict-count dict #:default [x #f])
+     (or x
+         (length (remove-duplicates (alist-v dict) #:key car))))]) (code:comment "etc. other methods")
 
-@defproc[(dict-set*! [dict (and/c dict? (not/c immutable?))]
-                     [key any/c]
-                     [v any/c]
-                     ...
-                     ...) void?]{
+  (define d1 (alist '((1 . a) (2 . b))))
+  (dict? d1)
+  (dict-ref d1 1)
+  (dict-remove d1 1)
+]
 
-Maps each @racket[key] to each @racket[v] in @racket[dict], overwriting any
-existing mapping for each @racket[key]. The update can fail with a
-@racket[exn:fail:contract] exception if @racket[dict] is not mutable
-or if any @racket[key] is not an allowed key for the dictionary (e.g., not
-an exact integer in the appropriate range when @racket[dict] is a
-@tech{vector}). The update takes place from the left, so later mappings overwrite
-earlier mappings.
+}
 
-@examples[
-#:eval dict-eval
-(define h (make-hash))
-(dict-set*! h 'a "apple" 'b "banana")
-h
-(define v1 (vector #f #f #f))
-(dict-set*! v1 0 "apple" 1 "banana")
-v1
-(define v2 (vector #f #f #f))
-(dict-set*! v2 0 "apple" 0 "banana")
-v2
-]}
+@defthing[prop:dict struct-type-property?]{
+  A deprecated structure type property used to define custom extensions
+  to the dictionary API. Use @racket[gen:dict] instead. Accepts a vector
+  of 10 method implementations:
 
+  @itemize[
+           @item{@racket[dict-ref]}
+           @item{@racket[dict-set!], or @racket[#f] if unsupported}
+           @item{@racket[dict-set], or @racket[#f] if unsupported}
+           @item{@racket[dict-remove!], or @racket[#f] if unsupported}
+           @item{@racket[dict-remove], or @racket[#f] if unsupported}
+           @item{@racket[dict-count]}
+           @item{@racket[dict-iterate-first]}
+           @item{@racket[dict-iterate-next]}
+           @item{@racket[dict-iterate-key]}
+           @item{@racket[dict-iterate-value]}
+           ]
+}
 
-@defproc[(dict-set [dict (and/c dict? immutable?)]
-                   [key any/c]
-                   [v any/c])
-          (and/c dict? immutable?)]{
+@subsection[#:tag "methods"]{Primitive Dictionary Methods}
 
-Functionally extends @racket[dict] by mapping @racket[key] to
-@racket[v], overwriting any existing mapping for @racket[key], and
-returning an extended dictionary. The update can fail with a
-@racket[exn:fail:contract] exception if @racket[dict] does not support
-functional extension or if @racket[key] is not an allowed key for the
-dictionary.
-
-@examples[
-#:eval dict-eval
-(dict-set #hash() 'a "apple")
-(dict-set #hash((a . "apple") (b . "beer")) 'b "banana")
-(dict-set '() 'a "apple")
-(dict-set '((a . "apple") (b . "beer")) 'b "banana")
-]}
-
-@defproc[(dict-set* [dict (and/c dict? immutable?)]
-                    [key any/c]
-                    [v any/c]
-                    ...
-                    ...)
-          (and/c dict? immutable?)]{
-
-Functionally extends @racket[dict] by mapping each @racket[key] to
-each @racket[v], overwriting any existing mapping for each @racket[key], and
-returning an extended dictionary. The update can fail with a
-@racket[exn:fail:contract] exception if @racket[dict] does not support
-functional extension or if any @racket[key] is not an allowed key for the
-dictionary. The update takes place from the left, so later mappings overwrite
-earlier mappings.
-
-@examples[
-#:eval dict-eval
-(dict-set* #hash() 'a "apple" 'b "beer")
-(dict-set* #hash((a . "apple") (b . "beer")) 'b "banana" 'a "anchor")
-(dict-set* '() 'a "apple" 'b "beer")
-(dict-set* '((a . "apple") (b . "beer")) 'b "banana" 'a "anchor")
-(dict-set* '((a . "apple") (b . "beer")) 'b "banana" 'b "ballistic")
-]}
-
-@defproc[(dict-has-key? [dict dict?] [key any/c])
-         boolean?]{
-
-Returns @racket[#t] if @racket[dict] contains a value for the given
-@racket[key], @racket[#f] otherwise.
-
-@examples[
-#:eval dict-eval
-(dict-has-key? #hash((a . "apple") (b . "beer")) 'a)
-(dict-has-key? #hash((a . "apple") (b . "beer")) 'c)
-(dict-has-key? '((a . "apple") (b . "banana")) 'b)
-(dict-has-key? #("apple" "banana") 1)
-(dict-has-key? #("apple" "banana") 3)
-(dict-has-key? #("apple" "banana") -3)
-]}
+These methods of @racket[gen:dict] have no fallback implementations; they are
+only supported for dictionary types that directly implement them.
 
 @defproc[(dict-ref [dict dict?]
                    [key any/c]
@@ -226,66 +201,45 @@ result:
 (dict-ref #("apple" "banana") -3 #f)
 ]}
 
-@defproc[(dict-ref! [dict dict?]
+@defproc[(dict-set! [dict (and/c dict? (not/c immutable?))]
                     [key any/c]
-                    [to-set any/c])
-         any]{
+                    [v any/c]) void?]{
 
-Returns the value for @racket[key] in @racket[dict]. If no value
-is found for @racket[key], then @racket[to-set] determines the
-result as in @racket[dict-ref] (i.e., it is either a thunk that computes a value
-or a plain value), and this result is stored in @racket[dict] for the
-@racket[key].  (Note that if @racket[to-set] is a thunk, it is not
-invoked in tail position.)
-
-@examples[
-#:eval dict-eval
-(dict-ref! (make-hasheq '((a . "apple") (b . "beer"))) 'a)
-(dict-ref! (make-hasheq '((a . "apple") (b . "beer"))) 'c 'cabbage)
-(define h (make-hasheq '((a . "apple") (b . "beer"))))
-(dict-ref h 'c)
-(dict-ref! h 'c (λ () 'cabbage))
-(dict-ref h 'c)
-]}
-
-@defproc[(dict-update! [dict (and/c dict? (not/c immutable?))]
-                       [key any/c]
-                       [updater (any/c . -> . any/c)]
-                       [failure-result any/c (lambda () (raise (make-exn:fail ....)))]) void?]{
-
-Composes @racket[dict-ref] and @racket[dict-set!] to update an
-existing mapping in @racket[dict], where the optional @racket[failure-result]
-argument is used as in @racket[dict-ref] when no mapping exists for 
-@racket[key] already.
+Maps @racket[key] to @racket[v] in @racket[dict], overwriting any
+existing mapping for @racket[key]. The update can fail with a
+@racket[exn:fail:contract] exception if @racket[dict] is not mutable
+or if @racket[key] is not an allowed key for the dictionary (e.g., not
+an exact integer in the appropriate range when @racket[dict] is a
+@tech{vector}).
 
 @examples[
 #:eval dict-eval
 (define h (make-hash))
-(dict-update! h 'a add1)
-(dict-update! h 'a add1 0)
+(dict-set! h 'a "apple")
 h
 (define v (vector #f #f #f))
-(dict-update! v 0 not)
+(dict-set! v 0 "apple")
 v
 ]}
 
-
-@defproc[(dict-update [dict dict?]
-                      [key any/c]
-                      [updater (any/c . -> . any/c)]
-                      [failure-result any/c (lambda () (raise (make-exn:fail ....)))])
+@defproc[(dict-set [dict (and/c dict? immutable?)]
+                   [key any/c]
+                   [v any/c])
           (and/c dict? immutable?)]{
 
-Composes @racket[dict-ref] and @racket[dict-set] to functionally
-update an existing mapping in @racket[dict], where the optional @racket[failure-result]
-argument is used as in @racket[dict-ref] when no mapping exists for 
-@racket[key] already.
+Functionally extends @racket[dict] by mapping @racket[key] to
+@racket[v], overwriting any existing mapping for @racket[key], and
+returning an extended dictionary. The update can fail with a
+@racket[exn:fail:contract] exception if @racket[dict] does not support
+functional extension or if @racket[key] is not an allowed key for the
+dictionary.
 
 @examples[
 #:eval dict-eval
-(dict-update #hash() 'a add1)
-(dict-update #hash() 'a add1 0)
-(dict-update #hash((a . "apple") (b . "beer")) 'b string-length)
+(dict-set #hash() 'a "apple")
+(dict-set #hash((a . "apple") (b . "beer")) 'b "banana")
+(dict-set '() 'a "apple")
+(dict-set '((a . "apple") (b . "beer")) 'b "banana")
 ]}
 
 
@@ -324,50 +278,6 @@ h
 h
 (dict-remove h 'z)
 (dict-remove '((a . "apple") (b . "banana")) 'a)
-]}
-
-
-@defproc[(dict-map [dict dict?]
-                   [proc (any/c any/c . -> . any/c)])
-         (listof any/c)]{
-
-Applies the procedure @racket[proc] to each element in
-@racket[dict] in an unspecified order, accumulating the results
-into a list. The procedure @racket[proc] is called each time with a
-key and its value.
-
-@examples[
-#:eval dict-eval
-(dict-map #hash((a . "apple") (b . "banana")) vector)
-]}
-
-
-@defproc[(dict-for-each [dict dict?]
-                        [proc (any/c any/c . -> . any)])
-         void?]{
-
-Applies @racket[proc] to each element in @racket[dict] (for the
-side-effects of @racket[proc]) in an unspecified order. The procedure
-@racket[proc] is called each time with a key and its value.
-
-@examples[
-#:eval dict-eval
-(dict-for-each #hash((a . "apple") (b . "banana")) 
-               (lambda (k v)
-                 (printf "~a = ~s\n" k v)))
-]}
-
-
-@defproc[(dict-count [dict dict?])
-         exact-nonnegative-integer?]{
-
-Returns the number of keys mapped by @racket[dict], usually in
-constant time.
-
-@examples[
-#:eval dict-eval
-(dict-count #hash((a . "apple") (b . "banana")))
-(dict-count #("apple" "banana"))
 ]}
 
 
@@ -448,10 +358,259 @@ operation should take constant time.
 (dict-iterate-value h (dict-iterate-next h i))
 ]}
 
+@subsection[#:tag "fallbacks"]{Derived Dictionary Methods}
+
+These methods of @racket[gen:dict] have fallback implementations in terms of
+the other methods; they may be supported even by dictionary types that do not
+directly implement them.
+
+@defproc[(dict-has-key? [dict dict?] [key any/c])
+         boolean?]{
+
+Returns @racket[#t] if @racket[dict] contains a value for the given
+@racket[key], @racket[#f] otherwise.
+
+Supported for any @racket[dict] that implements @racket[dict-ref].
+
+@examples[
+#:eval dict-eval
+(dict-has-key? #hash((a . "apple") (b . "beer")) 'a)
+(dict-has-key? #hash((a . "apple") (b . "beer")) 'c)
+(dict-has-key? '((a . "apple") (b . "banana")) 'b)
+(dict-has-key? #("apple" "banana") 1)
+(dict-has-key? #("apple" "banana") 3)
+(dict-has-key? #("apple" "banana") -3)
+]}
+
+@defproc[(dict-set*! [dict (and/c dict? (not/c immutable?))]
+                     [key any/c]
+                     [v any/c]
+                     ...
+                     ...) void?]{
+
+Maps each @racket[key] to each @racket[v] in @racket[dict], overwriting any
+existing mapping for each @racket[key]. The update can fail with a
+@racket[exn:fail:contract] exception if @racket[dict] is not mutable
+or if any @racket[key] is not an allowed key for the dictionary (e.g., not
+an exact integer in the appropriate range when @racket[dict] is a
+@tech{vector}). The update takes place from the left, so later mappings overwrite
+earlier mappings.
+
+Supported for any @racket[dict] that implements @racket[dict-set!].
+
+@examples[
+#:eval dict-eval
+(define h (make-hash))
+(dict-set*! h 'a "apple" 'b "banana")
+h
+(define v1 (vector #f #f #f))
+(dict-set*! v1 0 "apple" 1 "banana")
+v1
+(define v2 (vector #f #f #f))
+(dict-set*! v2 0 "apple" 0 "banana")
+v2
+]}
+
+@defproc[(dict-set* [dict (and/c dict? immutable?)]
+                    [key any/c]
+                    [v any/c]
+                    ...
+                    ...)
+          (and/c dict? immutable?)]{
+
+Functionally extends @racket[dict] by mapping each @racket[key] to
+each @racket[v], overwriting any existing mapping for each @racket[key], and
+returning an extended dictionary. The update can fail with a
+@racket[exn:fail:contract] exception if @racket[dict] does not support
+functional extension or if any @racket[key] is not an allowed key for the
+dictionary. The update takes place from the left, so later mappings overwrite
+earlier mappings.
+
+Supported for any @racket[dict] that implements @racket[dict-set].
+
+@examples[
+#:eval dict-eval
+(dict-set* #hash() 'a "apple" 'b "beer")
+(dict-set* #hash((a . "apple") (b . "beer")) 'b "banana" 'a "anchor")
+(dict-set* '() 'a "apple" 'b "beer")
+(dict-set* '((a . "apple") (b . "beer")) 'b "banana" 'a "anchor")
+(dict-set* '((a . "apple") (b . "beer")) 'b "banana" 'b "ballistic")
+]}
+
+@defproc[(dict-ref! [dict dict?]
+                    [key any/c]
+                    [to-set any/c])
+         any]{
+
+Returns the value for @racket[key] in @racket[dict]. If no value
+is found for @racket[key], then @racket[to-set] determines the
+result as in @racket[dict-ref] (i.e., it is either a thunk that computes a value
+or a plain value), and this result is stored in @racket[dict] for the
+@racket[key].  (Note that if @racket[to-set] is a thunk, it is not
+invoked in tail position.)
+
+Supported for any @racket[dict] that implements @racket[dict-ref] and
+@racket[dict-set!].
+
+@examples[
+#:eval dict-eval
+(dict-ref! (make-hasheq '((a . "apple") (b . "beer"))) 'a)
+(dict-ref! (make-hasheq '((a . "apple") (b . "beer"))) 'c 'cabbage)
+(define h (make-hasheq '((a . "apple") (b . "beer"))))
+(dict-ref h 'c)
+(dict-ref! h 'c (λ () 'cabbage))
+(dict-ref h 'c)
+]}
+
+@defproc[(dict-update! [dict (and/c dict? (not/c immutable?))]
+                       [key any/c]
+                       [updater (any/c . -> . any/c)]
+                       [failure-result any/c (lambda () (raise (make-exn:fail ....)))]) void?]{
+
+Composes @racket[dict-ref] and @racket[dict-set!] to update an
+existing mapping in @racket[dict], where the optional @racket[failure-result]
+argument is used as in @racket[dict-ref] when no mapping exists for 
+@racket[key] already.
+
+Supported for any @racket[dict] that implements @racket[dict-ref] and
+@racket[dict-set!].
+
+@examples[
+#:eval dict-eval
+(define h (make-hash))
+(dict-update! h 'a add1)
+(dict-update! h 'a add1 0)
+h
+(define v (vector #f #f #f))
+(dict-update! v 0 not)
+v
+]}
+
+
+@defproc[(dict-update [dict dict?]
+                      [key any/c]
+                      [updater (any/c . -> . any/c)]
+                      [failure-result any/c (lambda () (raise (make-exn:fail ....)))])
+          (and/c dict? immutable?)]{
+
+Composes @racket[dict-ref] and @racket[dict-set] to functionally
+update an existing mapping in @racket[dict], where the optional @racket[failure-result]
+argument is used as in @racket[dict-ref] when no mapping exists for 
+@racket[key] already.
+
+Supported for any @racket[dict] that implements @racket[dict-ref] and
+@racket[dict-set].
+
+@examples[
+#:eval dict-eval
+(dict-update #hash() 'a add1)
+(dict-update #hash() 'a add1 0)
+(dict-update #hash((a . "apple") (b . "beer")) 'b string-length)
+]}
+
+
+@defproc[(dict-map [dict dict?]
+                   [proc (any/c any/c . -> . any/c)])
+         (listof any/c)]{
+
+Applies the procedure @racket[proc] to each element in
+@racket[dict] in an unspecified order, accumulating the results
+into a list. The procedure @racket[proc] is called each time with a
+key and its value.
+
+Supported for any @racket[dict] that implements @racket[dict-iterate-first],
+@racket[dict-iterate-next], @racket[dict-iterate-key], and
+@racket[dict-iterate-value].
+
+@examples[
+#:eval dict-eval
+(dict-map #hash((a . "apple") (b . "banana")) vector)
+]}
+
+
+@defproc[(dict-for-each [dict dict?]
+                        [proc (any/c any/c . -> . any)])
+         void?]{
+
+Applies @racket[proc] to each element in @racket[dict] (for the
+side-effects of @racket[proc]) in an unspecified order. The procedure
+@racket[proc] is called each time with a key and its value.
+
+Supported for any @racket[dict] that implements @racket[dict-iterate-first],
+@racket[dict-iterate-next], @racket[dict-iterate-key], and
+@racket[dict-iterate-value].
+
+@examples[
+#:eval dict-eval
+(dict-for-each #hash((a . "apple") (b . "banana")) 
+               (lambda (k v)
+                 (printf "~a = ~s\n" k v)))
+]}
+
+
+@defproc[(dict-count [dict dict?])
+         exact-nonnegative-integer?]{
+
+Returns the number of keys mapped by @racket[dict], usually in
+constant time.
+
+Supported for any @racket[dict] that implements @racket[dict-iterate-first]
+and @racket[dict-iterate-next].
+
+@examples[
+#:eval dict-eval
+(dict-count #hash((a . "apple") (b . "banana")))
+(dict-count #("apple" "banana"))
+]}
+
+@defproc[(dict-keys [dict dict?]) list?]{ 
+Returns a list of the keys from
+@racket[dict] in an unspecified order.
+
+Supported for any @racket[dict] that implements @racket[dict-iterate-first],
+@racket[dict-iterate-next], and @racket[dict-iterate-key].
+
+@examples[
+#:eval dict-eval
+(define h #hash((a . "apple") (b . "banana")))
+(dict-keys h)
+]}
+
+@defproc[(dict-values [dict dict?]) list?]{ 
+Returns a list of the values from
+@racket[dict] in an unspecified order.
+
+Supported for any @racket[dict] that implements @racket[dict-iterate-first],
+@racket[dict-iterate-next], and @racket[dict-iterate-value].
+
+@examples[
+#:eval dict-eval
+(define h #hash((a . "apple") (b . "banana")))
+(dict-values h)
+]}
+
+@defproc[(dict->list [dict dict?]) list?]{ 
+Returns a list of the associations from
+@racket[dict] in an unspecified order.
+
+Supported for any @racket[dict] that implements @racket[dict-iterate-first],
+@racket[dict-iterate-next], @racket[dict-iterate-key], and
+@racket[dict-iterate-value].
+
+@examples[
+#:eval dict-eval
+(define h #hash((a . "apple") (b . "banana")))
+(dict->list h)
+]}
+@section{Dictionary Sequences}
 
 @defproc[(in-dict [dict dict?]) sequence?]{ Returns a @tech{sequence}
 whose each element is two values: a key and corresponding value from
 @racket[dict].
+
+Supported for any @racket[dict] that implements @racket[dict-iterate-first],
+@racket[dict-iterate-next], @racket[dict-iterate-key], and
+@racket[dict-iterate-value].
 
 @examples[
 #:eval dict-eval
@@ -464,6 +623,9 @@ whose each element is two values: a key and corresponding value from
 @defproc[(in-dict-keys [dict dict?]) sequence?]{
 Returns a sequence whose elements are the keys of @racket[dict].
 
+Supported for any @racket[dict] that implements @racket[dict-iterate-first],
+@racket[dict-iterate-next], and @racket[dict-iterate-key].
+
 @examples[
 #:eval dict-eval
 (define h #hash((a . "apple") (b . "banana")))
@@ -473,6 +635,9 @@ Returns a sequence whose elements are the keys of @racket[dict].
 
 @defproc[(in-dict-values [dict dict?]) sequence?]{
 Returns a sequence whose elements are the values of @racket[dict].
+
+Supported for any @racket[dict] that implements @racket[dict-iterate-first],
+@racket[dict-iterate-next], and @racket[dict-iterate-value].
 
 @examples[
 #:eval dict-eval
@@ -486,6 +651,10 @@ whose elements are pairs, each containing a key and its value from
 @racket[dict] (as opposed to using @racket[in-dict], which gets the
 key and value as separate values for each element).
 
+Supported for any @racket[dict] that implements @racket[dict-iterate-first],
+@racket[dict-iterate-next], @racket[dict-iterate-key], and
+@racket[dict-iterate-value].
+
 @examples[
 #:eval dict-eval
 (define h #hash((a . "apple") (b . "banana")))
@@ -493,108 +662,7 @@ key and value as separate values for each element).
   p)
 ]}
 
-@defproc[(dict-keys [dict dict?]) list?]{ 
-Returns a list of the keys from
-@racket[dict] in an unspecified order.
-
-@examples[
-#:eval dict-eval
-(define h #hash((a . "apple") (b . "banana")))
-(dict-keys h)
-]}
-
-@defproc[(dict-values [dict dict?]) list?]{ 
-Returns a list of the values from
-@racket[dict] in an unspecified order.
-
-@examples[
-#:eval dict-eval
-(define h #hash((a . "apple") (b . "banana")))
-(dict-values h)
-]}
-
-@defproc[(dict->list [dict dict?]) list?]{ 
-Returns a list of the associations from
-@racket[dict] in an unspecified order.
-
-@examples[
-#:eval dict-eval
-(define h #hash((a . "apple") (b . "banana")))
-(dict->list h)
-]}
-
-@defthing[gen:dict any/c]{
-
-A @tech{generic interface} (see @secref["struct-generics"]) that
-supplies dictionary method implementations for a structure type.
-To supply method implementations, the @racket[#:methods] form should be used.
-The provided implementations are applied only to instances of the structure
-type. The following methods can be implemented:
-
-@itemize[
-
- @item{@racket[dict-ref] : accepts either two or three arguments}
-
- @item{@racket[dict-set!] : accepts three arguments, left unimplemented if
-       mutation is not supported}
-
- @item{@racket[dict-set] : accepts three arguments and returns an updated
-       dictionary, left unimplemented if functional update is not supported}
-
- @item{@racket[dict-remove!] : accepts two arguments, left unimplemented if
-       mutation is not supported or if key removal is not supported}
-
- @item{@racket[dict-remove] : accepts two arguments and returns an updated
-       dictionary, left unimplemented if functional update or key removal is
-       not supported}
-
- @item{@racket[dict-count] : accepts one argument}
-
- @item{@racket[dict-iterate-first] : accepts one argument}
-
- @item{@racket[dict-iterate-next] : accepts two arguments; the
-       procedure is responsible for checking that the second argument
-       is a valid position for the first argument}
-
- @item{@racket[dict-iterate-key] : accepts two arguments; the
-       procedure is responsible for checking that the second argument
-       is a valid position for the first argument}
-
- @item{@racket[dict-iterate-value] : accepts two arguments; the
-       procedure is responsible for checking that the second argument
-       is a valid position for the first argument}
-]
-
-@examples[#:eval dict-eval
-(struct alist (v)
-  #:methods gen:dict
-  [(define (dict-ref dict key
-                     [default (lambda () (error "key not found" key))])
-     (cond [(assoc key (alist-v dict)) => cdr]
-           [else (if (procedure? default) (default) default)]))
-   (define (dict-set dict key val)
-     (alist (cons (cons key val) (alist-v dict))))
-   (define (dict-remove dict key)
-     (define al (alist-v dict))
-     (alist (remove* (filter (λ (p) (equal? (car p) key)) al) al)))
-   (define (dict-count dict #:default [x #f])
-     (or x
-         (length (remove-duplicates (alist-v dict) #:key car))))]) (code:comment "etc. other methods")
-
-  (define d1 (alist '((1 . a) (2 . b))))
-  (dict? d1)
-  (dict-ref d1 1)
-  (dict-remove d1 1)
-]
-
-}
-
-@defthing[prop:dict struct-type-property?]{
-  A deprecated structure type property used to define custom extensions
-  to the dictionary API. Use @racket[gen:dict] instead. Accepts a vector
-  of 10 procedures with the same arguments as the methods of
-  @racket[gen:dict].
-}
+@section{Contracted Dictionaries}
 
 @defthing[prop:dict/contract struct-type-property?]{
 
@@ -631,7 +699,7 @@ iterators, respectively, if @racket[d] implements the
 @racket[prop:dict/contract] interface.
 }
 
-@;{------------------------------------------------------------}
+@section{Custom Hash Table-based Dictionaries}
 
 @deftogether[(
 @defproc[(make-custom-hash [eql? (any/c any/c . -> . any/c)]
@@ -678,8 +746,6 @@ mappings are the same when keys and values are compared with
 (dict-set! h 1 'one)
 (dict-ref h "1")
 ]}
-
-@; ----------------------------------------------------------------------
 
 @close-eval[dict-eval]
 

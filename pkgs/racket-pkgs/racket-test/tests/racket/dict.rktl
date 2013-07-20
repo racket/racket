@@ -132,41 +132,36 @@
 (try-simple (hash-copy #hasheq((1 . one) (#f . 7))) #f #t #t #f)
 (try-simple '((0 . zero) (1 . one)) #t #f #t #t)
 (try-simple '((1 . one) (0 . zero)) #t #f #t #t)
-(try-simple (let ([h (make-custom-hash (lambda (a b)
-                                         (string=? (format "~a" a)
-                                                   (format "~a" b)))
-                                       (lambda (a)
-                                         (equal-hash-code (format "~a" a))))])
-              (dict-set! h "1" 'one)
-              (dict-set! h "2" 'two)
-              h)
-            #f #t #t #f
-            "1")
-(try-simple (let* ([h (make-immutable-custom-hash 
-                       (lambda (a b)
-                         (string=? (format "~a" a)
-                                   (format "~a" b)))
-                       (lambda (a)
-                         (equal-hash-code (format "~a" a))))]
-                   [h (dict-set h "1" 'one)]
-                   [h (dict-set h "2" 'two)])
-              h)
-            #f #f #t #t
-            "1")
-(let ([s1 (make-string 1 #\1)]
-      [s2 (make-string 1 #\2)])
-  (try-simple (let ([h (make-weak-custom-hash (lambda (a b)
-                                                (string=? (format "~a" a)
-                                                          (format "~a" b)))
-                                              (lambda (a)
-                                                (equal-hash-code (format "~a" a))))])
-                (dict-set! h s1 'one)
-                (dict-set! h s2 'two)
+
+(let ()
+  (define (key? x) #t)
+  (define (key-code a rec) (rec (format "~a" a)))
+  (define (key=? x y rec) (rec (format "~a" x) (format "~a" y)))
+  (define-custom-hash-types string-hash #:key? key? key=? key-code)
+  
+  (try-simple (let ([h (make-mutable-string-hash)])
+                (dict-set! h "1" 'one)
+                (dict-set! h "2" 'two)
                 h)
               #f #t #t #f
               "1")
-  ;; preserve from GC:
-  (list s1 s2))
+  (try-simple (let* ([h (make-immutable-string-hash)]
+                     [h (dict-set h "1" 'one)]
+                     [h (dict-set h "2" 'two)])
+                h)
+              #f #f #t #t
+              "1")
+  (let ([s1 (make-string 1 #\1)]
+        [s2 (make-string 1 #\2)])
+    (try-simple (let ([h (make-weak-string-hash)])
+                  (dict-set! h s1 'one)
+                  (dict-set! h s2 'two)
+                  (collect-garbage)
+                  h)
+                #f #t #t #f
+                "1")
+    ;; preserve from GC:
+    (list s1 s2)))
 
 ;; ----------------------------------------
 
