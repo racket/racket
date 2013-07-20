@@ -4,6 +4,7 @@
          mzlib/etc racket/port
          compiler/compiler racket/promise
          racket/match mzlib/compile
+         racket/promise
          "unit-tests/all-tests.rkt"
          "unit-tests/test-utils.rkt"
          "optimizer/run.rkt"
@@ -146,7 +147,8 @@
 
 
 (define (go tests) (test/gui tests))
-(define (go/text tests) (run-tests tests 'verbose))
+(define (go/text tests)
+  (force (delay/thread (run-tests tests 'verbose))))
 
 (provide go go/text just-one places start-workers
          verbose?
