@@ -443,7 +443,7 @@
     (copytree "collects" 'collects)
     (copytree "share"    'sharerkt #:missing 'skip)
     (copytree "doc"      'doc      #:missing 'skip)
-    (copytree "config"   'config   #:missing 'skip)
+    (copytree "etc"      'config   #:missing 'skip)
     (unless origtree? (write-config))))
 
 (define (make-install-destdir-fix)
