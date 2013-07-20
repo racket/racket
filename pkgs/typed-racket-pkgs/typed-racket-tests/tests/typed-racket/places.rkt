@@ -1,7 +1,7 @@
 #lang racket
 
 (require racket/place typed-racket/optimizer/logging
-         unstable/open-place compiler/compiler)
+         unstable/open-place syntax/modcode)
 (provide start-worker dr serialize-exn deserialize-exn s-exn? generate-log/place verbose?)
 
 (define verbose? (make-parameter #f))
@@ -33,24 +33,21 @@
     [(s-exn m)
      (exn m (current-continuation-marks))]))
 
-(define (dr p [reg-box #f])
+(define (dr p)
   (parameterize ([current-namespace (make-base-empty-namespace)])
-    (dynamic-require `(file ,(if (string? p) p (path->string p))) #f)
-    (and reg-box (set-box! reg-box (namespace-module-registry (current-namespace))))))
+    (dynamic-require `(file ,(if (string? p) p (path->string p))) #f)))
 
 
 (define (start-worker get-ch name)
   (define verb (verbose?))
   (open-place ch
-    (define reg (box #f))
     (let loop ()
       (match (place-channel-get get-ch)                
         [(vector 'log name dir res)
+         (dynamic-require 'typed-racket/core #f)
          (with-handlers ([exn:fail? 
-                          (λ (e) (place-channel-put 
-                                  res 
-                                  (string-append "EXCEPTION: " (exn-message e))))])
-           (define lg (generate-log/place name dir reg))
+                          (λ (e) (place-channel-put res (serialize-exn e)))])
+           (define lg (generate-log/place name dir))
            (place-channel-put res lg))
          (loop)]
         [(vector p* res error?) 
@@ -62,25 +59,34 @@
                           [current-directory path]
                           [current-output-port (open-output-nowhere)]                        
                           [error-display-handler (if error? void (error-display-handler))]) 
-             (dr p reg)
+             (dr p)
              (place-channel-put res #t)))
          (loop)]))))
 
-(define comp (compile-zos #f #:module? #t))
+(define-namespace-anchor anchor)
 
-(define (generate-log/place name dir [reg-box #f])
+(define (generate-log/place name dir)
   ;; some tests require other tests, so some fiddling is required
-  (define f (build-path dir name))
+  (define file (simplify-path (build-path dir name)))
+  (define orig-load/use-compiled (current-load/use-compiled))
+  (define orig-use-compiled-file-paths (use-compiled-file-paths))
+  (define (test-load/use-compiled path name)
+    (parameterize [(use-compiled-file-paths null)
+                   (current-load/use-compiled reset-load/use-compiled)]
+      (orig-load/use-compiled path name)))
+  (define (reset-load/use-compiled path name)
+    (parameterize [(use-compiled-file-paths orig-use-compiled-file-paths)
+                   (current-load/use-compiled orig-load/use-compiled)]
+      (orig-load/use-compiled path name)))
+
   (with-output-to-string
     (lambda ()
       (with-tr-logging-to-port
-       (current-output-port)
-       (lambda ()
-         (comp (list f) 'auto)))
-      (parameterize
-          ([current-namespace (make-base-empty-namespace)]
-           [current-load-relative-directory dir])
-        (dynamic-require f #f)
-        (and reg-box (set-box! reg-box (namespace-module-registry (current-namespace)))))
-      ;; clean up compiled files in prevision of the next testing run
-      (delete-directory/files (build-path dir "compiled")))))
+        (current-output-port)
+        (thunk
+          (parameterize ([current-namespace (make-base-empty-namespace)]
+                         [current-load/use-compiled test-load/use-compiled])
+            (define orig-namespace (namespace-anchor->namespace anchor))
+            (namespace-attach-module orig-namespace 'racket)
+            (namespace-attach-module orig-namespace 'typed-racket/core)
+            (dynamic-require file #f)))))))

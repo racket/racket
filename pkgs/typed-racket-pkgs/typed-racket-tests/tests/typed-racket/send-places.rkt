@@ -26,6 +26,9 @@
   (cond [(places) 
          (define-values (res-ch res-ch*) (place-channel))
          (place-channel-put enq-ch (vector 'log name dir res-ch*))
-         (place-channel-get res-ch)]
+         (define res (place-channel-get res-ch))
+         (if (s-exn? res)
+             (raise (deserialize-exn res))
+             res)]
         [else
          (generate-log/place name dir)]))
