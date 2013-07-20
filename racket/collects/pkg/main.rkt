@@ -78,6 +78,8 @@
   #:once-any
   [#:bool link () ("Link a directory package source in place")]
   [#:bool static-link () ("Link in place, promising collections do not change")]
+  [#:bool source () ("Strip built elements of the package before installing")]
+  [#:bool binary () ("Strip source elements of the package before installing")]
   #:once-each
   [#:bool skip-installed () ("Skip a <pkg-source> if already installed")]
   #:once-any
@@ -92,7 +94,7 @@
   [(#:str dir #f) scope-dir () "Install for package scope <dir>"]
   #:once-each
   [(#:str catalog #f) catalog () "Use <catalog> instead of configured catalogs"]
-  [#:bool no-setup () ("Don't run `raco setup' after changing packages (generally"
+  [#:bool no-setup () ("Don't run `raco setup' after changing packages (usually"
                        "not a good idea)")]
   [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"]
   #:args pkg-source
@@ -110,6 +112,7 @@
                        #:force? force
                        #:ignore-checksums? ignore-checksums
                        #:skip-installed? skip-installed
+                       #:strip (or (and source 'source) (and binary 'binary))
                        (for/list ([p (in-list pkg-source)])
                          (define a-type (or (and link 'link) 
                                             (and static-link 'static-link)
@@ -141,8 +144,11 @@
   [#:bool user ("-u") "Shorthand for `--scope user'"]
   [#:bool shared ("-s") "Shorthand for `--scope shared'"]
   [(#:str dir #f) scope-dir () "Update for package scope <dir>"]
+  #:once-any
+  [#:bool source () ("Strip built elements of the package before installing")]
+  [#:bool binary () ("Strip source elements of the package before installing")]
   #:once-each
-  [#:bool no-setup () ("Don't run `raco setup' after changing packages (generally"
+  [#:bool no-setup () ("Don't run `raco setup' after changing packages (usually"
                        "not a good idea)")]
   [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"]
   #:args pkg
@@ -155,7 +161,8 @@
         (pkg-update pkg
                     #:all? all
                     #:dep-behavior deps
-                    #:deps? update-deps)))
+                    #:deps? update-deps
+                    #:strip (or (and source 'source) (and binary 'binary)))))
      (setup no-setup setup-collects jobs)))]
  [remove
   "Remove packages"
@@ -173,7 +180,7 @@
   [#:bool shared ("-s") "Shorthand for `--scope shared'"]
   [(#:str dir #f) scope-dir () "Remove for package scope <dir>"]
   #:once-each
-  [#:bool no-setup () ("Don't run `raco setup' after changing packages (generally"
+  [#:bool no-setup () ("Don't run `raco setup' after changing packages (usually"
                        "not a good idea)")]
   [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"]
   #:args pkg

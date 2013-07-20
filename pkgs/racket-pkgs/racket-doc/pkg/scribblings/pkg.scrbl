@@ -315,6 +315,10 @@ sub-sub-commands:
         of the given directory will not change for each given directory that implements a
         @tech{multi-collection package}.}
 
+  @item{@DFlag{binary} --- Strips source elements of a package before installing.}
+
+  @item{@DFlag{source} --- Strips built elements of a package before installing.}
+
   @item{@DFlag{skip-installed} --- Ignore any @nonterm{pkg-source}
         whose name corresponds to an already-installed package.}
 
@@ -362,6 +366,8 @@ this command fails without installing any of the @nonterm{pkg}s
  @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Selects @nonterm{dir} as the @tech{package scope}, the same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
+ @item{@DFlag{binary} --- Same as for @command-ref{install}.}
+ @item{@DFlag{source} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  ]
 }

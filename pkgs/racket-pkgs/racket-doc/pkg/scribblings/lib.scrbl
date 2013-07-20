@@ -118,18 +118,24 @@ dependency.}
 @defproc[(pkg-stage [desc pkg-desc?]
                     [#:checksum checksum (or/c #f string?) #f]
                     [#:in-place? in-place? boolean? #f]
-                    [#:namespace namespace namespace? (make-base-namespace)])
+                    [#:namespace namespace namespace? (make-base-namespace)]
+                    [#:strip strip (or/c #f 'source 'binary) #f])
          (values string? path? (or/c #f string?) boolean? (listof module-path?))]{
 
 Locates the implementation of the package specified by @racket[desc]
 and downloads and unpacks it to a temporary directory (as needed).
 
 If @racket[desc] refers to an existing directory and
-@racket[in-place?]  is true, then the directory is used in place.
+@racket[in-place?] is true, then the directory is used in place.
 
 The @racket[namespace] argument is passed along to
 @racket[get-info/full] when the package's @filepath{info.rkt} is
 loaded.
+
+If @racket[strip] is not @racket[#f], then files and directories are
+removed from the prepared directory the same as when creating the
+corresponding kind of package. A directory that is staged in-place
+cannot be stripped.
 
 The result is the package name, the directory containing the unpacked package content,
 the checksum (if any) for the unpacked package, whether the
@@ -162,7 +168,8 @@ Unless @racket[quiet?] is true, information about the output is repotred to the 
                                            #f]
                            [#:force? force? boolean? #f]
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
-                           [#:quiet? boolean? quiet? #f])
+                           [#:quiet? boolean? quiet? #f]
+                           [#:strip strip (or/c #f 'source 'binary) #f])
          (or/c 'skip
                #f
                (listof (or/c path-string?
@@ -187,7 +194,8 @@ The package lock must be held; see @racket[with-pkg-lock].}
                                           #f]
                           [#:all? all? boolean? #f]
                           [#:deps? deps? boolean? #f]
-                          [#:quiet? boolean? quiet? #f])
+                          [#:quiet? boolean? quiet? #f]
+                          [#:strip strip (or/c #f 'source 'binary) #f])
         (or/c 'skip
               #f
               (listof (or/c path-string?
