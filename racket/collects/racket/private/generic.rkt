@@ -149,7 +149,10 @@
        #'(define (supported-name self-name)
            (define v table)
            (make-immutable-hasheqv
-             (list (cons 'method-name (vector-ref v 'index)) ...))))]))
+             (list
+              (cons 'method-name
+                    (procedure? (vector-ref v 'index)))
+              ...))))]))
 
 (begin-for-syntax
 
