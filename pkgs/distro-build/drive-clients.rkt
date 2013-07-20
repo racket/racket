@@ -91,6 +91,7 @@
   (displayln (apply ~a #:separator " " 
                     (map (lambda (p) (if (path? p) (path->string p) p)) 
                          (cons exe args))))
+  (flush-output)
   (apply system* exe args))
 
 (define (system*/string . args)
@@ -153,6 +154,7 @@
              (client-name c))))
   (when vbox
     (printf "Starting VirtualBox machine ~s\n" vbox)
+    (flush-output)
     (case (vbox-state vbox)
       [(running) (void)]
       [(paused) (vbox-control vbox "resume")]
@@ -169,6 +171,7 @@
   (define vbox (get-opt c '#:vbox))
   (when vbox
     (printf "Stopping VirtualBox machine ~s\n" vbox)
+    (flush-output)
     (vbox-control vbox "savestate")
     (unless (eq? (vbox-state vbox) 'saved)
       (error 'start-client "virtual machine isn't in the expected saved state: ~s" c))))
@@ -355,7 +358,7 @@
     (parameterize ([current-custodian cust])
       (thread (lambda ()
                 (sleep (* timeout-factor timeout))
-                (printf "timeout for ~s\n" (client-name c))
+                (eprintf "timeout for ~s\n" (client-name c))
                 ;; try nice interrupt, first:
                 (set! timeout? #t)
                 (break-thread orig-thread)
@@ -377,6 +380,7 @@
     (define log-file (build-path log-dir (client-name c)))
     (make-directory* log-dir)
     (printf "Logging build: ~a\n" log-file)
+    (flush-output)
     (define (go)
       (define p (open-output-file log-file
                                   #:exists 'truncate/replace))

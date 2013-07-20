@@ -44,7 +44,8 @@
   (begin
     (when (verbose)
       (printf (string-append " [" format-str "]\n")
-              arg ...))
+              arg ...)
+      (flush-output))
     (log-setup-debug format-str arg ...)))
 
 (define-serializable-struct doc (src-dir 

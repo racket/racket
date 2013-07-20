@@ -80,7 +80,8 @@
 
   (define (setup-fprintf p task s . args)
     (let ([task (if task (string-append task ": ") "")])
-      (apply fprintf p (string-append name-str ": " task s "\n") args)))
+      (apply fprintf p (string-append name-str ": " task s "\n") args)
+      (flush-output p)))
 
   (define (setup-printf task s . args)
     (apply setup-fprintf (current-output-port) task s args))

@@ -59,6 +59,11 @@
                      what
                      (exn-message x)))
 
+(define (printf/flush fmt . args)
+  ;; For status reporting, flush immediately after printing
+  (apply printf fmt args)
+  (flush-output))
+
 (struct pkg-desc (source type name auto?))
 (define (pkg-desc=? a b)
   (define (->list a)
@@ -589,7 +594,7 @@
 
 (define ((remove-package quiet?) pkg-name)
   (unless quiet?
-    (printf "Removing ~a\n" pkg-name))
+    (printf/flush "Removing ~a\n" pkg-name))
   (define db (read-pkg-db))
   (define pi (package-info pkg-name #:db db))
   (match-define (pkg-info orig-pkg checksum _) pi)
@@ -1060,7 +1065,7 @@
          #:install-conversation [install-conversation #f]
          #:update-conversation [update-conversation #f]
          descs)
-  (define download-printf (if quiet? void printf))
+  (define download-printf (if quiet? void printf/flush))
   (define check-sums? (not ignore-checksums?))
   (define all-db (merge-pkg-dbs))
   (define path-pkg-cache (make-hash))
@@ -1081,17 +1086,17 @@
                              (cadddr ud)))))
     (define (show-dependencies deps update? auto? conversation)
       (unless quiet?
-        (printf "The following ~a packages are listed as dependencies of ~a~a:~a\n"
-                (if update? "out-of-date" "uninstalled")
-                pkg-name
-                (if (or auto? (eq? conversation 'always-yes))
-                    (format "\nand they will be ~a~a"
-                            (if auto? "automatically " "")
-                            (if update? "updated" "installed"))
-                    "")
-                (if update?
-                    (format-deps deps)
-                    (format-list deps)))))
+        (printf/flush "The following ~a packages are listed as dependencies of ~a~a:~a\n"
+                      (if update? "out-of-date" "uninstalled")
+                      pkg-name
+                      (if (or auto? (eq? conversation 'always-yes))
+                          (format "\nand they will be ~a~a"
+                                  (if auto? "automatically " "")
+                                  (if update? "updated" "installed"))
+                          "")
+                      (if update?
+                          (format-deps deps)
+                          (format-list deps)))))
     (define simultaneous-installs
       (for/hash ([i (in-list infos)])
         (values (install-info-name i) (install-info-directory i))))
@@ -1545,12 +1550,15 @@
   (define to-update (filter-map (update-package download-printf db) pkgs))
   (cond
     [(empty? to-update)
-     (printf "No updates available\n")
+     (unless quiet?
+       (printf/flush "No updates available\n"))
      'skip]
     [else
-     (printf "Updating:\n")
-     (for ([u (in-list to-update)])
-       (printf "  ~a\n" (pkg-desc-name u)))
+     (unless quiet?
+       (printf "Updating:\n")
+       (for ([u (in-list to-update)])
+         (printf "  ~a\n" (pkg-desc-name u)))
+       (flush-output))
      (pkg-install
       #:updating? #t
       #:pre-succeed (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))
@@ -1641,8 +1649,8 @@
     (match create:format
       ['MANIFEST
        (unless quiet?
-         (printf "creating manifest for ~a\n"
-                 orig-dir))
+         (printf/flush "creating manifest for ~a\n"
+                       orig-dir))
        (with-output-to-file (build-path (or dest-dir dir) "MANIFEST")
          #:exists 'replace
          (λ ()
@@ -1659,11 +1667,11 @@
                                       [else (current-directory)]))))
        (define pkg/complete (path->complete-path pkg actual-dest-dir))
        (unless quiet?
-         (printf "packing~a into ~a\n"
-                 (if hide-src? "" (format " ~a" dir))
-                 (if dest-dir
-                     pkg/complete
-                     pkg)))
+         (printf/flush "packing~a into ~a\n"
+                       (if hide-src? "" (format " ~a" dir))
+                       (if dest-dir
+                           pkg/complete
+                           pkg)))
        (match create:format
          ['tgz
           (when (file-exists? pkg/complete)
@@ -1702,10 +1710,10 @@
        (define chk (format "~a.CHECKSUM" pkg))
        (define chk/complete (path->complete-path chk actual-dest-dir))
        (unless quiet?
-         (printf "writing package checksum to ~a\n"
-                 (if dest-dir
-                     chk/complete
-                     chk)))
+         (printf/flush "writing package checksum to ~a\n"
+                       (if dest-dir
+                           chk/complete
+                           chk)))
        (with-output-to-file chk/complete
          #:exists 'replace
          (λ () (display (call-with-input-file pkg/complete sha1))))])))
@@ -2178,7 +2186,7 @@
             (define ht (hash-ref details name))
             (define source (hash-ref ht 'source))
             (unless quiet?
-              (printf "Downloading ~s\n" source))
+              (printf/flush "Downloading ~s\n" source))
             (define-values (checksum modules deps)
               (get-pkg-content (pkg-desc source
                                          #f 

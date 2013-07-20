@@ -30,6 +30,7 @@
 
 (when (link-exists? link-file)
   (printf "Removing old \"current\" link\n")
+  (flush-output)
   (delete-file link-file))
 
 (define (get-snapshots)
@@ -46,9 +47,11 @@
                               (list-tail (sort snapshots string>?) n)))
     (for ([s (in-list remove-snapshots)])
       (printf "Removing snapshot ~a\n" s)
+      (flush-output)
       (delete-directory/files (build-path snapshots-dir s)))))
 
 (printf "Creating \"current\" link\n")
+(flush-output)
 (make-file-or-directory-link current-snapshot link-file)
 
 (make-download-page (build-path site-dir
