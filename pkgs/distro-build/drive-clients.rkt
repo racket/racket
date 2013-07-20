@@ -250,6 +250,8 @@
   (define dist-catalogs (choose-catalogs c '("")))
   (define release? (get-opt c '#:release? default-release?))
   (define source? (get-opt c '#:source? #f))
+  (define source-pkgs? (get-opt c '#:source-pkgs? source?))
+  (define source-runtime? (get-opt c '#:source-runtime? source?))
   (~a " SERVER=" server
       " PKGS=" (q pkgs)
       " DOC_SEARCH=" (q doc-search)
@@ -260,7 +262,10 @@
       " DIST_SUFFIX=" (q dist-suffix)
       " DIST_CATALOGS_q=" (qq dist-catalogs kind)
       " RELEASE_MODE=" (if release? "--release" (q ""))
-      " SOURCE_MODE=" (if source? "--source" (q ""))
+      " SOURCE_MODE=" (if source-runtime? "--source" (q ""))
+      " PKG_SOURCE_MODE=" (if source-pkgs?
+                              (q "--source --no-setup")
+                              (q ""))
       " README=" (q (file-name-from-path readme))))
 
 (define (unix-build c host port user server repo clean? pull? readme)

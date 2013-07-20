@@ -138,6 +138,8 @@
     [(#:pull?) (boolean? val)]
     [(#:release?) (boolean? val)]
     [(#:source?) (boolean? val)]
+    [(#:source-runtime?) (boolean? val)]
+    [(#:source-pkgs?) (boolean? val)]
     [(#:site-dest) (path-string? val)]
     [(#:pdf-doc?) (boolean? val)]
     [(#:max-snapshots) (real? val)]

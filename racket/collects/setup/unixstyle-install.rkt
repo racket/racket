@@ -12,8 +12,9 @@
 ;;     (interactive, undo-on-error, create-uninstaller)
 ;;   - `copy': similar to `move', but copies instead of moving
 ;;   - `bundle': like `copy', but no uninstall script
-;;   - `post-adjust': adjust an existing bundle after package installs
-;;   - `post-adjust--source': (really two dashes), like `post-adjust', but for source
+;;   - `post-adjust': adjust an existing bundle after package installs;
+;;     two extra arguments determine whether to strip build
+;;     artifacts
 ;;   - `make-install-copytree': copies some toplevel directories, skips ".*"
 ;;     subdirs, and rewrites "config.rkt", but no uninstaller
 ;;     (used by `make install') (requires an additional `origtree' argument)
@@ -35,6 +36,9 @@
   (begin0 (car args) (set! args (cdr args))))
 
 (define op (string->symbol (get-arg)))
+(define adjust-mode
+  (and (eq? op 'post-adjust)
+       (list (get-arg) (get-arg))))
 (define rktdir (get-arg))
 (define base-destdir (and (pair? args)
                           (null? (cdr args))
@@ -118,6 +122,16 @@
          (parameterize ([current-directory path]) (for-each rm (ls)))
          (delete-directory path)]
         [else #t])) ; shouldn't happen
+
+;; removes "compiled" subdirectories recursively
+(define (rm-compiled path)
+  (define (loop path)
+    (cond [(equal? path "compiled") (rm path)]
+          [(directory-exists? path)
+           (parameterize ([current-directory path]) (for-each loop (ls)))]
+          [else (void)]))
+  (parameterize ([current-directory path])
+    (for-each loop (ls))))
 
 ;; used for filtering files when copying (and moving toplevels)
 (define skip-filter (lambda (p) #f))
@@ -469,20 +483,24 @@
   (fix-executables bindir librktdir)
   (unless origtree? (write-config configdir)))
 
-(define (post-adjust-source)
-  (define do-tree (move/copy-tree #f))
-  (current-directory rktdir)
-  ;; Copy source into place:
-  (set! skip-filter ; skip src/build
-        (lambda (p) (regexp-match? #rx"^build$" p)))
-  (do-tree "src" (build-path base-destdir "src"))
-  ;; Remove directories that get re-created:
-  (define (remove! dst*) (rm (dir: dst*)))
-  (remove! 'bin)
-  (remove! 'lib)
-  (remove! 'man)
-  (remove! 'config) ; may be recreated by a later bundle step
-  (remove! 'includerkt))
+(define (post-adjust)
+  (when (regexp-match? #rx"--source" (car adjust-mode))
+    (define do-tree (move/copy-tree #f))
+    (current-directory rktdir)
+    ;; Copy source into place:
+    (set! skip-filter ; skip src/build
+          (lambda (p) (regexp-match? #rx"^build$" p)))
+    (do-tree "src" (build-path base-destdir "src"))
+    ;; Remove directories that get re-created:
+    (define (remove! dst*) (rm (dir: dst*)))
+    (remove! 'bin)
+    (remove! 'lib)
+    (remove! 'man)
+    (remove! 'config) ; may be recreated by a later bundle step
+    (remove! 'includerkt)
+    (when (regexp-match? #rx"--source" (cadr adjust-mode))
+      ;; strip "compiled" directories back out of "collects"
+      (rm-compiled (dir: 'collects)))))
 
 ;; --------------------------------------------------------------------------
 
@@ -491,8 +509,7 @@
     [(move) (move/copy-distribution #t #f)]
     [(copy) (move/copy-distribution #f #f)]
     [(bundle) (move/copy-distribution #f #t)]
-    [(post-adjust) (void)]
-    [(post-adjust--source) (post-adjust-source)]
+    [(post-adjust) (post-adjust)]
     [(make-install-copytree)    (make-install-copytree)]
     [(make-install-destdir-fix) (make-install-destdir-fix)]
     [else   (error (format "unknown operation: ~e" op))]))

@@ -204,11 +204,20 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     installers; the default is determined by the `RELEASE_MODE'
     makefile variable
 
-  #:source? <boolean> --- if true, then create a kernel-source archive
-    (with pre-built packages), instead of a platform-specific
-    installer; a #t value works best when used with a Unix client
-    machine, since Unix clients typically have no native-library
-    packages; the default is #f
+  #:source? <boolean> --- determines the default value for
+    `#:source-runtime' and `#:source-pkgs'
+
+  #:source-runtime? <boolean> --- if true, then create an archive that
+    contains the run-time system in source form (possibly with built
+    packages), instead of a platform-specific installer; a #t value
+    works best when used with a Unix client machine, since Unix
+    clients typically have no native-library packages; the default is
+    the value of `#:source?'
+
+  #:source-pkgs? --- if true, then packages are included in the
+    installer/archive only in source form; a true value works best
+    when the `#:source-runtime?' value is also #t; the default is the
+    value of `#:source?'
 
   #:site-dest <path-string> --- destination for completed build, used
     by the `site' and `snapshot-site' makefile targets; the default is

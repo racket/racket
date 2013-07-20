@@ -21,10 +21,13 @@
         @|(hash-ref config '#:name "Racket")|
       distribution for version @(version)@(maybe-stamp config).@;
 
-      @(if (hash-ref config '#:source? #f)
+      @(if (let ([src? (hash-ref config '#:source? #f)])
+             (or (hash-ref config '#:source-runtime? src?)
+                 (hash-ref config '#:source-pkgs? src?)))
            (string-append "\n" (make-source-notes config) "\n")
            "")@;
-      @(if (and (not (hash-ref config '#:source? #f))
+      @(if (and (not (hash-ref config '#:source-runtime? 
+                               (hash-ref config '#:source? #f)))
                 (eq? (hash-ref config '#:platform (system-type)) 'macosx))
            (string-append "\n" (make-macosx-notes config) "\n")
            "")@;
@@ -66,14 +69,28 @@
       share/COPYING_LESSER.txt for more information.})
 
 (define (make-source-notes config)
-
-  @~a{This distribution provides source for the Racket run-time system;
-      for build and installation instructions, see "racket/src/README".
-      Besides the run-time system's source, the distribution provides
-      pre-built versions of the core Racket bytecode, as well as pre-built
-      versions of included packages and documentation --- which makes it
-      suitable for quick installation on a Unix platform for which
-      executable binaries are not already provided.})
+  (define src? (hash-ref config '#:source? #f))
+  (define rt-src
+    @~a{This distribution provides source for the Racket run-time system;
+        for build and installation instructions, see "racket/src/README".})
+  (define pkg-src
+    @~a{(The distribution also includes the core Racket collections and any
+        installed packages in source form.)})
+  (define pkg-built
+    @~a{Besides the run-time system's source, the distribution provides
+        pre-built versions of the core Racket bytecode, as well as pre-built
+        versions of included packages and documentation --- which makes it
+        suitable for quick installation on a Unix platform for which
+        executable binaries are not already provided.})
+  (cond
+   [(and (hash-ref config '#:source-runtime? src?)
+         (not (hash-ref config '#:source-pkgs? src?)))
+    (~a rt-src "\n" pkg-built)]
+   [(and (hash-ref config '#:source-runtime? src?)
+         (hash-ref config '#:source-pkgs? src?))
+    (~a rt-src "\n" pkg-src)]
+   [else
+    @~a{The distribution includes any pre-installed packages in source form.}]))
 
 (define (make-macosx-notes config)
   @~a{Install by dragging the enclosing

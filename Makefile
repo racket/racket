@@ -118,8 +118,13 @@ SERVER = localhost
 # snapshot installers):
 RELEASE_MODE =
 
-# Set to "--source" to create a source "installer":
+# Set to "--source" to create an archive (instead of an "installer"
+# proper) on a client that has the run-time system in source form:
 SOURCE_MODE =
+
+# Set to "--source --no-setup" to include packages in an installer
+# (or archive) only in source form:
+PKG_SOURCE_MODE = 
 
 # Human-readable name (spaces allowed), installation name base, and
 # Unix installation directory name for the generated installers:
@@ -332,6 +337,7 @@ client:
 
 COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" \
 	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) \
+            PKG_SOURCE_MODE=$(PKG_SOURCE_MODE) \
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
             DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) \
             DIST_DESC="$(DIST_DESC)" README="$(README)" \
@@ -359,8 +365,8 @@ bundle-from-server:
 	mkdir -p bundle/racket
 	$(RACKET) -l setup/unixstyle-install bundle racket bundle/racket
 	$(RACKET) -l distro-build/unpack-collects http://$(SERVER):9440/
-	bundle/racket/bin/raco pkg install $(REMOTE_INST_AUTO) $(PKGS) $(REQUIRED_PKGS)
-	$(RACKET) -l setup/unixstyle-install post-adjust$(SOURCE_MODE) racket bundle/racket
+	bundle/racket/bin/raco pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS) $(REQUIRED_PKGS)
+	$(RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
 
 bundle-config:
 	$(RACKET) -l distro-build/set-config $(BUNDLE_CONFIG) "" "" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
@@ -386,8 +392,8 @@ win32-bundle:
 win32-bundle-from-server:
 	$(MAKE) win32-bundle $(COPY_ARGS)
 	$(WIN32_RACKET) -l distro-build/unpack-collects http://$(SERVER):9440/
-	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(REQUIRED_PKGS)
-	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(PKGS)
+	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
+	bundle\racket\raco pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 
 win32-installer-from-bundle:
 	$(WIN32_RACKET) -l- distro-build/installer $(DIST_ARGS_q)
