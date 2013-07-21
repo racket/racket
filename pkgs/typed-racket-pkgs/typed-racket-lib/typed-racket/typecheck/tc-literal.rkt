@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt"
          racket/match
          (typecheck signatures check-below)
-         (types abbrev numeric-tower utils subtype union generalize)
+         (types abbrev numeric-tower utils resolve subtype union generalize)
          (rep type-rep)
          (only-in (infer infer) restrict)
          (utils tc-utils stxclass-util)
@@ -76,7 +76,7 @@
     [i:regexp  -Regexp]
     [(~and i ()) (-val '())]
     [(i . r)
-     (match (and expected (restrict expected (-pair Univ Univ) 'orig))
+     (match (and expected (resolve (restrict expected (-pair Univ Univ) 'orig)))
        [(Pair: a-ty d-ty)
         (-pair
          (tc-literal #'i a-ty)
@@ -84,28 +84,30 @@
        [t 
         (-pair (tc-literal #'i) (tc-literal #'r))])]
     [(~var i (3d vector?))
-     (match (and expected (restrict expected (-vec Univ) 'orig))
+     (match (and expected (resolve (restrict expected -VectorTop 'orig)))
        [(Vector: t)
-        (make-Vector (apply Un
-                            t ;; so that this isn't (Un) when we get no elems
-                            (for/list ([l (in-vector (syntax-e #'i))])
-                              (tc-literal l t))))]
+        (make-Vector
+          (check-below
+            (apply Un
+              (for/list ([l (in-vector (syntax-e #'i))])
+                (tc-literal l t)))
+            t))]
        [(HeterogeneousVector: ts)
         (make-HeterogeneousVector
          (for/list ([l (in-vector (syntax-e #'i))]
                     [t (in-list ts)])
-           check-below (tc-literal l t) t))]
+           (check-below (tc-literal l t) t)))]
        [_ (make-HeterogeneousVector (for/list ([l (in-vector (syntax-e #'i))])
                                       (generalize (tc-literal l #f))))])]
     [(~var i (3d hash?))
-     (match expected
+     (match (and expected (resolve (restrict expected -HashTop 'orig)))
        [(Hashtable: k v)
         (let* ([h (syntax-e #'i)]
                [ks (hash-map h (lambda (x y) (tc-literal x k)))]
                [vs (hash-map h (lambda (x y) (tc-literal y v)))])
-          (check-below (apply Un ks) k)
-          (check-below (apply Un vs) v)
-          expected)]
+          (make-Hashtable
+            (check-below (apply Un ks) k)
+            (check-below (apply Un vs) v)))]
        [_ (let* ([h (syntax-e #'i)]
                  [ks (hash-map h (lambda (x y) (tc-literal x)))]
                  [vs (hash-map h (lambda (x y) (tc-literal y)))])
