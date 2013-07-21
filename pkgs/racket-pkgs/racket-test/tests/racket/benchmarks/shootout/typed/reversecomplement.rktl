@@ -1,6 +1,7 @@
 ;; The Computer Language Benchmarks Game
 ;; http://shootout.alioth.debian.org/
 
+(: translation (Vectorof Integer))
 (define translation (make-vector 128))
 
 (for: ([from : Char (in-string "ACGTUMRWSYKVHDBN")]
