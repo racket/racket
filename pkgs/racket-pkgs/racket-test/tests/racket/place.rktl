@@ -2,8 +2,8 @@
 (Section 'places)
 (require "benchmarks/places/place-utils.rkt")
 
-(place-wait (place/base (p1 ch)
-  (printf "Hello from place\n")))
+(place-wait
+ (place/splat (p1 ch) (printf "Hello from place\n")))
 
 (let ()
   (define-values (in out) (place-channel))
@@ -50,7 +50,7 @@
     (test #t equal? us (car r2))
     (test #t equal? us2 (cdr r2))))
   
-(let ([p (place/base (p1 ch)
+(let ([p (place/splat (p1 ch)
           (printf "Hello form place 2\n")
           (exit 99))])
   (test #f place? 1)
@@ -79,7 +79,7 @@
 (err/rt-test (dynamic-place '(quote some-module) 'tfunc))
 
         
-(let ([p (place/base (p1 ch)
+(let ([p (place/splat (p1 ch)
           (printf "Hello form place 2\n")
           (sync never-evt))])
   (place-kill p)
