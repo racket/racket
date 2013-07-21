@@ -2,6 +2,7 @@
 
 (require racket/private/generic ; to avoid circular dependencies
          racket/private/generic-methods
+         racket/vector
          (only-in racket/private/hash paired-fold)
          (for-syntax racket/base))
 
@@ -23,18 +24,18 @@
 (define (dict-mutable? d)
   (unless (dict? d)
     (raise-argument-error 'dict-mutable? "dict?" d))
-  (dict-supports? d 'dict-set!))
+  (dict-implements? d 'dict-set!))
 
 (define (dict-can-remove-keys? d)
   (unless (dict? d)
     (raise-argument-error 'dict-can-remove-keys? "dict?" d))
-  (or (dict-supports? d 'dict-remove!)
-      (dict-supports? d 'dict-remove)))
+  (or (dict-implements? d 'dict-remove!)
+      (dict-implements? d 'dict-remove)))
 
 (define (dict-can-functional-set? d)
   (unless (dict? d)
     (raise-argument-error 'dict-can-functional-set? "dict?" d))
-  (dict-supports? d 'dict-set))
+  (dict-implements? d 'dict-set))
 
 (define (fallback-has-key? d k)
   (define not-there (gensym))
@@ -65,7 +66,7 @@
     [else default]))
 
 (define (fallback-ref! d key new)
-  (unless (dict-supports? d 'dict-set!)
+  (unless (dict-implements? d 'dict-set!)
     (raise-support-error 'dict-ref! d))
   (define not-there (gensym))
   (define v (dict-ref d key not-there))
@@ -88,36 +89,36 @@
             (cons a (loop (cdr xd)))))])))
 
 (define (fallback-set*! d . pairs)
-  (unless (dict-supports? d 'dict-set!)
+  (unless (dict-implements? d 'dict-set!)
     (raise-support-error 'dict-set*! d))
   (paired-fold 'dict-set*! pairs (void)
               (lambda (x k v)
                 (dict-set! d k v))))
 
 (define (fallback-set* d . pairs)
-  (unless (dict-supports? d 'dict-set)
+  (unless (dict-implements? d 'dict-set)
     (raise-support-error 'dict-set* d))
   (paired-fold 'dict-set* pairs d dict-set))
 
 (define fallback-update!
   (case-lambda
    [(d key xform)
-    (unless (dict-supports? d 'dict-set!)
+    (unless (dict-implements? d 'dict-set!)
       (raise-support-error 'dict-update! d))
     (dict-set! d key (xform (dict-ref d key)))]
    [(d key xform default)
-    (unless (dict-supports? d 'dict-set!)
+    (unless (dict-implements? d 'dict-set!)
       (raise-support-error 'dict-update! d))
     (dict-set! d key (xform (dict-ref d key default)))]))
 
 (define fallback-update
   (case-lambda
    [(d key xform)
-    (unless (dict-supports? d 'dict-set)
+    (unless (dict-implements? d 'dict-set)
       (raise-support-error 'dict-update d))
     (dict-set d key (xform (dict-ref d key)))]
    [(d key xform default)
-    (unless (dict-supports? d 'dict-set)
+    (unless (dict-implements? d 'dict-set)
       (raise-support-error 'dict-update d))
     (dict-set d key (xform (dict-ref d key default)))]))
 
@@ -261,16 +262,24 @@
       (raise-argument-error 'dict-values "dict?" d))
     (cdr x)))
 
+(define (fallback-copy d)
+  (unless (dict-implements? d 'dict-clear dict-set!)
+    (raise-support-error 'dict-copy d))
+  (define d2 (dict-clear d))
+  (for ([(k v) (in-dict d)])
+    (dict-set! d2 k v))
+  d2)
+
 (define (assoc-clear d) '())
 
 (define (fallback-clear d)
-  (unless (dict-supports? d 'dict-remove)
+  (unless (dict-implements? d 'dict-remove)
     (raise-support-error 'dict-clear d))
   (for/fold ([d d]) ([k (in-dict-keys d)])
     (dict-remove d k)))
 
 (define (fallback-clear! d)
-  (unless (dict-supports? d 'dict-remove!)
+  (unless (dict-implements? d 'dict-remove!)
     (raise-support-error 'dict-clear! d))
   (let loop ()
     (define i (dict-iterate-first d))
@@ -311,7 +320,7 @@
   (raise-mismatch-error name "not implemented for " s))
 
 (define-primitive-generics
-  (dict gen:dict prop:gen:dict prop:gen:dict-methods dict? dict-supports?)
+  (dict gen:dict prop:gen:dict prop:gen:dict-methods dict? dict-implements?)
   #:fast-defaults
   ([mutable-hash? mutable-hash?
     (define dict-ref hash-ref)
@@ -331,6 +340,7 @@
     (define dict-keys hash-keys)
     (define dict-values hash-values)
     (define dict->list hash->list)
+    (define dict-copy hash-copy)
     (define dict-empty? hash-empty?)
     (define dict-clear hash-clear)
     (define dict-clear! hash-clear!)]
@@ -350,6 +360,7 @@
     (define dict-for-each hash-for-each)
     (define dict-keys hash-keys)
     (define dict-values hash-values)
+    (define dict-copy hash-copy)
     (define dict->list hash->list)
     (define dict-empty? hash-empty?)
     (define dict-clear hash-clear)]
@@ -366,6 +377,7 @@
     (define dict-for-each vector-for-each)
     (define dict-keys vector-keys)
     (define dict-values vector->list)
+    (define dict-copy vector-copy)
     (define dict->list vector->assoc)
     (define dict-empty? vector-empty?)]
    [immutable-vector? immutable-vector?
@@ -380,6 +392,7 @@
     (define dict-for-each vector-for-each)
     (define dict-keys vector-keys)
     (define dict-values vector->list)
+    (define dict-copy vector-copy)
     (define dict->list vector->assoc)
     (define dict-empty? vector-empty?)]
    [assoc? list?
@@ -413,6 +426,7 @@
    (define dict-keys fallback-keys)
    (define dict-values fallback-values)
    (define dict->list fallback->list)
+   (define dict-copy fallback-copy)
    (define dict-empty? fallback-empty?)
    (define dict-clear fallback-clear)
    (define dict-clear! fallback-clear!)]
@@ -438,6 +452,7 @@
   (dict-keys dict)
   (dict-values dict)
   (dict->list dict)
+  (dict-copy dict)
   (dict-empty? dict)
   (dict-clear dict)
   (dict-clear! dict))
@@ -622,10 +637,11 @@
          dict-keys
          dict-values
          dict->list
+         dict-copy
          dict-clear
          dict-clear!
          dict-empty?
-         dict-supports?
+         dict-implements?
 
          (rename-out [:in-dict in-dict]
                      [:in-dict-keys in-dict-keys]

@@ -19,7 +19,7 @@
                 prop:ordered-dict
                 ordered-methods
                 ordered-dict?
-                ordered-dict-supports?)
+                ordered-dict-implements?)
   #:fast-defaults ()
   #:defaults ()
   #:fallbacks ()

@@ -138,6 +138,10 @@
   (for/fold ([vals '()]) ([v (in-hash-values (custom-hash-table d))])
     (cons v vals)))
 
+(define (custom-hash-copy d)
+  (dprintf "custom-hash-copy\n")
+  (update-custom-hash-table d (hash-copy (custom-hash-table d))))
+
 (define (custom-hash->list d)
   (dprintf "custom-hash->list\n")
   (for/fold ([pairs '()]) ([(k v) (in-hash (custom-hash-table d))])
@@ -251,6 +255,7 @@
    (define dict-for-each custom-hash-for-each)
    (define dict-keys custom-hash-keys)
    (define dict-values custom-hash-values)
+   (define dict-copy custom-hash-copy)
    (define dict->list custom-hash->list)
    (define dict-empty? custom-hash-empty?)
    (define dict-clear custom-hash-clear)
