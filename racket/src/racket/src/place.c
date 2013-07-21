@@ -2982,6 +2982,11 @@ Scheme_Place_Async_Channel *place_async_channel_create() {
 
 static void async_channel_refcount(Scheme_Place_Async_Channel *ch, int for_send, int delta)
 {
+  if (!ch->lock) {
+    /* can happen via finalization, where the channel is already finalized
+       m(due to the lack of ordering on finalization) */
+    return;
+  }
   mzrt_mutex_lock(ch->lock);
   if (for_send)
     ch->wr_ref += delta;
