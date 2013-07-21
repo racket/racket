@@ -44,6 +44,10 @@
     (test (bitwise-arithmetic-shift -3 -1) -2)
     (test (bitwise-arithmetic-shift -2 -1) -1)
     (test (bitwise-arithmetic-shift -1 -1) -1)
+
+    (test (bitwise-arithmetic-shift-right 42 (greatest-fixnum)) 0)
+    (test (bitwise-arithmetic-shift-right 42 (+ 1 (greatest-fixnum))) 0)
+    (test (bitwise-arithmetic-shift-right 42 (+ 2 (greatest-fixnum))) 0)
     
     (test (bitwise-reverse-bit-field #b1010010 1 4)    88) ; #b1011000
 

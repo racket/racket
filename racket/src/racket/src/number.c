@@ -4120,7 +4120,7 @@ scheme_bitwise_shift(int argc, Scheme_Object *argv[])
 
     if (i > 0) {
       if (shift < 0) {
-	int shft = -shift;
+	intptr_t shft = -shift;
 	if (shft < MAX_SHIFT_EVER) {
 	  i = i >> shft;
 	  return scheme_make_integer(i);

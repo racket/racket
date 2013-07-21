@@ -1181,6 +1181,10 @@
 (test 0 arithmetic-shift (sub1 (expt 2 32)) -32)
 (test 1 arithmetic-shift (expt 2 32) -32)
 
+(for ([i (in-range -2 3)])
+  (test 0 arithmetic-shift 42 (+ i (- (expt 2 31))))
+  (test 0 arithmetic-shift 42 (+ i (- (expt 2 63)))))
+
 (arity-test arithmetic-shift 2 2)
 (err/rt-test (arithmetic-shift "a" 1))
 (err/rt-test (arithmetic-shift 1 "a"))
