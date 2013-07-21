@@ -157,13 +157,27 @@
        (method-table-redirect ctc blame)
        (λ (vec i v) v)))
     (λ (val)
-      (unless (contract-first-order-passes? ctc val)
-        (raise-blame-error
-         blame val
-         '(expected: "~s" given: "~e")
-         (contract-name ctc)
-         val))
-      (define accessor (base-generic-instance/c-accessor ctc))
+       (unless ((base-generic-instance/c-name? ctc) val)
+         (raise-blame-error
+          blame val
+          '(expected: "~s" given: "~e")
+          (contract-name ctc)
+          val))
+       (define accessor (base-generic-instance/c-accessor ctc))
+       (define method-table (accessor val))
+       (define ids (base-generic-instance/c-ids ctc))
+       (define ctcs (base-generic-instance/c-ctcs ctc))
+       (define method-map (base-generic-instance/c-method-map ctc))
+       ;; do sub-contract first-order checks
+       (for ([id ids] [ctc ctcs])
+         (define v (vector-ref method-table (hash-ref method-map id)))
+         (unless (contract-first-order-passes? ctc v)
+           (raise-blame-error
+            (blame-add-context blame (format "method ~s of" id))
+            v
+            '(expected: "~s" given: "~e")
+            (contract-name ctc)
+            v)))
       (proxy-struct val accessor redirect))))
 
 ;; recognizes instances of this generic interface
