@@ -186,11 +186,13 @@
     (test (flnan? -inf.0) #f)
     (test (flnan? +nan.0) #t)
 
+    (test (fl+) +0.0)
     (test (fl+ 2.3) 2.3)
     (test/approx (fl+ 2.3 3.1) 5.4)
     (test/approx (fl+ 2.3 3.1 -1.1) 4.3)
     (test/approx (fl+ 2.3e2 3.1e1) 261)
 
+    (test (fl*) 1.0)
     (test (fl* 2.3) 2.3)
     (test/approx (fl* 2.3 2.1) 4.83)
     (test/approx (fl* 2.3 2.1 1.1) 5.313)

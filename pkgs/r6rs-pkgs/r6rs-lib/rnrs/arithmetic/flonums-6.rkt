@@ -42,8 +42,8 @@
 (define-fl max flmax core:flmax (a b ...) nocheck)
 (define-fl min flmin core:flmin (a b ...) nocheck)
 
-(define-fl + fl+ core:fl+ (a b ...) nocheck)
-(define-fl * fl* core:fl* (a b ...) nocheck)
+(define-fl + fl+ core:fl+ #:base 0.0 (a b ...) nocheck)
+(define-fl * fl* core:fl* #:base 1.0 (a b ...) nocheck)
 (define-fl - fl- core:fl- [(a) (a b ...)] nocheck)
 (define-fl / fl/ core:fl/ [(a) (a b ...)] nocheck)
 
