@@ -58,12 +58,28 @@
             (make-TypeFilter (-val #f) p var))
        (make-Path p var)))
 
+(begin-for-syntax
+  (define-splicing-syntax-class return
+    (pattern ty:expr #:attr v #'(ret ty))
+    (pattern (~seq #:ret r:expr) #:attr v #'r))
+
+  (define-splicing-syntax-class expected
+    (pattern (~seq #:expected v:expr))
+    (pattern (~seq) #:attr v #'#f)))
 
 ;; check that a literal typechecks correctly
 (define-syntax tc-l
-  (syntax-rules ()
-    [(_ lit ty)
-     (check-type-equal? (format "~s" 'lit) (tc-literal #'lit) ty)]))
+  (syntax-parser
+    [(_ lit ty exp:expected)
+     #'(check-type-equal? (format "~s" 'lit) (tc-literal #'lit exp.v) ty)]))
+
+(define-syntax tc-l/err
+  (syntax-parser
+    [(_ expr exp:expected)
+     #'(test-exn (format "~a" 'expr)
+                 exn:fail:syntax?
+                 (lambda () (tc-literal #'expr exp.v)))]))
+
 
 
 (define (expand-helper stx k)
@@ -91,14 +107,6 @@
                               (tc-expr/check stx expected)
                               (tc-expr stx)))))]))
 
-(begin-for-syntax
-  (define-splicing-syntax-class return
-    (pattern ty:expr #:attr v #'(ret ty))
-    (pattern (~seq #:ret r:expr) #:attr v #'r))
-
-  (define-splicing-syntax-class expected
-    (pattern (~seq #:expected v:expr))
-    (pattern (~seq) #:attr v #'#f)))
 
 (define-syntax (tc-e stx)
   (syntax-parse stx
@@ -1686,6 +1694,21 @@
    [tc-l (3 . 4) (-pair -PosByte -PosByte)]
    [tc-l #hash((1 . 2) (3 . 4)) (make-Hashtable -Integer -Integer)]
    [tc-l #hasheq((a . q) (b . w)) (make-Hashtable -Symbol -Symbol)])
+   [tc-l #hash{[:a . :b]}
+         (let ([rec-type (-mu X (make-Hashtable (t:Un -Symbol X) (t:Un -Symbol X)))])
+           (make-Hashtable (t:Un -Symbol rec-type) (t:Un -Symbol rec-type)))
+         #:expected (-mu X (make-Hashtable (t:Un -Symbol X) (t:Un -Symbol X)))]
+   [tc-l #hash{[:a . :b]}
+         (make-Hashtable (-val ':a) (-val ':b))
+         #:expected (t:Un (-val #f) (make-Hashtable (-val ':a) (-val ':b)))]
+   [tc-l #(:a :b)
+         (-vec (t:Un (-val ':a) (-val ':b) (-mu X (-vec (t:Un (-val ':a) (-val ':b) X)))))
+         #:expected (-mu X (-vec (t:Un (-val ':a) (-val ':b) X)))]
+   [tc-l (#(:a) . :b)
+         (-pair (-vec (t:Un (-val ':a) (-mu X (-pair (-vec (t:Un (-val ':a) X)) (t:Un (-val ':b) X)))))
+                (-val ':b))
+         #:expected (-mu X (-pair (-vec (t:Un (-val ':a) X)) (t:Un (-val ':b) X)))]
+   [tc-l/err #(1 2) #:expected (make-HeterogeneousVector (list -Number -Symbol))]
   ))
 
 
