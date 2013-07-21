@@ -219,19 +219,17 @@
       (raise-type-error 'nan? "real" n)))
 
 ;; Someone needs to look more closely at div and mod.
-;; I started with the code from Enger04, and poked it
-;; until the results matched the examples in R6RS.
 
 (define (div x y)
   (cond
    [(rational? y)
-    (let ([n (* (numerator x)
-                (denominator y))]
-          [d (* (denominator x)
-                (numerator y))])
-      (if (negative? n)
-          (- (quotient (- (abs d) n 1) d))
-          (quotient n d)))]
+    (cond
+     [(x . >= . 0)
+      (truncate (/ x y))]
+     [(y . > . 0)
+      (floor (/ x y))]
+     [else
+      (ceiling (/ x y))])]
    [(real? y)
     ;; infinity or nan
     (if (equal? y +nan.0)
