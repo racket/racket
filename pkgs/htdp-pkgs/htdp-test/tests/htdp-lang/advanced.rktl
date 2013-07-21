@@ -2,7 +2,7 @@
 ;; Basic checks for the advanced language. See also
 ;;  beginner.rkt
 
-(load-relative "../racket/loadtest.rktl")
+(load-relative (collection-file-path "loadtest.rktl" "tests/racket"))
 
 ;; Don't need these:
 (define no-extra-if-tests? #t)

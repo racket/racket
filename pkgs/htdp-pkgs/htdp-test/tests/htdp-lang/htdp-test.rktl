@@ -71,7 +71,7 @@
                        (let ([locs ((exn:srclocs-accessor x) x)])
                          (and (not (empty? locs))
                               (andmap (lambda (s) (and (srcloc-source s)
-                                                       (regexp-match #rx"collects[/\\]tests" (srcloc-source s))
+                                                       (regexp-match #rx"htdp-test[/\\]tests" (srcloc-source s))
                                                        (srcloc-position s) (srcloc-span s))) 
 
                                       locs))))))]))
