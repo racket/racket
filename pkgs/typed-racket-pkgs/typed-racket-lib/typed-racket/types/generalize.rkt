@@ -20,6 +20,7 @@
         [(Value: '()) (-lst Univ)]
         [(Value: 0) -Int]
         [(List: ts) (-lst (apply Un ts))]
+        [(? (lambda (t) (subtype t -Bottom))) Univ]
         [(? (lambda (t) (subtype t -Int))) -Int]
         [(? (lambda (t) (subtype t -Rat))) -Rat]
         [(? (lambda (t) (subtype t -Flonum))) -Flonum]
