@@ -823,6 +823,8 @@
 (test (expt 2 29) / (- (expt 2 30)) -2)
 (test -1/1073741824 / (- (expt 2 30)))
 
+(test (expt 2 30) / (- (expt 2 30)) -1)
+
 (test +inf.0 / 1.0 0.0)
 (test -inf.0 / -1.0 0.0)
 (test +inf.0 / -1.0 -0.0)

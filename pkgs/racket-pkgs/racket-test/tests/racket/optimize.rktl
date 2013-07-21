@@ -499,6 +499,8 @@
     (bin -4/3 '/ 4 -3)
     (bin -4/3 '/ -4 3)
     (bin 4/3 '/ -4 -3)
+    (bin (expt 2 30) '/ (- (expt 2 30)) -1)
+    (bin (expt 2 62) '/ (- (expt 2 62)) -1)
 
     (bin-int 3 'quotient 10 3)
     (bin-int -3 'quotient 10 -3)
@@ -508,6 +510,7 @@
     (bin-exact 3 'fxquotient 10 3)
     (bin-exact -3 'fxquotient 10 -3)
     (bin-exact (expt 2 30) 'quotient (- (expt 2 30)) -1)
+    (bin-exact (expt 2 62) 'quotient (- (expt 2 62)) -1)
 
     (bin-int 1 'remainder 10 3)
     (bin-int 1 'remainder 10 -3)

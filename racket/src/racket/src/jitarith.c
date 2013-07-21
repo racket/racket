@@ -1616,13 +1616,19 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
               jit_modr_l(JIT_R0, JIT_V1, JIT_R2);
 
             if (arith == ARITH_DIV) {
-              GC_CAN_IGNORE jit_insn *refx;
+              GC_CAN_IGNORE jit_insn *refx, *refz;
+              __START_INNER_TINY__(branch_short);
+              /* watch out for negation of most negative fixnum,
+                 which is a positive number too big for a fixnum */
+              refz = jit_beqi_p(jit_forward(), JIT_R0, (void *)(((intptr_t)1 << ((8 * JIT_WORD_SIZE) - 2))));
+              __END_INNER_TINY__(branch_short);
               if (reversed)
                 jit_mulr_l(JIT_R2, JIT_R0, JIT_R2);
               else
                 jit_mulr_l(JIT_V1, JIT_R0, JIT_V1);
               __START_INNER_TINY__(branch_short);
               refx = jit_beqr_l(jit_forward(), JIT_R2, JIT_V1);
+              mz_patch_branch(refz);
               __END_INNER_TINY__(branch_short);
               /* restore R0 argument: */
               if (reversed) {
