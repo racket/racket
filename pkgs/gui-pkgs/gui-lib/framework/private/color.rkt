@@ -825,7 +825,7 @@ added get-regions
     (define/public (backward-match position cutoff)
       (let ((x (internal-backward-match position cutoff)))
         (cond
-          ((eq? x 'open) #f)
+          ((or (eq? x 'open) (eq? x 'beginning)) #f)
           (else x))))
     
     (define/private (internal-backward-match position cutoff)
@@ -855,9 +855,10 @@ added get-regions
                               (values (send (lexer-state-tokens ls) get-root-start-position)
                                       (send (lexer-state-tokens ls) get-root-end-position)))))
                 (cond
-                  ((or (send (lexer-state-parens ls) is-open-pos? tok-start)
-                       (= (+ start-pos tok-start) position))
+                  ((send (lexer-state-parens ls) is-open-pos? tok-start)
                    'open)
+                  ((= (+ start-pos tok-start) position)
+                   'beginning)
                   (else
                    (+ start-pos tok-start))))))))))
     
@@ -874,6 +875,7 @@ added get-regions
              ;; the docs seem to indicate it
              ;; does, but it doesn't really
              cur-pos)
+            ((eq? 'beginning p) #f)
             ((not p) #f)
             (else (loop p))))))
     
