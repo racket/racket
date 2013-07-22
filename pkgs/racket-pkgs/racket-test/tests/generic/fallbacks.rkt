@@ -108,7 +108,7 @@
   (generic-wrapped (make-peano n)))
 
 (module+ test
-  (require rackunit rackunit/text-ui)
+  (require rackunit rackunit/text-ui racket/port)
 
   (define max-n 10)
 
@@ -123,11 +123,13 @@
           (test-case (number->string i)
             (check-equal? (is-odd? (make i)) (odd? i)))))))
 
-  (run-tests
-    (test-suite "fallbacks"
-      (tests "built-in" values)
-      (tests "peano" make-peano)
-      (tests "binary" make-binary)
-      (tests "parity" make-parity)
-      (tests "wrapped" make-wrapped)
-      (tests "generic-wrapped" make-generic-wrapped))))
+  (parameterize {[current-output-port (open-output-nowhere)]}
+    (run-tests
+      (test-suite "fallbacks"
+        (tests "built-in" values)
+        (tests "peano" make-peano)
+        (tests "binary" make-binary)
+        (tests "parity" make-parity)
+        (tests "wrapped" make-wrapped)
+        (tests "generic-wrapped" make-generic-wrapped)))
+    (void)))
