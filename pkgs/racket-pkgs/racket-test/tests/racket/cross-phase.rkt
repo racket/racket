@@ -25,6 +25,7 @@
 (check-cross-phase #t '(define-values (x) cons))
 (check-cross-phase #t '(define-values (x) (cons 1 2)))
 (check-cross-phase #t '(define-values (x) (list 1 2)))
+(check-cross-phase #t '(define-values (x) (#%app list 1 2)))
 (check-cross-phase #t '(define-values (x) (cons 1 '())))
 (check-cross-phase #t '(#%require racket/tcp))
 (check-cross-phase #t '(define-values (x) (lambda (x) x)))
@@ -36,6 +37,13 @@
 (check-cross-phase #t '(begin
                          (define-values (x) 5)
                          (define-values (y) 6)))
+(check-cross-phase #t '(define-values (x) (gensym)))
+(check-cross-phase #t '(define-values (x) (gensym "s")))
+(check-cross-phase #t '(define-values (x) (gensym '"s")))
+(check-cross-phase #t '(define-values (x) (#%app gensym '"s")))
+(check-cross-phase #t '(define-values (x) (string->uninterned-symbol "s")))
+(check-cross-phase #t '(define-values (x) (string->uninterned-symbol '"s")))
+(check-cross-phase #t '(define-values (x) (#%app string->uninterned-symbol '"s")))
 
 (check-cross-phase #f '(define-values (x) #(x)))
 (check-cross-phase #f '(define-values (x) '(x)))
@@ -47,6 +55,8 @@
 (check-cross-phase #f '(define-values (x) (lambda () (if #f (#%variable-reference) 10))))
 (check-cross-phase #f '(define-values (x) (#%variable-reference x)))
 (check-cross-phase #f '(#%require racket/base))
+(check-cross-phase #f '(define-values (x) (gensym 1)))
+(check-cross-phase #f '(define-values (x) (string->uninterned-symbol)))
 
 (check-cross-phase #t '(module* sub #f (vector 1 2 3)))
 (check-cross-phase #t '(module* sub #f (#%variable-reference)))

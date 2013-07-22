@@ -1004,7 +1004,8 @@ and only if no module-level binding is @racket[set!]ed.
             #%plain-lambda case-lambda begin
             set! quote-syntax quote with-continuation-mark
             #%plain-app
-            cons list make-struct-type make-struct-type-property)
+            cons list make-struct-type make-struct-type-property
+            gensym string->uninterned-symbol)
 [cross-module (module id module-path
                 (#%plain-module-begin
                   cross-form ...))]
@@ -1022,7 +1023,10 @@ and only if no module-level binding is @racket[set!]ed.
                 (#%plain-app list cross-expr ...+)
                 (#%plain-app make-struct-type cross-expr ...+)
                 (#%plain-app make-struct-type-property
-                             cross-expr ...+)]
+                             cross-expr ...+)
+                (#%plain-app gensym)
+                (#%plain-app gensym string)
+                (#%plain-app string->uninterned-symbol string)]
 [cross-datum     number
                  boolean
                  identifier

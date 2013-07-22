@@ -246,6 +246,8 @@ READ_ONLY static Scheme_Object *make_struct_type_stx;
 READ_ONLY static Scheme_Object *make_struct_type_property_stx;
 READ_ONLY static Scheme_Object *list_stx;
 READ_ONLY static Scheme_Object *cons_stx;
+READ_ONLY static Scheme_Object *gensym_stx;
+READ_ONLY static Scheme_Object *string_to_uninterned_symbol_stx;
 
 READ_ONLY static Scheme_Object *empty_self_modidx;
 READ_ONLY static Scheme_Object *empty_self_modname;
@@ -687,11 +689,16 @@ void scheme_finish_kernel(Scheme_Env *env)
   REGISTER_SO(make_struct_type_property_stx);
   REGISTER_SO(cons_stx);
   REGISTER_SO(list_stx);
+  REGISTER_SO(gensym_stx);
+  REGISTER_SO(string_to_uninterned_symbol_stx);
 
   make_struct_type_stx = scheme_datum_to_syntax(scheme_intern_symbol("make-struct-type"), scheme_false, w, 0, 0);
   make_struct_type_property_stx = scheme_datum_to_syntax(scheme_intern_symbol("make-struct-type-property"), scheme_false, w, 0, 0);
   cons_stx = scheme_datum_to_syntax(scheme_intern_symbol("cons"), scheme_false, w, 0, 0);
   list_stx = scheme_datum_to_syntax(scheme_intern_symbol("list"), scheme_false, w, 0, 0);
+  gensym_stx = scheme_datum_to_syntax(scheme_intern_symbol("gensym"), scheme_false, w, 0, 0);
+  string_to_uninterned_symbol_stx = scheme_datum_to_syntax(scheme_intern_symbol("string->uninterned-symbol"), 
+                                                           scheme_false, w, 0, 0);
 
   REGISTER_SO(prefix_symbol);
   REGISTER_SO(only_symbol);
@@ -11329,10 +11336,7 @@ static int expression_starts_app(Scheme_Object *expr, Scheme_Object *id, int pha
 {
   if (expression_starts(expr, app_stx, phase)) {
     expr = SCHEME_STX_CDR(expr);
-    if (SCHEME_STX_PAIRP(expr)) {
-      expr = SCHEME_STX_CDR(expr);
-      return expression_starts(expr, id, phase);
-    }
+    return expression_starts(expr, id, phase);
   } else if (expression_starts(expr, id, phase)) {
     /* would explicit `#%app' be the core one? */
     id = scheme_datum_to_syntax(SCHEME_STX_VAL(app_stx), expr, expr, 0, 0);
@@ -11342,6 +11346,15 @@ static int expression_starts_app(Scheme_Object *expr, Scheme_Object *id, int pha
   }
 
   return 0;
+}
+
+static Scheme_Object *expression_app_args(Scheme_Object *expr, int phase)
+{
+  if (expression_starts(expr, app_stx, phase)) {
+    expr = SCHEME_STX_CDR(expr);
+    return SCHEME_STX_CDR(expr);
+  } else
+    return SCHEME_STX_CDR(expr);
 }
 
 static int phaseless_literal(Scheme_Object *val)
@@ -11436,10 +11449,36 @@ static int phaseless_constant_expression(Scheme_Object *val, int phase)
   
   if (expression_starts_app(val, cons_stx, phase)
       || expression_starts_app(val, list_stx, phase)) {
-    val = SCHEME_STX_CDR(val);
+    val = expression_app_args(val, phase);
     return phaseless_constant_expressions(val, phase);
   }
 
+  return 0;
+}
+
+static int expression_string_argument(Scheme_Object *val, int phase)
+{
+  Scheme_Object *a, *av;
+
+  if (SCHEME_STX_PAIRP(val)) {
+    a = SCHEME_STX_CAR(val);
+    val = SCHEME_STX_CDR(val);
+    if (SCHEME_STX_NULLP(val)) {
+      av = SCHEME_STX_VAL(a);
+      if (SCHEME_CHAR_STRINGP(av)
+          && phaseless_constant_expression(a, phase))
+        return 1;
+      else if (expression_starts(a, quote_stx, phase)) {
+        val = SCHEME_STX_CDR(a);
+        if (SCHEME_STX_PAIRP(val)) {
+          val = SCHEME_STX_CAR(val);
+          a = SCHEME_STX_VAL(val);
+          if (SCHEME_CHAR_STRINGP(a))
+            return 1;
+        }
+      }
+    }
+  }
 
   return 0;
 }
@@ -11449,6 +11488,17 @@ static int phaseless_rhs(Scheme_Object *val, int var_count, int phase)
   if (var_count == 1) {
     if (phaseless_constant_expression(val, phase))
       return 1;
+    else if (expression_starts_app(val, gensym_stx, phase)) {
+      val = expression_app_args(val, phase);
+      if (SCHEME_STX_NULLP(val))
+        return 1;
+      else if (expression_string_argument(val, phase))
+        return 1;
+    } else if (expression_starts_app(val, string_to_uninterned_symbol_stx, phase)) {
+      val = expression_app_args(val, phase);
+      if (expression_string_argument(val, phase))
+        return 1;
+    }
   } else if (var_count == 5) {
     if (expression_starts_app(val, make_struct_type_stx, phase)
         && phaseless_constant_expressions(val, phase)) {
