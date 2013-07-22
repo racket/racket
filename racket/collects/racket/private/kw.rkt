@@ -11,7 +11,8 @@
                          "name.rkt"
                          "norm-define.rkt"
                          "qqstx.rkt"
-                         "sort.rkt"))
+                         "sort.rkt"
+                         "kw-prop-key.rkt"))
 
   (#%provide new-lambda new-λ
              new-define
@@ -973,8 +974,6 @@
 
   (define-for-syntax kw-expander-impl (make-struct-field-accessor kw-expander-ref 1 'impl))
   (define-for-syntax kw-expander-proc (make-struct-field-accessor kw-expander-ref 2 'proc))
-
-  (define-for-syntax kw-converted-arguments-variant-of (gensym 'converted-arguments-variant-of))
 
   (define-for-syntax (syntax-procedure-converted-arguments-property stx) 
     (unless (syntax? stx)

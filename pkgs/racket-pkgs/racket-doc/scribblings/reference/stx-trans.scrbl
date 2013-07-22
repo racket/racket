@@ -1202,9 +1202,9 @@ first argument.}
                  val?))]
 )]{
 
-At expansion time, reports the value of a syntax property that can be
+Reports the value of a syntax property that can be
 attached to an identifier by the expansion of a keyword-application
-form during the same expansion time. See @racket[lambda] for more
+form. See @racket[lambda] for more
 information about the property.
 
 The property value is normally a pair consisting of the original

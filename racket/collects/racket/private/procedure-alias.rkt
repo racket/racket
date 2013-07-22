@@ -2,6 +2,7 @@
   (#%require "define.rkt"
              "small-scheme.rkt"
              "more-scheme.rkt"
+             "kw-prop-key.rkt"
              (for-syntax '#%kernel
                          "stx.rkt"
                          "small-scheme.rkt"
@@ -11,8 +12,7 @@
                          "qqstx.rkt"
                          "sort.rkt"))
   
-  (#%provide syntax-procedure-alias-property (protect alias-of))
-  (define alias-of (gensym 'alias-of))
+  (#%provide syntax-procedure-alias-property alias-of)
   (define (syntax-procedure-alias-property stx)
     (unless (syntax? stx)
       (raise-argument-error 'syntax-procedure-alias "syntax?" stx))

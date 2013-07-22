@@ -1718,6 +1718,27 @@
    f-id
    (eval '(extract f f2 f2 #t))))
 
+
+;; Check that alias & converted-argument information is
+;; cross-phase:
+(require racket/keyword-transform)
+(let ([e (parameterize ([current-namespace (make-base-namespace)])
+           (expand '(module m racket/base
+                      (define (f #:x [x 10]) x)
+                      (f #:x 8))))])
+  (define (find get)
+    (let loop ([e e])
+      (or (and (syntax? e)
+               (or (get e)
+                   (loop (syntax-e e))))
+          (and (pair? e)
+               (or (loop (car e))
+                   (loop (cdr e)))))))
+  (test #t 'cross-phase-alias
+        (and (find syntax-procedure-converted-arguments-property)
+             (find syntax-procedure-alias-property)
+             #t)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check interaction of marks, `rename-out', and `free-identifier=?' 
 
