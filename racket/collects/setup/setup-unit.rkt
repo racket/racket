@@ -1464,6 +1464,8 @@
                                  #t)
                                 (unless already?
                                   (delete-directory/files dest #:must-exist? #f)
+                                  (let-values ([(base name dir?) (split-path dest)])
+                                    (when (path? base) (make-directory* base)))
                                   (if (file-exists? src)
                                       (copy-file src dest)
                                       (copy-directory/files src dest)))
