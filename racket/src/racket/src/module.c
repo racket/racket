@@ -8427,7 +8427,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   Scheme_Object *lifted_reqs = scheme_null, *req_data, *unbounds = scheme_null;
   int maybe_has_lifts = 0, expand_ends = (phase == 0), non_phaseless, requested_phaseless;
   Scheme_Object *observer, *vec, *end_statements;
-  Scheme_Object *begin_for_syntax_stx;
+  Scheme_Object *begin_for_syntax_stx, *non_phaseless_form = NULL;
   const char *who = "module";
 
 #ifdef DO_STACK_CHECK
@@ -8734,8 +8734,10 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
             var_count++;
 	  }
 
-          if (!(non_phaseless & NON_PHASELESS_FORM) && !phaseless_rhs(val, var_count, phase))
+          if (!(non_phaseless & NON_PHASELESS_FORM) && !phaseless_rhs(val, var_count, phase)) {
             non_phaseless |= NON_PHASELESS_FORM;
+            non_phaseless_form = val;
+          }
           
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
 	  kind = DEFN_MODFORM_KIND;
@@ -8948,6 +8950,8 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
           kind = DONE_MODFORM_KIND;
 
           non_phaseless |= NON_PHASELESS_FORM;
+          if (!non_phaseless_form)
+            non_phaseless_form = e;
 	} else if (scheme_stx_module_eq_x(require_stx, fst, phase)) {
 	  /************ require *************/
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
@@ -9060,14 +9064,20 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	} else {
 	  kind = EXPR_MODFORM_KIND;
           non_phaseless |= NON_PHASELESS_FORM;
+          if (!non_phaseless_form)
+            non_phaseless_form = e;
         }
       } else {
-        non_phaseless |= NON_PHASELESS_FORM;
 	kind = EXPR_MODFORM_KIND;
+        non_phaseless |= NON_PHASELESS_FORM;
+        if (!non_phaseless_form)
+            non_phaseless_form = e;
       }
     } else {
-      non_phaseless |= NON_PHASELESS_FORM;
       kind = EXPR_MODFORM_KIND;
+      non_phaseless |= NON_PHASELESS_FORM;
+      if (!non_phaseless_form)
+        non_phaseless_form = e;
     }
 
     if (e) {
@@ -9359,9 +9369,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
       env->genv->module->phaseless = scheme_true;
     else {
       if (non_phaseless & NON_PHASELESS_IMPORT)
-        scheme_wrong_syntax(who, form, NULL, "cannot be cross-phase persistent due to required modules");
+        scheme_wrong_syntax(who, NULL, form, "cannot be cross-phase persistent due to required modules");
       else
-        scheme_wrong_syntax(who, form, NULL, "does not satisfy cross-phase persistent grammar");
+        scheme_wrong_syntax(who, non_phaseless_form, form, "does not satisfy cross-phase persistent grammar");
     }
   }
 

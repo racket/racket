@@ -1,7 +1,5 @@
 (module errortrace-key '#%kernel
 
-  (#%declare #:cross-phase-persistent)
-
   ;; this file is badly named; it contains
   ;; all of the code used at runtime by the
   ;; various annotations inserted by this 
