@@ -676,6 +676,7 @@ path/s is either such a string or a list of them.
 "pkgs/distro-build/installer.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/manage-snapshots.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/pack-native.rkt" drdr:command-line (mzc *)
+"pkgs/distro-build/pack-collects.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/set-config.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/unpack-collects.rkt" drdr:command-line (mzc *)
 "pkgs/drracket-pkgs/drracket/browser" responsible (robby)
