@@ -5,6 +5,7 @@
 /doc/
 /lib/
 /share/
+/man/
 
 # Windows and OSX executables
 /*.app

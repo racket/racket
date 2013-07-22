@@ -6,3 +6,5 @@
                                ("Porting from v3xxx to v4.x" "MzScheme_4.txt")
                                ("Porting from v2xxx to v3xxx" "MzScheme_300.txt")
                                ("Porting from v1xxx to v2xxx" "MzScheme_200.txt")))))
+
+(define copy-man-pages '("racket.1"))

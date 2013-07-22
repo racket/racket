@@ -10,3 +10,5 @@
 (define gracket-launcher-libraries '("drracket.rkt"))
 
 (define release-note-files (list (list "DrRacket" "HISTORY.txt")))
+
+(define copy-man-pages '("drracket.1"))
