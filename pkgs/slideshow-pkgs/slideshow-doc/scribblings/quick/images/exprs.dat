@@ -18,7 +18,7 @@
 ((2) 0 () 0 () () (void))
 ((2) 0 () 0 () () (c send c f c show c #f))
 ((2) 0 () 0 () () (void))
-((2) 0 () 0 () () (c require c slideshow/flash))
+((2) 0 () 0 () () (c require c pict/flash))
 ((2) 0 () 0 () () (void))
 ((2) 0 () 0 () () (c define c (c add-drawing c p) c (c let c (c (c drawer c (c make-pict-drawer c p))) c (c new c canvas% c (c parent c f) c (c style c (c quote c (c border))) c (c paint-callback c (c lambda c (c self c dc) c (c drawer c dc c 0 c 0)))))))
 ((2) 0 () 0 () () (void))
