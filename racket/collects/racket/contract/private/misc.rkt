@@ -360,7 +360,7 @@
                (raise-blame-error
                 blame
                 val
-                '(expected: "~s" given: "~e\n which isn't: ~s")
+                '(expected: "~s" given: "~e\n  which isn't: ~s")
                 (contract-name ctc)
                 val
                 (contract-name (car ctcs))))])))))
@@ -723,7 +723,7 @@
            (unless (= actual expected)
              (raise-blame-error
               blame x
-              '(expected: "a list of ~a elements" given: "~a element~a\n complete list: ~e")
+              '(expected: "a list of ~a elements" given: "~a element~a\n  complete list: ~e")
               expected 
               actual
               (if (= actual 1) "" "s")
