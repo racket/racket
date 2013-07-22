@@ -21,8 +21,12 @@ a structure type are defined using the @racket[#:methods] keyword
                 [method-id . kw-formals*] ...
                 generics-opt ...)
               ([generics-opt
+                (code:line #:fast-defaults ([fast-pred? fast-impl ...] ...))
+                (code:line #:defaults ([default-pred? default-impl ...] ...))
+                (code:line #:fallbacks [fallback-impl ...])
+                (code:line #:defined-predicate defined-pred-id)
                 (code:line #:defined-table defined-table-id)
-                (code:line #:defaults ([pred? method-impl ...] ...))]
+                (code:line #:derive-property prop-expr prop-value-expr)]
                [kw-formals* (arg* ...)
                             (arg* ...+ . rest-id)
                             rest-id]
@@ -31,7 +35,7 @@ a structure type are defined using the @racket[#:methods] keyword
                      (code:line keyword arg-id)
                      (code:line keyword [arg-id])])]{
 
-Defines 
+Defines the following names, plus any specified by keyword options.
 
 @itemlist[
 
@@ -43,43 +47,71 @@ Defines
 
  @item{each @racket[method-id] as a generic procedure that calls the
        corresponding method on values where
-       @racket[id]@racketidfont{?} is true.}
+       @racket[id]@racketidfont{?} is true.
+       Each @racket[method-id]'s @racket[kw-formals*] must include a required
+       by-position argument that is @racket[free-identifier=?] to
+       @racket[id]. That argument is used in the generic definition to
+       locate the specialization.}
 
  @item{@racket[id]@racketidfont{/c} as a contract combinator that
        recognizes instances of structure types which implement the
        @racketidfont{gen:}@racket[id] generic interface. The combinator
        takes pairs of @racket[method-id]s and contracts. The contracts
-       will be applied to each of the corresponding method implementations.}
+       will be applied to each of the corresponding method implementations.
+       The @racket[id]@racketidfont{/c} combinator is intended to be used to
+       contract the range of a constructor procedure for a struct type that
+       implements the generic interface.}
 
 ]
 
-Each @racket[method-id]'s @racket[kw-formals*] must include a required
-by-position argument that is @racket[free-identifier=?] to
-@racket[id]. That argument is used in the generic definition to
-locate the specialization.
+The @racket[#:defaults] option may be provided at most once.
+When it is provided, each generic function
+uses @racket[default-pred?]s to dispatch to the given default implementations,
+@racket[default-impl]s, if dispatching to the generic method table fails.
+The syntax of the @racket[default-impl]s is the same as the methods
+provided for the @racket[#:methods] keyword for @racket[struct].
 
-Keyword options to @racket[define-generics] may be provided both before and
-after the list of methods, but not in the middle.
+The @racket[#:fast-defaults] option may be provided at most once.
+It works the same as @racket[#:defaults], except the @racket[fast-pred?]s are
+checked before dispatching to the generic method table.  This option is
+intended to provide a fast path for dispatching to built-in datatypes, such as
+lists and vectors, that do not overlap with structures implementing
+@racketidfont{gen:}@racket[id].
 
-The @racket[#:defined-table] option may be provided at most once.
-When it is provided, @racket[defined-table-id] is defined as a
-procedure that takes an instance of the generics and returns an
-immutable @tech{hash table} that maps symbols corresponding to method
-names to booleans representing whether or not that method is
-implemented by the instance. This table is intended for use by
+The @racket[#:fallbacks] option may be provided at most once.
+When it is provided, the @racket[fallback-impl]s define method implementations
+that are used for any instance of the generics group that does not supply a
+specific implementation.  The syntax of the @racket[fallback-impl]s is the same
+as the methods provided for the @racket[#:methods] keyword for @racket[struct].
+
+The @racket[#:defined-predicate] option may be provided at most once.
+When it is provided, @racket[defined-pred-id] is defined as a
+procedure that reports whether a specific instance of the generics group
+implements a given set of methods.
+Specifically, @racket[(defined-pred-id v 'name ...)] produces @racket[#t] if
+@racket[v] has implementations for each method @racket[name], not counting
+@racket[#:fallbacks] implementations, and produces @racket[#f] otherwise.
+This procedure is intended for use by
 higher-level APIs to adapt their behavior depending on method
 availability.
 
-The @racket[#:defaults] option may be provided at most once.
-When it is provided, each generic function
-uses @racket[pred?]s to dispatch to the given default implementations,
-@racket[method-impl]s, if dispatching to the generic method table fails.
-The syntax of the @racket[method-impl]s is the same as the methods
-provided for the @racket[#:methods] keyword for @racket[struct].
+The @racket[#:defined-table] option may be provided at most once.
+When it is provided, @racket[defined-table-id] is defined as a
+procedure that takes an instance of the generics group and returns an
+immutable @tech{hash table} that maps symbols corresponding to method
+names to booleans representing whether or not that method is
+implemented by the instance.  This option is deprecated; use
+@racket[#:defined-predicate] instead.
 
-The @racket[id]@racketidfont{/c} combinator is intended to be used to
-contract the range of a constructor procedure for a struct type that
-implements the generic interface.}
+The @racket[#:derive-property] option may be provided any number of times.
+Each time it is provided, it specifies a @tech{structure type property} via
+@racket[prop-expr] and a value for the property via @racket[prop-value-expr].
+All structures implementing the generics group via @racket[#:methods]
+automatically implement this structure type property using the provided values.
+When @racket[prop-value-expr] is executed, each @racket[method-id] is bound to
+its specific implementation for the @tech{structure type}.
+
+}
 
 @defform[(define/generic local-id method-id)
          #:contracts
@@ -124,18 +156,18 @@ syntax error.}
    (define (gen-print* n [port (current-output-port)]
                        #:width w #:height [h 0])
      (fprintf port "Num (~ax~a): ~a" w h (num-v n)))])
-         
+
 (define-struct bool (v)
   #:methods gen:printable
   [(define/generic super-print gen-print)
    (define (gen-print b [port (current-output-port)])
-     (fprintf port "Bool: ~a" 
+     (fprintf port "Bool: ~a"
               (if (bool-v b) "Yes" "No")))
    (define (gen-port-print port b)
      (super-print b port))
    (define (gen-print* b [port (current-output-port)]
                        #:width w #:height [h 0])
-     (fprintf port "Bool (~ax~a): ~a" w h 
+     (fprintf port "Bool (~ax~a): ~a" w h
               (if (bool-v b) "Yes" "No")))])
 
 (define x (make-num 10))
