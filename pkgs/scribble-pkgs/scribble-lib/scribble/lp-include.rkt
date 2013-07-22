@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require scheme/include (for-syntax scheme/base)
-          (only-in scribble/private/lp chunk)
+          (only-in scribble/private/lp chunk CHUNK)
           scribble/manual)
 
 (provide lp-include)
