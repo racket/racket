@@ -25,7 +25,7 @@ values. The following datatypes are all dictionaries:
 
 @note-lib[racket/dict]
 
-@section{Dictionary Predicates}
+@section{Dictionary Predicates and Contracts}
 
 @defproc[(dict? [v any/c]) boolean?]{
 
@@ -44,22 +44,29 @@ traversing the list.
 (dict? '((a . "apple") (b . "banana")))
 ]}
 
-@defproc[(dict-supports? [d dict?] [sym symbol?] ...) boolean?]{
+@defproc[(dict-implements? [d dict?] [sym symbol?] ...) boolean?]{
 
 Returns @racket[#t] if @racket[d] implements all of the methods from
-@racket[gen:dict] named by the @racket[sym]s, or @racket[#f] otherwise.
+@racket[gen:dict] named by the @racket[sym]s; returns @racket[#f] otherwise.
 Fallback implementations do not affect the result; @racket[d] may support the
 given methods via fallback implementations yet produce @racket[#f].
 
 @examples[
 #:eval dict-eval
-(dict-supports? (hash 'a "apple") 'dict-set!)
-(dict-supports? (make-hash '((a . "apple") (b . "banana"))) 'dict-set!)
-(dict-supports? (make-hash '((b . "banana") (a . "apple"))) 'dict-remove!)
-(dict-supports? (vector "apple" "banana") 'dict-set!)
-(dict-supports? (vector 'a 'b) 'dict-remove!)
-(dict-supports? (vector 'a "apple") 'dict-set! 'dict-remove!)
+(dict-implements? (hash 'a "apple") 'dict-set!)
+(dict-implements? (make-hash '((a . "apple") (b . "banana"))) 'dict-set!)
+(dict-implements? (make-hash '((b . "banana") (a . "apple"))) 'dict-remove!)
+(dict-implements? (vector "apple" "banana") 'dict-set!)
+(dict-implements? (vector 'a 'b) 'dict-remove!)
+(dict-implements? (vector 'a "apple") 'dict-set! 'dict-remove!)
 ]
+
+}
+
+@defproc[(dict-implements/c [sym symbol?] ...) flat-contract?]{
+
+Recognizes dictionaries that support all of the methods from @racket[gen:dict]
+named by the @racket[sym]s.
 
 }
 
@@ -69,7 +76,7 @@ given methods via fallback implementations yet produce @racket[#f].
 Returns @racket[#t] if @racket[d] is mutable via @racket[dict-set!],
 @racket[#f] otherwise.
 
-Equivalent to @racket[(dict-supports? d 'dict-set!)].
+Equivalent to @racket[(dict-implements? d 'dict-set!)].
 
 @examples[
 #:eval dict-eval
@@ -89,7 +96,7 @@ Returns @racket[#t] if @racket[d] supports removing mappings via
 otherwise.
 
 Equivalent to
-@racket[(or (dict-supports? d 'dict-remove!) (dict-supports? d 'dict-remove))].
+@racket[(or (dict-implements? d 'dict-remove!) (dict-implements? d 'dict-remove))].
 
 @examples[
 #:eval dict-eval
@@ -104,7 +111,7 @@ Equivalent to
 Returns @racket[#t] if @racket[d] supports functional update via
 @racket[dict-set], @racket[#f] otherwise.
 
-Equivalent to @racket[(dict-supports? d 'dict-set)].
+Equivalent to @racket[(dict-implements? d 'dict-set)].
 
 @examples[
 #:eval dict-eval
@@ -121,8 +128,8 @@ Equivalent to @racket[(dict-supports? d 'dict-set)].
 A @tech{generic interface} (see @secref["struct-generics"]) that
 supplies dictionary method implementations for a structure type via the
 @racket[#:methods] option of @racket[struct] definitions.  This interface can
-be used to implement any of the methods documented as @secref["methods"] and
-@secref["fallbacks"].
+be used to implement any of the methods documented as
+@secref["primitive-dict-methods"] and @secref["derived-dict-methods"].
 
 @examples[#:eval dict-eval
 (struct alist (v)
@@ -167,7 +174,7 @@ be used to implement any of the methods documented as @secref["methods"] and
            ]
 }
 
-@subsection[#:tag "methods"]{Primitive Dictionary Methods}
+@subsection[#:tag "primitive-dict-methods"]{Primitive Dictionary Methods}
 
 These methods of @racket[gen:dict] have no fallback implementations; they are
 only supported for dictionary types that directly implement them.
@@ -358,7 +365,7 @@ operation should take constant time.
 (dict-iterate-value h (dict-iterate-next h i))
 ]}
 
-@subsection[#:tag "fallbacks"]{Derived Dictionary Methods}
+@subsection[#:tag "derived-dict-methods"]{Derived Dictionary Methods}
 
 These methods of @racket[gen:dict] have fallback implementations in terms of
 the other methods; they may be supported even by dictionary types that do not
@@ -548,6 +555,20 @@ Supported for any @racket[dict] that implements @racket[dict-iterate-first],
 ]}
 
 
+@defproc[(dict-empty? [dict dict?]) boolean?]{
+
+Reports whether @racket[dict] is empty.
+
+Supported for any @racket[dict] that implements @racket[dict-iterate-first].
+
+@examples[
+#:eval dict-eval
+(dict-empty? #hash((a . "apple") (b . "banana")))
+(dict-empty? (vector))
+]
+
+}
+
 @defproc[(dict-count [dict dict?])
          exact-nonnegative-integer?]{
 
@@ -562,6 +583,64 @@ and @racket[dict-iterate-next].
 (dict-count #hash((a . "apple") (b . "banana")))
 (dict-count #("apple" "banana"))
 ]}
+
+@defproc[(dict-copy [dict dict?]) dict?]{
+
+Produces a new, mutable dictionary of the same type as @racket[dict] and with
+the same key/value associations.
+
+Supported for any @racket[dict] that implements @racket[dict-clear],
+@racket[dict-set!], @racket[dict-iterate-first], @racket[dict-iterate-next],
+@racket[dict-iterate-key], and @racket[dict-iterate-value].
+
+@examples[
+#:eval dict-eval
+(define original (vector "apple" "banana"))
+(define copy (dict-copy original))
+original
+copy
+(dict-set! copy 1 "carrot")
+original
+copy
+]
+
+}
+
+@defproc[(dict-clear [dict dict?]) dict?]{
+
+Produces an empty dictionary of the same type as @racket[dict].  If
+@racket[dict] is mutable, the result must be a new dictionary.
+
+Supported for any @racket[dict] that supports @racket[dict-remove],
+@racket[dict-iterate-first], @racket[dict-iterate-next], and
+@racket[dict-iterate-key].
+
+@examples[
+#:eval dict-eval
+(dict-clear #hash((a . "apple") ("banana" . b)))
+(dict-clear '((1 . two) (three . "four")))
+]
+
+}
+
+@defproc[(dict-clear! [dict dict?]) dict?]{
+
+Removes all of the key/value associations in @racket[dict].
+
+Supported for any @racket[dict] that supports @racket[dict-remove!],
+@racket[dict-iterate-first], and @racket[dict-iterate-key].
+
+@examples[
+#:eval dict-eval
+(define table (make-hash))
+(dict-set! table 'a "apple")
+(dict-set! table "banana" 'b)
+table
+(dict-clear! table)
+table
+]
+
+}
 
 @defproc[(dict-keys [dict dict?]) list?]{ 
 Returns a list of the keys from
@@ -699,53 +778,190 @@ iterators, respectively, if @racket[d] implements the
 @racket[prop:dict/contract] interface.
 }
 
-@section{Custom Hash Table-based Dictionaries}
+@section{Custom Hash Tables}
 
-@deftogether[(
-@defproc[(make-custom-hash [eql? (any/c any/c . -> . any/c)]
-                           [hash-proc (any/c . -> . exact-integer?)]
-                           [hash2-proc (any/c . -> . exact-integer?) (lambda (v) 10001)])
-         dict?]
-@defproc[(make-immutable-custom-hash [eql? (any/c any/c . -> . any/c)]
-                           [hash-proc (any/c . -> . exact-integer?)]
-                           [hash2-proc (any/c . -> . exact-integer?) (lambda (v) 10001)])
-         dict?]
-@defproc[(make-weak-custom-hash [eql? (any/c any/c . -> . any/c)]
-                           [hash-proc (any/c . -> . exact-integer?)]
-                           [hash2-proc (any/c . -> . exact-integer?) (lambda (v) 10001)])
-         dict?]
-)]{
+@defform[(define-custom-hash-types name 
+                                   optional-predicate
+                                   comparison-expr
+                                   optional-hash-functions)
+         #:grammar ([optional-predicate
+                     (code:line)
+                     (code:line #:key? predicate-expr)]
+                    [optional-hash-functions
+                     (code:line)
+                     (code:line hash1-expr)
+                     (code:line hash1-expr hash2-expr)])]{
 
-Creates a dictionary that is implemented in terms of a hash table
-where keys are compared with @racket[eql?] and hashed with
-@racket[hash-proc] and @racket[hash2-proc]. See
-@racket[gen:equal+hash] for information on suitable equality and
-hashing functions.
+Creates a new dictionary type based on the given comparison
+@racket[comparison-expr], hash functions @racket[hash1-expr] and
+@racket[hash2-expr], and key predicate @racket[predicate-expr]; the interfaces
+for these functions are the same as in @racket[make-custom-hash-types].
+The new dictionary type has three variants: immutable, mutable with
+strongly-held keys, and mutable with weakly-held keys.
 
-The @racket[make-custom-hash] and @racket[make-weak-custom-hash]
-functions create a mutable dictionary that does not support functional
-update, while @racket[make-immutable-custom-hash] creates an immutable
-dictionary that supports functional update. The dictionary created by
-@racket[make-weak-custom-hash] retains its keys weakly, like the result
-of @racket[make-weak-hash].
+Defines seven names:
 
-Dictionaries created by @racket[make-custom-hash] and company are
-@racket[equal?] when they have the same mutability and key strength,
-the associated procedures are @racket[equal?], and the key--value
-mappings are the same when keys and values are compared with
-@racket[equal?].
+@itemize[
+@item{@racket[name]@racketidfont{?} recognizes instances of the new type,}
+@item{@racketidfont{immutable-}@racket[name]@racketidfont{?} recognizes
+      immutable instances of the new type,}
+@item{@racketidfont{mutable-}@racket[name]@racketidfont{?} recognizes
+      mutable instances of the new type with strongly-held keys,}
+@item{@racketidfont{weak-}@racket[name]@racketidfont{?} recognizes
+      mutable instances of the new type with weakly-held keys,}
+@item{@racketidfont{make-immutable-}@racket[name] constructs
+      immutable instances of the new type,}
+@item{@racketidfont{make-mutable-}@racket[name] constructs
+      mutable instances of the new type with strongly-held keys, and}
+@item{@racketidfont{make-weak-}@racket[name] constructs
+      mutable instances of the new type with weakly-held keys.}
+]
+
+The constructors all accept a dictionary as an optional argument, providing
+initial key/value pairs.
 
 @examples[
 #:eval dict-eval
-(define h (make-custom-hash (lambda (a b)
-                              (string=? (format "~a" a)
-                                        (format "~a" b)))
-                            (lambda (a)
-                              (equal-hash-code 
-                               (format "~a" a)))))
-(dict-set! h 1 'one)
-(dict-ref h "1")
-]}
+(define-custom-hash-types string-hash
+                          #:key? string?
+                          string=?
+                          string-length)
+(define imm
+  (make-immutable-string-hash
+   '(("apple" . a) ("banana" . b))))
+(define mut
+  (make-mutable-string-hash
+   '(("apple" . a) ("banana" . b))))
+(dict? imm)
+(dict? mut)
+(string-hash? imm)
+(string-hash? mut)
+(immutable-string-hash? imm)
+(immutable-string-hash? mut)
+(dict-ref imm "apple")
+(dict-ref mut "banana")
+(dict-set! mut "banana" 'berry)
+(dict-ref mut "banana")
+(equal? imm mut)
+(equal? (dict-remove (dict-remove imm "apple") "banana")
+        (make-immutable-string-hash))
+]
+
+}
+
+@defproc[(make-custom-hash-types
+          [eql?
+           (or/c (any/c any/c . -> . any/c)
+                 (any/c any/c (any/c any/c . -> . any/c) . -> . any/c))]
+          [hash1
+           (or/c (any/c . -> . exact-integer?)
+                 (any/c (any/c . -> . exact-integer?) . -> . exact-integer?))
+           (const 1)]
+          [hash2
+           (or/c (any/c . -> . exact-integer?)
+                 (any/c (any/c . -> . exact-integer?) . -> . exact-integer?))
+           (const 1)]
+          [#:key? key? (any/c . -> . boolean?) (const #true)]
+          [#:name name symbol? 'custom-hash]
+          [#:for who symbol? 'make-custom-hash-types])
+         (values (any/c . -> . boolean?)
+                 (any/c . -> . boolean?)
+                 (any/c . -> . boolean?)
+                 (any/c . -> . boolean?)
+                 (->* [] [dict?] dict?)
+                 (->* [] [dict?] dict?)
+                 (->* [] [dict?] dict?))]{
+
+Creates a new dictionary type based on the given comparison function
+@racket[eql?], hash functions @racket[hash1] and @racket[hash2], and predicate
+@racket[key?].  The new dictionary type has variants that are immutable,
+mutable with strongly-held keys, and mutable with weakly-held keys.  The given
+@racket[name] is used when printing instances of the new dictionary type, and
+the symbol @racket[who] is used for reporting errors.
+
+The comparison function @racket[eql?] may accept 2 or 3 arguments.  If it
+accepts 2 arguments, it given two keys to compare them.  If it accepts
+3 arguments and does not accept 2 arguments, it is also given a
+recursive comparison function that handles data cycles when comparing sub-parts
+of the keys.
+
+The hash functions @racket[hash1] and @racket[hash2] may accept 1 or 2
+arguments.  If either hash function accepts 1 argument, it is applied to a key
+to compute the corresponding hash value.  If either hash function accepts 2
+arguments and does not accept 1 argument, it is also given a recursive hash
+function that handles data cycles when computing hash values of sub-parts of
+the keys.
+
+The predicate @racket[key?] must accept 1 argument and is used to recognize
+valid keys for the new dictionary type.
+
+Produces seven values:
+
+@itemize[
+@item{a predicate recognizing all instances of the new dictionary type,}
+@item{a predicate recognizing immutable instances,}
+@item{a predicate recognizing mutable instances,}
+@item{a predicate recognizing weak instances,}
+@item{a constructor for immutable instances,}
+@item{a constructor for mutable instances, and}
+@item{a constructor for weak instances.}
+]
+
+See @racket[define-custom-hash-types] for an example.
+
+}
+
+@deftogether[(
+@defproc[(make-custom-hash
+          [eql?
+           (or/c (any/c any/c . -> . any/c)
+                 (any/c any/c (any/c any/c . -> . any/c) . -> . any/c))]
+          [hash1
+           (or/c (any/c . -> . exact-integer?)
+                 (any/c (any/c . -> . exact-integer?) . -> . exact-integer?))
+           (const 1)]
+          [hash2
+           (or/c (any/c . -> . exact-integer?)
+                 (any/c (any/c . -> . exact-integer?) . -> . exact-integer?))
+           (const 1)]
+          [#:key? key? (any/c . -> . boolean?) (const #true)])
+         dict?]
+@defproc[(make-weak-custom-hash
+          [eql?
+           (or/c (any/c any/c . -> . any/c)
+                 (any/c any/c (any/c any/c . -> . any/c) . -> . any/c))]
+          [hash1
+           (or/c (any/c . -> . exact-integer?)
+                 (any/c (any/c . -> . exact-integer?) . -> . exact-integer?))
+           (const 1)]
+          [hash2
+           (or/c (any/c . -> . exact-integer?)
+                 (any/c (any/c . -> . exact-integer?) . -> . exact-integer?))
+           (const 1)]
+          [#:key? key? (any/c . -> . boolean?) (const #true)])
+         dict?]
+@defproc[(make-immutable-custom-hash
+          [eql?
+           (or/c (any/c any/c . -> . any/c)
+                 (any/c any/c (any/c any/c . -> . any/c) . -> . any/c))]
+          [hash1
+           (or/c (any/c . -> . exact-integer?)
+                 (any/c (any/c . -> . exact-integer?) . -> . exact-integer?))
+           (const 1)]
+          [hash2
+           (or/c (any/c . -> . exact-integer?)
+                 (any/c (any/c . -> . exact-integer?) . -> . exact-integer?))
+           (const 1)]
+          [#:key? key? (any/c . -> . boolean?) (const #true)])
+         dict?]
+)]{
+
+Constructs an instance of a new dictionary type based on the given comparison
+function @racket[eql?], hash functions @racket[hash1] and @racket[hash2], and
+key predicate @racket[key?].
+
+These procedures are deprecated; use @racket[define-custom-hash-types] instead.
+
+}
 
 @close-eval[dict-eval]
-
