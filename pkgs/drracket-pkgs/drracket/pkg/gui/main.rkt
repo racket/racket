@@ -160,4 +160,4 @@
   frame)
 
 (module+ main
-  (void (make-pkg-installer)))
+  (void (make-pkg-gui)))

@@ -2,11 +2,13 @@
 (require racket/class
          racket/gui/base
          string-constants
-         racket/format)
+         racket/format
+         setup/dirs)
 
 (provide really-remove?
          sc-install-pkg-remove
-	 pick-wider)
+	 pick-wider
+         get-scope-list)
 
 (define sc-install-pkg-remove (string-constant install-pkg-remove))
 (define really-uninstall?-msg (string-constant install-pkg-really-remove?))
@@ -30,3 +32,12 @@
   (if (wa . > . wb)
       a
       b))
+
+(define (get-scope-list)
+  (append (let ([main (find-pkgs-dir)])
+            (reverse
+             (for/list ([d (get-pkgs-search-dirs)])
+               (if (equal? d main)
+                   'installation
+                   d))))
+          '(user shared)))

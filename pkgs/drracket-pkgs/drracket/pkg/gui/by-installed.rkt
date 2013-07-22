@@ -12,10 +12,16 @@
 (struct ipkg (name scope auto? checksum source))
 
 (define (scope<? a b)
-  (case a
-    [(installation) #t]
-    [(user) (eq? b 'shared)]
-    [else #f]))
+  (cond
+   [(path? a)
+    (or (not (path? b))
+        (bytes<? (path->bytes a) (path->bytes b)))]
+   [(path? b) #f]
+   [else
+    (case a
+      [(installation) #t]
+      [(user) (eq? b 'shared)]
+      [else #f])]))
 
 (define (ipkg<? a b)
   (if (string=? (ipkg-name a) (ipkg-name b))
@@ -35,7 +41,7 @@
            [parent this]
            [label #f]
            [choices null]
-           [columns (list "Auto?/Scope" "Name" "Checksum" "Source")]
+           [columns (list "Auto?" "Scope" "Name" "Checksum" "Source")]
            [style '(multiple column-headers clickable-headers)]
            [callback (lambda (lb e)
                        (when (e . is-a? . column-control-event%)
@@ -48,6 +54,8 @@
                          (sort-list!))
                        (adjust-buttons!))]))
 
+    (send pkg-list set-column-width 0 30 2 1000)
+
     (define sort-by 0)
     (define flip? #f)
     (define installed '())
@@ -59,7 +67,7 @@
 
     (define/private (reset-installed-list!)
       (set! installed
-            (for*/list ([scope (in-list '(installation user shared))]
+            (for*/list ([scope (in-list (get-scope-list))]
                         [(k v) (in-hash (installed-pkg-table #:scope scope))])
               (ipkg k scope (pkg-info-auto? v) (pkg-info-checksum v) (pkg-info-orig-pkg v))))
       (sort-list!))
@@ -114,7 +122,7 @@
       (define same-scope? (and (pair? ipkgs)
                                ;; must be all in the same scope:
                                (for/and ([i (cdr ipkgs)])
-                                 (eq? (ipkg-scope i) (ipkg-scope (car ipkgs))))))
+                                 (equal? (ipkg-scope i) (ipkg-scope (car ipkgs))))))
       (send remove-button enable same-scope?)
       (send update-button enable (and same-scope?
                                       (for/and ([i (in-list ipkgs)])
@@ -125,7 +133,7 @@
                       (lambda (a b)
                         ((if flip? not values)
                          (case sort-by
-                           [(0) (if (eq? (ipkg-scope a) (ipkg-scope b))
+                           [(0) (if (equal? (ipkg-scope a) (ipkg-scope b))
                                     (if (eq? (ipkg-auto? a) (ipkg-auto? b))
                                         (string<? (ipkg-name a) (ipkg-name b))
                                         (not (ipkg-auto? a)))
@@ -151,8 +159,9 @@
       (set! sorted-installed (list->vector l))
       (send pkg-list set
             (for/list ([i (in-list l)])
-              (~a (if (ipkg-auto? i) "*" "")
-                  (ipkg-scope i)))
+              (if (ipkg-auto? i) "*" ""))
+            (for/list ([i (in-list l)])
+              (~a (ipkg-scope i)))
             (for/list ([i (in-list l)])
               (format "~a" (ipkg-name i)))
             (for/list ([i (in-list l)])
@@ -164,6 +173,7 @@
                         [(catalog) "Catalog"]
                         [(url) "URL"]
                         [(link) "Link"]
+                        [(static-link) "Static link"]
                         [(file) "File"])
                       (cadr s))))
       (adjust-buttons!))))

@@ -266,7 +266,7 @@
                                        (string-constant install-pkg-update-catalogs)
                                        (string-constant install-pkg-do-not-update-catalogs)
                                        #f
-                                       this
+                                       (get-top-level-window)
                                        '(caution default=1)))
           (db:set-catalogs! user-catalogs)
           (update-db-package-list))))
@@ -416,7 +416,7 @@
 
     (define/private (refresh-installed-list! #:always? [always? #f])
       (define new-installed
-        (for*/hash ([scope (in-list '(installation user shared))]
+        (for*/hash ([scope (in-list (get-scope-list))]
                     [(k v) (in-hash (installed-pkg-table #:scope scope))])
           (values k (cons scope v))))
       (when (or always?
@@ -459,7 +459,7 @@
                      [(pkg-info-auto? info) "*"]
                      [else check-mark])
                     (cond
-                     [(eq? (car v) default-scope) ""]
+                     [(equal? (car v) default-scope) ""]
                      [else "!"])
                     (case (car (pkg-info-orig-pkg info))
                       [(catalog) ""]
