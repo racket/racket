@@ -1,6 +1,6 @@
 ;; Load this one with GRacket
 
-(load-relative "../racket/loadtest.rktl")
+(load-relative (collection-file-path "loadtest.rktl" "tests/racket"))
 (require racket/gui/base
          teachpack/htdp/image
          htdp/error

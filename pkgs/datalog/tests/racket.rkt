@@ -74,7 +74,7 @@
           (hasheq 'A 'joseph3 'B 'lucy)
           (hasheq 'A 'joseph3 'B 'joseph1))))
  
- (local [(local-require tests/datalog/examples/ancestor)]
+ (local [(local-require datalog/tests/examples/ancestor)]
    (datalog theory
             (? (ancestor A B))))
  =>
@@ -85,7 +85,7 @@
        (hasheq 'A 'ebbon 'B 'john)
        (hasheq 'A 'ebbon 'B 'douglas))
  
-  (local [(local-require tests/datalog/paren-examples/ancestor)]
+  (local [(local-require datalog/tests/paren-examples/ancestor)]
    (datalog theory
             (? (ancestor A B))))
  =>

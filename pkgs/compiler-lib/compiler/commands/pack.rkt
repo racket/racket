@@ -71,10 +71,7 @@
                                     #f
                                     '("collects" "doc" "include" "lib"))
                 #:requires
-                ;; Get current version of mzscheme for require:
-                (let* ([i (get-info '("mzscheme"))]
-                       [v (and i (i 'version (lambda () #f)))])
-                  (list (list '("mzscheme") v))))
+                null)
       (when (verbose)
         (printf " [output to \"~a\"]\n" plt-output)))
     ;; Collection
