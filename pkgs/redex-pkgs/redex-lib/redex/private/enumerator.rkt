@@ -1,7 +1,8 @@
 #lang racket/base
 (require racket/math
          racket/list
-         racket/function)
+         racket/function
+         data/gvector)
 
 (provide enum
          enum?
@@ -369,66 +370,130 @@
               1))
        2)))
 
-
-;; dep/enum : enum a (a -> enum b) -> enum (a,b)
+;; dep/enum : enum a (a -> enum b) -> enum (a, b)
 (define (dep/enum e f)
-  (cond [(= 0 (size e)) empty/enum]
-        [(not (infinite? (size (f (decode e 0)))))
-         (enum (if (infinite? (size e))
-                   +inf.f
-                   (foldl + 0 (map (compose size f) (to-list e))))
-               (λ (n) ;; n -> axb
-                  (let loop ([ei 0]
-                             [seen 0])
-                    (let* ([a (decode e ei)]
-                           [e2 (f a)])
-                      (if (< (- n seen)
-                             (size e2))
-                          (cons a (decode e2 (- n seen)))
-                          (loop (+ ei 1)
-                                (+ seen (size e2)))))))
-               (λ (ab) ;; axb -> n
-                  (let ([ai (encode e (car ab))])
-                    (+ (let loop ([i 0]
-                                  [sum 0])
-                         (if (>= i ai)
-                             sum
-                             (loop (+ i 1)
-                                   (+ sum
-                                      (size (f (decode e i)))))))
-                       (encode (f (car ab))
-                               (cdr ab))))))]
-        [(not (infinite? (size e)))
-         (enum +inf.f
-               (λ (n)
-                  (call-with-values
-                      (λ ()
-                         (quotient/remainder n (size e)))
-                    (λ (q r)
-                       (cons (decode e r)
-                             (decode (f (decode e r)) q)))))
-               (λ (ab)
-                  (+ (* (size e) (encode (f (car ab)) (cdr ab)))
-                     (encode e (car ab)))))]
-        [else ;; both infinite, same as prod/enum
-         (enum +inf.f               
-               (λ (n)
-                  (let* ([k (floor-untri n)]
-                         [t (tri k)]
-                         [l (- n t)]
-                         [m (- k l)]
-                         [a (decode e l)])
-                    (cons a
-                          (decode (f a) m))))
-               (λ (xs) ;; bijection from nxn -> n, inverse of previous
-                  ;; (n,m) -> (n+m)(n+m+1)/2 + n
-                  (unless (pair? xs)
-                    (error "not a pair"))
-                  (let ([l (encode e (car xs))]
-                        [m (encode (f (car xs)) (cdr xs))])
-                    (+ (/ (* (+ l m) (+ l m 1))
-                          2)
-                       l))))]))
+  (define (search-size sizes n)
+    (define (loop cur)
+      (let* ([lastSize (gvector-ref sizes (- cur 1))]
+             [e2 (f (decode e cur))]
+             [s  (+ lastSize (size e2))])
+        (gvector-add! sizes s)
+        (if (> s n)
+            cur
+            (loop (+ cur 1)))))
+    (loop (gvector-count sizes)))
+  ;; fill-table - find sizes[n], filling the table as it goes
+  ;; assumption: n >= (gvector-count sizes)
+  (define (fill-table sizes n)
+    (let loop ([cur (gvector-count sizes)])
+      (let* ([prevSize (gvector-ref sizes (- cur 1))]
+             [curE (f (decode e cur))]
+             [s (+ prevSize (size curE))])
+        (gvector-add! sizes s)
+        (if (= cur n)
+            s
+            (loop (+ cur 1))))))
+  (if (= 0 (size e))
+      empty/enum
+      (let ([first (size (f (decode e 0)))])
+        (cond
+         [(not (infinite? first))
+          ;; memo table caches the size of the dependent enumerators
+          ;; sizes[n] = # of terms with left side index <= n
+          ;; sizes : gvector int
+          (let ([sizes (gvector first)])
+            (enum (if (infinite? (size e))
+                      +inf.f
+                      (foldl
+                       (λ (curSize acc)
+                          (let ([sum (+ curSize acc)])
+                            (gvector-add! sizes sum)
+                            sum))
+                       first (map (compose size f) (cdr (to-list e)))))
+                  (λ (n)
+                     (let* ([ind (or (find-size sizes n)
+                                     (search-size sizes n))]
+                            [l (if (= ind 0)
+                                   0
+                                   (gvector-ref sizes (- ind 1)))]
+                            [m (- n l)]
+                            [x (decode e ind)]
+                            [e2 (f x)]
+                            [y (decode e2 m)])
+                       (cons x y)))
+                  (λ (ab)
+                     (let* ([a (car ab)]
+                            [b (cdr ab)]
+                            [ai (encode e a)]
+                            [ei (f a)]
+                            [nextSize (size ei)]
+                            [sizeUpTo (if (= ai 0)
+                                          0
+                                          (or (gvector-ref sizes (- ai 1) #f)
+                                              (let ([sizeUp
+                                                     (fill-table sizes (- ai 1))])
+                                                (begin0
+                                                    sizeUp
+                                                  (gvector-add! sizes
+                                                                (+ nextSize
+                                                                   sizeUp))))))])
+                       (+ sizeUpTo
+                          (encode ei b))))))]
+         [(not (infinite? (size e)))
+          (enum +inf.f
+                (λ (n)
+                   (call-with-values
+                       (λ ()
+                          (quotient/remainder n (size e)))
+                     (λ (q r)
+                        (cons (decode e r)
+                              (decode (f (decode e r)) q)))))
+                (λ (ab)
+                   (+ (* (size e) (encode (f (car ab)) (cdr ab)))
+                      (encode e (car ab)))))]
+         [else ;; both infinite, same as prod/enum
+          (enum +inf.f               
+                (λ (n)
+                   (let* ([k (floor-untri n)]
+                          [t (tri k)]
+                          [l (- n t)]
+                          [m (- k l)]
+                          [a (decode e l)])
+                     (cons a
+                           (decode (f a) m))))
+                (λ (xs) ;; bijection from nxn -> n, inverse of previous
+                   ;; (n,m) -> (n+m)(n+m+1)/2 + n
+                   (unless (pair? xs)
+                     (error "not a pair"))
+                   (let ([l (encode e (car xs))]
+                         [m (encode (f (car xs)) (cdr xs))])
+                     (+ (/ (* (+ l m) (+ l m 1))
+                           2)
+                        l))))]))))
+
+;; find-size : gvector int, int -> either int #f
+;; binary search for the index of the smallest element of vec greater
+;; than n or #f if no such element exists
+(define (find-size vec n)
+  (define (bin-search min max)
+    (cond [(= min max) min]
+          [(= (- max min) 1)
+           (cond [(> (gvector-ref vec min) n)
+                  min]
+                 [else max])]
+          [else
+           (let ([mid (quotient (+ max min)
+                                2)])
+             (cond [(> (gvector-ref vec mid) n)
+                    (bin-search min mid)]
+                   [else
+                    (bin-search mid max)]))]))
+  (let ([size (gvector-count vec)])
+    (cond [(or (= size 0)
+               (<= (gvector-ref vec (- size 1))
+                   n))
+           #f]
+          [else (bin-search 0 (- size 1))])))
 
 ;; dep2 : enum a (a -> enum b) -> enum (a,b)
 (define (dep2/enum e f)
@@ -836,15 +901,25 @@
 
   (check-bijection? nats-up))
 
- ;; dep2/enum tests
+ ;; find-size tests
+ (check-equal? (find-size (gvector) 5) #f)
+ (check-equal? (find-size (gvector 5) 4) 0)
+ (check-equal? (find-size (gvector 1 5 7) 0) 0)
+ (check-equal? (find-size (gvector 1 5 7) 1) 1)
+ (check-equal? (find-size (gvector 1 5 7) 4) 1)
+ (check-equal? (find-size (gvector 1 5 7) 5) 2)
+ (check-equal? (find-size (gvector 1 5 7) 6) 2)
+ (check-equal? (find-size (gvector 1 5 7) 7) #f) 
+ 
+ ;; depend/enum tests
  ;; same as dep unless the right side is finite
  (define 3-up-2
-   (dep2/enum
+   (dep/enum
     (from-list/enum '(0 1 2))
     up-to))
 
  (define nats-to-2
-   (dep2/enum nats up-to))
+   (dep/enum nats up-to))
 
 
  (test-begin
@@ -855,18 +930,28 @@
   (check-equal? (decode 3-up-2 3) (cons 2 0))
   (check-equal? (decode 3-up-2 4) (cons 2 1))
   (check-equal? (decode 3-up-2 5) (cons 2 2))
-  (check-bijection? 3-up-2)
+  
+  (check-equal? (encode 3-up-2 (cons 0 0)) 0)
+  (check-equal? (encode 3-up-2 (cons 1 0)) 1)
+  (check-equal? (encode 3-up-2 (cons 1 1)) 2)
+  (check-equal? (encode 3-up-2 (cons 2 0)) 3)
 
   (check-equal? (size nats-to-2) +inf.f)
+  (check-equal? (encode nats-to-2 (cons 0 0)) 0)
+  (check-equal? (encode nats-to-2 (cons 1 0)) 1)
+  (check-equal? (encode nats-to-2 (cons 1 1)) 2)
+  (check-equal? (encode nats-to-2 (cons 2 0)) 3)
+  (check-equal? (encode nats-to-2 (cons 2 1)) 4)
+  (check-equal? (encode nats-to-2 (cons 2 2)) 5)
+  (check-equal? (encode nats-to-2 (cons 3 0)) 6)
+
   (check-equal? (decode nats-to-2 0) (cons 0 0))
   (check-equal? (decode nats-to-2 1) (cons 1 0))
   (check-equal? (decode nats-to-2 2) (cons 1 1))
   (check-equal? (decode nats-to-2 3) (cons 2 0))
   (check-equal? (decode nats-to-2 4) (cons 2 1))
   (check-equal? (decode nats-to-2 5) (cons 2 2))
-  (check-equal? (decode nats-to-2 6) (cons 3 0))
-  (check-bijection? nats-to-2)
-  )
+  (check-equal? (decode nats-to-2 6) (cons 3 0)))
 
  ;; take/enum test
  (define to-2 (up-to 2))
