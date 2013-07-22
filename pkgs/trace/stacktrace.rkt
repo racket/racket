@@ -35,6 +35,8 @@
     (kernel-syntax-case stx #f
       [(#%provide . provide-specs)
        stx]
+      [(#%declare . provide-specs)
+       stx]
       [else-stx
        (general-top-level-expr-iterator stx)]))
 

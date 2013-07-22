@@ -184,6 +184,8 @@
          stx #f
          [(#%provide . provide-specs)
           stx]
+         [(#%declare . declare-specs)
+          stx]
          [else-stx
           (general-top-level-expr-iterator stx module-name )]))
       

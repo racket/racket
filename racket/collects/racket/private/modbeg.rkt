@@ -64,7 +64,7 @@
                                                  define-values define-syntaxes begin-for-syntax
                                                  module module*
                                                  #%module-begin 
-                                                 #%require #%provide 
+                                                 #%require #%provide #%declare
                                                  #%variable-reference))))])
                 ;; `begin' is special...
                 (if (let-values ([(p) (syntax-e e)])
@@ -101,7 +101,7 @@
                                                            (define-values define-syntaxes begin-for-syntax
                                                              module module*
                                                              #%module-begin 
-                                                             #%require #%provide))))
+                                                             #%require #%provide #%declare))))
                                                   #f
                                                   ;; Also check for calls to `void':
                                                   (if (free-identifier=? a (quote-syntax #%app))

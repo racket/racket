@@ -198,7 +198,8 @@
                                 module
                                 module*
                                 #%require
-                                #%provide )
+                                #%provide
+                                #%declare )
               [(begin expr ...)
                (syntax/loc body
                  (begin (expand-ssp-body (sp-id ...) (temp-id ...) (orig-id ...) expr) ...))]
@@ -217,6 +218,7 @@
               [(module* . _) body]
               [(#%require . _) body]
               [(#%provide . _) body]
+              [(#%declare . _) body]
               [expr (syntax/loc body
                       (letrec-syntaxes ([(sp-id) (syntax-local-value (quote-syntax temp-id))] ...)
                         expr))]))]))]))
@@ -270,7 +272,7 @@
                                define-syntaxes define-values
                                begin-for-syntax
                                module module*
-                               #%require #%provide
+                               #%require #%provide #%declare
                                quote-syntax)
                 [(begin form ...)
                  (syntax/loc e
@@ -284,5 +286,6 @@
                 [(module* . _) e]
                 [(#%require . _) e]
                 [(#%provide . _) e]
+                [(#%declare . _) e]
                 [(quote-syntax . _) e]
                 [else (as-expression)]))))])))

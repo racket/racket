@@ -1043,7 +1043,7 @@
            (skipto/auto exp 'rebuild annotate/module-top-level)] 
           [else 
            (syntax-case exp (#%app #%plain-app call-with-values define-values define-syntaxes 
-                                   #%require #%provide begin #%plain-lambda lambda
+                                   #%require #%provide #%declare begin #%plain-lambda lambda
                                    module module*)
              [(define-values (new-var ...) e)
               (let* ([name-list (syntax->list #`(new-var ...))]
@@ -1073,6 +1073,8 @@
               ;; get caught above in the "stepper-black-box-expr" check:
               exp]
              [(#%provide specs ...)
+              exp]
+             [(#%declare specs ...)
               exp]
              [(module . _) ; submodule
               exp]

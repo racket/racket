@@ -214,6 +214,7 @@
       ;; these forms should always be ignored
       [(#%require . _) (void)]
       [(#%provide . _) (void)]
+      [(#%declare . _) (void)]
       [(define-syntaxes . _) (void)]
       [(begin-for-syntax . _) (void)]
 

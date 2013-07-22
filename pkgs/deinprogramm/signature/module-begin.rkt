@@ -70,8 +70,7 @@
 	  (values table non-signatures))))
 
     (define local-expand-stop-list 
-      (append (list #': #'define-contract
-		    #'#%require #'#%provide)
+      (append (list #': #'define-contract)
 	      (kernel-form-identifier-list)))
 	
     (define (expand-signature-expressions signature-table expressions)
@@ -173,7 +172,7 @@
 	       (let ((e2 (local-expand #'e2 'module local-expand-stop-list)))
 		 ;; Lift out certain forms to make them visible to the module
 		 ;;  expander:
-		 (syntax-case e2 (#%require #%provide
+		 (syntax-case e2 (#%require #%provide #%declare
 				  define-syntaxes begin-for-syntax define-values begin
 				  define-record-procedures define-record-procedures-2
 				  define-record-procedures-parametric define-record-procedures-parametric-2
@@ -181,6 +180,8 @@
 		   ((#%require . __)
 		    #`(begin #,e2 (frm e3s #,e1s #,def-ids)))
 		   ((#%provide . __)
+		    #`(begin #,e2 (frm e3s #,e1s #,def-ids)))
+		   ((#%declare . __)
 		    #`(begin #,e2 (frm e3s #,e1s #,def-ids)))
 		   ((define-syntaxes (id ...) . _)
 		    #`(begin #,e2 (frm e3s #,e1s (id ... . #,def-ids))))

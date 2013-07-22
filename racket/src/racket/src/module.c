@@ -90,6 +90,8 @@ static Scheme_Object *modulestar_syntax(Scheme_Object *form, Scheme_Comp_Env *en
 static Scheme_Object *modulestar_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *module_begin_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *module_begin_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
+static Scheme_Object *declare_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
+static Scheme_Object *declare_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *require_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *require_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *provide_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
@@ -209,6 +211,7 @@ ROSYM static Scheme_Object *file_symbol;
 ROSYM static Scheme_Object *submod_symbol;
 ROSYM static Scheme_Object *module_name_symbol;
 ROSYM static Scheme_Object *nominal_id_symbol;
+ROSYM static Scheme_Object *phaseless_keyword;
 
 /* global read-only syntax */
 READ_ONLY Scheme_Object *scheme_module_stx;
@@ -222,6 +225,7 @@ READ_ONLY Scheme_Object *scheme_begin_for_syntax_stx;
 READ_ONLY static Scheme_Object *modbeg_syntax;
 READ_ONLY static Scheme_Object *require_stx;
 READ_ONLY static Scheme_Object *provide_stx;
+READ_ONLY static Scheme_Object *declare_stx;
 READ_ONLY static Scheme_Object *set_stx;
 READ_ONLY static Scheme_Object *app_stx;
 READ_ONLY static Scheme_Object *lambda_stx;
@@ -283,6 +287,10 @@ THREAD_LOCAL_DECL(static Scheme_Object *global_shift_cache);
 #define MODULE_MODFORM_KIND 4
 #define SAVED_MODFORM_KIND 5
 
+/* combined bitwise: */
+#define NON_PHASELESS_IMPORT 0x1
+#define NON_PHASELESS_FORM   0x2
+
 typedef void (*Check_Func)(Scheme_Object *prnt_name, Scheme_Object *name, 
                            Scheme_Object *nominal_modname, Scheme_Object *nominal_export,
 			   Scheme_Object *modname, Scheme_Object *srcname, int exet,
@@ -302,7 +310,7 @@ static void parse_requires(Scheme_Object *form, int at_phase,
                            int *all_simple,
                            Scheme_Hash_Table *modix_cache,
                            Scheme_Hash_Table *submodule_names,
-                           int *maybe_phaseless);
+                           int *non_phaseless);
 static void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
                            int at_phase,
                            Scheme_Hash_Table *all_provided,
@@ -369,6 +377,11 @@ void scheme_init_module(Scheme_Env *env)
 
   scheme_add_global_keyword("#%module-begin", 
 			    modbeg_syntax,
+			    env);
+
+  scheme_add_global_keyword("#%declare",
+                            scheme_make_compiled_syntax(declare_syntax,
+                                                        declare_expand),
 			    env);
 
   scheme_add_global_keyword("#%require", 
@@ -625,6 +638,7 @@ void scheme_finish_kernel(Scheme_Env *env)
   REGISTER_SO(scheme_begin_for_syntax_stx);
   REGISTER_SO(require_stx);
   REGISTER_SO(provide_stx);
+  REGISTER_SO(declare_stx);
   REGISTER_SO(set_stx);
   REGISTER_SO(app_stx);
   REGISTER_SO(scheme_top_stx);
@@ -652,6 +666,7 @@ void scheme_finish_kernel(Scheme_Env *env)
   scheme_begin_for_syntax_stx = scheme_datum_to_syntax(scheme_intern_symbol("begin-for-syntax"), scheme_false, w, 0, 0);
   require_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%require"), scheme_false, w, 0, 0);
   provide_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%provide"), scheme_false, w, 0, 0);
+  declare_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%declare"), scheme_false, w, 0, 0);
   set_stx = scheme_datum_to_syntax(scheme_intern_symbol("set!"), scheme_false, w, 0, 0);
   app_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%app"), scheme_false, w, 0, 0);
   scheme_top_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%top"), scheme_false, w, 0, 0);
@@ -722,6 +737,12 @@ void scheme_finish_kernel(Scheme_Env *env)
 
   REGISTER_SO(nominal_id_symbol);
   nominal_id_symbol = scheme_intern_symbol("nominal-id");
+
+  REGISTER_SO(phaseless_keyword);
+  {
+    const char *s = "cross-phase-persistent";
+    phaseless_keyword = scheme_intern_exact_keyword(s, strlen(s));
+  }
 }
 
 int scheme_is_kernel_modname(Scheme_Object *modname)
@@ -8397,7 +8418,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   Scheme_Object *lift_data;
   Scheme_Object *lift_ctx;
   Scheme_Object *lifted_reqs = scheme_null, *req_data, *unbounds = scheme_null;
-  int maybe_has_lifts = 0, expand_ends = (phase == 0), maybe_phaseless;
+  int maybe_has_lifts = 0, expand_ends = (phase == 0), non_phaseless, requested_phaseless;
   Scheme_Object *observer, *vec, *end_statements;
   Scheme_Object *begin_for_syntax_stx;
   const char *who = "module";
@@ -8453,7 +8474,8 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   if (*bxs->_num_phases < phase + 1)
     *bxs->_num_phases = phase + 1;
 
-  maybe_phaseless = (env->genv->module->phaseless ? 1 : 0);
+  non_phaseless = (env->genv->module->phaseless ? 0 : NON_PHASELESS_IMPORT);
+  requested_phaseless = 0;
   env->genv->module->phaseless = NULL;
 
   /* Expand each expression in form up to `begin', `define-values', `define-syntax', 
@@ -8705,8 +8727,8 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
             var_count++;
 	  }
 
-          if (maybe_phaseless && !phaseless_rhs(val, var_count, phase))
-            maybe_phaseless = 0;
+          if (!(non_phaseless & NON_PHASELESS_FORM) && !phaseless_rhs(val, var_count, phase))
+            non_phaseless |= NON_PHASELESS_FORM;
           
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
 	  kind = DEFN_MODFORM_KIND;
@@ -8918,7 +8940,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
           kind = DONE_MODFORM_KIND;
 
-          maybe_phaseless = 0;
+          non_phaseless |= NON_PHASELESS_FORM;
 	} else if (scheme_stx_module_eq_x(require_stx, fst, phase)) {
 	  /************ require *************/
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
@@ -8933,7 +8955,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
                          1, phase ? 1 : 0,
                          bxs->all_simple_renames, bxs->modidx_cache,
                          bxs->submodule_names,
-                         &maybe_phaseless);
+                         &non_phaseless);
 
 	  if (!erec)
 	    e = NULL;
@@ -8947,6 +8969,28 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
                                bxs->saved_provides);
           bxs->saved_provides = p;
           kind = PROVIDE_MODFORM_KIND;
+	} else if (scheme_stx_module_eq_x(declare_stx, fst, phase)) {
+	  /************ declare *************/
+          Scheme_Object *kws, *kw;
+          
+          kws = SCHEME_STX_CDR(e);
+          while (SCHEME_STX_PAIRP(kws)) {
+            kw = SCHEME_STX_CAR(kws);
+            if (SCHEME_KEYWORDP(SCHEME_STX_VAL(kw))) {
+              if (SAME_OBJ(SCHEME_STX_VAL(kw), phaseless_keyword)) {
+                if (requested_phaseless)
+                  scheme_wrong_syntax(who, kw, e, "duplicate declaration");
+                requested_phaseless = 1;
+              } else {
+                scheme_wrong_syntax(who, kw, e, "unrecognized keyword");
+              }
+            }
+            kws = SCHEME_STX_CDR(kws);
+          }
+          if (!SCHEME_STX_NULLP(kws))
+            scheme_wrong_syntax(who, NULL, e, IMPROPER_LIST_FORM);
+          
+          kind = SAVED_MODFORM_KIND;
 	} else if (scheme_stx_module_eq_x(scheme_module_stx, fst, phase)
                    || scheme_stx_module_eq_x(scheme_modulestar_stx, fst, phase)) {
 	  /************ module[*] *************/
@@ -9008,14 +9052,14 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer,e);
 	} else {
 	  kind = EXPR_MODFORM_KIND;
-          maybe_phaseless = 0;
+          non_phaseless |= NON_PHASELESS_FORM;
         }
       } else {
-        maybe_phaseless = 0;
+        non_phaseless |= NON_PHASELESS_FORM;
 	kind = EXPR_MODFORM_KIND;
       }
     } else {
-      maybe_phaseless = 0;
+      non_phaseless |= NON_PHASELESS_FORM;
       kind = EXPR_MODFORM_KIND;
     }
 
@@ -9283,7 +9327,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
   bxs->all_defs = adt;
 
   if (cenv->prefix->non_phaseless)
-    maybe_phaseless = 0;
+    non_phaseless |= NON_PHASELESS_IMPORT;
 
   if (!phase)
     env->genv->module->comp_prefix = cenv->prefix;
@@ -9303,8 +9347,16 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
     }
   }
 
-  if (maybe_phaseless)
-    env->genv->module->phaseless = scheme_true;
+  if (requested_phaseless) {
+    if (!non_phaseless)
+      env->genv->module->phaseless = scheme_true;
+    else {
+      if (non_phaseless & NON_PHASELESS_IMPORT)
+        scheme_wrong_syntax(who, form, NULL, "cannot be cross-phase persistent due to required modules");
+      else
+        scheme_wrong_syntax(who, form, NULL, "does not satisfy cross-phase persistent grammar");
+    }
+  }
 
   if (rec[drec].comp) {
     body_lists = scheme_make_pair(first, scheme_make_pair(exp_body, body_lists));
@@ -9552,7 +9604,7 @@ static void install_stops(Scheme_Comp_Env *xenv, int phase, Scheme_Object **_beg
 
   stop = scheme_get_stop_expander();
 
-  scheme_add_local_syntax(21, xenv);
+  scheme_add_local_syntax(22, xenv);
 
   if (phase == 0) {
     scheme_set_local_syntax(0, scheme_begin_stx, stop, xenv);
@@ -9577,6 +9629,7 @@ static void install_stops(Scheme_Comp_Env *xenv, int phase, Scheme_Object **_beg
     scheme_set_local_syntax(18, expression_stx, stop, xenv);
     scheme_set_local_syntax(19, scheme_modulestar_stx, stop, xenv);
     scheme_set_local_syntax(20, scheme_module_stx, stop, xenv);
+    scheme_set_local_syntax(21, declare_stx, stop, xenv);
   } else {
     w = scheme_sys_wraps_phase_worker(phase);
     s = scheme_datum_to_syntax(scheme_intern_symbol("begin"), scheme_false, w, 0, 0);
@@ -9609,6 +9662,8 @@ static void install_stops(Scheme_Comp_Env *xenv, int phase, Scheme_Object **_beg
     scheme_set_local_syntax(19, s, stop, xenv);
     s = scheme_datum_to_syntax(scheme_intern_symbol("module"), scheme_false, w, 0, 0);
     scheme_set_local_syntax(20, s, stop, xenv);
+    s = scheme_datum_to_syntax(scheme_intern_symbol("#%declare"), scheme_false, w, 0, 0);
+    scheme_set_local_syntax(21, s, stop, xenv);
   }
 }
 
@@ -11839,7 +11894,7 @@ void parse_requires(Scheme_Object *form, int at_phase,
                     int *all_simple,
                     Scheme_Hash_Table *modidx_cache,
                     Scheme_Hash_Table *submodule_names,
-                    int *maybe_phaseless)
+                    int *non_phaseless)
 /* form can be a module-path index or a quoted require spec */
 {
   Scheme_Object *ll = form, *mode = scheme_make_integer(0), *just_mode = NULL, *x_mode, *x_just_mode;
@@ -12184,8 +12239,8 @@ void parse_requires(Scheme_Object *form, int at_phase,
                    start ? eval_exp : 0, start ? eval_run : 0, 
                    main_env->phase, scheme_null, 0);
 
-      if (maybe_phaseless && !m->phaseless)
-        *maybe_phaseless = 0;
+      if (non_phaseless && !m->phaseless)
+        *non_phaseless |= NON_PHASELESS_IMPORT;
 
       x_just_mode = just_mode;
       x_mode = mode;
@@ -12447,6 +12502,21 @@ provide_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *r
 
 static Scheme_Object *
 provide_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
+{
+  SCHEME_EXPAND_OBSERVE_PRIM_PROVIDE(erec[drec].observer);
+  scheme_wrong_syntax(NULL, NULL, form, "not in module body");
+  return NULL;
+}
+
+static Scheme_Object *
+declare_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
+{
+  scheme_wrong_syntax(NULL, NULL, form, "not in module body");
+  return NULL;
+}
+
+static Scheme_Object *
+declare_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
   SCHEME_EXPAND_OBSERVE_PRIM_PROVIDE(erec[drec].observer);
   scheme_wrong_syntax(NULL, NULL, form, "not in module body");

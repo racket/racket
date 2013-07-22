@@ -24,7 +24,7 @@
                                             define-values define-syntaxes begin-for-syntax
                                             module module*
                                             #%plain-module-begin 
-                                            #%require #%provide 
+                                            #%require #%provide #%declare 
                                             #%variable-reference)))))
                         (let ([p phase])
                           (cond
@@ -85,7 +85,7 @@
                 #%top
                 #%datum
                 #%variable-reference
-                module module* #%provide #%require))))
+                module module* #%provide #%require #%declare))))
 
   (provide kernel-syntax-case
            kernel-syntax-case*

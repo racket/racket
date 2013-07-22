@@ -1,3 +1,8 @@
+Version 5.90.0.2
+Added #%declare
+Cross-phase persistent modules must be declared with
+ (#%declare #:cross-phase-persistent)
+
 Version 5.90.0.1
 Added "share" directory, moved "pkgs" there; moved "collects"
  back out of "lib"

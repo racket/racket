@@ -136,10 +136,10 @@
       [(_ EQUIV-MAP FORM FORMS ...)
        (let ([expanded-form 
               (local-expand #'FORM 'module 
-                            (list #'begin #'begin0 #'#%provide #'#%require
+                            (list #'begin #'begin0 #'#%provide #'#%require #'#%declare
                                   #'define-syntaxes #'define-values-for-syntax
                                   #'define-values #'#%app #'unit #'unit/sig))])
-         (syntax-case expanded-form (begin begin0 #%provide #%require
+         (syntax-case expanded-form (begin begin0 #%provide #%require #%declare
                                            define-syntaxes define-values-for-syntax
                                            define-values #%app)
            ;; explode top-level begin statements
@@ -156,7 +156,12 @@
             ;; TBD: support frtime-specific provide specs (lifted, etc)
             #`(begin #,expanded-form
                      (optimize-module EQUIV-MAP FORMS ...))]
- 
+
+           ;; declare
+           [(#%declare . __)
+            #`(begin #,expanded-form
+                     (optimize-module EQUIV-MAP FORMS ...))]
+
            ;; syntax definitions
            [(define-syntaxes . __)
             #`(begin #,expanded-form

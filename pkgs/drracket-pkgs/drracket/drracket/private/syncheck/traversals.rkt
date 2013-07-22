@@ -210,7 +210,7 @@
                                                   #%plain-app #%top #%plain-module-begin
                                                   define-values define-syntaxes begin-for-syntax
                                                   module module*
-                                                  #%require #%provide #%expression)
+                                                  #%require #%provide #%declare #%expression)
               (λ (x y) (free-identifier=? x y level 0))
               [(#%plain-lambda args bodies ...)
                (begin
@@ -401,6 +401,10 @@
                  (for ([provided-vars (in-list provided-varss)])
                    (for ([provided-var (in-list provided-vars)])
                      (add-id varrefs provided-var level-of-enclosing-module))))]
+
+              ; module top level only:
+              [(#%declare declare-specs ...)
+               (void)]
               
               [(#%expression arg)
                (begin

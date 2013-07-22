@@ -3,12 +3,16 @@
 (define (check-cross-phase is? form)
   (parameterize ([current-namespace (make-base-namespace)])
     (define o (open-output-bytes))
-    (write (compile `(module m racket/kernel ,form)) o)
+    (define syntax-error?
+      (with-handlers ([exn:fail:syntax? (lambda (exn) #t)])
+        (write (compile `(module m racket/kernel (#%declare #:cross-phase-persistent) ,form)) o)
+        #f))
     (close-output-port o)
     (define i (open-input-bytes (get-output-bytes o)))
     (define e (parameterize ([read-accept-compiled #t])
                 (read i)))
-    (unless (equal? is? (module-compiled-cross-phase-persistent? e))
+    (unless (equal? is? (and (not syntax-error?)
+                             (module-compiled-cross-phase-persistent? e)))
       (error 'cross-phase "failed: ~s ~s" is? form))))
 
 (check-cross-phase #t '(define-values (x) 5))
@@ -53,6 +57,7 @@
 (parameterize ([current-namespace (make-base-namespace)])
   (eval `(module m racket/kernel
            (#%provide s? make-s)
+           (#%declare #:cross-phase-persistent)
            (define-values (struct:s make-s s? s-ref s-set!) (make-struct-type 's #f 0 0))))
   (eval '(require 'm))
   (define s? (eval 's?))
@@ -80,6 +85,7 @@
   (parameterize ([compile-enforce-module-constants #f])
     (eval `(module m racket/kernel
              (#%provide x)
+             (#%declare #:cross-phase-persistent)
              (define-values (x) 5)))
     (compile `(module m racket/kernel
                 (#%provide x)

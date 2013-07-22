@@ -103,6 +103,8 @@
             (ploop #'last-one polarity)]
            [(#%provide pvd ...)
             (call-give-up)]
+           [(#%declare decl ...)
+            (call-give-up)]
            [(define-values (id ...) expr)
             (call-give-up)]
            [(define-syntaxes (id ...) expr)

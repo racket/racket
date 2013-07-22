@@ -24,5 +24,8 @@
           (c:tcp-addresses socket port-numbers?)
           (if (tcp-listener? socket)
               (c:tcp-addresses socket port-numbers?)
-              (raise-argument-error 'tcp-addresses "(or/c tcp-port? tcp-listener?)" socket)))])))
+              (raise-argument-error 'tcp-addresses "(or/c tcp-port? tcp-listener?)" socket)))]))
+
+  ;; Because we can, and because it makes a good test:
+  (#%declare #:cross-phase-persistent))
 

@@ -187,7 +187,7 @@ the binding (according to @racket[free-identifier=?]) matters.}
 @racketgrammar*[
 #:literals (#%expression module module* #%plain-module-begin begin #%provide
             define-values define-syntaxes begin-for-syntax
-            #%require
+            #%require #%declare
             #%plain-lambda case-lambda if begin begin0 let-values letrec-values
             set! quote-syntax quote with-continuation-mark
             #%plain-app #%top #%variable-reference)
@@ -201,7 +201,8 @@ the binding (according to @racket[free-identifier=?]) matters.}
 [module-level-form general-top-level-form
                    (#%provide raw-provide-spec ...)
                    (begin-for-syntax module-level-form ...)
-                   submodule-form]
+                   submodule-form
+                   (#%declare declaration-keyword ...)]
 [submodule-form    (module id module-path
                      (#%plain-module-begin
                       module-level-form ...))
@@ -993,12 +994,13 @@ to syntax transformers, via @racket[syntax-local-name].
 
 A module is @tech{cross-phase persistent} only if it fits the following grammar,
 which uses non-terminals from @secref["fully-expanded"], only if
+it includes @racket[(#%declare #:cross-phase-persistent)], only
 it includes no uses of @racket[quote-syntax] or @racket[#%variable-reference], 
 and only if no module-level binding is @racket[set!]ed.
 
 @racketgrammar*[
 #:literals (module module* #%plain-module-begin begin #%provide
-            define-values #%require
+            define-values #%require #%declare
             #%plain-lambda case-lambda begin
             set! quote-syntax quote with-continuation-mark
             #%plain-app
@@ -1006,7 +1008,8 @@ and only if no module-level binding is @racket[set!]ed.
 [cross-module (module id module-path
                 (#%plain-module-begin
                   cross-form ...))]
-[cross-form     (begin cross-form ...)                
+[cross-form     (#%declare #:cross-phase-persistent)
+                (begin cross-form ...)
                 (#%provide raw-provide-spec ...)
                 submodule-form
                 (define-values (id ...) cross-expr)

@@ -601,10 +601,12 @@ top-levels are in corresponding higher @tech{phase}s.
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "cross-phase persistent-modules"]{Cross-Phase Persistent Modules}
 
-Module declarations that fit a highly constrained form create
-@deftech{cross-phase persistent} modules. A @tech{cross-phase persistent} module's
-instantiations across all phases and @tech{module registries} share
-the variables produced by the first instantiation of the module.
+Module declarations that fit a highly constrained form---including a
+@racket[(#%declare #:cross-phase-persistent)] form in the module
+body---create @deftech{cross-phase persistent} modules. A
+@tech{cross-phase persistent} module's instantiations across all
+phases and @tech{module registries} share the variables produced by
+the first instantiation of the module.
 
 The intent of a @tech{cross-phase persistent} module is to support values that are
 recognizable after @tech{phase} crossings. For example, when a macro

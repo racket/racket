@@ -40,9 +40,7 @@
                              #'body1 'module
                              (append (kernel-form-identifier-list)
                                      (syntax->list #'(provide
-                                                      require
-                                                      #%provide
-                                                      #%require))))])
+                                                      require))))])
               (syntax-case expanded (begin)
                 [(begin body1 ...)
                  #`(doc-begin m-id post-process exprs body1 ... . body)]
@@ -57,7 +55,8 @@
                                               module
                                               module*
                                               #%require
-                                              #%provide))))
+                                              #%provide
+                                              #%declare))))
                  #`(begin #,expanded (doc-begin m-id post-process exprs . body))]
                 [_else
                  #`(doc-begin m-id post-process 

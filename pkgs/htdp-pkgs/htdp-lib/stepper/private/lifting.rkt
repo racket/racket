@@ -75,6 +75,8 @@
            stx #f
            [(#%provide . provide-specs)
             (void)]
+           [(#%declare . declare-specs)
+            (void)]
            [else-stx
             (general-top-level-expr-iterator stx context-so-far)]))
         

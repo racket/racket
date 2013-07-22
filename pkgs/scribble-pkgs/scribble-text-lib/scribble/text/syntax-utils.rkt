@@ -8,7 +8,7 @@
 (begin-for-syntax
   (define definition-ids ; ids that don't require forcing
     (syntax->list #'(define-values define-syntaxes begin-for-syntax
-                     require provide #%require #%provide)))
+                     require provide #%require #%provide #%declare)))
   (define stoplist (append definition-ids (kernel-form-identifier-list)))
   (define (definition-id? id)
     (and (identifier? id)

@@ -416,7 +416,7 @@
          [(#%require i ...) expr]
          ;; No error possible (and no way to wrap)
          [(#%provide i ...) expr]
-         
+         [(#%declare i ...) expr]
          
          ;; No error possible
          [(quote _)

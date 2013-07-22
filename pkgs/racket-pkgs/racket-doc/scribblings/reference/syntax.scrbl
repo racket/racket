@@ -367,6 +367,29 @@ Like @racket[#%module-begin], but without adding a
 Legal only in a @tech{module begin context}, and handled by the
 @racket[module] and @racket[module*] forms.}
 
+@defform[(#%declare declaration-keyword ...)
+         #:grammar
+         ([declaration-keyword #:cross-phase-persistent])]{
+
+Declarations that affect run-time or reflective properties of the
+module:
+
+@itemlist[
+
+ @item{@indexed-racket[#:cross-phase-persistent] --- declares the
+       module as @tech{cross-phase persistent}, and reports a syntax
+       error if the module does not meet the import or syntactic
+       constraints of a @tech{cross-phase persistent} module.}
+
+]
+
+A @racket[#%declare] form must appear in a @tech{module
+context} or a @tech{module-begin context}. Each
+@racket[declaration-keyword] can be declared at most once within a
+@racket[module] body.
+
+}           
+
 
 @;------------------------------------------------------------------------
 @section[#:tag '("require" "provide")]{Importing and Exporting: @racket[require] and @racket[provide]}

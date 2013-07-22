@@ -59,8 +59,9 @@
      (inner #'expr)]))
 
 (define ((make-module-case inner) stx)
-  (syntax-case* stx (#%provide begin-for-syntax module module*) free-identifier=?     
+  (syntax-case* stx (#%provide #%declare begin-for-syntax module module*) free-identifier=?     
     [(#%provide . p) stx]
+    [(#%declare . d) stx]
     [(module* . m) stx]
     [(module . m) stx]
     [(begin-for-syntax . e) stx]
