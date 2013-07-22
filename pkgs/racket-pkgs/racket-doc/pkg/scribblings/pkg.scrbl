@@ -396,14 +396,16 @@ removing any of the @nonterm{pkg}s.
 
 @item{@command/toc{show} @nonterm{option} ... --- Print information about currently installed packages. 
  By default, packages are shown for all installation modes (installation-wide,
- user- and Racket-version-specific, and user-specific all-version).
+ user- and Racket-version-specific, and user-specific all-version), but only for packages
+ not marked as auto-installed to fulfill dependencies.
 
  The @exec{show} sub-command accepts 
  the following @nonterm{option}s:
 
  @itemlist[
 
- @item{@Flag{d} --- Adds a column in the output for the directory the package is installed to.} 
+ @item{@Flag{a} or @DFlag{all} --- Includes auto-installed packages in the listing.} 
+ @item{@Flag{d} or @DFlag{dir} --- Adds a column in the output for the directory where the package is installed.} 
 
  @item{@DFlag{scope} @nonterm{scope} --- Shows only packages in @nonterm{scope}, which is one of
   @itemlist[

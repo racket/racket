@@ -197,6 +197,7 @@
  [show
   "Show information about installed packages"
   #:once-each
+  [#:bool all ("-a") "Show auto-installed packages, too"]
   [#:bool dir ("-d") "Show the directory where the package is installed"]
   #:once-any
   [(#:sym scope [installation user shared] #f) scope ()
@@ -240,7 +241,9 @@
                      [current-pkg-error (pkg-error 'show)]
                      [current-pkg-scope-version (or version (r:version))])
         (with-pkg-lock/read-only
-         (pkg-show (if only-mode "" " ") #:directory? dir)))))]
+         (pkg-show (if only-mode "" " ")
+                   #:auto? all
+                   #:directory? dir)))))]
  [create
   "Bundle a package from a directory or installed package"
   #:once-any

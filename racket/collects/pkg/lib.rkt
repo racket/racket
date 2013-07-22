@@ -1590,7 +1590,9 @@
       #:strip strip-mode
       to-update)]))
 
-(define (pkg-show indent #:directory? [dir? #f])
+(define (pkg-show indent 
+                  #:directory? [dir? #f]
+                  #:auto? [show-auto? #f])
   (let ()
     (define db (read-pkg-db))
     (define pkgs (sort (hash-keys db) string-ci<=?))
@@ -1599,13 +1601,17 @@
         (table-display
          (list*
           (append
-           (list (format "~aPackage[*=auto]" indent)
+           (list (format "~aPackage~a"
+                         indent 
+                         (if show-auto? "[*=auto]" ""))
                  "Checksum"
                  "Source")
            (if dir?
                (list "Directory")
                empty))
-          (for/list ([pkg (in-list pkgs)])
+          (for/list ([pkg (in-list pkgs)]
+                     #:when (or show-auto?
+                                (not (pkg-info-auto? (hash-ref db pkg)))))
             (match-define (pkg-info orig-pkg checksum auto?) (hash-ref db pkg))
             (append
              (list (format "~a~a~a"
@@ -2304,7 +2310,8 @@
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-show
    (->* (string?)
-        (#:directory? boolean?)
+        (#:directory? boolean?
+                      #:auto? boolean?)
         void?)]
   [pkg-install
    (->* ((listof pkg-desc?))
