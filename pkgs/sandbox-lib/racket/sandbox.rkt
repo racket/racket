@@ -941,7 +941,8 @@
        (exists ,(find-system-path 'addon-dir))
        (read ,(build-path (find-system-path 'addon-dir) "links.rktd"))
        (read ,(build-path (find-system-path 'addon-dir) (version) "links.rktd"))
-       (read ,(build-path (find-config-dir) "links.rktd"))
+       ,@(for/list ([f (get-links-search-files)])
+           `(read ,f))
        (read ,(find-lib-dir))
        ,@(compute-permissions allow-for-require allow-for-load)
        ,@(sandbox-path-permissions))]
