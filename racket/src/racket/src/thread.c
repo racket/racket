@@ -3470,7 +3470,7 @@ Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
 #ifdef USE_WINSOCK_TCP
   return NULL;
 #else
-  Scheme_Object *key, *v, *s;
+  Scheme_Object *key, *v, *s = NULL;
 #if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
 # else
   void *r, *w, *e;
