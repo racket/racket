@@ -286,8 +286,9 @@
                                 [(conflicts) ',conflicts]
                                 [(plt-relative?) ,plt-relative?]
                                 [(plt-home-relative?) ,plt-home-relative?]
-                                [(test-plt-dirs) ,test-dirs] ; #f or `(quote ,dirs)
-                                [else (failure)]))
+                                . ,(or `([(test-plt-dirs) ,test-dirs] ; #f or `(quote ,dirs)
+                                         [else (failure)])
+                                       `([,(and 'else test-dirs) (failure)]))))
                            (lambda (request failure)
                              (case request
                                [(name) name]
@@ -297,6 +298,7 @@
                                [(plt-relative?) plt-relative?]
                                [(plt-home-relative?) plt-home-relative?]
                                [(test-plt-dirs) (and test-dirs
+                                                     (not (eq? test-dirs 'else))
                                                      (cadr test-dirs))]
                                [else (failure)]))]
                           [else
@@ -444,7 +446,8 @@
                    (print-status (format "Unpacking ~a from ~a" name archive))
                    (let ([u (read p)])
                      (match u
-                       [`(unit (import main-collects-parent-dir mzuntar) (export)
+                       [`(unit (import ,(? symbol?) mzuntar) 
+                               (export)
                                (mzuntar void)
                                (quote ,collections))
                         (make-directory* (car target-dir-info))
