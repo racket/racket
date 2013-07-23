@@ -425,7 +425,7 @@
     (do-tree "include"  'includerkt)
     (do-tree "share"    'sharerkt)
     (do-tree "etc"      'config)
-    (do-tree "man"      'man)
+    (do-tree "man"      'man #:missing 'skip) ; not included for Windows
     ;; (when (and (not (equal? (dir: 'src) "")) (directory-exists? "src"))
     ;;   (do-tree "src" 'src))
     ;; don't use the above -- it would be pointless to put the source tree in
