@@ -3,7 +3,7 @@ Stepper
 
 Changes for 5.3.6:
 
-Files all in completely new locations, otherwise unchanged.
+None.
 
 Changes for 5.3.4:
 
