@@ -1061,6 +1061,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/future/random-future.rkt" drdr:timeout 480 drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/future/timing-test.rkt" drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/generic" responsible (asumu stamourv)
+"pkgs/racket-pkgs/racket-test/tests/generic/benchmark.rkt" drdr:timeout 250 drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/info.rkt" responsible (eli)
 "pkgs/racket-pkgs/racket-test/tests/match" responsible (samth)
 "pkgs/racket-pkgs/racket-test/tests/net" responsible (jay eli mflatt robby)
