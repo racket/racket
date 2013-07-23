@@ -538,7 +538,8 @@ corresponding @racketidfont{racket...} binding.}
                        (code:line #:use-sources (src-module-path ...))
                        (code:line #:link-target? link-target?-expr)
                        #:lang
-                       #:reader])]{
+                       #:reader
+                       (code:line #:packages (pkg-expr ...))])]{
 
 Produces a sequence of flow elements (in a @racket[splice])
 to start the documentation for a module---or for multiple modules, if
@@ -589,6 +590,13 @@ variant (and make each @racket[module-spec] a @racket[content-expr]).
 If @racket[#:reader] is provided, then the module name is shown after
 @racketmetafont{#reader} to indicate that the module path is intended
 for use as a reader module.
+
+By default, the package (if any) that supplies the documented module
+is determined automatically, but a set of providing packages can be
+specified explicitly with @racket[#:packages]. Each @racket[pkg-expr]
+result is passed on to a function like @racket[tt] for
+typesetting. Provide an empty sequence after @racket[#:packages] to
+suppress any package name in the output.
 
 Each @racket[option] form can appear at most once, and @racket[#:lang]
 and @racket[#:reader] are mutually exclusive.

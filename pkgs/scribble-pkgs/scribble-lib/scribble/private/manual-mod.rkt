@@ -3,9 +3,14 @@
          "../struct.rkt"
          "../basic.rkt"
          "../manual-struct.rkt"
+         (only-in "../core.rkt" table-columns)
          "manual-ex.rkt"
          "manual-style.rkt"
          "manual-scheme.rkt"
+         "manual-utils.rkt"
+         setup/main-collects
+         pkg/path
+         racket/list
          (for-syntax scheme/base
                      syntax/parse)
          (for-label scheme/base))
@@ -38,8 +43,6 @@
   (make-element (make-style #f (list (make-background-color-property "yellow"))) content))
 ;; ---------------------------------------------------------------------------------------------------
 
-(define spacer (hspace 1))
-
 (begin-for-syntax
  (define-splicing-syntax-class link-target?-kw
    #:description "#:link-target? keyword"
@@ -57,6 +60,7 @@
                         #:defaults ([link-target-expr #'#t]))
              (~optional (~seq #:use-sources (pname ...)))
              (~optional (~seq #:module-paths (modpath ...)))
+             (~optional (~seq #:packages (pkg ...)))
              (~optional (~and #:no-declare no-declare))
              (~optional (~or (~and #:lang language)
                              (~and #:reader readr))))
@@ -81,6 +85,15 @@
                      [modpaths (if (attribute modpath)
                                    #'(list (racketmodname modpath) ...)
                                    #'#f)]
+                     [packages (if (attribute pkg)
+                                   #'(list pkg ...)
+                                   #'#f)]
+                     [module-path (let ([l (syntax->list 
+                                            (if (attribute modpath)
+                                                #'(modpath ...)
+                                                #'(name2 ...)))])
+                                    (and (pair? l)
+                                         (car l)))]
                      [req (if (attribute req)
                               #'req
                               #'(racket require))]
@@ -92,6 +105,8 @@
              decl-exp ...
              (*defmodule (list show-name ...)
                          modpaths
+                         'module-path
+                         packages
                          link-target-expr
                          kind
                          (list . content)
@@ -167,35 +182,83 @@
 
 ;; ----------------------------------------
 
-(define (*defmodule names modpaths link-target? lang content req)
+(define (*defmodule names modpaths module-path packages link-target? lang content req)
   (let ([modpaths (or modpaths names)])
+    (define pkg-spec
+      (let ([pkgs
+             (or packages
+                 (let* ([path (with-handlers ([exn:missing-module? (lambda (exn) #f)])
+                                (and module-path
+                                     (resolved-module-path-name
+                                      (module-path-index-resolve (module-path-index-join module-path #f)))))]
+                        [pkg (and path 
+                                  (or (path->pkg path)
+                                      (let ([c (path->main-collects-relative path)])
+                                        (and c
+                                             "base"))))])
+                   (if pkg
+                       (list pkg)
+                       null)))])
+        (and pkgs
+             (pair? pkgs)
+             (make-flow
+              (list
+               (make-omitable-paragraph
+                (list (elem #:style "RpackageSpec"
+                            (list* (smaller (format "package~a:" 
+                                                    (if (null? (cdr pkgs))
+                                                        ""
+                                                        "s")))
+                                   " "
+                                   (add-between (map tt pkgs) ", "))))))))))
+    (define (flow-width f) (apply max (map block-width f)))
+    (define libs-specs
+      (map
+       (lambda (name modpath)
+         (define modname (if link-target?
+                             (make-defracketmodname name modpath)
+                             name))
+         (list
+          (make-flow
+           (list
+            (make-omitable-paragraph
+             (cons
+              spacer
+              (case lang
+                [(#f)
+                 (list (racket (#,req #,modname)))]
+                [(#t)
+                 (list (hash-lang) spacer modname)]
+                [(reader)
+                 (list (racketmetafont "#reader") spacer modname)]
+                [(just-lang)
+                 (list (hash-lang) spacer modname)]
+                [else (error 'defmodule "unknown mode: ~e" lang)])))))
+          'cont))
+       names
+       modpaths))
+
     (make-splice
      (cons
       (make-table
-       "defmodule"
-       (map
-        (lambda (name modpath)
-          (define modname (if link-target?
-                              (make-defracketmodname name modpath)
-                              name))
-          (list
-           (make-flow
-            (list
-             (make-omitable-paragraph
-              (cons
-               spacer
-               (case lang
-                 [(#f)
-                  (list (racket (#,req #,modname)))]
-                 [(#t)
-                  (list (hash-lang) spacer modname)]
-                 [(reader)
-                  (list (racketmetafont "#reader") spacer modname)]
-                 [(just-lang)
-                  (list (hash-lang) spacer modname)]
-                 [else (error 'defmodule "unknown mode: ~e" lang)])))))))
-        names
-        modpaths))
+       (make-style "defmodule"
+                   (list (table-columns (list
+                                         (make-style #f '(left))
+                                         (make-style #f '(right))))))
+       (if pkg-spec
+           (if ((+ (flow-width (caar libs-specs))
+                   (flow-width pkg-spec)
+                   8)
+                . < . (current-display-width))
+               (cons
+                (cons (car (car libs-specs))
+                      (list pkg-spec))
+                (cdr libs-specs))
+               (append
+                libs-specs
+                (list (list (make-flow (list (make-omitable-paragraph (list 'nbsp))))
+                            pkg-spec))))
+           libs-specs))
       (append (if link-target?
                   (map (lambda (modpath)
                          (make-part-tag-decl 

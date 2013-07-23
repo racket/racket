@@ -1638,6 +1638,7 @@
                                         (let ([tests-path (string->path "tests")]
                                               [scribblings-path (string->path "scribblings")])
                                           (for/list ([cc (in-list ccs-to-compile)])
+                                            (unless (cc-collection cc) (printf "~s\n" cc))
                                             (if (or (member tests-path (cc-collection cc))
                                                     (member scribblings-path (cc-collection cc)))
                                                 'build
