@@ -2545,6 +2545,91 @@ callback (struct dl_phdr_info *info, size_t size, void *ptr)
   return 1;
 }
 
+struct addrs_callback_data {
+  long size, count;
+  unw_word_t *starts, *ends;
+};
+
+static void add_address_range(struct addrs_callback_data *cb_data,
+			      unw_word_t start,
+			      unw_word_t end) {
+  if (cb_data->count == cb_data->size) {
+    long size = (cb_data->size ? (cb_data->size * 2) : 32);
+    unw_word_t *n;
+
+    n = (unw_word_t *)malloc(sizeof(unw_word_t) * size);
+    memcpy(n, cb_data->starts, sizeof(unw_word_t) * cb_data->size);
+    if (cb_data->starts) free(cb_data->starts);
+    cb_data->starts = n;
+
+    n = (unw_word_t *)malloc(sizeof(unw_word_t) * size);
+    memcpy(n, cb_data->ends, sizeof(unw_word_t) * cb_data->size);
+    if (cb_data->ends) free(cb_data->ends);
+    cb_data->ends = n;
+
+    cb_data->size = size;
+  }
+
+  cb_data->starts[cb_data->count] = start;
+  cb_data->ends[cb_data->count] = end;
+  cb_data->count++;
+}
+
+static int
+safe_addrs_callback (struct dl_phdr_info *info, size_t size, void *ptr)
+{
+  struct addrs_callback_data *cb_data = ptr;
+  const Elf_W(Phdr) *phdr;
+  Elf_W(Addr) load_base;
+  long n;
+
+  /* Make sure struct dl_phdr_info is at least as big as we need.  */
+  if (size < offsetof (struct dl_phdr_info, dlpi_phnum)
+	     + sizeof (info->dlpi_phnum))
+    return -1;
+
+  phdr = info->dlpi_phdr;
+  load_base = info->dlpi_addr;
+
+  /* See if PC falls into one of the loaded segments.  Find the
+     eh-header segment at the same time.  */
+  for (n = info->dlpi_phnum; --n >= 0; phdr++)
+    {
+      if (phdr->p_type == PT_LOAD)
+	{
+	  Elf_W(Addr) vaddr = phdr->p_vaddr + load_base;
+
+	  add_address_range(cb_data, (unw_word_t)vaddr, (unw_word_t)(vaddr + phdr->p_memsz));
+	}
+    }
+
+  return 0;
+}
+
+static struct addrs_callback_data safe_addrs;
+
+HIDDEN int
+initialize_safe_addresses (unw_addr_space_t as)
+{
+  if (!safe_addrs.count) {
+    struct addrs_callback_data cb_data;
+    memset(&cb_data, 0, sizeof(cb_data));
+#ifndef UW_NO_SYNC
+    sigprocmask (SIG_SETMASK, &unwi_full_mask, &saved_mask);
+#endif
+    (void)dl_iterate_phdr (safe_addrs_callback, &cb_data);
+#ifndef UW_NO_SYNC
+    sigprocmask (SIG_SETMASK, &saved_mask, NULL);
+#endif
+    memcpy(&safe_addrs, &cb_data, sizeof(cb_data));
+  }
+
+  as->num_safe_addresses = safe_addrs.count;
+  as->safe_start_addresses = safe_addrs.starts;
+  as->safe_end_addresses = safe_addrs.ends;
+  return 0;
+}
+
 HIDDEN int
 dwarf_find_proc_info (unw_addr_space_t as, unw_word_t ip,
 		      unw_proc_info_t *pi, int need_unwind_info, void *arg)
@@ -3161,6 +3246,8 @@ int unw_init_local (unw_cursor_t *cursor, unw_context_t *uc)
   as->debug_frames = shared_debug_frames;
 #endif
 
+  initialize_safe_addresses(as);
+
   c->dwarf.as = as;
   c->dwarf.as_arg = uc;
   return common_init (c);
@@ -3183,29 +3270,37 @@ int unw_step (unw_cursor_t *c)
   return dwarf_step(&((struct cursor *)c)->dwarf);
 }
 
-static int saw_bad_ptr = 0;
 static char safe_space[8];
-static unw_word_t safe_start_address, safe_end_address;
 
-void unw_set_safe_pointer_range(unw_word_t s, unw_word_t e)
+void unw_set_safe_pointer_range(unw_cursor_t *c, unw_word_t s, unw_word_t e)
 {
-  safe_start_address = s;
-  safe_end_address = e;
+  unw_addr_space_t as = ((struct dwarf_cursor *)c)->as;
+  as->safe_start_address = s;
+  as->safe_end_address = e;
 }
 
-int unw_reset_bad_ptr_flag()
+int unw_reset_bad_ptr_flag(unw_cursor_t *c)
 {
-  int v = saw_bad_ptr;
-  saw_bad_ptr = 0;
+  unw_addr_space_t as = ((struct dwarf_cursor *)c)->as;
+  int v = as->saw_bad_ptr;
+  as->saw_bad_ptr = 0;
   return v;
 }
 
-static void *safe_pointer(unw_word_t p)
+static void *safe_pointer(unw_addr_space_t as, unw_word_t p)
 {
-  if (safe_start_address != safe_end_address)
-    if ((p < safe_start_address)
-	|| (p >= safe_end_address)) {
-      saw_bad_ptr = 1;
+  int i;
+
+  for (i = as->num_safe_addresses; i--; ) {
+    if ((p >= as->safe_start_addresses[i])
+	&& (p <= as->safe_end_addresses[i]))
+      return (void *)p;
+  }
+
+  if (as->safe_start_address != as->safe_end_address)
+    if ((p < as->safe_start_address)
+	|| (p >= as->safe_end_address)) {
+      as->saw_bad_ptr = 1;
       return safe_space;
     }
 
@@ -3228,7 +3323,8 @@ unw_word_t unw_get_frame_pointer(unw_cursor_t *c)
 #else
 # define JIT_FRAME_POINTER_ID 6 /* = BP */
 #endif
-  return *(unw_word_t *)safe_pointer(((struct cursor *)c)->dwarf.loc[JIT_FRAME_POINTER_ID].val);
+  return *(unw_word_t *)safe_pointer(((struct cursor *)c)->dwarf.as,
+				     ((struct cursor *)c)->dwarf.loc[JIT_FRAME_POINTER_ID].val);
 }
 
 #ifdef UNW_X86_64
@@ -3249,8 +3345,8 @@ void unw_manual_step(unw_cursor_t *_c,
   c->dwarf.loc[13].val = (unw_word_t)r13_addr;
   c->dwarf.loc[16].val = (unw_word_t)ip_addr;
 
-  c->dwarf.ip = *(unw_word_t *)safe_pointer((unw_word_t)ip_addr);
-  c->dwarf.cfa = *(unw_word_t *)safe_pointer((unw_word_t)sp_addr);
+  c->dwarf.ip = *(unw_word_t *)safe_pointer(c->dwarf.as, (unw_word_t)ip_addr);
+  c->dwarf.cfa = *(unw_word_t *)safe_pointer(c->dwarf.as, (unw_word_t)sp_addr);
   c->dwarf.ret_addr_column = UNW_TDEP_IP;
   c->dwarf.pi_valid = 0;
   c->dwarf.hint = 0;
@@ -3280,8 +3376,8 @@ void unw_manual_step(unw_cursor_t *_c,
   c->dwarf.loc[UNW_ARM_RSP].val = (unw_word_t)sp_addr;
   c->dwarf.loc[UNW_ARM_R11].val = (unw_word_t)fp_addr;
 
-  c->dwarf.ip = *(unw_word_t *)safe_pointer((unw_word_t)ip_addr);
-  c->dwarf.cfa = *(unw_word_t *)safe_pointer((unw_word_t)sp_addr);
+  c->dwarf.ip = *(unw_word_t *)safe_pointer(c->dwarf.as, (unw_word_t)ip_addr);
+  c->dwarf.cfa = *(unw_word_t *)safe_pointer(c->dwarf.as, (unw_word_t)sp_addr);
   c->dwarf.ret_addr_column = UNW_TDEP_IP;
   c->dwarf.pi_valid = 0;
   c->dwarf.hint = 0;

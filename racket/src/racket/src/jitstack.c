@@ -198,13 +198,9 @@ Scheme_Object *scheme_native_stack_trace(void)
   }
 
 #ifdef MZ_USE_DWARF_LIBUNWIND
-  unw_set_safe_pointer_range(stack_start, stack_end);
-  unw_reset_bad_ptr_flag();
-#endif
-
-#ifdef MZ_USE_DWARF_LIBUNWIND
   unw_getcontext(&cx);
   unw_init_local(&c, &cx);
+  unw_set_safe_pointer_range(&c, stack_start, stack_end);
   use_unw = 1;
   p = NULL;
 #else
@@ -473,7 +469,7 @@ Scheme_Object *scheme_native_stack_trace(void)
         unw_step(&c);
         q = (void *)unw_get_ip(&c);
         if ((q == prev_q)
-	    || unw_reset_bad_ptr_flag())
+	    || unw_reset_bad_ptr_flag(&c))
           break;
       }
     }
