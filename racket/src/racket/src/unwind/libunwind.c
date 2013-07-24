@@ -3297,6 +3297,19 @@ static void *safe_pointer(unw_addr_space_t as, unw_word_t p)
       return (void *)p;
   }
 
+#ifdef CONFIG_DEBUG_FRAME
+  {
+    struct unw_debug_frame_list *df = as->debug_frames;
+    while (df) {
+      if ((p >= (unw_word_t)df->debug_frame)
+	  && (p < (unw_word_t)(df->debug_frame
+			       + df->debug_frame_size)))
+	return (void *)p;
+      df = df->next;
+    }
+  }
+#endif
+
   if (as->safe_start_address != as->safe_end_address)
     if ((p < as->safe_start_address)
 	|| (p >= as->safe_end_address)) {
