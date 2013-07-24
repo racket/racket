@@ -8,10 +8,10 @@
   (check-exn #rx"expected 2 arguments after keyword"
              (lambda () (convert-compile-time-error
                          (struct foo () #:methods 3))))
-  (check-exn #rx"not a name for a generics group"
+  (check-exn #rx"not a name for a generic interface"
              (lambda () (convert-compile-time-error
                          (struct foo () #:methods 3 ()))))
-  (check-exn #rx"not a name for a generics group"
+  (check-exn #rx"not a name for a generic interface"
              (lambda () (convert-compile-time-error
                          (struct foo () #:methods bad ()))))
   (check-exn #rx"method definition has an incorrect arity"

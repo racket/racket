@@ -80,13 +80,13 @@ lists and vectors, that do not overlap with structures implementing
 
 The @racket[#:fallbacks] option may be provided at most once.
 When it is provided, the @racket[fallback-impl]s define method implementations
-that are used for any instance of the generics group that does not supply a
+that are used for any instance of the generic interface that does not supply a
 specific implementation.  The syntax of the @racket[fallback-impl]s is the same
 as the methods provided for the @racket[#:methods] keyword for @racket[struct].
 
 The @racket[#:defined-predicate] option may be provided at most once.
 When it is provided, @racket[defined-pred-id] is defined as a
-procedure that reports whether a specific instance of the generics group
+procedure that reports whether a specific instance of the generic interface
 implements a given set of methods.
 Specifically, @racket[(defined-pred-id v 'name ...)] produces @racket[#t] if
 @racket[v] has implementations for each method @racket[name], not counting
@@ -97,7 +97,7 @@ availability.
 
 The @racket[#:defined-table] option may be provided at most once.
 When it is provided, @racket[defined-table-id] is defined as a
-procedure that takes an instance of the generics group and returns an
+procedure that takes an instance of the generic interface and returns an
 immutable @tech{hash table} that maps symbols corresponding to method
 names to booleans representing whether or not that method is
 implemented by the instance.  This option is deprecated; use
@@ -106,7 +106,7 @@ implemented by the instance.  This option is deprecated; use
 The @racket[#:derive-property] option may be provided any number of times.
 Each time it is provided, it specifies a @tech{structure type property} via
 @racket[prop-expr] and a value for the property via @racket[prop-value-expr].
-All structures implementing the generics group via @racket[#:methods]
+All structures implementing the generic interface via @racket[#:methods]
 automatically implement this structure type property using the provided values.
 When @racket[prop-value-expr] is executed, each @racket[method-id] is bound to
 its specific implementation for the @tech{structure type}.

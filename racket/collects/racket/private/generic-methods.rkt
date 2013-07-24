@@ -35,7 +35,7 @@
       (check-identifier! name ctx stx)
       (define info (syntax-local-value stx (lambda () #f)))
       (unless (generic-info? info)
-        (raise-syntax-error name "bad generics group name" ctx stx))
+        (raise-syntax-error name "bad generic interface name" ctx stx))
       info)
 
     (define (unimplemented-transformer un stx)

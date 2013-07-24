@@ -293,7 +293,7 @@
           (unless (generic-info? gen-val)
             (bad "the first argument to the "
                  (car p)
-                 " is not a name for a generics group"))
+                 " is not a name for a generic interface"))
           (loop (list* #'#:property
                        (quasisyntax/loc gen-id
                          (generic-property #,gen-id))
