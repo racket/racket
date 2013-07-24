@@ -1774,7 +1774,7 @@ apply_reg_state (struct dwarf_cursor *c, struct dwarf_reg_state *rs)
 
   if (c->ip == prev_ip && c->cfa == prev_cfa)
     {
-      dprintf ("%s: ip and cfa unchanged; stopping here (ip=0x%lx)\n",
+      Dprintf ("%s: ip and cfa unchanged; stopping here (ip=0x%lx)\n",
 	       __FUNCTION__, (long) c->ip);
       return -UNW_EBADFRAME;
     }
@@ -1839,7 +1839,7 @@ dwarf_find_save_locs (struct dwarf_cursor *c)
       memcpy(rs, rs1, offsetof(struct dwarf_reg_state, ip));
       if (!rs)
         {
-          dprintf ("%s: failed to create unwind rs\n", __FUNCTION__);
+          Dprintf ("%s: failed to create unwind rs\n", __FUNCTION__);
           ret = -UNW_EUNSPEC;
 	  goto out;
         }

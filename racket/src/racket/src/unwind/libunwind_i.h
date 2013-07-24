@@ -212,14 +212,14 @@ do {									\
       fprintf (stderr, format);						\
     }									\
 } while (0)
-# define dprintf(format...) 	    fprintf (stderr, format)
+# define Dprintf(format...) 	    fprintf (stderr, format)
 # ifdef __GNUC__
 #  undef inline
 #  define inline	UNUSED
 # endif
 #else
 # define Debug(level,format...)
-# define dprintf(format...)
+# define Dprintf(format...)
 #endif
 
 static ALWAYS_INLINE int
