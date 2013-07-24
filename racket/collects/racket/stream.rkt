@@ -40,6 +40,8 @@
 
 (define-syntax gen:stream
   (make-generic-info (quote-syntax prop:stream)
+                     (quote-syntax stream-via-prop?)
+                     (quote-syntax stream-get-generics)
                      (list (quote-syntax stream-empty?)
                            (quote-syntax stream-first)
                            (quote-syntax stream-rest))))

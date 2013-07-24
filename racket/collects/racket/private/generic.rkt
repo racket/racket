@@ -95,6 +95,8 @@
        #'(begin
            (define-syntax generic-name
              (make-generic-info (quote-syntax property-name)
+                                (quote-syntax prop:pred)
+                                (quote-syntax accessor-name)
                                 (list (quote-syntax method-name) ...)))
            (define (prop:guard x info)
              (unless (and (vector? x) (= (vector-length x) 'size))

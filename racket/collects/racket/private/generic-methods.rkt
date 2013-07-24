@@ -11,7 +11,10 @@
              (for-syntax generic-info?
                          make-generic-info
                          generic-info-property
-                         generic-info-methods))
+                         generic-info-predicate
+                         generic-info-accessor
+                         generic-info-methods
+                         find-generic-method-index))
 
   (begin-for-syntax
 
@@ -20,12 +23,16 @@
                     generic-info?
                     generic-info-get
                     generic-info-set!)
-      (make-struct-type 'generic-info #f 2 0))
+      (make-struct-type 'generic-info #f 4 0))
 
     (define-values (generic-info-property
+                    generic-info-predicate
+                    generic-info-accessor
                     generic-info-methods)
       (values (make-struct-field-accessor generic-info-get 0 'property)
-              (make-struct-field-accessor generic-info-get 1 'methods)))
+              (make-struct-field-accessor generic-info-get 1 'predicate)
+              (make-struct-field-accessor generic-info-get 2 'accessor)
+              (make-struct-field-accessor generic-info-get 3 'methods)))
 
     (define (check-identifier! name ctx stx)
       (unless (identifier? stx)
@@ -56,7 +63,80 @@
                                     unimplemented-transformer))))
 
     (define unimplemented-method
-      (make-struct-field-accessor unimplemented-get 0 'method)))
+      (make-struct-field-accessor unimplemented-get 0 'method))
+
+    (define (find-generic-method who ctx gen-id delta gen-info method-id proc)
+
+      (unless (syntax? ctx)
+        (raise-argument-error who "syntax?" ctx))
+      (unless (identifier? gen-id)
+        (raise-argument-error who "identifier?" gen-id))
+      (unless (and (procedure? delta)
+                   (procedure-arity-includes? delta 1))
+        (raise-argument-error who "(syntax? . -> . syntax?)" delta))
+      (unless (generic-info? gen-info)
+        (raise-argument-error who "generic-info?" gen-info))
+      (unless (identifier? method-id)
+        (raise-argument-error who "identifier?" method-id))
+      (unless (and (procedure? proc)
+                   (procedure-arity-includes? proc 2))
+        (raise-argument-error
+         who
+         "(exact-nonnegative-integer? identifier? . -> . any)"
+         proc))
+
+      (define-values (originals indices)
+        (let loop ([original-ids (generic-info-methods gen-info)]
+                   [index 0]
+                   [rev-originals '()]
+                   [rev-indices '()])
+          (cond
+            [(null? original-ids)
+             (values (reverse rev-originals)
+                     (reverse rev-indices))]
+            [else
+             (define original-id (car original-ids))
+             (define context-id (syntax-local-get-shadower (delta original-id)))
+             (cond
+               [(free-identifier=? context-id method-id)
+                (loop (cdr original-ids)
+                      (add1 index)
+                      (cons original-id rev-originals)
+                      (cons index rev-indices))]
+               [else
+                (loop (cdr original-ids)
+                      (add1 index)
+                      rev-originals
+                      rev-indices)])])))
+
+      (when (null? originals)
+        (raise-syntax-error
+         #f
+         (format "~.s is not a method of generic interfaces ~.s"
+                 (syntax-e method-id)
+                 (syntax-e gen-id))
+         ctx
+         method-id))
+      (unless (null? (cdr originals))
+        (raise-syntax-error
+         #f
+         (format "multiple methods match ~.s in generic interface ~.s: ~.s"
+                 (syntax-e method-id)
+                 (syntax-e gen-id)
+                 (map syntax-e originals))
+         ctx
+         method-id))
+      (proc (car indices) (car originals)))
+
+    (define (find-generic-method-index ctx gen-id delta gen-info method-id)
+      (find-generic-method 'find-generic-method-index
+                           ctx gen-id delta gen-info method-id
+                           (lambda (index original) index)))
+
+    (define (find-generic-method-original ctx gen-id delta gen-info method-id)
+      (find-generic-method 'find-generic-method-index
+                           ctx gen-id delta gen-info method-id
+                           (lambda (index original) original))))
 
   (define-syntax-parameter generic-method-context #f)
 
@@ -110,28 +190,7 @@
            (raise-syntax-error 'define/generic "expected an identifier" #'ref))
          (define delta (syntax-local-make-delta-introducer gen-id))
          (define methods (generic-info-methods gen-val))
-         (define matches
-           (let loop ([methods methods])
-             (cond
-               [(null? methods) '()]
-               [(free-identifier=? (syntax-local-get-shadower
-                                    (delta (car methods)))
-                                   #'ref)
-                (cons (car methods) (loop (cdr methods)))]
-               [else (loop (cdr methods))])))
-         (unless (pair? matches)
-           (raise-syntax-error 'define/generic
-                               (format "~.s is not a method of ~.s"
-                                       (syntax-e #'ref)
-                                       (syntax-e gen-id))
-                               stx
-                               #'ref))
-         (when (pair? (cdr matches))
-           (raise-syntax-error 'define/generic
-                               (format "multiple methods match ~.s: ~.s"
-                                       (syntax-e #'ref)
-                                       (map syntax-e matches))
-                               stx
-                               #'ref))
-         (with-syntax ([method (car matches)])
+         (define method-id
+           (find-generic-method-original stx gen-id delta gen-val #'ref))
+         (with-syntax ([method method-id])
            #'(define bind method)))])))

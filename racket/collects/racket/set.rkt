@@ -2,10 +2,11 @@
 
 (require racket/contract
          racket/private/set
-         racket/private/set-types)
+         racket/private/set-types
+         racket/generic
+         racket/private/for)
 
-(provide (except-out (all-from-out racket/private/set)
-                     primitive-set/c)
+(provide (all-from-out racket/private/set)
          (all-from-out racket/private/set-types)
          set/c)
 
@@ -42,30 +43,140 @@
     [else
      (unless (contract? elem/c)
        (raise-argument-error 'set/c "contract?" elem/c))])
-  (define c
-    (and/c (primitive-set/c elem/c)
-           cmp/c
-           kind/c))
-  (define name
-    `(set/c ,(contract-name elem/c)
-            ,@(if (eq? cmp 'dont-care)
-                  `[]
-                  `[#:cmp (quote #,cmp)])
-            ,@(if (eq? kind 'dont-care)
-                  `[]
-                  `[#:kind (quote #,kind)])))
-  (rename-contract c name))
+  (cond
+    [(chaperone-contract? elem/c)
+     (chaperone-set-contract elem/c cmp kind)]
+    [else
+     (impersonator-set-contract elem/c cmp kind)]))
 
-(define (rename-contract c name)
-  (define make
-    (cond
-      [(flat-contract? c) make-flat-contract]
-      [(chaperone-contract? c) make-chaperone-contract]
-      [else make-contract]))
-  (make
-    #:name name
-    #:first-order (contract-first-order c)
-    #:projection
+(struct set-contract [elem/c cmp kind])
+
+(define (set-contract-name ctc)
+  (define elem/c (set-contract-elem/c ctc))
+  (define cmp (set-contract-cmp ctc))
+  (define kind (set-contract-kind ctc))
+  `(set/c ,(contract-name elem/c)
+          ,@(if (eq? cmp 'dont-care)
+                `[]
+                `[#:cmp (quote #,cmp)])
+          ,@(if (eq? kind 'dont-care)
+                `[]
+                `[#:kind (quote #,kind)])))
+
+(define (set-contract-first-order ctc)
+  (define cmp (set-contract-cmp ctc))
+  (define kind (set-contract-kind ctc))
+  (define cmp?
+    (case cmp
+      [(dont-care) (lambda (x) #t)]
+      [(equal) set-equal?]
+      [(eqv) set-eqv?]
+      [(eq) set-eq?]))
+  (define kind?
+    (case kind
+      [(dont-care) (lambda (x) #t)]
+      [(mutable-or-weak) (lambda (x) (or (set-mutable? x) (set-weak? x)))]
+      [(mutable) set-mutable?]
+      [(weak) set-weak?]
+      [(immutable) set-immutable?]))
+  (lambda (x)
+    (and (set? x) (cmp? x) (kind? x))))
+
+(define (set-contract-projection mode)
+  (lambda (ctc)
+    (define elem/c (set-contract-elem/c ctc))
+    (define cmp (set-contract-cmp ctc))
+    (define kind (set-contract-kind ctc))
     (lambda (b)
-      ((contract-projection c)
-       (blame-add-context b #f)))))
+      (lambda (x)
+        (unless (set? x)
+          (raise-blame-error b x "expected a set"))
+        (case cmp
+          [(equal)
+           (unless (set-equal? x)
+             (raise-blame-error b x "expected an equal?-based set"))]
+          [(eqv)
+           (unless (set-equal? x)
+             (raise-blame-error b x "expected an eqv?-based set"))]
+          [(eq)
+           (unless (set-equal? x)
+             (raise-blame-error b x "expected an eq?-based set"))])
+        (case kind
+          [(mutable-or-weak)
+           (unless (or (set-mutable? x) (set-weak? x))
+             (raise-blame-error b x "expected a mutable or weak set"))]
+          [(mutable)
+           (unless (set-mutable? x)
+             (raise-blame-error b x "expected a mutable set"))]
+          [(weak)
+           (unless (set-mutable? x)
+             (raise-blame-error b x "expected a weak set"))]
+          [(immutable)
+           (unless (set-immutable? x)
+             (raise-blame-error b x "expected an immutable set"))])
+        (cond
+          [(list? x)
+           (define proj
+             ((contract-projection elem/c)
+              (blame-add-context b "an element of")))
+           (map proj x)]
+          [else
+           (define (method sym c)
+             (lambda (x)
+               (define name (contract-name c))
+               (define str (format "method ~a with contract ~.s" sym name))
+               (define b2 (blame-add-context b str))
+               (((contract-projection c) b2) x)))
+           (define-syntax-rule (redirect [id expr] ...)
+             (redirect-generics mode gen:set x [id (method 'id expr)] ...))
+           (redirect
+             [set-member? (-> set? elem/c boolean?)]
+             [set-empty? (or/c (-> set? boolean?) #f)]
+             [set-count (or/c (-> set? exact-nonnegative-integer?) #f)]
+             [set=? (or/c (-> set? ctc boolean?) #f)]
+             [subset? (or/c (-> set? ctc boolean?) #f)]
+             [proper-subset? (or/c (-> set? ctc boolean?) #f)]
+             [set-map (or/c (-> set? (-> elem/c any/c) list?) #f)]
+             [set-for-each (or/c (-> set? (-> elem/c any) void?) #f)]
+             [set-copy (or/c (-> set? ctc) #f)]
+             [in-set (or/c (-> set? sequence?) #f)]
+             [set->list (or/c (-> set? (listof elem/c)) #f)]
+             [set->stream (or/c (-> set? stream?) #f)]
+             [set-first (or/c (-> set? elem/c) #f)]
+             [set-rest (or/c (-> set? ctc) #f)]
+             [set-add (or/c (-> set? elem/c ctc) #f)]
+             [set-remove (or/c (-> set? elem/c ctc) #f)]
+             [set-clear (or/c (-> set? ctc) #f)]
+             [set-union
+              (or/c (->* [set?] [] #:rest (listof ctc) ctc) #f)]
+             [set-intersect
+              (or/c (->* [set?] [] #:rest (listof ctc) ctc) #f)]
+             [set-subtract
+              (or/c (->* [set?] [] #:rest (listof ctc) ctc) #f)]
+             [set-symmetric-difference
+              (or/c (->* [set?] [] #:rest (listof ctc) ctc) #f)]
+             [set-add! (or/c (-> set? elem/c void?) #f)]
+             [set-remove! (or/c (-> set? elem/c void?) #f)]
+             [set-clear! (or/c (-> set? void?) #f)]
+             [set-union!
+              (or/c (->* [set?] [] #:rest (listof ctc) void?) #f)]
+             [set-intersect!
+              (or/c (->* [set?] [] #:rest (listof ctc) void?) #f)]
+             [set-subtract!
+              (or/c (->* [set?] [] #:rest (listof ctc) void?) #f)]
+             [set-symmetric-difference!
+              (or/c (->* [set?] [] #:rest (listof ctc) void?) #f)])])))))
+
+(struct chaperone-set-contract set-contract []
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+    #:name set-contract-name
+    #:first-order set-contract-first-order
+    #:projection (set-contract-projection #t)))
+
+(struct impersonator-set-contract set-contract []
+  #:property prop:contract
+  (build-contract-property
+    #:name set-contract-name
+    #:first-order set-contract-first-order
+    #:projection (set-contract-projection #f)))

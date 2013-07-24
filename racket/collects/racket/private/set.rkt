@@ -16,7 +16,6 @@
          set-union! set-intersect! set-subtract! set-symmetric-difference!
 
          (rename-out [*in-set in-set])
-         primitive-set/c
          set-implements/c)
 
 ;; Method implementations for lists:
@@ -407,47 +406,6 @@
           (and (set? x)
                (for/and ([sym (in-list syms)])
                  (set-implements? x sym)))))))
-
-(define (primitive-set/c elem/c)
-  (define (proc)
-    (set/c
-      [set-member? (-> set? elem/c boolean?)]
-      [set-empty? (or/c (-> set? boolean?) #f)]
-      [set-count (or/c (-> set? exact-nonnegative-integer?) #f)]
-      [set=? (or/c (-> set? c boolean?) #f)]
-      [subset? (or/c (-> set? c boolean?) #f)]
-      [proper-subset? (or/c (-> set? c boolean?) #f)]
-      [set-map (or/c (-> set? (-> elem/c any/c) list?) #f)]
-      [set-for-each (or/c (-> set? (-> elem/c any) void?) #f)]
-      [set-copy (or/c (-> set? c) #f)]
-      [in-set (or/c (-> set? sequence?) #f)]
-      [set->list (or/c (-> set? list?) #f)]
-      [set->stream (or/c (-> set? stream?) #f)]
-      [set-first (or/c (-> set? elem/c) #f)]
-      [set-rest (or/c (-> set? c) #f)]
-      [set-add (or/c (-> set? elem/c c) #f)]
-      [set-remove (or/c (-> set? elem/c c) #f)]
-      [set-clear (or/c (-> set? c) #f)]
-      [set-union (or/c (->* [set?] [] #:rest (listof c) c) #f)]
-      [set-intersect (or/c (->* [set?] [] #:rest (listof c) c) #f)]
-      [set-subtract (or/c (->* [set?] [] #:rest (listof c) c) #f)]
-      [set-symmetric-difference (or/c (->* [set?] [] #:rest (listof c) c) #f)]
-      [set-add! (or/c (-> set? elem/c void?) #f)]
-      [set-remove! (or/c (-> set? elem/c void?) #f)]
-      [set-clear! (or/c (-> set? void?) #f)]
-      [set-union! (or/c (->* [set?] [] #:rest (listof c) void?) #f)]
-      [set-intersect! (or/c (->* [set?] [] #:rest (listof c) void?) #f)]
-      [set-subtract! (or/c (->* [set?] [] #:rest (listof c) void?) #f)]
-      [set-symmetric-difference!
-       (or/c (->* [set?] [] #:rest (listof c) void?) #f)]))
-  (define c
-    (cond
-      [(chaperone-contract? elem/c)
-       (recursive-contract (proc) #:chaperone)]
-      [else
-       (recursive-contract (proc) #:impersonator)]))
-  (or/c (listof elem/c)
-        (and/c set? c)))
 
 ;; Generics definition:
 
