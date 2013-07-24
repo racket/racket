@@ -357,6 +357,7 @@ THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stdin_port);
 THREAD_LOCAL_DECL(struct mz_fd_set *scheme_fd_set);
 THREAD_LOCAL_DECL(struct mz_fd_set *scheme_semaphore_fd_set);
 THREAD_LOCAL_DECL(Scheme_Hash_Table *scheme_semaphore_fd_mapping);
+THREAD_LOCAL_DECL(void *scheme_inotify_server);
 
 #ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
 THREAD_LOCAL_DECL(Scheme_Hash_Table *locked_fd_process_map);
