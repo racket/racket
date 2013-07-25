@@ -194,4 +194,45 @@ syntax error.}
 (gen-print* z #:width "not a number" #:height 5)
 ]
 
+@defform[(generic-instance/c gen-id [method-id method-ctc] ...)
+         #:contracts ([method-ctc contract?])]{
+
+Creates a contract that recognizes structures that implement the @tech{generic
+interface} @racket[gen-id], and constrains their implementations of the
+specified @racket[method-id]s with the corresponding @racket[method-ctc]s.
+
+}
+
+@defform[(impersonate-generics gen-id val-expr [method-id method-proc] ...)
+         #:contracts ([method-proc (any/c . -> . any/c)])]{
+
+Creates an @tech{impersonator} of @racket[val-expr], which must be a structure
+that implements the @tech{generic interface} @racket[gen-id].  The impersonator
+applies the specified @racket[method-proc]s to the structure's implementation
+of the corresponding @racket[method-id]s, and replaces the method
+implementation with the result.
+
+}
+
+@defform[(chaperone-generics gen-id val-expr [method-id method-proc] ...)
+         #:contracts ([method-proc (any/c . -> . any/c)])]{
+
+Creates a @tech{chaperone} of @racket[val-expr], which must be a structure
+that implements the @tech{generic interface} @racket[gen-id].  The chaperone
+applies the specified @racket[method-proc]s to the structure's implementation
+of the corresponding @racket[method-id]s, and replaces the method
+implementation with the result, which must be a chaperone of the original.
+
+}
+
+@defform[(redirect-generics mode gen-id val-expr [method-id method-proc] ...)
+         #:contracts ([method-proc (any/c . -> . any/c)])]{
+
+Creates an @tech{impersonator} of @racket[val-expr], like
+@racket[impersonate-generics], if @racket[mode] evaluates to @racket[#f].
+Creates a @tech{chaperone} of @racket[val-expr], like
+@racket[chaperone-generics], otherwise.
+
+}
+
 @close-eval[evaluator]
