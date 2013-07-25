@@ -123,7 +123,7 @@ combination of @racket[choice-evt] involving an event from
                      [handle (any/c ... . -> . any)]) 
          handle-evt?]{
 
-Like @racket[wrap], except that @racket[handle] is called in @tech{tail
+Like @racket[wrap-evt], except that @racket[handle] is called in @tech{tail
 position} with respect to the synchronization request, and without
 breaks explicitly disabled.}
 
