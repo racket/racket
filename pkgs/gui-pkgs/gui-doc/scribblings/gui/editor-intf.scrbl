@@ -677,7 +677,7 @@ If the editor is displayed in a single canvas, then the canvas's
 
 }}
 
-@defmethod[(get-filename [temp (box/c (or/c any/c #f)) (box #f)])
+@defmethod[(get-filename [temp (or/c (box/c any/c) #f) #f])
            (or/c path-string? #f)]{
 
 Returns the path name of the last file saved from or loaded into this
