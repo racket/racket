@@ -155,7 +155,7 @@
   (when (null? paths) (error 'tar-gzip "no paths specified"))
   (with-output-to-file tgz-file
     (lambda ()
-      (let-values ([(i o) (make-pipe)])
+      (let-values ([(i o) (make-pipe (* 1024 1024 32))])
         (thread (lambda ()
                   (tar->output (pathlist-closure paths #:follow-links? #f) o
                                #:path-prefix prefix)
