@@ -21,25 +21,6 @@
 (define current-max-to-send-at-once (make-parameter +inf.0))
 
 
-    ;                                                                                                             
-    ;                                                                                                             
-    ;                                                                                                             
-    ;                                                                                                   ;         
-    ;                                                                                                   ;         
-    ;                         ;                       ;                                                 ;         
-    ;    ;;;  ;     ; ; ;;   ;;;;  ;;;   ;     ;     ;;;;  ; ;  ;;;   ;     ;  ;;;   ; ;   ;;;   ;;;    ;    ;;;  
-    ;   ;     ;     ; ;;  ;   ;   ;   ;   ;   ;       ;    ;;  ;   ;   ;   ;  ;   ;  ;;   ;     ;   ;   ;   ;     
-    ;   ;;     ;   ;  ;   ;   ;       ;    ; ;        ;    ;       ;   ;   ; ;    ;  ;    ;;        ;   ;   ;;    
-    ;    ;;    ;   ;  ;   ;   ;    ;;;;     ;         ;    ;    ;;;;    ; ;  ;;;;;;  ;     ;;    ;;;;   ;    ;;   
-    ;      ;    ; ;   ;   ;   ;   ;   ;    ; ;        ;    ;   ;   ;    ; ;  ;       ;       ;  ;   ;   ;      ;  
-    ;      ;    ; ;   ;   ;   ;   ;   ;   ;   ;       ;    ;   ;   ;     ;    ;      ;       ;  ;   ;   ;      ;  
-    ;   ;;;      ;    ;   ;    ;;  ;;;;; ;     ;       ;;  ;    ;;;;;    ;     ;;;;  ;    ;;;    ;;;;;  ;   ;;;   
-    ;            ;                                                                                                
-    ;            ;                                                                                                
-    ;           ;                                                                                                 
-    
-    
-    
     ;; make-traversal : namespace string[directory] -> (values (syntax (union #f syntax) -> void)
     ;;                                                         (-> void))
     ;; returns a pair of functions that close over some state that
@@ -152,7 +133,8 @@
                                 [tail-parent-pos #f]
                                 ;; mods: (or/f #f   ; => outside a module
                                 ;;             '()  ; => inside the main module in this file
-                                ;;             '(name names ...) ; => inside some submodules named by name & names
+                                ;;             '(name names ...) ; => inside some submodules 
+                                ;;                                    named by name & names
                                 [mods #f])
           (define-values (next-tail-parent-src next-tail-parent-pos)
             (let ([child-src (find-source-editor stx-obj)]
@@ -181,12 +163,17 @@
                                                               (if mods
                                                                   (cons mod mods)
                                                                   '())))]
-                 [loop (λ (sexp) (level+tail+mod-loop sexp level level-of-enclosing-module #f #f mods))]
-                 [varrefs (lookup-phase-to-mapping phase-to-varrefs (+ level level-of-enclosing-module))]
-                 [varsets (lookup-phase-to-mapping phase-to-varsets (+ level level-of-enclosing-module))]
-                 [binders (lookup-phase-to-mapping phase-to-binders (+ level level-of-enclosing-module))]
+                 [loop (λ (sexp) (level+tail+mod-loop sexp level level-of-enclosing-module
+                                                      #f #f mods))]
+                 [varrefs (lookup-phase-to-mapping phase-to-varrefs
+                                                   (+ level level-of-enclosing-module))]
+                 [varsets (lookup-phase-to-mapping phase-to-varsets
+                                                   (+ level level-of-enclosing-module))]
+                 [binders (lookup-phase-to-mapping phase-to-binders
+                                                   (+ level level-of-enclosing-module))]
                  [tops (lookup-phase-to-mapping phase-to-tops (+ level level-of-enclosing-module))]
-                 [requires (hash-ref! phase-to-requires (+ level level-of-enclosing-module) (λ () (make-hash)))]
+                 [requires (hash-ref! phase-to-requires (+ level level-of-enclosing-module)
+                                      (λ () (make-hash)))]
                  [collect-general-info
                   (λ (stx)
                     (add-origins stx varrefs level-of-enclosing-module)
@@ -205,8 +192,8 @@
                      (loop fst)
                      (body-loop (car bodies) (cdr bodies))]))))
             
-            (syntax-case* stx-obj (#%plain-lambda case-lambda if begin begin0 let-values letrec-values set!
-                                                  quote quote-syntax with-continuation-mark
+            (syntax-case* stx-obj (#%plain-lambda case-lambda if begin begin0 let-values letrec-values
+                                                  set! quote quote-syntax with-continuation-mark
                                                   #%plain-app #%top #%plain-module-begin
                                                   define-values define-syntaxes begin-for-syntax
                                                   module module*
@@ -254,7 +241,8 @@
                  (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (for-each collect-general-info (syntax->list (syntax (bindings ...))))
                  (with-syntax ([(((xss ...) es) ...) (syntax (bindings ...))])
-                   (for-each (λ (x es) (add-binders x binders binding-inits es level-of-enclosing-module))
+                   (for-each (λ (x es) (add-binders x binders binding-inits es 
+                                                    level-of-enclosing-module))
                              (syntax->list (syntax ((xss ...) ...)))
                              (syntax->list (syntax (es ...))))
                    (for-each loop (syntax->list (syntax (es ...))))
@@ -264,7 +252,8 @@
                  (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
                  (for-each collect-general-info (syntax->list (syntax (bindings ...))))
                  (with-syntax ([(((xss ...) es) ...) (syntax (bindings ...))])
-                   (for-each (λ (x es) (add-binders x binders binding-inits es level-of-enclosing-module))
+                   (for-each (λ (x es) (add-binders x binders binding-inits es
+                                                    level-of-enclosing-module))
                              (syntax->list (syntax ((xss ...) ...)))
                              (syntax->list (syntax (es ...))))
                    (for-each loop (syntax->list (syntax (es ...))))
@@ -328,7 +317,8 @@
               [(begin-for-syntax exp ...)
                (begin
                  (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
-                 (for-each (lambda (e) (level-loop e (+ level 1))) (syntax->list (syntax (exp ...)))))]
+                 (for ([e (in-list (syntax->list (syntax (exp ...))))])
+                   (level-loop e (+ level 1))))]
               [(module m-name lang (#%plain-module-begin bodies ...))
                (begin
                  (annotate-raw-keyword stx-obj varrefs level-of-enclosing-module)
@@ -356,7 +346,8 @@
                    (let loop ([spec spec]
                               [level level])
                      (define (add-to-level n) (and n level (+ n level)))
-                     (syntax-case* spec (for-meta for-syntax for-template for-label just-meta) symbolic-compare?
+                     (syntax-case* spec (for-meta for-syntax for-template for-label just-meta)
+                       symbolic-compare?
                        [(for-meta phase specs ...)
                         (for ([spec (in-list (syntax->list #'(specs ...)))])
                           (loop spec (add-to-level (syntax-e #'phase))))]
@@ -452,7 +443,9 @@
               [(identifier? prop)
                (add-id id-set prop level-of-enclosing-module)])))))
     
-    ;; annotate-variables : namespace directory string id-set[four of them] (listof syntax) (listof syntax) -> void
+    ;; annotate-variables : namespace directory string id-set[four of them] 
+    ;;                      (listof syntax) (listof syntax) 
+    ;;                   -> void
     ;; colors in and draws arrows for variables, according to their classifications
     ;; in the various id-sets
     (define (annotate-variables user-namespace
@@ -471,8 +464,10 @@
       (define unused-require-for-labels (make-hash))
       (define unused/phases (make-hash))
 
-      ;; hash[(list (list src pos pos) (list src pos pos)) -o> #t   ;; indicates if this arrow has been recorded
-      ;;      (list src pos pos) -o> (cons number number)]          ;; indicates the number of defs and uses at this spot
+      ;; hash[(list (list src pos pos) (list src pos pos)) -o> #t
+      ;;       above indicates if this arrow has been recorded
+      ;;       below indicates the number of defs and uses at this spot
+      ;;      (list src pos pos) -o> (cons number number)]
       (define connections (make-hash))
 
       (for ([(level requires) (in-hash phase-to-requires)])
@@ -541,7 +536,8 @@
       
       (annotate-counts connections))
     
-    ;; color-unused : hash-table[sexp -o> syntax] hash-table[sexp -o> #f] hash-table[syntax -o> #t] -> void
+    ;; color-unused : hash-table[sexp -o> syntax] hash-table[sexp -o> #f] hash-table[syntax -o> #t]
+    ;;             -> void
     (define (color-unused requires unused module-lang-requires)
       (hash-for-each
        unused
@@ -561,7 +557,9 @@
                        (color stx unused-require-style-name)))
                    (hash-ref requires k
                              (λ ()
-                               (error 'syncheck/traversals.rkt "requires doesn't have a mapping for ~s" k)))))))
+                               (error 'syncheck/traversals.rkt 
+                                      "requires doesn't have a mapping for ~s"
+                                      k)))))))
     
     ;; id-level : integer-or-#f-or-'lexical identifier -> symbol
     (define (id-level phase-level id)
@@ -614,7 +612,8 @@
                                          id
                                          (syntax->datum req-stx))
                   (when id
-                    (define-values (filename submods) (get-require-filename source-req-path user-namespace user-directory))
+                    (define-values (filename submods) 
+                      (get-require-filename source-req-path user-namespace user-directory))
                     (when filename
                       (add-jump-to-definition
                        var
@@ -664,7 +663,8 @@
         [_ stx]))
     
     
-    ;; get-module-req-path : identifier number [#:nominal? boolean] -> (union #f (list require-sexp sym ?? module-path))
+    ;; get-module-req-path : identifier number [#:nominal? boolean] 
+    ;;                    -> (union #f (list require-sexp sym ?? module-path))
     (define (get-module-req-path var phase-level #:nominal? [nominal-source-path? #t])
       (define binding (identifier-binding var phase-level))
       (and (pair? binding)
@@ -789,8 +789,10 @@
                     (hash-set! connections connections-key #t)
                     (define start-before (or (hash-ref connections connections-start #f) (cons 0 0)))
                     (define end-before (or (hash-ref connections connections-end #f) (cons 0 0)))
-                    (hash-set! connections connections-start (cons (+ (car start-before) 1) (cdr start-before)))
-                    (hash-set! connections connections-end (cons (car end-before) (+ 1 (cdr end-before)))))
+                    (hash-set! connections connections-start (cons (+ (car start-before) 1) 
+                                                                   (cdr start-before)))
+                    (hash-set! connections connections-end (cons (car end-before)
+                                                                 (+ 1 (cdr end-before)))))
                   (define (name-dup? str)
                     (define sym (string->symbol str))
                     (define id1 (datum->syntax from sym))
@@ -946,7 +948,8 @@
     
     ;; trim-require-prefix : syntax -> syntax
     (define (trim-require-prefix require-spec)
-      (syntax-case* require-spec (only prefix all-except prefix-all-except rename just-meta) symbolic-compare?
+      (syntax-case* require-spec (only prefix all-except prefix-all-except rename just-meta) 
+        symbolic-compare?
         [(only module-name identifier ...)
          (syntax module-name)]
         [(prefix identifier module-name)
