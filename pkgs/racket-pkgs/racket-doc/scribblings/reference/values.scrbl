@@ -11,7 +11,7 @@ others) create continuations that receive multiple values.
 
 @defproc[(values [v any/c] ...) any]{
 
-Returns the given @racket[v]s. That is, @racket[values] returns as
+Returns the given @racket[v]s. That is, @racket[values] returns its
 provided arguments.
 
 @examples[
