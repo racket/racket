@@ -182,6 +182,13 @@
 (def-type Set ([elem Type/c])
   [#:key 'set])
 
+;; result is a Type
+(def-type NonHandleEvt ([result Type/c])
+  [#:key #f])
+
+(def-type HandleEvt ([result Type/c])
+  [#:key #f])
+
 ;; name is a Symbol (not a Name)
 ;; contract is used when generating contracts from types
 ;; predicate is used to check (at compile-time) whether a value belongs
