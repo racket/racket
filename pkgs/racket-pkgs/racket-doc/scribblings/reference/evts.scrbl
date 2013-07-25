@@ -1,5 +1,10 @@
 #lang scribble/doc
-@(require scribble/struct "mz.rkt" (for-label racket/async-channel))
+@(require scribble/struct
+          scribble/eval
+          "mz.rkt"
+          (for-label racket/async-channel))
+
+@(define evt-eval (make-base-eval))
 
 @title[#:tag "sync"]{Events}
 
@@ -37,7 +42,13 @@ though @racket[prop:evt].
 @defproc[(evt? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a @tech{synchronizable event},
-@racket[#f] otherwise.}
+@racket[#f] otherwise.
+
+@examples[#:eval evt-eval
+  (evt? never-evt)
+  (evt? (make-channel))
+  (evt? 5)
+]}
 
 
 @defproc[(sync [evt evt?] ...+) any]{
@@ -50,7 +61,13 @@ result} (often @racket[evt] itself) is returned.  If multiple
 @racket[evt]s are ready, one of the @racket[evt]s is chosen
 pseudo-randomly for the result; the
 @racket[current-evt-pseudo-random-generator] parameter sets the
-random-number generator that controls this choice.}
+random-number generator that controls this choice.
+
+@examples[#:eval evt-eval
+  (define ch (make-channel))
+  (thread (λ () (displayln (sync ch))))
+  (channel-put ch 'hellooooo)
+]}
 
 
 @defproc[(sync/timeout [timeout (or/c #f (and/c real? (not/c negative?)) (-> any))]
@@ -68,7 +85,17 @@ A zero value for @racket[timeout] is equivalent to @racket[(lambda ()
 #f)]. In either case, each @racket[evt] is checked at least once
 before returning @racket[#f] or calling @racket[timeout].
 
-See also @racket[alarm-evt] for an alternative timeout mechanism.}
+See also @racket[alarm-evt] for an alternative timeout mechanism.
+
+@examples[#:eval evt-eval
+  (code:comment "times out before waking up")
+  (sync/timeout
+   0.5
+   (thread (λ () (sleep 1) (displayln "woke up!"))))
+  (sync/timeout
+   (λ () (displayln "no ready events"))
+   never-evt)
+]}
 
 
 @defproc[(sync/enable-break [evt evt?] ...+) any]{
@@ -98,7 +125,17 @@ synchronization} when one or more of the @racket[_evt]s supplied to
 @racket[choice-evt] are @tech{ready for synchronization}. If the
 choice event is chosen, one of its ready @racket[_evt]s is chosen
 pseudo-randomly, and the @tech{synchronization result} is the chosen
-@racket[_evt]'s @tech{synchronization result}.}
+@racket[_evt]'s @tech{synchronization result}.
+
+@examples[#:eval evt-eval
+  (define ch1 (make-channel))
+  (define ch2 (make-channel))
+  (define either-channel (choice-evt ch1 ch2))
+  (thread (λ () (displayln (sync either-channel))))
+  (channel-put
+   (if (> (random) 0.5) ch1 ch2)
+   'tuturuu)
+]}
 
 
 @defproc[(wrap-evt [evt (and/c evt? (not/c handle-evt?))]
@@ -116,7 +153,14 @@ The call to @racket[wrap] is
 @racket[parameterize-break]ed to disable breaks initially. The
 @racket[evt] cannot be an event created by @racket[handle-evt] or any
 combination of @racket[choice-evt] involving an event from
-@racket[handle-evt].}
+@racket[handle-evt].
+
+@examples[#:eval evt-eval
+  (define ch (make-channel))
+  (define evt (wrap-evt ch (λ (v) (format "you've got mail: ~a" v))))
+  (thread (λ () (displayln (sync evt))))
+  (channel-put ch "Dear Alice ...")
+]}
 
 
 @defproc[(handle-evt [evt (and/c evt? (not/c handle-evt?))]
@@ -125,7 +169,25 @@ combination of @racket[choice-evt] involving an event from
 
 Like @racket[wrap-evt], except that @racket[handle] is called in @tech{tail
 position} with respect to the synchronization request, and without
-breaks explicitly disabled.}
+breaks explicitly disabled.
+
+@examples[#:eval evt-eval
+  (define msg-ch (make-channel))
+  (define exit-ch (make-channel))
+  (thread
+   (λ ()
+     (let loop ([val 0])
+       (printf "val = ~a~n" val)
+       (sync (handle-evt
+              msg-ch
+              (λ (val) (loop val)))
+             (handle-evt
+              exit-ch
+              (λ (val) (displayln val)))))))
+  (channel-put msg-ch 5)
+  (channel-put msg-ch 7)
+  (channel-put exit-ch 'done)
+]}
 
 
 @defproc[(guard-evt [maker (-> evt?)]) evt?]{
@@ -179,11 +241,19 @@ will certainly be chosen for its result.}
 
 
 @defthing[always-evt evt?]{A constant event that is always @tech{ready
-for synchronization}, with itself as its @tech{synchronization result}.}
+for synchronization}, with itself as its @tech{synchronization result}.
+
+@examples[#:eval evt-eval
+  (sync always-evt)
+]}
 
 
 @defthing[never-evt evt?]{A constant event that is never @tech{ready
-for synchronization}.}
+for synchronization}.
+
+@examples[#:eval evt-eval
+  (sync/timeout 0.1 never-evt)
+]}
 
 
 @defproc[(system-idle-evt) evt?]{
@@ -194,7 +264,14 @@ system is otherwise idle: if the result event were replaced by
 In other words, all threads must be suspended or blocked on events
 with timeouts that have not yet expired. The system-idle event's
 @tech{synchronization result} is @|void-const|. The result of the
-@racket[system-idle-evt] procedure is always the same event.}
+@racket[system-idle-evt] procedure is always the same event.
+
+@examples[#:eval evt-eval
+  (define th (thread (λ () (let loop () (loop)))))
+  (sync/timeout 0.1 (system-idle-evt))
+  (kill-thread th)
+  (sync (system-idle-evt))
+]}
 
 
 @defproc[(alarm-evt [msecs (>=/c 0)]) evt?]{
@@ -203,7 +280,12 @@ Returns a @tech{synchronizable event} that is not @tech{ready for synchronizatio
 @racket[(current-inexact-milliseconds)] would return a value that is
 less than @racket[msecs], and it is @tech{ready for synchronization} when
 @racket[(current-inexact-milliseconds)] would return a value that is
-more than @racket[msecs]. @ResultItself{alarm event}.}
+more than @racket[msecs]. @ResultItself{alarm event}.
+
+@examples[#:eval evt-eval
+  (define alarm (alarm-evt (+ (current-inexact-milliseconds) 100)))
+  (sync alarm)
+]}
 
 
 @defproc[(handle-evt? [evt evt?]) boolean?]{
@@ -214,7 +296,12 @@ or by @racket[choice-evt] applied to another event for which
 an argument to @racket[handle-evt] or @racket[wrap-evt], because they
 cannot be wrapped further. For any other event, @racket[handle-evt?]
 produces @racket[#f], and the event is a legal argument to
-@racket[handle-evt] or @racket[wrap-evt] for further wrapping.}
+@racket[handle-evt] or @racket[wrap-evt] for further wrapping.
+
+@examples[#:eval evt-eval
+  (handle-evt? never-evt)
+  (handle-evt? (handle-evt always-evt values))
+]}
 
 @;------------------------------------------------------------------------
 @defthing[prop:evt struct-type-property?]{
@@ -280,3 +367,6 @@ and the @racket[prop:input-port] property takes precedence over
 
 A @tech{parameter} that determines the pseudo-random number generator used by
 @racket[sync] for events created by @racket[choice-evt].}
+
+@close-eval[evt-eval]
+
