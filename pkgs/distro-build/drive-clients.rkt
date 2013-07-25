@@ -351,7 +351,7 @@
 
   (display-time)
   (begin0
-   
+
    ((case (or (get-opt c '#:platform) (system-type))
       [(unix macosx) unix-build]
       [else windows-build])
@@ -370,24 +370,25 @@
                         (* 30 60)))
     (define orig-thread (current-thread))
     (define timeout? #f)
-    (parameterize ([current-custodian cust])
-      (thread (lambda ()
-                (sleep (* timeout-factor timeout))
-                (eprintf "timeout for ~s\n" (client-name c))
-                ;; try nice interrupt, first:
-                (set! timeout? #t)
-                (break-thread orig-thread)
-                (sleep 1)
-                ;; force quit:
-                (custodian-shutdown-all cust)))
-      (with-handlers ([exn? (lambda (exn)
-                              (when (exn:break? exn) 
-                                (unless timeout?
-                                  (set! stop? #t)))
-                              (log-error "~a failed..." (client-name c))
-                              (log-error (exn-message exn)))])
-        (thunk)))
-    (custodian-shutdown-all cust)))
+    (begin0
+     (parameterize ([current-custodian cust])
+       (thread (lambda ()
+                 (sleep (* timeout-factor timeout))
+                 (eprintf "timeout for ~s\n" (client-name c))
+                 ;; try nice interrupt, first:
+                 (set! timeout? #t)
+                 (break-thread orig-thread)
+                 (sleep 1)
+                 ;; force quit:
+                 (custodian-shutdown-all cust)))
+       (with-handlers ([exn? (lambda (exn)
+                               (when (exn:break? exn) 
+                                 (unless timeout?
+                                   (set! stop? #t)))
+                               (log-error "~a failed..." (client-name c))
+                               (log-error (exn-message exn)))])
+         (thunk)))
+     (custodian-shutdown-all cust))))
 
 (define (client-thread c sequential? thunk)
   (unless stop?
@@ -400,9 +401,10 @@
       (define p (open-output-file log-file
                                   #:exists 'truncate/replace))
       (file-stream-buffer-mode p 'line)
-      (parameterize ([current-output-port p]
-                     [current-error-port p])
-        (thunk)))
+      (unless (parameterize ([current-output-port p]
+                             [current-error-port p])
+                (thunk))
+        (printf "Build FAILED for ~s\n" (client-name c))))
     (cond
      [sequential? (go) (thread void)]
      [else (thread go)])))
@@ -443,10 +445,11 @@
               (start-client c (or (get-opt c '#:max-vm) 1))
               ;; catch failure in build step proper, so we
               ;; can more likely stop the client:
-              (limit-and-report-failure
-               c 1
-               (lambda () (client-build c)))
-              ;; stop client, if a VM:
-              (stop-client c)))))]))))
+              (begin0
+               (limit-and-report-failure
+                c 1
+                (lambda () (client-build c)))
+               ;; stop client, if a VM:
+               (stop-client c))))))]))))
 
 (display-time)
