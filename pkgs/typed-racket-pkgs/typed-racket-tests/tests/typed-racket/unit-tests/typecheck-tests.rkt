@@ -1444,12 +1444,15 @@
         (tc-e (sync (make-custodian-box (current-custodian) 0))
               (make-CustodianBox (-val 0)))
         (tc-e (sync ((inst make-channel String))) -String)
-        (tc-e (sync always-evt) (-mu x (make-Evt x)))
+        (tc-e (sync always-evt) (-mu x (make-NonHandleEvt x)))
         (tc-e (sync never-evt) -Bottom)
         (tc-e (sync never-evt always-evt) Univ)
         (tc-e (sync (system-idle-evt)) -Void)
         (tc-e (sync (choice-evt (system-idle-evt))) -Void)
         (tc-e (sync/timeout 100 always-evt never-evt) Univ)
+        (tc-e (handle-evt never-evt identity) (make-HandleEvt Univ))
+        (tc-err (handle-evt (handle-evt never-evt values) values))
+        (tc-err (wrap-evt (handle-evt never-evt values) values))
 
         ;Semaphores
         (tc-e (make-semaphore) -Semaphore)

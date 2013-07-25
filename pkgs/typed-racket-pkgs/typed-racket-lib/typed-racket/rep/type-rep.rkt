@@ -182,8 +182,11 @@
 (def-type Set ([elem Type/c])
   [#:key 'set])
 
-;; elem is a Type
-(def-type Evt ([result Type/c])
+;; result is a Type
+(def-type NonHandleEvt ([result Type/c])
+  [#:key #f])
+
+(def-type HandleEvt ([result Type/c])
   [#:key #f])
 
 ;; name is a Symbol (not a Name)

@@ -477,26 +477,27 @@
                (subtype* A0 s t)]
               [((Set: t) (Set: t*)) (subtype* A0 t t*)]
               ;; Evts are covariant
-              [((Evt: t) (Evt: t*)) (subtype* A0 t t*)]
-              [((Base: 'Semaphore _ _ _ _) (Evt: t))
+              [((HandleEvt: t) (HandleEvt: t*)) (subtype* A0 t t*)]
+              [((NonHandleEvt: t) (NonHandleEvt: t*)) (subtype* A0 t t*)]
+              [((Base: 'Semaphore _ _ _ _) (NonHandleEvt: t))
                (subtype* A0 s t)]
-              [((Base: 'Output-Port _ _ _ _) (Evt: t))
+              [((Base: 'Output-Port _ _ _ _) (NonHandleEvt: t))
                (subtype* A0 s t)]
-              [((Base: 'Input-Port _ _ _ _) (Evt: t))
+              [((Base: 'Input-Port _ _ _ _) (NonHandleEvt: t))
                (subtype* A0 s t)]
-              [((Base: 'TCP-Listener _ _ _ _) (Evt: t))
+              [((Base: 'TCP-Listener _ _ _ _) (NonHandleEvt: t))
                (subtype* A0 s t)]
-              [((Base: 'Thread _ _ _ _) (Evt: t))
+              [((Base: 'Thread _ _ _ _) (NonHandleEvt: t))
                (subtype* A0 s t)]
-              [((Base: 'Subprocess _ _ _ _) (Evt: t))
+              [((Base: 'Subprocess _ _ _ _) (NonHandleEvt: t))
                (subtype* A0 s t)]
-              [((Base: 'Will-Executor _ _ _ _) (Evt: t))
+              [((Base: 'Will-Executor _ _ _ _) (NonHandleEvt: t))
                (subtype* A0 s t)]
-              [((CustodianBox: t) (Evt: t*))
+              [((CustodianBox: t) (NonHandleEvt: t*))
                ;; Note that it's the whole box type that's being
                ;; compared against t* here
                (subtype* A0 s t*)]
-              [((Channel: t) (Evt: t*)) (subtype* A0 t t*)]
+              [((Channel: t) (NonHandleEvt: t*)) (subtype* A0 t t*)]
               ;; Invariant types
               [((Box: s) (Box: t)) (type-equiv? A0 s t)]
               [((Box: _) (BoxTop:)) A0]

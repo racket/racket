@@ -35,7 +35,8 @@
           make-ThreadCellTop
           make-Ephemeron
           make-CustodianBox
-          make-Evt
+          make-HandleEvt
+          make-NonHandleEvt
           make-HeterogeneousVector
           make-Continuation-Mark-Keyof
           make-Continuation-Mark-KeyTop
@@ -287,44 +288,60 @@
 [empty (-val null)]
 
 ;; Section 10.2.1
-[evt? (make-pred-ty (make-Evt Univ))]
+[evt? (make-pred-ty (-Evtof Univ))]
+[handle-evt? (make-pred-ty (make-HandleEvt Univ))]
 [sync (-polydots (b a)
         (cl->*
-         (-> (make-Evt b) b)
-         (->... '() ((make-Evt a) a) Univ)))]
+         (-> (-Evtof b) b)
+         (->... '() ((-Evtof a) a) Univ)))]
 [sync/timeout
  (-polydots (c b a)
    (cl->*
-    (-> (-opt (Un -NonNegReal (-> b))) (make-Evt c) (-opt (Un b c)))
-    (->... (list (-opt (Un -NonNegReal (-> Univ)))) ((make-Evt a) a) Univ)))]
+    (-> (-opt (Un -NonNegReal (-> b))) (-Evtof c) (-opt (Un b c)))
+    (->... (list (-opt (Un -NonNegReal (-> Univ)))) ((-Evtof a) a) Univ)))]
 [sync/enable-break
  (-polydots (b a)
    (cl->*
-    (-> (make-Evt b) b)
-    (->... '() ((make-Evt a) a) Univ)))]
+    (-> (-Evtof b) b)
+    (->... '() ((-Evtof a) a) Univ)))]
 [sync/timeout/enable-break
  (-polydots (c b a)
    (cl->*
-    (-> (-opt (Un -NonNegReal (-> b))) (make-Evt c) (-opt (Un b c)))
-    (->... (list (-opt -NonNegReal)) ((make-Evt a) a) Univ)))]
+    (-> (-opt (Un -NonNegReal (-> b))) (-Evtof c) (-opt (Un b c)))
+    (->... (list (-opt -NonNegReal)) ((-Evtof a) a) Univ)))]
 [choice-evt
  (-polydots (b a)
    (cl->*
-    (-> (make-Evt b) (make-Evt b))
-    (->... '() ((make-Evt a) a) (make-Evt Univ))))]
-;; wrap-evt and handle-evt missing
-[guard-evt (-poly (a) (-> (-> (make-Evt a)) (make-Evt a)))]
+    (-> (make-HandleEvt b) (make-HandleEvt b))
+    (-> (make-NonHandleEvt b) (make-NonHandleEvt b))
+    (->... '() ((make-HandleEvt a) a) (make-HandleEvt Univ))
+    (->... '() ((make-NonHandleEvt a) a) (make-NonHandleEvt Univ))))]
+[wrap-evt (-poly (a b) (-> (make-NonHandleEvt a) (-> a b)
+                           (make-NonHandleEvt b)))]
+[handle-evt (-poly (a b) (-> (make-NonHandleEvt a) (-> a b)
+                             (make-HandleEvt b)))]
+[guard-evt
+ (-poly (a)
+   (cl->*
+    (-> (-> (make-HandleEvt a)) (make-HandleEvt a))
+    (-> (-> (make-NonHandleEvt a)) (make-NonHandleEvt a))
+    (-> (-> Univ) (-mu x (make-NonHandleEvt x)))))]
 [nack-guard-evt
  (-poly (a)
-   (-> (-> (make-Evt -Void) (make-Evt a))
-       (make-Evt a)))]
+   (cl->*
+    (-> (-> (make-NonHandleEvt -Void) (make-NonHandleEvt a))
+            (make-NonHandleEvt a))
+    (-> (-> (make-NonHandleEvt -Void) (make-HandleEvt a))
+            (make-HandleEvt a))))]
 [poll-guard-evt
- (-poly (a) (-> (-> -Boolean (make-Evt a)) (make-Evt a)))]
-[always-evt (-mu x (make-Evt x))]
-[never-evt (make-Evt (Un))]
-[system-idle-evt (-> (make-Evt -Void))]
-[alarm-evt (-> -NonNegReal (-mu x (make-Evt x)))]
-;; handle-evt? missing
+ (-poly (a)
+   (cl->*
+    (-> (-> -Boolean (make-NonHandleEvt a)) (make-NonHandleEvt a))
+    (-> (-> -Boolean (make-HandleEvt a)) (make-HandleEvt a))))]
+[always-evt (-mu x (make-NonHandleEvt x))]
+[never-evt (make-NonHandleEvt (Un))]
+[system-idle-evt (-> (make-NonHandleEvt -Void))]
+[alarm-evt (-> -NonNegReal (-mu x (make-NonHandleEvt x)))]
 [current-evt-pseudo-random-generator
  (-Param -Pseudo-Random-Generator -Pseudo-Random-Generator)]
 

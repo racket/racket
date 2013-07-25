@@ -263,7 +263,7 @@
 (define -Will-Executor
   (make-Base 'Will-Executor #'will-executor? will-executor? #'-Will-Executor))
 
-
+(define (-Evtof result) (Un (make-HandleEvt result) (make-NonHandleEvt result)))
 
 ;; Paths
 (define -car (make-CarPE))
