@@ -470,19 +470,6 @@
                                     (build-name id ; (field-id f) 
                                                 id "-" (field-id f)))
                                   fields)]
-                       [sets (let loop ([fields fields])
-                               (cond
-                                [(null? fields) null]
-                                [(not (or mutable? (field-mutable? (car fields))))
-                                 (loop (cdr fields))]
-                                [else
-                                 (cons (build-name id ; (field-id (car fields))
-                                                   "set-"
-                                                   id
-                                                   "-"
-                                                   (field-id (car fields))
-                                                   "!")
-                                       (loop (cdr fields)))]))]
                        [super-struct: (if super-info
                                           (or (car super-info)
                                               (raise-syntax-error
@@ -500,6 +487,87 @@
                        [reflect-name-expr (if reflect-name-expr
                                               (quasisyntax (check-reflection-name 'fm #,reflect-name-expr))
                                               (quasisyntax '#,id))])
+                   
+                   (define struct-name-size (string-length (symbol->string (syntax-e id))))
+                   (define struct-name/locally-introduced (syntax-local-introduce id))
+                   (define struct-name-to-predicate-directive
+                     (vector (syntax-local-introduce ?)
+                             0
+                             struct-name-size
+                             struct-name/locally-introduced
+                             0
+                             struct-name-size))
+                   
+                   (define struct-name-to-old-style-maker-directive
+                     (if ctor-name
+                         #f
+                         (vector (syntax-local-introduce make-)
+                                 5
+                                 struct-name-size
+                                 struct-name/locally-introduced
+                                 0
+                                 struct-name-size)))
+                   
+                   (define (struct-name-to-selector/mutator-directive id-stx selector?)
+                     (vector (syntax-local-introduce id-stx)
+                             (if selector? 0 4)
+                             struct-name-size
+                             struct-name/locally-introduced
+                             0
+                             struct-name-size))
+                   (define (field-to-selector/mutator-directive field id-stx selector?)
+                     (define fld-size (string-length (symbol->string (syntax-e (field-id field)))))
+                     (vector (syntax-local-introduce id-stx)
+                             (+ (if selector? 1 5) struct-name-size)
+                             fld-size
+                             (syntax-local-introduce (field-id field))
+                             0
+                             fld-size))
+                   
+                   (define-values (sets field-to-mutator-directives)
+                     (let loop ([fields fields])
+                       (cond
+                         [(null? fields) (values null null)]
+                         [(not (or mutable? (field-mutable? (car fields))))
+                          (loop (cdr fields))]
+                         [else
+                          (define-values (other-sets other-directives)
+                            (loop (cdr fields)))
+                          (define this-set
+                            (build-name id ; (field-id (car fields))
+                                        "set-"
+                                        id
+                                        "-"
+                                        (field-id (car fields))
+                                        "!"))
+                          (values (cons this-set other-sets)
+                                  (cons (field-to-selector/mutator-directive (car fields)
+                                                                             this-set
+                                                                             #f)
+                                        other-directives))])))
+                   
+                   (define all-directives
+                     (append 
+                      (list struct-name-to-predicate-directive)
+                      (if struct-name-to-old-style-maker-directive
+                          (list struct-name-to-old-style-maker-directive)
+                          '())
+                      field-to-mutator-directives
+                      (map (λ (field sel)
+                             (field-to-selector/mutator-directive field sel #t))
+                           fields
+                           sels)
+                      (map (λ (sel)
+                             (struct-name-to-selector/mutator-directive
+                              sel
+                              #t))
+                           sels)
+                      (map (λ (mut)
+                             (struct-name-to-selector/mutator-directive
+                              mut
+                              #f))
+                           sets)))
+                   
                    (let ([run-time-defns
                           (lambda ()
                             (quasisyntax/loc stx
@@ -647,11 +715,14 @@
                               (compile-time-defns)]
                              [else #'(begin)])])
                        (syntax-protect
-                        (if super-id
-                            (syntax-property result 
-                                             'disappeared-use 
-                                             (syntax-local-introduce super-id))
-                            result))))))))))]
+                        (syntax-property
+                         (if super-id
+                             (syntax-property result 
+                                              'disappeared-use 
+                                              (syntax-local-introduce super-id))
+                             result)
+                         'sub-range-binders
+                          all-directives))))))))))]
       [(_ _ id . _)
        (not (or (identifier? #'id)
                 (and (syntax->list #'id)
