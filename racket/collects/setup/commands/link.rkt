@@ -14,7 +14,7 @@
 (define show-mode (make-parameter #f))
 (define install-only (make-parameter #f))
 (define user-only (make-parameter #f))
-(define user-shared (make-parameter #f))
+(define user-version (make-parameter #f))
 
 (define link-symbol (string->symbol (short-program+command-name)))
 
@@ -42,16 +42,16 @@
    [("-r" "--remove") "Remove links for the specified directories"
     (remove-mode #t)]
    #:once-any
-   [("-u" "--user") "Adjust/list user-specific, version-specific links"
+   [("-u" "--user") "Adjust/list user-specific links for an installation name/version"
     (user-only #t)]
-   [("-s" "--shared") "Adjust/list user-specific links"
-    (user-only #t)
-    (user-shared #t)]
    [("-i" "--installation") "Adjust/list installation-wide links"
     (install-only #t)]
    [("-f" "--file") file "Select an alternate link file"
     (link-file (path->complete-path file))]
    #:once-each
+   [("-v" "--version") vers "Adjust/list user-specific links for <vers>"
+    (user-only #t)
+    (user-version vers)]
    [("--repair") "Enable repair mode to fix existing links"
     (repair-mode #t)]
    #:args 
@@ -67,20 +67,19 @@
   (and (null? dirs)
        (show-mode)
        (not (user-only))
-       (not (user-shared))
        (not (install-only))
        (not (link-file))))
 
 (when show-all?
   (printf "User-specific, version-specific links:\n"))
 
-(define (go user? shared?)
+(define (go user? vers)
   (apply links
          dirs
          #:root? (root-mode)
          #:static-root? (static-root-mode)
          #:user? user?
-         #:shared? shared?
+         #:user-version (or vers (get-installation-name))
          #:file (link-file)
          #:name (link-name)
          #:version-regexp (link-version)
@@ -92,15 +91,14 @@
 
 (define l1
   (go (not (install-only))
-      (user-shared)))
+      (user-version)))
 (define l2
   (if (and (not (or (user-only)
-                    (user-shared)
                     (install-only)))
            (remove-mode))
       (append
        (go #f #f)
-       (go #t #t))
+       (go #t (user-version)))
       null))
 
 (when show-all?

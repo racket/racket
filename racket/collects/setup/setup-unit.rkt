@@ -387,16 +387,15 @@
                       #:info-path info-path
                       #:info-path-mode 'abs-in-relative
                       #:omit-root 'dir))
-    (for ([shared? (in-list '(#t #f))])
-      (for ([c+p (in-list (links #:shared? shared? #:with-path? #t))])
-        (cc! (list (string->path (car c+p)))
-             #:path (cdr c+p)))
-      (for ([cp (in-list (links #:shared? shared? #:root? #t))]
-            #:when (directory-exists? cp)
-            [collection (directory-list cp)]
-            #:unless (skip-collection-directory? collection)
-            #:when (directory-exists? (build-path cp collection)))
-        (cc! (list collection) #:path (build-path cp collection)))))
+    (for ([c+p (in-list (links #:with-path? #t))])
+      (cc! (list (string->path (car c+p)))
+           #:path (cdr c+p)))
+    (for ([cp (in-list (links #:root? #t))]
+          #:when (directory-exists? cp)
+          [collection (directory-list cp)]
+          #:unless (skip-collection-directory? collection)
+          #:when (directory-exists? (build-path cp collection)))
+      (cc! (list collection) #:path (build-path cp collection))))
 
   ;; `all-collections' lists all top-level collections (not from Planet):
   (define all-collections

@@ -991,15 +991,10 @@ v
   installation scope; the directory indicated by the returned path may
   or may not exist.}
 
-@defproc[(find-user-pkgs-dir) path?]{
+@defproc[(find-user-pkgs-dir [vers string? (get-installation-name)]) path?]{
   Returns a path to the directory containing packages with
-  user- and version-specific scope; the directory indicated by
+  user-specific scope for installation name @racket[vers]; the directory indicated by
   the returned path may or may not exist.}
-
-@defproc[(find-shared-pkgs-dir) path?]{
-  Returns a path to the directory containing packages with
-  user-specific, all-version scope; the directory indicated by the
-  returned path may or may not exist.}
 
 @defproc[(get-pkgs-search-dirs) (listof path?)]{
   Returns a list of paths to the directories containing packages in
@@ -1103,6 +1098,11 @@ v
 @defproc[(get-doc-search-url) string?]{
   Returns a string that is used by the documentation system, augmented
   with a version and search-key query, for remote documentation links.}
+
+@defproc[(get-installation-name) string?]{ Returns the current
+  installation's name, which is often @racket[(version)] but can be
+  configured via @racket['installation-name] in @filepath{config.rktd}
+  (see @secref["config-file"]).}
 
 @defthing[absolute-installation? boolean?]{
   A binary boolean flag that is true if this installation is using

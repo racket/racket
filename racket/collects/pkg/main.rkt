@@ -1,6 +1,5 @@
 #lang racket/base
-(require (only-in racket/base [version r:version])
-         racket/function
+(require racket/function
          racket/list
          raco/command-name
          setup/dirs
@@ -31,15 +30,14 @@
          (string->symbol (format "~a ~a" (short-program+command-name) cmd))
          args))
 
-(define (call-with-package-scope who given-scope scope-dir installation shared user thunk)
+(define (call-with-package-scope who given-scope scope-dir installation user thunk)
   (define scope
     (case given-scope
-      [(installation user shared) given-scope]
+      [(installation user) given-scope]
       [else
        (cond
         [installation 'installation]
         [user 'user]
-        [shared 'shared]
         [scope-dir (path->complete-path scope-dir)]
         [else (default-pkg-scope)])]))
   (parameterize ([current-pkg-scope scope]
@@ -83,14 +81,12 @@
   #:once-each
   [#:bool skip-installed () ("Skip a <pkg-source> if already installed")]
   #:once-any
-  [(#:sym scope [installation user shared] #f) scope ()
+  [(#:sym scope [installation user] #f) scope ()
    ("Select package <scope>, one of"
     "  installation: Install for all users of the Racket installation"
-    "  user: Install as user- and version-specific"
-    "  shared: Install as user-specific but shared for all Racket versions")]
+    "  user: Install as user-specific for an installation version/name")]
   [#:bool installation ("-i") "Shorthand for `--scope installation'"]
   [#:bool user ("-u") "Shorthand for `--scope user'"]
-  [#:bool shared ("-s") "Shorthand for `--scope shared'"]
   [(#:str dir #f) scope-dir () "Install for package scope <dir>"]
   #:once-each
   [(#:str catalog #f) catalog () "Use <catalog> instead of configured catalogs"]
@@ -100,7 +96,7 @@
   #:args pkg-source
   (call-with-package-scope
    'install
-   scope scope-dir installation shared user
+   scope scope-dir installation user
    (lambda ()
      (unless (or (not name) (package-source->name name))
        ((current-pkg-error) (format "~e is an invalid package name" name)))
@@ -135,14 +131,12 @@
     "  search-auto: like 'search-ask' but does not ask for permission to install")]
   [#:bool update-deps () "Check named packages' dependencies for updates"]
   #:once-any
-  [(#:sym scope [installation user shared] #f) scope ()
+  [(#:sym scope [installation user] #f) scope ()
    ("Select package scope, one of"
     "  installation: Update only for all users of the Racket installation"
-    "  user: Update only user- and version-specific packages"
-    "  shared: Update only user-specific packages for all Racket versions")]
+    "  user: Update only user-specific for an installation version/name")]
   [#:bool installation ("-i") "Shorthand for `--scope installation'"]
   [#:bool user ("-u") "Shorthand for `--scope user'"]
-  [#:bool shared ("-s") "Shorthand for `--scope shared'"]
   [(#:str dir #f) scope-dir () "Update for package scope <dir>"]
   #:once-any
   [#:bool source () ("Strip built elements of the package before installing")]
@@ -154,7 +148,7 @@
   #:args pkg
   (call-with-package-scope
    'update
-   scope scope-dir installation shared user
+   scope scope-dir installation user
    (lambda ()
      (define setup-collects
        (with-pkg-lock
@@ -170,14 +164,12 @@
   [#:bool force () "Force removal of packages"]
   [#:bool auto () "Remove automatically installed packages with no dependencies"]
   #:once-any
-  [(#:sym scope [installation user shared] #f) scope ()
+  [(#:sym scope [installation user] #f) scope ()
    ("Select package <scope>, one of"
     "  installation: Remove packages for all users of the Racket installation"
-    "  user: Remove user- and version-specific packages"
-    "  shared: Remove user-specific packages for all Racket versions")]
+    "  user: Remove user-specific for an installation version/name")]
   [#:bool installation ("-i") "Shorthand for `--scope installation'"]
   [#:bool user ("-u") "Shorthand for `--scope user'"]
-  [#:bool shared ("-s") "Shorthand for `--scope shared'"]
   [(#:str dir #f) scope-dir () "Remove for package scope <dir>"]
   #:once-each
   [#:bool no-setup () ("Don't run `raco setup' after changing packages (usually"
@@ -186,7 +178,7 @@
   #:args pkg
   (call-with-package-scope
    'remove
-   scope scope-dir installation shared user
+   scope scope-dir installation user
    (lambda ()
      (define setup-collects
        (with-pkg-lock
@@ -200,24 +192,21 @@
   [#:bool all ("-a") "Show auto-installed packages, too"]
   [#:bool dir ("-d") "Show the directory where the package is installed"]
   #:once-any
-  [(#:sym scope [installation user shared] #f) scope ()
+  [(#:sym scope [installation user] #f) scope ()
    ("Show only for package <scope>, one of"
     "  installation: Show only for all users of the Racket installation"
-    "  user: Show only user- and version-specific"
-    "  shared: Show only user-specific for all Racket versions")]
-  [(#:str vers #f) version ("-v") "Show only user-specific for Racket <vers>"]
+    "  user: Show only user-specific for an installation version/name")]
+  [(#:str vers #f) version ("-v") "Show user-specific for installation <vers>"]
   [#:bool installation ("-i") "Shorthand for `--scope installation'"]
   [#:bool user ("-u") "Shorthand for `--scope user'"]
-  [#:bool shared ("-s") "Shorthand for `--scope shared'"]
   [(#:str dir #f) scope-dir () "Show only for package scope <dir>"]
   #:args ()
   (define only-mode (case scope
-                      [(installation user shared) scope]
+                      [(installation user) scope]
                       [else
                        (cond
                         [scope-dir (path->complete-path scope-dir)]
                         [installation 'installation]
-                        [shared 'shared]
                         [user 'user]
                         [else (if version 'user #f)])]))
   (for ([mode (if only-mode
@@ -228,18 +217,17 @@
                                (if (equal? d main)
                                    'installation
                                    d))))
-                          '(shared user)))])
+                          '(user)))])
     (when (or (equal? mode only-mode) (not only-mode))
       (unless only-mode
         (printf "~a\n" (case mode
                          [(installation) "Installation-wide:"]
-                         [(shared) "User-specific, all-version:"]
-                         [(user) (format "User-specific, version-specific (~a):"
-                                         (or version (r:version)))]
+                         [(user) (format "User-specific for installation ~s:"
+                                         (or version (get-installation-name)))]
                          [else (format "~a:" mode)])))
       (parameterize ([current-pkg-scope mode]
                      [current-pkg-error (pkg-error 'show)]
-                     [current-pkg-scope-version (or version (r:version))])
+                     [current-pkg-scope-version (or version (get-installation-name))])
         (with-pkg-lock/read-only
          (pkg-show (if only-mode "" " ")
                    #:auto? all
@@ -280,18 +268,16 @@
   #:once-each
   [#:bool set () "Completely replace the value"]
   #:once-any
-  [(#:sym scope [installation user shared] #f) scope ()
+  [(#:sym scope [installation user] #f) scope ()
    ("Select configuration <scope>, one of"
     "  installation: Operate on the installation-wide package configuration"
-    "  user: Operate on the user-specific, version-specific package configuration"
-    "  shared: Operate on the user-specific all-version package configuration")]
+    "  user: Operate on the user-specific for an installation name")]
   [#:bool installation ("-i") "Shorthand for `--scope installation'"]
   [#:bool user ("-u") "Shorthand for `--scope user'"]
-  [#:bool shared ("-s") "Shorthand for `--scope shared'"]
   #:args key/val
   (call-with-package-scope
    'config
-   scope #f installation shared user
+   scope #f installation user
    (lambda ()
      (if set
          (with-pkg-lock

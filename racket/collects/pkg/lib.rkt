@@ -35,7 +35,7 @@
 (define current-pkg-scope
   (make-parameter 'user))
 (define current-pkg-scope-version
-  (make-parameter (version)))
+  (make-parameter (get-installation-name)))
 (define current-pkg-error
   (make-parameter (lambda args (apply error 'pkg args))))
 (define current-no-pkg-db
@@ -409,13 +409,9 @@
          (for*/hash ([dir (in-list (get-pkgs-search-dirs))]
                      [(k v) (read-pkgs-db dir)])
            (values k v))]
-        [(shared)
-         (define db (read-pkgs-db 'shared))
-         (for/fold ([ht (merge-next-pkg-dbs 'installation)]) ([(k v) (in-hash db)])
-           (hash-set ht k v))]
         [(user)
          (define db (read-pkgs-db 'user))
-         (for/fold ([ht (merge-next-pkg-dbs 'shared)]) ([(k v) (in-hash db)])
+         (for/fold ([ht (merge-next-pkg-dbs 'installation)]) ([(k v) (in-hash db)])
            (hash-set ht k v))])))    
 
 (define (package-info pkg-name [fail? #t] #:db [given-db #f])
@@ -430,7 +426,6 @@
      (pkg-not-installed pkg-name db)]))
 
 ;; return the current scope as a string
-;; -> (or/c "user" "shared" "installation")
 (define (current-scope->string)
   (define scope (current-pkg-scope))
   (cond
@@ -446,22 +441,17 @@
   (define user-db
     (parameterize ([current-pkg-scope 'user])
       (read-pkg-db)))
-  (define shared-db
-    (parameterize ([current-pkg-scope 'shared])
-      (read-pkg-db)))
 
   ;; see if the package is installed in any scope
-  (define-values (in-install? in-user? in-shared?)
+  (define-values (in-install? in-user?)
    (values
     (and (hash-ref installation-db pkg-name #f)
          "--installation")
     (and (hash-ref user-db pkg-name #f)
-         "--user")
-    (and (hash-ref shared-db pkg-name #f)
-         "--shared")))
+         "--user")))
 
   (define not-installed-msg
-   (cond [(or in-user? in-install? in-shared?)
+   (cond [(or in-user? in-install?)
           =>
           (λ (scope-str)
              (~a "could not remove package\n"
@@ -510,9 +500,7 @@
         ;; Hard-wided:
         (get-default)
         ;; Enclosing:
-        (parameterize ([current-pkg-scope (if (eq? s 'user)
-                                              'shared
-                                              'installation)])
+        (parameterize ([current-pkg-scope 'installation])
           (read-pkg-cfg/def k)))]
    [else
     (match k
@@ -535,7 +523,6 @@
 (define (default-pkg-scope)
   (match (default-pkg-scope-as-string)
     ["installation" 'installation]
-    ["shared" 'shared]
     [else 'user]))
 (define (default-pkg-scope-as-string)
   (read-pkg-cfg/def 'default-scope))
@@ -568,7 +555,7 @@
   (if (path? current-scope)
       (list current-scope)
       (member current-scope
-              (append '(user shared)
+              (append '(user)
                       (let ([main (find-pkgs-dir)])
                         (for/list ([d (get-pkgs-search-dirs)])
                           (if (equal? d main)
@@ -603,21 +590,17 @@
   (define scope (current-pkg-scope))
   (define user? (not (or (eq? scope 'installation)
                          (path? scope))))
-  (define shared? (and user?
-                       (eq? (current-pkg-scope) 'shared)))
   (match orig-pkg
     [`(,(or 'link 'static-link) ,_)
      (links pkg-dir
             #:remove? #t
             #:user? user?
-            #:shared? shared?
             #:file (scope->links-file scope)
             #:root? (not (sc-pkg-info? pi)))]
     [_
      (links pkg-dir
             #:remove? #t
             #:user? user?
-            #:shared? shared?
             #:file (scope->links-file scope)
             #:root? (not (sc-pkg-info? pi)))
      (delete-directory/files pkg-dir)]))
@@ -1323,7 +1306,6 @@
                 #:name single-collect
                 #:user? (not (or (eq? 'installation scope)
                                  (path? scope)))
-                #:shared? (eq? 'shared scope)
                 #:file (scope->links-file scope)
                 #:root? (not single-collect)
                 #:static-root? (and (pair? orig-pkg)
@@ -1641,11 +1623,11 @@
        [(list* (and key "catalogs") val)
         (update-pkg-cfg! 'catalogs val)]
        [(list (and key "default-scope") val)
-        (unless (member val '("installation" "user" "shared"))
+        (unless (member val '("installation" "user"))
           (pkg-error (~a "invalid value for config key\n"
                          "  config key: ~a\n"
                          "  given value: ~a\n"
-                         "  valid values: installation, user, or shared")
+                         "  valid values: installation, user")
                      key
                      val))
         (update-pkg-cfg! 'default-scope val)]
@@ -1784,10 +1766,9 @@
             (parameterize ([current-pkg-scope scope])
               (with-pkg-lock/read-only
                (pkg-directory* dir-or-name))))
-          (define dir (or (get-dir 'user)
-                          (get-dir 'shared)))
+          (define dir (get-dir 'user))
           (unless dir
-            (pkg-error (~a "package not installed in user or shared scope\n"
+            (pkg-error (~a "package not installed in user scope\n"
                            "  package name: ~a"
                            (if (get-dir 'installation)
                                "\n  installed in scope: installation"
@@ -2258,7 +2239,7 @@
   (or/c #f 'fail 'force 'search-ask 'search-auto))
 
 (define package-scope/c
-  (or/c 'installation 'user 'shared
+  (or/c 'installation 'user
         (and/c path? complete-path?)))
 
 (provide

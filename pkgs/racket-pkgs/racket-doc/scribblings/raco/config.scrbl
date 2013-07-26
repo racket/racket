@@ -90,6 +90,11 @@ directory:
        path for resolving package names; an @racket[#f] in the list
        is replaced with the default search path.}
 
+ @item{@racket['installation-name] --- a string for the installation
+       name, which is used for packages in @exec{user} 
+       @tech[#:doc '(lib "pkg/scribblings/pkg.scrbl")]{package
+       scope}; the default is @racket[(version)].}
+
  @item{@racket['absolute-installation?] --- a boolean that is
        @racket[#t] if the installation uses absolute path names,
        @racket[#f] otherwise.}

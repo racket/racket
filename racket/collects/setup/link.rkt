@@ -7,10 +7,11 @@
 
 (define (links #:error [error error]
                #:user? [user? #t]
+               #:user-version [user-version (and user?
+                                                 (get-installation-name))]
                #:file [in-file #f]
                #:name [name #f]
                #:version-regexp [version-regexp #f]
-               #:shared? [shared? #f]
                #:root? [root? #f]
                #:static-root? [static-root? #f]
                #:remove? [remove? #f]
@@ -28,10 +29,8 @@
     (check-name name))
 
   (define file (or in-file
-                   (if (or user? shared?)
-                       (if shared?
-                           (build-path (find-system-path 'addon-dir) "links.rktd")
-                           (build-path (find-system-path 'addon-dir) (version) "links.rktd"))
+                   (if user?
+                       (build-path (find-system-path 'addon-dir) user-version "links.rktd")
                        (find-links-file))))
 
   (define need-repair? #f)

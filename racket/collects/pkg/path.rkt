@@ -15,13 +15,12 @@
 
 (define (check-scope who scope)
   (unless (or (eq? scope 'user)
-              (eq? scope 'shared)
               (eq? scope 'installation)
               (and (path? scope)
                    (complete-path? scope)))
     (raise-argument-error 
      who 
-     "(or/c 'user 'shared 'installation (and/c path? complete-path?))"
+     "(or/c 'user 'installation (and/c path? complete-path?))"
      scope)))
 
 (define (get-pkgs-dir scope [user-version (version)])
@@ -33,7 +32,6 @@
       (case scope
         [(installation) (find-pkgs-dir)]
         [(user) (find-user-pkgs-dir user-version)]
-        [(shared) (find-shared-pkgs-dir)]
         [else (error "unknown package scope")])))
 
 (define (read-pkg-file-hash file)
@@ -87,7 +85,7 @@
   (define (build-path* l)
     (if (null? l) 'same (apply build-path l)))
   (for/fold ([pkg #f] [subpath #f] [collect #f])
-      ([scope (in-list (list* 'user 'shared 
+      ([scope (in-list (list* 'user
                               (get-pkgs-search-dirs)))]
        #:when (not pkg))
     (define d (or (and cache

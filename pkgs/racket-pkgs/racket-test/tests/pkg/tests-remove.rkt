@@ -20,7 +20,7 @@
   (shelly-case
    "remove and show"
    (shelly-case "remove of not installed package fails"
-                $ "raco pkg show -u" =stdout> " [none]\n"
+                $ "raco pkg show -u -a" =stdout> " [none]\n"
                 $ "raco pkg remove not-there" =exit> 1)
    (shelly-install "remove test"
                    "test-pkgs/pkg-test1.zip")
@@ -29,12 +29,12 @@
                    "pkg-test1 pkg-test1")
    (shelly-install "remove of dep fails"
                    "test-pkgs/pkg-test1.zip"
-                   $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1 +[a-f0-9]+ +\\(file .+tests/pkg/test-pkgs/pkg-test1.zip\\)\n"
+                   $ "raco pkg show -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1 +[a-f0-9]+ +\\(file .+tests/pkg/test-pkgs/pkg-test1.zip\\)\n"
                    $ "raco pkg install test-pkgs/pkg-test2.zip"
-                   $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1 +[a-f0-9]+ +\\(file .+tests/pkg/test-pkgs/pkg-test1.zip\\)\npkg-test2 +[a-f0-9]+ +\\(file .+tests/pkg/test-pkgs/pkg-test2.zip\\)\n"
+                   $ "raco pkg show -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1 +[a-f0-9]+ +\\(file .+tests/pkg/test-pkgs/pkg-test1.zip\\)\npkg-test2 +[a-f0-9]+ +\\(file .+tests/pkg/test-pkgs/pkg-test2.zip\\)\n"
                    $ "raco pkg remove pkg-test1" =exit> 1 =stderr> #rx"pkg-test1 \\(required by: \\(pkg-test2\\)\\)"
                    $ "raco pkg remove pkg-test2"
-                   $ "raco pkg show -u" =stdout>  #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1 +[a-f0-9]+ +\\(file .+tests/pkg/test-pkgs/pkg-test1.zip\\)\n")
+                   $ "raco pkg show -u -a" =stdout>  #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1 +[a-f0-9]+ +\\(file .+tests/pkg/test-pkgs/pkg-test1.zip\\)\n")
    (shelly-install "remove of dep can be forced"
                    "test-pkgs/pkg-test1.zip"
                    $ "raco pkg install test-pkgs/pkg-test2.zip"
@@ -62,21 +62,21 @@
      $ "racket -e '(require pkg-test1)'" =exit> 1
      $ "racket -e '(require pkg-test2)'" =exit> 1
      $ "raco pkg install --deps search-auto test-pkgs/pkg-test2.zip" =exit> 0
-     $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9]+ +\\(catalog pkg-test1\\)\npkg-test2 +[a-f0-9]+ +\\(file .+tests/pkg/test-pkgs/pkg-test2.zip\\)\n"
+     $ "raco pkg show -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9]+ +\\(catalog pkg-test1\\)\npkg-test2 +[a-f0-9]+ +\\(file .+tests/pkg/test-pkgs/pkg-test2.zip\\)\n"
      $ "racket -e '(require pkg-test1)'" =exit> 0
      $ "racket -e '(require pkg-test2)'" =exit> 0
      $ "racket -e '(require pkg-test2/contains-dep)'" =exit> 0
      $ "raco pkg remove pkg-test2"
-     $ "raco pkg show -u" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9]+ +\\(catalog pkg-test1\\)\n"
+     $ "raco pkg show -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9]+ +\\(catalog pkg-test1\\)\n"
      $ "racket -e '(require pkg-test1)'" =exit> 0
      $ "raco pkg remove --auto"
-     $ "raco pkg show -u" =stdout> " [none]\n"
+     $ "raco pkg show -u -a" =stdout> " [none]\n"
      $ "racket -e '(require pkg-test1)'" =exit> 1
      $ "racket -e '(require pkg-test2)'" =exit> 1))
    (with-fake-root
     (shelly-case
      "different scope error"
-     $ "raco pkg install --shared test-pkgs/pkg-test1.zip" =exit> 0
-     $ "raco pkg remove pkg-test1" =exit> 1
-     =stderr> #rx"package installed in a different scope: shared"
-     $ "raco pkg remove --shared pkg-test1")))))
+     $ "raco pkg install test-pkgs/pkg-test1.zip" =exit> 0
+     $ "raco pkg remove --installation pkg-test1" =exit> 1
+     =stderr> #rx"package installed in a different scope: user"
+     $ "raco pkg remove pkg-test1")))))

@@ -1,3 +1,8 @@
+Version 5.90.0.3
+Base user directoy paths on an installation name instead
+ of the Racket version string
+Remove "shared" links and package scope
+
 Version 5.90.0.2
 Added #%declare
 Cross-phase persistent modules must be declared with

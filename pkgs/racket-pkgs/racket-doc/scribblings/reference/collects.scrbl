@@ -91,7 +91,7 @@ Produces a list of paths as follows:
 @itemize[
 
 @item{The path produced by @racket[(build-path (find-system-path
-    'addon-dir) (version) "collects")] is the first element of the
+    'addon-dir) (get-installation-name) "collects")] is the first element of the
   default collection path list, unless the value of the
   @racket[use-user-specific-search-paths] parameter is @racket[#f].}
 
@@ -197,17 +197,14 @@ The @deftech{collection links files} are used by
 default @tech{module name resolver} to locate collections before
 trying the @racket[(current-library-collection-paths)] search
 path, but only if the @racket[use-collection-link-paths] parameter is set to
-@racket[#t]. Furthermore, a user- and version-specific @tech{collection links file} takes
-precedence over a user-specific and all-version @tech{collection links file},
-which in turn takes precedence over an installation-wide @tech{collection links file}.
-The user-specific @tech{collection links files} are used only if the
+@racket[#t]. Furthermore, a user-specific @tech{collection links file} takes
+precedence over an installation-wide @tech{collection links file}.
+The user-specific @tech{collection links file} is used only if the
 @racket[use-user-specific-search-paths] parameter is set to
 @racket[#t].
 
-The path of the user- and version-specific @tech{collection links file} is
-@racket[(build-path (find-system-path 'addon-dir) (version) "links.rktd")].
-The path of the user-specific and all-version @tech{collection links file} is
-@racket[(build-path (find-system-path 'addon-dir) "links.rktd")].
+The path of the user--specific @tech{collection links file} is
+@racket[(build-path (find-system-path 'addon-dir) (get-installation-name) "links.rktd")].
 The path of the installation-wide @tech{collection links file} is
 @racket[(build-path (find-config-dir) "links.rktd")].
 Each @tech{collection links file} is cached by Racket, but

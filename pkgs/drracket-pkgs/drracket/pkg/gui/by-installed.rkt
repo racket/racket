@@ -20,7 +20,6 @@
    [else
     (case a
       [(installation) #t]
-      [(user) (eq? b 'shared)]
       [else #f])]))
 
 (define (ipkg<? a b)

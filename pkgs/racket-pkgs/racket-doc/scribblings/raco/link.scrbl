@@ -4,7 +4,8 @@
           "common.rkt"
           (for-label racket/base
                      racket/contract
-                     setup/link))
+                     setup/link
+                     setup/dirs))
 
 @title[#:tag "link"]{@exec{raco link}: Library Collection Links}
 
@@ -55,7 +56,7 @@ Full command-line options:
        any other command-line arguments are provided that modify the
        link table, the table is shown after modifications. If no
        directory arguments are provided, and if none of @Flag{u},
-       @DFlag{user}, @Flag{s}, @DFlag{shared}, @Flag{i}, @DFlag{installation}, @Flag{f}, or
+       @DFlag{user}, @Flag{i}, @DFlag{installation}, @Flag{f}, or
        @DFlag{file} are specified, then the link table is shown for
        all user-specific and installation-wide @tech[#:doc
        reference-doc]{collection links files}.}
@@ -86,7 +87,8 @@ Full command-line options:
        @nonterm{regexp} --- Sets a version regexp that limits the link
        to use only by Racket versions (as reported by
        @racket[version]) matching @nonterm{regexp}. This flag
-       is normally used with @Flag{s} or @DFlag{shared}. When the @Flag{r}
+       is normally used with @Flag{u} or @DFlag{user} with installations
+       that have different versions but the same installation name. When the @Flag{r}
        or @DFlag{remove} flag is also used, only links with a
        version regexp matching @nonterm{regexp} are removed.}
 
@@ -94,24 +96,17 @@ Full command-line options:
        of add mode.}
 
  @item{@Flag{u} or @DFlag{user} --- Limits listing and removal
-       of links to the user- and version-specific @tech[#:doc
-       reference-doc]{collection links file} and not the all-version or
-       collection-wide @tech[#:doc reference-doc]{collection links
-       file}. This flag is mutually exclusive with @Flag{s}, @DFlag{shared}, @Flag{i},
-       @DFlag{installation}, @Flag{f}, and @DFlag{file}.}
-
- @item{@Flag{s} or @DFlag{shared} --- Limits listing and removal
-       of links to the user-specific, all-version @tech[#:doc
-       reference-doc]{collection links file} and not the version-specific or
-       collection-wide @tech[#:doc reference-doc]{collection links
-       file}. This flag is mutually exclusive with @Flag{u}, @DFlag{user}, @Flag{i},
+       of links to the user-specific @tech[#:doc
+       reference-doc]{collection links file} and not the
+       installation-wide @tech[#:doc reference-doc]{collection links
+       file}. This flag is mutually exclusive with @Flag{i},
        @DFlag{installation}, @Flag{f}, and @DFlag{file}.}
 
  @item{@Flag{i} or @DFlag{installation} --- Reads and writes links in
        installation-wide @tech[#:doc reference-doc]{collection links
        file} and not the user-specific @tech[#:doc
        reference-doc]{collection links file}. This flag is mutually
-       exclusive with @Flag{u}, @DFlag{user}, @Flag{s}, @DFlag{shared}, @Flag{f}, and
+       exclusive with @Flag{u}, @DFlag{user}, @Flag{f}, and
        @DFlag{file}.}
 
  @item{@Flag{f} @nonterm{file} or @DFlag{file} @nonterm{file} ---
@@ -119,6 +114,11 @@ Full command-line options:
        user-specific @tech[#:doc reference-doc]{collection links
        file}.  This flag is mutually exclusive with @Flag{u},
        @DFlag{user}, @Flag{s}, @DFlag{shared}, @Flag{i}, and @DFlag{installation}.}
+
+ @item{@Flag{v} @nonterm{vers} or @DFlag{version} @nonterm{vers} ---
+       Selects @nonterm{vers} as relevant installation name for
+       operations on the user-specific @tech[#:doc
+       reference-doc]{collection links file}.}
 
  @item{@DFlag{repair} --- Enables repairs to the existing file content
        when the content is erroneous. The file is repaired by deleting
@@ -134,7 +134,7 @@ Full command-line options:
 
 @defproc[(links [dir path?] ...
                 [#:user? user? any/c #t]
-                [#:shared? shared? any/c #t]
+                [#:user-version user-version string? (get-installation-name)]
                 [#:file file (or/c path-string? #f) #f]
                 [#:name name (or/c string? #f) #f]
                 [#:root? root? any/c #f]
@@ -149,11 +149,11 @@ Full command-line options:
 
 A function version of the @exec{raco link} command that always works
 on a single file---either @racket[file] if it is a path string, the
-user- and version-specific @tech[#:doc reference-doc]{collection links file} if
-@racket[user?] is true and @racket[shared?] is false,  the
-user-specific, all-version @tech[#:doc reference-doc]{collection links file} if
-@racket[shared?] is true, or the installation-wide @tech[#:doc
-reference-doc]{collection links file} otherwise.
+user--specific @tech[#:doc reference-doc]{collection links file} if
+@racket[user?] is true, or the installation-wide @tech[#:doc
+reference-doc]{collection links file} otherwise. If @racket[user?]
+is true, then @racket[user-version] determines the relevant
+installation name (defaulting to the current installation's name).
 
 The @racket[static-root?] flag value is ignored unless @racket[root?]
 is true and @racket[remove?] is false, in which case each given

@@ -243,17 +243,15 @@ the version is part of the source. A @tech{single-collection package}
 can be a @tech{package update} of a @tech{multi-collection package}
 and vice versa.
 
-A @deftech{package scope} determines the effect of package installations,
-updates, @|etc|, with respect to different users, Racket versions, and
-Racket installations. The default @tech{package scope} can be configured, but it is
-normally @exec{user}, which is user-specific and version-specific;
-that is, package installation makes the package visible only for the
-installing user and with the installing version of Racket. The
-@exec{installation} scope means that package installation makes the
-package visible to all users of the specific Racket installation that
-is used to install the package. The @exec{shared} scope means
-user-specific, but for all versions and installations of Racket.
-Finally, a directory path can be used as a package scope, in which case
+A @deftech{package scope} determines the effect of package
+installations, updates, @|etc|, with respect to different users and
+Racket installations. The default @tech{package scope} can be
+configured, but it is normally @exec{user}, which makes actions
+specific to both the current user and the installation's name/version
+(in the sense of @racket[get-installation-name]). The
+@exec{installation} scope means that package operations affect
+all users of the Racket installation.
+Finally, a directory path can be used as a @tech{package scope}, in which case
 package operations affect the set of packages installations in the
 directory (and an installation can be configured to include the
 directory in its search path for installed packages).
@@ -325,14 +323,12 @@ sub-sub-commands:
  @item{@DFlag{scope} @nonterm{scope} --- Selects the @tech{package scope} for installation, where @nonterm{scope} is one of
   @itemlist[
    @item{@exec{installation} --- Install packages for all users of a Racket installation, rather than user-specific.}
-   @item{@exec{user} --- Install packages as user-specific and Racket version-specific.}
-   @item{@exec{shared} --- Install packages as user-specific, but for all Racket versions.}
+   @item{@exec{user} --- Install packages for the current user and current installation's name/version.}
   ]
   The default package scope is normally @exec{user}, but it can be configured with
   @command-ref{config}@exec{ --set default-scope @nonterm{scope}}.}
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
- @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Select @nonterm{dir} as the @tech{package scope}.}
  
  @item{@DFlag{catalog} @nonterm{catalog} --- Use @nonterm{catalog} instead of of the currently configured 
@@ -363,7 +359,6 @@ this command fails without installing any of the @nonterm{pkg}s
  @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
- @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Selects @nonterm{dir} as the @tech{package scope}, the same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{binary} --- Same as for @command-ref{install}.}
@@ -387,7 +382,6 @@ removing any of the @nonterm{pkg}s.
  @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
- @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Selects @nonterm{dir} as the @tech{package scope}, the same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
@@ -395,8 +389,7 @@ removing any of the @nonterm{pkg}s.
 }
 
 @item{@command/toc{show} @nonterm{option} ... --- Print information about currently installed packages. 
- By default, packages are shown for all installation modes (installation-wide,
- user- and Racket-version-specific, and user-specific all-version), but only for packages
+ By default, packages are shown for all @tech{package scopes}, but only for packages
  not marked as auto-installed to fulfill dependencies.
 
  The @exec{show} sub-command accepts 
@@ -410,15 +403,15 @@ removing any of the @nonterm{pkg}s.
  @item{@DFlag{scope} @nonterm{scope} --- Shows only packages in @nonterm{scope}, which is one of
   @itemlist[
    @item{@exec{installation} --- Show only installation-wide packages.}
-   @item{@exec{user} --- Show only user-specific, version-specific packages.}
-   @item{@exec{shared} --- Show only user-specific, all-version packages.}
+   @item{@exec{user} --- Show only user-specific packages for the current installation's name/version
+            or the name/version specified with @DFlag{version} or @Flag{v}.}
   ]
   The default is to show packages for all @tech{package scopes}.}
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
- @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Shows only packages installed in @nonterm{dir}.}
- @item{@DFlag{version} @nonterm{vers} or @Flag{v} @nonterm{vers} --- Show only user-specific packages for Racket version @nonterm{vers}.}
+ @item{@DFlag{version} @nonterm{vers} or @Flag{v} @nonterm{vers} --- Show only user-specific packages for 
+       the installation name/version @nonterm{vers}.}
  ]
 }
 
@@ -462,20 +455,17 @@ View and modify configuration of the package manager itself, with the following 
  @item{@DFlag{set} --- Sets an option, rather than printing it.}
  @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.
                                          A configuration value set at @exec{installation} scope serves
-                                         as the default value at @exec{shared} scope, and
-                                         a configuration value set at @exec{shared} scope serves
                                          as the default value at @exec{user} scope.}
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
- @item{@Flag{s} or @DFlag{shared} --- Shorthand for @exec{--scope shared}.}
  ]
 
  The valid keys are:
  @itemlist[
   @item{@exec{catalogs} --- A list of URLs for @tech{package catalogs}.}
-  @item{@exec{default-scope} --- Either @exec{installation}, @exec{user}, or @exec{shared}.
+  @item{@exec{default-scope} --- Either @exec{installation} or @exec{user}.
         The value of this key at @exec{user} scope (possibly defaulting from
-        @exec{shared} or @exec{installation} scope) is
+        @exec{installation} scope) is
         the default @tech{package scope} for all @exec{raco pkg} commands
         (even @command{config}, which is consistent but potentially confusing).}
  ]
@@ -930,13 +920,9 @@ and rebuilt.
 
 If you change the default @tech{package scope}, you can use the
 @Flag{u} or @DFlag{user} flag with a specific @exec{raco pkg} command
-to perform the command with user- and version-specific @tech{package
-scope}.
-
-Finally, you can use the @Flag{s} or @DFlag{shared} flag
-with @exec{raco pkg} commands to install user-specific packages that
-apply to all Racket versions that you run. (In contrast, @|Planet1|
-requires reinstallation of all packages every version change.)
+to perform the command with user-specific @tech{package scope}.
+User-specific scope is also specific for a Racket installation
+name, where an installation name is typically a Racket version.
 
 @subsection{Where and how are packages installed?}
 

@@ -40,4 +40,4 @@
                (if (equal? d main)
                    'installation
                    d))))
-          '(user shared)))
+          '(user)))

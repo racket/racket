@@ -32,13 +32,14 @@ that are documented to require the lock. Other functions from
 @racketmodname[pkg/lib] take the lock as needed.}
 
 @deftogether[(
-@defparam[current-pkg-scope scope (or/c 'installation 'user 'shared
+@defparam[current-pkg-scope scope (or/c 'installation 'user
                                         (and/c path? complete-path?))]
 @defparam[current-pkg-scope-version s string?]
 )]{
 
-Parameters that together determine @tech{package scope} for management
-operations and the version for version-specific scope.}
+Parameters that determine @tech{package scope} for management
+operations and, in the case of @racket['user] scope, the relevant
+installation name/version.}
 
 
 @defparam[current-pkg-error err procedure?]{
@@ -75,13 +76,13 @@ Returns the directory that holds the installation of the installed
 is installed.}
 
 
-@defproc[(default-pkg-scope) (or/c 'installation 'user 'shared
+@defproc[(default-pkg-scope) (or/c 'installation 'user
                                     (and/c path? complete-path?))]{
 
 Returns the user's configured default @tech{package scope}.}
 
 
-@defproc[(installed-pkg-names [#:scope scope (or/c #f 'installation 'user 'shared
+@defproc[(installed-pkg-names [#:scope scope (or/c #f 'installation 'user
                                                    (and/c path? complete-path?))])
          (listof string?)]{
 
@@ -90,7 +91,7 @@ scope}, where @racket[#f] indicates the user's default @tech{package
 scope}.}
 
 
-@defproc[(installed-pkg-table [#:scope scope (or/c #f 'installation 'user 'shared
+@defproc[(installed-pkg-table [#:scope scope (or/c #f 'installation 'user
                                                    (and/c path? complete-path?))])
          (hash/c string? pkg-info?)]{
 

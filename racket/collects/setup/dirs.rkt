@@ -84,17 +84,21 @@
 (define-config config:3m-suffix '3m-suffix values)
 (define-config config:absolute-installation? 'absolute-installation? (lambda (x) (and x #t)))
 (define-config config:doc-search-url 'doc-search-url values)
+(define-config config:installation-name 'installation-name values)
 
 (provide get-absolute-installation?
          get-cgc-suffix
          get-3m-suffix
-         get-doc-search-url)
+         get-doc-search-url
+         get-installation-name)
 
 (define (get-absolute-installation?) (force config:absolute-installation?))
 (define (get-cgc-suffix) (force config:cgc-suffix))
 (define (get-3m-suffix) (force config:3m-suffix))
 (define (get-doc-search-url) (or (force config:doc-search-url)
                                  "http://docs.racket-lang.org"))
+(define (get-installation-name) (or (force config:installation-name)
+                                    (version)))
 
 ;; ----------------------------------------
 ;;  "collects"
@@ -112,7 +116,7 @@
   (combine-search (force config:collects-search-dirs)
                   (list (find-collects-dir))))
 (define user-collects-dir
-  (delay (build-path (system-path* 'addon-dir) (version) "collects")))
+  (delay (build-path (system-path* 'addon-dir) (get-installation-name) "collects")))
 (define (find-user-collects-dir)
   (force user-collects-dir))
 (define (get-collects-search-dirs)
@@ -180,7 +184,7 @@
        (define-finder provide config:id id get-false default)
        (provide user-id)
        (define user-dir
-         (delay (build-path (system-path* 'addon-dir) (version) default)))
+         (delay (build-path (system-path* 'addon-dir) (get-installation-name) default)))
        (define (user-id)
          (force user-dir)))]))
 
@@ -361,12 +365,8 @@
   get-pkgs-search-dirs
   (chain-to (lambda () (build-path (find-share-dir) "pkgs"))))
 
-(provide find-user-pkgs-dir
-         find-shared-pkgs-dir)
-(define (find-user-pkgs-dir [vers (version)])
+(provide find-user-pkgs-dir)
+(define (find-user-pkgs-dir [vers (get-installation-name)])
   (build-path (find-system-path 'addon-dir)
               vers
-              "pkgs"))
-(define (find-shared-pkgs-dir)
-  (build-path (find-system-path 'addon-dir)
               "pkgs"))

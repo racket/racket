@@ -38,7 +38,6 @@
 (define sc-install-pkg-scope-label (string-constant install-pkg-scope-label))
 (define sc-install-pkg-installation (string-constant install-pkg-installation))
 (define sc-install-pkg-user (string-constant install-pkg-user))
-(define sc-install-pkg-shared (string-constant install-pkg-shared))
 (define sc-install-pkg-set-as-default (string-constant install-pkg-set-as-default))
 (define sc-install-pkg-scope-is (string-constant install-pkg-scope-is))
   
@@ -184,13 +183,11 @@
                               [callback (λ (x y) (adjust-all))]
                               [choices (list sc-install-pkg-default
                                              sc-install-pkg-installation
-                                             sc-install-pkg-user
-                                             sc-install-pkg-shared)]))
+                                             sc-install-pkg-user)]))
     (define/private (selected-scope) (case (send scope-choice get-selection)
                                        [(0) (default-pkg-scope)]
                                        [(1) 'installation]
-                                       [(2) 'user]
-                                       [(3) 'shared]))
+                                       [(2) 'user]))
     (define scope-default-button (new button% 
                                       [label sc-install-pkg-set-as-default]
                                       [font small-control-font]
@@ -331,14 +328,12 @@
       (send scope-msg set-label (format sc-install-pkg-scope-is
                                         (case (selected-scope)
                                           [(installation) sc-install-pkg-installation]
-                                          [(user) sc-install-pkg-user]
-                                          [(shared) sc-install-pkg-shared])))
+                                          [(user) sc-install-pkg-user])))
       (define is-default? (let ([v (send scope-choice get-selection)])
                             (or (zero? v)
                                 (= v (case (default-pkg-scope)
                                        [(installation) 1]
-                                       [(user) 2]
-                                       [(shared) 3])))))
+                                       [(user) 2])))))
       (define deleted? (not (member scope-default-button (send scope-panel get-children))))
       (unless (equal? is-default? deleted?)
         (if is-default?
