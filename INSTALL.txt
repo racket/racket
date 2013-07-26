@@ -4,7 +4,7 @@ Quick Instructions
 On Unix or Mac OS X, `make' (or `make in-place') creates a build in
 the "racket" directory.
 
-The build includes (via links) all packages that are in the "pkgs"
+The build includes (via links) packages that are in the "pkgs"
 directory.
 
 
@@ -15,7 +15,7 @@ The "racket" directory contains a stripped down version of Racket ---
 enough to run `raco pkg' to install everything else.
 
 The "pkgs" directory contains the packages that are included in a
-Racket distribution.
+Racket distribution, plus some additional packages (such as tests).
 
 On Unix and Mac OS X, you can build Racket plus the included packages
 with `make in-place' (or just `make'). The resulting build is in the
@@ -38,6 +38,16 @@ dependencies. The default value of `PKGS' reaches all packages in
 Mode", below, for more information on package links and using `again'
 or `LINK_MODE' to use remembered `PKGS' values from previous `make
 in-place's.
+
+Using `make' (or `make in-place') sets the installation's name to
+"development", unless the installation has been previously configured
+(i.e., unless the "racket/etc/config.rktd" file exists). The
+installation name affects, for example, the directory where
+user-specific documentation is installed. Using `make' also sets the
+default package scope is set to `installation', which means that
+package are installed by default into the installation's space instead
+of user-specific space. The name and/or default-scope configuration
+can be changed through `raco pkg config'.
 
 Note that `make -j <n>' controls parallelism for the makefile part of
 a build, but not for the `raco setup' part. To control both the
@@ -132,6 +142,15 @@ same as `in-place' (or `win32-in-place'), but with
 `LINK_MODE=--restore'. To suppress remembering a `PKGS' value, supply
 `LINK_MODE='; the `PKGS' value is saved by default because
 `LINK_MODE=--save' is the default.
+
+The `pkg-links' makefile target installs links to a specific
+"devel-pkgs" directory and adjusts the build's configuration to
+include "devel-pkgs" in the search path for packages. As a result, the
+package links are installation specific, but still isolated from any
+`installation'-scope packages that you install later. The `pkg-links'
+target alsosets the default package scope for the build to
+`installation' mode. Both of those configuration adjustments are made
+only if no configuration file "racket/etc/config.rktd" exists already.
 
 Trying Packages Locally
 -----------------------

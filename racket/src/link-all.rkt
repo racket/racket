@@ -193,6 +193,10 @@
      (write (hash 'pkgs-search-dirs
                   (list #f devel-pkgs-bytes)
                   'links-search-files
-                  (list #f devel-links-bytes))
+                  (list #f devel-links-bytes)
+                  'installation-name
+                  "development"
+                  'default-scope
+                  "installation")
             o)
      (newline o))))
