@@ -85,12 +85,14 @@
 (define-config config:absolute-installation? 'absolute-installation? (lambda (x) (and x #t)))
 (define-config config:doc-search-url 'doc-search-url values)
 (define-config config:installation-name 'installation-name values)
+(define-config config:build-stamp 'build-stamp values)
 
 (provide get-absolute-installation?
          get-cgc-suffix
          get-3m-suffix
          get-doc-search-url
-         get-installation-name)
+         get-installation-name
+         get-build-stamp)
 
 (define (get-absolute-installation?) (force config:absolute-installation?))
 (define (get-cgc-suffix) (force config:cgc-suffix))
@@ -99,6 +101,7 @@
                                  "http://docs.racket-lang.org"))
 (define (get-installation-name) (or (force config:installation-name)
                                     (version)))
+(define (get-build-stamp) (force config:build-stamp))
 
 ;; ----------------------------------------
 ;;  "collects"

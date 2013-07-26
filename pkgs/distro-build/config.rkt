@@ -121,6 +121,7 @@
     [(#:dist-catalogs) (and (list? val) (andmap string? val))]
     [(#:dist-base-url) (string? val)]
     [(#:install-name) (string? val)]
+    [(#:build-stamp) (string? val)]
     [(#:max-vm) (real? val)]
     [(#:server) (simple-string? val)]
     [(#:host) (simple-string? val)]

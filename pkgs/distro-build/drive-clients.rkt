@@ -9,7 +9,8 @@
          (only-in "config.rkt"
                   current-mode
                   site-config?
-                  site-config-tag site-config-options site-config-content)
+                  site-config-tag site-config-options site-config-content
+                  current-stamp)
          "url-options.rkt"
          "display-time.rkt"
          "readme.rkt")
@@ -257,6 +258,9 @@
   (define install-name (get-opt c '#:install-name (if release? 
                                                       "" 
                                                       snapshot-install-name)))
+  (define build-stamp (get-opt c '#:build-stamp (if release?
+                                                    ""
+                                                    (current-stamp))))
   (~a " SERVER=" server
       " PKGS=" (q pkgs)
       " DOC_SEARCH=" (q doc-search)
@@ -267,6 +271,7 @@
       " DIST_SUFFIX=" (q dist-suffix)
       " DIST_CATALOGS_q=" (qq dist-catalogs kind)
       " INSTALL_NAME=" (q install-name)
+      " BUILD_STAMP=" (q build-stamp)
       " RELEASE_MODE=" (if release? "--release" (q ""))
       " SOURCE_MODE=" (if source-runtime? "--source" (q ""))
       " PKG_SOURCE_MODE=" (if source-pkgs?
@@ -343,7 +348,10 @@
                                                '#:pkgs (string-split default-pkgs)
                                                '#:install-name (if (get-opt c '#:release? default-release?)
                                                                    ""
-                                                                   snapshot-install-name))))))
+                                                                   snapshot-install-name)
+                                               '#:build-stamp (if (get-opt c '#:release? default-release?)
+                                                                  ""
+                                                                  (current-stamp)))))))
   (make-directory* (build-path "build" "readmes"))
   (define readme (make-temporary-file
                   "README-~a"

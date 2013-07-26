@@ -6,4 +6,5 @@
   (unit (import drscheme:tool^) (export drscheme:tool-exports^)
     (define (phase1) (void))
     (define (phase2) (void))
-    (version:add-spec '-- stamp)))
+    (when stamp
+      (version:add-spec '-- stamp))))

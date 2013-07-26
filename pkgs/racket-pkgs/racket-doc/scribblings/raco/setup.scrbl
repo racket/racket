@@ -1104,6 +1104,12 @@ v
   configured via @racket['installation-name] in @filepath{config.rktd}
   (see @secref["config-file"]).}
 
+@defproc[(get-build-stamp) (or/c #f string?)]{ Returns a string
+   that identifies an installation build, which can be used to augment
+   the Racket version number to more specifically identify the
+   build. An empty string is normally produced for a release build.
+   The result is @racket[#f] if no build stamp is available.}
+
 @defthing[absolute-installation? boolean?]{
   A binary boolean flag that is true if this installation is using
   absolute path names.}

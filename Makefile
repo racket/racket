@@ -143,6 +143,10 @@ DIST_DESC =
 # installers, where "" is replaced by the default configuration:
 DIST_CATALOGS_q = ""
 
+# An identifier for this build; if not specified, a build identifier
+# is inferred from the date and git repository
+BUILD_STAMP = 
+
 # "Name" of the installation used for `user' package scope by default
 # in an installation from an installer, where an empty value leaves
 # the default as the version number:
@@ -226,6 +230,10 @@ build/site.rkt:
 	echo "(machine)" >> build/site.rkt
 
 stamp:
+	if [ "$(BUILD_STAMP)" = '' ] ; then $(MAKE) stamp-as-inferred ; else $(MAKE) stamp-as-given ; fi
+stamp-as-given:
+	echo "$(BUILD_STAMP)" > build/stamp.txt
+stamp-as-inferred:
 	if [ -d ".git" ] ; then $(MAKE) stamp-from-git ; else $(MAKE) stamp-from-date ; fi
 stamp-from-git:
 	echo `date +"%Y%m%d"`-`git log -1 --pretty=format:%h` > build/stamp.txt
@@ -276,7 +284,7 @@ fresh-user:
 	rm -rf build/user
 
 set-config:
-	$(RACKET) -l distro-build/set-config racket/etc/config.rktd $(CONFIG_MODE_q) "$(DOC_SEARCH)" "" ""
+	$(RACKET) -l distro-build/set-config racket/etc/config.rktd $(CONFIG_MODE_q) "$(DOC_SEARCH)" "" "" ""
 
 # Install packages from the source copies in this directory. The
 # packages are installed in user scope, but we set the add-on
@@ -344,7 +352,7 @@ client:
 	$(MAKE) bundle-config
 	$(MAKE) installer-from-bundle
 
-COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" \
+COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" BUILD_STAMP="$(BUILD_STAMP)" \
 	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) \
             PKG_SOURCE_MODE=$(PKG_SOURCE_MODE) INSTALL_NAME="$(INSTALL_NAME)"\
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
@@ -352,7 +360,7 @@ COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" \
             DIST_DESC="$(DIST_DESC)" README="$(README)" \
             JOB_OPTIONS="$(JOB_OPTIONS)"
 
-SET_BUNDLE_CONFIG_q = $(BUNDLE_CONFIG) "" "" "$(INSTALL_NAME)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
+SET_BUNDLE_CONFIG_q = $(BUNDLE_CONFIG) "" "" "$(INSTALL_NAME)" "$(BUILD_STAMP)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 
 win32-client:
 	IF EXIST build\user cmd /c rmdir /S /Q build\user

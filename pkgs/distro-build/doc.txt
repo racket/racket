@@ -146,6 +146,11 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     where "" keeps the name as the Racket version; the default is
     "snapshot" if the value of `#:release?' is false, "" otherwise.
 
+  #:build-stamp <string> --- a string representing a build stamp,
+     recorded in installes; the default is from the `BUILD_STAMP'
+     makefile variable or generated if the value of `#:release?' is
+     false, "" otherwise.
+
   #:dist-name <string> --- the distribution name; defaults to the
     `DIST_NAME' makefile variable
 

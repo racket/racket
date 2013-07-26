@@ -5,21 +5,24 @@
 #|
 
   This file provides a single binding, `stamp', with a string value that
-  describes the Racket version.  The format of this stamp is a date, a
-  SHA1, and a character describing how the information was retrieved:
+  describes the Racket version, or #f to indicate a "release" without a
+  stamp.
+
+  The format of a string stamp is a date, a SHA1, and a character
+  describing how the information was retrieved:
 
     "YYYY-MM-DD(SHA1/H)"
 
   The description is attempted in several ways, with the `H' character
   indicating how it was actually obtained:
 
-  * "a" -- the date and sha1 information were in the `archive-id' string
-    below, which means that it had that information at the time that
-    `git archive' created an archive out of a git repository.  This is
-    the expected value for nightly builds.
+  * "a" -- the date and sha1 information were in the installation's
+    configuration (as a non-empty string). This is the expected value
+    for a snapshot build, and if the installation's configuration has
+    a `build-stamp' entry, this format or #f are the only possibilities.
 
   * "g" -- `archive-id' didn't have information, but we found a git
-    executable and ran it. [*]
+    executable and ran it. [*]  This strategy is currently disabled.
 
   * "d" -- an executable was not found either, but a ".git" directory
     was found in the usual place, with a "HEAD" file that has eventually
@@ -36,19 +39,34 @@
 
 |#
 
-(define archive-id "$Format:%ct|%h|a$")
-;; when exported through `git archive', the above becomes something like
-;; "1273562690|cabd414|a"
-
-(require racket/system racket/runtime-path racket/string)
+(require racket/system
+         racket/runtime-path
+         racket/string
+         racket/date
+         setup/dirs)
 
 (define-runtime-path this-dir  ".")
 (define-runtime-path this-file "stamp.rkt")
 
-(define stamp
+(define (compute-stamp)
   (let ([rx:secs+id #rx"^([0-9]+)\\|([0-9a-f]+|-)\\|(.*?)[ \r\n]*$"])
     ;; info from an archive (incl. nightly builds)
-    (define (from-archive-id) archive-id)
+    (define (from-archive-id) 
+      (define m (regexp-match #rx"^([0-9][0-9][0-9][0-9])([0-9][0-9])([0-9][0-9])-([0-9a-f]+)$"
+                              (or (get-build-stamp) "")))
+      (define (n pos) (string->number (list-ref m pos)))
+      (and m
+           (format "~a|~a|a" 
+                   (with-handlers ([exn:fail? (lambda (exn) 
+                                                ;; Last resort:
+                                                (current-seconds))])
+                     (with-handlers ([exn:fail? (lambda (exn)
+                                                  ;; Local time failed; try UTC:
+                                                  (find-seconds 0 0 12 (n 3) (n 2) (n 1) #f))])
+                       ;; Convert to seconds, hopfully for round-trip in seconds->date
+                       ;; conversion below:
+                       (find-seconds 0 0 12 (n 3) (n 2) (n 1))))
+                   (list-ref m 4))))
     ;; adds a branch name if applicable (and if different from `master')
     (define (add-branch str br*)
       (define br
@@ -76,7 +94,7 @@
     ;; try to find a ".git" directory (can't run git, so conventional
     ;; guess) and use the sha1 from that file and its date
     (define (from-git-dir)
-      (define git-dir (build-path this-dir 'up 'up ".git"))
+      (define git-dir (build-path this-dir 'up 'up 'up 'up ".git"))
       (define branch #f)
       (let loop ([file (build-path git-dir "HEAD")])
         (define l (and (file-exists? file)
@@ -106,3 +124,11 @@
         (and d (format "~a-~a-~a(~a/~a)"
                        (date-year d) (pad02 date-month) (pad02 date-day)
                        id how))))))
+
+(define stamp
+  (if (equal? "" (get-build-stamp))
+      ;; Release
+      #f
+      ;; Compute it:
+      (compute-stamp)))
+stamp

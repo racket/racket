@@ -6,13 +6,15 @@
          "url-options.rkt")
 
 (define-values (dest-config-file config-file config-mode 
-                                 install-name 
+                                 install-name build-stamp 
                                  default-doc-search default-catalogs)
   (command-line
    #:args
-   (dest-config-file config-file config-mode install-name doc-search . catalog)
+   (dest-config-file config-file config-mode 
+                     install-name build-stamp
+                     doc-search . catalog)
    (values dest-config-file config-file config-mode 
-           install-name 
+           install-name build-stamp
            doc-search catalog)))
 
 (define config (if (equal? config-file "")
@@ -42,7 +44,10 @@
                                   c))))]
        [table (if (equal? install-name "")
                   table
-                  (hash-set table 'installation-name install-name))])
+                  (hash-set table 'installation-name install-name))]
+       [table (if (equal? build-stamp "")
+                  table
+                  (hash-set table 'build-stamp build-stamp))])
   (unless (equal? table orig)
     (make-directory* (path-only dest-config-file))
     (call-with-output-file dest-config-file
