@@ -48,6 +48,18 @@
                  @(apply ~a (for/list ([catalog (in-list catalogs)])
                               @~a{@"\n"  @|catalog|}))
                  @|is| consulted, first.@"\n"}))@;
+      @(let* ([name (hash-ref config '#:install-name "")])
+         (if (or (equal? name "")
+                 (equal? name (version)))
+             ""
+             @~a{@"\n"The distribution has been configured so that the installation
+                 name is
+                   @name
+                 Multiple installations with this name share `user'-scoped packages,
+                 which makes it easier to upgrade from such an installation to this one.
+                 To avoid sharing (which is better for keeping multiple installations
+                 active) use `raco pkg config --set name' to choose a different name
+                 for this installation.@"\n"}))@;
      
       Visit
          http://racket-lang.org/ 

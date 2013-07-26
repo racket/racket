@@ -120,6 +120,7 @@
     [(#:dist-suffix) (simple-string? val)]
     [(#:dist-catalogs) (and (list? val) (andmap string? val))]
     [(#:dist-base-url) (string? val)]
+    [(#:install-name) (string? val)]
     [(#:max-vm) (real? val)]
     [(#:server) (simple-string? val)]
     [(#:host) (simple-string? val)]

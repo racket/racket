@@ -5,11 +5,15 @@
          (only-in "config.rkt" extract-options)
          "url-options.rkt")
 
-(define-values (dest-config-file config-file config-mode default-doc-search default-catalogs)
+(define-values (dest-config-file config-file config-mode 
+                                 install-name 
+                                 default-doc-search default-catalogs)
   (command-line
    #:args
-   (dest-config-file config-file config-mode doc-search . catalog)
-   (values dest-config-file config-file config-mode doc-search catalog)))
+   (dest-config-file config-file config-mode install-name doc-search . catalog)
+   (values dest-config-file config-file config-mode 
+           install-name 
+           doc-search catalog)))
 
 (define config (if (equal? config-file "")
                    (hash)
@@ -35,7 +39,10 @@
                             (for/list ([c (in-list catalogs)])
                               (if (equal? c "")
                                   #f
-                                  c))))])
+                                  c))))]
+       [table (if (equal? install-name "")
+                  table
+                  (hash-set table 'installation-name install-name))])
   (unless (equal? table orig)
     (make-directory* (path-only dest-config-file))
     (call-with-output-file dest-config-file

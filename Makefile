@@ -143,6 +143,11 @@ DIST_DESC =
 # installers, where "" is replaced by the default configuration:
 DIST_CATALOGS_q = ""
 
+# "Name" of the installation used for `user' package scope by default
+# in an installation from an installer, where an empty value leaves
+# the default as the version number:
+INSTALL_NAME =
+
 # A README file to download from the server for the client:
 README = README.txt
 
@@ -267,7 +272,7 @@ fresh-user:
 	rm -rf build/user
 
 set-config:
-	$(RACKET) -l distro-build/set-config racket/etc/config.rktd $(CONFIG_MODE_q) "$(DOC_SEARCH)" ""
+	$(RACKET) -l distro-build/set-config racket/etc/config.rktd $(CONFIG_MODE_q) "$(DOC_SEARCH)" "" ""
 
 # Install packages from the source copies in this directory. The
 # packages are installed in user scope, but we set the add-on
@@ -337,18 +342,20 @@ client:
 
 COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" \
 	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) \
-            PKG_SOURCE_MODE=$(PKG_SOURCE_MODE) \
+            PKG_SOURCE_MODE=$(PKG_SOURCE_MODE) INSTALL_NAME="$(INSTALL_NAME)"\
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
             DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) \
             DIST_DESC="$(DIST_DESC)" README="$(README)" \
             JOB_OPTIONS="$(JOB_OPTIONS)"
+
+SET_BUNDLE_CONFIG_q = $(BUNDLE_CONFIG) "" "" "$(INSTALL_NAME)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 
 win32-client:
 	IF EXIST build\user cmd /c rmdir /S /Q build\user
 	$(MAKE) win32-core $(COPY_ARGS)
 	$(MAKE) win32-distro-build-from-server $(COPY_ARGS)
 	$(MAKE) win32-bundle-from-server $(COPY_ARGS)
-	$(WIN32_RACKET) -l distro-build/set-config $(BUNDLE_CONFIG) "" "" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
+	$(WIN32_RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
 	$(MAKE) win32-installer-from-bundle $(COPY_ARGS)
 
 # Install the "distro-build" package from the server into
@@ -369,7 +376,7 @@ bundle-from-server:
 	$(RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
 
 bundle-config:
-	$(RACKET) -l distro-build/set-config $(BUNDLE_CONFIG) "" "" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
+	$(RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
 
 UPLOAD_q = --readme http://$(SERVER):9440/$(README) --upload http://$(SERVER):9440/ --desc "$(DIST_DESC)"
 DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)"

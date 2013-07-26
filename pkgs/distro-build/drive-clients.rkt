@@ -21,6 +21,8 @@
 (define default-release? #f)
 (define default-clean? #f)
 
+(define snapshot-install-name "snapshot")
+
 (define-values (config-file config-mode
                             default-server default-pkgs default-doc-search
                             default-dist-name default-dist-base default-dist-dir)
@@ -252,6 +254,9 @@
   (define source? (get-opt c '#:source? #f))
   (define source-pkgs? (get-opt c '#:source-pkgs? source?))
   (define source-runtime? (get-opt c '#:source-runtime? source?))
+  (define install-name (get-opt c '#:install-name (if release? 
+                                                      "" 
+                                                      snapshot-install-name)))
   (~a " SERVER=" server
       " PKGS=" (q pkgs)
       " DOC_SEARCH=" (q doc-search)
@@ -261,6 +266,7 @@
       " DIST_DIR=" dist-dir
       " DIST_SUFFIX=" (q dist-suffix)
       " DIST_CATALOGS_q=" (qq dist-catalogs kind)
+      " INSTALL_NAME=" (q install-name)
       " RELEASE_MODE=" (if release? "--release" (q ""))
       " SOURCE_MODE=" (if source-runtime? "--source" (q ""))
       " PKG_SOURCE_MODE=" (if source-pkgs?
@@ -334,7 +340,10 @@
                            rdme
                            (rdme (add-defaults c
                                                '#:release? default-release?
-                                               '#:pkgs (string-split default-pkgs))))))
+                                               '#:pkgs (string-split default-pkgs)
+                                               '#:install-name (if (get-opt c '#:release? default-release?)
+                                                                   ""
+                                                                   snapshot-install-name))))))
   (make-directory* (build-path "build" "readmes"))
   (define readme (make-temporary-file
                   "README-~a"

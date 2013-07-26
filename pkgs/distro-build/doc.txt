@@ -141,6 +141,11 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
     present) extended with "doc/local-redirect/index.html", or the
     `DOC_SEARCH' makefile variable
 
+  #:install-name <string> --- string used as the name of the
+    installation for package operations in the `user' package scope,
+    where "" keeps the name as the Racket version; the default is
+    "snapshot" if the value of `#:release?' is false, "" otherwise.
+
   #:dist-name <string> --- the distribution name; defaults to the
     `DIST_NAME' makefile variable
 
