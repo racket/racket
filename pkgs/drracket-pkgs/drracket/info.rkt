@@ -34,7 +34,8 @@
 	       "net-lib"
                "srfi-lib"
                "srfi-doc"
-               "unstable"))
+               "unstable"
+               "gui-pkg-manager-lib"))
 (define build-deps '("compatibility-doc"
                      "draw-doc"
                      "errortrace-doc"

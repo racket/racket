@@ -11,6 +11,7 @@
                "main-distribution-test"
                "distro-build"
                "honu"
+               "gui-pkg-manager"
                
                ;; Actual dependencies:
                "eli-tester"

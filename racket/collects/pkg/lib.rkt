@@ -1656,13 +1656,16 @@
            (printf "  ~a from ~a\n" n (pkg-desc-source d))]))]))
   (if (null? to-install)
       'skip
-      (pkg-install to-install
-                   #:force? force?
-                   #:ignore-checksums? ignore-checksums?
-                   #:skip-installed? #t
-                   #:dep-behavior (or dep-behavior 'search-auto)
-                   #:quiet? quiet? 
-                   #:strip strip-mode)))
+      (begin0
+       (pkg-install to-install
+                    #:force? force?
+                    #:ignore-checksums? ignore-checksums?
+                    #:skip-installed? #t
+                    #:dep-behavior (or dep-behavior 'search-auto)
+                    #:quiet? quiet? 
+                    #:strip strip-mode)
+       (unless quiet?
+         (printf "Packages migrated\n")))))
 
 (define (pkg-config config:set key+vals)
   (cond

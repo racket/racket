@@ -6,6 +6,7 @@
          "by-source.rkt"
          "by-list.rkt"
          "by-installed.rkt"
+         "by-migrate.rkt"
          mrlib/terminal
          string-constants)
 
@@ -16,7 +17,7 @@
         (#:wrap-terminal-action 
          (-> (-> any) any) 
          #:initial-tab 
-         (or/c 'by-source 'from-list 'installed))
+         (or/c 'by-source 'from-list 'installed 'migrate))
         (is-a?/c top-level-window<%>))]
   [make-pkg-installer
    (->* ()
@@ -117,7 +118,8 @@
          [parent (send frame get-area-container)]
          [choices (list (string-constant install-pkg-install-by-source)
                         (string-constant install-pkg-install-from-list)
-                        (string-constant install-pkg-install-installed))]
+                        (string-constant install-pkg-install-installed)
+                        (string-constant install-pkg-migrate-from))]
          [callback (lambda (t e)
                      (update-sel-panel-active))]))
 
@@ -147,12 +149,16 @@
   (new by-installed-panel%
        [parent sel-panel]
        [in-terminal in-terminal-panel])
+  (new by-migrate-panel%
+       [parent sel-panel]
+       [in-terminal in-terminal-panel])
   
   (send sel-tab set-selection
         (case initial-tab
           [(by-source) 0]
           [(from-list) 1]
-          [(installed) 2]))
+          [(installed) 2]
+          [(migrate) 3]))
   (update-sel-panel-active)
   
   (send frame show #t)

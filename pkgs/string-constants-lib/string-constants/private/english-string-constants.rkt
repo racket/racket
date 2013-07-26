@@ -1785,6 +1785,7 @@ please adhere to these guidelines:
   (install-pkg-install-by-source "Install by Source") ; tab label
   (install-pkg-install-from-list "Install from List") ; tab label
   (install-pkg-install-installed "Installed")         ; tab label
+  (install-pkg-migrate-from "Migrate From")           ; tab label
   (install-pkg-menu-item... "Install Package...")
   (install-pkg-dialog-title "Install Package")
   (install-pkg-source-label "Package Source")
@@ -1796,7 +1797,7 @@ please adhere to these guidelines:
   (install-pkg-file-url "URL File")
   (install-pkg-github "Github")
   (install-pkg-name "Name (consulting resolver)")
-  (install-pkg-inferred-as "Type inferred to be ~a")
+  (install-pkg-inferred-as "Type inferred to be ~a") ; ~a gets install-pkg-{file,dir,...}
   (install-pkg-force? "Overwrite Existing?")
   (install-pkg-command-line "Equivalent command line invocation:")
   (install-pkg-error-installing-title "Error Installing Package")
@@ -1804,6 +1805,7 @@ please adhere to these guidelines:
   (install-pkg-install "Install")
   (install-pkg-update "Update")
   (install-pkg-remove "Remove")
+  (install-pkg-do-not-remove "Don't Remove")
   (install-pkg-action-inferred-to-be-update "Action inferred to be Update")
   (install-pkg-action-inferred-to-be-install "Action inferred to be Install")
   (install-pkg-default "Default")
@@ -1827,8 +1829,14 @@ please adhere to these guidelines:
   (install-pkg-abort-install "Abort Install")
   (install-pkg-abort-update "Abort Update")
   (install-pkg-abort-remove "Abort Remove")
+  (install-pkg-abort-migrate "Abort Migrate")
   (install-pkg-abort-generic-action "Abort Action")
   (install-pkg-show-all-options "Show All Options")
-  (pkg-manager-menu-item "Package Manager...")
+  (install-pkg-migrate-available-installations "Available Installations")
+  (install-pkg-inferred-as "Type inferred to be ~a") ; ~a gets install-pkg-{file,dir,...}
+  (pkg-manager-menu-item "Package Manager...")  
+  ;; where ~a gets an installation name:
+  (install-pkg-packages-for "Packages for ~a")
+  (install-pkg-really-remove-installation "Are you sure you want to remove all installed packages and information for ~a?")
   
   )
