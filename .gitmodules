@@ -1,0 +1,3 @@
+[submodule "native-pkgs"]
+	path = native-pkgs
+	url = https://github.com/plt/libs.git

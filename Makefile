@@ -202,12 +202,13 @@ BUNDLE_CONFIG = bundle/racket/etc/config.rktd
 # ------------------------------------------------------------
 # Linking all packages (development mode; not an installer build)
 
-LINK_ALL = -U -G build/config racket/src/link-all.rkt ++dir pkgs ++dir build/native-pkgs
+LINK_ALL = -U -G build/config racket/src/link-all.rkt ++dir pkgs ++dir native-pkgs
 
 pkg-links:
 	$(PLAIN_RACKET) $(LINK_ALL) $(LINK_MODE) $(PKGS) $(REQUIRED_PKGS)
 
 win32-pkg-links:
+	IF NOT EXIST native-pkgs\racket-win32-i386 $(MAKE) complain-no-submodule
 	$(MAKE) pkg-links PLAIN_RACKET="$(WIN32_PLAIN_RACKET)" LINK_MODE="$(LINK_MODE)" PKGS="$(PKGS)"
 
 # ------------------------------------------------------------
@@ -250,9 +251,12 @@ local-catalog:
 
 # Get pre-built native libraries from the repo:
 native-from-git:
-	mkdir -p build
-	if [ ! -d build/native-pkgs ]; then cd build; git clone git://github.com/plt/libs.git native-pkgs ; fi
-	cd build/native-pkgs; if [ -d ".git" ]; then git pull ; fi
+	if [ ! -d native-pkgs/racket-win32-i386 ]; then $(MAKE) complain-no-submodule ; fi
+complain-no-submodule:
+	: Native packages are not in the expected subdirectory. Probably,
+	: you need to use 'git submodule init' and 'git submodule update' to get
+	: the submodule for native packages.
+	exit 1
 
 # Create packages and a catalog for all native libraries:
 native-catalog:

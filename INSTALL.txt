@@ -18,14 +18,17 @@ The "pkgs" directory contains the packages that are included in a
 Racket distribution, plus some additional packages (such as tests).
 
 On Unix and Mac OS X, you can build Racket plus the included packages
-with `make in-place' (or just `make'). The resulting build is in the
-"racket" subdirectory. For now, you need to have `git' installed for
-downloading native-library packages. If you want more control over the
-process, see below.
+with `make in-place' (or just `make'). On Windows, you can use `nmake
+win32-in-place', as long as you're using Microsoft Visual Studio 9.0
+(2008). The resulting build is in the "racket" subdirectory. If you
+want more control over the process, see below.
 
-On Windows, you must first clone "git://github.com/plt/libs.git"
-as "build/native-pkgs". Then, you can use `nmake win32-in-place',
-as long as you're using Microsoft Visual Studio 9.0 (2008).
+On Mac OS X and Windows, you'll need native-library packages in the
+"native-pkgs" directory. In the git repostory, "native-pkgs" is a git
+submodule, so you'll need
+   git submodule init
+   git submodule update
+to get it set up.
 
 To install a subset of the packages in "pkgs", supply `PKGS' value to
 `make'. For example,
@@ -123,16 +126,9 @@ scope. Packages are linked with the `--no-setup' flag (effectively),
 which means that a `raco setup' is needed after installing links.
 
 Native-library packages provide (on Mac OS X and Windows) pre-built
-native libraries, such as Cairo. Currently, the libraries must be
-downloaded from GitHub. On a non-Windows platform, the
-`native-from-git' makefile target clones/updates the native-library
-repository from GitHub; otherwise, clone
-
-   git://github.com/plt/libs.git
-
-as
- 
-   build/native-pkgs
+native libraries, such as Cairo. They are available through a git
+submodule "native-pkgs", so use `git submodule init' and `git
+submodule update' as needed.
 
 By default, the `PKGS' value is remembered by `pkg-links', but a
 previously remembered value is not used. Supply `LINK_MODE=--restore'
@@ -160,10 +156,8 @@ looks like to install individual packages as if provided by a server
 (i.e., not through development-mode links).
 
 Use `make local-catalog' to create a package catalog that provides
-mappings for all of the packages in "pkgs" as well as packages
-pre-built native libraries downloaded from GitHub. (On Unix, use the
-`local-source-catalog' makefile target to skip native libraries, since
-none are needed.)
+mappings for all of the packages in "pkgs" as well as packages for
+pre-built native libraries.
 
 To install a package, try
 
@@ -374,10 +368,9 @@ In more detail:
 
      The `SRC_CATALOG' variable determines the catalog that is used to
      get package sources and native-library packages, but a value of
-     "local" triggers a bootstrap mode where native libraries are
-     downloaded directly from GitHub and all other packages are
-     represented by directories in the makefile's directory. For now,
-     "local" is the default.
+     "local" triggers a bootstrap mode where packages are represented
+     by directories in the makefile's directory. For now, "local" is
+     the default.
 
      The server provides README files from the "build/readmes"
      directory. If "README.txt" does not exist when the sever is
