@@ -50,7 +50,7 @@
    $ "racket -e '(require pkg-b)'" =exit> 43
    $ "racket -e '(require pkg-a)'" =exit> 0
    ;; remove auto doesn't do anything because everything is needed
-   $ "raco pkg remove --auto"
+   $ "raco pkg remove -u --auto"
    $ "raco pkg show -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9]+    \\(catalog pkg-a\\)\npkg-b +[a-f0-9]+ +\\(catalog pkg-b\\)\n"
    $ "racket -e '(require pkg-b)'" =exit> 43
    $ "racket -e '(require pkg-a)'" =exit> 0

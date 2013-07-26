@@ -395,7 +395,7 @@
 (define (read-pkg-db)
   (if (current-no-pkg-db)
       #hash()
-      (read-pkgs-db (current-pkg-scope))))
+      (read-pkgs-db (current-pkg-scope) (current-pkg-scope-version))))
 
 ;; read all packages in this scope or wider
 (define (merge-pkg-dbs [scope (current-pkg-scope)])
@@ -410,7 +410,7 @@
                      [(k v) (read-pkgs-db dir)])
            (values k v))]
         [(user)
-         (define db (read-pkgs-db 'user))
+         (define db (read-pkgs-db 'user (current-pkg-scope-version)))
          (for/fold ([ht (merge-next-pkg-dbs 'installation)]) ([(k v) (in-hash db)])
            (hash-set ht k v))])))    
 
@@ -1617,6 +1617,53 @@
   (sort (hash-keys (installed-pkg-table #:scope given-scope))
         string-ci<=?))
   
+(define (pkg-migrate from-version
+                     #:force? [force? #f]
+                     #:quiet? [quiet? #f]
+                     #:ignore-checksums? [ignore-checksums? #f]
+                     #:dep-behavior [dep-behavior #f]
+                     #:strip [strip-mode #f])
+  (define from-db
+    (parameterize ([current-pkg-scope-version from-version])
+      (installed-pkg-table #:scope 'user)))
+  (define to-install
+    (sort
+     (for/list ([(name info) (in-hash from-db)]
+                #:unless (pkg-info-auto? info))
+       (define-values (source type)
+         (match (pkg-info-orig-pkg info)
+           [(list 'catalog name) (values name 'name)]
+           [(list 'url url) (values url #f)]
+           [(list 'link path) (values path 'link)]
+           [(list 'static-link path) (values path 'static-link)]))
+       (pkg-desc source type name #f))
+     string<?
+     #:key pkg-desc-name))
+  (unless quiet?
+    (cond
+     [(null? to-install)
+      (printf "No packages from ~s to install\n" from-version)]
+     [else
+      (printf "Packages to install:\n")
+      (for ([d (in-list to-install)])
+        (define t (pkg-desc-type d))
+        (define n (pkg-desc-name d))
+        (case t
+          [(name) (printf "  ~a\n" n)]
+          [(link static-link)
+           (printf "  ~a ~aed from ~a\n" n t (pkg-desc-source d))]
+          [else
+           (printf "  ~a from ~a\n" n (pkg-desc-source d))]))]))
+  (if (null? to-install)
+      'skip
+      (pkg-install to-install
+                   #:force? force?
+                   #:ignore-checksums? ignore-checksums?
+                   #:skip-installed? #t
+                   #:dep-behavior (or dep-behavior 'search-auto)
+                   #:quiet? quiet? 
+                   #:strip strip-mode)))
+
 (define (pkg-config config:set key+vals)
   (cond
     [config:set
@@ -2309,6 +2356,14 @@
                         #:force? boolean?
                         #:ignore-checksums? boolean?
                         #:skip-installed? boolean?
+                        #:quiet? boolean?
+                        #:strip (or/c #f 'source 'binary))
+        (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
+  [pkg-migrate
+   (->* (string?)
+        (#:dep-behavior dep-behavior/c
+                        #:force? boolean?
+                        #:ignore-checksums? boolean?
                         #:quiet? boolean?
                         #:strip (or/c #f 'source 'binary))
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]

@@ -147,7 +147,7 @@ needed, and a list of module paths provided by the package.}
 @defproc[(pkg-config [set? boolean?] [keys/vals list?])
          void?]{
 
-Implements the @racket[config] command.
+Implements @racket[pkg-config-command].
 
 The package lock must be held (allowing writes if @racket[set?] is true); see
 @racket[with-pkg-lock].}
@@ -158,7 +158,7 @@ The package lock must be held (allowing writes if @racket[set?] is true); see
                      [#:quiet? quiet? boolean? #f])
         void?]{
 
-Implements the @racket[create] command.
+Implements @racket[pkg-create-command].
 
 Unless @racket[quiet?] is true, information about the output is repotred to the current output port.}
 
@@ -176,7 +176,7 @@ Unless @racket[quiet?] is true, information about the output is repotred to the 
                (listof (or/c path-string?
                              (non-empty-listof path-string?))))]{
 
-Implements the @racket[install] command. The result indicates which
+Implements @racket[pkg-install-command]. The result indicates which
 collections should be setup via @exec{raco setup}: @racket['skip]
 means that no setup is needed, @racket[#f] means all, and a list means
 only the indicated collections.
@@ -202,8 +202,8 @@ The package lock must be held; see @racket[with-pkg-lock].}
               (listof (or/c path-string?
                             (non-empty-listof path-string?))))]{
 
-Implements the @racket[update] command. The result is the same as for
-@racket[install-pkgs].
+Implements @racket[pkg-update-command]. The result is the same as for
+@racket[pkg-install].
 
 The package lock must be held; see @racket[with-pkg-lock].}
 
@@ -217,8 +217,8 @@ The package lock must be held; see @racket[with-pkg-lock].}
                (listof (or/c path-string? 
                              (non-empty-listof path-string?))))]{
 
-Implements the @racket[remove] command. The result is the same as for
-@racket[install-pkgs], indicating collects that should be setup
+Implements @racket[pkg-remove-command]. The result is the same as for
+@racket[pkg-install], indicating collects that should be setup
 via @exec{raco setup}.
 
 The package lock must be held; see @racket[with-pkg-lock].}
@@ -228,12 +228,29 @@ The package lock must be held; see @racket[with-pkg-lock].}
                    [#:directory show-dir? boolean? #f])
          void?]{
 
-Implements the @racket[show] command for a single package scope,
+Implements @racket[pkg-show-command] for a single package scope,
 printing to the current output port. See also
 @racket[installed-pkg-names] and @racket[installed-pkg-table].
 
 The package lock must be held to allow reads; see
 @racket[with-pkg-lock/read-only].}
+
+
+@defproc[(pkg-migrate      [from-version string?]
+                           [#:dep-behavior dep-behavior
+                                           (or/c #f 'fail 'force 'search-ask 'search-auto)
+                                           #f]
+                           [#:force? force? boolean? #f]
+                           [#:ignore-checksums? ignore-checksums? boolean? #f]
+                           [#:quiet? boolean? quiet? #f]
+                           [#:strip strip (or/c #f 'source 'binary) #f])
+         (or/c 'skip
+               #f
+               (listof (or/c path-string?
+                             (non-empty-listof path-string?))))]{
+
+Implements @racket[pkg-migrate-command].  The result is the same as for
+@racket[pkg-install].}
 
 
 @defproc[(pkg-catalog-show [names (listof string?)]
@@ -242,7 +259,7 @@ The package lock must be held to allow reads; see
                            [#:modules? modules? boolean? #f])
          void?]{
 
-Implements the @racket[catalog-show] command. If @racket[all?] is true,
+Implements @racket[catalog-show-command]. If @racket[all?] is true,
 then @racket[names] should be empty.}
 
 
@@ -254,7 +271,7 @@ then @racket[names] should be empty.}
                            [#:override? override? boolean? #f])
          void?]{
 
-Implements the @racket[catalog-copy] command.}
+Implements @racket[pkg-catalog-copy-command].}
 
 
 @defproc[(pkg-catalog-update-local [#:catalog-file catalog-file path-string? (current-pkg-catalog-file)]

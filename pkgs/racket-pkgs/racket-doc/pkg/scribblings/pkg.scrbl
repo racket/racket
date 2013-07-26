@@ -300,8 +300,6 @@ sub-sub-commands:
 
   @item{@DFlag{ignore-checksums} --- Ignores errors verifying package @tech{checksums} (unsafe).}
 
-  @item{@DFlag{skip-installed} --- Ignore a @nonterm{pkg-source} if a corresponding package is already installed.}
-
   @item{@DFlag{link} --- Implies @exec{--type dir} (and overrides any specified type),
         and links the existing directory as an installed package. The package is identified
         as a @tech{single-collection package} or a @tech{multi-collection package} at the
@@ -414,6 +412,31 @@ removing any of the @nonterm{pkg}s.
  @item{@DFlag{scope-dir} @nonterm{dir} --- Shows only packages installed in @nonterm{dir}.}
  @item{@DFlag{version} @nonterm{vers} or @Flag{v} @nonterm{vers} --- Show only user-specific packages for 
        the installation name/version @nonterm{vers}.}
+ ]
+}
+
+@item{@command/toc{migrate} @nonterm{option} ... @nonterm{from-version}
+ --- Installs packages that were previously installed in @exec{user}
+     @tech{package scope} for @nonterm{from-version}, where
+     @nonterm{from-version} is an installation name/version.
+
+ The @exec{migrate} sub-command accepts 
+ the following @nonterm{option}s:
+ @itemlist[
+
+ @item{@DFlag{deps} @nonterm{behavior} --- Same as for @command-ref{install}, except that @exec{search-auto} is
+       the default.}
+  @item{@DFlag{force} --- Same as for @command-ref{install}.}
+  @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
+  @item{@DFlag{binary} --- Same as for @command-ref{install}.}
+  @item{@DFlag{source} --- Same as for @command-ref{install}.}
+ @item{@DFlag{scope} @nonterm{scope} --- Same as for @command-ref{install}.}
+ @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
+ @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
+ @item{@DFlag{scope-dir} @nonterm{dir} --- Select @nonterm{dir} as the @tech{package scope}.}
+ @item{@DFlag{catalog} @nonterm{catalog} --- Same as for @command-ref{install}.}
+  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
+  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  ]
 }
 
@@ -536,6 +559,7 @@ to the command sub-sub-commands.
   @defthing[pkg-update-command procedure?]             
   @defthing[pkg-remove-command procedure?]             
   @defthing[pkg-show-command procedure?]             
+  @defthing[pkg-migrate-command procedure?]             
   @defthing[pkg-config-command procedure?]
   @defthing[pkg-create-command procedure?]
   @defthing[pkg-catalog-show-command procedure?]

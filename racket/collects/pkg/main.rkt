@@ -232,6 +232,51 @@
          (pkg-show (if only-mode "" " ")
                    #:auto? all
                    #:directory? dir)))))]
+
+ [migrate
+  "Install packages installed for other version/name"
+  #:once-each
+  [(#:sym mode [fail force search-ask search-auto] #f) deps ()
+   ("Specify the behavior for dependencies, with <mode> as one of"
+    "  fail: cancels the installation if dependencies are unmet"
+    "  force: installs the package despite missing dependencies"
+    "  search-ask: looks for the dependencies on your package naming services"
+    "              and asks if you would like it installed"
+    "  search-auto: (the default) like 'search-ask' but does not ask for"
+    "               permission to install")]
+  [#:bool force () "Ignores conflicts"]
+  [#:bool ignore-checksums () "Ignores checksums"]
+  #:once-any
+  [#:bool source () ("Strip built elements of the package before installing")]
+  [#:bool binary () ("Strip source elements of the package before installing")]
+  #:once-any
+  [(#:sym scope [installation user] #f) scope ()
+   ("Select package <scope>, one of"
+    "  installation: Install for all users of the Racket installation"
+    "  user: Install as user-specific for an installation version/name")]
+  [#:bool installation ("-i") "Shorthand for `--scope installation'"]
+  [#:bool user ("-u") "Shorthand for `--scope user'"]
+  [(#:str dir #f) scope-dir () "Install for package scope <dir>"]
+  #:once-each
+  [(#:str catalog #f) catalog () "Use <catalog> instead of configured catalogs"]
+  [#:bool no-setup () ("Don't run `raco setup' after changing packages (usually"
+                       "not a good idea)")]
+  [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"]
+  #:args (from-version)
+  (call-with-package-scope
+   'migrate
+   scope scope-dir installation user
+   (lambda ()
+     (define setup-collects
+       (with-pkg-lock
+        (parameterize ([current-pkg-catalogs (and catalog
+                                                  (list (catalog->url catalog)))])
+          (pkg-migrate from-version
+                       #:dep-behavior deps
+                       #:force? force
+                       #:ignore-checksums? ignore-checksums
+                       #:strip (or (and source 'source) (and binary 'binary))))))
+     (setup no-setup setup-collects jobs)))]
  [create
   "Bundle a package from a directory or installed package"
   #:once-any

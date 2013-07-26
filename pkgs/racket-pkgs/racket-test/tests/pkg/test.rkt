@@ -51,6 +51,7 @@
  ;; "main-server"
  "update-deps"
  "update-auto"
+ "migrate"
  "versions"
  "platform"
  "raco"

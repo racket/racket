@@ -23,7 +23,7 @@
      "(or/c 'user 'installation (and/c path? complete-path?))"
      scope)))
 
-(define (get-pkgs-dir scope [user-version (version)])
+(define (get-pkgs-dir scope [user-version (get-installation-name)])
   (check-scope 'get-pkgs-dir scope)
   (unless (string? user-version)
     (raise-argument-error 'get-pkgs-dir "string?" user-version))
@@ -52,10 +52,10 @@
               ht))))
         (hash))))
 
-(define (read-pkgs-db scope)
+(define (read-pkgs-db scope [user-version (get-installation-name)])
   (check-scope 'read-pkgs-db scope)
   (let ([db (read-pkg-file-hash 
-             (build-path (get-pkgs-dir scope) "pkgs.rktd"))])
+             (build-path (get-pkgs-dir scope user-version) "pkgs.rktd"))])
     ;; compatibility: map 'pnr to 'catalog:
     (for/hash ([(k v) (in-hash db)])
       (values k
