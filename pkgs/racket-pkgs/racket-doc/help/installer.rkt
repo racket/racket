@@ -19,7 +19,7 @@
                 make-mred-launcher
                 mred-program-launcher-path
                 (build-aux-from-path
-                 (build-path (collection-path "help") "help")))
+                 (path-replace-suffix (collection-file-path "help.ico" "help") #"")))
         (values available-mzscheme-variants
                 make-mzscheme-launcher
                 mzscheme-program-launcher-path
