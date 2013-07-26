@@ -12,8 +12,11 @@
          racket/set
          racket/class
          racket/list
+         racket/contract
          syntax/boundmap
          scribble/manual-struct)
+
+(define-logger check-syntax)
 
 (provide make-traversal
          current-max-to-send-at-once)
@@ -34,8 +37,9 @@
              [tl-phase-to-tops (make-hash)]
              [tl-binding-inits (make-id-set)]
              [tl-templrefs (make-id-set)]
-             [tl-phase-to-requires (make-hash)]
              [tl-module-lang-requires (make-hash)]
+             [tl-phase-to-requires (make-hash)]
+             [tl-sub-identifier-binding-directives (make-hash)]
              [expanded-expression
               (λ (sexp [ignored void])
                 (parameterize ([current-directory (or user-directory (current-directory))]
@@ -56,7 +60,8 @@
                              [requires (make-hash)]
                              [require-for-syntaxes (make-hash)]
                              [require-for-templates (make-hash)]
-                             [require-for-labels (make-hash)])
+                             [require-for-labels (make-hash)]
+                             [sub-identifier-binding-directives (make-hash)])
                           (annotate-basic sexp
                                           user-namespace user-directory
                                           phase-to-binders
@@ -66,7 +71,8 @@
                                           binding-inits
                                           templrefs
                                           module-lang-requires
-                                          phase-to-requires) 
+                                          phase-to-requires
+                                          sub-identifier-binding-directives)
                          (annotate-variables user-namespace
                                              user-directory
                                              phase-to-binders
@@ -75,7 +81,8 @@
                                              phase-to-tops
                                              templrefs
                                              module-lang-requires
-                                             phase-to-requires)
+                                             phase-to-requires
+                                             sub-identifier-binding-directives)
                          (annotate-contracts sexp 
                                              (hash-ref phase-to-binders 0 (λ () (make-id-set)))
                                              binding-inits))]
@@ -89,7 +96,8 @@
                                        tl-binding-inits
                                        tl-templrefs
                                        tl-module-lang-requires
-                                       tl-phase-to-requires)]))))]
+                                       tl-phase-to-requires
+                                       tl-sub-identifier-binding-directives)]))))]
              [expansion-completed
               (λ ()
                 (parameterize ([current-directory (or user-directory (current-directory))]
@@ -102,7 +110,8 @@
                                       tl-phase-to-tops
                                       tl-templrefs
                                       tl-module-lang-requires
-                                      tl-phase-to-requires)))])
+                                      tl-phase-to-requires
+                                      tl-sub-identifier-binding-directives)))])
         (values expanded-expression expansion-completed)))
     
     
@@ -124,7 +133,8 @@
                             binding-inits
                             templrefs
                             module-lang-requires
-                            phase-to-requires)
+                            phase-to-requires
+                            sub-identifier-binding-directives)
       
       (let level+tail+mod-loop ([stx-obj stx-obj]
                                 [level 0]
@@ -178,7 +188,11 @@
                   (λ (stx)
                     (add-origins stx varrefs level-of-enclosing-module)
                     (add-disappeared-bindings stx binders varrefs level-of-enclosing-module)
-                    (add-disappeared-uses stx varrefs level-of-enclosing-module))])
+                    (add-disappeared-uses stx varrefs level-of-enclosing-module)
+                    (add-sub-range-binders stx 
+                                           sub-identifier-binding-directives
+                                           level
+                                           level-of-enclosing-module))])
             (collect-general-info stx-obj)
             
             (define (list-loop/tail-last bodies)
@@ -417,7 +431,37 @@
     
     (define (hash-cons! ht k v)
       (hash-set! ht k (cons v (hash-ref ht k '()))))
-    
+
+    (define sub-range-binder-prop?
+      (vector/c #:flat? #t
+                syntax? exact-nonnegative-integer? exact-nonnegative-integer?
+                syntax? exact-nonnegative-integer? exact-nonnegative-integer?))
+    (define (add-sub-range-binders stx 
+                                   sub-identifier-binding-directives 
+                                   level
+                                   level-of-enclosing-module)
+      (let loop ([prop (syntax-property stx 'sub-range-binders)])
+        (cond
+          [(pair? prop)
+           (loop (car prop))
+           (loop (cdr prop))]
+          [(sub-range-binder-prop? prop) 
+           (define new-entry
+             (vector (syntax-shift-phase-level (vector-ref prop 0) level-of-enclosing-module)
+                     (vector-ref prop 1)
+                     (vector-ref prop 2)
+                     (syntax-shift-phase-level (vector-ref prop 3) level-of-enclosing-module)
+                     (vector-ref prop 4)
+                     (vector-ref prop 5)))
+           (hash-set! sub-identifier-binding-directives
+                      level
+                      (cons new-entry
+                            (hash-ref sub-identifier-binding-directives level '())))]
+          [(vector? prop)
+           (log-check-syntax-debug
+            "found a vector in a 'sub-range-binders property that is ill-formed ~s"
+            prop)])))
+
     ;; add-disappeared-bindings : syntax id-set integer -> void
     (define (add-disappeared-bindings stx binders disappaeared-uses level-of-enclosing-module)
       (let ([prop (syntax-property stx 'disappeared-binding)])
@@ -445,6 +489,7 @@
     
     ;; annotate-variables : namespace directory string id-set[four of them] 
     ;;                      (listof syntax) (listof syntax) 
+    ;;                      hash[phase -o> sub-identifier-binding-directive]
     ;;                   -> void
     ;; colors in and draws arrows for variables, according to their classifications
     ;; in the various id-sets
@@ -456,7 +501,8 @@
                                 phase-to-tops
                                 templrefs
                                 module-lang-requires
-                                phase-to-requires)
+                                phase-to-requires
+                                sub-identifier-binding-directives)
       
       (define unused-requires (make-hash))
       (define unused-require-for-syntaxes (make-hash))
@@ -534,7 +580,22 @@
         (define unused-hash (hash-ref unused/phases level))
         (color-unused require-hash unused-hash module-lang-requires))
       
-      (annotate-counts connections))
+      (annotate-counts connections)
+      
+      (for ([(phase-level directives) (in-hash sub-identifier-binding-directives)])
+        (for ([directive (in-list directives)])
+          (match-define (vector binding-id to-start to-span new-binding-id from-start from-span)
+            directive)
+          (define all-varrefs (lookup-phase-to-mapping phase-to-varrefs phase-level))
+          (define all-binders (lookup-phase-to-mapping phase-to-binders phase-level))
+          (define varrefs (get-ids all-varrefs binding-id))
+          (when varrefs
+            (for ([varref (in-list varrefs)])
+              (connect-syntaxes new-binding-id varref #t all-binders 
+                                (id-level phase-level new-binding-id)
+                                connections #f
+                                #:from-start from-start #:from-width from-span
+                                #:to-start to-start #:to-width to-span))))))
     
     ;; color-unused : hash-table[sexp -o> syntax] hash-table[sexp -o> #f] hash-table[syntax -o> #t]
     ;;             -> void
@@ -591,7 +652,7 @@
       (when binders
         (for ([x (in-list binders)])
           (connect-syntaxes x var actual? all-binders (id-level phase-level x) connections #f)))
-        
+      
       (when (and unused/phases phase-to-requires)
         (define req-path/pr (get-module-req-path var phase-level))
         (define source-req-path/pr (get-module-req-path var phase-level #:nominal? #f))
@@ -767,7 +828,11 @@
     
     ;; connect-syntaxes : syntax[original] syntax[original] boolean symbol connections -> void
     ;; adds an arrow from `from' to `to', unless they have the same source loc. 
-    (define (connect-syntaxes from to actual? all-binders level connections require-arrow?)
+    (define (connect-syntaxes from to actual? all-binders level connections require-arrow?
+                              #:from-start [from-start 0] 
+                              #:from-width [from-width (syntax-span from)]
+                              #:to-start [to-start 0] 
+                              #:to-width [to-width (syntax-span to)])
       (let ([from-source (find-source-editor from)] 
             [to-source (find-source-editor to)]
             [defs-text (current-annotations)])
@@ -777,10 +842,10 @@
                 [pos-to (syntax-position to)]
                 [span-to (syntax-span to)])
             (when (and pos-from span-from pos-to span-to)
-              (let* ([from-pos-left (- (syntax-position from) 1)]
-                     [from-pos-right (+ from-pos-left (syntax-span from))]
-                     [to-pos-left (- (syntax-position to) 1)]
-                     [to-pos-right (+ to-pos-left (syntax-span to))])
+              (let* ([from-pos-left (+ (syntax-position from) -1 from-start)]
+                     [from-pos-right (+ from-pos-left from-width)]
+                     [to-pos-left (+ (syntax-position to) -1 to-start)]
+                     [to-pos-right (+ to-pos-left to-width)])
                 (unless (= from-pos-left to-pos-left)
                   (define connections-start (list from-source from-pos-left from-pos-right))
                   (define connections-end (list to-source to-pos-left to-pos-right))

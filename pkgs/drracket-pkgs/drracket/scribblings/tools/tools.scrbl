@@ -931,16 +931,17 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
   The bitmap in the Check Syntax button on the DrRacket frame.
 }
 
-@subsection{Disappeared Uses and Bindings}
+@subsection{Syntax Properties that Check Syntax Looks For}
 
-@section-index["disappeared-use" "disappeared-binding"]
+@section-index["disappeared-use" "disappeared-binding" "sub-range-binders"]
 
 Check Syntax collects the values of the 
 @racket[syntax-property]s named 
-@racket['disappeared-use] and
-@racket['disappeared-binding] and uses them to add
+@racket['disappeared-use],
+@racket['disappeared-binding], and
+@racket['sub-range-binders], and uses them to add
 additional arrows to the program text. These properties are
-intended for use when a macro discards identifiers that,
+intended for use when a macro discards or manufactures identifiers that,
 from the programmers perspective, should be binding each other.
 
 For example, here is a macro that discards its arguments, but
@@ -960,7 +961,54 @@ are treated as a binding/bound pair by Check Syntax.
 
 See also @racket[current-recorded-disappeared-uses].
 
-Check Syntax only draws arrows between identifiers that are @racket[syntax-original?]
+The value of the @racket['sub-range-binders] property is expected
+to be a tree of @racket[cons] pairs (in any configuration) whose leaves
+are either ignored or are vectors of the shape
+@racketblock[(vector/c syntax? exact-nonnegative-integer? exact-nonnegative-integer?
+                       syntax? exact-nonnegative-integer? exact-nonnegative-integer?)].
+If the leaf is a vector, the first syntax object is expected to be an identifier whose
+bound occurrences should have arrows that point to the syntax object in the fourth
+position in the vector. The numbers indicate the starting point and the range inside
+the corresponding identifier to consider as the location of the end of the arrow.
+Here's an example:
+
+@codeblock{#lang racket/base
+           (require (for-syntax racket/base))
+           (define-syntax (define/hyphen stx)
+             (syntax-case stx ()
+               [(_ id1 id2 rhs-expr)
+                (let ()
+                  (define first-part (symbol->string (syntax-e #'id1)))
+                  (define second-part (symbol->string (syntax-e #'id2)))
+                  (define first-len (string-length first-part))
+                  (define second-len (string-length second-part))
+                  (define hyphenated-id 
+                    (datum->syntax
+                     #'id1
+                     (string->symbol (string-append first-part "-" second-part))))
+                  (syntax-property
+                   #`(define #,hyphenated-id rhs-expr)
+                   'sub-range-binders
+                   (list
+                    (vector (syntax-local-introduce hyphenated-id)
+                            0 first-len
+                            (syntax-local-introduce #'id1)
+                            0 first-len)
+                    (vector (syntax-local-introduce hyphenated-id)
+                            (+ first-len 1) second-len
+                            (syntax-local-introduce #'id2)
+                            0 second-len))))]))
+           
+           (define/hyphen big generator
+             11)
+           
+           (+ big-generator big-generator)}
+
+After putting this code in the DrRacket window, mouse over the words ``big'' and 
+``generator'' to see arrows pointing to the individual pieces of the identifier
+@racket[_big-generator].
+
+Finally, Check Syntax only draws arrows between identifiers that are @racket[syntax-original?]
 or that have the @racket[syntax-property] @racket['original-for-check-syntax]
 set to @racket[#t].
 
