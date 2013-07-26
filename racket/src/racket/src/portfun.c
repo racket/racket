@@ -2648,7 +2648,7 @@ Scheme_Object *do_get_output_string(const char *who, int is_byte,
         if (endpos < 0) 
           endpos = len+1;
       }
-      
+
       if (!(startpos <= len)) {
         scheme_out_of_range(who, "port", "starting ", argv[2], argv[0], 0, len);
         return NULL;
@@ -2657,8 +2657,13 @@ Scheme_Object *do_get_output_string(const char *who, int is_byte,
         scheme_out_of_range(who, "port", "ending ", argv[3], argv[0], startpos, len);
         return NULL;
       }
-    } else
+    } else {
+      if (!(startpos <= len)) {
+        scheme_out_of_range(who, "port", "starting ", argv[2], argv[0], 0, len);
+        return NULL;
+      }
       endpos = -1;
+    }
   } else {
     startpos = 0;
     endpos = -1;

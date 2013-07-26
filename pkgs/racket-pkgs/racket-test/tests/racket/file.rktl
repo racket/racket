@@ -211,6 +211,11 @@
   (test #"23" get-output-bytes os #t 1 3)
   (test #"" get-output-bytes os #f 0 #f))
 
+(err/rt-test (get-output-bytes (open-output-bytes) #t 1))
+(err/rt-test (get-output-bytes (open-output-bytes) #t 0 1))
+(err/rt-test (get-output-bytes (open-output-string) #t 1))
+(err/rt-test (get-output-bytes (open-output-string) #t 0 1))
+
 (define s (open-output-string))
 (err/rt-test (file-position 's 1))
 (err/rt-test (file-position s 'one))
