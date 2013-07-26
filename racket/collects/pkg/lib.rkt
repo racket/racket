@@ -489,6 +489,7 @@
        (list "https://pkg.racket-lang.org"
              "https://planet-compat.racket-lang.org")]
       ['default-scope "user"]
+      ['installation-name (version)]
       [_ #f]))
   (define c (read-pkg-file-hash (pkg-config-file)))
   (define v (hash-ref c k 'none))
@@ -1631,6 +1632,12 @@
                      key
                      val))
         (update-pkg-cfg! 'default-scope val)]
+       [(list (and key "name") val)
+        (unless (eq? 'installation (current-pkg-scope))
+          (pkg-error (~a "setting `name' makes sense only in `installation' scope\n"
+                         "  current package scope: ~a")
+                     (current-pkg-scope)))
+        (update-pkg-cfg! 'installation-name val)]
        [(list key)
         (pkg-error "unsupported config key\n  key: ~e" key)]
        [(list)
@@ -1644,6 +1651,8 @@
              (printf "~a\n" s))]
           ["default-scope"
            (printf "~a\n" (read-pkg-cfg/def 'default-scope))]
+          ["name"
+           (printf "~a\n" (read-pkg-cfg/def 'installation-name))]
           [_
            (pkg-error "unsupported config key\n  key: ~e" key)])]
        [(list)

@@ -326,7 +326,9 @@ sub-sub-commands:
    @item{@exec{user} --- Install packages for the current user and current installation's name/version.}
   ]
   The default package scope is normally @exec{user}, but it can be configured with
-  @command-ref{config}@exec{ --set default-scope @nonterm{scope}}.}
+  @command-ref{config}@exec{ --set default-scope @nonterm{scope}}.
+  The default installation name is normally the Racket version, but it can be configured with
+  @command-ref{config}@exec{ --set name @nonterm{name}}.}
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Select @nonterm{dir} as the @tech{package scope}.}
@@ -468,6 +470,8 @@ View and modify configuration of the package manager itself, with the following 
         @exec{installation} scope) is
         the default @tech{package scope} for all @exec{raco pkg} commands
         (even @command{config}, which is consistent but potentially confusing).}
+  @item{@exec{name} --- A string for the installation's name, which is used by @exec{user}
+        @tech{package scope} and defaults to the Racket version.}
  ]
 }
 
