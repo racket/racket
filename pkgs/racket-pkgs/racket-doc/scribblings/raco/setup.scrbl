@@ -9,6 +9,7 @@
                     setup/option-unit
                     setup/option-sig
                     setup/dirs
+                    setup/getinfo
                     setup/main-collects
                     setup/path-to-relative
                     setup/xref scribble/xref
@@ -350,10 +351,11 @@ Optional @filepath{info.rkt} fields trigger additional actions by
            change.}
 
      @item{@racket['no-depend-on] : Removes the document for
-           consideration for other dependencies. This mode is
-           typically used with @racket['always-run] to avoid
-           unnecessary dependencies that prevent reaching a stable
-           point in building documentation.}
+           consideration for other dependencies. Furthermore,
+           references from the document to other documents are always
+           direct, instead of potentially indirect (i.e., resolved at
+           document-viewing time and potentially redirected to a
+           remote site).}
 
      @item{@racket['main-doc-root] : Designates the root document for
            the main installation. The document that currently has this
@@ -556,11 +558,13 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 
  @item{@indexed-racket[install-collection] : @racket[path-string?]  --- A
    library module relative to the collection that provides
-   @racket[installer]. The @racket[installer] procedure accepts either
-   one or two arguments. The first argument is a directory path to the
+   @racket[installer]. The @racket[installer] procedure accepts one
+   to three arguments. The first argument is a directory path to the
    parent of the Racket installation's @filepath{collects} directory; the
    second argument, if accepted, is a path to the collection's own
-   directory. The procedure should perform collection-specific
+   directory; the third argument, if accepted, is a boolean indicating
+   whether the collection is installed as user-specific (@racket[#f])
+   or installation-wide (@racket[#f]). The procedure should perform collection-specific
    installation work, and it should avoid unnecessary work in the case
    that it is called multiple times for the same installation.}
 

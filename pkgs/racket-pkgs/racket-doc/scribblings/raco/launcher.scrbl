@@ -59,9 +59,57 @@ the following additional associations apply to launchers:
        will call ignoring @racket[args]. If this name is not provided,
        the script will go through the GRacket executable as usual.}
 
+ @item{@racket['exe-is-gracket] (when @racket['exe-name] is used) ---
+       indicates that @racket['exe-name] refers to the GRacket
+       executable, which is potentially in a @filepath{lib}
+       subdirectory instead of with other GUI applications.}
+
  @item{@racket['relative?] (all platforms) --- a boolean, where
         @racket[#t] means that the generated launcher should find the
         base GRacket executable through a relative path.}
+
+ @item{@racket['start-menu?] (Windows) --- a boolean; @racket[#t]
+       indicates that the launcher should be in the @onscreen{Start}
+       menu by an installer that includes the launcher.  A
+       @racket['start-menu?] value is used only when
+       @racket['install-mode] is also specified.}
+
+ @item{@racket['extension-register] (Windows) --- a list of document
+       types for file-extension registrations to be performed by an
+       installer. Each document type is described by a list of six
+       items:
+
+         @itemlist[
+
+            @item{a human-readable string describing the document
+                  type, such as @racket["Racket Document"];}
+
+            @item{a string to use as a key for the document type,
+                  such as @racket["Racket.Document"];}
+
+            @item{a list of strings, where each string is a file
+                  extension without the dot, such as @racket['("rkt"
+                  "rktl" "rktd")];}
+
+            @item{a path to a file that supplies the icon, such as
+                  @racket["doc.ico"];}
+
+            @item{a string to represent the command line to handle a
+                  document with a matching extension, such as
+                  @racket["\"%1\""], where the string will be prefixed
+                  with a path to the launcher, and where @litchar{%1}
+                  will be replaced with the document path}
+          ]
+
+       An @racket['extension-registry] value is used only when
+       @racket['install-mode] is also specified.}
+
+ @item{@racket['install-mode] (Windows) --- either @racket['user] or
+       @racket['main], indicates whether the launcher is being
+       installed to a user-specific place or an installation-wide
+       place, which in turn determines where to record
+       @racket['start-menu?] and @racket['extension-registry]
+       information.}
 
 ]
 
@@ -353,6 +401,14 @@ are as follows:
 
  @item{@filepath{.wmclass} @'rarr @racket['wm-class] as the literal
        content, removing a trailing newline if any; for use on Unix}
+
+ @item{@filepath{.startmenu} @'rarr @racket['start-menu?] as @racket[#t]
+       (the file content is ignored) for use on Windows}
+
+ @item{@filepath{.extreg} @'rarr @racket['extension-register] as
+       @racket[read] content (a single S-expression), but with
+       relative (to the @filepath{.extreg} file) paths converted
+       absolute; for use on Windows}
 
 ]}
 
