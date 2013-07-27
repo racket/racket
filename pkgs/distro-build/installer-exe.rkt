@@ -29,6 +29,15 @@
   (get-exe-actions src-dir "startmenu.rktd"
                    (lambda (k v) k)))
 
+(define (get-auto-launch src-dir)
+  (define l
+    (filter (lambda (p) (real? (cdr p)))
+            (get-exe-actions src-dir "startmenu.rktd"
+                             cons)))
+  (if (null? l)
+      #f
+      (path-replace-suffix (caar (sort l < #:key cdr)) #"")))
+
 (define (try-exe f)
   (and (file-exists? f) f))
 
@@ -419,5 +428,6 @@ SectionEnd
                  makensis
                  #:release release?
                  #:extension-registers (get-extreg "bundle/racket")
-                 #:start-menus (get-startmenu "bundle/racket"))
+                 #:start-menus (get-startmenu "bundle/racket")
+                 #:auto-launch (get-auto-launch "bundle/racket"))
   exe-path)

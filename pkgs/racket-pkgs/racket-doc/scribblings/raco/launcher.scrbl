@@ -68,10 +68,14 @@ the following additional associations apply to launchers:
         @racket[#t] means that the generated launcher should find the
         base GRacket executable through a relative path.}
 
- @item{@racket['start-menu?] (Windows) --- a boolean; @racket[#t]
-       indicates that the launcher should be in the @onscreen{Start}
-       menu by an installer that includes the launcher.  A
-       @racket['start-menu?] value is used only when
+ @item{@racket['start-menu] (Windows) --- a boolean or real number;
+       @racket[#t] indicates that the launcher should be in the
+       @onscreen{Start} menu by an installer that includes the
+       launcher. A number value is treated like @racket[#t], but also
+       requests that the installer automatically start the
+       application, where the number determines a precedence relative
+       to other launchers that may request starting.  A
+       @racket['start-menu] value is used only when
        @racket['install-mode] is also specified.}
 
  @item{@racket['extension-register] (Windows) --- a list of document
@@ -108,7 +112,7 @@ the following additional associations apply to launchers:
        @racket['main], indicates whether the launcher is being
        installed to a user-specific place or an installation-wide
        place, which in turn determines where to record
-       @racket['start-menu?] and @racket['extension-registry]
+       @racket['start-menu] and @racket['extension-registry]
        information.}
 
 ]
@@ -402,8 +406,9 @@ are as follows:
  @item{@filepath{.wmclass} @'rarr @racket['wm-class] as the literal
        content, removing a trailing newline if any; for use on Unix}
 
- @item{@filepath{.startmenu} @'rarr @racket['start-menu?] as @racket[#t]
-       (the file content is ignored) for use on Windows}
+ @item{@filepath{.startmenu} @'rarr @racket['start-menu] as the file
+       content if it @racket[read]s as a real number, @racket[#t]
+       otherwise, for use on Windows}
 
  @item{@filepath{.extreg} @'rarr @racket['extension-register] as
        @racket[read] content (a single S-expression), but with

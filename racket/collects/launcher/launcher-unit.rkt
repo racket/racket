@@ -407,13 +407,13 @@
                                        e)))
                                (cdr m)))))
       ;; record Windows start-menu requests, if any
-      (let ([m (assoc 'start-menu? aux)])
+      (let ([m (assoc 'start-menu aux)])
         (when (and m (cdr m))
           (update-register (cdr im) 
                            "startmenu.rktd"
                            (path-element->string
                             (file-name-from-path dest))
-                           #t))))))
+                           (cdr m)))))))
 
 (define (update-register mode filename key val)
   (define dir (if (eq? mode 'main)
@@ -655,7 +655,18 @@
                                       (path-only 
                                        (path->complete-path path)))
                                      e)))))))))))
-   (try 'start-menu? #".startmenu")
+   (let ([l (try 'start-menu #".startmenu")])
+     (if (null? l)
+         l
+         (with-handlers ([exn:fail:filesystem? (lambda (x) (log-fail l x) null)])
+           (with-input-from-file (cdar l)
+             (lambda ()
+               (list
+                (cons 'start-menu
+                      (let ([d (read)])
+                        (if (real? d)
+                            d 
+                            #t)))))))))
    (let ([l (try 'wm-class #".wmclass")])
      (if (null? l)
          l

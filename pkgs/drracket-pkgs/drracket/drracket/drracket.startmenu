@@ -1,1 +1,6 @@
+10
 Existence of this file puts DrRacket in the Windows Start menu.
+The fact that it starts with a number requests that the
+installer offers to run DrRacket as its final action, and the
+value of the number is a predence for that request relative
+to other requests.
