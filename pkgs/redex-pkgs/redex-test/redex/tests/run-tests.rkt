@@ -5,6 +5,7 @@
 (require racket/runtime-path
          racket/cmdline
          racket/match
+         pkg/lib
          "test-util.rkt"
          "bitmap-test-util.rkt")
 
@@ -37,19 +38,20 @@
      "enum-test.rkt"
      "bitmap-test.rkt")
    (if test-examples?
-       '("../examples/cbn-letrec.rkt"
-         "../examples/stlc.rkt"
-         "../examples/pi-calculus.rkt"
-         "../examples/list-machine/test.rkt"
-         ("../examples/beginner.rkt" main)
-         "../examples/racket-machine/reduction-test.rkt"
-         "../examples/racket-machine/verification-test.rkt"
-         "../examples/delim-cont/test.rkt"
-         "../examples/cont-mark-transform/all-test.rkt"
-         ("../examples/r6rs/r6rs-tests.rkt" main))
+       '("<redex-examples>/redex/examples/cbn-letrec.rkt"
+         "<redex-examples>/redex/examples/stlc.rkt"
+         "<redex-examples>/redex/examples/pi-calculus.rkt"
+         "<redex-examples>/redex/examples/list-machine/test.rkt"
+         ("<redex-examples>/redex/examples/beginner.rkt" main)
+         "<redex-examples>/redex/examples/racket-machine/reduction-test.rkt"
+         "<redex-examples>/redex/examples/racket-machine/verification-test.rkt"
+         "<redex-examples>/redex/examples/delim-cont/test.rkt"
+         "<redex-examples>/redex/examples/cont-mark-transform/all-test.rkt"
+         ("<redex-examples>/redex/examples/r6rs/r6rs-tests.rkt" main))
        '())))
 
 (define-runtime-path here ".")
+(define examples-path (pkg-directory "redex-examples"))
 
 (define (flush)
   ;; these flushes are here for running under cygwin, 
@@ -69,7 +71,10 @@
      (flush)
      (printf "running ~a\n" file)
      (flush)
-     (action (dynamic-require (build-path here file) provided))
+     (define path (if (regexp-match #rx"<redex-examples>" file)
+                      (build-path examples-path (cadr (regexp-match #rx"^<redex-examples>/(.*)$" file)))
+                      (build-path here file)))
+     (action (dynamic-require path provided))
      (flush)))
  test-files)
 

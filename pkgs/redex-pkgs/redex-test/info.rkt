@@ -10,5 +10,6 @@
                "gui-lib"
                "pict-lib"
                "redex-lib"
-               "scribble-lib"))
+               "scribble-lib"
+	       "redex-examples"))
 (define build-deps '())
