@@ -382,7 +382,7 @@ The recognized @tech{style properties} are as follows:
 
  @item{@racket['grouper] --- The part is numbered with a Roman
        numeral, and its subsections continue numbering as if they
-       appeared in the preceeding part. In other works, the part acts
+       appeared in the preceeding part. In other words, the part acts
        like a ``part'' in a book where chapter numbering is continuous
        across parts.}
 
