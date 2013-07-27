@@ -13,9 +13,9 @@
 
   (test/pos-blame
    'set/c2
-   '(contract (set/c integer?)
-              (set #t)
-              'pos 'neg))
+   '(set-first (contract (set/c integer?)
+                         (set #t)
+                         'pos 'neg)))
 
   (test/pos-blame
    'set/c3

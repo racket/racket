@@ -96,10 +96,10 @@
            (unless (set-equal? x)
              (raise-blame-error b x "expected an equal?-based set"))]
           [(eqv)
-           (unless (set-equal? x)
+           (unless (set-eqv? x)
              (raise-blame-error b x "expected an eqv?-based set"))]
           [(eq)
-           (unless (set-equal? x)
+           (unless (set-eq? x)
              (raise-blame-error b x "expected an eq?-based set"))])
         (case kind
           [(mutable-or-weak)
@@ -109,7 +109,7 @@
            (unless (set-mutable? x)
              (raise-blame-error b x "expected a mutable set"))]
           [(weak)
-           (unless (set-mutable? x)
+           (unless (set-weak? x)
              (raise-blame-error b x "expected a weak set"))]
           [(immutable)
            (unless (set-immutable? x)
