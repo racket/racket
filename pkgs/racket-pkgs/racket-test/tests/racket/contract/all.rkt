@@ -171,6 +171,7 @@
     [else
      (for ([file (in-list files-to-run)])
        (replay-io
+        file
         (capture-io
          (λ ()
            (dynamic-require (build-path (this-dir) (car file)) #f)))))]))

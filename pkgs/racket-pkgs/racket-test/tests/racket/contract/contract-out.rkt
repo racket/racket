@@ -1,5 +1,6 @@
 #lang racket/base
-(require "test-util.rkt")
+(require "test-util.rkt"
+         (for-syntax racket/base))
 
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace 'racket/contract)])
@@ -635,7 +636,7 @@
     
     ;; WARNING: do not add or remove lines between here-line and the two modules
     ;; below it, unless you also revise the expected result of the test case.
-    (define here-line (syntax-line #'here))
+    (define here-line (let-syntax ([m (λ (stx) #`'#,(syntax-line stx))]) (m)))
     
     (contract-eval
      (compile/wash
