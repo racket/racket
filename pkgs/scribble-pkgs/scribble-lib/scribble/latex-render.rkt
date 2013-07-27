@@ -289,28 +289,43 @@
             (printf "\\label{t:~a}"
                     (t-encode (add-current-tag-prefix (tag-key (target-element-tag e) ri)))))
           (when part-label?
-            (let* ([dest (resolve-get part ri (link-element-tag e))]
-                   [number (and dest (vector-ref dest 2))])
-              (printf "\\~aRef~a{"
+            (define-values (dest ext?) (resolve-get/ext? part ri (link-element-tag e)))
+            (let* ([number (and dest (vector-ref dest 2))]
+                   [formatted-number (and dest
+                                          (list? number)
+                                          (format-number number null))]
+                   [lbl? (and dest 
+                              (not ext?)
+                              (not (show-link-page-numbers)))])
+              (printf "\\~aRef~a~a~a{"
                       (case (and dest (number-depth number))
                         [(0) "Book"]
                         [(1) (if (string? (car number)) "Part" "Chap")]
                         [else "Sec"])
+                      (if lbl?
+                          "Local"
+                          "")
                       (if (let ([s (element-style e)])
                             (and (style? s) (memq 'uppercase (style-properties s))))
                           "UC"
+                          "")
+                      (if (null? formatted-number)
+                          "UN"
                           ""))
-              (render-content
-               (if dest
-                   (if (list? number)
-                       (format-number number null)
-                       (begin (eprintf "Internal tag error: ~s -> ~s\n"
-                                       (link-element-tag e)
-                                       dest)
-                              '("!!!")))
-                   (list "???"))
-               part ri)
-              (printf "}{")))
+              (when lbl?
+                (printf "t:~a}{" (t-encode (vector-ref dest 1))))
+              (unless (null? formatted-number)
+                (render-content
+                 (if dest
+                     (if (list? number)
+                         formatted-number
+                         (begin (eprintf "Internal tag error: ~s -> ~s\n"
+                                         (link-element-tag e)
+                                         dest)
+                                '("!!!")))
+                     (list "???"))
+                 part ri)
+                (printf "}{"))))
           (let* ([es (cond
                       [(element? e) (element-style e)]
                       [(multiarg-element? e) (multiarg-element-style e)]

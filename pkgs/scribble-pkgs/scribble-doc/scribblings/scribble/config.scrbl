@@ -260,40 +260,74 @@ style:
        @racketmodname[scribble/manual] configuration uses
        @ltx{newpage} to start each chapter on a new page.}
 
- @item{@ltxd[2]{SecRef} --- the first argument is a section number,
-       and the second argument is a section title. This macro is used
-       by @racket[secref] to reference a section (other than a
-       document or top-level section within a document), and the
-       default shows ``section'' followed by the section number
-       (ignoring the title). The @racketmodname[scribble/manual]
-       redefinition of this macro shows ``§'', the section number, and
-       the title in quotes.}
+ @item{@ltxd[3]{SecRefLocal} --- the first argument is a Latex label,
+       the second argument is a section number, and the third argument
+       is a section title. This macro is used by @racket[secref] to
+       reference a section (other than a document or top-level section
+       within a document) that has a number and that is local to the
+       current document. The default expands to @ltx{SecRef}, passing
+       along just the second and third arguments (so that the label is
+       ignored).}
 
- @item{@ltxd[2]{ChapRef} --- like @ltx{SecRef}, but for a top-level
-       section within a document. The default implementation defers to
-       @ltx{SecRef}.}
+ @item{@ltxd[2]{SecRef} --- like @ltx{SecRefLocal}, but used when the
+       referenced section is in a different document, so that no label
+       is available. The default shows ``section'' followed by the
+       section number (ignoring the title). The
+       @racketmodname[scribble/manual] redefinition of this macro
+       shows ``§'', the section number, and the title in quotes.}
 
- @item{@ltxd[2]{PartRef} --- like @ltx{SecRef}, but for a top-level
-       section within a document whose part has the @racket['grouper]
-       style property. The default shows ``part'' followed by the
-       section number (ignoring the title).}
+ @item{@ltxd[3]{ChapRefLocal} and @ltxd[2]{ChapRef} --- like
+       @ltx{SecRefLocal} and @ltx{SecRef}, but for a top-level section
+       within a document. The default implementation defers to
+       @ltx{SecRefLocal} or @ltx{SecRef}.}
 
- @item{@ltxd[2]{BookRef} --- like @ltx{SecRef}, but for a document (as
+ @item{@ltxd[3]{PartRefLocal} and @ltxd[2]{PartRef} --- like
+       @ltx{SecRefLocal} and @ltx{SecRef}, but for a top-level section
+       within a document whose part has the @racket['grouper] style
+       property. The default @ltx{PartRef} shows ``part'' followed by
+       the section number (ignoring the title).}
+
+ @item{@ltxd[3]{BookRefLocal} and @ltxd[2]{BookRef} --- like
+       @ltx{SecRefLocal} and @ltx{SecRef}, but for a document (as
        opposed to a section within the document). The default
-       implementation shows the title in italic.}
+       @ltx{BookRef} implementation shows the title in italic.}
 
- @item{@ltxd[2]{SecRefUC} --- like @ltx{SecRef}, but for @racket[Secref].
-       The default shows ``Section'' followed by the section number.}
+ @item{@ltxd[3]{SecRefLocalUC} and @ltxd[2]{SecRefUC} --- like
+       @ltx{SecRefLocal} and @ltx{SecRef}, but for @racket[Secref].
+       The default @ltx{SecRefUC} shows ``Section'' followed by the
+       section number.}
 
- @item{@ltxd[2]{ChapRefUC} --- like @ltx{ChapRef}, but for @racket[Secref].
-       section with a document. The default implementation defers to
-       @ltx{SecRefUC}.}
+ @item{@ltxd[3]{ChapRefLocalUC} and @ltxd[2]{ChapRefUC} --- like
+       @ltx{ChapRefLocal} and @ltx{ChapRef}, but for
+       @racket[Secref]. The default @ltx{ChapRefUC}implementation
+       defers to @ltx{SecRefUC}.}
 
- @item{@ltxd[2]{PartRefUC} --- like @ltx{PartRef}, but for @racket[Secref].
-       The default shows ``Part'' followed by the section number.}
+ @item{@ltxd[3]{PartRefLocalUC} and @ltxd[2]{PartRefUC} --- like
+       @ltx{PartRefLocal} and @ltx{PartRef}, but for @racket[Secref].
+       The default @ltx{PartRefUC} shows ``Part'' followed by the
+       section number.}
 
- @item{@ltxd[2]{BookRefUC} --- like @ltx{BookRef}, but for @racket[Secref].
-       The default shows defers to @ltx{BookRef}.}
+ @item{@ltxd[3]{BookRefLocalUC} and @ltxd[2]{BookRefUC} --- like
+       @ltx{BookRefLocal} and @ltx{BookRef}, but for @racket[Secref].
+       The default @ltx{BookRefUC} defers to @ltx{BookRef}.}
+
+ @item{@ltxd[2]{SecRefLocalUN}, @ltxd[1]{SecRefUCUN},
+       @ltxd[2]{SecRefLocalUCUN}, @ltxd[1]{SecRefUN},
+       @ltxd[2]{PartRefLocalUN}, @ltxd[1]{PartRefUN},
+       @ltxd[2]{PartRefLocalUCUN}, @ltxd[1]{PartRefUCUN},
+       @ltxd[2]{BookRefLocalUN}, @ltxd[1]{BookRefUN},
+       @ltxd[2]{BookRefLocalUCUN}, @ltxd[1]{BookRefUCUN},
+       @ltxd[2]{ChapRefLocalUN}, @ltxd[1]{ChapRefUN},
+       @ltxd[2]{ChapRefLocalUCUN}, and @ltxd[1]{ChapRefUCUN} --- like
+       @ltx{SecRefLocal}, etc., but in the case that a
+       section/part/chapter number is unavailable. The default
+       implementation of @ltx{BookRefUN} uses @ltx{BookRef} with an
+       empty first argument. The default @ltx{SecRefLocalUN} expands
+       to its second argument in quotes followed by ``on page'' as a
+       @ltx{pageref} using the first argument, while the default
+       @ltx{SecRefUN} expands to its only argument in quotes. The
+       default @ltx{PartRef} and @ltx{ChapRef} variants expand to the
+       corresponding @ltx{SecRef} variant.}
 
  @item{@ltxd[2]{Ssection}, @ltxd[2]{Ssubsection},
         @ltxd[2]{Ssubsubsection}, @ltxd[2]{Ssubsubsubsection},
