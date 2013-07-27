@@ -20,7 +20,7 @@ Here’s some Racket code:
 
 1.2. Another Subsection
 
- (require racket/base)
+ (require racket/base) package: base
 
 (cons car cdr) -> stuff?
   car : (or/c #f        

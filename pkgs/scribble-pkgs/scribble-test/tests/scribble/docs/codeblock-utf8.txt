@@ -1,4 +1,4 @@
- #reader scribble/manual
+ #reader scribble/manual package: scribble-lib
 
   #lang scribble/manual
   (λ x x)              

@@ -205,7 +205,8 @@
               (list
                (make-omitable-paragraph
                 (list (elem #:style "RpackageSpec"
-                            (list* (smaller (format "package~a:" 
+                            (list* (smaller 'nbsp
+                                            (format "package~a:" 
                                                     (if (null? (cdr pkgs))
                                                         ""
                                                         "s")))
