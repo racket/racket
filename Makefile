@@ -268,7 +268,7 @@ complain-no-submodule:
 
 # Create packages and a catalog for all native libraries:
 native-catalog:
-	$(RACKET) $(DISTBLD)/pack-native.rkt
+	$(RACKET) $(DISTBLD)/pack-native.rkt native-pkgs
 
 # Create a catalog for all packages in this directory:
 local-source-catalog:

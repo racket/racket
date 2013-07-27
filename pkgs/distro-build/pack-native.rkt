@@ -7,12 +7,12 @@
          net/url
          pkg/strip)
 
-(command-line
- #:args
- ()
- (void))
+(define src-dir
+  (command-line
+   #:args
+   (native-pkgs-dir)
+   native-pkgs-dir))
 
-(define src-dir (build-path "build" "native-pkgs"))
 (define dest-dir (build-path "build" "native" "pkgs"))
 (define catalog-dir (build-path "build" "native" "catalog"))
 (define local-catalog-dir (build-path "build" "local" "catalog"))
