@@ -1384,7 +1384,7 @@
     (define p-mode (judgment-form-mode p-form))
     (define p-clauses (judgment-form-gen-clauses p-form))
     (define-values (p/-s p/+s) (split-by-mode (syntax->list prem-body) p-mode))
-    (define-values (p/-rws mf-apps) (rewrite-terms p/-s ns))
+    (define-values (p/-rws mf-apps) (rewrite-terms p/-s ns in-judgment-form?))
     (define-values (syncheck-exps p/+rws new-names) (rewrite-pats p/+s lang))
     (define p-rw (fuse-by-mode p/-rws p/+rws p-mode))
     (with-syntax ([(p ...) p-rw])
@@ -1402,7 +1402,7 @@
       (syntax-case prem ()
         [(-where pat term)
          (where-keyword? #'-where)
-         (let-values ([(term-rws mf-cs) (rewrite-terms (list #'term) ns)])
+         (let-values ([(term-rws mf-cs) (rewrite-terms (list #'term) ns in-judgment-form?)])
            (with-syntax ([(syncheck-exp pat-rw new-names) (rewrite/pat #'pat lang)])
              (values (append mf-cs ps-rw)
                      (cons #`(begin syncheck-exp (eqn 'pat-rw '#,(car term-rws))) eqs)
@@ -1410,7 +1410,7 @@
         [(side-cond rest)
          (side-condition-keyword? #'side-cond)
          (if in-judgment-form?
-             (let-values ([(term-rws mf-cs) (rewrite-terms (list #'rest) ns)])
+             (let-values ([(term-rws mf-cs) (rewrite-terms (list #'rest) ns in-judgment-form?)])
                (values (append mf-cs ps-rw)
                        (cons #`(dqn '() #f '#,(car term-rws)) eqs)
                        ns))
@@ -1442,7 +1442,8 @@
                  (rewrite-side-conditions/check-errs lang #'rewrite/pat #t pat)])
     #'(syncheck-exp body (names ...))))
 
-(define-for-syntax (rewrite-terms terms names)
+(define-for-syntax (rewrite-terms terms names [reverse-mfs? #f])
+  (define maybe-rev (if reverse-mfs? reverse values))
   (with-syntax* ([((term-pattern ((res-pat ((metafunc f) args-pat)) ...) body-pat) ...)
                   (map (λ (t) (term-rewrite t names)) terms)]
                  [((mf-clauses ...) ...) (map (λ (fs) 
@@ -1454,7 +1455,7 @@
                                                      (syntax->list fs)))
                                               (syntax->list #'((f ...) ...)))])
                 (values (syntax->list #'(body-pat ...))
-                        (syntax->list #'((prem mf-clauses '(list args-pat res-pat)) ... ...)))))
+                        (maybe-rev (syntax->list #'((prem mf-clauses '(list args-pat res-pat)) ... ...))))))
 
 (define unsupported-pat-err-name (make-parameter #f))
 
