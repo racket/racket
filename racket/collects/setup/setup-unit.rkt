@@ -159,7 +159,7 @@
 
   (define (done)
     (unless (null? errors)
-      (setup-printf #f "")
+      (setup-printf #f "--- summary of errors ---")
       (show-errors (current-error-port))
       (when (pause-on-errors)
         (eprintf "INSTALLATION FAILED.\nPress Enter to continue...\n")
