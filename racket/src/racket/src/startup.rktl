@@ -450,7 +450,9 @@
         (or (and (file-exists? p)
                  (with-input-from-file p
                    (lambda ()
-                     (call-with-default-reading-parameterization read))))
+                     (let ([v (call-with-default-reading-parameterization read)])
+                       (and (hash? v)
+                            v)))))
             #hash()))))
 
   (define-values (get-installation-name)
@@ -508,22 +510,27 @@
                                     ;; search for the config file can trip over filesystem
                                     ;; restrictions imposed by security guards.
                                     (lambda ()
-                                      (let* ([d (find-config-dir)]
-                                             [ht (get-config-table d)]
-                                             [lf (coerce-to-path
-                                                  (or (hash-ref ht 'links-file #f)
-                                                      (build-path (or (hash-ref ht 'share-dir #f)
-                                                                      (build-path 'up "share"))
-                                                                  "links.rktd")))])
-                                        (cons (list->vector
-                                               (add-config-search
-                                                ht
-                                                'links-search-files
-                                                (list lf)))
-                                              (build-path (find-system-path 'addon-dir)
-                                                          (get-installation-name ht)
-                                                          "links.rktd"))))))
-  
+                                      ;; If `use-collection-link-paths' is disabled on
+                                      ;; startup, then don't try to read the configuration
+                                      ;; file, either.
+                                      (if (use-collection-link-paths)
+                                          (let* ([d (find-config-dir)]
+                                                 [ht (get-config-table d)]
+                                                 [lf (coerce-to-path
+                                                      (or (hash-ref ht 'links-file #f)
+                                                          (build-path (or (hash-ref ht 'share-dir #f)
+                                                                          (build-path 'up "share"))
+                                                                      "links.rktd")))])
+                                            (cons (list->vector
+                                                   (add-config-search
+                                                    ht
+                                                    'links-search-files
+                                                    (list lf)))
+                                                  (build-path (find-system-path 'addon-dir)
+                                                              (get-installation-name ht)
+                                                              "links.rktd")))
+                                          (cons #() #f)))))
+
   (define-values (links-paths) (car all-links-paths))
   (define-values (user-links-path) (cdr all-links-paths))
 
@@ -751,7 +758,9 @@
                                [links? (use-collection-link-paths)])
                            (append
                             ;; list of paths and (box path)s:
-                            (if (and links? (use-user-specific-search-paths))
+                            (if (and links? 
+                                     (use-user-specific-search-paths)
+                                     user-links-path)
                                 (append
                                  (let ([ht (get-linked-collections #t 0)])
                                    (append (hash-ref ht sym null)

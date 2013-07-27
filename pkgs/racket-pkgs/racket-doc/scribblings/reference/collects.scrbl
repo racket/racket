@@ -186,7 +186,15 @@ user-specific collection directory when this parameter's value is
 @defboolparam[use-collection-link-paths on?]{
 
 Parameter that determines whether @tech{collection links files} are
-used to locate collections.}
+used to locate collections.
+
+If this parameter's value is @racket[#f] on start-up, then
+@tech{collection links files} are effectively disabled permanently for
+the Racket process. In particular, if an empty string is provided as
+the @Flag{X} or @DFlag{collects} argument to @exec{racket}, then not
+only is @racket[current-library-collection-paths] initialized to the
+empty list, but @racket[use-collection-link-paths] is initialized to
+@racket[#f].}
 
 @; ----------------------------------------------------------------------
 

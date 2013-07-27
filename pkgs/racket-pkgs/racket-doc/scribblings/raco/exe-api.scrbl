@@ -217,6 +217,18 @@ currently supported keys are as follows:
         the @filepath{Resources} directory of the generated
         executable.}
 
+  @item{@racket['config-dir] : A string/path to a directory that
+        contains configuration information, such as
+        @filepath{config.rtkd} (see @secref["config-file"]).  If no
+        value is supplied, the path is left as-is and converted to
+        absolute form as needed. If @racket[#f] is supplied, the path
+        is left as-is (in potentially relative form). Note that if
+        @racket[collects-path] is provided as an empty list, then
+        the configuration-directory path is not used by Racket's
+        start up process (in contrast to a normal Racket start-up,
+        where the configuration directory is consulted for information
+        about collection link files).}
+
   @item{@racket['framework-root] (Mac OS X) : A string to prefix the
         executable's path to the Racket and GRacket frameworks
         (including a separating slash); note that when the prefix
@@ -267,9 +279,11 @@ currently supported keys are as follows:
         @racket[#t] means that, to the degree that the generated
         executable must refer to another, it can use a relative path
         (so the executables can be moved together, but not
-        separately); a @racket[#f] value (the default) means that
-        absolute paths should be used (so the generated executable can
-        be moved).}
+        separately), and it implies @racket[#f] for
+        @racket['config-dir], @racket['framework-dir], and
+        @racket['dll-dir], unless those are explicitly provided; a
+        @racket[#f] value (the default) means that absolute paths
+        should be used (so the generated executable can be moved).}
 
   @item{@racket['wm-class] (Unix) : A string; used as the default
         @tt{WM_CLASS} program class for the program's windows.}
@@ -293,7 +307,7 @@ before the main @filepath{collects} directory; then the search list is
 combined with @envvar{PLTCOLLECTS}, if it is defined). If the list
 is empty, then @racket[(find-system-path 'collects-dir)] will return
 the directory of the executable, but @racket[current-library-collection-paths] 
-is initialized to an empty list and
+is initialized to an empty list, and
 @racket[use-collection-link-paths] is set to false to disable the
 use of @tech[#:doc reference-doc]{collection links files}.
 

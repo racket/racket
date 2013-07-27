@@ -265,7 +265,7 @@ flags:
         empty string, then @racket[(find-system-path 'collects-dir)]
         returns @filepath{.}, but
         @racket[current-library-collection-paths] is initialized to
-        the empty list and @racket[use-collection-link-paths] is
+        the empty list, and @racket[use-collection-link-paths] is
         initialized to @racket[#f].}
 
   @item{@FlagFirst{S} @nonterm{dir} or @DFlagFirst{search}
