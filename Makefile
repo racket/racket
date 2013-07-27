@@ -9,12 +9,12 @@
 #
 #  in-place = build in "racket" with all packages in development mode
 #
-#  core = build in "racket" only (i.e., first step of `in-place')
+#  base = build in "racket" only (i.e., first step of `in-place')
 #
-#  server = build core, build packages listed in $(PKGS) or specified
+#  server = build base, build packages listed in $(PKGS) or specified
 #           via $(CONFIG), start server at port 9440
 #
-#  client = build core, create an installer with $(PKGS) with the help
+#  client = build base, create an installer with $(PKGS) with the help
 #           of $(SERVER); result is recorded in "bundle/installer.txt"
 #
 #  installers = `server' plus `client' via $(CONFIG)
@@ -42,13 +42,13 @@ cpus-in-place:
 	$(MAKE) -j $(CPUS) plain-in-place JOB_OPTIONS="-j $(CPUS)"
 
 plain-in-place:
-	$(MAKE) core
+	$(MAKE) base
 	if $(MACOSX_CHECK) ; then $(MAKE) native-from-git ; fi
 	$(MAKE) pkg-links LINK_MODE="$(LINK_MODE)"
 	$(PLAIN_RACKET) -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 win32-in-place:
-	$(MAKE) win32-core
+	$(MAKE) win32-base
 	$(MAKE) win32-pkg-links PKGS="$(PKGS)" LINK_MODE="$(LINK_MODE)"
 	$(WIN32_PLAIN_RACKET) -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
@@ -61,17 +61,17 @@ win32-again:
 	$(MAKE) LINK_MODE="--restore" $(IN_PLACE_COPY_ARGS)
 
 # ------------------------------------------------------------
-# Core build
+# Base build
 
 # During this step, we use a configuration file that indicates
 # an empty set of link files, so that any installation-wide
-# links or packages are ignored during the core build.
+# links or packages are ignored during the base build.
 
 CONFIGURE_ARGS_qq = 
 
 SELF_FLAGS_qq = SELF_RACKET_FLAGS="-G `cd ../../../build/config; pwd`"
 
-core:
+base:
 	mkdir -p build/config
 	echo '#hash((links-search-files . ()))' > build/config/config.rktd
 	mkdir -p racket/src/build
@@ -80,7 +80,7 @@ core:
 	cd racket/src/build; $(MAKE) $(SELF_FLAGS_qq)
 	cd racket/src/build; $(MAKE) install $(SELF_FLAGS_qq) PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)"
 
-win32-core:
+win32-base:
 	IF NOT EXIST build\config cmd /c mkdir -p build\config
 	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
 	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
@@ -220,9 +220,9 @@ win32-pkg-links:
 
 server:
 	$(MAKE) build/site.rkt
-	$(MAKE) core
+	$(MAKE) base
 	$(MAKE) stamp
-	$(MAKE) server-from-core
+	$(MAKE) server-from-base
 
 build/site.rkt:
 	mkdir -p build
@@ -240,7 +240,7 @@ stamp-from-git:
 stamp-from-date:
 	date +"%Y%m%d" > build/stamp.txt
 
-server-from-core:
+server-from-base:
 	if [ "$(EEAPP)" = '' ] ; then $(MAKE) build-from-local ; else $(MAKE) build-from-catalog ; fi
 	$(MAKE) origin-collects
 	$(MAKE) built-catalog
@@ -346,7 +346,7 @@ binary-catalog-server:
 
 client:
 	if [ ! -d build/log ] ; then rm -rf build/user ; fi
-	$(MAKE) core
+	$(MAKE) base
 	$(MAKE) distro-build-from-server
 	$(MAKE) bundle-from-server
 	$(MAKE) bundle-config
@@ -364,7 +364,7 @@ SET_BUNDLE_CONFIG_q = $(BUNDLE_CONFIG) "" "" "$(INSTALL_NAME)" "$(BUILD_STAMP)" 
 
 win32-client:
 	IF EXIST build\user cmd /c rmdir /S /Q build\user
-	$(MAKE) win32-core $(COPY_ARGS)
+	$(MAKE) win32-base $(COPY_ARGS)
 	$(MAKE) win32-distro-build-from-server $(COPY_ARGS)
 	$(MAKE) win32-bundle-from-server $(COPY_ARGS)
 	$(WIN32_RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)

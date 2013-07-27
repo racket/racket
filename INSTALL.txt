@@ -67,18 +67,18 @@ Building Racket Pieces
 Instead of just using `make in-place', you can take more control over
 the build.
 
-Building Core Racket
+Building Base Racket
 --------------------
 
 Instead of using the top-level makefile, you can go into "racket/src"
 and follow the "README" there, which gives you more configuration
 options.
 
-If you don't want any special configuration and you just want the core
-build, you can use `make core' (or `nmake win32-core') with the
+If you don't want any special configuration and you just want the base
+build, you can use `make base' (or `nmake win32-base') with the
 top-level makefile.
 
-(The Racket core does not require additional native libraries to run,
+(The Racket base does not require additional native libraries to run,
 but under Windows, encoding-conversion, extflonum, and SSL
 functionality is hobbled until native libraries from the
 `racket-win32-i386' or `racket-win32-x86_64' package are installed.)
@@ -90,12 +90,12 @@ single- and double-quote marks are allowed in the value.)
 
 On all platforms, `JOB_OPTIONS' as a makefile variable and
 `PLT_SETUP_OPTIONS' as an environment variable are passed on to the
-`raco setup' that is used to build core libraries.
+`raco setup' that is used to build base libraries.
 
 Installing Packages
 -------------------
 
-In the near future, after you've built the core, you can install
+In the near future, after you've built the base, you can install
 packages via a package-catalog server (ignoring the content of
 "pkgs"). That catalog server is not ready, yet.
 
@@ -151,7 +151,7 @@ only if no configuration file "racket/etc/config.rktd" exists already.
 Trying Packages Locally
 -----------------------
 
-Suppose that you've built core "racket" and you want to see what it
+Suppose that you've built base "racket" and you want to see what it
 looks like to install individual packages as if provided by a server
 (i.e., not through development-mode links).
 
@@ -348,16 +348,16 @@ In more detail:
 
  1a. Build "racket" on a server.
     
-     The `core' target of the makefile will do that, if you haven't
-     done it already. On Windows, use `nmake win32-core'.
+     The `base' target of the makefile will do that, if you haven't
+     done it already. On Windows, use `nmake win32-base'.
 
  1b. On the server, build packages and start a catalog server.
 
-     The `server-from-core' target of the makefile will do that. (The
+     The `server-from-base' target of the makefile will do that. (The
      server only works on non-Windows platforms, currently.)
 
-     Alternatively, use the `server' target, which combines `core' and
-     `server-from-core' (i.e., steps 1a and 1b).
+     Alternatively, use the `server' target, which combines `base' and
+     `server-from-base' (i.e., steps 1a and 1b).
 
      The `PKGS' variable of the makefile determines which packages are
      built for potential inclusion in a distribution.
@@ -396,8 +396,8 @@ In more detail:
      client, it affects future documentation builds in the
      installation.
 
-     Alternatively, use the `client' target, which combines `core' and
-     `client-from-core' (i.e., steps 2a and 2b).
+     Alternatively, use the `client' target, which combines `base' and
+     `client-from-base' (i.e., steps 2a and 2b).
 
      On Windows, you need NSIS installed, either in the usual location
      or with `makensis' in your command-line path.
