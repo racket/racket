@@ -131,4 +131,3 @@
       #f
       ;; Compute it:
       (compute-stamp)))
-stamp
