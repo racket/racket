@@ -463,7 +463,8 @@ COMPFLAGS=""
 
 ORIG_CC="${CC}"
 ORIG_CPP="${CPP}"
-SUB_CONFIGURE_EXTRAS=""
+# Include `--enable-portable-binary' by default for libffi
+SUB_CONFIGURE_EXTRAS="--enable-portable-binary"
 
 if test "${enable_oskit}" = "no" ; then
   AC_PROG_CC
@@ -1576,7 +1577,27 @@ else
   MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
 fi
 makefiles="$makefiles foreign/Makefile"
-ac_configure_args="$ac_configure_args$SUB_CONFIGURE_EXTRAS"
+
+# Remove any --enable or --disable arguments from `ac_configure_args':
+new_configure_args=
+fixup_prev=
+eval "set x $ac_configure_args"
+shift
+for fixup_arg
+do
+  case $fixup_arg in
+  # Strip away all feature choices
+  -enable* | --enable* | -disable* | --disable*)
+    ;;
+  *)
+    case $fixup_arg in
+    *\'*) fixup_arg=`echo "$fixup_arg" | sed "s/'/'\\\\\\\\''/g"` ;;
+    esac
+    new_configure_args="$new_configure_args '$fixup_arg'" ;;
+  esac
+done
+# Add in `SUB_CONFIGURE_EXTRAS'
+ac_configure_args="$new_configure_args$SUB_CONFIGURE_EXTRAS"
 
 if test "${enable_gracket}" = "yes" ; then
   makefiles="$makefiles
