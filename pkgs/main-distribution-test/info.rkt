@@ -13,5 +13,6 @@
                "errortrace-test"
                "r6rs-test"
                "web-server-test"
+               "typed-racket-test"
                "xrepl-test"
                "scribble-test"))
