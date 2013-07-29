@@ -76,8 +76,16 @@ Contracts in Racket are subdivided into three different categories:
 @itemlist[@item{@deftech{Flat contract}s can be fully checked immediately for
                  a given value. These kinds of contracts are essentially
                  predicate functions. Using @racket[flat-contract-predicate],
-                 you can extract the predicate from a flat contract, and
-                 @racket[flat-contract?] recognizes a flat contract.}
+                 you can extract the predicate from an arbitrary flat contract; some
+                 flat contracts can be applied like functions, in which case
+                 they accept a single argument and return @racket[#t] or
+                 @racket[#f] to indicate if the given value would be accepted
+                 by the contract. All of the flat contracts returned by functions
+                 in this library can be used directly as predicates, but ordinary
+                 Racket values that double as flat contracts (e.g., numbers or symbols)
+                 cannot.
+                 
+                 The function @racket[flat-contract?] recognizes a flat contract.}
           @item{@deftech{Chaperone contracts} are not always immediately
                  checkable, but are guaranteed to not change any properties
                  of any values that they check. That is, they may wrap
