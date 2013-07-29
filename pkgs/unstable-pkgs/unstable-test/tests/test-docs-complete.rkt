@@ -12,7 +12,6 @@
 (check-docs (quote unstable/hash))
 (check-docs (quote unstable/function))
 (check-docs (quote unstable/find))
-(check-docs (quote unstable/file))
 (check-docs (quote unstable/debug))
 (check-docs (quote unstable/contract))
 (check-docs (quote unstable/class-iop))
