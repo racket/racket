@@ -458,6 +458,7 @@
            (limit-and-report-failure
             c 2
             (lambda ()
+              (sleep (get-opt c '#:pause-before 0))
               ;; start client, if a VM:
               (start-client c (or (get-opt c '#:max-vm) 1))
               ;; catch failure in build step proper, so we
@@ -467,6 +468,7 @@
                 c 1
                 (lambda () (client-build c)))
                ;; stop client, if a VM:
-               (stop-client c))))))]))))
+               (stop-client c)
+               (sleep (get-opt c '#:pause-after 0)))))))]))))
 
 (display-time)

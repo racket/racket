@@ -145,6 +145,8 @@
     [(#:site-dest) (path-string? val)]
     [(#:pdf-doc?) (boolean? val)]
     [(#:max-snapshots) (real? val)]
+    [(#:pause-before) (and (real? val) (not (negative? val)))]
+    [(#:pause-after) (and (real? val) (not (negative? val)))]
     [(#:readme) (or (string? val)
                     (and (procedure? val)
                          (procedure-arity-includes? val 1)))]

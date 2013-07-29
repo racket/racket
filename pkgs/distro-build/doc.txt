@@ -239,6 +239,14 @@ Site-configuration keywords (where <string*> means no spaces, etc.):
   #:max-snapshots <number> --- number of snapshots to keep, used by
     the `snapshot-site' makefile target
 
+  #:pause-before <nonnegative-number> --- a pause in seconds to
+    wait before starting a machine, which may help a virtual machine
+    avoid confusion from being stopped and started too quickly; the
+    default is 0
+
+  #:pause-after <nonnegative-number> --- a pause in seconds to
+    wait after stopping a machine;  the default is 0
+
   #:custom <hash-table> --- a hash table mapping arbitrary keywords to
     arbitrary values; when a value for `#:custom' is overriden in a
     nested configuration, the new table is merged with the overriden
