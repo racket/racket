@@ -464,7 +464,7 @@ COMPFLAGS=""
 ORIG_CC="${CC}"
 ORIG_CPP="${CPP}"
 # Include `--enable-portable-binary' by default for libffi
-SUB_CONFIGURE_EXTRAS="--enable-portable-binary"
+SUB_CONFIGURE_EXTRAS=" --enable-portable-binary"
 
 if test "${enable_oskit}" = "no" ; then
   AC_PROG_CC
