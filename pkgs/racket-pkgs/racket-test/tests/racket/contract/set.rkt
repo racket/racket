@@ -13,9 +13,9 @@
 
   (test/pos-blame
    'set/c2
-   '(set-first (contract (set/c integer?)
-                         (set #t)
-                         'pos 'neg)))
+   '(contract (set/c integer?)
+              (set #t)
+              'pos 'neg))
 
   (test/pos-blame
    'set/c3
@@ -57,4 +57,56 @@
                                 (set (λ (x) #f))
                                 'pos 'neg)
                       values)])
-      ((car s) 1))))
+      ((car s) 1)))
+
+  (test/pos-blame
+   'set/c9
+   '(contract (set/c integer?)
+              (list 0)
+              'pos 'neg))
+
+  (test/pos-blame
+   'set/c10
+   '(contract (set/c integer?)
+              (mutable-set 0)
+              'pos 'neg))
+
+  (test/spec-passed/result
+   'set/c11
+   '(contract (set/c integer? #:kind 'dont-care)
+              (list 0)
+              'pos 'neg)
+   (list 0))
+
+  (test/spec-passed/result
+   'set/c12
+   '(contract (set/c integer? #:kind 'dont-care)
+              (set 0)
+              'pos 'neg)
+   (contract-eval '(set 0)))
+
+  (test/spec-passed/result
+   'set/c13
+   '(contract (set/c integer? #:kind 'dont-care)
+              (mutable-set 0)
+              'pos 'neg)
+   (contract-eval '(mutable-set 0)))
+
+  (test/pos-blame
+   'set/c14
+   '(contract (set/c integer? #:kind 'mutable)
+              (list 0)
+              'pos 'neg))
+
+  (test/pos-blame
+   'set/c15
+   '(contract (set/c integer? #:kind 'mutable)
+              (set 0)
+              'pos 'neg))
+
+  (test/spec-passed/result
+   'set/c16
+   '(contract (set/c integer? #:kind 'mutable)
+              (mutable-set 0)
+              'pos 'neg)
+   (contract-eval '(mutable-set 0))))
