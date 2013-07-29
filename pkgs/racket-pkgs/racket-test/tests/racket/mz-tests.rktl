@@ -38,6 +38,7 @@
   (load-relative "optimize.rktl"))
 (unless building-flat-tests?
   (load-relative "name.rktl"))
+(load-relative "srcloc.rktl")
 
 ;; Ok, so this isn't really all of them. Here are more:
 ; thrport.rktl
