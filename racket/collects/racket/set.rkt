@@ -12,7 +12,7 @@
 
 (define (set/c elem/c
                #:cmp [cmp 'dont-care]
-               #:kind [kind 'dont-care])
+               #:kind [kind 'immutable])
   (define cmp/c
     (case cmp
       [(dont-care) any/c]
@@ -41,9 +41,12 @@
         "element contract" (contract-name elem/c)
         "#:cmp option" cmp))]
     [else
-     (unless (contract? elem/c)
-       (raise-argument-error 'set/c "contract?" elem/c))])
+     (unless (chaperone-contract? elem/c)
+       (raise-argument-error 'set/c "chaperone-contract?" elem/c))])
   (cond
+    [(and (eq? kind 'immutable)
+          (flat-contract? elem/c))
+     (flat-set-contract elem/c cmp kind)]
     [(chaperone-contract? elem/c)
      (chaperone-set-contract elem/c cmp kind)]
     [else
@@ -58,10 +61,10 @@
   `(set/c ,(contract-name elem/c)
           ,@(if (eq? cmp 'dont-care)
                 `[]
-                `[#:cmp (quote #,cmp)])
-          ,@(if (eq? kind 'dont-care)
+                `[#:cmp (quote ,cmp)])
+          ,@(if (eq? kind 'immutable)
                 `[]
-                `[#:kind (quote #,kind)])))
+                `[#:kind (quote ,kind)])))
 
 (define (set-contract-first-order ctc)
   (define cmp (set-contract-cmp ctc))
@@ -82,6 +85,33 @@
   (lambda (x)
     (and (set? x) (cmp? x) (kind? x))))
 
+(define (set-contract-check cmp kind b x)
+  (unless (set? x)
+    (raise-blame-error b x "expected a set"))
+  (case cmp
+    [(equal)
+     (unless (set-equal? x)
+       (raise-blame-error b x "expected an equal?-based set"))]
+    [(eqv)
+     (unless (set-eqv? x)
+       (raise-blame-error b x "expected an eqv?-based set"))]
+    [(eq)
+     (unless (set-eq? x)
+       (raise-blame-error b x "expected an eq?-based set"))])
+  (case kind
+    [(mutable-or-weak)
+     (unless (or (set-mutable? x) (set-weak? x))
+       (raise-blame-error b x "expected a mutable or weak set"))]
+    [(mutable)
+     (unless (set-mutable? x)
+       (raise-blame-error b x "expected a mutable set"))]
+    [(weak)
+     (unless (set-weak? x)
+       (raise-blame-error b x "expected a weak set"))]
+    [(immutable)
+     (unless (set-immutable? x)
+       (raise-blame-error b x "expected an immutable set"))]))
+
 (define (set-contract-projection mode)
   (lambda (ctc)
     (define elem/c (set-contract-elem/c ctc))
@@ -89,31 +119,7 @@
     (define kind (set-contract-kind ctc))
     (lambda (b)
       (lambda (x)
-        (unless (set? x)
-          (raise-blame-error b x "expected a set"))
-        (case cmp
-          [(equal)
-           (unless (set-equal? x)
-             (raise-blame-error b x "expected an equal?-based set"))]
-          [(eqv)
-           (unless (set-eqv? x)
-             (raise-blame-error b x "expected an eqv?-based set"))]
-          [(eq)
-           (unless (set-eq? x)
-             (raise-blame-error b x "expected an eq?-based set"))])
-        (case kind
-          [(mutable-or-weak)
-           (unless (or (set-mutable? x) (set-weak? x))
-             (raise-blame-error b x "expected a mutable or weak set"))]
-          [(mutable)
-           (unless (set-mutable? x)
-             (raise-blame-error b x "expected a mutable set"))]
-          [(weak)
-           (unless (set-weak? x)
-             (raise-blame-error b x "expected a weak set"))]
-          [(immutable)
-           (unless (set-immutable? x)
-             (raise-blame-error b x "expected an immutable set"))])
+        (set-contract-check cmp kind b x)
         (cond
           [(list? x)
            (define proj
@@ -166,6 +172,35 @@
               (or/c (->* [set?] [] #:rest (listof ctc) void?) #f)]
              [set-symmetric-difference!
               (or/c (->* [set?] [] #:rest (listof ctc) void?) #f)])])))))
+
+(define (flat-set-contract-first-order ctc)
+  (define set-passes? (set-contract-first-order ctc))
+  (define elem-passes? (contract-first-order (set-contract-elem/c ctc)))
+  (lambda (x)
+    (and (set-passes? x)
+         (for/and ([e (in-set x)])
+           (elem-passes? e)))))
+
+(define (flat-set-contract-projection ctc)
+  (define elem/c (set-contract-elem/c ctc))
+  (define cmp (set-contract-cmp ctc))
+  (define kind (set-contract-kind ctc))
+  (lambda (b)
+    (lambda (x)
+      (set-contract-check cmp kind b x)
+      (define proj
+        ((contract-projection elem/c)
+         (blame-add-context b "an element of")))
+      (for ([e (in-set x)])
+        (proj e))
+      x)))
+
+(struct flat-set-contract set-contract []
+  #:property prop:flat-contract
+  (build-flat-contract-property
+    #:name set-contract-name
+    #:first-order flat-set-contract-first-order
+    #:projection flat-set-contract-projection))
 
 (struct chaperone-set-contract set-contract []
   #:property prop:chaperone-contract
