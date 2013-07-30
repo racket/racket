@@ -22,11 +22,13 @@
          (struct-out expect:literal)
          (struct-out expect:message)
          (struct-out expect:disj)
+         (struct-out expect:proper-pair)
 
          es-add-thing
          es-add-message
          es-add-atom
-         es-add-literal)
+         es-add-literal
+         es-add-proper-pair)
 
 ;; FIXME: add phase to expect:literal
 
@@ -143,6 +145,7 @@ An ExpectStack (during parsing) is one of
   * (make-expect:message string ExpectStack)
   * (make-expect:atom atom ExpectStack)
   * (make-expect:literal identifier ExpectStack)
+  * (make-expect:proper-pair ExpectStack)
 
 The *-marked variants can only occur at the top of the stack.
 
@@ -156,6 +159,7 @@ An Expect is one of
   * (expect:message string _)
   * (expect:atom atom _)
   * (expect:literal identifier _)
+  * (expect:proper-pair _)
   - (expect:disj (non-empty-listof Expect) _)
 
 That is, next link always ignored (replace with #f for sake of equal? cmp)
@@ -168,13 +172,15 @@ Goal during reporting is ease of manipulation.
 (struct expect:atom (atom next) #:prefab)
 (struct expect:literal (literal next) #:prefab)
 (struct expect:disj (expects next) #:prefab)
+(struct expect:proper-pair (next) #:prefab)
 
 (define (expect? x)
   (or (expect:thing? x)
       (expect:message? x)
       (expect:atom? x)
       (expect:literal? x)
-      (expect:disj? x)))
+      (expect:disj? x)
+      (expect:proper-pair? x)))
 
 (define (es-add-thing ps description transparent? role next)
   (if description
@@ -191,3 +197,6 @@ Goal during reporting is ease of manipulation.
 
 (define (es-add-literal literal next)
   (expect:literal literal next))
+
+(define (es-add-proper-pair next)
+  (expect:proper-pair next))

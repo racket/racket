@@ -131,7 +131,9 @@ complicated.
     [(expect:literal literal _)
      (format "expected the identifier `~s'" (syntax-e literal))]
     [(expect:message message _)
-     (format "~a" message)]))
+     (format "~a" message)]
+    [(expect:proper-pair _)
+     "expected more terms"]))
 
 ;; == Do Report ==
 
@@ -201,7 +203,9 @@ complicated.
         [(expect:atom atom rest-es)
          (cons (expect:atom atom #f) (loop rest-es))]
         [(expect:literal literal rest-es)
-         (cons (expect:literal literal #f) (loop rest-es))]))))
+         (cons (expect:literal literal #f) (loop rest-es))]
+        [(expect:proper-pair rest-es)
+         (cons (expect:proper-pair #f) (loop rest-es))]))))
 
 #|
 Simplification dilemma

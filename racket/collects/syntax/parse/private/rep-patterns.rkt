@@ -31,7 +31,7 @@ A SinglePattern is one of
   (pat:and Base (listof SinglePattern))
   (pat:or Base (listof SinglePattern))
   (pat:not Base SinglePattern)
-  (pat:pair Base SinglePattern SinglePattern)
+  (pat:pair Base boolean SinglePattern SinglePattern)
   (pat:vector Base SinglePattern)
   (pat:box Base SinglePattern)
   (pat:pstruct Base key SinglePattern)
@@ -46,7 +46,7 @@ A ListPattern is a subtype of SinglePattern; one of
   (pat:datum Base '())
   (pat:action Base ActionPattern ListPattern)
   (pat:head Base HeadPattern ListPattern)
-  (pat:pair Base SinglePattern ListPattern)
+  (pat:pair Base #t SinglePattern ListPattern)
   (pat:dots Base EllipsisHeadPattern SinglePattern)
 |#
 
@@ -60,7 +60,7 @@ A ListPattern is a subtype of SinglePattern; one of
 (define-struct pat:and (attrs patterns) #:prefab)
 (define-struct pat:or (attrs patterns) #:prefab)
 (define-struct pat:not (attrs pattern) #:prefab)
-(define-struct pat:pair (attrs head tail) #:prefab)
+(define-struct pat:pair (attrs proper? head tail) #:prefab)
 (define-struct pat:vector (attrs pattern) #:prefab)
 (define-struct pat:box (attrs pattern) #:prefab)
 (define-struct pat:pstruct (attrs key pattern) #:prefab)
@@ -268,7 +268,9 @@ A SideClause is one of
     (make pat:head attrs headp tailp)))
 
 (define (create-pat:pair headp tailp)
-  (make pat:pair (append-iattrs (map pattern-attrs (list headp tailp))) headp tailp))
+  (let ([attrs (append-iattrs (map pattern-attrs (list headp tailp)))]
+        [proper? (proper-list-pattern? tailp #t)])
+    (make pat:pair attrs proper? headp tailp)))
 
 (define (create-pat:vector pattern)
   (make pat:vector (pattern-attrs pattern) pattern))
@@ -412,3 +414,13 @@ A SideClause is one of
 
 (define (action-pattern->single-pattern gp)
   (create-pat:action gp (create-pat:any)))
+
+(define (proper-list-pattern? p trust-pair?)
+  (or (and (pat:datum? p) (eq? (pat:datum-datum p) '()))
+      (and (pat:pair? p)
+           (if trust-pair?
+               (pat:pair-proper? p)
+               (proper-list-pattern? (pat:pair-tail p))))
+      (and (pat:head? p) (proper-list-pattern? (pat:head-tail p) trust-pair?))
+      (and (pat:dots? p) (proper-list-pattern? (pat:dots-tail p) trust-pair?))
+      (and (pat:action? p) (proper-list-pattern? (pat:action-inner p) trust-pair?))))

@@ -911,7 +911,8 @@
 
 (define (parse-hpat:seq stx list-stx decls)
   (define pattern (parse-single-pattern list-stx decls))
-  (check-list-pattern pattern stx)
+  (unless (proper-list-pattern? pattern #t)
+    (wrong-syntax stx "expected proper list pattern"))
   (create-hpat:seq pattern))
 
 (define (parse-cdr-patterns stx decls allow-head? allow-action?)
@@ -1013,21 +1014,6 @@
   (syntax-case stx ()
     [(_ pattern)
      (parse-single-pattern #'pattern decls)]))
-
-(define (check-list-pattern pattern stx)
-  (match pattern
-    [(pat:datum _base '())
-     #t]
-    [(pat:head _base _head tail)
-     (check-list-pattern tail stx)]
-    [(pat:action _base _action tail)
-     (check-list-pattern tail stx)]
-    [(pat:dots _base _head tail)
-     (check-list-pattern tail stx)]
-    [(pat:pair _base _head tail)
-     (check-list-pattern tail stx)]
-    [_
-     (wrong-syntax stx "expected proper list pattern")]))
 
 (define (parse-hpat:optional stx decls)
   (define-values (head-stx head iattrs _name _tmm defaults)

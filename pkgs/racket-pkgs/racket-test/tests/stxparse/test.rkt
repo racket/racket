@@ -44,7 +44,7 @@
      #:pre [()] #:post [x:two])
 ;; check if wildcard, no attr bound
 
-(terx (1) _:two "expected two")
+(terx (1) _:two "expected more terms")
 ;(terx (1 2) _:one "expected one")
 (terx (1 (2 3)) (_:one _:two) "expected one")
 (terx ((1) 2) (_:one _:two) "expected two")
