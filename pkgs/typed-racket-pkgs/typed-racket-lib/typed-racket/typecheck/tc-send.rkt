@@ -4,7 +4,7 @@
 (require "../utils/utils.rkt"
          racket/match syntax/stx
          (typecheck signatures tc-funapp)
-         (types base-abbrev utils type-table)
+         (types base-abbrev resolve utils type-table)
          (rep type-rep) 
          (utils tc-utils))
 
@@ -14,8 +14,8 @@
 (define (tc/send form rcvr method args [expected #f])
   (define (do-check rcvr-type)
    (match rcvr-type
-     [(tc-result1: (Instance: (? Mu? type)))
-      (do-check (ret (make-Instance (unfold type))))]
+     [(tc-result1: (Instance: (? needs-resolving? type)))
+      (do-check (ret (make-Instance (resolve type))))]
      [(tc-result1: (Instance: (and c (Class: _ _ _ methods _ _))))
       (match (tc-expr method)
         [(tc-result1: (Value: (? symbol? s)))

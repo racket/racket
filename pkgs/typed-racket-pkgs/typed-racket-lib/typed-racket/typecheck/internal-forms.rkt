@@ -99,7 +99,7 @@
 
 (define-internal-classes
   [type-alias
-    (define-type-alias-internal name type)]
+    (define-type-alias-internal name type args)]
   [type-refinement
     (declare-refinement-internal predicate)]
   [typed-struct

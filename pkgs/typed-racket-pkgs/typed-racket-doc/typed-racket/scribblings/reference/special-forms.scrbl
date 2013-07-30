@@ -408,15 +408,34 @@ corresponding to @|define-struct-id| from @racketmodname[racket/base].}
 The first form defines @racket[name] as type, with the same meaning as
 @racket[t].  The second form is equivalent to
 @racket[(define-type name (All (v ...) t))].  Type names may
-refer to other types defined in the same module, but
-cycles among them are prohibited.
+refer to other types defined in the same or enclosing scopes.
 
 @ex[(define-type IntStr (U Integer String))
     (define-type (ListofPairs A) (Listof (Pair A A)))]
 
 If @racket[#:omit-define-syntaxes] is specified, no definition of
 @racket[name] is created. In this case, some other definition of @racket[name]
-is necessary.}
+is necessary.
+
+If the body of the type definition refers to itself, then the
+type definition is recursive. Recursion may also occur mutually,
+if a type refers to a chain of other types that eventually refers
+back to itself.
+
+@ex[(define-type BT (U Number (Pair BT BT)))
+    (let ()
+      (define-type (Even A) (U Null (Pairof A (Odd A))))
+      (define-type (Odd A) (Pairof A (Even A)))
+      (: even-lst (Even Integer))
+      (define even-lst '(1 2))
+      even-lst)]
+
+However, the recursive reference may not occur immediately inside
+the type:
+
+@ex[(define-type Foo Foo)
+    (define-type Bar (U Bar False))]
+}
 
 @section{Generating Predicates Automatically}
 

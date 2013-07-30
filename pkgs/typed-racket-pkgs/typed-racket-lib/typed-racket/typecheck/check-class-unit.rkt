@@ -305,14 +305,17 @@
   (define-values (super-row super-inits super-fields
                   super-methods super-augments super-init-rest)
     (match super-type
-      [(tc-result1: (Class: super-row super-inits super-fields
-                            super-methods super-augments super-init-rest))
-       (values super-row super-inits super-fields
-               super-methods super-augments super-init-rest)]
       [(tc-result1: t)
-       (tc-error/expr "expected a superclass but got value of type ~a" t
-                      #:stx (hash-ref parse-info 'superclass-expr))
-       (values #f null null null null)]))
+       (match (resolve t)
+         [(Class: super-row super-inits super-fields
+                  super-methods super-augments super-init-rest)
+          (values super-row super-inits super-fields
+                  super-methods super-augments super-init-rest)]
+         [t
+          (tc-error/expr "expected a superclass but got value of type ~a" t
+                         #:stx (hash-ref parse-info 'superclass-expr))
+          (values #f null null null null #f)])]
+      [_ (int-err "Unhandled result")]))
   (define super-init-names    (dict-keys super-inits))
   (define super-field-names   (dict-keys super-fields))
   (define super-method-names  (dict-keys super-methods))

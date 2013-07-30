@@ -504,22 +504,35 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (syntax/loc stx
        ((plambda: (A ...) (bn ...) . body) e ...))]))
 
+;; Syntax classes for `define-type-alias`
+(begin-for-syntax
+ (define-syntax-class type-alias-rest
+   #:literals (All)
+   #:attributes (args)
+   (pattern (All (arg:id ...) rest)
+            #:with args #'(arg ...))
+   (pattern type:expr #:with args #'#f)))
+
 (define-syntax (define-type-alias stx)
   (syntax-parse stx
-    [(_ tname:id rest (~optional (~and omit #:omit-define-syntaxes)
-                                 #:defaults
-                                 ([omit #f])))
+    [(_ tname:id rest:type-alias-rest
+        (~optional (~and omit #:omit-define-syntaxes)
+                   #:defaults
+                   ([omit #f])))
+     (define/with-syntax stx-err-fun
+       #'(lambda (stx)
+           (raise-syntax-error
+            'type-check
+            "type name used out of context"
+            stx
+            (and (stx-pair? stx) (stx-car stx)))))
      #`(begin
          #,(if (not (attribute omit))
-               (ignore #'(define-syntax tname
-                           (lambda (stx)
-                             (raise-syntax-error
-                              'type-check
-                              "type name used out of context"
-                              stx
-                              (and (stx-pair? stx) (stx-car stx))))))
+               (ignore #'(define-syntax tname stx-err-fun))
                #'(begin))
-         #,(internal (syntax/loc stx (define-type-alias-internal tname rest))))]
+         #,(internal (syntax/loc stx
+                       (define-type-alias-internal tname rest
+                         rest.args))))]
     [(_ (tname:id args:id ...) rest)
      (syntax/loc stx (define-type-alias tname (All (args ...) rest)))]))
 
