@@ -210,7 +210,7 @@ Returns a @tech{synchronizable event} (see @secref["sync"]) that is
 prevent @racket[thd] from being garbage collected (see
 @secref["gc-model"]). For a given @racket[thd],
 @racket[thread-dead-evt] always returns the same (i.e., @racket[eq?])
-result .@ResultItself{thread-dead event}.}
+result. @ResultItself{thread-dead event}.}
 
 @defproc[(thread-resume-evt [thd thread?]) evt?]{
 

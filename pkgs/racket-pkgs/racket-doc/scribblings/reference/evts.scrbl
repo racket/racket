@@ -32,7 +32,7 @@ event's state.
 
 Racket values that act as @tech{synchronizable events} include
 @tech{semaphores}, @tech{channels}, @tech{asynchronous channels},
-@tech{ports}, @tech{TCP listeners}, @tech{threads},
+@tech{ports}, @tech{TCP listeners}, @tech{log receiver}s, @tech{threads},
 @tech{subprocess}es, @tech{will executors}, and @tech{custodian
 box}es. Libraries can define new synchronizable events, especially
 though @racket[prop:evt].

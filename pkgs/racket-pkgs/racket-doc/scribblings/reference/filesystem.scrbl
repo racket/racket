@@ -492,7 +492,7 @@ event}, @racket[#f] otherwise.}
                                    [failure-thunk (-> any)])
             any])]{
 
-Creates a @deftech{filesystem change event}, which is
+Creates a @deftech{filesystem change event}, which is a
 @tech{synchronizable event} that becomes @tech{ready for
 synchronization} after a change to @racket[path]:
 

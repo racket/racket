@@ -510,14 +510,16 @@ address and port, @racket[#f] otherwise.}
 
 Returns a @tech{synchronizable event} (see @secref["sync"]) that is
 in a blocking state when @racket[udp-send-to] on @racket[udp-socket]
-would block.}
+would block. The @tech{synchronization result} is the event itself.
+}
 
 
 @defproc[(udp-receive-ready-evt [udp-socket udp?]) evt?]{
 
 Returns a @tech{synchronizable event} (see @secref["sync"]) that is
 in a blocking state when @racket[udp-receive!] on @racket[udp-socket]
-would block.}
+would block. The @tech{synchronization result} is the event itself.
+}
 
 @defproc[(udp-send-to-evt [udp-socket udp?]
                       [hostname string?]
@@ -542,7 +544,7 @@ bstr start-pos end-pos)], and the synchronization result is
          evt?]{
 
 Returns a @tech{synchronizable event}. The event is @tech{ready for synchronization}
-state when @racket[udp-send] on @racket[udp-socket] would
+when @racket[udp-send] on @racket[udp-socket] would
 not block. Otherwise, if the event is chosen in a synchronization, data is
 sent as for @racket[(udp-send-to udp-socket bstr start-pos end-pos)],
 and the @tech{synchronization result} is @|void-const|. (No bytes are sent if
