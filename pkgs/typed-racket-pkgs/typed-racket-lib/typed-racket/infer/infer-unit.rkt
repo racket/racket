@@ -450,6 +450,12 @@
            ;; constrain v to be above S (but don't mention V)
            (singleton (var-promote S V) v Univ)]
 
+          ;; recursive names should get resolved as they're seen
+          [(s (? Name? t))
+           (cg s (resolve-once t))]
+          [((? Name? s) t)
+           (cg (resolve-once s) t)]
+
           ;; constrain b1 to be below T, but don't mention the new vars
           [((Poly: v1 b1) T) (cgen (append v1 V) X Y b1 T)]
 
@@ -477,7 +483,7 @@
              (cset-meet proc-c (cgen/flds V X Y flds flds*)))]
 
           ;; two struct names, need to resolve b/c one could be a parent
-          [((Name: n) (Name: n*))
+          [((Name: n _ _ #t) (Name: n* _ _ #t))
            (if (free-identifier=? n n*)
                null
                (let ((rn (resolve-once S)) (rn* (resolve-once T)))

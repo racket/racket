@@ -2398,6 +2398,23 @@
                   void))
                (display "hello" accumulator/not-thread-safe))
              -Void]
+
+       ;; Additional tests for recursive type aliases
+       [tc-e ;; The types here are valid, but uninhabitable.
+             (let () (define-type-alias A (Listof B))
+                     (define-type-alias B (Listof A))
+                     "dummy")
+             #:ret (ret -String -true-filter)]
+       [tc-e (let () (define-type-alias A (Listof B))
+                     (define-type-alias B (U #f (Listof A)))
+                     (: a A)
+                     (define a (list #f (list (list #f))))
+                     (void))
+             -Void]
+       [tc-err (let () (define-type-alias A (Class #:implements A)) "dummy")
+               #:msg "Recursive #:implements clause not allowed"]
+       [tc-err (let () (define-type-alias X (U X #f)) "dummy")
+               #:msg "Recursive types are not allowed directly inside"]
         )
   (test-suite
    "tc-literal tests"

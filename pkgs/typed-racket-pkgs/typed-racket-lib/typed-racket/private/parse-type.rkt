@@ -37,7 +37,32 @@
                        [parse-tc-results/id (syntax? c:any/c . c:-> . tc-results/c)]
                        [parse-literal-alls (syntax? . c:-> . (c:listof (c:or/c (c:listof identifier?) (c:list/c (c:listof identifier?) identifier?))))])
 
-(provide star ddd/bound)
+(provide star ddd/bound
+         current-referenced-aliases
+         current-referenced-class-parents
+         current-type-alias-name)
+
+;; current-type-alias-name : Parameter<(Option Id)>
+;; This parameter stores the name of the type alias that is
+;; being parsed (set in type-alias-helper.rkt), #f if the
+;; parsing is not for a type alias
+(define current-type-alias-name (make-parameter #f))
+
+;; current-referenced-aliases : Parameter<Option<Box<List<Id>>>>
+;; This parameter is used to coordinate with the type-checker to determine
+;; if a type alias should be recursive or not
+;;
+;; interp. the argument is #f if not checking for type aliases.
+;;         Otherwise, it should be a box containing a list of
+;;         identifiers (i.e., type aliases in the syntax)
+(define current-referenced-aliases (make-parameter #f))
+
+;; current-referenced-class-parents : Parameter<Option<Box<List<Id>>>>
+;; This parameter is used to coordinate with the type-checker about
+;; the dependency structure of class types using #:implements
+;;
+;; interp. same as above
+(define current-referenced-class-parents (make-parameter #f))
 
 (define-literal-syntax-class #:for-label car)
 (define-literal-syntax-class #:for-label cdr)
@@ -450,13 +475,11 @@
           =>
           (lambda (t)
             ;(printf "found a type alias ~a\n" #'id)
+            (when (current-referenced-aliases)
+              (define alias-box (current-referenced-aliases))
+              (set-box! alias-box (cons #'id (unbox alias-box))))
             (add-disappeared-use (syntax-local-introduce #'id))
             t)]
-         ;; if it's a type name, we just use the name
-         [(lookup-type-name #'id (lambda () #f))
-          (add-disappeared-use (syntax-local-introduce #'id))
-          ;(printf "found a type name ~a\n" #'id)
-          (make-Name #'id)]
          [(free-identifier=? #'id #'->)
           (tc-error/delayed "Incorrect use of -> type constructor")
           Err]
@@ -481,7 +504,7 @@
           [args (parse-types #'(arg args ...))])
          (resolve-app-check-error rator args stx)
          (match rator
-           [(Name: _) (make-App rator args stx)]
+           [(Name: _ _ _ _) (make-App rator args stx)]
            [(Poly: _ _) (instantiate-poly rator args)]
            [(Mu: _ _) (loop (unfold rator) args)]
            [(Error:) Err]
@@ -560,10 +583,10 @@
 
 ;;; Utilities for (Class ...) type parsing
 
-;; process-class-clauses : Option<F> Syntax FieldDict MethodDict AugmentDict
+;; process-class-clauses : Option<F> Type Stx FieldDict MethodDict AugmentDict
 ;;                         -> Option<Id> FieldDict MethodDict AugmentDict
 ;; Merges #:implements class type and the current class clauses appropriately
-(define (merge-with-parent-type row-var stx fields methods augments)
+(define (merge-with-parent-type row-var parent-type parent-stx fields methods augments)
   ;; (Listof Symbol) Dict Dict String -> (Values Dict Dict)
   ;; check for duplicates in a class clause
   (define (check-duplicate-clause names super-names types super-types err-msg)
@@ -583,18 +606,16 @@
                    types (dict-remove super-types maybe-dup)
                    err-msg)]
                  [else
-                  (tc-error/stx stx err-msg maybe-dup)])]
+                  (tc-error/stx parent-stx err-msg maybe-dup)])]
           [else (values types super-types)]))
 
-  (define parent-type (parse-type stx))
   (define (match-parent-type parent-type)
-    (match parent-type
+    (define resolved (resolve parent-type))
+    (match resolved
       [(Class: row-var _ fields methods augments _)
        (values row-var fields methods augments)]
-      [(? Mu?)
-       (match-parent-type (unfold parent-type))]
       [_ (tc-error "expected a class type for #:implements clause, got ~a"
-                   parent-type)]))
+                   resolved)]))
   (define-values (super-row-var super-fields
                   super-methods super-augments)
     (match-parent-type parent-type))
@@ -670,8 +691,8 @@
   (syntax-parse stx
     [(kw (~var clause (class-type-clauses parse-type)))
      (add-disappeared-use #'kw)
-
-     (define parent-types (stx->list #'clause.extends-types))
+     (define parent-stxs (stx->list #'clause.extends-types))
+     (define parent-types (map parse-type parent-stxs))
      (define given-inits (attribute clause.inits))
      (define given-fields (attribute clause.fields))
      (define given-methods (attribute clause.methods))
@@ -683,31 +704,68 @@
        (and (attribute clause.init-rest)
             (parse-type (attribute clause.init-rest))))
 
-     (check-function-types given-methods)
-     (check-function-types given-augments)
+     ;; Only proceed to create a class type when the parsing
+     ;; process isn't looking for recursive type alias references.
+     ;; (otherwise the merging process will error)
+     (cond [(or (null? parent-stxs)
+                (not (current-referenced-aliases)))
 
-     ;; merge with all given parent types, erroring if needed
-     (define-values (row-var fields methods augments)
-      (for/fold ([row-var given-row-var]
-                 [fields given-fields]
-                 [methods given-methods]
-                 [augments given-augments])
-                ([parent-type parent-types])
-        (merge-with-parent-type row-var parent-type fields
-                                methods augments)))
+            (check-function-types given-methods)
+            (check-function-types given-augments)
 
-     ;; check constraints on row var for consistency with class
-     (when (and row-var (has-row-constraints? (F-n row-var)))
-       (define constraints (lookup-row-constraints (F-n row-var)))
-       (check-constraints given-inits (car constraints))
-       (check-constraints fields (cadr constraints))
-       (check-constraints methods (caddr constraints))
-       (check-constraints augments (cadddr constraints)))
+            ;; merge with all given parent types, erroring if needed
+            (define-values (row-var fields methods augments)
+              (for/fold ([row-var given-row-var]
+                         [fields given-fields]
+                         [methods given-methods]
+                         [augments given-augments])
+                  ([parent-type parent-types]
+                   [parent-stx  parent-stxs])
+                (merge-with-parent-type row-var parent-type parent-stx
+                                        fields methods augments)))
 
-     (define class-type
-       (make-Class row-var given-inits fields methods augments given-init-rest))
+            ;; check constraints on row var for consistency with class
+            (when (and row-var (has-row-constraints? (F-n row-var)))
+              (define constraints (lookup-row-constraints (F-n row-var)))
+              (check-constraints given-inits (car constraints))
+              (check-constraints fields (cadr constraints))
+              (check-constraints methods (caddr constraints))
+              (check-constraints augments (cadddr constraints)))
 
-     class-type]))
+            (define class-type
+              (make-Class row-var given-inits fields methods augments given-init-rest))
+
+            class-type]
+           [else
+            ;; Conservatively assume that if there *are* #:implements
+            ;; clauses, then the current type alias will be recursive
+            ;; through one of the type aliases in the #:implements clauses.
+            ;;
+            ;; This is needed because it's hard to determine if a type
+            ;; in the #:implements clauses depends on the current
+            ;; type alias at this point. Otherwise, we would have to
+            ;; parse all type aliases again.
+            ;;
+            ;; An example type that is a problem without this assumption is
+            ;;   alias = (Class #:implements Foo%) where Foo%
+            ;;           has a class clause referring to alias
+            ;; since "alias" will be a non-recursive alias
+            ;;
+            ;; Without the approximation, we may miss recursive references
+            ;; which can cause infinite looping elsewhere in TR.
+            ;;
+            ;; With the approximation, we have spurious recursive references
+            ;; which may cause more indirection through the Name environment
+            ;; or generate worse contracts.
+            (define alias-box (current-referenced-aliases))
+            (set-box! alias-box (cons (current-type-alias-name)
+                                      (unbox alias-box)))
+            (define class-box (current-referenced-class-parents))
+            (set-box! class-box (append parent-stxs (unbox class-box)))
+            ;; Ok to return Error here, since this type will
+            ;; get reparsed in another pass
+            (make-Error)
+            ])]))
 
 ;; check-function-types : Dict<Name, Type> -> Void
 ;; ensure all types recorded in the dictionary are function types

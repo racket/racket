@@ -6,10 +6,10 @@
                               make-Union)))
 
 (begin-for-syntax
- (define -pict (make-Name #'pict))
+ (define -pict (make-Name #'pict null #f #t))
  (define -pict-path
    (make-Union (list (-val #f) -pict (-lst -pict))))
- (define -child (make-Name #'child))
+ (define -child (make-Name #'child null #f #t))
  (define -pin-arrow-line
    (->key -Real
           -pict

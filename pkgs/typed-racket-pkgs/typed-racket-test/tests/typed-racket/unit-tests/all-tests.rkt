@@ -34,6 +34,7 @@
   "contract-tests.rkt"
   "interactive-tests.rkt"
   "type-printer-tests.rkt"
+  "type-alias-helper.rkt"
   "class-tests.rkt"
   "class-util-tests.rkt"
   "check-below-tests.rkt"

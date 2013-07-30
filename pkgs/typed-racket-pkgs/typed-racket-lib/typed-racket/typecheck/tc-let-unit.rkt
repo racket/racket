@@ -4,7 +4,8 @@
          (except-in (types utils abbrev union filter-ops) -> ->* one-of/c)
          (only-in (types abbrev) (-> t:->))
          (private type-annotation parse-type syntax-properties)
-         (env lexical-env type-alias-env global-env type-env-structs scoped-tvar-env)
+         (env lexical-env type-alias-env type-alias-helper
+              global-env type-env-structs scoped-tvar-env)
          (rep type-rep filter-rep)
          syntax/free-vars
          (typecheck signatures tc-metafunctions tc-subst internal-forms)
@@ -101,14 +102,24 @@
          [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])
     ;; Collect the declarations, which are represented as expression.
     ;; We put them back into definitions to reuse the existing machinery
-    (for ([body (in-list exprs)])
-      (syntax-parse #`(define-values () #,body)
-        [t:type-alias
-         (register-resolved-type-alias #'t.name (parse-type #'t.type))]
-        [t:type-declaration
-         (register-type-if-undefined #'t.id (parse-type #'t.type))
-         (register-scoped-tvars #'t.id (parse-literal-alls #'t.type))]
-        [_ (void)]))
+    (define-values (type-aliases declarations)
+      (for/fold ([aliases '()] [declarations '()])
+                ([body (in-list exprs)])
+        (syntax-parse #`(define-values () #,body)
+          [t:type-alias
+           (values (cons #'t aliases) declarations)]
+          [t:type-declaration
+           (values aliases (cons (list #'t.id #'t.type) declarations))]
+          [_ (values aliases declarations)])))
+
+    (define-values (alias-names alias-map) (get-type-alias-info type-aliases))
+    (register-all-type-aliases alias-names alias-map)
+
+    (for ([declaration declarations])
+      (match-define (list id type) declaration)
+      (register-type-if-undefined id (parse-type type))
+      (register-scoped-tvars id (parse-literal-alls type)))
+
     ;; add scoped type variables, before we get to typechecking
     ;; FIXME: can this pass be fused with the one immediately above?
     (for ([n (in-list names)] [b (in-list exprs)])

@@ -143,10 +143,11 @@
        ;; row var wasn't in the same position in some cases
        (fail))
      (define idx (car row-var-idxs))
-     (cond [(Class? (list-ref argtys-t idx))
+     (define resolved-argty (resolve (list-ref argtys-t idx)))
+     (cond [(Class? resolved-argty)
             (define substitution
               (hash row-var
-                    (t-subst (infer-row constraints (list-ref argtys-t idx)))))
+                    (t-subst (infer-row constraints resolved-argty))))
             (tc/funapp f-stx args-stx (ret (subst-all substitution f-ty))
                        argtys expected)]
            [else (fail)])]

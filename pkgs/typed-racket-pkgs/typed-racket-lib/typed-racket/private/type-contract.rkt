@@ -7,7 +7,7 @@
  syntax/parse
  (rep type-rep filter-rep object-rep)
  (utils tc-utils)
- (env type-name-env)
+ (env type-name-env type-alias-env)
  (rep rep-utils)
  (types resolve union utils kw-types)
  (prefix-in t: (types abbrev numeric-tower))
@@ -194,7 +194,94 @@
       (define (t->sc/method t) (t->sc/function t fail typed-side recursive-values loop #t))
       (define (t->sc/fun t) (t->sc/function t fail typed-side recursive-values loop #f))
       (match type
-        [(or (App: _ _ _) (Name: _)) (t->sc (resolve-once type))]
+        ;; Applications of implicit recursive type aliases
+        ;;
+        ;; We special case this rather than just resorting to standard
+        ;; App resolution (see case below) because the resolution process
+        ;; will make type->static-contract infinite loop.
+        [(App: (Name: name _ _ #f) rands _)
+         ;; Key with (cons name 'app) instead of just name because the
+         ;; application of the Name is not necessarily the same as the
+         ;; Name type alone
+         (cond [(hash-ref recursive-values (cons name 'app) #f)]
+               [else
+                (define name* (generate-temporary name))
+                (recursive-sc (list name*)
+                              (list
+                               (t->sc (resolve-once type)
+                                      #:recursive-values
+                                      (hash-set recursive-values
+                                                (cons name 'app)
+                                                (recursive-sc-use name*))))
+                              (recursive-sc-use name*))])]
+        ;; Implicit recursive aliases
+        [(Name: name-id dep-ids args #f)
+         ;; FIXME: this may not be correct for different aliases that have
+         ;;        the same name that are somehow used together, if that's
+         ;;        possible
+         (define name (syntax-e name-id))
+         (define deps (map syntax-e dep-ids))
+         (cond [;; recursive references are looked up, see F case
+                (hash-ref recursive-values name #f) =>
+                (λ (rv) (triple-lookup rv typed-side))]
+               [else
+                ;; see Mu case, which uses similar machinery
+                (match-define (and n*s (list untyped-n* typed-n* both-n*))
+                              (generate-temporaries (list name name name)))
+                (define-values (untyped-deps typed-deps both-deps)
+                  (values (generate-temporaries deps)
+                          (generate-temporaries deps)
+                          (generate-temporaries deps)))
+                ;; Set recursive references for the `name` itself
+                (define *rv
+                  (hash-set recursive-values name
+                            (triple (recursive-sc-use untyped-n*)
+                                    (recursive-sc-use typed-n*)
+                                    (recursive-sc-use both-n*))))
+                ;; Add in references for the dependency aliases
+                (define rv
+                  (for/fold ([rv *rv])
+                            ([dep (in-list deps)]
+                             [untyped-dep (in-list untyped-deps)]
+                             [typed-dep (in-list typed-deps)]
+                             [both-dep (in-list both-deps)])
+                    (hash-set rv dep
+                              (triple (recursive-sc-use untyped-dep)
+                                      (recursive-sc-use typed-dep)
+                                      (recursive-sc-use both-dep)))))
+                (define resolved-name (resolve-once type))
+                (define resolved-deps
+                  (map (λ (dep) (lookup-type-alias dep values)) dep-ids))
+
+                ;; resolved-deps->scs : (U 'untyped 'typed 'both)
+                ;;                      -> (Listof Static-Contract)
+                (define (resolved-deps->scs typed-side)
+                  (for/list ([resolved-dep resolved-deps])
+                    (loop resolved-dep typed-side rv)))
+
+                ;; Now actually generate the static contracts
+                (case typed-side
+                 [(both) (recursive-sc
+                          (append (list both-n*) both-deps)
+                          (cons (loop resolved-name 'both rv)
+                                (resolved-deps->scs 'both))
+                          (recursive-sc-use both-n*))]
+                 [(typed untyped)
+                  (define untyped (loop resolved-name 'untyped rv))
+                  (define typed (loop resolved-name 'typed rv))
+                  (define both (loop resolved-name 'both rv))
+                  (define-values (untyped-dep-scs typed-dep-scs both-dep-scs)
+                    (values
+                     (resolved-deps->scs 'untyped)
+                     (resolved-deps->scs 'typed)
+                     (resolved-deps->scs 'both)))
+                  (recursive-sc
+                   (append n*s untyped-deps typed-deps both-deps)
+                   (append (list untyped typed both)
+                           untyped-dep-scs typed-dep-scs both-dep-scs)
+                   (recursive-sc-use (if (from-typed? typed-side) typed-n* untyped-n*)))])])]
+        ;; Ordinary type applications or struct type names, just resolve
+        [(or (App: _ _ _) (Name: _ _ _ #t)) (t->sc (resolve-once type))]
         [(Univ:) (if (from-typed? typed-side) any-wrap/sc any/sc)]
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
          (listof/sc (t->sc elem-ty))]

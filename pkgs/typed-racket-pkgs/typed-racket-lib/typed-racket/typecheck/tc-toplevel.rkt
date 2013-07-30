@@ -8,7 +8,8 @@
          (types utils abbrev type-table struct-table)
          (private parse-type type-annotation type-contract syntax-properties)
          (env global-env init-envs type-name-env type-alias-env
-              lexical-env env-req mvar-env scoped-tvar-env)
+              lexical-env env-req mvar-env scoped-tvar-env
+              type-alias-helper)
          (utils tc-utils)
          (typecheck provide-handling def-binding tc-structs
                     typechecker internal-forms)
@@ -40,13 +41,6 @@
   (syntax-parse form
     [t:typed-struct (attribute t.tvars)]
     [t:typed-struct/exec null]))
-
-(define (add-constant-variance! name vars)
-  (unless (null? vars)
-    (register-type-variance! name (map (lambda (_) Constant) vars))))
-
-
-
 
 ;; syntax? -> (listof def-binding?)
 (define (tc-toplevel/pass1 form)
@@ -249,10 +243,6 @@
     [(define-syntaxes (nm ...) . rest) (syntax->list #'(nm ...))]
     [_ #f]))
 
-(define (parse-type-alias form)
-  (syntax-parse form
-    [t:type-alias (values #'t.name #'t.type)]))
-
 ;; actually do the work on a module
 ;; produces prelude and post-lude syntax objects
 ;; syntax-list -> (values syntax syntax)
@@ -269,16 +259,23 @@
      define/fixup-contract?))
   (do-time "Form splitting done")
   ;(printf "before parsing type aliases~n")
-  (for-each (compose register-type-alias parse-type-alias) type-aliases)
+
+  (define-values (type-alias-names type-alias-map)
+    (get-type-alias-info type-aliases))
+
   ;; Add the struct names to the type table, but not with a type
   ;(printf "before adding type names~n")
   (let ((names (map name-of-struct struct-defs))
         (type-vars (map type-vars-of-struct struct-defs)))
+    (for ([name names])
+      (register-resolved-type-alias
+       name (make-Name name null #f #t)))
     (for-each register-type-name names)
     (for-each add-constant-variance! names type-vars))
   ;(printf "after adding type names~n")
-  ;; resolve all the type aliases, and error if there are cycles
-  (resolve-type-aliases parse-type)
+
+  (register-all-type-aliases type-alias-names type-alias-map)
+
   ;; Parse and register the structure types
   (define parsed-structs
     (for/list ((def (in-list struct-defs)))
@@ -405,7 +402,9 @@
     [_
      ;; Handle type aliases
      (when (type-alias? form)
-       ((compose register-type-alias parse-type-alias) form))
+       (define-values (alias-names alias-map)
+         (get-type-alias-info (list form)))
+       (register-all-type-aliases alias-names alias-map))
      ;; Handle struct definitions
      (when (typed-struct? form)
        (define name (name-of-struct form))
