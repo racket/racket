@@ -943,7 +943,9 @@ has been moved out).
         (define bw (send bitmap-obj get-width))
         (define bh (send bitmap-obj get-height))
   
-        (send dc translate (- (/ bw 2)) (- (/ bh 2)))
+        (send dc translate 
+              (* (ibitmap-x-scale bitmap) (- (/ bw 2)))
+              (* (ibitmap-y-scale bitmap) (- (/ bh 2))))
         (send dc set-scale (ibitmap-x-scale bitmap) (ibitmap-y-scale bitmap))
         
         (send dc draw-bitmap bitmap-obj 0 0)

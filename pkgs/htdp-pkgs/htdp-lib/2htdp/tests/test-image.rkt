@@ -1474,6 +1474,31 @@
   (test (equal? (rotate 0 i1) i2) => #t)
   (test (equal? i1 (rotate 0 i2)) => #t))
 
+
+;; this test case checks for broken behavior in scaled, translated
+;; bitmaps whereby the translation amount isn't scaled properly so
+;; the bitmap goes in the wrong place (and thus the buggy would
+;; not equate the two images, since the bitmap would be in
+;; the bounding box (where it wasn't supposed to be))
+(let ()
+  (define img (make-object bitmap% 200 200))
+  (define bdc (make-object bitmap-dc% img))
+  (send bdc erase)
+  (send bdc set-brush "black" 'solid)
+  (send bdc set-pen "black" 1 'transparent)
+  (send bdc draw-rectangle 0 0 200 200)
+  (send bdc set-bitmap #f)
+  
+  (test (equal? (place-image (scale .1 (overlay (circle 60 'solid 'red) img))
+                             120 120 
+                             (rectangle 100 100 'solid 'white))
+                (place-image (scale .1 (circle 60 'solid 'red))
+                             120 120 
+                             (rectangle 100 100 'solid 'white)))
+        =>
+        #t))
+
+
 (define-runtime-path u.png "u.png")
 (let ()
   (define i (rotate 0 (make-object bitmap% u.png 'unknown/mask)))
