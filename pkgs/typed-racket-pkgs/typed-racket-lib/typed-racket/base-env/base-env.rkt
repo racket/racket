@@ -315,7 +315,7 @@
 [always-evt (-mu x (make-Evt x))]
 [never-evt (make-Evt (Un))]
 [system-idle-evt (-> (make-Evt -Void))]
-[alarm-evt (-> -NonNegReal (-mu x (make-Evt x)))]
+[alarm-evt (-> -Real (-mu x (make-Evt x)))]
 [handle-evt? (make-pred-ty (make-Evt Univ))]
 [current-evt-pseudo-random-generator
  (-Param -Pseudo-Random-Generator -Pseudo-Random-Generator)]
