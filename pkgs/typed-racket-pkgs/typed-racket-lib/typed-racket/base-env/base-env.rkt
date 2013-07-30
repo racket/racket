@@ -326,8 +326,8 @@
 [channel-get (-poly (a) ((-channel a) . -> . a))]
 [channel-try-get (-poly (a) ((-channel a) . -> . (Un a (-val #f))))]
 [channel-put (-poly (a) ((-channel a) a . -> . -Void))]
-
-
+[channel-put-evt (-poly (a) (-> (-channel a) a (-mu x (make-Evt x))))]
+[channel-put-evt? (make-pred-ty (-mu x (make-Evt x)))]
 
 ;Section 3.3
 
@@ -501,11 +501,9 @@
 
 ;Section 10.1.3
 [thread-wait (-Thread . -> . -Void)]
-
-;TODO need event types
-;thread-dead-evt
-;thread-resume-evt
-;thread-suspend-evt
+[thread-dead-evt (-> -Thread (-mu x (make-Evt x)))]
+[thread-resume-evt (-> -Thread (-mu x (make-Evt x)))]
+[thread-suspend-evt (-> -Thread (-mu x (make-Evt x)))]
 
 ;Section 10.1.4
 [thread-send
@@ -514,6 +512,7 @@
                    (-> -Thread Univ (-> a) (Un -Void a))))]
 [thread-receive (-> Univ)]
 [thread-try-receive (-> Univ)]
+[thread-receive-evt (-> (-mu x (make-Evt x)))]
 [thread-rewind-receive (-> (-lst Univ) -Void)]
 
 ;Section 10.3.1 (Thread Cells)
@@ -1530,6 +1529,10 @@
 [tcp-close (-TCP-Listener . -> . -Void)]
 [tcp-listener? (make-pred-ty -TCP-Listener)]
 
+[tcp-accept-evt
+ (-> -TCP-Listener
+     (make-Evt (-pair -Input-Port (-pair -Output-Port (-val '())))))]
+
 [tcp-abandon-port (-Port . -> . -Void)]
 [tcp-addresses (cl->*
                 (-Port [(-val #f)] . ->opt . (-values (list -String -String)))
@@ -1562,18 +1565,20 @@
 [udp-bound? (-> -UDP-Socket B)]
 [udp-connected? (-> -UDP-Socket B)]
 
+[udp-send-ready-evt (-> -UDP-Socket (-mu x (make-Evt x)))]
+[udp-receive-ready-evt (-> -UDP-Socket (-mu x (make-Evt x)))]
+[udp-send-to-evt (->opt -UDP-Socket -String -Nat -Bytes [-Nat -Nat]
+                        (make-Evt -Void))]
+[udp-send-evt (->opt -UDP-Socket -Bytes [-Nat -Nat]
+                     (make-Evt -Void))]
+[udp-receive!-evt
+ (->opt -UDP-Socket -Bytes [-Nat -Nat]
+        (make-Evt (-pair -Nat (-pair -String (-pair -Nat (-val null))))))]
+
 [udp-addresses
  (cl->*
   (->opt -UDP-Socket [(-val #f)] (-values (list -String -String)))
   (-> -UDP-Socket (-val #t) (-values (list -String -NonNegFixnum -String -NonNegFixnum))))]
-
-
-
-
-
-
-
-
 
 ;; racket/path
 
@@ -2190,9 +2195,10 @@
 [semaphore-wait (-> -Semaphore -Void)]
 [semaphore-try-wait? (-> -Semaphore B)]
 [semaphore-wait/enable-break (-> -Semaphore -Void)]
+[semaphore-peek-evt (-> -Semaphore (-mu x (make-Evt x)))]
+[semaphore-peek-evt? (make-pred-ty (-mu x (make-Evt x)))]
 ;[call-with-semaphore ???]
 ;[call-with-semaphore/enable-break ???]
-
 
 ;Section 17.2 (Libraries and Collections)
 [find-library-collection-paths (->opt [(-lst -Pathlike) (-lst -Pathlike)] (-lst -Path))]
@@ -2262,6 +2268,7 @@
 [close-output-port (-> -Output-Port -Void)]
 
 [port-closed? (-> -Port B)]
+[port-closed-evt (-> -Port (-mu x (make-Evt x)))]
 
 [current-input-port (-Param -Input-Port -Input-Port)]
 [current-output-port (-Param -Output-Port -Output-Port)]
@@ -2446,15 +2453,21 @@
 
 ;12.1.10.3
 
-;eof-evt
-;read-bytes-evt
-;read-bytes!-evt
-;read-bytes-avail!-evt
-;read-string-evt
-;read-string!-evt
-;read-line-evt
-;read-bytes-line-evt
-;peek-bytes-evt
+[eof-evt (-> -Input-Port (make-Evt (-val eof)))]
+[read-bytes-evt (-> -Nat -Input-Port (make-Evt (Un -Bytes (-val eof))))]
+;read-bytes!-evt (need progress event support)
+[read-bytes-avail!-evt
+ (-> -Bytes -Input-Port (make-Evt (Un -Nat (-val eof))))]
+[read-string-evt (-> -Nat -Input-Port (make-Evt (Un -String (-val eof))))]
+[read-string!-evt (-> -String -Input-Port (make-Evt (Un -Nat (-val eof))))]
+[read-line-evt (-> -Input-Port
+                   (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one)
+                   (make-Evt (Un -String (-val eof))))]
+[read-bytes-line-evt
+ (-> -Input-Port
+     (one-of/c 'linefeed 'return 'return-linefeed 'any 'any-one)
+     (make-Evt (Un -Bytes (-val eof))))]
+;peek-bytes-evt (ditto progress event)
 ;peek-bytes!-evt
 ;peek-bytes-avail!-evt
 ;peek-string-evt
@@ -2729,6 +2742,7 @@
                       #:named (Un (-val #f) -Symbol) #f
                       -Place)]
 [place-wait (-> -Place -Int)]
+[place-dead-evt (-> -Place (make-Evt -Byte))]
 [place-break (-> -Place -Void)]
 [place-kill (-> -Place -Void)]
 [place-channel (-> (-values (list -Place-Channel -Place-Channel)))]
