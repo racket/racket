@@ -29,3 +29,7 @@
                      "scribble-lib"
                      "slideshow-lib"
                      "unstable-doc"))
+
+(define pkg-desc "Libraries for graph plotting")
+
+(define pkg-authors '(ntoronto))

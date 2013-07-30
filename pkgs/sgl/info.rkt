@@ -12,3 +12,7 @@
                      "gui-doc"
                      "racket-doc"
                      "scribble-lib"))
+
+(define pkg-desc "Legacy OpenGL library")
+
+(define pkg-authors '(jay))

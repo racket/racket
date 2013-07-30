@@ -6,3 +6,7 @@
                "errortrace-doc"))
 (define implies '("errortrace-lib"
                   "errortrace-doc"))
+
+(define pkg-desc "Instrumentation tools for debugging")
+
+(define pkg-authors '(mflatt))

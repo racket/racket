@@ -14,3 +14,7 @@
                      "htdp-lib"
                      "pict-lib"
                      "redex-lib"))
+
+(define pkg-desc "documentation part of \"redex\"")
+
+(define pkg-authors '(robby bfetscher))

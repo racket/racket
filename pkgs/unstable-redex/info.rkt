@@ -15,3 +15,7 @@
                      "redex-doc"
                      "racket-doc"
                      "unstable-doc"))
+
+(define pkg-desc "Experimental libraries for typesetting PLT Redex models")
+
+(define pkg-authors '(ryanc))

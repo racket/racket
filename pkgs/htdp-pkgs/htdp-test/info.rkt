@@ -9,3 +9,7 @@
                      "racket-test"
                      "rackunit-lib"
                      "wxme-lib"))
+
+(define pkg-desc "tests for \"htdp\"")
+
+(define pkg-authors '(matthias mflatt robby))

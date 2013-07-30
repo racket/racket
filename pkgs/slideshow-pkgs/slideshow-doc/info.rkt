@@ -13,3 +13,7 @@
                      "scribble-lib"
                      "slideshow-lib"
                      "racket-doc"))
+
+(define pkg-desc "documentation part of \"slideshow\"")
+
+(define pkg-authors '(mflatt robby))

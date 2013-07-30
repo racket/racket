@@ -14,3 +14,7 @@
 (define deps '("base"
                "sandbox-lib"
                "scribble-lib"))
+
+(define pkg-desc "documentation part of \"xrepl\"")
+
+(define pkg-authors '(eli))

@@ -12,3 +12,7 @@
                      "pict-lib"
                      "racket-doc"))
 (define deps '("base"))
+
+(define pkg-desc "documentation part of \"pict\"")
+
+(define pkg-authors '(mflatt robby))

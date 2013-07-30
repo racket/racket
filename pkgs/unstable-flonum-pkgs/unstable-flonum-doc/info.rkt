@@ -12,3 +12,7 @@
 
 (define build-deps '("plot" ; used for an example
                      "racket-doc"))
+
+(define pkg-desc "Experimental libraries for flonum computations (documentation)")
+
+(define pkg-authors '(ntoronto))

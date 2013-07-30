@@ -7,3 +7,7 @@
                      "compatibility-lib"
                      "racket-doc"))
 (define deps '("base"))
+
+(define pkg-desc "documentation part of \"r5rs\"")
+
+(define pkg-authors '(mflatt))

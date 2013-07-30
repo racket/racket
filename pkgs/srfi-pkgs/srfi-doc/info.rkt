@@ -9,3 +9,7 @@
                      "r5rs-doc"
                      "r6rs-doc"
                      "compatibility-lib"))
+
+(define pkg-desc "documentation part of \"srfi\"")
+
+(define pkg-authors '(mflatt noel chongkai jay))

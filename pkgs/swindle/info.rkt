@@ -41,3 +41,7 @@
 (define build-deps '("compatibility-doc"
                      "racket-doc"
                      "scribble-lib"))
+
+(define pkg-desc "The implementation of the Swindle language")
+
+(define pkg-authors '(eli))

@@ -10,3 +10,7 @@
                      "sandbox-lib"
                      "unstable-flonum-lib"
                      "unstable"))
+
+(define pkg-desc "tests for \"typed-racket\"")
+
+(define pkg-authors '(samth stamourv))

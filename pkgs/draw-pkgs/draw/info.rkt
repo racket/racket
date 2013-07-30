@@ -6,3 +6,7 @@
                "draw-doc"))
 (define implies '("draw-lib"
                   "draw-doc"))
+
+(define pkg-desc "Drawing libraries")
+
+(define pkg-authors '(mflatt))

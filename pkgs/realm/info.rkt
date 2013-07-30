@@ -19,3 +19,7 @@
 (define deps '("base"
                "htdp"))
 (define build-deps '("rackunit-lib"))
+
+(define pkg-desc "Sample code for _Realm of Racket_")
+
+(define pkg-authors '(matthias))

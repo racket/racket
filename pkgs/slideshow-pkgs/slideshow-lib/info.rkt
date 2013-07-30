@@ -7,3 +7,7 @@
                "draw-lib"
                "pict-lib"
                "gui-lib"))
+
+(define pkg-desc "implementation (no documentation) part of \"slideshow\"")
+
+(define pkg-authors '(mflatt robby))

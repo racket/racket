@@ -16,3 +16,7 @@
                "typed-racket-test"
                "xrepl-test"
                "scribble-test"))
+
+(define pkg-desc "tests for \"main-distribution\"")
+
+(define pkg-authors '(eli jay matthias mflatt robby))

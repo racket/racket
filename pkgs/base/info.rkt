@@ -10,3 +10,7 @@
 
 (define deps '())
 (define implies '(core))
+
+(define pkg-desc "Racket libraries that are currently always available")
+
+(define pkg-authors '(mflatt))

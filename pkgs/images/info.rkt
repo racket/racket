@@ -24,3 +24,7 @@
 (define scribblings '(["scribblings/images.scrbl" (multi-page) (gui-library)]))
 
 (define compile-omit-paths '("tests"))
+
+(define pkg-desc "Functions for constructing icons and logos")
+
+(define pkg-authors '(ntoronto))

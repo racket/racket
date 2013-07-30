@@ -19,3 +19,7 @@
                      "racket-doc"
                      "web-server-doc"
                      "scribble-lib"))
+
+(define pkg-desc "Teaching languages for _Programming Languages: Application and Interpretation_")
+
+(define pkg-authors '(jay))

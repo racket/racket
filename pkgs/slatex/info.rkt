@@ -19,3 +19,7 @@
 ;; Make slatex.sty easier to find (for adding to TEXINPUTS)
 ;; by copying it to the "share" directory. Same for rubber support:
 (define copy-shared-files '("slatex.sty" "slatex.py"))
+
+(define pkg-desc "SLaTeX (Scheme in LaTeX)")
+
+(define pkg-authors '(sstrickl))

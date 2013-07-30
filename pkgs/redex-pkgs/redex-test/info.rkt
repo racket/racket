@@ -13,3 +13,7 @@
                "scribble-lib"
 	       "redex-examples"))
 (define build-deps '())
+
+(define pkg-desc "tests for \"redex\"")
+
+(define pkg-authors '(robby bfetscher))

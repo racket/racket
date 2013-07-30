@@ -7,3 +7,7 @@
 (define build-deps '("rackunit-lib"
                      "racket-doc"
                      "scribble-lib"))
+
+(define pkg-desc "Teaching language for _Essentials of Programming Languages_")
+
+(define pkg-authors '(dvanhorn))

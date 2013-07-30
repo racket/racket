@@ -29,3 +29,7 @@
                      "pict-doc"
                      "scribble-doc"
                      "slideshow-doc"))
+
+(define pkg-desc "documentation part of \"unstable\"")
+
+(define pkg-authors '(jay samth cce ryanc))

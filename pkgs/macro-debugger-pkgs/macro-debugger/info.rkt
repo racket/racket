@@ -14,3 +14,7 @@
 (define build-deps '("rackunit-lib"
                      "scribble-lib"
                      "racket-doc"))
+
+(define pkg-desc "The macro debugger tool")
+
+(define pkg-authors '(ryanc))

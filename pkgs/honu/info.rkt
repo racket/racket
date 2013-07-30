@@ -12,3 +12,7 @@
 
 ;; Make honu.vim easier to find by copying it to the "share" directory:
 (define copy-shared-files '("contrib/honu.vim"))
+
+(define pkg-desc "The implementation of the Honu language")
+
+(define pkg-authors '(mflatt rafkind))

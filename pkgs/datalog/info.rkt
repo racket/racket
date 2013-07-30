@@ -9,3 +9,7 @@
                "parser-tools-lib"))
 (define build-deps '("racket-doc"
                      "scribble-lib"))
+
+(define pkg-desc "An implementation of the Datalog language")
+
+(define pkg-authors '(jay))

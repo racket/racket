@@ -6,3 +6,7 @@
                      "readline-lib"
                      "racket-doc"))
 (define deps '("base"))
+
+(define pkg-desc "documentation part of \"readline\"")
+
+(define pkg-authors '(mflatt))

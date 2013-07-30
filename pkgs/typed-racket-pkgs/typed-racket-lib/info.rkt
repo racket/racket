@@ -10,3 +10,7 @@
                "compatibility-lib" ;; to assign types
                "string-constants-lib"))
 
+
+(define pkg-desc "implementation (no documentation) part of \"typed-racket\"")
+
+(define pkg-authors '(samth stamourv))

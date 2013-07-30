@@ -16,3 +16,7 @@
                      "web-server-lib"
                      "racket-doc"))
 (define deps '("base"))
+
+(define pkg-desc "documentation part of \"web-server\"")
+
+(define pkg-authors '(jay))

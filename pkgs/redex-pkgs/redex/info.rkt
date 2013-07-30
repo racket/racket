@@ -4,3 +4,7 @@
 
 (define deps '("redex-doc" "redex-examples" "redex-lib"))
 (define implies '("redex-doc" "redex-examples" "redex-lib"))
+
+(define pkg-desc "PLT Redex libraries for practical semantics engineering")
+
+(define pkg-authors '(robby bfetscher))

@@ -8,3 +8,7 @@
                      "scribble-lib"
                      "rackunit-lib"
                      "math"))
+
+(define pkg-desc "Profiling tool for contracts")
+
+(define pkg-authors '(stamourv))

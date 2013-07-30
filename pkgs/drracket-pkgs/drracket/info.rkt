@@ -45,3 +45,7 @@
                      "r5rs-doc"
                      "at-exp-lib"
                      "rackunit-lib"))
+
+(define pkg-desc "The DrRacket programming environment")
+
+(define pkg-authors '(robby))

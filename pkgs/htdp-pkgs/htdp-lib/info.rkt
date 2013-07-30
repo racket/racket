@@ -24,3 +24,7 @@
     "deinprogramm"))
 (define build-deps '("at-exp-lib"
                      "rackunit-lib"))
+
+(define pkg-desc "implementation (no documentation) part of \"htdp\"")
+
+(define pkg-authors '(matthias mflatt robby))

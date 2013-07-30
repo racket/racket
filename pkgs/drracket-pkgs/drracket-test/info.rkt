@@ -12,3 +12,7 @@
                      "htdp"
                      "scribble-lib"
                      "string-constants-lib"))
+
+(define pkg-desc "tests for \"drracket\"")
+
+(define pkg-authors '(robby))

@@ -17,3 +17,7 @@
                      "gui-doc"
                      "racket-doc"
                      "scribble-lib"))
+
+(define pkg-desc "The implementation of the FrTime language")
+
+(define pkg-authors '(jay gcooper))

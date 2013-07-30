@@ -27,3 +27,7 @@
 (define build-deps '("eli-tester"
                      "racket-doc"
                      "scribble-lib"))
+
+(define pkg-desc "The implementation of the Lazy Racket language")
+
+(define pkg-authors '(eli stchang))

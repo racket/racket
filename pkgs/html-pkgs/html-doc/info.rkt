@@ -6,3 +6,7 @@
                      "html-lib"
                      "racket-doc"))
 (define deps '("base"))
+
+(define pkg-desc "documentation part of \"html\"")
+
+(define pkg-authors '(jay mflatt))

@@ -14,3 +14,7 @@
                      "snip-lib"
                      "wxme-lib"
                      ))
+
+(define pkg-desc "tests for \"gui\"")
+
+(define pkg-authors '(mflatt))

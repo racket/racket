@@ -37,3 +37,7 @@
                      "compatibility-lib"
                      "future-visualizer"
                      "distributed-places-doc"))
+
+(define pkg-desc "Base Racket documentation")
+
+(define pkg-authors '(eli jay matthias mflatt robby ryanc samth))

@@ -16,3 +16,7 @@
                      "slideshow-lib"
                      "scribble-lib"
                      "racket-doc"))
+
+(define pkg-desc "documentation part of \"scribble\"")
+
+(define pkg-authors '(mflatt eli))

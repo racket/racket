@@ -2,3 +2,7 @@
 
 (define collection 'multi)
 (define deps '("base"))
+
+(define pkg-desc "Libraries for @-expressions")
+
+(define pkg-authors '(eli mflatt))

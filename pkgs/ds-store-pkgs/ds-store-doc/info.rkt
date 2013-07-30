@@ -8,3 +8,7 @@
 
 (define scribblings '(("ds-store.scrbl")))
 
+
+(define pkg-desc "documentation part of \"ds-store\"")
+
+(define pkg-authors '(mflatt))

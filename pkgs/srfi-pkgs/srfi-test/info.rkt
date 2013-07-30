@@ -6,3 +6,7 @@
                      "compatibility-lib"
                      "rackunit-lib"
                      "srfi-lib"))
+
+(define pkg-desc "tests for \"srfi\"")
+
+(define pkg-authors '(mflatt noel chongkai jay))

@@ -6,3 +6,7 @@
                      "syntax-color-doc"
                      "parser-tools-lib"
                      "scribble-lib"))
+
+(define pkg-desc "documentation part of \"parser-tools\"")
+
+(define pkg-authors '(mflatt))

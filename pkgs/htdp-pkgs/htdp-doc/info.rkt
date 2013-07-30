@@ -19,3 +19,7 @@
                      "racket-doc"
                      #;"at-exp-lib"
                      #;"rackunit-lib"))
+
+(define pkg-desc "documentation part of \"htdp\"")
+
+(define pkg-authors '(matthias mflatt robby))

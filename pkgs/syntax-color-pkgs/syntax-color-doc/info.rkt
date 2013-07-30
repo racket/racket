@@ -9,3 +9,7 @@
                      "racket-doc"
                      "syntax-color-lib"))
 (define deps '("base"))
+
+(define pkg-desc "documentation part of \"syntax-color\"")
+
+(define pkg-authors '(mflatt))

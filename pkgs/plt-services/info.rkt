@@ -23,3 +23,7 @@
                "sandbox-lib"
                "scribble-lib"
                "compatibility-lib"))
+
+(define pkg-desc "Miscellaneous management and maintenance tools used by the Racket development team")
+
+(define pkg-authors '(eli mflatt))

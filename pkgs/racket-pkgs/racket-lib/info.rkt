@@ -7,3 +7,7 @@
     ("racket-win32-x86_64" #:platform "win32\\x86_64")
     ("db-win32-i386" #:platform "win32\\i386")
     ("db-win32-x86_64" #:platform "win32\\x86_64")))
+
+(define pkg-desc "Combines platform-specific native libraries that are useful for base Racket")
+
+(define pkg-authors '(eli jay matthias mflatt robby ryanc samth))

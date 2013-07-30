@@ -18,3 +18,7 @@
                "gui-lib"
                "parser-tools-lib"
                "string-constants-lib"))
+
+(define pkg-desc "An implementation of the Algol60 language")
+
+(define pkg-authors '(mflatt robby))

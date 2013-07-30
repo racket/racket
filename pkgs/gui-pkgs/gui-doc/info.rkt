@@ -14,3 +14,7 @@
                      "gui-lib"
                      "racket-doc"))
 (define deps '("base"))
+
+(define pkg-desc "documentation part of \"gui\"")
+
+(define pkg-authors '(mflatt))

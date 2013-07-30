@@ -6,3 +6,7 @@
                "db-lib"
                "rackunit-lib"
                "web-server-lib"))
+
+(define pkg-desc "tests for \"db\"")
+
+(define pkg-authors '(ryanc))

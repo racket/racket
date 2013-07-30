@@ -4,3 +4,7 @@
 
 (define deps '("base"
                "data-lib"))
+
+(define pkg-desc "RackUnit testing framework")
+
+(define pkg-authors '(ryanc noel))

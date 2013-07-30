@@ -10,3 +10,7 @@
                "scribble-doc" ;; because some tests are examples from the docs
                "scribble-lib"
                "scribble-text-lib"))
+
+(define pkg-desc "tests for \"scribble\"")
+
+(define pkg-authors '(mflatt eli))

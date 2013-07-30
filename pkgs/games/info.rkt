@@ -22,3 +22,7 @@
                      "racket-doc"
                      "pict-lib"
                      "rackunit-lib"))
+
+(define pkg-desc "Games")
+
+(define pkg-authors '(mflatt robby))

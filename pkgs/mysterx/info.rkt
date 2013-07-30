@@ -7,3 +7,7 @@
 (define build-deps '("racket-doc"
                      "at-exp-lib"
                      "scribble-lib"))
+
+(define pkg-desc "Legacy library for working with COM on Windows")
+
+(define pkg-authors '(mflatt))

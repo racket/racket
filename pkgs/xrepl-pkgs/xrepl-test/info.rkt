@@ -6,3 +6,7 @@
                      "base"
                      "eli-tester"
                      "xrepl-lib"))
+
+(define pkg-desc "tests for \"xrepl\"")
+
+(define pkg-authors '(eli))

@@ -6,3 +6,7 @@
                      "scribble-lib"
                      "profile-lib"
                      "racket-doc"))
+
+(define pkg-desc "documentation part of \"profile\"")
+
+(define pkg-authors '(eli))

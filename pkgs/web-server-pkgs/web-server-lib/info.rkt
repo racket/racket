@@ -10,3 +10,7 @@
                "unstable-contract-lib"
                "parser-tools-lib"))
 (define build-deps '("rackunit-lib"))
+
+(define pkg-desc "implementation (no documentation) part of \"web-server\"")
+
+(define pkg-authors '(jay))

@@ -11,3 +11,7 @@
                      "scribble-lib"
                      "draw-lib"
                      "racket-doc"))
+
+(define pkg-desc "documentation part of \"draw\"")
+
+(define pkg-authors '(mflatt))

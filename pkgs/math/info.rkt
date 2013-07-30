@@ -16,3 +16,7 @@
                      "plot"
                      "sandbox-lib"
                      "scribble-lib"))
+
+(define pkg-desc "Functions and data structures useful for working with numbers and collections of numbers")
+
+(define pkg-authors '(ntoronto))

@@ -6,3 +6,7 @@
                "base"))
 
 (define implies '("gui-pkg-manager-lib"))
+
+(define pkg-desc "Graphical tool for managing Racket package installations")
+
+(define pkg-authors '(mflatt))

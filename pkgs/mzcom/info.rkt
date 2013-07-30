@@ -10,3 +10,7 @@
 (define build-deps '("racket-doc"
                      "mysterx"
                      "scribble-lib"))
+
+(define pkg-desc "COM control to instantate a Racket instance")
+
+(define pkg-authors '(mflatt))

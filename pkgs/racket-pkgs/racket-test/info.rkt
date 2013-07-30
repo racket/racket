@@ -27,3 +27,7 @@
 
 (define build-deps '("base"
                      "data-lib"))
+
+(define pkg-desc "Base Racket test suites")
+
+(define pkg-authors '(eli jay matthias mflatt robby ryanc samth))

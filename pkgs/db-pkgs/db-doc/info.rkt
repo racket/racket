@@ -12,3 +12,7 @@
                      "web-server-lib"
                      "db-lib"
                      "racket-doc"))
+
+(define pkg-desc "documentation part of \"db\"")
+
+(define pkg-authors '(ryanc))

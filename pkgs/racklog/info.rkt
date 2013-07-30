@@ -10,3 +10,7 @@
                      "rackunit-lib"
                      "racket-doc"
                      "scribble-lib"))
+
+(define pkg-desc "The implementation of the Racklog (embedded Prolog) language")
+
+(define pkg-authors '(jay))

@@ -13,3 +13,7 @@
                      "typed-racket-lib"
                      "racket-doc"))
 (define deps '("base"))
+
+(define pkg-desc "documentation part of \"typed-racket\"")
+
+(define pkg-authors '(samth stamourv))
