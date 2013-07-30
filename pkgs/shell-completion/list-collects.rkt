@@ -12,11 +12,10 @@
 (define (links* m root?)
   (case m
     [(user) (links #:user? #t #:root? root?)]
-    [(shared) (links #:shared? #t #:root? root?)]
     [else (links #:file m #:root? root?)]))
 
 (define (get-all-top-level-collections)
-  (define link-modes (list* 'user 'shared (get-links-search-files)))
+  (define link-modes (list* 'user (get-links-search-files)))
 
   (let* ([s (hash)]
          [s (for/fold ([s s]) ([c (in-list
