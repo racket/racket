@@ -1452,8 +1452,9 @@ path/s is either such a string or a list of them.
 "pkgs/sgl" responsible (jay)
 "pkgs/sgl/examples/alpha.rkt" drdr:command-line (mzc *)
 "pkgs/sgl/examples/gears.rkt" drdr:command-line (mzc "-k" *)
-"pkgs/shell-completion" responsible (samth sstrickl)
+"pkgs/shell-completion" responsible (samth sstrickl stamourv)
 "pkgs/shell-completion/racket-completion.bash" drdr:command-line #f
+"pkgs/shell-completion/racket-completion.zsh" responsible (eli)
 "pkgs/slatex" responsible (sstrickl)
 "pkgs/slatex/pdf-slatex-launcher.rkt" drdr:command-line (mzc *)
 "pkgs/slatex/slatex-launcher.rkt" drdr:command-line (mzc *)
