@@ -39,6 +39,7 @@
          "private/monad.rkt"
          "private/hash-monad.rkt"
          "private/name-collector.rkt"
+         "private/test.rkt"
          "private/text-ui-util.rkt")
 
 (provide run-tests
@@ -235,6 +236,10 @@
 
 ;; run-tests : test [(U 'quiet 'normal 'verbose)] -> integer
 (define (run-tests test [mode 'normal])
+  (unless (or (test-case? test) (test-suite? test))
+    (raise-argument-error 'run-tests "(or/c test-case? test-suite?)" test))
+  (unless (memq mode '(quiet normal verbose))
+    (raise-argument-error 'run-tests "(or/c 'quiet 'normal 'verbose)" mode))
   (parameterize ((current-custodian (make-custodian)))
     (monad-value
      ((compose
