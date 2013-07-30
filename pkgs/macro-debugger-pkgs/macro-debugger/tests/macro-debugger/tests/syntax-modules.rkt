@@ -201,7 +201,7 @@
          (macro
           (module m mzscheme 
             (#%plain-module-begin
-             (#%require (for-syntax scheme/mzscheme))
+             (#%require (for-syntax mzscheme))
              (define-values (x) 'a)
              x)))]
         #:no-hidden-steps)
@@ -213,7 +213,7 @@
          (macro
              (module m mzscheme
                (#%plain-module-begin 
-                (#%require (for-syntax scheme/mzscheme))
+                (#%require (for-syntax mzscheme))
                 (define-values (x) 'a))))]
         #:no-hidden-steps)
   (test "module mz, quote"
@@ -224,7 +224,7 @@
          (macro
              (module m mzscheme
                (#%plain-module-begin
-                (#%require (for-syntax scheme/mzscheme))
+                (#%require (for-syntax mzscheme))
                 'a)))]
         #:no-hidden-steps)
 
@@ -236,12 +236,12 @@
          (macro
              (module m mzscheme 
                (#%plain-module-begin
-                (#%require (for-syntax scheme/mzscheme))
+                (#%require (for-syntax mzscheme))
                 (begin 'a 'b))))
          (splice-module
           (module m mzscheme
             (#%plain-module-begin
-             (#%require (for-syntax scheme/mzscheme))
+             (#%require (for-syntax mzscheme))
              'a 'b)))]
         #:no-hidden-steps)
 
@@ -253,41 +253,41 @@
          (macro
           (module m mzscheme 
             (#%plain-module-begin
-             (#%require (for-syntax scheme/mzscheme))
+             (#%require (for-syntax mzscheme))
              (or 'a 'b)
              'c)))
          (macro
            (module m mzscheme
              (#%plain-module-begin
-              (#%require (for-syntax scheme/mzscheme))
+              (#%require (for-syntax mzscheme))
               (let ([or-part 'a])
                 (if or-part or-part (or 'b)))
               'c)))
          (macro
            (module m mzscheme
              (#%plain-module-begin
-              (#%require (for-syntax scheme/mzscheme))
+              (#%require (for-syntax mzscheme))
               (let-values ([(or-part) 'a])
                 (if or-part or-part (or 'b)))
               'c)))
          (rename-let-values
            (module m mzscheme
              (#%plain-module-begin
-              (#%require (for-syntax scheme/mzscheme))
+              (#%require (for-syntax mzscheme))
               (let-values ([(or-part) 'a])
                 (if or-part or-part (or 'b)))
               'c)))
          (macro
            (module m mzscheme
              (#%plain-module-begin
-              (#%require (for-syntax scheme/mzscheme))
+              (#%require (for-syntax mzscheme))
               (let-values ([(or-part) 'a])
                 (if or-part or-part (#%expression 'b)))
               'c)))
          (macro ;; FIXME: 'untag-expr
            (module m mzscheme
              (#%plain-module-begin
-              (#%require (for-syntax scheme/mzscheme))
+              (#%require (for-syntax mzscheme))
               (let-values ([(or-part) 'a])
                 (if or-part or-part 'b))
               'c)))]
@@ -310,25 +310,25 @@
          (macro
            (module m mzscheme
              (#%plain-module-begin
-              (#%require (for-syntax scheme/mzscheme))
+              (#%require (for-syntax mzscheme))
               (let-values ([(or-part) 'a])
                 (if or-part or-part (or 'b))))))
          (rename-let-values
            (module m mzscheme
              (#%plain-module-begin
-              (#%require (for-syntax scheme/mzscheme))
+              (#%require (for-syntax mzscheme))
               (let-values ([(or-part) 'a])
                 (if or-part or-part (or 'b))))))
          (macro
            (module m mzscheme
              (#%plain-module-begin
-              (#%require (for-syntax scheme/mzscheme))
+              (#%require (for-syntax mzscheme))
               (let-values ([(or-part) 'a])
                 (if or-part or-part (#%expression 'b))))))
          (macro ;; FIXME: 'untag-expr
            (module m mzscheme
              (#%plain-module-begin
-              (#%require (for-syntax scheme/mzscheme))
+              (#%require (for-syntax mzscheme))
               (let-values ([(or-part) 'a])
                 (if or-part or-part 'b)))))])
   ;; FIXME: hidden steps for above, tricky
