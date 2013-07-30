@@ -658,7 +658,7 @@ path/s is either such a string or a list of them.
 "pkgs/compiler-lib/compiler/demodularizer" responsible (jay)
 "pkgs/compiler-lib/compiler/demodularizer/batch.rkt" drdr:command-line #f
 "pkgs/contract-profile" responsible (stamourv)
-"pkgs/data-lib" responsible (mflatt)
+"pkgs/data-lib" responsible (ryanc)
 "pkgs/datalog" responsible (jay)
 "pkgs/db-pkgs" responsible (ryanc)
 "pkgs/db-pkgs/db-lib/db/odbc.rkt" drdr:command-line #f
@@ -1021,8 +1021,8 @@ path/s is either such a string or a list of them.
 "pkgs/r5rs-pkgs" responsible (mflatt)
 "pkgs/r6rs-pkgs" responsible (mflatt)
 "pkgs/r6rs-pkgs/r6rs-lib/r6rs/run.rkt" drdr:command-line (mzc *)
-"pkgs/racket-pkgs" responsible (eli jay matthias mflatt robby ryanc)
-"pkgs/racket-pkgs/at-exp-lib/at-exp" responsible (eli mflatt)
+"pkgs/racket-pkgs" responsible (eli jay matthias mflatt robby ryanc samth)
+"pkgs/racket-pkgs/at-exp-lib" responsible (eli mflatt)
 "pkgs/racket-pkgs/racket-doc/compatibility" responsible (asumu stamourv)
 "pkgs/racket-pkgs/racket-doc/data" responsible (ryanc samth)
 "pkgs/racket-pkgs/racket-doc/db" responsible (ryanc)
@@ -1390,7 +1390,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/zo-path.rkt" responsible (mflatt)
 "pkgs/racket-pkgs/racket-test/tests/zo-size.rkt" responsible (jay) drdr:random #t
 "pkgs/racklog" responsible (jay)
-"pkgs/rackunit-lib" responsible (noel)
+"pkgs/rackunit-lib" responsible (ryanc noel)
 "pkgs/readline-pkgs" responsible (mflatt)
 "pkgs/realm" responsible (matthias)
 "pkgs/redex-pkgs" responsible (robby bfetscher)
