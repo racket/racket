@@ -30,7 +30,6 @@
 
 (require racket/match
          racket/pretty
-         racket/contract
          "private/base.rkt"
          "private/counter.rkt"
          "private/format.rkt"
@@ -40,15 +39,10 @@
          "private/monad.rkt"
          "private/hash-monad.rkt"
          "private/name-collector.rkt"
-         "private/text-ui-util.rkt"
-         "private/test.rkt")
+         "private/text-ui-util.rkt")
 
-(provide/contract 
- [run-tests (((or/c test-case? test-suite?)) 
-             ((or/c 'quiet 'normal 'verbose))
-             . ->* . exact-nonnegative-integer?)])
-
-(provide display-context
+(provide run-tests
+         display-context
          display-exn
          display-summary+return
          display-ticker
