@@ -10,9 +10,6 @@
          current-failure-handler
          maximal-failures
 
-         exn:syntax-parse?
-         exn:syntax-parse-info
-
          invert-ps
          ps->stx+index
          )
@@ -46,16 +43,6 @@ broken by a lazy-require of this module into residual.rkt
 ;; Hack: alternative to new (primitive) phase-crossing exn type is to
 ;; store extra information in exn continuation marks.
 
-(define (exn:syntax-parse? x)
-  (and (exn:fail:syntax? x)
-       (pair? (continuation-mark-set-first
-               (exn-continuation-marks x)
-               'exn:syntax-parse))))
-
-;; exn:syntax-parse-info : exn:syntax-parse -> (cons syntax failureset)
-(define (exn:syntax-parse-info x)
-  (continuation-mark-set-first (exn-continuation-marks x) 'exn:syntax-parse))
-
 #|
 Reporting
 ---------
@@ -71,8 +58,7 @@ complicated.
 (define (report-failureset stx0 fs)
   (let* ([classes (maximal-failures fs)]
          [reports (apply append (map report/class classes))])
-    (with-continuation-mark 'exn:syntax-parse (cons stx0 fs)
-      (raise-syntax-error/reports stx0 reports))))
+    (raise-syntax-error/reports stx0 reports)))
 
 ;; A Report is
 ;;   - (report string stx)
