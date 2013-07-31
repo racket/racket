@@ -9,9 +9,25 @@
             #"text/s-expr" empty
             (λ (op) (write v op))))
 
-(define (pkg-index/basic get-pkgs pkg-name->info)
+(define (request-binding/string req id [fail? #t])
+  (define res
+    (bindings-assq (string->bytes/utf-8 id)
+                   (request-bindings/raw req)))
+  (cond
+    [res
+     (bytes->string/utf-8
+      (binding:form-value
+       res))]
+    [fail?
+     (error 'pnr "Missing field ~e" id)]
+    [else
+     #f]))
+
+(define (pkg-index/basic+versions get-pkgs pkg-name->info)
   (define (write-info req pkg-name)
-    (response/sexpr (pkg-name->info pkg-name)))
+    (response/sexpr
+     (pkg-name->info pkg-name
+                     #:version (request-binding/string req "version" #f))))
   (define (display-info req pkg-name)
     (define info (pkg-name->info pkg-name))
     (response/xexpr
@@ -32,7 +48,7 @@
   (define (write-pkgs req)
     (response/sexpr (get-pkgs)))
   (define (write-pkgs/all req)
-    (response/sexpr 
+    (response/sexpr
      (for/hash ([n (in-list (get-pkgs))])
        (values n (pkg-name->info n)))))
   (define-values (dispatch get-url)
@@ -45,8 +61,24 @@
      [("pkg" (string-arg)) write-info]))
   dispatch)
 
-(provide/contract
- [pkg-index/basic
-  (-> (-> (listof string?))
-      (-> string? (hash/c symbol? any/c))
-      (-> request? response?))])
+(define (pkg-index/basic get-pkgs pkg-name->info)
+  (pkg-index/basic+versions
+   get-pkgs
+   (λ (pkg-name #:version version)
+     (pkg-name->info pkg-name))))
+
+(provide
+ (contract-out
+  [request-binding/string
+   (->* (request? string?)
+        (boolean?)
+        string?)]
+  [pkg-index/basic+versions
+   (-> (-> (listof string?))
+       (-> string? #:version (or/c string? false/c)
+           (hash/c symbol? any/c))
+       (-> request? response?))]
+  [pkg-index/basic
+   (-> (-> (listof string?))
+       (-> string? (hash/c symbol? any/c))
+       (-> request? response?))]))

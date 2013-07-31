@@ -23,7 +23,8 @@
          meta/pkg-index/basic/main
          web-server/http/id-cookie
          file/sha1
-         (prefix-in bcrypt- bcrypt))
+         (prefix-in bcrypt- bcrypt)
+         version/utils)
 
 (define-syntax-rule (while cond e ...)
   (let loop ()
@@ -65,11 +66,25 @@
   (file-exists? (build-path pkgs-path pkg-name)))
 (define (package-remove! pkg-name)
   (delete-file (build-path pkgs-path pkg-name)))
-(define (package-info pkg-name)
-  (hash-set (file->value (build-path pkgs-path pkg-name)) 'name pkg-name))
+(define (package-info pkg-name #:version [version #f])
+  (define no-version (hash-set (file->value (build-path pkgs-path pkg-name)) 'name pkg-name))
+  (cond
+    [(and version 
+          (hash-ref no-version 'versions #f)
+          (hash-ref (hash-ref no-version 'versions) version #f))
+     =>
+     (λ (version-ht)
+       (hash-merge version-ht no-version))]
+    [else
+     no-version]))
 (define (package-info-set! pkg-name i)
   (write-to-file i (build-path pkgs-path pkg-name)
                  #:exists 'replace))
+
+(define (hash-merge from to)
+  (for/fold ([to to]) 
+      ([(k v) (in-hash from)])
+    (hash-set to k v)))
 
 (define (package-ref pkg-info key)
   (hash-ref pkg-info key
@@ -82,6 +97,8 @@
                  *default-ring*]
                 ['tags
                  empty]
+                ['versions
+                 (hash)]
                 [(or 'last-checked 'last-edit 'last-updated)
                  -inf.0]))))
 
@@ -441,7 +458,7 @@
   `(table
     ([class "packages sortable"])
     (thead
-     (tr (th "Package") (th "Author") (th "Description") (th "Tags")))
+     (tr (th "Package") (th "Authors") (th "Description") (th "Tags")))
     (tbody
      ,@(for/list ([p (in-list pkgs)])
          (define i (package-info p))
@@ -462,7 +479,7 @@
 
 (define (author-links authors terms)
   (for/list ([author (in-list (author->list authors))])
-    `(span 
+    `(span
       (a ([href ,(main-url page/search
                            (snoc terms
                                  (format "author:~a" author)))])
@@ -488,20 +505,6 @@
 
 (define (page/manage/upload req)
   (page/manage/edit req #f))
-
-(define (request-binding/string req id [fail? #t])
-  (define res
-    (bindings-assq (string->bytes/utf-8 id)
-                   (request-bindings/raw req)))
-  (cond
-    [res
-     (bytes->string/utf-8
-      (binding:form-value
-       res))]
-    [fail?
-     (error 'pnr "Missing field ~e" id)]
-    [else
-     #f]))
 
 (define (page/manage/edit req pkg)
   (define (edit-details pkg-req)
@@ -657,6 +660,62 @@
                            old)))
                   empty))))
 
+(define ((pkg-info-edit-version bc pkg-name v) req)
+  (define version-formlet
+    (if v 
+      (formlet
+       (table
+        (tr (td "Version:")
+            (td  ,v))
+        (tr (td "Source:")
+            (td ,{(to-string (required (text-input))) . => . source})))
+       (values v source))
+      (formlet
+       (table
+        (tr (td "Version:")
+            (td  ,{(to-string (required (text-input))) . => . version}))
+        (tr (td "Source:")
+            (td ,{(to-string (required (text-input))) . => . source})))
+       (values version source))))
+
+  (define version-req
+    (send/suspend
+     (λ (k-url)
+       (template
+        req
+        #:breadcrumb
+        bc
+        `(div([class "package"])
+             (form ([action ,k-url] [method "post"])
+                   ,@(formlet-display version-formlet)
+                   (input ([type "submit"] [value "Edit Version Exception"]))))))))
+
+  (define-values (version source)
+    (formlet-process version-formlet version-req))
+
+  (unless (valid-version? version)
+    (error 'pnr "Must use valid version for exception: ~e" 
+           version))
+  (when (and (package-exists? pkg-name)
+             (not (member (current-user version-req #t)
+                          (author->list (package-ref (package-info pkg-name) 'author)))))
+    (error 'pnr
+           "Packages may only be modified by their authors: ~e"
+           pkg-name))
+
+  (package-info-set! 
+   pkg-name
+   (hash-update (package-info pkg-name) 'versions
+                (λ (v-ht)
+                  (hash-set v-ht version
+                            (hasheq 'source source
+                                    'checksum "")))
+                hash))
+
+  (thread (λ () (update-checksum #t pkg-name)))
+
+  (redirect-to (main-url page/manage/edit pkg-name)))
+
 (define (page/info-like bc edit-details tag-url delete-handler req pkg-name)
   (define form-handler
     (or edit-details
@@ -737,6 +796,24 @@
             ,(if pkg-name
                `(li (input ([name "tag"] [type "text"])))
                ""))))
+         (tr
+          (td "Version Exceptions")
+          (td
+           (table
+            ,@(for/list ([(v vi) (in-hash (package-ref* i 'versions (hash)))])
+                `(tr
+                  (td ,(if edit-details 
+                         `(a ([href ,(embed/url (pkg-info-edit-version bc pkg-name v))])
+                             ,v)
+                         v))
+                  (td ,(hash-ref vi 'source ""))
+                  (td ,(hash-ref vi 'checksum ""))))
+            ,@(if edit-details
+                `((tr
+                   (td ([colspan "3"] [style "text-align: center;"])
+                       (a ([href ,(embed/url (pkg-info-edit-version bc pkg-name #f))])
+                          "Add exception"))))
+                '()))))
          `(tr (td ([class "submit"] [colspan "2"])
                   (input ([type "submit"] [value "Submit"]))))))
      (template
@@ -771,6 +848,7 @@
 (define (update-checksums force? pkgs)
   (for-each (curry update-checksum force?) pkgs))
 
+;; xxx look at all versions
 (define (update-checksum force? pkg-name)
   (define i (package-info pkg-name))
   (define old-checksum
@@ -791,6 +869,19 @@
      (define* i
        (hash-set i 'last-checked now))
      (define* i
+       (hash-update i 'versions
+                    (λ (v-ht)
+                      (for/hash ([(v vi) (in-hash v-ht)])
+                        (define old-checksum (hash-ref vi 'checksum ""))
+                        (define new-checksum
+                          (package-url->checksum
+                           (hash-ref vi 'source)))
+                        (values v
+                                (hash-set vi 'checksum
+                                          (or new-checksum
+                                              old-checksum)))))
+                    hash))
+     (define* i
        (if (and new-checksum (equal? new-checksum old-checksum)
                 ;; update if 'modules was not present:
                 (hash-ref i 'modules #f))
@@ -810,7 +901,7 @@
    i))
 
 (define basic-start
-  (pkg-index/basic package-list package-info))
+  (pkg-index/basic+versions package-list package-info))
 
 ;; Curation
 (define (curation-administrator? u)
