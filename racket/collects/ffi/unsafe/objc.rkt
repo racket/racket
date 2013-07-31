@@ -390,10 +390,11 @@
 (define-for-syntax method-sels (make-hash))
 
 (define-for-syntax (register-selector sym)
-  (or (hash-ref method-sels (cons (syntax-local-lift-context) sym) #f)
+  (define key (cons (syntax-local-lift-context) sym))
+  (or (hash-ref method-sels key #f)
       (let ([id (syntax-local-lift-expression
                  #`(sel_registerName #,(symbol->string sym)))])
-        (hash-set! method-sels sym id)
+        (hash-set! method-sels key id)
         id)))
 
 (provide selector)
