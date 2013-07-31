@@ -103,6 +103,9 @@
    [("rss") page/rss]
    [else basic-start]))
 
+(define (author->list as)
+  (string-split as))
+
 (define (page/rss req)
   (define ps
     (sort (map package-info (package-list))
@@ -128,7 +131,7 @@
            (format "https://pkg.racket-lang.org~a"
                    (main-url page/info p)))
          (define lu (atom-format-time (package-ref i 'last-updated)))
-         (define a (package-ref i 'author))
+         (define a (first (author->list (package-ref i 'author))))
          (match-define (regexp #rx"^([^@]+)" (list _ n)) a)
          `(entry
            (title ([type "html"])
@@ -186,7 +189,7 @@
              (list _ (app string->number (and (not #f) ring))))
      (equal? ring (package-ref info 'ring))]
     [(regexp #rx"^author:(.*?)$" (list _ author))
-     (equal? author (package-ref info 'author))]
+     (member author (author->list (package-ref info 'author)))]
     [_
      (define term-rx (regexp-quote term))
      (for/or ([tag (list* pkg-name (package-ref info 'tags))])
@@ -442,7 +445,7 @@
     (tbody
      ,@(for/list ([p (in-list pkgs)])
          (define i (package-info p))
-         (define author (package-ref i 'author))
+         (define authors (package-ref i 'author))
          `(tr
            ([class ,(if (< (- (current-seconds) (* 2 24 60 60))
                            (package-ref i 'last-updated))
@@ -450,15 +453,21 @@
                       "")])
            (td (a ([href ,(main-url page/package p)])
                   ,p))
-           (td (a ([href ,(main-url page/search
-                                    (snoc terms
-                                          (format "author:~a" author)))])
-                  ,author))
+           (td ,@(author-links authors terms))
            (td ,(package-ref i 'description))
            (td ,@(for/list ([t (in-list (package-ref i 'tags))])
                    `(span (a ([href ,(main-url page/search (snoc terms t))])
                              ,t)
                           " "))))))))
+
+(define (author-links authors terms)
+  (for/list ([author (in-list (author->list authors))])
+    `(span 
+      (a ([href ,(main-url page/search
+                           (snoc terms
+                                 (format "author:~a" author)))])
+         ,author)
+      nbsp)))
 
 (define (page/manage req)
   (define pkgs (package-list/mine req))
@@ -518,11 +527,21 @@
              new-pkg))
 
     (when (and (package-exists? new-pkg)
-               (not (equal? (package-ref (package-info new-pkg) 'author)
-                            (current-user pkg-req #t))))
+               (not (member (current-user pkg-req #t)
+                            (author->list (package-ref (package-info new-pkg) 'author)))))
       (error 'pnr
              "Packages may only be modified by their authors: ~e"
              new-pkg))
+
+    (define new-author (request-binding/string pkg-req "author"))
+    (when (string=? new-author "")
+      (error 'pnr "Author must not be empty: ~e" new-author))
+    (unless (member (current-user pkg-req #t)
+                    (author->list new-author))
+      (error 'pnr
+             "You(~e) must remain an author of the package: ~e"
+             (current-user pkg-req #t)
+             new-author))
 
     (package-begin
      (define* i
@@ -535,7 +554,7 @@
      (define* i
        (hash-set i 'source new-source))
      (define* i
-       (hash-set i 'author (current-user pkg-req #t)))
+       (hash-set i 'author new-author))
      (define* i
        (hash-set i 'description new-desc))
      (define* i
@@ -561,7 +580,7 @@
 
   (define (delete! pkg-req)
     (when (and (package-exists? pkg)
-               (not (equal? (package-ref (package-info pkg) 'author)
+               (not (member (package-ref (package-info pkg) 'author)
                             (current-user pkg-req #t))))
       (error 'pnr
              "Packages may only be modified by their authors: ~e"
@@ -650,7 +669,7 @@
        (if i
          (package-ref i id)
          def))
-     (define author (package-ref* i 'author ""))
+     (define authors (package-ref* i 'author ""))
      (define the-table
        `(table
          (tr
@@ -664,10 +683,14 @@
           (td "Ring")
           (td ,(ring-format (package-ref* i 'ring *default-ring*))))
          (tr
-          (td "Author")
-          (td (a ([href ,(main-url page/search
-                                   (list (format "author:~a" author)))])
-                 ,author)))
+          (td "Authors")
+          (td ,@(if edit-details
+                  `((input ([name "author"]
+                            [type "text"]
+                            [value ,(or authors "")]))
+                    (br)
+                    (span "Use spaces to separator each author's email address."))
+                  (author-links authors empty))))
          (tr
           (td "Source")
           (td
@@ -848,11 +871,11 @@
       `(table
         ([class "packages sortable"])
         (thead
-         (tr (th "Ring") (th "Package") (th "Author") (th "Last Update") (th "Conflicts")))
+         (tr (th "Ring") (th "Package") (th "Authors") (th "Last Update") (th "Conflicts")))
         (tbody
          ,@(for/list ([p (in-list (package-list))])
              (define i (package-info p))
-             (define author (package-ref i 'author))
+             (define authors (package-ref i 'author))
              (define r (package-ref i 'ring))
              (define conflicts (package-conflicts? p))
              (define lu (package-ref i 'last-updated))
@@ -874,7 +897,7 @@
                           blacktriangle)
                       `blacktriangle))
                (td ,p)
-               (td ,author)
+               (td ,authors)
                (td ([sorttable_customkey ,(number->string lu)])
                    ,(format-time lu))
                (td
