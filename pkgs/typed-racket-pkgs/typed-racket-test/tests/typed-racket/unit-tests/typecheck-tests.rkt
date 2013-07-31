@@ -1464,6 +1464,12 @@
               (make-Evt -String))
         (tc-e (guard-evt (inst make-channel String))
               (make-Evt -String))
+        (tc-err (let: ([a : (U (Evtof Any) String) always-evt])
+                  (if (handle-evt? a) a (string->symbol a))))
+        (tc-err (let: ([a : (U (Evtof Any) String) always-evt])
+                  (if (channel-put-evt? a) a (string->symbol a))))
+        (tc-err (let: ([a : (U (Evtof Any) String) always-evt])
+                  (if (semaphore-peek-evt? a) a (string->symbol a))))
 
         ;Semaphores
         (tc-e (make-semaphore) -Semaphore)

@@ -316,7 +316,7 @@
 [never-evt (make-Evt (Un))]
 [system-idle-evt (-> (make-Evt -Void))]
 [alarm-evt (-> -Real (-mu x (make-Evt x)))]
-[handle-evt? (make-pred-ty (make-Evt Univ))]
+[handle-evt? (asym-pred Univ B (-FS (-filter (make-Evt Univ) 0) -top))]
 [current-evt-pseudo-random-generator
  (-Param -Pseudo-Random-Generator -Pseudo-Random-Generator)]
 
@@ -327,7 +327,7 @@
 [channel-try-get (-poly (a) ((-channel a) . -> . (Un a (-val #f))))]
 [channel-put (-poly (a) ((-channel a) a . -> . -Void))]
 [channel-put-evt (-poly (a) (-> (-channel a) a (-mu x (make-Evt x))))]
-[channel-put-evt? (make-pred-ty (-mu x (make-Evt x)))]
+[channel-put-evt? (asym-pred Univ B (-FS (-filter (-mu x (make-Evt x)) 0) -top))]
 
 ;Section 3.3
 
@@ -2196,7 +2196,7 @@
 [semaphore-try-wait? (-> -Semaphore B)]
 [semaphore-wait/enable-break (-> -Semaphore -Void)]
 [semaphore-peek-evt (-> -Semaphore (-mu x (make-Evt x)))]
-[semaphore-peek-evt? (make-pred-ty (-mu x (make-Evt x)))]
+[semaphore-peek-evt? (asym-pred Univ B (-FS (-filter (-mu x (make-Evt x)) 0) -top))]
 ;[call-with-semaphore ???]
 ;[call-with-semaphore/enable-break ???]
 
