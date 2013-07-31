@@ -1,7 +1,10 @@
 #lang racket/base
 (require racket/list
+         racket/format
          syntax/stx
          unstable/struct
+         unstable/error
+         syntax/srcloc
          "minimatch.rkt"
          (except-in syntax/parse/private/residual
                     syntax-patterns-fail)
@@ -61,8 +64,8 @@ complicated.
     (raise-syntax-error/reports stx0 reports)))
 
 ;; A Report is
-;;   - (report string stx)
-(define-struct report (message stx) #:prefab)
+;;   - (report string (listof string) stx)
+(define-struct report (message context stx) #:prefab)
 
 ;; report/class : (non-empty-listof Failure) -> (listof Report)
 (define (report/class fs)
@@ -76,9 +79,10 @@ complicated.
 
 ;; report/expectstack : ExpectStack syntax nat -> Report
 (define (report/expectstack es stx index)
-  (let ([frame-expect (and (pair? es) (car es))])
+  (let ([frame-expect (and (pair? es) (car es))]
+        [context (append* (map context-prose-for-expect (if (pair? es) (cdr es) null)))])
     (cond [(not frame-expect)
-           (report "bad syntax" #f)]
+           (report "bad syntax" context #f)]
           [else
            (let ([frame-stx
                   (let-values ([(x cx) (stx-list-drop/cx stx stx index)])
@@ -86,21 +90,21 @@ complicated.
              (cond [(equal? frame-expect (expect:atom '() #f))
                     (syntax-case frame-stx ()
                       [(one . more)
-                       (report "unexpected term" #'one)]
+                       (report "unexpected term" context #'one)]
                       [_
-                       (report/expects (list frame-expect) frame-stx)])]
+                       (report (prose-for-expect frame-expect) context frame-stx)])]
                    [(expect:disj? frame-expect)
-                    (report/expects (expect:disj-expects frame-expect) frame-stx)]
+                    (report (prose-for-expects (expect:disj-expects frame-expect))
+                            context frame-stx)]
                    [else
-                    (report/expects (list frame-expect) frame-stx)]))])))
+                    (report (prose-for-expect frame-expect) context frame-stx)]))])))
 
-;; report/expects : (listof Expect) syntax -> Report
+;; prose-for-expects : (listof Expect) -> string
 ;; FIXME: partition by role first?
-(define (report/expects expects frame-stx)
-  (report (join-sep (for/list ([expect expects])
-                      (prose-for-expect expect))
-                    ";" "or")
-          frame-stx))
+(define (prose-for-expects expects)
+  (join-sep (for/list ([expect expects])
+              (prose-for-expect expect))
+            ";" "or"))
 
 ;; prose-for-expect : Expect -> string
 (define (prose-for-expect e)
@@ -121,23 +125,63 @@ complicated.
     [(expect:proper-pair _)
      "expected more terms"]))
 
+(define (context-prose-for-expect e)
+  (match e
+    [(expect:thing stx+index description transparent? role _)
+     (let ([stx (stx+index->stx stx+index)])
+       (cons (~a "while parsing " description
+                 (if role (~a " for " role) ""))
+             (if (error-print-source-location)
+                 (list (~a " term: "
+                           (~s (syntax->datum stx)
+                               #:limit-marker "..."
+                               #:max-width 50))
+                       (~a " location: "
+                           (or (source-location->string stx) "not available")))
+                 null)))]))
+
+(define (stx+index->stx stx+index)
+  (let*-values ([(stx) (car stx+index)]
+                [(index) (cdr stx+index)]
+                [(x cx) (stx-list-drop/cx stx stx index)])
+    (datum->syntax cx x cx)))
+
 ;; == Do Report ==
 
 (define (raise-syntax-error/reports stx0 reports)
-  (cond [(= (length reports) 1)
-         (raise-syntax-error/report stx0 (car reports))]
-        [else
-         (raise-syntax-error/report* stx0 (car reports))]))
+  (let* ([report (car reports)]
+         [more? (pair? (cdr reports))]
+         [message0 (report-message report)]
+         [context (report-context report)])
+    (raise-syntax-error* message0 stx0 (report-stx report)
+                         '("parsing context" multi maybe) context
+                         '("note" maybe) (and more? "additional errors omitted"))))
 
-(define (raise-syntax-error/report stx0 report)
-  (raise-syntax-error #f (report-message report) stx0 (report-stx report)))
-
-(define (raise-syntax-error/report* stx0 report)
-  (let ([message
-         (string-append
-          "There were multiple syntax errors. The first error follows:\n"
-          (report-message report))])
-    (raise-syntax-error #f message stx0 (report-stx report))))
+(define (raise-syntax-error* message0 stx sub-stx
+                             #:who [who #f]
+                             #:continued [continued-message null]
+                             #:extra-sources [extra-stxs null]
+                             . field+detail-list)
+  (let* ([source-stx (or stx sub-stx)]
+         [who (or who
+                  (let* ([maybe-id (if (stx-pair? stx) (stx-car stx) stx)])
+                    (if (identifier? maybe-id) (syntax-e maybe-id) '?)))]
+         [message
+          (apply compose-error-message who message0
+                 #:continued continued-message
+                 '("at" maybe) (and sub-stx
+                                    (error-print-source-location)
+                                    (format "~.s" (syntax->datum sub-stx)))
+                 '("in" maybe) (and stx
+                                    (error-print-source-location)
+                                    (format "~.s" (syntax->datum stx)))
+                 field+detail-list)]
+         [message
+          (if (error-print-source-location)
+              (string-append (source-location->prefix source-stx) message)
+              message)])
+    (raise (exn:fail:syntax message (current-continuation-marks)
+                            (filter values (list* stx sub-stx extra-stxs))))))
 
 ;; ====
 
