@@ -2744,6 +2744,7 @@ Scheme_Object *scheme_frame_get_end_statement_lifts(Scheme_Comp_Env *env);
 Scheme_Object *scheme_frame_get_require_lifts(Scheme_Comp_Env *env);
 Scheme_Object *scheme_frame_get_provide_lifts(Scheme_Comp_Env *env);
 Scheme_Object *scheme_generate_lifts_key(void);
+Scheme_Object *scheme_top_level_lifts_key(Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path, 
                                                   intptr_t phase,
@@ -3247,6 +3248,8 @@ struct Scheme_Env {
   struct Scheme_Env *instance_env; /* shortcut to env where module is instantiated */
 
   Scheme_Hash_Table *shadowed_syntax; /* top level only */
+
+  Scheme_Object *lift_key; /* for `syntax-local-lift-context' */
 
   /* Per-instance: */
   intptr_t phase, mod_phase;

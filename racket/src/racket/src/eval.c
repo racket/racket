@@ -3967,7 +3967,7 @@ static void *compile_k(void)
 	 before the rest. */
       while (1) {
 	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), 
-                                    scheme_false, scheme_false, scheme_null, scheme_false);
+                                    scheme_false, scheme_top_level_lifts_key(cenv), scheme_null, scheme_false);
 	form = scheme_check_immediate_macro(form, 
 					    cenv, &rec, 0,
 					    0, &gval, NULL, NULL);
@@ -4009,7 +4009,7 @@ static void *compile_k(void)
 
       while (1) {
 	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), 
-                                    scheme_false, scheme_false, scheme_null, scheme_false);
+                                    scheme_false, scheme_top_level_lifts_key(cenv), scheme_null, scheme_false);
 
 	scheme_init_compile_recs(&rec, 0, &rec2, 1);
 
@@ -4406,6 +4406,9 @@ static void *expand_k(void)
   p->ku.k.p3 = NULL;
   p->ku.k.p4 = NULL;
 
+  if (SCHEME_FALSEP(catch_lifts_key))
+    catch_lifts_key = scheme_top_level_lifts_key(env);
+
   if (!SCHEME_STXP(obj))
     obj = scheme_datum_to_syntax(obj, scheme_false, scheme_false, 1, 0);
 
@@ -4510,7 +4513,7 @@ static Scheme_Object *r_expand(Scheme_Object *obj, Scheme_Comp_Env *env,
 Scheme_Object *scheme_expand(Scheme_Object *obj, Scheme_Env *env)
 {
   return r_expand(obj, scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
-		  -1, 1, 0, scheme_true, -1, 0);
+		  -1, 1, 0, scheme_false, -1, 0);
 }
 
 Scheme_Object *scheme_tail_eval_expr(Scheme_Object *obj)
@@ -4705,6 +4708,16 @@ Scheme_Object *scheme_generate_lifts_key(void)
   char buf[20];
   sprintf(buf, "lifts%d", generate_lifts_count++);
   return scheme_make_symbol(buf); /* uninterned */
+}
+
+Scheme_Object *scheme_top_level_lifts_key(Scheme_Comp_Env *env)
+{
+  if (!env->genv->lift_key) {
+    Scheme_Object *o;
+    o = scheme_generate_lifts_key();
+    env->genv->lift_key = o;
+  }
+  return env->genv->lift_key;
 }
 
 Scheme_Object *
@@ -4996,7 +5009,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
       scheme_frame_captures_lifts(env, 
                                   (catch_lifts < 0) ? scheme_pair_lifted : scheme_make_lifted_defn, 
                                   data,
-                                  scheme_false, 
+                                  scheme_top_level_lifts_key(env),
                                   catch_lifts_key, NULL,
                                   scheme_false);
     }

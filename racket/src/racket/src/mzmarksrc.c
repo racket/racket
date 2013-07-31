@@ -925,6 +925,8 @@ namespace_val {
 
   gcMARK2(e->shadowed_syntax, gc);
 
+  gcMARK2(e->lift_key, gc);
+
   gcMARK2(e->link_midx, gc);
   gcMARK2(e->require_names, gc);
   gcMARK2(e->et_require_names, gc);
