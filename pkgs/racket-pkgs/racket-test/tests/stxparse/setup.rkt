@@ -48,21 +48,21 @@ Auxiliaries
 |#
 
 ;; tok = test pattern ok
-(define-syntax tok
-  (syntax-rules ()
+(define-syntax (tok stx)
+  (syntax-case stx ()
     [(tok s p expr #:pre [pre-p ...] #:post [post-p ...])
-     (test-case (format "line ~s: ~s match ~s"
-                        (syntax-line (quote-syntax s))
-                        's 'p)
-       (syntax-parse (quote-syntax s)
-         [pre-p (error 'wrong-pattern "~s" 'pre-p)] ...
-         [p expr]
-         [post-p (error 'wrong-pattern "~s" 'post-p)] ...)
-       (void))]
+     #`(test-case (format "line ~s: ~s match ~s"
+                          '#,(syntax-line #'s)
+                          's 'p)
+         (syntax-parse (quote-syntax s)
+           [pre-p (error 'wrong-pattern "~s" 'pre-p)] ...
+           [p expr]
+           [post-p (error 'wrong-pattern "~s" 'post-p)] ...)
+         (void))]
     [(tok s p expr)
-     (tok s p expr #:pre () #:post ())]
+     #'(tok s p expr #:pre () #:post ())]
     [(tok s p)
-     (tok s p 'ok)]))
+     #'(tok s p 'ok)]))
 
 (define-syntax-rule (bound b ...)
   (begin (bound1 b) ...))
@@ -90,18 +90,18 @@ Auxiliaries
 (define-syntax-rule (terx s p rx ...)
   (terx* s [p] rx ...))
 
-(define-syntax terx*
-  (syntax-rules ()
+(define-syntax (terx* stx)
+  (syntax-case stx ()
     [(terx s [p ...] rx ...)
-     (test-case (format "line ~s: ~a match ~s for error"
-                        (syntax-line (quote-syntax s))
-                        's '(p ...))
-       (check-exn (lambda (exn)
-                    (erx rx (exn-message exn)) ... #t)
-                  (lambda ()
-                    (syntax-parse (quote-syntax s)
-                      [p 'ok] ...)))
-       (void))]))
+     #`(test-case (format "line ~s: ~a match ~s for error"
+                          '#,(syntax-line #'s)
+                          's '(p ...))
+         (check-exn (lambda (exn)
+                      (erx rx (exn-message exn)) ... #t)
+                    (lambda ()
+                      (syntax-parse (quote-syntax s)
+                        [p 'ok] ...)))
+         (void))]))
 
 (define-syntax erx
   (syntax-rules (not)
