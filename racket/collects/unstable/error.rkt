@@ -33,7 +33,7 @@ TODO
        #:rest details-list/c
        any)]
  [compose-error-message
-  (->* (symbol? string?)
+  (->* ((or/c symbol? #f) string?)
        (#:continued (or/c string? (listof string)))
        #:rest details-list/c
        string?)])
@@ -78,6 +78,9 @@ TODO
                                 [value (cdr (car details))])
                            (cond [(and (or maybe? multi? (not value?))
                                        (not value))
+                                  (loop (cdr details))]
+                                 [(and maybe? multi?
+                                       (null? value))
                                   (loop (cdr details))]
                                  [multi?
                                   (list* "\n  " field ": "

@@ -34,8 +34,9 @@ options affect the formatting of the detail line:
 
 @itemlist[
 
-@item{@racket['multi] formats each element in the corresponding value,
-which must be a list, as a separate line}
+@item{@racket['multi] formats each element in the corresponding @racket[value],
+which must be a list, as a separate line; if @racket['maybe] is also provided,
+then the detail line is omittable if the list is empty}
 
 @item{@racket['value] formats the value using
 @racket[error-value->string-handler]; the detail line is not omittable
@@ -65,7 +66,7 @@ unless @racket['maybe] or @racket['multi] is also provided}
 }
 
 @defproc[(compose-error-message
-                         [name symbol?]
+                         [name (or/c symbol? #f)]
                          [message string?]
                          [field (let ([option/c (or/c 'value 'multi 'maybe)])
                                   (or/c string? (cons/c string? (listof option/c))))]
