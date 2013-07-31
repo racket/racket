@@ -373,23 +373,27 @@ A reader abbreviation for @racket[(inst e t ... t ooo bound)].}
 @section{Require}
 
 Here, @racket[_m] is a module spec, @racket[_pred] is an identifier
-naming a predicate, and @racket[_r] is an optionally-renamed identifier.
+naming a predicate, and @racket[_maybe-renamed] is an
+optionally-renamed identifier.
 
 @defform/subs[#:literals (struct)
 (require/typed m rt-clause ...)
-([rt-clause [r t]
+([rt-clause [maybe-renamed t]
             [#:struct name ([f : t] ...)
                  struct-option ...]
             [#:struct (name parent) ([f : t] ...)
                  struct-option ...]
             [#:opaque t pred]]
+ [maybe-renamed id
+                (orig-id new-id)]
  [struct-option
    (code:line #:constructor-name constructor-id)
    (code:line #:extra-constructor-name constructor-id)])]
 This form requires identifiers from the module @racket[m], giving
 them the specified types.
 
-The first case requires @racket[r], giving it type @racket[t].
+The first case requires @racket[_maybe-renamed], giving it type
+@racket[t].
 
 @index["struct"]{The second and third cases} require the struct with name @racket[name]
 with fields @racket[f ...], where each field has type @racket[t].  The
