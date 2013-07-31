@@ -267,12 +267,15 @@ complain-no-submodule:
 	exit 1
 
 # Create packages and a catalog for all native libraries:
+PACK_NATIVE = --native --absolute --pack build/native/pkgs \
+              ++catalog build/native/catalog \
+	      ++catalog build/local/catalog
 native-catalog:
-	$(RACKET) $(DISTBLD)/pack-native.rkt native-pkgs
+	$(RACKET) $(DISTBLD)/pack-and-catalog.rkt $(PACK_NATIVE) native-pkgs
 
 # Create a catalog for all packages in this directory:
 local-source-catalog:
-	$(RACKET) $(DISTBLD)/catalog-local.rkt
+	$(RACKET) $(DISTBLD)/pack-and-catalog.rkt ++catalog build/local/catalog pkgs
 
 # Clear out a package build in "build/user", and then install
 # packages:
@@ -332,6 +335,16 @@ binary-catalog:
 	$(RACKET) -l- distro-build/pack-built --mode binary
 binary-catalog-server:
 	$(RACKET) -l- distro-build/serve-catalog --mode binary
+
+# Assemble all packages from this repo into ".zip" form
+# to checksum-based subdirectories of "build/archive/pkgs"
+# and a catalog in "build/archive/catalog":
+PACK_ARCHIVE = --at-checksum build/archive/pkgs \
+               --pack build/archive/pre-pkgs \
+               ++catalog build/archive/catalog
+archive-catalog:
+	$(RACKET) $(DISTBLD)/pack-and-catalog.rkt --native $(PACK_ARCHIVE) native-pkgs
+	$(RACKET) $(DISTBLD)/pack-and-catalog.rkt $(PACK_ARCHIVE) pkgs
 
 # ------------------------------------------------------------
 # On each supported platform (for an installer build):
