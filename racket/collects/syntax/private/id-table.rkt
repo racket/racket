@@ -13,9 +13,10 @@
 
 (define (make-id-table-hash-code identifier->symbol)
   (lambda (d hash-code)
-    (+ (hash-code (id-table-phase d))
-       (for/sum (((k v) (in-dict d)))
-         (* (hash-code (identifier->symbol k)) (hash-code v))))))
+    (let ([phase (id-table-phase d)])
+      (+ (hash-code phase)
+         (for/sum (((k v) (in-dict d)))
+           (* (hash-code (identifier->symbol k phase)) (hash-code v)))))))
 
 (define (make-id-table-equal? idtbl-count idtbl-ref)
   (lambda (left right equal?)
