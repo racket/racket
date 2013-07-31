@@ -102,8 +102,6 @@
       null))
 
 (when show-all?
-  (printf "User-specific, all-version links:\n")
-  (void (links #:user? #t #:shared? #t #:show? #t))
   (printf "Installation links:\n")
   (void (links #:user? #f #:show? #t))
   (for ([f (in-list
