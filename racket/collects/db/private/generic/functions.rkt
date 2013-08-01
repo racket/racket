@@ -526,9 +526,9 @@
                     (eq? (hash-ref table key not-given) not-given)
                     ;; FIXME: okay to coalesce values if equal?
                     (equal? value old-value))
-          (raise-misc-error who "duplicate value for key"
-                            '("key" value) key
-                            '("values" multi value) (list old-value value)))
+          (error* who "duplicate value for key"
+                  '("key" value) key
+                  '("values" multi value) (list old-value value)))
         (if value-list?
             (hash-set table key
                       (if (ok-value? value)

@@ -519,8 +519,8 @@
 
     (define/override (start-transaction* fsym isolation option)
       (when (eq? isolation 'nested)
-        (raise-misc-error fsym "already in transaction"
-                          #:continued "nested transactions not supported for ODBC connections"))
+        (error* fsym "already in transaction"
+                #:continued "nested transactions not supported for ODBC connections"))
       (when option
         ;; No options supported
         (raise-argument-error fsym "#f" option))
@@ -544,8 +544,8 @@
                  ;; So if 0, use serializable.
                  (if (zero? default-level) SQL_TXN_SERIALIZABLE default-level)))])
         (when (zero? (bitwise-and requested-level ok-levels))
-          (raise-misc-error fsym "requested isolation level is not available"
-                            '("isolation level" value) isolation))
+          (error* fsym "requested isolation level is not available"
+                  '("isolation level" value) isolation))
         (let ([status (SQLSetConnectAttr db SQL_ATTR_TXN_ISOLATION requested-level)])
           (handle-status fsym status db)))
       (let ([status (SQLSetConnectAttr db SQL_ATTR_AUTOCOMMIT SQL_AUTOCOMMIT_OFF)])

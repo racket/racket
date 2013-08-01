@@ -146,8 +146,8 @@
          (cond [(equal? name "client_encoding")
                 (unless (equal? value "UTF8")
                   (disconnect* #f)
-                  (raise-misc-error fsym "client character encoding changed, disconnecting"
-                                    '("new encoding" value) value))]
+                  (error* fsym "client character encoding changed, disconnecting"
+                          '("new encoding" value) value))]
                [(equal? name "integer_datetimes")
                 (set! integer-datetimes? (equal? value "on"))]
                [else (void)])]))

@@ -100,28 +100,28 @@ macosx (64):
   (define clean-path (cleanse-path (path->complete-path path0)))
   (define path-b (path->bytes clean-path))
   (unless (< (bytes-length path-b) 100)
-    (raise-misc-error 'unix-socket-connect
-                      "complete path must be less than 100 bytes"
-                      '("path" value) path0
-                      '("complete path" value) clean-path))
+    (error* 'unix-socket-connect
+            "complete path must be less than 100 bytes"
+            '("path" value) path0
+            '("complete path" value) clean-path))
   (define s (socket AF_UNIX SOCK_STREAM 0))
   (unless (positive? s)
     (let ([errno (saved-errno)])
-      (raise-misc-error 'unix-socket-connect
-                        "failed to create socket"
-                        "errno" errno
-                        '("error" maybe) (strerror_r errno))))
+      (error* 'unix-socket-connect
+              "failed to create socket"
+              "errno" errno
+              '("error" maybe) (strerror_r errno))))
   (define addr (make-sockaddr path-b))
   (define addrlen (+ (ctype-sizeof _ushort) (bytes-length path-b)))
   (define ce (connect s addr addrlen))
   (unless (zero? ce)
     (close s)
     (let ([errno (saved-errno)])
-      (raise-misc-error 'unix-socket-connect
-                        "failed to connect socket"
-                        '("path" value) path0
-                        "errno" errno
-                        '("error" maybe) (strerror_r errno))))
+      (error* 'unix-socket-connect
+              "failed to connect socket"
+              '("path" value) path0
+              "errno" errno
+              '("error" maybe) (strerror_r errno))))
   (with-handlers ([(lambda (e) #t)
                    (lambda (e)
                      (close s)

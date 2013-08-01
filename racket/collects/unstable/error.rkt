@@ -28,10 +28,9 @@ TODO
    (or/c '() (cons/c field/c (cons/c any/c details-list/c)))))
 
 (provide/contract
- [raise-misc-error
-  (->* (symbol? string?)
-       (#:continued (or/c string? (listof string))
-        #:constructor (-> string? continuation-mark-set? exn?))
+ [error*
+  (->* [symbol? string?]
+       [#:continued (or/c string? (listof string))]
        #:rest details-list/c
        any)]
  [raise-syntax-error*
@@ -40,23 +39,21 @@ TODO
        #:rest details-list/c
        any)]
  [compose-error-message
-  (->* ((or/c symbol? #f) string?)
-       (#:continued (or/c string? (listof string)))
+  (->* [(or/c symbol? #f) string?]
+       [#:continued (or/c string? (listof string))]
        #:rest details-list/c
        string?)])
 
 ;; ----
 
-(define (raise-misc-error who message
-                          #:details [detail-table null]
-                          #:continued [continued-message null]
-                          #:constructor [constructor exn:fail]
-                          . field+detail-list)
+(define (error* who message
+                #:continued [continued-message null]
+                . field+detail-list)
   (raise
-   (constructor
+   (exn:fail
     (compose* who message
               continued-message
-              (field+detail-list->table 'raise-misc-error field+detail-list detail-table))
+              (field+detail-list->table 'error* field+detail-list null))
     (current-continuation-marks))))
 
 (define (raise-syntax-error* message0 stx sub-stx
@@ -88,48 +85,20 @@ TODO
 ;; ----
 
 (define (compose-error-message who message
-                               #:details [detail-table null]
                                #:continued [continued-message null]
                                . field+detail-list)
-  (let ([details
-         (field+detail-list->table 'compose-error-message field+detail-list detail-table)])
-    (compose* who message continued-message details)))
+  (define details
+    (field+detail-list->table 'compose-error-message field+detail-list null))
+  (compose* who message continued-message details))
 
 (define (compose* who message continued-message details)
-  (let* ([parts (let loop ([details details])
-                  (cond [(null? details) null]
-                        [else
-                         (let* ([field+opts (car (car details))]
-                                [options (if (pair? field+opts) (cdr field+opts) '())]
-                                [value? (memq 'value options)]
-                                [multi? (memq 'multi options)]
-                                [maybe? (memq 'maybe options)]
-                                [convert-value
-                                 (cond [value?
-                                        (lambda (v) ((error-value->string-handler) v (error-print-width)))]
-                                       [else
-                                        (lambda (v) (format "~a" v))])]
+  (let* ([parts (apply append
+                       (for/list ([detail (in-list details)])
+                         (let* ([field+opts (car detail)]
                                 [field (if (pair? field+opts) (car field+opts) field+opts)]
-                                [value (cdr (car details))])
-                           (cond [(and (or maybe? multi? (not value?))
-                                       (not value))
-                                  (loop (cdr details))]
-                                 [(and maybe? multi?
-                                       (null? value))
-                                  (loop (cdr details))]
-                                 [multi?
-                                  (list* "\n  " field ": "
-                                         (let value-loop ([value value])
-                                           (cond [(pair? value)
-                                                  (list* "\n   "
-                                                         (convert-value (car value))
-                                                         (value-loop (cdr value)))]
-                                                 [(null? value)
-                                                  (loop (cdr details))])))]
-                                 [else
-                                  (list* "\n  " field ": "
-                                         (convert-value value)
-                                         (loop (cdr details)))]))]))]
+                                [options (if (pair? field+opts) (cdr field+opts) '())]
+                                [value (cdr detail)])
+                           (compose-error-detail field options value))))]
          [parts (let loop ([continued continued-message])
                   (cond [(pair? continued) (list* "\n " (car continued) (loop (cdr continued)))]
                         [(string? continued) (loop (list continued))]
@@ -139,6 +108,36 @@ TODO
                     (list* (symbol->string who) ": " parts)
                     parts)])
     (apply string-append parts)))
+
+;; compose-error-detail : string (listof option) any -> (listof string)
+;; Note: includes a leading newline (unless detail omitted).
+(define (compose-error-detail field options value)
+  (let* ([value? (memq 'value options)]
+         [multi? (memq 'multi options)]
+         [maybe? (memq 'maybe options)]
+         [convert-value
+          (cond [value?
+                 (lambda (v) ((error-value->string-handler) v (error-print-width)))]
+                [else
+                 (lambda (v) (format "~a" v))])])
+    (cond [(and (or maybe? multi? (not value?))
+                (not value))
+           null]
+          [(and maybe? multi?
+                (null? value))
+           null]
+          [multi?
+           (list* "\n  " field ": "
+                  (let value-loop ([value value])
+                    (cond [(pair? value)
+                           (list* "\n   "
+                                  (convert-value (car value))
+                                  (value-loop (cdr value)))]
+                          [(null? value)
+                           null])))]
+          [else
+           (list "\n  " field ": "
+                 (convert-value value))])))
 
 ;; ----
 

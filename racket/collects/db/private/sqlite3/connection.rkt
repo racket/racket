@@ -194,12 +194,12 @@
                                     (sqlite3_prepare_v2 db sql)])
                         (when tail?
                           (when stmt (sqlite3_finalize stmt))
-                          (raise-misc-error fsym "multiple statements given"
-                                            '("given" value) sql))
+                          (error* fsym "multiple statements given"
+                                  '("given" value) sql))
                         (values prep-status stmt)))])
         (when DEBUG?
           (dprintf "  << prepared statement #x~x\n" (cast stmt _pointer _uintptr)))
-        (unless stmt (raise-misc-error fsym "SQL syntax error" '("given" value) sql))
+        (unless stmt (error* fsym "SQL syntax error" '("given" value) sql))
         (let* ([param-typeids
                 (for/list ([i (in-range (sqlite3_bind_parameter_count stmt))])
                   'any)]
