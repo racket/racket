@@ -5862,7 +5862,7 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   m->so.type = scheme_module_type;
   m->predefined = scheme_starting_up;
-  m->phaseless = (scheme_starting_up ? scheme_true : NULL);
+  m->phaseless = scheme_true;
   
   env = scheme_new_module_env(for_env, m, 0);
 
@@ -5921,6 +5921,11 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
   env->running = running;
 
   return env;
+}
+
+void scheme_set_primitive_module_phaseless(Scheme_Env *env, int phaseless)
+{
+  env->module->phaseless = (phaseless ? scheme_true : NULL); 
 }
 
 void scheme_finish_primitive_module(Scheme_Env *env)

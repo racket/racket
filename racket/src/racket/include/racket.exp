@@ -545,6 +545,7 @@ scheme_install_macro
 scheme_save_initial_module_set
 scheme_primitive_module
 scheme_finish_primitive_module
+scheme_set_primitive_module_phaseless
 scheme_protect_primitive_provide
 scheme_make_modidx
 scheme_apply_for_syntax_in_env

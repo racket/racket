@@ -1029,6 +1029,7 @@ MZ_EXTERN void scheme_install_macro(Scheme_Bucket *b, Scheme_Object *v);
 MZ_EXTERN void scheme_save_initial_module_set(Scheme_Env *env);
 MZ_EXTERN Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env);
 MZ_EXTERN void scheme_finish_primitive_module(Scheme_Env *env);
+MZ_EXTERN void scheme_set_primitive_module_phaseless(Scheme_Env *env, int phaseless);
 MZ_EXTERN void scheme_protect_primitive_provide(Scheme_Env *env, Scheme_Object *name);
 
 MZ_EXTERN Scheme_Object *scheme_make_modidx(Scheme_Object *path,
