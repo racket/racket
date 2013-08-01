@@ -14,8 +14,8 @@
 (define-syntax terx*
   (syntax-parser
     [(terx s [p ...] (~optional (~seq #:term term) #:defaults ([term #'#f])) rx ...)
-     #'(test-case (format "line ~s: ~a match ~s for error"
-                          (syntax-line (quote-syntax s))
+     #`(test-case (format "line ~s: ~a match ~s for error"
+                          '#,(syntax-line #'s)
                           's '(p ...))
          (let ([exn (let/ec escape
                       (check-exn (lambda (exn)
