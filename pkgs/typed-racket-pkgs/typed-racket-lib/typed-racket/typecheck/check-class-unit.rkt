@@ -1054,7 +1054,9 @@
     (for/or ([m (in-set required)])
       (and (not (set-member? actual m)) m)))
   (when missing
-    (tc-error/expr "class definition missing ~a ~a" msg missing)))
+    (tc-error/expr (~a "class definition missing ~a ~a "
+                       "that is required by the expected type")
+                   msg missing)))
 
 ;; Set<Symbol> Set<Symbol> String -> Void
 ;; check that names are absent when they should be
@@ -1073,21 +1075,16 @@
     (for/or ([m (in-set expected)])
       (and (not (set-member? actual m)) m)))
   (when missing
-    (tc-error/expr "class definition missing ~a ~a" msg missing))
+    (tc-error/expr (~a "class definition missing ~a ~a "
+                       "that is required by the expected type")
+                   msg missing))
   (define too-many
     (for/or ([m (in-set actual)])
       (and (not (set-member? expected m)) m)))
   (when too-many
-    (tc-error/expr "class definition has unexpected ~a ~a"
+    (tc-error/expr (~a "class definition contains ~a ~a "
+                       "that is not in the expected type")
                    msg too-many)))
-
-;; check-no-extra : Set<Symbol> Set<Symbol> -> Void
-;; check that the actual names don't include names not in the
-;; expected type (i.e., the names must exactly match up)
-(define (check-no-extra actual expected)
-  (unless (subset? actual expected)
-    ;; FIXME: better error reporting here
-    (tc-error/expr "class defines names not in expected type")))
 
 ;; I wish I could write this
 #;

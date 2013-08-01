@@ -179,21 +179,24 @@
     (define n% (class j% (super-new))))
 
    ;; should fail, too many methods
-   (check-err #:exn #rx"unexpected public method m"
+   (check-err
+    #:exn #rx"public method m that is not in the expected type"
     (: o% (Class))
     (define o% (class object%
                  (super-new)
                  (define/public (m) 0))))
 
    ;; same as previous
-   (check-err #:exn #rx"unexpected public method n"
+   (check-err
+    #:exn #rx"public method n that is not in the expected type"
     (: c% (Class [m (Integer -> Integer)]))
     (define c% (class object% (super-new)
                  (define/public (m x) (add1 x))
                  (define/public (n) 0))))
 
    ;; fails, too many inits
-   (check-err #:exn #rx"unexpected initialization argument x"
+   (check-err
+    #:exn #rx"initialization argument x that is not in the expected type"
     (: c% (Class))
     (define c% (class object% (super-new)
                  (init x))))
@@ -205,7 +208,8 @@
                  (init str))))
 
    ;; fails, too many fields
-   (check-err #:exn #rx"unexpected public field x"
+   (check-err
+    #:exn #rx"public field x that is not in the expected type"
     (: c% (Class (field [str String])))
     (define c% (class object% (super-new)
                  (field [str "foo"] [x 0]))))
@@ -485,7 +489,8 @@
     (define d% (class c% (super-new))))
 
    ;; fails, expected mandatory but got optional
-   (check-err #:exn #rx"unexpected optional init argument x"
+   (check-err
+    #:exn #rx"optional init argument x that is not in the expected type"
     (: c% (Class (init [x Integer])))
     (define c% (class object% (super-new)
                  (: x Integer)
