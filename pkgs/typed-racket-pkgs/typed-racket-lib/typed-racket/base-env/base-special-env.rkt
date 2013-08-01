@@ -116,6 +116,10 @@
    (-poly (a b)
           (cl-> [((-HT a b)) (-seq b)]
                 [(-HashTop) (-seq Univ)]))]
+  [(make-template-identifier 'in-hash-pairs 'racket/private/for)
+   (-poly (a b)
+          (cl-> [((-HT a b)) (-seq (-pair a b))]
+                [(-HashTop) (-seq (-pair Univ Univ))]))]
   ;; in-port
   [(make-template-identifier 'in-port 'racket/private/for)
    (->opt [(-> -Input-Port Univ) -Input-Port] (-seq Univ))]
