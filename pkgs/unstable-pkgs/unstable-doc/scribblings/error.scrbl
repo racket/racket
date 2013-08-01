@@ -65,6 +65,27 @@ unless @racket['maybe] or @racket['multi] is also provided}
 ]
 }
 
+@defproc[(raise-syntax-error* 
+              [message string?]
+              [expr (or/c syntax? #f)]
+              [sub-expr (or/c syntax? #f)]
+              [field (let ([option/c (or/c 'value 'multi 'maybe)])
+                       (or/c string? (cons/c string? (listof option/c))))]
+              [value any/c] ... ...
+              [#:continued continued-message (or/c string? (listof string?)) null])
+         any]{
+
+Like @racket[raise-syntax-error] but with the formatting of
+@racket[error*]. The raised exception is an instance of
+@racket[exn:fail:syntax]. Like @racket[raise-syntax-error], the
+inclusion of @racket[expr] and @racket[sub-expr] in the details of the
+error message is controlled by the
+@racket[error-print-source-location] paramter; if they included, they
+are included before the other details specified by @racket[field] and
+@racket[value]. Unlike @racket[raise-syntax-error], both @racket[expr]
+and @racket[sub-expr] are mandatory arguments.
+}
+
 @defproc[(compose-error-message
                          [name (or/c symbol? #f)]
                          [message string?]

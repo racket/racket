@@ -1,5 +1,7 @@
 #lang racket/base
-(require racket/contract/base)
+(require racket/contract/base
+         syntax/srcloc
+         syntax/stx)
 
 #|
 TODO
@@ -32,6 +34,11 @@ TODO
         #:constructor (-> string? continuation-mark-set? exn?))
        #:rest details-list/c
        any)]
+ [raise-syntax-error*
+  (->* [string? (or/c syntax? #f) (or/c syntax? #f)]
+       [#:continued (or/c string? (listof string))]
+       #:rest details-list/c
+       any)]
  [compose-error-message
   (->* ((or/c symbol? #f) string?)
        (#:continued (or/c string? (listof string)))
@@ -51,6 +58,34 @@ TODO
               continued-message
               (field+detail-list->table 'raise-misc-error field+detail-list detail-table))
     (current-continuation-marks))))
+
+(define (raise-syntax-error* message0 stx sub-stx
+                             #:who [who #f]
+                             #:continued [continued-message null]
+                             #:extra-sources [extra-stxs null]
+                             . field+detail-list)
+  (let* ([source-stx (or stx sub-stx)]
+         [who (or who
+                  (let* ([maybe-id (if (stx-pair? stx) (stx-car stx) stx)])
+                    (if (identifier? maybe-id) (syntax-e maybe-id) '?)))]
+         [message
+          (apply compose-error-message who message0
+                 #:continued continued-message
+                 '("at" maybe) (and sub-stx
+                                    (error-print-source-location)
+                                    (format "~.s" (syntax->datum sub-stx)))
+                 '("in" maybe) (and stx
+                                    (error-print-source-location)
+                                    (format "~.s" (syntax->datum stx)))
+                 field+detail-list)]
+         [message
+          (if (error-print-source-location)
+              (string-append (source-location->prefix source-stx) message)
+              message)])
+    (raise (exn:fail:syntax message (current-continuation-marks)
+                            (filter values (list* stx sub-stx extra-stxs))))))
+
+;; ----
 
 (define (compose-error-message who message
                                #:details [detail-table null]
