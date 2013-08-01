@@ -695,15 +695,18 @@
                             metadata-ns
                             #:strip [strip-mode #f]
                             #:in-place? [in-place? #f]
-                            #:in-place-clean? [in-place-clean? #f])
+                            #:in-place-clean? [in-place-clean? #f]
+                            #:link-dirs? [link-dirs? #f])
   (define-values (inferred-pkg-name type) 
     (if (path? pkg)
         (package-source->name+type (path->string pkg)
                                    (or given-type
                                        (if (directory-exists? pkg)
-                                           'dir
+                                           (if link-dirs?
+                                               'link
+                                               'dir)
                                            'file)))
-        (package-source->name+type pkg given-type)))
+        (package-source->name+type pkg given-type #:link-dirs? link-dirs?)))
   (define pkg-name (or given-pkg-name inferred-pkg-name))
   (when (and type (not pkg-name))
     (pkg-error (~a "could not infer package name from source\n"
@@ -1066,6 +1069,7 @@
          #:install-conversation [install-conversation #f]
          #:update-conversation [update-conversation #f]
          #:strip [strip-mode #f]
+         #:link-dirs? [link-dirs? #f]
          descs)
   (define download-printf (if quiet? void printf/flush))
   (define check-sums? (not ignore-checksums?))
@@ -1323,7 +1327,8 @@
       (stage-package/info (pkg-desc-source v) (pkg-desc-type v) (pkg-desc-name v) 
                           check-sums? download-printf
                           metadata-ns
-                          #:strip strip-mode)))
+                          #:strip strip-mode
+                          #:link-dirs? link-dirs?)))
   ;; For the top-level call, we need to double-check that all provided packages
   ;; were distinct:
   (for/fold ([ht (hash)]) ([i (in-list infos)]
@@ -1447,7 +1452,8 @@
                      #:quiet? [quiet? #f]
                      #:install-conversation [install-conversation #f]
                      #:update-conversation [update-conversation #f]
-                     #:strip [strip-mode #f])
+                     #:strip [strip-mode #f]
+                     #:link-dirs? [link-dirs? #f])
   (define new-descs
     (remove-duplicates
      (if (not skip-installed?)
@@ -1456,10 +1462,8 @@
            (filter (lambda (d)
                      (define pkg-name
                        (or (pkg-desc-name d)
-                           (let-values ([(name type)
-                                         (package-source->name+type (pkg-desc-source d) 
-                                                                    (pkg-desc-type d))])
-                             name)))
+                           (package-source->name (pkg-desc-source d) 
+                                                 (pkg-desc-type d))))
                      (not (hash-ref db pkg-name #f)))
                    descs)))
      pkg-desc=?))
@@ -1492,6 +1496,7 @@
      #:install-conversation install-conversation
      #:update-conversation update-conversation
      #:strip strip-mode
+     #:link-dirs? link-dirs?
      new-descs)))
 
 (define ((update-is-possible? db) pkg-name)
@@ -2360,7 +2365,8 @@
                         #:ignore-checksums? boolean?
                         #:skip-installed? boolean?
                         #:quiet? boolean?
-                        #:strip (or/c #f 'source 'binary))
+                        #:strip (or/c #f 'source 'binary)
+                        #:link-dirs? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-migrate
    (->* (string?)

@@ -74,10 +74,11 @@
   [#:bool force () "Ignores conflicts"]
   [#:bool ignore-checksums () "Ignores checksums"]
   #:once-any
-  [#:bool link () ("Link a directory package source in place")]
+  [#:bool link () ("Link a directory package source in place (default for a directory)")]
   [#:bool static-link () ("Link in place, promising collections do not change")]
-  [#:bool source () ("Strip built elements of the package before installing")]
-  [#:bool binary () ("Strip source elements of the package before installing")]
+  [#:bool copy () ("Treat directory sources the same as other sources")]
+  [#:bool source () ("Strip package's built elements before installing; implies --copy")]
+  [#:bool binary () ("Strip packages' source elements before installing; implies --copy")]
   #:once-each
   [#:bool skip-installed () ("Skip a <pkg-source> if already installed")]
   #:once-any
@@ -104,14 +105,17 @@
        (with-pkg-lock
         (parameterize ([current-pkg-catalogs (and catalog
                                                   (list (catalog->url catalog)))])
+          (define link-dirs? (not (or copy source binary)))
           (pkg-install #:dep-behavior deps
                        #:force? force
                        #:ignore-checksums? ignore-checksums
                        #:skip-installed? skip-installed
                        #:strip (or (and source 'source) (and binary 'binary))
+                       #:link-dirs? link-dirs?
                        (for/list ([p (in-list pkg-source)])
                          (define a-type (or (and link 'link) 
                                             (and static-link 'static-link)
+                                            (and (eq? type 'dir) link-dirs? 'link)
                                             type))
                          (pkg-desc p a-type name #f))))))
      (setup no-setup setup-collects jobs)))]

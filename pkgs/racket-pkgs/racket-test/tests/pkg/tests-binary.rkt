@@ -13,10 +13,10 @@
  $ "raco pkg install --deps fail test-pkgs/pkg-x/ test-pkgs/pkg-y/" =exit> 1
  $ "raco pkg install --deps fail test-pkgs/pkg-y/ test-pkgs/pkg-x/" =exit> 1
 
- $ "raco pkg install --deps fail test-pkgs/pkg-z/" =exit> 0
+ $ "raco pkg install --deps fail --copy test-pkgs/pkg-z/" =exit> 0
 
  (putenv "PLT_PKG_NOSETUP" "")
- $ "raco pkg install test-pkgs/pkg-x/ test-pkgs/pkg-y/"
+ $ "raco pkg install --copy test-pkgs/pkg-x/ test-pkgs/pkg-y/"
  (putenv "PLT_PKG_NOSETUP" "1")
 
  $ "racket -l racket/base -l x -e '(x)'" =stdout> "'x\n"

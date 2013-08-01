@@ -301,7 +301,11 @@ sub-sub-commands:
   @item{@DFlag{ignore-checksums} --- Ignores errors verifying package @tech{checksums} (unsafe).}
 
   @item{@DFlag{link} --- Implies @exec{--type dir} (and overrides any specified type),
-        and links the existing directory as an installed package. The package is identified
+        and links the existing directory as an installed package, instead of copying the
+        directory's content to install. Directory @tech{package sources} are treated as links
+        by default, unless @DFlag{copy} is specified.
+
+        The package is identified
         as a @tech{single-collection package} or a @tech{multi-collection package} at the
         time that it is installed, and that categorization does not change even if the @schemeidfont{collection}
         definition in @filepath{info.rkt} is changed (i.e., he package must be removed and re-installed
@@ -311,9 +315,12 @@ sub-sub-commands:
         of the given directory will not change for each given directory that implements a
         @tech{multi-collection package}.}
 
-  @item{@DFlag{binary} --- Strips source elements of a package before installing.}
+  @item{@DFlag{copy} --- Disables default handling of directory @tech{package sources} as links,
+        and instead treats them like other sources: package content is copied to install.}
 
-  @item{@DFlag{source} --- Strips built elements of a package before installing.}
+  @item{@DFlag{binary} --- Strips source elements of a package before installing, and implies @DFlag{copy}.}
+
+  @item{@DFlag{source} --- Strips built elements of a package before installing, and implies @DFlag{copy}.}
 
   @item{@DFlag{skip-installed} --- Ignore any @nonterm{pkg-source}
         whose name corresponds to an already-installed package.}

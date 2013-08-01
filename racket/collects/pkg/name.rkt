@@ -5,8 +5,9 @@
 
 (provide
  (contract-out
-  [package-source->name+type (-> string? (or/c #f symbol?) 
-                                 (values (or/c #f string?) (or/c #f symbol?)))]
+  [package-source->name+type (->* (string? (or/c #f symbol?))
+                                  (#:link-dirs? boolean?)
+                                  (values (or/c #f string?) (or/c #f symbol?)))]
   [package-source->name (-> string? (or/c #f string?))]))
 
 (define rx:package-name #rx"^[-_a-zA-Z0-9]+$")
@@ -33,7 +34,7 @@
              (and (not (equal? "" (path/param-path (car p))))
                   (path/param-path (car p))))]))
 
-(define (package-source->name+type s type)
+(define (package-source->name+type s type #:link-dirs? [link-dirs? #f])
   ;; returns (values inferred-name inferred-type);
   ;; if `type' is given it should be returned, but name can be #f;
   ;; type should not be #f for a non-#f name
@@ -101,7 +102,7 @@
         (path-string? s))
     (define-values (base name dir?) (split-path s))
     (define dir-name (and (path? name) (path->string name)))
-    (values (validate-name dir-name) (or type (and dir-name 'dir)))]
+    (values (validate-name dir-name) (or type (and dir-name (if link-dirs? 'link 'dir))))]
    [else
     (values #f #f)]))
 

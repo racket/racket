@@ -170,7 +170,8 @@ Unless @racket[quiet?] is true, information about the output is repotred to the 
                            [#:force? force? boolean? #f]
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
                            [#:quiet? boolean? quiet? #f]
-                           [#:strip strip (or/c #f 'source 'binary) #f])
+                           [#:strip strip (or/c #f 'source 'binary) #f]
+                           [#:link-dirs? link-dirs? boolean? #f])
          (or/c 'skip
                #f
                (listof (or/c path-string?
@@ -180,6 +181,11 @@ Implements @racket[pkg-install-command]. The result indicates which
 collections should be setup via @exec{raco setup}: @racket['skip]
 means that no setup is needed, @racket[#f] means all, and a list means
 only the indicated collections.
+
+The @racket[link-dirs?] argument determines whether package sources
+inferred to be directory paths should be treated as links or copied
+(like other package sources). Note that the default is @racket[#f],
+unlike the default built into @racket[pkg-install-command].
 
 Status information and debugging details are mostly reported to a logger
 named @racket['pkg], but information that is especially relevant to a

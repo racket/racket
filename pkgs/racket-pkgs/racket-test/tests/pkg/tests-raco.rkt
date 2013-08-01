@@ -32,7 +32,7 @@
  (with-fake-root
   (shelly-case
    "raco install uses raco setup with single collect"
-   $ "raco pkg install test-pkgs/pkg-test3-v3" =exit> 0))
+   $ "raco pkg install --copy test-pkgs/pkg-test3-v3" =exit> 0))
 
  (shelly-begin
   (initialize-catalogs)
@@ -46,7 +46,7 @@
     (shelly-install* "remote packages can be updated"
                      "http://localhost:9999/update-test/pkg-test1.zip"
                      "pkg-test1 pkg-test3"
-                     $ "raco pkg install test-pkgs/pkg-test3"
+                     $ "raco pkg install --copy test-pkgs/pkg-test3"
                      $ "racket -l pkg-test3/number" =exit> 1
                      $ "cp -f test-pkgs/pkg-test1-v2.zip test-pkgs/update-test/pkg-test1.zip"
                      $ "cp -f test-pkgs/pkg-test1-v2.zip.CHECKSUM test-pkgs/update-test/pkg-test1.zip.CHECKSUM"
