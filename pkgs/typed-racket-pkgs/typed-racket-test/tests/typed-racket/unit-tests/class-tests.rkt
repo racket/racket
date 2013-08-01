@@ -1028,5 +1028,12 @@
       (class object%
         (super-new)
         (field [(x y) : Integer 0])))
-    (+ 1 (get-field y (new c%))))))
+    (+ 1 (get-field y (new c%))))
+
+   ;; fails, duplicate type annotation
+   (check-err #:exn #rx"Duplicate type annotation of Real"
+     (class object%
+       (super-new)
+       (: x Real)
+       (field [x : Integer 0])))))
 

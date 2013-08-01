@@ -911,21 +911,29 @@
     [_ '()]))
 
 ;; register-internals : Listof<Syntax> -> Dict<Symbol, Type>
-;; Find : annotations and register them
+;; Find : annotations and register them, error if duplicates are found
 ;; TODO: support `define-type`?
 (define (register-internals stxs)
-  (for/fold ([table '()])
-            ([stx stxs])
+  (for/fold ([table #hash()]) ([stx stxs])
     (syntax-parse stx
       #:literals (let-values begin quote-syntax :-internal
                   #%plain-app values void)
       [(let-values ((()
                      (begin
-                       (quote-syntax (:-internal name:id type:expr))
+                       (quote-syntax (:-internal name-stx:id type-stx:expr))
                        (#%plain-app values))))
          (#%plain-app void))
-       (cons (cons (syntax-e #'name) (parse-type #'type))
-             table)]
+       (define name (syntax-e #'name-stx))
+       (define type (parse-type #'type-stx))
+       (cond [(and (hash-has-key? table name)
+                   (not (equal? (hash-ref table name)
+                                type)))
+              (tc-error/expr
+               #:stx #'name
+               "Duplicate type annotation of ~a for ~a, previous was ~a"
+               type name (hash-ref table name))
+              table]
+             [else (hash-set table name type)])]
       [_ table])))
 
 ;; infer-self-type : Dict<Symbol, Type> Set<Symbol> Dict<Symbol, Symbol>
