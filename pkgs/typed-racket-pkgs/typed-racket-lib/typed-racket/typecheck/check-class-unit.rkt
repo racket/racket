@@ -454,9 +454,10 @@
     (for/fold ([methods methods])
               ([(name type) (in-dict method-types)])
       (define old-type (dict-ref methods name #f))
-      ;; sanity check
-      (when (and old-type (not (equal? old-type type)))
-        (tc-error "merge-types: internal error"))
+      ;; sanity check, to ensure that the actual method type
+      ;; is as precise as the annotated type
+      (when (and old-type (not (subtype (car type) (car old-type))))
+        (int-err "merge-types: actual type not a subtype of annotated type"))
       (dict-set methods name type)))
   (make-Class #f inits fields
               (make-new-methods methods method-types)
@@ -518,9 +519,12 @@
       (define external (dict-ref internal-external-mapping m))
       (define maybe-type (dict-ref type-map external #f))
       (->* (list (make-Univ))
-           (cond [(and maybe-type (not inner?))
+           (cond [(and maybe-type
+                       (not (equal? (car maybe-type) top-func))
+                       (not inner?))
                   (fixup-method-type (car maybe-type) self-type)]
-                 [maybe-type
+                 [(and maybe-type
+                       (not (equal? (car maybe-type) top-func)))
                   (Un (-val #f)
                       (fixup-method-type (car maybe-type) self-type))]
                  [else (make-Univ)]))))
@@ -618,7 +622,10 @@
     (define method-name (syntax-property meth 'tr:class:method))
     (define external-name (dict-ref internal-external-mapping method-name #f))
     (define maybe-expected (and external-name (dict-ref methods external-name #f)))
-    (cond [maybe-expected
+    (cond [(and maybe-expected
+                ;; fall back to tc-expr/t if the annotated type
+                ;; was the default type (Procedure)
+                (not (equal? (car maybe-expected) top-func)))
            (define pre-method-type (car maybe-expected))
            (define method-type
              (fixup-method-type pre-method-type self-type))
@@ -946,7 +953,8 @@
                          super-inits super-fields super-methods
                          super-augments
                          inits fields publics augments)
-  (define (make-type-dict names supers [inits? #f])
+  (define (make-type-dict names supers [inits? #f]
+                          #:default-type [default-type Univ])
     (for/fold ([type-dict supers])
               ([name names])
       (define external (dict-ref internal-external-mapping name))
@@ -957,11 +965,17 @@
                      (list type (set-member? optional-inits name))
                      (list type)))
                (dict-set type-dict external entry))]
-            [else type-dict])))
+            [else
+             (dict-set type-dict external
+                       (if inits?
+                           (list default-type (set-member? optional-inits name))
+                           (list default-type)))])))
   (define init-types (make-type-dict inits super-inits #t))
   (define field-types (make-type-dict fields super-fields))
-  (define public-types (make-type-dict publics super-methods))
-  (define augment-types (make-type-dict augments super-augments))
+  (define public-types (make-type-dict publics super-methods
+                                       #:default-type top-func))
+  (define augment-types (make-type-dict augments super-augments
+                                        #:default-type top-func))
   (make-Instance (make-Class #f init-types field-types
                              public-types augment-types)))
 
@@ -971,7 +985,10 @@
   (match type
     [(Function: (list arrs ...))
      (define fixed-arrs
-       (for/list ([arr arrs])
+       (for/list ([arr arrs]
+                  ;; ignore top-arr, since the arity cannot
+                  ;; be sensibly modified in that case
+                  #:when (arr? arr))
          (match-define (arr: doms rng rest drest kws) arr)
          (make-arr (cons self-type doms) rng rest drest kws)))
      (make-Function fixed-arrs)]

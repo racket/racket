@@ -210,17 +210,14 @@
     (define c% (class object% (super-new)
                  (field [str "foo"] [x 0]))))
 
-   ;; FIXME: for the following two tests, we could improve
-   ;;        things by either figuring out the init or field
-   ;;        type when a default expr is provided. Otherwise,
-   ;;        we should still provide a better error message.
-   ;;
-   ;; fails, init with no type annotation
-   (check-err #:exn #rx"x has no type annotation"
+   ;; test that an init with no annotation still type-checks
+   ;; (though it will have the Any type)
+   (check-ok
      (define c% (class object% (super-new) (init x))))
 
-   ;; fails, field with no type annotation
-   (check-err #:exn #rx"unexpected public field x"
+   ;; test that a field with no annotation still type-checks
+   ;; (though it will have the Any type)
+   (check-ok
      (define c% (class object% (super-new) (field [x 0]))))
 
    ;; Mixin on classes without row polymorphism
@@ -750,7 +747,7 @@
 
    ;; fails, because the local call type is unknown
    ;; and is assumed to be Any
-   (check-err
+   (check-err #:exn #rx"since it is not a function type"
     (class object% (super-new)
             (define/public (m) (n))
             (define/public (n x) 0)))
