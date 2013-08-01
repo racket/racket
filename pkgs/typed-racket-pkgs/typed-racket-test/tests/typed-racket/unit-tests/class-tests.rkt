@@ -991,5 +991,42 @@
        (class object%
          (super-new)
          (init-field x)
-         (set! x 5))))))
+         (set! x 5))))
+
+   ;; test in-clause type annotations (next several tests)
+   (check-ok
+    (define c%
+      (class object%
+        (super-new)
+        (field [x : Integer 0])))
+    (+ 1 (get-field x (new c%))))
+
+   (check-ok
+    (define c%
+      (class object%
+        (super-new)
+        (init-field [x : Integer])))
+    (+ 1 (get-field x (new c% [x 5]))))
+
+   (check-ok
+    (define c%
+      (class object%
+        (super-new)
+        (public [m : (Integer -> Integer)])
+        (define (m x) (* x 2))))
+    (send (new c%) m 52))
+
+   (check-ok
+    (define c%
+      (class object%
+        (super-new)
+        (private [m : (Integer -> Integer)])
+        (define (m x) (* x 2)))))
+
+   (check-ok
+    (define c%
+      (class object%
+        (super-new)
+        (field [(x y) : Integer 0])))
+    (+ 1 (get-field y (new c%))))))
 
