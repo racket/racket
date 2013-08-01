@@ -3,11 +3,13 @@
 ;; This module provides TR primitives for classes and objects
 
 (require (rename-in racket/class [class untyped-class])
+         "colon.rkt"
          (for-syntax
           racket/base
           racket/class
           racket/dict
           racket/list
+          racket/match
           racket/pretty ;; get rid of this later
           racket/syntax
           racket/private/classidmap ;; this is bad
@@ -78,10 +80,13 @@
             (quote-syntax inspect)))))
 
 (begin-for-syntax
- ;; A Clause is a (clause Syntax Id Listof<Syntax>)
+ ;; A Clause is a (clause Syntax Id Listof<Syntax> Option<Type>)
  ;;
  ;; interp. a class clause such as init or field.
- (struct clause (stx type ids))
+ ;;   kind  - the kind of clause (e.g., init, field)
+ ;;   ids   - list of the ids defined in this clause
+ ;;   types - types for each id, #f if none provided
+ (struct clause (stx kind ids types))
 
  ;; An InitClause is a (init-clause Syntax Id Listof<Syntax> Boolean)
  ;;
@@ -95,19 +100,52 @@
  (struct non-clause (stx))
  
  (define-syntax-class init-decl
+   #:attributes (optional? ids type form)
    (pattern id:id
             #:attr optional? #f
-            #:with ids #'(id id))
-   (pattern (ren:renamed)
+            #:with ids #'(id id)
+            #:attr type #f
+            #:with form this-syntax)
+   (pattern (id:id (~datum :) type:expr)
             #:attr optional? #f
-            #:with ids #'ren.ids)
-   (pattern (mren:maybe-renamed default-value:expr)
+            #:with ids #'(id id)
+            #:with form #'id)
+   (pattern (ren:renamed (~optional (~seq (~datum :) type:expr)))
+            #:attr optional? #f
+            #:with ids #'ren.ids
+            #:with form #'(ren))
+   (pattern (mren:maybe-renamed
+             (~optional (~seq (~datum :) type:expr))
+             default-value:expr)
             #:attr optional? #t
-            #:with ids #'mren.ids))
+            #:with ids #'mren.ids
+            #:with form #'(mren default-value)))
 
  (define-syntax-class field-decl
-   (pattern (mren:maybe-renamed default-value:expr)
-            #:with ids #'mren.ids))
+   #:attributes (ids type form)
+   (pattern (mren:maybe-renamed
+             (~optional (~seq (~datum :) type:expr))
+             default-value:expr)
+            #:with ids #'mren.ids
+            #:with form #'(mren default-value)))
+
+ (define-syntax-class method-decl
+   #:attributes (ids type form)
+   (pattern mren:maybe-renamed
+            #:with ids #'mren.ids
+            #:attr type #f
+            #:with form this-syntax)
+   (pattern (mren:maybe-renamed (~datum :) type:expr)
+            #:with ids #'mren.ids
+            #:with form #'mren))
+
+ (define-syntax-class private-decl
+   #:attributes (id type form)
+   (pattern id:id
+            #:attr type #f
+            #:with form this-syntax)
+   (pattern (id:id (~datum :) type:expr)
+            #:with form #'id))
 
  (define-syntax-class renamed
    (pattern (internal-id:id external-id:id)
@@ -118,7 +156,7 @@
             #:with ids #'(id id))
    (pattern ren:renamed
             #:with ids #'ren.ids))
- 
+
  (define-syntax-class class-clause
    (pattern (~and ((~and clause-name (~or (~literal init)
                                           (~literal init-field)))
@@ -128,12 +166,16 @@
             ;; make this an attribute instead to represent
             ;; internal and external names
             #:attr data
-            (init-clause #'form #'clause-name
+            (init-clause #'(clause-name names.form ...)
+                         #'clause-name
                          (stx->list #'(names.ids ...))
+                         (attribute names.type)
                          (attribute names.optional?)))
    (pattern (~and ((~literal field) names:field-decl ...) form)
-            #:attr data (clause #'form #'field
-                                (stx->list #'(names.ids ...))))
+            #:attr data (clause #'(field names.form ...)
+                                #'field
+                                (stx->list #'(names.ids ...))
+                                (attribute names.type)))
    (pattern (~and ((~and clause-name (~or (~literal inherit-field)
                                           (~literal public)
                                           (~literal pubment)
@@ -147,18 +189,22 @@
                                           (~literal inherit)
                                           (~literal inherit/super)
                                           (~literal inherit/inner)))
-                   names:maybe-renamed ...)
+                   names:method-decl ...)
                   form)
             #:attr data
-            (clause #'form #'clause-name
-                    (stx->list #'(names.ids ...))))
+            (clause #'(clause-name names.form ...)
+                    #'clause-name
+                    (stx->list #'(names.ids ...))
+                    (attribute names.type)))
    (pattern (~and ((~and clause-name (~or (~literal private)
                                           (~literal abstract)))
-                   names:id ...)
+                   names:private-decl ...)
                   form)
             #:attr data
-            (clause #'form #'clause-name
-                    (stx->list #'(names ...)))))
+            (clause #'(clause-name names.form ...)
+                    #'clause-name
+                    (stx->list #'(names.id ...))
+                    (attribute names.type))))
 
  (define-syntax-class class-clause-or-other
    (pattern e:class-clause #:attr data (attribute e.data))
@@ -169,12 +215,12 @@
  (define (extract-names clauses)
    (for/fold ([clauses (make-immutable-free-id-table)])
              ([clause clauses])
-     (if (dict-has-key? clauses (clause-type clause))
-         (dict-update clauses (clause-type clause)
+     (if (dict-has-key? clauses (clause-kind clause))
+         (dict-update clauses (clause-kind clause)
                       (λ (old-names)
                         (append old-names (clause-ids clause))))
          (dict-set clauses
-                   (clause-type clause)
+                   (clause-kind clause)
                    (clause-ids clause)))))
 
  ;; Get rid of class top-level `begin` and local expand
@@ -267,6 +313,16 @@
                     (pubment #,@(dict-ref name-dict #'pubment '()))))
               (untyped-class #,annotated-super
                 #,@(map clause-stx clauses)
+                ;; construct in-body type annotations for clauses
+                #,@(apply append
+                          (for/list ([a-clause clauses])
+                            (match-define (clause _1 _2 ids types) a-clause)
+                            (for/list ([id ids] [type types]
+                                       #:when type)
+                              (syntax-property
+                               #`(: #,(if (stx-pair? id) (stx-car id) id)
+                                    #,type)
+                               'tr:class:top-level #t))))
                 #,@(map non-clause-stx annotated-methods)
                 #,(syntax-property
                    #`(begin #,@(map non-clause-stx other-top-level))
