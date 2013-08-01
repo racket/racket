@@ -132,7 +132,7 @@
                                            (if (symbol? r)
                                                (format "~a@racket-lang.org" r)
                                                r))
-                                         ", ")
+                                         " ")
                     'description (get 'pkg-desc)
                     'tags '()
                     'dependencies '()
