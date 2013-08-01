@@ -42,7 +42,8 @@
 ;; This checks if the syntax object resulted from a row instantiation
 (define (row-syntax? stx)
   (define lst (stx->list stx))
-  (and lst (eq? (syntax-e (car lst)) '#:row)))
+  (and lst (pair? lst)
+       (eq? (syntax-e (car lst)) '#:row)))
 
 ;; do-normal-inst : Syntax Syntax Type -> Type
 ;; Instantiate a normal polymorphic type
