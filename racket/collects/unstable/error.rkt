@@ -1,5 +1,7 @@
 #lang racket/base
 (require racket/contract/base
+         racket/string
+         racket/list
          syntax/srcloc
          syntax/stx)
 
@@ -42,7 +44,10 @@ TODO
   (->* [(or/c symbol? #f) string?]
        [#:continued (or/c string? (listof string))]
        #:rest details-list/c
-       string?)])
+       string?)]
+ [compose-error-detail
+  (-> string? (listof field-option/c) any/c
+      string?)])
 
 ;; ----
 
@@ -79,17 +84,27 @@ TODO
           (if (error-print-source-location)
               (string-append (source-location->prefix source-stx) message)
               message)])
-    (raise (exn:fail:syntax message (current-continuation-marks)
-                            (filter values (list* stx sub-stx extra-stxs))))))
+    (raise
+     (exn:fail:syntax message
+                      (current-continuation-marks)
+                      (if source-stx (cons source-stx extra-stxs) extra-stxs)))))
 
 ;; ----
 
+;; compose-error-message : .... -> string
 (define (compose-error-message who message
                                #:continued [continued-message null]
                                . field+detail-list)
   (define details
     (field+detail-list->table 'compose-error-message field+detail-list null))
   (compose* who message continued-message details))
+
+;; compose-error-detail : string (listof option) any -> (listof string)
+;; Note: includes a leading newline (unless detail omitted).
+(define (compose-error-detail field options value)
+  (apply string-append (compose-detail* field options value)))
+
+;; ----
 
 (define (compose* who message continued-message details)
   (let* ([parts (apply append
@@ -98,7 +113,7 @@ TODO
                                 [field (if (pair? field+opts) (car field+opts) field+opts)]
                                 [options (if (pair? field+opts) (cdr field+opts) '())]
                                 [value (cdr detail)])
-                           (compose-error-detail field options value))))]
+                           (compose-detail* field options value))))]
          [parts (let loop ([continued continued-message])
                   (cond [(pair? continued) (list* "\n " (car continued) (loop (cdr continued)))]
                         [(string? continued) (loop (list continued))]
@@ -109,17 +124,27 @@ TODO
                     parts)])
     (apply string-append parts)))
 
-;; compose-error-detail : string (listof option) any -> (listof string)
-;; Note: includes a leading newline (unless detail omitted).
-(define (compose-error-detail field options value)
+(define (compose-detail* field options value)
   (let* ([value? (memq 'value options)]
          [multi? (memq 'multi options)]
          [maybe? (memq 'maybe options)]
-         [convert-value
+         [noindent? (memq 'noindent options)]
+         [convert-value0
           (cond [value?
                  (lambda (v) ((error-value->string-handler) v (error-print-width)))]
                 [else
-                 (lambda (v) (format "~a" v))])])
+                 (lambda (v) (format "~a" v))])]
+         [convert-value
+          (if noindent?
+              (lambda (v indent) (list (convert-value0 v)))
+              (lambda (v indent)
+                (let* ([s (convert-value0 v)]
+                       [lines (string-split s #rx"[\n]" #:trim? #f)]
+                       [spacing
+                        (case indent
+                          ((3) "\n   ") ;; common case, make constant
+                          (else (string-append "\n" (make-string indent #\space))))])
+                  (add-between lines spacing))))])
     (cond [(and (or maybe? multi? (not value?))
                 (not value))
            null]
@@ -131,13 +156,13 @@ TODO
                   (let value-loop ([value value])
                     (cond [(pair? value)
                            (list* "\n   "
-                                  (convert-value (car value))
-                                  (value-loop (cdr value)))]
+                                  (append (convert-value (car value) 3)
+                                          (value-loop (cdr value))))]
                           [(null? value)
                            null])))]
           [else
-           (list "\n  " field ": "
-                 (convert-value value))])))
+           (list* "\n  " field ": "
+                  (convert-value value (+ 4 (string-length field))))])))
 
 ;; ----
 

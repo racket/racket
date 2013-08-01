@@ -96,4 +96,17 @@ the Racket @tech[#:doc '(lib
 "scribblings/reference/reference.scrbl")]{error message convention}.
 }
 
+@defproc[(compose-error-detail
+             [field string?]
+             [options (listof (or/c 'value 'multi 'maybe))]
+             [value any/c])
+         string?]{
+
+Formats a single detail for an error message. The @racket[options]
+behave as described in @racket[error*].
+
+The resulting string begins with a newline unless it is empty, so it
+can be appended to the end of a base error message.
+}
+
 @(close-eval the-eval)
