@@ -9,7 +9,8 @@
    planet/util
    planet/version
    planet/syntax
-   planet/scribble))
+   planet/scribble
+   setup/dirs))
 
 @title{Utility Libraries}
 
@@ -150,7 +151,7 @@ manually edit the @filepath{config.rkt} file.
 
 @defparam[PLANET-DIR dir path-string?]{
 The root of the version-specific PLaneT files. 
-Defaults to @racket[(build-path (PLANET-BASE-DIR) (version))].
+Defaults to @racket[(build-path (PLANET-BASE-DIR) (get-installation-name))].
 }
 
 @defparam[CACHE-DIR dir path-string?]{
@@ -206,7 +207,7 @@ The port on the server the client should connect to if
 
 @defparam[HARD-LINK-FILE file path?]{
   The name of the file where hard links are saved. Defaults to
-  @racket[(build-path (PLANET-BASE-DIR) (version) "HARD-LINKS")].
+  @racket[(build-path (PLANET-BASE-DIR) (get-installation-name) "HARD-LINKS")].
 }
 @defparam[PLANET-ARCHIVE-FILTER regexp-filter (or/c #f string? regexp?)]{
   A regular-expression based filter that is used to skip files when building a @|PLaneT| archive.

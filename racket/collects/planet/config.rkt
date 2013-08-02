@@ -1,5 +1,6 @@
 #lang racket/base
-(require "private/define-config.rkt")
+(require "private/define-config.rkt"
+         setup/dirs)
 (define-parameters
   (PLANET-SERVER-NAME       "planet.racket-lang.org")
   (PLANET-SERVER-PORT       270)
@@ -10,11 +11,11 @@
                                  (build-path (find-system-path 'addon-dir)
                                              "planet"
                                              (PLANET-CODE-VERSION)))))
-  (PLANET-DIR               (build-path (PLANET-BASE-DIR) (version)))
+  (PLANET-DIR               (build-path (PLANET-BASE-DIR) (get-installation-name)))
   (CACHE-DIR                (build-path (PLANET-DIR) "cache"))
   (UNINSTALLED-PACKAGE-CACHE (build-path (PLANET-BASE-DIR) "packages"))
   (LINKAGE-FILE             (build-path (PLANET-DIR) "LINKAGE"))
-  (HARD-LINK-FILE           (build-path (PLANET-BASE-DIR) (version) "HARD-LINKS"))
+  (HARD-LINK-FILE           (build-path (PLANET-BASE-DIR) (get-installation-name) "HARD-LINKS"))
   (LOG-FILE                 (build-path (PLANET-DIR) "INSTALL-LOG"))
   (DEFAULT-PACKAGE-LANGUAGE (version))
   
