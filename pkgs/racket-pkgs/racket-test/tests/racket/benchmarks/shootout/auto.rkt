@@ -18,7 +18,8 @@ exec racket -qu "$0" ${1+"$@"}
            mzlib/file
            dynext/file
            syntax/toplevel
-           scheme/runtime-path)
+           scheme/runtime-path
+           compiler/find-exe)
 
   ;; Implementaton-specific control functions ------------------------------
 
@@ -80,7 +81,7 @@ exec racket -qu "$0" ${1+"$@"}
                 void
                 mk-racket
                 (lambda (bm)
-                  (system (format "racket run.rkt ~a racket" bm)))
+                  (system* (find-exe) "run.rkt" bm "racket"))
                 extract-racket-times
                 clean-up-zo
                 '())
@@ -88,7 +89,7 @@ exec racket -qu "$0" ${1+"$@"}
                 void
                 mk-typed-racket-non-optimizing
                 (lambda (bm)
-                  (system (format "racket run.rkt ~a typed-racket-non-optimizing" bm)))
+                  (system* (find-exe) "run.rkt" bm "typed-racket-non-optimizing"))
                 extract-racket-times
                 clean-up-typed
                 '())
@@ -96,7 +97,7 @@ exec racket -qu "$0" ${1+"$@"}
                 void
                 mk-typed-racket
                 (lambda (bm)
-                  (system (format "racket run.rkt ~a typed-racket" bm)))
+                  (system* (find-exe) "run.rkt" bm "typed-racket"))
                 extract-racket-times
                 clean-up-typed
                 '())

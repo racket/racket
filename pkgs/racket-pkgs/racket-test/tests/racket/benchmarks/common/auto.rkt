@@ -18,7 +18,8 @@ exec racket -qu "$0" ${1+"$@"}
            dynext/file
            syntax/toplevel
            scheme/runtime-path
-           racket/port)
+           racket/port
+           compiler/find-exe)
 
   ;; Implementaton-specific control functions ------------------------------
 
@@ -363,7 +364,7 @@ exec racket -qu "$0" ${1+"$@"}
                 void
                 mk-racket
                 (lambda (bm)
-                  (system (format "racket -u ~a.rkt" bm)))
+                  (system* (find-exe) "-u" (format "~a.rkt" bm)))
                 extract-racket-times
                 clean-up-zo
                 racket-skip-progs)

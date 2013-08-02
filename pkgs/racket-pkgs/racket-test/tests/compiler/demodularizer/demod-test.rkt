@@ -1,6 +1,7 @@
 #lang racket
 (require tests/eli-tester
-         racket/runtime-path)
+         racket/runtime-path
+         compiler/find-exe)
 
 (define (capture-output command . args)
   (define o (open-output-string))
@@ -14,7 +15,7 @@
 (define (test-on-program filename)
   ; run modular program, capture output
   (define-values (modular-output modular-error)
-    (capture-output (find-executable-path "racket") filename))
+    (capture-output (find-exe) filename))
   
   (define demod-filename 
     (let-values ([(base filename dir?) (split-path filename)])
@@ -25,11 +26,11 @@
   
   ; demodularize
   (parameterize ([current-input-port (open-input-string "")])
-    (system* (find-executable-path "raco") "demod" "-o" demod-filename filename))
+    (system* (find-exe) "-l-" "raco" "demod" "-o" demod-filename filename))
   
   ; run whole program
   (define-values (whole-output whole-error)
-    (capture-output (find-executable-path "racket") demod-filename))
+    (capture-output (find-exe) demod-filename))
   
   ; compare output 
   (test

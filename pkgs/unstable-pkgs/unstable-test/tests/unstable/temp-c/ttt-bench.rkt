@@ -1,10 +1,10 @@
 #lang racket/base
 (require tests/stress
          racket/system
-         racket/runtime-path)
+         racket/runtime-path
+         compiler/find-exe)
 
-(define racket-pth
-  (find-executable-path "racket"))
+(define racket-pth (find-exe))
 
 (define-runtime-path ttt:raw "ttt-bench-raw.rkt")
 (define-runtime-path ttt:ctc "ttt-bench-ctc.rkt")
