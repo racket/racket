@@ -594,6 +594,8 @@
                (subtype-clause? field-map field-map*))]
          [((Class: row inits fields methods augments)
            (Class: row* inits* fields* methods* augments*))
+          ;; TODO: should the result be folded instead?
+          (define sub (curry subtype* A))
           ;; check that each of inits, fields, methods, etc. are
           ;; equal by sorting and checking type equality
           (define (equal-clause? clause clause* [inits? #f])
@@ -607,7 +609,7 @@
                 (match-define (list (list names* types*) ...) clause*)
                 (and (= (length names) (length names*))
                      (andmap equal? names names*)
-                     (andmap equal? types types*))]
+                     (andmap sub types types*))]
                [else
                 (match-define (list (list names types opt?) ...)
                               clause)
@@ -615,7 +617,7 @@
                               clause*)
                 (and (= (length names) (length names*))
                      (andmap equal? names names*)
-                     (andmap equal? types types*)
+                     (andmap sub types types*)
                      (andmap equal? opt? opt?*))])))
           ;; There is no non-trivial width subtyping on class types, but it's
           ;; possible for two "equal" class types to look different

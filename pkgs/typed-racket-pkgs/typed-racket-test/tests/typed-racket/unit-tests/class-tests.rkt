@@ -1037,5 +1037,12 @@
      (class object%
        (super-new)
        (: x Real)
-       (field [x : Integer 0])))))
+       (field [x : Integer 0])))
+
+   ;; fails, expected type and annotation don't match
+   (check-err #:exn #rx"Expected \\(Class \\(field \\(x String"
+     (: c% (Class (field [x String])))
+     (define c%
+       (class object% (super-new)
+         (field [x : Integer 5]))))))
 

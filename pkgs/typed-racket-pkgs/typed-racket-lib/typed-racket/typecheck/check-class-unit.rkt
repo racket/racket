@@ -160,15 +160,15 @@
 (define (check-class form [expected #f])
   (match (and expected (resolve expected))
     [(tc-result1: (and self-class-type (Class: _ _ _ _ _)))
-     (do-check form #t self-class-type)]
+     (do-check form self-class-type)]
     [(tc-result1: (Poly-names: ns body-type))
      (check-class form (ret body-type))]
-    [#f (do-check form #f #f)]
-    [_ (check-below (do-check form #f #f) expected)]))
+    [#f (do-check form #f)]
+    [_ (check-below (do-check form #f) expected)]))
 
 ;; Syntax Boolean Option<Type> -> Type
 ;; Do the actual type-checking
-(define (do-check form expected? self-class-type)
+(define (do-check form expected)
   (syntax-parse form
     ;; Inspect the expansion of the class macro for the pieces that
     ;; we need to type-check like superclass, methods, top-level
@@ -178,19 +178,17 @@
      ;; FIXME: maybe should check the property on this expression
      ;;        as a sanity check too
      (define super-type (tc-expr #'cls.superclass-expr))
-     (define-values (super-inits super-fields
+     (define-values (super-row super-inits super-fields
                      super-methods super-augments)
        (match super-type
-         ;; FIXME: should handle the case where the super class is
-         ;;        polymorphic
-         [(tc-result1: (Class: _ super-inits super-fields
+         [(tc-result1: (Class: super-row super-inits super-fields
                                super-methods super-augments))
-          (values super-inits super-fields super-methods super-augments)]
+          (values super-row super-inits super-fields
+                  super-methods super-augments)]
          [(tc-result1: t)
           (tc-error/expr "expected a superclass but got value of type ~a" t
                          #:stx #'cls.superclass-expr)
-          ;; FIXME: is this the right thing to do?
-          (values null null null null)]))
+          (values #f null null null null)]))
      ;; Define sets of names for use later
      (define super-init-names (list->set (dict-keys super-inits)))
      (define super-field-names (list->set (dict-keys super-fields)))
@@ -294,19 +292,19 @@
          name))
      ;; Type for self in method calls
      (define self-type
-       (if self-class-type
-           (make-Instance self-class-type)
-           (infer-self-type internals-table
-                            optional-inits
-                            internal-external-mapping
-                            remaining-super-inits
-                            super-fields
-                            super-methods
-                            super-augments
-                            this%-init-internals
-                            this%-field-internals
-                            this%-public-internals
-                            this%-pubment-internals)))
+       (infer-self-type super-row
+                        expected
+                        internals-table
+                        optional-inits
+                        internal-external-mapping
+                        remaining-super-inits
+                        super-fields
+                        super-methods
+                        super-augments
+                        this%-init-internals
+                        this%-field-internals
+                        this%-public-internals
+                        this%-pubment-internals))
      (match-define (Instance: (Class: _ inits fields methods augments))
                    self-type)
      ;; trawl the body for the local name table
@@ -374,14 +372,12 @@
        (check-private-methods meth-stxs this%-private-names
                               private-method-types self-type))
      (define final-class-type
-       (if expected?
-           self-class-type
-           (merge-types
-            self-type
-            checked-method-types
-            checked-pubment-types)))
+       (merge-types
+        self-type
+        checked-method-types
+        checked-pubment-types))
      (check-method-presence-and-absence
-      final-class-type
+      expected
       this%-init-names this%-field-names
       this%-public-names this%-override-names
       this%-inherit-names
@@ -390,13 +386,15 @@
       remaining-super-inits super-field-names
       super-method-names
       super-augment-names)
+     (when expected
+       (check-below final-class-type expected))
      final-class-type]))
 
 ;; check-method-presence-and-absence : Type Set<Symbol> * 12 -> Void
 ;; use the internal class: information to check whether clauses
 ;; exist or are absent appropriately
 (define (check-method-presence-and-absence
-         class-type this%-init-names this%-field-names
+         expected this%-init-names this%-field-names
          this%-public-names this%-override-names
          this%-inherit-names
          this%-pubment-names this%-augment-names
@@ -404,30 +402,31 @@
          remaining-super-inits super-field-names
          super-method-names
          super-augment-names)
-  (match-define (Class: _ inits fields methods augments) class-type)
-  (define exp-init-names (list->set (dict-keys inits)))
-  (define exp-field-names (list->set (dict-keys fields)))
-  (define exp-method-names (list->set (dict-keys methods)))
-  (define exp-augment-names (list->set (dict-keys augments)))
-  (define exp-optional-inits
-    (for/set ([(name val) (in-dict inits)]
-              #:when (cadr val))
-             name))
-  (check-same (set-union this%-init-names
-                         (list->set (dict-keys remaining-super-inits)))
-              exp-init-names
-              "initialization argument")
-  (check-same (set-union this%-public-names super-method-names)
-              exp-method-names
-              "public method")
-  (check-same (set-union this%-field-names super-field-names)
-              exp-field-names
-              "public field")
-  (check-same (set-union this%-pubment-names super-augment-names)
-              exp-augment-names
-              "public augmentable method")
-  (check-same optional-external exp-optional-inits
-              "optional init argument")
+  (when expected
+   (match-define (Class: _ inits fields methods augments) expected)
+   (define exp-init-names (list->set (dict-keys inits)))
+   (define exp-field-names (list->set (dict-keys fields)))
+   (define exp-method-names (list->set (dict-keys methods)))
+   (define exp-augment-names (list->set (dict-keys augments)))
+   (define exp-optional-inits
+     (for/set ([(name val) (in-dict inits)]
+               #:when (cadr val))
+              name))
+   (check-same (set-union this%-init-names
+                          (list->set (dict-keys remaining-super-inits)))
+               exp-init-names
+               "initialization argument")
+   (check-same (set-union this%-public-names super-method-names)
+               exp-method-names
+               "public method")
+   (check-same (set-union this%-field-names super-field-names)
+               exp-field-names
+               "public field")
+   (check-same (set-union this%-pubment-names super-augment-names)
+               exp-augment-names
+               "public augmentable method")
+   (check-same optional-external exp-optional-inits
+               "optional init argument"))
   (check-exists super-method-names this%-override-names
                 "override method")
   (check-exists super-augment-names this%-augment-names
@@ -448,7 +447,7 @@
   (match-define
    (Instance:
     (and class-type
-         (Class: #f inits fields methods augments)))
+         (Class: row-var inits fields methods augments)))
    self-type)
   (define (make-new-methods methods method-types)
     (for/fold ([methods methods])
@@ -459,7 +458,7 @@
       (when (and old-type (not (subtype (car type) (car old-type))))
         (int-err "merge-types: actual type not a subtype of annotated type"))
       (dict-set methods name type)))
-  (make-Class #f inits fields
+  (make-Class row-var inits fields
               (make-new-methods methods method-types)
               (make-new-methods augments pubment-types)))
 
@@ -943,40 +942,52 @@
              [else (hash-set table name type)])]
       [_ table])))
 
-;; infer-self-type : Dict<Symbol, Type> Set<Symbol> Dict<Symbol, Symbol>
+;; infer-self-type : RowVar Class Dict<Symbol, Type> Set<Symbol> Dict<Symbol, Symbol>
 ;;                   Inits Fields Methods
 ;;                   Set<Symbol> * 4 -> Type
-;; Construct a self object type based on the registered types
-;; from : inside the class body.
-(define (infer-self-type internals-table optional-inits
+;; Construct a self object type based on all type annotations
+;; and the expected type
+(define (infer-self-type super-row
+                         expected
+                         internals-table optional-inits
                          internal-external-mapping
                          super-inits super-fields super-methods
                          super-augments
                          inits fields publics augments)
-  (define (make-type-dict names supers [inits? #f]
+  (define (make-type-dict names supers maybe-expected [inits? #f]
                           #:default-type [default-type Univ])
     (for/fold ([type-dict supers])
               ([name names])
       (define external (dict-ref internal-external-mapping name))
-      (cond [(dict-ref internals-table name #f) =>
-             (λ (type)
-               (define entry
-                 (if inits?
-                     (list type (set-member? optional-inits name))
-                     (list type)))
-               (dict-set type-dict external entry))]
-            [else
-             (dict-set type-dict external
-                       (if inits?
-                           (list default-type (set-member? optional-inits name))
-                           (list default-type)))])))
-  (define init-types (make-type-dict inits super-inits #t))
-  (define field-types (make-type-dict fields super-fields))
-  (define public-types (make-type-dict publics super-methods
+      (define (update-dict type)
+        (define entry
+          (if inits?
+              (list type (set-member? optional-inits name))
+              (list type)))
+        (dict-set type-dict external entry))
+      ;; A type is assigned for each member in this order:
+      ;;   (1) a type annotation from the user
+      ;;   (2) the expected type
+      ;;   (3) Any or Procedure
+      (cond [(dict-ref internals-table name #f) => update-dict]
+            [(and maybe-expected
+                  (dict-ref maybe-expected name #f))
+             => (compose update-dict car)]
+            [default-type => update-dict])))
+  (define-values (expected-inits expected-fields
+                  expected-publics expected-augments)
+    (match expected
+      [(Class: _ inits fields publics augments)
+       (values inits fields publics augments)]
+      [_ (values #f #f #f #f)]))
+  (define init-types (make-type-dict inits super-inits expected-inits #t))
+  (define field-types (make-type-dict fields super-fields expected-fields))
+  (define public-types (make-type-dict publics super-methods expected-publics
                                        #:default-type top-func))
-  (define augment-types (make-type-dict augments super-augments
-                                        #:default-type top-func))
-  (make-Instance (make-Class #f init-types field-types
+  (define augment-types (make-type-dict
+                         augments super-augments expected-augments
+                         #:default-type top-func))
+  (make-Instance (make-Class super-row init-types field-types
                              public-types augment-types)))
 
 ;; fixup-method-type : Function Type -> Function
