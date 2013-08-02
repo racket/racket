@@ -8,7 +8,9 @@
   [package-source->name+type (->* (string? (or/c #f symbol?))
                                   (#:link-dirs? boolean?)
                                   (values (or/c #f string?) (or/c #f symbol?)))]
-  [package-source->name (-> string? (or/c #f string?))]))
+  [package-source->name (->* (string?)
+                             ((or/c #f symbol?))
+                             (or/c #f string?))]))
 
 (define rx:package-name #rx"^[-_a-zA-Z0-9]+$")
 (define rx:archive #rx"[.](plt|zip|tar|tgz|tar[.]gz)$")
@@ -106,6 +108,6 @@
    [else
     (values #f #f)]))
 
-(define (package-source->name s)
-  (define-values (name type) (package-source->name+type s #f))
+(define (package-source->name s [given-type #f])
+  (define-values (name type) (package-source->name+type s given-type))
   name)
