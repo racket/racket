@@ -5,7 +5,7 @@
 
 @defproc[(make-eventspace)
          eventspace?]{
-Creates and returns a new eventspace value. The new eventspace is
+Creates and returns a new @tech{eventspace} value. The new eventspace is
  created as a child of the current eventspace. The eventspace is used
  by making it the current eventspace with the
  @racket[current-eventspace] parameter.
@@ -57,7 +57,9 @@ Produces a synchronizable event (see @racket[sync]) that is ready when
 a GUI event (mouse or keyboard action, update event, timer, queued
 callback, etc.) is ready for dispatch in @racket[e]. That is, the
 result event is ready when @racket[(yield)] for the eventspace
-@racket[e] would dispatch a GUI event.}
+@racket[e] would dispatch a GUI event. The synchronization result is
+the eventspace @racket[e] itself.
+}
 
 
 @defproc[(check-for-break)
@@ -219,10 +221,10 @@ Blocks for at least the specified number of seconds, handling events
 Returns @racket[#t] if the given eventspace has been shut down by its
  custodian, @racket[#f] otherwise. Attempting to create a new window,
  timer, or explicitly queued event in a shut-down eventspace raises
- the @racket[exn:misc] exception.
+ the @racket[exn:fail] exception.
 
 Attempting to use certain methods of windows and timers in a shut-down
- eventspace also raises the @racket[exn:misc] exception, but the
+ eventspace also raises the @racket[exn:fail] exception, but the
 @xmethod[area<%> get-top-level-window] and
 @xmethod[top-level-window<%> get-eventspace] methods work even after the area's eventspace is shut down.
 
