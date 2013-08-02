@@ -15,7 +15,8 @@
                "web-server-test"
                "typed-racket-test"
                "xrepl-test"
-               "scribble-test"))
+               "scribble-test"
+               "unstable-test"))
 
 (define pkg-desc "tests for \"main-distribution\"")
 
