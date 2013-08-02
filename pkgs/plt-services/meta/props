@@ -679,14 +679,12 @@ path/s is either such a string or a list of them.
 "pkgs/distro-build" responsible (mflatt)
 "pkgs/distro-build/add-catalog.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/assemble-site.rkt" drdr:command-line (mzc *)
-"pkgs/distro-build/catalog-local.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/drive-clients.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/install-for-docs.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/install-pkgs.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/installer.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/manage-snapshots.rkt" drdr:command-line (mzc *)
-"pkgs/distro-build/pack-collects.rkt" drdr:command-line (mzc *)
-"pkgs/distro-build/pack-native.rkt" drdr:command-line (mzc *)
+"pkgs/distro-build/pack-and-catalog.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/set-config.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/unpack-collects.rkt" drdr:command-line (mzc *)
 "pkgs/draw-pkgs" responsible (mflatt)
@@ -1025,7 +1023,6 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/at-exp-lib" responsible (eli mflatt)
 "pkgs/racket-pkgs/racket-doc/compatibility" responsible (asumu stamourv)
 "pkgs/racket-pkgs/racket-doc/data" responsible (ryanc samth)
-"pkgs/racket-pkgs/racket-doc/db" responsible (ryanc)
 "pkgs/racket-pkgs/racket-doc/dynext" responsible (mflatt)
 "pkgs/racket-pkgs/racket-doc/file" responsible (mflatt)
 "pkgs/racket-pkgs/racket-doc/help" responsible (robby)
@@ -1343,6 +1340,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/racket/setup.rktl" drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/racket/shared-tests.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/sp.rktl" drdr:random #t
+"pkgs/racket-pkgs/racket-test/tests/racket/srcloc.rktl" responsible (cce)
 "pkgs/racket-pkgs/racket-test/tests/racket/stress" responsible (jay) drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/racket/stress/contract-lifting.rkt" responsible (robby sstrickl)
 "pkgs/racket-pkgs/racket-test/tests/racket/stress/dict.rkt" drdr:timeout 180
@@ -1445,7 +1443,6 @@ path/s is either such a string or a list of them.
 "pkgs/scribble-pkgs/scribble-lib/scribble/jfp/lang.rkt" drdr:command-line (mzc *)
 "pkgs/scribble-pkgs/scribble-lib/scribble/lncs/lang.rkt" drdr:command-line (mzc *)
 "pkgs/scribble-pkgs/scribble-lib/scribble/run.rkt" drdr:command-line (mzc *)
-"pkgs/scribble-pkgs/scribble-lib/scribble/text" responsible (eli)
 "pkgs/scribble-pkgs/scribble-test/tests/scribble/main.rkt" drdr:command-line #f
 "pkgs/scribble-pkgs/scribble-test/tests/scriblib" responsible (mflatt)
 "pkgs/scribble-pkgs/scribble-text-lib/scribble/text.rkt" responsible (eli)
@@ -1515,7 +1512,6 @@ path/s is either such a string or a list of them.
 "pkgs/unstable-pkgs/unstable-test/tests/unstable/automata" responsible (jay)
 "pkgs/unstable-pkgs/unstable-test/tests/unstable/list.rkt" responsible (jay)
 "pkgs/unstable-pkgs/unstable-test/tests/unstable/logging.rkt" responsible (stamourv)
-"pkgs/unstable-pkgs/unstable-test/tests/unstable/srcloc.rktl" responsible (cce)
 "pkgs/unstable-pkgs/unstable-test/tests/unstable/temp-c" responsible (jay)
 "pkgs/unstable-pkgs/unstable-test/tests/unstable/temp-c/bench-affine.rkt" drdr:random #t
 "pkgs/unstable-pkgs/unstable-test/tests/unstable/temp-c/bench.rkt" drdr:random #t
