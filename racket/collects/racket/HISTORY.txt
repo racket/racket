@@ -1,3 +1,11 @@
+Version 5.90.0.4
+Add current-library-collection-links, find-library-collection-links
+Changed module search to use current-library-collection-paths
+ before collection link files by default
+Changed use-user-specific-search-paths and use-collection-link-paths
+ to affect only find-library-collection-paths and
+ find-library-collection-links
+
 Version 5.90.0.3
 Base user directoy paths on an installation name instead
  of the Racket version string

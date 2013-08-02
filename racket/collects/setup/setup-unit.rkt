@@ -64,6 +64,8 @@
   (define main-collects-dir (simple-form-path (find-collects-dir)))
   (define main-collects-dirs (for/hash ([p (in-list (get-main-collects-search-dirs))])
                                (values (simple-form-path p) #t)))
+  (define main-links-files (for/hash ([p (in-list (get-links-search-files))])
+                             (values (simple-form-path p) #t)))
   (define mode-dir
     (if (compile-mode)
       (build-path "compiled" (compile-mode))
@@ -76,7 +78,12 @@
        p)))
 
   (current-library-collection-paths
-   (map simple-form-path (current-library-collection-paths)))
+   (if (member #f (current-library-collection-links))
+       ;; Normal case, include current library collection paths:
+       (map simple-form-path (current-library-collection-paths))
+       ;; No `#f' in links list means that we don't look at
+       ;; the current library collection paths:
+       null))
 
   (define (setup-fprintf p task s . args)
     (let ([task (if task (string-append task ": ") "")])
@@ -345,7 +352,8 @@
     ;; checkout as a collection directory
     (regexp-match? #rx"[.](git|svn)$" (path->bytes collection)))
 
-  ;; Add in all non-planet collections:
+  ;; Add in all non-planet collections, first from 
+  ;; `current-library-collection-paths':
   (for ([cp (current-library-collection-paths)]
         #:when (directory-exists? cp)
         [collection (directory-list cp)]
@@ -355,6 +363,8 @@
                     #:info-root cp
                     #:path (build-path cp collection)
                     #:main? (hash-ref main-collects-dirs cp #f)))
+  ;; Now from `current-library-collection-links' for installation-wide
+  ;; links:
   (let ()
     (define info-root (find-share-dir))
     (define info-path (build-path info-root "info-cache.rktd"))
@@ -366,7 +376,9 @@
                       #:info-path-mode 'abs-in-relative
                       #:omit-root 'dir
                       #:main? #t))
-    (for ([inst-links (in-list (get-links-search-files))])
+    (for ([inst-links (in-list (current-library-collection-links))]
+          #:when (and (path? inst-links)
+                      (hash-ref main-links-files (simple-form-path inst-links) #f)))
       (for ([c+p (in-list (links #:file inst-links #:with-path? #t))])
         (cc! (list (string->path (car c+p)))
              #:path (cdr c+p)))
@@ -377,6 +389,8 @@
             #:when (directory-exists? (build-path cp collection)))
         (cc! (list collection)
              #:path (build-path cp collection)))))
+  ;; Now from `current-library-collection-links' for user-specific
+  ;; links:
   (when (make-user)
     (define info-root (find-user-share-dir))
     (define info-path (build-path info-root "info-cache.rktd"))
@@ -387,15 +401,36 @@
                       #:info-path info-path
                       #:info-path-mode 'abs-in-relative
                       #:omit-root 'dir))
-    (for ([c+p (in-list (links #:with-path? #t))])
-      (cc! (list (string->path (car c+p)))
-           #:path (cdr c+p)))
-    (for ([cp (in-list (links #:root? #t))]
-          #:when (directory-exists? cp)
-          [collection (directory-list cp)]
-          #:unless (skip-collection-directory? collection)
-          #:when (directory-exists? (build-path cp collection)))
-      (cc! (list collection) #:path (build-path cp collection))))
+    ;; A links spec in `current-library-collection-links' counts as
+    ;; user-specific when it's not in `make-links-files':
+    (for ([inst-links (in-list (current-library-collection-links))]
+          #:unless (and (path? inst-links)
+                        (hash-ref main-links-files (simple-form-path inst-links) #f)))
+      (cond
+       [(not inst-links) ; covered by `current-library-collection-paths'
+        (void)]
+       [(path? inst-links)
+        (for ([c+p (in-list (links #:file inst-links #:with-path? #t))])
+          (cc! (list (string->path (car c+p)))
+               #:path (cdr c+p)))
+        (for ([cp (in-list (links #:file inst-links #:root? #t))]
+              #:when (directory-exists? cp)
+              [collection (directory-list cp)]
+              #:unless (skip-collection-directory? collection)
+              #:when (directory-exists? (build-path cp collection)))
+          (cc! (list collection) #:path (build-path cp collection)))]
+       [else ; must be a hash table that simulates a links file:
+        (for ([(coll-sym dir) (in-hash inst-links)])
+          (cond
+           [coll-sym
+            ;; A single collection
+            (cc! (string-split "/" (symbol->string coll-sym)) #:path dir)]
+           [(directory-exists? dir)
+            ;; A directory that holds collections:
+            (for ([collection (directory-list dir)]
+                  #:unless (skip-collection-directory? collection)
+                  #:when (directory-exists? (build-path dir collection)))
+              (cc! (list collection) #:path (build-path dir collection)))]))])))
 
   ;; `all-collections' lists all top-level collections (not from Planet):
   (define all-collections

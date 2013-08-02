@@ -201,6 +201,7 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_identity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_size(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_library_collection_paths(int argc, Scheme_Object *argv[]);
+static Scheme_Object *current_library_collection_links(int argc, Scheme_Object *argv[]);
 static Scheme_Object *use_compiled_kind(int, Scheme_Object *[]);
 static Scheme_Object *compiled_file_roots(int, Scheme_Object *[]);
 static Scheme_Object *use_user_paths(int, Scheme_Object *[]);
@@ -240,7 +241,6 @@ SHARED_OK static Scheme_Object *run_cmd;
 SHARED_OK static Scheme_Object *collects_path, *config_path;
 THREAD_LOCAL_DECL(static Scheme_Object *original_pwd);
 SHARED_OK static Scheme_Object *addon_dir;
-THREAD_LOCAL_DECL(static Scheme_Object *inst_links_path);
 
 #endif
 READ_ONLY static Scheme_Object *windows_symbol, *unix_symbol;
@@ -553,6 +553,11 @@ void scheme_init_file(Scheme_Env *env)
 			     scheme_register_parameter(current_library_collection_paths,
 						       "current-library-collection-paths",
 						       MZCONFIG_COLLECTION_PATHS),
+			     env);
+  scheme_add_global_constant("current-library-collection-links",
+			     scheme_register_parameter(current_library_collection_links,
+						       "current-library-collection-links",
+						       MZCONFIG_COLLECTION_LINKS),
 			     env);
 #endif
   scheme_add_global_constant("use-compiled-file-paths",
@@ -5930,9 +5935,38 @@ static Scheme_Object *current_user_directory(int argc, Scheme_Object **argv)
 
 #endif
 
-static Scheme_Object *collpaths_gen_p(int argc, Scheme_Object **argv, int rel_ok, int abs_ok, int sym_ok)
+static Scheme_Object *check_link_key_val(Scheme_Object *key, Scheme_Object *val)
+{
+  Scheme_Object *new_val = scheme_null, *a;
+
+  if (!SCHEME_FALSEP(key)
+      && (!SCHEME_SYMBOLP(key)
+          || !scheme_is_module_path(key)))
+    return NULL;
+  
+  while (SCHEME_PAIRP(val)) {
+    a = SCHEME_CAR(val);
+    if (!SCHEME_PATH_STRINGP(a))
+      return NULL;
+    a = TO_PATH(a);
+    if (!scheme_is_complete_path(SCHEME_PATH_VAL(a),
+                                 SCHEME_PATH_LEN(a),
+                                 SCHEME_PLATFORM_PATH_KIND))
+      return NULL;
+    new_val = scheme_make_pair(a, new_val);
+    val = SCHEME_CDR(val);
+  }
+
+  if (!SCHEME_NULLP(val))
+    return NULL;
+
+  return scheme_reverse(new_val);
+}
+
+static Scheme_Object *collpaths_gen_p(int argc, Scheme_Object **argv, int rel_ok, int abs_ok, int sym_ok, int links_ok)
 {
   Scheme_Object *v = argv[0];
+  Scheme_Object *new_hts = scheme_null;
 
   if (scheme_proper_list_length(v) < 0)
     return NULL;
@@ -5945,6 +5979,36 @@ static Scheme_Object *collpaths_gen_p(int argc, Scheme_Object **argv, int rel_ok
     s = SCHEME_CAR(v);
     if (sym_ok && SAME_OBJ(s, same_symbol)) {
       /* ok */
+    } else if (links_ok && SCHEME_FALSEP(s)) {
+      /* ok */
+    } else if (links_ok && (SCHEME_CHAPERONE_HASHTP(s)
+                            || SCHEME_CHAPERONE_HASHTRP(s)
+                            || SCHEME_CHAPERONE_BUCKTP(s))) {
+      Scheme_Hash_Tree *new_ht;
+      Scheme_Object *key, *val, *idx, *a[2];
+
+      new_ht = scheme_make_hash_tree(0);
+
+      a[0] = s;
+      idx = scheme_hash_table_iterate_start(1, a);
+      while (SCHEME_TRUEP(idx)) {
+        a[0] = s;
+        a[1] = idx;
+        key = scheme_hash_table_iterate_key(2, a);
+        
+        val = scheme_chaperone_hash_get(s, key);
+        if (val) {
+          val = check_link_key_val(key, val);
+          if (!val) return NULL;
+          new_ht = scheme_hash_tree_set(new_ht, key, val);
+        }
+
+        a[0] = s;
+        a[1] = idx;
+        idx = scheme_hash_table_iterate_next(2, a);
+      }
+
+      new_hts = scheme_make_pair((Scheme_Object *)new_ht, new_hts);
     } else {
       if (!SCHEME_PATH_STRINGP(s))
         return NULL;
@@ -5964,14 +6028,24 @@ static Scheme_Object *collpaths_gen_p(int argc, Scheme_Object **argv, int rel_ok
   if (!SCHEME_NULLP(v))
     return NULL;
 
+  new_hts = scheme_reverse(new_hts);
+
   /* Convert to list of paths: */
   {
     Scheme_Object *last = NULL, *first = NULL, *p, *s;
     v = argv[0];
     while (SCHEME_PAIRP(v)) {
       s = SCHEME_CAR(v);
-      if (!SCHEME_SYMBOLP(s))
+      if (SCHEME_SYMBOLP(s)) {
+        /* ok */
+      } else if (SCHEME_FALSEP(s)) {
+        /* ok */
+      } else if (SCHEME_PATH_STRINGP(s)) {
         s = TO_PATH(s);
+      } else {
+        s = SCHEME_CAR(new_hts);
+        new_hts = SCHEME_CDR(new_hts);
+      }
       
       p = scheme_make_pair(s, scheme_null);
       if (!first)
@@ -5991,7 +6065,7 @@ static Scheme_Object *collpaths_gen_p(int argc, Scheme_Object **argv, int rel_ok
 
 static Scheme_Object *collpaths_p(int argc, Scheme_Object **argv)
 {
-  return collpaths_gen_p(argc, argv, 0, 1, 0);
+  return collpaths_gen_p(argc, argv, 0, 1, 0, 0);
 }
 
 Scheme_Object *scheme_current_library_collection_paths(int argc, Scheme_Object *argv[]) {
@@ -6006,11 +6080,32 @@ static Scheme_Object *current_library_collection_paths(int argc, Scheme_Object *
                               -1, collpaths_p, "(listof (and/c path-string? complete-path?))", 1);
 }
 
+static Scheme_Object *colllinks_p(int argc, Scheme_Object **argv)
+{
+  return collpaths_gen_p(argc, argv, 0, 1, 0, 1);
+}
+
+Scheme_Object *scheme_current_library_collection_links(int argc, Scheme_Object *argv[]) {
+  return current_library_collection_links(argc, argv);
+}
+
+static Scheme_Object *current_library_collection_links(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config2("current-library-collection-links", 
+                              scheme_make_integer(MZCONFIG_COLLECTION_LINKS),
+                              argc, argv,
+                              -1, colllinks_p, 
+                              "(listof (or/c #f (and/c path-string? complete-path?)"
+                              /**/         " (hash/c (or/c (and/c symbol? module-path?) #f)"
+                              /**/                 " (listof (and/c path-string? complete-path?)))))", 
+                              1);
+}
+
 #endif
 
 static Scheme_Object *compiled_kind_p(int argc, Scheme_Object **argv)
 {
-  return collpaths_gen_p(argc, argv, 1, 0, 0);
+  return collpaths_gen_p(argc, argv, 1, 0, 0, 0);
 }
 
 static Scheme_Object *use_compiled_kind(int argc, Scheme_Object *argv[])
@@ -6023,7 +6118,7 @@ static Scheme_Object *use_compiled_kind(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *compiled_roots_p(int argc, Scheme_Object **argv)
 {
-  return collpaths_gen_p(argc, argv, 1, 1, 1);
+  return collpaths_gen_p(argc, argv, 1, 1, 1, 0);
 }
 
 Scheme_Object *scheme_compiled_file_roots(int argc, Scheme_Object *argv[])
@@ -6436,17 +6531,6 @@ void scheme_set_addon_dir(Scheme_Object *p)
     REGISTER_SO(addon_dir);
   }
   addon_dir = p;
-}
-
-Scheme_Object *scheme_find_links_path(int argc, Scheme_Object *argv[])
-{
-  if (inst_links_path)
-    return inst_links_path;
-
-  REGISTER_SO(inst_links_path);
-  inst_links_path = scheme_apply(argv[0], 0, NULL);
-
-  return inst_links_path;
 }
 
 /********************************************************************************/

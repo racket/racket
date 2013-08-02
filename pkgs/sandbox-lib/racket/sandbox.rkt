@@ -923,24 +923,25 @@
                      (current-library-collection-paths)))]
     [sandbox-path-permissions
      `(,@(map (lambda (p) `(read-bytecode ,p))
-              (append
-               (current-library-collection-paths)
-               (apply append
-                      (for/list ([f (get-links-search-files)]
-                                 #:when (file-exists? f))
-                        (links #:root? #t #:file f)))
-               (links #:root? #t #:user? #t)
-               (apply append
-                      (for/list ([f (get-links-search-files)]
-                                 #:when (file-exists? f))
-                        (map cdr (links #:file f #:with-path? #t))))
-               (map cdr (links #:user? #t #:with-path? #t))))
+              (apply
+               append
+               (for/list ([l (current-library-collection-links)])
+                 (cond
+                  [(not l)
+                   (current-library-collection-paths)]
+                  [(hash? l)
+                   (hash-values l)]
+                  [else
+                   (if (file-exists? l)
+                       (append
+                        (links #:root? #t #:file l)
+                        (map cdr (links #:file l #:with-path? #t)))
+                       null)]))))
+       ,@(for/list ([l (current-library-collection-links)]
+                    #:when (path? l))
+           `(read ,l))
        (read-bytecode ,(PLANET-BASE-DIR))
        (exists ,(find-system-path 'addon-dir))
-       (read ,(build-path (find-system-path 'addon-dir) "links.rktd"))
-       (read ,(build-path (find-system-path 'addon-dir) (version) "links.rktd"))
-       ,@(for/list ([f (get-links-search-files)])
-           `(read ,f))
        (read ,(find-lib-dir))
        ,@(compute-permissions allow-for-require allow-for-load)
        ,@(sandbox-path-permissions))]

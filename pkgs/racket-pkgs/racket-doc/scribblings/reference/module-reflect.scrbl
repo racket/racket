@@ -80,7 +80,14 @@ when the expander encounters @racket[(require _module-path)] where
 or resolved module path. When such a @racket[require] appears within a
 module, the @deftech{module path resolver} is also given the name of
 the enclosing module, so that a relative reference can be converted to
-an absolute symbol or @tech{resolved module path}.
+an absolute symbol or @tech{resolved module path}. 
+
+The default @tech{module name resolver} uses
+@racket[collection-file-path] to convert @racket[lib] and
+symbolic-shorthand module paths to filesystem paths. The 
+@racket[collection-file-path] function, in turn, uses the
+@racket[current-library-collection-links]
+and @racket[current-library-collection-paths] parameters.
 
 A @tech{module name resolver} takes two and four arguments:
 @itemize[

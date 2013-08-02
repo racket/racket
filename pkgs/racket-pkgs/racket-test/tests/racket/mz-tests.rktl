@@ -27,6 +27,7 @@
 (load-relative "prompt.rktl")
 (load-relative "will.rktl")
 (load-relative "namespac.rktl")
+(load-relative "collects.rktl")
 (load-relative "modprot.rktl")
 (load-relative "chaperone.rktl")
 (unless (or building-flat-tests? in-drscheme?)

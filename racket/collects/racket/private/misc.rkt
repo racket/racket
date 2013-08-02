@@ -234,6 +234,7 @@
              guard-evt channel-get channel-try-get channel-put
              port? displayln
              find-library-collection-paths
+             find-library-collection-links
              bytes-environment-variable-name?
              string-environment-variable-name?
              getenv putenv

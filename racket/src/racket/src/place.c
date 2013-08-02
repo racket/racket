@@ -208,6 +208,7 @@ typedef struct Place_Start_Data {
   Scheme_Object *function;
   Scheme_Object *channel;
   Scheme_Object *current_library_collection_paths;
+  Scheme_Object *current_library_collection_links;
   Scheme_Object *compiled_roots;
   mzrt_sema *ready;  /* malloc'ed item */
   struct Scheme_Place_Object *place_obj;   /* malloc'ed item */
@@ -274,6 +275,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   Place_Start_Data      *place_data;
   mz_proc_thread        *proc_thread;
   Scheme_Object         *collection_paths;
+  Scheme_Object         *collection_links;
   Scheme_Place_Object   *place_obj;
   mzrt_sema             *ready;
   struct NewGC          *parent_gc;
@@ -364,6 +366,9 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   collection_paths = scheme_current_library_collection_paths(0, NULL);
   place_data->current_library_collection_paths = collection_paths;
 
+  collection_links = scheme_current_library_collection_links(0, NULL);
+  place_data->current_library_collection_links = collection_links;
+
   collection_paths = scheme_compiled_file_roots(0, NULL);
   place_data->compiled_roots = collection_paths;
 
@@ -451,6 +456,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   }
 
   places_prepare_direct(place_data->current_library_collection_paths);
+  places_prepare_direct(place_data->current_library_collection_links);
   places_prepare_direct(place_data->compiled_roots);
   places_prepare_direct(place_data->channel);
   places_prepare_direct(place_data->module);
@@ -2633,6 +2639,8 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
 
   a[0] = places_deep_direct_uncopy(place_data->current_library_collection_paths);
   scheme_current_library_collection_paths(1, a);
+  a[0] = places_deep_direct_uncopy(place_data->current_library_collection_links);
+  scheme_current_library_collection_links(1, a);
   a[0] = places_deep_direct_uncopy(place_data->compiled_roots);
   scheme_compiled_file_roots(1, a);
   scheme_seal_parameters();

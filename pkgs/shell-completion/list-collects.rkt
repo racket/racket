@@ -9,24 +9,22 @@
         (hash-set s (path-element->string p) #t))
       s))
 
-(define (links* m root?)
-  (case m
-    [(user) (links #:user? #t #:root? root?)]
-    [else (links #:file m #:root? root?)]))
-
 (define (get-all-top-level-collections)
-  (define link-modes (list* 'user (get-links-search-files)))
-
-  (let* ([s (hash)]
-         [s (for/fold ([s s]) ([c (in-list
-                                   (current-library-collection-paths))])
-              (add-directory-collections c s))]
-         [s (for*/fold ([s s]) ([m (in-list link-modes)]
-                                [l (in-list (links* m #f))])
-              (hash-set s l #t))]
-         [s (for*/fold ([s s]) ([m (in-list link-modes)]
-                                [c (in-list (links* m #t))])
-              (add-directory-collections c s))])
-    (hash-keys s)))
+  (hash-keys
+   (for/fold ([s (hash)]) ([l (in-list
+                               (current-library-collection-links))])
+     (cond
+      [(not l)
+       (for/fold ([s s]) ([c (in-list
+                              (current-library-collection-paths))])
+         (add-directory-collections c s))]
+      [(path? l)
+       (let ([s (for*/fold ([s s]) ([c (in-list (links #:file l #:root? #f))])
+                  (hash-set s c #t))])
+         (for*/fold ([s s]) ([c (in-list (links #:file l #:root? #t))])
+           (add-directory-collections c s)))]
+      [else (error 'get-all-top-level-collections
+                   "unexpected value in `current-library-collection-links': ~e"
+                   l)]))))
 
 (for-each displayln (get-all-top-level-collections))

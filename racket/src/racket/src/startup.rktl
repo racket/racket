@@ -190,6 +190,7 @@
              collection-path
              collection-file-path
              find-library-collection-paths
+             find-library-collection-links
              path-list-string->path-list
              find-executable-path
              load/use-compiled
@@ -504,42 +505,37 @@
                [else (cons (coerce-to-path (car l)) (loop (cdr l)))]))
             orig-l))))
 
-  (define-values (all-links-paths) (find-links-path!
-                                    ;; This thunk is called once per place, and the result
-                                    ;; is remembered for later invocations. Otherwise, the
-                                    ;; search for the config file can trip over filesystem
-                                    ;; restrictions imposed by security guards.
-                                    (lambda ()
-                                      ;; If `use-collection-link-paths' is disabled on
-                                      ;; startup, then don't try to read the configuration
-                                      ;; file, either.
-                                      (if (use-collection-link-paths)
-                                          (let* ([d (find-config-dir)]
-                                                 [ht (get-config-table d)]
-                                                 [lf (coerce-to-path
-                                                      (or (hash-ref ht 'links-file #f)
-                                                          (build-path (or (hash-ref ht 'share-dir #f)
-                                                                          (build-path 'up "share"))
-                                                                      "links.rktd")))])
-                                            (cons (list->vector
-                                                   (add-config-search
-                                                    ht
-                                                    'links-search-files
-                                                    (list lf)))
-                                                  (build-path (find-system-path 'addon-dir)
-                                                              (get-installation-name ht)
-                                                              "links.rktd")))
-                                          (cons #() #f)))))
+  (define-values (find-library-collection-links)
+    (lambda ()
+      (let* ([d (find-config-dir)]
+             [ht (get-config-table d)]
+             [lf (coerce-to-path
+                  (or (hash-ref ht 'links-file #f)
+                      (build-path (or (hash-ref ht 'share-dir #f)
+                                      (build-path 'up "share"))
+                                  "links.rktd")))])
+        (append
+         ;; `#f' means `current-library-collection-paths':
+         (list #f)
+         ;; user-specific
+         (if (and (use-user-specific-search-paths)
+                  (use-collection-link-paths))
+             (list (build-path (find-system-path 'addon-dir)
+                               (get-installation-name ht)
+                               "links.rktd"))
+             null)
+         ;; installation-wide:
+         (if (use-collection-link-paths)
+             (add-config-search
+              ht
+              'links-search-files
+              (list lf))
+             null)))))
 
-  (define-values (links-paths) (car all-links-paths))
-  (define-values (user-links-path) (cdr all-links-paths))
+  ;; map from link-file names to cached information:
+  (define-values (links-cache) (make-weak-hash))
 
-  (define-values (user-links-cache) (make-hasheq))
-  (define-values (user-links-stamp) #f)
-
-  (define-values (links-caches) (make-vector (vector-length links-paths) (make-hasheq)))
-  (define-values (links-stamps) (make-vector (vector-length links-paths) #f))
-
+  ;; used for low-level except abort below:
   (define-values (stamp-prompt-tag) (make-continuation-prompt-tag 'stamp))
 
   (define-values (file->stamp)
@@ -606,7 +602,9 @@
           (not (car a)))))
   
   (define-values (get-linked-collections)
-    (lambda (user? ii)
+    (lambda (links-path)
+      ;; Use/save information in `links-cache', relying on filesystem-change events
+      ;; or a copy of the file to detect when the cache is stale.
       (call/ec (lambda (esc)
                  (define-values (make-handler)
                    (lambda (ts)
@@ -617,20 +615,12 @@
                                (log-message l 'error
                                             (format
                                              "error reading collection links file ~s: ~a"
-                                             (cond
-                                              [user? user-links-path]
-                                              [else (vector-ref links-paths ii)])
+                                             links-path
                                              (exn-message exn))
                                             (current-continuation-marks))))
                            (void))
                        (when ts
-                         (cond
-                          [user?
-                           (set! user-links-cache (make-hasheq))
-                           (set! user-links-stamp ts)]
-                          [else
-                           (vector-set! links-caches ii (make-hasheq))
-                           (vector-set! links-stamps ii ts)]))
+                         (hash-set! links-cache links-path (cons #hasheq() ts)))
                        (if (exn:fail? exn)
                            (esc (make-hasheq))
                            ;; re-raise the exception (which is probably a break)
@@ -638,13 +628,9 @@
                  (with-continuation-mark
                      exception-handler-key
                      (make-handler #f)
-                   (let* ([a-links-path (cond
-                                         [user? user-links-path]
-                                         [else (vector-ref links-paths ii)])]
-                          [a-links-stamp (cond
-                                          [user? user-links-stamp]
-                                          [else (vector-ref links-stamps ii)])]
-                          [ts (file->stamp a-links-path a-links-stamp)])
+                   (let* ([links-stamp+cache (hash-ref links-cache links-path '(#f . #hasheq()))]
+                          [a-links-stamp (car links-stamp+cache)]
+                          [ts (file->stamp links-path a-links-stamp)])
                      (if (not (equal? ts a-links-stamp))
                          (with-continuation-mark
                              exception-handler-key
@@ -653,7 +639,7 @@
                             (lambda ()
                               (let ([v (if (no-file-stamp? ts)
                                            null
-                                           (let ([p (open-input-file a-links-path 'binary)])
+                                           (let ([p (open-input-file links-path 'binary)])
                                              (dynamic-wind
                                                  void
                                                  (lambda () 
@@ -676,7 +662,7 @@
                                                      v))
                                   (error "ill-formed content"))
                                 (let ([ht (make-hasheq)]
-                                      [dir (let-values ([(base name dir?) (split-path a-links-path)])
+                                      [dir (let-values ([(base name dir?) (split-path links-path)])
                                              base)])
                                   (for-each
                                    (lambda (p)
@@ -715,17 +701,9 @@
                                    ht
                                    (lambda (k v) (hash-set! ht k (reverse v))))
                                   ;; save table & file content:
-                                  (cond
-                                   [user?
-                                    (set! user-links-cache ht)
-                                    (set! user-links-stamp ts)]
-                                   [else
-                                    (vector-set! links-caches ii ht)
-                                    (vector-set! links-stamps ii ts)])
+                                  (hash-set! links-cache links-path (cons ts ht))
                                   ht)))))
-                         (cond
-                          [user? user-links-cache]
-                          [else (vector-ref links-caches ii)]))))))))
+                         (cdr links-stamp+cache))))))))
 
   (define-values (normalize-collection-reference)
     (lambda (collection collection-path)
@@ -752,32 +730,38 @@
     (lambda (fail collection collection-path file-name)
       (let-values ([(collection collection-path)
                     (normalize-collection-reference collection collection-path)])
-        (let ([all-paths (let ([sym (string->symbol (if (path? collection)
-                                                        (path->string collection)
-                                                        collection))]
-                               [links? (use-collection-link-paths)])
-                           (append
-                            ;; list of paths and (box path)s:
-                            (if (and links? 
-                                     (use-user-specific-search-paths)
-                                     user-links-path)
-                                (append
-                                 (let ([ht (get-linked-collections #t 0)])
-                                   (append (hash-ref ht sym null)
-                                           (hash-ref ht #f null))))
-                                null)
-                            ;; list of paths and (box path)s:
-                            (if links?
-                                (let loop ([ii 0])
-                                  (if (ii . >= . (vector-length links-paths))
-                                      null
-                                      (let ([ht (get-linked-collections #f ii)])
-                                        (append (hash-ref ht sym null)
-                                                (hash-ref ht #f null)
-                                                (loop (add1 ii))))))
-                                null)
-                            ;; list of paths:
-                            (current-library-collection-paths)))])
+        (let ([all-paths (let ([sym (string->symbol 
+                                     (if (path? collection)
+                                         (path->string collection)
+                                         collection))])
+                           (let loop ([l (current-library-collection-links)])
+                             (cond
+                              [(null? l) null]
+                              [(not (car l))
+                               ;; #f is the point where we try the old parameter:
+                               (append 
+                                (current-library-collection-paths)
+                                (loop (cdr l)))]
+                              [(hash? (car l))
+                               ;; A hash table maps a collection-name symbol
+                               ;; to a list of paths. We need to wrap each path
+                               ;; in a box, because that's how the code below
+                               ;; knows that it's a single collection's directory.
+                               ;; A hash table can also map #f to a list of paths
+                               ;; for directories that hold collections.
+                               (append
+                                (map box (hash-ref (car l) sym null))
+                                (hash-ref (car l) #f null)
+                                (loop (cdr l)))]
+                              [else
+                               (let ([ht (get-linked-collections (car l))])
+                                 (append 
+                                  ;; Table values are lists of paths and (box path)s,
+                                  ;; where a (box path) is a collection directory
+                                  ;; (instead of a directory containing collections).
+                                  (hash-ref ht sym null)
+                                  (hash-ref ht #f null)
+                                  (loop (cdr l))))])))])
           (define-values (done)
             (lambda (p)
               (if file-name (build-path p file-name) p)))

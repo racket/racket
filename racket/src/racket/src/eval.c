@@ -5325,6 +5325,14 @@ void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *ex
   if (!scheme_setjmp(newbuf)) {
     Scheme_Object *clcp, *flcp, *a[2];
 
+    clcp = scheme_builtin_value("current-library-collection-links");
+    flcp = scheme_builtin_value("find-library-collection-links");
+
+    if (clcp && flcp) {
+      a[0] = _scheme_apply(flcp, 0, NULL);
+      _scheme_apply(clcp, 1, a);
+    }
+
     clcp = scheme_builtin_value("current-library-collection-paths");
     flcp = scheme_builtin_value("find-library-collection-paths");
 
