@@ -130,6 +130,21 @@
 
 (test 21 ctype-sizeof (_array _byte 3 7))
 
+;; Test enum and bitmask
+(define ([t (_enum '(a b c = 4 d))]
+         [s (_bitmask '(a b c = 14 d))])
+  (define (check t v n)
+    (test n (cast v t _int)))
+  (check t 'a 0)
+  (check t 'b 1)
+  (check t 'c 4)
+  (check t 'd 5)
+  (check t 'a 1)
+  (check t 'b 2)
+  (check t 'c 14)
+  (check t 'd 16)
+  (check t '(a b) 3))
+
 (define-cstruct _ic7i ([i1 _int]
                        [c7 _c7_list]
                        [i2 _int]))

@@ -828,23 +828,25 @@
 ;; the above with '= -- but the numbers have to be specified in some way.  The
 ;; generated type will convert a list of these symbols into the logical-or of
 ;; their values and back.
-(define (_bitmask name orig-symbols->integers . base?)
+(define (_bitmask name orig-s->i . base?)
   (define basetype (if (pair? base?) (car base?) _uint))
   (define s->c
     (if name (string->symbol (format "bitmask:~a->int" name)) 'bitmask->int))
   (define symbols->integers
-    (let loop ([s->i orig-symbols->integers])
+    (let loop ([s->i orig-s->i] [last 0])
       (cond
        [(null? s->i)
         null]
        [(and (pair? (cdr s->i)) (eq? '= (cadr s->i)) (pair? (cddr s->i)))
         (cons (list (car s->i) (caddr s->i))
-              (loop (cdddr s->i)))]
+              (loop (cdddr s->i) (integer-length (caddr s->i))))]
        [(and (pair? (car s->i)) (pair? (cdar s->i)) (null? (cddar s->i))
              (symbol? (caar s->i)) (integer? (cadar s->i)))
-        (cons (car s->i) (loop (cdr s->i)))]
+        (cons (car s->i) (loop (cdr s->i) (integer-length (cadar s->i))))]
+       [(symbol? (car s->i))
+        (cons (list (car s->i) (arithmetic-shift 1 last)) (loop (cdr s->i) (add1 last)))]
        [else
-        (error '_bitmask "bad spec in ~e" orig-symbols->integers)])))
+        (error '_bitmask "bad spec in ~e" orig-s->i)])))
   (make-ctype basetype
     (lambda (symbols)
       (if (null? symbols) ; probably common

@@ -1399,7 +1399,7 @@ is to throw an exception.
 
 @examples[#:eval ffi-eval
   (code:comment "example from snappy-c.h")
-  (define _snappy_status
+  (define @#,racketidfont{_snappy_status}
     (_enum '(ok = 0
              invalid_input
              buffer_too_small)))
@@ -1409,14 +1409,21 @@ is to throw an exception.
          ctype?]{
 
 Similar to @racket[_enum], but the resulting mapping translates a list
-of symbols to a number and back, using @racket[bitwise-ior].  A single
-symbol is equivalent to a list containing just the symbol.  The
-default @racket[basetype] is @racket[_uint], since high bits are often
-used for flags.
+of symbols to a number and back, using @racket[bitwise-ior] on the
+values of individual symbols, where A single symbol is equivalent to a
+list containing just the symbol.
+
+When a symbol does not have a given value (via @racket['=] after the
+symbol in @racket[symbols]), its value is the next power of 2 greater
+than the previous symbol's assignment (or @racket[1] for the first
+symbol).
+
+The default @racket[basetype] is @racket[_uint], since high bits are
+often used for flags.
 
 @examples[#:eval ffi-eval
   (code:comment "example from curl.h")
-  (define _curl_global_flag
+  (define @#,racketidfont{_curl_global_flag}
     (_bitmask `(CURL_GLOBAL_SSL = 1
                 CURL_GLOBAL_WIN32 = 2
                 CURL_GLOBAL_ALL = 3
@@ -1424,7 +1431,7 @@ used for flags.
                 CURL_GLOBAL_DEFAULT = 3
                 CURL_GLOBAL_ACK_EINTR = 4)))
   (code:comment "example from XOrg")
-  (define _Modifiers
+  (define @#,racketidfont{_Modifiers}
     (_bitmask '(ShiftMask = #b0000000000001
                 LockMask = #b0000000000010
                 ControlMask = #b0000000000100
