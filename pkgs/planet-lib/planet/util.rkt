@@ -377,7 +377,7 @@
                  (build-path SCRIBBLE-DOCUMENT-DIR (bytes->path (cadr pathname)))))
              
              (when (and (build-scribble-docs?)
-                        (file-exists? (build-path (collection-path "setup") "scribble.rkt")))
+                        (file-exists? (collection-file-path "scribble.rkt" "setup")))
                (with-handlers ([exn:fail? 
                                 (lambda (e)
                                   (set! critical-errors
