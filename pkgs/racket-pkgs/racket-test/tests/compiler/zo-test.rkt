@@ -7,6 +7,7 @@ exec racket -t "$0" -- -s -t 60 -v -R $*
 (require setup/dirs
          racket/runtime-path
          racket/future
+         compiler/find-exe
          "zo-test-util.rkt")
 
 (define ((make-recorder! ht) file phase)
@@ -63,7 +64,7 @@ exec racket -t "$0" -- -s -t 60 -v -R $*
      (! p-str)]))
 
 (define-runtime-path zo-test-worker-path "zo-test-worker.rkt")
-(define racket-path (path->string (find-executable-path "racket")))
+(define racket-path (path->string (find-exe)))
 
 (define p
   (command-line #:program "zo-test" 
