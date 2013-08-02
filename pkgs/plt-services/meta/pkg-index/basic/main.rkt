@@ -69,6 +69,9 @@
 
 (provide
  (contract-out
+  [response/sexpr
+   (-> any/c
+       response?)]
   [request-binding/string
    (->* (request? string?)
         (boolean?)

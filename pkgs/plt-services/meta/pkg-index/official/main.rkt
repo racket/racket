@@ -69,7 +69,7 @@
 (define (package-info pkg-name #:version [version #f])
   (define no-version (hash-set (file->value (build-path pkgs-path pkg-name)) 'name pkg-name))
   (cond
-    [(and version 
+    [(and version
           (hash-ref no-version 'versions #f)
           (hash-ref (hash-ref no-version 'versions) version #f))
      =>
@@ -82,7 +82,7 @@
                  #:exists 'replace))
 
 (define (hash-merge from to)
-  (for/fold ([to to]) 
+  (for/fold ([to to])
       ([(k v) (in-hash from)])
     (hash-set to k v)))
 
@@ -118,7 +118,39 @@
    [("curate") page/curate]
    [("curate" "edit" (string-arg) (number-arg)) page/curate/edit]
    [("rss") page/rss]
+   [("api" "upload") #:method "post" api/upload]
    [else basic-start]))
+
+(define (api/upload req)
+  (define req-data (read (open-input-bytes (or (request-post-data/raw req) #""))))
+  (match-define (list email given-password pis) req-data)
+  (define password-path (build-path users.new-path email))
+  (define expected-password (file->bytes password-path))
+  (cond
+    [(not (and (bcrypt-check expected-password given-password)
+               (curation-administrator? email)))
+     (response/sexpr #f)]
+    [else
+     (for ([(p more-pi) (in-hash pis)])
+       (define pi (package-info p))
+       (define new-pi (hash-deep-merge pi more-pi))
+       (package-info-set! p new-pi)
+       (thread (λ () (update-checksum #t p))))
+     (response/sexpr #t)]))
+
+(define (hash-deep-merge ht more-ht)
+  (for/fold ([ht ht])
+      ([(k new-v) (in-hash more-ht)])
+    (hash-update ht k 
+                 (λ (old-v)
+                   (cond
+                     [(not old-v) 
+                      new-v]
+                     [(hash? old-v)
+                      (hash-deep-merge old-v new-v)]
+                     [else
+                      new-v]))
+                 #f)))
 
 (define (author->list as)
   (string-split as))
@@ -662,7 +694,7 @@
 
 (define ((pkg-info-edit-version bc pkg-name v) req)
   (define version-formlet
-    (if v 
+    (if v
       (formlet
        (table
         (tr (td "Version:")
@@ -694,7 +726,7 @@
     (formlet-process version-formlet version-req))
 
   (unless (valid-version? version)
-    (error 'pnr "Must use valid version for exception: ~e" 
+    (error 'pnr "Must use valid version for exception: ~e"
            version))
   (when (and (package-exists? pkg-name)
              (not (member (current-user version-req #t)
@@ -703,7 +735,7 @@
            "Packages may only be modified by their authors: ~e"
            pkg-name))
 
-  (package-info-set! 
+  (package-info-set!
    pkg-name
    (hash-update (package-info pkg-name) 'versions
                 (λ (v-ht)
@@ -802,7 +834,7 @@
            (table
             ,@(for/list ([(v vi) (in-hash (package-ref* i 'versions (hash)))])
                 `(tr
-                  (td ,(if edit-details 
+                  (td ,(if edit-details
                          `(a ([href ,(embed/url (pkg-info-edit-version bc pkg-name v))])
                              ,v)
                          v))
@@ -848,7 +880,6 @@
 (define (update-checksums force? pkgs)
   (for-each (curry update-checksum force?) pkgs))
 
-;; xxx look at all versions
 (define (update-checksum force? pkg-name)
   (define i (package-info pkg-name))
   (define old-checksum
@@ -905,7 +936,7 @@
 
 ;; Curation
 (define (curation-administrator? u)
-  (member u '("jay.mccarthy@gmail.com")))
+  (member u '("jay.mccarthy@gmail.com" "mflatt@cs.utah.edu")))
 
 (define *default-ring* 2)
 (define (ring-format i)
