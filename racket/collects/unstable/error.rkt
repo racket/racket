@@ -87,7 +87,9 @@ TODO
     (raise
      (exn:fail:syntax message
                       (current-continuation-marks)
-                      (if source-stx (cons source-stx extra-stxs) extra-stxs)))))
+                      (cond [sub-stx (cons sub-stx extra-stxs)]
+                            [stx (cons stx extra-stxs)]
+                            [else extra-stxs])))))
 
 ;; ----
 
