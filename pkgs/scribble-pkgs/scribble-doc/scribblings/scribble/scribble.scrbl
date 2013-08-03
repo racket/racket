@@ -14,7 +14,7 @@ programmatically.
 
 This document is itself written using Scribble. You can see its source
 at
-@(let ([url "http://git.racket-lang.org/plt/tree/HEAD:/collects/scribblings/scribble"])
+@(let ([url "http://git.racket-lang.org/plt/tree/HEAD:/pkgs/scribble-pkgs/scribble-doc/scribblings/scribble"])
    (link url url)),
 starting with the @filepath{scribble.scrbl} file.
 
