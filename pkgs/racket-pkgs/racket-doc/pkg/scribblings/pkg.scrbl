@@ -14,12 +14,10 @@
          @litchar{0} through @litchar{9}, 
          @litchar{_}, and @litchar{-}})
 
-@(define (inset . c)
-   (cons (hspace 2) c))
-
 @(define (gtech s)
    @tech[#:doc '(lib "scribblings/guide/guide.scrbl") s])
 
+@(define subcommand list)
 
 @; ----------------------------------------
 
@@ -31,6 +29,10 @@ collections, and the Racket package sever helps other Racket
 programmers find libraries that you make available.
 
 @table-of-contents[]
+
+@; ----------------------------------------
+
+@include-section["getting-started.scrbl"]
 
 @; ----------------------------------------
 
@@ -255,22 +257,12 @@ directory in its search path for installed packages).
 
 @; ----------------------------------------
 
-@section[#:tag "Managing Packages"]{Managing Packages}
+@section[#:tag "cmdline"]{Using @exec{raco pkg}}
 
-The Racket package manager has two main user interfaces: a command line @exec{raco}
-command and a @racketmodname[pkg] library to run the same commands.
-They have the exact same capabilities, as
-the command line interface invokes the library functions and
-reprovides all their options.
+The @exec{raco pkg} command provides package-management tools via
+sub-commands.
 
-@subsection[#:tag "cmdline"]{Command Line}
-
-The @as-index{@exec{raco pkg}} command provides the following
-sub-commands:
-
-@itemlist[
-
-@item{@command/toc{install} @nonterm{option} ... @nonterm{pkg-source} ... 
+@command/toc{install} @nonterm{option} ... @nonterm{pkg-source} ... 
  --- Installs the given @tech{package sources} (eliminating exact-duplicate @nonterm{pkg-source}s).
      If a given @nonterm{pkg-source} is ``auto-installed'' (to satisfy some other package's
      dependency), then it is promoted to explicitly installed.
@@ -297,7 +289,7 @@ sub-commands:
    @item{@exec{search-auto} --- Like @exec{search-ask}, but does not ask for permission to install or update.}
   ]}
 
-  @item{@DFlag{force} --- Ignores conflicts (unsafe)}
+  @item{@DFlag{force} --- Ignores conflicts (unsafe).}
 
   @item{@DFlag{ignore-checksums} --- Ignores errors verifying package @tech{checksums} (unsafe).}
 
@@ -348,10 +340,10 @@ sub-commands:
 
   @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Install and setup with @nonterm{n} parallel jobs.}
  ]
-}
 
 
-@item{@command/toc{update} @nonterm{option} ... @nonterm{pkg} ... 
+
+@subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg} ... 
 --- Checks the specified packages for
 @tech{package updates}. If an update is found, but it cannot be
 installed (e.g. it conflicts with another installed package), then
@@ -379,7 +371,7 @@ the given @nonterm{pkg}s.
  ]
 }
 
-@item{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
+@subcommand{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
 --- Attempts to remove the given packages. By default, if a package is the dependency
 of another package that is not listed, this command fails without 
 removing any of the @nonterm{pkg}s.
@@ -407,7 +399,7 @@ the given @nonterm{pkg}s.
  ]
 }
 
-@item{@command/toc{show} @nonterm{option} ... --- Print information about currently installed packages. 
+@subcommand{@command/toc{show} @nonterm{option} ... --- Print information about currently installed packages. 
  By default, packages are shown for all @tech{package scopes}, but only for packages
  not marked as auto-installed to fulfill dependencies.
 
@@ -434,7 +426,7 @@ the given @nonterm{pkg}s.
  ]
 }
 
-@item{@command/toc{migrate} @nonterm{option} ... @nonterm{from-version}
+@subcommand{@command/toc{migrate} @nonterm{option} ... @nonterm{from-version}
  --- Installs packages that were previously installed in @exec{user}
      @tech{package scope} for @nonterm{from-version}, where
      @nonterm{from-version} is an installation name/version.
@@ -459,7 +451,7 @@ the given @nonterm{pkg}s.
  ]
 }
 
-@item{@command/toc{create} @nonterm{option} ... @nonterm{directory-or-package}
+@subcommand{@command/toc{create} @nonterm{option} ... @nonterm{directory-or-package}
 --- Bundles a package into an archive. Bundling
     is not needed for a package that is provided directly from a
     GitHub repository or other non-archive formats. The @exec{create}
@@ -492,7 +484,7 @@ the given @nonterm{pkg}s.
   ]
 }
 
-@item{@command/toc{config} @nonterm{option} ... @nonterm{key} @nonterm{val} ... --- 
+@subcommand{@command/toc{config} @nonterm{option} ... @nonterm{key} @nonterm{val} ... --- 
 View and modify configuration of the package manager itself, with the following @nonterm{option}s:
 
  @itemlist[
@@ -518,7 +510,7 @@ View and modify configuration of the package manager itself, with the following 
  ]
 }
 
-@item{@command/toc{catalog-show} @nonterm{option} ... @nonterm{package-name} ...
+@subcommand{@command/toc{catalog-show} @nonterm{option} ... @nonterm{package-name} ...
 --- Consults @tech{package catalogs} for a package (that is not necessarily installed)
     and displays the catalog's information for the package, such as its source URL and
     a checksum.
@@ -538,7 +530,7 @@ View and modify configuration of the package manager itself, with the following 
  ]
 }
 
-@item{@command/toc{catalog-copy} @nonterm{option} ... @nonterm{src-catalog} ... @nonterm{dest-catalog}
+@subcommand{@command/toc{catalog-copy} @nonterm{option} ... @nonterm{src-catalog} ... @nonterm{dest-catalog}
 --- Copies information from @tech{package catalog} names by @nonterm{src-catalog}s 
     to a local database or directory @nonterm{dest-catalog},
     which can be used as a new @tech{package catalog}.
@@ -564,218 +556,6 @@ View and modify configuration of the package manager itself, with the following 
                          over information already in @nonterm{dest-catalog}.}
  ]
 }
-
-]
-
-@subsection{Programmatic Commands}
-
-@defmodule[pkg]
-
-The @racketmodname[pkg] module provides a programmatic interface
-to the command sub-sub-commands.
-
-@deftogether[
- (@defthing[pkg-install-command procedure?]             
-  @defthing[pkg-update-command procedure?]             
-  @defthing[pkg-remove-command procedure?]             
-  @defthing[pkg-show-command procedure?]             
-  @defthing[pkg-migrate-command procedure?]             
-  @defthing[pkg-config-command procedure?]
-  @defthing[pkg-create-command procedure?]
-  @defthing[pkg-catalog-show-command procedure?]
-  @defthing[pkg-catalog-copy-command procedure?])             
-]{
- Duplicates the @seclink["cmdline"]{command line interface}. 
-
- Each long form option of the command-line interface is keyword
- argument. An argument corresponding to @DFlag{type}, @DFlag{deps},
- @DFlag{format}, or @DFlag{scope} accepts its argument as a symbol. All other options
- accept booleans, where @racket[#t] is equivalent to the presence of
- the option.
-
- See also @racketmodname[pkg/lib].}
-
-@; ----------------------------------------
-
-@section[#:tag "how-to-create"]{Developing Packages}
-
-To create a package, first make a directory for your package and
-select its name, @nonterm{package}:
-
-@commandline{mkdir @nonterm{package}}
-
-Optionally, enter your directory and create a basic @filepath{info.rkt} file:
-
-@commandline{cd @nonterm{package}}
-@commandline{echo "#lang info" > info.rkt}
-@commandline{echo "(define deps (list \"base\"))" >> info.rkt}
-
-The @filepath{info.rkt} file is not necessary for a
-@tech{single-collection package} with no dependencies, but you may
-wish to create it to simplify adding dependencies in the future.  For
-a @tech{multi-collection package}, you must create an
-@filepath{info.rkt} file and define @racketidfont{collection} as
-@racket['multi]:
-
-@commandline{echo "(define collection 'multi)" >> info.rkt}
-
-Note that in the case of a @tech{multi-collection package}, the
-@filepath{info.rkt} file is for the package, not for a collection;
-definitions such as @racket[scribblings] or @racket[raco-commands]
-work only in a collection's @filepath{info.rkt}. For a
-@tech{single-collection package}, the @filepath{info.rkt} file serves
-double-duty for the package and collection.
-
-Next, link your development directory to your local package
-repository:
-
-@commandline{raco pkg install --link @nonterm{package}}
-
-
-Finally, inside the @nonterm{package} directory, add directories and/or
-files to implement the collections and/or modules that your package
-provide. For
-example, the developer of a @pkgname{tic-tac-toe} @tech{multi-collection package} that provides
-@racketidfont{games/tic-tac-toe/main} and @racketidfont{data/matrix}
-libraries might create directories and files like this:
-
-@commandline{mkdir -p games/tic-tac-toe}
-@commandline{touch games/tic-tac-toe/info.rkt}
-@commandline{touch games/tic-tac-toe/main.rkt}
-@commandline{mkdir -p data}
-@commandline{touch data/matrix.rkt}
-
-After your package is ready to deploy, choose either @secref["github-deploy"]
-or @secref["manual-deploy"].
-
-@subsection[#:tag "github-deploy"]{GitHub Deployment}
-
-First, @link["https://github.com/signup/free"]{create a free account}
-on GitHub, then
-@link["https://help.github.com/articles/create-a-repo"]{create a
-repository for your package}. After that, publish your package source
-as:
-
-@inset{@exec{github://github.com/@nonterm{user}/@nonterm{package}/@nonterm{branch}}}
-
-Typically, @nonterm{branch} will be @exec{master}, but you may wish to use
-different branches for releases and development.
-
-Whenever you
-
-@commandline{git push}
-
-your changes will automatically be discovered by those who used your
-package source when they use @exec{raco pkg update}.
-
-@subsection[#:tag "manual-deploy"]{Manual Deployment}
-
-@margin-note{By default, @exec{raco pkg create} generates a Zip
-archive. For more options, refer to the @command-ref{create}
-documentation. If you want to generate an archive through some other
-means, simply archive what you made in the first part of this
-section. For more formal details, refer to the @tech{package}
-definition.}
-
-Alternatively, you can deploy your package by publishing it on a URL
-you control. If you do this, it is preferable to create an archive
-from your package directory first:
-
-@commandline{raco pkg create @nonterm{package}}
-
-And then upload the archive and its @tech{checksum} to your site:
-
-@commandline{scp @nonterm{package}.zip @nonterm{package}.zip.CHECKSUM your-host:public_html/}
-
-Now, publish your package source as:
-
-@inset{@exec{http://your-host/~@nonterm{user}/@nonterm{package}.zip}}
-
-Whenever you want to provide a new release of a package, recreate and reupload the
-package archive (and @tech{checksum}). Your changes will automatically be
-discovered by those who used your package source when they use
-@exec{raco pkg update}.
-
-@subsection{Helping Others Discover Your Package}
-
-By using either of the above deployment techniques, anyone will be
-able to use your package by referring to your @tech{package source}.
-However, they will not be able to refer to
-it by a simple name until it is listed on a @tech{package catalog}.
-
-If you'd like to use the official @tech{package catalog}, browse
-to
-@link["https://pkg.racket-lang.org/manage/upload"]{https://pkg.racket-lang.org/manage/upload}
-and upload a new package. You will need to create an account and log
-in first.
-
-You only need to go to this site @emph{once} to list your package. The
-server will periodically check the package source you designate for
-updates.
-
-If you use this server, and use GitHub for deployment, then you will
-never need to open a web browser to update your package for end
-users. You just need to push to your GitHub repository, then within 24
-hours, the official @tech{package catalog} will notice, and
-@exec{raco pkg update} will work on your user's machines.
-
-@subsection{Naming and Designing Packages}
-
-Although of course not required, we suggest the following system for
-naming and designing packages:
-
-@itemlist[
-
-@item{Packages should not include the name of the author or
-organization that produces them, but be named based on the content of
-the package. For example, @pkgname{data-priority-queue} is preferred
-to @pkgname{johns-amazing-queues}.}
-
-@item{Packages that provide an interface to a foreign library or
-service should be named the same as the service. For example,
-@pkgname{cairo} is preferred to @pkgname{Racket-cairo} or a similar
-name.}
-
-@item{Packages should not generally contain version-like elements in
-their names, initially. Instead, version-like elements should be added
-when backwards incompatible changes are necessary. For example,
-@pkgname{data-priority-queue} is preferred to
-@pkgname{data-priority-queue1}. Exceptions include packages that
-present interfaces to external, versioned things, such as
-@pkgname{sqlite3} or @pkgname{libgtk2}.}
-
-@item{A @tech{version} declaration for a package is used only by other
-package implementors to effectively declare dependencies on provided
-features. Such declarations allow @exec{raco pkg install} and
-@exec{raco pkg update} to help check dependencies.  Declaring and
-changing a version is optional, and @tech{package catalog}
-ignore version declarations; in particular, a package is a candidate
-for updating when its @tech{checksum} changes, independent of whether
-the package's version changes or in which direction the version
-changes.}
-
-@item{Packages should not combine large sets of utilities libraries
-with other functionality. For example, 
-a package that contain many extensions to the @filepath{racket} collection, like
-@filepath{racket/more-lists.rkt} and
-@filepath{racket/more-bools.rkt} 
-should not also contain complete applications, as other packages
-interested in the @filepath{racket/more-bools.rkt} library
-will not wish to depend on in such application.}
-
-@item{Packages should generally provide one collection with a name
-similar to the name of the package. For example, @pkgname{libgtk1}
-should provide a collection named @filepath{libgtk}. Exceptions
-include extensions to existing collection, such as new data-structures
-for the @filepath{data} collection, DrRacket tools, new games for PLT
-Games, etc.}
-
-@item{Packages are not allowed to start with @pkgname{plt},
-@pkgname{racket}, or @pkgname{planet} without special approval from
-PLT curation.}
-
-]
-
 @; ----------------------------------------
 
 @section[#:tag "metadata"]{Package Metadata}
@@ -899,6 +679,12 @@ The following @filepath{info.rkt} fields are used by the package manager:
 
 @; ----------------------------------------
 
+@include-section["apis.scrbl"]
+
+@include-section["catalog-protocol.scrbl"]
+
+@; ----------------------------------------
+
 @section{@|Planet1| Compatibility}
 
 PLT maintains a @tech{package catalog} to serve packages that
@@ -937,12 +723,6 @@ future.
 
 @; ----------------------------------------
 
-@include-section["apis.scrbl"]
-
-@include-section["catalog-protocol.scrbl"]
-
-@; ----------------------------------------
-
 @section[#:style 'quiet]{FAQ}
 
 This section answers anticipated frequently asked questions about
@@ -951,9 +731,11 @@ the package manager.
 @subsection{Are package installations versioned with respect to the
 Racket version?}
 
-By default, when you install a package, it is installed for a specific
-user and a specific version of Racket. That is, the @tech{package
-scope} is user- and version-specific.
+Most Racket installations are configured to that installing a package
+installs it for a specific user and a specific version of Racket. That
+is, the @tech{package scope} is user- and version-specific. More
+precisely, it is user-specific and installation-name-specific, where
+an installation name is typically a Racket version.
 
 You can change the default @tech{package scope} (for a particular
 Racket installation) with @command-ref{config}@exec{ -i --set
@@ -969,17 +751,13 @@ and rebuilt.
 If you change the default @tech{package scope}, you can use the
 @Flag{u} or @DFlag{user} flag with a specific @exec{raco pkg} command
 to perform the command with user-specific @tech{package scope}.
-User-specific scope is also specific for a Racket installation
-name, where an installation name is typically a Racket version.
 
 @subsection{Where and how are packages installed?}
 
 User-specific and Racket-version-specific packages are in
-@racket[(build-path (find-system-path 'addon-dir) (version) "pkgs")],
-user-specific and all-version packages are in @racket[(build-path
-(find-system-path 'addon-dir) "pkgs")], and installation-wide packages
-are in @racket[(build-path (find-lib-dir) "pkgs")]. They are linked as
-collections (for single-collection packages) collection roots (for
+@racket[(find-user-pkgs-dir)], and installation-wide packages
+are in @racket[(find-pkgs-dir)]. They are linked as
+collections (for single-collection packages) or collection roots (for
 multi-collection packages) with @exec{raco link}.
 
 @subsection{How are user-specific and installation-wide @tech{package scopes}
@@ -1107,42 +885,42 @@ out of beta when these are completed.
 @itemlist[
 
 @item{The official catalog server will divide packages into three
-categories: @reponame{planet}, @reponame{solar-system}, and @reponame{galaxy}. The definitions
+categories: @reponame{ring-0}, @reponame{ring-1}, and @reponame{ring-2}. The definitions
 for these categories are:
 
  @itemlist[
 
-  @item{@reponame{galaxy} --- No restrictions.}
+  @item{@reponame{ring-2} --- No restrictions.}
 
-  @item{@reponame{solar-system} --- Must not conflict any package
-in @reponame{solar-system} or @reponame{planet}.}
+  @item{@reponame{ring-1} --- Must not conflict any package
+in @reponame{ring-1} or @reponame{ring-0}.}
 
-  @item{@reponame{planet} --- Must not conflict any package in @reponame{solar-system}
-or @reponame{planet}. Must have documentation and tests. The author must be
+  @item{@reponame{ring-0} --- Must not conflict any package in @reponame{ring-1}
+or @reponame{ring-0}. Must have documentation and tests. The author must be
 responsive about fixing regressions against changes in Racket, etc.}
 
  ]
 
 These categories will be curated by PLT.
 
-Our goal is for all packages to be in the @reponame{solar-system}, with
-the @reponame{galaxy} as a temporary place while the curators work with the
+Our goal is for all packages to be in @reponame{ring-1}, with
+@reponame{ring-2} as a temporary place while the curators work with the
 authors of conflicting packages to determine how modules should be
 renamed for unity.
 
 However, before curation is complete, each package will be
-automatically placed in @reponame{galaxy} or @reponame{solar-system}
+automatically placed in @reponame{ring-2} or @reponame{ring-1}
 depending on its conflicts, with preference being given to older
 packages. (For example, if a new package B conflicts with an old
-package A, then A will be in @reponame{solar-system}, but B will be in
-@reponame{galaxy}.) During curation, however, it is not necessarily
+package A, then A will be in @reponame{ring-1}, but B will be in
+@reponame{ring-2}.) During curation, however, it is not necessarily
 the case that older packages have preference. (For example,
 @pkgname{tic-tac-toe} should probably not provide
 @filepath{data/matrix.rkt}, but that could be spun off into another
 package used by both @pkgname{tic-tac-toe} and
 @pkgname{factory-optimize}.)
 
-In contrast, the @reponame{planet} category will be a special category that
+In contrast, the @reponame{ring-0} category will be a special category that
 authors may apply for. Admission requires a code audit and implies
 a "stamp of approval" from PLT. In the future, packages in this
 category will have more benefits, such as automatic regression testing
@@ -1150,7 +928,7 @@ on DrDr, testing during releases, provided binaries, and advertisement
 during installation.
 
 The @|Planet1| compatibility packages will also be included in
-the @reponame{solar-system} category, automatically. 
+the @reponame{ring-1} category, automatically. 
 
 }
 
@@ -1160,14 +938,14 @@ printers that search for providers of modules on the configured
 @tech{package catalogs}. For example, if a module requires
 @filepath{data/matrix.rkt}, and it is not available, then the catalog will
 be consulted to discover what packages provide it. @emph{Only packages
-in @reponame{solar-system} or @reponame{planet} will be
+in @reponame{ring-1} or @reponame{ring-0} will be
 returned.} (This category restriction ensures that the package to
 install is unique.)
 
 Users can configure their systems to then automatically install the
 package provided is has the appropriate category (i.e., some users may
-wish to automatically install @reponame{planet} packages but not
-@reponame{solar-system} packages, while others may not want to install
+wish to automatically install @reponame{ring-0} packages but not
+@reponame{ring-1} packages, while others may not want to install
 any.)
 
 This feature will be generalized across all @tech{package catalogs}, 
@@ -1193,7 +971,7 @@ unclear.}
 @tech{package catalog} with a public key shipped with Racket, and
 allow other catalogs to implement a similar security scheme.}
 
-@item{Packages in the @reponame{planet} category should be tested on
+@item{Packages in the @reponame{ring-0} category should be tested on
 DrDr. This would require a way to communicate information about how
 they should be run to DrDr. This is currently done via the
 @filepath{meta/props} script for things in the core. We should
@@ -1211,38 +989,9 @@ manual, rather than extending the documentation of the existing
 to have such "documentation plugins" in Scribble and support
 similar "plugin" systems elsewhere in the code-base.}
 
-@item{Packages can contain any kinds of files, including bytecode and
-documentation, which would reduce the time required to install a
-package (since we must run @exec{raco setup}). However, packages with
-these included are painful to maintain and unreliable given users with
-different versions of Racket installed.
-
-One solution is to have a separate place where such "binary" packages
-are available. For example, PLT could run a catalog server for every Racket
-version, i.e., @filepath{https://binaries.racket-lang.org/5.3.1.4},
-that would contain the binaries for all the packages in the
-@reponame{planet} category. Thus, when you install package
-@pkgname{tic-tac-toe} you could also install the binary version from
-the appropriate catalog.
-
-There are obvious problems with this... it could be expensive for PLT
-in terms of space and time... Racket compilation is not necessarily
-deterministic or platform-independent.
-
-This problem requires more thought.}
-
 @item{The user interface could be improved, including integration with
 DrRacket and a GUI. For example, it would be good if DrRacket would
 poll for package updates periodically and if when it was first started
 it would display available, popular packages.}
-
-@item{The core distribution should be split apart into many more
-packages. For example, Redex, Plot, the Web Server, and the teaching
-languages are natural candidates for being broken off.}
-
-@item{The core should be able to be distributed with packages that
-will be installed as soon as the system is installed. Ideally, this
-would be customizable by instructors so they could share small
-distributions with just the right packages for their class.}
 
 ]

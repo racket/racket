@@ -8,10 +8,19 @@
   @exec{raco pkg @|s|})
 
 (define (command-ref s)
-  @(link-element "plainlink" @command[s] `(raco-pkg-cmd ,s)))
+  @(seclink #:underline? #f (format "raco-pkg-~a" s) @command[s]))
 
 (define (command/toc s)
-  @(toc-target-element #f @command[s] `(raco-pkg-cmd ,s)))
+  (list
+   @subsection[#:tag (format "raco-pkg-~a" s)]{@command[s]}
+   @command-ref[s]))
 
-(define pkgname onscreen)
-(define reponame litchar)
+(define pkgname tt)
+(define reponame elem)
+
+(define (rtech . content)
+  (apply tech #:doc '(lib "scribblings/reference/reference.scrbl") content))
+
+@(define (inset . c)
+   (apply nested #:style 'inset c))
+
