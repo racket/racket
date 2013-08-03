@@ -1833,7 +1833,6 @@ please adhere to these guidelines:
   (install-pkg-abort-generic-action "Abort Action")
   (install-pkg-show-all-options "Show All Options")
   (install-pkg-migrate-available-installations "Available Installations")
-  (install-pkg-inferred-as "Type inferred to be ~a") ; ~a gets install-pkg-{file,dir,...}
   (pkg-manager-menu-item "Package Manager...")  
   ;; where ~a gets an installation name:
   (install-pkg-packages-for "Packages for ~a")
