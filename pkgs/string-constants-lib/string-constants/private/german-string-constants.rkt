@@ -167,6 +167,7 @@
  (online-expansion-error-margin "am Rand")
  ; the label of a preference in the (string-constant online-expansion) section
  (show-arrows-on-mouseover "Bindungen und Tail-Positionen unter Mauszeiger anzeigen")
+ (show-blueboxes "Blaue Kästen  und blaue anzeigen")
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
  (read-only "Nur Lesen")
@@ -1660,6 +1661,7 @@
   (install-pkg-install-by-source "Nach Quelle installieren") ; tab label
   (install-pkg-install-from-list "Von Liste installieren") ; tab label
   (install-pkg-install-installed "Installiert")         ; tab label
+  (install-pkg-migrate-from "Migrieren von")           ; tab label
   (install-pkg-menu-item... "Paket installieren...")
   (install-pkg-dialog-title "Paket installieren")
   (install-pkg-source-label "Packet-Quelltext")
@@ -1671,7 +1673,7 @@
   (install-pkg-file-url "URL Datei")
   (install-pkg-github "Github")
   (install-pkg-name "Name (frage Auflöser)")
-  (install-pkg-inferred-as "Typ inferiert als ~a")
+  (install-pkg-inferred-as "Typ inferiert als ~a") ; ~a gets install-pkg-{file,dir,...}
   (install-pkg-force? "Existierendes überschreiben?")
   (install-pkg-command-line "Äquivalenter Kommandozeilen-Aufruf:")
   (install-pkg-error-installing-title "Fehler beim Installieren von Paket")
@@ -1680,6 +1682,7 @@
   (install-pkg-install "Installieren")
   (install-pkg-update "Aktualisieren")
   (install-pkg-remove "Entfernen")
+  (install-pkg-do-not-remove "Nicht entfernen")
   (install-pkg-action-inferred-to-be-update "Maßnahme als Aktualisierung inferiert")
   (install-pkg-action-inferred-to-be-install "Maßnahme als Installation inferiert")
   (install-pkg-default "Standard")
@@ -1703,9 +1706,14 @@
   (install-pkg-abort-install "Installation abbrechen")
   (install-pkg-abort-update "Aktualisierung abbrechen")
   (install-pkg-abort-remove "Entfernung abbrechen")
+  (install-pkg-abort-migrate "Migration abbrechen")
   (install-pkg-abort-generic-action "Aktion abbrechen")
   (install-pkg-show-all-options "Alle Optionen anzeigen")
+  (install-pkg-migrate-available-installations "Verfügbare Installationen")
   (pkg-manager-menu-item "Paket-Manager...")
+  ;; where ~a gets an installation name:
+  (install-pkg-packages-for "Pakete für ~a")
+  (install-pkg-really-remove-installation "Sind Sie sicher, dass Sie alle installierten Pakete und Informationen für ~a löschen wollen?")
   
   )
 
