@@ -167,22 +167,23 @@
 (void
  (parameterize ([current-pkg-scope (path->complete-path devel-pkgs-dir)])
    (define (is-auto? name) (not (set-member? pkgs name)))
-   (pkg-install (for/list ([name (in-list (sort (set->list all-pkgs)
-                                                ;; Non-auto before auto:
-                                                (lambda (a b)
-                                                  (cond
-                                                   [(is-auto? a)
-                                                    (and (is-auto? b)
-                                                         (string<? a b))]
-                                                   [(is-auto? b) #t]
-                                                   [else (string<? a b)]))))])
-                  (define dir (hash-ref found name))
-                  (define auto? (is-auto? name))
-                  (printf "Adding ~a~a as ~a\n" name (if auto? "*" "") dir)
-                  (pkg-desc (path->string dir)
-                            'static-link
-                            #f
-                            auto?)))))
+   (with-pkg-lock
+    (pkg-install (for/list ([name (in-list (sort (set->list all-pkgs)
+                                                 ;; Non-auto before auto:
+                                                 (lambda (a b)
+                                                   (cond
+                                                    [(is-auto? a)
+                                                     (and (is-auto? b)
+                                                          (string<? a b))]
+                                                    [(is-auto? b) #t]
+                                                    [else (string<? a b)]))))])
+                   (define dir (hash-ref found name))
+                   (define auto? (is-auto? name))
+                   (printf "Adding ~a~a as ~a\n" name (if auto? "*" "") dir)
+                   (pkg-desc (path->string dir)
+                             'static-link
+                             #f
+                             auto?))))))
 
 ;; link configuration
 (unless (file-exists? config-file-path)
