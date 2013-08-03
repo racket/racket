@@ -134,7 +134,7 @@ exec racket "$0" "$@"
     Checking the integrity of the binary archive... ok.
     "@|testdir|/racket@N" exists, delete? @i{y}
     Deleting old "@|testdir|/racket@N"... @;
-      /bin/rm: cannot remove `@|testdir|/racket@N': @;
+      /usr/bin/rm: cannot remove ‘@|testdir|/racket@|N|’: @;
         Permission denied
     Error: could not delete "@|testdir|/racket@N".
     sh> @i{chmod 755 racket*}
@@ -199,6 +199,14 @@ exec racket "$0" "$@"
     Checking the integrity of the binary archive... ok.
     Unpacking into "@|testdir|/R1" (Ctrl+C to abort)...
     @break
+    @; HACK! BAD TEST!
+    @; This test fails sometimes, when `tar' happens to be the first to break,
+    @; leading to an unpacking error followed by the file cleanup followed by
+    @; the "aborting" errors and no cleanup (since it's already done).  The
+    @; test can be modified to try either pattern but it'd be better to find
+    @; a way to make the output more predictable -- somehow kill the tar
+    @; process before it errors, and more generally, make it kill any child
+    @; processes.
     Error: Aborting...
       (Removing installation files in @|testdir|/R1)
     sh> @i{LS}
