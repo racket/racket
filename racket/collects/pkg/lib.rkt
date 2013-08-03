@@ -33,7 +33,10 @@
          (prefix-in db: "db.rkt"))
 
 (define current-pkg-scope
-  (make-parameter 'user))
+  (make-parameter 'user (lambda (p)
+                          (if (path? p)
+                              (simple-form-path p)
+                              p))))
 (define current-pkg-scope-version
   (make-parameter (get-installation-name)))
 (define current-pkg-error
@@ -264,10 +267,24 @@
       #t))
 
 (define pkg-lock-held (make-parameter #f))
+(define pkg-lock-scope (make-parameter #f))
 
+;; Call `t' with lock held for the current scope. The intent is that
+;; `t' reads and writes package information in the curent scope. It
+;; may also *read* package information for wider package scopes
+;; without a further lock --- which is questionable, but modification
+;; of a shared scope while others are running can create trouble,
+;; anyway.
 (define (with-pkg-lock* read-only? t)
   (define mode (if read-only? 'shared 'exclusive))
   (define held-mode (pkg-lock-held))
+  (define now-scope (current-pkg-scope))
+  (define held-scope (pkg-lock-scope))
+  (when (and held-scope
+             (not (eq? held-scope now-scope)))
+    (pkg-error "lock mismatch\n  held scope: ~a\n  requested scope: ~a"
+               held-scope
+               now-scope))
   (if (or (eq? mode held-mode)
           (eq? 'exclusive held-mode))
       (t)
@@ -280,7 +297,8 @@
              #f 
              mode
              (lambda ()
-               (parameterize ([pkg-lock-held mode])
+               (parameterize ([pkg-lock-held mode]
+                              [pkg-lock-scope now-scope])
                  (t)))
              (λ () (pkg-error  (~a "could not acquire package lock\n"
                                    "  lock file: ~a")
@@ -387,12 +405,16 @@
                             #:download-printf download-printf)]))
 
 (define (write-file-hash! file new-db)
+  (unless (eq? (pkg-lock-held) 'exclusive)
+    (pkg-error "attempt to write package database without write lock"))
   (make-parent-directory* file)
   (call-with-atomic-output-file
    file
    (λ (o tmp-path) (write new-db o) (newline o))))
 
 (define (read-pkg-db)
+  (unless (pkg-lock-held)
+    (pkg-error "attempt to read package database without lock"))
   (if (current-no-pkg-db)
       #hash()
       (read-pkgs-db (current-pkg-scope) (current-pkg-scope-version))))
@@ -401,7 +423,7 @@
 (define (merge-pkg-dbs [scope (current-pkg-scope)])
   (define (merge-next-pkg-dbs scope)
     (parameterize ([current-pkg-scope scope])
-      (with-pkg-lock/read-only (merge-pkg-dbs scope))))
+      (merge-pkg-dbs scope)))
   (if (path? scope)
       (read-pkg-db)
       (case scope
@@ -413,6 +435,29 @@
          (define db (read-pkgs-db 'user (current-pkg-scope-version)))
          (for/fold ([ht (merge-next-pkg-dbs 'installation)]) ([(k v) (in-hash db)])
            (hash-set ht k v))])))    
+
+;; Finds the scope, in which `pkg-name' is installed; returns 'dir,
+;; 'installation, a path, or #f (where #f means "not installed").  If
+;; `next?' is true, search only scopes wider than the current one.
+(define (find-pkg-installation-scope pkg-name #:next? [next? #f])
+  (case (current-pkg-scope)
+    [(user)
+     (or (and (not next?)
+              (hash-ref (read-pkg-db) pkg-name #f)
+              'user)
+         (parameterize ([current-pkg-scope 'installation])
+           (find-pkg-installation-scope pkg-name)))]
+    [(installation)
+     (or (and (not next?)
+              (hash-ref (read-pkg-db) pkg-name #f)
+              'installation)
+         (for/or ([dir (in-list (get-pkgs-search-dirs))])
+           (and (hash-ref (read-pkgs-db dir) pkg-name #f)
+                dir)))]
+    [else
+     (and (not next?)
+          (and (hash-ref (read-pkgs-db (current-pkg-scope)) pkg-name #f)
+               (current-pkg-scope)))]))
 
 (define (package-info pkg-name [fail? #t] #:db [given-db #f])
   (define db (or given-db (read-pkg-db)))
@@ -435,40 +480,33 @@
 ;; prints an error for packages that are not installed
 ;; pkg-name db -> void
 (define (pkg-not-installed pkg-name db)
-  (define installation-db
-    (parameterize ([current-pkg-scope 'installation])
-      (read-pkg-db)))
-  (define user-db
-    (parameterize ([current-pkg-scope 'user])
-      (read-pkg-db)))
-
-  ;; see if the package is installed in any scope
-  (define-values (in-install? in-user?)
-   (values
-    (and (hash-ref installation-db pkg-name #f)
-         "--installation")
-    (and (hash-ref user-db pkg-name #f)
-         "--user")))
+  ;; This may read narrower package scopes without holding the
+  ;; lock, but maybe that's ok for mere error reporting:
+  (define s (parameterize ([current-pkg-scope 'user])
+              (find-pkg-installation-scope pkg-name)))
 
   (define not-installed-msg
-   (cond [(or in-user? in-install?)
-          =>
-          (λ (scope-str)
-             (~a "could not remove package\n"
-                 " package installed in a different scope: "
-                 (substring scope-str 2) "\n"
-                 " consider using the " scope-str " flag\n"))]
-         [else (~a "could not remove package\n"
-                   " package not currently installed\n")]))
+   (cond [s "package installed in a different scope"]
+         [else "package not currently installed"]))
 
-  (pkg-error (~a not-installed-msg
-                    "  current scope: ~a\n"
-                    "  package: ~a\n"
-                    "  currently installed:~a")
-                (current-scope->string)
-                pkg-name
-                (format-list (hash-keys db))))
-
+  (apply pkg-error (~a not-installed-msg
+                       "\n  package: ~a"
+                       "\n  current scope: ~a"
+                       (if s
+                           "\n  installed in scope: ~a"
+                           "")
+                       ;; Probably too much information:
+                       #;
+                       "\n  packages in current scope:~a")
+         (append
+          (list
+           pkg-name
+           (current-scope->string))
+          (if s (list s) null)
+          #;
+          (list
+           (format-list (hash-keys db))))))
+         
 (define (update-pkg-db! pkg-name info)
   (write-file-hash!
    (pkg-db-file)
@@ -564,10 +602,18 @@
                               d)))))))
 
 (define (pkg-directory pkg-name)
+  ;; Warning: takes locks individually.
+  (pkg-directory** pkg-name 
+                   (lambda (f)
+                     (with-pkg-lock/read-only
+                      (f)))))
+
+(define (pkg-directory** pkg-name [call-with-pkg-lock (lambda (f) (f))])
   (for/or ([scope (in-list (get-scope-list))])
     (parameterize ([current-pkg-scope scope])
-      (with-pkg-lock/read-only
-       (pkg-directory* pkg-name)))))
+      (call-with-pkg-lock
+       (lambda ()
+         (pkg-directory* pkg-name))))))
 
 (define (pkg-directory* pkg-name #:db [db #f])
   (define info (package-info pkg-name #f #:db db))
@@ -579,6 +625,22 @@
             (path->complete-path orig-pkg-dir (pkg-installed-dir))]
            [_
             (build-path (pkg-installed-dir) pkg-name)]))))
+
+(define (update-auto this-pkg-info auto?)
+  (match-define (pkg-info orig-pkg checksum _) this-pkg-info)
+  (if (sc-pkg-info? this-pkg-info)
+      (sc-pkg-info orig-pkg checksum auto?
+                   (sc-pkg-info-collect this-pkg-info))
+      (pkg-info orig-pkg checksum auto?)))
+
+(define (demote-packages quiet? pkg-names)
+  (define db (read-pkg-db))
+  (for ([pkg-name (in-list pkg-names)])
+    (define pi (package-info pkg-name #:db db))
+    (unless (pkg-info-auto? pi)
+      (unless quiet?
+        (printf/flush "Demoting ~a to auto-installed\n" pkg-name))
+      (update-pkg-db! pkg-name (update-auto pi #t)))))
 
 (define ((remove-package quiet?) pkg-name)
   (unless quiet?
@@ -606,7 +668,10 @@
             #:root? (not (sc-pkg-info? pi)))
      (delete-directory/files pkg-dir)]))
 
-(define (pkg-remove in-pkgs
+      
+
+(define (pkg-remove given-pkgs
+                    #:demote? [demote? #f]
                     #:force? [force? #f]
                     #:auto? [auto? #f]
                     #:quiet? [quiet? #f])
@@ -616,7 +681,8 @@
   (define all-pkgs-set
     (list->set all-pkgs))
   (define metadata-ns (make-metadata-namespace))
-  (define pkgs
+  (define in-pkgs (remove-duplicates given-pkgs))
+  (define remove-pkgs
     (if auto?
         ;; compute fixpoint:
         (let ([init-drop (set-union
@@ -640,13 +706,18 @@
                 (loop still-drop
                       (set-union keep delta)))))
         ;; just given pkgs:
-        (remove-duplicates in-pkgs)))
+        (if demote?
+            null
+            in-pkgs)))
   (define setup-collects
-    (get-setup-collects pkgs
+    (get-setup-collects remove-pkgs
                         db
                         metadata-ns))
-  (unless force?
-    (define pkgs-set (list->set pkgs))
+  (unless (or force? demote?)
+    ;; Check dependencies on `in-pkgs' (not `pkgs', which has already
+    ;; been filtered to remove package with dependencies if `auto?' is
+    ;; true).
+    (define pkgs-set (list->set in-pkgs))
     (define remaining-pkg-db-set
       (set-subtract all-pkgs-set
                     pkgs-set))
@@ -670,9 +741,19 @@
                                 remaining-pkg-db-set)))
                      (~a p " (required by: " ds ")"))
                    (set->list deps-to-be-removed))))))
-  (for-each (remove-package quiet?) pkgs)
+
+  (when demote?
+    ;; Demote any package that is not going to be removed:
+    (demote-packages
+     quiet?
+     (set->list (set-subtract (list->set in-pkgs)
+                              (list->set remove-pkgs)))))
+
+  (for-each (remove-package quiet?)
+            remove-pkgs)
+
   (cond
-   [(null? pkgs) 
+   [(or (null? remove-pkgs) demote?)
     ;; Did nothing, so no setup:
     'skip]
    [else
@@ -1073,6 +1154,7 @@
          descs)
   (define download-printf (if quiet? void printf/flush))
   (define check-sums? (not ignore-checksums?))
+  (define current-scope-db (read-pkg-db))
   (define all-db (merge-pkg-dbs))
   (define path-pkg-cache (make-hash))
   (define (install-package/outer infos desc info)
@@ -1108,8 +1190,42 @@
         (values (install-info-name i) (install-info-directory i))))
     (cond
       [(and (not updating?) (hash-ref all-db pkg-name #f))
-       (clean!)
-       (pkg-error "package is already installed\n  package: ~a" pkg-name)]
+       (define this-pkg-info (hash-ref all-db pkg-name #f))
+       (cond
+        [(and (pkg-info-auto? this-pkg-info)
+              (not (pkg-desc-auto? desc))
+              ;; Don't confuse a promotion request with a different-source install:
+              (equal? (pkg-info-orig-pkg this-pkg-info) orig-pkg)
+              ;; Also, make sure it's installed in the scope that we're changing:
+              (hash-ref current-scope-db pkg-name #f))
+         ;; promote an auto-installed package to a normally installed one
+         (lambda ()
+           (unless quiet?
+             (download-printf "Promoting ~a from auto-installed to explicitly installed\n" pkg-name))
+           (update-pkg-db! pkg-name (update-auto this-pkg-info #f)))]
+        [else
+         ;; Fail --- already installed
+         (clean!)
+         (if (and (pkg-info-auto? this-pkg-info)
+                  (not (pkg-desc-auto? desc)))
+             ;; It failed either due to scope or source:
+             (if (equal? (pkg-info-orig-pkg this-pkg-info) orig-pkg)
+                 (pkg-error (~a "package is currently installed in a wider scope\n"
+                                "  package: ~a\n"
+                                "  installed scope: ~a\n"
+                                "  given scope: ~a")
+                            pkg-name
+                            (find-pkg-installation-scope pkg-name #:next? #t)
+                            (current-pkg-scope))
+                 (pkg-error (~a "package is already installed from a different source\n"
+                                "  package: ~a\n"
+                                "  installed source: ~a\n"
+                                "  given source: ~a")
+                            pkg-name
+                            (pkg-info-orig-pkg this-pkg-info)
+                            orig-pkg))
+             (pkg-error "package is already installed\n  package: ~a"
+                        pkg-name))])]
       [(and
         (not force?)
         (for/or ([mp (in-set module-paths)])
@@ -1223,7 +1339,7 @@
                                                   'version (lambda () "0.0"))
                                     #f))]
                              [else
-                              (values (get-metadata metadata-ns (pkg-directory name)
+                              (values (get-metadata metadata-ns (pkg-directory** name)
                                                     'version (lambda () "0.0"))
                                       #t)]))
                           (define inst-vers (if (and this-platform?
@@ -1344,14 +1460,23 @@
                  (pkg-desc-source desc)))
     (hash-set ht name desc))
 
+  (define all-descs (append old-descs descs))
+  (define all-infos (append old-infos infos))
+
   (define do-its
-    (map (curry install-package/outer (append old-infos infos))
-         (append old-descs descs)
-         (append old-infos infos)))
+    (map (curry install-package/outer all-infos)
+         all-descs
+         all-infos))
   (pre-succeed)
 
   (define post-metadata-ns (make-metadata-namespace))
   (for-each (λ (t) (t)) do-its)
+
+  (define (is-promote? info)
+    ;; if the package name is in `current-scope-db', we must
+    ;; be simply promiting the package, and so it's
+    ;; already set up:
+    (and (hash-ref current-scope-db (install-info-name info) #f) #t))
 
   (define setup-collects
     (let ([db (read-pkg-db)])
@@ -1360,12 +1485,15 @@
                                                           post-metadata-ns)
                                values)
                            (map install-info-name
-                                (append old-infos infos)))
+                                (if updating?
+                                    all-infos
+                                    (filter-not is-promote? all-infos))))
                           db
                           post-metadata-ns)))
 
   (cond
-   [(null? do-its) 
+   [(or (null? do-its)
+        (and (not updating?) (andmap is-promote? all-infos)))
     ;; No actions, so no setup:
     'skip]
    [else
@@ -1464,7 +1592,8 @@
                        (or (pkg-desc-name d)
                            (package-source->name (pkg-desc-source d) 
                                                  (pkg-desc-type d))))
-                     (not (hash-ref db pkg-name #f)))
+                     (define i (hash-ref db pkg-name #f))
+                     (or (not i) (pkg-info-auto? i)))
                    descs)))
      pkg-desc=?))
   (with-handlers* ([vector?
@@ -2351,7 +2480,8 @@
    (->* ((listof string?))
         (#:auto? boolean?
                  #:force? boolean?
-                 #:quiet? boolean?)
+                 #:quiet? boolean?
+                 #:demote? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-show
    (->* (string?)
@@ -2446,4 +2576,7 @@
    (->* (path-string?)
         (#:name string?
                 #:namespace namespace?)
-        (or/c #f string?))]))
+        (or/c #f string?))]
+  [find-pkg-installation-scope (->* (string?)
+                                    (#:next? boolean?)
+                                    (or/c #f package-scope/c))]))

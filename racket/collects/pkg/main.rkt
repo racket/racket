@@ -1,6 +1,8 @@
 #lang racket/base
 (require racket/function
          racket/list
+         racket/format
+         racket/path
          raco/command-name
          setup/dirs
          net/url
@@ -30,7 +32,10 @@
          (string->symbol (format "~a ~a" (short-program+command-name) cmd))
          args))
 
-(define (call-with-package-scope who given-scope scope-dir installation user thunk)
+
+;; Selects scope from `given-scope' through `user' arguments, or infers
+;; a scope from `pkgs' if non-#f, and then calls `thunk'.
+(define (call-with-package-scope who given-scope scope-dir installation user pkgs thunk)
   (define scope
     (case given-scope
       [(installation user) given-scope]
@@ -39,7 +44,36 @@
         [installation 'installation]
         [user 'user]
         [scope-dir (path->complete-path scope-dir)]
-        [else (default-pkg-scope)])]))
+        [else
+         (define default-scope (default-pkg-scope))
+         (or (and pkgs
+                  ;; Infer a scope from given package names:
+                  (parameterize ([current-pkg-scope 'user]
+                                 [current-pkg-error (pkg-error who)])
+                    (with-pkg-lock/read-only
+                     (define-values (pkg scope)
+                       (for/fold ([prev-pkg #f] [prev-scope #f]) ([pkg (in-list pkgs)])
+                         (define scope (find-pkg-installation-scope pkg))
+                         (cond
+                          [(not prev-pkg) (values pkg scope)]
+                          [(equal? scope prev-scope) (values prev-pkg prev-scope)]
+                          [else
+                           ((current-pkg-error) 
+                            (~a "given packages are installed in different scopes\n"
+                                "  package: ~a\n"
+                                "  scope: ~a\n"
+                                "  second package: ~a\n"
+                                "  second scope: ~a")
+                            prev-pkg
+                            prev-scope
+                            pkg
+                            scope)])))
+                     (when (and scope
+                                (not (equal? scope default-scope)))
+                       (printf "Inferred package scope: ~a\n" scope))
+                     scope)))
+             ;; No inference, so use configured default scope:
+             default-scope)])]))
   (parameterize ([current-pkg-scope scope]
                  [current-pkg-error (pkg-error who)])
     (thunk)))
@@ -97,7 +131,7 @@
   #:args pkg-source
   (call-with-package-scope
    'install
-   scope scope-dir installation user
+   scope scope-dir installation user #f
    (lambda ()
      (unless (or (not name) (package-source->name name))
        ((current-pkg-error) (format "~e is an invalid package name" name)))
@@ -152,7 +186,7 @@
   #:args pkg
   (call-with-package-scope
    'update
-   scope scope-dir installation user
+   scope scope-dir installation user pkg
    (lambda ()
      (define setup-collects
        (with-pkg-lock
@@ -165,6 +199,7 @@
  [remove
   "Remove packages"
   #:once-each
+  [#:bool demote () "Demote to automatically installed, instead of removing"]
   [#:bool force () "Force removal of packages"]
   [#:bool auto () "Remove automatically installed packages with no dependencies"]
   #:once-any
@@ -182,11 +217,12 @@
   #:args pkg
   (call-with-package-scope
    'remove
-   scope scope-dir installation user
+   scope scope-dir installation user pkg
    (lambda ()
      (define setup-collects
        (with-pkg-lock
         (pkg-remove pkg
+                    #:demote? demote
                     #:auto? auto
                     #:force? force)))
      (setup no-setup setup-collects jobs)))]
@@ -220,7 +256,7 @@
                              (for/list ([d (get-pkgs-search-dirs)])
                                (if (equal? d main)
                                    'installation
-                                   d))))
+                                   (simple-form-path d)))))
                           '(user)))])
     (when (or (equal? mode only-mode) (not only-mode))
       (unless only-mode
@@ -269,7 +305,7 @@
   #:args (from-version)
   (call-with-package-scope
    'migrate
-   scope scope-dir installation user
+   scope scope-dir installation user #f
    (lambda ()
      (define setup-collects
        (with-pkg-lock
@@ -326,7 +362,7 @@
   #:args key/val
   (call-with-package-scope
    'config
-   scope #f installation user
+   scope #f installation user #f
    (lambda ()
      (if set
          (with-pkg-lock

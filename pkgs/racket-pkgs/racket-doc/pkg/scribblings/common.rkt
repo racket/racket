@@ -13,3 +13,5 @@
 (define (command/toc s)
   @(toc-target-element #f @command[s] `(raco-pkg-cmd ,s)))
 
+(define pkgname onscreen)
+(define reponame litchar)

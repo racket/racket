@@ -78,5 +78,5 @@
      "different scope error"
      $ "raco pkg install test-pkgs/pkg-test1.zip" =exit> 0
      $ "raco pkg remove --installation pkg-test1" =exit> 1
-     =stderr> #rx"package installed in a different scope: user"
+     =stderr> #rx"package installed in a different scope"
      $ "raco pkg remove pkg-test1")))))

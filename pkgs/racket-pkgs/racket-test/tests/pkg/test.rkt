@@ -43,6 +43,7 @@
  "conflicts" "checksums"
  "deps" "update"
  "remove"
+ "promote"
  "locking"
  "overwrite"
  "config"

@@ -8,9 +8,6 @@
 
 @(define @|Planet1| @|PLaneT|)
 
-@(define pkgname onscreen)
-@(define reponame litchar)
-
 @(define package-name-chars
    @list{@litchar{a} through @litchar{z}, 
          @litchar{A} through @litchar{Z}, 
@@ -26,7 +23,7 @@
 
 @; ----------------------------------------
 
-@title{Package Management in Racket (Beta)}
+@title{Package Management in Racket}
 @author[@author+email["Jay McCarthy" "jay@racket-lang.org"]]
 
 The Racket package manager lets you install new libraries and
@@ -258,24 +255,28 @@ directory in its search path for installed packages).
 
 @; ----------------------------------------
 
-@section{Managing Packages}
+@section[#:tag "Managing Packages"]{Managing Packages}
 
 The Racket package manager has two main user interfaces: a command line @exec{raco}
-sub-command and a @racketmodname[pkg] library to run the same commands.
+command and a @racketmodname[pkg] library to run the same commands.
 They have the exact same capabilities, as
 the command line interface invokes the library functions and
 reprovides all their options.
 
 @subsection[#:tag "cmdline"]{Command Line}
 
-The @as-index{@exec{raco pkg}} sub-command provides the following
-sub-sub-commands:
+The @as-index{@exec{raco pkg}} command provides the following
+sub-commands:
 
 @itemlist[
 
 @item{@command/toc{install} @nonterm{option} ... @nonterm{pkg-source} ... 
- --- Installs the given @tech{package sources} (eliminating exact-duplicate @nonterm{pkg-source}s) with the given
- @nonterm{option}s:
+ --- Installs the given @tech{package sources} (eliminating exact-duplicate @nonterm{pkg-source}s).
+     If a given @nonterm{pkg-source} is ``auto-installed'' (to satisfy some other package's
+     dependency), then it is promoted to explicitly installed.
+
+ The @exec{install} sub-command accepts 
+ the following @nonterm{option}s:
 
  @itemlist[
 
@@ -323,7 +324,8 @@ sub-sub-commands:
   @item{@DFlag{source} --- Strips built elements of a package before installing, and implies @DFlag{copy}.}
 
   @item{@DFlag{skip-installed} --- Ignore any @nonterm{pkg-source}
-        whose name corresponds to an already-installed package.}
+        whose name corresponds to an already-installed package, except for promoting auto-installed
+        packages to explicitly installed.}
 
  @item{@DFlag{scope} @nonterm{scope} --- Selects the @tech{package scope} for installation, where @nonterm{scope} is one of
   @itemlist[
@@ -356,6 +358,9 @@ installed (e.g. it conflicts with another installed package), then
 this command fails without installing any of the @nonterm{pkg}s 
 (or their dependencies).
 
+If a @tech{package scope} is not specified, the scope is inferred from
+the given @nonterm{pkg}s.
+
  The @exec{update} sub-command accepts 
  the following @nonterm{option}s:
 
@@ -379,13 +384,20 @@ this command fails without installing any of the @nonterm{pkg}s
 of another package that is not listed, this command fails without 
 removing any of the @nonterm{pkg}s.
 
+If a @tech{package scope} is not specified, the scope is inferred from
+the given @nonterm{pkg}s.
+
  The @exec{remove} sub-command accepts 
  the following @nonterm{option}s:
 
  @itemlist[
+ @item{@DFlag{demote} --- ``Remove'' explicitly installed packages by demoting them to auto-installed
+                            (leaving auto-installed packages as such). Combined with @DFlag{auto}, removes
+                            packages for which there are no dependencies.}
  @item{@DFlag{force} --- Ignore dependencies when removing packages.}
- @item{@DFlag{auto} --- Remove packages that were installed by the @exec{search-auto} or @exec{search-ask}
-                        dependency behavior and are no longer required.}
+ @item{@DFlag{auto} --- Remove auto-installed packages (i.e., installed by the @exec{search-auto} or @exec{search-ask}
+                        dependency behavior, or demoted via @DFlag{demote}) that are no longer required by any
+                        explicitly installed package.}
  @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
@@ -498,8 +510,9 @@ View and modify configuration of the package manager itself, with the following 
   @item{@exec{default-scope} --- Either @exec{installation} or @exec{user}.
         The value of this key at @exec{user} scope (possibly defaulting from
         @exec{installation} scope) is
-        the default @tech{package scope} for all @exec{raco pkg} commands
-        (even @command{config}, which is consistent but potentially confusing).}
+        the default @tech{package scope} for @exec{raco pkg} commands for which
+        a scope is not inferred from a given set of package names
+        (even for @command{config}, which is consistent but potentially confusing).}
   @item{@exec{name} --- A string for the installation's name, which is used by @exec{user}
         @tech{package scope} and defaults to the Racket version.}
  ]

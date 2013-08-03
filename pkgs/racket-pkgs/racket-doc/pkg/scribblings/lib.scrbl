@@ -215,6 +215,7 @@ The package lock must be held; see @racket[with-pkg-lock].}
 
 
 @defproc[(pkg-remove      [names (listof string?)]
+                          [#:demote? demote? boolean? #f]
                           [#:auto? auto? boolean? #f]
                           [#:force? force? boolean? #f]
                           [#:quiet? boolean? quiet? #f])
@@ -224,8 +225,8 @@ The package lock must be held; see @racket[with-pkg-lock].}
                              (non-empty-listof path-string?))))]{
 
 Implements @racket[pkg-remove-command]. The result is the same as for
-@racket[pkg-install], indicating collects that should be setup
-via @exec{raco setup}.
+@racket[pkg-install], indicating collects that should be setup via
+@exec{raco setup}.
 
 The package lock must be held; see @racket[with-pkg-lock].}
 
@@ -256,7 +257,9 @@ The package lock must be held to allow reads; see
                              (non-empty-listof path-string?))))]{
 
 Implements @racket[pkg-migrate-command].  The result is the same as for
-@racket[pkg-install].}
+@racket[pkg-install].
+
+The package lock must be held; see @racket[with-pkg-lock].}
 
 
 @defproc[(pkg-catalog-show [names (listof string?)]
@@ -265,7 +268,7 @@ Implements @racket[pkg-migrate-command].  The result is the same as for
                            [#:modules? modules? boolean? #f])
          void?]{
 
-Implements @racket[catalog-show-command]. If @racket[all?] is true,
+Implements @racket[pkg-catalog-show-command]. If @racket[all?] is true,
 then @racket[names] should be empty.}
 
 
