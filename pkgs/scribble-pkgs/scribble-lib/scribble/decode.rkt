@@ -245,9 +245,13 @@
                           (part-to-collect part)
                           para
                           (cons s (part-parts part))))
-             (if (splice? (car l))
-               (loop (append (splice-run (car l)) (cdr l)) s-accum)
-               (loop (cdr l) (cons (car l) s-accum))))))]
+             (cond
+              [(splice? (car l))
+               (loop (append (splice-run (car l)) (cdr l)) s-accum)]
+              [(list? (car l))
+               (loop (append (car l) (cdr l)) s-accum)]
+              [else
+               (loop (cdr l) (cons (car l) s-accum))]))))]
       [(splice? (car l))
        (loop (append (splice-run (car l)) (cdr l))
              next? keys colls accum title tag-prefix tags vers style)]
