@@ -685,6 +685,26 @@ an @tech{impersonator} contract.
 ]
 }
 
+@defproc[(evt/c [contract chaperone-contract?] ...) chaperone-contract?]{
+Returns a contract that recognizes @tech{synchronizable event}s whose
+@tech{synchronization result}s are checked by the given
+@racket[contract]s.
+
+The resulting contract is always a @tech{chaperone} contract and its
+arguments must all be chaperone contracts.
+
+@defexamples[#:eval (contract-eval)
+  (define/contract my-evt
+    (evt/c evt?)
+    always-evt)
+  (define/contract failing-evt
+    (evt/c number? number?)
+    (alarm-evt (+ (current-inexact-milliseconds) 50)))
+  (sync my-evt)
+  (sync failing-evt)
+]
+}
+
 
 @defform[(flat-rec-contract id flat-contract-expr ...)]{
 
