@@ -40,6 +40,7 @@
          continuation-mark-key/c
 
          channel/c
+         evt/c
 
          chaperone-contract?
          impersonator-contract?
@@ -1452,6 +1453,71 @@
    #:stronger continuation-mark-key/c-stronger?
    #:name continuation-mark-key/c-name))
 
+;; evt/c : Contract * -> Contract
+;; Contract combinator for synchronizable events
+(define (evt/c . maybe-ctcs)
+  (define ctcs (coerce-contracts 'evt/c maybe-ctcs))
+  (for ([ctc ctcs])
+    (unless (chaperone-contract? ctc)
+      (raise-argument-error 'evt/c "chaperone-contract?" ctc)))
+  (make-chaperone-evt/c ctcs))
+
+;; evt/c-proj : Contract -> (Blame -> Any -> Any)
+;; Constructs the projection for evt/c
+(define (evt/c-proj evt-ctc)
+  (define ctcs (chaperone-evt/c-ctcs evt-ctc))
+  (define projs (map contract-projection ctcs))
+  (λ (blame)
+    (define ((checker val) . args)
+      (define expected-num (length ctcs))
+      (unless (= (length args) expected-num)
+        (raise-blame-error
+         blame val
+         `(expected: "event that produces ~a values"
+           given: "event that produces ~a values")
+         expected-num
+         (length args)))
+      (apply
+       values
+       (for/list ([proj projs] [val args])
+         ((proj blame) val))))
+    (define (generator evt)
+      (values evt (checker evt)))
+    (λ (val)
+      (unless (contract-first-order-passes? evt-ctc val)
+        (raise-blame-error
+         blame val
+         '(expected: "~s" given: "~e")
+         (contract-name evt-ctc)
+         val))
+      (chaperone-evt val generator))))
+
+;; evt/c-first-order : Contract -> Any -> Boolean
+;; First order check for evt/c
+(define ((evt/c-first-order ctc) v) (evt? v))
+
+;; evt/c-name : Contract -> Sexp
+;; Construct the name of the contract
+(define (evt/c-name ctc)
+  (apply build-compound-type-name
+         (cons 'evt/c (chaperone-evt/c-ctcs ctc))))
+
+;; evt/c-stronger? : Contract Contract -> Boolean
+(define (evt/c-stronger? this that)
+  (define this-ctcs (chaperone-evt/c-ctcs this))
+  (define that-ctcs (chaperone-evt/c-ctcs that))
+  (and (= (length this-ctcs) (that-ctcs))
+       (for/and ([this this-ctcs] [that that-ctcs])
+         (contract-stronger? this that))))
+
+;; ctcs - Listof<Contract>
+(define-struct chaperone-evt/c (ctcs)
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:projection evt/c-proj
+   #:first-order evt/c-first-order
+   #:stronger evt/c-stronger?
+   #:name evt/c-name))
 
 ;; channel/c
 (define/subexpression-pos-prop (channel/c ctc-arg)
