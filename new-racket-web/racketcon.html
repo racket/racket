@@ -1,0 +1,310 @@
+<!doctype html>
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
+<!--[if IE 9]>    <html class="no-js ie9" lang="en"> <![endif]-->
+<!-- Consider adding an manifest.appcache: h5bp.com/d/Offline -->
+<!--[if gt IE 9]><!--> <html class="no-js" lang="en" itemscope itemtype="http://schema.org/Product"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+
+  <!-- Use the .htaccess and remove these lines to avoid edge case issues.
+       More info: h5bp.com/b/378 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+<title>Racket: RacketCon 2013</title>
+  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+
+  <!-- Mobile viewport optimized: j.mp/bplateviewport -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <!-- Place favicon.ico and apple-touch-icon.png in the root directory: mathiasbynens.be/notes/touch-icons -->
+
+  <!-- CSS: implied media=all -->
+  <!-- CSS concatenated and minified via ant build script-->
+  <!-- <link rel="stylesheet" href="css/minified.css"> -->
+
+  <!-- CSS imports non-minified for staging, minify before moving to production-->
+  <link rel="stylesheet" href="css/gumby.css">
+  <!-- end CSS-->
+
+  <!-- More ideas for your <head> here: h5bp.com/d/head-Tips -->
+
+  <!-- All JavaScript at the bottom, except for Modernizr / Respond.
+       Modernizr enables HTML5 elements & feature detects; Respond is a polyfill for min/max-width CSS3 Media Queries
+       For optimal performance, use a custom Modernizr build: www.modernizr.com/download/ -->
+  <script src="js/libs/modernizr-2.6.2.min.js"></script>
+<style>
+
+  body { background: url(img/loud.png) center 40%  no-repeat
+  fixed;  }
+
+  .btn,.drawer {margin-bottom:10px;}
+  .drawer { text-align: center; }
+  h1.lead { border-bottom: 1px dotted #ccc; margin-bottom: 30px; }
+  h4.lead {margin-bottom:10px;}
+  #icon_map ul li { font-size: 16px; }
+  .smallify { font-size: 13px; }
+  #icon_map ul {m argin-bottom: 25px; }
+  .modal h2, .modal .btn { margin: 10px 0 0px; }
+  .parallax { height: 300px; width: 100%; background:
+  url(img/img_parallax_demo.jpg); }
+  .navbar { background: rgb(245,245,245) }
+  pre { color: black }
+  p {color: black}
+  code { font-family: 'Inconsolata'}
+
+
+.codecomment {
+  color: #c2741f;
+}
+.codeparenthesis {
+  color: #843c24;
+}
+.codeconstant, .codestring {
+  color: #228b22;
+}
+.codeid, .codemodpath {
+  color: #262680;
+}
+.codeimportid {
+  color: blue;
+}
+.codeimportform {
+  font-weight: bold;
+}
+.codelinkimportid {
+  color: blue;
+  text-decoration: none;
+}
+.codelinkimportform {
+  font-weight: bold;
+  color: black;
+  text-decoration: none;
+}
+.codelinkimportid:hover {
+  text-decoration: none;
+}
+.codelinkimportform:hover {
+  text-decoration: none;
+}
+.codemodpath:hover {
+  text-decoration: none;
+}
+
+.codesnip { display: none }
+.codesnip.active { display: block}
+
+#growboxes { margin-top: 10pt; }
+.panetitle { color: red; font-size: 120%; margin-bottom: 4pt }
+
+</style>
+</head>
+<body>
+
+<div class="navbar" gumby-fixed="top" id="nav1" style="border-bottom: 1px solid black">
+  <div class="row">
+    <a class="toggle" gumby-trigger="#nav1 > .row > ul" href="#"><i class="icon-menu"></i></a>
+      <a class="five columns logo" href="">
+        <img class="logo" src="img/logo.png" />
+      </a>
+    <ul class="five columns">
+      <li><a href="https://pkg.racket-lang.org">Packages</a></li>
+      <li><a href="http://docs.racket-lang.org">Documentation</a></li>
+      <li><a href="http://blog.racket-lang.org">Blog</a></li>
+      <li>
+        <button class="medium metro info btn icon-left entypo icon-install">
+          <a href="#">Download</a>
+        </button>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="row" >
+  <div class="eight columns centered">
+    <h2 style="font-size: 180%; margin-bottom: 10pt">
+      <strong>RacketCon</strong>: 29 September 2013</h2>
+  </div>
+</div>
+
+<div class="row">
+<div class="eight columns centered" style="margin-bottom: 10pt; font-size: 120%; text-align:justify;">
+<b>RacketCon</b> is a public meeting for everyone interested in Racket:
+developers, contributors, programmers, educators, and by-standers.  It
+is an opportunity for all members of the community to come together to
+share plans, ideas, and enthusiasm.  RacketCon will enable the entire
+Racket community to mingle: to update each other, to exchange ideas, to
+collaborate, and to help shape the future of Racket.
+</div>
+</div>
+
+<div class="row">
+  <h3>Overview</h3>
+</div>
+<div class="row">
+<div class="four columns">
+<div class="panetitle">Where</div>
+<p>RacketCon will be hosted by the
+<a href="http://www.ccs.neu.edu/">College of Computer and Information Science</a>
+of <a href="http://www.neu.edu/">Northeastern University</a>, in Boston,
+Massachusetts.  See <a href="#getting">Getting to RacketCon</a> below.</p>
+</div>
+<div class="four columns">
+<div class="panetitle">Register</div>
+<p>Registration will open during the summer.</p>
+</div>
+<div class="four columns">
+<div class="panetitle">Hackathon</div>
+<p>We will also run a Hackathon on Saturday (28th) in the same room as
+RacketCon. For details, see the
+<a href="https://github.com/plt/racket/wiki/RacketCon-Hackathon-2013">wiki page</a>.</p>
+</div>
+</div>
+
+<div class="row">
+  <h3>Schedule</h3>
+</div>
+<div class="row">
+  <div class="ten columns centered">
+
+<table class="striped rounded">
+<thead>
+<tr>
+<th>Slot</th>
+<th>Speaker</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TBA</td>
+<td>TBA</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+
+<div class="row">
+  <a name="getting"></a><h3>Getting to RacketCon</h3>
+</div>
+<div class="row">
+<div class="eight columns">
+
+<div class="panetitle">The Venue</div>
+   RacketCon will be held in <b>West Village H, Room 108</b>, at
+   Northeastern University.  West Village H is located
+   at 440 Huntington Ave, Boston Massachusetts, and is building
+   <a href="http://www.northeastern.edu/campusmap/map/qad4.html">#23H</a> on
+   the <a href="http://www.northeastern.edu/campusmap/map">campus map</a>.
+   See also the building on
+   <a href="http://goo.gl/maps/On05h">Google Maps</a>
+
+<div class="panetitle">Transport</div>
+<dl ><dt>by Car:</dt>
+<dd>There is very little on-street parking near Northeastern.
+<a href="http://neu.edu/test/parking/guestparking/">Visitor parking</a>
+is available at the
+<a href="http://neu.edu/test/parking/wheretopark/">Renaissance Garage</a>,
+a few minutes walk from the conference.  Driving directions from many
+points are available
+  <a href="http://www.neu.edu/campusmap/directions.html">here</a>.</dd>
+<dt>by Subway:</dt>
+<dd>Northeastern is conveniently located near both the Green and Orange
+subway lines.  The <a href="http://www.mbta.com/">MBTA</a> has more
+information.  On the Green ‘E’ line, the Northeastern stop is the
+closest, and appears on the campus map below as the ‘T’ symbol on
+Huntington Avenue.  On the Orange line, the Ruggles stop is closest
+and appears on the campus map below as the ‘T’ symbol in the
+middle-left of the illustration.</dd>
+<dt>by Bicycle, Commuter Rail, Amtrak:</dt>
+<dd>Northeastern is located near the major Amtrak lines, and is also
+accessible by commuter rail and bicycle.  Please contact <a href="mailto:racketcon@racket-lang.org">the organizers</a> for
+more information.</dd></dl>
+</div>
+
+<div class="four columns image photo">
+  <img src="img/wvh.jpg" />
+</div>
+</div>
+
+
+<div class="row">
+  <h3>Accommodation</h3>
+</div>
+
+<div class="row">
+<div class="six columns">
+<div class="panetitle">Where to eat</div>
+<p>While there are no conference dinner plans, there are numerous
+restaurants near Northeastern:</p>
+<dl><dt><a href="http://www.symphonysushi.com/">Symphony Sushi</a></dt>
+<dd>A sushi restaurant, 5 minutes walk</dd>
+<dt><a href="http://www.phoandi.com/">Pho and I</a></dt>
+<dd>Thai and Vietnamese food, 5 minutes walk.</dd>
+<dt><a href="http://maps.google.com/maps/place?q=pizzeria+uno+boston&amp;cid=11922407303454006467">Pizzeria Uno</a></dt>
+<dd>Deep dish pizza, 5 minutes walk.</dd>
+<dt><a href="http://www.yelp.com/biz/punters-pub-boston">Punter's Pub</a></dt>
+<dd>A bar, adjacent to Northeastern.</dd>
+<dt><a href="http://www.squealingpigboston.com/">The Squealing Pig</a></dt>
+<dd>A bar with food, 15 minutes walk.</dd>
+<dt><a href="http://www.urbanspoon.com/r/4/54985/restaurant/Back-Bay/Woodys-Grill-Tap-Boston">Woody's Grill and Tap</a></dt>
+<dd>Brick oven pizza, 15 minutes walk.</dd></dl>
+<p>This is just a small selection;
+<a href="http://maps.google.com/maps?q=restaurant&amp;hl=en&amp;ll=42.342147,-71.093645&amp;spn=0.01337,0.01929&amp;sll=42.338636,-71.092004&amp;sspn=0.006685,0.009645&amp;near=440+Huntington+Ave,+Northeastern+University,+Boston,+MA+02115&amp;geocode=CUTKaBPhO49uFUwJhgId3DjD-ylfch77IXrjiTHFj4qar3TSZw&amp;gl=us&amp;fll=42.338166,-71.092958&amp;fspn=0.013371,0.01929&amp;z=16">Google</a>
+and
+<a href="http://www.yelp.com/search?find_desc=&amp;find_loc=440+Huntington+Ave%2C+Boston%2C+MA+02115#cflt=restaurants">Yelp</a>
+have many more.</p>
+</div>
+
+<div class="six columns">
+<div class="panetitle">Where to stay</div>
+<p>Numerous hotels are located close to Northeastern.  The three closest
+are:</p>
+<dl><dt><a href="http://www.colonnadehotel.com/">The Colonnade Hotel</a></dt>
+<dd>A ten minute walk from RacketCon.  Ask for the Northeastern
+discounted rate.  Even with the discount, this is likely to be
+expensive.</dd>
+<dt><a href="http://www.midtownhotel.com/">The Midtown Hotel</a></dt>
+<dd>A ten minute walk from RacketCon.  A less expensive and less fancy
+option.</dd>
+<dt><a href="http://www.innatlongwood.com/">The Best Western Inn at Longwood</a></dt>
+<dd>A fifteen minute walk from RacketCon.</dd></dl>
+</div>
+</div>
+
+<div class="row">
+<div class="twelve columns">
+<h3>Frequently Asked Questions</h3>
+<dl><dt>Do I have to be a Racket programmer to attend?</dt>
+<dd>No.  We welcome anyone interested in or curious about Racket to come
+to RacketCon and learn about why we're all so excited about Racket.</dd>
+<dt>Will there be a registration fee?</dt>
+<dd>No.  RacketCon is free to everyone who wants to attend.  We
+     ask that you register ahead of time, so that we can
+     plan appropriately.</dd>
+<dt>Will the conference provide lunch?</dt>
+<dd>Yes!  We will provide complimentary lunch
+to registered attendees.</dd>
+<dt>Will the talks be recorded?</dt>
+<dd>We hope to record and post the talks given at RacketCon.  If you are
+interested in assisting with this, please let the organizers know.</dd>
+<dt>Who is in charge of RacketCon?</dt>
+<dd>RacketCon is organized by
+<a href="http://www.ccs.neu.edu/home/asumu">Asumu Takikawa</a>
+and the rest of the Racket development team.</dd></dl>
+</div>
+</div>
+
+<div class="row">
+<div class="twelve columns">
+<h3>Sponsors</h3>
+<p>Support for RacketCon is generously provided by:</p>
+<div align="center"><a title="Northeastern University" href="http://neu.edu/"><img style="margin: 20px; border: 0;" src="img/neu.png" alt="Northeastern University" /></a></div>
+</div>
+</div>
+</body>
+</html>
