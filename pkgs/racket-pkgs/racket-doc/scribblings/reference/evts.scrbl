@@ -138,7 +138,7 @@ pseudo-randomly, and the @tech{synchronization result} is the chosen
 ]}
 
 
-@defproc[(wrap-evt [evt (and/c evt? (not/c handle-evt?))]
+@defproc[(wrap-evt [evt evt?]
                    [wrap (any/c ... . -> . any)]) 
          evt?]{
 
@@ -163,13 +163,14 @@ combination of @racket[choice-evt] involving an event from
 ]}
 
 
-@defproc[(handle-evt [evt (and/c evt? (not/c handle-evt?))]
+@defproc[(handle-evt [evt evt?]
                      [handle (any/c ... . -> . any)]) 
          handle-evt?]{
 
 Like @racket[wrap-evt], except that @racket[handle] is called in @tech{tail
-position} with respect to the synchronization request, and without
-breaks explicitly disabled.
+position} with respect to the synchronization request---and without
+breaks explicitly disabled---when it is not wrapped by @racket[wrap-evt],
+@racket[chaperone-evt], or another @racket[handle-evt].
 
 @examples[#:eval evt-eval
   (define msg-ch (make-channel))
@@ -292,11 +293,8 @@ more than @racket[msecs]. @ResultItself{alarm event}.
 
 Returns @racket[#t] if @racket[evt] was created by @racket[handle-evt]
 or by @racket[choice-evt] applied to another event for which
-@racket[handle-evt?] produces @racket[#t]. Such events are illegal as
-an argument to @racket[handle-evt] or @racket[wrap-evt], because they
-cannot be wrapped further. For any other event, @racket[handle-evt?]
-produces @racket[#f], and the event is a legal argument to
-@racket[handle-evt] or @racket[wrap-evt] for further wrapping.
+@racket[handle-evt?] produces @racket[#t]. For any other event,
+@racket[handle-evt?]  produces @racket[#f].
 
 @examples[#:eval evt-eval
   (handle-evt? never-evt)

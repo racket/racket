@@ -302,10 +302,12 @@
                      (sync
                       (handle-evt always-evt (lambda (x) (loop (sub1 n))))))))
 
-;; cannot wrap a `handle-evt' returns with a wrap or another handle:
-(err/rt-test (handle-evt (handle-evt always-evt void) void))
-(err/rt-test (wrap-evt (handle-evt always-evt void) void))
-(err/rt-test (handle-evt (choice-evt (handle-evt always-evt void) void)))
+;; cac wrap a `handle-evt' with a wrap or another handle, although it
+;; defeats tail behavior of the `handle-evt'.
+(test (list (void)) sync (handle-evt (handle-evt always-evt void) list))
+(test (box (void)) sync (wrap-evt (handle-evt always-evt void) box))
+(test (vector (void)) sync (handle-evt (choice-evt (handle-evt always-evt void) never-evt) vector))
+(test (void) sync (chaperone-evt (handle-evt always-evt void) (lambda (x) (values x values))))
 
 ;; can handle a wrap evt:
 (test #t evt? (handle-evt (wrap-evt always-evt void) void))

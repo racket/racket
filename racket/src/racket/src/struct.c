@@ -3311,8 +3311,8 @@ static Scheme_Object *wrap_evt(const char *who, int wrap, int argc, Scheme_Objec
 {
   Wrapped_Evt *ww;
 
-  if (!scheme_is_evt(argv[0]) || handle_evt_p(0, argv))
-    scheme_wrong_contract(who, "(and/c evt? (not/c handle-evt?))", 0, argc, argv);
+  if (!scheme_is_evt(argv[0]))
+    scheme_wrong_contract(who, "evt?", 0, argc, argv);
 
   if (!SCHEME_PROCP(argv[1]))
     scheme_wrong_contract(who, "procedure?", 1, argc, argv);
