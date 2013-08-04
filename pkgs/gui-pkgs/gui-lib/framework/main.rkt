@@ -1605,10 +1605,12 @@
  
  (proc-doc/names
   editor:set-default-font-color
-  (-> (is-a?/c color%) void?)
-  (color)
-  @{Sets the color of the style named
-    @racket[editor:get-default-color-style-name].})
+  (->* ((is-a?/c color%)) ((or/c #f (is-a?/c color%))) void?)
+  ((fg-color) ((bg-color #f)))
+  @{Sets the foreground color of the style named
+    @racket[editor:get-default-color-style-name] to @racket[fg-color].
+    If @racket[bg-color] is not @racket[#f], then @racket[editor:set-default-font-color]
+    sets the background color to @racket[bg-color].})
 
  (proc-doc/names
   editor:get-default-color-style-name

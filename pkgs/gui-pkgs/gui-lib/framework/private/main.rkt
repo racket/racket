@@ -413,10 +413,16 @@
 (preferences:set-default 'framework:coloring-active #t boolean?)
 
 (color-prefs:set-default/color-scheme 'framework:default-text-color "black" "white")
+(define (invert-a-color color)
+  (make-object color%
+    (- 255 (send color red))
+    (- 255 (send color green))
+    (- 255 (send color blue))))
 (preferences:add-callback 'framework:default-text-color
                           (λ (p v)
-                            (editor:set-default-font-color v)))
-(editor:set-default-font-color (preferences:get 'framework:default-text-color))
+                            (editor:set-default-font-color v (invert-a-color v))))
+(editor:set-default-font-color (preferences:get 'framework:default-text-color)
+                               (invert-a-color (preferences:get 'framework:default-text-color)))
 
 (color-prefs:set-default/color-scheme 'framework:misspelled-text-color "black" "white")
 

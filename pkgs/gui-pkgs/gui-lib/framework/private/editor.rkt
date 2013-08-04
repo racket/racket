@@ -359,12 +359,13 @@
                     (send standard-style-list find-named-style "Standard")
                     delta))))
   
-  (define (set-default-font-color color)
-    (let* ([the-standard (send standard-style-list find-named-style default-color-style-name)]
-           [the-delta (make-object style-delta%)])
-      (send the-standard get-delta the-delta)
-      (send the-delta set-delta-foreground color)
-      (send the-standard set-delta the-delta)))
+(define (set-default-font-color color [bg-color #f])
+  (define the-standard (send standard-style-list find-named-style default-color-style-name))
+  (define the-delta (make-object style-delta%))
+  (send the-standard get-delta the-delta)
+  (send the-delta set-delta-foreground color)
+  (when bg-color (send the-delta set-delta-background bg-color))
+  (send the-standard set-delta the-delta))
   
   (define (set-font-size size)
     (update-standard-style
