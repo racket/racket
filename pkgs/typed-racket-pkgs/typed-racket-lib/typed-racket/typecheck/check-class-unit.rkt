@@ -565,7 +565,9 @@
     (for/list ([f (in-set names)])
       (define pre-type (dict-ref type-map f #f))
       (define maybe-type (if (pair? pre-type) (car pre-type) pre-type))
-      (or (and maybe-type (fixup-method-type maybe-type self-type))
+      (or (and maybe-type
+               (not (equal? maybe-type top-func))
+               (fixup-method-type maybe-type self-type))
           (make-Univ))))
 
   (define private-method-types
