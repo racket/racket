@@ -268,7 +268,7 @@ point directly to the source location of the non-identifier.
 @section[#:tag "with-syntax"]{@racket[with-syntax] and @racket[generate-temporaries]}
 
 Since @racket[syntax-case] lets us compute with arbitrary Racket
-expression, we can more simply solve a problem that we had in
+expressions, we can more simply solve a problem that we had in
 writing @racket[define-for-cbr] (see
 @secref["pattern-macro-example"]), where we needed to generate a
 set of names based on a sequence @racket[id ...]:
@@ -323,7 +323,7 @@ This way of generating identifiers is normally easier to think
 about than tricking the macro expander into generating names with
 purely pattern-based macros.
 
-In general, the right-hand side of a @racket[with-syntax]
+In general, the left-hand side of a @racket[with-syntax]
 binding is a pattern, just like in @racket[syntax-case]. In fact,
 a @racket[with-syntax] form is just a @racket[syntax-case] form
 turned partially inside-out.
@@ -335,10 +335,10 @@ turned partially inside-out.
 As sets of macros get more complicated, you might want to write
 your own helper functions, like
 @racket[generate-temporaries]. For example, to provide good
-syntax-error messsage, @racket[swap], @racket[rotate], and
+syntax error messsages, @racket[swap], @racket[rotate], and
 @racket[define-cbr] all should check that certain sub-forms in
 the source form are identifiers. We could use a
-@racket[check-ids] to perform this checking everywhere:
+@racket[check-ids] function to perform this checking everywhere:
 
 @racketblock/eval[
 #:eval check-eval

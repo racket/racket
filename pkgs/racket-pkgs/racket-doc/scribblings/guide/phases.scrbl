@@ -73,7 +73,7 @@ answer is that @racket[#'age] captures both.
 The relevant binding of @racket[age] captured by @racket[#'age] is
 determined when @racket[#'age] is eventually used.  As an example, we
 bind @racket[#'age] to a pattern variable so we can use it in a
-template, and then we @racket[eval]utae the template: @margin-note*{We
+template, and then we @racket[eval]uate the template: @margin-note*{We
   use @racket[eval] here to demonstrate phases, but see
   @secref["reflection"] for caveats about @racket[eval].}
 

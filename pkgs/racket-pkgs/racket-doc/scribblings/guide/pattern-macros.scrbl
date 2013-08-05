@@ -40,7 +40,7 @@ followed by an identifier, which is @racket[swap] in this case. After
 the initial identifier, other identifiers are @deftech{macro pattern
 variables} that can match anything in a use of the macro. Thus, this
 macro matches the form @racket[(swap _form1 _form2)] for any
-@racket[_form_1] and @racket[_form_2].
+@racket[_form1] and @racket[_form2].
 
 @margin-note{Macro pattern variables are similar to pattern variables for
  @racket[match]. See @secref["match"].}
@@ -179,7 +179,7 @@ using @racket[syntax-rules]:
 
 The expression @racket[(rotate red green)] matches the first pattern
 in the @racket[syntax-rules] form, so it expands to @racket[(swap red
-green)]. The expression @racket[(rotate a b c)] matches the second
+green)]. The expression @racket[(rotate red green blue)] matches the second
 pattern, so it expands to @racket[(begin (swap red green) (swap green
 blue))].
 

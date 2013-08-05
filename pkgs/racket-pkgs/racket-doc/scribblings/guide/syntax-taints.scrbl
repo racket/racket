@@ -167,14 +167,14 @@ that contains nested @racket[define-values] forms.
 
 The default application of dye packs can be overridden by attaching
 a @racket['taint-mode] property (see @refsecref["stxprops"]) to the
-result syntax object of a macro transformer. If the property value is
+resulting syntax object of a macro transformer. If the property value is
 @racket['opaque], then the syntax object is armed and not its
 parts. If the property value is @racket['transparent], then the
 syntax object's parts are armed. If the property value is
-@racket['transparent-binding], then the syntax object's parts and to
+@racket['transparent-binding], then the syntax object's parts and
 the sub-parts of the second part (as for @racket[define-values] and
 @racket[define-syntaxes]) are armed. The @racket['transparent] and
-@racket['transparent-binding] modes triggers recursive property
+@racket['transparent-binding] modes trigger recursive property
 checking at the parts, so that armings can be pushed arbitrarily deep
 into a transformer's result.
 
@@ -183,7 +183,7 @@ into a transformer's result.
 
 Tools that are intended to be privileged (such as a debugging
 transformer) must disarm dye packs in expanded programs.  Privilege is
-granted through @deftech{code inspectors}. Each dye pack records and
+granted through @deftech{code inspectors}. Each dye pack records an
 inspector, and a syntax object can be disarmed using a sufficiently
 powerful inspector.
 
@@ -227,7 +227,7 @@ racket
              (protect-syntax #'(unchecked-go 8 x))])))]))
 ]
 
-When @racket[def-go] is used inside another module to defined
+When @racket[def-go] is used inside another module to define
 @racket[go], and when the @racket[go]-defining module is at a
 different protection level than the @racket[def-go]-defining module, the
 generated macro's use of @racket[protect-syntax] is not right.  The
