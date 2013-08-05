@@ -225,7 +225,7 @@ A @tech{generic interface} (see @secref["struct-generics"]) that
 supplies set method implementations for a structure type via the
 @racket[#:methods] option of @racket[struct] definitions.  This interface can
 be used to implement any of the methods documented as
-@secref["primitive-set-methods"] and @secref["derived-set-methods"].
+@secref["set-methods"].
 
 @examples[
 #:eval set-eval
@@ -252,58 +252,71 @@ bset
 
 }
 
-@subsection[#:tag "primitive-set-methods"]{Primitive Set Methods}
+@subsection[#:tag "set-methods"]{Set Methods}
 
-These methods of @racket[gen:set] have no fallback implementations; they are
-only supported for set types that directly implement them.
+The methods of @racket[gen:set] can be classified into three categories, as determined by their fallback implementations:
+
+@itemlist[#:style 'ordered
+          @item{methods with no fallbacks,}
+          @item{methods whose fallbacks depend on other, non-fallback methods,}
+          @item{and methods whose fallbacks can depend on either fallback or non-fallback methods.}]
+
+In the method descriptions below, if a fallback requires a non-fallback method of a set, we say that the set must @deftech{implement} that method. If a fallback can use another fallback method, then we say that the set has to @deftech{support} that method.
+
+As an example, implementing the following methods would guarantee that all the methods in @racket[gen:set] would at least have a fallback method:
+
+@itemlist[@item{@racket[set-member]}
+          @item{@racket[set-add]}
+          @item{@racket[set-add!]}
+          @item{@racket[set-remove]}
+          @item{@racket[set-remove!]}
+          @item{@racket[set-first]}
+          @item{@racket[set-empty?]}]
+
+There may be other such subsets of methods that would guarantee at least a fallback for every method.
 
 @defproc[(set-member? [st set?] [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is in @racket[st], @racket[#f]
-otherwise.
+otherwise. Has no fallback.
 
 }
 
 @defproc[(set-add [st set?] [v any/c]) set?]{
 
 Produces a set that includes @racket[v] plus all elements of
-@racket[st]. This operation runs in constant time for @tech{hash sets}.
+@racket[st]. This operation runs in constant time for @tech{hash sets}. Has no fallback.
 
 }
 
 @defproc[(set-add! [st set?] [v any/c]) void?]{
 
 Adds the element @racket[v] to @racket[st].  This operation runs in constant
-time for @tech{hash sets}.
+time for @tech{hash sets}. Has no fallback.
 
 }
 
 @defproc[(set-remove [st set?] [v any/c]) set?]{
 
 Produces a set that includes all elements of @racket[st] except
-@racket[v]. This operation runs in constant time for @tech{hash sets}.
+@racket[v]. This operation runs in constant time for @tech{hash sets}. Has no fallback.
 
 }
 
 @defproc[(set-remove! [st set?] [v any/c]) void?]{
 
 Adds the element @racket[v] to @racket[st].  This operation runs in constant
-time for @tech{hash sets}.
+time for @tech{hash sets}. Has no fallback.
 
 }
 
-@subsection[#:tag "derived-set-methods"]{Derived Set Methods}
-
-These methods of @racket[gen:set] have fallback implementations in terms of
-the other methods; they may be supported even by set types that do not
-directly implement them.
 
 @defproc[(set-empty? [st set?]) boolean?]{
 
 Returns @racket[#t] if @racket[st] has no members; returns @racket[#f]
 otherwise.
 
-Supported for any @racket[st] that implements @racket[set->stream] or
+Supported for any @racket[st] that @tech{implements} @racket[set->stream] or
 @racket[set-count].
 
 }
@@ -312,7 +325,7 @@ Supported for any @racket[st] that implements @racket[set->stream] or
 
 Returns the number of elements in @racket[st].
 
-Supported for any @racket[st] that supports @racket[set->stream].
+Supported for any @racket[st] that @tech{supports} @racket[set->stream].
 
 }
 
@@ -321,7 +334,7 @@ Supported for any @racket[st] that supports @racket[set->stream].
 Produces an unspecified element of @racket[st]. Multiple uses of
 @racket[set-first] on @racket[st] produce the same result.
 
-Supported for any @racket[st] that implements @racket[set->stream].
+Supported for any @racket[st] that @tech{implements} @racket[set->stream].
 
 }
 
@@ -331,7 +344,7 @@ Supported for any @racket[st] that implements @racket[set->stream].
 Produces a set that includes all elements of @racket[st] except
 @racket[(set-first st)].
 
-Supported for any @racket[st] that implements @racket[set-remove] and either
+Supported for any @racket[st] that @tech{implements} @racket[set-remove] and either
 @racket[set-first] or @racket[set->stream].
 
 }
@@ -340,10 +353,13 @@ Supported for any @racket[st] that implements @racket[set-remove] and either
 
 Produces a stream containing the elements of @racket[st].
 
-Supported for any @racket[st] that implements @racket[set->list], or
-@racket[set-empty?], @racket[set-first], and either @racket[set-rest] or
-@racket[set-remove].
-
+Supported for any @racket[st] that @tech{implements}:
+@itemlist[@item{@racket[set->list]}
+          @item{@racket[in-set]}
+          @item{@racket[set-empty?], @racket[set-first], @racket[set-rest]}
+          @item{@racket[set-empty?], @racket[set-first], @racket[set-remove]}
+          @item{@racket[set-count], @racket[set-first], @racket[set-rest]}
+          @item{@racket[set-count], @racket[set-first], @racket[set-remove]}]
 }
 
 @defproc[(set-copy [st set?]) set?]{
@@ -351,8 +367,8 @@ Supported for any @racket[st] that implements @racket[set->list], or
 Produces a new, mutable set of the same type and with the same elements as
 @racket[st].
 
-Supported for any @racket[st] that implements @racket[set-clear] and
-@racket[set-add!].
+Supported for any @racket[st] that @tech{implements} @racket[set-clear] and
+@racket[set-add!], and @tech{supports} @racket[set->stream].
 
 }
 
@@ -361,7 +377,7 @@ Supported for any @racket[st] that implements @racket[set-clear] and
 Produces a new, empty set of the same type, mutability, and key strength as
 @racket[st].
 
-Supported for any @racket[st] that implements @racket[set-remove] and supports
+Supported for any @racket[st] that @tech{implements} @racket[set-remove] and @tech{supports}
 @racket[set->stream].
 
 }
@@ -370,9 +386,8 @@ Supported for any @racket[st] that implements @racket[set-remove] and supports
 
 Removes all elements from @racket[st].
 
-Supported for any @racket[st] that implements @racket[set-remove] and either
-supports @racket[set->stream] or implements @racket[set-count] and
-@racket[set-first].
+Supported for any @racket[st] that @tech{implements} @racket[set-remove] and either
+@tech{supports} @racket[set->stream] or @tech{implements} @racket[set-first] and either @racket[set-count] or @racket[set-empty?].
 
 }
 
@@ -396,7 +411,7 @@ of the resulting set (list, hash set, etc.).  If there is a case where
 @racket[set-union] may be applied to zero arguments, instead pass an empty set
 of the intended type as the first argument.
 
-Supported for any @racket[st] that implements @racket[set-add].
+Supported for any @racket[st] that @tech{implements}  @racket[set-add] and @tech{supports} @racket[set->stream].
 
 @examples[#:eval set-eval
 (set-union (set))
@@ -416,7 +431,7 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 total size of the @racket[st]s.
 
-Supported for any @racket[st] that implements @racket[set-add!].
+Supported for any @racket[st] that @tech{implements} @racket[set-add!] and @tech{supports} @racket[set->stream].
 
 }
 
@@ -435,8 +450,8 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of the smallest immutable set.
 
-Supported for any @racket[st] that implements either @racket[set-remove] or
-both @racket[set-clear] and @racket[set-add].
+Supported for any @racket[st] that @tech{implements} either @racket[set-remove] or
+both @racket[set-clear] and @racket[set-add], and @tech{supports} @racket[set->stream].
 
 }
 
@@ -451,7 +466,7 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st0].
 
-Supported for any @racket[st] that implements @racket[set-remove!].
+Supported for any @racket[st] that @tech{implements} @racket[set-remove!] and @tech{supports} @racket[set->stream].
 
 }
 
@@ -470,8 +485,8 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st0].
 
-Supported for any @racket[st] that implements either @racket[set-remove] or
-both @racket[set-clear] and @racket[set-add].
+Supported for any @racket[st] that @tech{implements} either @racket[set-remove] or
+both @racket[set-clear] and @racket[set-add], and @tech{supports} @racket[set->stream].
 
 }
 
@@ -486,7 +501,7 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st0].
 
-Supported for any @racket[st] that implements @racket[set-remove!].
+Supported for any @racket[st] that @tech{implements} @racket[set-remove!] and @tech{supports} @racket[set->stream].
 
 }
 
@@ -506,8 +521,7 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 total size of all of the sets except the largest immutable set.
 
-Supported for any @racket[st] that implements @racket[set-member?] and either
-@racket[set-remove] or both @racket[set-clear] and @racket[set-add].
+Supported for any @racket[st] that @tech{implements} @racket[set-remove] or both @racket[set-clear] and @racket[set-add], and @tech{supports} @racket[set->stream].
 
 @examples[#:eval set-eval
 (set-symmetric-difference (set 1) (set 1 2) (set 1 2 3))
@@ -527,7 +541,7 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 total size of the @racket[st]s.
 
-Supported for any @racket[st] that implements @racket[set-remove!].
+Supported for any @racket[st] that @tech{implements} @racket[set-remove!] and @tech{supports} @racket[set->stream].
 
 }
 
@@ -546,8 +560,8 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st] plus the size of @racket[st2].
 
-Supported for any @racket[st] and @racket[st2] that both support
-@racket[subset?]; also supported for any if @racket[st2] that implements
+Supported for any @racket[st] and @racket[st2] that both @tech{support}
+@racket[subset?]; also supported for any if @racket[st2] that @tech{implements}
 @racket[set=?] regardless of @racket[st].
 
 @examples[#:eval set-eval
@@ -577,7 +591,7 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st].
 
-Supported for any @racket[st] that supports @racket[set->stream].
+Supported for any @racket[st] that @tech{supports} @racket[set->stream].
 
 @examples[#:eval set-eval
 (subset? (set 1) (set 1 2 3))
@@ -602,7 +616,7 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st] plus the size of @racket[st2].
 
-Supported for any @racket[st] and @racket[st2] that both support
+Supported for any @racket[st] and @racket[st2] that both @tech{support}
 @racket[subset?].
 
 @examples[#:eval set-eval
@@ -617,7 +631,7 @@ Supported for any @racket[st] and @racket[st2] that both support
 
 Produces a list containing the elements of @racket[st].
 
-Supported for any @racket[st] that supports @racket[set->stream].
+Supported for any @racket[st] that @tech{supports} @racket[set->stream].
 
 }
 
@@ -629,7 +643,7 @@ Applies the procedure @racket[proc] to each element in
 @racket[st] in an unspecified order, accumulating the results
 into a list.
 
-Supported for any @racket[st] that supports @racket[set->stream].
+Supported for any @racket[st] that @tech{supports} @racket[set->stream].
 
 }
 
@@ -641,7 +655,7 @@ Supported for any @racket[st] that supports @racket[set->stream].
 Applies @racket[proc] to each element in @racket[st] (for the
 side-effects of @racket[proc]) in an unspecified order.
 
-Supported for any @racket[st] that supports @racket[set->stream].
+Supported for any @racket[st] that @tech{supports} @racket[set->stream].
 
 }
 
@@ -650,7 +664,7 @@ Supported for any @racket[st] that supports @racket[set->stream].
 Explicitly converts a set to a sequence for use with @racket[for] and
 other forms.
 
-Supported for any @racket[st] that supports @racket[set->stream].
+Supported for any @racket[st] that @tech{supports} @racket[set->stream].
 
 }
 
