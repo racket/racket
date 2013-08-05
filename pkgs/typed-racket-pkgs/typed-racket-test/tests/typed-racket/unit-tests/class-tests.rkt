@@ -1044,5 +1044,11 @@
      (: c% (Class (field [x String])))
      (define c%
        (class object% (super-new)
-         (field [x : Integer 5]))))))
+         (field [x : Integer 5]))))
+
+   ;; fails, but make sure it's not an internal error
+   (check-err #:exn #rx"Cannot apply expression of type Any"
+     (class object% (super-new)
+            (define/pubment (foo x) 0)
+            (define/public (g x) (foo 3))))))
 
