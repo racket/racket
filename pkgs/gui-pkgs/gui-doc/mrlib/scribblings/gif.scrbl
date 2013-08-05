@@ -25,7 +25,7 @@ transparent pixels in the generated GIF image.}
 					pair?)]
                              [delay-csec (integer-in 0 #xFFFFFFFF)]
                              [filename path-string?]
-                             [#:loop loop? any/c (and delay-csec #t)]
+                             [#:loop? loop? any/c (and delay-csec #t)]
                              [#:one-at-a-time? one-at-a-time? any/c #f]
                              [#:last-frame-delay last-frame-delay (or/c (integer-in 0 #xFFFFFFFF) #f) #f])
          void?]{
