@@ -474,7 +474,7 @@
       @item{invokes @racket[exit:on-exit] and then}
       @item{queues a callback that calls @racket[exit] (a racket procedure)
             and (if @racket[exit] returns) sets the result of
-            @racket[exit:exiting?] back to @racket[#t].}]})
+            @racket[exit:exiting?] back to @racket[#f].}]})
 
  (proc-doc/names
   exit:user-oks-exit
