@@ -194,54 +194,41 @@
                          #:stx #'cls.superclass-expr)
           (values #f null null null null)]))
      ;; Define sets of names for use later
-     (define super-init-names (list->set (dict-keys super-inits)))
-     (define super-field-names (list->set (dict-keys super-fields)))
-     (define super-method-names (list->set (dict-keys super-methods)))
-     (define super-augment-names (list->set (dict-keys super-augments)))
+     (define super-init-names (dict-keys super-inits))
+     (define super-field-names (dict-keys super-fields))
+     (define super-method-names (dict-keys super-methods))
+     (define super-augment-names (dict-keys super-augments))
      (define this%-init-internals
-       (list->set (append (syntax->datum #'cls.init-internals)
-                          (syntax->datum #'cls.init-field-internals))))
-     (define this%-public-internals
-       (list->set (syntax->datum #'cls.public-internals)))
-     (define this%-override-internals
-       (list->set (syntax->datum #'cls.override-internals)))
-     (define this%-pubment-internals
-       (list->set (syntax->datum #'cls.pubment-internals)))
-     (define this%-augment-internals
-       (list->set (syntax->datum #'cls.augment-internals)))
+       (set-union (syntax->datum #'cls.init-internals)
+                  (syntax->datum #'cls.init-field-internals)))
+     (define this%-public-internals (syntax->datum #'cls.public-internals))
+     (define this%-override-internals (syntax->datum #'cls.override-internals))
+     (define this%-pubment-internals (syntax->datum #'cls.pubment-internals))
+     (define this%-augment-internals (syntax->datum #'cls.augment-internals))
      (define this%-method-internals
        (set-union this%-public-internals this%-override-internals))
      (define this%-field-internals
-       (list->set (append (syntax->datum #'cls.field-internals)
-                          (syntax->datum #'cls.init-field-internals))))
+       (set-union (syntax->datum #'cls.field-internals)
+                  (syntax->datum #'cls.init-field-internals)))
      (define this%-inherit-internals
-       (list->set (syntax->datum #'cls.inherit-internals)))
+       (syntax->datum #'cls.inherit-internals))
      (define this%-inherit-field-internals
-       (list->set (syntax->datum #'cls.inherit-field-internals)))
+       (syntax->datum #'cls.inherit-field-internals))
      (define this%-init-names
-       (list->set
-        (append (syntax->datum #'cls.init-externals)
-                (syntax->datum #'cls.init-field-externals))))
+       (set-union (syntax->datum #'cls.init-externals)
+                  (syntax->datum #'cls.init-field-externals)))
      (define this%-field-names
-       (list->set
-        (append (syntax->datum #'cls.field-externals)
-                (syntax->datum #'cls.init-field-externals))))
-     (define this%-public-names
-       (list->set (syntax->datum #'cls.public-externals)))
-     (define this%-override-names
-       (list->set (syntax->datum #'cls.override-externals)))
-     (define this%-pubment-names
-       (list->set (append (syntax->datum #'cls.pubment-externals))))
-     (define this%-augment-names
-       (list->set (append (syntax->datum #'cls.augment-externals))))
-     (define this%-inherit-names
-       (list->set (syntax->datum #'cls.inherit-externals)))
+       (set-union (syntax->datum #'cls.field-externals)
+                  (syntax->datum #'cls.init-field-externals)))
+     (define this%-public-names (syntax->datum #'cls.public-externals))
+     (define this%-override-names (syntax->datum #'cls.override-externals))
+     (define this%-pubment-names (syntax->datum #'cls.pubment-externals))
+     (define this%-augment-names (syntax->datum #'cls.augment-externals))
+     (define this%-inherit-names (syntax->datum #'cls.inherit-externals))
      (define this%-inherit-field-names
-       (list->set (syntax->datum #'cls.inherit-field-externals)))
-     (define this%-private-names
-       (list->set (syntax->datum #'cls.private-names)))
-     (define this%-private-fields
-       (list->set (syntax->datum #'cls.private-field-names)))
+       (syntax->datum #'cls.inherit-field-externals))
+     (define this%-private-names (syntax->datum #'cls.private-names))
+     (define this%-private-fields (syntax->datum #'cls.private-field-names))
      (define this%-overridable-names
        (set-union this%-public-names this%-override-names))
      (define this%-augmentable-names
@@ -249,29 +236,23 @@
      (define this%-method-names
        (set-union this%-overridable-names this%-augmentable-names))
      (define all-internal
-       (apply append
-              (map (λ (stx) (syntax->datum stx))
-                   (list #'cls.init-internals
-                         #'cls.init-field-internals
-                         #'cls.field-internals
-                         #'cls.public-internals
-                         #'cls.override-internals
-                         #'cls.inherit-internals
-                         #'cls.inherit-field-internals
-                         #'cls.pubment-internals
-                         #'cls.augment-internals))))
+       (set-union this%-init-internals
+                  this%-field-internals
+                  this%-public-internals
+                  this%-override-internals
+                  this%-inherit-internals
+                  this%-inherit-field-internals
+                  this%-pubment-internals
+                  this%-augment-internals))
      (define all-external
-       (apply append
-              (map (λ (stx) (syntax->datum stx))
-                   (list #'cls.init-externals
-                         #'cls.init-field-externals
-                         #'cls.field-externals
-                         #'cls.public-externals
-                         #'cls.override-externals
-                         #'cls.inherit-externals
-                         #'cls.inherit-field-externals
-                         #'cls.pubment-externals
-                         #'cls.augment-externals))))
+       (set-union this%-init-names
+                  this%-field-names
+                  this%-public-names
+                  this%-override-names
+                  this%-inherit-names
+                  this%-inherit-field-names
+                  this%-pubment-names
+                  this%-augment-names))
      ;; establish a mapping between internal and external names
      (define internal-external-mapping
        (for/hash ([internal all-internal]
@@ -293,7 +274,7 @@
                   #:unless (member name provided-init-names))
          (cons name val)))
      ;; define which init names are optional
-     (define optional-inits (list->set (syntax->datum #'cls.optional-inits)))
+     (define optional-inits (syntax->datum #'cls.optional-inits))
      (define optional-external (for/set ([n optional-inits])
                                  (dict-ref internal-external-mapping n)))
      (define optional-super
@@ -348,7 +329,7 @@
                                   local-init-table inits
                                   ;; omit init-fields here since they don't have
                                   ;; init accessors, only field accessors
-                                  (list->set (syntax->datum #'cls.init-internals))
+                                  (syntax->datum #'cls.init-internals)
                                   local-inherit-table
                                   local-inherit-field-table
                                   local-super-table
@@ -420,16 +401,16 @@
          super-augment-names)
   (when expected
    (match-define (Class: _ inits fields methods augments) expected)
-   (define exp-init-names (list->set (dict-keys inits)))
-   (define exp-field-names (list->set (dict-keys fields)))
-   (define exp-method-names (list->set (dict-keys methods)))
-   (define exp-augment-names (list->set (dict-keys augments)))
+   (define exp-init-names (dict-keys inits))
+   (define exp-field-names (dict-keys fields))
+   (define exp-method-names (dict-keys methods))
+   (define exp-augment-names (dict-keys augments))
    (define exp-optional-inits
      (for/set ([(name val) (in-dict inits)]
                #:when (cadr val))
               name))
    (check-same (set-union this%-init-names
-                          (list->set (dict-keys remaining-super-inits)))
+                          (dict-keys remaining-super-inits))
                exp-init-names
                "initialization argument")
    (check-same (set-union this%-public-names super-method-names)
