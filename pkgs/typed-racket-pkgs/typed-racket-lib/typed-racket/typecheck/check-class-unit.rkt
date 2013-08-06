@@ -36,8 +36,8 @@
 (define-syntax-class internal-class-data
   #:literals (#%plain-app quote-syntax class-internal begin
               values c:init c:init-field optional-init c:field
-              c:public c:override c:private c:inherit private-field
-              c:augment c:pubment)
+              c:public c:override c:private c:inherit c:inherit-field
+              private-field c:augment c:pubment)
   (pattern (begin (quote-syntax
                    (class-internal
                     (c:init init-names:name-pair ...)
@@ -49,6 +49,7 @@
                     (c:private privates:id ...)
                     (private-field private-fields:id ...)
                     (c:inherit inherit-names:name-pair ...)
+                    (c:inherit-field inherit-field-names:name-pair ...)
                     (c:augment augment-names:name-pair ...)
                     (c:pubment pubment-names:name-pair ...)))
                   (#%plain-app values))
@@ -65,6 +66,8 @@
            #:with override-externals #'(override-names.external ...)
            #:with inherit-externals #'(inherit-names.external ...)
            #:with inherit-internals #'(inherit-names.internal ...)
+           #:with inherit-field-externals #'(inherit-field-names.external ...)
+           #:with inherit-field-internals #'(inherit-field-names.internal ...)
            #:with augment-externals #'(augment-names.external ...)
            #:with augment-internals #'(augment-names.internal ...)
            #:with pubment-externals #'(pubment-names.external ...)
@@ -127,6 +130,7 @@
                 public-internals public-externals
                 override-internals override-externals
                 inherit-internals inherit-externals
+                inherit-field-internals inherit-field-externals
                 augment-internals augment-externals
                 pubment-internals pubment-externals
                 private-names private-field-names
@@ -212,6 +216,8 @@
                           (syntax->datum #'cls.init-field-internals))))
      (define this%-inherit-internals
        (list->set (syntax->datum #'cls.inherit-internals)))
+     (define this%-inherit-field-internals
+       (list->set (syntax->datum #'cls.inherit-field-internals)))
      (define this%-init-names
        (list->set
         (append (syntax->datum #'cls.init-externals)
@@ -230,6 +236,8 @@
        (list->set (append (syntax->datum #'cls.augment-externals))))
      (define this%-inherit-names
        (list->set (syntax->datum #'cls.inherit-externals)))
+     (define this%-inherit-field-names
+       (list->set (syntax->datum #'cls.inherit-field-externals)))
      (define this%-private-names
        (list->set (syntax->datum #'cls.private-names)))
      (define this%-private-fields
@@ -249,6 +257,7 @@
                          #'cls.public-internals
                          #'cls.override-internals
                          #'cls.inherit-internals
+                         #'cls.inherit-field-internals
                          #'cls.pubment-internals
                          #'cls.augment-internals))))
      (define all-external
@@ -260,6 +269,7 @@
                          #'cls.public-externals
                          #'cls.override-externals
                          #'cls.inherit-externals
+                         #'cls.inherit-field-externals
                          #'cls.pubment-externals
                          #'cls.augment-externals))))
      ;; establish a mapping between internal and external names
@@ -308,10 +318,12 @@
      (match-define (Instance: (Class: _ inits fields methods augments))
                    self-type)
      ;; trawl the body for the local name table
-     (define locals (trawl-for-property #'cls.make-methods 'tr:class:local-table))
+     (define locals
+       (trawl-for-property #'cls.make-methods 'tr:class:local-table))
      (define-values (local-method-table local-private-table local-field-table
                      local-private-field-table local-init-table
-                     local-inherit-table local-super-table
+                     local-inherit-table local-inherit-field-table
+                     local-super-table
                      local-augment-table local-inner-table)
        (construct-local-mapping-tables (car locals)))
      ;; types for private elements
@@ -337,9 +349,12 @@
                                   ;; omit init-fields here since they don't have
                                   ;; init accessors, only field accessors
                                   (list->set (syntax->datum #'cls.init-internals))
-                                  local-inherit-table local-super-table
-                                  super-methods
+                                  local-inherit-table
+                                  local-inherit-field-table
+                                  local-super-table
+                                  super-methods super-fields
                                   this%-inherit-internals
+                                  this%-inherit-field-internals
                                   this%-override-internals
                                   local-augment-table local-inner-table
                                   augments super-augments
@@ -380,7 +395,7 @@
       expected
       this%-init-names this%-field-names
       this%-public-names this%-override-names
-      this%-inherit-names
+      this%-inherit-names this%-inherit-field-names
       this%-pubment-names this%-augment-names
       (set-union optional-external optional-super)
       remaining-super-inits super-field-names
@@ -397,6 +412,7 @@
          expected this%-init-names this%-field-names
          this%-public-names this%-override-names
          this%-inherit-names
+         this%-inherit-field-names
          this%-pubment-names this%-augment-names
          optional-external
          remaining-super-inits super-field-names
@@ -434,6 +450,8 @@
   (check-exists (set-union super-method-names super-augment-names)
                 this%-inherit-names
                 "inherited method")
+  (check-exists super-field-names this%-inherit-field-names
+                "inherited field")
   (check-absent super-field-names this%-field-names "public field")
   (check-absent super-method-names this%-public-names "public method")
   (check-absent super-augment-names this%-pubment-names
@@ -475,9 +493,12 @@
                                    local-private-field-table
                                    private-field-types private-field-names
                                    local-init-table inits init-names
-                                   local-inherit-table local-super-table
-                                   super-types
-                                   inherit-names override-names
+                                   local-inherit-table
+                                   local-inherit-field-table
+                                   local-super-table
+                                   super-types super-fields
+                                   inherit-names inherit-field-names
+                                   override-names
                                    local-augment-table local-inner-table
                                    augments super-augments
                                    pubment-names augment-names
@@ -498,6 +519,12 @@
     (map car localized-private-field-pairs))
   (define localized-private-field-set-names
     (map cadr localized-private-field-pairs))
+  (define localized-inherit-field-pairs
+    (localize local-inherit-field-table inherit-field-names))
+  (define localized-inherit-field-get-names
+    (map car localized-inherit-field-pairs))
+  (define localized-inherit-field-set-names
+    (map cadr localized-inherit-field-pairs))
   (define localized-inherit-names (localize local-inherit-table inherit-names))
   (define localized-private-methods
     (localize local-private-table private-methods))
@@ -559,6 +586,8 @@
   (define-values (private-field-get-types private-field-set-types)
     (make-field-types private-field-names private-field-types
                       #:private? #t))
+  (define-values (inherit-field-get-types inherit-field-set-types)
+    (make-field-types inherit-field-names super-fields))
 
   ;; types for privates and super calls
   (define (make-private-like-types names type-map)
@@ -589,6 +618,8 @@
                             localized-private-field-get-names
                             localized-private-field-set-names
                             localized-inherit-names
+                            localized-inherit-field-get-names
+                            localized-inherit-field-set-names
                             localized-override-names
                             localized-pubment-names
                             localized-augment-names
@@ -596,7 +627,10 @@
   (define all-types (append method-types private-method-types
                             field-get-types field-set-types
                             private-field-get-types private-field-set-types
-                            inherit-types super-call-types
+                            inherit-types
+                            inherit-field-get-types
+                            inherit-field-set-types
+                            super-call-types
                             pubment-types augment-types inner-types))
   (values all-names all-types
           ;; FIXME: consider removing method names and types
@@ -794,6 +828,14 @@
                       (let-values (((_) _))
                         (let-values (((_) _)) (#%plain-app local-private-set:id _ _))))
                     ...)]
+                  [(inherit-field:id ...)
+                   (#%plain-app
+                    values
+                    (#%plain-lambda ()
+                      (let-values (((_) _)) (#%plain-app local-inherit-get:id _))
+                      (let-values (((_) _))
+                        (let-values (((_) _)) (#%plain-app local-inherit-set:id _ _))))
+                    ...)]
                   [(init:id ...)
                    (#%plain-app values (#%plain-lambda () local-init:id) ...)]
                   [(inherit:id ...)
@@ -841,6 +883,10 @@
              (map cons
                   (syntax->datum #'(inherit ...))
                   (syntax->list #'(local-inherit ...)))
+             (map list
+                  (syntax->datum #'(inherit-field ...))
+                  (syntax->list #'(local-inherit-get ...))
+                  (syntax->list #'(local-inherit-set ...)))
              (map cons
                   (syntax->datum #'(override ...))
                   (syntax->list #'(local-super ...)))
