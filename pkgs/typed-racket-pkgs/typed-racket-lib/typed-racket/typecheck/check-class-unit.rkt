@@ -444,14 +444,14 @@
    (check-same optional-external exp-optional-inits
                "optional init argument"))
   (check-exists super-method-names this%-override-names
-                "override method")
+                "overridable method")
   (check-exists super-augment-names this%-augment-names
-                "augment method")
+                "augmentable method")
   (check-exists (set-union super-method-names super-augment-names)
                 this%-inherit-names
-                "inherited method")
+                "method")
   (check-exists super-field-names this%-inherit-field-names
-                "inherited field")
+                "field")
   (check-absent super-field-names this%-field-names "public field")
   (check-absent super-method-names this%-public-names "public method")
   (check-absent super-augment-names this%-pubment-names
@@ -1113,8 +1113,8 @@
     (for/or ([m (in-set required)])
       (and (not (set-member? actual m)) m)))
   (when missing
-    (tc-error/expr (~a "class definition missing ~a ~a "
-                       "that is required by the expected type")
+    (tc-error/expr (~a "superclass missing ~a ~a "
+                       "that the current class requires")
                    msg missing)))
 
 ;; Set<Symbol> Set<Symbol> String -> Void

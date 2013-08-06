@@ -348,7 +348,7 @@
                  (define/override (m y) (* 2 y)))))
 
    ;; fails, superclass missing public for override
-   (check-err #:exn #rx"missing override method m"
+   (check-err #:exn #rx"superclass missing overridable method m"
     (: d% (Class [m (Integer -> Integer)]))
     (define d% (class object% (super-new)
                  (define/override (m y) (* 2 y)))))
@@ -577,6 +577,12 @@
       (super-new)
       (inherit-field [y x])
       (set! y 1)))
+
+   ;; fails, superclass missing inherited field
+   (check-err #:exn #rx"superclass missing field"
+    (class (class object% (super-new))
+      (super-new)
+      (inherit-field [y x])))
 
    ;; fails, missing super method for inherit
    (check-err
