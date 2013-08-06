@@ -309,6 +309,7 @@
                     (private #,@(dict-ref name-dict #'private '()))
                     (private-field #,@private-fields)
                     (inherit #,@(dict-ref name-dict #'inherit '()))
+                    (inherit-field #,@(dict-ref name-dict #'inherit-field '()))
                     (augment #,@(dict-ref name-dict #'augment '()))
                     (pubment #,@(dict-ref name-dict #'pubment '()))))
               (untyped-class #,annotated-super
@@ -412,6 +413,8 @@
       (stx-map stx-car (dict-ref name-dict #'init '())))
     (define inherit-names
       (stx-map stx-car (dict-ref name-dict #'inherit '())))
+    (define inherit-field-names
+      (stx-map stx-car (dict-ref name-dict #'inherit-field '())))
     (define augment-names
       (append (stx-map stx-car (dict-ref name-dict #'pubment '()))
               (stx-map stx-car (dict-ref name-dict #'augment '()))))
@@ -428,6 +431,9 @@
                     [(#,@private-field-names)
                      (values #,@(map (λ (stx) #`(λ () #,stx (set! #,stx 0)))
                                      private-field-names))]
+                    [(#,@inherit-field-names)
+                     (values #,@(map (λ (stx) #`(λ () #,stx (set! #,stx 0)))
+                                     inherit-field-names))]
                     [(#,@init-names)
                      (values #,@(map (λ (stx) #`(λ () #,stx))
                                      init-names))]

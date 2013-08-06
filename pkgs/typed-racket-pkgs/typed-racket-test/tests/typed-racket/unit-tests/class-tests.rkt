@@ -563,6 +563,21 @@
       (inherit [n m])
       (n 5)))
 
+   ;; test inherit field
+   (check-ok
+    (class (class object% (super-new)
+             (field [x : Integer 0]))
+      (super-new)
+      (inherit-field x)))
+
+   ;; test internal name with inherit-field
+   (check-ok
+    (class (class object% (super-new)
+             (field [x : Integer 0]))
+      (super-new)
+      (inherit-field [y x])
+      (set! y 1)))
+
    ;; fails, missing super method for inherit
    (check-err
     (class (class object% (super-new)) (super-new) (inherit z)))
