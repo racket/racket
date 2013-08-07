@@ -1,6 +1,7 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.rkt" (for-label racket teachpack/htdp/image))
+@(require scribble/manual "shared.rkt"
+          (for-label racket lang/posn teachpack/htdp/image))
 
 @teachpack["image"]{Manipulating Images}
 
