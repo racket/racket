@@ -1,6 +1,7 @@
 #lang scribble/doc
 
-@(require (for-label (only-in racket/contract and/c or/c any/c not/c)
+@(require (for-label (only-in racket/contract and/c or/c any/c not/c listof
+                                              >=/c <=/c)
                      2htdp/image
                      (except-in lang/htdp-beginner posn make-posn posn? posn-x posn-y image?)
                      lang/posn
@@ -57,7 +58,7 @@
           for a more careful discussion of this issue.}))
 
 @defmodule[#:require-form beginner-require 2htdp/image]
-
+a
 The image teachpack provides a number of basic image construction
 functions, along with combinators for building more complex images out of
 existing images. Basic images include various polygons, ellipses and
@@ -504,13 +505,13 @@ They all construct a triangle oriented as follows:
 
 }
 
-@defproc*[([(rectangle [width real?]
-                       [height real?]
+@defproc*[([(rectangle [width (and/c real? (not/c negative?))]
+                       [height (and/c real? (not/c negative?))]
                        [mode mode?]
                        [color image-color?])
             image?]
-           [(rectangle [width real?] 
-                       [height real?] 
+           [(rectangle [width (and/c real? (not/c negative?))]
+                       [height (and/c real? (not/c negative?))]
                        [outline-mode (or/c 'outline "outline")] 
                        [pen-or-color (or/c pen? image-color?)])
             image?])]{
@@ -1110,7 +1111,7 @@ a black outline.
 @defproc[(scene+curve [scene image?] 
                       [x1 real?] [y1 real?] [angle1 angle?] [pull1 real?]
                       [x2 real?] [y2 real?] [angle2 angle?] [pull2 real?]
-                      [color image-color?])
+                      [color (or/c pen? image-color?)])
          image?]{
 
 Adds a curve to @racket[scene], starting at the point
