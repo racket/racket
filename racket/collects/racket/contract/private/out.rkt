@@ -21,9 +21,38 @@
      ;; check for syntax errors
      (true-provide/contract stx #t 'contract-out)
      
-     (syntax-case stx ()
-       [(_ . args)
-        (syntax-local-lift-module-end-declaration 
-         #`(provide/contract-for-contract-out . args))])
-     
-     #`(combine-out))))
+     (with-syntax ([(contracted-vars-info) (generate-temporaries '(contracted-vars-info))])
+       (syntax-local-lift-module-end-declaration
+        #`(handle-contract-out contracted-vars-info #,stx))
+       
+       #`(provide-contracted-vars contracted-vars-info)))))
+
+(define-syntax (handle-contract-out stx)
+  (syntax-case stx ()
+    [(_ contracted-vars-info orig-stx)
+     (let ()
+       (define provide-clauses '())
+       (define without-provide-clauses
+         (let loop ([stx (true-provide/contract #'orig-stx #f 'contract-out)])
+           (syntax-case stx (begin provide)
+             [(begin args ...)
+              #`(begin #,@(map loop (syntax->list #'(args ...))))]
+             [(provide clause ...)
+              (identifier? #'x)
+              (begin (set! provide-clauses (append (syntax->list #'(clause ...))
+                                                   provide-clauses))
+                     #'(begin))]
+             [x stx])))
+       #`(begin
+           #,without-provide-clauses
+           (define-syntax contracted-vars-info (quote-syntax #,provide-clauses))))]))
+  
+(define-syntax provide-contracted-vars 
+  (make-provide-transformer
+   (λ (stx modes)
+     (define contracted-vars-info
+       (syntax-case stx ()
+         [(_ id) #'id]))
+     (for*/list ([provide-clause (in-list (syntax->list (syntax-local-value contracted-vars-info)))]
+                 [export (in-list (expand-export provide-clause modes))])
+       export))))

@@ -1076,6 +1076,21 @@
                                'pos 'neg))))
       (eval '(require 'contract-struct/c-2b))))
   
+  (test/spec-passed/result
+   'contract-out-rename1
+   '(begin
+      (eval '(module contract-out-rename1-a racket/base
+               (require racket/contract/base)
+               (provide (prefix-out my- (contract-out [f any/c])))
+               (define f 11)))
+      (eval '(module contract-out-rename1-b racket/base
+               (require 'contract-out-rename1-a)
+               (define contract-out-rename1-my-f my-f)
+               (provide contract-out-rename1-my-f)))
+      (eval '(require 'contract-out-rename1-b))
+      (eval 'contract-out-rename1-my-f))
+   11)
+  
   
   
   (contract-eval
