@@ -13,14 +13,13 @@
                               exact-positive-integer?)
                      (only-in racket/contract/base
                               or/c listof any/c)
-                     (only-in plai/collector
+                     (only-in plai/gc2/collector
                               root?
                               heap-size
                               location?
                               heap-value?
                               heap-set! heap-ref with-heap
-                              get-root-set read-root set-root!
-                              procedure-roots)
+                              get-root-set read-root set-root!)
                      plai/scribblings/fake-collector2
                      plai/scribblings/fake-mutator2
                      plai/random-mutator
@@ -33,12 +32,13 @@
 
 @defmodulelang[plai/gc2/mutator]
 
-The @MUTATE-LANG language is used to test garbage collectors written with the
-@secref["collector"] language.  Since collectors support a subset of Racket's
-values, the @MUTATE-LANG language supports a subset of procedures and syntax.
-In addition, many procedures that can be written in the mutator are omitted as
-they make good test cases.  Therefore, the mutator language provides only
-primitive procedures, such as @racket[+], @racket[cons], etc.
+The @MUTATE-LANG language is used to test garbage collectors written
+with the @secref["gc2-collector"] language.  Since collectors support
+a subset of Racket's values, the @MUTATE-LANG language supports a
+subset of procedures and syntax.  In addition, many procedures that
+can be written in the mutator are omitted as they make good test
+cases.  Therefore, the mutator language provides only primitive
+procedures, such as @racket[+], @racket[cons], etc.
 
 @section{Building Mutators for GC2}
 

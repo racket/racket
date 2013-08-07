@@ -70,7 +70,7 @@ Determines if @racket[v] is a root.
 
 @defproc[(heap-value? [v any/c]) boolean?]{
   A value that may be stored on the heap. Roughly corresponds to the contract
-  @racket[(or/c boolean? number? procedure? symbol? empty?)].
+  @racket[(or/c boolean? number? symbol? empty?)].
 }
 
 
@@ -184,11 +184,6 @@ value should occupy a single heap cell, though you may use additional space to
 store a tag, etc. You are also welcome to pre-allocate common constants (e.g.,
 the empty list). This procedure may need to perform a garbage-collection. If
 there is still insufficient space, it should signal an error.
-
-Note that closures are flat values. The environment of a closure is internally
-managed, but contains references to values on the heap. Therefore, during
-garbage collection, the environment of reachable closures must be updated. The
-language exposes the environment via the @racket[procedure-roots] function.
 
 }
 
