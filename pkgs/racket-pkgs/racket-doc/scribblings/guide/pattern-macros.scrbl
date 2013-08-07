@@ -425,7 +425,7 @@ synthesize identifiers based on existing identifiers.
 
 As it turns out, lexical scope gives us a way around this problem. The
 trick is to iterate expansions of @racket[define-for-cbr] once for
-each argument in the function, and that's why @racket[define-cbr]
+each argument in the function, and that's why @racket[define-for-cbr]
 starts with an apparently useless @racket[()] after the argument
 list. We need to keep track of all the arguments seen so far and the
 @racket[get] and @racket[put] names generated for each, in addition to
