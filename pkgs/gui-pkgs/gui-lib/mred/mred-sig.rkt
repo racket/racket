@@ -45,6 +45,7 @@ cursor%
 dc<%>
 dc-path%
 dialog%
+dimension-integer?
 editor-admin%
 editor-canvas%
 editor-data%
@@ -156,6 +157,8 @@ pen-list%
 play-sound
 point%
 popup-menu%
+position-integer?
+positive-dimension-integer?
 post-script-dc%
 printer-dc%
 ps-setup%
@@ -181,6 +184,7 @@ snip%
 snip-admin%
 snip-class%
 snip-class-list<%>
+spacing-integer?
 special-control-key
 special-option-key
 string-snip%

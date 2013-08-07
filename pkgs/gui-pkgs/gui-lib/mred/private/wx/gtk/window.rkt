@@ -469,17 +469,17 @@
       (set-size x y -1 -1))
 
     (define/public (set-size x y w h)
-      (unless (and (or (= x -11111) (= save-x x))
-                   (or (= y -11111) (= save-y y))
+      (unless (and (or (not x) (equal? save-x x))
+                   (or (not y) (equal? save-y y))
                    (or (= w -1) (= save-w (max w client-delta-w)))
                    (or (= h -1) (= save-h (max h client-delta-h))))
-        (unless (= x -11111) (set! save-x x))
-        (unless (= y -11111) (set! save-y y))
+        (unless (not x) (set! save-x x))
+        (unless (not y) (set! save-y y))
         (unless (= w -1) (set! save-w w))
         (unless (= h -1) (set! save-h h))
         (set! save-w (max save-w client-delta-w))
         (set! save-h (max save-h client-delta-h))
-        (really-set-size gtk x y save-x save-y save-w save-h)
+        (really-set-size gtk x y (or save-x 0) (or save-y 0) save-w save-h)
         (queue-on-size)))
 
     (define/public (save-size x y w h)
@@ -497,8 +497,8 @@
       ;; called in event-pump thread
       (unless (and (= save-w w)
                    (= save-h h)
-                   (= save-x x)
-                   (= save-y y))
+                   (equal? save-x x)
+                   (equal? save-y y))
         (set! save-w w)
         (set! save-h h)
         (set! save-x x)
@@ -533,8 +533,8 @@
     (define/public (set-auto-size [dw 0] [dh 0])
       (let ([req (make-GtkRequisition 0 0)])
         (gtk_widget_size_request gtk req)
-        (set-size -11111
-                  -11111
+        (set-size #f
+                  #f
                   (+ (GtkRequisition-width req) dw)
                   (+ (GtkRequisition-height req) dh))))
 
@@ -560,8 +560,8 @@
 
     (unless no-show? (show #t))
 
-    (define/public (get-x) (if (= save-x -11111) 0 save-x))
-    (define/public (get-y) (if (= save-y -11111) 0 save-y))
+    (define/public (get-x) (or save-x 0))
+    (define/public (get-y) (or save-y 0))
     (define/public (get-width) save-w)
     (define/public (get-height) save-h)
 

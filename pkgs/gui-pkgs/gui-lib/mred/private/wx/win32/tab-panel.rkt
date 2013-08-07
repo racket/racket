@@ -104,7 +104,7 @@
                0 0 0 0 #:combine-width +
                (lambda (w h)
                  (set! tab-height (+ h 6))
-                 (set-size -11111 -11111 
+                 (set-size #f #f
                            (+ w (* 6 (length choices))) 
                            (+ h 12))))
     

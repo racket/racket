@@ -201,10 +201,10 @@
 @defmixin[frame:size-pref-mixin (frame:basic<%>) (frame:size-pref<%>)]{
   @defconstructor/auto-super[([size-preferences-key symbol?]
                               [position-preferences-key (or/c symbol? #f) #f]
-                              [width (or/c (integer-in 0 10000) #f) #f]
-                              [height (or/c (integer-in 0 10000) #f) #f]
-                              [x (or/c (integer-in -10000 10000) #f) #f]
-                              [y (or/c (integer-in -10000 10000) #f) #f])]{
+                              [width (or/c dimension-integer? #f) #f]
+                              [height (or/c dimension-integer? #f) #f]
+                              [x (or/c position-integer? #f) #f]
+                              [y (or/c position-integer? #f) #f])]{
 
     The  @racket[size-preferences-key] symbol is used with
     @racket[preferences:get] and @racket[preferences:set] to track the current
@@ -227,15 +227,15 @@
 
   }
 
-  @defmethod[#:mode override (on-size (width (integer-in 0 10000)) 
-                                      (height (integer-in 0 10000)))
+  @defmethod[#:mode override (on-size (width dimension-integer?) 
+                                      (height dimension-integer?))
                     void?]{
     Updates the preferences, according to the width and
     height. The preferences key is the one passed
     to the initialization argument of the class.
   }
-  @defmethod[#:mode override (on-move (width (integer-in -10000 10000))
-                                      (height (integer-in -10000 10000)))
+  @defmethod[#:mode override (on-move (width position-integer?)
+                                      (height position-integer?))
                     void?]{
     Updates the preferences according to the width and
     height, if @racket[position-preferences-key] is not @racket[#f], using
@@ -575,10 +575,10 @@
   @defconstructor[((filename string?)
                    (editor% (implementation?/c editor:basic<%>))
                    (parent (or/c (is-a?/c frame%) false/c) #f)
-                   (width (or/c (integer-in 0 10000) false/c) #f)
-                   (height (or/c (integer-in 0 10000) false/c) #f)
-                   (x (or/c (integer-in -10000 10000) false/c) #f)
-                   (y (or/c (integer-in -10000 10000) false/c) #f)
+                   (width (or/c dimension-integer? false/c) #f)
+                   (height (or/c dimension-integer? false/c) #f)
+                   (x (or/c position-integer? false/c) #f)
+                   (y (or/c position-integer? false/c) #f)
                    (style (listof (or/c 'no-resize-border
                                         'no-caption
                                         'no-system-menu
@@ -590,11 +590,11 @@
                                         'metal))
                           null)
                    (enabled any/c #t)
-                   (border (integer-in 0 1000) 0)
-                   (spacing (integer-in 0 1000) 0)
+                   (border spacing-integer? 0)
+                   (spacing spacing-integer? 0)
                    (alignment (list/c (or/c 'left 'center 'right) (or/c 'top 'center 'bottom)) '(center top))
-                   (min-width (integer-in 0 10000) graphical-minimum-width)
-                   (min-height (integer-in 0 10000) graphical-minimum-height)
+                   (min-width dimension-integer? graphical-minimum-width)
+                   (min-height dimension-integer? graphical-minimum-height)
                    (stretchable-width any/c #t)
                    (stretchable-height any/c #t))]{
 

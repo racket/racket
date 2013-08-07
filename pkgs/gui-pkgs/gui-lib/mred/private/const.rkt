@@ -17,10 +17,13 @@
   
   ;; the maximum hard-min-width of a gauge
   (define const-max-gauge-length 150)
-  
-  ;; maximum reasonable minimum width/height
-  (define max-min 10000)
 
+  ;; the maximum window size/position value:
+  (define WIN-SIZE-MAX 1000000)
+
+  ;; the maximum slide/gauge value:
+  (define GAUGE-MAX WIN-SIZE-MAX)
+  
   (define side-combo-width (case (system-type)
 			     [(windows) 20]
 			     [(macosx) 18]

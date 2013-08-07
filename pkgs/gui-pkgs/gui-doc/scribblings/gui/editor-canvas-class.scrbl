@@ -22,13 +22,13 @@ An @racket[editor-canvas%] object manages and displays a
                  [label (or/c label-string? #f) #f]
                  [wheel-step (or/c (integer-in 1 10000) #f) 3]
                  [line-count (or/c (integer-in 1 1000) #f) #f]
-                 [horizontal-inset (integer-in 0 1000) 5]
-                 [vertical-inset (integer-in 0 1000) 5]
+                 [horizontal-inset spacing-integer? 5]
+                 [vertical-inset spacing-integer? 5]
                  [enabled any/c #t]
-                 [vert-margin (integer-in 0 1000) 0]
-                 [horiz-margin (integer-in 0 1000) 0]
-                 [min-width (or/c (integer-in 0 10000) #f) #f]
-                 [min-height (or/c (integer-in 0 10000) #f) #f]
+                 [vert-margin spacing-integer? 0]
+                 [horiz-margin spacing-integer? 0]
+                 [min-width (or/c dimension-integer? #f) #f]
+                 [min-height (or/c dimension-integer? #f) #f]
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t])]{
 
@@ -258,8 +258,8 @@ around the editor area is always cleared.
 }
 
 @defmethod[#:mode override 
-           (on-size [width (integer-in 0 10000)]
-                    [height (integer-in 0 10000)])
+           (on-size [width dimension-integer?]
+                    [height dimension-integer?])
            void?]{
 
 If the canvas is displaying an editor, its @method[editor<%>

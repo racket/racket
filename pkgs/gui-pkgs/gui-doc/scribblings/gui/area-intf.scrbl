@@ -25,8 +25,8 @@ All @racket[area<%>] classes accept the following named instantiation
 
 
 @defmethod[(get-graphical-min-size)
-           (values (integer-in 0 10000)
-                   (integer-in 0 10000))]{
+           (values dimension-integer?
+                   dimension-integer?)]{
 
 Returns the area's graphical minimum size as two values: the minimum
  width and the minimum height (in pixels).
@@ -56,8 +56,8 @@ Returns the area's closest frame or dialog ancestor. For a frame or
 }
 
 @defmethod*[([(min-width)
-              (integer-in 0 10000)]
-             [(min-width [w (integer-in 0 10000)])
+              dimension-integer?]
+             [(min-width [w dimension-integer?])
               void?])]{
 
 Gets or sets the area's minimum width (in pixels) for geometry
@@ -78,8 +78,8 @@ When setting the minimum width, if @racket[w] is smaller than the
 }
 
 @defmethod*[([(min-height)
-              (integer-in 0 10000)]
-             [(min-height [h (integer-in 0 10000)])
+              dimension-integer?]
+             [(min-height [h dimension-integer?])
               void?])]{
 
 Gets or sets the area's minimum height for geometry management.

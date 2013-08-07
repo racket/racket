@@ -18,10 +18,10 @@ A @racket[canvas%] object is a general-purpose window for drawing and
                  [label (or/c label-string? #f) #f]
                  [gl-config (or/c (is-a?/c gl-config%) #f) #f]
                  [enabled any/c #t]
-                 [vert-margin (integer-in 0 1000) 0]
-                 [horiz-margin (integer-in 0 1000) 0]
-                 [min-width (or/c (integer-in 0 10000) #f) #f]
-                 [min-height (or/c (integer-in 0 10000) #f) #f]
+                 [vert-margin spacing-integer? 0]
+                 [horiz-margin spacing-integer? 0]
+                 [min-width (or/c dimension-integer? #f) #f]
+                 [min-height (or/c dimension-integer? #f) #f]
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t])]{
 
@@ -101,7 +101,7 @@ The @racket[gl-config] argument determines properties of an OpenGL
 
 
 @defmethod[(get-scroll-page [which (or/c 'horizontal 'vertical)])
-           (integer-in 1 1000000)]{
+           positive-dimension-integer?]{
 
 Get the current page step size of a manual scrollbar. The result is
  @racket[0] if the scrollbar is not active or it is automatic.
@@ -116,7 +116,7 @@ See also
 
 
 @defmethod[(get-scroll-pos [which (or/c 'horizontal 'vertical)])
-           (integer-in 0 1000000)]{
+           dimension-integer?]{
 
 Gets the current value of a manual scrollbar. The result is always
  @racket[0] if the scrollbar is not active or it is automatic.
@@ -131,7 +131,7 @@ See also
 
 
 @defmethod[(get-scroll-range [which (or/c 'horizontal 'vertical)])
-           (integer-in 0 1000000)]{
+           dimension-integer?]{
 
 Gets the current maximum value of a manual scrollbar. The result is
  always @racket[0] if the scrollbar is not active or it is automatic.
@@ -146,7 +146,7 @@ See also
 
 
 @defmethod[(get-view-start)
-           (values (integer-in 0 10000) (integer-in 0 10000))]{
+           (values dimension-integer? dimension-integer?)]{
 
 Get the location at which the visible portion of the canvas
 starts, based on the current values of the horizontal and
@@ -163,7 +163,7 @@ If the scrollbars are disabled or initialized as manual (see
 
 
 @defmethod[(get-virtual-size)
-           (value (integer-in 0 10000) (integer-in 0 10000))]{
+           (value dimension-integer? dimension-integer?)]{
 Gets the size in device units of the scrollable canvas area (as
  opposed to the client size, which is the area of the canvas currently
  visible). This is the same size as the client size (as returned by
@@ -173,8 +173,8 @@ Gets the size in device units of the scrollable canvas area (as
 }
 
 
-@defmethod[(init-auto-scrollbars [horiz-pixels (or/c (integer-in 1 1000000) #f)]
-                                 [vert-pixels (or/c (integer-in 1 1000000) #f)]
+@defmethod[(init-auto-scrollbars [horiz-pixels (or/c positive-dimension-integer? #f)]
+                                 [vert-pixels (or/c positive-dimension-integer? #f)]
                                  [h-value (real-in 0.0 1.0)]
                                  [v-value (real-in 0.0 1.0)])
            void?]{
@@ -218,12 +218,12 @@ See also
 
 }
 
-@defmethod[(init-manual-scrollbars [h-length (or/c (integer-in 0 1000000) #f)]
-                                   [v-length (or/c (integer-in 0 1000000) #f)]
-                                   [h-page (integer-in 1 1000000)]
-                                   [v-page (integer-in 1 1000000)]
-                                   [h-value (integer-in 0 1000000)]
-                                   [v-value (integer-in 0 1000000)])
+@defmethod[(init-manual-scrollbars [h-length (or/c dimension-integer? #f)]
+                                   [v-length (or/c dimension-integer? #f)]
+                                   [h-page positive-dimension-integer?]
+                                   [v-page positive-dimension-integer?]
+                                   [h-value dimension-integer?]
+                                   [v-value dimension-integer?])
            void?]{
 
 Enables and initializes manual scrollbars for the canvas.  A
@@ -339,7 +339,7 @@ See also
 
 
 @defmethod[(set-scroll-page [which (or/c 'horizontal 'vertical)]
-                            [value (integer-in 1 1000000)])
+                            [value positive-dimension-integer?])
            void?]{
 
 Set the current page step size of a manual scrollbar. (This method has
@@ -356,7 +356,7 @@ See also
 
 
 @defmethod[(set-scroll-pos [which (or/c 'horizontal 'vertical)]
-                           [value (integer-in 0 1000000)])
+                           [value dimension-integer?])
            void?]{
 
 Sets the current value of a manual scrollbar. (This method has no
@@ -376,7 +376,7 @@ See also
 
 
 @defmethod[(set-scroll-range [which (or/c 'horizontal 'vertical)]
-                             [value (integer-in 0 1000000)])
+                             [value dimension-integer?])
            void?]{
 
 Sets the current maximum value of a manual scrollbar. (This method has

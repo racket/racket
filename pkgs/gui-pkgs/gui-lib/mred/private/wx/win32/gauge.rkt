@@ -52,8 +52,8 @@
     (set-range rng)
 
     (if (memq 'horizontal style)
-        (set-size -11111 -11111 100 24)
-        (set-size -11111 -11111 24 100))
+        (set-size #f #f 100 24)
+        (set-size #f #f 24 100))
 
     (define/public (get-value)
       (SendMessageW hwnd PBM_GETPOS 0 0))

@@ -23,15 +23,15 @@ A @racket[panel%] object has a degenerate placement strategy for
                                       'hscroll 'auto-hscroll
                                       'vscroll 'auto-vscroll)) null]
                  [enabled any/c #t]
-                 [vert-margin (integer-in 0 1000) 0]
-                 [horiz-margin (integer-in 0 1000) 0]
-                 [border (integer-in 0 1000) 0]
-                 [spacing (integer-in 0 1000) 0]
+                 [vert-margin spacing-integer? 0]
+                 [horiz-margin spacing-integer? 0]
+                 [border spacing-integer? 0]
+                 [spacing spacing-integer? 0]
                  [alignment (list/c (or/c 'left 'center 'right)
                                     (or/c 'top 'center 'bottom))
                             '(center center)]
-                 [min-width (or/c (integer-in 0 10000) #f) #f]
-                 [min-height (or/c (integer-in 0 10000) #f) #f]
+                 [min-width (or/c dimension-integer? #f) #f]
+                 [min-height (or/c dimension-integer? #f) #f]
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t])]{
 

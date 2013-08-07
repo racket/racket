@@ -47,8 +47,8 @@
                                          dialog-proc
                                          0)])
         (SetWindowTextW hwnd label)
-        (let ([x (if (= x -11111) 0 x)]
-              [y (if (= y -11111) 0 y)])
+        (let ([x (or x 0)]
+              [y (or y 0)])
           (MoveWindow hwnd x y w h #t))
         hwnd))
 

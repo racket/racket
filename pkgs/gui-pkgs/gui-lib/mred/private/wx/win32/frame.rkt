@@ -212,8 +212,8 @@
                           0
                           (bitwise-ior WS_CAPTION
                                        WS_MINIMIZEBOX)))
-                     (if (= x -11111) CW_USEDEFAULT x)
-                     (if (= y -11111) CW_USEDEFAULT y)
+                     (or x CW_USEDEFAULT)
+                     (or y CW_USEDEFAULT)
                      w h
                      #f
                      #f

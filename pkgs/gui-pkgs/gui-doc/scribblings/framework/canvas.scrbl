@@ -79,7 +79,7 @@
 
   The result of this mixin uses the same initialization arguments as the
   mixin's argument.
-  @defmethod*[#:mode override (((on-size (width (integer-in 0 10000)) (height (integer-in 0 10000))) void?))]{
+  @defmethod*[#:mode override (((on-size (width dimension-integer?) (height dimension-integer?)) void?))]{
 
     Adjusts the sizes of the marked snips.
 

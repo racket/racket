@@ -19,15 +19,15 @@ Unlike most panel classes, a group-box panel's horizontal and vertical
                  [style (listof (or/c 'deleted)) null]
                  [font (is-a?/c font%) small-control-font]
                  [enabled any/c #t]
-                 [vert-margin (integer-in 0 1000) 2]
-                 [horiz-margin (integer-in 0 1000) 2]
-                 [border (integer-in 0 1000) 0]
-                 [spacing (integer-in 0 1000) 0]
+                 [vert-margin spacing-integer? 2]
+                 [horiz-margin spacing-integer? 2]
+                 [border spacing-integer? 0]
+                 [spacing spacing-integer? 0]
                  [alignment (list/c (or/c 'left 'center 'right)
                                     (or/c 'top 'center 'bottom))
                             '(center top)]
-                 [min-width (or/c (integer-in 0 10000) #f) #f]
-                 [min-height (or/c (integer-in 0 10000) #f) #f]
+                 [min-width (or/c dimension-integer? #f) #f]
+                 [min-height (or/c dimension-integer? #f) #f]
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t])]{
 

@@ -93,14 +93,14 @@
                 [(dir) (send wx center dir)]))]
      [move (entry-point
             (lambda (x y)
-              (check-slider-integer '(method top-level-window<%> move) x)
-              (check-slider-integer '(method top-level-window<%> move) y)
+              (check-position '(method top-level-window<%> move) x)
+              (check-position '(method top-level-window<%> move) y)
               (send wx move x y)))]
      [resize (entry-point
               (lambda (w h)
-                (check-range-integer '(method top-level-window<%> resize) w)
-                (check-range-integer '(method top-level-window<%> resize) h)
-                (send wx set-size -11111 -11111 w h)))]
+                (check-dimension '(method top-level-window<%> resize) w)
+                (check-dimension '(method top-level-window<%> resize) h)
+                (send wx set-size #f #f w h)))]
 
      [get-focus-window (entry-point
                         (lambda () (let ([w (send wx get-focus-window)])
@@ -166,10 +166,10 @@
     (let ([cwho '(constructor frame)])
       (check-label-string cwho label)
       (check-frame-parent/false cwho parent)
-      (check-dimension cwho width)
-      (check-dimension cwho height)
-      (check-init-pos-integer cwho x)
-      (check-init-pos-integer cwho y)
+      (check-init-dimension cwho width)
+      (check-init-dimension cwho height)
+      (check-init-position cwho x)
+      (check-init-position cwho y)
       (check-style cwho #f '(no-resize-border no-caption no-system-menu
                                               toolbar-button hide-menu-bar float metal)
                    style))
@@ -211,7 +211,7 @@
          (lambda (finish)
            (set! wx (finish (make-object wx-frame% this this
                                          (and parent (mred->wx parent)) label
-                                         (or x -11111) (or y -11111)
+                                         x y ; each can be #f
                                          (or width -1) (or height -1)
                                          style)
                             #f))
@@ -249,7 +249,10 @@
     (let ([cwho '(constructor dialog)])
       (check-label-string cwho label)
       (check-top-level-parent/false cwho parent)
-      (for-each (lambda (x) (check-dimension cwho x)) (list width height x y))
+      (check-init-position cwho x)
+      (check-init-position cwho y)
+      (check-init-dimension cwho width)
+      (check-init-dimension cwho height)
       (check-style cwho #f '(no-caption resize-border no-sheet close-button) style))
     (rename-super [super-on-subwindow-char on-subwindow-char])
     (define wx #f)
@@ -270,7 +273,8 @@
          (lambda (finish)
            (set! wx (finish (make-object wx-dialog% this this
                                          (and parent (mred->wx parent)) label
-                                         (or x -11111) (or y -11111) (or width 0) (or height 0)
+                                         x y ; each can be #f
+                                         (or width 0) (or height 0)
                                          style)
                             #f))
            wx)]
@@ -317,8 +321,8 @@
               (loop (cdr l) f s ms))))))
 
 (define (send-message-to-window x y m)
-  (check-slider-integer 'send-message-to-window x)
-  (check-slider-integer 'send-message-to-window y)
+  (check-position 'send-message-to-window x)
+  (check-position 'send-message-to-window y)
   (let ([w (wx:location->window x y)])
     (and w (let ([f (wx->proxy w)])
              (and f

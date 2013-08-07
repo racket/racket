@@ -20,10 +20,10 @@ Whenever a button is clicked by the user, the button's callback
                  [style (listof (or/c 'border 'deleted)) null]
                  [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
-                 [vert-margin (integer-in 0 1000) 2]
-                 [horiz-margin (integer-in 0 1000) 2]
-                 [min-width (or/c (integer-in 0 10000) #f) #f]
-                 [min-height (or/c (integer-in 0 10000) #f) #f]
+                 [vert-margin spacing-integer? 2]
+                 [horiz-margin spacing-integer? 2]
+                 [min-width (or/c dimension-integer? #f) #f]
+                 [min-height (or/c dimension-integer? #f) #f]
                  [stretchable-width any/c #f]
                  [stretchable-height any/c #f])]{
 

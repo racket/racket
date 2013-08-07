@@ -98,8 +98,8 @@
       ;; pointer to panel in the frame for use in on-size
       (define panel #f)
 
-      (define use-default-position? (and (= -11111 (list-ref args 2))
-                                         (= -11111 (list-ref args 1))))
+      (define use-default-position? (and (not (list-ref args 2))
+                                         (not (list-ref args 1))))
        
       (define enabled? #t)
       (define focus #f)
@@ -349,7 +349,7 @@
                    (set! last-height correct-h)
                    (set! already-trying? #t)
                    (enforce-size -1 -1 -1 -1 1 1)
-                   (set-size -11111 -11111 correct-w correct-h)
+                   (set-size #f #f correct-w correct-h)
                    (enforce-size min-w min-h
                                  (if sx? -1 min-w) (if sy? -1 min-h)
                                  1 1)

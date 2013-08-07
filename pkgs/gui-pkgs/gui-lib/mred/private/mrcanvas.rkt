@@ -174,8 +174,8 @@
         (when y-len (check-gauge-integer who y-len))
         (check-gauge-integer who x-page)
         (check-gauge-integer who y-page)
-        (check-range-integer who x-val)
-        (check-range-integer who y-val)
+        (check-gauge-integer who x-val)
+        (check-gauge-integer who y-val)
         (when (and x-len (< x-len x-val))
           (raise-arguments-error (who->name who)
                                  "horizontal value is larger than the horizontal range"
@@ -206,8 +206,8 @@
       (unless (or (eq? d 'horizontal) (eq? d 'vertical))
         (raise-argument-error (who->name `(method canvas% ,name)) "(or/c 'horizontal 'vertical)" d))
       (let ([bottom (if must-positive? 1 0)])
-        (unless (<= bottom v 10000000)
-          ((check-bounded-integer bottom 10000000 #f) `(method canvas% ,name) v))))
+        (unless (<= bottom v GAUGE-MAX)
+          ((check-bounded-integer bottom GAUGE-MAX #f) `(method canvas% ,name) v))))
 
     (define get-scroll-pos (entry-point (lambda (d) (check-scroll 'get-scroll-pos d 1 #f) (send wx get-scroll-pos d))))
     (define set-scroll-pos (entry-point (lambda (d v) (check-scroll 'set-scroll-pos d v #f) (send wx set-scroll-pos d v))))

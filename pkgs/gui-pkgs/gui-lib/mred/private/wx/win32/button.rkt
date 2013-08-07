@@ -118,7 +118,7 @@
     (define/public (auto-size-button 
 		    font 
 		    label
-		    #:resize [resize (lambda (w h) (set-size -11111 -11111 w h))])
+		    #:resize [resize (lambda (w h) (set-size #f #f w h))])
       (cond
        [orientation
 	(let ([h? (memq orientation '(left right))])

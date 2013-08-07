@@ -41,8 +41,8 @@
             [stretchable-width no-val]
             [stretchable-height no-val])
       (let ([cwho '(iconstructor area)])
-        (unless (eq? min-width no-val) (check-dimension cwho min-width))
-        (unless (eq? min-height no-val) (check-dimension cwho min-height)))
+        (unless (eq? min-width no-val) (check-init-dimension cwho min-width))
+        (unless (eq? min-height no-val) (check-init-dimension cwho min-height)))
       (mismatches)
       (define get-wx-outer-panel get-outer-wx-pan)
       (define parent prnt)
@@ -123,8 +123,8 @@
        [popup-menu (entry-point 
                     (lambda (m x y)
                       (check-instance '(method window<%> popup-menu) popup-menu% 'popup-menu% #f m)
-                      (check-range-integer '(method window<%> popup-menu) x)
-                      (check-range-integer '(method window<%> popup-menu) y)
+                      (check-position '(method window<%> popup-menu) x)
+                      (check-position '(method window<%> popup-menu) y)
                       (let ([mwx (mred->wx m)])
                         (and (send mwx popup-grab this)
                              (as-exit
@@ -134,11 +134,11 @@
        [on-focus (lambda (x) (void))]
        [on-subwindow-focus (lambda (win active?) (void))]
        [on-size (lambda (w h)
-                  (check-range-integer '(method window<%> on-size) w)
-                  (check-range-integer '(method window<%> on-size) h))]
+                  (check-dimension '(method window<%> on-size) w)
+                  (check-dimension '(method window<%> on-size) h))]
        [on-move (lambda (x y)
-                  (check-slider-integer '(method window<%> on-move) x)
-                  (check-slider-integer '(method window<%> on-move) y))]
+                  (check-position '(method window<%> on-move) x)
+                  (check-position '(method window<%> on-move) y))]
        [on-subwindow-char (lambda (w e)
                             (check-instance '(method window<%> on-subwindow-char) window<%> 'window<%> #f w)
                             (check-instance '(method window<%> on-subwindow-char) wx:key-event% 'key-event% #f e)
@@ -175,15 +175,15 @@
 	
        [client->screen (entry-point
                         (lambda (x y)
-                          (check-slider-integer '(method window<%> client->screen) x)
-                          (check-slider-integer '(method window<%> client->screen) y)
+                          (check-position '(method window<%> client->screen) x)
+                          (check-position '(method window<%> client->screen) y)
                           (double-boxed
                            x y
                            (lambda (x y) (send wx client-to-screen x y)))))]
        [screen->client (entry-point
                         (lambda (x y)
-                          (check-slider-integer '(method window<%> screen->client) x)
-                          (check-slider-integer '(method window<%> screen->client) y)
+                          (check-position '(method window<%> screen->client) x)
+                          (check-position '(method window<%> screen->client) y)
                           (double-boxed
                            x y
                            (lambda (x y) (send wx screen-to-client x y)))))]
@@ -230,8 +230,8 @@
        
        [warp-pointer (entry-point (lambda (x y) 
                                     (let ([who '(method window<%> warp-pointer)])
-                                      (check-init-pos-integer who x)
-                                      (check-init-pos-integer who y))
+                                      (check-init-position who x)
+                                      (check-init-position who y))
                                     (send wx warp-pointer x y)))])
       (define wx #f)
       (super-make-object (lambda () (set! wx (mk-wx)) wx) get-wx-panel get-outer-wx-panel mismatches parent)

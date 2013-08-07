@@ -119,11 +119,11 @@
                            (set! value-w w)
                            (set! value-h h)
                            (if vertical?
-                               (set-size -11111 -11111 (+ THICKNESS w) (max h MIN_LENGTH))
-                               (set-size -11111 -11111 (max w MIN_LENGTH) (+ THICKNESS h)))))
+                               (set-size #f #f (+ THICKNESS w) (max h MIN_LENGTH))
+                               (set-size #f #f (max w MIN_LENGTH) (+ THICKNESS h)))))
       (if vertical?
-          (set-size -11111 -11111 THICKNESS MIN_LENGTH)
-          (set-size -11111 -11111 MIN_LENGTH THICKNESS)))
+          (set-size #f #f THICKNESS MIN_LENGTH)
+          (set-size #f #f MIN_LENGTH THICKNESS)))
 
   (SendMessageW slider-hwnd TBM_SETRANGE 1 (MAKELPARAM lo hi))
   (set-value val)

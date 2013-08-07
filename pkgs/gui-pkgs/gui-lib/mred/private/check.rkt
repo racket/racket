@@ -107,16 +107,12 @@
                                     i))
                               range))))
   
-  (define check-range-integer (check-bounded-integer 0 10000 #f))
-
-  (define check-slider-integer (check-bounded-integer -10000 10000 #f))
-
-  (define check-init-pos-integer (check-bounded-integer -10000 10000 #t))
+  (define check-slider-integer (check-bounded-integer (- GAUGE-MAX) GAUGE-MAX #f))
 
   (define check-margin-integer (check-bounded-integer 0 1000 #f))
 
-  (define check-gauge-integer (check-bounded-integer 1 1000000 #f))
-  (define check-gauge-range-integer (check-bounded-integer 0 1000000 #f))
+  (define check-gauge-integer (check-bounded-integer 1 GAUGE-MAX #f))
+  (define check-gauge-range-integer (check-bounded-integer 0 GAUGE-MAX #f))
 
   (define (check-wheel-step cwho wheel-step)
     (when (and wheel-step
@@ -148,8 +144,10 @@
   (define (check-non-negative-integer/false who i)
     (-check-non-negative-integer who i #t))
 
-  (define check-dimension (check-bounded-integer 0 10000 #t))
-  (define check-non#f-dimension (check-bounded-integer 0 10000 #f))
+  (define check-init-dimension (check-bounded-integer 0 WIN-SIZE-MAX #t))
+  (define check-dimension (check-bounded-integer 0 WIN-SIZE-MAX #f))
+  (define check-position (check-bounded-integer (- WIN-SIZE-MAX) WIN-SIZE-MAX #f))
+  (define check-init-position (check-bounded-integer (- WIN-SIZE-MAX) WIN-SIZE-MAX #t))
 
   (define (check-label-string-or-bitmap who label)
     (unless (or (label-string? label) (is-a? label wx:bitmap%))

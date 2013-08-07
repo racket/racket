@@ -26,15 +26,15 @@ The @racket[tab-panel%] class does not implement the virtual
                  [style (listof (or/c 'no-border 'deleted)) null]
                  [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
-                 [vert-margin (integer-in 0 1000) 0]
-                 [horiz-margin (integer-in 0 1000) 0]
-                 [border (integer-in 0 1000) 0]
-                 [spacing (integer-in 0 1000) 0]
+                 [vert-margin spacing-integer? 0]
+                 [horiz-margin spacing-integer? 0]
+                 [border spacing-integer? 0]
+                 [spacing spacing-integer? 0]
                  [alignment (list/c (or/c 'left 'center 'right)
                                     (or/c 'top 'center 'bottom))
                             '(center top)]
-                 [min-width (or/c (integer-in 0 10000) #f) #f]
-                 [min-height (or/c (integer-in 0 10000) #f) #f]
+                 [min-width (or/c dimension-integer? #f) #f]
+                 [min-height (or/c dimension-integer? #f) #f]
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t])]{
 

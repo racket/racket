@@ -68,7 +68,7 @@ an item callback is invoked, if the user selected an item.)
 }
 
 
-@defmethod[(set-min-width [width (integer-in 0 10000)])
+@defmethod[(set-min-width [width dimension-integer?])
            void?]{
 
 Sets the popup menu's minimum width in pixels.

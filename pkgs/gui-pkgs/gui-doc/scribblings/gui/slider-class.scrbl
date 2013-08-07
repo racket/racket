@@ -17,22 +17,22 @@ Whenever the user changes the value of a slider, its callback
 
 
 @defconstructor[([label (or/c label-string? #f)]
-                 [min-value (integer-in -10000 10000)]
-                 [max-value (integer-in -10000 10000)]
+                 [min-value position-integer?]
+                 [max-value position-integer?]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [callback ((is-a?/c slider%) (is-a?/c control-event%) . -> . any) (lambda (b e) (void))]
-                 [init-value (integer-in -10000 10000) min-value]
+                 [init-value position-integer? min-value]
                  [style (listof (or/c 'horizontal 'vertical 'plain 
                                       'vertical-label 'horizontal-label 
                                       'deleted)) 
                         '(horizontal)]
                  [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
-                 [vert-margin (integer-in 0 1000) 2]
-                 [horiz-margin (integer-in 0 1000) 2]
-                 [min-width (or/c (integer-in 0 10000) #f) #f]
-                 [min-height (or/c (integer-in 0 10000) #f) #f]
+                 [vert-margin spacing-integer? 2]
+                 [horiz-margin spacing-integer? 2]
+                 [min-width (or/c dimension-integer? #f) #f]
+                 [min-height (or/c dimension-integer? #f) #f]
                  [stretchable-width any/c (memq 'horizontal style)]
                  [stretchable-height any/c (memq 'vertical style)])]{
 
@@ -63,13 +63,13 @@ The @racket[style] argument must include either @racket['vertical] for
 }
 
 @defmethod[(get-value)
-           (integer-in -10000 10000)]{
+           position-integer?]{
 
 Gets the current slider value.
 
 }
 
-@defmethod[(set-value [value (integer-in -10000 10000)])
+@defmethod[(set-value [value position-integer?])
            void?]{
 
 Sets the value (and displayed position) of the slider. (The control's

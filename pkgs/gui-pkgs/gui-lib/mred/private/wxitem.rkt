@@ -53,10 +53,10 @@
          ;;   Otherwise, does nothing.
          [set-size
           (lambda (x y width height)
-	    (set! x (if (= x -11111)
+	    (set! x (if (not x)
 			(get-x)
 			(+ x (send (area-parent) dx))))
-	    (set! y (if (= y -11111)
+	    (set! y (if (not y)
 			(get-y)
 			(+ y (send (area-parent) dy))))
             (unless (and (same-dimension? x (get-x))
@@ -95,13 +95,13 @@
           (case-lambda 
 	    [() (- (min-width) (client-inset #f))]
 	    [(new-width)
-	     (check-range-integer '(method canvas<%> min-client-width) new-width)
+	     (check-dimension '(method canvas<%> min-client-width) new-width)
 	     (min-width (+ new-width (client-inset #f)))])]
          [min-client-height
           (case-lambda 
 	    [() (- (min-height) (client-inset #t))]
 	    [(new-height) 
-	     (check-range-integer '(method canvas<%> min-client-height) new-height)
+	     (check-dimension '(method canvas<%> min-client-height) new-height)
 	     (min-height (+ new-height (client-inset #t)))])])
 
         (define -mw 0)
@@ -117,13 +117,13 @@
           (mk-param
            -mw identity
            (lambda (v)
-             (check-range-integer '(method area<%> min-width) v))
+             (check-dimension '(method area<%> min-width) v))
            force-redraw)]
          [min-height
           (mk-param
            -mh identity
            (lambda (v)
-             (check-range-integer '(method area<%> min-height) v))
+             (check-dimension '(method area<%> min-height) v))
            force-redraw)]
 	  
          [x-margin

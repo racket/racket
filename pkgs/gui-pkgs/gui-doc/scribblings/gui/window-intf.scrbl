@@ -29,10 +29,10 @@ All @racket[window<%>] classes accept the following named instantiation
  disabled. See also @method[window<%> on-drop-file].
 }
 
-@defmethod[(client->screen [x (integer-in -10000 10000)]
-                           [y (integer-in -10000 10000)])
-           (values (integer-in -10000 10000)
-                   (integer-in -10000 10000))]{
+@defmethod[(client->screen [x position-integer?]
+                           [y position-integer?])
+           (values position-integer?
+                   position-integer?)]{
 
 @index["global coordinates"]{Converts} local window coordinates to
 screen coordinates.
@@ -101,8 +101,8 @@ See also @method[window<%> get-handle].}
 
 
 @defmethod[(get-client-size)
-           (values (integer-in 0 10000)
-                   (integer-in 0 10000))]{
+           (values dimension-integer?
+                   dimension-integer?)]{
 
 Gets the interior size of the window in pixels. For a container, the
  interior size is the size available for placing subwindows (including
@@ -148,7 +148,7 @@ See also @method[window<%> get-client-handle].}
 
 
 @defmethod[(get-height)
-           (integer-in 0 10000)]{
+           dimension-integer?]{
 
 Returns the window's total height (in pixels).
 
@@ -203,8 +203,8 @@ Like
 
 
 @defmethod[(get-size)
-           (values (integer-in 0 10000)
-                   (integer-in 0 10000))]{
+           (values dimension-integer?
+                   dimension-integer?)]{
 
 Gets the current size of the entire window in pixels, not counting
  horizontal and vertical margins. (On Unix, this size does not include
@@ -220,7 +220,7 @@ See also
 
 
 @defmethod[(get-width)
-           (integer-in 0 10000)]{
+           dimension-integer?]{
 
 Returns the window's current total width (in pixels).
 
@@ -230,7 +230,7 @@ See also
 }
 
 @defmethod[(get-x)
-           (integer-in -10000 10000)]{
+           position-integer?]{
 
 Returns the position of the window's left edge in its
  parent's coordinate system.
@@ -241,7 +241,7 @@ See also
 }
 
 @defmethod[(get-y)
-           (integer-in -10000 10000)]{
+           position-integer?]{
 
 Returns the position of the window's top edge in its
  parent's coordinate system.
@@ -325,8 +325,8 @@ Does nothing.
 
 }}
 
-@defmethod[(on-move [x (integer-in -10000 10000)]
-                    [y (integer-in -10000 10000)])
+@defmethod[(on-move [x position-integer?]
+                    [y position-integer?])
            void?]{
 @methspec{
 
@@ -342,8 +342,8 @@ Does nothing.
 }}
 
 
-@defmethod[(on-size [width (integer-in 0 10000)]
-                    [height (integer-in 0 10000)])
+@defmethod[(on-size [width dimension-integer?]
+                    [height dimension-integer?])
            void?]{
 @methspec{
 
@@ -505,8 +505,8 @@ Does nothing.
 }}
 
 @defmethod[(popup-menu [menu (is-a?/c popup-menu%)]
-                       [x (integer-in 0 10000)]
-                       [y (integer-in 0 10000)])
+                       [x position-integer?]
+                       [y position-integer?])
            void?]{
 
 @popupmenuinfo["window" "window" ""]
@@ -523,10 +523,10 @@ Enqueues an event to repaint the window.
 
 }
 
-@defmethod[(screen->client [x (integer-in -10000 10000)]
-                           [y (integer-in -10000 10000)])
-           (values (integer-in -10000 10000)
-                   (integer-in -10000 10000))]{
+@defmethod[(screen->client [x position-integer?]
+                           [y position-integer?])
+           (values position-integer?
+                   position-integer?)]{
 
 @index["global coordinates"]{Converts} global coordinates to window
  local coordinates. See also @racket[client->screen] for information
@@ -576,8 +576,8 @@ window is shown.
 
 }
 
-@defmethod[(warp-pointer [x (integer-in -10000 10000)]
-                         [y (integer-in -10000 10000)])
+@defmethod[(warp-pointer [x position-integer?]
+                         [y position-integer?])
            void?]{
 Moves the cursor to the given location in the window's local coordinates.
 

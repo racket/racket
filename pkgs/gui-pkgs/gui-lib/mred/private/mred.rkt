@@ -41,7 +41,8 @@
            "repl.rkt"
            "helper.rkt"
            "dynamic.rkt"
-           "check.rkt")
+           "check.rkt"
+           "const.rkt")
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; These functions are re-implemented in scheme/gui/base
@@ -172,6 +173,11 @@
                          [else ".gracketrc"]))]
           [else #f])))
 
+  (define (dimension-integer? x) (and (exact-integer? x) (<= 0 x WIN-SIZE-MAX)))
+  (define (position-integer? x) (and (exact-integer? x) (<= (- WIN-SIZE-MAX) x WIN-SIZE-MAX)))
+  (define (spacing-integer? x) (and (exact-integer? x) (<= 0 x 1000)))
+  (define (positive-dimension-integer? x) (and (exact-integer? x) (<= 1 x WIN-SIZE-MAX)))
+
   (provide (all-from racket/draw)
            (all-from racket/snip)
            (all-from file/resource))
@@ -286,4 +292,8 @@
            system-position-ok-before-cancel?
            label-string?
            key-code-symbol?
-           find-graphical-system-path))
+           find-graphical-system-path
+           dimension-integer?
+           positive-dimension-integer?
+           position-integer?
+           spacing-integer?))

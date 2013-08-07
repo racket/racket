@@ -13,7 +13,7 @@ of the gauge.
 
 
 @defconstructor[([label (or/c label-string? #f)]
-                 [range (integer-in 1 1000000)]
+                 [range positive-dimension-integer?]
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [style (listof (or/c 'horizontal 'vertical 
@@ -22,10 +22,10 @@ of the gauge.
                         '(horizontal)]
                  [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
-                 [vert-margin (integer-in 0 1000) 2]
-                 [horiz-margin (integer-in 0 1000) 2]
-                 [min-width (or/c (integer-in 0 10000) #f) #f]
-                 [min-height (or/c (integer-in 0 10000) #f) #f]
+                 [vert-margin spacing-integer? 2]
+                 [horiz-margin spacing-integer? 2]
+                 [min-width (or/c dimension-integer? #f) #f]
+                 [min-height (or/c dimension-integer? #f) #f]
                  [stretchable-width any/c (memq 'horizontal style)]
                  [stretchable-height any/c (memq 'vertical style)])]{
 
@@ -49,26 +49,26 @@ The @racket[style] list must include either @racket['horizontal],
 }
 
 @defmethod[(get-range)
-           (integer-in 1 1000000)]{
+           positive-dimension-integer?]{
 Returns the range (maximum value) of the gauge.
 
 }
 
 @defmethod[(get-value)
-           (integer-in 0 1000000)]{
+           dimension-integer?]{
 
 Returns the gauge's current value.
 
 }
 
-@defmethod[(set-range [range (integer-in 1 1000000)])
+@defmethod[(set-range [range positive-dimension-integer?])
            void?]{
 
 Sets the range (maximum value) of the gauge.
 
 }
 
-@defmethod[(set-value [pos (integer-in 0 1000000)])
+@defmethod[(set-value [pos dimension-integer?])
            void?]{
 
 Sets the gauge's current value. If the specified value is larger than

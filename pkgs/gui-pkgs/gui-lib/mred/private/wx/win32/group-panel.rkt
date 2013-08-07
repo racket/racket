@@ -61,7 +61,7 @@
     (auto-size #f label 0 0 0 0
                (lambda (w h)
                  (set! label-h h)
-                 (set-size -11111 -11111 (+ w 10) (+ h 10))))
+                 (set-size #f #f (+ w 10) (+ h 10))))
 
     (define/public (set-label lbl)
       (SetWindowTextW hwnd lbl))

@@ -61,8 +61,8 @@ Suspends geometry management in the container's top-level window
 }
 
 @defmethod*[([(border)
-              (integer-in 0 1000)]
-             [(border [margin (integer-in 0 1000)])
+              spacing-integer?]
+             [(border [margin spacing-integer?])
               void?])]{
 
 Gets or sets the border margin for the container in pixels. This
@@ -104,11 +104,11 @@ The
 
 }
 
-@defmethod[(container-size [info (listof (list/c (integer-in 0 10000)
-                                                 (integer-in 0 10000)
+@defmethod[(container-size [info (listof (list/c dimension-integer?
+                                                 dimension-integer?
                                                  any/c
                                                  any/c))])
-           (values (integer-in 0 10000) (integer-in 0 10000))]{
+           (values dimension-integer? dimension-integer?)]{
 
 Called to determine the minimum size of a container. See
  @|geomdiscuss| for more information.
@@ -149,16 +149,16 @@ Returns a list of the container's non-deleted children. (The non-deleted
 
 }
 
-@defmethod[(place-children [info (listof (list/c (integer-in 0 10000)
-                                                 (integer-in 0 10000)
+@defmethod[(place-children [info (listof (list/c dimension-integer?
+                                                 dimension-integer?
                                                  any/c
                                                  any/c))]
-                           [width (integer-in 0 10000)]
-                           [height (integer-in 0 10000)])
-           (listof (list/c (integer-in 0 10000)
-                           (integer-in 0 10000)
-                           (integer-in 0 10000)
-                           (integer-in 0 10000)))]{
+                           [width dimension-integer?]
+                           [height dimension-integer?])
+           (listof (list/c dimension-integer?
+                           dimension-integer?
+                           dimension-integer?
+                           dimension-integer?))]{
 
 Called to place the children of a container. See @|geomdiscuss|
  for more information.
@@ -213,8 +213,8 @@ Similarly, a container's vertical alignment can be @racket['top],
 }
 
 @defmethod*[([(spacing)
-              (integer-in 0 1000)]
-             [(spacing [spacing (integer-in 0 1000)])
+              spacing-integer?]
+             [(spacing [spacing spacing-integer?])
               void?])]{
 
 Gets or sets the spacing, in pixels, used between subareas in the

@@ -58,7 +58,7 @@
                (if (null? choices) (list "Choice") choices)
                0 0 40 0
                (lambda (w h)
-                 (set-size -11111 -11111 w (* h 8))))
+                 (set-size #f #f w (* h 8))))
 
 
     (define choice-dropped? #f)

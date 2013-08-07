@@ -9,21 +9,21 @@ A frame is a top-level container window. It has a title bar (which
 
 @defconstructor[([label label-string?]
                  [parent (or/c (is-a?/c frame%) #f) #f]
-                 [width (or/c (integer-in 0 10000) #f) #f]
-                 [height (or/c (integer-in 0 10000) #f) #f]
-                 [x (or/c (integer-in -10000 10000) #f) #f]
-                 [y (or/c (integer-in -10000 10000) #f) #f]
+                 [width (or/c dimension-integer? #f) #f]
+                 [height (or/c dimension-integer? #f) #f]
+                 [x (or/c position-integer? #f) #f]
+                 [y (or/c position-integer? #f) #f]
                  [style (listof (or/c 'no-resize-border 'no-caption 
                                       'no-system-menu 'hide-menu-bar 
                                       'toolbar-button 'float 'metal)) null]
                  [enabled any/c #t]
-                 [border (integer-in 0 1000) 0]
-                 [spacing (integer-in 0 1000) 0]
+                 [border spacing-integer? 0]
+                 [spacing spacing-integer? 0]
                  [alignment (list/c (or/c 'left 'center 'right)
                                     (or/c 'top 'center 'bottom))
                             '(center top)]
-                 [min-width (or/c (integer-in 0 10000) #f) #f]
-                 [min-height (or/c (integer-in 0 10000) #f) #f]
+                 [min-width (or/c dimension-integer? #f) #f]
+                 [min-height (or/c dimension-integer? #f) #f]
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t])]{
 

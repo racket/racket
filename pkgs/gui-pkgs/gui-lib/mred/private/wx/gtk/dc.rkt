@@ -47,7 +47,9 @@
     (init w h gdk-win)
     (super-make-object (make-alternate-bitmap-kind w h))
 
-    (define pixmap (gdk_pixmap_new gdk-win (max 1 w) (max 1 h)
+    (define pixmap (gdk_pixmap_new gdk-win 
+				   (min (max 1 w) 32000)
+				   (min (max 1 h) 32000)
 				   (if gdk-win 
 				       -1
 				       (GdkVisual-rec-depth

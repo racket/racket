@@ -268,7 +268,7 @@
     (define/override (get-dialog-level) 0)
     (define/public (frame-relative-dialog-status win) #f)
 
-    (define/override (get-unset-pos) -11111)
+    (define/override (get-unset-pos) #f)
 
     (define/override (center dir wrt)
       (let ([w-box (box 0)]
@@ -292,17 +292,17 @@
           (set-top-position (if (or (eq? dir 'both)
                                     (eq? dir 'horizontal))
                                 (+ (unbox sx-box) (quotient (- sw fw) 2))
-                                -11111)
+                                #f)
                             (if (or (eq? dir 'both)
                                     (eq? dir 'vertical))
                                 (+ (unbox sy-box) (quotient (- sh fh) 2))
-                                -11111)))))
+                                #f)))))
 
     (define/public (set-top-position x y)
-      (unless (and (= x -11111) (= y -11111))
+      (unless (and (not x) (not y))
         (gtk_widget_set_uposition gtk
-                                  (if (= x -11111) -2 x)
-                                  (if (= y -11111) -2 y))))
+                                  (or x -2)
+                                  (or y -2))))
 
     (define/override (really-set-size gtk x y processed-x processed-y w h)
       (set-top-position x y)

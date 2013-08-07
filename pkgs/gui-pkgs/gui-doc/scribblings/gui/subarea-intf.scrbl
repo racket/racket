@@ -21,8 +21,8 @@ All @racket[subarea<%>] classes accept the following named
 
 
 @defmethod*[([(horiz-margin)
-              (integer-in 0 1000)]
-             [(horiz-margin [margin (integer-in 0 1000)])
+              spacing-integer?]
+             [(horiz-margin [margin spacing-integer?])
               void?])]{
 
 Gets or sets the area's horizontal margin, which is added both to the
@@ -32,8 +32,8 @@ Gets or sets the area's horizontal margin, which is added both to the
 }
 
 @defmethod*[([(vert-margin)
-              (integer-in 0 1000)]
-             [(vert-margin [margin (integer-in 0 1000)])
+              spacing-integer?]
+             [(vert-margin [margin spacing-integer?])
               void?])]{
 
 Gets or sets the area's vertical margin, which is added both to the

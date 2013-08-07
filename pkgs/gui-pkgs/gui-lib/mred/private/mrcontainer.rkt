@@ -108,11 +108,14 @@
                                      (andmap
                                       (lambda (l)
                                         (and (list? l) (= (length l) 4)
-                                             (integer? (car l)) (exact? (car l)) (<= 0 (car l) 10000)
-                                             (integer? (cadr l)) (exact? (cadr l)) (<= 0 (cadr l) 10000)))
+                                             (integer? (car l)) (exact? (car l)) (<= 0 (car l) WIN-SIZE-MAX)
+                                             (integer? (cadr l)) (exact? (cadr l)) (<= 0 (cadr l) WIN-SIZE-MAX)))
                                       l))
                           (raise-argument-error (who->name '(method area-container<%> container-size))
-                                                "(listof (list/c (integer-in 0 10000) (integer-in 0 10000) any/c any/c))"
+                                                (format
+                                                 "(listof (list/c (integer-in 0 ~a) (integer-in 0 ~a) any/c any/c))"
+                                                 WIN-SIZE-MAX
+                                                 WIN-SIZE-MAX)
                                                 l))
                         (let ([l (send (get-wx-panel) do-get-graphical-min-size)])
                           (apply values l))))]

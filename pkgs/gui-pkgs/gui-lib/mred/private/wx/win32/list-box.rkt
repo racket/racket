@@ -266,7 +266,7 @@
                [style style])
 
     (set-control-font font)
-    (set-size -11111 -11111 40 60)
+    (set-size #f #f 40 60)
 
     (define callback cb)
 

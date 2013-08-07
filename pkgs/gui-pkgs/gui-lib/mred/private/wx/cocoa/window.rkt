@@ -658,8 +658,8 @@
         (set-box! h (->long (NSSize-height s)))))
 
     (define/public (set-size x y w h)
-      (let ([x (if (= x -11111) (get-x) x)]
-            [y (if (= y -11111) (get-y) y)])
+      (let ([x (if (not x) (get-x) x)]
+            [y (if (not y) (get-y) y)])
         ;; old location will need refresh:
         (tellv cocoa setNeedsDisplay: #:type _BOOL #t)
         (tellv cocoa setFrame: #:type _NSRect (make-NSRect (make-NSPoint x (flip y h))
@@ -973,10 +973,10 @@
      (tellv cocoa-win enableFlushWindow))))
 
 (define (make-init-point x y)
-  (make-NSPoint (if (= x -11111)
+  (make-NSPoint (if (not x)
                     0
                     x)
-                (if (= y -11111)
+                (if (not y)
                     0
                     y)))
 

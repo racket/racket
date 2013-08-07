@@ -107,8 +107,8 @@ See also @method[top-level-window<%> get-edit-target-window] and
 }
 
 
-@defmethod[(move [x (integer-in -10000 10000)]
-                 [y (integer-in -10000 10000)])
+@defmethod[(move [x position-integer?]
+                 [y position-integer?])
            void?]{
 
 Moves the window to the given position on the screen.
@@ -319,8 +319,8 @@ Checks whether the given event pops open the system menu in the
 
 }
 
-@defmethod[(resize [width (integer-in 0 10000)]
-                   [height (integer-in 0 10000)])
+@defmethod[(resize [width dimension-integer?]
+                   [height dimension-integer?])
            void?]{
 
 Sets the size of the window (in pixels), but only if the given size is

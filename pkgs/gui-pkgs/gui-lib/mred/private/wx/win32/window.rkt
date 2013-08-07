@@ -325,13 +325,13 @@
 
   (define/public (set-size x y w h)
     (let-values ([(x y w h)
-                  (if (or (= x -11111)
-                          (= y -11111)
+                  (if (or (not x)
+                          (not y)
                           (= w -1)
                           (= h -1))
                       (let ([r (GetWindowRect hwnd)])
-                        (values (if (= x -11111) (RECT-left r) x)
-                                (if (= y -11111) (RECT-top r) y)
+                        (values (or x (RECT-left r))
+                                (or y (RECT-top r))
                                 (if (= w -1) (- (RECT-right r) (RECT-left r)) w)
                                 (if (= h -1) (- (RECT-bottom r) (RECT-top r)) h)))
                       (values x y w h))])
@@ -355,7 +355,7 @@
 
   (define/public (auto-size font label min-w min-h dw dh
                             [resize
-                             (lambda (w h) (set-size -11111 -11111 w h))]
+                             (lambda (w h) (set-size #f #f w h))]
                             #:combine-width [combine-w max]
                             #:combine-height [combine-h max]
                             #:scale-w [scale-w 1]

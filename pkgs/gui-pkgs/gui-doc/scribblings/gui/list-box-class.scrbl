@@ -48,10 +48,10 @@ See also @racket[choice%].
                  [font (is-a?/c font%) view-control-font]
                  [label-font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
-                 [vert-margin (integer-in 0 1000) 2]
-                 [horiz-margin (integer-in 0 1000) 2]
-                 [min-width (or/c (integer-in 0 10000) #f) #f]
-                 [min-height (or/c (integer-in 0 10000) #f) #f]
+                 [vert-margin spacing-integer? 2]
+                 [horiz-margin spacing-integer? 2]
+                 [min-width (or/c dimension-integer? #f) #f]
+                 [min-height (or/c dimension-integer? #f) #f]
                  [stretchable-width any/c #t]
                  [stretchable-height any/c #t]
                  [columns (cons/c label-string? (listof label-string?))
@@ -182,9 +182,9 @@ See also @method[list-box% set-column-order].}
 
 
 @defmethod[(get-column-width [column exact-nonnegative-integer?])
-           (values (integer-in 0 10000)
-                   (integer-in 0 10000)
-                   (integer-in 0 10000))]{
+           (values dimension-integer?
+                   dimension-integer?
+                   dimension-integer?)]{
 
 Gets the width of the column identified by @racket[column] (in logical
 positions, as opposed to display positions), which must be between 0
@@ -309,9 +309,9 @@ See also @method[list-box% get-column-order].}
 
 
 @defmethod[(set-column-width [column exact-nonnegative-integer?]
-                             [width (integer-in 0 10000)]
-                             [min-width (integer-in 0 10000)]
-                             [max-width (integer-in 0 10000)])
+                             [width dimension-integer?]
+                             [min-width dimension-integer?]
+                             [max-width dimension-integer?])
             void?]{
 
 Sets the width of the column identified by @racket[column] (in logical

@@ -31,7 +31,7 @@
                        (send i on-demand)))
                    (send wx get-items)))]
      [set-min-width (lambda (n)
-                      (check-range-integer '(method popup-menu% set-min-width) n)
+                      (check-dimension '(method popup-menu% set-min-width) n)
                       (send wx set-width n))]
      [get-font (lambda ()
                  (send wx get-font))])

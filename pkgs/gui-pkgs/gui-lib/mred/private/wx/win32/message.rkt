@@ -87,7 +87,7 @@
     (set-control-font font)
 
     (if (symbol? label)
-        (set-size -11111 -11111 32 32)
+        (set-size #f #f 32 32)
         (auto-size font label 0 0 0 0))
 
     (define/public (set-preferred-size) #f)

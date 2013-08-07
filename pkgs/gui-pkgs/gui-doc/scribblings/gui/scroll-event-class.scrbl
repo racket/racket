@@ -17,7 +17,7 @@ See
                                    'page-up 'page-down 'thumb)
                              'thumb]
                  [direction (or/c 'horizontal 'vertical) 'vertical]
-                 [position (integer-in 0 10000) 0]
+                 [position dimension-integer? 0]
                  [time-stamp exact-integer? 0])]{
 
 See the corresponding @racket[get-] and @racket[set-] methods for
@@ -55,7 +55,7 @@ Returns the type of the event, one of the following:
 }
 
 @defmethod[(get-position)
-           (integer-in 0 10000)]{
+           dimension-integer?]{
 
 Returns the position of the scrollbar after the action triggering the
  event. See also @method[scroll-event% set-position].
@@ -81,7 +81,7 @@ for information about each event type.
 
 }
 
-@defmethod[(set-position [position (integer-in 0 10000)])
+@defmethod[(set-position [position dimension-integer?])
            void?]{
 
 Records the position of the scrollbar after the action triggering the

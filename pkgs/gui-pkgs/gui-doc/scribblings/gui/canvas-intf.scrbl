@@ -140,8 +140,8 @@ drawing.
 
 
 @defmethod*[([(min-client-height)
-              (integer-in 0 10000)]
-             [(min-client-height [h (integer-in 0 10000)])
+              dimension-integer?]
+             [(min-client-height [h dimension-integer?])
               void?])]{
 
 Gets or sets the canvas's minimum height for geometry management,
@@ -156,8 +156,8 @@ The minimum height is ignored when it is smaller than the canvas's
 
 
 @defmethod*[([(min-client-width)
-              (integer-in 0 10000)]
-             [(min-client-width [w (integer-in 0 10000)])
+              dimension-integer?]
+             [(min-client-width [w dimension-integer?])
               void?])]{
 
 Gets or sets the canvas's minimum width for geometry management, based

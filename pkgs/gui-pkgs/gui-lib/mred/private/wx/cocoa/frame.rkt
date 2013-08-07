@@ -261,7 +261,7 @@
          (tellv tb setVisible: #:type _BOOL #f)
          (tellv tb release))))
 
-    (internal-move -11111 (if (= y -11111) 0 y))
+    (internal-move #f (or y 0))
 
     (tellv cocoa setAcceptsMouseMovedEvents: #:type _BOOL #t)
 
@@ -515,7 +515,7 @@
       (- (super get-y) (get-menu-bar-height)))
 
     (define/override (set-size x y w h)
-      (unless (and (= x -1) (= y -1))
+      (unless (and (equal? x -1) (equal? y -1))
         (internal-move x y))
       (let ([f (tell #:type _NSRect cocoa frame)])
         (tellv cocoa setFrame: 
@@ -538,8 +538,8 @@
                                (make-NSSize w h))
                display: #:type _BOOL #t)))
     (define/override (internal-move x y)
-      (let ([x (if (= x -11111) (get-x) x)]
-            [y (if (= y -11111) (get-y) y)])
+      (let ([x (if (not x) (get-x) x)]
+            [y (if (not y) (get-y) y)])
         (tellv cocoa setFrameTopLeftPoint: #:type _NSPoint (make-NSPoint x (- (flip-screen y)
                                                                               (get-menu-bar-height))))))
 

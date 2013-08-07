@@ -30,6 +30,16 @@ See also @racket[is-busy?].
 Rings the system bell.
 }
 
+
+@defproc[(dimension-integer? [v any/c]) boolean?]{
+
+Equivalent to @racket[(integer-in 0 1000000)].
+
+Beware that certain kinds of windows behave badly when larger than
+32,000 or so in either dimension on some platforms. Redraw of the
+window may be disabled or clipped, for example.}
+
+
 @defproc[(end-busy-cursor) void?]{
 See @racket[begin-busy-cursor].
 }
@@ -300,6 +310,16 @@ On Mac OS X, Quicktime is used to play sounds; most sound
  with OS 7.5 and up) is required.}
 
 
+@defproc[(position-integer? [v any/c]) boolean?]{
+
+Equivalent to @racket[(integer-in -1000000 1000000)].}
+
+
+@defproc[(positive-dimension-integer? [v any/c]) boolean?]{
+
+Equivalent to @racket[(integer-in 1 1000000)].}
+
+
 @defproc[(register-collecting-blit [canvas (is-a?/c canvas%)]
                                    [x real?]
                                    [y real?]
@@ -341,8 +361,8 @@ Unregisters all blit requests installed for @racket[canvas] with
  @racket[register-collecting-blit].}
 
 
-@defproc[(send-message-to-window [x (integer-in -10000 10000)]
-                                 [y (integer-in -10000 10000)]
+@defproc[(send-message-to-window [x position-integer?]
+                                 [y position-integer?]
                                  [message any/c])
          any/c]{
 
@@ -355,6 +375,11 @@ Unregisters all blit requests installed for @racket[canvas] with
  is covered by a non-Racket window at (@racket[x], @racket[y]),
  @racket[#f] is returned.
 }
+
+
+@defproc[(spacing-integer? [v any/c]) boolean?]{
+
+Equivalent to @racket[(integer-in 0 1000)].}
 
 
 @defproc[(system-position-ok-before-cancel?) boolean?]{
