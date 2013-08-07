@@ -449,7 +449,7 @@
   (set-cport-pos! cp (add1 (cport-pos cp)))
   r)
 
-(define small-list-max 65)
+(define small-list-max 50)
 (define raw-cpt-table
   ;; The "schcpt.h" mapping, earlier entries override later ones
   `([0  escape]
