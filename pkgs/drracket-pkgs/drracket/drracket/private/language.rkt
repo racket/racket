@@ -460,10 +460,10 @@
                                   ;; do this computation here so that any failures
                                   ;; during drawing happen under the user's custodian
                                   (image-core:compute-image-cache value) 
-                                  (write-special value port)
+                                  (write-special (send value copy) port)
                                   1]
                                  [else
-                                  (write-special value port)
+                                  (write-special (send value copy) port)
                                   1])]
                               [(pict:convertible? value)
                                (write-special (mk-pict-snip value))]
