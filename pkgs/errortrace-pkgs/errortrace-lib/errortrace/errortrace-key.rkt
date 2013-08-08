@@ -5,7 +5,7 @@
   ;; various annotations inserted by this 
   ;; library.
   
-  ;; Defining `errortrace-key' as a funciton is a performance hack:
+  ;; Defining `errortrace-key' as a function is a performance hack:
   ;; the compiler can track function constants, and in particular the
   ;; fact that it's not an impersonated/chaperoned mark key, so that a
   ;; `with-continuation-mark' using this key can be dropped if the
