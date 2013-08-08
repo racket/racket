@@ -1164,15 +1164,16 @@ If the namespace does not, they are colored the unbound color.
               ;; the admin for the canvas the mouse is over.
               (invalidate-bitmap-cache 0 0 'display-end 'display-end))
             
-            (define/public (syncheck:build-popup-menu menu pos text)
+            (define/public (syncheck:build-popup-menu menu pos text [sep-before? #t])
               (when arrow-records
                 (define arrow-record (hash-ref arrow-records text #f))
                 (when arrow-record
-                  (define added-sep? #f)
+                  (define need-a-sep? (not sep-before?))
                   (define (add-sep) 
-                    (unless added-sep? 
-                      (set! added-sep? #t)
-                      (new separator-menu-item% [parent menu])))
+                    (unless need-a-sep? 
+                      (set! need-a-sep? #t)
+                      (when sep-before?
+                        (new separator-menu-item% [parent menu]))))
                   (define vec-ents (interval-map-ref arrow-record pos null))
                   (define start-selection (send text get-start-position))
                   (define end-selection (send text get-end-position))
@@ -1258,6 +1259,9 @@ If the namespace does not, they are colored the unbound color.
                                                     name-to-offer 
                                                     binding-identifiers
                                                     frame-parent)))]))
+                  (unless sep-before?
+                    (when need-a-sep?
+                      (new separator-menu-item% [parent menu])))
                   (void))))
             
             (define/private (update-tooltip-frame-and-matching-identifiers refreshing?)
@@ -1666,14 +1670,14 @@ If the namespace does not, they are colored the unbound color.
             
             (super-new)))))
     
-    (keymap:add-to-right-button-menu
-     (let ([old (keymap:add-to-right-button-menu)])
+    (keymap:add-to-right-button-menu/before
+     (let ([old (keymap:add-to-right-button-menu/before)])
        (λ (menu editor event)
          (old menu editor event)
          (when (is-a? editor syncheck-text<%>)
            (define-values (pos text) (send editor get-pos/text event))
            (when (and pos (is-a? text text%))
-             (send editor syncheck:build-popup-menu menu pos text))))))
+             (send editor syncheck:build-popup-menu menu pos text #f))))))
             
     (define syncheck-frame<%>
       (interface ()
