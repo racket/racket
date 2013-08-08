@@ -321,10 +321,10 @@ Equivalent to @racket[(integer-in 1 1000000)].}
 
 
 @defproc[(register-collecting-blit [canvas (is-a?/c canvas%)]
-                                   [x real?]
-                                   [y real?]
-                                   [w (and/c real? (not/c negative?))]
-                                   [h (and/c real? (not/c negative?))]
+                                   [x position-integer?]
+                                   [y position-integer?]
+                                   [w dimension-integer?]
+                                   [h dimension-integer?]
                                    [on (is-a?/c bitmap%)]
                                    [off (is-a?/c bitmap%)]
                                    [on-x real? 0]

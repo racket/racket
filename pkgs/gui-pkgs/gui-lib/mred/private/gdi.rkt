@@ -29,6 +29,8 @@
      [(canvas x y w h on off on-x on-y) (register-collecting-blit canvas x y w h on off on-x on-y 0 0)]
      [(canvas x y w h on off on-x on-y off-x) (register-collecting-blit canvas x y w h on off on-x on-y off-x 0)]
      [(canvas x y w h on off on-x on-y off-x off-y)
+      (define (check-real who v)
+        (unless (real? v) (raise-argument-error who "real?" v)))
       (check-instance 'register-collecting-blit canvas% 'canvas% #f canvas)
       (check-position 'register-collecting-blit x)
       (check-position 'register-collecting-blit y)
@@ -36,10 +38,10 @@
       (check-dimension 'register-collecting-blit h)
       (check-instance 'register-collecting-blit wx:bitmap% 'bitmap% #f on)
       (check-instance 'register-collecting-blit wx:bitmap% 'bitmap% #f off)
-      (check-position 'register-collecting-blit on-x)
-      (check-position 'register-collecting-blit on-y)
-      (check-position 'register-collecting-blit off-x)
-      (check-position 'register-collecting-blit off-y)
+      (check-real 'register-collecting-blit on-x)
+      (check-real 'register-collecting-blit on-y)
+      (check-real 'register-collecting-blit off-x)
+      (check-real 'register-collecting-blit off-y)
       (wx:register-collecting-blit (mred->wx canvas) x y w h on off on-x on-y off-x off-y)]))
 
   (define unregister-collecting-blit
