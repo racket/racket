@@ -306,11 +306,11 @@ information.}
                                             (listof (or/c #f
                                                           (and/c path-string? complete-path?)
                                                           (hash/c (or/c (and/c symbol? module-path?) #f)
-                                                          (listof (and/c path-string? complete-path?)))))
+                                                                  (listof (and/c path-string? complete-path?)))))
                                             (listof (or/c #f
                                                           (and/c path? complete-path?)
                                                           (hash/c (or/c (and/c symbol? module-path?) #f)
-                                                          (listof (and/c path? complete-path?)))))]{
+                                                                  (listof (and/c path? complete-path?)))))]{
 
 
 Parameter that determines @tech{collection links files}, additional
