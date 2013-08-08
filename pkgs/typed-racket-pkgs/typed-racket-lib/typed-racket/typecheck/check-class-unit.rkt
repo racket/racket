@@ -260,7 +260,7 @@
          (values internal external)))
      ;; trawl the body for top-level expressions
      (define top-level-exprs (trawl-for-property #'cls.make-methods 'tr:class:top-level))
-     (define internals-table (register-internals top-level-exprs))
+     (define annotation-table (register-annotations top-level-exprs))
      ;; find the `super-new` call (or error if missing)
      (define super-new-stxs (trawl-for-property #'cls.make-methods 'tr:class:super-new))
      (define super-new-stx (check-super-new-exists super-new-stxs))
@@ -285,7 +285,7 @@
      (define self-type
        (infer-self-type super-row
                         expected
-                        internals-table
+                        annotation-table
                         optional-inits
                         internal-external-mapping
                         remaining-super-inits
@@ -309,11 +309,11 @@
        (construct-local-mapping-tables (car locals)))
      ;; types for private elements
      (define private-method-types
-       (for/hash ([(name type) (in-dict internals-table)]
+       (for/hash ([(name type) (in-dict annotation-table)]
                   #:when (set-member? this%-private-names name))
          (values name type)))
      (define private-field-types
-       (for/hash ([(name type) (in-dict internals-table)]
+       (for/hash ([(name type) (in-dict annotation-table)]
                   #:when (set-member? this%-private-fields name))
          (values name (list type))))
      ;; start type-checking elements in the body
@@ -945,10 +945,10 @@
      (recur-on-all #'(e ...))]
     [_ '()]))
 
-;; register-internals : Listof<Syntax> -> Dict<Symbol, Type>
+;; register-annotations : Listof<Syntax> -> Dict<Symbol, Type>
 ;; Find : annotations and register them, error if duplicates are found
 ;; TODO: support `define-type`?
-(define (register-internals stxs)
+(define (register-annotations stxs)
   (for/fold ([table #hash()]) ([stx stxs])
     (syntax-parse stx
       #:literals (let-values begin quote-syntax :-internal
@@ -978,7 +978,7 @@
 ;; and the expected type
 (define (infer-self-type super-row
                          expected
-                         internals-table optional-inits
+                         annotation-table optional-inits
                          internal-external-mapping
                          super-inits super-fields super-methods
                          super-augments
@@ -998,7 +998,7 @@
       ;;   (1) a type annotation from the user
       ;;   (2) the expected type
       ;;   (3) Any or Procedure
-      (cond [(dict-ref internals-table name #f) => update-dict]
+      (cond [(dict-ref annotation-table name #f) => update-dict]
             [(and maybe-expected
                   (dict-ref maybe-expected name #f))
              => (compose update-dict car)]
