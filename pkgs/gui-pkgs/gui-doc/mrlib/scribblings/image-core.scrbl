@@ -26,6 +26,11 @@ up an image.
 @defproc[(un/cache-image [image image?] [b any/c]) image?]{
   Returns an image that either caches its drawing in the 
   snip @method[snip% draw] method or doesn't, depending on @racket[b].
+  
+  Not all @racket[image?] values have special caching capabilities;
+  in those cases, this returns a copy of the value if it is a 
+  @racket[snip%]; otherwise it returns the value itself (if it 
+  isn't a @racket[snip%]).
 }
 
 @defproc[(compute-image-cache [image image?]) void?]{

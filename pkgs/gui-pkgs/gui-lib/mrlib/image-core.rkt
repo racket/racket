@@ -84,10 +84,17 @@ has been moved out).
 
 (define (un/cache-image img bitmap-cache?)
   (unless (image? img)
-    (error 'un/cache-image "expected an image as the first argument, got ~e" img))
-  (define res (send img copy))
-  (send res set-use-bitmap-cache?! (and bitmap-cache? #t))
-  res)
+    (raise-argument-error 'un/cache-image
+                          "image?"
+                          0
+                          img bitmap-cache?))
+  (cond
+    [(is-a? img snip%)
+     (define res (send img copy))
+     (when (is-a? res image%)
+       (send res set-use-bitmap-cache?! (and bitmap-cache? #t)))
+     res]
+    [else img]))
 
 (define (compute-image-cache img)
   (unless (image? img)
