@@ -58,7 +58,7 @@
           for a more careful discussion of this issue.}))
 
 @defmodule[#:require-form beginner-require 2htdp/image]
-a
+
 The image teachpack provides a number of basic image construction
 functions, along with combinators for building more complex images out of
 existing images. Basic images include various polygons, ellipses and
