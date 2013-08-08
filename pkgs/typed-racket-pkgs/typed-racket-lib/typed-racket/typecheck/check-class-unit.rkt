@@ -156,7 +156,7 @@
 ;;
 ;; Assumptions:
 ;;  by the time this is called, we can be sure that
-;;  init, field, and method presence/absence is guaranteed
+;;  method clauses match up to a corresponding definition
 ;;  by the local-expansion done by `class`
 ;;
 ;;  we know by this point that #'form is an actual typed
@@ -170,7 +170,7 @@
     [#f (do-check form #f)]
     [_ (check-below (do-check form #f) expected)]))
 
-;; Syntax Boolean Option<Type> -> Type
+;; Syntax Option<Type> -> Type
 ;; Do the actual type-checking
 (define (do-check form expected)
   (syntax-parse form
@@ -260,7 +260,7 @@
          (values internal external)))
      ;; trawl the body for top-level expressions
      (define top-level-exprs (trawl-for-property #'cls.make-methods 'tr:class:top-level))
-     (define internals-table (register-internals top-level-exprs))
+     (define annotation-table (register-annotations top-level-exprs))
      ;; find the `super-new` call (or error if missing)
      (define super-new-stxs (trawl-for-property #'cls.make-methods 'tr:class:super-new))
      (define super-new-stx (check-super-new-exists super-new-stxs))
@@ -285,7 +285,7 @@
      (define self-type
        (infer-self-type super-row
                         expected
-                        internals-table
+                        annotation-table
                         optional-inits
                         internal-external-mapping
                         remaining-super-inits
@@ -309,11 +309,11 @@
        (construct-local-mapping-tables (car locals)))
      ;; types for private elements
      (define private-method-types
-       (for/hash ([(name type) (in-dict internals-table)]
+       (for/hash ([(name type) (in-dict annotation-table)]
                   #:when (set-member? this%-private-names name))
          (values name type)))
      (define private-field-types
-       (for/hash ([(name type) (in-dict internals-table)]
+       (for/hash ([(name type) (in-dict annotation-table)]
                   #:when (set-member? this%-private-fields name))
          (values name (list type))))
      ;; start type-checking elements in the body
@@ -529,11 +529,11 @@
            (cond [(and maybe-type
                        (not (equal? (car maybe-type) top-func))
                        (not inner?))
-                  (fixup-method-type (car maybe-type) self-type)]
+                  (function->method (car maybe-type) self-type)]
                  [(and maybe-type
                        (not (equal? (car maybe-type) top-func)))
                   (Un (-val #f)
-                      (fixup-method-type (car maybe-type) self-type))]
+                      (function->method (car maybe-type) self-type))]
                  [else (make-Univ)]))))
 
   (define method-types (make-method-types method-names methods))
@@ -577,7 +577,7 @@
       (define maybe-type (if (pair? pre-type) (car pre-type) pre-type))
       (or (and maybe-type
                (not (equal? maybe-type top-func))
-               (fixup-method-type maybe-type self-type))
+               (function->method maybe-type self-type))
           (make-Univ))))
 
   (define private-method-types
@@ -644,7 +644,7 @@
                 (not (equal? (car maybe-expected) top-func)))
            (define pre-method-type (car maybe-expected))
            (define method-type
-             (fixup-method-type pre-method-type self-type))
+             (function->method pre-method-type self-type))
            (define expected (ret method-type))
            (define annotated (annotate-method meth self-type method-type))
            (tc-expr/check annotated expected)
@@ -654,7 +654,7 @@
           ;; type-check pubments/augments.
           [(and filter (set-member? filter external-name))
            (cons (list external-name
-                       (unfixup-method-type (tc-expr/t meth)))
+                       (method->function (tc-expr/t meth)))
                  checked)]
           [else checked])))
 
@@ -669,7 +669,7 @@
     (cond [(and private? annotation)
            (define pre-method-type annotation)
            (define method-type
-             (fixup-method-type pre-method-type self-type))
+             (function->method pre-method-type self-type))
            (define expected (ret method-type))
            (define annotated (annotate-method stx self-type method-type))
            (tc-expr/check annotated expected)]
@@ -945,10 +945,10 @@
      (recur-on-all #'(e ...))]
     [_ '()]))
 
-;; register-internals : Listof<Syntax> -> Dict<Symbol, Type>
+;; register-annotations : Listof<Syntax> -> Dict<Symbol, Type>
 ;; Find : annotations and register them, error if duplicates are found
 ;; TODO: support `define-type`?
-(define (register-internals stxs)
+(define (register-annotations stxs)
   (for/fold ([table #hash()]) ([stx stxs])
     (syntax-parse stx
       #:literals (let-values begin quote-syntax :-internal
@@ -978,7 +978,7 @@
 ;; and the expected type
 (define (infer-self-type super-row
                          expected
-                         internals-table optional-inits
+                         annotation-table optional-inits
                          internal-external-mapping
                          super-inits super-fields super-methods
                          super-augments
@@ -998,7 +998,7 @@
       ;;   (1) a type annotation from the user
       ;;   (2) the expected type
       ;;   (3) Any or Procedure
-      (cond [(dict-ref internals-table name #f) => update-dict]
+      (cond [(dict-ref annotation-table name #f) => update-dict]
             [(and maybe-expected
                   (dict-ref maybe-expected name #f))
              => (compose update-dict car)]
@@ -1019,9 +1019,9 @@
   (make-Instance (make-Class super-row init-types field-types
                              public-types augment-types)))
 
-;; fixup-method-type : Function Type -> Function
+;; function->method : Function Type -> Function
 ;; Fix up a method's arity from a regular function type
-(define (fixup-method-type type self-type)
+(define (function->method type self-type)
   (match type
     [(Function: (list arrs ...))
      (define fixed-arrs
@@ -1032,12 +1032,11 @@
          (match-define (arr: doms rng rest drest kws) arr)
          (make-arr (cons self-type doms) rng rest drest kws)))
      (make-Function fixed-arrs)]
-    [_ (tc-error "fixup-method-type: internal error")]))
+    [_ (tc-error "function->method: internal error")]))
 
-;; unfixup-method-type : Function -> Function
+;; method->function : Function -> Function
 ;; Turn a "real" method type back into a function type
-;; FIXME: this is a really badly named function
-(define (unfixup-method-type type)
+(define (method->function type)
   (match type
     [(Function: (list arrs ...))
      (define fixed-arrs
@@ -1129,6 +1128,6 @@
 ;; I wish I could write this
 #;
 (module+ test
-  (check-equal? (fixup-method-type (parse-type #'(Integer -> Integer)))
+  (check-equal? (function->method (parse-type #'(Integer -> Integer)))
                 (parse-type #'(Any Integer -> Integer))))
 
