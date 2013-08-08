@@ -137,7 +137,9 @@
                ;; maps pos-neg edges (pairs) to lists of samples
                [edge-samples (hash)])
         ([s (in-list live-contract-samples)])
-      (match-define (list blame thread-id timestamp stack-trace ...) s)
+      (match-define (list blame sample-time stack-trace ...) s)
+      (when (empty? stack-trace)
+        (log-warning "contract profiler: sample had empty stack trace"))
       (define pos (blame-positive blame))
       (define neg (blame-negative blame))
       ;; We consider original blames and their swapped versions to be the same.
