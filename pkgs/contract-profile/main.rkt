@@ -150,7 +150,11 @@
                            '()))))
 
   (define nodes->typed?
-    (for/hash ([n nodes])
+    (for/hash ([n nodes]
+               ;; Needs to be either a file or a submodule.
+               ;; I've seen 'unit and 'not-enough-info-for-blame go by here,
+               ;; and we can't do anything with either.
+               #:when (or (path? n) (pair? n)))
       ;; typed modules have a #%type-decl submodule
       (define submodule? (not (path? n)))
       (define filename (if submodule? (car n) n))
