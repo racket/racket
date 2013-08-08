@@ -75,6 +75,14 @@ provides core support for literate programming.}
 
 }
 
+@defform[(CHUNK id form ...)]{
+
+ Like @racket[chunk], but allows the use of @racket[unsyntax] in the
+code part. If you want to use @racket[unsyntax] to escape to Scribble,
+use @racket[UNSYNTAX].
+
+}
+
 @section{@racketmodname[scribble/lp-include] Module}
 
 @defmodule[scribble/lp-include]{The
