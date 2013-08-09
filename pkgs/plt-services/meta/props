@@ -824,7 +824,7 @@ path/s is either such a string or a list of them.
 "pkgs/gui-pkgs/gui-test/framework/tests/handler-test.rkt" drdr:command-line (mzc "-k" *)
 "pkgs/gui-pkgs/gui-test/framework/tests/keys.rkt" drdr:command-line (mzc "-k" *)
 "pkgs/gui-pkgs/gui-test/framework/tests/load.rkt" drdr:command-line (mzc "-k" *)
-"pkgs/gui-pkgs/gui-test/framework/tests/main.rkt" drdr:command-line (gracket *) drdr:timeout 240
+"pkgs/gui-pkgs/gui-test/framework/tests/main.rkt" drdr:command-line (gracket *) drdr:timeout 360
 "pkgs/gui-pkgs/gui-test/framework/tests/mem.rkt" drdr:command-line (mzc "-k" *)
 "pkgs/gui-pkgs/gui-test/framework/tests/panel-single.rkt" drdr:command-line (mzc "-k" *)
 "pkgs/gui-pkgs/gui-test/framework/tests/panel.rkt" drdr:command-line (mzc "-k" *)
