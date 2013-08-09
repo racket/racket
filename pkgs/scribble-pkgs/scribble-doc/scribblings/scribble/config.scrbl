@@ -105,7 +105,7 @@ For example, a Scribble document
 combined with an @filepath{inbox.css} that contains
 
 @verbatim[#:indent 2]|{
-  .inbox {
+  .InBox {
     padding: 0.2em;
     border: 1px solid #000000;
   }
