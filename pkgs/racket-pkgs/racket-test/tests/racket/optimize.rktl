@@ -846,7 +846,7 @@
             (lambda () v) 0 "other"
             (lambda () (test 77 unbox v))))
 
-    (bin-exact #t 'procedure-arity-includes? cons 2)
+    (bin-exact #t 'procedure-arity-includes? cons 2 #t)
     (bin-exact #f 'procedure-arity-includes? cons 1)
     (bin-exact #f 'procedure-arity-includes? cons 3)
     (bin-exact #t 'procedure-arity-includes? car 1)

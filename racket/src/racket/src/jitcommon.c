@@ -2950,6 +2950,8 @@ static int common10(mz_jit_state *jitter, void *_data)
     mz_patch_branch(ref);
     (void)jit_blti_l(refslow, JIT_R1, 0);
 
+    (void)jit_bmsi_l(refslow, JIT_R0, 0x1);
+
     jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
     ref_nc = jit_beqi_i(jit_forward(), JIT_R2, scheme_native_closure_type);
     ref_prim = jit_beqi_i(jit_forward(), JIT_R2, scheme_prim_type);
