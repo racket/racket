@@ -8528,6 +8528,30 @@ int scheme_os_pipe(intptr_t *a, int nearh)
 
 /**************** Unix: signal stuff ******************/
 
+#if defined(UNIX_PROCESSES)
+
+void scheme_block_child_signals(int block)
+  XFORM_SKIP_PROC
+{
+#if defined(MZ_PLACES_WAITPID)
+  if (block)
+    scheme_wait_suspend();
+  else
+    scheme_wait_resume();
+#else
+  sigset_t sigs;
+
+  sigemptyset(&sigs);
+  sigaddset(&sigs, SIGCHLD);
+# ifdef USE_ITIMER
+  sigaddset(&sigs, SIGPROF);
+# endif
+  sigprocmask(block ? SIG_BLOCK : SIG_UNBLOCK, &sigs, NULL);
+#endif
+}
+
+#endif
+
 #if defined(UNIX_PROCESSES) && !defined(MZ_PLACES_WAITPID)
 
 #ifndef MZ_PRECISE_GC
@@ -8540,21 +8564,6 @@ int scheme_os_pipe(intptr_t *a, int nearh)
 SHARED_OK static void *unused_pids;
 
 static int need_to_check_children;
-
-void scheme_block_child_signals(int block)
-  XFORM_SKIP_PROC
-{
-#if !defined(MZ_PLACES_WAITPID)
-  sigset_t sigs;
-
-  sigemptyset(&sigs);
-  sigaddset(&sigs, SIGCHLD);
-# ifdef USE_ITIMER
-  sigaddset(&sigs, SIGPROF);
-# endif
-  sigprocmask(block ? SIG_BLOCK : SIG_UNBLOCK, &sigs, NULL);
-#endif
-}
 
 static void child_done(int ingored)
   XFORM_SKIP_PROC
@@ -9012,7 +9021,7 @@ static int subp_done(Scheme_Object *so)
   {
     int status;
     if (!sp->done) {
-      if (scheme_get_child_status(sp->pid, sp->is_group, &status)) {
+      if (scheme_get_child_status(sp->pid, sp->is_group, 1, &status)) {
         sp->done = 1;
         sp->status = status;
         child_mref_done(sp);
@@ -9078,7 +9087,7 @@ static Scheme_Object *subprocess_status(int argc, Scheme_Object **argv)
   if (sp->done)
     status = sp->status;
   else {
-    if (!scheme_get_child_status(sp->pid, sp->is_group, &status)) {
+    if (!scheme_get_child_status(sp->pid, sp->is_group, 1, &status)) {
       going = 1;
     } else {
       child_mref_done(sp);
@@ -9167,9 +9176,9 @@ static Scheme_Object *do_subprocess_kill(Scheme_Object *_sp, Scheme_Object *kill
 
     scheme_wait_suspend();
 
-    /* Don't pass sp->is_group, because we don't want to wait
+    /* Don't allow group checking, because we don't want to wait
        on a group if we haven't already: */
-    if (scheme_get_child_status(sp->pid, 0, &status)) {
+    if (scheme_get_child_status(sp->pid, 0, 0, &status)) {
       sp->status = status;
       sp->done = 1;
       child_mref_done(sp);

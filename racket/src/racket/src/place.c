@@ -753,7 +753,7 @@ static void add_child_status(int pid, int status) {
   if (st->signal_fd)
     scheme_signal_received_at(st->signal_fd);
   if (st->unneeded)
-    (void)scheme_get_child_status(st->pid, 0, NULL);
+    (void)scheme_get_child_status(st->pid, 0, 0, NULL);
 }
 
 static int raw_get_child_status(int pid, int *status, int done_only, int do_remove, int do_free) {
@@ -782,12 +782,12 @@ static int raw_get_child_status(int pid, int *status, int done_only, int do_remo
   return found;
 }
 
-int scheme_get_child_status(int pid, int is_group, int *status) {
+int scheme_get_child_status(int pid, int is_group, int can_check_group, int *status) {
   int found = 0;
 
   /* Check specific pid, in case the child has its own group
      (either given by Racket or given to itself): */
-  {
+  if (can_check_group) {
     pid_t pid2;
     int status;
 

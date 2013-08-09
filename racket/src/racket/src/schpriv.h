@@ -4047,7 +4047,7 @@ void scheme_spawn_master_place();
 void scheme_places_block_child_signal();
 void scheme_places_unblock_child_signal();
 void scheme_places_start_child_signal_handler();
-int scheme_get_child_status(int pid, int is_group, int *status);
+int scheme_get_child_status(int pid, int is_group, int can_check_group, int *status);
 int scheme_places_register_child(int pid, int is_group, void *signal_fd, int *status);
 void scheme_wait_suspend();
 void scheme_wait_resume();
