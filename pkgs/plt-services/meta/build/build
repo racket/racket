@@ -232,6 +232,8 @@ name_of_platform() {
     ( "i386-linux-ubuntu"          ) echo "Linux/i386/Ubuntu" ;;
     ( "i386-linux-ubuntu-"* ) echo "Linux/i386/Ubuntu" \
                                    "$(last_part_capital "$1")" ;;
+    ( "x86_64-linux-ubuntu-"* ) echo "Linux/x86_64/Ubuntu" \
+                                   "$(last_part_capital "$1")" ;;
     ( "i386-freebsd"      ) echo "FreeBSD" ;;
     ( "sparc-solaris"     ) echo "Solaris" ;;
     ( "i386-osx-mac"      ) echo "Mac OS X (Intel 32-bit)" ;;
