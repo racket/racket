@@ -49,11 +49,10 @@ START_XFORM_SUSPEND;
 # include <signal.h>
 # include <unistd.h>
 # include <time.h>
-# if defined(UNIX_LIMIT_STACK) || defined(UNIX_LIMIT_FDSET_SIZE)
-#   include <signal.h>
-#   include <sys/time.h>
-#   include <sys/resource.h>
-# endif
+#endif
+#ifdef UNIX_FIND_STACK_BOUNDS
+#include <sys/time.h>
+#include <sys/resource.h>
 #endif
 
 /* Define this is we need CGC support for threads. This was needed
@@ -254,9 +253,21 @@ mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_pro
 }
 
 mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* data) {
-  intptr_t stacksize;
+  uintptr_t stacksize;
 
-#if defined(OS_X) || defined(linux)
+#if defined(ASSUME_FIXED_STACK_SIZE)
+  stacksize = FIXED_STACK_SIZE;
+#elif defined(UNIX_FIND_STACK_BOUNDS)
+  {
+    struct rlimit rl;
+    getrlimit(RLIMIT_STACK, &rl);
+    stacksize = (uintptr_t)rl.rlim_cur;
+#  ifdef UNIX_STACK_MAXIMUM
+    if (stacksize > UNIX_STACK_MAXIMUM)
+      stacksize = UNIX_STACK_MAXIMUM;
+#  endif
+  }
+#elif defined(OS_X) || defined(linux)
   stacksize = 8*1024*1024;
 #else
   stacksize = 0;
