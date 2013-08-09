@@ -260,7 +260,14 @@
          (values internal external)))
      ;; trawl the body for top-level expressions
      (define top-level-exprs (trawl-for-property #'cls.make-methods 'tr:class:top-level))
-     (define annotation-table (register-annotations top-level-exprs))
+     ;; augment annotations go in their own table, because they're
+     ;; the only kind of type annotation that is allowed to be duplicate
+     ;; (i.e., m can have type Integer -> Integer and an augment type of
+     ;;          String -> String in the separate tables)
+     (define-values (annotation-table augment-annotation-table)
+       ((compose (setup-pubment-defaults this%-pubment-names)
+                 register-annotations)
+        top-level-exprs))
      ;; find the `super-new` call (or error if missing)
      (define super-new-stxs (trawl-for-property #'cls.make-methods 'tr:class:super-new))
      (define super-new-stx (check-super-new-exists super-new-stxs))
@@ -286,6 +293,7 @@
        (infer-self-type super-row
                         expected
                         annotation-table
+                        augment-annotation-table
                         optional-inits
                         internal-external-mapping
                         remaining-super-inits
@@ -358,20 +366,20 @@
      (define meth-stxs (trawl-for-property #'cls.make-methods 'tr:class:method))
      (define checked-method-types
        (with-lexical-env/extend lexical-names lexical-types
-         (check-methods internal-external-mapping meth-stxs methods self-type
-                        #:filter this%-overridable-names)))
-     (define checked-pubment-types
+         (check-methods (append this%-pubment-names
+                                this%-overridable-names)
+                        internal-external-mapping meth-stxs
+                        methods self-type)))
+     (define checked-augment-types
        (with-lexical-env/extend lexical-names lexical-types
-         (check-methods internal-external-mapping meth-stxs augments self-type
-                        #:filter this%-augmentable-names)))
+         (check-methods this%-augment-names
+                        internal-external-mapping meth-stxs
+                        augments self-type)))
      (with-lexical-env/extend lexical-names lexical-types
        (check-private-methods meth-stxs this%-private-names
                               private-method-types self-type))
      (define final-class-type
-       (merge-types
-        self-type
-        checked-method-types
-        checked-pubment-types))
+       (merge-types self-type checked-method-types checked-augment-types))
      (check-method-presence-and-absence
       expected
       this%-init-names this%-field-names
@@ -413,13 +421,15 @@
                           (dict-keys remaining-super-inits))
                exp-init-names
                "initialization argument")
-   (check-same (set-union this%-public-names super-method-names)
+   (check-same (set-union this%-public-names this%-pubment-names
+                          super-method-names)
                exp-method-names
                "public method")
    (check-same (set-union this%-field-names super-field-names)
                exp-field-names
                "public field")
-   (check-same (set-union this%-pubment-names super-augment-names)
+   (check-same (set-union this%-pubment-names this%-augment-names
+                          super-augment-names)
                exp-augment-names
                "public augmentable method")
    (check-same optional-external exp-optional-inits
@@ -442,7 +452,7 @@
 ;; Given a self object type, construct the real class type based on
 ;; new information found from type-checking. Only used when an expected
 ;; type was not provided.
-(define (merge-types self-type method-types pubment-types)
+(define (merge-types self-type method-types augment-types)
   (match-define
    (Instance:
     (and class-type
@@ -454,12 +464,15 @@
       (define old-type (dict-ref methods name #f))
       ;; sanity check, to ensure that the actual method type
       ;; is as precise as the annotated type
+      ;; FIXME: should this be a type error and not internal?
       (when (and old-type (not (subtype (car type) (car old-type))))
-        (int-err "merge-types: actual type not a subtype of annotated type"))
+        (int-err (~a "merge-types: actual type ~a not"
+                     " a subtype of annotated type ~a")
+                 (car type) (car old-type)))
       (dict-set methods name type)))
   (make-Class row-var inits fields
               (make-new-methods methods method-types)
-              (make-new-methods augments pubment-types)))
+              (make-new-methods augments augment-types)))
 
 ;; local-tables->lexical-env : Dict<Symbol, Symbol>
 ;;                             LocalMapping NameTypeDict Names
@@ -585,7 +598,7 @@
   (define super-call-types
     (make-private-like-types override-names super-types))
   (define pubment-types
-    (make-private-like-types pubment-names augments))
+    (make-private-like-types pubment-names methods))
 
   (define init-types
     (for/list ([i (in-set init-names)])
@@ -627,12 +640,11 @@
                   init-types
                   (list self-type (make-Univ)))))
 
-;; check-methods : Listof<Syntax> Dict<Symbol, Symbol> Dict Type
+;; check-methods : Listof<Symbol> Listof<Syntax> Dict<Symbol, Symbol> Dict Type
 ;;                 -> Dict<Symbol, Type>
 ;; Type-check the methods inside of a class
-(define (check-methods internal-external-mapping
-                       meths methods self-type
-                       #:filter [filter #f])
+(define (check-methods names-to-check internal-external-mapping
+                       meths methods self-type)
   (for/fold ([checked '()])
             ([meth meths])
     (define method-name (syntax-property meth 'tr:class:method))
@@ -641,7 +653,8 @@
     (cond [(and maybe-expected
                 ;; fall back to tc-expr/t if the annotated type
                 ;; was the default type (Procedure)
-                (not (equal? (car maybe-expected) top-func)))
+                (not (equal? (car maybe-expected) top-func))
+                (set-member? names-to-check external-name))
            (define pre-method-type (car maybe-expected))
            (define method-type
              (function->method pre-method-type self-type))
@@ -652,7 +665,7 @@
           ;; Only try to type-check if these names are in the
           ;; filter when it's provided. This allows us to, say, only
           ;; type-check pubments/augments.
-          [(and filter (set-member? filter external-name))
+          [(set-member? names-to-check external-name)
            (cons (list external-name
                        (method->function (tc-expr/t meth)))
                  checked)]
@@ -945,13 +958,26 @@
      (recur-on-all #'(e ...))]
     [_ '()]))
 
-;; register-annotations : Listof<Syntax> -> Dict<Symbol, Type>
+;; register-annotations : Listof<Syntax>
+;;                        -> Dict<Symbol, Type>, Dict<Symbol, Type>
 ;; Find : annotations and register them, error if duplicates are found
 ;; TODO: support `define-type`?
 (define (register-annotations stxs)
-  (for/fold ([table #hash()]) ([stx stxs])
+  ;; check if the key is duplicated and return the new table
+  ;; (erroring if it is a duplicate)
+  (define (check-duplicate table name type)
+    (cond [(and (hash-has-key? table name)
+                (not (equal? (hash-ref table name) type)))
+           (tc-error/expr
+            #:stx #'name
+            "Duplicate type annotation of ~a for ~a, previous was ~a"
+            type name (hash-ref table name))
+           table]
+          [else (hash-set table name type)]))
+  (for/fold ([table #hash()] [augment-table #hash()])
+            ([stx stxs])
     (syntax-parse stx
-      #:literals (let-values begin quote-syntax :-internal
+      #:literals (let-values begin quote-syntax :-internal :-augment
                   #%plain-app values void)
       [(let-values ((()
                      (begin
@@ -960,30 +986,48 @@
          (#%plain-app void))
        (define name (syntax-e #'name-stx))
        (define type (parse-type #'type-stx))
-       (cond [(and (hash-has-key? table name)
-                   (not (equal? (hash-ref table name)
-                                type)))
-              (tc-error/expr
-               #:stx #'name
-               "Duplicate type annotation of ~a for ~a, previous was ~a"
-               type name (hash-ref table name))
-              table]
-             [else (hash-set table name type)])]
-      [_ table])))
+       (values (check-duplicate table name type) augment-table)]
+      [(quote-syntax (:-augment name-stx:id type-stx))
+       (define name (syntax-e #'name-stx))
+       (define type (parse-type #'type-stx))
+       (values table (check-duplicate augment-table name type))]
+      [_ (values table augment-table)])))
 
-;; infer-self-type : RowVar Class Dict<Symbol, Type> Set<Symbol> Dict<Symbol, Symbol>
+;; setup-pubment-defaults : Listof<Symbol> ->
+;;                          Dict<Symbol, Type> Dict<Symbol, Type> ->
+;;                          Dict<Symbol, Type> Dict<Symbol, Type>
+;; this does a second pass through the type annotations and adds
+;; the pubment types as default augment types if an augment type
+;; was not already provided
+(define ((setup-pubment-defaults pubment-names)
+         annotations augment-annotations)
+  (for/fold ([annotations annotations]
+             [augment-annotations augment-annotations])
+            ([name pubment-names])
+    (cond [(and (not (dict-has-key? augment-annotations name))
+                (dict-has-key? annotations name))
+           (values annotations
+                   (dict-set augment-annotations name
+                             (dict-ref annotations name)))]
+          [else (values annotations augment-annotations)])))
+
+;; infer-self-type : RowVar Class Dict<Symbol, Type> Dict<Symbol, Type>
+;;                   Set<Symbol> Dict<Symbol, Symbol>
 ;;                   Inits Fields Methods
 ;;                   Set<Symbol> * 4 -> Type
 ;; Construct a self object type based on all type annotations
 ;; and the expected type
 (define (infer-self-type super-row
                          expected
-                         annotation-table optional-inits
+                         annotation-table augment-annotation-table
+                         optional-inits
                          internal-external-mapping
                          super-inits super-fields super-methods
                          super-augments
-                         inits fields publics augments)
-  (define (make-type-dict names supers maybe-expected [inits? #f]
+                         inits fields publics pubments)
+  (define (make-type-dict names supers maybe-expected
+                          #:inits [inits? #f]
+                          #:annotations-from [annotation-table annotation-table]
                           #:default-type [default-type Univ])
     (for/fold ([type-dict supers])
               ([name names])
@@ -1009,13 +1053,16 @@
       [(Class: _ inits fields publics augments)
        (values inits fields publics augments)]
       [_ (values #f #f #f #f)]))
-  (define init-types (make-type-dict inits super-inits expected-inits #t))
+  (define init-types (make-type-dict inits super-inits expected-inits
+                                     #:inits #t))
   (define field-types (make-type-dict fields super-fields expected-fields))
-  (define public-types (make-type-dict publics super-methods expected-publics
+  (define public-types (make-type-dict (append publics pubments)
+                                       super-methods expected-publics
                                        #:default-type top-func))
   (define augment-types (make-type-dict
-                         augments super-augments expected-augments
-                         #:default-type top-func))
+                         pubments super-augments expected-augments
+                         #:default-type top-func
+                         #:annotations-from augment-annotation-table))
   (make-Instance (make-Class super-row init-types field-types
                              public-types augment-types)))
 

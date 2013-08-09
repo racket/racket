@@ -212,9 +212,11 @@
            (check-duplicate (map first (attribute fields)))
            "duplicate field or init-field clause"
            #:fail-when
-           (check-duplicate (map first (append (attribute methods)
-                                               (attribute augments))))
-           "duplicate method or augmentable method clause"))
+           (check-duplicate (map first (attribute methods)))
+           "duplicate method clause"
+           #:fail-when
+           (check-duplicate (map first (attribute augments)))
+           "duplicate augment clause"))
 
 ;; Stx Stx Listof<Boolean> (Stx -> Type) -> Listof<(List Symbol Type Boolean)>
 ;; Construct init entries for a dictionary for the class type
@@ -237,51 +239,55 @@
   #:attributes (init-entries field-entries
                 method-entries augment-entries)
   #:literals (init init-field field augment)
-  (pattern (~or (init init-clause:init-type ...)
-                (init-field init-field-clause:init-type ...)
-                (field field-clause:field-or-method-type ...)
-                (augment augment-clause:field-or-method-type ...)
-                method-clause:field-or-method-type)
+  (pattern (init init-clause:init-type ...)
            #:attr init-entries
-           (append (if (attribute init-clause)
-                       (make-init-entries
-                        #'(init-clause.label ...)
-                        #'(init-clause.type ...)
-                        (attribute init-clause.optional?)
-                        parse-type)
-                       null)
-                   (if (attribute init-field-clause)
-                       (make-init-entries
-                        #'(init-field-clause.label ...)
-                        #'(init-field-clause.type ...)
-                        (attribute init-field-clause.optional?)
-                        parse-type)
-                       null))
+                  (make-init-entries
+                   #'(init-clause.label ...)
+                   #'(init-clause.type ...)
+                   (attribute init-clause.optional?)
+                   parse-type)
+           #:attr field-entries null
+           #:attr method-entries null
+           #:attr augment-entries null)
+  (pattern (init-field init-field-clause:init-type ...)
+           #:attr init-entries
+                  (make-init-entries
+                   #'(init-field-clause.label ...)
+                   #'(init-field-clause.type ...)
+                   (attribute init-field-clause.optional?)
+                   parse-type)
            #:attr field-entries
-           (append (if (attribute field-clause)
-                       (make-field/augment-entries
-                        #'(field-clause.label ...)
-                        #'(field-clause.type ...)
-                        parse-type)
-                       null)
-                   (if (attribute init-field-clause)
-                       (make-field/augment-entries
-                        #'(init-field-clause.label ...)
-                        #'(init-field-clause.type ...)
-                        parse-type)
-                       null))
-           #:attr method-entries
-           (if (attribute method-clause)
-               (list (list (syntax-e #'method-clause.label)
-                           (parse-type #'method-clause.type)))
-               null)
+                  (make-field/augment-entries
+                   #'(init-field-clause.label ...)
+                   #'(init-field-clause.type ...)
+                   parse-type)
+           #:attr method-entries null
+           #:attr augment-entries null)
+  (pattern (field field-clause:field-or-method-type ...)
+           #:attr init-entries null
+           #:attr field-entries
+                  (make-field/augment-entries
+                   #'(field-clause.label ...)
+                   #'(field-clause.type ...)
+                   parse-type)
+           #:attr method-entries null
+           #:attr augment-entries null)
+  (pattern (augment augment-clause:field-or-method-type ...)
+           #:attr init-entries null
+           #:attr field-entries null
+           #:attr method-entries null
            #:attr augment-entries
-           (if (attribute augment-clause)
-               (make-field/augment-entries
-                #'(augment-clause.label ...)
-                #'(augment-clause.type ...)
-                parse-type)
-               null)))
+                  (make-field/augment-entries
+                   #'(augment-clause.label ...)
+                   #'(augment-clause.type ...)
+                   parse-type))
+  (pattern method-clause:field-or-method-type
+           #:attr init-entries null
+           #:attr field-entries null
+           #:attr method-entries
+                  (list (list (syntax-e #'method-clause.label)
+                              (parse-type #'method-clause.type)))
+           #:attr augment-entries null))
 
 (define-syntax-class init-type
   #:description "Initialization argument label and type"

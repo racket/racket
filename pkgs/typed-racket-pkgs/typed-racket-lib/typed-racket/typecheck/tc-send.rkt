@@ -16,10 +16,10 @@
    (match rcvr-type
      [(tc-result1: (Instance: (? Mu? type)))
       (do-check (ret (make-Instance (unfold type))))]
-     [(tc-result1: (Instance: (and c (Class: _ _ _ methods augments))))
+     [(tc-result1: (Instance: (and c (Class: _ _ _ methods _))))
       (match (tc-expr method)
         [(tc-result1: (Value: (? symbol? s)))
-         (let* ([ftype (cond [(assq s (append methods augments)) => cadr]
+         (let* ([ftype (cond [(assq s methods) => cadr]
                              [else (tc-error/expr "send: method ~a not understood by class ~a" s c)])]
                 [retval (tc/funapp rcvr args (ret ftype) (stx-map tc-expr args) expected)])
            (add-typeof-expr form retval)
