@@ -93,7 +93,7 @@ A collector for use in testing the random mutator generator.
 (define (gc:first pr-ptr) 
   (if (equal? (heap-ref pr-ptr) 'pair)
       (heap-ref (+ pr-ptr 1))
-      (error 'first "non pair")))
+      (error 'first "non pair: loc ~e val ~e" pr-ptr (heap-ref pr-ptr))))
 
 (test (with-heap (vector 'free 'flat 3 'pair 0 1)
                  (gc:first 3))

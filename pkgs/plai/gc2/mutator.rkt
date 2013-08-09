@@ -268,14 +268,13 @@
                leftovers
                (cons (make-root 'closure-root
                                 (λ () this-loc)
-                                (λ (v) 
-                                  (set! this-loc v)
-                                  (this-setter v)
-                                  (for ([root (in-list this-other-roots)])
-                                    (set-root! v))))
+                                (λ (v) (set! this-loc v)
+                                   (this-setter v)
+                                   (for ([root (in-list this-other-roots)])
+                                     (set-root! v))))
                      closure-roots))])))
   (parameterize ([active-roots remaining-roots])
-    (collector:closure closure closure-roots)))
+    (collector:closure closure (reverse closure-roots))))
   
 (define-syntax (mutator-app stx)
   (syntax-case stx ()
@@ -627,7 +626,7 @@
       (apply (closure-code-proc v) 
              (append 
               (for/list ([i (in-range (closure-code-env-count v))])
-                        (collector:closure-env-ref proc/loc i))
+                (collector:closure-env-ref proc/loc i))
               args)))]
    [else
     (error 'procedure-application "expected procedure, given ~e" v)]))
