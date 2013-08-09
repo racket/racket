@@ -678,6 +678,8 @@ path/s is either such a string or a list of them.
 "pkgs/distributed-places-pkgs/distributed-places-lib/racket/place/distributed/examples/hello-world.rkt" drdr:command-line #f
 "pkgs/distro-build" responsible (mflatt)
 "pkgs/distro-build/add-catalog.rkt" drdr:command-line (mzc *)
+"pkgs/distro-build/serve-catalog.rkt" drdr:command-line (mzc *)
+"pkgs/distro-build/pack-collects.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/assemble-site.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/drive-clients.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/install-for-docs.rkt" drdr:command-line (mzc *)
