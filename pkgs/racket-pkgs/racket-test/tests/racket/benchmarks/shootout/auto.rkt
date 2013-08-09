@@ -172,7 +172,10 @@ exec racket -qu "$0" ${1+"$@"}
                     (let ([out (open-output-bytes)])
                       (unless (parameterize ([current-output-port out]
                                              [current-error-port out])
-                                ((impl-run i) bm))
+                                ((impl-run i) 
+                                 (if (symbol? bm)
+                                   (format "~a" bm)
+                                   bm)))
                         (error 'auto "~a\nrun failed ~a" (get-output-bytes out) bm))
                       (rprintf "[~a ~a ~s ~a]\n"
                                impl
