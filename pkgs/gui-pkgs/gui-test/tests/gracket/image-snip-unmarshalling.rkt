@@ -114,7 +114,7 @@ and compares a bunch of properties of them
            '(#f)
            '(#f #t))
 
-(parameterize ([current-directory (collection-path "icons")])
+(parameterize ([current-directory (build-path (collection-file-path "b-run.png" "icons") "..")])
   (try-perms (list "b-run.png")
              '(unknown unknown/mask unknown/alpha
                        png png/mask png/alpha)
