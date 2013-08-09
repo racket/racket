@@ -16,8 +16,8 @@ enum {
   MMU_WRITABLE        = 1,
 };
 
-#if defined(MZ_USE_PLACES) &&  !defined(_WIN32)
-#define USE_BLOCK_CACHE
+#if (defined(MZ_USE_PLACES) && !defined(_WIN32)) || defined(PREFER_MMAP_LARGE_BLOCKS)
+# define USE_BLOCK_CACHE
 #endif
 
 struct BlockCache;

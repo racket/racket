@@ -408,6 +408,7 @@ STRIP_DEBUG=":"
 enable_strip_by_default=yes
 
 use_flag_pthread=yes
+use_flag_posix_pthread=no
 skip_iconv_check=no
 
 ###### OSKit stuff #######
@@ -570,6 +571,15 @@ case "$host_os" in
     need_gcc_static_libgcc="yes"
     check_gcc_dash_e="yes"
     try_poll_syscall="yes"
+    use_flag_pthread="no"
+    use_flag_posix_pthread="yes"
+    case "$host_cpu" in
+      x86_64|i386|i486|i586|i686)
+       enable_parallel_by_default=yes
+       ;;
+      *)
+       ;;
+    esac
     ;;
   aix*)
     enable_cgcdefault="yes"
@@ -1203,6 +1213,9 @@ if test "${enable_pthread}" = "yes" ; then
   if test "${use_flag_pthread}" = "yes" ; then
     PREFLAGS="$PREFLAGS -pthread"
     LDFLAGS="$LDFLAGS -pthread"
+  fi
+  if test "${use_flag_posix_pthread}" = "yes" ; then
+    PREFLAGS="$PREFLAGS -D_POSIX_PTHREAD_SEMANTICS"
   fi
   AC_DEFINE(USE_PTHREAD_INSTEAD_OF_ITIMER, 1, [Pthread timer enabled])
 

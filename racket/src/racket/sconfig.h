@@ -114,6 +114,8 @@
 # define USE_ON_EXIT_FOR_ATEXIT
 # endif
 
+# define PREFER_MMAP_LARGE_BLOCKS
+
 # define FMOD_CAN_RETURN_POS_ZERO
 
 # ifdef i386
@@ -1610,8 +1612,13 @@
  /*    Miscellaneous    */
 /***********************/
 
- /* USE_MAP_ANON indicates that mmap should use BSD's MAP_ANON flag
+ /* USE_MAP_ANON indicates that mmap() should use BSD's MAP_ANON flag
     rather than trying to open /dev/zero */
+
+ /* PREFER_MMAP_LARGE_BLOCKS indicates that mmap() should be called with
+    large block sizes as much as possible, because the actual allocated
+    size for small requests (on the order of the page size) is much
+    larger than the request. */
 
  /* REGISTER_POOR_MACHINE guides a hand optimization that seems to
     be work best one way for Sparc machines, and better the other
