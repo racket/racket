@@ -28,17 +28,21 @@
          ;; for use in ~literal clauses
          class-internal
          optional-init
-         private-field)
+         private-field
+         :-augment)
 
 ;; give it a binding, but it shouldn't be used directly
 (define-syntax (class-internal stx)
-  (raise-syntax-error "should only be used internally"))
+  (raise-syntax-error 'class "should only be used internally"))
 
 (define-syntax (optional-init stx)
-  (raise-syntax-error "should only be used internally"))
+  (raise-syntax-error 'class "should only be used internally"))
 
 (define-syntax (private-field stx)
-  (raise-syntax-error "should only be used internally"))
+  (raise-syntax-error 'class "should only be used internally"))
+
+(define-syntax (:-augment stx)
+  (raise-syntax-error 'class "should only be used internally"))
 
 (begin-for-syntax
  (module+ test (require rackunit))
@@ -47,6 +51,7 @@
  (define stop-forms
    (append (kernel-form-identifier-list)
            (list
+            (quote-syntax :)
             (quote-syntax #%app)
             (quote-syntax lambda)
             (quote-syntax init)
@@ -344,7 +349,7 @@
               ([content contents])
       (define stx (non-clause-stx content))
       (syntax-parse stx
-        #:literals (define-values super-new)
+        #:literals (: define-values super-new)
         ;; if it's a method definition for a declared method, then
         ;; mark it as something to type-check
         [(define-values (id) . rst)
@@ -365,6 +370,15 @@
                  (append rest-top (list content))
                  (append (syntax->list #'(id ...))
                          private-fields))]
+        ;; special : annotation for augment interface
+        [(: name:id type:expr #:augment augment-type:expr)
+         (define new-clause
+           (non-clause #'(quote-syntax (:-augment name augment-type))))
+         (define plain-annotation
+           (non-clause (syntax/loc stx (: name type))))
+         (values methods
+                 (append rest-top (list plain-annotation new-clause))
+                 private-fields)]
         ;; Identify super-new for the benefit of the type checker
         [(super-new [init-id init-expr] ...)
          (define new-non-clause

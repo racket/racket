@@ -153,6 +153,8 @@
     (make-Class #f null null null `((m ,(t:-> N N))))]
    [(Class (augment [m (Number -> Number)]) (field [x Number]))
     (make-Class #f null `((x ,-Number)) null `((m ,(t:-> N N))))]
+   [(Class (augment [m (-> Number)]) [m (-> Number)])
+    (make-Class #f null null `((m ,(t:-> N))) `((m ,(t:-> N))))]
    [FAIL (Class foobar)]
    [FAIL (Class [x UNBOUND])]
    [FAIL (Class [x Number #:random-keyword])]
@@ -164,8 +166,9 @@
    [FAIL (Class (init [x Number]) (init [x Number]))]
    [FAIL (Class (init [x Number]) (init-field [x Number]))]
    [FAIL (Class (field [x Number]) (init-field [x Number]))]
-   [FAIL (Class (augment [x (-> Number)]) [x (-> Number)])]
-   [FAIL (Class (augment [x (-> Number)] [x (-> String)]))]
+   [FAIL (Class (augment [m (-> Number)] [m (-> Number)]))]
+   [FAIL (Class (augment [m (-> Number)]) (augment [m (-> Number)]))]
+   [FAIL (Class [m (-> Number)] [m (-> Number)])]
    ;; test #:row-var
    [(All (r #:row) (Class #:row-var r))
     (make-PolyRow (list 'r)
