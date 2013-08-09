@@ -679,8 +679,6 @@ path/s is either such a string or a list of them.
 "pkgs/distributed-places-pkgs/distributed-places-lib/racket/place/distributed/examples/hello-world.rkt" drdr:command-line #f
 "pkgs/distro-build" responsible (mflatt)
 "pkgs/distro-build/add-catalog.rkt" drdr:command-line (mzc *)
-"pkgs/distro-build/serve-catalog.rkt" drdr:command-line (mzc *)
-"pkgs/distro-build/pack-collects.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/assemble-site.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/drive-clients.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/install-for-docs.rkt" drdr:command-line (mzc *)
@@ -688,6 +686,8 @@ path/s is either such a string or a list of them.
 "pkgs/distro-build/installer.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/manage-snapshots.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/pack-and-catalog.rkt" drdr:command-line (mzc *)
+"pkgs/distro-build/pack-collects.rkt" drdr:command-line (mzc *)
+"pkgs/distro-build/serve-catalog.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/set-config.rkt" drdr:command-line (mzc *)
 "pkgs/distro-build/unpack-collects.rkt" drdr:command-line (mzc *)
 "pkgs/draw-pkgs" responsible (mflatt)
@@ -721,6 +721,7 @@ path/s is either such a string or a list of them.
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/memory-log.rkt" drdr:command-line (gracket *)
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/module-lang-test.rkt" drdr:command-line (gracket "-j" "-e" "(void (putenv \"PLTDRDRTEST\" \"yes\"))" "-t" *) drdr:timeout 800
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/no-write-and-frame-leak.rkt" drdr:timeout 500
+"pkgs/drracket-pkgs/drracket-test/tests/drracket/populate-compiled.rkt" drdr:command-line #f
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/randomly-click-language-dialog.rkt" drdr:command-line (mzc *)
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/randomly-click-preferences.rkt" drdr:command-line (mzc *)
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/repl-test-debug.rkt" drdr:command-line (gracket *) drdr:timeout 300
@@ -731,7 +732,6 @@ path/s is either such a string or a list of them.
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/snip/run-all.rkt" drdr:timeout 800
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/snips.rkt" drdr:command-line (gracket *)
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/syncheck-test.rkt" drdr:command-line (gracket *) drdr:timeout 200
-"pkgs/drracket-pkgs/drracket-test/tests/drracket/populate-compiled.rkt" drdr:command-line #f
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/teaching-lang-coverage.rkt" responsible (robby matthias) drdr:command-line (gracket *)
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/teaching-lang-save-file.rkt" responsible (robby matthias) drdr:command-line (gracket *)
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/teaching-lang-sharing-modules.rkt" drdr:timeout 800
@@ -1070,8 +1070,8 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/net/stress/websocket.rkt" drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/net/url-port.rkt" responsible (jay)
 "pkgs/racket-pkgs/racket-test/tests/net/websocket" responsible (jay)
-"pkgs/racket-pkgs/racket-test/tests/net/websocket/example.rkt" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/net/websocket.rkt" responsible (jay)
+"pkgs/racket-pkgs/racket-test/tests/net/websocket/example.rkt" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/openssl" responsible (mflatt)
 "pkgs/racket-pkgs/racket-test/tests/openssl/basic.rkt" drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/pkg" responsible (jay) drdr:command-line (mzc *)
@@ -1283,8 +1283,8 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/racket/contract-stress-argmin.rkt" responsible (robby) drdr:command-line (racket "-r" *)
 "pkgs/racket-pkgs/racket-test/tests/racket/contract-stress-take-right.rkt" responsible (robby) drdr:command-line (racket "-r" *)
 "pkgs/racket-pkgs/racket-test/tests/racket/date.rktl" drdr:random #t
-"pkgs/racket-pkgs/racket-test/tests/racket/embed-me4.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/embed-in-c.rkt" drdr:command-line #f
+"pkgs/racket-pkgs/racket-test/tests/racket/embed-me4.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/embed-me9.rkt" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/embed-planet-1/alt.rkt" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/embed-planet-1/dyn-sub.rkt" drdr:command-line #f
