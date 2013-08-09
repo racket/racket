@@ -1344,7 +1344,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/racket/stress" responsible (jay) drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/racket/stress/contract-lifting.rkt" responsible (robby sstrickl)
 "pkgs/racket-pkgs/racket-test/tests/racket/stress/dict.rkt" drdr:timeout 180
-"pkgs/racket-pkgs/racket-test/tests/racket/stress/fuzz.rkt" responsible (samth mflatt) drdr:command-line (racket * "-c") drdr:timeout 300
+"pkgs/racket-pkgs/racket-test/tests/racket/stress/fuzz.rkt" responsible (samth mflatt) drdr:command-line (racket * "-c") drdr:timeout 600
 "pkgs/racket-pkgs/racket-test/tests/racket/stress/module-stack.rkt" drdr:timeout 500
 "pkgs/racket-pkgs/racket-test/tests/racket/structlib.rktl" drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/racket/stx.rktl" drdr:random #t
