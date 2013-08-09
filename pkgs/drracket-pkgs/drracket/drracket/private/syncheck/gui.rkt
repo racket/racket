@@ -1432,7 +1432,7 @@ If the namespace does not, they are colored the unbound color.
                          (loop (send (send admin get-snip) get-editor))
                          #f)])))
               (cond
-                [(and window (< -10000 x-off 10000) (< -10000 y-off 10000))
+                [(and window (position-integer? x-off) (position-integer? y-off))
                  (define (c n) (inexact->exact (round n)))
                  (define-values (gx gy) (send window client->screen (c x-off) (c y-off)))
                  (values gx gy gx gy)]
