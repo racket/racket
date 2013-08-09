@@ -995,15 +995,18 @@ static void got_sigchld() XFORM_SKIP_PROC
 void scheme_places_block_child_signal() XFORM_SKIP_PROC
 {
   sigset_t set;
-  sigemptyset(&set);
-  sigaddset(&set, SIGCHLD);
-  sigprocmask(SIG_BLOCK, &set, NULL);
 
   /* Mac OS X seems to need a handler installed for SIGCHLD to be
      delivered, since the default is to drop the signal. Also, this
      handler serves as a back-up alert if some thread is created that
-     does not block SIGCHLD. */
+     does not block SIGCHLD.
+     Solaris, meanwhile, seems to unmask SIGCHLD as a result of
+     setting a handler, so do this before masking the signal. */
   MZ_SIGSET(SIGCHLD, got_sigchld);
+
+  sigemptyset(&set);
+  sigaddset(&set, SIGCHLD);
+  sigprocmask(SIG_BLOCK, &set, NULL);
 }
 
 void scheme_places_unblock_child_signal() XFORM_SKIP_PROC

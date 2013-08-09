@@ -118,6 +118,10 @@
 
 # define FMOD_CAN_RETURN_POS_ZERO
 
+# ifdef _POSIX_PTHREAD_SEMANTICS
+#  define SUBPROCESS_USE_FORK1
+# endif
+
 # ifdef i386
 #  define MZ_USE_JIT_I386
 #  define MZ_JIT_USE_MPROTECT
@@ -1235,6 +1239,8 @@
  /* CLOSE_ALL_FDS_AFTER_FORK means that all fds except 0, 1, and 2
     should be closed after performing a fork() for `process'
     and `system' calls. */
+
+ /* SUBPROCESS_USE_FORK1 uses fork1() instead of fork(). */
 
  /* USE_UNIX_SOCKETS_TCP means that the tcp- procedures can be implemented
     with the standard Unix socket functions. */

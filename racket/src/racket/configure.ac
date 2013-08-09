@@ -1215,7 +1215,7 @@ if test "${enable_pthread}" = "yes" ; then
     LDFLAGS="$LDFLAGS -pthread"
   fi
   if test "${use_flag_posix_pthread}" = "yes" ; then
-    PREFLAGS="$PREFLAGS -D_POSIX_PTHREAD_SEMANTICS"
+    PREFLAGS="$PREFLAGS -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT"
   fi
   AC_DEFINE(USE_PTHREAD_INSTEAD_OF_ITIMER, 1, [Pthread timer enabled])
 

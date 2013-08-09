@@ -5695,8 +5695,12 @@ static int try_lock(intptr_t fd, int writer, int *_errid)
       if (!pipe(ofds)) {
         int pid;
 
+#ifdef SUBPROCESS_USE_FORK1
+        pid = fork1();
+#else
         pid = fork();
-      
+#endif
+        
         if (pid > 0) {
           /* Original process: */
           int errid = 0;
@@ -9814,10 +9818,12 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
     scheme_starting_child();
 #endif
 
-#if !defined(__QNX__)
-    pid = fork();
-#else
+#if defined(__QNX__)
     pid = vfork();
+#elif defined(SUBPROCESS_USE_FORK1)
+    pid = fork1();
+#else
+    pid = fork();
 #endif
 
     if (pid > 0) {
