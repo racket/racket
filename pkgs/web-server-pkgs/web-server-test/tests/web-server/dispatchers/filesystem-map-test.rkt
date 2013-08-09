@@ -2,6 +2,7 @@
 (require rackunit
          net/url
          racket/list
+         racket/path
          web-server/private/util
          racket/runtime-path
          web-server/dispatchers/filesystem-map)
@@ -11,8 +12,8 @@
   (require rackunit/text-ui)
   (run-tests filesystem-map-tests))
 
-(define-runtime-path base-dir
-  "../../../web-server")
+(define base-dir
+  (path-only (collection-file-path "main.rkt" "web-server")))
 
 (define test-map (make-url->path base-dir))
 (define test-valid-map (make-url->valid-path test-map))

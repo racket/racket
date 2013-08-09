@@ -2,6 +2,7 @@
 (require rackunit
          (only-in mzlib/file make-temporary-file)
          racket/runtime-path
+         racket/path
          web-server/http
          web-server/private/mime-types)
 (provide mime-types-tests)
@@ -16,8 +17,9 @@ END
             ))
   #:exists 'replace)  
 
-(define-runtime-path default-web-root
-  "../../../web-server/default-web-root")
+(define default-web-root
+  (path-only 
+   (collection-file-path "default-web-root/configuration-table.rkt" "web-server")))
 
 (define mime-types-tests
   (test-suite

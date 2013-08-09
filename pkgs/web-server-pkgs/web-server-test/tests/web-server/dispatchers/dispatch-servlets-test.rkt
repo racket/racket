@@ -32,8 +32,9 @@
                      (raise exn))))
   d)
 
-(define-runtime-path default-web-root
-  "../../../web-server/default-web-root")
+(define default-web-root
+  (path-only 
+   (collection-file-path "default-web-root/configuration-table.rkt" "web-server")))
 (define example-servlets
   (build-path default-web-root "htdocs" "servlets" "examples/"))
 

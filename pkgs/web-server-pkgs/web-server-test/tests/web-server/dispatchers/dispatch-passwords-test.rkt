@@ -6,6 +6,7 @@
          racket/promise
          racket/runtime-path
          racket/list
+         racket/path
          racket/serialize
          web-server/http
          web-server/dispatchers/dispatch
@@ -16,8 +17,9 @@
 (require/expose web-server/dispatchers/dispatch-passwords
                 (read-passwords))
 
-(define-runtime-path default-web-root
-  "../../../web-server/default-web-root")
+(define default-web-root
+  (path-only 
+   (collection-file-path "default-web-root/configuration-table.rkt" "web-server")))
 
 (define default-passwords (build-path default-web-root "passwords"))
 (define test-passwords (make-temporary-file))
@@ -91,3 +93,7 @@
    ; XXX test refresh cache
    
    ))
+
+(module+ test
+  (require rackunit/text-ui)
+  (run-tests dispatch-passwords-tests))
