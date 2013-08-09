@@ -1,6 +1,6 @@
 #lang info
 
-(define collection "unstable")
+(define collection 'multi)
 
 (define deps '("base"))
 (define build-deps '("at-exp-lib"
