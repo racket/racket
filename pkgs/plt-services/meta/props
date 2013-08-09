@@ -1300,6 +1300,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/racket/format.rkt" drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/racket/imap.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/iostream.rktl" drdr:random #t
+"pkgs/racket-pkgs/racket-test/tests/racket/link.rkt" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/list.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/module.rktl" drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/racket/mz-tests.rktl" drdr:command-line #f
