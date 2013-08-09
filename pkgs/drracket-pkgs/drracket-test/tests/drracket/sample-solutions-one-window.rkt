@@ -29,7 +29,9 @@
   
   (define ((test-single-file labels sample-solutions-dir toc) filename)
     (let* ([sample-solutions-teachpack-filename
-            (build-path (collection-path "tests" "drracket") "sample-solutions-testsuite-tp.scm")]
+            (build-path (collection-file-path "sample-solutions-testsuite-tp.scm"
+                                              "tests"
+                                              "drracket"))]
            [toc-entry (let ([lookup (assoc (string->symbol filename) toc)])
                         (if lookup
                             (cdr lookup)
@@ -82,7 +84,8 @@
                     (send interactions-text get-text
                           (send interactions-text paragraph-start-position 2)
                           (send interactions-text paragraph-start-position 
-                                (+ 2 (length teachpacks) 1)))))] ;; add 1 for the always there teachpack
+                                ;; add 1 for the always there teachpack
+                                (+ 2 (length teachpacks) 1)))))] 
                [teachpacks-already-set? (string=? teachpack-should-be teachpack-is)])
           (unless teachpacks-already-set?
             (fw:test:menu-select "Language" "Clear All Teachpacks")
@@ -126,7 +129,8 @@
                 (has-error? drs-frame))
            =>
            (lambda (err-msg)
-             (printf "ERROR: ~a: found error, but should be no errors (section ~a):\n  ~a\n  teachpacks: ~a\n"
+             (printf (string-append "ERROR: ~a: found error, but should be no errors"
+                                    " (section ~a):\n  ~a\n  teachpacks: ~a\n")
                      filename
                      section
                      err-msg
@@ -148,7 +152,9 @@
                                                     (lambda (exn) exn)])
                                      (read port))])
                         (unless (equal? after last)
-                          (printf "ERROR: ~a: pair #~a mismatched.\n     got ~s\nexpected ~s\nteachpacks: ~a\n"
+                          (printf (string-append
+                                   "ERROR: ~a: pair #~a mismatched."
+                                   "\n     got ~s\nexpected ~s\nteachpacks: ~a\n")
                                   filename equal-count 
                                   (if (exn? last) (exn-message last) last)
                                   (if (exn? after) (exn-message after) after)

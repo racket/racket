@@ -57,13 +57,13 @@ the settings above should match r5rs
      (lambda () (fw:test:set-check-box! "Enforce constant definitions (enables some inlining)" #f))
      "enforce-module-constants -- #f"
      "#lang racket/base\n(define x 1)\n"
-     #:interactions "(set! x 2)\n"
+     #:interactions "(set! x 2)"
      "> (set! x 2)")
     (test-setting
      (lambda () (fw:test:set-check-box! "Enforce constant definitions (enables some inlining)" #t))
      "enforce-module-constants -- #t"
      "#lang racket/base\n(define x 1)\n"
-     #:interactions "(set! x 2)\n"
+     #:interactions "(set! x 2)"
      #rx"cannot modify a constant")
     
     (prepare-for-test-expression)
@@ -1126,8 +1126,9 @@ the settings above should match r5rs
     (clear-definitions drs)
     (insert-in-definitions drs expression)
     (do-execute drs)
-    (when interactions
+    (when interactions-expr
       (insert-in-interactions drs interactions-expr)
+      (alt-return-in-interactions drs)
       (wait-for-computation drs))
     (let* ([got (fetch-output/should-be-tested drs)])
       (unless (if (regexp? result)
@@ -1358,7 +1359,7 @@ the settings above should match r5rs
               [(eq? item 'image)
                (use-get/put-dialog 
                 (lambda () (fw:test:menu-select "Insert" "Insert Image..."))
-                (simplify-path (build-path (collection-path "icons") "recycle.png")))]
+                (simplify-path (build-path (collection-file-path "recycle.png" "icons"))))]
               [(string? item)
                (insert-in-definitions drs item)]
               [(eq? item 'xml)

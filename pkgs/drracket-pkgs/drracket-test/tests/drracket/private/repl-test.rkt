@@ -973,11 +973,7 @@ This produces an ACK message
 (define backtrace-image-string "{stop-multi.png}")
 (define file-image-string "{stop-22x22.png}")
 
-(define tmp-load-directory (find-system-path 'temp-dir)
-  #;
-  (normal-case-path
-   (normalize-path 
-    (collection-path "tests" "drracket"))))
+(define tmp-load-directory (find-system-path 'temp-dir))
 
 (define tmp-load-short-filename "repl-test-tmp.rkt")
 (define tmp-load-filename (build-path tmp-load-directory tmp-load-short-filename))
