@@ -866,7 +866,7 @@ path/s is either such a string or a list of them.
 "pkgs/htdp-pkgs/htdp-lib/2htdp/tests/on-release-no-key.rkt" drdr:command-line (raco "make" *)
 "pkgs/htdp-pkgs/htdp-lib/2htdp/tests/on-tick-universe-with-limit.rkt" drdr:command-line (gracket *)
 "pkgs/htdp-pkgs/htdp-lib/2htdp/tests/pad1.rkt" drdr:command-line (raco "make" *)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/perform-record.rkt" drdr:command-line (gracket *)
+"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/perform-record.rkt" drdr:command-line (gracket *) drdr:timeout 300
 "pkgs/htdp-pkgs/htdp-lib/2htdp/tests/perform-robby.rkt" drdr:command-line (gracket *)
 "pkgs/htdp-pkgs/htdp-lib/2htdp/tests/perform-whack.rkt" drdr:command-line #f
 "pkgs/htdp-pkgs/htdp-lib/2htdp/tests/profile-robby.rkt" drdr:command-line #f
