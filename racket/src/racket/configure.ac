@@ -573,13 +573,6 @@ case "$host_os" in
     try_poll_syscall="yes"
     use_flag_pthread="no"
     use_flag_posix_pthread="yes"
-    case "$host_cpu" in
-      x86_64|i386|i486|i586|i686)
-       enable_parallel_by_default=yes
-       ;;
-      *)
-       ;;
-    esac
     ;;
   aix*)
     enable_cgcdefault="yes"
