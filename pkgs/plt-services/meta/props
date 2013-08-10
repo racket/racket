@@ -1070,8 +1070,8 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/net/stress/websocket.rkt" drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/net/url-port.rkt" responsible (jay)
 "pkgs/racket-pkgs/racket-test/tests/net/websocket" responsible (jay)
-"pkgs/racket-pkgs/racket-test/tests/net/websocket.rkt" responsible (jay)
 "pkgs/racket-pkgs/racket-test/tests/net/websocket/example.rkt" drdr:command-line #f
+"pkgs/racket-pkgs/racket-test/tests/net/websocket.rkt" responsible (jay)
 "pkgs/racket-pkgs/racket-test/tests/openssl" responsible (mflatt)
 "pkgs/racket-pkgs/racket-test/tests/openssl/basic.rkt" drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/pkg" responsible (jay) drdr:command-line (mzc *)
@@ -1278,6 +1278,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/racket/compile.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/contmark.rktl" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/racket/contract" responsible (robby)
+"pkgs/racket-pkgs/racket-test/tests/racket/contract/all.rkt" drdr:command-line (raco "make" *)
 "pkgs/racket-pkgs/racket-test/tests/racket/contract-mzlib-test.rktl" responsible (robby) drdr:command-line (racket "-r" *)
 "pkgs/racket-pkgs/racket-test/tests/racket/contract-opt-tests.rkt" responsible (robby) drdr:command-line (racket "-r" *)
 "pkgs/racket-pkgs/racket-test/tests/racket/contract-stress-argmin.rkt" responsible (robby) drdr:command-line (racket "-r" *)
@@ -1587,12 +1588,7 @@ path/s is either such a string or a list of them.
 "racket/collects/ffi/examples/xosd.rkt" drdr:command-line (mzc *)
 "racket/collects/ffi/objc.rkt" drdr:command-line (mzc *)
 "racket/collects/ffi/unsafe/objc.rkt" drdr:command-line (mzc *)
-"racket/collects/racket/contract/private/arrow.rkt" responsible (robby)
-"racket/collects/racket/contract/private/base.rkt" responsible (robby)
-"racket/collects/racket/contract/private/ds-helpers.rkt" responsible (robby)
-"racket/collects/racket/contract/private/ds.rkt" responsible (robby)
-"racket/collects/racket/contract/private/guts.rkt" responsible (robby)
-"racket/collects/racket/contract/private/helpers.rkt" responsible (robby)
+"racket/collects/racket/contract" responsible (robby)
 "racket/collects/racket/generic.rkt" responsible (asumu stamourv)
 "racket/collects/racket/match" responsible (samth)
 "racket/collects/racket/match.rkt" responsible (samth)
