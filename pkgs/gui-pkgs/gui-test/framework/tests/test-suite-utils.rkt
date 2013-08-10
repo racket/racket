@@ -5,6 +5,7 @@
          racket/system
          racket/tcp
          racket/pretty
+         compiler/find-exe
          "debug.rkt")
 
 (provide
@@ -86,22 +87,13 @@
   (shutdown-mred)
   (thread
    (lambda ()
-     (define racket-bin
-       (path->string
-        (build-path
-         (let-values ([(dir exe _)
-                       (split-path (find-system-path 'exec-file))])
-           (if (eq? dir 'relative)
-               'same
-               dir))
-         (if (eq? 'windows (system-type)) "Racket.exe" "racket"))))
+     (define racket-bin (find-exe))
      (unless (system*
               racket-bin
               (path->string
                (collection-file-path "framework-test-engine.rkt" "framework" "tests")))
-       (eprintf "starting gracket failed; used path ~s; (find-system-path 'exec-file) = ~s\n"
-                racket-bin
-                (find-system-path 'exec-file)))))
+       (eprintf "starting gracket failed; used path ~s\n"
+                racket-bin))))
   (debug-printf mz-tcp "accepting listener\n")
   (let-values ([(in out) (tcp-accept listener)])
     (set! in-port in)
