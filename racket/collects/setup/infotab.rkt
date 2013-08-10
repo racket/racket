@@ -16,6 +16,7 @@
                             (loop (cdr defns)
                                   (syntax-case (car defns) (define)
                                     [(define var val)
+                                     (identifier? #'var)
                                      (cons (syntax var) r)]
                                     ;; In case it gets expanded:
                                     [(define-values (var) val)
