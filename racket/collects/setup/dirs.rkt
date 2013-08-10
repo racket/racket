@@ -72,6 +72,7 @@
 (define-config config:lib-dir 'lib-dir to-path)
 (define-config config:lib-search-dirs 'lib-search-dirs to-path)
 (define-config config:share-dir 'share-dir to-path)
+(define-config config:apps-dir 'apps-dir to-path)
 (define-config config:include-dir 'include-dir to-path)
 (define-config config:include-search-dirs 'include-search-dirs to-path)
 (define-config config:bin-dir 'bin-dir to-path)
@@ -148,6 +149,14 @@
 
 (define-syntax define-finder
   (syntax-rules (get-false chain-to)
+    [(_ provide config:id id user-id #:default user-default default)
+     (begin
+       (define-finder provide config:id id get-false default)
+       (provide user-id)
+       (define user-dir
+         (delay (build-path (system-path* 'addon-dir) (get-installation-name) user-default)))
+       (define (user-id)
+         (force user-dir)))]
     [(_ provide config:id id user-id config:search-id search-id default)
      (begin
        (define-finder provide config:id id user-id default)
@@ -183,13 +192,7 @@
        (define (id)
          (force dir)))]
     [(_ provide config:id id user-id default)
-     (begin
-       (define-finder provide config:id id get-false default)
-       (provide user-id)
-       (define user-dir
-         (delay (build-path (system-path* 'addon-dir) (get-installation-name) default)))
-       (define (user-id)
-         (force user-dir)))]))
+     (define-finder provide config:id id user-id #:default default default)]))
 
 (define-syntax no-provide (syntax-rules () [(_ . rest) (begin)]))
 
@@ -245,6 +248,15 @@
   find-share-dir
   find-user-share-dir
   "share")
+
+;; ----------------------------------------
+;; "apps"
+
+(define-finder provide
+  config:share-dir
+  find-apps-dir
+  find-user-apps-dir #:default (build-path "share" "applications")
+  (chain-to (lambda () (build-path (find-share-dir) "applications"))))
 
 ;; ----------------------------------------
 ;; "man"

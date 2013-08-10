@@ -15,6 +15,7 @@ libpltdir = @libpltdir@
 sharepltdir = @sharepltdir@
 configdir = @etcpltdir@
 collectsdir = @collectsdir@
+appsdir = @appsdir@
 mandir = @mandir@
 docdir = @docdir@
 builddir = @builddir@
@@ -39,6 +40,7 @@ ALLDIRINFO = "$(DESTDIR)$(bindir)" \
              "$(DESTDIR)$(libpltdir)" \
              "$(DESTDIR)$(sharepltdir)" \
              "$(DESTDIR)$(configdir)" \
+             "$(DESTDIR)$(appsdir)" \
              "$(DESTDIR)$(mandir)"
 
 COPYING = "$(srcdir)/COPYING-libscheme.txt" \

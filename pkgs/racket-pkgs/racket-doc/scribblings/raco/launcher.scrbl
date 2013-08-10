@@ -68,6 +68,13 @@ the following additional associations apply to launchers:
         @racket[#t] means that the generated launcher should find the
         base GRacket executable through a relative path.}
 
+ @item{@racket['install-mode] (Windows, Unix) --- either
+       @racket['user] or @racket['main], indicates that the launcher
+       is being installed to a user-specific place or to an
+       installation-wide place, which in turn determines where to
+       record @racket['start-menu], @racket['extension-registry],
+       and/or @racket['desktop] information.}
+
  @item{@racket['start-menu] (Windows) --- a boolean or real number;
        @racket[#t] indicates that the launcher should be in the
        @onscreen{Start} menu by an installer that includes the
@@ -108,12 +115,24 @@ the following additional associations apply to launchers:
        An @racket['extension-registry] value is used only when
        @racket['install-mode] is also specified.}
 
- @item{@racket['install-mode] (Windows) --- either @racket['user] or
-       @racket['main], indicates whether the launcher is being
-       installed to a user-specific place or an installation-wide
-       place, which in turn determines where to record
-       @racket['start-menu] and @racket['extension-registry]
-       information.}
+ @item{@racket['desktop] (Unix) --- a string containing the content of
+       a @filepath{.desktop} file for the launcher, where @tt{Exec}
+       and @tt{Icon} items should be omitted, because they will be
+       added automatically. The file is written to the directory
+       produced by @racket[(find-apps-dir)] or
+       @racket[(find-user-apps-dir)]. A @racket['desktop] value is
+       used only when @racket['install-mode] is also specified.}
+
+  @item{@racket['png] (Unix) : An icon file path (suffix
+        @filepath{.png}) to be referenced by a @filepath{.desktop}
+        file (if any); a @racket['png] value takes precedence over a
+        @racket['ico] value, but neither is used unless a
+        @racket['desktop] value is also present.}
+
+  @item{@racket['ico] (Unix, in addition to more general Windows use)
+        : An icon file path (suffix @filepath{.ico}) that is used in
+        the same way as @racket['png] if no @racket['png] value is
+        available.}
 
 ]
 
@@ -339,6 +358,30 @@ Backward-compatible aliases for
 Backward-compatible aliases for
 @racket[racket-program-launcher-path], etc.}
 
+
+@defproc[(installed-executable-path->desktop-path [exec-path path-string?] [user? any/c])
+         (and/c path? complete-path?)]{
+
+Returns a path for a @filepath{.desktop} file to describe the
+installed executable at @racket[exec-path]. Only the filename part of
+@racket[exec-path] is used. The @racket[user?] argument should be true
+if @racket[exec-path] is installed in a user-specific location (in
+which case the result path will also be user-specific).}
+
+
+@defproc[(installed-desktop-path->icon-path [desktop-path path-string?]
+                                            [user? any/c]
+                                            [suffix bytes?])
+         (and/c path? complete-path?)]{
+
+Returns a path for an icon file to be referenced by the
+@filepath{desktop} file at @racket[desktop-path]. Only the filename
+part of @racket[desktop-path] is used. The @racket[user?] argument
+should be true if @racket[desktop-path] is installed in a
+user-specific location (in which case the result path will also be
+user-specific).  The @racket[suffix] argument provides the icon-file
+suffix, normally either @racket[#"png"] or @racket[#"ico"].}
+
 @; ----------------------------------------------------------------------
 
 @section{Launcher Configuration}
@@ -385,7 +428,10 @@ are as follows:
        OS X}
 
  @item{@filepath{.ico} @'rarr @racket['ico] file for use on
-       Windows}
+       Windows or Unix}
+
+ @item{@filepath{.png} @'rarr @racket['png] file for use on
+       Unix}
 
  @item{@filepath{.lch} @'rarr @racket['independent?] as @racket[#t]
        (the file content is ignored) for use on Windows}
@@ -405,6 +451,9 @@ are as follows:
 
  @item{@filepath{.wmclass} @'rarr @racket['wm-class] as the literal
        content, removing a trailing newline if any; for use on Unix}
+
+ @item{@filepath{.desktop} @'rarr @racket['desktop] as the literal
+       content; for use on Unix}
 
  @item{@filepath{.startmenu} @'rarr @racket['start-menu] as the file
        content if it @racket[read]s as a real number, @racket[#t]

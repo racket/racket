@@ -1091,6 +1091,16 @@ v
   programs; the directory indicated by the returned path may or may
   not exist.}
 
+@defproc[(find-apps-dir) (or/c path? #f)]{
+  Returns a path to the installation's directory @filepath{.desktop}
+  files (for Unix). The result is @racket[#f] if no such directory
+  exists.}
+
+@defproc[(find-user-apps-dir) path?]{
+  Returns a path to the user's directory for @filepath{.desktop} files
+  (for Unix); the directory indicated by the returned path may or may
+  not exist.}
+
 @defproc[(find-man-dir) (or/c path? #f)]{
   Returns a path to the installation's man-page directory. The result is
   @racket[#f] if no such directory exists.}
@@ -1114,9 +1124,10 @@ v
    build. An empty string is normally produced for a release build.
    The result is @racket[#f] if no build stamp is available.}
 
-@defthing[absolute-installation? boolean?]{
-  A binary boolean flag that is true if this installation is using
-  absolute path names.}
+@defproc[(get-absolute-installation?) boolean?]{
+  Returns @racket[#t] if this installation uses
+  absolute path names for executable and library references, 
+  @racket[#f] otherwise.}
 
 @; ------------------------------------------------------------------------
 

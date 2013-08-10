@@ -203,6 +203,9 @@ fi
 if test "${collectsdir}" != '${exec_prefix}/share/${PACKAGE}/collects' ; then
   unixstyle=yes
 fi
+if test "${appsdir}" != '${exec_prefix}/share/applications' ; then
+  unixstyle=yes
+fi
 
 
 MAKE_COPYTREE=no
@@ -221,6 +224,7 @@ if test "${unixstyle}" = "no" ; then
   docdir='${prefix}/doc'
   mandir='${prefix}/man'
   collectsdir='${prefix}/collects'
+  appsdir='${prefix}/share/applications'
   COLLECTS_PATH="../collects"
   CONFIG_PATH="../etc"
   INSTALL_ORIG_TREE=yes
@@ -1526,6 +1530,7 @@ AC_SUBST(LTO)
 AC_SUBST(LTA)
 
 AC_SUBST(collectsdir)
+AC_SUBST(appsdir)
 AC_SUBST(libpltdir)
 AC_SUBST(sharepltdir)
 AC_SUBST(etcpltdir)
@@ -1634,8 +1639,9 @@ else
   echo " C headers          : ${includepltdir}/..."
   echo " platform libraries : ${libpltdir}/..."
   echo " common libraries   : ${sharepltdir}/..."
-  echo " core collections   : ${collectsdir}/..."
+  echo " base collections   : ${collectsdir}/..."
   echo " configuration      : ${etcpltdir}/..."
+  echo " .desktop files     : ${appsdir}/..."
   echo " man pages          : ${mandir}/..."
   echo "     where prefix = ${prefix}"
   echo "  and datarootdir = ${datarootdir}"

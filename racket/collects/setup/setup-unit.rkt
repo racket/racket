@@ -1432,7 +1432,24 @@
                         (delete-file exe-path)]
                        [(and is-dir? (directory-exists? exe-path))
                         (setup-printf "deleting" "launcher ~a" rel-exe-path)
-                        (delete-directory/files exe-path)]))
+                        (delete-directory/files exe-path)])
+                      ;; Clean up any associated .desktop file and icon file:
+                      (when (eq? 'unix (system-type))
+                        (let ([desktop (installed-executable-path->desktop-path
+                                        exe-path
+                                        user?)])
+                          (when (file-exists? desktop)
+                            (setup-printf "deleting" "desktop file ~a" 
+                                          (path->relative-string/share desktop))
+                            (delete-file desktop))
+                          (for ([ext (in-list '(#"ico" #"png"))])
+                            (define icon (installed-desktop-path->icon-path desktop
+                                                                            user?
+                                                                            ext))
+                            (when (file-exists? icon)
+                              (setup-printf "deleting" "icon file ~a" 
+                                            (path->relative-string/share icon))
+                              (delete-file icon))))))
                     ht])))
     (unless (equal? ht ht2)
       (setup-printf "updating" "launcher list")

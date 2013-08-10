@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Slideshow
+GenericName=Slide-presentation tool
+Comment=Slideshow is a Racket-based tool for writing slide presentations as programs
+Terminal=false
+Type=Application
+Categories=Graphics;Presentation;

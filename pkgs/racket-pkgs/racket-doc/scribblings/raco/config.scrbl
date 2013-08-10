@@ -66,9 +66,22 @@ directory:
        but for packages in installation scope.}
 
  @item{@indexed-racket['bin-dir] --- a path, string, or byte string for the
-       main directory containing executables; it defaults to a
+       installion's directory containing executables; it defaults to a
        @filepath{bin} sibling directory of the main collection
        directory.}
+
+ @item{@indexed-racket['apps-dir] --- a path, string, or byte string
+       for the installation's directory for @filepath{.desktop} files;
+       it defaults to a @filepath{applications} subdirectory of the
+       @racket['share-dir] directory.}
+
+ @item{@indexed-racket['man-dir] --- a path, string, or byte string for the
+       installation's man-page directory; it defaults to a @filepath{man}
+       sibling directory of the main collection directory.}
+
+ @item{@indexed-racket['man-dir] --- a path, string, or byte string for the
+       main man-page directory; it defaults to a @filepath{man}
+       sibling directory of the main collection directory.}
 
  @item{@indexed-racket['doc-search-dirs] --- like @racket['lib-search-dirs],
        but for directories containing documentation.}

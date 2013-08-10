@@ -238,7 +238,7 @@
       (let ([p (append (map (lambda (x) 'up) (cdr d)) b)])
         (if (null? p) #f (apply build-path p))))))
 
-(define (make-relative-path-header dest bindir)
+(define (make-relative-path-header dest bindir use-librktdir?)
   ;; rely only on binaries in /usr/bin:/bin
   (define (has-exe? exe)
     (or (file-exists? (build-path "/usr/bin" exe))
@@ -290,8 +290,10 @@
          "cd \"$saveD\"\n"
          "\n"
          "bindir=\"$D"
-         (let ([s (relativize bindir-explode dest-explode)])
-           (if s (string-append "/" (protect-shell-string s)) ""))
+         (if use-librktdir?
+             ""
+             (let ([s (relativize bindir-explode dest-explode)])
+               (if s (string-append "/" (protect-shell-string s)) "")))
          "\"\n"
          "PATH=\"$saveP\"\n")
         ;; fallback to absolute path header
@@ -333,6 +335,10 @@
                   "#!/bin/sh\n"
                   "# This script was created by make-"
                   (symbol->string kind)"-launcher\n")]
+         [use-librktdir? (if alt-exe
+                             (let ([m (assq 'exe-is-gracket aux)])
+                               (and m (cdr m)))
+                             (eq? kind 'mred))]
          [dir-finder
           (let ([bindir (if alt-exe
                             (let ([m (assq 'exe-is-gracket aux)])
@@ -345,15 +351,18 @@
                             (find-console-bin-dir))])
             (if (let ([a (assq 'relative? aux)])
                   (and a (cdr a)))
-                (make-relative-path-header dest bindir)
+                (make-relative-path-header dest bindir use-librktdir?)
                 (make-absolute-path-header bindir)))]
          [exec (format
-                "exec \"${bindir}/~a~a\" ~a"
+                "exec \"${~a}/~a~a\" ~a"
+                (if use-librktdir?
+                    "librktdir"
+                    "bindir")
                 (or alt-exe (case kind
                               [(mred) (if (eq? 'macosx (system-type))
-                                          (format "../lib/GRacket~a.app/Contents/MacOS/Gracket"
+                                          (format "GRacket~a.app/Contents/MacOS/Gracket"
                                                   (variant-suffix variant #t))
-                                          "../lib/gracket")]
+                                          "gracket")]
                               [(mzscheme) "racket"]))
                 (if alt-exe
                     ""
@@ -381,8 +390,13 @@
         (display "# {{{ bindir\n")
         (display dir-finder)
         (display "# }}} bindir\n")
+        (when use-librktdir?
+          (display "# {{{ librktdir\n")
+          (display "librktdir=\"$bindir/../lib\"\n")
+          (display "# }}} librktdir\n"))
         (newline)
-        (display (assemble-exec exec args))))))
+        (display (assemble-exec exec args)))))
+  (check-desktop aux dest))
 
 (define (check-registry aux dest)
   (let ([im (assoc 'install-mode aux)])
@@ -390,7 +404,7 @@
       ;; record Windows regsistry requests, if any
       (let ([m (assoc 'extension-register aux)])
         (when (and m (cdr m))
-          (update-register (cdr im) 
+          (update-register (cdr im)
                            "extreg.rktd"
                            (path-element->string
                             (file-name-from-path dest))
@@ -409,11 +423,82 @@
       ;; record Windows start-menu requests, if any
       (let ([m (assoc 'start-menu aux)])
         (when (and m (cdr m))
-          (update-register (cdr im) 
+          (update-register (cdr im)
                            "startmenu.rktd"
                            (path-element->string
                             (file-name-from-path dest))
                            (cdr m)))))))
+
+(define (installed-executable-path->desktop-path dest user?)
+  (unless (path-string? dest)
+    (raise-argument-error 'installed-executable-path->desktop-path
+                          "path-string?"
+                          dest))
+  (define dir (if user?
+                  (find-user-apps-dir)
+                  (find-apps-dir)))
+  (path-replace-suffix (build-path dir (file-name-from-path dest))
+                       #".desktop"))
+
+(define (installed-desktop-path->icon-path dest user? extension)
+  ;; We put icons files in "share" so that `setup/unixstyle-install'
+  ;; knows how to fix up the "Icon" path in a ".desktop" file.
+  (unless (path-string? dest)
+    (raise-argument-error 'installed-desktop-path->icon-path
+                          "path-string?"
+                          dest))
+  (unless (bytes? extension)
+    (raise-argument-error 'installed-desktop-path->icon-path
+                          "bytes?"
+                          extension))
+  (build-path (if user?
+                  (find-user-share-dir)
+                  (find-share-dir))
+              (path-replace-suffix
+               (file-name-from-path dest)
+               (bytes-append
+                #"-exe-icon."
+                extension))))
+
+(define (check-desktop aux dest)
+  (when (eq? 'unix (system-type))
+    (let ([im (assoc 'install-mode aux)])
+      (when (and im (member (cdr im) '(main user)))
+        (define user? (eq? (cdr im) 'user))
+        ;; create Unix ".desktop" files, if any
+        (let ([m (assoc 'desktop aux)])
+          (when (and m (cdr m))
+            (define file (installed-executable-path->desktop-path dest
+                                                                  user?))
+            (make-directory* (path-only file))
+            (define (adjust-path p)
+              ;; A ".desktop" file is supposed to have absolute paths
+              ;; for the executable and icon, but we don't want absolute
+              ;; paths in an in-place build. So, the ".desktop" files
+              ;; in an in-place build won't be usable directly, but they
+              ;; adn be patched up by `setup/unixstyle-install'.
+              (let ([p (simple-form-path (path->complete-path p))])
+                (if (or user?
+                        (get-absolute-installation?))
+                    p
+                    (find-relative-path (simple-form-path (path-only file)) p))))
+            (install-template file 'mzscheme "starter-sh" "starter-sh") ; for something that's executable
+            (call-with-output-file*
+             file
+             #:exists 'truncate
+             (lambda (o)
+               (displayln (regexp-replace #rx"\n+$" (cdr m) "") o)
+               (fprintf o "Exec=~a\n" (adjust-path dest))
+               (let ([m (or (assq 'png aux)
+                            (assq 'ico aux))])
+                 (when m
+                   (define copy-dest
+                     (installed-desktop-path->icon-path file
+                                                        user? 
+                                                        (filename-extension (cdr m))))
+                   (unless (file-exists? copy-dest)
+                     (copy-file (cdr m) copy-dest))
+                   (fprintf o "Icon=~a\n" (adjust-path copy-dest))))))))))))
 
 (define (update-register mode filename key val)
   (define dir (if (eq? mode 'main)
@@ -597,6 +682,7 @@
   (append
    (try 'icns #".icns")
    (try 'ico #".ico")
+   (try 'png #".png")
    (try 'independent? #".lch")
    (let ([l (try 'creator #".creator")])
      (if (null? l)
@@ -674,7 +760,12 @@
            (list (cons 'wm-class 
                        (regexp-replace #rx"(?:\r\n|\r|\n)$"
                                        (file->string (cdar l))
-                                       ""))))))))
+                                       ""))))))
+   (let ([l (try 'desktop #".desktop")])
+     (if (null? l)
+         l
+         (with-handlers ([exn:fail:filesystem? (lambda (x) (log-fail l x) null)])
+           (list (cons 'desktop (file->string (cdar l)))))))))
 
 (define (build-aux-from-path aux-root)
   (let ([aux-root (if (string? aux-root) (string->path aux-root) aux-root)])
@@ -686,13 +777,15 @@
     (append
      (try #".icns")
      (try #".ico")
+     (try #".png")
      (try #".lch")
      (try #".creator")
      (try #".filetypes")
      (try #".utiexports")
      (try #".extreg")
      (try #".startmenu")
-     (try #".wmclass"))))
+     (try #".wmclass")
+     (try #".desktop"))))
 
 (define (make-gracket-program-launcher file collection dest)
   (make-mred-launcher (list "-l-" (string-append collection "/" file))

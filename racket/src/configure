@@ -638,7 +638,7 @@ docdir
 infodir
 htmldir
 collectsdir
-pdfdir
+appsdir
 psdir
 libdir
 localedir
@@ -748,6 +748,7 @@ LIBRACKET_DEP
 LTO
 LTA
 collectsdir
+appsdir
 libpltdir
 sharepltdir
 etcpltdir
@@ -822,7 +823,7 @@ docdir='${datarootdir}/doc/${PACKAGE}'
 infodir='${datarootdir}/info'
 htmldir='${docdir}'
 collectsdir='${exec_prefix}/share/${PACKAGE}/collects'
-pdfdir='${docdir}'
+appsdir='${exec_prefix}/share/applications'
 psdir='${docdir}'
 libdir='${exec_prefix}/lib'
 localedir='${datarootdir}/locale'
@@ -1039,10 +1040,10 @@ do
   | --progr-tra=* | --program-tr=* | --program-t=*)
     program_transform_name=$ac_optarg ;;
 
-  -pdfdir | --pdfdir | --pdfdi | --pdfd | --pdf | --pd)
-    ac_prev=pdfdir ;;
-  -pdfdir=* | --pdfdir=* | --pdfdi=* | --pdfd=* | --pdf=* | --pd=*)
-    pdfdir=$ac_optarg ;;
+  -appsdir | --appsdir | --appsdi | --appsd | --apps | --pd)
+    ac_prev=appsdir ;;
+  -appsdir=* | --appsdir=* | --appsdi=* | --appsd=* | --apps=* | --pd=*)
+    appsdir=$ac_optarg ;;
 
   -psdir | --psdir | --psdi | --psd | --ps)
     ac_prev=psdir ;;
@@ -1168,7 +1169,7 @@ fi
 # Be sure to have absolute directory names.
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
-		oldincludedir docdir infodir htmldir collectsdir pdfdir psdir \
+		oldincludedir docdir infodir htmldir collectsdir appsdir psdir \
 		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
@@ -1324,7 +1325,8 @@ Fine tuning of the installation directories:
   --datadir=DIR          read-only architecture-independent data [DATAROOTDIR]
   --mandir=DIR           man documentation [DATAROOTDIR/man]
   --docdir=DIR           documentation root [DATAROOTDIR/doc/PACKAGE]
-  --collectsdir=DIR      collects documentation [EPREFIX/share/PACKAGE/collects]
+  --collectsdir=DIR      base collections [EPREFIX/share/PACKAGE/collects]
+  --appsdir=DIR          .desktop files [EPREFIX/share/applications]
 _ACEOF
 
   cat <<\_ACEOF
@@ -2307,6 +2309,9 @@ fi
 if test "${collectsdir}" != '${exec_prefix}/share/${PACKAGE}/collects' ; then
   unixstyle=yes
 fi
+if test "${appsdir}" != '${exec_prefix}/share/applications' ; then
+  unixstyle=yes
+fi
 
 
 MAKE_COPYTREE=no
@@ -2325,6 +2330,7 @@ if test "${unixstyle}" = "no" ; then
   docdir='${prefix}/doc'
   mandir='${prefix}/man'
   collectsdir='${prefix}/collects'
+  appsdir='${prefix}/share/applications'
   COLLECTS_PATH="../collects"
   CONFIG_PATH="../etc"
   INSTALL_ORIG_TREE=yes
@@ -9261,6 +9267,7 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
+
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -9993,7 +10000,7 @@ docdir!$docdir$ac_delim
 infodir!$infodir$ac_delim
 htmldir!$htmldir$ac_delim
 collectsdir!$collectsdir$ac_delim
-pdfdir!$pdfdir$ac_delim
+appsdir!$appsdir$ac_delim
 psdir!$psdir$ac_delim
 libdir!$libdir$ac_delim
 localedir!$localedir$ac_delim
@@ -10144,6 +10151,7 @@ LIBRACKET_DEP!$LIBRACKET_DEP$ac_delim
 LTO!$LTO$ac_delim
 LTA!$LTA$ac_delim
 collectsdir!$collectsdir$ac_delim
+appsdir!$appsdir$ac_delim
 libpltdir!$libpltdir$ac_delim
 sharepltdir!$sharepltdir$ac_delim
 etcpltdir!$etcpltdir$ac_delim
@@ -10168,7 +10176,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 59; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 60; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -10794,8 +10802,9 @@ else
   echo " C headers          : ${includepltdir}/..."
   echo " platform libraries : ${libpltdir}/..."
   echo " common libraries   : ${sharepltdir}/..."
-  echo " core collections   : ${collectsdir}/..."
+  echo " base collections   : ${collectsdir}/..."
   echo " configuration      : ${etcpltdir}/..."
+  echo " .desktop files     : ${appsdir}/..."
   echo " man pages          : ${mandir}/..."
   echo "     where prefix = ${prefix}"
   echo "  and datarootdir = ${datarootdir}"
