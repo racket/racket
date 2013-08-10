@@ -222,7 +222,9 @@
 (test @t{#lang info}
       #f
       ;; test the complete buffer, to make sure that there is no error
-      "\nInteractions disabled: info does not support a REPL (no #%top-interaction)"
+      ;; would be better if this said "lang" and not "setup/infotab" but
+      ;; leave it like this for now.
+      "\nInteractions disabled: setup/infotab does not support a REPL (no #%top-interaction)"
       #t)
 
 ;; test racket/load behavior
