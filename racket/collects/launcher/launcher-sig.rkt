@@ -52,3 +52,6 @@ available-mred-variants
 available-mzscheme-variants
 available-gracket-variants
 available-racket-variants
+
+installed-executable-path->desktop-path
+installed-desktop-path->icon-path
