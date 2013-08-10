@@ -660,7 +660,9 @@
                            (λ (x)
                              (define m 
                                (regexp-match #rx"contract-out[.]rkt[^ ]*.30" (exn-message x)))
-                             (and m (car m)))))
+                             (if m 
+                                 (car m) 
+                                 (list 'regexp-match-failed (exn-message x))))))
             (contract-eval '(require 'provide/contract-35/n)))))
   
   ;; test that provide/contract by itself in a module doesn't signal an error

@@ -99,7 +99,9 @@
               racket-bin
               (path->string
                (collection-file-path "framework-test-engine.rkt" "framework" "tests")))
-       (eprintf "starting gracket failed; used path ~s\n" racket-bin))))
+       (eprintf "starting gracket failed; used path ~s; (find-system-path 'exec-file) = ~s\n"
+                racket-bin
+                (find-system-path 'exec-file)))))
   (debug-printf mz-tcp "accepting listener\n")
   (let-values ([(in out) (tcp-accept listener)])
     (set! in-port in)

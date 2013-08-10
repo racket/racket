@@ -177,14 +177,21 @@
            (dynamic-require (build-path (this-dir) (car file)) #f)))))]))
   
 (define (replay-io file-to-run io)
+  (flush-output (current-output-port))
+  (flush-output (current-error-port))
   (printf "FINISHED ~a\n" (car file-to-run))
   (for ([pr (in-list io)])
     (display (cdr pr)
              ((case (car pr)
                 [(out) current-output-port]
-                [(err) current-error-port])))))    
+                [(err) current-error-port]))))
+  (flush-output (current-output-port))
+  (flush-output (current-error-port)))
 
 (main)
+
+(flush-output (current-output-port))
+(flush-output (current-error-port))
 (fprintf (if (zero? failures)
              (current-output-port)
              (current-error-port))
