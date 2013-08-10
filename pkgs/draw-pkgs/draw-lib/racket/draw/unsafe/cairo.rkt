@@ -125,6 +125,22 @@
                  (set! warned? #t))
                (values 0 0 0 0)))))
 
+(define-cairo cairo_fill_extents (_cfun _cairo_t 
+                                        (x1 : (_ptr o _double)) 
+                                        (y1 : (_ptr o _double)) 
+                                        (x2 : (_ptr o _double)) 
+                                        (y2 : (_ptr o _double)) 
+                                        -> _void
+                                        -> (values x1 y1 x2 y2)))
+
+(define-cairo cairo_stroke_extents (_cfun _cairo_t 
+                                          (x1 : (_ptr o _double)) 
+                                          (y1 : (_ptr o _double)) 
+                                          (x2 : (_ptr o _double)) 
+                                          (y2 : (_ptr o _double)) 
+                                          -> _void
+                                          -> (values x1 y1 x2 y2)))
+
 ;; Transforms
 (define-cairo cairo_translate (_cfun _cairo_t _double* _double* -> _void))
 (define-cairo cairo_scale (_cfun _cairo_t _double* _double* -> _void))
@@ -439,6 +455,22 @@
 
 (define-cairo cairo_copy_path (_cfun _cairo_t -> _cairo_path_t-pointer)
   #:wrap (allocator cairo_path_destroy))
+
+(define-cairo cairo_path_extents (_cfun _cairo_t 
+                                        (x1 : (_ptr o _double)) 
+                                        (y1 : (_ptr o _double)) 
+                                        (x2 : (_ptr o _double)) 
+                                        (y2 : (_ptr o _double)) 
+                                        -> _void
+                                        -> (values x1 y1 x2 y2))
+  ;; cairo_path_extents is in version 1.6 and later
+  #:fail (lambda ()
+           (let ([warned? #f])
+             (lambda (cr) 
+               (unless warned?
+                 (log-warning "cairo_path_extents is unavailable; returning the empty rectangle")
+                 (set! warned? #t))
+               (values 0 0 0 0)))))
 
 (define-enum 0
   CAIRO_PATH_MOVE_TO

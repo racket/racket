@@ -33,7 +33,7 @@
 (define dc-path%
   (class object%
     ;; A path is a list of pairs and vectors:
-    ;;  * The pairs corerspond to points on the path
+    ;;  * The pairs correspond to points on the path
     ;;  * A vector must be between two pairs; it specifies
     ;;    control points for a curve between the two points.
 
@@ -173,6 +173,26 @@
                                            (max b (vector-ref p 1) (vector-ref p 3)))]))])
               (values l t (- r l) (- b t))))))
     
+    (define/public (do-get-path-bounding-box cr type align-x align-y)
+      (flatten-closed!)
+      (flatten-open!)
+      (if (and (null? closed-points) 
+               (null? open-points)
+               (not cr))
+          (values 0. 0. 0. 0.)
+          (let ()
+            (define cairo_op
+              (cond
+                [(eq? type 'path)   cairo_path_extents]
+                [(eq? type 'fill)   cairo_fill_extents]
+                [(eq? type 'stroke) cairo_stroke_extents]
+                [else (error 'get-tight-binding-boc "expected 'path, 'fill, or, 'stroke")]))
+            (cairo_save cr)
+            (do-path cr align-x align-y)
+            (define-values (x1 y1 x2 y2) (cairo_op cr))
+            (cairo_restore cr)
+            (values x1 y1 y2 y2))))
+      
     (define/public (move-to x y)
       (when (or (pair? open-points)
                 (pair? rev-open-points))

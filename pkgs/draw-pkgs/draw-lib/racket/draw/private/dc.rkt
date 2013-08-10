@@ -1134,6 +1134,15 @@
            (rounded-rect x y (sub1w width) (sub1h height)
                          (lambda (x) (align-x x)) (lambda (y) (align-y y)))
            (draw cr #f #t)))))
+    
+    (define (bounding-box-type? o) (member o '(path fill stroke)))
+    
+    (def/public (get-path-bounding-box [dc-path% path] [bounding-box-type? type])
+      (with-cr
+        (values 0. 0. 0. 0.)
+        cr
+        (send path do-get-path-bounding-box cr type 
+              (lambda (x) (align-x x)) (lambda (y) (align-y y)))))
 
     (def/public (draw-spline [real? x1] [real? y1] [real? x2] [real? y2] [real? x3] [real? y3])
       (with-cr

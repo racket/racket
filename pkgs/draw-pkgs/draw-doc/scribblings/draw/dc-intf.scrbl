@@ -621,6 +621,36 @@ See also @method[dc<%> set-origin] and @method[dc<%> get-transformation].
 Gets the current pen. See also @method[dc<%> set-pen].
 
 }
+                     
+                          
+@defmethod[(get-path-bounding-box [path (is-a?/c dc-path%)] 
+                                  [type (or/c 'path 'stroke 'fill)])
+           (values real? real? real? real?)]{
+Returns a rectangle that encloses the path’s points. 
+The return values are the left, top, width, and, height of the rectangle.
+The numbers are in logical coordinates.
+
+For the type @racket['stroke] the rectangle covers the area that would be affected ("inked")
+when drawn with the current pen by draw-path in the drawing context (with a transparent brush). 
+If the pen width is zero, then an empty rectangle will be returned. The size and clipping of the 
+drawing context is ignored.
+
+For the type @racket['fill] the rectangle covers the area that would be affected ("inked")
+by draw-path in the drawing context (with a non-transparent pen and brush). If the line width 
+is zero, then an empty rectangle will be returned. The size and clipping of the drawing
+context are ignored.
+
+For the type @racket['path] the rectangle covers the path, but the pen and brush are ignored.
+The size and clipping of the drawing context are also ignored.
+More precisely: The result is defined as the limit of the bounding boxes returned
+by the 'stroke type for line widths approaching 0 with a round pen cap. The "limit
+process" stops when an empty rectangle is returned. This that zero-area segments contributes
+the rectangle.
+
+For all types if the path is empty, then an empty rectangle @racket[(values 0 0 0 0)] 
+will be returned.
+}
+ 
 
 @defmethod[(get-rotation) real?]{
 
