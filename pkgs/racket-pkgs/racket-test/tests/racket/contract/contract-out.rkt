@@ -624,15 +624,23 @@
     
     ;; drop-var-info : syntax -> syntax
     ;; strips the lexical content from the syntax object, but preserves the source locations
-    (define (drop-var-info stx)
-      (let loop ([stx stx])
-        (cond
-          [(syntax? stx)
-           (datum->syntax #f (loop (syntax-e stx)) stx)]
-          [(pair? stx)
-           (cons (loop (car stx))
-                 (loop (cdr stx)))]
-          [else stx])))
+    (define-syntax (drop-var-info stx)
+      (syntax-case stx ()
+        [(_ arg)
+         (let loop ([stx #'arg])
+           (cond
+             [(syntax? stx)
+              #`(datum->syntax #f 
+                               #,(loop (syntax-e stx)) 
+                               (vector #,(syntax-source stx)
+                                       #,(syntax-line stx)
+                                       #,(syntax-column stx)
+                                       #,(syntax-position stx)
+                                       #,(syntax-span stx)))]
+             [(pair? stx)
+              #`(cons #,(loop (car stx))
+                      #,(loop (cdr stx)))]
+             [else #`'#,stx]))]))
     
     ;; WARNING: do not add or remove lines between here-line and the two modules
     ;; below it, unless you also revise the expected result of the test case.
@@ -641,25 +649,25 @@
     (contract-eval
      (compile/wash
       (drop-var-info
-       #'(module provide/contract-35/m racket/base
-           (require racket/contract)
-           (define (f x) x)
-           (provide/contract [f (-> integer? integer?)])))))
+       (module provide/contract-35/m racket/base
+         (require racket/contract)
+         (define (f x) x)
+         (provide/contract [f (-> integer? integer?)])))))
     
     (contract-eval
      (compile/wash
       (drop-var-info
-       #'(module provide/contract-35/n racket/base
-           (require 'provide/contract-35/m)
-           (f #f)))))
+       (module provide/contract-35/n racket/base
+         (require 'provide/contract-35/m)
+         (f #f)))))
     
-    (test (format "contract-out.rkt:~a.30"
+    (test (format "contract-out.rkt:~a.28"
                   (+ here-line 8))
           'provide/contract-compiled-source-locs
           (with-handlers ((exn:fail?
                            (λ (x)
                              (define m 
-                               (regexp-match #rx"contract-out[.]rkt[^ ]*.30" (exn-message x)))
+                               (regexp-match #rx"contract-out[.]rkt[^ ]*.28" (exn-message x)))
                              (if m 
                                  (car m) 
                                  (list 'regexp-match-failed (exn-message x))))))
