@@ -801,7 +801,7 @@
       (cairo_pattern_destroy p))
 
     ;; Stroke, fill, and flush the current path
-    (define/private (draw cr brush? pen?)
+    (define/private (draw cr brush? pen? [do? #t])
       (define (install-stipple st col mode transformation get put)
         (let ([s (cond
                   [(get) => (lambda (s) s)]
@@ -987,10 +987,10 @@
                                    [(miter) CAIRO_LINE_JOIN_MITER]
                                    [(round) CAIRO_LINE_JOIN_ROUND]
                                    [(bevel) CAIRO_LINE_JOIN_BEVEL]))
-            (cairo_stroke cr)
+            (and do? (cairo_stroke cr))
             (unless (or (eq? s 'solid) (eq? s 'xor))
               (cairo_set_dash cr #() 0)))))
-      (flush-cr))
+      (and do? (flush-cr)))
     
     (define/private (do-draw-arc who 
                                  x y
@@ -1141,8 +1141,14 @@
       (with-cr
         (values 0. 0. 0. 0.)
         cr
-        (send path do-get-path-bounding-box cr type 
-              (lambda (x) (align-x x)) (lambda (y) (align-y y)))))
+        (let ()
+          (cairo_save cr)
+          (draw cr #t #t #f)
+          (define-values (x y w h)
+            (send path do-get-path-bounding-box cr type 
+                  (lambda (x) (align-x x)) (lambda (y) (align-y y))))
+          (cairo_restore cr)
+          (values x y w h))))
 
     (def/public (draw-spline [real? x1] [real? y1] [real? x2] [real? y2] [real? x3] [real? y3])
       (with-cr

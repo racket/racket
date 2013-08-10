@@ -1,4 +1,3 @@
-
 (load-relative "loadtest.rktl")
 
 (require racket/gui/base)
@@ -704,6 +703,53 @@
   (test #f 'no (send r in-region? 5 5))
   (test #t 'yes (send r in-region? 105 105)))
 
+;; ----------------------------------------
+;; Test get-path-bounding-box
+
+(define (test-square-bounding-boxes)
+  (define-syntax (box stx)
+    (syntax-case stx ()
+      [(_ expr ...)
+       #'(let-values ([(left top width height) expr ...])
+           (list left top width height))]))
+  (define dp ; a-square-path
+    (let ([dp (new dc-path%)])
+      (send dp move-to 10 20)
+      (send dp line-to 30 20)
+      (send dp line-to 30 50)
+      (send dp line-to 10 50)
+      (send dp line-to 10 20)
+      (send dp close)
+      dp))
+  
+  (define bm (make-object bitmap% 100 100))
+  (define dc (new bitmap-dc% [bitmap bm]))
+  (send dc set-brush (send the-brush-list find-or-create-brush "red" 'solid))
+  (send dc set-smoothing 'smoothed)
+  
+  (define (bbs pen-width)
+    (send dc set-pen (send the-pen-list find-or-create-pen "black" pen-width 'solid 
+                           'projecting 'round))
+    (define bb        (box (send dp get-bounding-box)))
+    (define bb-path   (box (send dc get-path-bounding-box dp 'path)))
+    (define bb-stroke (box (send dc get-path-bounding-box dp 'stroke)))
+    (define bb-fill   (box (send dc get-path-bounding-box dp 'fill)))
+    (values bb bb-path bb-stroke bb-fill))
+  (define (inside? b1 b2) ; is b2 inside b1? 
+    (match-define (list x y w h) b1)
+    (match-define (list s t a b) b2)
+    (and (< x s) (< y t) (> w a) (> h a)))
+  (define (test w)
+    (define-values (n p s f) (bbs w))
+    (when (= w 0) (set! w 1)) ; 1 is the hair line width
+    (and (inside? s p) ; p ignores pen width, s does not
+         (equal? n (list 10. 20. 20. 30.))
+         (equal? p n); no control points outside the convex hull
+         (equal? s (list (- 10. (/ w 2)) (- 20. (/ w 2)) (+ 20. w) (+ 30. w)))
+         (equal? p f)))
+  (and (test 10) (test 1) (test 0)))
+
+(test #t 'get-path-bounding-box (test-square-bounding-boxes))
 
 ;; ----------------------------------------
 

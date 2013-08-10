@@ -465,12 +465,7 @@
                                         -> (values x1 y1 x2 y2))
   ;; cairo_path_extents is in version 1.6 and later
   #:fail (lambda ()
-           (let ([warned? #f])
-             (lambda (cr) 
-               (unless warned?
-                 (log-warning "cairo_path_extents is unavailable; returning the empty rectangle")
-                 (set! warned? #t))
-               (values 0 0 0 0)))))
+           cairo_stroke_extents))
 
 (define-enum 0
   CAIRO_PATH_MOVE_TO

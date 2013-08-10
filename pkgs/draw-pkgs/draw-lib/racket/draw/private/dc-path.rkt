@@ -191,7 +191,7 @@
             (do-path cr align-x align-y)
             (define-values (x1 y1 x2 y2) (cairo_op cr))
             (cairo_restore cr)
-            (values x1 y1 y2 y2))))
+            (values x1 y1 (- x2 x1) (- y2 y1)))))
       
     (define/public (move-to x y)
       (when (or (pair? open-points)
