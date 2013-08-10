@@ -82,7 +82,7 @@
                    [[exact-integer? y] 0])
   (init [time-stamp 0])
   (init-properties [[bool? caps-down] #f])
-  (properties [[(make-alts symbol? char?) key-release-code] 'down]
+  (properties [[(make-alts symbol? char?) key-release-code] 'press]
               [[(make-or-false (make-alts symbol? char?)) other-shift-key-code] #f]
               [[(make-or-false (make-alts symbol? char?)) other-altgr-key-code] #f]
               [[(make-or-false (make-alts symbol? char?)) other-shift-altgr-key-code] #f]
