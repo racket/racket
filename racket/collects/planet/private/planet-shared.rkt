@@ -254,9 +254,13 @@ Various common pieces of code that both the client and server need to access
     ;; we can only call with-hard-link-lock when the directory containing
     ;; (HARD-LINK-FILE) exists
     (if (with-powerful-security-guard (file-exists? (HARD-LINK-FILE)))
-        (with-hard-link-lock
-         (λ ()
-           (get-hard-link-table/internal)))
+        (with-handlers ((exn:fail? (λ (x) (get-hard-link-table/internal))))
+          ;; sometimes the with-hard-link-lock code will fail because
+          ;; a security guard prevents writing; in that case, just try again
+          ;; but without locking the file.
+          (with-hard-link-lock
+           (λ ()
+             (get-hard-link-table/internal))))
         '()))
   
   ;; row-for-package? : row string (listof string) num num -> boolean
