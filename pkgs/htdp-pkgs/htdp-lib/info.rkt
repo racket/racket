@@ -9,6 +9,7 @@
     "errortrace-lib"
     "gui-lib"
     "htdp-doc"
+    "html-lib"
     "images"
     "pconvert-lib"
     "r5rs-lib"
