@@ -14,7 +14,7 @@
          (make-tex-addition (build-path here "io.tex"))))
 @(define (file-is f)
   (define x (parameterize ([current-directory here]) (read-file f)))
-  (centered
+  (nested
     (tabular #:style (make-style "FileBox" io-style-extras)
       (list (list (verbatim x))))))
 
@@ -140,6 +140,32 @@ elements.
  In many cases, the function argument is used to construct a structure from
  a row.}
 
+@; -----------------------------------------------------------------------------
+@item{@reading[read-xexpr xexpr?]{an X-expression, including whitespace such as tabs and newlines}
+
+Assumption: the file @racket[f] or the selected input device contains an
+XML element. 
+
+@examples[#:eval (examples-batch-io)
+(read-xexpr "data.xml")
+]
+assuming the file named @racket["data.xml"] has this shape: 
+@(file-is "data.xml")
+Note how the result includes @racket["\\n"] for the newlines.}
+
+@item{@reading[read-plain-xexpr xexpr?]{an X-expression, without whitespace}
+
+Assumption: the file @racket[f] or the selected input device contains an
+XML element and the content of this element are other XML elements and
+whitespace. In particular, the XML element does not contain any strings as
+elements other than whitespace. 
+
+@examples[#:eval (examples-batch-io)
+(read-plain-xexpr "data-plain.xml")
+]
+assuming the file named @racket["data-plain.xml"] has this shape: 
+@(file-is "data-plain.xml")
+Compare this result with the one for @racket[read-xexpr].}
 ]
 
 There is only one writer function at the moment: 
@@ -177,6 +203,77 @@ cruel world
  characters. Note that this describes only one example of possible
  malfunction; there are other cases when trans-platform actions may cause
  this teachpack to fail. 
+
+@; -----------------------------------------------------------------------------
+@(define-syntax (reading/web stx)
+   (syntax-case stx ()
+     [(reading name ctc s)
+     #`@defproc[(@name [u string?]) @ctc]{
+      reads the content of URL @racket[u] and produces the first XML
+      element as an @racket[xexpr?] @list[s]. If possible, the function interprets the HTML at
+      the specified URL as XML. The function returns #@racket[f] if the web page
+      does not exist (404)}]
+     [(reading name ctc [x ctc2] s ...)
+      #`@defproc[(@name [f (or/c 'standard-in 'stdin (and/c string? file-exists?))] [@x @ctc2]) @ctc ]{
+      reads the content of URL @racket[u] and produces the first XML
+      element as an @racket[xexpr?] @list[s ...] If possible, the function interprets the HTML at
+      the specified URL as XML. The function returns #@racket[f] if the web page
+      does not exist (404)}]))
+
+@section{Web Functions}
+
+All functions that read a web-based XML consume a URL and possibly
+ additional arguments. They assume that the computer is connected to
+ specified part of the web, though they tolerate non-existent web pages
+ (404 errors) 
+
+@itemlist[
+@; -----------------------------------------------------------------------------
+@item{
+@reading/web[read-xexpr/web xexpr?]{including whitespace such as tabs and newlines}}
+
+@item{
+@reading/web[read-plain-xexpr/web xexpr?]{without whitespace}}
+
+@item{
+@defproc[(url-exists? [u string?]) boolean?]{ensures that the specified URL
+@racket[u] does not produce a 404 error.}}
+
+@item{
+@defproc[(xexpr? [u any?]) boolean?]{checks that the given value is an
+X-expression in the following sense: 
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketblock
+ ;   @deftech{Xexpr} is one of: 
+ ;   -- @racket[symbol?] 
+ ;   -- @racket[string?] 
+ ;   -- @racket[(cons symbol? (cons [List-of #, @tech{Attribute}] [List-of #, @tech{Xexpr}]))]
+ ;   -- @racket[(cons symbol? [List-of #, @tech{Xexpr}])]
+ ;
+ ;   @deftech{Attribute} is:
+ ;      @racket[(list symbol? string?)]
+ ;   @racket[(list 'a "some text")] is called an a-Attribute 
+ ;   and "some text" is a's value.
+))
+@;%
+ Note that full Racket uses a wider notion of X-expression. 
+ }}
+
+@item{
+@defproc[(xexpr-as-string [x xexpr?]) string?]{renders the given
+X-expression as a string.}}
+
+@item{
+@defproc[(url-html-neighbors [u string?]) (listof string?)]{retrieves the
+content of URL @racket[u] and produces the list of all URLs that refer to
+.html pages via an @tt{<a>} tag.}}
+
+]
+
+
+
 
 @; -----------------------------------------------------------------------------
 @section{Testing}
