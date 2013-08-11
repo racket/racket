@@ -1,6 +1,7 @@
 (module kw-file "pre-base.rkt" 
 
-  (require (prefix-in k: "pre-base.rkt"))
+  (require (prefix-in k: "pre-base.rkt")
+           "sort.rkt")
 
   (provide (rename-out
             [open-input-file        -open-input-file]
@@ -136,6 +137,9 @@
     (lambda ([dir (current-directory)] #:build? [build? #f])
       (unless (path-string? dir)
         (raise-argument-error 'directory-list "path-string?" dir))
-      (if build?
-          (map (lambda (i) (build-path dir i)) (k:directory-list dir))
-          (k:directory-list dir)))))
+      (let ([content (sort (k:directory-list dir)
+                           bytes<?
+                           path-element->bytes)])
+        (if build?
+            (map (lambda (i) (build-path dir i)) content)
+            content)))))

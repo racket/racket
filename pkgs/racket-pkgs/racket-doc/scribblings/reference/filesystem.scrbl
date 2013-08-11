@@ -465,7 +465,10 @@ by @racket[path]. If @racket[build?] is @racket[#f], the resulting
 paths are all @tech{path elements}; otherwise, the individual results
 are combined with @racket[path] using @racket[build-path].
 On Windows, an element of the result list may start with
-@litchar{\\?\REL\\}.}
+@litchar{\\?\REL\\}.
+
+The resulting paths are always sorted using
+@racket[path-element->bytes] and @racket[bytes<?].}
 
 
 @defproc[(filesystem-root-list) (listof path?)]{
