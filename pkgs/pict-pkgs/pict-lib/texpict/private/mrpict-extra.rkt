@@ -492,7 +492,9 @@
 				 [b (get-brush)]
 				 [fg (get-text-foreground)])
 			     (let ([color (resolve-color (cadr x))])
-                               (set-pen (find-or-create-pen color (send p get-width) (send p get-style)))
+                          (set-pen (find-or-create-pen color 
+                                                       (send p get-width) (send p get-style)
+                                                       (send p get-cap) (send p get-join)))
 			       (set-brush (find-or-create-brush color 'solid))
 			       (set-text-foreground color))
 			     (loop dx dy (caddr x))
@@ -513,7 +515,9 @@
                                                           (case (cadr x)
                                                             [(#f) 'transparent]
                                                             [(thicklines thinlines) (send p get-style)]
-                                                            [else (cadr x)]))))
+                                                            [else (cadr x)]))
+                                                      (send p get-cap) 
+                                                      (send p get-join)))
 			 (loop dx dy (caddr x))
 			 (set-pen p))]
 		      [(prog)
