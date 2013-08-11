@@ -3,6 +3,7 @@
          racket/file
          racket/port
          racket/string
+         racket/list
          file/zip
          openssl/sha1
          net/url
@@ -41,18 +42,22 @@
 (define (stream-directory d)
   (define-values (i o) (make-pipe (* 100 4096)))
   (define (skip-path? p)
-    (member (let-values ([(base name dir?) (split-path p)]) (path->string name))
-            '("compiled")))
+    (let-values ([(base name dir?) (split-path p)])
+      (define s (path->string name))
+      (or (member s '("compiled"))
+          (regexp-match? #rx#"^(?:[.]git.*|[.]svn|.*~|#.*#)$" s))))
   (thread (lambda ()
-            (for ([f (in-directory d)])
-              (cond
-               [(skip-path? f) (void)]
-               [(directory-exists? f)
-                (write (directory-list f) o)]
-               [(file-exists? f)
-                (call-with-input-file* 
-                 f
-                 (lambda (i) (copy-port i o)))]))
+            (let loop ([d d])
+              (for ([f (directory-list d #:build? #t)])
+                (cond
+                 [(skip-path? f) (void)]
+                 [(directory-exists? f)
+                  (write (filter-not skip-path? (directory-list f)) o)
+                  (loop f)]
+                 [(file-exists? f)
+                  (call-with-input-file* 
+                   f
+                   (lambda (i) (copy-port i o)))])))
             (close-output-port o)))
   i)
 
@@ -61,6 +66,7 @@
   (define dest-zip (and pack-dest-dir
                         (build-path (path->complete-path pack-dest-dir) 
                                     zip-file)))
+
   (when pack-dest-dir
     (define sum-file (path-add-suffix pkg-name #".srcsum"))
     (define pkg-src-dir (build-path src-dir pkg-name))
@@ -73,12 +79,16 @@
                          (call-with-input-file* dest-sum read)))
       (printf "packing ~a\n" zip-file)
       (define tmp-dir (make-temporary-file "~a-pkg" 'directory))
-      (generate-stripped-directory (if native? 'binary 'source)
-                                   pkg-src-dir 
-                                   tmp-dir)
+      (parameterize ([strip-binary-compile-info #f]) ; for deterministic checksum
+        (generate-stripped-directory (if native? 'binary 'source)
+                                     pkg-src-dir 
+                                     tmp-dir))
       (parameterize ([current-directory tmp-dir])
         (when (file-exists? dest-zip) (delete-file dest-zip))
-        (apply zip dest-zip (directory-list)))
+        (apply zip dest-zip (directory-list)
+               ;; Use a constant timestamp so that the checksum does
+               ;; not depend on timestamps:
+               #:timestamp 1359788400))
       (delete-directory/files tmp-dir)
       (call-with-output-file*
        dest-sum

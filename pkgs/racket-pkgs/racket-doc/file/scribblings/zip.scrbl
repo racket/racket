@@ -8,25 +8,35 @@ utilities to create @exec{zip} archive files, which are compatible
 with both Windows and Unix (including Mac OS X) unpacking. The actual
 compression is implemented by @racket[deflate].}
 
-@defproc[(zip [zip-file path-string?][path path-string?] ...) 
+@defproc[(zip [zip-file path-string?] [path path-string?] ...
+              [#:timestamp timestamp (or/c #f exact-integer?) #f])
          void?]{
 
 Creates @racket[zip-file], which holds the complete content of all
-@racket[path]s.  The given @racket[path]s are all expected to be
+@racket[path]s.
+
+The given @racket[path]s are all expected to be
 relative path names of existing directories and files (i.e., relative
 to the current directory).  If a nested path is provided as a
 @racket[path], its ancestor directories are also added to the
 resulting zip file, up to the current directory (using
-@racket[pathlist-closure]).  Files are packaged as usual for
+@racket[pathlist-closure]).
+
+Files are packaged as usual for
 @exec{zip} files, including permission bits for both Windows and Unix
 (including Mac OS X).  The permission bits are determined by
 @racket[file-or-directory-permissions], which does not preserve the
 distinction between owner/group/other permissions. Also, symbolic
-links are always followed.}
+links are always followed.
+
+If @racket[timestamp] is not @racket[#f], it is used as the
+modification date for each file, instead of the result of
+@racket[file-or-directory-modify-seconds].}
 
 
 @defproc[(zip->output [paths (listof path-string?)]
-                      [out output-port? (current-output-port)])
+                      [out output-port? (current-output-port)]
+                      [#:timestamp timestamp (or/c #f exact-integer?) #f])
          void?]{
 
 Zips each of the given @racket[paths], and packages it as a zip

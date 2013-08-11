@@ -8,7 +8,10 @@
          racket/set)
 
 (provide generate-stripped-directory
-         fixup-local-redirect-reference)
+         fixup-local-redirect-reference
+         strip-binary-compile-info)
+
+(define strip-binary-compile-info (make-parameter #t))
 
 (define (generate-stripped-directory mode dir dest-dir)
   (define drop-keep-ns (make-base-namespace))
@@ -214,8 +217,9 @@
     (unless (get-info/full dir #:namespace (make-base-namespace))
       (error 'pkg-binary-create "rewrite failed"))
     ;; compile it, if not top level:
-    (unless (eq? src-base 'same)
-      (managed-compile-zo new-p))))
+    (when (strip-binary-compile-info)
+      (unless (eq? src-base 'same)
+        (managed-compile-zo new-p)))))
 
 (define ((fixup-info-definition get-info) defn)
   (match defn

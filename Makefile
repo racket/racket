@@ -219,9 +219,7 @@ win32-pkg-links:
 # On a server platform (for an installer build):
 
 server:
-	$(MAKE) build/site.rkt
 	$(MAKE) base
-	$(MAKE) stamp
 	$(MAKE) server-from-base
 
 build/site.rkt:
@@ -240,8 +238,13 @@ stamp-from-git:
 stamp-from-date:
 	date +"%Y%m%d" > build/stamp.txt
 
+local-from-base:
+	$(MAKE) build/site.rkt
+	$(MAKE) stamp
+	if [ "$(SRC_CATALOG)" = 'local' ] ; then $(MAKE) build-from-local ; else $(MAKE) build-from-catalog ; fi
+
 server-from-base:
-	if [ "$(EEAPP)" = '' ] ; then $(MAKE) build-from-local ; else $(MAKE) build-from-catalog ; fi
+	$(MAKE) local-from-base
 	$(MAKE) origin-collects
 	$(MAKE) built-catalog
 	$(MAKE) built-catalog-server
@@ -335,16 +338,6 @@ binary-catalog:
 	$(RACKET) -l- distro-build/pack-built --mode binary
 binary-catalog-server:
 	$(RACKET) -l- distro-build/serve-catalog --mode binary
-
-# Assemble all packages from this repo into ".zip" form
-# to checksum-based subdirectories of "build/archive/pkgs"
-# and a catalog in "build/archive/catalog":
-PACK_ARCHIVE = --at-checksum build/archive/pkgs \
-               --pack build/archive/pre-pkgs \
-               ++catalog build/archive/catalog
-archive-catalog:
-	$(RACKET) $(DISTBLD)/pack-and-catalog.rkt --native $(PACK_ARCHIVE) native-pkgs
-	$(RACKET) $(DISTBLD)/pack-and-catalog.rkt $(PACK_ARCHIVE) pkgs
 
 # ------------------------------------------------------------
 # On each supported platform (for an installer build):

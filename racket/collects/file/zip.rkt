@@ -142,8 +142,8 @@
       (write-int comment-length 2)
       (write-bytes *zip-comment*)))
 
-  ;; write-central-directory : (listof header) ->
-  (define (write-central-directory headers)
+  ;; write-central-directory : (listof header) (or/c #f exact-integer?) ->
+  (define (write-central-directory headers timestamp)
     (let ([count (length headers)])
       (let loop ([headers headers] [offset 0] [size 0])
         (if (null? headers)
@@ -155,7 +155,10 @@
                  [attributes (metadata-attributes metadata)]
                  [compression (metadata-compression metadata)]
                  [version (bitwise-ior *spec-version*
-                                       (arithmetic-shift *system* 8))])
+                                       (arithmetic-shift (if timestamp
+                                                             3
+                                                             *system*)
+                                                         8))])
             (write-int #x02014b50                   4)
             (write-int version                      2)
             (write-int *required-version*           2)
@@ -224,9 +227,10 @@
   (define (with-slash-separator bytes)
     (regexp-replace* *os-specific-separator-regexp* bytes #"/"))
 
-  ;; build-metadata : relative-path -> metadata
-  (define (build-metadata path)
-    (let* ([mod  (seconds->date (file-or-directory-modify-seconds path))]
+  ;; build-metadata : relative-path (or/c #f exact-integer?) -> metadata
+  (define (build-metadata path timestamp)
+    (let* ([mod  (seconds->date (or timestamp
+                                    (file-or-directory-modify-seconds path)))]
            [dir? (directory-exists? path)]
            [path (cond [(path? path)   path]
                        [(string? path) (string->path path)]
@@ -246,24 +250,27 @@
   ;; zip-write : (listof relative-path) ->
   ;; writes a zip file to current-output-port
   (provide zip->output)
-  (define (zip->output files [out (current-output-port)])
+  (define (zip->output files [out (current-output-port)]
+                       #:timestamp [timestamp #f])
     (parameterize ([current-output-port out])
       (let* ([seekable? (seekable-port? (current-output-port))]
              [headers ; note: Racket's `map' is always left-to-right
               (map (lambda (file)
-                     (zip-one-entry (build-metadata file) seekable?))
+                     (zip-one-entry (build-metadata file timestamp) seekable?))
                    files)])
         (when (zip-verbose)
           (eprintf "zip: writing headers...\n"))
-        (write-central-directory headers))
+        (write-central-directory headers timestamp))
       (when (zip-verbose)
         (eprintf "zip: done.\n"))))
 
   ;; zip : output-file paths ->
   (provide zip)
-  (define (zip zip-file . paths)
+  (define (zip zip-file #:timestamp [timestamp #f]
+               . paths)
     ;; (when (null? paths) (error 'zip "no paths specified"))
     (with-output-to-file zip-file
-      (lambda () (zip->output (pathlist-closure paths)))))
+      (lambda () (zip->output (pathlist-closure paths) 
+                              #:timestamp timestamp))))
 
   )
