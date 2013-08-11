@@ -24,12 +24,13 @@
      #f]))
 
 (define (pkg-index/basic+versions get-pkgs pkg-name->info)
+  (define (req-version req) (request-binding/string req "version" #f))
   (define (write-info req pkg-name)
     (response/sexpr
      (pkg-name->info pkg-name
-                     #:version (request-binding/string req "version" #f))))
+                     #:version (req-version req))))
   (define (display-info req pkg-name)
-    (define info (pkg-name->info pkg-name))
+    (define info (pkg-name->info pkg-name #:version (req-version req)))
     (response/xexpr
      `(html
        (body
@@ -50,7 +51,7 @@
   (define (write-pkgs/all req)
     (response/sexpr
      (for/hash ([n (in-list (get-pkgs))])
-       (values n (pkg-name->info n)))))
+       (values n (pkg-name->info n #:version (req-version req))))))
   (define-values (dispatch get-url)
     (dispatch-rules
      [() list-pkgs]
