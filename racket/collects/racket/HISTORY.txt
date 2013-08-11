@@ -1,3 +1,6 @@
+Version 5.90.0.6
+Added path<?, symbol<?
+
 Version 5.90.0.4
 Add current-library-collection-links, find-library-collection-links
 Changed module search to use current-library-collection-paths

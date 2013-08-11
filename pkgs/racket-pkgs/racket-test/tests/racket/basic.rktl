@@ -395,6 +395,12 @@
 (test 'JollyWog string->symbol (symbol->string 'JollyWog))
 #ci(test 'JollyWog string->symbol (symbol->string 'JollyWog))
 
+(test #t symbol<? 'a 'b)
+(test #t symbol<? 'a 'b 'c)
+(test #f symbol<? 'a 'c 'b)
+(test #t symbol<? 'a 'aa)
+(test #f symbol<? 'aa 'a)
+
 (arity-test symbol? 1 1)
 
 (test #t keyword? '#:a)

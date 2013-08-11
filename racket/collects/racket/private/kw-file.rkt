@@ -138,8 +138,7 @@
       (unless (path-string? dir)
         (raise-argument-error 'directory-list "path-string?" dir))
       (let ([content (sort (k:directory-list dir)
-                           bytes<?
-                           path-element->bytes)])
+                           path<?)])
         (if build?
             (map (lambda (i) (build-path dir i)) content)
             content)))))

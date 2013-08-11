@@ -467,8 +467,7 @@ are combined with @racket[path] using @racket[build-path].
 On Windows, an element of the result list may start with
 @litchar{\\?\REL\\}.
 
-The resulting paths are always sorted using
-@racket[path-element->bytes] and @racket[bytes<?].}
+The resulting paths are always sorted using @racket[path<?].}
 
 
 @defproc[(filesystem-root-list) (listof path?)]{

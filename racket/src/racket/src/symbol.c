@@ -66,6 +66,7 @@ THREAD_LOCAL_DECL(static int gensym_counter);
 void scheme_set_case_sensitive(int v) { scheme_case_sensitive =  v; }
 
 /* locals */
+static Scheme_Object *symbol_lt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *symbol_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *symbol_unreadable_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *symbol_interned_p_prim (int argc, Scheme_Object *argv[]);
@@ -333,7 +334,8 @@ scheme_init_symbol (Scheme_Env *env)
   
   p = scheme_make_folding_prim(symbol_interned_p_prim, "symbol-interned?", 1, 1, 1);
   scheme_add_global_constant("symbol-interned?", p, env);
-  
+
+  GLOBAL_FOLDING_PRIM("symbol<?",                 symbol_lt,                       2, -1, 1, env);  
   GLOBAL_IMMED_PRIM("string->symbol",             string_to_symbol_prim,            1, 1, env);
   GLOBAL_IMMED_PRIM("string->uninterned-symbol",  string_to_uninterned_symbol_prim, 1, 1, env);
   GLOBAL_IMMED_PRIM("string->unreadable-symbol",  string_to_unreadable_symbol_prim, 1, 1, env);
@@ -842,19 +844,20 @@ keyword_p_prim (int argc, Scheme_Object *argv[])
   return SCHEME_KEYWORDP(argv[0]) ? scheme_true : scheme_false;
 }
 
-static Scheme_Object *keyword_lt (int argc, Scheme_Object *argv[])
+static Scheme_Object *symkey_lt (const char *who, Scheme_Type ty, const char *contract,
+                                  int argc, Scheme_Object *argv[])
 {
   Scheme_Object *prev = argv[0], *kw;
   GC_CAN_IGNORE unsigned char *a, *b;
   int i, al, bl, t;
 
-  if (!SCHEME_KEYWORDP(prev))
-    scheme_wrong_contract("keyword<?", "keyword?", 0, argc, argv);
+  if (!SAME_TYPE(SCHEME_TYPE(prev), ty))
+    scheme_wrong_contract(who, contract, 0, argc, argv);
 
   for (i = 1; i < argc; i++) {
     kw = argv[i];
-    if (!SCHEME_KEYWORDP(kw))
-      scheme_wrong_contract("keyword<?", "keyword?", i, argc, argv);
+    if (!SAME_TYPE(SCHEME_TYPE(kw), ty))
+      scheme_wrong_contract(who, contract, i, argc, argv);
 
     a = (unsigned char *)SCHEME_SYM_VAL(prev);
     al = SCHEME_SYM_LEN(prev);
@@ -879,8 +882,8 @@ static Scheme_Object *keyword_lt (int argc, Scheme_Object *argv[])
     if (al >= bl) {
       /* Check remaining types */
       for (i++; i < argc; i++) {
-        if (!SCHEME_KEYWORDP(argv[i]))
-          scheme_wrong_contract("keyword<?", "keyword?", i, argc, argv);
+        if (!SAME_TYPE(SCHEME_TYPE(argv[i]), ty))
+          scheme_wrong_contract(who, contract, i, argc, argv);
       }
       return scheme_false;
     }
@@ -889,6 +892,16 @@ static Scheme_Object *keyword_lt (int argc, Scheme_Object *argv[])
   }
 
   return scheme_true;
+}
+
+static Scheme_Object *keyword_lt (int argc, Scheme_Object *argv[])
+{
+  return symkey_lt("keyword<?", scheme_keyword_type, "keyword?", argc, argv);
+}
+
+static Scheme_Object *symbol_lt (int argc, Scheme_Object *argv[])
+{
+  return symkey_lt("symbol<?", scheme_symbol_type, "symbol?", argc, argv);
 }
 
 static Scheme_Object *

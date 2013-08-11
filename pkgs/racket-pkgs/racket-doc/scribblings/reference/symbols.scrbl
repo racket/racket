@@ -100,3 +100,11 @@ used as an ephemeron key (see @secref["ephemerons"]).
  optional @racket[base] argument is a prefix symbol or string.}
 
 @examples[(gensym "apple")]
+
+
+@defproc[(symbol<? [a-sym symbol?] [b-sym symbol?] ...) boolean?]{
+
+Returns @racket[#t] if the arguments are sorted, where the comparison
+for each pair of symbols is the same as using
+@racket[symbol->string] witk @racket[string->bytes/utf-8] and
+@racket[bytes<?].}

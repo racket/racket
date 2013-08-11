@@ -5,6 +5,13 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test #t path<? (bytes->path #"a") (bytes->path #"b"))
+(test #f path<? (bytes->path #"b") (bytes->path #"a"))
+(test #t path<? (bytes->path #"a") (bytes->path #"b") (bytes->path #"c"))
+(test #f path<? (bytes->path #"a") (bytes->path #"c") (bytes->path #"b"))
+(test #t path<? (bytes->path #"a") (bytes->path #"aa"))
+(test #f path<? (bytes->path #"aa") (bytes->path #"a"))
+
 (test (string->path "x.zo") path-replace-suffix "x.rkt" ".zo")
 (test (string->path "x.zo") path-replace-suffix "x.rkt" #".zo")
 (test (string->path "x.zo") path-replace-suffix "x" #".zo")

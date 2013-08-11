@@ -325,6 +325,8 @@ static Scheme_Object *byte_string_convert(int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_string_convert_end(int argc, Scheme_Object *argv[]);
 static Scheme_Object *byte_converter_p(int argc, Scheme_Object *argv[]);
 
+static Scheme_Object *path_lt (int argc, Scheme_Object *argv[]);
+
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
@@ -950,6 +952,13 @@ scheme_init_string (Scheme_Env *env)
 						       MZCONFIG_CMDLINE_ARGS),
 			     env);
 
+
+  scheme_add_global_constant("path<?",
+			     scheme_make_immed_prim(path_lt,
+						    "path<?",
+						    2, -1),
+			     env);
+
 #ifdef MZ_PRECISE_GC
   register_traversers();
 #endif
@@ -1210,15 +1219,15 @@ byte_p(int argc, Scheme_Object *argv[])
 
 /* comparisons */
 
-#define GEN_BYTE_STRING_COMP(name, scheme_name, comp, op) \
+#define GEN_BYTE_STRING_PATH_COMP(name, scheme_name, comp, op, PRED, contract)     \
 static Scheme_Object * name (int argc, Scheme_Object *argv[]) \
 {  char *s, *prev; int i, sl, pl; int falz = 0;\
-   if (!SCHEME_BYTE_STRINGP(argv[0])) \
-    scheme_wrong_contract(scheme_name, "bytes?", 0, argc, argv); \
+  if (!PRED(argv[0])) \
+    scheme_wrong_contract(scheme_name, contract, 0, argc, argv); \
    prev = SCHEME_BYTE_STR_VAL(argv[0]); pl = SCHEME_BYTE_STRTAG_VAL(argv[0]); \
    for (i = 1; i < argc; i++) { \
-     if (!SCHEME_BYTE_STRINGP(argv[i])) \
-      scheme_wrong_contract(scheme_name, "bytes?", i, argc, argv); \
+     if (!PRED(argv[i])) \
+      scheme_wrong_contract(scheme_name, contract, i, argc, argv); \
      s = SCHEME_BYTE_STR_VAL(argv[i]); sl = SCHEME_BYTE_STRTAG_VAL(argv[i]); \
      if (!falz) if (!(comp(scheme_name, \
                            (unsigned char *)prev, pl, \
@@ -1228,9 +1237,14 @@ static Scheme_Object * name (int argc, Scheme_Object *argv[]) \
   return falz ? scheme_false : scheme_true; \
 }
 
+#define GEN_BYTE_STRING_COMP(name, scheme_name, comp, op) \
+  GEN_BYTE_STRING_PATH_COMP(name, scheme_name, comp, op, SCHEME_BYTE_STRINGP, "bytes?") \
+
 GEN_BYTE_STRING_COMP(byte_string_eq, "bytes=?", mz_strcmp, ==)
 GEN_BYTE_STRING_COMP(byte_string_lt, "bytes<?", mz_strcmp, <)
 GEN_BYTE_STRING_COMP(byte_string_gt, "bytes>?", mz_strcmp, >)
+
+GEN_BYTE_STRING_PATH_COMP(path_lt, "path<?", mz_strcmp, <, SCHEME_PATHP, "path?")
 
 /**********************************************************************/
 /*                   byte string <-> char string                      */

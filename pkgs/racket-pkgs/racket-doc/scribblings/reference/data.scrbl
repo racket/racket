@@ -68,7 +68,8 @@ Returns a keyword whose @racket[display]ed form is the same as that of
 
 Returns @racket[#t] if the arguments are sorted, where the comparison
 for each pair of keywords is the same as using
-@racket[keyword->string] and @racket[string<?].}
+@racket[keyword->string] with @racket[string->bytes/utf-8] and
+@racket[bytes<?].}
 
 @; ----------------------------------------------------------------------
 @include-section["pairs.scrbl"]

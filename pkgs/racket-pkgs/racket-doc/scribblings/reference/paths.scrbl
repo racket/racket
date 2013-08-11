@@ -186,6 +186,13 @@ reassembling the result with @racket[bytes->path-element] and
 @racket[build-path]).}
 
 
+@defproc[(path<? [a-path path?] [b-path path?] ...) boolean?]{
+
+Returns @racket[#t] if the arguments are sorted, where the comparison
+for each pair of paths is the same as using
+@racket[path->bytes] and @racket[bytes<?].}
+
+
 @defproc[(path-convention-type [path path-for-some-system?])
          (or/c 'unix 'windows)]{
 
