@@ -732,7 +732,7 @@ TODO
               (hash-set! ht (car arrs) n)
               (loop (cdr arrs) (+ n 1))))
           (let* ([unsorted (hash-map ht list)]
-                 [sorted (sort unsorted (λ (x y) (<= (cadr x) (cadr y))))]
+                 [sorted (sort unsorted < #:key cadr)]
                  [arrs (map car sorted)])
             arrs)))
       

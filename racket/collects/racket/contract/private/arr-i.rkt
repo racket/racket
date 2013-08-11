@@ -647,7 +647,7 @@
        (set! blame-ids (cons (cons (build-blame-identifier indy? dom? id)
                                    (vector (syntax-e id) indy? dom?))
                              blame-ids)))))
-  (set! blame-ids (sort blame-ids string<=? #:key (λ (x) (symbol->string (syntax-e (car x))))))
+  (set! blame-ids (sort blame-ids symbol<? #:key (λ (x) (syntax-e (car x)))))
   
   (values
    (map cdr blame-ids)

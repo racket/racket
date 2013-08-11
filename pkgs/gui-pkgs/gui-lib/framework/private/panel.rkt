@@ -862,7 +862,7 @@
 ;; has been shrunk one size, larger sizes for that child will not be
 ;; considered, and shrinking always proceeds from the left to the right.
 (define (candidate-sizes lolon)
-  (define all-boxes (map (λ (x) (box (sort x >=))) lolon))
+  (define all-boxes (map (λ (x) (box (sort x >))) lolon))
   (define answer '())
   (define (record-current)
     (set! answer (cons (map car (map unbox all-boxes)) answer)))

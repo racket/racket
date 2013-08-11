@@ -35,8 +35,7 @@
                            subject
                            description
                            how-to-repeat)
-                         string<=?
-                         #:key symbol->string))
+                         symbol<?))
 
 ;; id : number
 ;; open? : boolean?
@@ -74,8 +73,7 @@
   (match a-saved-report
     [(struct saved-report ((? number?)
                            (list (list (? symbol? keys) vals) ...)))
-     (and (equal? (sort keys string<=? #:key symbol->string)
-                  valid-keys)
+     (and (equal? (sort keys symbol<?) valid-keys)
           (for/and ([key (in-list keys)]
                     [val (in-list vals)])
             (case key

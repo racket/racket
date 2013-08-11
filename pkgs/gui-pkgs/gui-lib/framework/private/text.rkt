@@ -1311,7 +1311,7 @@
         (hash-map search-bubble-table
                   (λ (x true) 
                     (list x (if replace-mode? 'light-search-color 'normal-search-color)))))
-       string<=?
+       string<?
        #:key (λ (x) (format "~s" (car x)))))
     
     
@@ -4039,7 +4039,7 @@ designates the character that triggers autocompletion
                                   (map sym->mpi (exported-index-desc-from-libs desc))))
                    (hash-set! ht (symbol->string name) #t)))))))
        (xref-index xref))
-      (sort (hash-map ht (λ (x y) x)) string<=?))))
+      (sort (hash-map ht (λ (x y) x)) string<?))))
 
 ;; ============================================================
 ;; auto complete example code
