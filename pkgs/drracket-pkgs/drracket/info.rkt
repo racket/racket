@@ -16,7 +16,6 @@
                "profile-lib"
                "sandbox-lib"
                "scribble-lib"
-               "slideshow-lib"
                "snip-lib"
                "string-constants-lib"
                "typed-racket-lib"
