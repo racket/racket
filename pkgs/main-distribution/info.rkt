@@ -48,7 +48,7 @@
                "racket-index"
                "racket-lib"
                "racklog"
-               "rackunit-lib"
+               "rackunit"
                "readline"
                "realm"
                "redex"
