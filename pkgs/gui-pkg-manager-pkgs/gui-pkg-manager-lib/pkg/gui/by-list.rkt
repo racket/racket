@@ -288,7 +288,15 @@
       (set! task (thread 
                   (lambda ()
                     (with-handlers ([exn:break? void])
-                      (thunk)
+                      (with-handlers ([exn:fail? (lambda (exn)
+                                                   (queue-callback
+                                                    (lambda ()
+                                                      (message-box
+                                                       "Error"
+                                                       (exn-message exn)
+                                                       (get-top-level-window)
+                                                       '(ok stop)))))])
+                        (thunk))
                       (let ([f finalize])
                         (queue-callback/wait (lambda () (f #t)))))))))
 
