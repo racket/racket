@@ -20,7 +20,7 @@
 (define drracket-tools '(("lazy-tool.rkt")))
 (define drracket-tool-names '("Lazy Racket"))
 (define deps '("base"
-               "drracket"
+               "drracket-plugin-lib"
                "htdp"
                "string-constants-lib"
                "compatibility-lib"))

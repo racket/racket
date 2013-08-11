@@ -34,7 +34,7 @@
 (define tool-urls  '("http://www.barzilay.org/Swindle/"))
 (define deps '("base"
                "compatibility-lib"
-               "drracket"
+               "drracket-plugin-lib"
                "gui-lib"
 	       "net-lib"
                "string-constants-lib"))

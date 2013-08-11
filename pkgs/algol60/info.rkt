@@ -6,14 +6,14 @@
                      "racket-doc"
                      "scribble-doc"
                      "scribble-lib"
-                     "drracket"))
+                     "drracket-plugin-lib"))
 
 (define tools '(("tool.rkt")))
 (define tool-names '("Algol 60"))
 (define scribblings '(("algol60.scrbl" () (experimental 40))))
 (define deps '("base"
                "compatibility-lib"
-               "drracket"
+               "drracket-plugin-lib"
                "errortrace-lib"
                "gui-lib"
                "parser-tools-lib"
