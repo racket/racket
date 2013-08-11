@@ -1,6 +1,6 @@
 #lang racket/unit
   (require string-constants
-           "drsig.rkt"
+           drracket/private/drsig
            racket/gui/base
            racket/list
            framework)

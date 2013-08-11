@@ -1,6 +1,6 @@
 #lang racket/unit
 
-(require "drsig.rkt"
+(require drracket/private/drsig
          string-constants
          
          ;; NOTE: this module instantiates stacktrace itself, so we have

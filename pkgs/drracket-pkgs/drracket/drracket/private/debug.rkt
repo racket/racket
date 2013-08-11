@@ -19,7 +19,7 @@ profile todo:
          framework
          framework/private/bday
          "embedded-snip-utils.rkt"
-         "drsig.rkt"
+         drracket/private/drsig
          "bindings-browser.rkt"
          "stack-checkpoint.rkt"
          net/sendurl

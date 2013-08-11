@@ -28,7 +28,7 @@ TODO
          racket/gui/base
          framework
          browser/external
-         "drsig.rkt"
+         drracket/private/drsig
          "local-member-names.rkt"
          "stack-checkpoint.rkt"
          "parse-logger-args.rkt"

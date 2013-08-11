@@ -6,7 +6,7 @@
          framework
          browser/external
          setup/getinfo
-         "drsig.rkt"
+         drracket/private/drsig
          "../acks.rkt")
 
 (import [prefix drracket:unit: drracket:unit^]

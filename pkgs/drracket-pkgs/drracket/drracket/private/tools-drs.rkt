@@ -14,7 +14,7 @@ This file sets up the right lexical environment to invoke the tools that want to
          mred
          framework
          framework/splash
-         "drsig.rkt"
+         drracket/private/drsig
          "language-object-contract.rkt"
          mrlib/switchable-button
          string-constants)

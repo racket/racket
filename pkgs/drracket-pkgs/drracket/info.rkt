@@ -31,10 +31,11 @@
                "typed-racket-more"
                "trace"
                "macro-debugger"
-	       "net-lib"
+               "net-lib"
                "srfi-lib"
                "srfi-doc"
                "unstable"
+               "drracket-plugin-lib"
                "gui-pkg-manager-lib"))
 (define build-deps '("compatibility-doc"
                      "draw-doc"
@@ -45,6 +46,8 @@
                      "r5rs-doc"
                      "at-exp-lib"
                      "rackunit-lib"))
+
+(define implies '("drracket-plugin-lib"))
 
 (define pkg-desc "The DrRacket programming environment")
 

@@ -20,7 +20,7 @@
          mrlib/close-icon
          mrlib/name-message
          "tooltip.rkt"
-         "drsig.rkt"
+         drracket/private/drsig
          "rep.rkt"
          "eval-helpers.rkt"
          "local-member-names.rkt"

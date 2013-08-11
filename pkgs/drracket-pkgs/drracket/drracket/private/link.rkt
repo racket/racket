@@ -11,7 +11,7 @@
          "tools-drs.rkt"
          "language.rkt"
          "language-configuration.rkt"
-         "drsig.rkt"
+         drracket/private/drsig
          "init.rkt"
          "text.rkt"
          "app.rkt"

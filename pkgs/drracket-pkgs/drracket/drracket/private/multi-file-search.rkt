@@ -8,7 +8,7 @@
            mzlib/thread
            mzlib/async-channel
            string-constants
-           "drsig.rkt")
+           drracket/private/drsig)
   
   (import [prefix drracket:frame: drracket:frame^]
           [prefix drracket:unit: drracket:unit^]

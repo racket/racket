@@ -3,7 +3,7 @@
            racket/class
 	   racket/list
            framework
-           "drsig.rkt")
+           drracket/private/drsig)
   
   (import)
   (export drracket:modes^)

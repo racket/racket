@@ -31,7 +31,7 @@ module browser threading seems wrong.
          net/sendurl
          net/url
          
-         "drsig.rkt"
+         drracket/private/drsig
          "auto-language.rkt"
          "insert-large-letters.rkt"
          "get-defs.rkt"

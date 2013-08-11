@@ -8,7 +8,7 @@
          mred
          framework
          framework/splash
-         "drsig.rkt"
+         drracket/private/drsig
          "language-object-contract.rkt"
          mrlib/switchable-button
          string-constants)

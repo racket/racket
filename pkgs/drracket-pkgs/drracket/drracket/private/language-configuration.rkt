@@ -7,7 +7,7 @@
            racket/string
            racket/list
            racket/gui/base
-           "drsig.rkt"
+           drracket/private/drsig
            "tooltip.rkt"
            string-constants
            framework

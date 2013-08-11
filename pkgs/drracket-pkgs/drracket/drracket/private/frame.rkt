@@ -26,7 +26,7 @@
          racket/file
          racket/math
          racket/unit
-         "drsig.rkt"
+         drracket/private/drsig
          racket/gui/base
          framework
          net/url

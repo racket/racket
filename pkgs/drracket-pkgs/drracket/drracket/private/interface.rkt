@@ -9,7 +9,7 @@ remain the same for tools that use them.
 
 |#
 
-(require "drsig.rkt"
+(require drracket/private/drsig
          "local-member-names.rkt"
          racket/class 
          framework)

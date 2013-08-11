@@ -1,7 +1,7 @@
 #lang racket/unit
 
 (require racket/class
-         "drsig.rkt"
+         drracket/private/drsig
          framework/private/logging-timer)
 
 (import [prefix drracket:unit: drracket:unit^]

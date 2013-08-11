@@ -8,7 +8,7 @@
          setup/dirs
          help/search
          help/private/buginfo
-         "drsig.rkt")
+         drracket/private/drsig)
 
 (import [prefix drracket:frame: drracket:frame^]
         [prefix drracket:language-configuration: drracket:language-configuration/internal^]

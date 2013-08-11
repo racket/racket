@@ -1,6 +1,6 @@
 #lang racket/unit
   (require mzlib/class
-           "drsig.rkt"
+           drracket/private/drsig
            framework)
   
   (import)

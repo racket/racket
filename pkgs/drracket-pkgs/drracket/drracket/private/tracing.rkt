@@ -10,7 +10,7 @@
          string-constants
          framework
          (prefix-in tr: trace/stacktrace)
-         "drsig.rkt")
+         drracket/private/drsig)
 
 (provide tracing@)
 

@@ -7,7 +7,7 @@
          racket/unit
          racket/class
          racket/gui/base
-         "drsig.rkt"
+         drracket/private/drsig
          "local-member-names.rkt"
          framework/private/logging-timer)
 

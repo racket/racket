@@ -2,7 +2,7 @@
 (require racket/unit
          racket/class
          racket/gui/base
-         "drsig.rkt"
+         drracket/private/drsig
          framework
          string-constants)
 

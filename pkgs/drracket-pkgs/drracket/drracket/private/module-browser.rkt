@@ -12,7 +12,7 @@
          framework/framework
          string-constants
          mrlib/graph
-         "drsig.rkt"
+         drracket/private/drsig
          "eval-helpers.rkt"
          racket/unit
          racket/async-channel

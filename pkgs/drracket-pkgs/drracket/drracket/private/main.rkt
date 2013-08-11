@@ -3,7 +3,7 @@
 (require string-constants
          racket/contract
          racket/class
-         "drsig.rkt"
+         drracket/private/drsig
          "frame-icon.rkt"
          mred
          framework
