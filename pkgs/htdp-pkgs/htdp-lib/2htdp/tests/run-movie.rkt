@@ -10,4 +10,4 @@
 (define DOT (circle 3 'solid 'red))
 (define BACKGROUND (empty-scene 100 400))
 
-(run-movie 8 (make-images 8))
+(run-movie 1/8 (make-images 8))
