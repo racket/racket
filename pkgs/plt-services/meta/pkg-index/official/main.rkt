@@ -132,9 +132,14 @@
      (response/sexpr #f)]
     [else
      (for ([(p more-pi) (in-hash pis)])
-       (define pi (package-info p))
+       (define pi (if (package-exists? p)
+                      (package-info p)
+                      #hash()))
        (define new-pi (hash-deep-merge pi more-pi))
-       (package-info-set! p new-pi)
+       (define updated-pi (let ([now (current-seconds)])
+                            (for/fold ([pi new-pi]) ([k (in-list '(last-edit last-checked last-updated))])
+                              (hash-set pi k now))))
+       (package-info-set! p updated-pi)
        (thread (λ () (update-checksum #t p))))
      (response/sexpr #t)]))
 
