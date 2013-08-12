@@ -43,6 +43,20 @@
   
 (define sc-install-pkg-browse (string-constant browse...))
 
+(define sc-install-pkg-abort-set-scope (string-constant install-pkg-abort-set-scope))
+
+(define sc-install-pkg-dependencies-fail (string-constant install-pkg-dependencies-fail))
+(define sc-install-pkg-dependencies-force (string-constant install-pkg-dependencies-force))
+(define sc-install-pkg-dependencies-search-ask (string-constant install-pkg-dependencies-search-ask))
+(define sc-install-pkg-dependencies-search-auto 
+  (string-constant install-pkg-dependencies-search-auto))
+
+(define sc-install-pkg-dependencies-mode (string-constant install-pkg-dependencies-mode))
+
+(define sc-install-pkg-dependencies-search-ask-not-supported-in-gui
+  (string-constant install-pkg-dependencies-search-ask-not-supported-in-gui))
+(define sc-install-pkg-deps-is (string-constant install-pkg-deps-is))
+
 (preferences:set-default 'drracket:gui-installer-pkg-source "" string?)
 
 (define by-source-panel%
@@ -57,41 +71,44 @@
                               [parent this] 
                               [stretchable-height #f]))
 
-    (define tf (new text-field% 
-                    [parent source-panel] 
-                    [min-width 600]
-                    [label (~a sc-install-pkg-source-label ":")]
-                    [callback (λ (_1 _2) 
-                                 (preferences:set 'drracket:gui-installer-pkg-source (send tf get-value))
-                                 (adjust-all))]))
-    (send tf set-value (or text-field-initial-value (preferences:get 'drracket:gui-installer-pkg-source)))
+    (define tf 
+      (new text-field% 
+           [parent source-panel] 
+           [min-width 600]
+           [label (~a sc-install-pkg-source-label ":")]
+           [callback (λ (_1 _2) 
+                       (preferences:set 'drracket:gui-installer-pkg-source (send tf get-value))
+                       (adjust-all))]))
+    (send tf set-value (or text-field-initial-value 
+                           (preferences:get 'drracket:gui-installer-pkg-source)))
 
+    (define (browse-callback b e)
+      (define mode (send choice get-string-selection))
+      (define dir? (or (equal? mode sc-install-pkg-dir)
+                       (equal? mode sc-install-pkg-dir-url)))
+      (define f
+        (cond
+          [dir?
+           (get-directory (string-constant install-pkg-select-package-directory)
+                          (get-top-level-window))]
+          [else
+           (parameterize ([finder:default-filters
+                           '(("Package" "*.zip;*.plt;*.tgz;*.tar")
+                             ("Any" "*.*"))])
+             (finder:get-file #f (string-constant install-pkg-select-package-file)
+                              #f "bad"
+                              (get-top-level-window)))]))
+      (when f
+        (send tf set-value 
+              (url->string (path->url (if dir?
+                                          (path->directory-path f) 
+                                          f))))
+        (adjust-all)))
     (define browse-button (new button%
                                [parent source-panel]
                                [label (string-constant browse...)]
                                [font small-control-font]
-                               [callback (lambda (b e)
-                                           (define mode (send choice get-string-selection))
-                                           (define dir? (or (equal? mode sc-install-pkg-dir)
-                                                            (equal? mode sc-install-pkg-dir-url)))
-                                           (define f
-                                             (cond
-                                              [dir?
-                                               (get-directory (string-constant install-pkg-select-package-directory)
-                                                              (get-top-level-window))]
-                                              [else
-                                               (parameterize ([finder:default-filters
-                                                               '(("Package" "*.zip;*.plt;*.tgz;*.tar")
-                                                                 ("Any" "*.*"))])
-                                                 (finder:get-file #f (string-constant install-pkg-select-package-file)
-                                                                  #f "bad"
-                                                                  (get-top-level-window)))]))
-                                           (when f
-                                             (send tf set-value 
-                                                   (url->string (path->url (if dir?
-                                                                               (path->directory-path f) 
-                                                                               f))))
-                                             (adjust-all)))]))
+                               [callback browse-callback]))
     
     (define/public (get-button-panel) button-panel)
     (define button-panel (new horizontal-panel% 
@@ -170,7 +187,9 @@
                                             [parent details-panel]
                                             [stretchable-height #f]
                                             [alignment '(right center)]))
-    (define inferred-action-msg (new message% [label ""] [parent inferred-action-msg-parent] [auto-resize #t]))
+    (define inferred-action-msg (new message% [label ""] 
+                                     [parent inferred-action-msg-parent]
+                                     [auto-resize #t]))
 
     
     (define scope-panel (new horizontal-panel%
@@ -192,18 +211,52 @@
                                       [label sc-install-pkg-set-as-default]
                                       [font small-control-font]
                                       [parent scope-panel]
-                                      [callback (lambda (b e)
-                                                  (in-terminal
-                                                   (lambda ()
-                                                     (define scope (selected-scope))
-                                                     (pkg-config-command #:scope 'installation #:set #t "default-scope" (~a scope))
-                                                     (printf "Default scope successfully changed to ~a" scope)))
-                                                  (adjust-all))]))
+                                      [callback
+                                       (lambda (b e)
+                                         (in-terminal
+                                          sc-install-pkg-abort-set-scope
+                                          (lambda ()
+                                            (define scope (selected-scope))
+                                            (pkg-config-command #:scope 'installation
+                                                                #:set #t
+                                                                "default-scope"
+                                                                (~a scope))
+                                            (printf "Default scope successfully changed to ~a"
+                                                    scope)))
+                                         (adjust-all))]))
     (define inferred-scope-msg-parent (new horizontal-panel% 
                                            [parent details-panel]
                                            [stretchable-height #f]
                                            [alignment '(right center)]))
     (define scope-msg (new message% [label ""] [parent inferred-scope-msg-parent] [auto-resize #t]))
+    
+    (define deps-panel (new horizontal-panel% [parent details-panel] [stretchable-height #f]))
+    (define (deps-choice-callback b e)
+      (case (send deps-choice get-selection)
+        [(3) 
+         (send deps-choice set-selection 0)
+         (adjust-all)
+         (message-box 
+          sc-install-pkg-dependencies-mode
+          sc-install-pkg-dependencies-search-ask-not-supported-in-gui)]
+        [else 
+         (adjust-all)]))
+              
+    (define deps-choice (new choice%
+                             [label sc-install-pkg-dependencies-mode]
+                             [parent deps-panel]
+                             [choices (list sc-install-pkg-default
+                                            sc-install-pkg-dependencies-fail
+                                            sc-install-pkg-dependencies-force
+                                            sc-install-pkg-dependencies-search-ask
+                                            sc-install-pkg-dependencies-search-auto)]
+                             [stretchable-width #t]
+                             [callback deps-choice-callback]))
+    (define deps-msg-parent (new horizontal-panel% 
+                                 [parent details-panel]
+                                 [stretchable-height #f]
+                                 [alignment '(right center)]))
+    (define deps-msg (new message% [label ""] [parent deps-msg-parent] [auto-resize #t]))
     
     (define cb (new check-box% 
                     [label sc-install-pkg-force?] 
@@ -267,6 +320,7 @@
       (adjust-details-shown)
       (adjust-browse)
       (adjust-scope)
+      (adjust-deps)
       (adjust-ok))
     
     (define/private (adjust-checkbox)
@@ -316,13 +370,17 @@
                 (λ (l) '()))])))
     
     (define/private (adjust-inferred)
+      (define inferred-actual-type (get-inferred-actual-type))
       (define new-lab
-        (and (equal? #f (selected-type))
-             (let-values ([(_ actual-type)
-                           (package-source->name+type (send tf get-value) #f)])
-               (and actual-type
-                    (format sc-install-pkg-inferred-as (type->str actual-type))))))
+        (and inferred-actual-type
+             (format sc-install-pkg-inferred-as (type->str inferred-actual-type))))
       (send inferred-msg set-label (or new-lab "")))
+    
+    (define (get-inferred-actual-type)
+      (and (equal? #f (selected-type))
+           (let-values ([(_ actual-type)
+                         (package-source->name+type (send tf get-value) #f)])
+             actual-type)))
 
     (define/private (adjust-scope)
       (send scope-msg set-label (format sc-install-pkg-scope-is
@@ -340,6 +398,25 @@
             (send scope-panel delete-child scope-default-button)
             (send scope-panel add-child scope-default-button))))
     
+    (define/private (adjust-deps)
+      (send deps-msg set-label
+            (cond
+              [(equal? 0 (send deps-choice get-selection)) 
+               (format sc-install-pkg-deps-is (get-deps-selected-type))]
+              [else ""])))
+    
+    (define (get-deps-selected-type)
+      (case (send deps-choice get-selection)
+        [(0)
+         (define current-type (or (selected-type) (get-inferred-actual-type)))
+         (case current-type
+           [(name) 'search-auto]
+           [else 'fail])]
+        [(1) 'fail]
+        [(2) 'force]
+        [(3) 'fail] ;; shouldn't happen
+        [(4) 'search-auto]))
+      
     (define/private (adjust-cmd-line)
       (define (convert-to-string s)
         (cond
@@ -386,6 +463,7 @@
                     (if (equal? scope (default-pkg-scope))
                         '()
                         (list '#:scope scope)))
+                  (list '#:deps (get-deps-selected-type))
                   (list the-pkg)))))
 
     (define/override (on-superwindow-show on?)

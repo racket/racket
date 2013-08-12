@@ -1838,4 +1838,18 @@ please adhere to these guidelines:
   (install-pkg-packages-for "Packages for ~a")
   (install-pkg-really-remove-installation "Are you sure you want to remove all installed packages and information for ~a?")
   
+  (install-pkg-abort-set-scope "Abort Scope Change")
+
+  (install-pkg-dependencies-fail "Fail: cancels the installation if dependencies unmet")
+  (install-pkg-dependencies-force "Force: install despite missing dependencies")
+  (install-pkg-dependencies-search-ask 
+ "Ask: prompt about each missing dependency (not supported in GUI)")
+  (install-pkg-dependencies-search-auto "Auto: install missing dependencies automatically")
+
+  (install-pkg-dependencies-mode "Dependencies Mode")
+
+  (install-pkg-dependencies-search-ask-not-supported-in-gui
+   "The “ask“ mode for dependencies is not supported in the GUI installer.")
+  (install-pkg-deps-is "Default deps mode is “~a”")
+  
   )
