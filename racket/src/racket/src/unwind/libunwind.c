@@ -2860,6 +2860,43 @@ static uint8_t dwarf_to_unw_regnum_map[17] =
   };
 #endif
 
+#ifdef PLAIN_X86
+/* DWARF column numbers: */
+#define EAX	0
+#define ECX	1
+#define EDX	2
+#define EBX	3
+#define ESP	4
+#define EBP	5
+#define ESI	6
+#define EDI	7
+#define EIP	8
+#define EFLAGS	9
+#define TRAPNO	10
+#define ST0	11
+#endif
+
+#ifdef UNW_X86_64
+/* DWARF column numbers for x86_64: */
+#define RAX	0
+#define RDX	1
+#define RCX	2
+#define RBX	3
+#define RSI	4
+#define RDI	5
+#define RBP	6
+#define RSP	7
+#define R8	8
+#define R9	9
+#define R10	10
+#define R11	11
+#define R12	12
+#define R13	13
+#define R14	14
+#define R15	15
+#define RIP	16
+#endif
+
 int
 unw_get_reg (unw_cursor_t *cursor, int regnum, unw_word_t *valp)
 {
@@ -2908,7 +2945,7 @@ unw_get_reg (unw_cursor_t *cursor, int regnum, unw_word_t *valp)
 
     case UNW_X86_64_RIP:
       c->dwarf.ip = *valp;		/* also update the RIP cache */
-      loc = c->dwarf.loc[REG_RIP];
+      loc = c->dwarf.loc[RIP];
       break;
 
     case UNW_X86_64_CFA:
@@ -2927,23 +2964,23 @@ unw_get_reg (unw_cursor_t *cursor, int regnum, unw_word_t *valp)
 	  return 0;
 	}
       else
-	loc = c->dwarf.loc[(regnum == UNW_X86_64_RAX) ? REG_RAX : REG_RDX];
+	loc = c->dwarf.loc[(regnum == UNW_X86_64_RAX) ? RAX : RDX];
       break;
 
-    case UNW_X86_64_RCX: loc = c->dwarf.loc[REG_RCX]; break;
-    case UNW_X86_64_RBX: loc = c->dwarf.loc[REG_RBX]; break;
+    case UNW_X86_64_RCX: loc = c->dwarf.loc[RCX]; break;
+    case UNW_X86_64_RBX: loc = c->dwarf.loc[RBX]; break;
 
-    case UNW_X86_64_RBP: loc = c->dwarf.loc[REG_RBP]; break;
-    case UNW_X86_64_RSI: loc = c->dwarf.loc[REG_RSI]; break;
-    case UNW_X86_64_RDI: loc = c->dwarf.loc[REG_RDI]; break;
-    case UNW_X86_64_R8: loc = c->dwarf.loc[REG_R8]; break;
-    case UNW_X86_64_R9: loc = c->dwarf.loc[REG_R9]; break;
-    case UNW_X86_64_R10: loc = c->dwarf.loc[REG_R10]; break;
-    case UNW_X86_64_R11: loc = c->dwarf.loc[REG_R11]; break;
-    case UNW_X86_64_R12: loc = c->dwarf.loc[REG_R12]; break;
-    case UNW_X86_64_R13: loc = c->dwarf.loc[REG_R13]; break;
-    case UNW_X86_64_R14: loc = c->dwarf.loc[REG_R14]; break;
-    case UNW_X86_64_R15: loc = c->dwarf.loc[REG_R15]; break;
+    case UNW_X86_64_RBP: loc = c->dwarf.loc[RBP]; break;
+    case UNW_X86_64_RSI: loc = c->dwarf.loc[RSI]; break;
+    case UNW_X86_64_RDI: loc = c->dwarf.loc[RDI]; break;
+    case UNW_X86_64_R8: loc = c->dwarf.loc[R8]; break;
+    case UNW_X86_64_R9: loc = c->dwarf.loc[R9]; break;
+    case UNW_X86_64_R10: loc = c->dwarf.loc[R10]; break;
+    case UNW_X86_64_R11: loc = c->dwarf.loc[R11]; break;
+    case UNW_X86_64_R12: loc = c->dwarf.loc[R12]; break;
+    case UNW_X86_64_R13: loc = c->dwarf.loc[R13]; break;
+    case UNW_X86_64_R14: loc = c->dwarf.loc[R14]; break;
+    case UNW_X86_64_R15: loc = c->dwarf.loc[R15]; break;
 
     default:
       Debug (1, "bad register number %u\n", regnum);
@@ -3051,43 +3088,6 @@ int dwarf_to_unw_regnum(reg)
   return (((reg) <= DWARF_REGNUM_MAP_LENGTH) ? dwarf_to_unw_regnum_map[reg] : 0);
 #endif
 }
-
-#ifdef PLAIN_X86
-/* DWARF column numbers: */
-#define EAX	0
-#define ECX	1
-#define EDX	2
-#define EBX	3
-#define ESP	4
-#define EBP	5
-#define ESI	6
-#define EDI	7
-#define EIP	8
-#define EFLAGS	9
-#define TRAPNO	10
-#define ST0	11
-#endif
-
-#ifdef UNW_X86_64
-/* DWARF column numbers for x86_64: */
-#define RAX	0
-#define RDX	1
-#define RCX	2
-#define RBX	3
-#define RSI	4
-#define RDI	5
-#define RBP	6
-#define RSP	7
-#define R8	8
-#define R9	9
-#define R10	10
-#define R11	11
-#define R12	12
-#define R13	13
-#define R14	14
-#define R15	15
-#define RIP	16
-#endif
 
 #ifdef PLAIN_X86
 static inline int
