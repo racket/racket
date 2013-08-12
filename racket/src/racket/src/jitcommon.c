@@ -790,7 +790,7 @@ static int common2(mz_jit_state *jitter, void *_data)
   mz_pop_locals();
   jit_ret();
   CHECK_LIMIT();
-  scheme_jit_register_helper_func(jitter, scheme_on_demand_jit_code);
+  scheme_jit_register_helper_func(jitter, scheme_on_demand_jit_code, 0);
 
   /* Used for the state of a function that is being JITted 
      (for a kind of cycle detection) without breaking concurrent 
@@ -819,11 +819,11 @@ static int common2(mz_jit_state *jitter, void *_data)
   sjc.finish_tail_call_code = jit_get_ip();
   scheme_generate_finish_tail_call(jitter, 0);
   CHECK_LIMIT();
-  scheme_jit_register_helper_func(jitter, sjc.finish_tail_call_code);
+  scheme_jit_register_helper_func(jitter, sjc.finish_tail_call_code, 0);
   sjc.finish_tail_call_fixup_code = jit_get_ip();
   scheme_generate_finish_tail_call(jitter, 2);
   CHECK_LIMIT();
-  scheme_jit_register_helper_func(jitter, sjc.finish_tail_call_fixup_code);
+  scheme_jit_register_helper_func(jitter, sjc.finish_tail_call_fixup_code, 0);
 
   /* *** get_stack_pointer_code *** */
   sjc.get_stack_pointer_code = jit_get_ip();

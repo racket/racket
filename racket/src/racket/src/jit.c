@@ -3885,17 +3885,26 @@ typedef struct {
   int num_params;
   int has_rest;
   int is_method;
+  int gcable;
 } Generate_Arity_Check_Data;
 
 static int do_generate_lambda_simple_arity_check(mz_jit_state *jitter, void *_data)
 {
   Generate_Arity_Check_Data *data = (Generate_Arity_Check_Data *)_data;
+  void *code;
+  int r;
   
 #ifdef MZ_USE_JIT_PPC
   jitter->js.jitl.nbArgs = 2; /* matches check_arity_code prolog */
 #endif
 
-  return generate_simple_arity_check(jitter, data->num_params, data->has_rest, data->is_method);
+  code = jit_get_ip();
+
+  r = generate_simple_arity_check(jitter, data->num_params, data->has_rest, data->is_method);
+
+  scheme_jit_register_helper_func(jitter, code, data->gcable);
+
+  return r;
 }
 
 static void *generate_lambda_simple_arity_check(int num_params, int has_rest, int is_method, int permanent)
@@ -3905,6 +3914,7 @@ static void *generate_lambda_simple_arity_check(int num_params, int has_rest, in
   data.num_params = num_params;
   data.has_rest = has_rest;
   data.is_method = is_method;
+  data.gcable = !permanent;
 
   return scheme_generate_one(NULL, do_generate_lambda_simple_arity_check, &data, !permanent, NULL, NULL);
 }
@@ -3995,6 +4005,8 @@ static int do_generate_case_lambda_dispatch(mz_jit_state *jitter, void *_data)
 #ifdef NEED_RETAIN_CODE_POINTERS
       data->ndata->retain_code = jit_unadjust_ip(start_code);
 #endif
+
+      scheme_jit_register_helper_func(jitter, start_code, 1);
 
       return 1;
     }

@@ -1309,7 +1309,7 @@ typedef struct {
   int direct_prim, direct_native, nontail_self, unboxed_args;
 } Generate_Call_Data;
 
-void scheme_jit_register_sub_func(mz_jit_state *jitter, void *code, Scheme_Object *protocol)
+static void jit_register_sub_func(mz_jit_state *jitter, void *code, Scheme_Object *protocol, int gcable)
 /* protocol: #f => normal lightweight call protocol
              void => next return address is in LOCAL2
              eof => name to use is in LOCAL2 */
@@ -1320,15 +1320,21 @@ void scheme_jit_register_sub_func(mz_jit_state *jitter, void *code, Scheme_Objec
   if (jitter->retain_start)
     scheme_jit_add_symbol((uintptr_t)jit_unadjust_ip(code),
                           (uintptr_t)jit_unadjust_ip(code_end) - 1,
-                          protocol, 0);
+                          protocol,
+                          gcable);
 }
 
-void scheme_jit_register_helper_func(mz_jit_state *jitter, void *code)
+void scheme_jit_register_sub_func(mz_jit_state *jitter, void *code, Scheme_Object *protocol)
+{
+  return jit_register_sub_func(jitter, code, protocol, 0);
+}
+
+void scheme_jit_register_helper_func(mz_jit_state *jitter, void *code, int gcable)
 {
 #if defined(MZ_USE_DWARF_LIBUNWIND) || defined(_WIN64)
   /* Null indicates that there's no function name to report, but the
      stack should be unwound manually using the JJIT-generated convention. */
-  scheme_jit_register_sub_func(jitter, code, scheme_null);
+  jit_register_sub_func(jitter, code, scheme_null, gcable);
 #endif  
 }
 
@@ -1352,7 +1358,7 @@ static int do_generate_shared_call(mz_jit_state *jitter, void *_data)
       ok = scheme_generate_tail_call(jitter, data->num_rands, data->direct_native, 1, 0, 
                                      NULL, NULL);
 
-    scheme_jit_register_helper_func(jitter, code);
+    scheme_jit_register_helper_func(jitter, code, 0);
 
     return ok;
   } else {

@@ -1463,7 +1463,7 @@ int scheme_generate_finish_apply(mz_jit_state *jitter);
 int scheme_generate_finish_multi_apply(mz_jit_state *jitter);
 int scheme_generate_finish_tail_apply(mz_jit_state *jitter);
 void scheme_jit_register_sub_func(mz_jit_state *jitter, void *code, Scheme_Object *protocol);
-void scheme_jit_register_helper_func(mz_jit_state *jitter, void *code);
+void scheme_jit_register_helper_func(mz_jit_state *jitter, void *code, int gcable);
 #ifdef MZ_USE_FUTURES
 Scheme_Object *scheme_noncm_prim_indirect(Scheme_Prim proc, int argc);
 Scheme_Object *scheme_prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc, Scheme_Object *self);
