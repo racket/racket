@@ -1082,7 +1082,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/planet/examples/dummy-module.rkt" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/planet/examples/scribblings-package" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/planet/lang.rkt" drdr:command-line (raco "make" *)
-"pkgs/racket-pkgs/racket-test/tests/planet/run-all.rkt" drdr:timeout 240 drdr:random #t
+"pkgs/racket-pkgs/racket-test/tests/planet/run-all.rkt" drdr:timeout 500 drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/planet/submod.rkt" drdr:command-line #f
 "pkgs/racket-pkgs/racket-test/tests/planet/test-docs-complete.rkt" drdr:command-line (raco "make" *)
 "pkgs/racket-pkgs/racket-test/tests/planet/thread-safe-resolver.rkt" drdr:command-line (raco "make" *) drdr:timeout 1000
