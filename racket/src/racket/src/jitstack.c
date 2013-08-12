@@ -465,11 +465,9 @@ Scheme_Object *scheme_native_stack_trace(void)
 # endif
 	manual_unw = 0;
       } else {
-        void *prev_q = q;
         unw_step(&c);
         q = (void *)unw_get_ip(&c);
-        if ((q == prev_q)
-	    || unw_reset_bad_ptr_flag(&c))
+        if (unw_reset_bad_ptr_flag(&c))
           break;
       }
     }
