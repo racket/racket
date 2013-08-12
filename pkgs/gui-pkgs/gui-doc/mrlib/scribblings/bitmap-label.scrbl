@@ -16,8 +16,9 @@ image specified by @racket[img] followed by the text in @racket[str].}
 
 @defproc[((bitmap-label-maker [str string?]
                               [img (or/c (is-a?/c bitmap%) path-string?)])
-          [future-parent (is-a?/c area-container<%>)])
+          [future-parent any/c])
          (is-a?/c bitmap%)]{
 
-And older variant of @racket[make-bitmap-label] that obtains a
-font to use from a container @racket[future-parent].}
+And older variant of @racket[make-bitmap-label] that was designed to
+obtain a font to use from a container @racket[future-parent]. The
+@racket[future-parent] argument is currently ignored.}
