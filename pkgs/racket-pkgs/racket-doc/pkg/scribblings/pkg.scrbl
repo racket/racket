@@ -289,6 +289,8 @@ sub-commands.
    @item{@exec{search-auto} --- Like @exec{search-ask}, but does not ask for permission to install or update.}
   ]}
 
+  @item{@DFlag{auto} --- Shorthand for @exec{@DFlag{deps} search-auto}.}
+
   @item{@DFlag{force} --- Ignores conflicts (unsafe).}
 
   @item{@DFlag{ignore-checksums} --- Ignores errors verifying package @tech{checksums} (unsafe).}
@@ -357,9 +359,10 @@ the given @nonterm{pkg}s.
  the following @nonterm{option}s:
 
  @itemlist[
- @item{@DFlag{deps} @nonterm{behavior} --- Same as for @command-ref{install}.}
  @item{@DFlag{all} or @Flag{a} --- Update all packages, if no packages are given in the argument list.}
- @item{@DFlag{update-deps} --- Checks the named packages, and their dependencies (transitively) for updates.}
+ @item{@DFlag{update-deps} --- Checks the named packages plus their dependencies (transitively) for updates.}
+ @item{@DFlag{deps} @nonterm{behavior} --- Same as for @command-ref{install}.}
+ @item{@DFlag{auto} --- Shorthand for @exec{@DFlag{deps} search-auto} plus @DFlag{update-deps}.}
  @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}

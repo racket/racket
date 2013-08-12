@@ -95,7 +95,7 @@
     "if not specified, the type is inferred syntactically")]
   [(#:str name #f) name ("-n") ("Name of package, instead of inferred"
                                 "(makes sense only when a single <pkg-source> is given)")]
-  #:once-each
+  #:once-any
   [(#:sym mode [fail force search-ask search-auto] #f) deps ()
    ("Specify the behavior for dependencies, with <mode> as one of"
     "  fail: cancels the installation if dependencies are unmet"
@@ -105,6 +105,8 @@
     "              (default if package is a package name) and asks if you would"
     "              like it installed"
     "  search-auto: like 'search-ask' but does not ask for permission to install")]
+  [#:bool auto () "Shorthand for `--deps search-auto'"]
+  #:once-each
   [#:bool force () "Ignores conflicts"]
   [#:bool ignore-checksums () "Ignores checksums"]
   #:once-any
@@ -140,7 +142,7 @@
         (parameterize ([current-pkg-catalogs (and catalog
                                                   (list (catalog->url catalog)))])
           (define link-dirs? (not (or copy source binary)))
-          (pkg-install #:dep-behavior deps
+          (pkg-install #:dep-behavior (if auto 'search-auto deps)
                        #:force? force
                        #:ignore-checksums? ignore-checksums
                        #:skip-installed? skip-installed
@@ -158,6 +160,8 @@
   #:once-each
   [#:bool all ("-a") ("Update all packages;"
                       "only if no packages are given on the command line")]
+  [#:bool update-deps () "Check named packages' dependencies for updates"]
+  #:once-any
   [(#:sym mode [fail force search-ask search-auto] #f) deps ()
    ("Specify the behavior for dependencies, with <mode> as one of"
     "  fail: cancels the installation if dependencies are unmet"
@@ -167,7 +171,7 @@
     "              (default if package is an package name) and asks if you would"
     "              like it installed"
     "  search-auto: like 'search-ask' but does not ask for permission to install")]
-  [#:bool update-deps () "Check named packages' dependencies for updates"]
+  [#:bool auto () "Shorthand for `--deps search-auto' plus `--update-deps'"]
   #:once-any
   [(#:sym scope [installation user] #f) scope ()
    ("Select package scope, one of"
@@ -192,8 +196,8 @@
        (with-pkg-lock
         (pkg-update pkg
                     #:all? all
-                    #:dep-behavior deps
-                    #:deps? update-deps
+                    #:dep-behavior (if auto 'search-auto deps)
+                    #:deps? (or update-deps auto)
                     #:strip (or (and source 'source) (and binary 'binary)))))
      (setup no-setup setup-collects jobs)))]
  [remove
