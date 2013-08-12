@@ -1,7 +1,9 @@
 #lang scribble/doc
 
 @(require scribble/manual
-          (for-label test-engine/racket-tests (only-in htdp/testing generate-report)))
+          (for-label test-engine/racket-tests
+                     (only-in racket/base void?)
+                     (only-in htdp/testing generate-report)))
 
 @title{Testing} 
 
