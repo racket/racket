@@ -79,7 +79,7 @@
   (make-keyword-procedure
    (lambda (kws kw-vals . subs)
      (constructor kws kw-vals subs
-                  check-group-keyword 'sequential))))
+                  check-group-keyword 'parallel))))
 (define machine
   (make-keyword-procedure
    (lambda (kws kw-vals)
