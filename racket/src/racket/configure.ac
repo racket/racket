@@ -831,7 +831,8 @@ fi
 
 if test "${enable_strip}" = "yes" ; then
   AC_CHECK_TOOL([STRIP], [strip])
-  STRIP_DEBUG="$STRIP -S"
+  # Used to add -S flag, but not all `strip' variants support it:
+  STRIP_DEBUG="$STRIP"
 fi
 
 ############## C flags ################

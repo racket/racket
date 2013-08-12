@@ -4435,7 +4435,8 @@ else
   STRIP="$ac_cv_prog_STRIP"
 fi
 
-  STRIP_DEBUG="$STRIP -S"
+  # Used to add -S flag, but not all `strip' variants support it:
+  STRIP_DEBUG="$STRIP"
 fi
 
 ############## C flags ################
