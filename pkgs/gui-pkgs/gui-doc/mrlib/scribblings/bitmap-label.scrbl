@@ -19,6 +19,6 @@ image specified by @racket[img] followed by the text in @racket[str].}
           [future-parent any/c])
          (is-a?/c bitmap%)]{
 
-And older variant of @racket[make-bitmap-label] that was designed to
+An older variant of @racket[make-bitmap-label] that was designed to
 obtain a font to use from a container @racket[future-parent]. The
 @racket[future-parent] argument is currently ignored.}
