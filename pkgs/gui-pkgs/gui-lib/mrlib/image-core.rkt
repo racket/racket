@@ -885,30 +885,35 @@ has been moved out).
        (send dc set-smoothing 'smoothed)
        (send dc draw-path path dx dy))]
     [(curve-segment? simple-shape)
-     (let* ([path (new dc-path%)]
-            [start (curve-segment-start simple-shape)]
-            [end (curve-segment-end simple-shape)]
-            [sx (point-x start)]
-            [sy (point-y start)]
-            [ex (point-x end)]
-            [ey (point-y end)]
-            [sa (degrees->radians (curve-segment-s-angle simple-shape))]
-            [ea (degrees->radians (curve-segment-e-angle simple-shape))]
-            [d (sqrt (+ (sqr (- ey sy)) (sqr (- ex sx))))]
-            [sp (* (curve-segment-s-pull simple-shape) d)]
-            [ep (* (curve-segment-e-pull simple-shape) d)])
-       (send path move-to sx sy)
-       (send path curve-to
-             (+ sx (* sp (cos sa)))
-             (- sy (* sp (sin sa)))
-             (- ex (* ep (cos ea)))
-             (+ ey (* ep (sin ea)))
-             ex
-             ey)
-       (send dc set-pen (mode-color->pen 'outline (curve-segment-color simple-shape)))
-       (send dc set-brush "black" 'transparent)
-       (send dc set-smoothing 'smoothed)
-       (send dc draw-path path dx dy))]))
+     (define path (curve-segment->path simple-shape))
+     (send dc set-pen (mode-color->pen 'outline (curve-segment-color simple-shape)))
+     (send dc set-brush "black" 'transparent)
+     (send dc set-smoothing 'smoothed)
+     (send dc draw-path path dx dy)]))
+
+(define (curve-segment->path simple-shape)
+  (define start (curve-segment-start simple-shape))
+  (define end (curve-segment-end simple-shape))
+  (define sx (point-x start))
+  (define sy (point-y start))
+  (define ex (point-x end))
+  (define ey (point-y end))
+  (define sa (degrees->radians (curve-segment-s-angle simple-shape)))
+  (define ea (degrees->radians (curve-segment-e-angle simple-shape)))
+
+  (define path (new dc-path%))
+  (define d (sqrt (+ (sqr (- ey sy)) (sqr (- ex sx)))))
+  (define sp (* (curve-segment-s-pull simple-shape) d))
+  (define ep (* (curve-segment-e-pull simple-shape) d))
+  (send path move-to sx sy)
+  (send path curve-to
+        (+ sx (* sp (cos sa)))
+        (- sy (* sp (sin sa)))
+        (- ex (* ep (cos ea)))
+        (+ ey (* ep (sin ea)))
+        ex
+        ey)
+  path)
 
 (define (render-np-atomic-shape np-atomic-shape dc dx dy)
   (cond
@@ -1350,7 +1355,10 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          to-img
          bitmap->image
          image-snip->image
-         image-snip%)
+         image-snip%
+         
+         curve-segment->path
+         mode-color->pen)
 
 ;; method names
 (provide get-shape get-bb get-pinhole get-normalized? get-normalized-shape)

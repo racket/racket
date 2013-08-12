@@ -1,4 +1,13 @@
 ------------------------------------------------------------------------
+Version 6.0
+
+* 2htdp/image: changed scene+curve and add-curve to more accurately
+  compute the bounding box of the curve (previously the argument
+  points were used as the bounding box for the entire curve; now the
+  bounding box is calculated properly in the case that the curve goes
+  outside that rectangle)
+
+------------------------------------------------------------------------
 Version 5.3.4				  [Wed Apr 24 16:20:03 EDT 2013]
 
 Small bug fixes and doc improvements. 

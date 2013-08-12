@@ -977,25 +977,28 @@
                 (send image get-pinhole))))
 
 (define/chk (add-curve image x1 y1 angle1 pull1 x2 y2 angle2 pull2 color)
-  (let* ([dx (abs (min 0 x1 x2))]
-         [dy (abs (min 0 y1 y2))]
-         [bottom (max (+ y1 dy)
-                      (+ y2 dy)
-                      (+ dy (get-bottom image)))]
-         [right (max (+ x1 dx)
-                     (+ x2 dx)
-                     (+ dx (get-right image)))]
-         [baseline (+ dy (get-baseline image))])
-    (make-image (make-translate
-                 dx dy
-                 (make-overlay
-                  (make-curve-segment (make-point x1 y1) angle1 pull1
-                                      (make-point x2 y2) angle2 pull2
-                                      color)
-                  (image-shape image)))
-                (make-bb right bottom baseline)
-                #f
-                (send image get-pinhole))))
+  (define cs (make-curve-segment (make-point x1 y1) angle1 pull1
+                                 (make-point x2 y2) angle2 pull2
+                                 color))
+  (define path (curve-segment->path cs))
+  (define rdc (new record-dc%))
+  (send rdc set-pen (mode-color->pen 'outline color))
+  (send rdc set-brush "black" 'transparent)
+  (send rdc set-smoothing 'smoothed)
+  (define-values (path-l path-t path-w path-h) (send rdc get-path-bounding-box path 'stroke))
+  (define dx (abs (min 0 path-l)))
+  (define dy (abs (min 0 path-t)))
+  (define bottom (max (+ dy path-t path-h) (+ dy (get-bottom image))))
+  (define right (max (+ dx path-l path-w) (+ dx (get-right image))))
+  (define baseline (+ dy (get-baseline image)))
+  (make-image (make-translate
+               dx dy
+               (make-overlay
+                cs
+                (image-shape image)))
+              (make-bb right bottom baseline)
+              #f
+              (send image get-pinhole)))
 
 ;; this is just so that 'text' objects can be sized.
 (define text-sizing-bm (make-object bitmap-dc% (make-object bitmap% 1 1)))
