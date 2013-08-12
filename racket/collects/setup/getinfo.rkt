@@ -13,30 +13,30 @@
 (define user-infotable (get-planet-cache-path))
 
 ;; get-info : (listof path-or-string) -> info/#f
-(define (get-info coll-path #:namespace [ns #f])
+(define (get-info coll-path #:namespace [ns #f] #:bootstrap? [bootstrap? #f])
   (get-info/full (apply collection-path
                         (map (lambda (x) (if (path? x) (path->string x) x))
                              coll-path))
-                 #:namespace ns))
+                 #:namespace ns
+                 #:bootstrap? bootstrap?))
 
-;; HACK:
-;; This require is not used.  It just requires the file, since
-;; otherwise the reader guard below will be invoked on it too, and
-;; that will make it throw up.  One possible solution for this would
-;; be for the security guard to be provided with the file in question.
-;; Another would be to force all info files to use `#lang' which means
-;; that we'll be able to query their module-language via the
-;; `get-info' protocol.
-(require (prefix-in !!!HACK!!! setup/infotab/lang/reader)
-         (prefix-in !!!HACK!!!2 (submod info reader)))
+;; These `require's ensure that the `#lang info' readers
+;; are loaded, so that no reader guard will be invoked for the reader
+;; intself when checking a language via a reader guard, and 
+(require (only-in setup/infotab)
+         (only-in info)
+         (only-in setup/infotab/lang/reader)
+         (only-in (submod info reader)))
 
 ;; get-info/full : path -> info/#f
-(define (get-info/full dir #:namespace [ns #f])
-  (or (get-info/full/ext dir "rkt" ns)
-      (get-info/full/ext dir "ss" ns)))
+(define (get-info/full dir #:namespace [ns #f] #:bootstrap? [bootstrap? #f])
+  (or (get-info/full/ext dir "rkt" ns bootstrap?)
+      (get-info/full/ext dir "ss" ns bootstrap?)))
 
-(define (get-info/full/ext dir ext ns)
+(define (get-info/full/ext dir ext ns bootstrap?)
   (define file (build-path dir (format "info.~a" ext)))
+  (define enclosing-ns (variable-reference->namespace
+                        (#%variable-reference)))
   (define (err fmt . args)
     (apply error 'get-info (string-append "info file " fmt " in ~a")
            (append args (list file))))
@@ -48,7 +48,11 @@
                               (equal? x '(submod setup/infotab reader))
                               (equal? x '(submod info reader)))
                         x
-                        (err "has illegal #lang or #reader")))])
+                        (err "has illegal #lang or #reader")))]
+                   [current-namespace
+                    ;; Use this module's namespace; see the `only-in'
+                    ;; `require's above.
+                    enclosing-ns])
       (with-input-from-file file
         (lambda ()
           (begin0 
@@ -70,9 +74,20 @@
           ;; above (a guard will see other uses of #lang for stuff
           ;; that is required).
           ;; We are, however, trusting that the bytecode form of the
-          ;; file (if any) matches the source.
+          ;; file (if any) matches the source (except in bootstrap
+          ;; mode).
           (parameterize ([current-namespace (or ns (info-namespace))])
-            (dynamic-require file '#%info-lookup))]
+            (if bootstrap?
+                ;; Attach `info' language modules to target namespace, and
+                ;; disable the use of compiled bytecode:
+                (parameterize ([use-compiled-file-paths null])
+                  (namespace-attach-module enclosing-ns 'setup/infotab)
+                  (namespace-attach-module enclosing-ns 'setup/infotab/lang/reader)
+                  (namespace-attach-module enclosing-ns 'info)
+                  (namespace-attach-module enclosing-ns '(submod info reader))
+                  (dynamic-require file '#%info-lookup))
+                ;; Can use compiled bytecode, etc.:
+                (dynamic-require file '#%info-lookup)))]
          [else (err "does not contain a module of the right shape")])))
 
 (define info-namespace
@@ -253,8 +268,12 @@
 
 (provide/contract
  (reset-relevant-directories-state! (-> any))
- (get-info (((listof path-or-string?)) (#:namespace (or/c namespace? #f)) . ->* . (or/c info? boolean?)))
- (get-info/full ((path-string?) (#:namespace (or/c namespace? #f)) . ->* . (or/c info? boolean?)))
+ (get-info (((listof path-or-string?))
+            (#:namespace (or/c namespace? #f) #:bootstrap? any/c)
+            . ->* . (or/c info? boolean?)))
+ (get-info/full ((path-string?)
+                 (#:namespace (or/c namespace? #f) #:bootstrap? any/c)
+                 . ->* . (or/c info? boolean?)))
  (find-relevant-directories
   (->* [(listof symbol?)]
        [(or/c 'preferred 'all-available 'no-planet 'no-user)]

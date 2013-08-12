@@ -1138,7 +1138,8 @@ v
    files.}
 
 @defproc[(get-info [collection-names (listof string?)]
-                   [#:namespace namespace (or/c namespace? #f) #f])
+                   [#:namespace namespace (or/c namespace? #f) #f]
+                   [#:bootstrap? bootstrap? any/c #f])
          (or/c
           (symbol? [(-> any)] . -> . any)
           #f)]{
@@ -1147,7 +1148,8 @@ v
    named collection and the @racket[namespace] argument.}
 
 @defproc[(get-info/full [path path-string?]
-                        [#:namespace namespace (or/c namespace? #f) #f])
+                        [#:namespace namespace (or/c namespace? #f) #f]
+                        [#:bootstrap? bootstrap? any/c #f])
          (or/c
           (symbol? [(-> any)] . -> . any)
           #f)]{
@@ -1178,7 +1180,16 @@ v
 
    The @filepath{info.rkt} (or @filepath{info.ss}) module is loaded
    into @racket[namespace] if it is not @racket[#f], or a private,
-   weakly-held namespace otherwise.}
+   weakly-held namespace otherwise.
+
+   If @racket[bootstrap?] is true, then
+   @racket[use-compiled-file-paths] is set to @racket['()] while
+   reading @filepath{info.rkt} (or @filepath{info.ss}), in case an
+   existing compiled file is broken. Furthermore, the
+   @racketmodname[info] and @racketmodname[setup/infotab] modules are
+   attached to @racket[namespace] from the namespace of
+   @racket[get-info/full] before attempting to load
+   @filepath{info.rkt} (or @filepath{info.ss}).}
 
 @defproc[(find-relevant-directories
           (syms (listof symbol?))

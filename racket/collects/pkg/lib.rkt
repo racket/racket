@@ -149,13 +149,9 @@
   (with-handlers ([exn:fail? (λ (x)
                                 (log-exn x "getting info")
                                 #f)])
-    (parameterize ([current-namespace metadata-ns])
-      ;; with compiled files on:
-      (dynamic-require '(submod info reader) #f)
-      (dynamic-require 'info 0))
-    ;; without compiled files:
-    (parameterize ([use-compiled-file-paths '()])
-      (get-info/full pkg-dir #:namespace metadata-ns))))
+    (get-info/full pkg-dir 
+                   #:namespace metadata-ns
+                   #:bootstrap? #t)))
 
 (define (get-metadata metadata-ns pkg-dir key get-default
                       #:checker [checker void])

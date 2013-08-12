@@ -34,20 +34,25 @@
 
 (define-namespace-anchor anchor)
 
-;; read info files using whatever namespace, .zo-use, and compilation
-;;  configuration was in place for loading setup, instead of whatever
-;;  is in place for the collections that setup is processing:
-(define getinfo
+;; Although we use `#:bootstrap?' mode for reading an "info.rkt" file,
+;; which disables the use of compiled bytecode, also use whatever
+;; namespace, .zo-use, and compilation configuration was in place for
+;; loading setup (just in case), instead of whatever is in place for
+;; the collections that setup is processing:
+(define make-getinfo
   (let ([ns (namespace-anchor->empty-namespace anchor)]
         [compile (current-compile)]
         [loader (current-load/use-compiled)]
         [paths (use-compiled-file-paths)])
-    (lambda (path)
-      (parameterize ([current-namespace ns]
-                     [current-compile compile]
-                     [current-load/use-compiled loader]
-                     [use-compiled-file-paths paths])
-        (get-info/full path #:namespace ns)))))
+    (lambda (info-ns)
+      (lambda (path)
+        (parameterize ([current-namespace ns]
+                       [current-compile compile]
+                       [current-load/use-compiled loader]
+                       [use-compiled-file-paths paths])
+          (get-info/full path 
+                         #:namespace info-ns
+                         #:bootstrap? #t))))))
 
 (provide setup@)
 
@@ -220,6 +225,8 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define pkg-path-cache (make-hash))
+
+  (define getinfo (make-getinfo (make-base-namespace)))
 
   (define (make-cc* collection parent path omit-root info-root 
                     info-path info-path-mode shadowing-policy 
