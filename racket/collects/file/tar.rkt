@@ -165,5 +165,6 @@
          (cond [(regexp-match #rx"^(.*[.])(?:tar[.]gz|tgz)$"
                               (if (path? tgz-file)
                                 (path->string tgz-file) tgz-file))
-                => (lambda (m) (string-append (car m) "tar"))])
+                => (lambda (m) (string-append (car m) "tar"))]
+               [else #f])
          (current-seconds))))))
