@@ -1493,6 +1493,7 @@ typedef struct Scheme_Object *(Scheme_Native_Proc)(void *d, int argc, struct Sch
 /*========================================================================*/
 
 Scheme_Object *scheme_handle_stack_overflow(Scheme_Object *(*k)(void));
+int scheme_is_stack_too_shallow();
 
 THREAD_LOCAL_DECL(extern struct Scheme_Overflow_Jmp *scheme_overflow_jmp);
 THREAD_LOCAL_DECL(extern void *scheme_overflow_stack_start);

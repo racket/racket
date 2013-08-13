@@ -589,9 +589,6 @@
 /* Default stack size is 1MB, but we try to read
    the actual size from the executable on startup: */
 # define WINDOWS_DEFAULT_STACK_SIZE 1048576
-# ifdef _WIN64
-#  define STACK_SAFETY_MARGIN 100000
-# endif
 
 # ifndef _WIN64
 #  define USE_MZ_SETJMP
@@ -1525,7 +1522,8 @@
 
  /* STACK_SAFETY_MARGIN <X> sets the number of bytes that should be
      available on the stack for "safety" to <X>. Used only if
-     DO_STACK_CHECK is used. STACK_SAFETY_MARGIN defaults to 50000. */
+     DO_STACK_CHECK is used. STACK_SAFETY_MARGIN defaults to 50000
+     for a 32-bit platform, twice as much for a 64-bit platform. */
 
  /* UNIX_LIMIT_STACK <X> limits stack usage to <X> bytes. This may
      be necessary to avoid GC-setup traversal over too much memory

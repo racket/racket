@@ -99,7 +99,7 @@ static void overflow_error(const char *who, const char *op, intptr_t a, intptr_t
                         NULL);
 }
 
-intptr_t mult_check_overflow(const char *who, intptr_t a, intptr_t b)
+static intptr_t mult_check_overflow(const char *who, intptr_t a, intptr_t b)
 {
   Scheme_Object *c;
   c = scheme_bin_mult(scheme_make_integer(a), scheme_make_integer(b));
@@ -108,7 +108,7 @@ intptr_t mult_check_overflow(const char *who, intptr_t a, intptr_t b)
   return SCHEME_INT_VAL(c);
 }
 
-intptr_t add_check_overflow(const char *who, intptr_t a, intptr_t b)
+static intptr_t add_check_overflow(const char *who, intptr_t a, intptr_t b)
 {
   Scheme_Object *c;
   c = scheme_bin_plus(scheme_make_integer(a), scheme_make_integer(b));
@@ -137,8 +137,8 @@ typedef BOOL (WINAPI *EnumProcessModules_t)(HANDLE hProcess,
 EnumProcessModules_t _EnumProcessModules;
 #include <tlhelp32.h>
 
-BOOL mzEnumProcessModules(HANDLE hProcess, HMODULE* lphModule,
-                          DWORD cb, LPDWORD lpcbNeeded)
+static BOOL mzEnumProcessModules(HANDLE hProcess, HMODULE* lphModule,
+                                 DWORD cb, LPDWORD lpcbNeeded)
 {
   if (!epm_tried) {
     HMODULE hm;
@@ -603,7 +603,7 @@ static unsigned short *ucs4_string_or_null_to_utf16_pointer(Scheme_Object *ucs)
   return ucs4_string_to_utf16_pointer(ucs);
 }
 
-Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
+static Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 {
   intptr_t ulen, end;
   mzchar *res;
@@ -1182,13 +1182,13 @@ static Scheme_Object *foreign_make_ctype(int argc, Scheme_Object *argv[])
 #undef MYNAME
 
 /* see below */
-void free_libffi_type(void *ignored, void *p)
+static void free_libffi_type(void *ignored, void *p)
 {
   free(((ffi_type*)p)->elements);
   free(p);
 }
 
-void free_libffi_type_with_alignment(void *ignored, void *p)
+static void free_libffi_type_with_alignment(void *ignored, void *p)
 {
   int i;
 
@@ -1205,7 +1205,7 @@ static Scheme_Object *default_sym;
 static Scheme_Object *stdcall_sym;
 static Scheme_Object *sysv_sym;
 
-ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
+static ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
 {
   if (SCHEME_FALSEP(sym) || SAME_OBJ(sym, default_sym))
     return FFI_DEFAULT_ABI;
@@ -3272,7 +3272,7 @@ static void finish_ffi_call(ffi_cif *cif, void *c_func, intptr_t cfoff,
   ffi_call(cif, (VoidFun)W_OFFSET(c_func, cfoff), p, avalues);
 }
 
-Scheme_Object *ffi_do_call(int argc, Scheme_Object *argv[], Scheme_Object *self)
+static Scheme_Object *ffi_do_call(int argc, Scheme_Object *argv[], Scheme_Object *self)
 /* data := {name, c-function, itypes, otype, cif} */
 {
   Scheme_Object *data = SCHEME_PRIM_CLOSURE_ELS(self)[0];
@@ -3394,6 +3394,34 @@ Scheme_Object *ffi_do_call(int argc, Scheme_Object *argv[], Scheme_Object *self)
   return C2SCHEME(NULL, otype, p, 0, 1, 1);
 }
 
+static Scheme_Object *ffi_do_call_k()
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object **argv, *self;
+
+  argv = (Scheme_Object **)p->ku.k.p1;
+  self = (Scheme_Object *)p->ku.k.p2;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+
+  return ffi_do_call(p->ku.k.i1, argv, self);
+}
+
+static Scheme_Object *ffi_do_call_after_stack_check(int argc, Scheme_Object *argv[], Scheme_Object *self)
+{
+  /* Make sure we have an extra-comfortable amount of space on the
+     stack before calling into foreign code: */
+  if (!scheme_no_stack_overflow && scheme_is_stack_too_shallow()) {
+    Scheme_Thread *p = scheme_current_thread;
+    p->ku.k.i1 = argc;
+    p->ku.k.p1 = argv;
+    p->ku.k.p2 = self;
+    return scheme_handle_stack_overflow(ffi_do_call_k);
+  } else
+    return ffi_do_call(argc, argv, self);
+}
+
 /* see below */
 void free_fficall_data(void *data, void *p)
 {
@@ -3485,7 +3513,7 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
 # endif /* MZ_USE_PLACES */
   scheme_register_finalizer(data, free_fficall_data, cif, NULL, NULL);
   a[0] = data;
-  return scheme_make_prim_closure_w_arity(ffi_do_call,
+  return scheme_make_prim_closure_w_arity(ffi_do_call_after_stack_check,
                                           1, a,
                                           SCHEME_BYTE_STR_VAL(name),
                                           nargs, nargs);
@@ -3516,7 +3544,7 @@ static ffi_callback_struct *extract_ffi_callback(void *userdata)
   return data;
 }
 
-void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
+static void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
 {
   ffi_callback_struct *data;
   Scheme_Object *argv_stack[MAX_QUICK_ARGS];
@@ -3661,7 +3689,7 @@ void scheme_check_foreign_work(void)
 
 #endif
 
-void ffi_queue_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
+static void ffi_queue_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
   XFORM_SKIP_PROC
 {
 #ifdef MZ_USE_MZRT
@@ -3725,7 +3753,7 @@ typedef struct closure_and_cif_struct {
 } closure_and_cif;
 
 /* free the above */
-void free_cl_cif_args(void *ignored, void *p)
+static void free_cl_cif_args(void *ignored, void *p)
 {
   /*
   scheme_warning("Releasing cl+cif+args %V %V (%d)",
@@ -3740,7 +3768,7 @@ void free_cl_cif_args(void *ignored, void *p)
 }
 
 #ifdef MZ_USE_MZRT
-void free_cl_cif_queue_args(void *ignored, void *p)
+static void free_cl_cif_queue_args(void *ignored, void *p)
 {
   void *data = ((closure_and_cif*)p)->data, *constant_result;
   void **q = (void **)data;

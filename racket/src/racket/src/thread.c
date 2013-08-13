@@ -3061,10 +3061,7 @@ void scheme_add_swap_out_callback(Scheme_Closure_Func f, Scheme_Object *data)
 #ifdef DO_STACK_CHECK
 # define THREAD_STACK_SPACE (STACK_SAFETY_MARGIN / 2)
 
-int scheme_is_stack_too_shallow(void)
-/* Make sure this function insn't inlined, mainly because
-   is_stack_too_shallow2() can get inlined, and it adds a lot
-   to the stack. */
+int scheme_is_stack_too_shallow()
 {
 # define SCHEME_PLUS_STACK_DELTA(x) ((x) - THREAD_STACK_SPACE)
 # include "mzstkchk.h"

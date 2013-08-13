@@ -46,5 +46,9 @@
 #endif
 
 #ifndef STACK_SAFETY_MARGIN
-# define STACK_SAFETY_MARGIN 50000
+# ifdef SIXTY_FOUR_BIT_INTEGERS
+#  define STACK_SAFETY_MARGIN 100000
+# else
+#  define STACK_SAFETY_MARGIN 50000
+# endif
 #endif
