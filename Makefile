@@ -36,20 +36,25 @@ LINK_MODE = --save
 CPUS = 
 
 in-place:
-	if [ "$(CPUS)" = "" ] ; then $(MAKE) plain-in-place ; else $(MAKE) cpus-in-place ; fi
+	if [ "$(CPUS)" = "" ] ; \
+         then $(MAKE) plain-in-place PKGS="$(PKGS)" ; \
+         else $(MAKE) cpus-in-place PKGS="$(PKGS)" ; fi
 
 cpus-in-place:
-	$(MAKE) -j $(CPUS) plain-in-place JOB_OPTIONS="-j $(CPUS)"
+	$(MAKE) -j $(CPUS) plain-in-place JOB_OPTIONS="-j $(CPUS)" PKGS="$(PKGS)"
+
+# Explicitly propagate variables for non-GNU `make's:
+PKG_LINK_COPY_ARGS = PKGS="$(PKGS)" LINK_MODE="$(LINK_MODE)"
 
 plain-in-place:
 	$(MAKE) base
 	if $(MACOSX_CHECK) ; then $(MAKE) native-from-git ; fi
-	$(MAKE) pkg-links LINK_MODE="$(LINK_MODE)"
+	$(MAKE) pkg-links $(PKG_LINK_COPY_ARGS)
 	$(PLAIN_RACKET) -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 win32-in-place:
 	$(MAKE) win32-base
-	$(MAKE) win32-pkg-links PKGS="$(PKGS)" LINK_MODE="$(LINK_MODE)"
+	$(MAKE) win32-pkg-links $(PKG_LINK_COPY_ARGS)
 	$(WIN32_PLAIN_RACKET) -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 again:
@@ -218,6 +223,9 @@ win32-pkg-links:
 # ------------------------------------------------------------
 # On a server platform (for an installer build):
 
+# These targets require GNU `make', so that we don't have to propagate
+# variables through all of the target layers.
+
 server:
 	$(MAKE) base
 	$(MAKE) server-from-base
@@ -228,7 +236,9 @@ build/site.rkt:
 	echo "(machine)" >> build/site.rkt
 
 stamp:
-	if [ "$(BUILD_STAMP)" = '' ] ; then $(MAKE) stamp-as-inferred ; else $(MAKE) stamp-as-given ; fi
+	if [ "$(BUILD_STAMP)" = '' ] ; \
+          then $(MAKE) stamp-as-inferred ; \
+          else $(MAKE) stamp-as-given ; fi
 stamp-as-given:
 	echo "$(BUILD_STAMP)" > build/stamp.txt
 stamp-as-inferred:
@@ -241,7 +251,9 @@ stamp-from-date:
 local-from-base:
 	$(MAKE) build/site.rkt
 	$(MAKE) stamp
-	if [ "$(SRC_CATALOG)" = 'local' ] ; then $(MAKE) build-from-local ; else $(MAKE) build-from-catalog ; fi
+	if [ "$(SRC_CATALOG)" = 'local' ] ; \
+          then $(MAKE) build-from-local ; \
+          else $(MAKE) build-from-catalog ; fi
 
 server-from-base:
 	$(MAKE) local-from-base
@@ -350,14 +362,6 @@ binary-catalog-server:
 # keep the "build/user" directory on the grounds that the
 # client is the same as the server.
 
-client:
-	if [ ! -d build/log ] ; then rm -rf build/user ; fi
-	$(MAKE) base
-	$(MAKE) distro-build-from-server
-	$(MAKE) bundle-from-server
-	$(MAKE) bundle-config
-	$(MAKE) installer-from-bundle
-
 COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" BUILD_STAMP="$(BUILD_STAMP)" \
 	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) \
             PKG_SOURCE_MODE=$(PKG_SOURCE_MODE) INSTALL_NAME="$(INSTALL_NAME)"\
@@ -365,6 +369,14 @@ COPY_ARGS = SERVER=$(SERVER) PKGS="$(PKGS)" BUILD_STAMP="$(BUILD_STAMP)" \
             DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) \
             DIST_DESC="$(DIST_DESC)" README="$(README)" \
             JOB_OPTIONS="$(JOB_OPTIONS)"
+
+client:
+	if [ ! -d build/log ] ; then rm -rf build/user ; fi
+	$(MAKE) base $(COPY_ARGS)
+	$(MAKE) distro-build-from-server $(COPY_ARGS)
+	$(MAKE) bundle-from-server $(COPY_ARGS)
+	$(MAKE) bundle-config $(COPY_ARGS)
+	$(MAKE) installer-from-bundle $(COPY_ARGS)
 
 SET_BUNDLE_CONFIG_q = $(BUNDLE_CONFIG) "" "" "$(INSTALL_NAME)" "$(BUILD_STAMP)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 

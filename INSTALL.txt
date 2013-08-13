@@ -182,11 +182,14 @@ Building Installers
 To build distribution installers, do not use `make in-place' or just
 `make', but instead start from a clean repository.
 
-Use one non-Windows machine as a server, where packages will be
+Use one non-Windows machine as a server[*], where packages will be
 pre-built. Then, create platform-specific installers on N client
 machines, each of which contacts the server machine to obtain
 pre-built packages. The server can act as a client, naturally, to
 create an installer for the server's platform.
+
+ [*] GNU `make' is required on the server machine, but any `make'
+     should work on client machines.
 
 Running Build Farms
 -------------------
