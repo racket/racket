@@ -164,15 +164,16 @@
 (define (check-class form [expected #f])
   (match (and expected (resolve expected))
     [(tc-result1: (and self-class-type (Class: _ _ _ _ _)))
-     (do-check form self-class-type)]
+     (parse-and-check form self-class-type)]
     [(tc-result1: (Poly-names: ns body-type))
      (check-class form (ret body-type))]
-    [#f (do-check form #f)]
-    [_ (check-below (do-check form #f) expected)]))
+    [#f (parse-and-check form #f)]
+    [_ (check-below (parse-and-check form #f) expected)]))
 
 ;; Syntax Option<Type> -> Type
-;; Do the actual type-checking
-(define (do-check form expected)
+;; Parse the syntax and extract useful information to pass to the
+;; main type-checking helper function
+(define (parse-and-check form expected)
   (syntax-parse form
     ;; Inspect the expansion of the class macro for the pieces that
     ;; we need to type-check like superclass, methods, top-level
@@ -182,231 +183,236 @@
      ;; FIXME: maybe should check the property on this expression
      ;;        as a sanity check too
      (define super-type (tc-expr #'cls.superclass-expr))
-     (define-values (super-row super-inits super-fields
-                     super-methods super-augments)
-       (match super-type
-         [(tc-result1: (Class: super-row super-inits super-fields
-                               super-methods super-augments))
-          (values super-row super-inits super-fields
-                  super-methods super-augments)]
-         [(tc-result1: t)
-          (tc-error/expr "expected a superclass but got value of type ~a" t
-                         #:stx #'cls.superclass-expr)
-          (values #f null null null null)]))
-     ;; Define sets of names for use later
-     (define super-init-names (dict-keys super-inits))
-     (define super-field-names (dict-keys super-fields))
-     (define super-method-names (dict-keys super-methods))
-     (define super-augment-names (dict-keys super-augments))
-     (define this%-init-internals
-       (set-union (syntax->datum #'cls.init-internals)
-                  (syntax->datum #'cls.init-field-internals)))
-     (define this%-public-internals (syntax->datum #'cls.public-internals))
-     (define this%-override-internals (syntax->datum #'cls.override-internals))
-     (define this%-pubment-internals (syntax->datum #'cls.pubment-internals))
-     (define this%-augment-internals (syntax->datum #'cls.augment-internals))
-     (define this%-method-internals
-       (set-union this%-public-internals this%-override-internals))
-     (define this%-field-internals
-       (set-union (syntax->datum #'cls.field-internals)
-                  (syntax->datum #'cls.init-field-internals)))
-     (define this%-inherit-internals
-       (syntax->datum #'cls.inherit-internals))
-     (define this%-inherit-field-internals
-       (syntax->datum #'cls.inherit-field-internals))
-     (define this%-init-names
-       (set-union (syntax->datum #'cls.init-externals)
-                  (syntax->datum #'cls.init-field-externals)))
-     (define this%-field-names
-       (set-union (syntax->datum #'cls.field-externals)
-                  (syntax->datum #'cls.init-field-externals)))
-     (define this%-public-names (syntax->datum #'cls.public-externals))
-     (define this%-override-names (syntax->datum #'cls.override-externals))
-     (define this%-pubment-names (syntax->datum #'cls.pubment-externals))
-     (define this%-augment-names (syntax->datum #'cls.augment-externals))
-     (define this%-inherit-names (syntax->datum #'cls.inherit-externals))
-     (define this%-inherit-field-names
-       (syntax->datum #'cls.inherit-field-externals))
-     (define this%-private-names (syntax->datum #'cls.private-names))
-     (define this%-private-fields (syntax->datum #'cls.private-field-names))
-     (define this%-overridable-names
-       (set-union this%-public-names this%-override-names))
-     (define this%-augmentable-names
-       (set-union this%-augment-names this%-pubment-names))
-     (define this%-method-names
-       (set-union this%-overridable-names this%-augmentable-names))
-     (define all-internal
-       (set-union this%-init-internals
-                  this%-field-internals
-                  this%-public-internals
-                  this%-override-internals
-                  this%-inherit-internals
-                  this%-inherit-field-internals
-                  this%-pubment-internals
-                  this%-augment-internals))
-     (define all-external
-       (set-union this%-init-names
-                  this%-field-names
-                  this%-public-names
-                  this%-override-names
-                  this%-inherit-names
-                  this%-inherit-field-names
-                  this%-pubment-names
-                  this%-augment-names))
-     ;; establish a mapping between internal and external names
-     (define internal-external-mapping
-       (for/hash ([internal all-internal]
-                  [external all-external])
-         (values internal external)))
-     ;; trawl the body for top-level expressions
-     (define top-level-exprs (trawl-for-property #'cls.make-methods 'tr:class:top-level))
-     ;; augment annotations go in their own table, because they're
-     ;; the only kind of type annotation that is allowed to be duplicate
-     ;; (i.e., m can have type Integer -> Integer and an augment type of
-     ;;          String -> String in the separate tables)
-     (define-values (annotation-table augment-annotation-table)
-       ((compose (setup-pubment-defaults this%-pubment-names)
-                 register-annotations)
-        top-level-exprs))
-     ;; find the `super-new` call (or error if missing)
-     (define super-new-stxs (trawl-for-property #'cls.make-methods 'tr:class:super-new))
-     (define super-new-stx (check-super-new-exists super-new-stxs))
-     (define provided-super-inits
-       (if super-new-stx
-           (find-provided-inits super-new-stx super-inits)
-           '()))
-     (define provided-init-names (dict-keys provided-super-inits))
-     (define remaining-super-inits
-       (for/list ([(name val) (in-dict super-inits)]
-                  #:unless (member name provided-init-names))
-         (cons name val)))
-     ;; define which init names are optional
-     (define optional-inits (syntax->datum #'cls.optional-inits))
-     (define optional-external (for/set ([n optional-inits])
-                                 (dict-ref internal-external-mapping n)))
-     (define optional-super
-       (for/set ([(name val) (in-dict remaining-super-inits)]
-                 #:when (cadr val))
-         name))
-     ;; Type for self in method calls
-     (define self-type
-       (infer-self-type super-row
-                        expected
-                        annotation-table
-                        augment-annotation-table
-                        optional-inits
-                        internal-external-mapping
-                        remaining-super-inits
-                        super-fields
-                        super-methods
-                        super-augments
-                        this%-init-internals
-                        this%-field-internals
-                        this%-public-internals
-                        this%-pubment-internals))
-     (match-define (Instance: (Class: _ inits fields methods augments))
-                   self-type)
-     ;; trawl the body for the local name table
-     (define locals
-       (trawl-for-property #'cls.make-methods 'tr:class:local-table))
-     (define-values (local-method-table local-private-table local-field-table
-                     local-private-field-table local-init-table
-                     local-inherit-table local-inherit-field-table
-                     local-super-table
-                     local-augment-table local-inner-table)
-       (construct-local-mapping-tables (car locals)))
-     ;; types for private elements
-     (define private-method-types
-       (for/hash ([(name type) (in-dict annotation-table)]
-                  #:when (set-member? this%-private-names name))
-         (values name type)))
-     (define private-field-types
-       (for/hash ([(name type) (in-dict annotation-table)]
-                  #:when (set-member? this%-private-fields name))
-         (values name (list type))))
-     ;; start type-checking elements in the body
-     (define-values (lexical-names lexical-types
-                     lexical-names/top-level lexical-types/top-level)
-       (local-tables->lexical-env internal-external-mapping
-                                  local-method-table methods
-                                  this%-method-internals
-                                  local-field-table fields
-                                  this%-field-internals
-                                  local-private-field-table private-field-types
-                                  this%-private-fields
-                                  local-init-table inits
-                                  ;; omit init-fields here since they don't have
-                                  ;; init accessors, only field accessors
-                                  (syntax->datum #'cls.init-internals)
-                                  local-inherit-table
-                                  local-inherit-field-table
-                                  local-super-table
-                                  super-methods super-fields
-                                  this%-inherit-internals
-                                  this%-inherit-field-internals
-                                  this%-override-internals
-                                  local-augment-table local-inner-table
-                                  augments super-augments
-                                  this%-pubment-internals
-                                  this%-augment-internals
-                                  local-private-table private-method-types
-                                  this%-private-names
-                                  #'cls.initializer-self-id
-                                  #'cls.initializer-args-id
-                                  self-type))
-     (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
-       (check-super-new provided-super-inits super-inits))
-     (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
-       (for ([stx top-level-exprs]
-             #:unless (syntax-property stx 'tr:class:super-new))
-         (tc-expr stx)))
-     (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
-       (check-field-set!s #'cls.initializer-body local-field-table inits))
-     ;; trawl the body and find methods and type-check them
-     (define meth-stxs (trawl-for-property #'cls.make-methods 'tr:class:method))
-     (define checked-method-types
-       (with-lexical-env/extend lexical-names lexical-types
-         (check-methods (append this%-pubment-names
-                                this%-overridable-names)
-                        internal-external-mapping meth-stxs
-                        methods self-type)))
-     (define checked-augment-types
-       (with-lexical-env/extend lexical-names lexical-types
-         (check-methods this%-augment-names
-                        internal-external-mapping meth-stxs
-                        augments self-type)))
-     (with-lexical-env/extend lexical-names lexical-types
-       (check-private-methods meth-stxs this%-private-names
-                              private-method-types self-type))
-     (define final-class-type
-       (merge-types self-type checked-method-types checked-augment-types))
-     (check-method-presence-and-absence
-      expected
-      this%-init-names this%-field-names
-      this%-public-names this%-override-names
-      this%-inherit-names this%-inherit-field-names
-      this%-pubment-names this%-augment-names
-      (set-union optional-external optional-super)
-      remaining-super-inits super-field-names
-      super-method-names
-      super-augment-names)
-     (when expected
-       (check-below final-class-type expected))
-     final-class-type]))
+     ;; Save parse attributes to pass through to helper functions
+     (define parse-info
+       (hash 'superclass-expr     #'cls.superclass-expr
+             'make-methods        #'cls.make-methods
+             'initializer-self-id #'cls.initializer-self-id
+             'initializer-args-id #'cls.initializer-args-id
+             'initializer-body    #'cls.initializer-body
+             'optional-inits      (syntax->datum #'cls.optional-inits)
+             'only-init-internals (syntax->datum #'cls.init-internals)
+             'only-init-names     (syntax->datum #'cls.init-externals)
+             'init-internals
+             (set-union (syntax->datum #'cls.init-internals)
+                        (syntax->datum #'cls.init-field-internals))
+             'public-internals   (syntax->datum #'cls.public-internals)
+             'override-internals (syntax->datum #'cls.override-internals)
+             'pubment-internals  (syntax->datum #'cls.pubment-internals)
+             'augment-internals  (syntax->datum #'cls.augment-internals)
+             'method-internals
+             (set-union (syntax->datum #'cls.public-internals)
+                        (syntax->datum #'cls.override-internals))
+             'field-internals
+             (set-union (syntax->datum #'cls.field-internals)
+                        (syntax->datum #'cls.init-field-internals))
+             'inherit-internals
+             (syntax->datum #'cls.inherit-internals)
+             'inherit-field-internals
+             (syntax->datum #'cls.inherit-field-internals)
+             'init-names
+             (set-union (syntax->datum #'cls.init-externals)
+                        (syntax->datum #'cls.init-field-externals))
+             'field-names
+             (set-union (syntax->datum #'cls.field-externals)
+                        (syntax->datum #'cls.init-field-externals))
+             'public-names   (syntax->datum #'cls.public-externals)
+             'override-names (syntax->datum #'cls.override-externals)
+             'pubment-names  (syntax->datum #'cls.pubment-externals)
+             'augment-names  (syntax->datum #'cls.augment-externals)
+             'inherit-names  (syntax->datum #'cls.inherit-externals)
+             'inherit-field-names
+             (syntax->datum #'cls.inherit-field-externals)
+             'private-names  (syntax->datum #'cls.private-names)
+             'private-fields (syntax->datum #'cls.private-field-names)
+             'overridable-names
+             (set-union (syntax->datum #'cls.public-externals)
+                        (syntax->datum #'cls.override-externals))
+             'augmentable-names
+             (set-union (syntax->datum #'cls.pubment-externals)
+                        (syntax->datum #'cls.augment-externals))
+             'method-names
+             (set-union (syntax->datum #'cls.public-externals)
+                        (syntax->datum #'cls.override-externals)
+                        (syntax->datum #'cls.augment-externals)
+                        (syntax->datum #'cls.pubment-externals))
+             'all-internal
+             (set-union (syntax->datum #'cls.init-internals)
+                        (syntax->datum #'cls.init-field-internals)
+                        (syntax->datum #'cls.field-internals)
+                        (syntax->datum #'cls.public-internals)
+                        (syntax->datum #'cls.override-internals)
+                        (syntax->datum #'cls.inherit-internals)
+                        (syntax->datum #'cls.inherit-field-internals)
+                        (syntax->datum #'cls.pubment-internals)
+                        (syntax->datum #'cls.augment-internals))
+             'all-external
+             (set-union (syntax->datum #'cls.init-externals)
+                        (syntax->datum #'cls.init-field-externals)
+                        (syntax->datum #'cls.field-externals)
+                        (syntax->datum #'cls.public-externals)
+                        (syntax->datum #'cls.override-externals)
+                        (syntax->datum #'cls.inherit-externals)
+                        (syntax->datum #'cls.inherit-field-externals)
+                        (syntax->datum #'cls.pubment-externals)
+                        (syntax->datum #'cls.augment-externals))))
+     (do-check expected super-type parse-info)]))
 
-;; check-method-presence-and-absence : Type Set<Symbol> * 12 -> Void
+;; do-check : Type Type Dict -> Type
+;; The actual type-checking
+(define (do-check expected super-type parse-info)
+  ;; unpack superclass names and types
+  (define-values (super-row super-inits super-fields
+                  super-methods super-augments)
+    (match super-type
+      [(tc-result1: (Class: super-row super-inits super-fields
+                            super-methods super-augments))
+       (values super-row super-inits super-fields
+               super-methods super-augments)]
+      [(tc-result1: t)
+       (tc-error/expr "expected a superclass but got value of type ~a" t
+                      #:stx (hash-ref parse-info 'superclass-expr))
+       (values #f null null null null)]))
+  (define super-init-names    (dict-keys super-inits))
+  (define super-field-names   (dict-keys super-fields))
+  (define super-method-names  (dict-keys super-methods))
+  (define super-augment-names (dict-keys super-augments))
+  ;; establish a mapping between internal and external names
+  (define internal-external-mapping
+    (for/hash ([internal (hash-ref parse-info 'all-internal)]
+               [external (hash-ref parse-info 'all-external)])
+      (values internal external)))
+  ;; trawl the body for top-level expressions
+  (define make-methods-stx (hash-ref parse-info 'make-methods))
+  (define top-level-exprs
+    (trawl-for-property make-methods-stx 'tr:class:top-level))
+  ;; augment annotations go in their own table, because they're
+  ;; the only kind of type annotation that is allowed to be duplicate
+  ;; (i.e., m can have type Integer -> Integer and an augment type of
+  ;;          String -> String in the separate tables)
+  (define-values (annotation-table augment-annotation-table)
+    ((compose (setup-pubment-defaults (hash-ref parse-info 'pubment-names))
+              register-annotations)
+     top-level-exprs))
+  ;; find the `super-new` call (or error if missing)
+  (define super-new-stxs
+    (trawl-for-property make-methods-stx 'tr:class:super-new))
+  (define super-new-stx (check-super-new-exists super-new-stxs))
+  (define provided-super-inits
+    (if super-new-stx
+        (find-provided-inits super-new-stx super-inits)
+        '()))
+  (define provided-init-names (dict-keys provided-super-inits))
+  (define remaining-super-inits
+    (for/list ([(name val) (in-dict super-inits)]
+               #:unless (member name provided-init-names))
+      (cons name val)))
+  ;; define which init names are optional
+  (define optional-inits (hash-ref parse-info 'optional-inits))
+  (define optional-external (for/set ([n optional-inits])
+                              (dict-ref internal-external-mapping n)))
+  (define optional-super
+    (for/set ([(name val) (in-dict remaining-super-inits)]
+              #:when (cadr val))
+      name))
+  ;; Type for self in method calls
+  (define self-type
+    (infer-self-type parse-info
+                     super-row
+                     expected
+                     annotation-table
+                     augment-annotation-table
+                     optional-inits
+                     internal-external-mapping
+                     remaining-super-inits
+                     super-fields
+                     super-methods
+                     super-augments))
+  (match-define (Instance: (Class: _ inits fields methods augments))
+                self-type)
+  ;; trawl the body for the local name table
+  (define locals
+    (trawl-for-property make-methods-stx 'tr:class:local-table))
+  (define-values (local-method-table local-private-table local-field-table
+                  local-private-field-table local-init-table
+                  local-inherit-table local-inherit-field-table
+                  local-super-table
+                  local-augment-table local-inner-table)
+    (construct-local-mapping-tables (car locals)))
+  ;; types for private elements
+  (define private-method-types
+    (for/hash ([(name type) (in-dict annotation-table)]
+               #:when (set-member? (hash-ref parse-info 'private-names) name))
+      (values name type)))
+  (define private-field-types
+    (for/hash ([(name type) (in-dict annotation-table)]
+               #:when (set-member? (hash-ref parse-info 'private-fields) name))
+      (values name (list type))))
+  ;; start type-checking elements in the body
+  (define-values (lexical-names lexical-types
+                  lexical-names/top-level lexical-types/top-level)
+    (local-tables->lexical-env parse-info
+                               internal-external-mapping
+                               local-method-table methods
+                               local-field-table fields
+                               local-private-field-table private-field-types
+                               local-init-table inits
+                               local-inherit-table
+                               local-inherit-field-table
+                               local-super-table
+                               super-methods super-fields
+                               local-augment-table local-inner-table
+                               augments super-augments
+                               local-private-table private-method-types
+                               self-type))
+  (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
+    (check-super-new provided-super-inits super-inits))
+  (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
+    (for ([stx top-level-exprs]
+          #:unless (syntax-property stx 'tr:class:super-new))
+      (tc-expr stx)))
+  (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
+    (check-field-set!s (hash-ref parse-info 'initializer-body)
+                       local-field-table
+                       inits))
+  ;; trawl the body and find methods and type-check them
+  (define meth-stxs (trawl-for-property make-methods-stx 'tr:class:method))
+  (define checked-method-types
+    (with-lexical-env/extend lexical-names lexical-types
+      (check-methods (append (hash-ref parse-info 'pubment-names)
+                             (hash-ref parse-info 'overridable-names))
+                     internal-external-mapping meth-stxs
+                     methods self-type)))
+  (define checked-augment-types
+    (with-lexical-env/extend lexical-names lexical-types
+      (check-methods (hash-ref parse-info 'augment-names)
+                     internal-external-mapping meth-stxs
+                     augments self-type)))
+  (with-lexical-env/extend lexical-names lexical-types
+    (check-private-methods meth-stxs (hash-ref parse-info 'private-names)
+                           private-method-types self-type))
+  (define final-class-type
+    (merge-types self-type checked-method-types checked-augment-types))
+  (check-method-presence-and-absence
+   parse-info
+   expected
+   (set-union optional-external optional-super)
+   remaining-super-inits
+   super-field-names
+   super-method-names
+   super-augment-names)
+  (when expected
+    (check-below final-class-type expected))
+  final-class-type)
+
+;; check-method-presence-and-absence : Dict Type Set<Symbol> ... -> Void
 ;; use the internal class: information to check whether clauses
 ;; exist or are absent appropriately
 (define (check-method-presence-and-absence
-         expected this%-init-names this%-field-names
-         this%-public-names this%-override-names
-         this%-inherit-names
-         this%-inherit-field-names
-         this%-pubment-names this%-augment-names
+         parse-info expected
          optional-external
-         remaining-super-inits super-field-names
-         super-method-names
-         super-augment-names)
+         remaining-super-inits
+         super-field-names super-method-names super-augment-names)
   (when expected
    (match-define (Class: _ inits fields methods augments) expected)
    (define exp-init-names (dict-keys inits))
@@ -417,35 +423,39 @@
      (for/set ([(name val) (in-dict inits)]
                #:when (cadr val))
               name))
-   (check-same (set-union this%-init-names
+   (check-same (set-union (hash-ref parse-info 'init-names)
                           (dict-keys remaining-super-inits))
                exp-init-names
                "initialization argument")
-   (check-same (set-union this%-public-names this%-pubment-names
+   (check-same (set-union (hash-ref parse-info 'public-names)
+                          (hash-ref parse-info 'pubment-names)
                           super-method-names)
                exp-method-names
                "public method")
-   (check-same (set-union this%-field-names super-field-names)
+   (check-same (set-union (hash-ref parse-info 'field-names)
+                          super-field-names)
                exp-field-names
                "public field")
-   (check-same (set-union this%-pubment-names this%-augment-names
+   (check-same (set-union (hash-ref parse-info 'augmentable-names)
                           super-augment-names)
                exp-augment-names
                "public augmentable method")
    (check-same optional-external exp-optional-inits
                "optional init argument"))
-  (check-exists super-method-names this%-override-names
+  (check-exists super-method-names (hash-ref parse-info 'override-names)
                 "overridable method")
-  (check-exists super-augment-names this%-augment-names
+  (check-exists super-augment-names (hash-ref parse-info 'augment-names)
                 "augmentable method")
   (check-exists (set-union super-method-names super-augment-names)
-                this%-inherit-names
+                (hash-ref parse-info 'inherit-names)
                 "method")
-  (check-exists super-field-names this%-inherit-field-names
+  (check-exists super-field-names (hash-ref parse-info 'inherit-field-names)
                 "field")
-  (check-absent super-field-names this%-field-names "public field")
-  (check-absent super-method-names this%-public-names "public method")
-  (check-absent super-augment-names this%-pubment-names
+  (check-absent super-field-names (hash-ref parse-info 'field-names)
+                "public field")
+  (check-absent super-method-names (hash-ref parse-info 'public-names)
+                "public method")
+  (check-absent super-augment-names (hash-ref parse-info 'pubment-names)
                 "public augmentable method"))
 
 ;; merge-types : Type Dict<Symbol, Type> Dict<Symbol, Type> -> Type
@@ -474,63 +484,72 @@
               (make-new-methods methods method-types)
               (make-new-methods augments augment-types)))
 
-;; local-tables->lexical-env : Dict<Symbol, Symbol>
-;;                             LocalMapping NameTypeDict Names
+;; local-tables->lexical-env : Dict Dict<Symbol, Symbol>
+;;                             LocalMapping NameTypeDict
 ;;                             (for each kind of clause) ...
-;;                             Id Id Type
+;;                             Type
 ;;                             -> List<Id> List<Type> List<Id> List<Type>
 ;; Construct mappings to put into the lexical type-checking environment
 ;; from the class local accessor mappings
-(define (local-tables->lexical-env internal-external-mapping
-                                   local-method-table methods method-names
-                                   local-field-table fields field-names
+(define (local-tables->lexical-env parse-info
+                                   internal-external-mapping
+                                   local-method-table methods
+                                   local-field-table fields
                                    local-private-field-table
-                                   private-field-types private-field-names
-                                   local-init-table inits init-names
+                                   private-field-types
+                                   local-init-table inits
                                    local-inherit-table
                                    local-inherit-field-table
                                    local-super-table
                                    super-types super-fields
-                                   inherit-names inherit-field-names
-                                   override-names
                                    local-augment-table local-inner-table
                                    augments super-augments
-                                   pubment-names augment-names
                                    local-private-table
-                                   private-types private-methods
-                                   self-id init-args-id
+                                   private-types
                                    self-type)
   ;; localize to accessor names via the provided tables
-  (define (localize local-table names)
+  (define (localize local-table name-key-or-list)
+    (define names
+      (if (list? name-key-or-list)
+          (apply append (map (λ (k) (hash-ref parse-info k))
+                             name-key-or-list))
+          (hash-ref parse-info name-key-or-list)))
     (for/list ([m names]) (dict-ref local-table m)))
-  (define localized-method-names (localize local-method-table method-names))
-  (define localized-field-pairs (localize local-field-table field-names))
-  (define localized-field-get-names (map car localized-field-pairs))
-  (define localized-field-set-names (map cadr localized-field-pairs))
-  (define localized-private-field-pairs
-    (localize local-private-field-table private-field-names))
-  (define localized-private-field-get-names
-    (map car localized-private-field-pairs))
-  (define localized-private-field-set-names
-    (map cadr localized-private-field-pairs))
-  (define localized-inherit-field-pairs
-    (localize local-inherit-field-table inherit-field-names))
-  (define localized-inherit-field-get-names
-    (map car localized-inherit-field-pairs))
-  (define localized-inherit-field-set-names
-    (map cadr localized-inherit-field-pairs))
-  (define localized-inherit-names (localize local-inherit-table inherit-names))
-  (define localized-private-methods
-    (localize local-private-table private-methods))
-  (define localized-override-names
-    (localize local-super-table override-names))
-  (define localized-pubment-names
-    (localize local-augment-table pubment-names))
-  (define localized-augment-names
-    (localize local-augment-table augment-names))
-  (define localized-inner-names
-    (localize local-inner-table (set-union pubment-names augment-names)))
-  (define localized-init-names (localize local-init-table init-names))
+  (define-values (localized-method-names
+                  localized-field-pairs
+                  localized-private-field-pairs
+                  localized-inherit-field-pairs
+                  localized-inherit-names
+                  localized-private-methods
+                  localized-override-names
+                  localized-pubment-names
+                  localized-augment-names
+                  localized-inner-names
+                  localized-init-names)
+    (values
+     (localize local-method-table 'method-internals)
+     (localize local-field-table 'field-internals)
+     (localize local-private-field-table 'private-fields)
+     (localize local-inherit-field-table 'inherit-field-internals)
+     (localize local-inherit-table 'inherit-internals)
+     (localize local-private-table 'private-names)
+     (localize local-super-table 'override-internals)
+     (localize local-augment-table 'pubment-internals)
+     (localize local-augment-table 'augment-internals)
+     (localize local-inner-table '(pubment-internals augment-internals))
+     (localize local-init-table 'only-init-internals)))
+  (define-values (localized-field-get-names
+                  localized-field-set-names
+                  localized-private-field-get-names
+                  localized-private-field-set-names
+                  localized-inherit-field-get-names
+                  localized-inherit-field-set-names)
+    (values (map car localized-field-pairs)
+            (map cadr localized-field-pairs)
+            (map car localized-private-field-pairs)
+            (map cadr localized-private-field-pairs)
+            (map car localized-inherit-field-pairs)
+            (map cadr localized-inherit-field-pairs)))
 
   ;; construct the types for method accessors
   (define (make-method-types method-names type-map
@@ -549,15 +568,18 @@
                       (function->method (car maybe-type) self-type))]
                  [else (make-Univ)]))))
 
-  (define method-types (make-method-types method-names methods))
+  (define method-types
+    (make-method-types (hash-ref parse-info 'method-internals) methods))
   (define inherit-types
     (make-method-types
-     inherit-names
+     (hash-ref parse-info 'inherit-internals)
      (append super-types super-augments)))
-  (define augment-types (make-method-types augment-names augments))
+  (define augment-types
+    (make-method-types (hash-ref parse-info 'augment-internals) augments))
   (define inner-types
     (make-method-types
-     (set-union pubment-names augment-names)
+     (set-union (hash-ref parse-info 'pubment-internals)
+                (hash-ref parse-info 'augment-internals))
      augments #:inner? #t))
 
   ;; construct field accessor types
@@ -576,12 +598,14 @@
             -Void))))
 
   (define-values (field-get-types field-set-types)
-    (make-field-types field-names fields))
+    (make-field-types (hash-ref parse-info 'field-internals) fields))
   (define-values (private-field-get-types private-field-set-types)
-    (make-field-types private-field-names private-field-types
+    (make-field-types (hash-ref parse-info 'private-fields)
+                      private-field-types
                       #:private? #t))
   (define-values (inherit-field-get-types inherit-field-set-types)
-    (make-field-types inherit-field-names super-fields))
+    (make-field-types (hash-ref parse-info 'inherit-field-internals)
+                      super-fields))
 
   ;; types for privates and super calls
   (define (make-private-like-types names type-map)
@@ -594,14 +618,19 @@
           (make-Univ))))
 
   (define private-method-types
-    (make-private-like-types private-methods private-types))
+    (make-private-like-types (hash-ref parse-info 'private-names)
+                             private-types))
   (define super-call-types
-    (make-private-like-types override-names super-types))
+    (make-private-like-types (hash-ref parse-info 'override-internals)
+                             super-types))
   (define pubment-types
-    (make-private-like-types pubment-names methods))
+    (make-private-like-types (hash-ref parse-info 'pubment-internals)
+                             methods))
 
+  ;; omit init-fields here since they don't have
+  ;; init accessors, only field accessors
   (define init-types
-    (for/list ([i (in-set init-names)])
+    (for/list ([i (in-set (hash-ref parse-info 'only-init-internals))])
       (define external (dict-ref internal-external-mapping i))
       (car (dict-ref inits external (list -Bottom)))))
 
@@ -635,7 +664,8 @@
                   ;; to Any, so that accessors can use them without
                   ;; problems.
                   ;; Be careful though!
-                  (list self-id init-args-id))
+                  (list (hash-ref parse-info 'initializer-self-id)
+                        (hash-ref parse-info 'initializer-args-id)))
           (append all-types
                   init-types
                   (list self-type (make-Univ)))))
@@ -1011,20 +1041,20 @@
                              (dict-ref annotations name)))]
           [else (values annotations augment-annotations)])))
 
-;; infer-self-type : RowVar Class Dict<Symbol, Type> Dict<Symbol, Type>
+;; infer-self-type : Dict RowVar Class Dict<Symbol, Type> Dict<Symbol, Type>
 ;;                   Set<Symbol> Dict<Symbol, Symbol>
 ;;                   Inits Fields Methods
-;;                   Set<Symbol> * 4 -> Type
+;;                   -> Type
 ;; Construct a self object type based on all type annotations
 ;; and the expected type
-(define (infer-self-type super-row
+(define (infer-self-type parse-info
+                         super-row
                          expected
                          annotation-table augment-annotation-table
                          optional-inits
                          internal-external-mapping
                          super-inits super-fields super-methods
-                         super-augments
-                         inits fields publics pubments)
+                         super-augments)
   (define (make-type-dict names supers maybe-expected
                           #:inits [inits? #f]
                           #:annotations-from [annotation-table annotation-table]
@@ -1053,6 +1083,11 @@
       [(Class: _ inits fields publics augments)
        (values inits fields publics augments)]
       [_ (values #f #f #f #f)]))
+  (define-values (inits fields publics pubments)
+    (values (hash-ref parse-info 'init-internals)
+            (hash-ref parse-info 'field-internals)
+            (hash-ref parse-info 'public-internals)
+            (hash-ref parse-info 'pubment-internals)))
   (define init-types (make-type-dict inits super-inits expected-inits
                                      #:inits #t))
   (define field-types (make-type-dict fields super-fields expected-fields))
