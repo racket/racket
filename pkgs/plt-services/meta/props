@@ -861,28 +861,6 @@ path/s is either such a string or a list of them.
 "pkgs/htdp-pkgs/htdp-lib/2htdp/private/image-core.rkt" responsible (robby)
 "pkgs/htdp-pkgs/htdp-lib/2htdp/private/image-more.rkt" responsible (robby)
 "pkgs/htdp-pkgs/htdp-lib/2htdp/private/img-err.rkt" responsible (robby)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/full-scene-visible.rkt" drdr:command-line (gracket *)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/image-equality-performance-htdp.rkt" responsible (robby)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/image-equality-performance.rkt" responsible (robby)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/jpr-bug.rkt" drdr:command-line #f
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/mouse-evt.rkt" drdr:command-line #f
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/mp.rkt" drdr:command-line #f
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/on-release-no-key.rkt" drdr:command-line (raco "make" *)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/on-tick-universe-with-limit.rkt" drdr:command-line (gracket *)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/pad1.rkt" drdr:command-line (raco "make" *)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/perform-record.rkt" drdr:command-line (gracket *) drdr:timeout 300
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/perform-robby.rkt" drdr:command-line (gracket *)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/perform-whack.rkt" drdr:command-line #f
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/profile-robby.rkt" drdr:command-line #f
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/record-stop-when.rkt" drdr:command-line (gracket *)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/record.rkt" drdr:command-line (gracket *)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/release.rkt" drdr:command-line (gracket *)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/struct-universe.rkt" drdr:command-line (gracket *) drdr:random #t
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/test-image.rkt" responsible (robby)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/ufo-rename.rkt" drdr:command-line (gracket *)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/universe-receive.rkt" drdr:command-line (raco "make" *)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/universe-restart.rkt" drdr:command-line (gracket *)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/tests/world0-stops.rkt" drdr:command-line (gracket *)
 "pkgs/htdp-pkgs/htdp-lib/2htdp/uchat/chatter.rkt" drdr:command-line (mzc "-k" *)
 "pkgs/htdp-pkgs/htdp-lib/2htdp/uchat/server.rkt" drdr:command-line (mzc "-k" *)
 "pkgs/htdp-pkgs/htdp-lib/2htdp/utest/balls.rkt" drdr:command-line (mzc *)
@@ -892,21 +870,43 @@ path/s is either such a string or a list of them.
 "pkgs/htdp-pkgs/htdp-lib/graphics/turtle-test.rkt" drdr:command-line (mzc "-k" *)
 "pkgs/htdp-pkgs/htdp-lib/graphics/value-turtles-test.rkt" drdr:command-line (mzc *)
 "pkgs/htdp-pkgs/htdp-lib/htdp/graphing.rkt" drdr:command-line (mzc *)
-"pkgs/htdp-pkgs/htdp-lib/htdp/tests/convert.rkt" drdr:command-line (mzc *)
-"pkgs/htdp-pkgs/htdp-lib/htdp/tests/dir.rkt" drdr:command-line #f
-"pkgs/htdp-pkgs/htdp-lib/htdp/tests/elevator.rkt" drdr:command-line (mzc *)
-"pkgs/htdp-pkgs/htdp-lib/htdp/tests/graphing.rkt" drdr:command-line (mzc *)
-"pkgs/htdp-pkgs/htdp-lib/htdp/tests/gui.rkt" responsible (robby) drdr:command-line (mzc *)
-"pkgs/htdp-pkgs/htdp-lib/htdp/tests/hangman-error.rkt" drdr:command-line (mzc *)
-"pkgs/htdp-pkgs/htdp-lib/htdp/tests/matrix-client.rkt" drdr:command-line #f
-"pkgs/htdp-pkgs/htdp-lib/htdp/tests/matrix-example.rkt" drdr:command-line #f
-"pkgs/htdp-pkgs/htdp-lib/htdp/tests/world-mouse.rkt" drdr:command-line (mzc *)
 "pkgs/htdp-pkgs/htdp-lib/stepper" responsible (clements)
 "pkgs/htdp-pkgs/htdp-lib/teachpack" responsible (matthias)
 "pkgs/htdp-pkgs/htdp-lib/teachpack/balls.ss" drdr:command-line (mzc *)
 "pkgs/htdp-pkgs/htdp-lib/teachpack/deinprogramm" responsible (sperber)
 "pkgs/htdp-pkgs/htdp-lib/teachpack/htdp/graphing.rkt" drdr:command-line (mzc *)
 "pkgs/htdp-pkgs/htdp-lib/test-engine" responsible (kathyg)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/full-scene-visible.rkt" drdr:command-line (gracket *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/image-equality-performance-htdp.rkt" responsible (robby)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/image-equality-performance.rkt" responsible (robby)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/jpr-bug.rkt" drdr:command-line #f
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/mouse-evt.rkt" drdr:command-line #f
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/mp.rkt" drdr:command-line #f
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/on-release-no-key.rkt" drdr:command-line (raco "make" *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/on-tick-universe-with-limit.rkt" drdr:command-line (gracket *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/pad1.rkt" drdr:command-line (raco "make" *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/perform-record.rkt" drdr:command-line (gracket *) drdr:timeout 300
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/perform-robby.rkt" drdr:command-line (gracket *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/perform-whack.rkt" drdr:command-line #f
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/profile-robby.rkt" drdr:command-line #f
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/record-stop-when.rkt" drdr:command-line (gracket *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/record.rkt" drdr:command-line (gracket *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/release.rkt" drdr:command-line (gracket *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/struct-universe.rkt" drdr:command-line (gracket *) drdr:random #t
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/test-image.rkt" responsible (robby)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/ufo-rename.rkt" drdr:command-line (gracket *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/universe-receive.rkt" drdr:command-line (raco "make" *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/universe-restart.rkt" drdr:command-line (gracket *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/world0-stops.rkt" drdr:command-line (gracket *)
+"pkgs/htdp-pkgs/htdp-test/htdp/tests/convert.rkt" drdr:command-line (mzc *)
+"pkgs/htdp-pkgs/htdp-test/htdp/tests/dir.rkt" drdr:command-line #f
+"pkgs/htdp-pkgs/htdp-test/htdp/tests/elevator.rkt" drdr:command-line (mzc *)
+"pkgs/htdp-pkgs/htdp-test/htdp/tests/graphing.rkt" drdr:command-line (mzc *)
+"pkgs/htdp-pkgs/htdp-test/htdp/tests/gui.rkt" responsible (robby) drdr:command-line (mzc *)
+"pkgs/htdp-pkgs/htdp-test/htdp/tests/hangman-error.rkt" drdr:command-line (mzc *)
+"pkgs/htdp-pkgs/htdp-test/htdp/tests/matrix-client.rkt" drdr:command-line #f
+"pkgs/htdp-pkgs/htdp-test/htdp/tests/matrix-example.rkt" drdr:command-line #f
+"pkgs/htdp-pkgs/htdp-test/htdp/tests/world-mouse.rkt" drdr:command-line (mzc *)
 "pkgs/htdp-pkgs/htdp-test/tests/htdp-lang" responsible (robby mflatt matthias)
 "pkgs/htdp-pkgs/htdp-test/tests/htdp-lang/advanced.rktl" drdr:timeout 360
 "pkgs/htdp-pkgs/htdp-test/tests/htdp-lang/beg-adv.rktl" drdr:command-line #f
