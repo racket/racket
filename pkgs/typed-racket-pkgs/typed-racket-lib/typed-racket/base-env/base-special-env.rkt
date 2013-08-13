@@ -166,7 +166,9 @@
    ;; finite approximation of the type
    ;;   (-> ... 2 args ... (List Pathlike ..._n) -> (List Path ..._n))
    (cl->* (-> -Variable-Reference (Un (-> -Path) (-> -Void))
-              (-pair -Pathlike (-val null))
+              (-pair (Un -Pathlike
+                         (-pair (-val 'lib) (-pair -Pathlike (-lst -Pathlike))))
+                     (-val null))
               (-pair -Path (-val null)))
           ;; this case is for `define-runtime-module-path-index`
           (-> -Variable-Reference (Un (-> -Path) (-> -Void))
