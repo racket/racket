@@ -1924,9 +1924,11 @@ static int produces_local_type(Scheme_Object *rator, int argc)
   return 0;
 }
 
-int scheme_expr_produces_local_type(Scheme_Object *expr)
+static int expr_produces_local_type(Scheme_Object *expr, int fuel)
 /* can be called by the JIT */
 {
+  if (fuel <= 0) return 0;
+
   while (1) {
     switch (SCHEME_TYPE(expr)) {
     case scheme_application_type:
@@ -1944,6 +1946,27 @@ int scheme_expr_produces_local_type(Scheme_Object *expr)
     case scheme_application3_type:
       {
         Scheme_App3_Rec *app = (Scheme_App3_Rec *)expr;
+
+
+        if (SCHEME_PRIMP(app->rator)
+            && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)) {
+          /* Recognize combinations of bitwise operations as generating fixnums */
+          if (IS_NAMED_PRIM(app->rator, "bitwise-and")) {
+            if ((expr_produces_local_type(app->rand1, fuel-1) == SCHEME_LOCAL_TYPE_FIXNUM)
+                || (expr_produces_local_type(app->rand2, fuel-1) == SCHEME_LOCAL_TYPE_FIXNUM))
+              return SCHEME_LOCAL_TYPE_FIXNUM;
+          } else if (IS_NAMED_PRIM(app->rator, "bitwise-ior")
+                     || IS_NAMED_PRIM(app->rator, "bitwise-xor")) {
+            if ((expr_produces_local_type(app->rand1, fuel-1) == SCHEME_LOCAL_TYPE_FIXNUM)
+                && (expr_produces_local_type(app->rand2, fuel-1) == SCHEME_LOCAL_TYPE_FIXNUM))
+              return SCHEME_LOCAL_TYPE_FIXNUM;
+          } else if (IS_NAMED_PRIM(app->rator, "arithmetic-shift")) {
+            if (SCHEME_INTP(app->rand2) && (SCHEME_INT_VAL(app->rand2) <= 0)
+                && (expr_produces_local_type(app->rand1, fuel-1) == SCHEME_LOCAL_TYPE_FIXNUM))
+              return SCHEME_LOCAL_TYPE_FIXNUM;
+          }
+        }
+
         return produces_local_type(app->rator, 2);
       }
       break;
@@ -1971,6 +1994,11 @@ int scheme_expr_produces_local_type(Scheme_Object *expr)
       return 0;
     }
   }
+}
+
+int scheme_expr_produces_local_type(Scheme_Object *expr)
+{
+  return expr_produces_local_type(expr, 10);
 }
 
 static Scheme_Object *finish_optimize_app(Scheme_Object *o, Optimize_Info *info, int context, int rator_flags)
