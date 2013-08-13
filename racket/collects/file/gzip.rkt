@@ -197,6 +197,39 @@
  ;;  multiply invoked), so we pack it up into a unit to
  ;;  invoke each time we need it.
 
+;; /* Data structure describing a single value and its code string. */
+(define-struct ct_data (freq code dad len) #:mutable)
+;;    union {
+;;        ush  freq;       ;; /* frequency count */
+;;        ush  code;       ;; /* bit string */
+;;    } fc;
+;;    union {
+;;        ush  dad;        ;; /* father node in Huffman tree */
+;;        ush  len;        ;; /* length of bit string */
+;;    } dl;
+#|
+(define ct_data-freq ct_data-freq/code)
+(define ct_data-code ct_data-freq/code)
+(define ct_data-dad ct_data-dad/len)
+(define ct_data-len ct_data-dad/len)
+(define set-ct_data-freq! set-ct_data-freq/code!)
+(define set-ct_data-code! set-ct_data-freq/code!)
+(define set-ct_data-dad! set-ct_data-dad/len!)
+(define set-ct_data-len! set-ct_data-dad/len!)
+(define (_make-ct_data f c d l) (make-ct_data (or f c) (or d l)))
+|#
+(define _make-ct_data make-ct_data)
+
+(define-struct tree_desc
+  (dyn_tree;      ;; /* the dynamic tree */
+   static_tree;   ;; /* corresponding static tree or NULL */
+   extra_bits;    ;; /* extra bits for each code or NULL */
+   extra_base;    ;; /* base index for extra_bits */
+   elems;         ;; /* max number of elements in the tree */
+   max_length;    ;; /* max bit length for the codes */
+   max_code);    ;; /* largest code with non zero frequency */
+  #:mutable)
+
  (define (code)
 
 ;; /* ===========================================================================
@@ -875,29 +908,6 @@
 ;;  * Local data
 ;;  */
 
-;; /* Data structure describing a single value and its code string. */
-(define-struct ct_data (freq code dad len) #:mutable)
-;;    union {
-;;        ush  freq;       ;; /* frequency count */
-;;        ush  code;       ;; /* bit string */
-;;    } fc;
-;;    union {
-;;        ush  dad;        ;; /* father node in Huffman tree */
-;;        ush  len;        ;; /* length of bit string */
-;;    } dl;
-#|
-(define ct_data-freq ct_data-freq/code)
-(define ct_data-code ct_data-freq/code)
-(define ct_data-dad ct_data-dad/len)
-(define ct_data-len ct_data-dad/len)
-(define set-ct_data-freq! set-ct_data-freq/code!)
-(define set-ct_data-code! set-ct_data-freq/code!)
-(define set-ct_data-dad! set-ct_data-dad/len!)
-(define set-ct_data-len! set-ct_data-dad/len!)
-(define (_make-ct_data f c d l) (make-ct_data (or f c) (or d l)))
-|#
-(define _make-ct_data make-ct_data)
-
 (define HEAP_SIZE (+ (* 2 L_CODES) 1))
 ;; /* maximum heap size */
 
@@ -918,16 +928,6 @@
 
 (define bl_tree (make-vector (+ (* 2 BL_CODES) 1) 'uninit-dl))
 ;; /* Huffman tree for the bit lengths */
-
-(define-struct tree_desc
-  (dyn_tree;      ;; /* the dynamic tree */
-   static_tree;   ;; /* corresponding static tree or NULL */
-   extra_bits;    ;; /* extra bits for each code or NULL */
-   extra_base;    ;; /* base index for extra_bits */
-   elems;         ;; /* max number of elements in the tree */
-   max_length;    ;; /* max bit length for the codes */
-   max_code);    ;; /* largest code with non zero frequency */
-  #:mutable)
 
 (define l_desc (make-tree_desc
                 dyn_ltree static_ltree extra_lbits
