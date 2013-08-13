@@ -159,4 +159,34 @@
    (-> Univ Univ Univ Univ Univ)]
   [(make-template-identifier 'missing-kw 'racket/private/kw)
    (->* (list Univ) Univ Univ)]
+  ;; from the expansion of `define-runtime-path`
+  [(make-template-identifier 'path-of 'racket/runtime-path)
+   (-> -Path -Path)]
+  [(make-template-identifier 'resolve-paths 'racket/runtime-path)
+   ;; finite approximation of the type
+   ;;   (-> ... 2 args ... (List Pathlike ..._n) -> (List Path ..._n))
+   (cl->* (-> -Variable-Reference (Un (-> -Path) (-> -Void))
+              (-pair -Pathlike (-val null))
+              (-pair -Path (-val null)))
+          ;; this case is for `define-runtime-module-path-index`
+          (-> -Variable-Reference (Un (-> -Path) (-> -Void))
+              (-pair (-pair (-val 'module)
+                            (-pair -Module-Path
+                                   (-pair -Variable-Reference (-val null))))
+                     (-val null))
+              (-pair -Module-Path-Index (-val null)))
+          (-> -Variable-Reference (Un (-> -Path) (-> -Void))
+              (-pair -Pathlike (-pair -Pathlike (-val null)))
+              (-pair -Path (-pair -Path (-val null))))
+          (-> -Variable-Reference (Un (-> -Path) (-> -Void))
+              (-pair -Pathlike (-pair -Pathlike (-val null)))
+              (-pair -Path (-pair -Path (-val null))))
+          (-> -Variable-Reference (Un (-> -Path) (-> -Void))
+              (-pair -Pathlike (-pair -Pathlike (-pair -Pathlike (-val null))))
+              (-pair -Path (-pair -Path (-pair -Path (-val null))))))]
+  [(make-template-identifier 'extract-module-file 'racket/private/this-expression-source-directory)
+   (-> (-Syntax Univ) -Path)]
+  ;; for `define-runtime-module-path`
+  [(make-template-identifier 'combine-module-path 'racket/runtime-path)
+   (-> -Variable-Reference -Module-Path -Resolved-Module-Path)]
   )
