@@ -74,20 +74,47 @@
           ;; above (a guard will see other uses of #lang for stuff
           ;; that is required).
           ;; We are, however, trusting that the bytecode form of the
-          ;; file (if any) matches the source (except in bootstrap
-          ;; mode).
-          (parameterize ([current-namespace (or ns (info-namespace))])
-            (if bootstrap?
+          ;; file (if any) matches the source.
+          (let ([ns (or ns (info-namespace))])
+            (if (and bootstrap?
+                     (parameterize ([current-namespace ns])
+                       (not (module-declared? file))))
                 ;; Attach `info' language modules to target namespace, and
-                ;; disable the use of compiled bytecode:
-                (parameterize ([use-compiled-file-paths null])
-                  (namespace-attach-module enclosing-ns 'setup/infotab)
-                  (namespace-attach-module enclosing-ns 'setup/infotab/lang/reader)
-                  (namespace-attach-module enclosing-ns 'info)
-                  (namespace-attach-module enclosing-ns '(submod info reader))
-                  (dynamic-require file '#%info-lookup))
+                ;; disable the use of compiled bytecode if it fails; we
+                ;; need a trial namespace to try loading bytecode, since
+                ;; the use of bytecode "sticks" for later attempts.
+                (let ([attach!
+                       (lambda (ns)
+                         (namespace-attach-module enclosing-ns 'setup/infotab ns)
+                         (namespace-attach-module enclosing-ns 'setup/infotab/lang/reader ns)
+                         (namespace-attach-module enclosing-ns 'info ns)
+                         (namespace-attach-module enclosing-ns '(submod info reader) ns))]
+                      [try
+                       (lambda (ns)
+                         (parameterize ([current-namespace ns])
+                           (dynamic-require file '#%info-lookup)))])
+                  (define ns-id (namespace-module-registry ns))
+                  ((with-handlers ([exn:fail? (lambda (exn)
+                                                ;; Trial namespace is damaged, so uncache:
+                                                (hash-set! trial-namespaces ns-id #f)
+                                                ;; Try again from source:
+                                                (lambda ()
+                                                  (attach! ns)
+                                                  (parameterize ([use-compiled-file-paths null])
+                                                    (try ns))))])
+                     ;; To reduce the cost of the trial namespace, try to used a cached
+                     ;; one previously generated for the `ns':
+                     (define try-ns (or (hash-ref trial-namespaces ns-id #f)
+                                        (let ([try-ns (make-base-empty-namespace)])
+                                          (attach! try-ns)
+                                          try-ns)))
+                     (define v (try try-ns))
+                     (hash-set! trial-namespaces ns-id try-ns)
+                     (namespace-attach-module try-ns file ns)
+                     (lambda () v))))
                 ;; Can use compiled bytecode, etc.:
-                (dynamic-require file '#%info-lookup)))]
+                (parameterize ([current-namespace ns])
+                  (dynamic-require file '#%info-lookup))))]
          [else (err "does not contain a module of the right shape")])))
 
 (define info-namespace
@@ -100,6 +127,10 @@
           (let ([ns (make-base-empty-namespace)])
             (set! ns-box (make-weak-box ns))
             ns)))))
+
+;; Weak map from a namespace registry to a trial-loading namespace for
+;; bootstrap mode:
+(define trial-namespaces (make-weak-hasheq))
 
 ;; directory-record = (make-directory-record nat nat key path (listof symbol))
 ;; eg: (make-directory-record 1 0 '(lib "mzlib") #"mzlib" '(name))
