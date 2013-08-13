@@ -262,7 +262,7 @@ must be a list or vector of five elements:
   @#,elem{or} (vector source-name line column position span)
 ]
 
-where @racket[source-name-v] is an arbitrary value for the source
+where @racket[source-name] is an arbitrary value for the source
 name; @racket[line] is an integer for the source line, or @racket[#f];
 @racket[column] is an integer for the source column, or @racket[#f];
 @racket[position] is an integer for the source position, or
