@@ -4499,8 +4499,9 @@ static MZ_MARK_STACK_TYPE find_shareable_marks()
 static Scheme_Overflow *clone_overflows(Scheme_Overflow *overflow, void *limit, Scheme_Overflow *tail)
 {
   Scheme_Overflow *naya, *first = NULL, *prev = NULL;
+  int stop = 0;
 
-  for (; overflow && (!limit || (overflow->id != limit)); overflow = overflow->prev) {
+  for (; overflow && !stop; overflow = overflow->prev) {
     naya = MALLOC_ONE_RT(Scheme_Overflow);
     memcpy(naya, overflow, sizeof(Scheme_Overflow));
     if (prev)
@@ -4508,6 +4509,8 @@ static Scheme_Overflow *clone_overflows(Scheme_Overflow *overflow, void *limit, 
     else
       first = naya;
     prev = naya;
+    if (limit && overflow->id == limit)
+      stop = 1;
   }
 
   if (first) {
