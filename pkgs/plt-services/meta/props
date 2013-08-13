@@ -876,6 +876,7 @@ path/s is either such a string or a list of them.
 "pkgs/htdp-pkgs/htdp-lib/teachpack/deinprogramm" responsible (sperber)
 "pkgs/htdp-pkgs/htdp-lib/teachpack/htdp/graphing.rkt" drdr:command-line (mzc *)
 "pkgs/htdp-pkgs/htdp-lib/test-engine" responsible (kathyg)
+"pkgs/htdp-pkgs/htdp-test/2htdp/tests/batch-io-xexpr.rkt" drdr:command-line (raco "make" *)
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/full-scene-visible.rkt" drdr:command-line (gracket *)
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/image-equality-performance-htdp.rkt" responsible (robby)
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/image-equality-performance.rkt" responsible (robby)
