@@ -76,7 +76,7 @@
   [request-binding/string
    (->* (request? string?)
         (boolean?)
-        string?)]
+        (or/c string? false/c))]
   [pkg-index/basic+versions
    (-> (-> (listof string?))
        (-> string? #:version (or/c string? false/c)
