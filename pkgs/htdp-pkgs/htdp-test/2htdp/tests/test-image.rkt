@@ -39,7 +39,7 @@
                   to-img
                   render-normalized
                   render-image)
-         (only-in "../private/image-more.rkt"
+         (only-in 2htdp/private/image-more
                   bring-between
                   swizzle)
          mrlib/private/image-core-bitmap
