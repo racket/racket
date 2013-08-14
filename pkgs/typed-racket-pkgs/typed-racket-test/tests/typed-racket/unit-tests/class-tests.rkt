@@ -1059,6 +1059,58 @@
          (init-field x)
          (set! x 5))))
 
+   ;; test polymorphism with keyword
+   (check-ok
+    (define point%
+      (class object%
+        #:forall X
+        (super-new)
+        (init-field [x : X] [y : X])))
+    (new (inst point% Integer) [x 0] [y 5])
+    (new (inst point% String) [x "foo"] [y "bar"]))
+
+   ;; test polymorphism with two type parameters
+   (check-ok
+    (define point%
+      (class object%
+        #:forall (X Y)
+        (super-new)
+        (init-field [x : X] [y : Y])))
+    (new (inst point% Integer String) [x 0] [y "foo"])
+    (new (inst point% String Integer) [x "foo"] [y 3]))
+
+   ;; test class polymorphism with method
+   (check-ok
+    (define id%
+      (class object%
+        #:forall (X)
+        (super-new)
+        (: m (X -> X))
+        (define/public (m x) x)))
+    (send (new (inst id% Integer)) m 0))
+
+   ;; fails because m is not parametric
+   (check-err #:exn #rx"Expected X.*, but got String"
+    (class object%
+      #:forall (X)
+      (super-new)
+      (: m (X -> X))
+      (define/public (m x) (string-append x))))
+
+   ;; fails because default init value cannot be polymorphic
+   (check-err #:exn #rx"Default init value has wrong type"
+    (class object%
+      #:forall Z
+      (super-new)
+      (init-field [x : Z] [y : Z 0])))
+
+   ;; fails because default field value cannot be polymorphic
+   (check-err #:exn #rx"Expected Z.*, but got Zero"
+    (class object%
+      #:forall Z
+      (super-new)
+      (field [x : Z 0])))
+
    ;; test in-clause type annotations (next several tests)
    (check-ok
     (define c%
