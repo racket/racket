@@ -1,4 +1,4 @@
-#lang racket/base
+#lang unstable/2d racket/base
 
 (require racket/list
          racket/contract
@@ -10,7 +10,8 @@
          "extract-conditions.rkt"
          "enum.rkt"
          (for-syntax "rewrite-side-conditions.rkt"
-                     racket/base))
+                     racket/base)
+         unstable/2d/match)
 
 (provide unify
          unify*
@@ -386,128 +387,132 @@
 (define (unify* t0 u0 e L)
   (define t (resolve t0 e))
   (define u (resolve u0 e))
+  #2dmatch
+  ╔═════════════════╦═════════════════╦═════════════╦═══════════════╦═══════════╦══════╦════════════╦══════════════╦═══════════╦═══════════╦═════════╦══════════╦══════════════╦═════════════╗
+  ║            u    ║ `(mismatch-name ║ `(name      ║ `(cstr        ║`(nt ,n-u) ║`any  ║ (? num-ty?)║`(list        ║ (? vnom?) ║ `variable ║ `string ║ `boolean ║ (? base-ty?) ║(? not-pair?)║
+  ║                 ║   ,u-name       ║   ,name-u   ║   (,nts1 ...) ║           ║      ║            ║  ,us ...)    ║           ║           ║         ║          ║              ║             ║
+  ║  t              ║   ,u-pat)       ║   ,(bound)) ║   ,p1)        ║           ║      ║            ║              ║           ║           ║         ║          ║              ║             ║
+  ╠═════════════════╬═════════════════╩═════════════╩═══════════════╩═══════════╩══════╩════════════╩══════════════╩═══════════╩═══════════╩═════════╩══════════╩══════════════╩═════════════╣
+  ║`(mismatch-name  ║ (hash-set! (dqs-found) t-name (cons u (hash-ref (dqs-found) t-name (λ () '()))))                                                                                       ║
+  ║  ,t-name        ║ (unify* t-pat u e L)                                                                                                                                                   ║
+  ║  ,t-pat)        ║                                                                                                                                                                        ║
+  ╠═════════════════╬═════════════════╦══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╣
+  ║`(name ,name-t   ║                 ║ (instantiate* name-t u e L)                                                                                                                          ║
+  ║       ,(bound)) ║                 ║                                                                                                                                                      ║
+  ╠═════════════════╣                 ╚═════════════╦═══════════════╦════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╣
+  ║`(cstr           ║                               ║(u*-2cstrs     ║ (u*-1cstr nts2 p2 u e L)                                                                                               ║
+  ║  (,nts2 ...)    ║                               ║  nts1 p1      ║                                                                                                                        ║
+  ║  ,p2)           ║                               ║  nts2 p2 e L) ║                                                                                                                        ║
+  ╠═════════════════╣                               ╚═══════════════╬═══════════╦════════════════════════════════════════════════════════════════════════════════════════════════════════════╣
+  ║ `(nt ,n-t)      ║                                               ║(u*-2nts   ║ (u*-1nt n-t u e L)                                                                                         ║
+  ║                 ║                                               ║ n-t n-u   ║                                                                                                            ║
+  ║                 ║                                               ║ e L)      ║                                                                                                            ║
+  ╠═════════════════╣                                               ╚═══════════╬════════════════════════════════════════════════════════════════════════════════════════════════════════════╣
+  ║  `any           ║                                                           ║ u                                                                                                          ║
+  ║                 ║                                                           ║                                                                                                            ║
+  ╠═════════════════╣                                                           ╚══════╦════════════╦══════════════════════════════════════════════════════════════════════════╦═════════════╣
+  ║  (? num-ty?)    ║                                                                  ║(u*-2nums   ║                                                                          ║             ║
+  ║                 ║                                                                  ║  t u)      ║                                                                          ║             ║
+  ╠═════════════════╣                                                                  ╚════════════╬══════════════╗                                                           ║             ║
+  ║ `(list ,ts ...) ║                                                                               ║(u*-2lsts     ║                        (unif-fail)                        ║             ║
+  ║                 ║                                                                               ║ ts us e L)   ║                                                           ║(u*-matches? ║
+  ╠═════════════════╣                                                                               ╚══════════════╬═══════════╦═══════════╗                                   ║  t u        ║
+  ║ (? vnom?)       ║                                                                                              ║    t      ║     t     ║                                   ║  e L)       ║
+  ╠═════════════════╣                                                                                              ╚═══════════╬═══════════╣                                   ║             ║
+  ║ `variable       ║                                                                                                          ║     t     ║                                   ║             ║
+  ╠═════════════════╣                                                                                                          ╚═══════════╬═════════╗                         ║             ║
+  ║ `string         ║                   (unify* u t e L)                                                                                   ║    t    ║                         ║             ║
+  ╠═════════════════╣                                                                                                                      ╚═════════╬══════════╗              ║             ║
+  ║ `boolean        ║                                                                                                                                ║    t     ║              ║             ║
+  ╠═════════════════╣                                                                                                                                ╚══════════╬══════════════╣             ║
+  ║ (? base-ty?)    ║                                                                                                                                           ║      t       ║             ║
+  ╠═════════════════╣                                                                                                                                           ╚══════════════╬═════════════╣
+  ║ (? not-pair?)   ║                                                                                                                                                          ║(and/fail    ║
+  ║                 ║                                                                                                                                                          ║ (equal? t u)║
+  ║                 ║                                                                                                                                                          ║ t)          ║
+  ╚═════════════════╩══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╩═════════════╝)
+
+(define (vnom? x) (equal? x 'variable-not-otherwise-mentioned))
+(define (not-pair? x) (not (pair? x)))
+
+(define (u*-2cstrs nts1 p1 nts2 p2 e L)
+  (let ([res (unify* p1 p2 e L)]
+        [new-nts (merge-ids/sorted nts1 nts2 L)])
+    (and/fail (not-failed? res)
+              new-nts
+              (when (lvar? res)
+                (error 'unify* "unify* returned lvar as result: ~s\n~s\n~s\n" p1 p2 e))
+              `(cstr ,new-nts ,res))))
+
+(define (u*-1cstr nts p u e L)
+    (let ([res (unify* p u e L)])
+      (and/fail (not-failed? res)
+                (match res
+                  [(lvar id)
+                   (error 'unify* "unify* returned lvar as result: ~s\n~s\n~s\n" p u e)]
+                  [`(nt ,nt)
+                   (define new-nts (merge-ids/sorted (list nt) nts L))
+                   (and/fail new-nts
+                             `(cstr ,new-nts ,p))]
+                  [`(cstr ,nts2 ,new-p)
+                   (define new-nts (merge-ids/sorted nts nts2 L))
+                   (and/fail new-nts
+                             `(cstr ,new-nts ,new-p))]
+                  [_
+                   (and/fail (for/and ([n nts]) (check-nt n L res))
+                             `(cstr ,nts ,res))]))))
+  
+(define (u*-2nts n-t n-u e L)
+    (if (equal? n-t n-u)
+        (let ([n n-t])
+          (if (hash-has-key? (compiled-lang-collapsible-nts L) n)
+              (hash-ref (compiled-lang-collapsible-nts L) n)
+              `(nt ,n)))
+        (u*-1nt n-t `(nt ,n-u) e L)))
+
+(define (u*-1nt p u e L)
+  (and/fail
+   (check-nt p L u)
+   (if (hash-has-key? (compiled-lang-collapsible-nts L) p)
+       (unify* (hash-ref (compiled-lang-collapsible-nts L) p) u e L)
+       (let ([res (unify* u u e L)]) ;; look at structure of nt here?
+         (and/fail (not-failed? res)
+                   (when (lvar? res)
+                     (error 'unify* "unify* returned lvar as result: ~s\n~s\n~s\n" u u e))
+                   `(cstr (,p) ,res))))))
+  
+(define (u*-2lsts ts us e L)
+  (and/fail (= (length ts) (length us))
+            (let/ec fail
+              `(list ,@(for/list ([t ts] [u us])
+                         (let ([res (unify* t u e L)])
+                           (if (not-failed? res)
+                               res
+                               (fail (unif-fail)))))))))
+
+(define (u*-2nums t u)
+  (cond 
+    [(number-superset? t u) u]
+    [(number-superset? u t) t]))
+
+(define (u*-matches? t u e L) 
   (match* (t u)
-    ;; mismatch patterns
-    [(`(mismatch-name ,name ,t-pat) u)
-     (hash-set! (dqs-found) name 
-                (cons u (hash-ref (dqs-found) name (λ () '()))))
-     (unify* t-pat u e L)]
-    [(t `(mismatch-name ,name ,u-pat))
-     (hash-set! (dqs-found) name 
-                (cons t (hash-ref (dqs-found) name (λ () '()))))
-     (unify* t u-pat e L)]
-    ;; named pats always pre-bound here
-    [(`(name ,name ,(bound)) _)
-     (instantiate* name u e L)]
-    [(_ `(name ,name ,(bound)))
-     (unify* u t e L)]
-    ;; cstrs
-    [(`(cstr (,nts1 ...) ,p1) `(cstr (,nts2 ...) ,p2))
-     (let ([res (unify* p1 p2 e L)]
-           [new-nts (merge-ids/sorted nts1 nts2 L)])
-       (and/fail (not-failed? res)
-                 new-nts
-                 (when (lvar? res)
-                   (error 'unify* "unify* returned lvar as result: ~s\n~s\n~s\n" p1 p2 e))
-                 `(cstr ,new-nts ,res)))]
-    [(`(cstr ,nts ,p) _)
-     (let ([res (unify* p u e L)])
-       (and/fail (not-failed? res)
-                 (match res
-                   [(lvar id)
-                    (error 'unify* "unify* returned lvar as result: ~s\n~s\n~s\n" p u e)]
-                   [`(nt ,nt)
-                    (define new-nts (merge-ids/sorted (list nt) nts L))
-                    (and/fail new-nts
-                              `(cstr ,new-nts ,p))]
-                   [`(cstr ,nts2 ,new-p)
-                    (define new-nts (merge-ids/sorted nts nts2 L))
-                    (and/fail new-nts
-                              `(cstr ,new-nts ,new-p))]
-                   [_
-                    (and/fail (for/and ([n nts]) (check-nt n L res))
-                              `(cstr ,nts ,res))])))]
-    [(_ `(cstr ,nts ,p))
-     (unify* `(cstr ,nts ,p) t e L)]
-    ;; nts
-    [(`(nt ,n) `(nt ,n))
-     (if (hash-has-key? (compiled-lang-collapsible-nts L) n)
-         (hash-ref (compiled-lang-collapsible-nts L) n)
-         `(nt ,n))]
-    [(`(nt ,p) u)
-     (and/fail
-      (check-nt p L u)
-      (if (hash-has-key? (compiled-lang-collapsible-nts L) p)
-          (unify* (hash-ref (compiled-lang-collapsible-nts L) p) u e L)
-          (let ([res (unify* u u e L)]) ;; look at structure of nt here?
-            (and/fail (not-failed? res)
-                      (when (lvar? res)
-                        (error 'unify* "unify* returned lvar as result: ~s\n~s\n~s\n" u u e))
-                      `(cstr (,p) ,res)))))]
-    [(_ `(nt ,p))
-     (unify* `(nt ,p) t e L)]
-    ;; other pat stuff
-    [(`(list ,ts ...) `(list ,us ...))
-     (and/fail (= (length ts) (length us))
-               (let/ec fail
-                 `(list ,@(for/list ([t ts] [u us])
-                            (let ([res (unify* t u e L)])
-                              (if (not-failed? res)
-                                  res
-                                  (fail (unif-fail))))))))]
-    [((? number-type? t) (? number-type? u))
-     (cond 
-       [(number-superset? t u) u]
-       [(number-superset? u t) t])]
-    [((? number-type? t) _)
+    [((? num-ty? t) _)
      (and/fail ((number-pred t) u)
                u)]
-    [(_ (? number-type? u))
-     (unify* u t e L)]
-    [(`variable-not-otherwise-mentioned `variable-not-otherwise-mentioned)
-     `variable-not-otherwise-mentioned]
-    [(_ `variable-not-otherwise-mentioned)
-     (unify* u t e L)]
-    [(`variable-not-otherwise-mentioned `variable)
-     `variable-not-otherwise-mentioned]
     [(`variable-not-otherwise-mentioned (? symbol? s))
      (and/fail (not (memq s (compiled-lang-literals L)))
-               (not (base-type? s))
+               (not (base-ty? s))
                s)]
-    [(`variable `variable)
-     `variable]
-    [(_ `variable)
-     (unify* u t e L)]
     [(`variable (? symbol? s))
-     (and/fail (not (base-type? s))
+     (and/fail (not (base-ty? s))
                s)]
-    ;; string stuff
-    [(`string `string)
-     `string]
-    [(_ `string)
-     (unify* u t e L)]
     [(`string (? string? s))
      s]
-    
-    ;; booleans
-    [(`boolean `boolean)
-     `boolean]
-    [(`string `boolean)
-     (unif-fail)]
-    [(_ `boolean)
-     (unify* u t e L)]
     [(`boolean (? boolean? b))
      b]
-    
-    ;; other
-    [((? base-type? t) (? base-type? u))
-     (and/fail (equal? t u)
-               t)]
-    [((? (compose not pair?) t) (? (compose not pair?) u))
-     (and/fail (equal? t u)
-               t)]
     [(_ _) (unif-fail)]))
-
+    
 (define (resolve pat env)
   (match pat
     [`(name ,id ,(bound))
@@ -649,16 +654,15 @@
     [`(,a ,b ,rest ...)
      (cons a (de-dupe/sorted (cons b rest)))]))
 
-(define (number-type? symbol)
+(define (num-ty? symbol)
   (member symbol
-          '(any number real integer natural)))
+          '(number real integer natural)))
 
 (define npreds (hash 'number number?
                      'real real?
                      'integer integer?
                      'natural (λ (n) (and (integer? n)
-                                           (>= n 0)))
-                     'any (λ (n) #t)))
+                                           (>= n 0)))))
 (define (number-pred symbol)
   (hash-ref npreds symbol))
 
@@ -667,7 +671,7 @@
   (>= (length (member super nums))
       (length (member sub nums))))
 
-(define (base-type? symbol)
+(define (base-ty? symbol)
   (member symbol
           '(any number string natural integer real boolean
                 variable variable-not-otherwise-mentioned)))
