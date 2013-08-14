@@ -112,38 +112,43 @@
   ;; a buff-spec is (make-buff-spec string nat nat)
   ;; a buff-spec represents a buffer state; the content of the buffer,
   ;; and the start and end of the highlighted region.
-  (define-struct buff-spec (string start end) #:prefab)
+  ;; the overwrite? field specifies if the overwrite mode is enabled during the test
+  ;;    (its value is ignored for the result checking)
+  (define-struct buff-spec (string start end overwrite?) #:prefab)
   
+  (define (build-buff-spec string start end #:overwrite? [overwrite? #f])
+    (make-buff-spec string start end overwrite?))
+
   ;; the keybindings test cases applied to frame:text% editors
   (define global-specs
     (list
-     (make-key-spec (make-buff-spec "abc" 1 1)
-                    (make-buff-spec "abc" 2 2)
+     (make-key-spec (build-buff-spec "abc" 1 1)
+                    (build-buff-spec "abc" 2 2)
                     (list '((#\f control)) '((right)))
                     (list '((#\f control)) '((right)))
                     (list '((#\f control)) '((right))))
      
      ;; TeX-compress tests
      (make-key-spec/allplatforms 
-      (make-buff-spec "\\ome" 4 4)
-      (make-buff-spec "ω" 1 1)
+      (build-buff-spec "\\ome" 4 4)
+      (build-buff-spec "ω" 1 1)
       '(((#\\ control))))
      (make-key-spec/allplatforms 
-      (make-buff-spec "\\sub" 4 4)
-      (make-buff-spec "\\subset" 7 7)
+      (build-buff-spec "\\sub" 4 4)
+      (build-buff-spec "\\subset" 7 7)
       '(((#\\ control))))
      (make-key-spec/allplatforms 
-      (make-buff-spec "\\subset" 7 7)
-      (make-buff-spec "⊂" 1 1)
+      (build-buff-spec "\\subset" 7 7)
+      (build-buff-spec "⊂" 1 1)
       '(((#\\ control))))
      (make-key-spec/allplatforms 
-      (make-buff-spec "\\sub" 4 4)
-      (make-buff-spec "⊆" 1 1)
+      (build-buff-spec "\\sub" 4 4)
+      (build-buff-spec "⊆" 1 1)
       '(((#\\ control) (#\e) (#\\ control))))))
   
   (define (build-open-bracket-spec str pos char)
-    (make-key-spec (make-buff-spec str pos pos)
-                   (make-buff-spec 
+    (make-key-spec (build-buff-spec str pos pos)
+                   (build-buff-spec 
                     (string-append (substring str 0 pos)
                                    (string char)
                                    (substring str pos (string-length str)))
@@ -154,31 +159,31 @@
                    (list (list (list #\[)))))
   
   (define (ascii-art-box-spec before after)
-    (make-key-spec/allplatforms (make-buff-spec before 0 0) 
-                                (make-buff-spec after 0 0)
+    (make-key-spec/allplatforms (build-buff-spec before 0 0) 
+                                (build-buff-spec after 0 0)
                                 (list '((#\x control) (#\r) (#\a)))))
   
   ;; the keybindings test cases applied to racket:text% editors
   (define scheme-specs
     (list 
-     (make-key-spec (make-buff-spec "(abc (def))" 4 4)
-                    (make-buff-spec "(abc (def))" 10 10)
+     (make-key-spec (build-buff-spec "(abc (def))" 4 4)
+                    (build-buff-spec "(abc (def))" 10 10)
                     (list '((right alt)))
                     (list '((right alt)))
                     (list '((right alt))))
-     (make-key-spec (make-buff-spec "'(abc (def))" 1 1)
-                    (make-buff-spec "'(abc (def))" 12 12)
+     (make-key-spec (build-buff-spec "'(abc (def))" 1 1)
+                    (build-buff-spec "'(abc (def))" 12 12)
                     (list '((right alt)))
                     (list '((right alt)))
                     (list '((right alt))))
      #|
-     (make-key-spec (make-buff-spec "'(abc (def))" 0 0)
-                    (make-buff-spec "'(abc (def))" 12 12)
+     (make-key-spec (build-buff-spec "'(abc (def))" 0 0)
+                    (build-buff-spec "'(abc (def))" 12 12)
                     (list '(right alt))
                     (list '(right alt))
                     (list '(right alt)))
-     (make-key-spec (make-buff-spec "'(abc (def))" 12 12)
-                    (make-buff-spec "'(abc (def))" 0 0)
+     (make-key-spec (build-buff-spec "'(abc (def))" 12 12)
+                    (build-buff-spec "'(abc (def))" 0 0)
                     (list '(left alt))
                     (list '(left alt))
                     (list '(left alt)))
@@ -217,68 +222,94 @@
      (build-open-bracket-spec "(local []" 9 #\()
      ;; test to show that multi-keystrokes works:
      (make-key-spec/allplatforms
-      (make-buff-spec "" 0 0) 
-      (make-buff-spec "zx" 2 2)
+      (build-buff-spec "" 0 0) 
+      (build-buff-spec "zx" 2 2)
       (list '((#\z) (#\x))))
      ;; remove-enclosing-parens :
      (make-key-spec/allplatforms
-      (make-buff-spec "(abc def)" 1 1)
-      (make-buff-spec "abc" 0 0)
+      (build-buff-spec "(abc def)" 1 1)
+      (build-buff-spec "abc" 0 0)
       (list '((#\c control) (#\o control))))
      ;; (is this the desired behavior?):
      (make-key-spec/allplatforms
-      (make-buff-spec "(abc def)" 2 3)
-      (make-buff-spec "bc" 0 0)
+      (build-buff-spec "(abc def)" 2 3)
+      (build-buff-spec "bc" 0 0)
       (list '((#\c control) (#\o control))))
      ;; insert-()-pair :
      (make-key-spec
-      (make-buff-spec "abc" 0 0)
-      (make-buff-spec "()abc" 1 1)
+      (build-buff-spec "abc" 0 0)
+      (build-buff-spec "()abc" 1 1)
       (list '((escape) (#\()))
       (list '((#\( meta)))
       (list '((escape) (#\())))
      (make-key-spec
-      (make-buff-spec "abc" 0 2)
-      (make-buff-spec "(ab)c" 1 1)
+      (build-buff-spec "abc" 0 2)
+      (build-buff-spec "(ab)c" 1 1)
       (list '((escape) (#\()))
       (list '((#\( meta)))
       (list '((escape) (#\())))
      ;; toggle-square-round-parens :
      ; () -> []
      (make-key-spec/allplatforms
-      (make-buff-spec "(a)" 0 0)
-      (make-buff-spec "[a]" 0 0)
+      (build-buff-spec "(a)" 0 0)
+      (build-buff-spec "[a]" 0 0)
       (list '((#\c control) (#\[ control))))
      ; [] -> ()
      (make-key-spec/allplatforms
-      (make-buff-spec "[a]" 0 0)
-      (make-buff-spec "(a)" 0 0)
+      (build-buff-spec "[a]" 0 0)
+      (build-buff-spec "(a)" 0 0)
       (list '((#\c control) (#\[ control))))
      ; enclosed sexps
      (make-key-spec/allplatforms
-      (make-buff-spec "[a (def )b]" 0 0)
-      (make-buff-spec "(a (def )b)" 0 0)
+      (build-buff-spec "[a (def )b]" 0 0)
+      (build-buff-spec "(a (def )b)" 0 0)
       (list '((#\c control) (#\[ control))))
      ; extra preceding whitespace
      (make-key-spec/allplatforms
-      (make-buff-spec "  \n [a (def )b]" 0 0)
-      (make-buff-spec "  \n (a (def )b)" 0 0)
+      (build-buff-spec "  \n [a (def )b]" 0 0)
+      (build-buff-spec "  \n (a (def )b)" 0 0)
       (list '((#\c control) (#\[ control))))
      ; cursor not at beginning of buffer
      (make-key-spec/allplatforms
-      (make-buff-spec "  \n [a (def )b]" 1 1)
-      (make-buff-spec "  \n (a (def )b)" 1 1)
+      (build-buff-spec "  \n [a (def )b]" 1 1)
+      (build-buff-spec "  \n (a (def )b)" 1 1)
       (list '((#\c control) (#\[ control))))
      ; intervening non-paren sexp
      (make-key-spec/allplatforms
-      (make-buff-spec "  \nf [a (def )b]" 1 1)
-      (make-buff-spec "  \nf [a (def )b]" 1 1)
+      (build-buff-spec "  \nf [a (def )b]" 1 1)
+      (build-buff-spec "  \nf [a (def )b]" 1 1)
       (list '((#\c control) (#\[ control))))
      ;; at end of buffer (hence sexp-forward returns #f):
      (make-key-spec/allplatforms
-      (make-buff-spec "[a]" 3 3)
-      (make-buff-spec "[a]" 3 3)
+      (build-buff-spec "[a]" 3 3)
+      (build-buff-spec "[a]" 3 3)
       (list '((#\c control) (#\[ control))))
+     
+     (make-key-spec/allplatforms
+      (build-buff-spec "a" 0 0 #:overwrite? #t)
+      (build-buff-spec "b" 1 1)
+      (list '((#\b))))
+     
+     (make-key-spec/allplatforms
+      (build-buff-spec "a" 0 0 #:overwrite? #t)
+      (build-buff-spec "|" 1 1)
+      (list '((#\|))))
+     
+     (make-key-spec/allplatforms
+      (build-buff-spec "a" 0 0 #:overwrite? #t)
+      (build-buff-spec "(" 1 1)
+      (list '((#\())))
+     
+     (make-key-spec/allplatforms
+      (build-buff-spec "a" 0 0 #:overwrite? #t)
+      (build-buff-spec ")" 1 1)
+      (list '((#\)))))
+     
+     ;; needs to be in auto-adjut open paren mode
+     (make-key-spec/allplatforms
+      (build-buff-spec "a" 0 0 #:overwrite? #t)
+      (build-buff-spec "(" 1 1)
+      (list '((#\[))))
      
      (ascii-art-box-spec "+" "═")
      (ascii-art-box-spec "x" "x")
@@ -310,20 +341,20 @@
                                         "╚═╩═╝\n"))))
   
   (define automatic-scheme-specs
-    (list (make-key-spec/allplatforms (make-buff-spec "" 0 0) 
-                                      (make-buff-spec "()" 1 1)
+    (list (make-key-spec/allplatforms (build-buff-spec "" 0 0) 
+                                      (build-buff-spec "()" 1 1)
                                       '(((#\())))
-          (make-key-spec/allplatforms (make-buff-spec "" 0 0) 
-                                      (make-buff-spec "[]" 1 1)
+          (make-key-spec/allplatforms (build-buff-spec "" 0 0) 
+                                      (build-buff-spec "[]" 1 1)
                                       '(((#\[))))
-          (make-key-spec/allplatforms (make-buff-spec "" 0 0) 
-                                      (make-buff-spec "{}" 1 1)
+          (make-key-spec/allplatforms (build-buff-spec "" 0 0) 
+                                      (build-buff-spec "{}" 1 1)
                                       '(((#\{))))
-          (make-key-spec/allplatforms (make-buff-spec "" 0 0) 
-                                      (make-buff-spec "\"\"" 1 1)
+          (make-key-spec/allplatforms (build-buff-spec "" 0 0) 
+                                      (build-buff-spec "\"\"" 1 1)
                                       '(((#\"))))
-          (make-key-spec/allplatforms (make-buff-spec "" 0 0) 
-                                      (make-buff-spec "||" 1 1)
+          (make-key-spec/allplatforms (build-buff-spec "" 0 0) 
+                                      (build-buff-spec "||" 1 1)
                                       '(((#\|))))))
   
   (queue-sexp-to-mred `(send (make-object frame:basic% "dummy to trick frame group") show #t))
@@ -352,6 +383,7 @@
                                            (channel-get c)))]
                               [text (qc (λ () (send (get-top-level-focus-window) get-editor)))])
                          (qc (λ () 
+                               (send text set-overwrite-mode ,(buff-spec-overwrite? before))
                                (send text erase)
                                (send text insert ,(buff-spec-string before))
                                (send text set-position ,(buff-spec-start before) ,(buff-spec-end before))))
@@ -371,6 +403,11 @@
           [i (in-naturals)])
       (test-key spec i))
     (queue-sexp-to-mred `(send (get-top-level-focus-window) close)))
+
+(define old-paren-adjusting-prefs
+  (queue-sexp-to-mred `(list (preferences:get 'framework:fixup-open-parens)
+                             (preferences:get 'framework:automatic-parens))))
+
   
   (queue-sexp-to-mred `(preferences:set 'framework:fixup-open-parens #t))
   (queue-sexp-to-mred `(preferences:set 'framework:automatic-parens #f))
@@ -387,3 +424,7 @@
                  (define/override (get-editor%) racket:text%)
                  (super-new))
               automatic-scheme-specs)
+
+(queue-sexp-to-mred
+ `(begin (preferences:set 'framework:fixup-open-parens ,(list-ref old-paren-adjusting-prefs 0))
+         (preferences:set 'framework:automatic-parens ,(list-ref old-paren-adjusting-prefs 1))))

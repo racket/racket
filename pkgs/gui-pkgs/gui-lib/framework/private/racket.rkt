@@ -1573,8 +1573,7 @@
       (send text insert close-brace)
       (when (and (char? open-brace) (char=? #\| open-brace) hash-before?) 
         (send text insert #\#))
-      (send text set-position (+ selection-start open-len (if space-between? 1 0)))
-      )
+      (send text set-position (+ selection-start open-len (if space-between? 1 0))))
     (send text end-edit-sequence))
   
 
@@ -1586,7 +1585,11 @@
       (for/list ([x (racket-paren:get-paren-pairs)]) (string-ref (car x) 0)))
     (cond
       [(not (preferences:get 'framework:automatic-parens))
-       (send text insert open-brace)]
+       (define startpos (send text get-start-position))
+       (if (and (send text get-overwrite-mode) 
+                (= startpos (send text get-end-position)))
+           (send text insert open-brace startpos (add1 startpos))
+           (send text insert open-brace))]
     
       [else  ; automatic-parens is enabled
        (define c (immediately-following-cursor text))
@@ -1775,7 +1778,9 @@
          [end-pos (send text get-end-position)]
          [letrec-like-forms (preferences:get 'framework:square-bracket:letrec)])
     (send text begin-edit-sequence #f #f)
-    (send text insert "[" start-pos 'same #f)
+    (if (and (send text get-overwrite-mode) (= start-pos end-pos))
+        (send text insert "[" start-pos (add1 start-pos) #f)
+        (send text insert "[" start-pos 'same #f))
     (when (eq? (send text classify-position pos) 'parenthesis)
       (let* ([before-whitespace-pos (send text skip-whitespace pos 'backward #t)]
              [keyword/distance (find-keyword-and-distance before-whitespace-pos text)])
