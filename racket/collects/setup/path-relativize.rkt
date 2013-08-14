@@ -19,16 +19,11 @@
   ;; We need to compare paths to find when something is in the racket
   ;; tree, so we explode the paths. This is slower than the old way
   ;; (by a factor of 2 or so), but it's simpler and more portable.
-  (define (explode-path path)
-    (let loop ([path (simplify-path (path->complete-path path))]
-               [rest null])
-      (let-values ([(base name dir?) (split-path path)])
-        (if (path? base)
-          (loop base (cons name rest))
-          (cons name rest)))))
+  (define (explode-path* path)
+    (explode-path (simplify-path (path->complete-path path))))
 
   (define exploded-root
-    (delay (cond [(find-root-dir) => explode-path] [else #f])))
+    (delay (cond [(find-root-dir) => explode-path*] [else #f])))
 
   ;; path->relative : path-or-bytes -> datum-containing-bytes-or-path
   (define (path->relative path0)
@@ -37,9 +32,11 @@
             [(path-string? path0) path0]
             [else (raise-type-error to-rel-name "path, string, or bytes"
                                     path0)]))
-    (let loop ([path (explode-path path1)] [root (force exploded-root)])
+    (let loop ([path (explode-path* path1)] [root (force exploded-root)])
       (cond [(not root) path0]
-            [(null? root) (cons tag (map (lambda (pe) (datum-intern-literal (path-element->bytes pe)))
+            [(null? root) (cons tag (map (lambda (pe)
+                                           (datum-intern-literal
+                                            (path-element->bytes pe)))
                                          path))]
             ;; Note: in some cases this returns the input path as is, which
             ;; could be a byte string -- it should be possible to return

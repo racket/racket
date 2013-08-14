@@ -121,8 +121,14 @@
         (if (and (pair? orig)
                  (or (eq? 'link (car orig))
                      (eq? 'static-link (car orig))))
-            (let ([orig-pkg-dir (simplify-path (path->complete-path (cadr orig) pkgs-dir) #f)])
-              (define e (explode orig-pkg-dir))
+            (let ([e (or (and cache
+                              (hash-ref cache `(pkg-dir ,(cadr orig)) #f))
+                         (let ([e (explode (simplify-path 
+                                            (path->complete-path (cadr orig) pkgs-dir) 
+                                            #f))])
+                           (when cache
+                             (hash-set! cache `(pkg-dir ,(cadr orig)) e))
+                           e))])
               (if (sub-path? <= p e)
                   (values k
                           (build-path* (list-tail p (length e)))
