@@ -67,4 +67,9 @@
                             [y (in-range 1 num-of-rows)])
                   #`[(#,(hash-ref coord-to-content (list x 0))
                       #,(hash-ref coord-to-content (list 0 y)))
-                     (let () #,@(hash-ref coord-to-content (list x y)))]))))]))
+                     (let () #,@(hash-ref coord-to-content (list x y)))])
+             [(_ _)
+              (2dmatch-error #,@main-args)])))]))
+
+(define (2dmatch-error a b)
+  (error '2dmatch "no matching clauses for ~e and ~e" a b))
