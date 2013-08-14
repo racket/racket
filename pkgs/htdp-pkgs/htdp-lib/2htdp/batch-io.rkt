@@ -80,6 +80,7 @@
  ;   Xexpr is one of: 
  ;   -- Symbol 
  ;   -- String 
+ ;   -- Number 
  ;   -- (cons Symbol (cons [List-of Attribute] [List-of Xexpr]))
  ;   -- (cons Symbol [List-of Xexpr])
  ;
@@ -90,7 +91,7 @@
  ;; Any -> Boolean 
  ;; is the given value an Xexpr? 
  ;; effect: display bad piece if x is not an xexpr
- (rename-out (my-xexpr? xexpr?))
+ xexpr?
  
  ;; String -> Xexpr
  ;; given a file name, read an Xexpr from a file that contains at least one XML element
@@ -138,7 +139,7 @@
          "private/csv/csv.rkt"
          ;; --- xml/html 
          net/url
-         xml/xml
+         (except-in xml/xml xexpr?)
          html
          srfi/13)
 
@@ -184,11 +185,36 @@
   (read-line (current-input-port) 'any))
 
 ;; ---------------------------------------------------------------------------------------------------
-(define (my-xexpr? x0)
+(define (xexpr? x0)
+  (define tag (gensym))
+  
+  ;; Any -> Boolean 
+  (define (xexpr-aux? x)
+    (cond
+      [(string? x) #t]
+      [(symbol? x) #t]
+      [(number? x) #t]
+      [(and (cons? x) (symbol? (first x)))
+       (define body (rest x))
+       (or (and (list-of-attributes? (first body)) (list-of-xexpr? (rest body))) 
+           (list-of-xexpr? body))]
+      [else (raise (cons tag x))]))
+  
+  ;; Any -> Boolean 
+  (define (list-of-attributes? xs)
+    (and (or (list? xs) (raise (cons tag xs)))
+         (for/and ((x xs))
+           (and (list? x) (= (length x) 2) (symbol? (first x)) (string? (second x))))))
+  
+  ;; Any -> Boolean 
+  (define (list-of-xexpr? xs)
+    (and (or (list? xs) (raise (cons tag xs)))
+         (andmap xexpr-aux? xs)))
+  
   ;; -- IN -- 
   (with-handlers (((lambda (x) (and (cons? x) (eq? (car x) tag)))
                    (lambda (x) 
-                     (displayln `(,(cdr x) occurs in ,x0))
+                     (pretty-print `(,(cdr x) occurs in ,x0))
                      #f)))
     (xexpr-aux? x0)))
 
@@ -300,38 +326,11 @@
   (map string-trim (split str "\r*\n")))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; is the given value a 
-
-(define tag (gensym))
-
-;; Any -> Boolean 
-(define (xexpr-aux? x)
-  (cond
-    [(string? x) #t]
-    [(symbol? x) #t]
-    [(and (cons? x) (symbol? (first x)))
-     (define body (rest x))
-     (or (and (list-of-attributes? (first body)) (list-of-xexpr? (rest body))) 
-         (list-of-xexpr? body))]
-    [else (raise (cons tag x))]))
-
-;; Any -> Boolean 
-(define (list-of-attributes? xs)
-  (and (or (list? xs) (raise (cons tag xs)))
-       (for/and ((x xs))
-         (and (list? x) (= (length x) 2) (symbol? (first x)) (string? (second x))))))
-
-;; Any -> Boolean 
-(define (list-of-xexpr? xs)
-  (and (or (list? xs) (raise (cons tag xs)))
-       (andmap xexpr? xs)))
-
-;; ---------------------------------------------------------------------------------------------------
 ;; Symbol String [XML -> XML] -> Xexpr
 ;; read an Xexpr from a file that contains one XML element 
 (define (read-xexpr-aux tag f fix-up)
   (define raw (read-from-file-or-device f read-xml/element))
-  (check-result 'read-plain-xexpr my-xexpr? 'xexpr (xml->xexpr (fix-up raw))))
+  (check-result 'read-plain-xexpr xexpr? 'xexpr (xml->xexpr (fix-up raw))))
 
 ;; Symbol String [XML -> XML] -> Xexpr
 (define (read-xexpr/web-aux tag url:string fix-up)
@@ -342,7 +341,7 @@
        [(404? h) #f]
        [else 
         (define e (filter element? (call/input-url url get-pure-port read-html-as-xml)))
-        (and (cons? e) (check-result tag my-xexpr? 'xexpr (xml->xexpr (fix-up (first e)))))]))))
+        (and (cons? e) (check-result tag xexpr? 'xexpr (xml->xexpr (fix-up (first e)))))]))))
 
 (define fix-up (eliminate-whitespace '() (lambda (x) #t)))
 

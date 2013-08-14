@@ -249,6 +249,7 @@ X-expression in the following sense:
  ;   @deftech{Xexpr} is one of: 
  ;   -- @racket[symbol?] 
  ;   -- @racket[string?] 
+ ;   -- @racket[number?] 
  ;   -- @racket[(cons symbol? (cons [List-of #, @tech{Attribute}] [List-of #, @tech{Xexpr}]))]
  ;   -- @racket[(cons symbol? [List-of #, @tech{Xexpr}])]
  ;
