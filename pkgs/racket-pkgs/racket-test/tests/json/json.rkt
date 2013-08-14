@@ -72,7 +72,14 @@
         (jsexpr->string "\37\40\177") => "\"\\u001f \\u007f\""
         (jsexpr->string "λ∀𝄞") => "\"λ∀𝄞\""
         (jsexpr->string "λ∀𝄞" #:encode 'all)
-                               => "\"\\u03bb\\u2200\\ud834\\udd1e\""))
+          => "\"\\u03bb\\u2200\\ud834\\udd1e\""
+        ;; and that the same holds for keys
+        (jsexpr->string (string->jsexpr "{\"\U0010FFFF\":\"\U0010FFFF\"}"))
+          => "{\"\U0010FFFF\":\"\U0010FFFF\"}"
+        (jsexpr->string (string->jsexpr "{\"\U0010FFFF\":\"\U0010FFFF\"}")
+                        #:encode 'all)
+          => "{\"\\udbff\\udfff\":\"\\udbff\\udfff\"}"
+        ))
 
 (define (parse-tests)
   (test (string->jsexpr @T{  1   }) =>  1

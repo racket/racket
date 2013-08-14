@@ -52,6 +52,10 @@
                            (u-esc (+ #xDC00 (bitwise-and n #x3FF)))))))))
   (define rx-to-encode
     (case enc
+      ;; FIXME: This should also encode (always) anything that is represented
+      ;; with a \U in Racket (since the json thing should be two \u sequences,
+      ;; so there should never be a \U in the output of this function); but I
+      ;; don't know if there's a known specification to what gets a \U
       [(control) #rx"[\0-\37\\\"\177]"]
       [(all)     #rx"[\0-\37\\\"\177-\U10FFFF]"]
       [else (raise-type-error who "encoding symbol" enc)]))
@@ -78,7 +82,9 @@
              (unless (symbol? k)
                (raise-type-error who "legal JSON key value" k))
              (if first? (set! first? #f) (write-bytes #"," o))
-             (write (symbol->string k) o) ; no `printf' => proper escapes
+             ;; use a string encoding so we get the same deal with
+             ;; `rx-to-encode'
+             (write-json-string (symbol->string k))
              (write-bytes #":" o)
              (loop v))
            (write-bytes #"}" o)]
