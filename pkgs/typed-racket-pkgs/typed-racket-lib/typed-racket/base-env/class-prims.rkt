@@ -103,6 +103,14 @@
  ;; interp. a top-level class expression that is not one of the special
  ;;         class clauses such as init or field.
  (struct non-clause (stx))
+
+ (define-splicing-syntax-class maybe-type-parameter
+   (pattern (~seq #:forall type-variable:id)
+            #:attr type-variables #'(type-variable))
+   (pattern (~seq #:forall (type-variable:id ...))
+            #:attr type-variables #'(type-variable ...))
+   (pattern (~seq)
+            #:attr type-variables #'()))
  
  (define-syntax-class init-decl
    #:attributes (optional? ids type form)
@@ -278,7 +286,7 @@
 
 (define-syntax (class stx)
   (syntax-parse stx
-    [(_ super e ...)
+    [(_ super forall:maybe-type-parameter e ...)
      (define class-context (generate-class-expand-context))
      (define (class-expand stx)
        (local-expand stx class-context stop-forms))
@@ -305,6 +313,7 @@
                  ;; FIXME: maybe put this in a macro and/or a syntax class
                  ;;        so that it's easier to deal with
                  #`(class-internal
+                    (#:forall #,@(attribute forall.type-variables))
                     (init #,@(dict-ref name-dict #'init '()))
                     (init-field #,@(dict-ref name-dict #'init-field '()))
                     (optional-init #,@optional-inits)

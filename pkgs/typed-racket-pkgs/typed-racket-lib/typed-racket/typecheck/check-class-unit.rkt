@@ -16,7 +16,7 @@
          (prefix-in c: racket/class)
          (private parse-type syntax-properties type-annotation)
          (base-env class-prims)
-         (env lexical-env)
+         (env lexical-env tvar-env)
          (types utils abbrev union subtype resolve)
          (typecheck check-below internal-forms)
          (utils tc-utils)
@@ -40,6 +40,7 @@
               private-field c:augment c:pubment)
   (pattern (begin (quote-syntax
                    (class-internal
+                    (#:forall type-parameter:id ...)
                     (c:init init-names:name-pair ...)
                     (c:init-field init-field-names:name-pair ...)
                     (optional-init optional-names:id ...)
@@ -53,6 +54,7 @@
                     (c:augment augment-names:name-pair ...)
                     (c:pubment pubment-names:name-pair ...)))
                   (#%plain-app values))
+           #:with type-parameters #'(type-parameter ...)
            #:with init-internals #'(init-names.internal ...)
            #:with init-externals #'(init-names.external ...)
            #:with init-field-internals #'(init-field-names.internal ...)
@@ -123,6 +125,7 @@
 (define-syntax-class class-expansion
   #:literals (let-values letrec-syntaxes+values #%plain-app)
   #:attributes (superclass-expr
+                type-parameters
                 init-internals init-externals
                 init-field-internals init-field-externals
                 optional-inits
@@ -166,6 +169,7 @@
     [(tc-result1: (and self-class-type (Class: _ _ _ _ _)))
      (parse-and-check form self-class-type)]
     [(tc-result1: (Poly-names: ns body-type))
+     ;; FIXME: this case probably isn't quite right
      (check-class form (ret body-type))]
     [#f (parse-and-check form #f)]
     [_ (check-below (parse-and-check form #f) expected)]))
@@ -184,8 +188,12 @@
      ;;        as a sanity check too
      (define super-type (tc-expr #'cls.superclass-expr))
      ;; Save parse attributes to pass through to helper functions
+     (define type-parameters (syntax->datum #'cls.type-parameters))
+     (define fresh-parameters (map gensym type-parameters))
      (define parse-info
-       (hash 'superclass-expr     #'cls.superclass-expr
+       (hash 'type-parameters     type-parameters
+             'fresh-parameters    fresh-parameters
+             'superclass-expr     #'cls.superclass-expr
              'make-methods        #'cls.make-methods
              'initializer-self-id #'cls.initializer-self-id
              'initializer-args-id #'cls.initializer-args-id
@@ -256,7 +264,8 @@
                         (syntax->datum #'cls.inherit-field-externals)
                         (syntax->datum #'cls.pubment-externals)
                         (syntax->datum #'cls.augment-externals))))
-     (do-check expected super-type parse-info)]))
+     (extend-tvars/new type-parameters fresh-parameters
+       (do-check expected super-type parse-info))]))
 
 ;; do-check : Type Type Dict -> Type
 ;; The actual type-checking
@@ -403,7 +412,12 @@
    super-augment-names)
   (when expected
     (check-below final-class-type expected))
-  final-class-type)
+  (define class-type-parameters (hash-ref parse-info 'type-parameters))
+  (if (null? class-type-parameters)
+      final-class-type
+      (make-Poly #:original-names class-type-parameters
+                 (hash-ref parse-info 'fresh-parameters)
+                 final-class-type)))
 
 ;; check-method-presence-and-absence : Dict Type Set<Symbol> ... -> Void
 ;; use the internal class: information to check whether clauses
