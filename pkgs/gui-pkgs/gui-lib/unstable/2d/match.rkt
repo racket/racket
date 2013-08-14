@@ -5,8 +5,7 @@
 (provide 2dmatch)
 (define-syntax (2dmatch stx)
   (syntax-case stx ()
-    [(_ widths heights 
-        [(cell ...) rhs ...] ...)
+    [(_ widths heights [(cell ...) rhs ...] ...)
      (let ()
        
        ;; coord-to-content : hash[(list num num) -o> (listof syntax)]
@@ -36,7 +35,10 @@
            [on-boundary?
             (unless (and rhses-lst (= 1 (length rhses-lst)))
               (raise-syntax-error '2dmatch 
-                                  (format "cell at ~a,~a must contain exactly one match pattern")
+                                  (format 
+                                   "cell at ~a,~a must contain exactly one match pattern, found ~a"
+                                   (list-ref (car cells) 0) (list-ref (car cells) 1)
+                                   (length rhses-lst))
                                   stx))
             (hash-set! coord-to-content (car cells) (car (syntax->list rhses)))]
            [else
@@ -46,21 +48,16 @@
                                           (list-ref (car cells) 0)
                                           (list-ref (car cells) 1))
                                   stx))
-            (cond
-              [(null? (cdr cells)) ;; only one cell:
-               ;; => we don't need a let binding
-               (hash-set! coord-to-content 
-                          (car cells)
-                          (syntax->list rhses))]
-              [else
-               (for ([cell (in-list cells)])
-                 (define x (list-ref cell 0))
-                 (define y (list-ref cell 1))
-                 (with-syntax ([(id) (generate-temporaries (list (format "2dmatch~a-~a" x y)))]
-                               [(rhs ...) rhses])
-                   (set! let-bindings (cons #`[id (λ () rhs ...)]
-                                            let-bindings))
-                   (hash-set! coord-to-content cell (list #'(id)))))])]))
+            ;; this code will duplicate the rhses expressions
+            ;; in the case that there are multiple cells in `cells'
+            ;; it would be better to analyze the corresponding
+            ;; match patterns and then stick the code in a function
+            ;; whose arguments are the intersection of the bound variables
+            ;; (supplying the arguments in a call in the cell)
+            (for ([cell (in-list cells)])
+              (hash-set! coord-to-content 
+                         cell
+                         (syntax->list rhses)))]))
        
        (define num-of-cols (length (syntax->list #'widths)))
        (define num-of-rows (length (syntax->list #'heights)))
