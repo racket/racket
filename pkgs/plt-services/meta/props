@@ -705,12 +705,10 @@ path/s is either such a string or a list of them.
 "pkgs/drracket-pkgs/drracket/drscheme/tool-lib.rkt" drdr:command-line (mzc *)
 "pkgs/drracket-pkgs/drracket/gui-debugger" responsible (gmarceau mflatt)
 "pkgs/drracket-pkgs/drracket/lang" responsible (mflatt robby matthias)
-"pkgs/drracket-pkgs/drracket/rackunit/tool.rkt" responsible (ryanc)
 "pkgs/drracket-pkgs/drracket/repo-time-stamp" responsible (eli)
 "pkgs/drracket-pkgs/drracket/scribble/tools/drracket-buttons.rkt" drdr:command-line #f
 "pkgs/drracket-pkgs/drracket/scribble/tools/private/mk-drs-bitmaps.rkt" drdr:command-line (racket * "skip")
 "pkgs/drracket-pkgs/drracket/scribblings/drracket/incremental-keybindings.rkt" drdr:command-line #f
-"pkgs/drracket-pkgs/drracket/texpict/face-demo.rkt" drdr:command-line (mzc *)
 "pkgs/drracket-pkgs/drracket-test/tests/drracket" drdr:random #t
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/easter-egg.rkt" drdr:timeout 480
 "pkgs/drracket-pkgs/drracket-test/tests/drracket/example-tool.rkt" drdr:command-line (gracket *)
@@ -863,8 +861,6 @@ path/s is either such a string or a list of them.
 "pkgs/htdp-pkgs/htdp-lib/2htdp/private/img-err.rkt" responsible (robby)
 "pkgs/htdp-pkgs/htdp-lib/2htdp/uchat/chatter.rkt" drdr:command-line (mzc "-k" *)
 "pkgs/htdp-pkgs/htdp-lib/2htdp/uchat/server.rkt" drdr:command-line (mzc "-k" *)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/utest/balls.rkt" drdr:command-line (mzc *)
-"pkgs/htdp-pkgs/htdp-lib/2htdp/utest/sam.rkt" drdr:command-line (mzc *)
 "pkgs/htdp-pkgs/htdp-lib/graphics" responsible (mflatt robby)
 "pkgs/htdp-pkgs/htdp-lib/graphics/tests/sixlib.rktl" drdr:command-line #f
 "pkgs/htdp-pkgs/htdp-lib/graphics/turtle-test.rkt" drdr:command-line (mzc "-k" *)
@@ -899,6 +895,8 @@ path/s is either such a string or a list of them.
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/universe-receive.rkt" drdr:command-line (raco "make" *)
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/universe-restart.rkt" drdr:command-line (gracket *)
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/world0-stops.rkt" drdr:command-line (gracket *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/utest/balls.rkt" drdr:command-line (mzc *)
+"pkgs/htdp-pkgs/htdp-test/2htdp/utest/sam.rkt" drdr:command-line (mzc *)
 "pkgs/htdp-pkgs/htdp-test/htdp/tests/convert.rkt" drdr:command-line (mzc *)
 "pkgs/htdp-pkgs/htdp-test/htdp/tests/dir.rkt" drdr:command-line #f
 "pkgs/htdp-pkgs/htdp-test/htdp/tests/elevator.rkt" drdr:command-line (mzc *)
@@ -990,7 +988,6 @@ path/s is either such a string or a list of them.
 "pkgs/pconvert-lib" responsible (robby)
 "pkgs/pict-pkgs" responsible (mflatt robby)
 "pkgs/picturing-programs" responsible (sbloch)
-"pkgs/picturing-programs/htdp" responsible (matthias)
 "pkgs/plai" responsible (jay)
 "pkgs/plai/tests/gc/bad-mutators" drdr:command-line #f
 "pkgs/plai/tests/gc/other-mutators" drdr:command-line #f
@@ -1396,7 +1393,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/zo-path.rkt" responsible (mflatt)
 "pkgs/racket-pkgs/racket-test/tests/zo-size.rkt" responsible (jay) drdr:random #t
 "pkgs/racklog" responsible (jay)
-"pkgs/rackunit-lib" responsible (ryanc noel)
+"pkgs/rackunit-pkgs" responsible (ryanc noel)
 "pkgs/readline-pkgs" responsible (mflatt)
 "pkgs/realm" responsible (matthias)
 "pkgs/redex-pkgs" responsible (robby bfetscher)
@@ -1467,6 +1464,7 @@ path/s is either such a string or a list of them.
 "pkgs/slideshow-pkgs/slideshow-exe/slideshow/examples/interlocking-components.scm" drdr:command-line (mzc *)
 "pkgs/slideshow-pkgs/slideshow-exe/slideshow/start.rkt" drdr:command-line (mzc *)
 "pkgs/slideshow-pkgs/slideshow-exe/slideshow/tutorial-show.rkt" drdr:command-line (mzc *)
+"pkgs/slideshow-pkgs/slideshow-plugin/texpict/face-demo.rkt" drdr:command-line (mzc *)
 "pkgs/snip-pkgs" responsible (mflatt)
 "pkgs/srfi-pkgs" responsible (mflatt noel chongkai jay)
 "pkgs/srfi-pkgs/srfi-lib/srfi/25/arlib.scm" drdr:command-line #f
