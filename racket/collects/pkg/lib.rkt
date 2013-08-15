@@ -2300,6 +2300,10 @@
    (when clean?
      (delete-directory/files dir))))
 
+(define (pkg-directory->module-paths dir pkg-name 
+                                     #:namespace [metadata-ns (make-metadata-namespace)])
+  (set->list (directory->module-paths dir pkg-name metadata-ns)))
+
 (define (directory->module-paths dir pkg-name metadata-ns)
   (define dummy (build-path dir "dummy.rkt"))
   (define compiled (string->path-element "compiled"))
@@ -2595,4 +2599,8 @@
         (or/c #f string?))]
   [find-pkg-installation-scope (->* (string?)
                                     (#:next? boolean?)
-                                    (or/c #f package-scope/c))]))
+                                    (or/c #f package-scope/c))]
+  [pkg-directory->module-paths (->* (path-string? string?)
+                                    (#:namespace namespace?)
+                                    (listof module-path?))]))
+

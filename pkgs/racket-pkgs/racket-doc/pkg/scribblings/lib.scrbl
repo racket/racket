@@ -405,3 +405,12 @@ If @racket[filter?] is true, then platform-specific dependencies are
 removed from the result list when they do not apply to the current
 platform, and other information is stripped so that the result list is
 always a list of strings.}
+
+@defproc[(pkg-directory->module-paths [dir path-string?]
+                                      [pkg-name string]
+                                      [#:namespace namespace namespace? (make-base-namespace)])
+         (listof module-path?)]{
+
+Returns a list of module paths (normalized in the sense of
+@racket[collapse-module-path]) that are provided by the package
+represented by @racket[dir] and named @racket[pkg-name].}
