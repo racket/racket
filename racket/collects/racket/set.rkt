@@ -144,7 +144,7 @@
              [proper-subset? (or/c (-> set? ctc boolean?) #f)]
              [set-map (or/c (-> set? (-> elem/c any/c) list?) #f)]
              [set-for-each (or/c (-> set? (-> elem/c any) void?) #f)]
-             [set-copy (or/c (-> set? ctc) #f)]
+             [set-copy (or/c (-> set? set?) #f)]
              [in-set (or/c (-> set? sequence?) #f)]
              [set->list (or/c (-> set? (listof elem/c)) #f)]
              [set->stream (or/c (-> set? stream?) #f)]
@@ -153,6 +153,7 @@
              [set-add (or/c (-> set? elem/c ctc) #f)]
              [set-remove (or/c (-> set? elem/c ctc) #f)]
              [set-clear (or/c (-> set? ctc) #f)]
+             [set-copy-clear (or/c (-> set? set?) #f)]
              [set-union
               (or/c (->* [set?] [] #:rest (listof ctc) ctc) #f)]
              [set-intersect

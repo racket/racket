@@ -282,6 +282,7 @@
   scheme_extension_table->scheme_bucket_from_table = scheme_bucket_from_table;
   scheme_extension_table->scheme_bucket_table_equal = scheme_bucket_table_equal;
   scheme_extension_table->scheme_clone_bucket_table = scheme_clone_bucket_table;
+  scheme_extension_table->scheme_clear_bucket_table = scheme_clear_bucket_table;
   scheme_extension_table->scheme_make_hash_table = scheme_make_hash_table;
   scheme_extension_table->scheme_make_hash_table_equal = scheme_make_hash_table_equal;
   scheme_extension_table->scheme_make_hash_table_eqv = scheme_make_hash_table_eqv;
@@ -294,6 +295,7 @@
   scheme_extension_table->scheme_is_hash_table_equal = scheme_is_hash_table_equal;
   scheme_extension_table->scheme_is_hash_table_eqv = scheme_is_hash_table_eqv;
   scheme_extension_table->scheme_clone_hash_table = scheme_clone_hash_table;
+  scheme_extension_table->scheme_clear_hash_table = scheme_clear_hash_table;
   scheme_extension_table->scheme_make_hash_tree = scheme_make_hash_tree;
   scheme_extension_table->scheme_hash_tree_set = scheme_hash_tree_set;
   scheme_extension_table->scheme_hash_tree_get = scheme_hash_tree_get;

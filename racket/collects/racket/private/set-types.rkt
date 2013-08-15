@@ -130,6 +130,10 @@
    s
    (hash-remove (custom-set-table s) (set-wrap-elem s x))))
 
+(define (custom-set-copy-clear s)
+  (dprintf "custom-set-copy-clear\n")
+  (update-custom-set-table s (hash-copy-clear (custom-set-table s))))
+
 (define (custom-set-clear s)
   (dprintf "custom-set-clear\n")
   (update-custom-set-table s (hash-clear (custom-set-table s))))
@@ -469,6 +473,7 @@
    (define set-map custom-set-map)
    (define set-for-each custom-set-for-each)
    (define set-copy custom-set-copy)
+   (define set-copy-clear custom-set-copy-clear)
    (define set->list custom-set->list)
    (define set->stream custom-set->stream)
    (define in-set custom-in-set)
@@ -493,11 +498,11 @@
    (define set-map custom-set-map)
    (define set-for-each custom-set-for-each)
    (define set-copy custom-set-copy)
+   (define set-copy-clear custom-set-copy-clear)
    (define set->list custom-set->list)
    (define set->stream custom-set->stream)
    (define in-set custom-in-set)
    (define set-first custom-set-first)
-   (define set-clear custom-set-clear)
    (define set-add! custom-set-add!)
    (define set-remove! custom-set-remove!)
    (define set-clear! custom-set-clear!)

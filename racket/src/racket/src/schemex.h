@@ -383,6 +383,7 @@ void *(*scheme_lookup_in_table)(Scheme_Bucket_Table *table, const char *key);
 Scheme_Bucket *(*scheme_bucket_from_table)(Scheme_Bucket_Table *table, const char *key);
 int (*scheme_bucket_table_equal)(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2);
 Scheme_Bucket_Table *(*scheme_clone_bucket_table)(Scheme_Bucket_Table *bt);
+void (*scheme_clear_bucket_table)(Scheme_Bucket_Table *bt);
 Scheme_Hash_Table *(*scheme_make_hash_table)(int type);
 Scheme_Hash_Table *(*scheme_make_hash_table_equal)();
 Scheme_Hash_Table *(*scheme_make_hash_table_eqv)();
@@ -394,7 +395,8 @@ Scheme_Object *(*scheme_hash_get_atomic)(Scheme_Hash_Table *table, Scheme_Object
 int (*scheme_hash_table_equal)(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2);
 int (*scheme_is_hash_table_equal)(Scheme_Object *o);
 int (*scheme_is_hash_table_eqv)(Scheme_Object *o);
-Scheme_Hash_Table *(*scheme_clone_hash_table)(Scheme_Hash_Table *bt);
+Scheme_Hash_Table *(*scheme_clone_hash_table)(Scheme_Hash_Table *ht);
+void (*scheme_clear_hash_table)(Scheme_Hash_Table *ht);
 Scheme_Hash_Tree *(*scheme_make_hash_tree)(int kind);
 Scheme_Hash_Tree *(*scheme_hash_tree_set)(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val);
 Scheme_Object *(*scheme_hash_tree_get)(Scheme_Hash_Tree *tree, Scheme_Object *key);

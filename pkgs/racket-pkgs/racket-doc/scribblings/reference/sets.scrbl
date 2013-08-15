@@ -48,6 +48,19 @@ update, just like mutable hash sets; the constant on immutable operations is
 usually larger, but the functional nature of immutable hash sets can pay off in
 certain algorithms.
 
+All hash sets @impl{implement} @racket[set->stream],
+@racket[set-empty?], @racket[set-member?], @racket[set-count],
+@racket[subset?], @racket[proper-subset?], @racket[set-map],
+@racket[set-for-each], @racket[set-copy], @racket[set-copy-clear],
+@racket[set->list], and @racket[set-first].  Immutable hash sets in
+addition @impl{implement} @racket[set-add], @racket[set-remove],
+@racket[set-clear], @racket[set-union], @racket[set-intersect],
+@racket[set-subtract], and @racket[set-symmetric-difference].  Mutable
+hash sets in addition @impl{implement} @racket[set-add!],
+@racket[set-remove!], @racket[set-clear!], @racket[set-union!],
+@racket[set-intersect!], @racket[set-subtract!], and
+@racket[set-symmetric-difference!].
+
 Operations on sets that contain elements that are mutated are
 unpredictable in much the same way that @tech{hash table} operations are
 unpredictable when keys are mutated.
@@ -311,7 +324,6 @@ time for @tech{hash sets}. Has no fallback.
 
 }
 
-
 @defproc[(set-empty? [st set?]) boolean?]{
 
 Returns @racket[#t] if @racket[st] has no members; returns @racket[#f]
@@ -368,15 +380,30 @@ Supported for any @racket[st] that @impl{implements}:
 Produces a new, mutable set of the same type and with the same elements as
 @racket[st].
 
-Supported for any @racket[st] that @impl{implements} @racket[set-clear] and
-@racket[set-add!], and @supp{supports} @racket[set->stream].
+Supported for any @racket[st] that @supp{supports} @racket[set->stream] and 
+either @impl{implements} @racket[set-copy-clear] and @racket[set-add!].
+
+}
+
+@defproc[(set-copy-clear [st set?]) (and/c set? set-empty?)]{
+
+Produces a new, empty set of the same type, mutability, and key strength as
+@racket[st].
+
+A difference between @racket[set-copy-clear] and @racket[set-clear] is
+that the latter conceptually iterates @racket[set-remove] on the given
+set, and so it preserves any contract on the given set. The
+@racket[set-copy-clear] function produces a new set without any
+contracts.
+
+Supported for any @racket[st] that @impl{implements} @racket[set-remove] and @supp{supports}
+@racket[set->stream].
 
 }
 
 @defproc[(set-clear [st set?]) (and/c set? set-empty?)]{
 
-Produces a new, empty set of the same type, mutability, and key strength as
-@racket[st].
+Produces set by removing all elements of @racket[st].
 
 Supported for any @racket[st] that @impl{implements} @racket[set-remove] and @supp{supports}
 @racket[set->stream].
@@ -387,7 +414,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set-remove] and @su
 
 Removes all elements from @racket[st].
 
-Supported for any @racket[st] that @impl{implements} @racket[set-remove] and either
+Supported for any @racket[st] that @impl{implements} @racket[set-remove!] and either
 @supp{supports} @racket[set->stream] or @impl{implements} @racket[set-first] and either @racket[set-count] or @racket[set-empty?].
 
 }
@@ -467,7 +494,7 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st0].
 
-Supported for any @racket[st] that @impl{implements} @racket[set-remove!] and @tech{supports} @racket[set->stream].
+Supported for any @racket[st] that @impl{implements} @racket[set-remove!] and @supp{supports} @racket[set->stream].
 
 }
 
@@ -487,7 +514,7 @@ sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st0].
 
 Supported for any @racket[st] that @impl{implements} either @racket[set-remove] or
-both @racket[set-clear] and @racket[set-add], and @tech{supports} @racket[set->stream].
+both @racket[set-clear] and @racket[set-add], and @supp{supports} @racket[set->stream].
 
 }
 
@@ -502,7 +529,7 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st0].
 
-Supported for any @racket[st] that @impl{implements} @racket[set-remove!] and @tech{supports} @racket[set->stream].
+Supported for any @racket[st] that @impl{implements} @racket[set-remove!] and @supp{supports} @racket[set->stream].
 
 }
 
@@ -522,7 +549,7 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 total size of all of the sets except the largest immutable set.
 
-Supported for any @racket[st] that @impl{implements} @racket[set-remove] or both @racket[set-clear] and @racket[set-add], and @tech{supports} @racket[set->stream].
+Supported for any @racket[st] that @impl{implements} @racket[set-remove] or both @racket[set-clear] and @racket[set-add], and @supp{supports} @racket[set->stream].
 
 @examples[#:eval set-eval
 (set-symmetric-difference (set 1) (set 1 2) (set 1 2 3))
@@ -542,7 +569,7 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 total size of the @racket[st]s.
 
-Supported for any @racket[st] that @impl{implements} @racket[set-remove!] and @tech{supports} @racket[set->stream].
+Supported for any @racket[st] that @impl{implements} @racket[set-remove!] and @supp{supports} @racket[set->stream].
 
 }
 
@@ -561,7 +588,7 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st] plus the size of @racket[st2].
 
-Supported for any @racket[st] and @racket[st2] that both @tech{support}
+Supported for any @racket[st] and @racket[st2] that both @supp{support}
 @racket[subset?]; also supported for any if @racket[st2] that @impl{implements}
 @racket[set=?] regardless of @racket[st].
 
@@ -592,7 +619,7 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st].
 
-Supported for any @racket[st] that @tech{supports} @racket[set->stream].
+Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
 @examples[#:eval set-eval
 (subset? (set 1) (set 1 2 3))
@@ -617,7 +644,7 @@ If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
 sets may differ.  This operation runs on hash sets in time proportional to the
 size of @racket[st] plus the size of @racket[st2].
 
-Supported for any @racket[st] and @racket[st2] that both @tech{support}
+Supported for any @racket[st] and @racket[st2] that both @supp{support}
 @racket[subset?].
 
 @examples[#:eval set-eval
@@ -632,7 +659,7 @@ Supported for any @racket[st] and @racket[st2] that both @tech{support}
 
 Produces a list containing the elements of @racket[st].
 
-Supported for any @racket[st] that @tech{supports} @racket[set->stream].
+Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
 }
 
@@ -644,7 +671,7 @@ Applies the procedure @racket[proc] to each element in
 @racket[st] in an unspecified order, accumulating the results
 into a list.
 
-Supported for any @racket[st] that @tech{supports} @racket[set->stream].
+Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
 }
 
@@ -656,7 +683,7 @@ Supported for any @racket[st] that @tech{supports} @racket[set->stream].
 Applies @racket[proc] to each element in @racket[st] (for the
 side-effects of @racket[proc]) in an unspecified order.
 
-Supported for any @racket[st] that @tech{supports} @racket[set->stream].
+Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
 }
 
@@ -665,7 +692,7 @@ Supported for any @racket[st] that @tech{supports} @racket[set->stream].
 Explicitly converts a set to a sequence for use with @racket[for] and
 other forms.
 
-Supported for any @racket[st] that @tech{supports} @racket[set->stream].
+Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
 }
 

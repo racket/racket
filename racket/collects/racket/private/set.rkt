@@ -9,7 +9,8 @@
          set-empty? set-member? set-count
          set=? subset? proper-subset?
          set-map set-for-each
-         set-copy set->list set->stream set-first set-rest
+         set-copy set-copy-clear
+         set->list set->stream set-first set-rest
          set-add set-remove set-clear
          set-union set-intersect set-subtract set-symmetric-difference
          set-add! set-remove! set-clear!
@@ -224,7 +225,7 @@
 
 (define (fallback-copy s)
   (cond
-    [(set-implements? s 'set-clear 'set-add!)
+    [(set-implements? s 'set-copy-clear 'set-add!)
      (define s2 (set-clear s))
      (for ([x (*in-set s)])
        (set-add! s2 x))
@@ -418,6 +419,7 @@
   (set-map set f)
   (set-for-each set f)
   (set-copy set)
+  (set-copy-clear set)
   (in-set set)
   (set->list set)
   (set->stream set)
@@ -448,6 +450,7 @@
     (define proper-subset? list-proper-subset?)
     (define set-map list-map)
     (define set-for-each list-for-each)
+    (define set-copy-clear list-clear)
     (define in-set in-list)
     (define set->list values)
     (define set->stream values)

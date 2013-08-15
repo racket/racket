@@ -47,39 +47,39 @@
                 (lambda (x k v)
                   (hash-set! table k v))))
 
-  ;; This could probably be implemented in O(1) internally by simply
-  ;; throwing away the hash table's array and allocating a new one.
-  ;; At the Racket level, we'll have to make do with O(n) iteration.
-  (define (hash-clear! table)
-    (unless (and (hash? table) (not (immutable? table)))
-      (raise-argument-error 'hash-clear!
-                            "(and/c hash? (not/c immutable?))"
-                            table))
-    (let loop ()
-      (define i (hash-iterate-first table))
-      (when i
-        (hash-remove! table (hash-iterate-key table i))
-        (loop))))
-
-  (define (hash-clear table)
+  (define (hash-copy-clear table)
     (unless (hash? table)
       (raise-argument-error 'hash-clear "hash?" table))
     (cond
-      [(immutable? table)
-       (cond
+     [(immutable? table)
+      (cond
+       [(hash-equal? table) (hash)]
+       [(hash-eqv? table) (hasheqv)]
+       [(hash-eq? table) (hasheq)])]
+     [(hash-weak? table)
+      (cond
+       [(hash-equal? table) (make-weak-hash)]
+       [(hash-eqv? table) (make-weak-hasheqv)]
+       [(hash-eq? table) (make-weak-hasheq)])]
+     [else
+      (cond
+       [(hash-equal? table) (make-hash)]
+       [(hash-eqv? table) (make-hasheqv)]
+       [(hash-eq? table) (make-hasheq)])]))
+
+  (define (hash-clear table)
+    (unless (and (hash? table) (immutable? table))
+      (raise-argument-error 'hash-clear "(and/c hash? immutable?)" table))
+    (if (not (impersonator? table))
+        ;; Can just make a new one:
+        (cond
          [(hash-equal? table) (hash)]
          [(hash-eqv? table) (hasheqv)]
-         [(hash-eq? table) (hasheq)])]
-      [(hash-weak? table)
-       (cond
-         [(hash-equal? table) (make-weak-hash)]
-         [(hash-eqv? table) (make-weak-hasheqv)]
-         [(hash-eq? table) (make-weak-hasheq)])]
-      [else
-       (cond
-         [(hash-equal? table) (make-hash)]
-         [(hash-eqv? table) (make-hasheqv)]
-         [(hash-eq? table) (make-hasheq)])]))
+         [(hash-eq? table) (hasheq)])
+        ;; To preserve chaperones, need to remove
+        ;; each individual key:
+        (for/fold ([table table]) ([k (in-hash-keys table)])
+          (hash-remove table k))))
 
   (define (hash-empty? table)
     (unless (hash? table)
@@ -94,4 +94,4 @@
            hash-set*!
            hash-empty?
            hash-clear
-           hash-clear!))
+           hash-copy-clear))

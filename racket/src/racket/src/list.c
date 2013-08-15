@@ -122,6 +122,7 @@ Scheme_Object *scheme_hash_table_put(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_get(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_remove_bang(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_remove(int argc, Scheme_Object *argv[]);
+static Scheme_Object *hash_table_clear_bang(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_map(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_for_each(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_hash_table_iterate_start(int argc, Scheme_Object *argv[]);
@@ -580,6 +581,11 @@ scheme_init_list (Scheme_Env *env)
 			     scheme_make_noncm_prim(hash_table_remove,
 						    "hash-remove",
 						    2, 2),
+			     env);
+  scheme_add_global_constant("hash-clear!",
+			     scheme_make_noncm_prim(hash_table_clear_bang,
+						    "hash-clear!",
+						    1, 1),
 			     env);
   scheme_add_global_constant("hash-map",
 			     scheme_make_noncm_prim(hash_table_map,
@@ -2414,6 +2420,37 @@ static Scheme_Object *hash_table_remove(int argc, Scheme_Object *argv[])
     scheme_wrong_contract("hash-remove", "(and/c hash? immutable?)", 0, argc, argv);
 
   return (Scheme_Object *)scheme_hash_tree_set((Scheme_Hash_Tree *)v, argv[1], NULL);
+}
+
+static Scheme_Object *hash_table_clear_bang(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v;
+
+  v = argv[0];
+
+  if (!(SCHEME_HASHTP(v) && SCHEME_MUTABLEP(v)) && !SCHEME_BUCKTP(v))
+    scheme_wrong_contract("hash-clear!", "(and/c hash? (not/c immutable?))", 0, argc, argv);
+
+  if (SCHEME_NP_CHAPERONEP(v) && (SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(v))
+                                  || SCHEME_BUCKTP(SCHEME_CHAPERONE_VAL(v)))) {
+    /* Implement `(hash-clear! ht)' as `(hash-for-each ht hash-set!)'
+       to allow chaperones to interpose. */
+    Scheme_Object *i, *a[2];
+    a[0] = v;
+    while (1) {
+      i = scheme_hash_table_iterate_start(1, a);
+      if (SCHEME_FALSEP(i))
+        break;
+      a[2] = i;
+      hash_table_remove_bang(1, a);
+    }
+  } else if (SCHEME_BUCKTP(v)) {
+    scheme_clear_bucket_table((Scheme_Bucket_Table *)v);
+  } else{
+    scheme_clear_hash_table((Scheme_Hash_Table *)v);
+  }
+
+  return scheme_void;
 }
 
 static void no_post_key(const char *name, Scheme_Object *key, int chap)

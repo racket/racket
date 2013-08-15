@@ -2080,7 +2080,9 @@
                     hash-map hash-for-each
                     hash-iterate-first hash-iterate-next
                     hash-iterate-value hash-iterate-key
-                    hash-copy)
+                    hash-copy
+                    hash-clear! hash-clear
+                    hash-empty?)
   (define-struct ax (b c)) ; opaque
   (define-struct a (b c) #:inspector (make-inspector))
 
@@ -2269,6 +2271,18 @@
       (test 'the-val3 hash-ref c2 'the-key3)
       (test 'the-val4 hash-ref c1 'the-key4)))
 
+  (for ([make-hash (list make-hash
+                         make-weak-hash)])
+    (when make-hash
+      (define c1 (make-hash))
+      (hash-set! c1 'the-key1 'the-val1)
+      (hash-set! c1 'the-key2 'the-val2)
+      (hash-set! c1 'the-key3 'the-val3)
+      (hash-set! c1 'the-key4 'the-val4)
+      (test #f hash-empty? c1)
+      (hash-clear! c1)
+      (test #t hash-empty? c1)))
+
   (save)) ; prevents gcing of the ht-registered values
 
 (hash-tests make-hash make-hasheq make-hasheqv
@@ -2278,7 +2292,9 @@
             hash-map hash-for-each
             hash-iterate-first hash-iterate-next
             hash-iterate-value hash-iterate-key
-            hash-copy)
+            hash-copy
+            hash-clear! hash-clear
+            hash-empty?)
 (let ([ub-wrap (lambda (proc)
                  (lambda (ht . args)
                    (apply proc (unbox ht) args)))])
@@ -2301,7 +2317,10 @@
               (ub-wrap hash-iterate-next)
               (ub-wrap hash-iterate-value)
               (ub-wrap hash-iterate-key)
-              (lambda (ht) (box (unbox ht)))))
+              (lambda (ht) (box (unbox ht)))
+              (lambda (ht) (set-box! ht (hash-clear (unbox ht))))
+              #f
+              (ub-wrap hash-empty?)))
 
 (test #f hash? 5)
 (test #t hash? (make-hasheq))

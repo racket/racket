@@ -60,7 +60,7 @@ a table-specific semaphore as needed. Three caveats apply, however:
   uses @racket[equal?] or @racket[eqv?] key comparisons, all current
   and future operations on the hash table may block indefinitely.}
 
-  @item{The @racket[hash-map] and @racket[hash-for-each] procedures do
+  @item{The @racket[hash-map], @racket[hash-for-each], and @racket[hash-clear!] procedures do
   not use the table's semaphore to guard the traversal as a whole.
   Changes by one thread to a hash table can affect the keys and values
   seen by another thread part-way through its traversal of the same
@@ -313,6 +313,36 @@ Functionally removes any existing mapping for @racket[key] in
 @see-also-mutable-key-caveat[]}
 
 
+@defproc[(hash-clear! [hash (and/c hash? (not/c immutable?))])
+         void?]{
+
+Removes all mappings from @racket[hash].
+
+If @racket[hash] is not an @tech{impersonator}, then all mappings are
+removed in constant time. If @racket[hash] is an @tech{impersonator},
+then each key is removed one-by-one using @racket[hash-remove!].
+
+@see-also-caveats[]}
+
+
+@defproc[(hash-clear [hash (and/c hash? immutable?)])
+         (and/c hash? immutable?)]{
+
+Functionally removes all mappings from @racket[hash].
+
+If @racket[hash] is not an @tech{impersonator}, then clearing is
+equivalent to creating a new @tech{hash table}, and the operation is
+performed in constant time.  If @racket[hash] is an @tech{chaperone},
+then each key is removed one-by-one using @racket[hash-remove].}
+
+
+@defproc[(hash-copy-clear [hash hash?]) hash?]{
+
+Produces an empty @tech{hash table} with the same key-comparison
+procedure and mutability of @racket[hash].}
+
+
+
 @defproc[(hash-map [hash hash?]
                    [proc (any/c any/c . -> . any/c)])
          (listof any/c)]{
@@ -373,6 +403,11 @@ Returns the number of keys mapped by @racket[hash]. Unless @racket[hash]
 retains keys weakly, the result is computed in
 constant time and atomically. If @racket[hash] retains it keys weakly, a
 traversal is required to count the keys.}
+
+
+@defproc[(hash-empty? [hash hash?]) boolean?]{
+
+Equivalent to @racket[(zero? (hash-count hash))].}
 
 
 @defproc[(hash-iterate-first [hash hash?])

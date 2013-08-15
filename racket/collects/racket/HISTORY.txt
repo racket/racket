@@ -1,5 +1,6 @@
 Version 5.90.0.6
 Added path<?, symbol<?
+Added hash-copy-clear
 
 Version 5.90.0.4
 Add current-library-collection-links, find-library-collection-links
@@ -22,6 +23,7 @@ Version 5.90.0.2
 Added #%declare
 Cross-phase persistent modules must be declared with
  (#%declare #:cross-phase-persistent)
+Added hash-clear, hash-clear!, and hash-empty?
 
 Version 5.90.0.1
 Added "share" directory, moved "pkgs" there; moved "collects"

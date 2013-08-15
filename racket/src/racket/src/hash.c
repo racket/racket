@@ -197,6 +197,15 @@ Scheme_Hash_Table *scheme_make_hash_table(int type)
   return table;
 }
 
+void scheme_clear_hash_table(Scheme_Hash_Table *ht)
+{
+  ht->size = 0;
+  ht->count = 0;
+  ht->keys = NULL;
+  ht->vals = NULL;
+  ht->mcount = 0;
+}
+
 static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int set, Scheme_Object *val)
 {
   Scheme_Object *tkey, **keys;
@@ -576,6 +585,16 @@ scheme_make_bucket_table (intptr_t size, int type)
     table->weak = 0;
   
   return table;
+}
+
+void scheme_clear_bucket_table(Scheme_Bucket_Table *bt)
+{
+  Scheme_Bucket **ba;
+
+  bt->count = 0;
+  bt->size = 4;
+  ba = (Scheme_Bucket **)scheme_malloc(bt->size * sizeof(Scheme_Bucket **));
+  bt->buckets = ba;
 }
 
 static Scheme_Bucket *

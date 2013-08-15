@@ -297,7 +297,10 @@
 
       (for ([elem (in-list elems)])
         (test #true set-member? ms elem)
-        (test #true set-member? s elem))
+        (test #true set-member? s elem)
+        (test #false set-member? (set-clear s) elem)
+        (test #false set-member? (set-copy-clear ms) elem)
+        (test #false set-member? (set-copy-clear s) elem))
 
       (for ([elem (in-list just-supers)])
         (test #false set-member? ms elem)
