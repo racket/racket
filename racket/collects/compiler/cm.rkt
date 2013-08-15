@@ -324,7 +324,7 @@
             (date-hour d) (date-minute d) (date-second d))))
 
 (define (verify-times ss-name zo-name)
-  (define ss-sec (try-file-time ss-name))
+  (define ss-sec (file-or-directory-modify-seconds ss-name))
   (define zo-sec (try-file-time zo-name))
   (cond [(not ss-sec) (error 'compile-zo "internal error")]
         [(not zo-sec) (error 'compile-zo "failed to create .zo file (~a) for ~a"
