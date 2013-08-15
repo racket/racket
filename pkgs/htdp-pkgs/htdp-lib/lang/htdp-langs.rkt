@@ -48,7 +48,8 @@
   (define (oprintf . args) (apply fprintf o args))
   
   (define user-installed-teachpacks-collection "installed-teachpacks")
-  (define teachpack-installation-dir (build-path (find-user-collects-dir) user-installed-teachpacks-collection))
+  (define teachpack-installation-dir 
+    (build-path (find-user-collects-dir) user-installed-teachpacks-collection))
   
   
   (define tool@
@@ -141,7 +142,8 @@
                   [scheme-test-module-name
                    ((current-module-name-resolver) '(lib "test-engine/racket-tests.ss") #f #f)]
                   [scheme-signature-module-name
-                   ((current-module-name-resolver) '(lib "deinprogramm/signature/signature-english.rkt") #f #f)]
+                   ((current-module-name-resolver) 
+                    '(lib "deinprogramm/signature/signature-english.rkt") #f #f)]
                   [tests-on? (preferences:get 'test-engine:enable?)])
               (run-in-user-thread
                (lambda ()
@@ -150,7 +152,8 @@
                  (namespace-attach-module drs-namespace ''drscheme-secrets)
                  (namespace-attach-module drs-namespace set-result-module-name)                 
                  (error-display-handler teaching-languages-error-display-handler)
-                 (error-value->string-handler (λ (x y) (teaching-languages-error-value->string settings x y)))
+                 (error-value->string-handler 
+                  (λ (x y) (teaching-languages-error-value->string settings x y)))
                  (current-eval (add-annotation (htdp-lang-settings-tracing? settings) (current-eval)))
                  (error-print-source-location #f)
                  (read-decimal-as-inexact #f)
@@ -172,16 +175,18 @@
                  (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace test-display%))
                  (test-execute tests-on?)
 		 (signature-checking-enabled? (get-preference 'signatures:enable-checking? (lambda () #t)))
-                 (test-format (make-formatter (lambda (v o) (render-value/format v settings o 40)))))))
+                 (test-format (make-formatter (λ (v o) (render-value/format v settings o 40)))))))
             (super on-execute settings run-in-user-thread)
             
             ;; set the global-port-print-handler after the super class because the super sets it too
             (run-in-user-thread
              (lambda ()
-               (define my-setup-printing-parameters (drscheme:language:make-setup-printing-parameters))
+               (define my-setup-printing-parameters 
+                 (drscheme:language:make-setup-printing-parameters))
                (global-port-print-handler
                 (λ (value port [depth 0])
-                  (teaching-language-render-value/format my-setup-printing-parameters value settings port 'infinity))))))
+                  (teaching-language-render-value/format my-setup-printing-parameters
+                                                         value settings port 'infinity))))))
           
           (define/private (teaching-languages-error-value->string settings v len)
             (let ([sp (open-output-string)])
@@ -239,11 +244,14 @@
               (thunk)))
           
           (define/override (render-value/format value settings port width)
-            (teaching-language-render-value/format drscheme:language:setup-printing-parameters value settings port width))
+            (teaching-language-render-value/format drscheme:language:setup-printing-parameters
+                                                   value settings port width))
           (define/override (render-value value settings port)
-            (teaching-language-render-value/format drscheme:language:setup-printing-parameters value settings port 'infinity))
+            (teaching-language-render-value/format drscheme:language:setup-printing-parameters
+                                                   value settings port 'infinity))
           
-          (define/private (teaching-language-render-value/format setup-printing-parameters value settings port width)
+          (define/private (teaching-language-render-value/format setup-printing-parameters 
+                                                                 value settings port width)
             ;; set drscheme's printing parameters
             (setup-printing-parameters
              (λ ()
@@ -254,7 +262,8 @@
                   (let-values ([(converted-value write?)
                                 (call-with-values
                                     (lambda ()
-                                      (drscheme:language:simple-module-based-language-convert-value value settings))
+                                      (drscheme:language:simple-module-based-language-convert-value
+                                       value settings))
                                   (case-lambda
                                    [(converted-value) (values converted-value #t)]
                                    [(converted-value write?) (values converted-value write?)]))])
@@ -274,7 +283,8 @@
           
           (super-new)))
       
-      ;; sharing/not-config-panel :  boolean boolean parent -> (case-> (-> settings) (settings -> void))
+      ;; sharing/not-config-panel :  boolean boolean parent 
+      ;;                         -> (case-> (-> settings) (settings -> void))
       ;; constructs the config-panel for a language without a sharing option.
       (define (sharing/not-config-panel allow-sharing-config? accept-quasiquote? _parent)
         (let* ([parent (make-object vertical-panel% _parent)]
@@ -365,7 +375,8 @@
               (send tracing get-value)
               tps)]
             [(settings)
-             (send case-sensitive set-value (drscheme:language:simple-settings-case-sensitive settings))
+             (send case-sensitive set-value 
+                   (drscheme:language:simple-settings-case-sensitive settings))
              (send output-style set-selection
                    (if accept-quasiquote?
                        (case (drscheme:language:simple-settings-printing-style settings)
@@ -381,7 +392,8 @@
                      [(mixed-fraction) 0]
                      [(repeating-decimal) 1]))
              (when allow-sharing-config?
-               (send show-sharing set-value (drscheme:language:simple-settings-show-sharing settings)))
+               (send show-sharing set-value
+                     (drscheme:language:simple-settings-show-sharing settings)))
              (send insert-newlines set-value 
                    (drscheme:language:simple-settings-insert-newlines settings))
              (set! tps (htdp-lang-settings-teachpacks settings))
@@ -496,7 +508,9 @@
                        (string-append no-ext-name ".scm")]
                       [(file-exists? no-ext-name)
                        no-ext-name]
-                      [else (error 'htdp-lang.rkt "could not find language filename ~s" no-ext-name)])]
+                      [else (error 'htdp-lang.rkt 
+                                   "could not find language filename ~s"
+                                   no-ext-name)])]
                    [base-dir (let-values ([(base _1 _2) (split-path full-name)]) base)]
                    [stx
                     (call-with-input-file full-name
@@ -561,7 +575,8 @@
             (case key
               [(drscheme:autocomplete-words)
                (unless keywords 
-                 (set! keywords (text:get-completions/manuals #f))) ;; complete with everything, which is wrong ..
+                 ;; complete with everything, which is wrong ..
+                 (set! keywords (text:get-completions/manuals #f))) 
                keywords]
               [(drscheme:teachpack-menu-items) htdp-teachpack-callbacks]
               [(drscheme:special:insert-lambda) #f]
@@ -642,7 +657,8 @@
              (format "#reader~s~s\n"
                      reader-module
                      `((modname ,modname)
-                       (read-case-sensitive ,(drscheme:language:simple-settings-case-sensitive settings))
+                       (read-case-sensitive
+                        ,(drscheme:language:simple-settings-case-sensitive settings))
                        (teachpacks ,(htdp-lang-settings-teachpacks settings))
                        (htdp-settings ,(htdp-lang-settings->vector settings))))))
           
@@ -679,15 +695,12 @@
         (define tp-dirs (list "htdp" "2htdp"))
         (define labels (list (string-constant teachpack-pre-installed/htdp)
                              (string-constant teachpack-pre-installed/2htdp)))
-        (define tpss (map (λ (tp-dir)
-                            (let ([base (collection-path "teachpack" tp-dir)])
-                              (filter
-                               (λ (x) (file-exists? (build-path base x)))
-                               (directory-list base))))
-                          tp-dirs))
+        (define tpss (map tp-dir->tps tp-dirs))
         (define sort-order (λ (x y) (string<=? (path->string x) (path->string y))))
         (define pre-installed-tpss (map (λ (tps) (sort tps sort-order)) tpss))
-        (define dlg (new (frame:focus-table-mixin dialog%) [parent parent] [label (string-constant drscheme)]))
+        (define dlg (new (frame:focus-table-mixin dialog%) 
+                         [parent parent]
+                         [label (string-constant drscheme)]))
         (define hp (new horizontal-panel% [parent dlg]))
         (define answer #f)
         (define compiling? #f)
@@ -854,7 +867,10 @@
                                   [parent dlg]
                                   [alignment '(right center)]
                                   [stretchable-height #f]))
-        (define compiling-message (new message% [parent button-panel] [label ""] [stretchable-width #t]))
+        (define compiling-message (new message% 
+                                       [parent button-panel]
+                                       [label ""]
+                                       [stretchable-width #t]))
         (define-values (ok-button cancel-button)
           (gui-utils:ok/cancel-buttons button-panel
                                        (λ (b e)
@@ -868,7 +884,8 @@
           (cond
             [(ormap (λ (pre-installed-lb tp-dir) 
                       (and (send pre-installed-lb get-selection)
-                           (list tp-dir (send pre-installed-lb get-string (send pre-installed-lb get-selection)))))
+                           (list tp-dir (send pre-installed-lb get-string 
+                                              (send pre-installed-lb get-selection)))))
                     pre-installed-lbs
                     tp-dirs)
              =>
@@ -887,6 +904,13 @@
         
         (send dlg show #t)
         answer)
+      
+      (define (tp-dir->tps tp-dir)
+        (define known-tp (collection-file-path "image.rkt" "teachpack" tp-dir))
+        (define-values (base name dir?) (split-path known-tp))
+        (filter
+         (λ (x) (file-exists? (build-path base x)))
+         (directory-list base)))
 
       (define (stepper-settings-language %)
         (if (implementation? % stepper-language<%>)
@@ -1036,8 +1060,8 @@
       
       ;; with-mark : syntax syntax exact-nonnegative-integer -> syntax
       ;; a member of stacktrace-imports^
-      ;; guarantees that the continuation marks associated with teaching-languages-continuation-mark-key are
-      ;; members of the debug-source type
+      ;; guarantees that the continuation marks associated with
+      ;; teaching-languages-continuation-mark-key are members of the debug-source type
       (define (with-mark source-stx expr phase)
         (let ([source (syntax-source source-stx)]
               [line (syntax-line source-stx)]
@@ -1049,8 +1073,10 @@
                    (number? span))
               (with-syntax ([expr expr]
                             [mark (list source line col start-position span)]
-                            [teaching-languages-continuation-mark-key teaching-languages-continuation-mark-key]
-                            [wcm (syntax-shift-phase-level #'with-continuation-mark (- phase base-phase))]
+                            [teaching-languages-continuation-mark-key 
+                             teaching-languages-continuation-mark-key]
+                            [wcm (syntax-shift-phase-level #'with-continuation-mark 
+                                                           (- phase base-phase))]
                             [quot (syntax-shift-phase-level #'quote (- phase base-phase))])
                 #`(wcm (quot teaching-languages-continuation-mark-key)
                     (quot mark)
@@ -1132,24 +1158,25 @@
           teaching-language-eval-handler))
       
      
-      
-;                                                                                                                
-;                                                                                                                
-;                                                                                                                
-;                            ;                   ;   ;                                        ;                  
-;                                                ;   ;                                        ;                  
-;                   ;            ;               ;   ;       ;                           ;    ;                  
-;   ; ;;    ;   ;  ;;;;      ;  ;;;;      ;;;    ;   ;      ;;;;   ;;;     ;; ;    ;;;  ;;;;  ; ;;     ;;;   ; ; 
-;   ;;  ;   ;   ;   ;        ;   ;       ;   ;   ;   ;       ;    ;   ;   ;  ;;   ;   ;  ;    ;;  ;   ;   ;  ;;  
-;   ;    ;  ;   ;   ;        ;   ;           ;   ;   ;       ;   ;     ; ;    ;  ;    ;  ;    ;   ;  ;    ;  ;   
-;   ;    ;  ;   ;   ;        ;   ;        ;;;;   ;   ;       ;   ;     ; ;    ;  ;;;;;;  ;    ;   ;  ;;;;;;  ;   
-;   ;    ;  ;   ;   ;        ;   ;       ;   ;   ;   ;       ;   ;     ; ;    ;  ;       ;    ;   ;  ;       ;   
-;   ;;  ;   ;  ;;   ;        ;   ;       ;   ;   ;   ;       ;    ;   ;   ;  ;;   ;      ;    ;   ;   ;      ;   
-;   ; ;;     ;; ;    ;;      ;    ;;      ;;;;;  ;   ;        ;;   ;;;     ;; ;    ;;;;   ;;  ;   ;    ;;;;  ;   
-;   ;                                                                         ;                                  
-;   ;                                                                    ;    ;                                  
-;   ;                                                                     ;;;;                                   
-      
+   
+;                                                                                               
+;                                                                                               
+;                                                                                               
+;                                                                                               
+;                    ;      ;;;   ;        ;                            ;  ;;;                  
+;                  ;;;          ;;;      ;;;                          ;;;  ;;;                  
+;  ;;; ;;  ;;; ;;; ;;;;     ;;; ;;;;     ;;;;   ;;;    ;; ;;;   ;;;;  ;;;; ;;; ;;    ;;;;  ;;; ;
+;  ;;;;;;; ;;; ;;; ;;;;     ;;; ;;;;     ;;;;  ;;;;;  ;;;;;;;  ;; ;;; ;;;; ;;;;;;;  ;; ;;; ;;;;;
+;  ;;; ;;; ;;; ;;; ;;;      ;;; ;;;      ;;;  ;;; ;;; ;;; ;;; ;;; ;;; ;;;  ;;; ;;; ;;; ;;; ;;;  
+;  ;;; ;;; ;;; ;;; ;;;      ;;; ;;;      ;;;  ;;; ;;; ;;; ;;; ;;;;;;; ;;;  ;;; ;;; ;;;;;;; ;;;  
+;  ;;; ;;; ;;; ;;; ;;;      ;;; ;;;      ;;;  ;;; ;;; ;;; ;;; ;;;     ;;;  ;;; ;;; ;;;     ;;;  
+;  ;;;;;;; ;;;;;;; ;;;;     ;;; ;;;;     ;;;;  ;;;;;  ;;;;;;;  ;;;;;; ;;;; ;;; ;;;  ;;;;;; ;;;  
+;  ;;; ;;   ;; ;;;  ;;;     ;;;  ;;;      ;;;   ;;;    ;; ;;;   ;;;;   ;;; ;;; ;;;   ;;;;  ;;;  
+;  ;;;                                                    ;;;                                   
+;  ;;;                                                ;;;;;;                                    
+;                                                                                               
+;                                                                                               
+
       
       ;; add-htdp-language : (instanceof htdp-language<%>) -> void
       (define (add-htdp-language o)
@@ -1291,7 +1318,8 @@
                                              test-coverage-off-style-name
                                              (send the-color-database find-color "orange")
                                              (send the-color-database find-color "indianred")
-                                             #:background (send the-color-database find-color "black"))
+                                             #:background 
+                                             (send the-color-database find-color "black"))
       (color-prefs:add-to-preferences-panel 
        "HtDP Languages"
        (λ (parent)
