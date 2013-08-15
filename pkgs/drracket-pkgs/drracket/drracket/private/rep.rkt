@@ -654,7 +654,7 @@ TODO
           (when (and start span)
             (let ([finish (+ start span)])
               (when (eq? source definitions-text) ;; only move set the cursor in the defs window
-                (send source set-position start span))
+                (send source set-position start start))
               (send source scroll-to-position start #f finish)))
           
           (on-highlighted-errors loc)
