@@ -8,12 +8,14 @@
          openssl/sha1
          net/url
          pkg/strip
+         pkg/lib
          setup/getinfo)
 
 (define pack-dest-dir #f)
 (define catalog-dirs null)
 (define native? #f)
 (define relative? #t)
+(define get-modules? #f)
 (define checksum-dir #f)
 
 (define src-dirs
@@ -27,6 +29,8 @@
     (set! relative? #f)]
    [("--at-checksum") dir "Copy each to to <dir>/<checksum>"
     (set! checksum-dir dir)]
+   [("--mods") "Include modules and dependencies in catalog"
+    (set! get-modules? #t)]
    #:multi
    [("++catalog") catalog-dir "Write catalog entry to <catalog-dir>"
     (set! catalog-dirs (cons catalog-dir catalog-dirs))]
@@ -38,6 +42,8 @@
   (make-directory* pack-dest-dir))
 (for ([catalog-dir (in-list catalog-dirs)])
   (make-directory* catalog-dir))
+
+(define metadata-ns (make-base-namespace))
 
 (define (stream-directory d)
   (define-values (i o) (make-pipe (* 100 4096)))
@@ -117,6 +123,11 @@
     (define checksum-dest (if checksum-dir
                               (build-path checksum-dir checksum zip-file)
                               orig-dest))
+    (define pkg-dir (build-path src-dir pkg-name))
+    (define info (and get-modules?
+                      (get-info/full pkg-dir 
+                                     #:namespace metadata-ns 
+                                     #:bootstrap? #t)))
     (when dest-zip
       (when checksum-dir
         (make-directory* (build-path checksum-dir checksum))
@@ -135,7 +146,7 @@
                              ((if relative? values path->complete-path)
                               (if dest-zip
                                   checksum-dest
-                                  (path->directory-path (build-path src-dir pkg-name)))))
+                                  (path->directory-path pkg-dir))))
                     'checksum checksum
                     'name (path->string pkg-name)
                     'author (string-join (for/list ([r (get 'pkg-authors)])
@@ -145,8 +156,17 @@
                                          " ")
                     'description (get 'pkg-desc)
                     'tags '()
-                    'dependencies '()
-                    'modules '())
+                    'dependencies (if get-modules?
+                                      (append
+                                       (info 'deps (lambda () null))
+                                       (info 'build-deps (lambda () null)))
+                                      '())
+                    'modules (if get-modules?
+                                 (pkg-directory->module-paths
+                                  pkg-dir
+                                  (path->string pkg-name)
+                                  #:namespace metadata-ns)
+                                 '()))
               o)
        (newline o))))
   (for ([catalog-dir (in-list catalog-dirs)])

@@ -39,7 +39,8 @@ pull-latest-from-git:
 # and a catalog in "build/archive/catalog":
 PACK_ARCHIVE = --at-checksum $(PLT_TOP)/build/archive/pkgs \
                --pack $(PLT_TOP)/build/archive/pre-pkgs \
-               ++catalog $(PLT_TOP)/build/archive/catalog
+               ++catalog $(PLT_TOP)/build/archive/catalog \
+               --mods
 archive-catalog:
 	rm -rf $(PLT_TOP)/build/archive/catalog
 	$(RACKET) -l- distro-build/pack-and-catalog --native $(PACK_ARCHIVE) $(PLT_TOP)/build/latest/native-pkgs

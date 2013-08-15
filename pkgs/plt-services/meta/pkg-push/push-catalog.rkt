@@ -10,6 +10,11 @@
          http/head
          pkg/lib)
 
+(define empty-source "empty.zip")
+(define empty-source-checksum "9f098dddde7f217879070816090c1e8e74d49432")
+;; Versions to map to the empty source:
+(define compatibility-versions '("5.3.4" "5.3.5" "5.3.6"))
+
 (define-values (src-dir s3-hostname bucket dest-catalog)
   (command-line
    #:args
@@ -42,6 +47,25 @@
                                 s3-hostname
                                 (hash-ref ht 'checksum)
                                 i))))))
+
+;; Compute the package in the main distribution
+(define main-dist-pkgs
+  ;; A union-find would be better...
+  (let loop ([pkgs (set)] [check-pkgs (set "main-distribution")])
+    (cond
+     [(set-empty? check-pkgs) pkgs]
+     [else
+      (define a (set-first check-pkgs))
+      (define r (set-rest check-pkgs))
+      (if (set-member? pkgs a)
+          (loop pkgs r)
+          (loop (set-add pkgs a)
+                (set-union
+                 r
+                 (apply set (map (lambda (p) (if (pair? p) (car p) p)) 
+                                 (hash-ref (hash-ref new-pkgs a)
+                                           'dependencies
+                                           '()))))))])))
 
 (printf "Getting current S3 content...\n")
 (define old-content (list->set (ls (string-append bucket "/pkgs"))))
@@ -123,6 +147,20 @@
                     port->bytes))
   (read (open-input-bytes bs)))
 
+(define (add-compatibility-pkgs ht)
+  (hash-set ht 'versions
+            (for/fold ([ht2 (hash-ref ht 'versions (hash))]) ([v compatibility-versions])
+              (hash-set ht2 v (hash 'source
+                                    (format "http://~a.~a/pkgs/~a"
+                                            bucket
+                                            s3-hostname
+                                            empty-source)
+                                    'checksum
+                                    empty-source-checksum)))))
+
+(define (add-rung-0 ht)
+  (hash-set ht 'ring 0))
+
 ;; ------------------------------
 
 ;; Upload current files:
@@ -137,7 +175,23 @@
                                           (hash-ref ht 'source #f))
                                   (equal? (hash-ref v 'checksum)
                                           (hash-ref ht 'checksum #f)))))
-         (values k v))])
+         (define (add-tag v t)
+           (define l (hash-ref v 'tags '()))
+           (if (member t l)
+               v
+               (hash-set v 'tags (cons t l))))
+         (values k (add-ring-0
+                    (add-compatibility-pkgs
+                     (cond
+                      [(set-member? main-dist-pkgs k)
+                       (add-tag v "main-distribution")]
+                      [(let ([m (regexp-match #rx"^(.*)-test$" k)])
+                         (and m
+                              (set-member? main-dist-pkgs (cadr m))))
+                       (add-tag v "main-tests")]
+                      [(equal? k "racket-test")
+                       (add-tag v "main-tests")]
+                      [else v])))))])
   (unless (zero? (hash-count changed-pkgs))
     (printf "Updating catalog:\n")
     (for ([k (in-hash-keys changed-pkgs)])
