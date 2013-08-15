@@ -2,7 +2,8 @@
 @(require "common.rkt"
           (for-label mzlib/pconvert
                      mzlib/pconvert-prop
-                     scheme/pretty))
+                     racket/contract
+                     racket/pretty))
 
 @mzlib[#:mode title pconvert]
 
@@ -24,7 +25,7 @@ the original value. For example, @racket[(pretty-write (print-convert
 port.
 
 To install print converting into the read-eval-print loop, require
-@racket[mzlib/pconvert] and call the procedure
+@racketmodname[mzlib/pconvert] and call the procedure
 @racket[install-converting-printer].
 
 In addition to @racket[print-convert], this library provides
