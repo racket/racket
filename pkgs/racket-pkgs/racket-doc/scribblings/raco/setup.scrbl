@@ -1210,7 +1210,7 @@ v
    Note that the cache may be out of date by the time you call
    @racket[get-info/full], so do not assume that every returned
    directory's @filepath{info.rkt} file will supply one of the
-   requested sybols.
+   requested symbols.
 
    The result is in a canonical order (sorted lexicographically by
    directory name), and the paths it returns are suitable for
