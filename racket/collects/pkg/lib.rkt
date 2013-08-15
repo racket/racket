@@ -330,6 +330,7 @@
      [else #f])]
    [else (server i)]))
 
+;; Add current package version to a URL:
 (define (add-version-query addr/no-query)
   (struct-copy url addr/no-query
                [query (append
@@ -337,36 +338,55 @@
                        (list
                         (cons 'version (current-pkg-scope-version))))]))
 
+;; Take a package-info hash table and lift any version-specific
+;; information in 'versions.
+(define (select-info-version ht)
+  (and ht
+       (let ([v (hash-ref ht 'versions #f)])
+         (cond
+          [(hash? v)
+           (or (for/or ([vers (in-list (list (current-pkg-scope-version)
+                                             'default))])
+                 (define ht2 (hash-ref v (current-pkg-scope-version) #f))
+                 (and ht2
+                      ;; Override fields of `ht' with values from `ht2':
+                      (for/fold ([ht ht]) ([(k v) (in-hash ht2)])
+                        (hash-set ht k v))))
+               ;; Keep ht as-is:
+               ht)]
+          [else ht]))))
+
 (define (package-catalog-lookup pkg details? download-printf)
   (or
    (for/or ([i (in-list (pkg-catalogs))])
      (if download-printf
          (download-printf "Resolving ~s via ~a\n" pkg (url->string i))
          (log-pkg-debug "consulting catalog ~a" (url->string i)))
-     (catalog-dispatch
-      i
-      ;; Server:
-      (lambda (i)
-        (define addr (add-version-query
-                      (combine-url/relative i (format "pkg/~a" pkg))))
-        (log-pkg-debug "resolving via ~a" (url->string addr))
-        (read-from-server
-         'package-catalog-lookup
-         addr
-         (lambda (v) (and (hash? v)
-                          (for/and ([k (in-hash-keys v)])
-                            (symbol? k))))
-         (lambda (s) #f)))
-      ;; Local database:
-      (lambda ()
-        (define pkgs (db:get-pkgs #:name pkg))
-        (and (pair? pkgs)
-             (db-pkg-info (car pkgs) details?)))
-      ;; Local directory:
-      (lambda (path)
+     (select-info-version
+      (catalog-dispatch
+       i
+       ;; Server:
+       (lambda (i)
+         (define addr (add-version-query
+                       (combine-url/relative i (format "pkg/~a" pkg))))
+         (log-pkg-debug "resolving via ~a" (url->string addr))
+         (read-from-server
+          'package-catalog-lookup
+          addr
+          (lambda (v) (and (hash? v)
+                           (for/and ([k (in-hash-keys v)])
+                             (symbol? k))))
+          (lambda (s) #f)))
+       ;; Local database:
+       (lambda ()
+         (define pkgs (db:get-pkgs #:name pkg))
+         (and (pair? pkgs)
+              (db-pkg-info (car pkgs) details?)))
+       ;; Local directory:
+       (lambda (path)
          (define pkg-path (build-path path "pkg" pkg))
          (and (file-exists? pkg-path)
-              (call-with-input-file* pkg-path read)))))
+              (call-with-input-file* pkg-path read))))))
    (pkg-error (~a "cannot find package on catalogs\n"
                   "  package: ~a")
               pkg)))

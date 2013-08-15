@@ -74,10 +74,14 @@
         (lambda (o)
           (write (hash 'name "whale"
                        'checksum cksum
-                       'source "http://localhost:9999/whale.plt")
+                       'source "http://localhost:9999/whale.plt"
+                       'versions (hash "5.3.6"
+                                       (hash 'checksum
+                                             123)))
                  o))))
      (add-whale! "345")
      $ (~a "raco pkg catalog-show --catalog file://" (path->string dir2) " whale") =stdout> #rx"Checksum: 345"
+     $ (~a "raco pkg catalog-show --version 5.3.6 --catalog file://" (path->string dir2) " whale") =stdout> #rx"Checksum: 123"
      $ "raco pkg catalog-show whale" =exit> 1
      
      $ (~a "raco pkg catalog-copy --merge " (path->string dir2) " " (path->string dest))

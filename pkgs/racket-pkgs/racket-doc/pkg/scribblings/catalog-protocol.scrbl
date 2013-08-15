@@ -31,7 +31,7 @@ information about packages:
  @item{@litchar{pkg} and @nonterm{package} path elements, where
        @nonterm{package} is a @tech{package name}, plus a
        @exec{version=}@nonterm{version} query (where @nonterm{version}
-       is a Racket version number) in the case of a remote URL:
+       is a Racket version number) in the case of a remote URL.
 
        This URL/path form is use to obtain information about
        @nonterm{package}. An HTTP request for a remote URL should
@@ -73,9 +73,21 @@ information about packages:
               @racket[collapse-module-path].}
 
         @item{@racket['versions] (optional) --- a hash table mapping
-              version strings to hash tables, where each version-specific
-              hash table provides mappings to override the ones in the main
-              hash table.}
+              version strings and @racket['default] to hash tables,
+              where each version-specific hash table provides mappings
+              to override the ones in the main hash table, and
+              @racket['default] applies to any version not otherwise
+              mapped.
+
+              Clients of a remote catalog may request information for
+              a specific version, but they should also check for a
+              @racket['versions] entry in a catalog response, in case
+              a catalog with version-specific mappings is implemented
+              as a directory or by a file-serving HTTP server. A
+              @racket['default] mapping, meanwhile, allows the main
+              hash table to provide information that is suitable for
+              clients at version 5.3.6 and earlier (which do not check
+              for @racket['versions]).}
 
        ]}
  
