@@ -269,11 +269,16 @@ adjusts the parsing of S-expression input, where @racket[#f] implies the
 default behavior. See @secref["readtables"] for more information.}
 
 
-@defproc[(call-with-default-reading-parameterizations [thunk (-> any)])
+@defproc[(call-with-default-reading-parameterization [thunk (-> any)])
          any]{
 
 Calls @racket[thunk] in @tech{tail position} of a @racket[parameterize]
-to set all reader @tech{parameters} above to their default values.}
+to set all reader @tech{parameters} above to their default values.
+
+Using the default parameter values ensures consistency, and it also
+provides safety when reading from untrusted sources, since the default
+values disable evaluation of arbitrary code via @hash-lang[] or
+@litchar{#reader}.}
 
 
 @defparam[current-reader-guard proc (any/c . -> . any)]{
@@ -343,4 +348,3 @@ except that special-comment values (see
 
 The default port read handler itself can be customized through a
 readtable; see @secref["readtables"] for more information.}
-
