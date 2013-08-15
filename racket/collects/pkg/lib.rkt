@@ -335,7 +335,7 @@
                [query (append
                        (url-query addr/no-query)
                        (list
-                        (cons 'version (version))))]))
+                        (cons 'version (current-pkg-scope-version))))]))
 
 (define (package-catalog-lookup pkg details? download-printf)
   (or

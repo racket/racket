@@ -322,7 +322,7 @@
                        #:strip (or (and source 'source) (and binary 'binary))))))
      (setup no-setup setup-collects jobs)))]
  [create
-  "Bundle a package from a directory or installed package"
+  "Bundle package from a directory or installed package"
   #:once-any
   [#:bool from-dir () "Treat <directory-or-package> as a directory (the default)"]
   [#:bool from-install () "Treat <directory-or-package> as a package name"]
@@ -374,19 +374,22 @@
          (with-pkg-lock/read-only
           (pkg-config #f key/val)))))]
  [catalog-show
-  "Show information about packages as reported by catalog"
+  "Show package information as reported by a catalog"
   #:once-any 
   [(#:str catalog #f) catalog () "Use <catalog> instead of configured catalogs"]
   #:once-each
   [#:bool all () "Show all packages"]
   [#:bool only-names () "Show only package names"]
   [#:bool modules () "Show implemented modules"]
+  [(#:str vers #f) version ("-v") "Show result for Racket <vers>"]
   #:args pkg-name
   (when (and all (pair? pkg-name))
     ((pkg-error 'catalog-show) "both `--all' and package names provided"))
   (parameterize ([current-pkg-catalogs (and catalog
                                             (list (catalog->url catalog)))]
-                 [current-pkg-error (pkg-error 'catalog-show)])
+                 [current-pkg-error (pkg-error 'catalog-show)]
+                 [current-pkg-scope-version (or version
+                                                (current-pkg-scope-version))])
     (pkg-catalog-show pkg-name 
                       #:all? all
                       #:only-names? only-names
@@ -400,13 +403,16 @@
   [#:bool merge () "Merge to existing database"]
   #:once-each
   [#:bool override () "While merging, override existing with new"]
+  [(#:str vers #f) version ("-v") "Copy information suitable for Racket <vers>"]
   #:args catalog
   (parameterize ([current-pkg-error (pkg-error 'catalog-copy)])
     (when (null? catalog)
       ((current-pkg-error) "need a destination catalog"))
-    (pkg-catalog-copy (drop-right catalog 1)
-                      (last catalog)
-                      #:from-config? from-config
-                      #:force? force
-                      #:merge? merge
-                      #:override? override))])
+    (parameterize ([current-pkg-scope-version (or version
+                                                  (current-pkg-scope-version))])
+      (pkg-catalog-copy (drop-right catalog 1)
+                        (last catalog)
+                        #:from-config? from-config
+                        #:force? force
+                        #:merge? merge
+                        #:override? override)))])

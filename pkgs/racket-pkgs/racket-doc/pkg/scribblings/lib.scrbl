@@ -269,7 +269,10 @@ The package lock must be held; see @racket[with-pkg-lock].}
          void?]{
 
 Implements @racket[pkg-catalog-show-command]. If @racket[all?] is true,
-then @racket[names] should be empty.}
+then @racket[names] should be empty.
+
+The @racket[current-pkg-scope-version] parameter determines the version
+included in the catalog query.}
 
 
 @defproc[(pkg-catalog-copy [sources (listof path-string?)]
@@ -280,7 +283,10 @@ then @racket[names] should be empty.}
                            [#:override? override? boolean? #f])
          void?]{
 
-Implements @racket[pkg-catalog-copy-command].}
+Implements @racket[pkg-catalog-copy-command].
+
+The @racket[current-pkg-scope-version] parameter determines the version
+for extracting existing catalog information.}
 
 
 @defproc[(pkg-catalog-update-local [#:catalog-file catalog-file path-string? (current-pkg-catalog-file)]

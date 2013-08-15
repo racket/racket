@@ -530,6 +530,8 @@ View and modify configuration of the package manager itself, with the following 
  @item{@DFlag{modules} --- Show the modules that are implemented by a package.}
  @item{@DFlag{catalog} @nonterm{catalog} --- Query @nonterm{catalog} instead of the currently configured 
        @tech{package catalogs}.}
+ @item{@DFlag{version} @nonterm{version} --- Query catalogs for a result specific to @nonterm{version},
+       instead of the installation's Racket version.}
  ]
 }
 
@@ -557,6 +559,8 @@ View and modify configuration of the package manager itself, with the following 
                          over new information.}
  @item{@DFlag{override} --- Changes merging so that new information takes precedence
                          over information already in @nonterm{dest-catalog}.}
+ @item{@DFlag{version} @nonterm{version} --- Copy catalog results specific to @nonterm{version}
+       (for catalogs that make a distinction), instead of the installation's Racket version.}
  ]
 }
 @; ----------------------------------------
