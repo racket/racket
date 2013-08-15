@@ -31,7 +31,7 @@ information about packages:
  @item{@litchar{pkg} and @nonterm{package} path elements, where
        @nonterm{package} is a @tech{package name}, plus a
        @exec{version=}@nonterm{version} query (where @nonterm{version}
-       is the Racket version number) in the case of a remote URL:
+       is a Racket version number) in the case of a remote URL:
 
        This URL/path form is use to obtain information about
        @nonterm{package}. An HTTP request for a remote URL should
@@ -72,7 +72,13 @@ information about packages:
               be normalized in the sense of
               @racket[collapse-module-path].}
 
+        @item{@racket['versions] (optional) --- a hash table mapping
+              version strings to hash tables, where each version-specific
+              hash table provides mappings to override the ones in the main
+              hash table.}
+
        ]}
+ 
 
  @item{@litchar{pkgs} path element: Obtains a list of package names
        that are mapped by the @tech{package catalog}.  An HTTP request for a remote URL
