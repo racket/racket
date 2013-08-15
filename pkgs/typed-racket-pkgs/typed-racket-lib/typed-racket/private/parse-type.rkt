@@ -598,11 +598,14 @@
   (define merged-augments (append checked-super-augments checked-augments))
 
   ;; make sure augments and methods are disjoint
-  (define maybe-dup (check-duplicate (append (dict-keys merged-methods)
-                                             (dict-keys merged-augments))))
-  (when maybe-dup
-    (tc-error (~a "method name " maybe-dup " conflicts with"
-                  " another method name or augmentable method name")))
+  (define maybe-dup-method (check-duplicate (dict-keys merged-methods)))
+  (when maybe-dup-method
+    (tc-error (~a "method name " maybe-dup-method " conflicts with"
+                  " another method name")))
+  (define maybe-dup-augment (check-duplicate (dict-keys merged-augments)))
+  (when maybe-dup-augment
+    (tc-error (~a "augmentable method name " maybe-dup-augment " conflicts with"
+                  " another augmentable method name")))
 
   (values (or row-var super-row-var) merged-fields
           merged-methods merged-augments))
