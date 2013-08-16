@@ -1731,31 +1731,41 @@
     (define pkgs (sort (hash-keys db) string-ci<=?))
     (if (null? pkgs)
         (printf " [none]\n")
-        (table-display
-         (list*
-          (append
-           (list (format "~aPackage~a"
-                         indent 
-                         (if show-auto? "[*=auto]" ""))
-                 "Checksum"
-                 "Source")
-           (if dir?
-               (list "Directory")
-               empty))
-          (for/list ([pkg (in-list pkgs)]
-                     #:when (or show-auto?
-                                (not (pkg-info-auto? (hash-ref db pkg)))))
-            (match-define (pkg-info orig-pkg checksum auto?) (hash-ref db pkg))
+        (begin
+          (table-display
+           (list*
             (append
-             (list (format "~a~a~a"
-                           indent
-                           pkg
-                           (if auto? "*" ""))
-                   (format "~a" checksum)
-                   (format "~a" orig-pkg))
+             (list (format "~aPackage~a"
+                           indent 
+                           (if show-auto? "[*=auto]" ""))
+                   "Checksum"
+                   "Source")
              (if dir?
-                 (list (~a (pkg-directory* pkg #:db db)))
-                 empty))))))))
+                 (list "Directory")
+                 empty))
+            (for/list ([pkg (in-list pkgs)]
+                       #:when (or show-auto?
+                                  (not (pkg-info-auto? (hash-ref db pkg)))))
+              (match-define (pkg-info orig-pkg checksum auto?) (hash-ref db pkg))
+              (append
+               (list (format "~a~a~a"
+                             indent
+                             pkg
+                             (if auto? "*" ""))
+                     (format "~a" checksum)
+                     (format "~a" orig-pkg))
+               (if dir?
+                   (list (~a (pkg-directory* pkg #:db db)))
+                   empty)))))
+          (unless show-auto?
+            (define n (for/sum ([pkg (in-list pkgs)] 
+                                #:when (pkg-info-auto? (hash-ref db pkg)))
+                               1))
+            (unless (zero? n)
+              (printf "~a[~a auto-installed package~a not shown]\n"
+                      indent
+                      n
+                      (if (= n 1) "" "s"))))))))
 
 (define (installed-pkg-table #:scope [given-scope #f])
   (parameterize ([current-pkg-scope 
