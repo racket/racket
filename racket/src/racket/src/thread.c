@@ -6869,7 +6869,7 @@ Scheme_Object *scheme_make_thread_cell(Scheme_Object *def_val, int inherited)
   return (Scheme_Object *)c;
 }
 
-Scheme_Object *scheme_thread_cell_get(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells)
+static Scheme_Object *do_thread_cell_get(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells)
 {
   Scheme_Object *v;
 
@@ -6880,6 +6880,14 @@ Scheme_Object *scheme_thread_cell_get(Scheme_Object *cell, Scheme_Thread_Cell_Ta
   }
 
   return ((Thread_Cell *)cell)->def_val;
+}
+
+Scheme_Object *scheme_thread_cell_get(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells)
+{
+  if (!((Thread_Cell *)cell)->assigned)
+    return ((Thread_Cell *)cell)->def_val;
+  else
+    return do_thread_cell_get(cell, cells);
 }
 
 void scheme_thread_cell_set(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells, Scheme_Object *v)
@@ -6997,11 +7005,18 @@ static Scheme_Object *thread_cell_set(int argc, Scheme_Object *argv[])
 /*========================================================================*/
 
 SHARED_OK static int max_configs = __MZCONFIG_BUILTIN_COUNT__;
-static Scheme_Object *do_param(void *data, int argc, Scheme_Object *argv[]);
+static Scheme_Object *do_param(int argc, Scheme_Object *argv[], Scheme_Object *self);
+
+static Scheme_Config *config_fail()
+{
+  /* in a separate function to help xform */
+  scheme_longjmp(scheme_error_buf, 1);
+  return NULL;
+}
 
 Scheme_Config *scheme_current_config()
 {
-  Scheme_Object *v;
+  GC_CAN_IGNORE Scheme_Object *v;
 
   v = scheme_extract_one_cc_mark(NULL, scheme_parameterization_key);
 
@@ -7010,7 +7025,7 @@ Scheme_Config *scheme_current_config()
        and misused it.
        Printing an error message requires consulting parameters,
        so just escape. */
-    scheme_longjmp(scheme_error_buf, 1);
+    return config_fail();
   }
 
   return (Scheme_Config *)v;
@@ -7050,7 +7065,7 @@ Scheme_Object *find_param_cell(Scheme_Config *c, Scheme_Object *k, int force_cel
   Scheme_Object *v;
   Scheme_Parameterization *p;
 
-  v = scheme_hash_tree_get(c->ht, k);
+  v = scheme_eq_hash_tree_get(c->ht, k);
   if (v)
     return v;
   
@@ -7141,14 +7156,14 @@ static Scheme_Object *extend_parameterization(int argc, Scheme_Object *argv[])
       a[0] = key;
       a[1] = scheme_false;
       while (1) {
-        if (SCHEME_PRIMP(param)) {
+        if (!(((Scheme_Primitive_Proc *)param)->pp.flags & SCHEME_PRIM_IS_CLOSURE)) {
           Scheme_Prim *proc;
           proc = (Scheme_Prim *)((Scheme_Primitive_Proc *)param)->prim_val;
           key = proc(2, a); /* leads to scheme_param_config to set a[1] */
           break;
         } else {
           /* sets a[1] */
-          key = do_param(((Scheme_Closed_Primitive_Proc *)param)->data, 2, a);
+          key = do_param(2, a, param);
           if (SCHEME_PARAMETERP(key)) {
             param = key;
             a[0] = a[1];
@@ -7210,10 +7225,10 @@ static Scheme_Object *parameter_p(int argc, Scheme_Object **argv)
 	  : scheme_false);
 }
 
-static Scheme_Object *do_param(void *_data, int argc, Scheme_Object *argv[])
+static Scheme_Object *do_param(int argc, Scheme_Object *argv[], Scheme_Object *self)
 {
   Scheme_Object *guard, **argv2, *pos[2];
-  ParamData *data = (ParamData *)_data;
+    ParamData *data = (ParamData *)SCHEME_PRIM_CLOSURE_ELS(self)[0];
 
   if (argc && argv[0]) {
     guard = data->guard;
@@ -7260,9 +7275,33 @@ static Scheme_Object *do_param(void *_data, int argc, Scheme_Object *argv[])
 			     -2, NULL, NULL, 0);
 }
 
+static Scheme_Object *extract_param(Scheme_Config *config, Scheme_Object *key, Scheme_Object *defcell)
+{
+  Scheme_Object *cell;
+  
+  cell = find_param_cell(config, key, 0);
+  if (!cell)
+    cell = defcell;
+  
+  if (SCHEME_THREAD_CELLP(cell))
+    return scheme_thread_cell_get(cell, scheme_current_thread->cell_values);
+  else
+    return cell; /* it's really the value, instead of a cell */
+}
+
+static Scheme_Object *do_param_fast(int argc, Scheme_Object *argv[], Scheme_Object *self)
+{
+  ParamData *data = (ParamData *)SCHEME_PRIM_CLOSURE_ELS(self)[0];
+
+  if (!argc && !data->is_derived)
+    return extract_param(scheme_current_config(), data->key, data->defcell);
+
+  return do_param(argc, argv, self);
+}
+
 static Scheme_Object *make_parameter(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *p, *cell;
+  Scheme_Object *p, *cell, *a[1];
   ParamData *data;
   void *k;
 
@@ -7280,8 +7319,9 @@ static Scheme_Object *make_parameter(int argc, Scheme_Object **argv)
   data->defcell = cell;
   data->guard = ((argc > 1) ? argv[1] : NULL);
 
-  p = scheme_make_closed_prim_w_arity(do_param, (void *)data, 
-				      "parameter-procedure", 0, 1);
+  a[0] = (Scheme_Object *)data;
+  p = scheme_make_prim_closure_w_arity(do_param_fast, 1, a, 
+                                       "parameter-procedure", 0, 1);
   ((Scheme_Primitive_Proc *)p)->pp.flags |= SCHEME_PRIM_TYPE_PARAMETER;
 
   return p;
@@ -7289,7 +7329,7 @@ static Scheme_Object *make_parameter(int argc, Scheme_Object **argv)
 
 static Scheme_Object *make_derived_parameter(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *p;
+  Scheme_Object *p, *a[1];
   ParamData *data;
 
   if (!SCHEME_PARAMETERP(argv[0]))
@@ -7307,8 +7347,9 @@ static Scheme_Object *make_derived_parameter(int argc, Scheme_Object **argv)
   data->guard = argv[1];
   data->extract_guard = argv[2];
 
-  p = scheme_make_closed_prim_w_arity(do_param, (void *)data, 
-				      "parameter-procedure", 0, 1);
+  a[0] = (Scheme_Object *)data;
+  p = scheme_make_prim_closure_w_arity(do_param, 1, a, 
+                                       "parameter-procedure", 0, 1);
   ((Scheme_Primitive_Proc *)p)->pp.flags |= SCHEME_PRIM_TYPE_PARAMETER;
 
   return p;
@@ -7640,16 +7681,7 @@ static Scheme_Object *do_param_config(char *name, Scheme_Object *pos,
 
   if (argc == 0) {
     if (arity == -2) {
-      Scheme_Object *cell;
-
-      cell = find_param_cell(config, ((Scheme_Object **)pos)[0], 0);
-      if (!cell)
-	cell = ((Scheme_Object **)pos)[1];
-
-      if (SCHEME_THREAD_CELLP(cell))
-	return scheme_thread_cell_get(cell, scheme_current_thread->cell_values);
-      else
-	return cell; /* it's really the value, instead of a cell */
+      return extract_param(config, ((Scheme_Object **)pos)[0], ((Scheme_Object **)pos)[1]);
     } else {
       Scheme_Object *s;
       s = scheme_get_param(config, SCHEME_INT_VAL(pos));

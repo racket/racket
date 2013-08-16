@@ -76,9 +76,10 @@ static Scheme_Object *cont_mark_set_first_try_fast(Scheme_Object *cms, Scheme_Ob
   Scheme_Object *nullableCms;
   Scheme_Object *prompt_tag; 
  
-  prompt_tag = SCHEME_PTR_VAL(scheme_default_prompt_tag);
   if (key == scheme_parameterization_key || key == scheme_break_enabled_key) 
     prompt_tag = NULL;
+  else
+    prompt_tag = SCHEME_PTR_VAL(scheme_default_prompt_tag);
 
   nullableCms = SCHEME_FALSEP(cms) ? NULL : cms;
   

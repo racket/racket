@@ -7296,7 +7296,7 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
           cache = NULL;
         if (cache) {
           if (SCHEME_HASHTP(cache))
-            cache = scheme_hash_get((Scheme_Hash_Table *)cache, prompt_tag ? prompt_tag : scheme_false);
+            cache = scheme_eq_hash_get((Scheme_Hash_Table *)cache, prompt_tag ? prompt_tag : scheme_false);
           else if (prompt_tag != scheme_default_prompt_tag)
             cache = NULL;
         }
@@ -7347,7 +7347,7 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
         if (cache && !SCHEME_FALSEP(cache)) {
           if (SCHEME_HASHTP(cache)) {
             Scheme_Hash_Table *ht = (Scheme_Hash_Table *)cache;
-            cache = scheme_hash_get(ht, prompt_tag ? prompt_tag : scheme_false);
+            cache = scheme_eq_hash_get(ht, prompt_tag ? prompt_tag : scheme_false);
             if (!cache) {
               scheme_hash_set(ht, prompt_tag ? prompt_tag : scheme_false, (Scheme_Object *)pr);
             } else {
@@ -7882,6 +7882,7 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
                                      MZ_MARK_POS_TYPE *_vpos)
 {
   Scheme_Object *key = key_arg;
+
   if (SCHEME_NP_CHAPERONEP(key)
       && SCHEME_CONTINUATION_MARK_KEYP(SCHEME_CHAPERONE_VAL(key))) {
     key = SCHEME_CHAPERONE_VAL(key);
@@ -7948,7 +7949,7 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
         } else {
           cache = seg[pos].cache;
           if (cache && SCHEME_HASHTP(cache))
-            cache = scheme_hash_get((Scheme_Hash_Table *)cache, 
+            cache = scheme_eq_hash_get((Scheme_Hash_Table *)cache, 
                                     prompt_tag ? prompt_tag : scheme_false);
           else if (prompt_tag)
             cache = NULL;
@@ -7964,7 +7965,7 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
             } else {
               Scheme_Hash_Table *ht;
               ht = (Scheme_Hash_Table *)SCHEME_VEC_ELS(cache)[2];
-              val = scheme_hash_get(ht, key);
+              val = scheme_eq_hash_get(ht, key);
               if (val) {
                 vpos = (MZ_MARK_POS_TYPE)SCHEME_CDR(val);
                 val = SCHEME_CAR(val);
@@ -7997,7 +7998,7 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
           Scheme_Hash_Table *cht;
           if (cache && SCHEME_HASHTP(cache)) {
             cht = (Scheme_Hash_Table *)cache;
-            cache = scheme_hash_get(cht, prompt_tag ? prompt_tag : scheme_false);
+            cache = scheme_eq_hash_get(cht, prompt_tag ? prompt_tag : scheme_false);
           } else if (prompt_tag) {
             cht = scheme_make_hash_table(SCHEME_hash_ptr);
             if (cache) {
@@ -8079,6 +8080,61 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
   return NULL;
 }
 
+XFORM_NONGCING static Scheme_Object *
+extract_one_cc_mark_fast(Scheme_Object *key)
+/* A non-GCing fast path for scheme_extract_one_cc_mark_with_meta()
+   where there are no complications. */
+{
+  intptr_t findpos, bottom, startpos, minbottom;
+  intptr_t pos;
+  Scheme_Object *val = NULL;
+  Scheme_Object *cache;
+  Scheme_Cont_Mark *seg;
+  Scheme_Thread *p = scheme_current_thread;
+
+  startpos = (intptr_t)MZ_CONT_MARK_STACK;
+  if (!p->cont_mark_stack_segments)
+    findpos = 0;
+
+  bottom = p->cont_mark_stack_bottom;
+  minbottom = findpos - 32;
+  if (bottom < minbottom) 
+    bottom = minbottom;
+  
+  findpos = startpos;
+  
+  /* Search mark stack, checking caches along the way: */
+  while (findpos-- > bottom) {
+    seg = p->cont_mark_stack_segments[findpos >> SCHEME_LOG_MARK_SEGMENT_SIZE];
+    pos = findpos & SCHEME_MARK_SEGMENT_MASK;
+
+    if (SAME_OBJ(seg[pos].key, key))
+      return seg[pos].val;
+    else {
+      cache = seg[pos].cache;
+      if (cache && SCHEME_HASHTP(cache))
+        cache = scheme_eq_hash_get((Scheme_Hash_Table *)cache, scheme_false);
+      if (cache && SCHEME_VECTORP(cache)) {
+        /* If slot 1 has a key, this cache has just one key--value
+           pair. Otherwise, slot 2 is a hash table. */
+        if (SCHEME_VEC_ELS(cache)[1]) {
+          if (SAME_OBJ(SCHEME_VEC_ELS(cache)[1], key))
+            return SCHEME_VEC_ELS(cache)[2];
+        } else {
+          Scheme_Hash_Table *ht;
+          ht = (Scheme_Hash_Table *)SCHEME_VEC_ELS(cache)[2];
+          val = scheme_eq_hash_get(ht, key);
+          if (val) {
+            return SCHEME_CAR(val);
+          }
+        }
+      }
+    }
+  }
+  
+  return NULL;
+}
+
 static Scheme_Object *get_set_cont_mark_by_pos(Scheme_Object *key,
                                                Scheme_Thread *p,
                                                Scheme_Meta_Continuation *mc,
@@ -8145,6 +8201,13 @@ static Scheme_Object *get_set_cont_mark_by_pos(Scheme_Object *key,
 Scheme_Object *
 scheme_extract_one_cc_mark(Scheme_Object *mark_set, Scheme_Object *key)
 {
+  Scheme_Object *v;
+  
+  if (!mark_set) {
+    v = extract_one_cc_mark_fast(key);
+    if (v) return v;
+  }
+
   return scheme_extract_one_cc_mark_with_meta(mark_set, key, NULL, NULL, NULL);
 }
 
