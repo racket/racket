@@ -2,7 +2,7 @@
 # Configuration
 
 # This `racket' must have the the "distro-build" and "aws" packages
-# installed:
+# installed, where "aws" depends on "html-lib":
 RACKET = racket
 
 # In `PLT_TOP', "build/latest" should be a git clone to update (and it
