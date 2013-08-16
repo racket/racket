@@ -1526,12 +1526,12 @@
             stx))]
         [(_ (lib . rest))
          (let ([s (syntax->list #'rest)])
-           (unless ((length s) . >= . 2)
+           (unless ((length s) . >= . 1)
              (teach-syntax-error
               'require
               stx
               #f
-              "expected at least two strings with lib, found only ~a parts"
+              "expected at least one string with lib, found only ~a parts"
               (length s)))
            (for-each (lambda (v)
                        (unless (string? (syntax-e v))
