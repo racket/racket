@@ -158,7 +158,7 @@
                                     'checksum
                                     empty-source-checksum)))))
 
-(define (add-rung-0 ht)
+(define (add-ring-0 ht)
   (hash-set ht 'ring 0))
 
 ;; ------------------------------
