@@ -1976,10 +1976,28 @@ typedef struct AVLNode {
 #if 0
 # define AVL_ASSERT(p) if (p) { } else { scheme_signal_error("hash-tree assert failure %d", __LINE__); }
 # define AVL_ASSERT_ONLY(x) x
+# define AVL_CHECK_FORMS 1
 #else
 # define AVL_ASSERT(p) /* empty */
 # define AVL_ASSERT_ONLY(x) /* empty */
 #endif
+
+XFORM_NONGCING static int get_height(AVLNode* t)
+{
+  if (t == NULL)
+    return 0;
+  else
+    return t->height;
+}
+
+XFORM_NONGCING static void fix_height(AVLNode* t)
+{
+  int h;
+  h = get_height(t->left);
+  if (get_height(t->right) > h)
+    h = get_height(t->right);
+  t->height = h + 1;
+}
 
 static AVLNode *make_avl(AVLNode *left,
                          uintptr_t code, Scheme_Object *key, Scheme_Object *val,
@@ -1995,6 +2013,8 @@ static AVLNode *make_avl(AVLNode *left,
   avl->left = left;
   avl->right = right;
 
+  fix_height(avl);
+
   return avl;
 }
 
@@ -2006,26 +2026,9 @@ static AVLNode *avl_clone(AVLNode *avl)
   return naya;
 }
 
-XFORM_NONGCING static int get_height(AVLNode* t)
-{
-  if (t == NULL)
-    return 0;
-  else
-    return t->height;
-}
-
 XFORM_NONGCING static int get_balance(AVLNode* t)
 {
   return get_height(t->left) - get_height(t->right);
-}
-
-XFORM_NONGCING static void fix_height(AVLNode* t)
-{
-  int h;
-  h = get_height(t->left);
-  if (get_height(t->right) > h)
-    h = get_height(t->right);
-  t->height = h + 1;
 }
 
 XFORM_NONGCING static AVLNode *avl_find(uintptr_t code, AVLNode *s)
@@ -2043,11 +2046,28 @@ XFORM_NONGCING static AVLNode *avl_find(uintptr_t code, AVLNode *s)
   }
 }
 
+#ifdef AVL_CHECK_FORMS
 static AVLNode *AVL_CHK(AVLNode *avl, uintptr_t code)
 {
   AVL_ASSERT(avl_find(code, avl));
   return avl;
 }
+static void AVL_CHK_FORM(AVLNode *avl)
+{
+  if (avl) {
+    int h1, h2;
+    h1 = get_height(avl->left);
+    h2 = get_height(avl->right);
+    if (h2 > h1) h1 = h2;
+    AVL_ASSERT(avl->height == (h1 + 1));
+    AVL_CHK_FORM(avl->left);
+    AVL_CHK_FORM(avl->right);
+  }
+}
+#else
+# define AVL_CHK(avl, code) avl
+XFORM_NONGCING static void AVL_CHK_FORM(AVLNode *avl)  { }
+#endif
   
 AVLNode* check_rotate_right(AVLNode* t)
 {
@@ -2289,6 +2309,8 @@ static void *hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Ob
   AVLNode *added;
   int delta;
 
+  AVL_CHK_FORM(root);
+
   if (!val) {
     /* Removing ... */
     added = avl_find(h, root);
@@ -2307,6 +2329,8 @@ static void *hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Ob
         if (tree) {
           tree2 = MALLOC_ONE_TAGGED(Scheme_Hash_Tree);
           memcpy(tree2, tree, sizeof(Scheme_Hash_Tree));
+
+          AVL_CHK_FORM(root);
           
           tree2->root = root;
           --tree2->count;
@@ -2400,6 +2424,8 @@ static void *hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Ob
     added->val = val;
     delta = 1;
   }
+
+  AVL_CHK_FORM(root);
 
   if (tree) {
     tree2 = MALLOC_ONE_TAGGED(Scheme_Hash_Tree);
