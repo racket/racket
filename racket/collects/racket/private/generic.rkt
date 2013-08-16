@@ -69,19 +69,35 @@
        (define/with-syntax [method-index ...] method-indices)
        (define/with-syntax contract-str
          (format "~s" (syntax-e #'predicate-name)))
+
        (define/with-syntax (fast-pred-name ...)
          (generate-temporaries fast-preds))
        (define/with-syntax (fast-disp-name ...)
          (generate-temporaries #'(fast-disp ...)))
+       (define/with-syntax (fast-disp-expr ...)
+         (for/list ([stx (in-list (syntax->list #'(fast-disp ...)))]
+                    [id (in-list (syntax->list #'(fast-pred-name ...)))])
+           (if (eq? (syntax-e stx) '#:same)
+               id
+               stx)))
+
        (define/with-syntax (default-pred-name ...)
          (generate-temporaries default-preds))
        (define/with-syntax (default-disp-name ...)
          (generate-temporaries #'(default-disp ...)))
+       (define/with-syntax (default-disp-expr ...)
+         (for/list ([stx (in-list (syntax->list #'(default-disp ...)))]
+                    [id (in-list (syntax->list #'(default-pred-name ...)))])
+           (if (eq? (syntax-e stx) '#:same)
+               id
+               stx)))
+
        (define/with-syntax ([fast-by-method ...] ...) fasts-by-method)
        (define/with-syntax ([fast-by-type ...] ...) fasts-by-type)
        (define/with-syntax ([default-by-method ...] ...) defaults-by-method)
        (define/with-syntax ([default-by-type ...] ...) defaults-by-type)
        (define/with-syntax [fallback ...] (generate-methods))
+
        (define/with-syntax forward-declaration
          (if (eq? (syntax-local-context) 'top-level)
              #'(define-syntaxes (fast-pred-name ...
@@ -125,10 +141,6 @@
                ...)
               #t))
            forward-declaration
-           (define fast-pred-name fast-pred) ...
-           (define fast-disp-name fast-disp) ...
-           (define default-pred-name default-pred) ...
-           (define default-disp-name default-disp) ...
            (define (predicate-name self-name)
              (or (fast-pred-name self-name)
                  ...
@@ -183,6 +195,10 @@
                  fallback)
              original)
            ...
+           (define fast-pred-name fast-pred) ...
+           (define fast-disp-name fast-disp-expr) ...
+           (define default-pred-name default-pred) ...
+           (define default-disp-name default-disp-expr) ...
            (define-values (fast-by-type ...)
              (generic-methods generic-name fast-defn ...))
            ...
