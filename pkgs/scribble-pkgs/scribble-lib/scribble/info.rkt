@@ -1,5 +1,7 @@
 #lang info
 
+(define source-keep-files '("doc"))
+
 (define mzscheme-launcher-names '("scribble"))
 (define mzscheme-launcher-libraries '("run.rkt"))
 
