@@ -45,7 +45,7 @@ Defines the following names, plus any specified by keyword options.
  @item{@racket[id]@racketidfont{?} as a predicate identifying
        instances of structure types that implement this generic group; and}
 
- @item{each @racket[method-id] as a generic procedure that calls the
+ @item{each @racket[method-id] as a @deftech{generic method} that calls the
        corresponding method on values where
        @racket[id]@racketidfont{?} is true.
        Each @racket[method-id]'s @racket[kw-formals*] must include a required
@@ -110,6 +110,39 @@ All structures implementing the generic interface via @racket[#:methods]
 automatically implement this structure type property using the provided values.
 When @racket[prop-value-expr] is executed, each @racket[method-id] is bound to
 its specific implementation for the @tech{structure type}.
+
+If a value @racket[v] satisfies @racket[id]@racketidfont{?}, then @racket[v] is
+a @deftech{generic instance} of @racketidfont{gen:}@racket[id].
+
+If a generic instance @racket[v] has a corresponding implementation for some
+@racket[method-id] provided via @racket[#:methods] in @racket[struct] or via
+@racket[#:defaults] or @racket[#:fast-defaults] in @racket[define-generics],
+then @racket[method-id] is an @deftech{implemented generic method} of
+@racket[v].
+
+If @racket[method-id] is not an implemented generic method of a generic
+instance @racket[v], and @racket[method-id] has a fallback implementation that
+does not raise an @racket[exn:fail:support] exception when given @racket[v],
+then @racket[method-id] is a @deftech{supported generic method} of @racket[v].
+
+}
+
+@defproc[(raise-support-error [name symbol?] [v any/c]) none/c]{
+
+Raises an @racket[exn:fail:support] exception for a @techlink{generic
+method} called @racket[name] that does not support the @techlink{generic
+instance} @racket[v].
+
+@examples[#:eval evaluator
+(raise-support-error 'some-method-name '("arbitrary" "instance" "value"))
+]
+
+}
+
+@defstruct*[(exn:fail:support exn:fail) () #:transparent]{
+
+Raised for @techlink{generic methods} that do not support the given
+@techlink{generic instance}.
 
 }
 
