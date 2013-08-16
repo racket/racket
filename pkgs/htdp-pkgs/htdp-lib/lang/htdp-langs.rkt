@@ -18,9 +18,11 @@
          mrlib/cache-image-snip
          (prefix-in ic: mrlib/image-core)
          setup/dirs
+         setup/getinfo
+         setup/collects
          test-engine/racket-tests
 
-         ;; this module is shared between the drscheme's namespace (so loaded here) 
+         ;; this module is shared between the drracket namespace (so loaded here) 
          ;; and the user's namespace in the teaching languages
          "private/set-result.rkt"
          "private/rewrite-error-message.rkt"
@@ -38,8 +40,7 @@
                   scheme-test-data error-handler test-format test-execute display-results
                   build-test-engine)
          (lib "test-engine/test-display.scm")
-         deinprogramm/signature/signature
-         )
+         deinprogramm/signature/signature)
   
   
   (provide tool@)
@@ -454,23 +455,23 @@
               (cond
                 [(= 1 (length tps))
                  (go ": " welcome)
-                 (go (cadr (car tps)) (drscheme:rep:get-dark-green-delta))]
+                 (go (tp-require->str (car tps)) (drscheme:rep:get-dark-green-delta))]
                 [(= 2 (length tps))
                  (go "s: " welcome)
-                 (go (cadr (car tps)) (drscheme:rep:get-dark-green-delta))
+                 (go (tp-require->str (car tps)) (drscheme:rep:get-dark-green-delta))
                  (go " and " welcome)
-                 (go (cadr (cadr tps)) (drscheme:rep:get-dark-green-delta))]
+                 (go (tp-require->str (cadr tps)) (drscheme:rep:get-dark-green-delta))]
                 [else
                  (go "s: " welcome)
-                 (go (cadr (car tps)) (drscheme:rep:get-dark-green-delta))
+                 (go (tp-require->str (car tps)) (drscheme:rep:get-dark-green-delta))
                  (let loop ([these-tps (cdr tps)])
                    (cond
                      [(null? (cdr these-tps))
                       (go ", and " welcome)
-                      (go (cadr (car these-tps)) (drscheme:rep:get-dark-green-delta))]
+                      (go (tp-require->str (car these-tps)) (drscheme:rep:get-dark-green-delta))]
                      [else
                       (go ", " welcome)
-                      (go (cadr (car these-tps)) (drscheme:rep:get-dark-green-delta))
+                      (go (tp-require->str (car these-tps)) (drscheme:rep:get-dark-green-delta))
                       (loop (cdr these-tps))]))])
               (go "." welcome)
               (newline port)))
@@ -478,6 +479,15 @@
           (define/override (first-opened settings)
             (for ([tp (in-list (htdp-lang-settings-teachpacks settings))])
               (namespace-require/constant tp)))
+          
+          (define/private (tp-require->str tp)
+            (match tp
+              [`(lib ,x) 
+               (define m (regexp-match #rx"teachpack/2?htdp/(.*)$" x))
+               (if m
+                   (list-ref m 1)
+                   (format "~s" tp))]
+              [_ (format "~s" tp)]))
           
           (inherit get-module get-transformer-module get-init-code
                    use-namespace-require/copy?)
@@ -597,7 +607,8 @@
           (define htdp-teachpack-callbacks
             (drscheme:unit:make-teachpack-callbacks
              (λ (settings) 
-               (map cadr (htdp-lang-settings-teachpacks settings)))
+               (map (λ (x) (tp-require->str x))
+                    (htdp-lang-settings-teachpacks settings)))
              (λ (settings parent) 
                (let ([teachpack (get-teachpack-from-user parent)])
                  (if teachpack
@@ -695,9 +706,24 @@
         (define tp-dirs (list "htdp" "2htdp"))
         (define labels (list (string-constant teachpack-pre-installed/htdp)
                              (string-constant teachpack-pre-installed/2htdp)))
-        (define tpss (map tp-dir->tps tp-dirs))
-        (define sort-order (λ (x y) (string<=? (path->string x) (path->string y))))
-        (define pre-installed-tpss (map (λ (tps) (sort tps sort-order)) tpss))
+        (define tp-syms '(htdp-teachpacks 2htdp-teachpacks))
+        (define tpss (map tp-dir->tps tp-syms))
+        
+        (define label+mpss
+          (for/list ([tps (in-list tpss)])
+            (let ([all-filenames (map (λ (tp) (list-ref tp 0)) tps)])
+              (for/list ([tp (in-list tps)])
+                (define filename (list-ref tp 0))
+                (define mp (list-ref tp 1))
+                (list (path->string 
+                       (or (shrink-path-wrt filename all-filenames)
+                           (let-values ([(base name dir?) (split-path filename)])
+                             name)))
+                      mp)))))
+        
+        (define pre-installed-tpss 
+          (for/list ([label+mps (in-list label+mpss)])
+            (sort label+mps string<? #:key car)))
         (define dlg (new (frame:focus-table-mixin dialog%) 
                          [parent parent]
                          [label (string-constant drscheme)]))
@@ -716,22 +742,29 @@
         
         (define pre-installed-lbs
           (map (λ (pre-installed-gb pre-installed-tps)
-                 (new list-box%
-                      [label #f]
-                      [choices (map path->string pre-installed-tps)]
-                      [stretchable-height #t]
-                      [min-height 300]
-                      [min-width 200]
-                      [callback
-                       (λ (this evt)
-                         (case (send evt get-event-type)
-                           [(list-box-dclick) (selected this)]
-                           [else
-                            (for-each (λ (x) (unless (eq? x this) (clear-selection x)))
-                                      (cons user-installed-lb
-                                            pre-installed-lbs))
-                            (update-button)]))]
-                      [parent pre-installed-gb]))
+                 (define lb 
+                   (new list-box%
+                        [label #f]
+                        [choices (map (λ (x) (gui-utils:trim-string (list-ref x 0) 200))
+                                      pre-installed-tps)]
+                        [stretchable-height #t]
+                        [min-height 300]
+                        [min-width 200]
+                        [callback
+                         (λ (this evt)
+                           (case (send evt get-event-type)
+                             [(list-box-dclick) (selected this)]
+                             [else
+                              (for ([x (in-list (cons user-installed-lb
+                                                      pre-installed-lbs))]
+                                    #:unless (eq? x this))
+                                (clear-selection x))
+                              (update-button)]))]
+                        [parent pre-installed-gb]))
+                 (for ([i (in-naturals)]
+                       [tp (in-list pre-installed-tps)])
+                   (send lb set-data i (list-ref tp 1)))
+                 lb)
                pre-installed-gbs
                pre-installed-tpss))
         
@@ -884,14 +917,12 @@
           (cond
             [(ormap (λ (pre-installed-lb tp-dir) 
                       (and (send pre-installed-lb get-selection)
-                           (list tp-dir (send pre-installed-lb get-string 
-                                              (send pre-installed-lb get-selection)))))
+                           (send pre-installed-lb get-data
+                                 (send pre-installed-lb get-selection))))
                     pre-installed-lbs
                     tp-dirs)
              =>
-             (λ (pr)
-               (define-values (tp-dir f) (apply values pr))
-               `(lib ,f "teachpack" ,tp-dir))]
+             values]
             [(send user-installed-lb get-selection)
              =>
              (λ (i) `(lib ,(send user-installed-lb get-string i)
@@ -905,12 +936,32 @@
         (send dlg show #t)
         answer)
       
-      (define (tp-dir->tps tp-dir)
-        (define known-tp (collection-file-path "image.rkt" "teachpack" tp-dir))
-        (define-values (base name dir?) (split-path known-tp))
+      (define (tp-dir->tps tp-sym)
         (filter
-         (λ (x) (file-exists? (build-path base x)))
-         (directory-list base)))
+         values
+         (for*/list ([dir (in-list (find-relevant-directories (list tp-sym)))]
+                     #:when (let ([inf (get-info/full dir)])
+                              (and inf (inf tp-sym (λ () #f))))
+                     [file-or-dir (in-list
+                                   (let ([files ((get-info/full dir) tp-sym)])
+                                     (cond
+                                       [(eq? files 'all)
+                                        (for/list ([x (in-list (directory-list dir))]
+                                                   #:when
+                                                   (regexp-match #rx"[.](ss|scm|rkt)$"
+                                                                 (path->string x))
+                                                   #:unless
+                                                   (member (path->string x) '("info.rkt" "info.ss")))
+                                          x)]
+                                       [(list? files) files]
+                                       [else '()])))])
+           (let/ec k
+             (unless (path? file-or-dir) (k #f))
+             (define candidate (build-path dir file-or-dir))
+             (unless (file-exists? candidate) (k #f))
+             (define mp (path->module-path candidate))
+             (when (path-string? mp) (k #f))
+             (list candidate mp)))))
 
       (define (stepper-settings-language %)
         (if (implementation? % stepper-language<%>)
@@ -1009,7 +1060,7 @@
       (define mf-note
         (let ([bitmap
                (make-object bitmap%
-                 (build-path (collection-path "icons") "mf.gif"))])
+                 (collection-file-path "mf.gif" "icons"))])
           (and (send bitmap ok?)
                (make-object image-snip% bitmap))))
       

@@ -102,6 +102,24 @@ the list @racket[all-nums] is bound to an infinite list
 For more examples, see the @filepath{htdp} sub-collection in the
 @filepath{teachpack} collection of the PLT installation.
 
+@subsection{Adding Your Own Teachpacks to the Teachpack Dialog}
+
+The @onscreen{Language|Add Teachpack...} dialog is extensible
+in two ways. First, users can add teachpacks to the third column
+by clicking the button at the bottom of the column. These additions
+are stored in the preferences file, so one way to add site-specific
+teachpacks is to provide a default preferences file.
+
+The first two columns are also extensible. When a collection has
+an @tech{info.rkt} file 
+(see also @secref[#:doc '(lib "scribblings/raco/raco.scrbl") "info.rkt"])
+that defines @racket[htdp-teachpacks] or @racket[2htdp-teachpacks],
+then they are expected to be either a list of (collection-relative)
+paths containing teachpacks to add to the dialog, or the symbol
+@racket['all], which means that all of the (top-level) files in the collection
+that end with @filepath{.rkt}, @filepath{.ss}, or @filepath{.scm}
+are teachpacks (except @filepath{info.rkt} or @filepath{info.ss}).
+
 @; ----------------------------------------------------------------------
 
 @section[#:tag "environment-variables"]{Environment Variables}

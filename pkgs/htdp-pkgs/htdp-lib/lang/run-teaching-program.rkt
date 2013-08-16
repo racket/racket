@@ -6,6 +6,7 @@
          scheme/class
          scheme/contract
          test-engine/racket-tests
+         syntax/modresolve
          (only-in racket/list split-at)
          (only-in racket/sequence sequence->list))
 
@@ -102,19 +103,15 @@
    values
    (for/list ([tp (in-list teachpacks)])
      (cond
-       [(file-exists? (build-path (apply collection-path (cddr tp))
-                                  (cadr tp)))
+       [(with-handlers ((exn:fail? (λ (x) #f)))
+          (file-exists? (resolve-module-path tp #f)))
         (stepper-skip
          (datum->syntax #f `(require ,tp)))]
        [else
         (eprintf "~a\n" (missing-tp-message tp))]))))
 
 (define (missing-tp-message x)
-  (let* ([m (regexp-match #rx"/([^/]*)$" (cadr x))]
-         [name (if m
-                   (cadr m)
-                   (cadr x))])
-    (format "the teachpack '~a' was not found" name)))
+  (format "the teachpack '~s' was not found" x))
 
 
 ;; rewrite-module : syntax -> syntax
