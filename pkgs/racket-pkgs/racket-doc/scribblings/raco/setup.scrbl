@@ -982,6 +982,11 @@ v
   reference-doc]{collection links file}.  The file indicated by the
   returned path may or may not exist.}
 
+@defproc[(find-user-links-file [vers string? (get-installation-name)]) path?]{
+  Returns a path to the user's @tech[#:doc reference-doc]{collection
+  links file}.  The file indicated by the returned path may or may not
+  exist.}
+
 @defproc[(get-links-search-files) path?]{
   Returns a list of paths to installation @tech[#:doc
   reference-doc]{collection links files} that are search in

@@ -360,7 +360,8 @@
 ;; Links files
 
 (provide find-links-file
-         get-links-search-files)
+         get-links-search-files
+         find-user-links-file)
 
 (define (find-links-file)
   (or (force config:links-file)
@@ -368,6 +369,11 @@
 (define (get-links-search-files)
   (combine-search (force config:links-search-files)
                   (list (find-links-file))))
+
+(define (find-user-links-file [vers (get-installation-name)])
+  (build-path (find-system-path 'addon-dir)
+              vers
+              "links.rktd"))
 
 ;; ----------------------------------------
 ;; Packages

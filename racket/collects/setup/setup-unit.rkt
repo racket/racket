@@ -1711,15 +1711,21 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (setup-printf "version" "~a [~a]" (version) (system-type 'gc))
+  (setup-printf "installation name" "~a" (get-installation-name))
   (setup-printf "variants" "~a" (string-join (map symbol->string (available-mzscheme-variants)) ", "))
   (setup-printf "main collects" "~a" main-collects-dir)
   (setup-printf "collects paths" (if (null? (current-library-collection-paths)) " empty!" ""))
   (for ([p (current-library-collection-paths)])
     (setup-printf #f "  ~a" p))
   (setup-printf "main pkgs" "~a" (find-pkgs-dir))
-  (setup-printf "pkgs paths" (if (null? (get-pkgs-search-dirs)) " empty!" ""))
+  (setup-printf "pkgs paths" "")
   (for ([p (get-pkgs-search-dirs)])
     (setup-printf #f "  ~a" p))
+  (setup-printf #f "  ~a" (find-user-pkgs-dir))
+  (setup-printf "links files" "")
+  (for ([p (get-links-search-files)])
+    (setup-printf #f "  ~a" p))
+  (setup-printf #f "  ~a" (find-user-links-file))
   (setup-printf "main docs" "~a" (find-doc-dir))
 
   (when (and (not (null? (archives))) no-specific-collections?)
