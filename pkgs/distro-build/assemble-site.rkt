@@ -116,7 +116,7 @@
                     #:installers-url "installers/"
                     #:docs-url (and (directory-exists? doc-path)
                                     "doc/index.html")
-                    #:pdf-docs-url (and (directory-exists? doc-path)
+                    #:pdf-docs-url (and (directory-exists? pdf-doc-path)
                                         "pdf-doc/")
                     #:dest (build-path dest-dir
                                        "index.html")
