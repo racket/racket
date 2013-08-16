@@ -9,7 +9,9 @@
 
 (provide define-primitive-generics
          define-primitive-generics/derived
-         define/generic)
+         define/generic
+         raise-support-error
+         (struct-out exn:fail:support))
 
 (begin-for-syntax
 
@@ -383,10 +385,16 @@
        #'(define (method-name . method-formals)
            (define proc-name proc)
            (unless proc-name
-             (raise-arguments-error 'method-name
-                                    (format "not implemented for ~e"
-                                            self-name)))
+             (raise-support-error 'method-name self-name))
            method-apply))]))
+
+(struct exn:fail:support exn:fail [] #:transparent)
+
+(define (raise-support-error name v)
+  (raise
+   (exn:fail:support
+    (format "~a: not implemented for ~e" name v)
+    (current-continuation-marks))))
 
 (define-syntax (check-generic-method stx)
   (syntax-case stx ()

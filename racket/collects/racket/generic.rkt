@@ -14,6 +14,8 @@
 
 (provide define-generics
          define/generic
+         raise-support-error
+         (struct-out exn:fail:support)
          chaperone-generics
          impersonate-generics
          redirect-generics

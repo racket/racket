@@ -386,9 +386,6 @@
        (set-remove! s x))]
     [else (raise-support-error 'set-symmetric-difference! s)]))
 
-(define (raise-support-error name s)
-  (raise-mismatch-error name "not implemented for " s))
-
 (define-sequence-syntax *in-set
   (lambda () #'in-set)
   (lambda (stx)

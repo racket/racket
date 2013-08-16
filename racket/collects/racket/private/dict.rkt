@@ -316,9 +316,6 @@
   (for/list ([k*v (in-dict-pairs d)])
     k*v))
 
-(define (raise-support-error name s)
-  (raise-mismatch-error name "not implemented for " s))
-
 (define-primitive-generics
   (dict gen:dict prop:gen:dict prop:gen:dict-methods dict? dict-implements?)
   #:fast-defaults
