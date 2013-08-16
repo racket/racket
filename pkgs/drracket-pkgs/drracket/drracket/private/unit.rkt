@@ -1,17 +1,5 @@
 #lang racket/base
 
-#|
-
-closing:
-  warning messages don't have frame as parent.....
-
-tab panels new behavior:
-  - save all tabs (pr 6689?)
-  
-module browser threading seems wrong.
-
-|#
-
 (require racket/contract
          racket/unit
          racket/class
@@ -2305,56 +2293,25 @@ module browser threading seems wrong.
                      (andmap eq? tab-label-cache-valid current-paths))
           (set! tab-label-cache-valid current-paths)
           (set! tab-label-cache (make-hasheq)))
+        (define nfn (normalize-path/exists fn))
         (hash-ref! tab-label-cache 
                    fn
-                   (lambda () (compute-tab-label-from-filename fn))))
-      
-      (define/private (compute-tab-label-from-filename fn)
-        (let* ([take-n
-                (λ (n lst)
-                  (let loop ([n n]
-                             [lst lst])
-                    (cond
-                      [(zero? n) null]
-                      [(null? lst) null]
-                      [else (cons (car lst) (loop (- n 1) (cdr lst)))])))]
-               [find-exp-diff
-                (λ (p1 p2)
-                  (let loop ([p1 p1]
-                             [p2 p2]
-                             [i 1])
-                    (cond
-                      [(or (null? p1) (null? p2)) i]
-                      [else (let ([f1 (car p1)]
-                                  [f2 (car p2)])
-                              (if (equal? f1 f2)
-                                  (loop (cdr p1) (cdr p2) (+ i 1))
-                                  i))])))]
-               [exp (reverse (explode-path (normalize-path/exists fn)))]
-               [other-exps
-                (filter
-                 (λ (x) (and x 
-                             (not (equal? exp x))))
-                 (map (λ (other-tab) 
-                        (let ([fn (send (send other-tab get-defs) get-filename)])
-                          (and fn 
-                               (reverse (explode-path (normalize-path/exists fn))))))
-                      tabs))]
-               [size
-                (let loop ([other-exps other-exps]
-                           [size 1])
-                  (cond
-                    [(null? other-exps) size]
-                    [else (let ([new-size (find-exp-diff (car other-exps) exp)])
-                            (loop (cdr other-exps)
-                                  (max new-size size)))]))])
-          (path->string (apply build-path (reverse (take-n size exp))))))
-      
+                   (lambda () 
+                     (path->string
+                      (or (shrink-path-wrt
+                           nfn
+                           (filter values
+                                   (for/list ([other-tab (in-list tabs)])
+                                     (define fn (send (send other-tab get-defs) get-filename))
+                                     (and fn (normalize-path/exists fn)))))
+                          (let-values ([(base name dir?) (split-path nfn)])
+                            name))))))
+
       (define/private (normalize-path/exists fn)
         (if (file-exists? fn)
             (normalize-path fn)
             fn))
-      
+
       (define/private (add-modified-flag text string)
         (if (send text is-modified?)
             (let ([prefix (get-save-diamond-prefix)])
@@ -5307,3 +5264,4 @@ module browser threading seems wrong.
         (check-true (string? 
                      (compute-label-string 
                       (string->path (make-string i #\x)))))))))
+
