@@ -1067,6 +1067,21 @@
   
   (syntax-test #'(struct-copy t (t 1 2 3) [a #:parent p 11])))
 
+(begin-for-syntax
+ (struct S (info) #:property prop:struct-info (λ (s) (S-info s))))
+(let ()
+  (struct a-container (x) #:transparent)
+  (define-syntax a (S (extract-struct-info (syntax-local-value #'a-container))))
+  (struct b a (y) #:transparent)
+  
+  (test (a-container 0)
+        'struct-copy3
+        (struct-copy a (a-container 4) [x 0]))
+
+  (test (b 0 1)
+        'struct-copy3
+        (struct-copy b (b 2 1) [x #:parent a 0])))
+
 (test #t prefab-key? 'apple)
 (test #f prefab-key? '#(apple))
 (test #t prefab-key? '(apple 4))
