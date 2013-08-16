@@ -86,4 +86,31 @@
 
 ;; ----------------------------------------
 
+(test #f shrink-path-wrt (build-path "x.rkt") '())
+(test #f shrink-path-wrt (build-path "x.rkt") (list (build-path "x.rkt")))
+(test (build-path "x.rkt") shrink-path-wrt (build-path "x.rkt") (list (build-path "x.rkt")
+                                                                      (build-path "y.rkt")))
+(test (build-path "a" "x.rkt") shrink-path-wrt
+      (build-path "a" "x.rkt")
+      (list (build-path "a" "x.rkt")
+            (build-path "b" "x.rkt")))
+
+(test (build-path "d" "a" "x.rkt") shrink-path-wrt
+      (build-path "d" "a" "x.rkt")
+      (list (build-path "b" "x.rkt")
+            (build-path "c" "a" "x.rkt")
+            (build-path "d" "a" "x.rkt")))
+
+(test (build-path "d" "a" "x.rkt") shrink-path-wrt
+      (build-path "d" "a" "x.rkt")
+      (list (build-path "b" "x.rkt")
+            (build-path "p" "c" "a" "x.rkt")
+            (build-path "p" "d" "a" "x.rkt")))
+
+(test #f shrink-path-wrt
+      (build-path "d" "a" "x.rkt")
+      (list (build-path "d" "a" "x.rkt")
+            (build-path "d" "a" "x.rkt")))
+
+
 (report-errs)

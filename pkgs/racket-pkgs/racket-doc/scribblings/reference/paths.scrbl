@@ -549,6 +549,8 @@ machine and volume names become path elements.
 @;------------------------------------------------------------------------
 @section{More Path Utilities}
 
+@(define path-eval (make-base-eval `(require racket/path)))
+
 @note-lib[racket/path]
 
 @defproc[(file-name-from-path [path (or/c path-string? path-for-some-system?)])
@@ -651,6 +653,26 @@ of the path's bytes.
 Use this function when working with paths for a different system
 (whose encoding of pathnames might be unrelated to the current
 locale's encoding) and when starting and ending with strings.}
+
+@defproc[(shrink-path-wrt [pth path?] [other-pths (listof path?)]) (or/c #f path?)]{
+  Returns a suffix of @racket[pth] that shares nothing
+  in common with the suffixes of @racket[other-pths], or
+  @racket[pth], if not possible (e.g. when @racket[other-pths]
+  is empty or contains only paths with the same elements as @racket[pth]).
+  
+  @examples[#:eval path-eval
+                   (shrink-path-wrt (build-path "racket" "list.rkt")
+                                    (list (build-path "racket" "list.rkt")
+                                          (build-path "racket" "base.rkt")))
+                   
+                   (shrink-path-wrt (build-path "racket" "list.rkt")
+                                    (list (build-path "racket" "list.rkt")
+                                          (build-path "racket" "private" "list.rkt")
+                                          (build-path "racket" "base.rkt")))]
+
+}
+
+@close-eval[path-eval]
 
 @;------------------------------------------------------------------------
 @include-section["unix-paths.scrbl"]

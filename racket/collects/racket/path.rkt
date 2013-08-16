@@ -8,7 +8,8 @@
          path-only
          some-system-path->string
          string->some-system-path
-         path-element?)
+         path-element?
+         shrink-path-wrt)
 
 (define (simple-form-path p)
   (unless (path-string? p)
@@ -184,3 +185,55 @@
   (and (path-for-some-system? path)
        (let-values ([(base name d?) (split-path path)])
          (eq? base 'relative))))
+
+
+
+(define (shrink-path-wrt fn other-fns)
+  (unless (path? fn)
+    (raise-argument-error
+     'shrink-path-wrt
+     "path?"
+     0 fn other-fns))
+  (unless (and (list? other-fns) (andmap path? other-fns))
+    (raise-argument-error
+     'shrink-path-wrt
+     "(listof path?)"
+     1 fn other-fns))
+  (define exp (reverse (explode-path fn)))
+  (define other-exps
+    (filter
+     (λ (x) (not (equal? exp x)))
+     (map (λ (fn) (reverse (explode-path fn)))
+          other-fns)))
+  (cond
+    [(null? other-exps) #f]
+    [else
+     (define size
+       (let loop ([other-exps other-exps]
+                  [size 1])
+         (cond
+           [(null? other-exps) size]
+           [else (let ([new-size (find-exp-diff (car other-exps) exp)])
+                   (loop (cdr other-exps)
+                         (max new-size size)))])))
+     (apply build-path (reverse (take-n size exp)))]))
+  
+(define (take-n n lst)
+  (let loop ([n n]
+             [lst lst])
+    (cond
+      [(zero? n) null]
+      [(null? lst) null]
+      [else (cons (car lst) (loop (- n 1) (cdr lst)))])))
+
+(define (find-exp-diff p1 p2)
+  (let loop ([p1 p1]
+             [p2 p2]
+             [i 1])
+    (cond
+      [(or (null? p1) (null? p2)) i]
+      [else (let ([f1 (car p1)]
+                  [f2 (car p2)])
+              (if (equal? f1 f2)
+                  (loop (cdr p1) (cdr p2) (+ i 1))
+                  i))])))
