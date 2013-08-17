@@ -118,7 +118,7 @@ added get-regions
        ;; The tree of tokens that have been invalidated by an edit
        ;; but might still be valid.
        invalid-tokens ; = (new token-tree%)
-       ;; The position right before the ainvalid-tokens tree
+       ;; The position right before the invalid-tokens tree
        invalid-tokens-start ; = +inf.0
        invalid-tokens-mode
        ;; The position right before the next token to be read
@@ -479,7 +479,9 @@ added get-regions
            (set-lexer-state-invalid-tokens-start!
             ls
             (+ (lexer-state-invalid-tokens-start ls) tok-end change-length))
-           (set-lexer-state-invalid-tokens-mode! ls (and orig-data (data-lexer-mode orig-data)))))
+           (set-lexer-state-invalid-tokens-mode! ls (and orig-data (data-lexer-mode orig-data)))
+           (when (<= edit-start-pos (lexer-state-current-pos ls))
+             (set-lexer-state-current-pos! ls (+ (lexer-state-current-pos ls) change-length)))))
         ((> edit-start-pos (lexer-state-current-pos ls))
          (set-lexer-state-invalid-tokens-start! 
           ls 
