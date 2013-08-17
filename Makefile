@@ -86,7 +86,7 @@ base:
 	cd racket/src/build; $(MAKE) install $(SELF_FLAGS_qq) PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)"
 
 win32-base:
-	IF NOT EXIST build\config cmd /c mkdir -p build\config
+	IF NOT EXIST build\config cmd /c mkdir build\config
 	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
 	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
