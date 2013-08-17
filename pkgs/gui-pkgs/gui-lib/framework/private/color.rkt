@@ -15,7 +15,8 @@ added get-regions
          string-constants
          "../preferences.rkt"
          "sig.rkt"
-         "aspell.rkt")
+         "aspell.rkt"
+         "color-local-member-name.rkt")
 
 (import [prefix icon: framework:icon^]
         [prefix mode: framework:mode^]
@@ -324,9 +325,15 @@ added get-regions
     
     (define re-tokenize-lses #f)
     
+    (define/public (tokenizing-give-up-early) 'defer)
+    
     (define/private (continue-re-tokenize start-time ok-to-stop? ls in in-start-pos lexer-mode)
       (cond
-        [(and ok-to-stop? ((+ start-time 20.0) . <= . (current-inexact-milliseconds)))
+        [(and ok-to-stop?
+              (case (tokenizing-give-up-early)
+                [(#t) #t]
+                [(#f) #f]
+                [(defer) ((+ start-time 20.0) . <= . (current-inexact-milliseconds))]))
          #f]
         [else
          (define-values (_line1 _col1 pos-before) (port-next-location in))
