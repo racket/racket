@@ -79,7 +79,7 @@ Existing images can be rotated, scaled, flipped, and overlaid on top of each oth
                     [outline-mode (or/c 'outline "outline")]
                     [pen-or-color (or/c pen? image-color?)])
             image?])]{
-  Constructs a circle with the given radius, height, mode, and color.
+  Constructs a circle with the given radius, mode, and color.
   
   @mode/color-and-nitty-text
   
