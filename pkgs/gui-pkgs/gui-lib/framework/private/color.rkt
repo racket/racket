@@ -472,16 +472,15 @@ added get-regions
            (set-lexer-state-up-to-date?! ls #f)
            (update-lexer-state-observers)
            (queue-callback (λ () (colorer-callback)) #f)))
-        ((>= edit-start-pos (lexer-state-invalid-tokens-start ls))
+        ((and (>= edit-start-pos (lexer-state-invalid-tokens-start ls))
+              (> edit-start-pos (lexer-state-current-pos ls)))
          (let-values (((tok-start tok-end valid-tree invalid-tree orig-data)
                        (split-backward ls (lexer-state-invalid-tokens ls) edit-start-pos)))
            (set-lexer-state-invalid-tokens! ls invalid-tree)
            (set-lexer-state-invalid-tokens-start!
             ls
             (+ (lexer-state-invalid-tokens-start ls) tok-end change-length))
-           (set-lexer-state-invalid-tokens-mode! ls (and orig-data (data-lexer-mode orig-data)))
-           (when (<= edit-start-pos (lexer-state-current-pos ls))
-             (set-lexer-state-current-pos! ls (+ (lexer-state-current-pos ls) change-length)))))
+           (set-lexer-state-invalid-tokens-mode! ls (and orig-data (data-lexer-mode orig-data)))))
         ((> edit-start-pos (lexer-state-current-pos ls))
          (set-lexer-state-invalid-tokens-start! 
           ls 

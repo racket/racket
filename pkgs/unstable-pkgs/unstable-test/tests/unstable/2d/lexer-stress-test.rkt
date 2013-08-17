@@ -8,7 +8,7 @@
 (define f (new frame% [label ""] [width 400] [height 600]))
 (define t (new (class racket:text%
                  (define/override (tokenizing-give-up-early) 
-                   (when (zero? (random 4))
+                   (when (zero? (random 2))
                      (do-something))
                    #t)
                  (super-new))))
