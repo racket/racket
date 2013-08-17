@@ -1714,6 +1714,21 @@
   ;; where ~a gets an installation name:
   (install-pkg-packages-for "Pakete für ~a")
   (install-pkg-really-remove-installation "Sind Sie sicher, dass Sie alle installierten Pakete und Informationen für ~a löschen wollen?")
+
+  (install-pkg-abort-set-scope "Änderung des Einzugsbereich widerrufen")
+
+  (install-pkg-dependencies-fail "Fehlschlag: widerruft die Installation falls Abhänigkeiten fehlen")
+  (install-pkg-dependencies-force "Trotzdem: installieren trotz fehlender abhängigkeiten")
+  (install-pkg-dependencies-search-ask 
+   "Fragen: bei jeder fehlenden Abhänigkeit fragen (nicht unterstützt in GUI)")
+  (install-pkg-dependencies-search-auto "Auto: fehlende Abhänigkeiten automatisch installieren")
+
+  (install-pkg-dependencies-mode "Modus Abhängigkeiten")
+
+  (install-pkg-dependencies-search-ask-not-supported-in-gui
+   "Der “Fragen“-Modus für Abhänigkeiten ist im GUI-Installierer nicht unterstützt.")
+  (install-pkg-deps-is "Standard-Modus für Abhängigkeiten ist “~a”")
+
   
   )
 
