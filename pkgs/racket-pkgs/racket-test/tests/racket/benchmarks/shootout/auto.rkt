@@ -40,11 +40,11 @@ exec racket -qu "$0" ${1+"$@"}
                    [read-accept-reader #t])
       (let ([name (format "~a.rkt" bm)])
         (compile-file name
-                      (build-path "compiled" (path-add-suffix name #".zo"))))))
+                      "compiled/current-bm_rkt.zo"))))
 
   (define (clean-up-zo bm)
-    (when (directory-exists? "compiled")
-      (delete-directory/files "compiled")))
+    (when (file-exists? "compiled/current-bm_rkt.zo")
+      (delete-file "compiled/current-bm_rkt.zo")))
 
   (define (mk-typed-racket-non-optimizing bm)
     (unless (directory-exists? "typed/compiled")
@@ -53,7 +53,7 @@ exec racket -qu "$0" ${1+"$@"}
                    [read-accept-reader #t])
       (let ([name (format "~a-non-optimizing.rkt" bm)])
         (compile-file (format "typed/~a" name)
-                      (build-path "typed/compiled" (path-add-suffix name #".zo"))))))
+                      "typed/compiled/current-bm_rkt.zo"))))
   (define (mk-typed-racket bm)
     (unless (directory-exists? "typed/compiled")
       (make-directory "typed/compiled"))
@@ -61,11 +61,11 @@ exec racket -qu "$0" ${1+"$@"}
                    [read-accept-reader #t])
       (let ([name (format "~a-optimizing.rkt" bm)])
         (compile-file (format "typed/~a" name)
-                      (build-path "typed/compiled" (path-add-suffix name #".zo"))))))
+                      "typed/compiled/current-bm_rkt.zo"))))
 
   (define (clean-up-typed bm)
-    (when (directory-exists? "typed/compiled")
-      (delete-directory/files "typed/compiled")))
+    (when (file-exists? "typed/compiled/current-bm_rkt.zo")
+      (delete-file "typed/compiled/current-bm_rkt.zo")))
 
   (define (extract-racket-times bm str)
     (let ([m (regexp-match #rx#"cpu time: ([0-9]+) real time: ([0-9]+) gc time: ([0-9]+)" str)])

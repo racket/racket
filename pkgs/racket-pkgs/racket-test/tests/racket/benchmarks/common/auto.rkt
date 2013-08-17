@@ -46,14 +46,17 @@ exec racket -qu "$0" ${1+"$@"}
                    [read-accept-reader #t])
       (let ([name (format "~a.rkt" bm)])
         (compile-file name
-                      (build-path "compiled" (path-add-suffix name #".zo"))))))
+                      "compiled/current-bm_rkt.zo"))))
+
+  (define (compiled-path bm)
+    "current-bm.rkt")
 
   (define (mk-mz-old bm)
     (system (format "mz-old -l- raco make ~a.rkt" bm)))
 
   (define (clean-up-zo bm)
-    (when (directory-exists? "compiled")
-      (delete-directory/files "compiled")))
+    (when (file-exists? "compiled/current-bm_rkt.zo")
+      (delete-file "compiled/current-bm_rkt.zo")))
 
   (define (mk-typed-racket-non-optimizing bm)
     (unless (directory-exists? "typed/compiled")
@@ -364,7 +367,7 @@ exec racket -qu "$0" ${1+"$@"}
                 void
                 mk-racket
                 (lambda (bm)
-                  (system* (find-exe) "-u" (format "~a.rkt" bm)))
+                  (system* (find-exe) "-u" (compiled-path bm)))
                 extract-racket-times
                 clean-up-zo
                 racket-skip-progs)
@@ -380,7 +383,7 @@ exec racket -qu "$0" ${1+"$@"}
                 void
                 mk-racket
                 (lambda (bm)
-                  (system (format "racketcgc -u ~a.rkt" bm)))
+                  (system (format "racketcgc -u ~a" (compiled-path bm))))
                 extract-racket-times
                 clean-up-zo
                 racket-skip-progs)
@@ -388,7 +391,7 @@ exec racket -qu "$0" ${1+"$@"}
                 void
                 mk-racket
                 (lambda (bm)
-                  (system (format "racket3m -u ~a.rkt" bm)))
+                  (system (format "racket3m -u ~a" (compiled-path bm))))
                 extract-racket-times
                 clean-up-zo
                 racket-skip-progs)
@@ -415,7 +418,7 @@ exec racket -qu "$0" ${1+"$@"}
                 void
                 mk-racket
                 (lambda (bm)
-                  (system (format "racket -jqu ~a.rkt" bm)))
+                  (system (format "racket -jqu ~a" (compiled-path bm))))
                 extract-racket-times
                 clean-up-zo
                 racket-skip-progs)
@@ -423,7 +426,7 @@ exec racket -qu "$0" ${1+"$@"}
                 void
                 mk-racket
                 (lambda (bm)
-                  (system (format "racketcgc -jqu ~a.rkt" bm)))
+                  (system (format "racketcgc -jqu ~a" (compiled-path bm))))
                 extract-racket-times
                 clean-up-zo
                 racket-skip-progs)
