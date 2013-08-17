@@ -1013,6 +1013,7 @@ path/s is either such a string or a list of them.
 "pkgs/plt-services/meta/pkg-index" responsible (jay)
 "pkgs/plt-services/meta/pkg-index/official/main.rkt" drdr:command-line #f
 "pkgs/plt-services/meta/pkg-index/planet-compat/main.rkt" drdr:command-line (raco "test" *)
+"pkgs/plt-services/meta/pkg-push/push-catalog.rkt" drdr:command-line #f
 "pkgs/plt-services/meta/props" responsible (eli jay) drdr:command-line (racket "-um" * "verify")
 "pkgs/plt-services/meta/web" drdr:command-line #f
 "pkgs/preprocessor" responsible (eli)
