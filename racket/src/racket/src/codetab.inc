@@ -20,6 +20,45 @@ extern MZ_DLLIMPORT int GC_is_marked(void *);
 #define NODE_STARTS_OFFSET 1
 #define NODE_GCABLE_OFFSET 2
 
+/* Represent a node in the tree as an array of
+   NODE_HEADER_SIZE + KEY_COUNT pointers.
+
+   The first pointer is always NULL, so that the node can be
+   recognized as a node (as opposed to a Racket value) when referenced
+   by other nodes.
+
+   The second "pointer" is used as an array of bits, where each bit
+   indicates whether the corresponding pointer is the start of a
+   mapped range. The bits are shfted up by 1 an dthe low bit is always
+   set to 1, so that the GC doesn't think it's a pointer.
+
+   The third "pointer" is similar to the first, but it represents the
+   GC status of the reference, andthe bit is only used at a ramge
+   start.
+
+   Then there are KEY_COUNT "key" pointers for the content of the
+   node.  Note that KEY_COUNT is smaller than the number of bits
+   available in the header's second and third "pointer"s.
+
+   In a leaf node, every "key" corresponds to an address. In a node
+   that references leaf nodes, every "key" corresponds to KEY_SIZE
+   addresses. So, at the root, the first key corresonds to address 0,
+   the second key corresponds to address (1 << (32-LOG_KEY_SIZE)) on a
+   32-bit platform, and so on.
+
+   To make the tree more compact, when all of the pointers in a node
+   would be the same non-node value, then the node itself can be
+   replaced with the non-node value. (That's why we need to be able to
+   distinguish node references from Scheme-object references.) Of
+   course, "leaf node" above means nodes that would be leaves without
+   this compaction. 
+
+   When PLT_DUMP_JIT_RANGES is defined for compilation and as an
+   environment variable at run time, then an exit hook prints the
+   ranges of JIT-generated code. Furthermore, for 3m, defining
+   PLT_DUMP_JIT_RANGES at compilation time disables GC of
+   JIT-generated code. */
+
 THREAD_LOCAL_DECL(static void **codetab_tree);
 THREAD_LOCAL_DECL(static int during_set);
 #ifdef MZ_USE_PLACES
@@ -28,6 +67,11 @@ static void **shared_codetab_tree;
    and the fact that kentries are only added (never removed)
    to skip the lock. */
 static mzrt_mutex *shared_codetab_lock;
+#endif
+
+#ifdef PLT_DUMP_JIT_RANGES
+static int dump_registered = 0;
+static void dump_symbol_ranges();
 #endif
 
 static int do_clear_symbols(void **t, uintptr_t start, int offset, uintptr_t addr, int clearing);
@@ -97,6 +141,14 @@ void scheme_jit_add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_a
   int m;
   int offset = (JIT_WORD_SIZE * 8), split_offset = 0;
   void **the_tree, **t1, **t2, **split_t, *val1, *val2;
+
+#ifdef PLT_DUMP_JIT_RANGES
+  if (!dump_registered) {
+    dump_registered = 1;
+    if (getenv("PLT_DUMP_JIT_RANGES"))
+      atexit(dump_symbol_ranges);
+  }
+#endif
 
 #ifdef MZ_USE_PLACES
   if (!gc_able) {
@@ -314,6 +366,60 @@ static void clear_symbols_for_collected()
   if (codetab_tree) {
     do_clear_symbols(codetab_tree, 0, (JIT_WORD_SIZE * 8) - LOG_KEY_SIZE, 0, 0); 
   }
+}
+
+#endif
+
+#ifdef PLT_DUMP_JIT_RANGES
+
+static void *dump_symbol_range(void **t, int offset, uintptr_t base, void *val)
+{
+  int i, m;
+  void *p;
+
+  offset -= LOG_KEY_SIZE;
+
+  for (i = 0; i < KEY_COUNT; i++) {
+    p = t[i + NODE_HEADER_SIZE];
+    if (p) {
+      if (*(Scheme_Type *)p) {
+        int is_start;
+
+        m = (1 << (i + 1));
+        is_start = (((uintptr_t *)t)[NODE_STARTS_OFFSET] & m);
+
+        if (val && ((p != val) || is_start)) {
+          printf("%" PRIxPTR "\n", base + (((uintptr_t)i - 1) << offset)); /* end range */
+          val = NULL;
+        }
+
+        if (is_start) {
+          /* start new range */
+          val = p;
+          printf("%" PRIxPTR "-", base + ((uintptr_t)i << offset));
+          if (find_symbol(base + ((uintptr_t)i << offset)) != val)
+            printf("[oops]");
+        }
+      } else {
+        val = dump_symbol_range((void **)p, offset, base + ((uintptr_t)i << offset), val);
+      }
+    } else if (val) {
+      printf("%" PRIxPTR "\n", base + (((uintptr_t)i - 1) << offset)); /* end range */
+      val = NULL;
+    }
+  }
+
+  return val;
+}
+
+static void dump_symbol_ranges()
+{
+  (void)dump_symbol_range(codetab_tree, JIT_WORD_SIZE * 8, 0, NULL);
+
+#ifdef MZ_USE_PLACES
+  if (shared_codetab_tree)
+    (void)dump_symbol_range(shared_codetab_tree, JIT_WORD_SIZE * 8, 0, NULL);
+#endif
 }
 
 #endif
