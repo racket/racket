@@ -138,7 +138,7 @@
                           (define action (case (car res)
                                            [(install) pkg-install-command]
                                            [(update) pkg-update-command]))
-                          (apply action (cdr res))))
+                          (apply/keywords action (cdr res))))
                        (reset-installed-pkgs!))]))
 
     (define/private (reset-installed-pkgs!)
@@ -469,5 +469,24 @@
     (define/override (on-superwindow-show on?)
       (when on? 
         (reset-installed-pkgs!)))
+
+    ;; Pull keyword arguments out of the list `all-args';
+    ;; assumes that no keyword is intended as an argument value.
+    ;; (This seems ugly.)
+    (define/private (apply/keywords proc all-args)
+      (define-values (args kws kw-vals)
+        (let loop ([args all-args] [rev-args null] [kws+vals null])
+          (cond
+           [(null? args)
+            (let ([kws+vals (sort kws+vals keyword<? #:key car)])
+              (values (reverse rev-args)
+                      (map car kws+vals)
+                      (map cdr kws+vals)))]
+           [(keyword? (car args))
+            (loop (cddr args) rev-args (cons (cons (car args) (cadr args))
+                                             kws+vals))]
+           [else
+            (loop (cdr args) (cons (car args) rev-args) kws+vals)])))
+      (keyword-apply proc kws kw-vals args))
     
     (adjust-all)))
