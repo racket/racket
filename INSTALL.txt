@@ -2,9 +2,13 @@ Quick Instructions
 ==================
 
 On Unix or Mac OS X, `make' (or `make in-place') creates a build in
-the "racket" directory.
+the "racket" directory --- but for Mac OS X, see the notes below on
+`git submodule'.
 
-The build includes (via links) packages that are in the "pkgs"
+On Windows, `nmake win32-inplace' creates a build in the "racket"
+directory, but see the notes below on `git submodule'.
+
+An in-place build includes (via links) packages that are in the "pkgs"
 directory.
 
 
