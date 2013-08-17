@@ -291,10 +291,6 @@ sub-commands.
 
   @item{@DFlag{auto} --- Shorthand for @exec{@DFlag{deps} search-auto}.}
 
-  @item{@DFlag{force} --- Ignores conflicts (unsafe).}
-
-  @item{@DFlag{ignore-checksums} --- Ignores errors verifying package @tech{checksums} (unsafe).}
-
   @item{@DFlag{link} --- Implies @exec{--type dir} (and overrides any specified type),
         and links the existing directory as an installed package, instead of copying the
         directory's content to install. Directory @tech{package sources} are treated as links
@@ -317,10 +313,6 @@ sub-commands.
 
   @item{@DFlag{source} --- Strips built elements of a package before installing, and implies @DFlag{copy}.}
 
-  @item{@DFlag{skip-installed} --- Ignore any @nonterm{pkg-source}
-        whose name corresponds to an already-installed package, except for promoting auto-installed
-        packages to explicitly installed.}
-
  @item{@DFlag{scope} @nonterm{scope} --- Selects the @tech{package scope} for installation, where @nonterm{scope} is one of
   @itemlist[
    @item{@exec{installation} --- Install packages for all users of a Racket installation, rather than user-specific.}
@@ -337,6 +329,14 @@ sub-commands.
  @item{@DFlag{catalog} @nonterm{catalog} --- Use @nonterm{catalog} instead of of the currently configured 
        @tech{package catalogs}.}
 
+  @item{@DFlag{skip-installed} --- Ignore any @nonterm{pkg-source}
+        whose name corresponds to an already-installed package, except for promoting auto-installed
+        packages to explicitly installed.}
+
+  @item{@DFlag{force} --- Ignores conflicts (unsafe).}
+
+  @item{@DFlag{ignore-checksums} --- Ignores errors verifying package @tech{checksums} (unsafe).}
+
   @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
         environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
 
@@ -345,31 +345,46 @@ sub-commands.
 
 
 
-@subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg} ... 
---- Checks the specified packages for
-@tech{package updates}. If an update is found, but it cannot be
-installed (e.g. it conflicts with another installed package), then
-this command fails without installing any of the @nonterm{pkg}s 
-(or their dependencies).
+@subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ... 
+--- Checks the specified package names for @tech{package updates} or
+replaces existing package installations with the given sources. If an
+update or replacement cannot be installed (e.g. it conflicts with
+another installed package), then this command fails without installing
+any of the @nonterm{pkg-source}s (or their dependencies).
 
 If a @tech{package scope} is not specified, the scope is inferred from
-the given @nonterm{pkg}s.
+the given @nonterm{pkg-source}s.
 
  The @exec{update} sub-command accepts 
  the following @nonterm{option}s:
 
  @itemlist[
  @item{@DFlag{all} or @Flag{a} --- Update all packages, if no packages are given in the argument list.}
- @item{@DFlag{update-deps} --- Checks the named packages plus their dependencies (transitively) for updates.}
+
+ @item{@DFlag{update-deps} --- Checks dependencies (transitively) for updates.}
+
+ @item{@DFlag{lookup} --- Checks Causes a @tech{package name} as a @nonterm{pkg-source} to be used
+       as a replacement, instead of the name of a installed package that may have updates.
+       (If the named package was installed through a package name, then there's effectively
+        no difference.)}
+
+ @item{@DFlag{type} @nonterm{type} or @Flag{t} @nonterm{type} --- Same as for @command-ref{install}.}
+ @item{@DFlag{name} @nonterm{pkg} or @Flag{n} @nonterm{pkg} --- Same as for @command-ref{install}.}
  @item{@DFlag{deps} @nonterm{behavior} --- Same as for @command-ref{install}.}
  @item{@DFlag{auto} --- Shorthand for @exec{@DFlag{deps} search-auto} plus @DFlag{update-deps}.}
+ @item{@DFlag{link} --- Same as for @command-ref{install}.}
+ @item{@DFlag{static-link} --- Same as for @command-ref{install}.}
+ @item{@DFlag{binary} --- Same as for @command-ref{install}.}
+ @item{@DFlag{copy} --- Same as for @command-ref{install}.}
+ @item{@DFlag{source} --- Same as for @command-ref{install}.}
  @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Selects @nonterm{dir} as the @tech{package scope}, the same as for @command-ref{install}.}
+ @item{@DFlag{catalog} @nonterm{catalog} --- Same as for @command-ref{install}.}
+ @item{@DFlag{force} --- Same as for @command-ref{install}.}
+ @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
- @item{@DFlag{binary} --- Same as for @command-ref{install}.}
- @item{@DFlag{source} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  ]
 }
@@ -390,7 +405,8 @@ the given @nonterm{pkg}s.
                             (leaving auto-installed packages as such). Combined with @DFlag{auto}, removes
                             packages for which there are no dependencies.}
  @item{@DFlag{force} --- Ignore dependencies when removing packages.}
- @item{@DFlag{auto} --- Remove auto-installed packages (i.e., installed by the @exec{search-auto} or @exec{search-ask}
+ @item{@DFlag{auto} --- In addition to removing each @nonterm{pkg},
+                        remove auto-installed packages (i.e., installed by the @exec{search-auto} or @exec{search-ask}
                         dependency behavior, or demoted via @DFlag{demote}) that are no longer required by any
                         explicitly installed package.}
  @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
@@ -440,8 +456,6 @@ the given @nonterm{pkg}s.
 
  @item{@DFlag{deps} @nonterm{behavior} --- Same as for @command-ref{install}, except that @exec{search-auto} is
        the default.}
-  @item{@DFlag{force} --- Same as for @command-ref{install}.}
-  @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
   @item{@DFlag{binary} --- Same as for @command-ref{install}.}
   @item{@DFlag{source} --- Same as for @command-ref{install}.}
  @item{@DFlag{scope} @nonterm{scope} --- Same as for @command-ref{install}.}
@@ -449,6 +463,8 @@ the given @nonterm{pkg}s.
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Select @nonterm{dir} as the @tech{package scope}.}
  @item{@DFlag{catalog} @nonterm{catalog} --- Same as for @command-ref{install}.}
+  @item{@DFlag{force} --- Same as for @command-ref{install}.}
+  @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
   @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
   @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  ]
@@ -497,9 +513,10 @@ View and modify configuration of the package manager itself, with the following 
                                          as the default value at @exec{user} scope.}
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
+ @item{@DFlag{scope-dir} @nonterm{dir} --- Same as for @command-ref{install}.}
  ]
 
- The valid keys are:
+ The valid @nonterm{key}s are:
  @itemlist[
   @item{@exec{catalogs} --- A list of URLs for @tech{package catalogs}.}
   @item{@exec{default-scope} --- Either @exec{installation} or @exec{user}.
@@ -530,7 +547,8 @@ View and modify configuration of the package manager itself, with the following 
  @item{@DFlag{modules} --- Show the modules that are implemented by a package.}
  @item{@DFlag{catalog} @nonterm{catalog} --- Query @nonterm{catalog} instead of the currently configured 
        @tech{package catalogs}.}
- @item{@DFlag{version} @nonterm{version} --- Query catalogs for a result specific to @nonterm{version},
+ @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Query catalogs 
+       for a result specific to @nonterm{version},
        instead of the installation's Racket version.}
  ]
 }
@@ -559,7 +577,8 @@ View and modify configuration of the package manager itself, with the following 
                          over new information.}
  @item{@DFlag{override} --- Changes merging so that new information takes precedence
                          over information already in @nonterm{dest-catalog}.}
- @item{@DFlag{version} @nonterm{version} --- Copy catalog results specific to @nonterm{version}
+ @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Copy catalog 
+       results specific to @nonterm{version}
        (for catalogs that make a distinction), instead of the installation's Racket version.}
  ]
 }

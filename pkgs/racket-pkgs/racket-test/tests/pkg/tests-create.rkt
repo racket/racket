@@ -44,6 +44,7 @@
    (shelly-create "racket-conflict" "tgz")
    (shelly-create "pkg-test3" "zip")
    (shelly-create "pkg-test3-v2" "zip")
+   (shelly-create "pkg-test3-v3" "zip")
 
    $ "raco pkg create --format txt test-pkgs/pkg-test1" =exit> 1
 

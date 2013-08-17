@@ -52,7 +52,8 @@
 (define github-client_secret (make-parameter #f))
 
 (define (package-url->checksum pkg-url-str [query empty]
-                               #:download-printf [download-printf void])
+                               #:download-printf [download-printf void]
+                               #:pkg-name [pkg-name "package"])
   (define pkg-url
     (string->url pkg-url-str))
   (match (url-scheme pkg-url)
@@ -94,7 +95,7 @@
             (hash-ref (hash-ref b 'commit) 'sha)))]
     [_
      (define u (string-append pkg-url-str ".CHECKSUM"))
-     (download-printf "Downloading checksum\n")
+     (download-printf "Downloading checksum for ~a\n" pkg-name)
      (log-pkg-debug "Downloading checksum as ~a" u)
      (call/input-url+200 (string->url u)
                          port->string)]))

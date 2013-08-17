@@ -86,7 +86,7 @@ package:
 The ``Checksum'' column reports the specific ``version'' of each
 package that is installed. A package can have a @tech{version} in a
 more traditional sense, but the @tech{checksum} is the ``version'' as
-far as the package system is concerned. When you request an upgrade,
+far as the package system is concerned. When you request an update,
 then a package installation is updated if the current implementation
 of the package has a different @tech{checksum} than the installed
 package, whether or not the package author adjusted the package's
@@ -194,7 +194,7 @@ actual package implementation, so each package installed from a
 @tech{package catalog} is actually installed from a @filepath{.zip}
 file, Github repository, etc. Registering with a @tech{package
 catalog} is just a way of making your package easier to find and
-upgrade.
+update.
 
 @; ----------------------------------------
 
@@ -225,6 +225,14 @@ package authors to declare (and for the package manager to check)
 those dependencies. The end result is that @command-ref{update} might
 report a version-mismatch error that forces you to request more
 package updates than you originally requested.
+
+Normally, you provide @tech{package names} to
+@command-ref{update}. More generally, you can provide a @tech{package
+source} to @command-ref{update}. In that case, a package with the same
+name must be installed already, and the installed package is replaced
+with the specified one. Replacing a package with a new @tech{package
+source} is a generalization of fetching a replacement package that has
+a new @tech{checksum} at a previously specified source.
 
 @; ----------------------------------------
 

@@ -412,13 +412,26 @@
       (hash 'source (db:pkg-source pkg)
             'checksum (db:pkg-source pkg))))
 
-(define (remote-package-checksum pkg download-printf)
+(define (remote-package-checksum pkg download-printf pkg-name)
   (match pkg
     [`(catalog ,pkg-name)
      (hash-ref (package-catalog-lookup pkg-name #f download-printf) 'checksum)]
     [`(url ,pkg-url-str)
      (package-url->checksum pkg-url-str 
-                            #:download-printf download-printf)]))
+                            #:download-printf download-printf
+                            #:pkg-name pkg-name)]))
+
+(define (checksum-for-pkg-source pkg-source type pkg-name download-printf)
+  (cond
+   [(or (eq? type 'file-url) (eq? type 'dir-url) (eq? type 'github))
+    (remote-package-checksum `(url ,pkg-source) download-printf pkg-name)]
+   [(eq? type 'file)
+    (define checksum-pth (format "~a.CHECKSUM" pkg-source))
+    (or (and (file-exists? checksum-pth)
+             (file->string checksum-pth))
+        (and (file-exists? pkg-source)
+             (call-with-input-file* pkg-source sha1)))]
+   [else #f]))
 
 (define (write-file-hash! file new-db)
   (unless (eq? (pkg-lock-held) 'exclusive)
@@ -825,7 +838,7 @@
 
     (define orig-pkg `(url ,pkg))
     (define checksum (or given-checksum
-                         (remote-package-checksum orig-pkg download-printf)))
+                         (remote-package-checksum orig-pkg download-printf pkg-name)))
     (define info
       (update-install-info-orig-pkg
        (match type
@@ -1158,6 +1171,8 @@
          #:old-descs [old-descs empty]
          #:pre-succeed [pre-succeed void]
          #:dep-behavior [dep-behavior #f]
+         #:update-deps? [update-deps? #f]
+         #:update-cache [update-cache #f]
          #:updating? [updating? #f]
          #:ignore-checksums? [ignore-checksums? #f]
          #:skip-installed? [skip-installed? #f]
@@ -1184,14 +1199,16 @@
         (delete-directory/files pkg-dir)))
     (define (format-deps update-deps)
       (format-list (for/list ([ud (in-list update-deps)])
-                     (format "~a (have ~a, need ~a)"
-                             (car ud)
-                             (caddr ud)
-                             (cadddr ud)))))
+                     (if (pkg-desc? ud)
+                         (pkg-desc-name ud)
+                         (format "~a (have ~a, need ~a)"
+                                 (car ud)
+                                 (caddr ud)
+                                 (cadddr ud))))))
     (define (show-dependencies deps update? auto? conversation)
       (unless quiet?
-        (printf/flush "The following ~a packages are listed as dependencies of ~a~a:~a\n"
-                      (if update? "out-of-date" "uninstalled")
+        (printf/flush "The following~a packages are listed as dependencies of ~a~a:~a\n"
+                      (if update? " out-of-date" " uninstalled")
                       pkg-name
                       (if (or auto? (eq? conversation 'always-yes))
                           (format "\nand they will be ~a~a"
@@ -1332,6 +1349,30 @@
                (clean!)
                (pkg-error "missing dependencies\n  missing packages:~a" (format-list unsatisfied-deps))])]))]
       [(and
+        update-deps?
+        (let ()
+          (define deps (get-all-deps metadata-ns pkg-dir))
+          (define update-pkgs
+            (append-map (λ (dep)
+                           (define name (dependency->name dep))
+                           (define this-platform? (dependency-this-platform? dep))
+                           (or (and this-platform?
+                                    (not (hash-ref simultaneous-installs name #f))
+                                    ((packages-to-update download-printf current-scope-db 
+                                                         #:must-update? #f #:deps? #t
+                                                         #:update-cache update-cache
+                                                         #:namespace metadata-ns)
+                                     name))
+                               null))
+                        deps))
+          (and (not (empty? update-pkgs))
+               update-pkgs)))
+       => (lambda (update-pkgs)
+            (show-dependencies update-pkgs #t #f 'always-yes)
+            (raise (vector #t infos update-pkgs
+                           (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) update-pkgs))
+                           install-conversation update-conversation)))]
+      [(and
         (not (eq? dep-behavior 'force))
         (let ()
           (define deps (get-all-deps metadata-ns pkg-dir))
@@ -1393,8 +1434,12 @@
             ;; Try updates:
             (define update-pkgs (map car update-deps))
             (define (make-pre-succeed)
-              (define db (read-pkg-db))
-              (let ([to-update (filter-map (update-package download-printf db) update-pkgs)])
+              (define db current-scope-db)
+              (let ([to-update (append-map (packages-to-update download-printf db
+                                                               #:deps? update-deps? 
+                                                               #:update-cache update-cache
+                                                               #:namespace metadata-ns)
+                                           update-pkgs)])
                 (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))))
             (match (or dep-behavior
                        (if name?
@@ -1592,6 +1637,8 @@
                      #:skip-installed? [skip-installed? #f]
                      #:pre-succeed [pre-succeed void]
                      #:dep-behavior [dep-behavior #f]
+                     #:update-deps? [update-deps? #f]
+                     #:update-cache [update-cache #f]
                      #:updating? [updating? #f]
                      #:quiet? [quiet? #f]
                      #:install-conversation [install-conversation #f]
@@ -1621,13 +1668,17 @@
                        #:force? force
                        #:ignore-checksums? ignore-checksums?
                        #:dep-behavior dep-behavior
+                       #:update-deps? update-deps?
+                       #:update-cache update-cache
                        #:pre-succeed (lambda () (pre-succeed) (more-pre-succeed))
                        #:updating? updating?
                        #:install-conversation inst-conv
                        #:update-conversation updt-conv
                        #:strip strip-mode
                        (for/list ([dep (in-list deps)])
-                         (pkg-desc dep #f #f #t)))])])
+                         (if (pkg-desc? dep)
+                             dep
+                             (pkg-desc dep #f #f #t))))])])
     (install-packages
      #:old-infos old-infos
      #:old-descs old-descs
@@ -1635,6 +1686,8 @@
      #:ignore-checksums? ignore-checksums?
      #:skip-installed? skip-installed?
      #:dep-behavior dep-behavior
+     #:update-deps? update-deps?
+     #:update-cache update-cache
      #:pre-succeed pre-succeed
      #:updating? updating?
      #:quiet? quiet?
@@ -1644,42 +1697,126 @@
      #:link-dirs? link-dirs?
      new-descs)))
 
-(define ((update-is-possible? db) pkg-name)
-  (match-define (pkg-info orig-pkg checksum _)
-                (package-info pkg-name #:db db))
-  (define ty (first orig-pkg))
-  (not (member ty '(link static-link dir file))))
+;; Determine packages to update, starting with `pkg-name'. If `pkg-name'
+;; needs to be updated, return it in a list. Otherwise, if `deps?',
+;; then return a list of dependencies that need to be updated.
+;; (If a package needs to be updated, wait until the update
+;; has been inspected for further dependencies.)
+;; If `must-installed?', then complain if the package is not
+;; installed inthe current scope.
+;; If `must-update?', then complain if the package is not
+;; updatable.
+;; The `update-cache' argument is used to cache which packages
+;; are already being updated and downloaded checksums.
+(define ((packages-to-update download-printf db
+                             #:must-installed? [must-installed? #t]
+                             #:must-update? [must-update? #t]
+                             #:deps? [deps? #f]
+                             #:namespace metadata-ns 
+                             #:update-cache update-cache)
+         pkg-name)
+  (cond
+   [(pkg-desc? pkg-name)
+    ;; Infer the package-source type and name:
+    (define-values (inferred-name type) (package-source->name+type
+                                         (pkg-desc-source pkg-name)
+                                         (pkg-desc-type pkg-name)))
+    (define name (or (pkg-desc-name pkg-name)
+                     inferred-name))
+    ;; Check that the package is installed, and get current checksum:
+    (define info (package-info name #:db db))
+    (if (or (not (pkg-info-checksum info))
+            (not (equal? (pkg-info-checksum info)
+                         (checksum-for-pkg-source (pkg-desc-source pkg-name)
+                                                  type 
+                                                  name download-printf))))
+        ;; Update:
+        (begin
+          (hash-set! update-cache (pkg-desc-source pkg-name) #t)
+          (list (pkg-desc (pkg-desc-source pkg-name)
+                          (pkg-desc-type pkg-name)
+                          name
+                          (pkg-desc-auto? pkg-name))))
+        ;; No update needed, but maybe check dependencies:
+        (if deps?
+            ((packages-to-update download-printf db
+                                 #:must-update? #f
+                                 #:deps? #t
+                                 #:update-cache update-cache
+                                 #:namespace metadata-ns)
+             pkg-name)
+            null))]
+   [(eq? #t (hash-ref update-cache pkg-name #f))
+    ;; package is already being updated
+    null]
+   ;; A string indicates that package source that should be
+   ;; looked up in the installed packages to get the old source
+   ;; for getting the checksum:
+   [(package-info pkg-name #:db db must-update?)
+    =>
+    (lambda (m)
+      (match-define (pkg-info orig-pkg checksum auto?) m)
+      (match orig-pkg
+        [`(,(or 'link 'static-link) ,_)
+         (if must-update?
+             (pkg-error (~a "cannot update linked packages\n"
+                            "  package name: ~a\n"
+                            "  package source: ~a")
+                        pkg-name
+                        orig-pkg)
+             null)]
+        [`(dir ,_)
+         (if must-update?
+             (pkg-error (~a "cannot update packages installed locally;\n"
+                            " package was installed via a local directory\n"
+                        "  package name: ~a")
+                        pkg-name)
+             null)]
+        [`(file ,_)
+         (if must-update?
+             (pkg-error (~a "cannot update packages installed locally;\n"
+                            " package was installed via a local file\n"
+                            "  package name: ~a")
+                        pkg-name)
+             null)]
+        [`(,_ ,orig-pkg-source)
+         (define new-checksum
+           (or (hash-ref update-cache pkg-name #f)
+               (remote-package-checksum orig-pkg download-printf pkg-name)))
+         ;; Record downloaded checksum:
+         (hash-set! update-cache pkg-name new-checksum)
+         (or (and new-checksum
+                  (not (equal? checksum new-checksum))
+                  (begin
+                    ;; Update it:
+                    (hash-set! update-cache pkg-name #t)
+                    ;; Flush cache of downloaded checksums, in case
+                    ;; there was a race between our checkig and updates on
+                    ;; the catalog server:
+                    (clear-checksums-in-cache! update-cache)
+                    ;; FIXME: the type shouldn't be #f here; it should be
+                    ;; preseved from install time:
+                    (list (pkg-desc orig-pkg-source #f pkg-name auto?))))
+             (if deps?
+                 ;; Check dependencies
+                 (append-map
+                  (packages-to-update download-printf db
+                                      #:must-update? #f
+                                      #:deps? #t
+                                      #:update-cache update-cache
+                                      #:namespace metadata-ns)
+                  ((package-dependencies metadata-ns db) pkg-name))
+                 null))]))]
+   [else null]))
 
-(define ((update-package download-printf db) pkg-name)
-  (match-define (pkg-info orig-pkg checksum auto?)
-                (package-info pkg-name #:db db))
-  (match orig-pkg
-    [`(,(or 'link 'static-link) ,_)
-     (pkg-error (~a "cannot update linked packages\n"
-                    "  package name: ~a\n"
-                    "  package source: ~a")
-                pkg-name
-                orig-pkg)]
-    [`(dir ,_)
-     (pkg-error (~a "cannot update packages installed locally;\n"
-                    " package was installed via a local directory\n"
-                    "  package name: ~a")
-                pkg-name)]
-    [`(file ,_)
-     (pkg-error (~a "cannot update packages installed locally;\n"
-                    " package was installed via a local file\n"
-                    "  package name: ~a")
-                pkg-name)]
-    [`(,_ ,orig-pkg-source)
-     (define new-checksum
-       (remote-package-checksum orig-pkg download-printf))
-     (and new-checksum
-          (not (equal? checksum new-checksum))
-          ;; FIXME: the type shouldn't be #f here; it should be
-          ;; preseved from install time:
-          (pkg-desc orig-pkg-source #f pkg-name auto?))]))
+(define (clear-checksums-in-cache! update-cache)
+  (define l (for/list ([(k v) (in-hash update-cache)]
+                       #:when (string? v))
+              k))
+  (for ([k (in-list l)]) (hash-remove! update-cache k)))
+                  
 
-(define ((package-dependencies metadata-ns db) pkg-name)  
+(define ((package-dependencies metadata-ns db) pkg-name)
   (map dependency->name 
        (filter dependency-this-platform?
                (get-all-deps metadata-ns (pkg-directory* pkg-name #:db db)))))
@@ -1687,23 +1824,27 @@
 (define (pkg-update in-pkgs
                     #:all? [all? #f]
                     #:dep-behavior [dep-behavior #f]
-                    #:deps? [deps? #f]
+                    #:force? [force? #f]
+                    #:ignore-checksums? [ignore-checksums? #f]
+                    #:deps? [update-deps? #f]
                     #:quiet? [quiet? #f]
-                    #:strip [strip-mode #f])
+                    #:strip [strip-mode #f]
+                    #:link-dirs? [link-dirs? #f])
   (define download-printf (if quiet? void printf))
   (define metadata-ns (make-metadata-namespace))
   (define db (read-pkg-db))
-  (define pkgs
-    (cond
-      [(and all? (empty? in-pkgs))
-       (filter (update-is-possible? db) (hash-keys db))]
-      [deps?
-       (append-map
-        (package-dependencies metadata-ns db)
-        in-pkgs)]
-      [else
-       in-pkgs]))
-  (define to-update (filter-map (update-package download-printf db) pkgs))
+  (define all-mode? (and all? (empty? in-pkgs)))
+  (define pkgs (cond
+                [all-mode? (hash-keys db)]
+                [else in-pkgs]))
+  (define update-cache (make-hash))
+  (define to-update (append-map (packages-to-update download-printf db
+                                                    #:must-update? (not all-mode?)
+                                                    #:deps? (or update-deps? 
+                                                                all-mode?) ; avoid races
+                                                    #:update-cache update-cache
+                                                    #:namespace metadata-ns)
+                                pkgs))
   (cond
     [(empty? to-update)
      (unless quiet?
@@ -1719,8 +1860,13 @@
       #:updating? #t
       #:pre-succeed (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))
       #:dep-behavior dep-behavior
+      #:update-deps? update-deps?
+      #:update-cache update-cache
       #:quiet? quiet?
       #:strip strip-mode
+      #:force? force?
+      #:ignore-checksums? ignore-checksums?
+      #:link-dirs? link-dirs?
       to-update)]))
 
 (define (pkg-show indent 
@@ -1868,7 +2014,7 @@
        [(list)
         (pkg-error "config key not provided")]
        [_
-        (pkg-error "multiple config keys provided")])]))
+        (pkg-error "multiple config keys provided (not in value-setting mode)")])]))
 
 (define (create-as-is create:format pkg-name dir orig-dir
                       #:quiet? [quiet? #f]
@@ -1963,7 +2109,9 @@
         (create-as-is create:format name dest-dir dir 
                       #:hide-src? #t 
                       #:quiet? quiet?
-                      #:dest archive-dest-dir))
+                      #:dest (if archive-dest-dir
+                                 (path->complete-path archive-dest-dir)
+                                 (current-directory))))
       (lambda ()
         (delete-directory/files tmp-dir))))
 
@@ -2499,12 +2647,15 @@
                   #:dest (or/c (and/c path-string? complete-path?) #f))
         void?)]
   [pkg-update
-   (->* ((listof string?))
+   (->* ((listof (or/c string? pkg-desc?)))
         (#:dep-behavior dep-behavior/c
                         #:all? boolean?
                         #:deps? boolean?
                         #:quiet? boolean?
-                        #:strip (or/c #f 'source 'binary))
+                        #:force? boolean?
+                        #:ignore-checksums? boolean?
+                        #:strip (or/c #f 'source 'binary)
+                        #:link-dirs? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-remove
    (->* ((listof string?))

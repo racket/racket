@@ -195,14 +195,17 @@ port, unless @racket[quiet?] is true.
 The package lock must be held; see @racket[with-pkg-lock].}
 
 
-@defproc[(pkg-update      [names (listof string?)]
+@defproc[(pkg-update      [names (listof (or/c string? pkg-desc?))]
                           [#:dep-behavior dep-behavior
                                           (or/c #f 'fail 'force 'search-ask 'search-auto)
                                           #f]
                           [#:all? all? boolean? #f]
                           [#:deps? deps? boolean? #f]
+                          [#:force? force? boolean? #f]
+                          [#:ignore-checksums? ignore-checksums? boolean? #f]
                           [#:quiet? boolean? quiet? #f]
-                          [#:strip strip (or/c #f 'source 'binary) #f])
+                          [#:strip strip (or/c #f 'source 'binary) #f]
+                          [#:link-dirs? link-dirs? boolean? #f])
         (or/c 'skip
               #f
               (listof (or/c path-string?
@@ -210,6 +213,10 @@ The package lock must be held; see @racket[with-pkg-lock].}
 
 Implements @racket[pkg-update-command]. The result is the same as for
 @racket[pkg-install].
+
+A string in @racket[names] refers to an installed package that should
+be checked for updates. A @racket[pkg-desc] in @racket[names] indicates
+a package source that should replace the current installation.
 
 The package lock must be held; see @racket[with-pkg-lock].}
 
