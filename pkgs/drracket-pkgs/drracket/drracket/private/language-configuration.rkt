@@ -751,6 +751,8 @@
         ;; construct-details : (union (-> void) #f)
         (define construct-details void)
         
+        (define any-teaching-language-added? #f)
+        
         ;; add-language-to-dialog : (instanceof language<%>) -> void
         ;; adds the language to the dialog
         ;; opens all of the turn-down tags
@@ -762,6 +764,8 @@
           (define teaching-language? (and (pair? positions)
                                           (equal? (car positions)
                                                   (string-constant teaching-languages))))
+          
+          (when teaching-language? (set! any-teaching-language-added? #t))
           
           ;; don't show the initial language ...
           (unless (equal? positions initial-language-position)
@@ -1147,6 +1151,13 @@
         (send revert-to-defaults-outer-panel stretchable-height #f)
         
         (for-each add-language-to-dialog languages)
+        
+        (unless any-teaching-language-added?
+          (send languages-choice-panel change-children
+                (λ (l)
+                  (remove* (list teaching-languages-hier-list-panel use-teaching-language-rb)
+                           l))))
+        
         (define (hier-list-sort-predicate x y)
           (cond
             [(and (x . is-a? . second-number<%>)
