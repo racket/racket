@@ -194,6 +194,7 @@
 
 (define (ssh-script host port user kind . cmds)
   (for/and ([cmd (in-list cmds)])
+    (when cmd (display-time))
     (or (not cmd)
         (if (and (equal? host "localhost")
                  (not user))
@@ -366,7 +367,6 @@
        ;; ensure a newline at the end:
        (newline o))))
 
-  (display-time)
   (begin0
 
    ((case (or (get-opt c '#:platform) (system-type))
