@@ -294,7 +294,8 @@
              mode
              (lambda ()
                (parameterize ([pkg-lock-held mode]
-                              [pkg-lock-scope now-scope])
+                              [pkg-lock-scope now-scope]
+                              [current-no-pkg-db #f])
                  (t)))
              (λ () (pkg-error  (~a "could not acquire package lock\n"
                                    "  lock file: ~a")
@@ -303,7 +304,7 @@
             ;; Directory does not exist; we must be in read-only mode.
             ;; Run `t' under the claim that no database is available
             ;; (in case the database is created concurrently):
-            (parameterize ([current-no-pkg-db #t])
+            (parameterize ([current-no-pkg-db now-scope])
               (parameterize ([pkg-lock-held mode])
                 (t)))))))
 (define-syntax-rule (with-pkg-lock e ...)
@@ -444,9 +445,10 @@
 (define (read-pkg-db)
   (unless (pkg-lock-held)
     (pkg-error "attempt to read package database without lock"))
-  (if (current-no-pkg-db)
+  (define scope (current-pkg-scope))
+  (if (eq? (current-no-pkg-db) scope)
       #hash()
-      (read-pkgs-db (current-pkg-scope) (current-pkg-scope-version))))
+      (read-pkgs-db scope (current-pkg-scope-version))))
 
 ;; read all packages in this scope or wider
 (define (merge-pkg-dbs [scope (current-pkg-scope)])
