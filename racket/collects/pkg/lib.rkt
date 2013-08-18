@@ -1169,21 +1169,21 @@
        (loop)])))
 
 (define (install-packages
-         #:old-infos [old-infos empty]
-         #:old-descs [old-descs empty]
-         #:pre-succeed [pre-succeed void]
-         #:dep-behavior [dep-behavior #f]
-         #:update-deps? [update-deps? #f]
-         #:update-cache [update-cache #f]
-         #:updating? [updating? #f]
-         #:ignore-checksums? [ignore-checksums? #f]
-         #:skip-installed? [skip-installed? #f]
-         #:force? [force? #f]
-         #:quiet? [quiet? #f]
-         #:install-conversation [install-conversation #f]
-         #:update-conversation [update-conversation #f]
-         #:strip [strip-mode #f]
-         #:link-dirs? [link-dirs? #f]
+         #:old-infos old-infos
+         #:old-descs old-descs
+         #:pre-succeed pre-succeed
+         #:dep-behavior dep-behavior
+         #:update-deps? update-deps?
+         #:update-cache update-cache
+         #:updating? updating?
+         #:ignore-checksums? ignore-checksums?
+         #:skip-installed? skip-installed?
+         #:force? force?
+         #:quiet? quiet?
+         #:install-conversation install-conversation
+         #:update-conversation update-conversation
+         #:strip strip-mode
+         #:link-dirs? link-dirs?
          descs)
   (define download-printf (if quiet? void printf/flush))
   (define check-sums? (not ignore-checksums?))
@@ -1640,7 +1640,7 @@
                      #:pre-succeed [pre-succeed void]
                      #:dep-behavior [dep-behavior #f]
                      #:update-deps? [update-deps? #f]
-                     #:update-cache [update-cache #f]
+                     #:update-cache [update-cache (make-hash)]
                      #:updating? [updating? #f]
                      #:quiet? [quiet? #f]
                      #:install-conversation [install-conversation #f]
