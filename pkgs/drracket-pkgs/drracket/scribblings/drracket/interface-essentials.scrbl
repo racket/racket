@@ -453,7 +453,7 @@ window ultimately appears as follows:
 @racketblock[
 @#,ioinputfont{(1 2)}
 @#,iooutputfont{(1 2)}
-@#,racketresult[(1 2)]
+@#,racketresult['(1 2)]
 @#,tt{>} @#,tt{_}
 ]
 
@@ -472,7 +472,7 @@ produces a different-looking result:
 @#,tt{>} (display v)
 @#,iooutputfont{(1 2)}
 @#,tt{>} v
-@#,racketresult[(1 2)]
+@#,racketresult['(1 2)]
 @#,tt{>} @#,tt{_}
 ]
 
@@ -498,12 +498,27 @@ inserts a newline character into the input stream:
 @racketblock[
 @#,tt{>} (read)
 @#,ioinputfont{5}
-
 @#,racketresult[5]
 @#,tt{>} (read-char)
 @#,racketresult[#\newline]
 @#,tt{>} @#,tt{_}
 ]
+
+The @onscreen{eof} button that appears beside an input box inserts
+a single @racket[eof-object] into the input stream, but more IO may
+follow in a later sequence. For example, in the following interaction,
+the user typed @litchar{1} and then clicked the @onscreen{eof} button:
+
+@racketblock[
+@#,tt{>} (read-char)
+@#,ioinputfont{1}@#,racketresult[#\1]
+@#,tt{>} (read-char)
+@#,racketresultfont{#<eof>}
+]
+
+At this point, however, future interactions can still take place:
+new calls to input functions with open a new input box and new
+characters will come from the same port.
 
 Within a @racket[@#,hash-lang[] @#,racketmodname[racket]] module,
 the results of top-level expression print the same as the results of
