@@ -37,7 +37,7 @@ distributions.}
 
 @defthing[ssl-available? boolean?]{
 
-A boolean value which says whether the system openssl library was
+A boolean value that reports whether the system OpenSSL library was
 successfully loaded. Calling @racket[ssl-connect], @|etc| when this
 value is @racket[#f] (library not loaded) will raise an exception.}
 
@@ -235,7 +235,7 @@ The @racket[ssl-accept/enable-break] procedure is analogous to
 @racket[tcp-accept/enable-break].}
 
 
-@defproc[(ssl-abandon-port [in (and/c ssl-port? output-port?)]) void?]{
+@defproc[(ssl-abandon-port [p ssl-port?]) void?]{
 
 Analogous to @racket[tcp-abandon-port].}
 

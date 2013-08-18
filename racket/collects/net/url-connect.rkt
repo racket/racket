@@ -3,7 +3,8 @@
 (require (rename-in racket/tcp
                     [tcp-connect plain-tcp-connect]
                     [tcp-abandon-port plain-tcp-abandon-port])
-         openssl)
+         openssl
+         "win32-ssl.rkt")
 
 (provide (all-defined-out))
 
@@ -15,10 +16,14 @@
 ;; `current-connect-scheme'
 (define (tcp-connect host port)
   (cond [(equal? (current-connect-scheme) "https")
-         (ssl-connect host port (current-https-protocol))]
+         (if (or ssl-available?
+                 (not win32-ssl-available?))
+             (ssl-connect host port (current-https-protocol))
+             (win32-ssl-connect host port (current-https-protocol)))]
         [else
          (plain-tcp-connect host port)]))
 
 (define (tcp-abandon-port port)
   (cond [(ssl-port? port) (ssl-abandon-port port)]
+        [(win32-ssl-port? port) (win32-ssl-abandon-port port)]
         [else (plain-tcp-abandon-port port)]))
