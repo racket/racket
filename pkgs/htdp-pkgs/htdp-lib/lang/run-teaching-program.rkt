@@ -103,12 +103,24 @@
    values
    (for/list ([tp (in-list teachpacks)])
      (cond
-       [(with-handlers ((exn:fail? (λ (x) #f)))
-          (file-exists? (resolve-module-path tp #f)))
+       [(has-a-file? tp)
         (stepper-skip
          (datum->syntax #f `(require ,tp)))]
        [else
         (eprintf "~a\n" (missing-tp-message tp))]))))
+
+(define (has-a-file? tp)
+  (define pth 
+    (with-handlers ((exn:fail? (λ (x) #f)))
+      (resolve-module-path tp #f)))
+  (and pth
+       (or (file-exists? pth)
+           (file-exists? 
+            (bytes->path (regexp-replace #rx#"[.]rkt$" 
+                                         (path->bytes pth)
+                                         #".ss"))))))
+           
+       
 
 (define (missing-tp-message x)
   (format "the teachpack '~s' was not found" x))
