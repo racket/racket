@@ -131,14 +131,17 @@
            [callback (lambda (b e)
                        (define res (compute-cmd-line))
                        (in-terminal
-                        (case (car res)
+                        (case (cmdline-which res)
                           [(install) (string-constant install-pkg-abort-install)]
                           [(update) (string-constant install-pkg-abort-update)])
                         (lambda ()
-                          (define action (case (car res)
+                          (define action (case (cmdline-which res)
                                            [(install) pkg-install-command]
                                            [(update) pkg-update-command]))
-                          (apply/keywords action (cdr res))))
+                          (keyword-apply action 
+                                         (cmdline-kwds res)
+                                         (cmdline-kwd-args res)
+                                         (cmdline-args res))))
                        (reset-installed-pkgs!))]))
 
     (define/private (reset-installed-pkgs!)
@@ -418,16 +421,10 @@
         [(4) 'search-auto]))
       
     (define/private (adjust-cmd-line)
-      (define (convert-to-string s)
-        (cond
-         [(string? s)
-          (if (regexp-match #rx" " s)
-              (string-append "\"" s "\"")
-              s)]
-         [(keyword? s) (regexp-replace #rx"^#:" (format "~a" s) "--")]
-         [(symbol? s) (symbol->string s)]
-         [(boolean? s) #f]
-         [else (error 'convert-to-string "unk ~s" s)]))
+      (define (possibly-quote-string s)
+        (if (regexp-match #rx" " s)
+            (string-append "\"" s "\"")
+            s))
       (define cmd-line (compute-cmd-line))
       (send cmdline-msg set-label
             (if cmd-line
@@ -436,57 +433,51 @@
                      "raco.exe"
                      "raco")
                  " pkg "
+                 (format "~a " (cmdline-which cmd-line))
+                 (apply 
+                  string-append
+                  (add-between
+                   (map (λ (kwd kwd-arg)
+                          (format "--~a ~s" 
+                                  (regexp-replace #rx"^#:" (format "~a" kwd) "")
+                                  kwd-arg))
+                        (cmdline-kwds cmd-line)
+                        (cmdline-kwd-args cmd-line))
+                   " "))
                  (apply string-append
-                        (add-between 
-                         (filter values (map convert-to-string cmd-line))
-                         " ")))
+                        (map (λ (x) (format " ~a" (possibly-quote-string x)))
+                             (cmdline-args cmd-line))))
                 "")))
     
+    (struct cmdline (which kwds kwd-args args) #:transparent)
     (define/private (compute-cmd-line)
       (define the-pkg 
         (cond
-         [(and (equal? 'update (get-current-action))
-               (package-source->name (send tf get-value)))
-          =>
-          values]
-         [else (send tf get-value)]))
-      (and (not (equal? the-pkg ""))
-           (cons (get-current-action)
-                 (append
-                  (if (and (send cb is-enabled?) (send cb get-value))
-                      '(#:force #t)
-                      '())
-                  (if (selected-type)
-                      (list '#:type (selected-type))
-                      '())
-                  (let ([scope (selected-scope)])
-                    (if (equal? scope (default-pkg-scope))
-                        '()
-                        (list '#:scope scope)))
-                  (list '#:deps (get-deps-selected-type))
-                  (list the-pkg)))))
+          [(and (equal? 'update (get-current-action))
+                (package-source->name (send tf get-value)))
+           =>
+           values]
+          [else (send tf get-value)]))
+      (cond
+        [(equal? the-pkg "") #f]
+        [else
+         (define kwds '()) 
+         (define kwd-args '())
+         (define (add-kwd-arg kwd arg)
+           (set! kwds (cons kwd kwds))
+           (set! kwd-args (cons arg kwd-args)))
+         (when (and (send cb is-enabled?) (send cb get-value))
+           (add-kwd-arg '#:force #t))
+         (when (selected-type)
+           (add-kwd-arg '#:type (selected-type)))
+         (let ([scope (selected-scope)])
+           (unless (equal? scope (default-pkg-scope))
+             (add-kwd-arg '#:scope scope)))
+         (add-kwd-arg '#:deps (get-deps-selected-type))
+         (cmdline (get-current-action) kwds kwd-args (list the-pkg))]))
 
     (define/override (on-superwindow-show on?)
       (when on? 
         (reset-installed-pkgs!)))
 
-    ;; Pull keyword arguments out of the list `all-args';
-    ;; assumes that no keyword is intended as an argument value.
-    ;; (This seems ugly.)
-    (define/private (apply/keywords proc all-args)
-      (define-values (args kws kw-vals)
-        (let loop ([args all-args] [rev-args null] [kws+vals null])
-          (cond
-           [(null? args)
-            (let ([kws+vals (sort kws+vals keyword<? #:key car)])
-              (values (reverse rev-args)
-                      (map car kws+vals)
-                      (map cdr kws+vals)))]
-           [(keyword? (car args))
-            (loop (cddr args) rev-args (cons (cons (car args) (cadr args))
-                                             kws+vals))]
-           [else
-            (loop (cdr args) (cons (car args) rev-args) kws+vals)])))
-      (keyword-apply proc kws kw-vals args))
-    
     (adjust-all)))
