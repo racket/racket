@@ -1457,7 +1457,6 @@
 ;; a display handler that omits stacktraces (making them available later)
 
 (define ((make-xrepl-display-handler orig) str exn)
-  (fresh-line #t)
   (define backtrace?
     (parameterize ([current-error-port (open-output-string)])
       (orig str exn)
@@ -1477,6 +1476,7 @@
            [s (if backtrace?
                 (string-append s (if (regexp-match? #rx"\n" s) "\n; " " ") msg)
                 s)])
+      (fresh-line #t)
       (with-wrapped-output (printf "; ~a\n" s)))))
 
 ;; ----------------------------------------------------------------------------
