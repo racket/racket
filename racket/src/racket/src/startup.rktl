@@ -195,7 +195,9 @@
              find-executable-path
              load/use-compiled
              embedded-load
-             call-with-default-reading-parameterization)
+             call-with-default-reading-parameterization
+             find-main-collects
+             find-main-config)
 
   (define-values (path-string?)
     (lambda (s)
@@ -431,24 +433,28 @@
                      collection collection-path
                      file-name)))
 
-  (define-values (find-config-dir)
+  (define-values (find-main-collects)
     (lambda ()
-      (let ([c (find-system-path 'config-dir)])
-        (if (complete-path? c)
-            c
-            (or (and (relative-path? c)
-                     (parameterize ([current-directory (find-system-path 'orig-dir)])
-                       (find-executable-path (find-system-path 'exec-file) c)))
-                (let ([exec (path->complete-path 
-                             (find-executable-path (find-system-path 'exec-file))
-                             (find-system-path 'orig-dir))])
-                  (let-values ([(base name dir?) (split-path exec)])
-                    (path->complete-path c base))))))))
+      ;; Recorded once and for all (per place), which helps avoid
+      ;; sandbox problems:
+      (cache-configuration
+       0
+       (lambda ()
+         (exe-relative-path->complete-path (find-system-path 'collects-dir))))))
+
+  (define-values (find-main-config)
+    (lambda ()
+      ;; Also recorded once and for all (per place):
+      (cache-configuration
+       1
+       (lambda ()
+         (exe-relative-path->complete-path (find-system-path 'config-dir))))))
 
   (define-values (get-config-table)
     (lambda (d)
-      (let ([p (build-path d "config.rktd")])
-        (or (and (file-exists? p)
+      (let ([p (and d (build-path d "config.rktd"))])
+        (or (and p
+                 (file-exists? p)
                  (with-input-from-file p
                    (lambda ()
                      (let ([v (call-with-default-reading-parameterization read)])
@@ -475,24 +481,23 @@
       (cond
        [(complete-path? p) p]
        [else
-        (path->complete-path
-         p
-         (or (exe-relative-path->complete-path (find-system-path 'collects-dir))
-             (find-system-path 'orig-dir)))])))
+        (path->complete-path p (find-main-collects))])))
 
   (define-values (exe-relative-path->complete-path)
     (lambda (collects-path)
       (cond
-       [(complete-path? collects-path) collects-path]
+       [(complete-path? collects-path) (simplify-path collects-path)]
        [(absolute-path? collects-path)
         ;; This happens only under Windows; add a drive
         ;;  specification to make the path complete
-        (path->complete-path collects-path
-                             (path->complete-path
-                              (find-executable-path (find-system-path 'exec-file) #f #t)
-                              (find-system-path 'orig-dir)))]
+        (let ([exec (path->complete-path
+                     (find-executable-path (find-system-path 'exec-file))
+                     (find-system-path 'orig-dir))])
+          (let-values ([(base name dir?) (split-path exec)])
+            (simplify-path (path->complete-path collects-path base))))]
        [else
-        (find-executable-path (find-system-path 'exec-file) collects-path #t)])))
+        (let ([p (find-executable-path (find-system-path 'exec-file) collects-path #t)])
+          (and p (simplify-path p)))])))
 
   (define-values (add-config-search)
     (lambda (ht key orig-l)
@@ -507,8 +512,7 @@
 
   (define-values (find-library-collection-links)
     (lambda ()
-      (let* ([d (find-config-dir)]
-             [ht (get-config-table d)]
+      (let* ([ht (get-config-table (find-main-config))]
              [lf (coerce-to-path
                   (or (hash-ref ht 'links-file #f)
                       (build-path (or (hash-ref ht 'share-dir #f)
@@ -912,7 +916,7 @@
      [(extra-collects-dirs post-collects-dirs)
       (let ([user-too? (use-user-specific-search-paths)]
             [cons-if (lambda (f r) (if f (cons f r) r))]
-            [config-table (get-config-table (find-config-dir))])
+            [config-table (get-config-table (find-main-config))])
         (path-list-string->path-list
          (if user-too?
              (let ([c (environment-variables-ref (current-environment-variables)
@@ -964,7 +968,6 @@
           (unless (eof-object? e)
             (eval e)
             (loop)))))))
-
 
 ;; ----------------------------------------
 ;; When places are implemented by plain old threads,

@@ -355,6 +355,7 @@ typedef struct Thread_Local_Variables {
   int atomic_timeout_auto_suspend_;
   int atomic_timeout_atomic_level_;
   void *scheme_inotify_server_;
+  struct Scheme_Object *configuration_callback_cache_[2];
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
@@ -735,6 +736,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define atomic_timeout_auto_suspend XOA (scheme_get_thread_local_variables()->atomic_timeout_auto_suspend_)
 #define atomic_timeout_atomic_level XOA (scheme_get_thread_local_variables()->atomic_timeout_atomic_level_)
 #define scheme_inotify_server XOA (scheme_get_thread_local_variables()->scheme_inotify_server_)
+#define configuration_callback_cache XOA (scheme_get_thread_local_variables()->configuration_callback_cache_)
+
 
 /* **************************************** */
 

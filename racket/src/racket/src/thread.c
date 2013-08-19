@@ -208,6 +208,8 @@ ROSYM Scheme_Object *scheme_parameterization_key;
 ROSYM Scheme_Object *scheme_exn_handler_key;
 ROSYM Scheme_Object *scheme_break_enabled_key;
 
+THREAD_LOCAL_DECL(static Scheme_Object *configuration_callback_cache[2]);
+
 THREAD_LOCAL_DECL(intptr_t scheme_total_gc_time);
 THREAD_LOCAL_DECL(static intptr_t start_this_gc_time);
 THREAD_LOCAL_DECL(static intptr_t end_this_gc_time);
@@ -383,6 +385,8 @@ static Scheme_Object *is_thread_cell_values(int argc, Scheme_Object *args[]);
 static Scheme_Object *make_security_guard(int argc, Scheme_Object *argv[]);
 static Scheme_Object *security_guard_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_security_guard(int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *cache_configuration(int argc, Scheme_Object **argv);
 
 static Scheme_Object *make_thread_set(int argc, Scheme_Object *argv[]);
 static Scheme_Object *thread_set_p(int argc, Scheme_Object *argv[]);
@@ -670,6 +674,8 @@ void scheme_init_paramz(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("reparameterize"          , reparameterize          , 1,  1, newenv);
   GLOBAL_PRIM_W_ARITY("make-custodian-from-main", make_custodian_from_main, 0,  0, newenv);
 
+  GLOBAL_PRIM_W_ARITY("cache-configuration"     , cache_configuration, 2,  2, newenv);
+
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
 }
@@ -708,6 +714,27 @@ static Scheme_Object *current_memory_use(int argc, Scheme_Object *args[])
   return scheme_make_integer_value_from_unsigned(retval);
 }
 
+static Scheme_Object *cache_configuration(int argc, Scheme_Object **argv)
+{
+  int pos;
+
+  if (!SCHEME_INTP(argv[0]))
+    return scheme_false;
+
+  pos = SCHEME_INT_VAL(argv[0]);
+  
+  if ((pos < 0) || (pos >= 2))
+    return scheme_false;
+
+  if (!configuration_callback_cache[pos]) {
+    Scheme_Object *v;
+    v = _scheme_apply(argv[1], 0, NULL);
+    REGISTER_SO(configuration_callback_cache[pos]);
+    configuration_callback_cache[pos] = v;
+  }
+
+  return configuration_callback_cache[pos];
+}
 
 /*========================================================================*/
 /*                              custodians                                */

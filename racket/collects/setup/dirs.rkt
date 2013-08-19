@@ -3,16 +3,13 @@
 (require racket/promise
          compiler/private/winutf16
          compiler/private/mach-o
-         "private/main-collects.rkt")
+         '#%utils)
 
 ;; ----------------------------------------
 ;; "config"
 
-(define config-dir
-  (delay (complete-path-from-exe (find-system-path 'config-dir))))
-    
 (define (find-config-dir)
-  (force config-dir))
+  (find-main-config))
 
 (provide find-config-dir)
 
@@ -33,8 +30,8 @@
                #hash()))))
 
 (define (to-path l)
-  (cond [(string? l) (complete-path (string->path l))]
-        [(bytes? l) (complete-path (bytes->path l))]
+  (cond [(string? l) (simplify-path (complete-path (string->path l)))]
+        [(bytes? l) (simplify-path (complete-path (bytes->path l)))]
         [(list? l) (map to-path l)]
         [else l]))
 
@@ -44,21 +41,6 @@
          (path->complete-path
           p
           (find-main-collects))]))
-
-(define (complete-path-from-exe p)
-  (cond [(complete-path? p) p]
-        [(absolute-path? p) (exe-relative p)]
-        [else
-         (or (parameterize ([current-directory (find-system-path 'orig-dir)])
-               (find-executable-path (find-system-path 'exec-file) p))
-             (exe-relative p))]))
-
-(define (exe-relative p)
-  (let ([exec (path->complete-path 
-               (find-executable-path (find-system-path 'exec-file))
-               (find-system-path 'orig-dir))])
-    (let-values ([(base name dir?) (split-path exec)])
-      (path->complete-path p base))))
 
 (define-syntax-rule (define-config name key wrap)
   (define name (delay
@@ -107,20 +89,17 @@
 ;; ----------------------------------------
 ;;  "collects"
 
-(define main-collects-dir
-  (delay (find-main-collects)))
-
 (provide find-collects-dir
          get-main-collects-search-dirs
          find-user-collects-dir
          get-collects-search-dirs)
 (define (find-collects-dir)
-  (force main-collects-dir))
+  (find-main-collects))
 (define (get-main-collects-search-dirs)
   (combine-search (force config:collects-search-dirs)
                   (list (find-collects-dir))))
 (define user-collects-dir
-  (delay (build-path (system-path* 'addon-dir) (get-installation-name) "collects")))
+  (delay (simplify-path (build-path (find-system-path 'addon-dir) (get-installation-name) "collects"))))
 (define (find-user-collects-dir)
   (force user-collects-dir))
 (define (get-collects-search-dirs)
@@ -154,7 +133,7 @@
        (define-finder provide config:id id get-false default)
        (provide user-id)
        (define user-dir
-         (delay (build-path (system-path* 'addon-dir) (get-installation-name) user-default)))
+         (delay (simplify-path (build-path (find-system-path 'addon-dir) (get-installation-name) user-default))))
        (define (user-id)
          (force user-dir)))]
     [(_ provide config:id id user-id config:search-id search-id default)
@@ -295,7 +274,7 @@
     (case (system-type)
       [(windows)
        ;; Extract "lib" location from binary:
-       (let ([exe (parameterize ([current-directory (system-path* 'orig-dir)])
+       (let ([exe (parameterize ([current-directory (find-system-path 'orig-dir)])
                     (find-executable-path (find-system-path 'exec-file)))])
          (and
           exe
@@ -316,7 +295,7 @@
                       (let ([p (bytes->path (utf-16-bytes->bytes (cadr m)))])
                         (path->complete-path p dir)))))))))]
       [(macosx)
-       (let* ([exe (parameterize ([current-directory (system-path* 'orig-dir)])
+       (let* ([exe (parameterize ([current-directory (find-system-path 'orig-dir)])
                      (let loop ([p (find-executable-path
                                     (find-system-path 'exec-file))])
                        (and 
@@ -347,7 +326,7 @@
                               (if (bytes=? b #"")
                                   dir
                                   (build-path dir (bytes->path b)))))
-                        (system-path* 'orig-dir))))))]
+                        (find-system-path 'orig-dir))))))]
           [else (find-lib-dir)]))]
       [else
        (if (eq? 'shared (system-type 'link))

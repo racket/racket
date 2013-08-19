@@ -414,7 +414,8 @@
                                     ;; Last chance: check for a "racket-prefs.rtkd" file
                                     ;; in the configuration directory:
                                     (values
-                                     (let ([f (build-path (find-config-dir) "racket-prefs.rktd")])
+                                     (let* ([d (find-config-dir)]
+                                            [f (and d (build-path d "racket-prefs.rktd"))])
                                        (if (file-exists? f)
                                            f
                                            ;; Trigger a filesystem error:

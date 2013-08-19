@@ -972,10 +972,12 @@ v
   user-specific. The dierctories indicated by the returned paths may
   or may not exist.}
 
-@defproc[(find-config-dir) path?]{
+@defproc[(find-config-dir) (or/c path? #f)]{
   Returns a path to the installation's @filepath{etc} directory, which
   contains configuration and package information---including
-  configuration of some of the other directories (see @secref["config-file"]).}
+  configuration of some of the other directories (see @secref["config-file"]).
+  A @racket[#f] result indicates that no configuration directory
+  is available.}
 
 @defproc[(find-links-file) path?]{
   Returns a path to the installation's @tech[#:doc

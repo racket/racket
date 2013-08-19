@@ -13,6 +13,7 @@
 
 (module main '#%kernel
   (#%require '#%min-stx
+             '#%utils ; for find-main-collects
              ;; Need to make sure they're here:
              '#%builtin)
 
@@ -77,9 +78,8 @@
   (define-values (main-collects-relative->path)
     (let ([main-collects #f])
       (lambda (p)
-        ;; At this point, it's safe to try to load 'setup/private/main-collects
         (unless main-collects
-          (set! main-collects ((dynamic-require 'setup/private/main-collects 'find-main-collects))))
+          (set! main-collects (find-main-collects)))
         (if (and (pair? p)
                  (eq? 'collects (car p)))
             (apply build-path main-collects
