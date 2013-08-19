@@ -903,6 +903,11 @@
                        (if bytes? buf (bytes->string/utf-8 buf #\?))))
            outp]
           [else (error who "bad sandox-~a spec: ~e" what out)]))
+  ;; Call path functions to make sure the underying path computations
+  ;; have been foced, so that the sandbox filesystem guards will not
+  ;; be relevant:
+  (find-config-dir)
+  (find-collects-dir)
   ;; set global memory limit
   (when (and memory-accounting? (sandbox-memory-limit))
     (custodian-limit-memory
@@ -946,7 +951,10 @@
        (read-bytecode ,(PLANET-BASE-DIR))
        (exists ,(find-system-path 'addon-dir))
        (read ,(find-lib-dir))
-       (read ,(build-path (find-config-dir) "config.rktd"))
+       ,@(let ([d (find-config-dir)])
+           (if d
+               `((read ,(build-path d "config.rktd")))
+               null))
        ,@(compute-permissions allow-for-require allow-for-load)
        ,@(sandbox-path-permissions))]
     ;; restrict the sandbox context from this point
