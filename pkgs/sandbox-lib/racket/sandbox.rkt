@@ -940,9 +940,13 @@
        ,@(for/list ([l (current-library-collection-links)]
                     #:when (path? l))
            `(read ,l))
+       ,@(for/list ([l (get-pkgs-search-dirs)])
+           `(read ,(build-path l "pkgs.rktd")))
+       (read ,(build-path (find-user-pkgs-dir) "pkgs.rktd"))
        (read-bytecode ,(PLANET-BASE-DIR))
        (exists ,(find-system-path 'addon-dir))
        (read ,(find-lib-dir))
+       (read ,(build-path (find-config-dir) "config.rktd"))
        ,@(compute-permissions allow-for-require allow-for-load)
        ,@(sandbox-path-permissions))]
     ;; restrict the sandbox context from this point
