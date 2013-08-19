@@ -1155,7 +1155,7 @@
     (printf question)
     (printf " [Y/n/a/?] ")
     (flush-output)
-    (match (read-line)
+    (match (string-trim (read-line (current-input-port) 'any))
       [(or "y" "Y" "")
        'yes]
       [(or "n" "N")
