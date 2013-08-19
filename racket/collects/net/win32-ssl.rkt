@@ -73,6 +73,7 @@
 
 (define SEC_E_OK 0)
 (define SEC_I_CONTINUE_NEEDED #x00090312)
+(define SEC_I_CONTEXT_EXPIRED #x00090317)
 (define SEC_E_INCOMPLETE_MESSAGE #x80090318)
 (define SEC_E_BUFFER_TOO_SMALL #x80090321)
 
@@ -440,6 +441,9 @@
       (unless (= prev-n n)
         ;; Try with a larger buffer:
         (loop (* size 2) n))]
+     [(= r SEC_I_CONTEXT_EXPIRED)
+      ;; Other end closed the connection.
+      (close-output-port in-post-w)]
      [else
       (error 'decrypt "unexpected result: ~x" r)])))
 
