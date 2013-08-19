@@ -140,7 +140,8 @@
 (preferences:add-callback 'framework:special-meta-key (λ (p v) (map-command-as-meta-key v)))
 (map-command-as-meta-key (preferences:get 'framework:special-meta-key))
 
-(preferences:set-default 'framework:fraction-snip-style 'mixed (λ (x) (memq x '(mixed improper decimal))))
+(preferences:set-default 'framework:fraction-snip-style 
+                         'mixed (λ (x) (memq x '(mixed improper decimal))))
 
 (preferences:set-default 'framework:standard-style-list:font-name
                          (get-family-builtin-face 'modern)
@@ -283,9 +284,8 @@
 (preferences:set-default 'framework:fixup-parens #t boolean?)
 (preferences:set-default 'framework:fixup-open-parens #f boolean?)
 (preferences:set-default 'framework:paren-match #t boolean?)
-(let ([hash-table (make-hasheq)])
-  (for-each (λ (x) 
-              (hash-set! hash-table x 'define))
+(let ([defaults-ht (make-hasheq)])
+  (for-each (λ (x) (hash-set! defaults-ht x 'define))
             '(struct
               local
                      
@@ -293,8 +293,7 @@
               define: pdefine:
               define-type define-predicate
               match-define))
-  (for-each (λ (x) 
-              (hash-set! hash-table x 'begin))
+  (for-each (λ (x) (hash-set! defaults-ht x 'begin))
             '(case-lambda case-lambda: pcase-lambda:
                match-lambda match-lambda*
                cond
@@ -302,8 +301,7 @@
                unit compound-unit compound-unit/sig
                public private override
                inherit sequence))
-  (for-each (λ (x) 
-              (hash-set! hash-table x 'lambda))
+  (for-each (λ (x) (hash-set! defaults-ht x 'lambda))
             `(
               cases
                  instantiate super-instantiate
@@ -360,32 +358,76 @@
 
 	       for-all
                
-               type-case
-	       ))
+               type-case))
   (preferences:set-default 
    'framework:tabify
-   (list hash-table #rx"^begin" #rx"^def" #f)
+   (list defaults-ht #rx"^begin" #rx"^def" #f)
    (λ (x)
      (and (list? x)
           (= (length x) 4)
           (hash? (car x))
           (andmap (λ (x) (or (regexp? x) (not x))) (cdr x)))))
+  (define old-style-pred? (listof (list/c symbol? symbol?)))
+  (define pref-pred?
+    (list/c (or/c 
+             ;; old-style prefs
+             old-style-pred?
+             
+             ;; new-style prefs
+             (list/c (listof (list/c symbol? symbol?))   ;; additions to defaults
+                     (listof (list/c symbol? symbol?)))) ;; deletions
+            
+            (or/c regexp? #f)
+            (or/c regexp? #f)
+            (or/c regexp? #f)))
+  
+  (define (ht->addition/deletion-lists ht)
+    (define additions '())
+    (define deletions '())
+    (for ([(k v) (in-hash ht)])
+      (unless (hash-ref defaults-ht k #f)
+        (set! additions (cons (list k v) additions))))
+    (for ([(k v) (in-hash defaults-ht)])
+      (unless (hash-ref ht k #f)
+        (set! deletions (cons (list k v) deletions))))
+    (list additions deletions))
+  
+  (define (addition/deletion-lists->ht lsts)
+    (define additions (list-ref lsts 0))
+    (define deletions (list-ref lsts 1))
+    (define ht (hash-copy defaults-ht))
+    (for ([pr (in-list deletions)])
+      (define k (list-ref pr 0))
+      (define v (list-ref pr 1))
+      (when (equal? (hash-ref ht k #f) v)
+        (hash-remove! ht k)))
+    (for ([pr (in-list additions)])
+      (define k (list-ref pr 0))
+      (define v (list-ref pr 1))
+      (hash-set! ht k v))
+    ht)
+  
   (preferences:set-un/marshall
    'framework:tabify 
-   (λ (t) (cons (hash-map (car t) list)
+   (λ (t) (cons (ht->addition/deletion-lists (list-ref t 0))
                 (cdr t)))
    (λ (l) 
-     (and (list? l)
-          (= (length l) 4)
-          (andmap (λ (x) (or (regexp? x) (not x)))
-                  (cdr l))
-          (andmap (λ (x) (and (list? x)
-                              (= 2 (length x))
-                              (andmap symbol? x)))
-                  (car l))
-          (let ([h (make-hasheq)])
-            (for-each (λ (x) (apply hash-set! h x)) (car l))
-            (cons h (cdr l)))))))
+     (and (pref-pred? l)
+          (cond
+            [(old-style-pred? (list-ref l 0))
+             ;; when migrating prefs from the old style,
+             ;; get rid of any apparent deletions, as
+             ;; they are likely unintentional, a result 
+             ;; of moving defaults
+             (define h (make-hasheq))
+             (for-each (λ (x) (apply hash-set! h x)) (list-ref l 0))
+             (define lsts (ht->addition/deletion-lists h))
+             (cons (addition/deletion-lists->ht (list (list-ref l 0)
+                                                      '()))
+                   (cdr l))]
+            [else 
+             (cons (addition/deletion-lists->ht (list-ref l 0))
+                   (cdr l))])))))
 
 
 (preferences:set-default 'framework:autosave-delay 300 number?)
@@ -432,7 +474,8 @@
 
  
 (let ([delta (make-object style-delta%)]
-      [style (send (editor:get-standard-style-list) find-named-style color:misspelled-text-color-style-name)])
+      [style (send (editor:get-standard-style-list) find-named-style
+                   color:misspelled-text-color-style-name)])
   (if style
       (send style set-delta delta)
       (send (editor:get-standard-style-list) new-named-style color:misspelled-text-color-style-name
