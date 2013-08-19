@@ -303,6 +303,8 @@ static __declspec(thread) void *tls_space;
 #ifdef DOS_FILE_SYSTEM
 void load_delayed()
 {
+  (void)SetErrorMode(SEM_FAILCRITICALERRORS);
+
   /* Order matters: load dependencies first */
 # ifndef MZ_PRECISE_GC
   load_delayed_dll(NULL, "libmzgcxxxxxxx.dll");
