@@ -1,6 +1,7 @@
 #lang racket/unit
 (require racket/class
          racket/contract
+         racket/list
          "sig.rkt"
          "../preferences.rkt"
          mred/mred-sig)
@@ -74,32 +75,91 @@
 
 (preferences:set-default 'framework:paren-color-scheme 'basic-grey symbol?)
   
+(define cond/offset-defaults
+  '(("case-lambda" 0)
+    ("match-lambda" 0)
+    ("match-lambda*" 0)
+    ("cond" 0)
+    ("field" 0)
+    ("provide/contract" 0)
+    ("match" 1)
+    ("new" 1)
+    ("case" 1)
+    ("datum-case" 1)
+    ("match" 1)
+    ("match*" 1)
+    ("syntax-rules" 1)
+    ("syntax-case" 2)
+    ("syntax-case*" 3)
+    ("kernel-syntax-case" 2)
+    ("kernel-syntax-case*" 3)))
 (preferences:set-default 'framework:square-bracket:cond/offset
-                         '(("case-lambda" 0)
-                           ("match-lambda" 0)
-                           ("match-lambda*" 0)
-                           ("cond" 0)
-                           ("field" 0)
-                           ("provide/contract" 0)
-                           ("match" 1)
-                           ("new" 1)
-                           ("case" 1)
-                           ("match" 1)
-                           ("match*" 1)
-                           ("syntax-rules" 1)
-                           ("syntax-case" 2)
-                           ("syntax-case*" 3)
-                           ("kernel-syntax-case" 2)
-                           ("kernel-syntax-case*" 3))
-                         (λ (x) (and (list? x) (andmap (λ (x) (and (pair? x)
-                                                                   (string? (car x))
-                                                                   (pair? (cdr x))
-                                                                   (number? (cadr x))
-                                                                   (null? (cddr x))))
-                                                       x))))
-(preferences:set-default 'framework:square-bracket:local
-                         '("local")
-                         (λ (x) (and (list? x) (andmap string? x))))
+                         cond/offset-defaults
+                         (listof (list/c string? exact-nonnegative-integer?)))
+
+(preferences:set-un/marshall
+ 'framework:square-bracket:cond/offset
+ (λ (val) 
+   (define deletions (for/list ([line (in-list cond/offset-defaults)]
+                                #:unless (ormap (λ (val-line)
+                                                  (equal? (car line) (car val-line)))
+                                                val))
+                       (list-ref line 0)))
+   (define additions/changes (for/list ([line (in-list val)]
+                                        #:when (not (member line cond/offset-defaults)))
+                               line))
+   (list additions/changes deletions))
+ (λ (marsh)
+   (cond
+     [((listof (list/c string? exact-nonnegative-integer?)) marsh)
+      ;; old style prefs: don't try to find any deletions, as they are
+      ;; probably caused by a stale defaults setting
+      (define ht (make-hash (map (λ (x) (cons (list-ref x 0) (list-ref x 1))) cond/offset-defaults)))
+      (for ([line (in-list marsh)])
+        (hash-set! ht (list-ref line 0) (list-ref line 1)))
+      (hash-map ht list)]
+     [((list/c (listof (list/c string? exact-nonnegative-integer?)) (listof string?)) marsh)
+      ;; new style-pref
+      (define additions/changes (list-ref marsh 0))
+      (define deletions (list-ref marsh 1))
+      (define ht (make-hash (map (λ (x) (cons (list-ref x 0) (list-ref x 1))) cond/offset-defaults)))
+      (for ([del (in-list deletions)])
+        (hash-remove! ht del))
+      (for/list ([line (in-list additions/changes)])
+        (hash-set! ht (list-ref line 0) (list-ref line 1)))
+      (hash-map ht list)])))
+
+ 
+(define (set-square-bracket-nonum-pref pref-sym defaults)
+  (preferences:set-default pref-sym defaults (listof string?))
+  (preferences:set-un/marshall 
+   pref-sym
+   (λ (val)
+     (define additions '())
+     (define deletions '())
+     (for ([itm (in-list val)])
+       (unless (member itm defaults)
+         (set! additions (cons itm additions))))
+     (for ([def (in-list defaults)])
+       (unless (member def val)
+         (set! deletions (cons def deletions))))
+     (list additions deletions))
+   (λ (marshed)
+     (cond
+       [((listof string?) marshed)
+        ;; this is the old preference; in this case
+        ;; we ignore any deletions while unmarshalling
+        ;; as those are likely caused by a defaults
+        ;; set that got bigger
+        (remove-duplicates (append marshed defaults))]
+       [((list/c (listof string?) (listof string?)) marshed)
+        (define additions (list-ref marshed 0))
+        (define deletions (list-ref marshed 1))
+        (append additions (remove* deletions defaults))]))))
+  
+
+(set-square-bracket-nonum-pref 'framework:square-bracket:local
+                               '("local"))
 
 (define all-fors
   (let ()
@@ -117,17 +177,16 @@
                    untyped-fors)))
     all-fors))
 
-(preferences:set-default 'framework:square-bracket:letrec
-                         (append (map symbol->string all-fors)
-                                 '("let" 
-                                   "let*" "let-values" "let*-values"
-                                   "let-syntax" "let-struct" "let-syntaxes"
-                                   "match-let" "match-let*" "match-letrec"
-                                   "letrec"
-                                   "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values"
-                                   "parameterize" "parameterize*"
-                                   "with-syntax"))
-                         (λ (x) (and (list? x) (andmap string? x))))
+(set-square-bracket-nonum-pref 'framework:square-bracket:letrec
+                               (append (map symbol->string all-fors)
+                                       '("let" 
+                                         "let*" "let-values" "let*-values"
+                                         "let-syntax" "let-struct" "let-syntaxes"
+                                         "match-let" "match-let*" "match-letrec"
+                                         "letrec"
+                                         "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values"
+                                         "parameterize" "parameterize*"
+                                         "with-syntax" "with-handlers")))
 
 (preferences:set-default 'framework:white-on-black? #f boolean?)
 
@@ -362,11 +421,7 @@
   (preferences:set-default 
    'framework:tabify
    (list defaults-ht #rx"^begin" #rx"^def" #f)
-   (λ (x)
-     (and (list? x)
-          (= (length x) 4)
-          (hash? (car x))
-          (andmap (λ (x) (or (regexp? x) (not x))) (cdr x)))))
+   (list/c hash? (or/c #f regexp?) (or/c #f regexp?) (or/c #f regexp?)))
   (define old-style-pred? (listof (list/c symbol? symbol?)))
   (define pref-pred?
     (list/c (or/c 
