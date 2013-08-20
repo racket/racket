@@ -111,8 +111,8 @@ are stored in the preferences file, so one way to add site-specific
 teachpacks is to provide a default preferences file.
 
 The first two columns are also extensible. When a collection has
-an @tech{info.rkt} file 
-(see also @secref[#:doc '(lib "scribblings/raco/raco.scrbl") "info.rkt"])
+an @filepath{info.rkt} file 
+(see @secref[#:doc '(lib "scribblings/raco/raco.scrbl") "info.rkt"])
 that defines @racket[htdp-teachpacks] or @racket[2htdp-teachpacks],
 then they are expected to be either a list of (collection-relative)
 paths containing teachpacks to add to the dialog, or the symbol
