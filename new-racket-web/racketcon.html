@@ -27,6 +27,8 @@
 
   <!-- CSS imports non-minified for staging, minify before moving to production-->
   <link rel="stylesheet" href="css/gumby.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/scribble.css">
   <!-- end CSS-->
 
   <!-- More ideas for your <head> here: h5bp.com/d/head-Tips -->
@@ -35,73 +37,8 @@
        Modernizr enables HTML5 elements & feature detects; Respond is a polyfill for min/max-width CSS3 Media Queries
        For optimal performance, use a custom Modernizr build: www.modernizr.com/download/ -->
   <script src="js/libs/modernizr-2.6.2.min.js"></script>
-<style>
-
-  body { background: url(img/loud.png) center 40%  no-repeat
-  fixed;  }
-
-  .btn,.drawer {margin-bottom:10px;}
-  .drawer { text-align: center; }
-  h1.lead { border-bottom: 1px dotted #ccc; margin-bottom: 30px; }
-  h4.lead {margin-bottom:10px;}
-  #icon_map ul li { font-size: 16px; }
-  .smallify { font-size: 13px; }
-  #icon_map ul {m argin-bottom: 25px; }
-  .modal h2, .modal .btn { margin: 10px 0 0px; }
-  .parallax { height: 300px; width: 100%; background:
-  url(img/img_parallax_demo.jpg); }
-  .navbar { background: black; }
-  pre { color: black }
-  p {color: black}
-  code { font-family: 'Inconsolata'}
-  .navbar ul li a { color: white; }
-
-
-.codecomment {
-  color: #c2741f;
-}
-.codeparenthesis {
-  color: #843c24;
-}
-.codeconstant, .codestring {
-  color: #228b22;
-}
-.codeid, .codemodpath {
-  color: #262680;
-}
-.codeimportid {
-  color: blue;
-}
-.codeimportform {
-  font-weight: bold;
-}
-.codelinkimportid {
-  color: blue;
-  text-decoration: none;
-}
-.codelinkimportform {
-  font-weight: bold;
-  color: black;
-  text-decoration: none;
-}
-.codelinkimportid:hover {
-  text-decoration: none;
-}
-.codelinkimportform:hover {
-  text-decoration: none;
-}
-.codemodpath:hover {
-  text-decoration: none;
-}
-
-.codesnip { display: none }
-.codesnip.active { display: block}
-
-#growboxes { margin-top: 10pt; }
-.panetitle { color: red; font-size: 120%; margin-bottom: 4pt }
-
-</style>
 </head>
+
 <body>
 
 <div class="navbar" gumby-fixed="top" id="nav1">
