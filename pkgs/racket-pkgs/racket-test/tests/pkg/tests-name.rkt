@@ -72,6 +72,11 @@
   (check-equal-values? (package-source->name+type "fish/master" 'github) (values #f 'github))
   (check-equal-values? (package-source->name+type "github://github.com/racket/fish.more/release" 'github) (values #f 'github))
 
+  (check-equal-values? (package-source->name+type "file://fish.plt" #f) (values "fish" 'file))
+  (check-equal-values? (package-source->name+type "file:///root/fish.plt" #f) (values "fish" 'file))
+  (check-equal-values? (package-source->name+type "file://fish" #f) (values "fish" 'dir))
+  (check-equal-values? (package-source->name+type "file:///root/fish" #f) (values "fish" 'dir))
+
   (check-equal-values? (package-source->name+type "random://racket-lang.org/fish.plt" #f) (values #f #f))
 
   (void))

@@ -125,7 +125,7 @@ but the @filepath{.plt} format does not accommodate a
 
 A package source is inferred to refer to a file
 only when it has a suffix matching a valid archive format
-and when it does not start
+and when it starts with @litchar{file://} or does not start
 with alphabetic characters followed by @litchar{://}. The inferred
 package name is the filename without its suffix.}
 
@@ -135,7 +135,8 @@ directory. The @tech{checksum} is not present. For example,
 
 A package source is inferred to refer
 to a directory only when it does not have a file-archive suffix, does
-not match the grammar of a package name, and does not start
+not match the grammar of a package name, and either starts with starts 
+with @litchar{file://} or does not start
 with alphabetic characters followed by @litchar{://}. The inferred
 package name is the directory name.}
 

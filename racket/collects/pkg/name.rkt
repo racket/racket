@@ -40,6 +40,25 @@
   ;; returns (values inferred-name inferred-type);
   ;; if `type' is given it should be returned, but name can be #f;
   ;; type should not be #f for a non-#f name
+  (define (parse-path s)
+    (cond
+     [(if type
+          (eq? type 'file)
+          (and (path-string? s)
+               (regexp-match rx:archive s)))
+      (define-values (base name+ext dir?) (split-path s))
+      (define name (extract-archive-name name+ext))
+      (values name 'file)]
+     [(if type
+          (or (eq? type 'dir) 
+              (eq? type 'link)
+              (eq? type 'static-link))
+          (path-string? s))
+      (define-values (base name dir?) (split-path s))
+      (define dir-name (and (path? name) (path->string name)))
+      (values (validate-name dir-name) (or type (and dir-name (if link-dirs? 'link 'dir))))]
+     [else
+      (values #f #f)]))
   (cond
    [(if type
         (eq? type 'name)
@@ -88,25 +107,13 @@
           (values #f #f)))
     (values (validate-name name) (or type (and name-type)))]
    [(and (not type)
+         (regexp-match #rx"^file://(.*)$" s))
+    => (lambda (m) (parse-path (cadr m)))]
+   [(and (not type)
          (regexp-match? #rx"^[a-zA-Z]*://" s))
     (values #f #f)]
-   [(if type
-        (eq? type 'file)
-        (and (path-string? s)
-             (regexp-match rx:archive s)))
-    (define-values (base name+ext dir?) (split-path s))
-    (define name (extract-archive-name name+ext))
-    (values name 'file)]
-   [(if type
-        (or (eq? type 'dir) 
-            (eq? type 'link)
-            (eq? type 'static-link))
-        (path-string? s))
-    (define-values (base name dir?) (split-path s))
-    (define dir-name (and (path? name) (path->string name)))
-    (values (validate-name dir-name) (or type (and dir-name (if link-dirs? 'link 'dir))))]
    [else
-    (values #f #f)]))
+    (parse-path s)]))
 
 (define (package-source->name s [given-type #f])
   (define-values (name type) (package-source->name+type s given-type))
