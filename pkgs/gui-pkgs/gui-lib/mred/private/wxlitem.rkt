@@ -42,6 +42,7 @@
   (define (make-label label proxy p font)
     (and label 
          (let ([l (make-object wx-message% #f proxy p label -1 -1 null font)])
+           (send l x-margin 0) (send l y-margin 0)
 	   (send l skip-enter-leave-events #t)
            (send l skip-subwindow-events? #t)
            l)))

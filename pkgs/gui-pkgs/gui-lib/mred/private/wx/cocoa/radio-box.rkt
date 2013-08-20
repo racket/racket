@@ -83,6 +83,7 @@
                                            RacketImageButtonCell)
                             numberOfRows: #:type _NSInteger (if horiz? 1 (length labels))
                             numberOfColumns: #:type _NSInteger (if horiz? (length labels) 1)))])
+                (tellv cocoa setIntercellSpacing: #:type _NSSize (make-NSSize 2 2))
                 (for ([label (in-list labels)]
                       [i (in-naturals)])
                   (let ([button (tell cocoa 
