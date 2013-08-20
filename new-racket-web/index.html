@@ -52,7 +52,8 @@
   .modal h2, .modal .btn { margin: 10px 0 0px; }
   .parallax { height: 300px; width: 100%; background:
   url(img/img_parallax_demo.jpg); }
-  .navbar { background: rgb(245,245,245) }
+  .navbar { background: black }
+  .navbar { color: white }
   pre { color: black }
   p {color: black}
   code { font-family: 'Inconsolata'}
@@ -100,19 +101,21 @@
 
 #growboxes { margin-top: 10pt; }
 .panetitle { color: red; font-size: 120%; margin-bottom: 4pt }
+  .navbar ul li a { color: white; }
+  .navbar ui li:hover { color: red; }
 
 </style>
 
 <body>
 
 
-<div class="navbar" gumby-fixed="top" id="nav1" style="border-bottom: 1px solid black">
+<div class="navbar" gumby-fixed="top" id="nav1">
   <div class="row">
     <a class="toggle" gumby-trigger="#nav1 > .row > ul" href="#"><i class="icon-menu"></i></a>
       <a class="five columns logo" href="">
         <img class="logo" src="img/logo.png" />
       </a>
-    <ul class="five columns">
+    <ul class="five columns" >
       <li><a href="https://pkg.racket-lang.org">Packages</a></li>
       <li><a href="http://docs.racket-lang.org">Documentation</a></li>
       <li><a href="http://blog.racket-lang.org">Blog</a></li>
