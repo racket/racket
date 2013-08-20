@@ -338,6 +338,7 @@
                     (build-path pkg-dir "info.rkt")
                   (lambda (o)
                     (fprintf o "#lang info\n")
+                    (write `(define collection 'multi) o)
                     (write `(define deps ',deps) o)))))
 
 
@@ -348,7 +349,7 @@
             (unless (file-exists? pkg-pth)
               (printf "Packaging ~a\n" pkg-short)
               (parameterize ([current-directory work])
-                (system (format "raco pkg create --format plt ~a" pkg-name))
+                (system (format "raco pkg create --format plt \"~a\"" pkg-name))
                 (rename-file-or-directory
                  (build-path work pkg-name.plt)
                  pkg-pth)
