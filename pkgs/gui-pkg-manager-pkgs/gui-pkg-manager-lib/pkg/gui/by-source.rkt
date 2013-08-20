@@ -146,14 +146,14 @@
            [style '(border)]
            [callback (lambda (b e)
                        (define res (compute-cmd-line))
+                       (define action (case (cmdline-which res)
+                                        [(install) pkg-install-command]
+                                        [(update) pkg-update-command]))
                        (in-terminal
                         (case (cmdline-which res)
                           [(install) (string-constant install-pkg-abort-install)]
                           [(update) (string-constant install-pkg-abort-update)])
                         (lambda ()
-                          (define action (case (cmdline-which res)
-                                           [(install) pkg-install-command]
-                                           [(update) pkg-update-command]))
                           (keyword-apply action 
                                          (cmdline-kwds res)
                                          (cmdline-kwd-args res)
@@ -267,10 +267,10 @@
                                       [parent scope-panel]
                                       [callback
                                        (lambda (b e)
+                                         (define scope (selected-scope))
                                          (in-terminal
                                           sc-install-pkg-abort-set-scope
                                           (lambda ()
-                                            (define scope (selected-scope))
                                             (pkg-config-command #:scope 'user
                                                                 #:set #t
                                                                 "default-scope"
