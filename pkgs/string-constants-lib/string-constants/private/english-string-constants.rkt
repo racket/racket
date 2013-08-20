@@ -1805,6 +1805,7 @@ please adhere to these guidelines:
   (install-pkg-link-dirs "Local directory as link")
   (install-pkg-file-or-dir? "Choose a file or a directory?")
   (install-pkg-force? "Ignore conflicts")
+  (install-pkg-replace? "Replace existing installation")
   (install-pkg-command-line "Equivalent command line invocation:")
   (install-pkg-error-installing-title "Error Installing Package")
   (install-pkg-action-label "Action to Take")

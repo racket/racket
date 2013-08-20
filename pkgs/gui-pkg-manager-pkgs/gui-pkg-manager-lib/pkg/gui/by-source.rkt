@@ -26,6 +26,7 @@
 (define sc-install-pkg-name (string-constant install-pkg-name))
 (define sc-install-pkg-inferred-as (string-constant install-pkg-inferred-as))
 (define sc-install-pkg-force? (string-constant install-pkg-force?))
+(define sc-install-pkg-replace? (string-constant install-pkg-replace?))
 (define sc-install-pkg-command-line (string-constant install-pkg-command-line))
 
 (define sc-install-pkg-action-label (string-constant install-pkg-action-label))
@@ -157,11 +158,13 @@
                                          (cmdline-kwds res)
                                          (cmdline-kwd-args res)
                                          (cmdline-args res))))
-                       (reset-installed-pkgs!))]))
+                       (reset-installed-pkgs!)
+                       (adjust-all))]))
 
     (define/private (reset-installed-pkgs!)
-      (set! currently-installed-pkgs (installed-pkg-names))
-      (adjust-all))
+      (define scope (selected-scope))
+      (set! currently-installed-pkgs (installed-pkg-names #:scope scope))
+      (set! currently-installed-pkgs-scope scope))
     
     (new horizontal-panel% [parent button-panel])
     (define details-shown? #f)
@@ -192,7 +195,8 @@
                               [stretchable-width #t]))
     (define name-field (new text-field%
                             [label #f]
-                            [parent name-panel]))
+                            [parent name-panel]
+                            [callback (lambda (t e) (adjust-all))]))
     ;; Make the panel height the same whether we show the message or field:
     (let-values ([(w h) (send name-panel get-graphical-min-size)])
       (send name-panel min-height h))
@@ -308,11 +312,21 @@
                                  [stretchable-height #f]
                                  [alignment '(right center)]))
     (define deps-msg (new message% [label ""] [parent deps-msg-parent] [auto-resize #t]))
+
+    (define checkboxes-panel (new horizontal-panel%
+                                  [parent details-panel]
+                                  [stretchable-height #f]
+                                  [alignment '(left center)]))
     
     (define cb (new check-box% 
                     [label sc-install-pkg-force?] 
-                    [parent details-panel]
+                    [parent checkboxes-panel]
                     [callback (λ (a b) (adjust-all))]))
+
+    (define overwrite-cb (new check-box% 
+                              [label sc-install-pkg-replace?]
+                              [parent checkboxes-panel]
+                              [callback (λ (a b) (adjust-all))]))
 
     (new message% [parent details-panel] [label " "]) ; a spacer
 
@@ -349,11 +363,12 @@
         [(dir-url) sc-install-pkg-dir-url]
         [else (error 'type->str "unknown type ~s\n" type)]))
     
-    (define currently-installed-pkgs (installed-pkg-names))
+    (define currently-installed-pkgs-scope #f)
+    (define currently-installed-pkgs '())
     (define/private (get-current-action)
       (case (send action-choice get-selection)
         [(0) 
-         (define current-name (package-source->name (send tf get-value)))
+         (define current-name (get-name))
          (cond
           [(and current-name (member current-name currently-installed-pkgs))
            'update]
@@ -372,6 +387,9 @@
           (send name-field get-value)))
 
     (define/private (adjust-all)
+      (unless (eq? currently-installed-pkgs-scope
+                   (selected-scope))
+        (reset-installed-pkgs!))
       (adjust-name)
       (adjust-inferred)
       (adjust-link-dir)
@@ -396,7 +414,7 @@
         (send name-field set-value name)))
     
     (define/private (adjust-checkbox)
-      (send cb enable (equal? 'install (get-current-action))))
+      (void))
     
     (define/private (adjust-inferred-action)
       (define action (get-current-action))
@@ -535,40 +553,52 @@
     
     (struct cmdline (which kwds kwd-args args) #:transparent)
     (define/private (compute-cmd-line)
-      (define the-pkg 
-        (cond
-          [(and (equal? 'update (get-current-action))
-                (package-source->name (send tf get-value)))
-           =>
-           values]
-          [else (send tf get-value)]))
+      (define action (get-current-action))
+      (define update-by-name? (and (eq? 'update action)
+                                   (not (send overwrite-cb get-value))))
+      (define the-pkg (if update-by-name?
+                          (get-name)
+                          (send tf get-value)))
       (cond
         [(equal? the-pkg "") #f]
         [else
          (define kwds '()) 
          (define kwd-args '())
          (define (add-kwd-arg kwd arg)
-           (set! kwds (cons kwd kwds))
-           (set! kwd-args (cons arg kwd-args)))
+           (set!-values (kwds kwd-args)
+                        (let loop ([ks kwds] [as kwd-args])
+                          (cond
+                           [(null? ks) (values (list kwd) (list arg))]
+                           [(keyword<? kwd (car ks))
+                            (values (cons kwd ks) (cons arg as))]
+                           [else
+                            (define-values (ks2 as2) (loop (cdr ks) (cdr as)))
+                            (values (cons (car ks) ks2) (cons (car as) as2))]))))
          (when (and (send cb is-enabled?) (send cb get-value))
            (add-kwd-arg '#:force #t))
-         (when (selected-type)
+         (when (and (not update-by-name?)
+                    (selected-type))
            (add-kwd-arg '#:type (selected-type)))
-         (when (send link-dir-checkbox get-value)
-           (when (eq? 'dir (or (selected-type) (get-inferred-actual-type)))
-             (add-kwd-arg '#:link #t)))
+         (when (and (not update-by-name?)
+                    (send link-dir-checkbox get-value)
+                    (eq? 'dir (or (selected-type) (get-inferred-actual-type))))
+             (add-kwd-arg '#:link #t))
          (let ([scope (selected-scope)])
-           (unless (equal? scope (default-pkg-scope))
+           (unless (and (equal? scope (default-pkg-scope))
+                        ;; Don't let `update' infer a scope itself:
+                        (not (eq? action 'update)))
              (add-kwd-arg '#:scope scope)))
          (add-kwd-arg '#:deps (get-deps-selected-type))
          (when (get-deps-auto-update)
            (add-kwd-arg '#:update-deps #t))
-         (unless (infer-package-name?)
+         (unless (or update-by-name?
+                     (infer-package-name?))
            (add-kwd-arg '#:name (get-name)))
-         (cmdline (get-current-action) kwds kwd-args (list the-pkg))]))
+         (cmdline action kwds kwd-args (list the-pkg))]))
 
     (define/override (on-superwindow-show on?)
-      (when on? 
-        (reset-installed-pkgs!)))
+      (when on?
+        (reset-installed-pkgs!)
+        (adjust-all)))
 
     (adjust-all)))
