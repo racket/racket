@@ -4,6 +4,7 @@
          racket/match
          unstable/syntax
          racket/syntax
+         racket/private/this-expression-source-directory
          planet/planet-archives)
 
 (provide this-package-version

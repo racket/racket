@@ -15,6 +15,8 @@
  => (void)
  (dynamic-require `(file ,(in-here "examples/dummy-module.rkt")) 'result)
  => '(successful test result)
+ (dynamic-require '(planet plt/dummy-package/me) 'me)
+ => '("plt" "dummy-package.plt" 1 0)
  (remove-hard-link "plt" "dummy-package.plt" 1 0)
  => (void)
 
