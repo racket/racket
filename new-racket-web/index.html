@@ -38,26 +38,17 @@
 </head>
 
 <style>
+  body { background: url(img/loud.png) center 60%  no-repeat fixed;  }
 
-  body { background: url(img/loud.png) center 40%  no-repeat fixed;  }
-
-  .btn,.drawer {margin-bottom:10px;}
-  .drawer { text-align: center; }
-  h1.lead { border-bottom: 1px dotted #ccc; margin-bottom: 30px; }
-  h4.lead {margin-bottom:10px;}
-  #icon_map ul li { font-size: 16px; }
-  .smallify { font-size: 13px; }
-  #icon_map ul {m argin-bottom: 25px; }
   .modal h2, .modal .btn { margin: 10px 0 0px; }
-  .parallax { height: 300px; width: 100%; background:
-  url(img/img_parallax_demo.jpg); }
-  .navbar { background: black; }
-  .navbar div ul li a:hover { background: gray; }
-  .navbar { color: white }
-  pre { color: black }
-  p {color: black}
-  code { font-family: 'Inconsolata'}
+  .navbar div ul li a:hover { background: #292929; }
 
+  #growboxes { margin-top: 10pt; }
+  .panetitle { color: red; font-size: 120%; margin-bottom: 4pt }
+</style>
+
+<!-- CSS style for scribble formatting -->
+<style>
 
 .codecomment {
   color: #c2741f;
@@ -98,11 +89,6 @@
 
 .codesnip { display: none }
 .codesnip.active { display: block}
-
-#growboxes { margin-top: 10pt; }
-.panetitle { color: red; font-size: 120%; margin-bottom: 4pt }
-  .navbar ul li a { color: white; }
-  .navbar ui li:hover { color: red; }
 
 </style>
 
@@ -217,8 +203,8 @@ documentation, so click on them for more information.
 <div class="row" >
 <div class="ten columns centered">
 <h2 style="font-size: 180%; margin-bottom:
-             10pt"><strong>Racket</strong>: A programmable programming
-             language</h2> 
+             10pt"><strong>Racket</strong> &nbsp;&mdash;&nbsp; <span style="font-style: italic">a programmable programming
+             language</span></h2> 
 </div></div>
 <div class="row" >
 <div class="eight columns centered" style="margin-bottom: 10pt; font-size: 120%; text-align:justify;">

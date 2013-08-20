@@ -28,9 +28,10 @@
   background: rgb(0, 0, 0);
   background: $modal-overlay-color;
  	> .content {
- 		width: 85%;
+	  	min-width: 50%;
+ 		max-width: 85%;
  		min-height: 50%;
-    max-height: 95%;
+		max-height: 95%;
  		position: relative;
  		top: 5%;
  		margin: 0 auto;

@@ -30,8 +30,8 @@ h1 {
     @include font-size($absurd);
   }
 }
-h2 { @include font-size($xlarge); margin-top: $med; margin-bottom: $norm; }
-h3 { @include font-size($larger); }
+h2 { @include font-size($xlarge); padding-top: $med; padding-bottom: $norm; }
+h3 { @include font-size($larger); padding-top: $norm; padding-bottom: $norm; }
 h4 { @include font-size($large);}
 h5 { @include font-size($med);}
 h6 { @include font-size($norm);}
@@ -58,6 +58,7 @@ h6 { @include font-size($norm);}
 p {
   font-family: $font-family;
   font-weight: $body-font-weight;
+  color: black;
   @include font-size($base-font-size);
   margin-bottom: $base-line-height / 2;
   @include adjust-leading-to(1);
@@ -210,6 +211,11 @@ abbr {
   text-transform: none;
 }
 
+pre, code {
+  color: black;
+  font-family: 'Inconsolata';
+}
+
 /**
    * Print styles.
  *
@@ -252,6 +258,7 @@ abbr {
   pre, blockquote {
     border: 1px solid #999;
     page-break-inside: avoid;
+    color: black;
   }
   thead {
     display: table-header-group;
