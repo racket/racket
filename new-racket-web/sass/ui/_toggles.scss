@@ -24,22 +24,21 @@
 	top: 0;
 	left: 0;
 	z-index: -999999;
-	display: none;
   background: rgb(0, 0, 0);
   background: $modal-overlay-color;
  	> .content {
- 		width: 85%;
+ 		width: 50%;
  		min-height: 50%;
-    max-height: 95%;
+    max-height: 65%;
  		position: relative;
- 		top: 5%;
+ 		top: 25%;
  		margin: 0 auto;
- 		padding: 10px;
+ 		padding: $gutter-in-px;
  		background: $modal-window-color;
  		z-index: 2;
  		overflow: auto;
     @include respond(portrait-tablets) {
-      width: 90%;
+      width: 80%;
       min-height: 80%;
       max-height: 80%;
       top: 10%;
@@ -59,10 +58,9 @@
   }
   &, > .content {
     @include opacity(0);
-    @include transition-duration(.1s);
+    @include transition-duration(.3s);
   }
  	&.active {
-	        display: block;
  		z-index: 999999;
     &, > .content {
       @include opacity(1);

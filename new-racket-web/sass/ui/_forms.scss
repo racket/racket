@@ -3,7 +3,7 @@
 @import "../functions/forms";
 
 
-form { 
+form {
   margin: 0 0 18px;
   label {
     display: block;
@@ -35,7 +35,7 @@ form {
     }
   }
 }
-  
+
 .field {
   position: relative;
   max-width: 100%;
@@ -205,6 +205,10 @@ form {
     @include border-radius(0px 4px 4px 0);
   }
 
+  &.append button, &.prepend button {
+    display: inline-block;
+  }
+
   &.append input:first-child {
     margin-right: 0;
   }
@@ -237,6 +241,10 @@ form {
         z-index: 999;
         color: nth($error, 2);
         }
+      }
+
+      &.no-icon:after {
+        display: none;
       }
 
       // <input> does not allow :before & :after
@@ -275,7 +283,7 @@ form {
       }
     }
   }
-  
+
   .radio, & .checkbox {
     @each $error in danger $danger-color, warning $warning-color, success $success-color {
       &.#{nth($error, 1)} {
@@ -316,14 +324,14 @@ form {
     line-height: 16px;
   }
 }
-  
+
 .field .text input[type="search"] {
   -webkit-appearance: textfield;
 }
-  
+
 
 /* Form Picker Element (<select>) */
-  
+
 .picker {
   position: relative;
   width: auto;

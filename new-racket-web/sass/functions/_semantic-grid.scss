@@ -45,10 +45,11 @@
 
 @mixin column($columns:$columns, $alignment: false, $behavior: false) {
   @if $alignment == center   {
-    float: none;
-    margin: 0 auto !important;
-    width: columns($columns);
     @extend %columnconfig;
+    float: none;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: columns($columns);
     @include respond(all-phones) {
       float: left;
       margin-left: 0;
@@ -56,17 +57,17 @@
     }
   }
   @else if $behavior == collapse {
-    width: columns($columns);
     @extend %columnconfig;
     @extend %collapse;
+    width: columns($columns);
     @include respond(all-phones) {
       float: left;
       width: 100%;
     }
   }
   @else {
-    width: columns($columns);
     @extend %columnconfig;
+    width: columns($columns);
     @include respond(all-phones) {
       float: left;
       margin-left: 0;
@@ -77,10 +78,11 @@
 
 @mixin hybrid($columns:$columns, $alignment: false, $behavior: false) {
   @if $alignment == center   {
-    float: none;
-    margin: 0 auto !important;
-    width: columns($columns, true);
     @extend %columnconfig;
+    float: none;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: columns($columns, true);
     @include respond(all-phones) {
       float: left;
       margin-left: 0;
@@ -88,17 +90,17 @@
     }
   }
   @else if $behavior == collapse {
-    width: columns($columns, true);
     @extend %columnconfig;
     @extend %collapse;
+    width: columns($columns, true);
     @include respond(all-phones) {
       float: left;
       width: 100%;
     }
   }
   @else {
-    width: columns($columns, true);
     @extend %columnconfig;
+    width: columns($columns, true);
     @include respond(all-phones) {
       float: left;
       margin-left: 0;

@@ -40,6 +40,7 @@
       &.active > a {
         @include line-and-height($tab-height + 1);
         background: $white;
+        cursor: default;
       }
       &:last-child {
         margin-right: 0;

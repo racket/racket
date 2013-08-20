@@ -16,6 +16,9 @@
   @else if $media == tablets {
   	@media only screen and (min-width: $tablet-device-width) and (max-width: $document-width - 1) { @content; }
   }
+  @else if $media == desktop {
+    @media only screen and (min-width: $tablet-device-width) { @content; }
+  }
   @else if $media == document-width {
     @media only screen and (max-width: $document-width + 20) { @content; }
   }

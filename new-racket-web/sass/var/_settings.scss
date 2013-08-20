@@ -26,13 +26,12 @@ $font-smoothing: antialiased;
 // Font Weights
 $font-weight-bold: 700;
 $font-weight-semibold: 600;
-$font-weight-heavy: 500;
 $font-weight-medium: 400;
 $font-weight-regular: 400;
 $font-weight-light: 300;
 $font-weight-thin: 300;
 
-$header-font-weight: $font-weight-heavy;
+$header-font-weight: $font-weight-thin;
 $body-font-weight: $font-weight-regular;
 $type-font-weight: $font-weight-regular;
 $link-font-weight: $font-weight-regular;
@@ -128,6 +127,21 @@ $drawer-inner-shadow-x-offset: 0;
 $drawer-inner-shadow-y-offset: 2px;
 $drawer-inner-shadow-blur: 5px;
 $drawer-inner-shadow-color: #313436;
+
+// Tables
+$table-bgcolor: #fff;
+$table-thead-bgcolor: $primary-color;
+$table-row-first-cell-font-weight: bold;
+$table-border-size: 1px;
+$table-border-style: solid;
+$table-border-color: #e5e5e5;
+$table-cell-border-size: 1px;
+$table-cell-border-color: #e5e5e5;
+$table-cell-border-style: solid;
+// .rounded
+$table-border-radius: 4px;
+// .striped
+$table-stripe-bgcolor: #e5e5e5;
 
 // Floats
 $default-float: left;
