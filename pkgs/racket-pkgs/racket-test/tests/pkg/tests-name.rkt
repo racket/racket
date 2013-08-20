@@ -79,6 +79,14 @@
 
   (check-equal-values? (package-source->name+type "random://racket-lang.org/fish.plt" #f) (values #f #f))
 
+  (check-equal-values? (package-source->name+type "" #f) (values #f #f))
+  (check-equal-values? (package-source->name+type "" 'file) (values #f 'file))
+  (check-equal-values? (package-source->name+type "" 'link) (values #f 'link))
+  (check-equal-values? (package-source->name+type "" 'static-link) (values #f 'static-link))
+  (check-equal-values? (package-source->name+type "" 'file-url) (values #f 'file-url))
+  (check-equal-values? (package-source->name+type "" 'dir-url) (values #f 'dir-url))
+  (check-equal-values? (package-source->name+type "" 'github) (values #f 'github))
+
   (void))
 
 (provide run-pkg-tests)

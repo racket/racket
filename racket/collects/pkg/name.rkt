@@ -46,15 +46,19 @@
           (eq? type 'file)
           (and (path-string? s)
                (regexp-match rx:archive s)))
-      (define-values (base name+ext dir?) (split-path s))
-      (define name (extract-archive-name name+ext))
+      (define-values (base name+ext dir?) (if (path-string? s)
+                                              (split-path s)
+                                              (values #f #f #f)))
+      (define name (and name+ext (extract-archive-name name+ext)))
       (values name 'file)]
      [(if type
           (or (eq? type 'dir) 
               (eq? type 'link)
               (eq? type 'static-link))
           (path-string? s))
-      (define-values (base name dir?) (split-path s))
+      (define-values (base name dir?) (if (path-string? s)
+                                          (split-path s)
+                                          (values #f #f #f)))
       (define dir-name (and (path? name) (path->string name)))
       (values (validate-name dir-name) (or type (and dir-name (if link-dirs? 'link 'dir))))]
      [else
