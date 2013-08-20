@@ -149,9 +149,11 @@ documentation, so click on them for more information.
 
 <div class="row" >
 <div class="ten columns centered">
-<h2 style="font-size: 180%; margin-bottom:
-             10pt"><strong>Racket</strong> &nbsp;&mdash;&nbsp; <span style="font-style: italic">a programmable programming
-             language</span></h2> 
+<h2 style="font-size: 180%; margin-bottom: 10pt">
+  <strong>Racket</strong> &nbsp;&mdash;&nbsp;
+  <span style="font-style: italic">a programmable programming
+    language</span>
+</h2> 
 </div></div>
 <div class="row" >
 <div class="eight columns centered" style="margin-bottom: 10pt; font-size: 120%; text-align:justify;">
@@ -166,18 +168,18 @@ computing and from databases to charts.
 </div>
 
 
-<div class="row" >
-  <div class="one columns"></div>
-<div class="eight columns"><h2   style="font-size: 180%; 
-                                               margin-bottom:
-                                               10pt"></>Start
-                                               Quickly</h2></div>
+<!-- <div class="row" > -->
+<!--   <div class="one columns"></div> -->
+<!-- <div class="eight columns"><h2   style="font-size: 180%;  -->
+<!--                                                margin-bottom: -->
+<!--                                                10pt"></>Start -->
+<!--                                                Quickly</h2></div> -->
 
-<div class="three columns"><h2   style="font-size: 180%; 
-                                               margin-bottom:
-                                               10pt"></>News
-                                               </h2></div>
-</div>
+<!-- <div class="three columns"><h2   style="font-size: 180%;  -->
+<!--                                                margin-bottom: -->
+<!--                                                10pt"></>News -->
+<!--                                                </h2></div> -->
+<!-- </div> -->
 
 
  <!-- The other version of the buttons: -->
@@ -200,19 +202,31 @@ computing and from databases to charts.
 
   <div class="row">
     <div class="one columns">
-      <a href="#" class="toggle" 
-         gumby-trigger=".unique_lines|.web_scraper">
-        <img src="img/prev.png"  style="margin-top: 50px; width: 50px">
-      </a>
     </div>
 
-    <div class="seven columns" style="position: relative; font-size: 140%; font-family: 'Inconsolata';">
+    
+    <div class="seven columns" >
+      <h2   style="font-size: 180%; 
+                                               margin-bottom:
+                                               10pt"></>Start
+                                               Quickly</h2>
+    <div style="position: relative; ">
       <p class="metro primary btn"
          style="position: absolute; top: -10%; right: 0%;" >
         <a href="#" class="switch" gumby-trigger="#modal1"> <i class="icon-help"></i></a>
       </p>
+
+      <a href="#" class="toggle" 
+         gumby-trigger=".unique_lines|.web_scraper" style="position: absolute; top: 40%; left: -15%">
+        <img src="img/prev.png"  style="width: 50px">
+      </a>
+
+      <a href="#" class="toggle" 
+         gumby-trigger=".unique_lines|.web_scraper" style="position: absolute; top: 40%; right: -15%">
+        <img src="img/next.png"  style="width: 50px">
+      </a>
       
-<pre class="codesnip active unique_lines">
+<pre class="codesnip active unique_lines" style="font-size: 140%;">
 #lang <a href="http://docs.racket-lang.org/reference/index.html" class="codemodpath" rel="nofollow">racket</a>
 <span class="codecomment">;; Report each unique line from stdin</span>
 <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/let.html#(form._((lib._racket/private/letstx-scheme..rkt)._let))" class="codelinkimportform" rel="nofollow">let</a> <span class="codeparenthesis">(</span><span class="codeparenthesis">[</span><span class="codeid">saw</span> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/hashtables.html#(def._((quote._~23~25kernel)._make-hash))" class="codelinkimportid" rel="nofollow">make-hash</a><span class="codeparenthesis">)</span><span class="codeparenthesis">]</span><span class="codeparenthesis">)</span>
@@ -238,19 +252,16 @@ computing and from databases to charts.
     <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/reference/regexp.html#(def._((lib._racket/private/base..rkt)._regexp-match*))" class="codelinkimportid" rel="nofollow">regexp-match*</a> <span class="codeid">rx</span> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/net/url.html#(def._((lib._net/url..rkt)._get-pure-port))" class="codelinkimportid" rel="nofollow">get-pure-port</a> <span class="codeparenthesis">(</span><a href="http://docs.racket-lang.org/net/url.html#(def._((lib._net/url..rkt)._string-~3eurl))" class="codelinkimportid" rel="nofollow">string-&gt;url</a> <span class="codeid">u</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span><span class="codeparenthesis">)</span>
 </pre>
 </div>
+</div>
 
-    <div class="one columns">
-      <a href="#"  class="toggle" gumby-trigger=".unique_lines|.web_scraper">
-        <img src="img/next.png" style="width: 50px; margin-top: 50px;">
-          </a>
-    </div>
+    <div class="one columns"> </div>
 
 
     <div class="three columns" style="text-color: black">
-
-<p>Racket version 5.3.5 has been released.</p>
-<p>Racket videos are now available.</p>
-<p><a href="racketcon.html">RacketCon 2013</a> will be in September in Boston.</p>
+      <h2 style="font-size: 180%; margin-bottom: 10pt">News </h2>
+      <p>Racket version 5.3.5 has been released.</p>
+      <p>Racket videos are now available.</p>
+      <p><a href="racketcon.html">RacketCon 2013</a> will be in September in Boston.</p>
     </div>
     
 
