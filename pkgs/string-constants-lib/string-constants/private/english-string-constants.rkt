@@ -1513,6 +1513,7 @@ please adhere to these guidelines:
   (ml-cp-collection-paths "Collection Paths")
 
   ;; button labels
+  ;;  The package manager uses these, too
   (ml-cp-add "Add")
   (ml-cp-add-default "Add Default")
   (ml-cp-remove "Remove")
@@ -1786,19 +1787,24 @@ please adhere to these guidelines:
   (install-pkg-install-from-list "Install from List") ; tab label
   (install-pkg-install-installed "Installed")         ; tab label
   (install-pkg-migrate-from "Migrate From")           ; tab label
+  (install-pkg-settings "Settings")                   ; tab label
   (install-pkg-menu-item... "Install Package...")
   (install-pkg-dialog-title "Install Package")
   (install-pkg-source-label "Package Source")
-  (install-pkg-type-label "Package Source Type")
+  (install-pkg-package-name "Package Name")
   (install-pkg-infer "Infer")
+  (install-pkg-use "Use") ; as opposed to "Infer", label for text box
+  (install-pkg-type-label "Package Source Type")
   (install-pkg-file "File")
   (install-pkg-dir "Directory")
-  (install-pkg-dir-url "URL Directory")
-  (install-pkg-file-url "URL File")
+  (install-pkg-dir-url "Remote Directory")
+  (install-pkg-file-url "Remote File")
   (install-pkg-github "Github")
   (install-pkg-name "Name (consulting resolver)")
   (install-pkg-inferred-as "Type inferred to be ~a") ; ~a gets install-pkg-{file,dir,...}
-  (install-pkg-force? "Overwrite Existing?")
+  (install-pkg-link-dirs "Local directory as link")
+  (install-pkg-file-or-dir? "Choose a file or a directory?")
+  (install-pkg-force? "Ignore conflicts")
   (install-pkg-command-line "Equivalent command line invocation:")
   (install-pkg-error-installing-title "Error Installing Package")
   (install-pkg-action-label "Action to Take")
@@ -1810,9 +1816,9 @@ please adhere to these guidelines:
   (install-pkg-action-inferred-to-be-install "Action inferred to be Install")
   (install-pkg-default "Default")
   (install-pkg-scope-label "Package Scope")
+  (install-pkg-default-scope-label "Deafult Package Scope") ; for picking the scope to be default
   (install-pkg-installation "Specific Racket Installation")
   (install-pkg-user "Specific User and Racket Version")
-  (install-pkg-shared "Specific User and All Racket Versions")
   (install-pkg-set-as-default "Set as Default")
   (install-pkg-scope-is "Package scope is ~a") ; ~a gets install-pkg-{installation,user,shared}
   (install-pkg-select-package-directory "Select Package Directory")
@@ -1826,9 +1832,13 @@ please adhere to these guidelines:
   (install-pkg-update-catalogs "Update")
   (install-pkg-do-not-update-catalogs "Don't Update")
   (install-pkg-really-remove? "Are you sure you want to remove the following selected packages?")
+  (install-pkg-promote "Promote from Auto-Installed")
+  (install-pkg-demote "Demote to Auto-Installed")
   (install-pkg-abort-install "Abort Install")
   (install-pkg-abort-update "Abort Update")
   (install-pkg-abort-remove "Abort Remove")
+  (install-pkg-abort-demote "Abort Demote")
+  (install-pkg-abort-promote "Abort Promote")
   (install-pkg-abort-migrate "Abort Migrate")
   (install-pkg-abort-generic-action "Abort Action")
   (install-pkg-show-all-options "Show All Options")
@@ -1840,16 +1850,20 @@ please adhere to these guidelines:
   
   (install-pkg-abort-set-scope "Abort Scope Change")
 
-  (install-pkg-dependencies-fail "Fail: cancels the installation if dependencies unmet")
-  (install-pkg-dependencies-force "Force: install despite missing dependencies")
-  (install-pkg-dependencies-search-ask 
- "Ask: prompt about each missing dependency (not supported in GUI)")
-  (install-pkg-dependencies-search-auto "Auto: install missing dependencies automatically")
+  (install-pkg-dependencies-fail "Fail: cancels installation/update if dependencies are unmet")
+  (install-pkg-dependencies-force "Force: install despite missing or version-mismatched dependencies")
+  (install-pkg-dependencies-search-ask "Ask: prompt about each missing dependency (not supported in GUI)")
+  (install-pkg-dependencies-search-auto "Auto: install missing or version-mismatched dependencies automatically")
+  (install-pkg-dependencies-search-auto+update "Auto + Update: update dependencies whenever possible")
 
   (install-pkg-dependencies-mode "Dependencies Mode")
 
   (install-pkg-dependencies-search-ask-not-supported-in-gui
    "The “ask“ mode for dependencies is not supported in the GUI installer.")
-  (install-pkg-deps-is "Default deps mode is “~a”")
+  ;; "~a" is pre-":" part of `install-pkg-dependencies-fail' or `install-pkg-dependencies-search-auto':
+  (install-pkg-deps-is "Default dependency mode is ~a")
+
+  (install-pkg-package-catalogs "Package Catalogs") ; label for a list box
+  (install-pkg-add-package-catalog "Add Package Catalog")
   
   )

@@ -2,6 +2,7 @@
 (require racket/class
          racket/gui/base
          racket/format
+         setup/dirs
          pkg/lib
          pkg
          string-constants
@@ -10,6 +11,12 @@
 (provide by-installed-panel%)
 
 (struct ipkg (name scope auto? checksum source))
+
+(define ((ipkg->source dir) ipkg)
+  (define s (cadr (ipkg-source ipkg)))
+  (if (not (eq? 'catalog (car (ipkg-source ipkg))))
+      (path->string (path->complete-path s dir))
+      s))
 
 (define (scope<? a b)
   (cond
@@ -81,70 +88,130 @@
            [alignment '(center center)]
            [stretchable-height #f]))
 
-    (define remove-button
-      (new button%
-           [label sc-install-pkg-remove]
-           [parent button-line]
-           [callback (lambda (b e)
-                       (define ipkgs (selected-ipkgs))
-                       (define names (map ipkg-name ipkgs))
-                       (when (really-remove? names #:parent (get-top-level-window))
-                         (define scope (ipkg-scope (car ipkgs)))
-                         (in-terminal
-                          (string-constant install-pkg-abort-remove)
-                          (lambda ()
-                            (apply
-                             pkg-remove-command
-                             #:scope scope
-                             names)))
-                         (reset-installed-list!)))]))
-
     (define update-button
       (new button%
            [label (string-constant install-pkg-update)]
            [parent button-line]
            [callback (lambda (b e)
-                       (define ipkgs (selected-ipkgs))
-                       (define names (map ipkg-name ipkgs))
-                       (define scope (ipkg-scope (car ipkgs)))
-                       (in-terminal
+                       (handle-packages
                         (string-constant install-pkg-abort-update)
-                        (lambda ()
+                        (lambda (names scope)
                           (apply
                            pkg-update-command
                            #:scope scope
-                           names)))
-                       (reset-installed-list!))]))
+                           names))))]))
+
+    (define promote-button
+      (new button%
+           [label (string-constant install-pkg-promote)]
+           [parent button-line]
+           [callback (lambda (b e)
+                       (handle-packages
+                        (string-constant install-pkg-abort-promote)
+                        #:ipkgs? #t
+                        (lambda (ipkgs scope)
+                          ;; Links can be relative to scope:
+                          (define dir (cond
+                                       [(path? scope) scope]
+                                       [(eq? scope 'installation) (find-pkgs-dir)]
+                                       [else (find-user-pkgs-dir)]))
+                          ;; Also preserve link kind:
+                          (define kind (car (ipkg-source (car ipkgs))))
+                          (apply
+                           pkg-install-command
+                           #:scope scope
+                           #:link (eq? 'link kind)
+                           #:static-link (eq? 'static-link kind)
+                           (map (ipkg->source dir) ipkgs)))))]))
+
+    (define demote-button
+      (new button%
+           [label (string-constant install-pkg-demote)]
+           [parent button-line]
+           [callback (lambda (b e)
+                       (handle-packages
+                        (string-constant install-pkg-abort-demote)
+                        (lambda (names scope)
+                          (apply
+                           pkg-remove-command
+                           #:demote #t
+                           #:scope scope
+                           names))))]))
+
+    (define remove-button
+      (new button%
+           [label sc-install-pkg-remove]
+           [parent button-line]
+           [callback (lambda (b e)
+                       (handle-packages
+                        (string-constant install-pkg-abort-remove)
+                        #:check (lambda (names)
+                                  (really-remove? names #:parent (get-top-level-window)))
+                        (lambda (names scope)
+                          (apply
+                           pkg-remove-command
+                           #:scope scope
+                           names))))]))
+
+    (define/private (handle-packages label cb 
+                                     #:ipkgs? [ipkgs? #f]
+                                     #:check [check void])
+      (define ipkgs (selected-ipkgs))
+      (define names (map ipkg-name ipkgs))
+      (when (check names)
+        (define scope (ipkg-scope (car ipkgs)))
+        (in-terminal
+         label
+         (lambda ()
+           (cb (if ipkgs? ipkgs names) scope)))
+        (reset-installed-list!)))
 
     (define/private (adjust-buttons!)
       (define ipkgs (selected-ipkgs))
       (define same-scope? (and (pair? ipkgs)
                                ;; must be all in the same scope:
-                               (for/and ([i (cdr ipkgs)])
+                               (for/and ([i (in-list (cdr ipkgs))])
                                  (equal? (ipkg-scope i) (ipkg-scope (car ipkgs))))))
       (send remove-button enable same-scope?)
+      (send demote-button enable (and same-scope?
+                                      (for/and ([i (in-list ipkgs)])
+                                        (not (ipkg-auto? i)))))
+      (send promote-button enable (and same-scope?
+                                       (for/and ([i (in-list ipkgs)])
+                                         (ipkg-auto? i))
+                                       ;; all 'catalog, 'link, or 'static-link
+                                       (let ([kind (car (ipkg-source (car ipkgs)))])
+                                         (and (memq kind '(catalog link static-link))
+                                              (for/and ([i (in-list (cdr ipkgs))])
+                                                (eq? kind (car (ipkg-source i))))))))
       (send update-button enable (and same-scope?
                                       (for/and ([i (in-list ipkgs)])
-                                        (not (eq? 'link (car (ipkg-source i))))))))
+                                        (not (memq (car (ipkg-source i))
+                                                   '(link static-link)))))))
 
     (define/private (sort-list!)
       (define l (sort installed
                       (lambda (a b)
                         ((if flip? not values)
                          (case sort-by
-                           [(0) (if (equal? (ipkg-scope a) (ipkg-scope b))
+                           [(0) (if (eq? (ipkg-auto? a) (ipkg-auto? b))
+                                    (if (equal? (ipkg-scope a) (ipkg-scope b))
+                                        (string<? (ipkg-name a) (ipkg-name b))
+                                        (not (ipkg-auto? a)))
+                                    (ipkg-auto? b))]
+                           [(1) (if (equal? (ipkg-scope a) (ipkg-scope b))
                                     (if (eq? (ipkg-auto? a) (ipkg-auto? b))
                                         (string<? (ipkg-name a) (ipkg-name b))
                                         (not (ipkg-auto? a)))
                                     (scope<? (ipkg-scope a) (ipkg-scope b)))]
-                           [(1) (ipkg<? a b)]
-                           [(2) (if (equal? (ipkg-checksum a) (ipkg-checksum b))
+                           [(2) (ipkg<? a b)]
+                           [(3) (if (equal? (ipkg-checksum a) (ipkg-checksum b))
                                     (ipkg<? a b)
                                     (cond
                                      [(not (ipkg-checksum a)) #f]
                                      [(not (ipkg-checksum b)) #t]
                                      [else (string<? (ipkg-checksum a) (ipkg-checksum b))]))]
-                           [(3) 
+                           [(4) 
                             (define sa (ipkg-source a))
                             (define sb (ipkg-source b))
                             (if (equal? sa sb)

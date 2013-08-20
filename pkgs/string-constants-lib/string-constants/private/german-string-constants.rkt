@@ -1669,12 +1669,12 @@
   (install-pkg-infer "Inferieren")
   (install-pkg-file "Datei")
   (install-pkg-dir "Verzeichnis")
-  (install-pkg-dir-url "URL Verzeichnis")
-  (install-pkg-file-url "URL Datei")
+  ; change: "URL" -> "Remote" (install-pkg-dir-url "URL Verzeichnis")
+  ; change: "URL" -> "Remote" (install-pkg-file-url "URL Datei")
   (install-pkg-github "Github")
   (install-pkg-name "Name (frage Auflöser)")
   (install-pkg-inferred-as "Typ inferiert als ~a") ; ~a gets install-pkg-{file,dir,...}
-  (install-pkg-force? "Existierendes überschreiben?")
+  ; change: "force" is not "overwrite", not a question (install-pkg-force? "Existierendes überschreiben?")
   (install-pkg-command-line "Äquivalenter Kommandozeilen-Aufruf:")
   (install-pkg-error-installing-title "Fehler beim Installieren von Paket")
 
@@ -1689,7 +1689,6 @@
   (install-pkg-scope-label "Paket-Einzugsbereich")
   (install-pkg-installation "Bestimmte Racket-Installation")
   (install-pkg-user "Bestimmter Benutzer und Racket-Version")
-  (install-pkg-shared "Bestimmter Benutzer und alle Racket-Versionem")
   (install-pkg-set-as-default "Als Standard setzen")
   (install-pkg-scope-is "Paket-Einzugsbereich ist ~a") ; ~a gets install-pkg-{installation,user,shared}
   (install-pkg-select-package-directory "Paket-Verzeichnis auswählen")
@@ -1717,17 +1716,16 @@
 
   (install-pkg-abort-set-scope "Änderung des Einzugsbereich widerrufen")
 
-  (install-pkg-dependencies-fail "Fehlschlag: widerruft die Installation falls Abhänigkeiten fehlen")
+  ; change: "installation" -> "installation/update" (install-pkg-dependencies-fail "Fehlschlag: widerruft die Installation falls Abhänigkeiten fehlen")
   (install-pkg-dependencies-force "Trotzdem: installieren trotz fehlender abhängigkeiten")
-  (install-pkg-dependencies-search-ask 
-   "Fragen: bei jeder fehlenden Abhänigkeit fragen (nicht unterstützt in GUI)")
+  (install-pkg-dependencies-search-ask "Fragen: bei jeder fehlenden Abhänigkeit fragen (nicht unterstützt in GUI)")
   (install-pkg-dependencies-search-auto "Auto: fehlende Abhänigkeiten automatisch installieren")
 
   (install-pkg-dependencies-mode "Modus Abhängigkeiten")
 
   (install-pkg-dependencies-search-ask-not-supported-in-gui
    "Der “Fragen“-Modus für Abhänigkeiten ist im GUI-Installierer nicht unterstützt.")
-  (install-pkg-deps-is "Standard-Modus für Abhängigkeiten ist “~a”")
+  (install-pkg-deps-is "Standard-Modus für Abhängigkeiten ist ~a")
 
   
   )

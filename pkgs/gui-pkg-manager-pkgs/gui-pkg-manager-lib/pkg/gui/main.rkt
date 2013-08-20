@@ -7,6 +7,7 @@
          "by-list.rkt"
          "by-installed.rkt"
          "by-migrate.rkt"
+         "settings.rkt"
          mrlib/terminal
          string-constants)
 
@@ -119,7 +120,8 @@
          [choices (list (string-constant install-pkg-install-by-source)
                         (string-constant install-pkg-install-from-list)
                         (string-constant install-pkg-install-installed)
-                        (string-constant install-pkg-migrate-from))]
+                        (string-constant install-pkg-migrate-from)
+                        (string-constant install-pkg-settings))]
          [callback (lambda (t e)
                      (update-sel-panel-active))]))
 
@@ -152,6 +154,8 @@
   (new by-migrate-panel%
        [parent sel-panel]
        [in-terminal in-terminal-panel])
+  (new settings-panel%
+       [parent sel-panel])
   
   (send sel-tab set-selection
         (case initial-tab

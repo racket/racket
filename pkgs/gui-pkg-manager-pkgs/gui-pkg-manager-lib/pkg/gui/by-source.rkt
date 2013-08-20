@@ -48,8 +48,8 @@
 (define sc-install-pkg-dependencies-fail (string-constant install-pkg-dependencies-fail))
 (define sc-install-pkg-dependencies-force (string-constant install-pkg-dependencies-force))
 (define sc-install-pkg-dependencies-search-ask (string-constant install-pkg-dependencies-search-ask))
-(define sc-install-pkg-dependencies-search-auto 
-  (string-constant install-pkg-dependencies-search-auto))
+(define sc-install-pkg-dependencies-search-auto (string-constant install-pkg-dependencies-search-auto))
+(define sc-install-pkg-dependencies-search-auto+update (string-constant install-pkg-dependencies-search-auto+update))
 
 (define sc-install-pkg-dependencies-mode (string-constant install-pkg-dependencies-mode))
 
@@ -83,32 +83,47 @@
                            (preferences:get 'drracket:gui-installer-pkg-source)))
 
     (define (browse-callback b e)
-      (define mode (send choice get-string-selection))
-      (define dir? (or (equal? mode sc-install-pkg-dir)
-                       (equal? mode sc-install-pkg-dir-url)))
-      (define f
-        (cond
-          [dir?
-           (get-directory (string-constant install-pkg-select-package-directory)
-                          (get-top-level-window))]
-          [else
-           (parameterize ([finder:default-filters
-                           '(("Package" "*.zip;*.plt;*.tgz;*.tar")
-                             ("Any" "*.*"))])
-             (finder:get-file #f (string-constant install-pkg-select-package-file)
-                              #f "bad"
-                              (get-top-level-window)))]))
-      (when f
-        (send tf set-value 
-              (url->string (path->url (if dir?
-                                          (path->directory-path f) 
-                                          f))))
-        (adjust-all)))
+      (let/ec esc
+        (define mode (send choice get-string-selection))
+        (define dir? (or (equal? mode sc-install-pkg-dir)
+                         (and (not (equal? mode sc-install-pkg-file))
+                              (let ([v (message-box/custom 
+                                        (string-constant browse...)
+                                        (string-constant install-pkg-file-or-dir?)
+                                        (string-constant install-pkg-file)
+                                        (string-constant install-pkg-dir)
+                                        (string-constant cancel)
+                                        (get-top-level-window)
+                                        '(default=1))])
+                                (when (or (= v 3) (not v)) (esc (void)))
+                                (= v 2)))))
+        
+        (define f
+          (cond
+           [dir?
+            (get-directory (string-constant install-pkg-select-package-directory)
+                           (get-top-level-window))]
+           [else
+            (parameterize ([finder:default-filters
+                            '(("Package" "*.zip;*.plt;*.tgz;*.tar")
+                              ("Any" "*.*"))])
+              (finder:get-file #f (string-constant install-pkg-select-package-file)
+                               #f "bad"
+                               (get-top-level-window)))]))
+        (when f
+          (send tf set-value 
+                ;; Simplified paths on no platform should start "[a-z]*://":
+                (path->string (simplify-path
+                               (if dir?
+                                   (path->directory-path f) 
+                                   f))))
+          (adjust-all))))
     (define browse-button (new button%
                                [parent source-panel]
                                [label (string-constant browse...)]
                                [font small-control-font]
-                               [callback browse-callback]))
+                               [callback browse-callback]
+                               [vert-margin 0]))
     
     (define/public (get-button-panel) button-panel)
     (define button-panel (new horizontal-panel% 
@@ -159,9 +174,35 @@
                                    (adjust-all))]))
 
     (send details-parent change-children (λ (l) '()))
+
+    (define name-panel (new horizontal-panel% 
+                            [parent details-panel]
+                            [stretchable-height #f]))
+    (define name-choice (new radio-box%
+                             [label (~a (string-constant install-pkg-package-name) ":")]
+                             [parent name-panel]
+                             [style '(horizontal)]
+                             [stretchable-width #f]
+                             [choices (list (string-constant install-pkg-infer)
+                                            (~a (string-constant install-pkg-use) ":"))]
+                             [callback (lambda (cb e) (adjust-all))]))
+    (define name-message (new message%
+                              [label ""]
+                              [parent name-panel]
+                              [stretchable-width #t]))
+    (define name-field (new text-field%
+                            [label #f]
+                            [parent name-panel]))
+    ;; Make the panel height the same whether we show the message or field:
+    (let-values ([(w h) (send name-panel get-graphical-min-size)])
+      (send name-panel min-height h))
+
+    (define type-panel (new horizontal-panel% 
+                            [parent details-panel]
+                            [stretchable-height #f]))
     (define choice (new choice%
                         [label (~a sc-install-pkg-type-label ":")]
-                        [parent details-panel]
+                        [parent type-panel]
                         [stretchable-width #t]
                         [callback (λ (x y) (adjust-all))]
                         [choices (list sc-install-pkg-infer
@@ -171,6 +212,11 @@
                                        sc-install-pkg-dir-url
                                        sc-install-pkg-github
                                        sc-install-pkg-name)]))
+    (define link-dir-checkbox (new check-box%
+                                   [parent type-panel]
+                                   [label (string-constant install-pkg-link-dirs)]
+                                   [value #t]
+                                   [callback (lambda (b e) (adjust-cmd-line))]))
     
     (define inferred-msg-parent (new horizontal-panel% 
                                      [parent details-panel]
@@ -213,6 +259,7 @@
     (define scope-default-button (new button% 
                                       [label sc-install-pkg-set-as-default]
                                       [font small-control-font]
+                                      [vert-margin 0]
                                       [parent scope-panel]
                                       [callback
                                        (lambda (b e)
@@ -220,7 +267,7 @@
                                           sc-install-pkg-abort-set-scope
                                           (lambda ()
                                             (define scope (selected-scope))
-                                            (pkg-config-command #:scope 'installation
+                                            (pkg-config-command #:scope 'user
                                                                 #:set #t
                                                                 "default-scope"
                                                                 (~a scope))
@@ -252,7 +299,8 @@
                                             sc-install-pkg-dependencies-fail
                                             sc-install-pkg-dependencies-force
                                             sc-install-pkg-dependencies-search-ask
-                                            sc-install-pkg-dependencies-search-auto)]
+                                            sc-install-pkg-dependencies-search-auto
+                                            sc-install-pkg-dependencies-search-auto+update)]
                              [stretchable-width #t]
                              [callback deps-choice-callback]))
     (define deps-msg-parent (new horizontal-panel% 
@@ -313,10 +361,20 @@
            'install])]
         [(1) 'install]
         [(2) 'update]))
-    
-    
+
+    (define/private (infer-package-name?)
+      (= 0 (send name-choice get-selection)))
+
+    (define/private (get-name)
+      (if (infer-package-name?)
+          (or (package-source->name (send tf get-value) (selected-type))
+              "???")
+          (send name-field get-value)))
+
     (define/private (adjust-all)
+      (adjust-name)
       (adjust-inferred)
+      (adjust-link-dir)
       (adjust-inferred-action)
       (adjust-checkbox)
       (adjust-cmd-line)
@@ -325,6 +383,17 @@
       (adjust-scope)
       (adjust-deps)
       (adjust-ok))
+
+    (define/private (adjust-name)
+      (define infer? (infer-package-name?))
+      (send name-panel change-children
+            (lambda (l)
+              (list name-choice
+                    (if infer? name-message name-field))))
+      (when infer?
+        (define name (get-name))
+        (send name-message set-label name)
+        (send name-field set-value name)))
     
     (define/private (adjust-checkbox)
       (send cb enable (equal? 'install (get-current-action))))
@@ -348,8 +417,9 @@
 
     (define/private (adjust-browse)
       (define mode (send choice get-string-selection))
-      (define show? (not (or (equal? mode sc-install-pkg-github)
-                             (equal? mode sc-install-pkg-name))))
+      (define show? (or (equal? mode sc-install-pkg-infer)
+                        (equal? mode sc-install-pkg-file)
+                        (equal? mode sc-install-pkg-dir)))
       (define shown? (member browse-button (send source-panel get-children)))
       (unless (eq? (and show? #t) (and shown? #t))
         (if show?
@@ -378,6 +448,9 @@
         (and inferred-actual-type
              (format sc-install-pkg-inferred-as (type->str inferred-actual-type))))
       (send inferred-msg set-label (or new-lab "")))
+
+    (define/private (adjust-link-dir)
+      (send link-dir-checkbox show (member (selected-type) '(#f dir))))
     
     (define (get-inferred-actual-type)
       (and (equal? #f (selected-type))
@@ -405,7 +478,14 @@
       (send deps-msg set-label
             (cond
               [(equal? 0 (send deps-choice get-selection)) 
-               (format sc-install-pkg-deps-is (get-deps-selected-type))]
+               (format sc-install-pkg-deps-is 
+                       (cadr
+                        (regexp-match #rx"^(.*):" 
+                                      (case (get-deps-selected-type)
+                                        [(fail)
+                                         (string-constant install-pkg-dependencies-fail)]
+                                        [(search-auto)
+                                         (string-constant install-pkg-dependencies-search-auto)]))))]
               [else ""])))
     
     (define (get-deps-selected-type)
@@ -418,7 +498,10 @@
         [(1) 'fail]
         [(2) 'force]
         [(3) 'fail] ;; shouldn't happen
-        [(4) 'search-auto]))
+        [(4 5) 'search-auto]))
+
+    (define (get-deps-auto-update)
+      (= 5 (send deps-choice get-selection)))
       
     (define/private (adjust-cmd-line)
       (define (possibly-quote-string s)
@@ -438,9 +521,10 @@
                   string-append
                   (add-between
                    (map (λ (kwd kwd-arg)
-                          (format "--~a ~s" 
-                                  (regexp-replace #rx"^#:" (format "~a" kwd) "")
-                                  kwd-arg))
+                          (define flag (~a "--" (keyword->string kwd)))
+                          (if (boolean? kwd-arg)
+                              flag
+                              (~a flag " " (~s kwd-arg))))
                         (cmdline-kwds cmd-line)
                         (cmdline-kwd-args cmd-line))
                    " "))
@@ -470,10 +554,17 @@
            (add-kwd-arg '#:force #t))
          (when (selected-type)
            (add-kwd-arg '#:type (selected-type)))
+         (when (send link-dir-checkbox get-value)
+           (when (eq? 'dir (or (selected-type) (get-inferred-actual-type)))
+             (add-kwd-arg '#:link #t)))
          (let ([scope (selected-scope)])
            (unless (equal? scope (default-pkg-scope))
              (add-kwd-arg '#:scope scope)))
          (add-kwd-arg '#:deps (get-deps-selected-type))
+         (when (get-deps-auto-update)
+           (add-kwd-arg '#:update-deps #t))
+         (unless (infer-package-name?)
+           (add-kwd-arg '#:name (get-name)))
          (cmdline (get-current-action) kwds kwd-args (list the-pkg))]))
 
     (define/override (on-superwindow-show on?)

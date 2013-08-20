@@ -32,6 +32,19 @@
       "  "
       "@: installed from URL"))
 
+(define (pkg-install-status info scope default-scope)
+  (~a (cond 
+       [(pkg-info-auto? info) "*"]
+       [else check-mark])
+      (cond
+       [(equal? scope default-scope) ""]
+       [else "!"])
+      (case (car (pkg-info-orig-pkg info))
+        [(catalog) ""]
+        [(link) "="]
+        [(static-link) "="]
+        [(url) "@"])))
+
 (define by-list-panel%
   (class vertical-panel%
     (init-field [in-terminal in-terminal])
@@ -106,13 +119,20 @@
 
     (define/private (sort-by! col)
       (define sel (case col
-                    [(0 1) db:pkg-name]
+                    [(0) (lambda (p)
+                           (define i
+                             (hash-ref installed (db:pkg-name p) #f))
+                           (if i
+                               (pkg-install-status (cdr i) (car i) default-scope)
+                               ""))]
+                    [(1) db:pkg-name]
                     [(2) db:pkg-author]
                     [(3) db:pkg-desc]
                     [(4) (lambda (p) (format-tags (pkg-tags p)))]
                     [(5) db:pkg-checksum]
                     [(6) db:pkg-source]
                     [(7) db:pkg-catalog]))
+      (define empty-last? (not (= col 0)))
       (define switch (if (= sort-column col)
                          not
                          values))
@@ -123,10 +143,12 @@
             (lambda (a b)
               (switch
                (cond
-                [(and (not (string=? (sel a) ""))
+                [(and empty-last?
+                      (not (string=? (sel a) ""))
                       (string=? (sel b) ""))
                  #t]
-                [(and (string=? (sel a) "")
+                [(and empty-last?
+                      (string=? (sel a) "")
                       (not (string=? (sel b) "")))
                  #f]
                 [(string<? (sel a) (sel b)) #t]
@@ -419,17 +441,19 @@
       (set! tagss (for/hash ([p (in-list pkg-list)]
                              [t (in-list tags-list)])
                     (values p t)))
-      (set! default-scope (default-pkg-scope))
       (refresh-installed-list! #:always? #t))
 
     (define/private (refresh-installed-list! #:always? [always? #f])
+      (define new-default-scope (default-pkg-scope))
       (define new-installed
         (for*/hash ([scope (in-list (get-scope-list))]
                     [(k v) (in-hash (installed-pkg-table #:scope scope))])
           (values k (cons scope v))))
       (when (or always?
-                (not (equal? installed new-installed)))
+                (not (equal? installed new-installed))
+                (not (eq? default-scope new-default-scope)))
         (set! installed new-installed)
+        (set! default-scope new-default-scope)
         (sort-pkg-list!)))
 
     (define/private (pkg-tags p)
@@ -462,18 +486,7 @@
               (cond
                [(not v) ""]
                [else
-                (define info (cdr v))
-                (~a (cond 
-                     [(pkg-info-auto? info) "*"]
-                     [else check-mark])
-                    (cond
-                     [(equal? (car v) default-scope) ""]
-                     [else "!"])
-                    (case (car (pkg-info-orig-pkg info))
-                      [(catalog) ""]
-                      [(link) "="]
-                      [(static-link) "="]
-                      [(url) "@"]))]))
+                (pkg-install-status (cdr v) (car v) default-scope)]))
             (for/list ([p list-pkgs]) (->label-string (db:pkg-name p)))
             (for/list ([p list-pkgs]) (->label-string (db:pkg-author p)))
             (for/list ([p list-pkgs]) (->label-string (db:pkg-desc p)))
