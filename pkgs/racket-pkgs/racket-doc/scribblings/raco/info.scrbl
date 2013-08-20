@@ -26,7 +26,7 @@ declaration has a highly constrained form. It must match the following
 grammar of @racket[_info-module]:
 
 @racketgrammar*[
-#:literals (info lib info quote quasiquote
+#:literals (info lib setup/infotab module define quote quasiquote
                  cons car cdr list list* reverse append
                  string-append path->string build-path
                  collection-path
@@ -43,8 +43,8 @@ grammar of @racket[_info-module]:
                (lib "infotab.rkt" "setup")
                (lib "infotab.ss" "setup")]
 [decl (define id info-expr)]
-[info-expr (quote datum)
-           (quasiquote datum)
+[info-expr (@#,racket[quote] datum)
+           (@#,racket[quasiquote] datum)
            (info-primitive info-expr ...)
            id
            string
