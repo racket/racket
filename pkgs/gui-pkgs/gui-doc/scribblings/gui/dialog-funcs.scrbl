@@ -391,7 +391,7 @@ Like @racket[message-box/custom], except that
                              [message (or/c label-string? #f)]
                              [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                              [init-val string? ""]
-                             [style (listof 'password) null]
+                             [style (listof (or/c 'password 'disallow-invalid)) null]
                              [#:validate validate (-> string? boolean?)]
                              [#:dialog-mixin dialog-mixin (make-mixin-contract dialog%) values]) 
          (or/c string? #f)]{
@@ -410,8 +410,10 @@ If @racket[style] includes @racket['password], the dialog's text field
  of the actual character.
 
 The @racket[validate] function is called each time the text field changed,
-with the contents of the text field. If it returns @racket[#t], the background
-of the text is colored pink.
+with the contents of the text field. If it returns @racket[#f], the background
+of the text is colored pink. If @racket['disallow-invalid] is included in
+@racket[style], the @onscreen{Ok} button is disabled whenever the text
+background is pink.
  
 The @racket[dialog-mixin] argument is applied to the class that implements the dialog
 before the dialog is created. 

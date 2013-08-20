@@ -195,7 +195,7 @@
     (check-label-string/false 'get-text-from-user message)
     (check-top-level-parent/false 'get-text-from-user parent)
     (check-string 'get-text-from-user init-val)
-    (check-style 'get-text-from-user #f '(password) style)
+    (check-style 'get-text-from-user #f '(password disallow-invalid) style)
     (define f (make-object (dialog-mixin dialog%) title parent box-width))
     (define ok? #f)
     (define (done ?) (set! ok? ?) (send f show #f))
@@ -208,22 +208,30 @@
                                   (done #t)]
                                  [else (do-validation)]))]
                    [init-value init-val]
-                   [style (list* 'single 'vertical-label style)]))
+                   [style (list* 'single 'vertical-label
+                                 (if (memq 'password style)
+                                     '(password)
+                                     '()))]))
     (define default-background (send t get-field-background))
     (define (do-validation)
+      (define valid? (validate (send t get-value)))
       (send t set-field-background 
-            (if (validate (send t get-value))
+            (if valid?
                 default-background
-                (send wx:the-color-database find-color "pink"))))
+                (send wx:the-color-database find-color "pink")))
+      (when (memq 'disallow-invalid style)
+        (send ok-button enable valid?)))
     (define p (make-object horizontal-pane% f))
     (send p set-alignment 'right 'center)
     (send f stretchable-height #f)
-    (ok-cancel
-     (lambda () (make-object button% "OK" p (λ (b e) (done #t)) '(border)))
-     (lambda () (make-object button% "Cancel" p (λ (b e) (done #f)))))
+    (define-values (ok-button cancel-button)
+      (ok-cancel
+       (lambda () (make-object button% "OK" p (λ (b e) (done #t)) '(border)))
+       (lambda () (make-object button% "Cancel" p (λ (b e) (done #f))))))
     (send (send t get-editor) select-all)
     (send t focus)
     (send f center)
+    (do-validation)
     (send f show #t)
     (and ok? (send t get-value)))
 
