@@ -167,6 +167,7 @@ Unless @racket[quiet?] is true, information about the output is repotred to the 
                            [#:dep-behavior dep-behavior
                                            (or/c #f 'fail 'force 'search-ask 'search-auto)
                                            #f]
+                           [#:update-deps? update-deps? boolean? #f]
                            [#:force? force? boolean? #f]
                            [#:ignore-checksums? ignore-checksums? boolean? #f]
                            [#:quiet? boolean? quiet? #f]
@@ -196,11 +197,11 @@ The package lock must be held; see @racket[with-pkg-lock].}
 
 
 @defproc[(pkg-update      [names (listof (or/c string? pkg-desc?))]
+                          [#:all? all? boolean? #f]
                           [#:dep-behavior dep-behavior
                                           (or/c #f 'fail 'force 'search-ask 'search-auto)
                                           #f]
-                          [#:all? all? boolean? #f]
-                          [#:deps? deps? boolean? #f]
+                          [#:update-deps? update-deps? boolean? #f]
                           [#:force? force? boolean? #f]
                           [#:ignore-checksums? ignore-checksums? boolean? #f]
                           [#:quiet? boolean? quiet? #f]

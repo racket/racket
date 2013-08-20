@@ -96,6 +96,7 @@
           #:install-dep-flags (install-dep-flags ...)
           #:install-dep-desc (install-dep-desc ...)
           #:install-force-flags (install-force-flags ...)
+          #:update-deps-flags (update-deps-flags ...)
           #:install-copy-flags (install-copy-flags ...)
           #:install-copy-defns (install-copy-defns ...))
        (with-syntax ([([scope-flags ...]
@@ -104,6 +105,7 @@
                        [install-type-flags ...]
                        [(install-dep-flags ... (dep-desc ...))]
                        [install-force-flags ...]
+                       [update-deps-flags ...]
                        [install-copy-flags ...]
                        [install-copy-defns ...])
                       (syntax-local-introduce #'([scope-flags ...]
@@ -112,6 +114,7 @@
                                                  [install-type-flags ...]
                                                  [install-dep-flags ...]
                                                  [install-force-flags ...]
+                                                 [update-deps-flags ...]
                                                  [install-copy-flags ...]
                                                  [install-copy-defns ...]))])
          #`(commands
@@ -127,6 +130,8 @@
                                 (dep-desc ... 
                                           install-dep-desc ...)]
              [#:bool auto () "Shorthand for `--deps search-auto'"]
+             #:once-each
+             update-deps-flags ...
              #:once-any
              install-copy-flags ...
              #:once-any
@@ -152,6 +157,7 @@
                                   #:force? force
                                   #:ignore-checksums? ignore-checksums
                                   #:skip-installed? skip-installed
+                                  #:update-deps? update-deps
                                   #:strip (or (and source 'source) (and binary 'binary))
                                   #:link-dirs? link-dirs?
                                   (for/list ([p (in-list pkg-source)])
@@ -162,7 +168,6 @@
              "Update packages"
              #:once-each
              [#:bool all ("-a") ("Update all packages if no <pkg-source> is given")]
-             [#:bool update-deps () "Also update all dependencies"]
              [#:bool lookup () "For each name <pkg-source>, look up in catalog"]
              #:once-any
              install-type-flags ...
@@ -171,6 +176,8 @@
                                 (dep-desc ... 
                                           install-dep-desc ...)]
              [#:bool auto () "Shorthand for `--deps search-auto' plus `--update-deps'"]
+             #:once-each
+             update-deps-flags ...
              #:once-any
              install-copy-flags ...
              #:once-any
@@ -203,7 +210,7 @@
                                  #:dep-behavior (if auto 'search-auto deps)
                                  #:force? force
                                  #:ignore-checksums? ignore-checksums
-                                 #:deps? (or update-deps auto)
+                                 #:update-deps? (or update-deps auto)
                                  #:strip (or (and source 'source) (and binary 'binary))
                                  #:link-dirs? link-dirs?))))
                 (setup no-setup setup-collects jobs)))]
@@ -432,6 +439,8 @@
    #:install-force-flags
    ([#:bool force () "Ignores conflicts"]
     [#:bool ignore-checksums () "Ignores checksums"])
+   #:update-deps-flags
+   ([#:bool update-deps () "For `search-ask' or `search-auto', also update dependencies"])
    #:install-copy-flags
    ([#:bool link () ("Link a directory package source in place (default for a directory)")]
     [#:bool static-link () ("Link in place, promising collections do not change")]

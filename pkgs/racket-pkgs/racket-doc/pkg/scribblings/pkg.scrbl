@@ -283,14 +283,22 @@ sub-commands.
 
  @item{@DFlag{deps} @nonterm{behavior} --- Selects the behavior for dependencies, where @nonterm{behavior} is one of
   @itemlist[
-   @item{@exec{fail} --- Cancels the installation if dependencies are version requirements are unmet (default for most packages)}
-   @item{@exec{force} --- Installs the package(s) despite missing dependencies or version requirements (unsafe)}
-   @item{@exec{search-ask} --- Looks for the dependencies or updates via the configured @tech{package catalogs} 
-         (default if the dependency is a @tech{package name}) but asks if you would like it installed or updated.}
+   @item{@exec{fail} --- Cancels the installation if dependencies are uninstalled or version requirements are unmet. 
+        This behavior is the default for a @nonterm{pkg-source} that is not a @tech{package name}.}
+   @item{@exec{force} --- Installs the package(s) despite missing dependencies or version requirements (unsafe).}
+   @item{@exec{search-ask} --- Looks for dependencies (when uninstalled) or updates (when version requirements are unmet)
+         via the configured @tech{package catalogs},
+         but asks if you would like the packages installed or updated. This behavior is the default for a
+         @nonterm{pkg-source} that is a @tech{package name}.}
    @item{@exec{search-auto} --- Like @exec{search-ask}, but does not ask for permission to install or update.}
   ]}
 
   @item{@DFlag{auto} --- Shorthand for @exec{@DFlag{deps} search-auto}.}
+
+  @item{@DFlag{update-deps} --- With @exec{search-ask} or @exec{search-auto} dependency behavior, checks
+        already-installed dependencies transitively for updates (even when
+        not forced by version requirements), asking or automatically updating a
+        package when an update is available.}
 
   @item{@DFlag{link} --- Implies @exec{--type dir} (and overrides any specified type),
         and links the existing directory as an installed package, instead of copying the
@@ -362,8 +370,6 @@ the given @nonterm{pkg-source}s.
  @itemlist[
  @item{@DFlag{all} or @Flag{a} --- Update all packages, if no packages are given in the argument list.}
 
- @item{@DFlag{update-deps} --- Checks dependencies (transitively) for updates.}
-
  @item{@DFlag{lookup} --- Checks Causes a @tech{package name} as a @nonterm{pkg-source} to be used
        as a replacement, instead of the name of a installed package that may have updates.
        (If the named package was installed through a package name, then there's effectively
@@ -373,6 +379,8 @@ the given @nonterm{pkg-source}s.
  @item{@DFlag{name} @nonterm{pkg} or @Flag{n} @nonterm{pkg} --- Same as for @command-ref{install}.}
  @item{@DFlag{deps} @nonterm{behavior} --- Same as for @command-ref{install}.}
  @item{@DFlag{auto} --- Shorthand for @exec{@DFlag{deps} search-auto} plus @DFlag{update-deps}.}
+ @item{@DFlag{update-deps} --- Same as for @command-ref{install}, but
+       implied by @DFlag{auto} only for @command-ref{update}.}
  @item{@DFlag{link} --- Same as for @command-ref{install}.}
  @item{@DFlag{static-link} --- Same as for @command-ref{install}.}
  @item{@DFlag{binary} --- Same as for @command-ref{install}.}

@@ -1180,8 +1180,7 @@
          #:skip-installed? skip-installed?
          #:force? force?
          #:quiet? quiet?
-         #:install-conversation install-conversation
-         #:update-conversation update-conversation
+         #:conversation conversation
          #:strip strip-mode
          #:link-dirs? link-dirs?
          descs)
@@ -1196,6 +1195,10 @@
      (install-info pkg-name orig-pkg pkg-dir clean? checksum module-paths)
      info)
     (define name? (eq? 'catalog (first orig-pkg)))
+    (define this-dep-behavior (or dep-behavior
+                                  (if name?
+                                      'search-ask
+                                      'fail)))
     (define (clean!)
       (when clean?
         (delete-directory/files pkg-dir)))
@@ -1207,7 +1210,7 @@
                                  (car ud)
                                  (caddr ud)
                                  (cadddr ud))))))
-    (define (show-dependencies deps update? auto? conversation)
+    (define (show-dependencies deps update? auto?)
       (unless quiet?
         (printf/flush "The following~a packages are listed as dependencies of ~a~a:~a\n"
                       (if update? " out-of-date" " uninstalled")
@@ -1323,11 +1326,7 @@
                unsatisfied-deps)))
        =>
        (λ (unsatisfied-deps)
-          (match
-             (or dep-behavior
-                 (if name?
-                   'search-ask
-                   'fail))
+          (match this-dep-behavior
            ['fail
             (clean!)
             (pkg-error (~a "missing dependencies\n"
@@ -1336,22 +1335,23 @@
                        pkg
                        (format-list unsatisfied-deps))]
            ['search-auto
-            (show-dependencies unsatisfied-deps #f #t install-conversation)
-            (raise (vector updating? infos unsatisfied-deps void 'always-yes update-conversation))]
+            (show-dependencies unsatisfied-deps #f #t)
+            (raise (vector updating? infos unsatisfied-deps void 'always-yes))]
            ['search-ask
-            (show-dependencies unsatisfied-deps #f #f install-conversation)
-            (case (if (eq? install-conversation 'always-yes)
+            (show-dependencies unsatisfied-deps #f #f)
+            (case (if (eq? conversation 'always-yes)
                       'always-yes
                       (ask "Would you like to install these dependencies?"))
               [(yes)
-               (raise (vector updating? infos unsatisfied-deps void 'again update-conversation))]
+               (raise (vector updating? infos unsatisfied-deps void 'again))]
               [(always-yes)
-               (raise (vector updating? infos unsatisfied-deps void 'always-yes update-conversation))]
+               (raise (vector updating? infos unsatisfied-deps void 'always-yes))]
               [(no)
                (clean!)
                (pkg-error "missing dependencies\n  missing packages:~a" (format-list unsatisfied-deps))])]))]
       [(and
         update-deps?
+        (member this-dep-behavior '(search-auto search-ask))
         (let ()
           (define deps (get-all-deps metadata-ns pkg-dir))
           (define update-pkgs
@@ -1368,12 +1368,29 @@
                                null))
                         deps))
           (and (not (empty? update-pkgs))
-               update-pkgs)))
-       => (lambda (update-pkgs)
-            (show-dependencies update-pkgs #t #f 'always-yes)
-            (raise (vector #t infos update-pkgs
-                           (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) update-pkgs))
-                           install-conversation update-conversation)))]
+               update-pkgs
+               (let ()
+                 (define (continue conversation)
+                   (raise (vector #t infos update-pkgs
+                                  (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) update-pkgs))
+                                  conversation)))
+                 (match this-dep-behavior
+                   ['search-auto
+                    (show-dependencies update-pkgs #t #t)
+                    (continue 'always-yes)]
+                   ['search-ask
+                    (show-dependencies update-pkgs #t #f)
+                    (case (if (eq? conversation 'always-yes)
+                              'always-yes
+                              (ask "Would you like to update these dependencies?"))
+                      [(yes)
+                       (continue 'again)]
+                      [(always-yes)
+                       (continue 'always-yes)]
+                      [(no)
+                       ;; Don't fail --- just skip update
+                       #f])])))))
+       (error "internal error: should have raised an exception")]
       [(and
         (not (eq? dep-behavior 'force))
         (let ()
@@ -1443,25 +1460,22 @@
                                                                #:namespace metadata-ns)
                                            update-pkgs)])
                 (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))))
-            (match (or dep-behavior
-                       (if name?
-                           'search-ask
-                           'fail))
+            (match this-dep-behavior
               ['fail
                (clean!)
                (report-mismatch update-deps)]
               ['search-auto
-               (show-dependencies update-deps #t #t update-conversation)
-               (raise (vector #t infos update-pkgs (make-pre-succeed) install-conversation 'always-yes))]
+               (show-dependencies update-deps #t #t)
+               (raise (vector #t infos update-pkgs (make-pre-succeed) 'always-yes))]
               ['search-ask
-               (show-dependencies update-deps #t #f update-conversation)
-               (case (if (eq? update-conversation 'always-yes)
+               (show-dependencies update-deps #t #f)
+               (case (if (eq? conversation 'always-yes)
                          'always-yes
                          (ask "Would you like to update these dependencies?"))
                  [(yes)
-                  (raise (vector #t infos update-pkgs (make-pre-succeed) install-conversation 'again))]
+                  (raise (vector #t infos update-pkgs (make-pre-succeed) 'again))]
                  [(always-yes)
-                  (raise (vector #t infos update-pkgs (make-pre-succeed) install-conversation 'always-yes))]
+                  (raise (vector #t infos update-pkgs (make-pre-succeed) 'always-yes))]
                  [(no)
                   (clean!)
                   (report-mismatch update-deps)])]))]
@@ -1643,8 +1657,7 @@
                      #:update-cache [update-cache (make-hash)]
                      #:updating? [updating? #f]
                      #:quiet? [quiet? #f]
-                     #:install-conversation [install-conversation #f]
-                     #:update-conversation [update-conversation #f]
+                     #:conversation [conversation #f]
                      #:strip [strip-mode #f]
                      #:link-dirs? [link-dirs? #f])
   (define new-descs
@@ -1663,7 +1676,7 @@
      pkg-desc=?))
   (with-handlers* ([vector?
                     (match-lambda
-                     [(vector updating? new-infos deps more-pre-succeed inst-conv updt-conv)
+                     [(vector updating? new-infos deps more-pre-succeed conv)
                       (pkg-install
                        #:old-infos new-infos
                        #:old-auto+pkgs (append old-descs new-descs)
@@ -1674,8 +1687,7 @@
                        #:update-cache update-cache
                        #:pre-succeed (lambda () (pre-succeed) (more-pre-succeed))
                        #:updating? updating?
-                       #:install-conversation inst-conv
-                       #:update-conversation updt-conv
+                       #:conversation conv
                        #:strip strip-mode
                        (for/list ([dep (in-list deps)])
                          (if (pkg-desc? dep)
@@ -1693,8 +1705,7 @@
      #:pre-succeed pre-succeed
      #:updating? updating?
      #:quiet? quiet?
-     #:install-conversation install-conversation
-     #:update-conversation update-conversation
+     #:conversation conversation
      #:strip strip-mode
      #:link-dirs? link-dirs?
      new-descs)))
@@ -1828,7 +1839,7 @@
                     #:dep-behavior [dep-behavior #f]
                     #:force? [force? #f]
                     #:ignore-checksums? [ignore-checksums? #f]
-                    #:deps? [update-deps? #f]
+                    #:update-deps? [update-deps? #f]
                     #:quiet? [quiet? #f]
                     #:strip [strip-mode #f]
                     #:link-dirs? [link-dirs? #f])
@@ -2652,7 +2663,7 @@
    (->* ((listof (or/c string? pkg-desc?)))
         (#:dep-behavior dep-behavior/c
                         #:all? boolean?
-                        #:deps? boolean?
+                        #:update-deps? boolean?
                         #:quiet? boolean?
                         #:force? boolean?
                         #:ignore-checksums? boolean?
@@ -2674,6 +2685,7 @@
   [pkg-install
    (->* ((listof pkg-desc?))
         (#:dep-behavior dep-behavior/c
+                        #:update-deps? boolean?
                         #:force? boolean?
                         #:ignore-checksums? boolean?
                         #:skip-installed? boolean?
