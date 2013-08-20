@@ -845,7 +845,10 @@
      (hash-set! ht add1 sub1)
      (test 9 (hash-ref ht add1) 10)
      (test '(10) 'for-hash (for/list ([(k v) (in-hash ht)])
-                             (k (v 10)))))))
+                             (test v hash-ref ht k)
+                             (k (v 10))))
+     (test (void) hash-clear! ht)
+     (test 0 hash-count ht))))
 
 ;; ----------------------------------------
 
@@ -866,8 +869,7 @@
            (test #f hash-ref h 1 #f)
            (err/rt-test (hash-iterate-value h (hash-iterate-first h)))
            (err/rt-test (hash-map h void))
-           (err/rt-test (hash-for-each h void))
-           (err/rt-test (hash-clear! h))))])
+           (err/rt-test (hash-for-each h void))))])
   (check (make-hash))
   (check (make-hasheq))
   (check (make-weak-hash))

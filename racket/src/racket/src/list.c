@@ -2424,25 +2424,31 @@ static Scheme_Object *hash_table_remove(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *hash_table_clear_bang(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *v;
+  Scheme_Object *v, *v2;
 
   v = argv[0];
 
-  if (!(SCHEME_HASHTP(v) && SCHEME_MUTABLEP(v)) && !SCHEME_BUCKTP(v))
+  v2 = (SCHEME_NP_CHAPERONEP(v) ? SCHEME_CHAPERONE_VAL(v) : v);
+
+  if (!(SCHEME_HASHTP(v2) && SCHEME_MUTABLEP(v2)) && !SCHEME_BUCKTP(v2))
     scheme_wrong_contract("hash-clear!", "(and/c hash? (not/c immutable?))", 0, argc, argv);
 
   if (SCHEME_NP_CHAPERONEP(v) && (SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(v))
                                   || SCHEME_BUCKTP(SCHEME_CHAPERONE_VAL(v)))) {
-    /* Implement `(hash-clear! ht)' as `(hash-for-each ht hash-set!)'
+    /* Implement `(hash-clear! ht)' as `(hash-for-each ht (lambda (k) (hash-remove! ht k)))'
        to allow chaperones to interpose. */
-    Scheme_Object *i, *a[2];
+    Scheme_Object *i, *a[2], *key;
     a[0] = v;
     while (1) {
       i = scheme_hash_table_iterate_start(1, a);
       if (SCHEME_FALSEP(i))
         break;
-      a[2] = i;
-      hash_table_remove_bang(1, a);
+
+      a[1] = i;
+      key = scheme_hash_table_iterate_key(2, a);
+      a[1] = key;
+      
+      hash_table_remove_bang(2, a);
     }
   } else if (SCHEME_BUCKTP(v)) {
     scheme_clear_bucket_table((Scheme_Bucket_Table *)v);
