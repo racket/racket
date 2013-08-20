@@ -271,7 +271,7 @@ with timeouts that have not yet expired. The system-idle event's
   (define th (thread (λ () (let loop () (loop)))))
   (sync/timeout 0.1 (system-idle-evt))
   (kill-thread th)
-  (sync (system-idle-evt))
+  (eval:alts (sync (system-idle-evt)) (void))
 ]}
 
 
