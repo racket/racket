@@ -71,9 +71,15 @@ example uses:
             '()]
            [else (cons c (loop))])))
      (define-values (post-2d-line post-2d-col post-2d-span) (port-next-location port))
-     (define-values (cell-connections lines table-column-breaks initial-space-count)
+     (define-values (cell-connections 
+                     lines 
+                     table-column-breaks 
+                     initial-space-count 
+                     position-of-first-cell)
        (parse-2dcond port source _line _col _pos chars-read))
-     (define lhses (close-cell-graph cell-connections (length table-column-breaks) (vector-length lines)))
+     (define lhses (close-cell-graph cell-connections 
+                                     (length table-column-breaks)
+                                     (vector-length lines)))
      (define scratch-string (make-string (for/sum ([ss (in-vector lines)])
                                            (for/sum ([s (in-list ss)])
                                              (string-length s)))
@@ -88,6 +94,21 @@ example uses:
      (port-count-lines! kwd-port)
      (set-port-next-location! kwd-port _line (and _col (+ _col 1)) (and _pos (+ _pos 1)))
      (define kwd-stx (read-syntax source kwd-port))
+     
+     (define line-width (+ initial-space-count 
+                           (apply + table-column-breaks)
+                           (max 0 (- (length table-column-breaks) 1))))
+     
+     (define (add-srclocs indicies)
+       (for/list ([index (in-list indicies)])
+         (define srcloc (hash-ref position-of-first-cell index))
+         (datum->syntax #f
+                        index
+                        (vector (srcloc-source srcloc)
+                                #f ;; line
+                                #f ;; col
+                                (srcloc-position srcloc)
+                                1))))
      
      `(,kwd-stx
        
@@ -104,7 +125,7 @@ example uses:
            (define scratch-port (open-input-string scratch-string))
            (when post-2d-line (port-count-lines! scratch-port))
            (set-port-next-location! scratch-port post-2d-line post-2d-col post-2d-span)
-           `[,(sort (set->list set-of-indicies) compare/xy)
+           `[,(add-srclocs (sort (set->list set-of-indicies) compare/xy))
              ,@(read-subparts source scratch-port 
                               initial-space-count table-column-breaks heights set-of-indicies
                               /recursive)]))]

@@ -85,6 +85,58 @@ well-formed @litchar{#2d} expression. In this case, the @racket[2dmatch]
 treats any of the situations that fall into the larger regions as
 the same.
 
+In general, a @litchar{#2d} expression, when read, turns into an expression
+with at least two sub-pieces (not counting the initial name). The first is
+a sequence of numbers giving the widths of the top row of cells;
+the second is also a sequence of numbers, this time giving the heights
+of the leftmost column of cells. The remaining sequence describe the cells
+content. The first element of each is itself a sequence of coordinates,
+one for each of the cells that are connected together. The remaining elements
+are the subexpressions in the given cells.
+
+For example, this:
+
+@codeblock{
+  #lang unstable/2d racket
+  '#2dex
+  ╔══════════╦══════════╗
+  ║    0     ║    1     ║
+  ╠══════════╬══════════╣
+  ║    2     ║    3     ║
+  ╚══════════╩══════════╝
+}
+
+evaluates to
+@racketblock['(2dex (10 10)
+                    (2 2)
+                    (((0 0)) 0)
+                    (((0 1)) 2)
+                    (((1 0)) 1)
+                    (((1 1)) 3))]
+
+and this
+@codeblock{
+  #lang unstable/2d racket
+  '#2dex
+  ╔══════════╦══════════╦══════════╗
+  ║    0     ║    1 2   ║   3 4    ║
+  ╠══════════╬══════════╩══════════╣
+  ║    5     ║         6           ║
+  ╚══════════╩═════════════════════╝
+}
+evaluates to
+@racketblock['(2dex (10 10 10)
+                    (2 2)
+                    (((0 0)) 0)
+                    (((0 1)) 5)
+                    (((1 0)) 1 2)
+                    (((1 1) (2 1)) 6)
+                    (((2 0)) 3 4))]
+
+In addition, the cells coordinates pairs have source locations of the first
+character that is inside the corresponding cell. (Currently the span
+is always @racket[1], but that may change.)
+
 @section{2D Cond}
 
 @defmodule[unstable/2d/cond]

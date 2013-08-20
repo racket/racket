@@ -214,7 +214,8 @@ example uses:
       (pending-row '())
       (rows '())
       (current-row 0)
-      (cell-connections (make-hash)))))
+      (cell-connections (make-hash))
+      (position-of-first-cell (hash)))))
 
 (define-syntax (setup-state stx)
   (syntax-case stx ()
@@ -263,12 +264,13 @@ example uses:
        (values cell-connections 
                (apply vector (reverse rows))
                table-column-breaks
-               initial-space-count)])))
+               initial-space-count
+               position-of-first-cell)])))
 
 (struct guide (char srcloc) #:transparent)
 
   
-;; parse-2dcond returns three values:
+;; parse-2dcond returns four values:
 ;;  - a hash table encoding a graph that shows where the 
 ;;    broken walls are in the 2d
 ;;  - a vector of lists of strings containing the all of the line
@@ -390,7 +392,7 @@ example uses:
          (line-of-interest)
          (readerr "expected ╗ to terminate the first line" pos)])))
   
-  (define (process-a-line current-map)
+  (define (process-a-line current-map previous-line-separator?)
     (fetch-next-line)
     ;; check leading space
     (let loop ([n 0])
@@ -403,7 +405,7 @@ example uses:
          (line-of-interest)
          (readerr "expected leading space" n)]))
     (case (string-ref current-line initial-space-count)
-      [(#\║) (values (continue-line current-map) #t)]
+      [(#\║) (values (continue-line current-map previous-line-separator?) #t)]
       [(#\╠) (values (start-new-block current-map) #f)]
       [(#\╚) (values (finish-table current-map) #f)]
       [else 
@@ -512,12 +514,13 @@ example uses:
                previous-map
                current-column)])))
   
-  (define (continue-line map)
+  (define (continue-line map previous-line-separator?)
     (let loop ([current-cell-size (car table-column-breaks)]
                [table-column-breaks (cdr table-column-breaks)]
                [map map]
                [pos (+ initial-space-count 1)]
-               [column-number 0])
+               [column-number 0]
+               [starting-a-new-cell? #t])
       (cond
         [(zero? current-cell-size)
          (unless (< pos current-line-length)
@@ -540,7 +543,8 @@ example uses:
                   (cdr table-column-breaks)
                   (cdr map)
                   (+ pos 1)
-                  (+ column-number 1))])]
+                  (+ column-number 1)
+                  #t)])]
         [else
          (unless (< pos current-line-length)
            (line-of-interest)
@@ -548,11 +552,19 @@ example uses:
          (when (double-barred-char? (string-ref current-line pos))
            (line-of-interest)
            (readerr "expected not to find a cell boundary character" pos))
+         (when previous-line-separator?
+           (when starting-a-new-cell?
+             (set! position-of-first-cell
+                   (hash-set
+                    position-of-first-cell
+                    (list column-number current-row)
+                    (guide-srcloc (make-a-guide pos))))))
          (loop (- current-cell-size 1)
                table-column-breaks
                map
                (+ pos 1)
-               column-number)]))
+               column-number
+               #f)]))
     map)
   
   
@@ -640,10 +652,11 @@ example uses:
   (let loop ([map (or last-left-map
                       (begin
                         (process-first-line)
-                        (map (λ (x) #t) table-column-breaks)))])
-    (define-values (next-map continue?) (process-a-line map))
+                        (map (λ (x) #t) table-column-breaks)))]
+             [previous-line-separator? #t])
+    (define-values (next-map continue?) (process-a-line map previous-line-separator?))
     (cond
-      [continue? (loop next-map)]
+      [continue? (loop next-map #f)]
       [next-map next-map]
       [else #f])))
      

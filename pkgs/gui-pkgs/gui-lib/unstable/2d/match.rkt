@@ -27,6 +27,9 @@
                              (= 0 (list-ref lst 1))))
                 cells))
        
+       (define (cell-stx-object cell) 
+         (datum->syntax #f " " cell))
+       
        ;; build up the coord-to-content mapping for the 
        ;; boundary cells and build up the pattern-vars table
        (for ([cells-stx (in-list (syntax->list #'((cell ...) ...)))]
@@ -36,7 +39,8 @@
          (cond
            [(member (list 0 0) cells) 
             (unless (and rhses-lst (= 2 (length rhses-lst)))
-              (raise-syntax-error '2dmatch "cell at 0,0 must contain two expressions"))
+              (raise-syntax-error '2dmatch "cell at 0,0 must contain two expressions"
+                                  (cell-stx-object (car cells))))
             (with-syntax ([(left-x right-x) (generate-temporaries rhses)]
                           [(left-arg right-arg) rhses])
               (set! let-bindings (list* #`[right-x right-arg]
@@ -50,7 +54,8 @@
                                    "cell at ~a,~a must contain exactly one match pattern, found ~a"
                                    (list-ref (car cells) 0) (list-ref (car cells) 1)
                                    (length rhses-lst))
-                                  stx))
+                                  stx
+                                  (cell-stx-object (car (syntax-e cells-stx)))))
             (define pat (car (syntax->list rhses)))
             (hash-set! pattern-vars (car cells) (bound-vars (parse pat)))
             (hash-set! coord-to-content (car cells) pat)]))
@@ -68,7 +73,8 @@
                                  (format "cell at ~a,~a should not be empty"
                                          (list-ref (car cells) 0)
                                          (list-ref (car cells) 1))
-                                 stx))
+                                 stx
+                                 (cell-stx-object (car cells))))
            (define horizontal-vars (hash-ref pattern-vars (list (list-ref (car cells) 0) 0)))
            (define vertical-vars (hash-ref pattern-vars (list 0 (list-ref (car cells) 1))))
            
