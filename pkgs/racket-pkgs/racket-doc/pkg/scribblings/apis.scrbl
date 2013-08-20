@@ -21,9 +21,12 @@ building blocks and local-database support.
 The @racketmodname[pkg] module provides a programmatic interface
 to the @exec{raco pkg} sub-subcommands.
 
- Each-long form option of the command-line interface is keyword
+ Each-long form option of the command-line interface is a keyword
  argument to the functions described below. An argument corresponding to @DFlag{type}, @DFlag{deps},
- @DFlag{format}, or @DFlag{scope} accepts its argument as a symbol. All other options
+ @DFlag{format}, or @DFlag{scope} accepts its argument as a symbol.
+ An argument corresponding to @DFlag{scope} is also allowed to be a path string,
+ as would be provided to @DFlag{scope-dir}.
+ Options without argument correspond to keyword arguments that
  accept booleans, where @racket[#t] is equivalent to the presence of
  the option.
 

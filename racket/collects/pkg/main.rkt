@@ -45,6 +45,10 @@
        (cond
         [installation 'installation]
         [user 'user]
+        [(path-string? given-scope) 
+         ;; This can happens when a #:scope value is given a path programmatically.
+         ;; Make it easier on clients by alloing that.
+         (path->complete-path given-scope)]
         [scope-dir (path->complete-path scope-dir)]
         [else
          (define default-scope (default-pkg-scope))
