@@ -906,29 +906,29 @@
 ;;  Fairness in wait selection
 
 (let ([try (lambda (t1 t2 r min max)
-	     (test #t 
-		   < 
-		   min
-		   (let loop ([n 100][r-n 0])
-		     (if (zero? n)
-			 r-n
-			 (loop (sub1 n) (+ r-n
-					   (if (eq? r (sync t1 t2))
-					       1
-					       0)))))
-		   max))])
+             (test #t 
+                   < 
+                   min
+                   (let loop ([n 1000][r-n 0])
+                     (if (zero? n)
+                         r-n
+                         (loop (sub1 n) (+ r-n
+                                           (if (eq? r (sync t1 t2))
+                                               1
+                                               0)))))
+                   max))])
   (let ([t1 (semaphore-peek-evt (make-semaphore 1))]
-	[t2 (semaphore-peek-evt (make-semaphore 1))])
+        [t2 (semaphore-peek-evt (make-semaphore 1))])
     (let-values ([(r w) (make-pipe)])
       (fprintf w "Hi!\n")
       ;; Between 20% and 80% is fair, and surely < 20% or > 80% is unlikely
-      (try t1 t2 t1 20 80)
-      (try t1 t2 t2 20 80)
-      (try t1 w w 20 80)
-      (try w t1 w 20 80)
-      (try t1 (choice-evt t2 w) t1 10 50)
-      (try t1 (choice-evt t2 w) w 10 50)
-      (try (choice-evt t2 w) t1 w 10 50))))
+      (try t1 t2 t1 200 800)
+      (try t1 t2 t2 200 800)
+      (try t1 w w 200 800)
+      (try w t1 w 200 800)
+      (try t1 (choice-evt t2 w) t1 100 500)
+      (try t1 (choice-evt t2 w) w 100 500)
+      (try (choice-evt t2 w) t1 w 100 500))))
 
 ;; ----------------------------------------
 ;;  No starvation, despite hack to increase throughput for
