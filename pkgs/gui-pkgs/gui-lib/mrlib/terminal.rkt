@@ -44,7 +44,9 @@
                      #:close-button? [close-button? #t])
   (define orig-eventspace (current-eventspace))
   (define orig-custodian (current-custodian))
-  (define inst-eventspace (make-eventspace))
+  (define inst-eventspace (if container
+                              (send (send container get-top-level-window) get-eventspace)
+                              (make-eventspace)))
 
   (define on-terminal-run-proc (on-terminal-run))
   
@@ -155,7 +157,9 @@
        (when frame
          (send frame show #t)))))
   
-  (semaphore-wait setup-sema)
+  (if (equal? inst-eventspace (current-eventspace))
+      (yield setup-sema)
+      (semaphore-wait setup-sema))
   
   (define (mk-port style)
     (make-output-port
