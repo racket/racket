@@ -24,29 +24,31 @@
 	top: 0;
 	left: 0;
 	z-index: -999999;
+	display: none;
   background: rgb(0, 0, 0);
   background: $modal-overlay-color;
  	> .content {
- 		width: 50%;
+ 		width: 85%;
  		min-height: 50%;
-    max-height: 65%;
+    max-height: 95%;
  		position: relative;
- 		top: 25%;
+ 		top: 5%;
  		margin: 0 auto;
- 		padding: $gutter-in-px;
+ 		padding-top: 10px;
+ 		padding-bottom: 10px;
  		background: $modal-window-color;
  		z-index: 2;
  		overflow: auto;
     @include respond(portrait-tablets) {
-      width: 80%;
+      width: 90%;
       min-height: 80%;
-      max-height: 80%;
+      max-height: 95%;
       top: 10%;
     }
     @include respond(all-phones) {
       width: 92.5%;
       min-height: 92.5%;
-      max-height: 92.5%;
+      max-height: 95;
       top: 3.75%;
     }
  	  > .close {
@@ -58,9 +60,10 @@
   }
   &, > .content {
     @include opacity(0);
-    @include transition-duration(.3s);
+    @include transition-duration(.1s);
   }
  	&.active {
+	        display: block;
  		z-index: 999999;
     &, > .content {
       @include opacity(1);

@@ -102,7 +102,7 @@
         max-height: 600px;
         z-index: 999999;
         @include transition-duration(.5s);
-        @include box-shadow(0 2px 2px darken($navbar-color, 15%));
+        @include box-shadow(0 2px 2px lighten($navbar-color, 15%));
       }
     }
 

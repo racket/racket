@@ -26,12 +26,13 @@ $font-smoothing: antialiased;
 // Font Weights
 $font-weight-bold: 700;
 $font-weight-semibold: 600;
+$font-weight-heavy: 500;
 $font-weight-medium: 400;
 $font-weight-regular: 400;
 $font-weight-light: 300;
 $font-weight-thin: 300;
 
-$header-font-weight: $font-weight-thin;
+$header-font-weight: $font-weight-heavy;
 $body-font-weight: $font-weight-regular;
 $type-font-weight: $font-weight-regular;
 $link-font-weight: $font-weight-regular;
