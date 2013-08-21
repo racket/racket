@@ -1165,7 +1165,13 @@
          (match-define (arr: doms rng rest drest kws) arr)
          (make-arr (cons self-type doms) rng rest drest kws)))
      (make-Function fixed-arrs)]
-    [_ (tc-error "function->method: internal error")]))
+    [(Poly: ns body)
+     (make-Poly ns (function->method body self-type))]
+    [(PolyDots: ns body)
+     (make-PolyDots ns (function->method body self-type))]
+    [(PolyRow: ns constraints body)
+     (make-PolyRow ns constraints (function->method body self-type))]
+    [_ (int-err "function->method: ~a" type)]))
 
 ;; method->function : Function -> Function
 ;; Turn a "real" method type back into a function type
@@ -1177,6 +1183,12 @@
          (match-define (arr: doms rng rest drest kws) arr)
          (make-arr (cdr doms) rng rest drest kws)))
      (make-Function fixed-arrs)]
+    [(Poly: ns body)
+     (make-Poly ns (method->function body))]
+    [(PolyDots: ns body)
+     (make-PolyDots ns (method->function type))]
+    [(PolyRow: ns constraints body)
+     (make-PolyRow ns constraints (method->function type))]
     [_ (tc-error/expr "expected a function type for method")]))
 
 ;; annotate-method : Syntax Type -> Syntax
