@@ -253,8 +253,16 @@ specific to both the current user and the installation's name/version
 all users of the Racket installation.
 Finally, a directory path can be used as a @tech{package scope}, in which case
 package operations affect the set of packages installations in the
-directory (and an installation can be configured to include the
-directory in its search path for installed packages).
+directory; an installation can be configured to include the
+directory in its search path for installed packages (see
+@secref["config-file" #:doc '(lib "scribblings/raco/raco.scrbl")]).
+Conflict checking disallows installation of the same or conflicting
+package in different scopes, but if such a configuration is forced,
+collections are found first in packages with @exec{user} @tech{package
+scope}; search then proceeds in a configured order, where
+@exec{installation} @tech{package scope} typically precedes other
+directory @tech{package scopes}.
+
 
 @; ----------------------------------------
 
@@ -285,7 +293,8 @@ sub-commands.
   @itemlist[
    @item{@exec{fail} --- Cancels the installation if dependencies are uninstalled or version requirements are unmet. 
         This behavior is the default for a @nonterm{pkg-source} that is not a @tech{package name}.}
-   @item{@exec{force} --- Installs the package(s) despite missing dependencies or version requirements (unsafe).}
+   @item{@exec{force} --- Installs the package(s) despite missing dependencies or version requirements.
+         Forcing an installation may leave package content in an inconsistent state.}
    @item{@exec{search-ask} --- Looks for dependencies (when uninstalled) or updates (when version requirements are unmet)
          via the configured @tech{package catalogs},
          but asks if you would like the packages installed or updated. This behavior is the default for a
@@ -342,7 +351,9 @@ sub-commands.
         whose name corresponds to an already-installed package, except for promoting auto-installed
         packages to explicitly installed.}
 
-  @item{@DFlag{force} --- Ignores conflicts (unsafe).}
+  @item{@DFlag{force} --- Ignores module conflicts, including conflicts due to installing a single
+        package in multiple scopes. Forcing an installation may leave package content in an
+        inconsistent state.}
 
   @item{@DFlag{ignore-checksums} --- Ignores errors verifying package @tech{checksums} (unsafe).}
 
@@ -799,13 +810,12 @@ multi-collection packages) with @exec{raco link}.
 related for conflict checking?}
 
 User-specific packages are checked against installation-wide packages
-for conflicts. Installation-wide packages are checked only against
-other installation-wide packages.
+for package-name conflicts and provided-module
+conflicts. Installation-wide packages are checked against
+user-specific packages only for provided-module conflicts.
 
-Beware that a new installation-wide package can invalidate previous
-conflict checks for user-specific packages. Similarly, new
-user-specific but all-version packages can invalidate previous
-user-specific conflict checks for a different Racket version.
+Beware that a conflict-free, installation-wide change by one user can
+create conflicts for a different user.
 
 @subsection{Do I need to change a package's version when I update a package with error fixes, @|etc|?}
 

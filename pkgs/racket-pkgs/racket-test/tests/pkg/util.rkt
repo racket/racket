@@ -9,6 +9,7 @@
          racket/runtime-path
          racket/path
          racket/list
+         setup/dirs
          pkg/util
          "shelly.rkt")
 
@@ -20,26 +21,64 @@
   (and (file-exists? p)
        p))
 
+(define (with-fake-installation* t)
+  (define tmp-dir
+    (make-temporary-file ".racket.fake-installation~a" 'directory
+                         (find-system-path 'temp-dir)))
+  (make-directory* tmp-dir)
+  (dynamic-wind
+      void
+      (λ ()
+         (define ->s path->string)
+         (define config
+           (hash
+            ;; redirect main installation via "share" to
+            ;; our temporary directory:
+            'share-dir
+            (->s (build-path tmp-dir))
+
+            ;; Find existing links and packages from the
+            ;; old configuration:
+            'links-search-files 
+            (cons #f
+                  (map ->s (get-links-search-files)))
+            'pkgs-search-dirs
+            (cons #f
+                  (map ->s (get-pkgs-search-dirs)))))
+         (call-with-output-file*
+          (build-path tmp-dir "config.rktd")
+          (lambda (o)
+            (write config o)
+            (newline o)))
+         (define tmp-dir-s
+           (path->string tmp-dir))
+         (parameterize ([current-environment-variables
+                         (environment-variables-copy
+                          (current-environment-variables))])
+           (putenv "PLTCONFIGDIR" tmp-dir-s)
+           (t)))
+      (λ ()
+        (delete-directory/files tmp-dir))))
+(define-syntax-rule (with-fake-installation e ...)
+  (with-fake-installation* (λ ()  e ...)))
+
 (define (with-fake-root* t)
   (define tmp-dir
     (make-temporary-file ".racket.fake-root~a" 'directory
                          (find-system-path 'home-dir)))
   (make-directory* tmp-dir)
-  (define tmp-dir-s
-    (path->string tmp-dir))
-  (define before 
-    (or (getenv "PLTADDONDIR")
-        (path->string (find-system-path 'addon-dir))))
   (dynamic-wind
       void
       (λ ()
-        (putenv "PLTADDONDIR"
-                tmp-dir-s)
-        (t))
+         (define tmp-dir-s
+           (path->string tmp-dir))
+         (parameterize ([current-environment-variables
+                         (environment-variables-copy
+                          (current-environment-variables))])
+           (putenv "PLTADDONDIR" tmp-dir-s)
+           (t)))
       (λ ()
-        (delete-directory/files tmp-dir)
-        (putenv "PLTADDONDIR"
-                before))))
+        (delete-directory/files tmp-dir))))
 (define-syntax-rule (with-fake-root e ...)
   (with-fake-root* (λ ()  e ...)))
 

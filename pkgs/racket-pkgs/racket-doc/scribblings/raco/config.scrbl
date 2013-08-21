@@ -52,8 +52,7 @@ directory:
 
  @item{@indexed-racket['links-file] --- a path, string, or byte string for the
        @tech[#:doc reference-doc]{collection links file}; it defaults
-       to a @filepath{links.rktd} file in the @filepath{share} sibling
-       of the main collection directory.}
+       to a @filepath{links.rktd} file in the main shared-file directory.}
 
  @item{@indexed-racket['links-search-files] --- like @racket['lib-search-dirs],
        but for @tech[#:doc reference-doc]{collection links file}.}

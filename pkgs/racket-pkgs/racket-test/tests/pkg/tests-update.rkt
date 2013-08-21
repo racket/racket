@@ -138,7 +138,7 @@
                      $ "cp -f test-pkgs/pkg-test1-v2.zip.CHECKSUM test-pkgs/update-test/pkg-test1.zip.CHECKSUM"
                      $ "cp -f test-pkgs/pkg-test3-v2.zip test-pkgs/update-test/pkg-test3.zip"
                      $ "cp -f test-pkgs/pkg-test3-v2.zip.CHECKSUM test-pkgs/update-test/pkg-test3.zip.CHECKSUM"
-                     $ "raco pkg update --update-deps pkg-test3" =exit> 0
+                     $ "raco pkg update --update-deps --deps search-auto pkg-test3" =exit> 0
                      $ "racket -e '(require pkg-test1/update)'" =exit> 43
                      $ "racket -e '(require pkg-test3)'" =stdout> #rx"version 2 loaded"
                      $ "raco pkg remove pkg-test3")
@@ -189,7 +189,7 @@
                      $ "cp -f test-pkgs/pkg-test1-v2.zip.CHECKSUM test-pkgs/update-test/pkg-test1.zip.CHECKSUM"
                      $ "cp -f test-pkgs/pkg-test3.zip test-pkgs/update-test/pkg-test3.zip"
                      $ "cp -f test-pkgs/pkg-test3.zip.CHECKSUM test-pkgs/update-test/pkg-test3.zip.CHECKSUM"
-                     $ "raco pkg update --update-deps pkg-test3" =exit> 0
+                     $ "raco pkg update --update-deps --deps search-auto pkg-test3" =exit> 0
                      $ "racket -e '(require pkg-test1/update)'" =exit> 43
                      $ "racket -e '(require pkg-test3)'" =stdout> #rx"main loaded"
                      $ "raco pkg remove pkg-test3")

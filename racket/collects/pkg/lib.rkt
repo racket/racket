@@ -1227,43 +1227,48 @@
       (for/hash ([i (in-list infos)])
         (values (install-info-name i) (install-info-directory i))))
     (cond
-      [(and (not updating?) (hash-ref all-db pkg-name #f))
-       (define this-pkg-info (hash-ref all-db pkg-name #f))
+      [(and (not updating?)
+            (hash-ref all-db pkg-name #f)
+            ;; Already installed, but can force if the install is for
+            ;; a wider scope:
+            (not (and (not (hash-ref current-scope-db pkg-name #f))
+                      force?)))
+       (define existing-pkg-info (hash-ref all-db pkg-name #f))
        (cond
-        [(and (pkg-info-auto? this-pkg-info)
+        [(and (pkg-info-auto? existing-pkg-info)
               (not (pkg-desc-auto? desc))
               ;; Don't confuse a promotion request with a different-source install:
-              (equal? (pkg-info-orig-pkg this-pkg-info) orig-pkg)
+              (equal? (pkg-info-orig-pkg existing-pkg-info) orig-pkg)
               ;; Also, make sure it's installed in the scope that we're changing:
               (hash-ref current-scope-db pkg-name #f))
          ;; promote an auto-installed package to a normally installed one
          (lambda ()
            (unless quiet?
              (download-printf "Promoting ~a from auto-installed to explicitly installed\n" pkg-name))
-           (update-pkg-db! pkg-name (update-auto this-pkg-info #f)))]
+           (update-pkg-db! pkg-name (update-auto existing-pkg-info #f)))]
         [else
          ;; Fail --- already installed
          (clean!)
-         (if (and (pkg-info-auto? this-pkg-info)
-                  (not (pkg-desc-auto? desc)))
-             ;; It failed either due to scope or source:
-             (if (equal? (pkg-info-orig-pkg this-pkg-info) orig-pkg)
-                 (pkg-error (~a "package is currently installed in a wider scope\n"
-                                "  package: ~a\n"
-                                "  installed scope: ~a\n"
-                                "  given scope: ~a")
-                            pkg-name
-                            (find-pkg-installation-scope pkg-name #:next? #t)
-                            (current-pkg-scope))
-                 (pkg-error (~a "package is already installed from a different source\n"
-                                "  package: ~a\n"
-                                "  installed source: ~a\n"
-                                "  given source: ~a")
-                            pkg-name
-                            (pkg-info-orig-pkg this-pkg-info)
-                            orig-pkg))
-             (pkg-error "package is already installed\n  package: ~a"
-                        pkg-name))])]
+         (cond
+          [(not (hash-ref current-scope-db pkg-name #f))
+           (pkg-error (~a "package is currently installed in a wider scope\n"
+                          "  package: ~a\n"
+                          "  installed scope: ~a\n"
+                          "  given scope: ~a")
+                      pkg-name
+                      (find-pkg-installation-scope pkg-name #:next? #t)
+                      (current-pkg-scope))]
+          [(not (equal? (pkg-info-orig-pkg existing-pkg-info) orig-pkg))
+           (pkg-error (~a "package is already installed from a different source\n"
+                          "  package: ~a\n"
+                          "  installed source: ~a\n"
+                          "  given source: ~a")
+                      pkg-name
+                      (pkg-info-orig-pkg existing-pkg-info)
+                      orig-pkg)]
+          [else
+           (pkg-error "package is already installed\n  package: ~a"
+                      pkg-name)])])]
       [(and
         (not force?)
         (for/or ([mp (in-set module-paths)])
@@ -1300,10 +1305,13 @@
          (clean!)
          (match-define (cons conflicting-pkg mp) conflicting-pkg*mp)
          (if conflicting-pkg
-             (pkg-error (~a "packages conflict\n"
+             (pkg-error (~a "packages ~aconflict\n"
                             "  package: ~a\n"
                             "  package: ~a\n"
                             "  module path: ~s")
+                        (if (equal? conflicting-pkg pkg-name)
+                            "in different scopes "
+                            "")
                         pkg conflicting-pkg (pretty-module-path mp))
              (pkg-error (~a "package conflicts with existing installed\n"
                             "  package: ~a\n"
