@@ -216,15 +216,26 @@ computing and from databases to charts.
         <a href="#" class="switch" gumby-trigger="#modal1"> <i class="icon-help"></i></a>
       </p>
 
-      <a href="#" class="toggle" 
+      <a href="#" class="toggle narrow_only" 
+         gumby-trigger=".unique_lines|.web_scraper" style="position: absolute; top: -40%; left: 35%">
+        <img src="img/prev.png"  style="width: 50px">
+      </a>
+
+      <a href="#" class="toggle narrow_only" 
+         gumby-trigger=".unique_lines|.web_scraper" style="position: absolute; top: -40%; right: 35%">
+        <img src="img/next.png"  style="width: 50px">
+      </a>
+
+      <a href="#" class="toggle wide_only" 
          gumby-trigger=".unique_lines|.web_scraper" style="position: absolute; top: 40%; left: -15%">
         <img src="img/prev.png"  style="width: 50px">
       </a>
 
-      <a href="#" class="toggle" 
+      <a href="#" class="toggle wide_only" 
          gumby-trigger=".unique_lines|.web_scraper" style="position: absolute; top: 40%; right: -15%">
         <img src="img/next.png"  style="width: 50px">
       </a>
+
       
 <pre class="codesnip active unique_lines" style="font-size: 140%;">
 #lang <a href="http://docs.racket-lang.org/reference/index.html" class="codemodpath" rel="nofollow">racket</a>
@@ -264,6 +275,7 @@ computing and from databases to charts.
       <p><a href="racketcon.html">RacketCon 2013</a> will be in September in Boston.</p>
     </div>
     
+
 
   </div>
 
@@ -371,6 +383,66 @@ and system builder.</p>
 
 <div class="row">
 <div class="ten columns centered">
+<h3>Community</h3>
+</div>
+</div>
+
+<div class=row>
+
+
+<div class="four columns">
+<div class="panetitle">News & Events</div>
+
+<p><a href="racketcon.html">RacketCon</a> — the annual
+  Racket meeting, coming up in September.  Previously
+  in <a href="http://con.racket-lang.org/2012">2012</a>
+  and <a href="http://con.racket-lang.org/2012">2011</a>.</p>
+
+<p><a href="http://blog.racket-lang.org/">Blog</a>
+  — announcements, helpful hints, and thoughtful rants.</p>
+<p><a href="http://twitter.com/#!/racketlang">Twitter</a>
+— short bits of Racket news.</p>
+</div>
+
+<div class="four columns">
+  <div class="panetitle">Discussion</div>
+<p><a href="http://lists.racket-lang.org/">Mailing lists</a>
+  — discussion for using and developing Racket.</p>
+<p><a href="http://racket-lang.org/irc-chat.html">IRC</a>   —
+Chat in the <tt style="background-color: #d8d8e8;"><big><strong>#racket</strong></big></tt> channel on
+<a href="http://freenode.net"><tt>freenode.net</tt></a> — an informal
+discussion channel for all things related to Racket.
+(<a href="https://botbot.me/freenode/racket/">Browse the logs</a>.)</p>
+
+<p><a href="http://racket-lang.org/people.html">People</a>   —
+The people behind Racket.</p>
+</div>
+
+
+
+<div class="four columns">
+<div class="panetitle">Contributing</div>
+<p><a href="https://github.com/plt/racket/">Code</a>
+  — the Racket source code on GitHub.</p>
+<p><a href="https://github.com/plt/racket/wiki">Wiki</a>   —
+Useful pages
+  include <a href="https://github.com/plt/racket/wiki/Intro-Projects">Intro
+    Projects</a>
+  and <a href="https://github.com/plt/racket/wiki/Videos">Videos</a>,
+  including tutorials, interviews, and more.</p>
+<p><a href="http://www.cs.utah.edu/plt/snapshots">Snapshot builds</a>   —
+The freshest versions of Racket.</p>
+
+<p><a href="http://bugs.racket-lang.org">Bug reports</a>   —
+File, query and maybe fix existing reports.</p>
+
+</div>
+
+</div>
+
+
+<div class="row">
+<div class="ten columns centered">
 <h3>Learning</h3>
 </div>
 </div>
@@ -438,64 +510,6 @@ and system builder.</p>
 
 </div>
 
-<div class="row">
-<div class="ten columns centered">
-<h3>Community</h3>
-</div>
-</div>
-
-<div class=row>
-
-
-<div class="four columns">
-<div class="panetitle">News & Events</div>
-
-<p><a href="racketcon.html">RacketCon</a> — the annual
-  Racket meeting, coming up in September.  Previously
-  in <a href="http://con.racket-lang.org/2012">2012</a>
-  and <a href="http://con.racket-lang.org/2012">2011</a>.</p>
-
-<p><a href="http://blog.racket-lang.org/">Blog</a>
-  — announcements, helpful hints, and thoughtful rants.</p>
-<p><a href="http://twitter.com/#!/racketlang">Twitter</a>
-— short bits of Racket news.</p>
-</div>
-
-<div class="four columns">
-  <div class="panetitle">Discussion</div>
-<p><a href="http://lists.racket-lang.org/">Mailing lists</a>
-  — discussion for using and developing Racket.</p>
-<p><a href="http://racket-lang.org/irc-chat.html">IRC</a>   —
-Chat in the <tt style="background-color: #d8d8e8;"><big><strong>#racket</strong></big></tt> channel on
-<a href="http://freenode.net"><tt>freenode.net</tt></a> — an informal
-discussion channel for all things related to Racket.
-(<a href="https://botbot.me/freenode/racket/">Browse the logs</a>.)</p>
-
-<p><a href="http://racket-lang.org/people.html">People</a>   —
-The people behind Racket.</p>
-</div>
-
-
-
-<div class="four columns">
-<div class="panetitle">Contributing</div>
-<p><a href="https://github.com/plt/racket/">Code</a>
-  — the Racket source code on GitHub.</p>
-<p><a href="https://github.com/plt/racket/wiki">Wiki</a>   —
-Useful pages
-  include <a href="https://github.com/plt/racket/wiki/Intro-Projects">Intro
-    Projects</a>
-  and <a href="https://github.com/plt/racket/wiki/Videos">Videos</a>,
-  including tutorials, interviews, and more.</p>
-<p><a href="http://www.cs.utah.edu/plt/snapshots">Snapshot builds</a>   —
-The freshest versions of Racket.</p>
-
-<p><a href="http://bugs.racket-lang.org">Bug reports</a>   —
-File, query and maybe fix existing reports.</p>
-
-</div>
-
-</div>
 
 
   <!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
