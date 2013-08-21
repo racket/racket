@@ -21,6 +21,7 @@
          (typecheck check-below internal-forms)
          (utils tc-utils)
          (rep type-rep)
+         (for-syntax racket/base)
          (for-template racket/base
                        (prefix-in c: racket/class)
                        (base-env class-prims)
@@ -28,6 +29,23 @@
 
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-expr^)
 (export check-class^)
+
+;; time debugging
+(define-syntax do-timing #f)
+(define start-time (make-parameter 0))
+(define-syntax (with-timing stx)
+  (syntax-case stx ()
+    [(with-timing e ...)
+     (if (syntax-local-value #'do-timing)
+         #'(begin
+             (log-info "TR class start timing")
+             (parameterize ([start-time (current-inexact-milliseconds)])
+               e ...))
+         #'(begin e ...))]))
+
+(define (do-timestamp [str ""])
+  (log-info (format "TR class time @ ~a: ~a"
+                    str (- (current-inexact-milliseconds) (start-time)))))
 
 ;; Syntax classes for use in functions below
 (define-syntax-class name-pair
@@ -264,8 +282,10 @@
                         (syntax->datum #'cls.inherit-field-externals)
                         (syntax->datum #'cls.pubment-externals)
                         (syntax->datum #'cls.augment-externals))))
-     (extend-tvars/new type-parameters fresh-parameters
-       (do-check expected super-type parse-info))]))
+     (with-timing
+      (do-timestamp (format "methods ~a" (dict-ref parse-info 'method-names)))
+      (extend-tvars/new type-parameters fresh-parameters
+        (do-check expected super-type parse-info)))]))
 
 ;; do-check : Type Type Dict -> Type
 ;; The actual type-checking
@@ -303,6 +323,7 @@
     ((compose (setup-pubment-defaults (hash-ref parse-info 'pubment-names))
               register-annotations)
      top-level-exprs))
+  (do-timestamp "built annotation table")
   ;; find the `super-new` call (or error if missing)
   (define super-new-stxs
     (trawl-for-property make-methods-stx 'tr:class:super-new))
@@ -339,6 +360,7 @@
                      super-augments))
   (match-define (Instance: (Class: _ inits fields methods augments))
                 self-type)
+  (do-timestamp "built self type")
   ;; trawl the body for the local name table
   (define locals
     (trawl-for-property make-methods-stx 'tr:class:local-table))
@@ -374,16 +396,21 @@
                                augments super-augments
                                local-private-table private-method-types
                                self-type))
+  (do-timestamp "built local tables")
   (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
     (check-super-new provided-super-inits super-inits))
+  (do-timestamp "checked super-new")
+  (do-timestamp top-level-exprs)
   (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
     (for ([stx top-level-exprs]
           #:unless (syntax-property stx 'tr:class:super-new))
       (tc-expr stx)))
+  (do-timestamp "checked other top-level exprs")
   (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
     (check-field-set!s (hash-ref parse-info 'initializer-body)
                        local-field-table
                        inits))
+  (do-timestamp "checked field initializers")
   ;; trawl the body and find methods and type-check them
   (define meth-stxs (trawl-for-property make-methods-stx 'tr:class:method))
   (define checked-method-types
@@ -392,14 +419,18 @@
                              (hash-ref parse-info 'overridable-names))
                      internal-external-mapping meth-stxs
                      methods self-type)))
+  (do-timestamp "checked methods")
   (define checked-augment-types
     (with-lexical-env/extend lexical-names lexical-types
       (check-methods (hash-ref parse-info 'augment-names)
                      internal-external-mapping meth-stxs
                      augments self-type)))
+  (do-timestamp "checked augments")
   (with-lexical-env/extend lexical-names lexical-types
     (check-private-methods meth-stxs (hash-ref parse-info 'private-names)
                            private-method-types self-type))
+  (do-timestamp "checked privates")
+  (do-timestamp "finished methods")
   (define final-class-type
     (merge-types self-type checked-method-types checked-augment-types))
   (check-method-presence-and-absence
@@ -413,6 +444,7 @@
   (when expected
     (check-below final-class-type expected))
   (define class-type-parameters (hash-ref parse-info 'type-parameters))
+  (do-timestamp "done")
   (if (null? class-type-parameters)
       final-class-type
       (make-Poly #:original-names class-type-parameters
@@ -704,14 +736,19 @@
              (function->method pre-method-type self-type))
            (define expected (ret method-type))
            (define annotated (annotate-method meth self-type method-type))
+           (do-timestamp (format "started checking method ~a" external-name))
            (tc-expr/check annotated expected)
+           (do-timestamp (format "finished method ~a" external-name))
            (cons (list external-name pre-method-type) checked)]
           ;; Only try to type-check if these names are in the
           ;; filter when it's provided. This allows us to, say, only
           ;; type-check pubments/augments.
           [(set-member? names-to-check external-name)
+           (do-timestamp (format "started checking method ~a" external-name))
+           (define type (tc-expr/t meth))
+           (do-timestamp (format "finished method ~a" external-name))
            (cons (list external-name
-                       (method->function (tc-expr/t meth)))
+                       (method->function type))
                  checked)]
           [else checked])))
 
