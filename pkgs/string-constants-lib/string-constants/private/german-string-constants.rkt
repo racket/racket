@@ -1658,10 +1658,10 @@
   (spell-program-wrote-to-stderr-on-startup "Der Rechtschreibchecker (~a) hat eine Fehlermeldung ausgegeben:")
   
   ;; GUI for installing a pkg package; available via File|Install Package...
-  (install-pkg-install-by-source "Nach Quelle installieren") ; tab label
-  (install-pkg-install-from-list "Von Liste installieren") ; tab label
-  (install-pkg-install-installed "Installiert")         ; tab label
-  (install-pkg-migrate-from "Migrieren von")           ; tab label
+  ; change: (install-pkg-install-by-source "Nach Quelle installieren") ; tab label
+  ; change: (install-pkg-install-from-list "Von Liste installieren") ; tab label
+  ; change: (install-pkg-install-installed "Installiert")         ; tab label
+  ; change: (install-pkg-migrate-from "Migrieren von")           ; tab label
   (install-pkg-menu-item... "Paket installieren...")
   (install-pkg-dialog-title "Paket installieren")
   (install-pkg-source-label "Packet-Quelltext")

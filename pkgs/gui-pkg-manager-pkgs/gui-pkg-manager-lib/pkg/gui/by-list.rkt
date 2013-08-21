@@ -9,28 +9,13 @@
          pkg/lib
          pkg
          (prefix-in db: pkg/db)
+         "filter-panel.rkt"
          "common.rkt")
 
 (provide by-list-panel%)
 
 (define sc-pkg-update-package-list (string-constant install-pkg-update-package-list))
 (define sc-pkg-stop-update (string-constant install-pkg-stop-update))
-
-(define check-mark
-  (for/or ([c '(#\u2713 #\u2714 #\u221A #\x)])
-    (and (send normal-control-font screen-glyph-exists? c #t)
-	 (string c))))
-
-(define default-status
-  (~a check-mark ": installed"
-      "  "
-      "*: auto-installed"
-      "  "
-      "!: not default scope"
-      "  "
-      "=: installed as link"
-      "  "
-      "@: installed from URL"))
 
 (define (pkg-install-status info scope default-scope)
   (~a (cond 
@@ -59,8 +44,8 @@
            [alignment '(left center)]
            [stretchable-height #f]))
 
-    (define keep-rx #rx"")
     (define/private (list-pkg-keep? a)
+      (define keep-rx (send filter-panel get-rx))
       (or (regexp-match? keep-rx (db:pkg-name a))
           (regexp-match? keep-rx (db:pkg-author a))
           (regexp-match? keep-rx (db:pkg-desc a))
@@ -68,31 +53,8 @@
           (regexp-match? keep-rx (db:pkg-source a))
           (regexp-match? keep-rx (db:pkg-catalog a))))
 
-    (define filter-text
-      (new text-field%
-           [label (~a (string-constant install-pkg-filter) ":")]
-           [parent tool-panel]
-           [font small-control-font]
-           [stretchable-width #t]
-           [callback (lambda (tf e)
-                       (define s (send tf get-value))
-                       (define terms (filter (lambda (s) (not (string=? s "")))
-                                             (regexp-split #rx"[, \t\r\n]" s)))
-                       (define rx
-                         (regexp (apply ~a
-                                        #:separator "|"
-                                        (for/list ([term terms])
-                                          (~a "(?i:" (regexp-quote term) ")")))))
-                       (unless (equal? rx keep-rx)
-                         (set! keep-rx rx)
-                         (sort-pkg-list!)))]))
-
-    (define filter-result
-      (new message%
-           [label "9999/9999 match"]
-           [parent tool-panel]
-           [font small-control-font]))
-    (send filter-result set-label "")
+    (define filter-panel (make-filter-panel tool-panel
+                                            (lambda () (sort-pkg-list!))))
   
     (define updating? #f)
 
@@ -110,7 +72,7 @@
     (define status-text
       (new message%
            [parent this]
-           [label default-status]
+           [label install-status-desc]
            [font small-control-font]
            [stretchable-width #t]))
 
@@ -340,7 +302,7 @@
         (sync task)
         (finalize #f))
       (set! task #f)
-      (send status-text set-label default-status))
+      (send status-text set-label install-status-desc))
 
     (define/private (update-db-package-list)
       (interrupt-task!)
@@ -373,7 +335,7 @@
              (db:set-pkg-dependencies! name catalog (hash-ref ht 'checksum "")
                                        (hash-ref ht 'dependencies '())))))
        (lambda (finished?)
-         (send status-text set-label default-status)
+         (send status-text set-label install-status-desc)
          (set! updating? #f)
          (send update-button set-label sc-pkg-update-package-list)
          (refresh-pkg-list!))))
@@ -419,7 +381,7 @@
                   (send pkg-list set-string lpos (->label-string checksum) 5)
                   (send pkg-list set-string lpos (->label-string source) 6)))))))
        (lambda (ok?)
-         (send status-text set-label default-status))))
+         (send status-text set-label install-status-desc))))
 
     (define/private (->label-string s)
       (let ([s (regexp-replace* #rx"[\r\n]+" s " ")])
@@ -477,9 +439,7 @@
             [j (in-naturals)])
         (vector-set! posns (cdr p) j))
       (define list-pkgs (map car list-pkg+poses))
-      (send filter-result set-label (format "~a/~a match" 
-                                            (length list-pkgs)
-                                            (vector-length pkgs)))
+      (send filter-panel set-result (length list-pkgs) (vector-length pkgs))
       (send pkg-list set
             (for/list ([p list-pkgs])
               (define v (hash-ref installed (db:pkg-name p) #f))

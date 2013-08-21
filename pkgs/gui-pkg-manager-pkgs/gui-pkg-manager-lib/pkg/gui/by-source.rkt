@@ -63,7 +63,8 @@
 (define by-source-panel%
   (class vertical-panel%
     (init-field [in-terminal in-terminal])
-    (init [text-field-initial-value #f])
+    (init [text-field-initial-value #f]
+          [(details-initially-shown? details-shown?) #f])
     (super-new)
     
     (inherit get-top-level-window)
@@ -96,7 +97,7 @@
                                         (string-constant cancel)
                                         (get-top-level-window)
                                         '(default=1))])
-                                (when (or (= v 3) (not v)) (esc (void)))
+                                (when (or (not v) (= v 3)) (esc (void)))
                                 (= v 2)))))
         
         (define f
@@ -125,8 +126,13 @@
                                [font small-control-font]
                                [callback browse-callback]
                                [vert-margin 0]))
+
+    (new message% 
+         [parent this]
+         [label (string-constant install-pkg-package-source-desc)]
+         [stretchable-width #t]
+         [font small-control-font])
     
-    (define/public (get-button-panel) button-panel)
     (define button-panel (new horizontal-panel% 
                               [parent this] 
                               [stretchable-height #f]))
@@ -137,6 +143,25 @@
                                [alignment '(left center)]
                                [stretchable-height #f]))
 
+    (define/private (reset-installed-pkgs!)
+      (define scope (selected-scope))
+      (set! currently-installed-pkgs (installed-pkg-names #:scope scope))
+      (set! currently-installed-pkgs-scope scope))
+    
+    (define details-shown? details-initially-shown?)
+    (define details-button (new button% 
+                                [label (if details-initially-shown?
+                                           (string-constant hide-details-button-label)
+                                           (string-constant show-details-button-label))]
+                                [parent button-panel]
+                                [callback
+                                 (λ (a b)
+                                   (set! details-shown? (not details-shown?))
+                                   (adjust-all))]))
+    (unless details-initially-shown?
+      (send details-parent change-children (λ (l) '())))
+
+    (new horizontal-panel% [parent button-panel])
     (define ok-button
       (new button%
            [label (pick-wider normal-control-font
@@ -161,23 +186,8 @@
                        (reset-installed-pkgs!)
                        (adjust-all))]))
 
-    (define/private (reset-installed-pkgs!)
-      (define scope (selected-scope))
-      (set! currently-installed-pkgs (installed-pkg-names #:scope scope))
-      (set! currently-installed-pkgs-scope scope))
+    (define/public (get-close-button-panel) button-panel)
     
-    (new horizontal-panel% [parent button-panel])
-    (define details-shown? #f)
-    (define details-button (new button% 
-                                [label (string-constant show-details-button-label)]
-                                [parent button-panel]
-                                [callback
-                                 (λ (a b)
-                                   (set! details-shown? (not details-shown?))
-                                   (adjust-all))]))
-
-    (send details-parent change-children (λ (l) '()))
-
     (define name-panel (new horizontal-panel% 
                             [parent details-panel]
                             [stretchable-height #f]))

@@ -6,6 +6,7 @@
          pkg/lib
          pkg
          string-constants
+         "filter-panel.rkt"
          "common.rkt")
 
 (provide by-installed-panel%)
@@ -17,6 +18,26 @@
   (if (not (eq? 'catalog (car (ipkg-source ipkg))))
       (path->string (path->complete-path s dir))
       s))
+
+(define (source->string s)
+  (format "~a: ~a"
+          (case (car s)
+            [(catalog) "Catalog"]
+            [(url) "URL"]
+            [(link) "Link"]
+            [(static-link) "Static link"]
+            [(file) "File"])
+          (cadr s)))
+
+(define (status-string a default-scope)
+  (~a (if (ipkg-auto? a) "*" check-mark)
+      (if (equal? (ipkg-scope a) default-scope)
+          ""
+          "!")
+      (case (car (ipkg-source a))
+        [(link static-link) "="]
+        [(URL) "@"]
+        [else ""])))
 
 (define (scope<? a b)
   (cond
@@ -42,12 +63,22 @@
 
     (inherit get-top-level-window)
 
+    (define filter-panel (make-filter-panel this
+                                            (lambda () (sort-list!))))
+
+    (define status-text
+      (new message%
+           [parent this]
+           [label install-status-desc]
+           [font small-control-font]
+           [stretchable-width #t]))
+
     (define pkg-list
       (new list-box%
            [parent this]
            [label #f]
            [choices null]
-           [columns (list "Auto?" "Scope" "Name" "Checksum" "Source")]
+           [columns (list check-mark "Scope" "Name" "Checksum" "Source")]
            [style '(multiple column-headers clickable-headers)]
            [callback (lambda (lb e)
                        (when (e . is-a? . column-control-event%)
@@ -61,6 +92,12 @@
                        (adjust-buttons!))]))
 
     (send pkg-list set-column-width 0 30 2 1000)
+    (send pkg-list set-column-width 2 
+          (max 100 (let-values ([(w mn mx) (send pkg-list get-column-width 2)])
+                     w))
+          2 1000)
+    (send pkg-list set-column-width 4 300 2 1000)
+
 
     (define sort-by 0)
     (define flip? #f)
@@ -190,7 +227,18 @@
                                                    '(link static-link)))))))
 
     (define/private (sort-list!)
-      (define l (sort installed
+      (define default-scope (default-pkg-scope))
+      (define show-installed (let ([rx (send filter-panel get-rx)])
+                               (filter
+                                (lambda (a)
+                                  (or (regexp-match? rx (status-string a default-scope))
+                                      (regexp-match? rx (ipkg-name a))
+                                      (regexp-match? rx (~a (ipkg-scope a)))
+                                      (regexp-match? rx (or (ipkg-checksum a) ""))
+                                      (regexp-match? rx (source->string (ipkg-source a)))))
+                                installed)))
+      (send filter-panel set-result (length show-installed) (length installed))
+      (define l (sort show-installed
                       (lambda (a b)
                         ((if flip? not values)
                          (case sort-by
@@ -225,7 +273,7 @@
       (set! sorted-installed (list->vector l))
       (send pkg-list set
             (for/list ([i (in-list l)])
-              (if (ipkg-auto? i) "*" ""))
+              (status-string i default-scope))
             (for/list ([i (in-list l)])
               (~a (ipkg-scope i)))
             (for/list ([i (in-list l)])
@@ -233,13 +281,5 @@
             (for/list ([i (in-list l)])
               (or (ipkg-checksum i) ""))
             (for/list ([i (in-list l)])
-              (define s (ipkg-source i))
-              (format "~a: ~a"
-                      (case (car s)
-                        [(catalog) "Catalog"]
-                        [(url) "URL"]
-                        [(link) "Link"]
-                        [(static-link) "Static link"]
-                        [(file) "File"])
-                      (cadr s))))
+              (source->string (ipkg-source i))))
       (adjust-buttons!))))

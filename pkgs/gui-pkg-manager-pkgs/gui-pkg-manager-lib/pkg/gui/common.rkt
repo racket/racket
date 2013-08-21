@@ -8,7 +8,9 @@
 (provide really-remove?
          sc-install-pkg-remove
 	 pick-wider
-         get-scope-list)
+         get-scope-list
+         check-mark
+         install-status-desc)
 
 (define sc-install-pkg-remove (string-constant install-pkg-remove))
 (define really-uninstall?-msg (string-constant install-pkg-really-remove?))
@@ -41,3 +43,19 @@
                    'installation
                    d))))
           '(user)))
+
+(define check-mark
+  (for/or ([c '(#\u2713 #\u2714 #\u221A #\x)])
+    (and (send normal-control-font screen-glyph-exists? c #t)
+	 (string c))))
+
+(define install-status-desc
+  (~a check-mark ": installed"
+      "  "
+      "*: auto-installed"
+      "  "
+      "!: not default scope"
+      "  "
+      "=: installed as link"
+      "  "
+      "@: installed from URL"))

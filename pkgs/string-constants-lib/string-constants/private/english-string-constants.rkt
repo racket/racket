@@ -1783,15 +1783,16 @@ please adhere to these guidelines:
   (spell-program-wrote-to-stderr-on-startup "The spell program (~a) printed an error message:")
   
   ;; GUI for installing a pkg package; available via File|Install Package...
-  (install-pkg-install-by-source "Install by Source") ; tab label
-  (install-pkg-install-from-list "Install from List") ; tab label
-  (install-pkg-install-installed "Installed")         ; tab label
-  (install-pkg-migrate-from "Migrate From")           ; tab label
-  (install-pkg-settings "Settings")                   ; tab label
+  (install-pkg-install-by-source "Do What I Mean")         ; tab label
+  (install-pkg-install-from-list "Available from Catalog") ; tab label
+  (install-pkg-install-installed "Currently Installed")    ; tab label
+  (install-pkg-migrate-from "Copy from Version")           ; tab label
+  (install-pkg-settings "Settings")                        ; tab label
   (install-pkg-menu-item... "Install Package...")
   (install-pkg-dialog-title "Install Package")
   (install-pkg-source-label "Package Source")
   (install-pkg-package-name "Package Name")
+  (install-pkg-package-source-desc "A package source is a package name, file, directory, URL, or Github reference")
   (install-pkg-infer "Infer")
   (install-pkg-use "Use") ; as opposed to "Infer", label for text box
   (install-pkg-type-label "Package Source Type")
@@ -1805,7 +1806,7 @@ please adhere to these guidelines:
   (install-pkg-link-dirs "Local directory as link")
   (install-pkg-file-or-dir? "Choose a file or a directory?")
   (install-pkg-force? "Ignore conflicts")
-  (install-pkg-replace? "Replace existing installation")
+  (install-pkg-replace? "Updates can replace existing installations")
   (install-pkg-command-line "Equivalent command line invocation:")
   (install-pkg-error-installing-title "Error Installing Package")
   (install-pkg-action-label "Action to Take")
@@ -1842,6 +1843,7 @@ please adhere to these guidelines:
   (install-pkg-abort-promote "Abort Promote")
   (install-pkg-abort-migrate "Abort Migrate")
   (install-pkg-abort-generic-action "Abort Action")
+  (install-pkg-close-terminal-output "Close Output")
   (install-pkg-show-all-options "Show All Options")
   (install-pkg-migrate-available-installations "Available Installations")
   (pkg-manager-menu-item "Package Manager...")  

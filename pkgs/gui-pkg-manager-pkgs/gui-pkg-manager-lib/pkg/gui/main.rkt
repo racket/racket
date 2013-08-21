@@ -18,7 +18,7 @@
         (#:wrap-terminal-action 
          (-> (-> any) any) 
          #:initial-tab 
-         (or/c 'by-source 'from-list 'installed 'migrate))
+         (or/c 'by-source 'installed 'from-list 'migrate))
         (is-a?/c top-level-window<%>))]
   [make-pkg-installer
    (->* ()
@@ -61,12 +61,12 @@
     (when terminal (send terminal close))
     (define t (in-terminal 
                #:abort-label abort-label
-               #:canvas-min-height 400
+               #:canvas-min-height 200
                #:container dlg
                #:close-button? #f
                (λ (cust parent) (wrap-terminal-action thunk))))
+    (move-close-button (send t get-button-panel))
     (send dlg reflow-container)
-    (unless parent (unless terminal (send dlg center)))
     (set! terminal t)
     (disallow-close)
     (send dlg end-container-sequence)
@@ -84,15 +84,28 @@
   (define by-source-panel
     (new by-source-panel% 
          [parent dlg]
+         [stretchable-height #f]
          [in-terminal in-terminal-panel]
          [text-field-initial-value package-to-offer]))
   
   (define close (new button% 
                      [label (string-constant close)] 
-                     [parent (send by-source-panel get-button-panel)]
+                     [parent (send by-source-panel get-close-button-panel)]
                      [callback
                       (λ (x y)
                         (send dlg show #f))]))
+
+  (define (move-close-button button-panel)
+    (define button-panel-originals (send button-panel get-children))
+    (send close reparent button-panel)
+    ;; Make the close button appear in the bottom right:
+    (send button-panel change-children
+          (lambda (l)
+            (append
+             (list (new horizontal-pane% [parent button-panel]))
+             button-panel-originals
+             (list (new horizontal-pane% [parent button-panel])
+                   close)))))
   
   (send dlg show #t)
 
@@ -100,7 +113,7 @@
 
 (define (make-pkg-gui #:wrap-terminal-action 
                       [wrap-terminal-action (lambda (thunk) (thunk))]
-                      #:initial-tab [initial-tab 'installed])
+                      #:initial-tab [initial-tab 'by-source])
 
   (define frame
     (new pkg-gui-frame%
@@ -118,8 +131,8 @@
     (new tab-panel%
          [parent (send frame get-area-container)]
          [choices (list (string-constant install-pkg-install-by-source)
-                        (string-constant install-pkg-install-from-list)
                         (string-constant install-pkg-install-installed)
+                        (string-constant install-pkg-install-from-list)
                         (string-constant install-pkg-migrate-from)
                         (string-constant install-pkg-settings))]
          [callback (lambda (t e)
@@ -135,6 +148,7 @@
       (send terminal close))
     (define t (in-terminal 
                #:abort-label abort-label
+               #:close-label (string-constant install-pkg-close-terminal-output)
                #:container (send frame get-area-container)
                (λ (cust parent) (wrap-terminal-action thunk))))
     (set! terminal t)
@@ -145,10 +159,10 @@
   (new by-source-panel% 
        [parent sel-panel]
        [in-terminal in-terminal-panel])
-  (new by-list-panel% 
+  (new by-installed-panel%
        [parent sel-panel]
        [in-terminal in-terminal-panel])
-  (new by-installed-panel%
+  (new by-list-panel% 
        [parent sel-panel]
        [in-terminal in-terminal-panel])
   (new by-migrate-panel%
@@ -170,4 +184,6 @@
   frame)
 
 (module+ main
+  (void (make-pkg-installer))
+  #;
   (void (make-pkg-gui)))
