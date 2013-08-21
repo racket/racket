@@ -92,7 +92,12 @@
                       (is-a? window wx:dialog%)) 
                   (set! top-level window)]
                  [else (loop (send window get-parent))])))
-            top-level)])
+            top-level)]
+         [ensure-forgotten
+          (lambda ()
+            ;; This value or its ancestor is going to be adopted elsewhere,
+            ;; so really forget it, make sure it's hidden, etc.
+            (send (get-top-level) forget-child this))])
         (public*
          [really-show
           (lambda (on?)

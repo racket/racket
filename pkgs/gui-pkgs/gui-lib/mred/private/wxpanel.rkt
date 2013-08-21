@@ -144,8 +144,15 @@
                                     (set! hidden-child (car children))
                                     (let ([i (send hidden-child get-info)])
                                       (set-min-width (child-info-x-min i))
-                                      (set-min-height (child-info-y-min i))))]
+                                      (set-min-height (child-info-y-min i))))])
+      
+      (override*
+       [ensure-forgotten (lambda ()
+                           (for ([c (in-list children)])
+                             (send c ensure-forgotten))
+                           (super ensure-forgotten))])
 
+      (public*         
        [border
         (case-lambda
           [() curr-border]

@@ -226,6 +226,12 @@
           (when (zero? seq-count)
             (delay-updates #f)))]
 
+       [forget-child
+        (lambda (child)
+          (unless (hash-ref show-ht child #t)
+            (send child show #f))
+          (hash-remove! show-ht child))]
+
        [show-child
         (lambda (child show?)
           (if perform-updates?

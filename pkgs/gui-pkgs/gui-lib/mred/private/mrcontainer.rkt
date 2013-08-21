@@ -40,7 +40,8 @@
 
 (define-local-member-name
   has-wx-child?
-  adopt-wx-child)
+  adopt-wx-child
+  forget-wx-child)
 
 (define (make-container% %) ; % implements area<%>
   (class* % (area-container<%> internal-container<%>)
@@ -156,14 +157,14 @@
              is-shown?
              show)
     (define/public (reparent new-parent)
-      (check-container-parent '(subwindow<%> reparent) new-parent)
+      (check-container-parent '(method subwindow<%> reparent) new-parent)
       (unless (as-entry
                (lambda ()
                  (let ([p1 (send (mred->wx this) get-top-level)]
                        [p2 (send (mred->wx new-parent) get-top-level)])
                    (eq? (send p1 get-eventspace) (send p1 get-eventspace)))))
         (raise-arguments-error
-         (who->name '(subwindow<%> reparent))
+         (who->name '(method subwindow<%> reparent))
          "current parent's eventspace is not the same as the eventspace of the new parent"
          "subwindow" this
          "new parent" new-parent))
@@ -171,7 +172,7 @@
         (when p
           (when (eq? p this)
             (raise-arguments-error
-             (who->name '(subwindow<%> reparent))
+             (who->name '(method subwindow<%> reparent))
              (if (eq? new-parent this)
                  "cannot set parent to self"
                  "cannot set parent to a descedant")
@@ -192,6 +193,7 @@
                               (or (eq? p wx)
                                   (loop (send p get-parent)))))
                  ;; Ok --- really reparent:
+                 (send wx ensure-forgotten)
                  (send new-parent adopt-wx-child wx)
                  (set-parent new-parent))))))
         (when added?
