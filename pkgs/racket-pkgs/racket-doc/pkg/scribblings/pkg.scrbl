@@ -63,7 +63,7 @@ Each @tech{package} has associated @deftech{package metadata}:
                                 package can be updated when its @tech{checksum} changes,
                                 whether or not its @tech{version} changes. The checksum
                                 can be computed as the SHA1 (see @racketmodname[openssl/sha1])
-                                of the package's source.}
+                                of the package's content.}
  @item{a @deftech{version} --- a string of the form @nonterm{maj}@litchar{.}@nonterm{min},
                      @nonterm{maj}@litchar{.}@nonterm{min}@litchar{.}@nonterm{sub}, or
                      @nonterm{maj}@litchar{.}@nonterm{min}@litchar{.}@nonterm{sub}@litchar{.}@nonterm{rel},
@@ -81,6 +81,8 @@ A @tech{package} is typically represented by a directory with the same
 name as the package. The @tech{checksum} is typically left implicit.
 The package directory can contain a file named @filepath{info.rkt}
 to declare other metadata (see @secref["metadata"]).
+
+@subsection[#:tag "concept:multi-collection"]{Single-collection and Multi-collection Packages}
 
 A @tech{package} can be a @tech{single-collection package} or a
 @tech{multi-collection package}:
@@ -103,25 +105,32 @@ A @tech{package} can be a @tech{single-collection package} or a
 
 ]
 
-More generally, a @deftech{package source} identifies a @tech{package}
+@subsection[#:tag "concept:source"]{Package Sources}
+
+A @deftech{package source} identifies a @tech{package}
 representation. Each package source type has a different way of
 storing the @tech{checksum} and providing the package content (usually
 with @tech{single-collection package} and @tech{multi-collection
-package} variants). The valid @tech{package source} types are:
+package} variants).
+
+The @tech{package source} types are:
 
 @itemlist[
 
 @item{a local file path naming an archive -- The name of the package
 is the basename of the archive file. The @tech{checksum} for archive
-@filepath{f.@nonterm{ext}} is given by the file @filepath{f.@nonterm{ext}.CHECKSUM}. For
-example, @filepath{~/tic-tac-toe.zip}'s @tech{checksum} would be inside
-@filepath{~/tic-tac-toe.zip.CHECKSUM}. The valid archive formats
+@filepath{f.@nonterm{ext}} is given by the file @filepath{f.@nonterm{ext}.CHECKSUM}.
+The valid archive formats
 are (currently) @filepath{.zip}, @filepath{.tar}, @filepath{.tgz}, 
 @filepath{.tar.gz}, and
 @filepath{.plt}, each of which represents package content analogous
-to a directory ,
+to a directory,
 but the @filepath{.plt} format does not accommodate a 
 @tech{single-collection package} representation.
+
+For
+example, @filepath{~/tic-tac-toe.zip}'s @tech{checksum} would be inside
+@filepath{~/tic-tac-toe.zip.CHECKSUM}. 
 
 A package source is inferred to refer to a file
 only when it has a suffix matching a valid archive format
@@ -130,7 +139,9 @@ with alphabetic characters followed by @litchar{://}. The inferred
 package name is the filename without its suffix.}
 
 @item{a local directory -- The name of the package is the name of the
-directory. The @tech{checksum} is not present. For example,
+directory. The @tech{checksum} is not present.
+
+For example,
 @filepath{~/tic-tac-toe/} is directory package source.
 
 A package source is inferred to refer
@@ -142,7 +153,9 @@ package name is the directory name.}
 
 @item{a remote URL naming an archive -- This type follows the same
 rules as a local file path, but the archive and @tech{checksum} files are
-accessed via HTTP(S). For example,
+accessed via HTTP(S).
+
+For example,
 @filepath{http://game.com/tic-tac-toe.zip} is a remote URL package
 source whose @tech{checksum} is found at
 @filepath{http://game.com/tic-tac-toe.zip.CHECKSUM}.
@@ -159,7 +172,9 @@ contain a file named @filepath{MANIFEST} that lists all the contingent
 files. These are downloaded into a local directory and then the rules
 for local directory paths are followed. However, if the remote
 directory contains a file named @filepath{.CHECKSUM}, then it is used
-to determine the @tech{checksum}. For example,
+to determine the @tech{checksum}.
+
+For example,
 @filepath{http://game.com/tic-tac-toe/} is a directory URL package
 source whose @tech{checksum} is found at
 @filepath{http://game.com/tic-tac-toe/.CHECKSUM}.
@@ -172,8 +187,11 @@ is the directory name.}
 @item{a remote URL naming a GitHub repository -- The format for such
 URLs is:
 
-@inset{@exec{github://github.com/}@nonterm{user}@exec{/}@nonterm{repository}@;
-@exec{/}@nonterm{branch-or-tag}@exec{/}@nonterm{optional-subpath}}
+@inset{@exec{github://github.com/}@nonterm{user}@exec{/}@nonterm{repo}@;
+@exec{/}@nonterm{branch-or-tag}@exec{/}@nonterm{subpath}}
+
+where @nonterm{subpath} is optional and can contain multiple
+@litchar{/}-separated elements.
 
 For example, @filepath{github://github.com/game/tic-tac-toe/master/}
 is a GitHub package source.
@@ -187,11 +205,13 @@ A package source is inferred to be a GitHub reference when it
 starts with @litchar{github://}; a package source that is otherwise
 specified as a GitHub reference is automatically prefixed with
 @filepath{github://github.com/}. The inferred package name
-is the last element of @nonterm{optional-subpath} if it is
-non-empty, otherwise the inferred name is @nonterm{repository}.}
+is the last element of @nonterm{subpath} if it is
+non-empty, otherwise the inferred name is @nonterm{repo}.}
 
 @item{a @tech{package name} -- A @tech{package catalog} is
-consulted to determine the source and @tech{checksum} for the package. For
+consulted to determine the source and @tech{checksum} for the package.
+
+For
 example, @exec{tic-tac-toe} is a package name that can be used as a
 package source.
 
@@ -200,6 +220,8 @@ to be a package name when it fits the grammar of package names, which
 means that it has only the characters @|package-name-chars|.}
 
 ]
+
+@subsection[#:tag "concept:catalog"]{Package Catalogs}
 
 A @deftech{package catalog} is a server or database that converts package
 names to other package sources. A @tech{package catalog} is identified by a string
@@ -215,33 +237,46 @@ generated packages for old @|PLaneT| packages. Anyone may host a
 as a basic @tech{package catalog} server. See @secref["catalog-protocol"]
 for information on how package information is extracted from a catalog.
 
-After a package is installed, the original source of its installation
+@subsection[#:tag "concept:auto"]{Explicit vs@|._| Auto-Installation}
+
+When a package is installed, the original source of its installation
 is recorded, as well as whether the instalation was an @tech{automatic installation}. An
 @deftech{automatic installation} is one that was installed because it
 was a dependency of a non-@tech{automatic installation} package.
+
+@subsection[#:tag "concept:conflicts"]{Package Conflicts}
 
 Two packages are in @deftech{conflict} if they contain the same
 module. For example, if the package @pkgname{tic-tac-toe} contains the
 module file @filepath{data/matrix.rkt} and the package
 @pkgname{factory-optimize} contains the module file
 @filepath{data/matrix.rkt}, then @pkgname{tic-tac-toe} and
-@pkgname{factory-optimize} are in conflict. A package may also be in
+@pkgname{factory-optimize} are in conflict.
+
+A package may also be in
 conflict with Racket itself, if it contains a module file that is part
-of the core Racket distribution. For example, any package that
-contains @filepath{racket/list.rkt} is in conflict with Racket. For
-the purposes of conflicts, a module is a file that ends in
-@filepath{.rkt} or @filepath{.ss}.
+of the base Racket implementation. For example, any package that
+contains @filepath{racket/list.rkt} is in conflict with Racket.
+
+For the purposes of conflicts, a module is a file that ends in
+@filepath{.rkt}, @filepath{.ss}, or @filepath{.scrbl}.
+
+@subsection[#:tag "concept:updates"]{Package Updates}
 
 Package A is a @deftech{package update} of Package B if (1) B is
 installed, (2) A and B have the same name, and (3) A's @tech{checksum} is
-different than B's. Note that a package @tech{version} is not taken
+different than B's. A @tech{single-collection package}
+can be a @tech{package update} of a @tech{multi-collection package}
+and vice versa.
+
+Note that a package @tech{version} is not taken
 into account when determining a @tech{package update}, although a change
 in a package's @tech{version} (in either direction)
 implies a change in the @tech{checksum} because the checksum is
 computed from the package source and the meta-data that specifies
-the version is part of the source. A @tech{single-collection package}
-can be a @tech{package update} of a @tech{multi-collection package}
-and vice versa.
+the version is part of the source.
+
+@subsection[#:tag "concept:scope"]{Package Scopes}
 
 A @deftech{package scope} determines the effect of package
 installations, updates, @|etc|, with respect to different users and
@@ -251,15 +286,17 @@ specific to both the current user and the installation's name/version
 (in the sense of @racket[get-installation-name]). The
 @exec{installation} scope means that package operations affect
 all users of the Racket installation.
-Finally, a directory path can be used as a @tech{package scope}, in which case
+
+A directory path can be used as a @tech{package scope}, in which case
 package operations affect the set of packages installations in the
-directory; an installation can be configured to include the
+directory. An installation can be configured to include the
 directory in its search path for installed packages (see
 @secref["config-file" #:doc '(lib "scribblings/raco/raco.scrbl")]).
+
 Conflict checking disallows installation of the same or conflicting
 package in different scopes, but if such a configuration is forced,
 collections are found first in packages with @exec{user} @tech{package
-scope}; search then proceeds in a configured order, where
+scope}. Search then proceeds in a configured order, where
 @exec{installation} @tech{package scope} typically precedes other
 directory @tech{package scopes}.
 

@@ -38,7 +38,7 @@ operations.
 
 A @tech{package} is not something that you refer to directly in your
 Racket programs. Instead, a @tech{package} is a set of libraries that
-fit into the @rtech{collection} hierarchy, and you refer to liraries
+fit into the @rtech{collection} hierarchy, and you refer to libraries
 through their @rtech{collection}-based paths. Libraries that are close
 in the hierarchy may be provided by different packages, while a single
 package may provide libraries that are far from each other in the
@@ -83,7 +83,7 @@ package:
   [none]
 }
 
-The ``Checksum'' column reports the specific ``version'' of each
+The ``Checksum'' column reports the specific implementation of each
 package that is installed. A package can have a @tech{version} in a
 more traditional sense, but the @tech{checksum} is the ``version'' as
 far as the package system is concerned. When you request an update,
@@ -101,7 +101,7 @@ installation. We discuss other possibilities for ``Source'' in
 @secref["installing-packages"].
 
 Neither the @pkgname{main-distribution} package nor the
-@pkgname{racket-lib} package actually provide any libraries on its own,
+@pkgname{racket-lib} package actually provides any libraries on its own,
 but each declares dependencies on other packages. The
 @pkgname{racket-lib} package depends on native-library packages, if
 any, for your platform. The @pkgname{main-distribution} package
@@ -115,14 +115,14 @@ packages you have explicitly selected for your installation).
 @commandline{raco pkg show --all}
 
 An asterisk appears beside the name of every package that was
-``auto-installed'' to satisfy a dependency. All ``auto-installed''
+``auto-installed'' to satisfy a dependency. All auto-installed
 packages are as available for your use in the same way as explicitly
 installed packages, but normally your code should refer only to
 packages that you have explicitly installed. The difference between an
-``auto-installed'' and an explicitly installed package is how various
+auto-installed and an explicitly installed package is how various
 commands, such as @command-ref{show}, treat the package. If you
 specifically request installation of a package that is
-``auto-installed'', then the package is promoted and thereafter
+auto-installed, then the package is promoted and thereafter
 treated as a explicitly installed package.
 
 @; ----------------------------------------
@@ -166,11 +166,10 @@ use the package's name with @command-ref{install}:
 
 If the package depends on other packages that you do not have
 installed already, then @command-ref{install} will alert you and ask
-whether it should install them, too. Use @exec{@DFlag{deps} search-auto} to
+whether it should install them, too. Use @DFlag{auto} to
 skip the question and make dependencies installed automatically.
 Either way, packages installed to satisfy dependencies are marked as
-``auto-installed,'' which makes them easier to uninstall when the
-dependent packages are installed, and it also makes them hidden by
+auto-installed, which makes them easier to uninstall, and it also makes them hidden by
 default for @command-ref{show} (since packages that are installed for
 dependencies are an implementation detail that you usually do not care
 about).
@@ -182,8 +181,8 @@ catalog}. In general, each argument to @command-ref{install} is a
 @filepath{.zip} file, a @filepath{.tar} file, a Github repository, a
 directory-structured web site, or a few other possibilities. In each
 of those cases, a @tech{package name} is inferred from the
-@tech{package source}; after the package is installed, you use the
-name with other @exec{raco pkg} commands to refer to the installed
+@tech{package source}. After the package is installed, you use the
+package name with other @exec{raco pkg} commands to refer to the installed
 package.
 
 In fact, a @tech{package catalog} does not actually serve package
@@ -201,9 +200,13 @@ update.
 @section[#:tag "updating-packages"]{Updating Packages}
 
 If your package installations become out of date, you can update
-packages with @command-ref{update}. Either specify individual
-packages to update, or use @DFlag{all} to update all installed
-packages for which a new @tech{checksum} is available.
+packages with @command-ref{update}:
+
+@commandline{raco pkg update @nonterm{pkg-name}}
+
+Either specify individual packages to update, or use @DFlag{all} to
+update all installed packages for which a new @tech{checksum} is
+available.
 
 The way that the package manager finds updates depends on the way that
 a package was installed. If it was installed by using a @tech{package
@@ -233,6 +236,27 @@ name must be installed already, and the installed package is replaced
 with the specified one. Replacing a package with a new @tech{package
 source} is a generalization of fetching a replacement package that has
 a new @tech{checksum} at a previously specified source.
+
+@; ----------------------------------------
+
+@section[#:tag "removing-packages"]{Removing Packages}
+
+As you might expect, @command-ref{remove} removes a package:
+
+@commandline{raco pkg remove @nonterm{pkg-name}}
+
+If the installation of a package triggered auto-installs of other
+packages, then removing the package @emph{does not} automatically
+remove the auto-installed packages. Supply the @DFlag{auto} flag for
+@command-ref{remove}, either by itself or when uninstalling packages,
+to also remove any auto-installed packages that are left without
+dependents.
+
+The @command-ref{remove} command will not remove a package if other
+installed packages depend on it, unless you force the removal. If you want
+to demote a package from explicitly installed to auto-installed (for
+clean-up later, perhaps when other packages are removed), then
+supply the @DFlag{demote} flag to @command-ref{remove}.
 
 @; ----------------------------------------
 
@@ -283,7 +307,7 @@ development directory as a locally installed package. Use
 
 If you use @command-ref{show} at this point, you'll see a line for
 @nonterm{pkg-name}. The ``Source'' column will show that it's a
-linked package, and the ``Checksum'' column will say @litchar{#f},
+linked package, and the ``Checksum'' column will say @tt{#f},
 which means that there is no checksum. Sub-commands like
 @command-ref{update} will not work on a linked package, because
 ``updates'' to the package happen whenever you modify the package's
@@ -314,11 +338,11 @@ dependencies and help you figure out what dependencies to declare.)
 Even for a @tech{single-collection package}, you may want to create
 @filepath{info.rkt} and include the definition
 
-@racketblock[(define collection @{"}@nonterm{pkg-name}@{"})]
+@racketblock[(define collection @#,racketvalfont{"}@#,nonterm{pkg-name}@#,racketvalfont{"})]
 
 This definition may seem redundant, since @nonterm{pkg-name} is
 available as the name of the enclosing directory, but declaring the
-collection name explicitly prevents the meaning of your implementation
+collection name explicitly prevents the meaning of your package's implementation
 from depending on the way that the implementation is referenced.
 
 Finally, in the case of a @tech{multi-collection package}, note that
@@ -379,7 +403,7 @@ Then, upload the archive and its @tech{checksum} to your site:
 
 @commandline{scp @nonterm{package}.zip @nonterm{package}.zip.CHECKSUM your-host:public_html/}
 
-Your @tech{package source} is then
+Your @tech{package source} is then something like
 
 @inset{@exec{http://your-host/~@nonterm{user}/@nonterm{package}.zip}}
 
