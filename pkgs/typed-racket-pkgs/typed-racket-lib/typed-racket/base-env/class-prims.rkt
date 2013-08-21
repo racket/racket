@@ -223,7 +223,7 @@
    (pattern e:class-clause #:attr data (attribute e.data))
    (pattern e:expr #:attr data (non-clause #'e)))
 
- ;; Listof<Clause> -> Hash<Identifier, Names>
+ ;; Listof<Clause> -> Dict<Identifier, Names>
  ;; Extract names from init, public, etc. clauses
  (define (extract-names clauses)
    (for/fold ([clauses (make-immutable-free-id-table)])
@@ -236,14 +236,54 @@
                    (clause-kind clause)
                    (clause-ids clause)))))
 
- ;; Get rid of class top-level `begin` and local expand
- (define ((eliminate-begin expander) stx)
-   (syntax-parse stx
-     #:literals (begin)
-     [(begin e ...)
-      (stx-map (compose (eliminate-begin expander) expander)
-               (flatten-begin stx))]
-     [_ stx]))
+ ;; FIXME: less magic
+ ;; magic used to disarm syntax after expansion
+ (define class-insp (variable-reference->module-declaration-inspector
+                      (#%variable-reference)))
+ (define (disarm stx)
+   (syntax-disarm stx class-insp))
+
+ ;; Expand the syntax inside the class body
+ ;; this is mostly cribbed from class-internal.rkt
+ (define (expand-expressions stxs ctx def-ctx)
+   (define (class-expand stx)
+     ;; try using syntax-local-expand-expression?
+     (local-expand stx ctx stop-forms def-ctx))
+   (let loop ([stxs stxs])
+     (cond [(null? stxs) null]
+           [else
+            (define stx (disarm (class-expand (car stxs))))
+            (syntax-parse stx
+              #:literals (begin define-syntaxes)
+              [(begin . _)
+               (loop (append (flatten-begin stx) (cdr stxs)))]
+              ;; Handle syntax definitions in the expanded syntax
+              ;; i.e., macro definitions in the class body
+              ;; see class-internal.rkt as well
+              [(define-syntaxes (name:id ...) rhs:expr)
+               (define/with-syntax expanded-rhs
+                 (local-transformer-expand #'rhs 'expression null))
+               (syntax-local-bind-syntaxes
+                (syntax->list #'(name ...)) #'expanded-rhs def-ctx)
+               (cons #'(define-syntaxes (name ...) expanded-rhs)
+                     (loop (cdr stxs)))]
+              [(define-values (name:id ...) rhs:expr)
+               (syntax-local-bind-syntaxes
+                (syntax->list #'(name ...)) #f def-ctx)
+               (cons stx (loop (cdr stxs)))]
+              [_ (cons stx (loop (cdr stxs)))])])))
+
+ ;; add-names-to-intdef-context : Intdef-Ctx Dict<Id, Names> -> Void
+ ;; Establish accessor names in the internal definition context
+ ;; to avoid unbound identifier errors at this level
+ (define (add-names-to-intdef-context def-ctx name-dict)
+   (define (add-kind kind)
+     (define names (map stx-car (dict-ref name-dict kind null)))
+     (syntax-local-bind-syntaxes names #f def-ctx))
+   (add-kind #'init-field)
+   (add-kind #'field)
+   (add-kind #'public)
+   (add-kind #'pubment))
  
  (module+ test
    ;; equal? check but considers id & stx pair equality
@@ -287,20 +327,20 @@
 (define-syntax (class stx)
   (syntax-parse stx
     [(_ super forall:maybe-type-parameter e ...)
-     (define class-context (generate-class-expand-context))
-     (define (class-expand stx)
-       (local-expand stx class-context stop-forms))
      ;; FIXME: potentially needs to expand super clause?
-     (define expanded-stx (stx-map class-expand #'(e ...)))
-     (define flattened-stx
-       (flatten (map (eliminate-begin class-expand) expanded-stx)))
-     (syntax-parse flattened-stx
+     (define class-ctx (generate-class-expand-context))
+     (define def-ctx (syntax-local-make-definition-context))
+     (define expanded-stx
+       (expand-expressions (syntax->list #'(e ...)) class-ctx def-ctx))
+     (syntax-parse expanded-stx
        [(class-elems:class-clause-or-other ...)
         (define-values (clauses others)
           (filter-multiple (attribute class-elems.data)
                            clause?
                            non-clause?))
         (define name-dict (extract-names clauses))
+        (add-names-to-intdef-context def-ctx name-dict)
+        (internal-definition-context-seal def-ctx)
         (define-values (annotated-methods other-top-level private-fields)
           (process-class-contents others name-dict))
         (define annotated-super
