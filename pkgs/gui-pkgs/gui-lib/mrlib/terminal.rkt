@@ -16,7 +16,8 @@
                      #:cleanup-thunk (-> void?)
                      #:canvas-min-width (or/c #f exact-nonnegative-integer?)
                      #:canvas-min-height (or/c #f exact-nonnegative-integer?)
-                     #:close-button? boolean?)
+                     #:close-button? boolean?
+                     #:close-label string?)
                     (is-a?/c terminal<%>))])
  terminal<%>)
 
@@ -41,7 +42,8 @@
                      #:cleanup-thunk [cleanup-thunk void]
                      #:canvas-min-width [canvas-min-width #f]
                      #:canvas-min-height [canvas-min-height #f]
-                     #:close-button? [close-button? #t])
+                     #:close-button? [close-button? #t]
+                     #:close-label [close-button-label (string-constant close)])
   (define orig-eventspace (current-eventspace))
   (define orig-custodian (current-custodian))
   (define inst-eventspace (if container
@@ -67,95 +69,98 @@
   (define (close-callback)
     (custodian-shutdown-all installer-cust))
   
+  (define saved-button-panel #f)
+
   (parameterize ([current-eventspace inst-eventspace])
     (queue-callback
      (λ ()
-       (unless container
-         (set! frame
-               (new (class frame%
-                      (define/augment (can-close?) currently-can-close?)
-                      (define/augment (on-close) (close-callback))
-                      (super-new [label title]
-                                 [width 600]
-                                 [height 300]))))
-         (set! container frame)
-         (define mb (new menu-bar% [parent frame]))
-         (define edit-menu (new menu% 
-                                [label (string-constant edit-menu)]
-                                [parent mb]))
-         (define copy-menu-item
-           (new menu-item%
-                [parent edit-menu]
-                [label (string-constant copy-menu-item)]
-                [shortcut #\c]
-                [demand-callback
-                 (λ (item)
-                    (send copy-menu-item enable
-                          (not (= (send text get-start-position)
-                                  (send text get-end-position)))))]
-                [callback
-                 (λ (item evt)
-                    (send text copy))]))
-         (new menu-item%
-              [parent edit-menu]
-              [label (string-constant select-all-menu-item)]
-              [shortcut #\a]
-              [callback
-               (λ (item evt)
-                  (send text set-position 0 (send text last-position)))]))
-       
-       (when container
-         (send container begin-container-sequence))
+        (unless container
+          (set! frame
+                (new (class frame%
+                       (define/augment (can-close?) currently-can-close?)
+                       (define/augment (on-close) (close-callback))
+                       (super-new [label title]
+                                  [width 600]
+                                  [height 300]))))
+          (set! container frame)
+          (define mb (new menu-bar% [parent frame]))
+          (define edit-menu (new menu% 
+                                 [label (string-constant edit-menu)]
+                                 [parent mb]))
+          (define copy-menu-item
+            (new menu-item%
+                 [parent edit-menu]
+                 [label (string-constant copy-menu-item)]
+                 [shortcut #\c]
+                 [demand-callback
+                  (λ (item)
+                     (send copy-menu-item enable
+                           (not (= (send text get-start-position)
+                                   (send text get-end-position)))))]
+                 [callback
+                  (λ (item evt)
+                     (send text copy))]))
+          (new menu-item%
+               [parent edit-menu]
+               [label (string-constant select-all-menu-item)]
+               [shortcut #\a]
+               [callback
+                (λ (item evt)
+                   (send text set-position 0 (send text last-position)))]))
+        
+        (when container
+          (send container begin-container-sequence))
 
-       (set! sub-container
-             (or frame
-                 (new (class vertical-panel%
-                        (super-new)
-                        (define/override (on-superwindow-show on?)
-                          (unless on? (close-callback))))
-                      [parent container])))
-                                    
-       (set! text (new (text:hide-caret/selection-mixin text:standard-style-list%)))
-       (define canvas (new editor-canvas%
-                           [parent sub-container]
-                           [editor text]
-                           [min-width canvas-min-width]
-                           [min-height canvas-min-height]))
-       (define button-panel (new horizontal-panel%
-                                 [parent sub-container]
-                                 [stretchable-height #f]
-                                 [alignment '(center center)]))
-       (set! kill-button (new button%
-                              [label abort-label]
-                              [parent button-panel]
-                              [callback (λ (b e) (kill-callback))]))
-       (when close-button?
-         (set! close-button (new button% 
-                                 [label (string-constant close)]
-                                 [parent button-panel]
-                                 [callback (λ (b e) (close))])))
+        (set! sub-container
+              (or frame
+                  (new (class vertical-panel%
+                         (super-new)
+                         (define/override (on-superwindow-show on?)
+                           (unless on? (close-callback))))
+                       [parent container])))
+        
+        (set! text (new (text:hide-caret/selection-mixin text:standard-style-list%)))
+        (define canvas (new editor-canvas%
+                            [parent sub-container]
+                            [editor text]
+                            [min-width canvas-min-width]
+                            [min-height canvas-min-height]))
+        (define button-panel (new horizontal-panel%
+                                  [parent sub-container]
+                                  [stretchable-height #f]
+                                  [alignment '(center center)]))
+        (set! kill-button (new button%
+                               [label abort-label]
+                               [parent button-panel]
+                               [callback (λ (b e) (kill-callback))]))
+        (when close-button?
+          (set! close-button (new button% 
+                                  [label close-button-label]
+                                  [parent button-panel]
+                                  [callback (λ (b e) (close))])))
 
-       (define (close)
-         (if frame
-             (send frame show #f)
-             (send container delete-child sub-container))
-         (close-callback))
+        (define (close)
+          (if frame
+              (send frame show #f)
+              (send container delete-child sub-container))
+          (close-callback))
 
-       (define (kill-callback)
-         (custodian-shutdown-all installer-cust)
-         (fprintf output-port "\n~a\n" aborted-message))
-       (set! currently-can-close? #f)
-       (when close-button (send close-button enable #f))
-       (send canvas allow-tab-exit #t)
-       ((current-text-keymap-initializer) (send text get-keymap))
-       (send text set-styles-sticky #f)
-       (send text lock #t)
-       (send text hide-caret #t)
-       (semaphore-post setup-sema)
-       (when container
-         (send container end-container-sequence))
-       (when frame
-         (send frame show #t)))))
+        (define (kill-callback)
+          (custodian-shutdown-all installer-cust)
+          (fprintf output-port "\n~a\n" aborted-message))
+        (set! currently-can-close? #f)
+        (when close-button (send close-button enable #f))
+        (send canvas allow-tab-exit #t)
+        ((current-text-keymap-initializer) (send text get-keymap))
+        (send text set-styles-sticky #f)
+        (send text lock #t)
+        (send text hide-caret #t)
+        (set! saved-button-panel button-panel)
+        (semaphore-post setup-sema)
+        (when container
+          (send container end-container-sequence))
+        (when frame
+          (send frame show #t)))))
   
   (if (equal? inst-eventspace (current-eventspace))
       (yield setup-sema)
@@ -244,6 +249,8 @@
   
   (new (class* object% (terminal<%>)
          (super-new)
+         (define/public (get-button-panel)
+           saved-button-panel)
          (define/public (can-close-evt)
            (semaphore-peek-evt can-close-sema))
          (define/public (is-closed?)
