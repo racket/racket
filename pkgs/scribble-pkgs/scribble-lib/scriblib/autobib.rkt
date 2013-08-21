@@ -148,7 +148,7 @@
    (append
     (list 'nbsp (send style get-cite-open))
     (add-between
-     (for/list ([k (if sort? (sort keys string-ci<?) keys)])
+     (for/list ([k (if sort? (sort keys (lambda (x y) (if (not (and x y)) x (string-ci<? x y)))) keys)])
        (let ([v (hash-ref groups k)])
          (make-element
           #f

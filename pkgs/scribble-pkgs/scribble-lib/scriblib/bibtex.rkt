@@ -214,12 +214,13 @@
     (define citet-id (make-citer autobib-citet))))
 
 (define (parse-author as)
-  (apply authors
+  (and as
+      (apply authors
          (for/list ([a (in-list (regexp-split #rx" *and *" as))])
            (match (regexp-split #rx" +" a)
              [(list one) (org-author-name one)]
              [(list one two) (author-name one two)]
-             [(list-rest first rest) (author-name first (apply string-append (add-between rest " ")))]))))
+             [(list-rest first rest) (author-name first (apply string-append (add-between rest " ")))])))))
 (define (parse-pages ps)
   (match ps
     [(regexp #rx"^([0-9]+)\\-+([0-9]+)$" (list _ f l))
