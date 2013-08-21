@@ -356,8 +356,7 @@
       (match-define (list name type) name+type)
       `(,name ,(type->sexp type))))
   (define augments*
-    (cond [(null? augments) '()]
-          [object? augments]
+    (cond [(or object? (null? augments)) '()]
           [else (list (cons 'augment augments))]))
   `(,(if object? 'Object 'Class)
     ,@row-var* ,@inits* ,@fields* ,@methods* ,@augments*))
