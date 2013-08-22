@@ -1025,7 +1025,8 @@
                         #`(make-metafunc-extra-side-cond #,(to-lw/proc lst))]
                        [(where pat (unquote (f _ _)))
                         (and (or (identifier? #'pat)
-                                 (andmap identifier? (syntax->list #'pat)))
+                                 (let ([l (syntax->list #'pat)])
+                                   (and l (andmap identifier? (syntax->list #'pat)))))
                              (or (free-identifier=? #'f #'variable-not-in)
                                  (free-identifier=? #'f #'variables-not-in)))
                         (with-syntax ([(ids ...)
