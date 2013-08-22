@@ -13,7 +13,7 @@
 }
 
 /* Serif: */
-.main, .refcontent, .tocview, .tocsub, i {
+.main, .refcontent, .tocview, .tocsub, .sroman, i {
   font-family: serif;
 }
 

@@ -1340,6 +1340,7 @@
            [(italic) '([style "font-style: italic"])]
            [(bold) '([style "font-weight: bold"])]
            [(tt) '([class "stt"])]
+           [(roman) '([class "sroman"])]
            [(url) '([class "url"])]
            [(no-break) '([class "nobreak"])]
            [(sf) '([style "font-family: sans-serif; font-size: 80%; font-weight: bold"])]

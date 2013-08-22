@@ -780,7 +780,7 @@ recognized:
 
 @itemize[
 
- @item{@racket['tt], @racket['italic], @racket['bold], @racket['sf],
+ @item{@racket['tt], @racket['italic], @racket['bold], @racket['roman], @racket['sf],
        @racket['url], @racket['subscript], @racket['superscript], 
        @racket['smaller], @racket['larger] ---
        Basic styles recognized by all renders.}

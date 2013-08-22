@@ -392,6 +392,7 @@
                   [(url) (wrap e "Snolinkurl" 'url)]
                   [(no-break) (wrap e "mbox" tt?)]
                   [(sf) (wrap e "textsf" #f)]
+                  [(roman) (wrap e "textrm" #f)]
                   [(subscript) (wrap e "textsub" #f)]
                   [(superscript) (wrap e "textsuper" #f)]
                   [(smaller) (wrap e "Smaller" #f)]
