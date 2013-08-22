@@ -61,30 +61,33 @@
     (interleave l alt))
 
   (define (BNF-alt/close . l)
-    (interleave l " | "))
+    (interleave l (make-element 'roman " | ")))
 
-  (define BNF-etc "...")
+  (define BNF-etc (make-element 'roman "..."))
 
   (define/kw (nonterm #:body s)
-    (make-element #f (append (list 'lang)
-                             (list (make-element 'italic (decode-content s)))
-                             (list 'rang))))
+    (make-element 'roman (append (list 'lang)
+                                 (list (make-element 'italic (decode-content s)))
+                                 (list 'rang))))
 
   (define/kw (optional #:body s)
-    (make-element #f (append (list "[") (decode-content s) (list "]"))))
+    (make-element #f (append (list (make-element 'roman "["))
+                             (decode-content s)
+                             (list (make-element 'roman "]")))))
 
   (define/kw (BNF-group #:body s)
-    (make-element #f (append (list "{") 
+    (make-element #f (append (list (make-element 'roman "{"))
                              (list (apply BNF-seq (decode-content s)))
-                             (list "}"))))
+                             (list (make-element 'roman "}")))))
 
   (define/kw (kleenestar #:body s)
-    (make-element #f (append (decode-content s) (list "*"))))
+    (make-element #f (append (decode-content s) (list (make-element 'roman "*")))))
 
   (define/kw (kleeneplus #:body s)
     (make-element #f (append (decode-content s) (list (make-element 'superscript (list "+"))))))
 
   (define/kw (kleenerange a b #:body s)
     (make-element #f (append (decode-content s) 
-                             (list (make-element 'superscript 
-                                                 (list (format "{~a,~a}" a b))))))))
+                             (list (make-element 'roman 
+                                                 (make-element 'superscript 
+                                                               (list (format "{~a,~a}" a b)))))))))
