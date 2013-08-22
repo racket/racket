@@ -370,10 +370,10 @@ on GitHub, then
 repository for your package}. After that, your @tech{package source}
 is:
 
-@inset{@exec{github://github.com/@nonterm{user}/@nonterm{package}/@nonterm{branch}}}
+@inset{@exec{git://github.com/@nonterm{user}/@nonterm{package}}}
 
-Typically, @nonterm{branch} will be @exec{master}, but you may wish to use
-different branches for releases and development.
+If you want the package to be @nonterm{branch} instead of @exec{master},
+then add @filepath{#@nonterm{branch}} to the end of the package source.
 
 Whenever you
 

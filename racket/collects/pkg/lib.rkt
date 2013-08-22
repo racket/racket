@@ -838,9 +838,9 @@
                pkg))
   (cond
    [(and (eq? type 'github)
-         (not (regexp-match? #rx"^github://" pkg)))
-    ;; Add "github://github.com/"
-    (stage-package/info (string-append "github://github.com/" pkg) type 
+         (not (regexp-match? #rx"^git(?:hub)?://" pkg)))
+    ;; Add "git://github.com/"
+    (stage-package/info (string-append "git://github.com/" pkg) type 
                         pkg-name 
                         #:given-checksum given-checksum
                         check-sums? download-printf

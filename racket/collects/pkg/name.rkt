@@ -107,15 +107,15 @@
     (validate-name s complain #f)
     (values (and (regexp-match? rx:package-name s) s) 'name)]
    [(and (eq? type 'github)
-         (not (regexp-match? #rx"^github://" s)))
+         (not (regexp-match? #rx"^git(?:hub)?://" s)))
     (package-source->name+type 
-     (string-append "github://github.com/" s)
+     (string-append "git://github.com/" s)
      'github)]
    [(if type
         (or (eq? type 'github)
             (eq? type 'file-url)
             (eq? type 'dir-url))
-        (regexp-match? #rx"^(https?|github)://" s))
+        (regexp-match? #rx"^(https?|github|git)://" s))
     (define url (with-handlers ([exn:fail? (lambda (exn) #f)])
                   (string->url s)))
     (define-values (name name-type)
@@ -124,25 +124,40 @@
             (cond
              [(if type
                   (eq? type 'github)
-                  (equal? (url-scheme url) "github"))
-              (unless (equal? (url-scheme url) "github")
-                (complain "URL scheme is not 'github'"))
+                  (or (equal? (url-scheme url) "github")
+                      (equal? (url-scheme url) "git")))
+              (unless (or (equal? (url-scheme url) "github")
+                          (equal? (url-scheme url) "git"))
+                (complain "URL scheme is not 'git' or 'github'"))
               (define name
                 (and (cor (pair? p)
                           (complain "URL path is empty"))
                      (cor (equal? "github.com" (url-host url))
                           (complain "URL host is not 'github.com'"))
-                     (let ([p (if (equal? "" (path/param-path (last p)))
-                                  (reverse (cdr (reverse p)))
-                                  p)])
-                       (and (cor ((length p) . >= . 3)
-                                 (complain "URL does not have at least three path elements"))
-                            (validate-name
-                             (if (= (length p) 3)
-                                 (path/param-path (second (reverse p)))
-                                 (last-non-empty p))
-                             complain-name
-                             #t)))))
+                     (if (equal? (url-scheme url) "git")
+                         ;; git://
+                         (and (cor (or (= (length p) 2)
+                                       (and (= (length p) 3)
+                                            (equal? "" (path/param-path (caddr p)))))
+                                   (complain "URL does not have two path elements (name and repo)"))
+                              (let ([a (assoc 'path (url-query url))])
+                                (define sub (and a (cdr a) (string-split (cdr a) "/")))
+                                (if (pair? sub)
+                                    (validate-name (last sub) complain-name #t)
+                                    (let ([s (path/param-path (cadr p))])
+                                      (validate-name (regexp-replace #rx"[.]git$" s "") complain-name #t)))))
+                         ;; github://
+                         (let ([p (if (equal? "" (path/param-path (last p)))
+                                      (reverse (cdr (reverse p)))
+                                      p)])
+                           (and (cor ((length p) . >= . 3)
+                                     (complain "URL does not have at least three path elements"))
+                                (validate-name
+                                 (if (= (length p) 3)
+                                     (path/param-path (second (reverse p)))
+                                     (last-non-empty p))
+                                 complain-name
+                                 #t))))))
               (values name (or type 'github))]
              [(if type
                   (eq? type 'file-url)

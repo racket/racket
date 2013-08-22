@@ -16,17 +16,17 @@
 (pkg-tests
  (shelly-begin
   (shelly-install "remote/github"
-                  "github://github.com/jeapostrophe/galaxy/master/tests/planet2/test-pkgs/planet2-test1")
+                  "git://github.com/jeapostrophe/galaxy?path=tests/planet2/test-pkgs/planet2-test1")
   (shelly-install "remote/github with slash"
-                  "github://github.com/jeapostrophe/galaxy/master/tests/planet2/test-pkgs/planet2-test1/")
+                  "git://github.com/jeapostrophe/galaxy?path=tests/planet2/test-pkgs/planet2-test1/")
   (shelly-install "remote/github with auto prefix"
-                  "--type github jeapostrophe/galaxy/master/tests/planet2/test-pkgs/planet2-test1/")
+                  "--type github jeapostrophe/galaxy?path=tests/planet2/test-pkgs/planet2-test1/")
 
   (hash-set! *index-ht-1* "planet2-test1-github-different-checksum"
              (hasheq 'checksum
                      "23eeaee731e72a39bddbacdf1ed6cce3bcf423a5"
                      'source
-                     "github://github.com/jeapostrophe/galaxy/master/tests/planet2/test-pkgs/planet2-test1/"))
+                     "git://github.com/jeapostrophe/galaxy?path=tests/planet2/test-pkgs/planet2-test1/"))
 
   (with-fake-root
     (shelly-case

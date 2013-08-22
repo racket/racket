@@ -53,7 +53,17 @@
 (define github-client_secret (make-parameter #f))
 
 (define (split-github-url pkg-url)
-  (map path/param-path (url-path/no-slash pkg-url)))
+  (if (equal? (url-scheme pkg-url) "github")
+      ;; github://
+      (map path/param-path (url-path/no-slash pkg-url))
+      ;; git://
+      (let* ([paths (map path/param-path (url-path/no-slash pkg-url))])
+        (list* (car paths)
+               (regexp-replace* #rx"[.]git$" (cadr paths) "")
+               (or (url-fragment pkg-url) "master")
+               (let ([a (assoc 'path (url-query pkg-url))])
+                 (or (and a (cdr a) (string-split (cdr a) "/"))
+                     null))))))
 
 (define (package-url->checksum pkg-url-str [query empty]
                                #:download-printf [download-printf void]
@@ -61,7 +71,7 @@
   (define pkg-url
     (string->url pkg-url-str))
   (match (url-scheme pkg-url)
-    ["github"
+    [(or "github" "git")
      (match-define (list* user repo branch path)
                    (split-github-url pkg-url))
      (define api-u

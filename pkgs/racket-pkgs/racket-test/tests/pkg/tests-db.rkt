@@ -37,10 +37,10 @@
                   (list
                    (pkg "p1" "http://a" "" "" "" "")))
     
-    (set-pkg! "p1" "http://a" "github:a" "adam" "123" "the first package")
+    (set-pkg! "p1" "http://a" "adam" "git:a" "123" "the first package")
     (check-equal? (get-pkgs)
                   (list
-                   (pkg "p1" "http://a" "github:a" "adam" "123" "the first package")
+                   (pkg "p1" "http://a" "adam" "git:a" "123" "the first package")
                    (pkg "p2" "http://b" "" "" "" "")))
 
     ;; reverse order of catalogs:
@@ -50,7 +50,7 @@
     (check-equal? (get-pkgs)
                   (list
                    (pkg "p2" "http://b" "" "" "" "")
-                   (pkg "p1" "http://a" "github:a" "adam" "123" "the first package")))
+                   (pkg "p1" "http://a" "adam" "git:a" "123" "the first package")))
 
     (check-equal? (get-pkg-tags "p2" "http://b")
                   '())
@@ -97,6 +97,6 @@
 
     (check-equal? (get-pkgs) 
                   (list
-                   (pkg "p1" "http://a" "github:a" "adam" "123" "the first package")))
+                   (pkg "p1" "http://a" "adam" "git:a" "123" "the first package")))
 
     (delete-file (current-pkg-catalog-file)))
