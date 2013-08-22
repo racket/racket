@@ -442,11 +442,12 @@
                                                      (path->string p)
                                                      p))]
                                             [s (regexp-replace* #rx"\\\\" s "%5c")]
+                                            [s (regexp-replace* #rx"#" s "\\\\#")]
                                             [s (regexp-replace* #rx"{" s "%7b")]
                                             [s (regexp-replace* #rx"}" s "%7d")]
                                             [s (regexp-replace* #rx"%" s "\\\\%")])
                                        s))
-                      (if (regexp-match? #rx"^[^#]*#[^#]*$" target)
+                      (if (regexp-match? #rx"^[^#]*[^\\]#[^#]*$" target)
                           ;; work around a problem with `\href' as an
                           ;; argument to other macros, such as `\marginpar':
                           (let ([l (string-split target "#")])
@@ -817,6 +818,7 @@
           (case c
             [(#\%) (display "\\%")]
             [(#\#) (display "\\#")]
+            [(#\_) (display "\\_")]
             [(#\\) (display "\\%5c")]
             [(#\{) (display "\\%7b")]
             [(#\}) (display "\\%7d")]
