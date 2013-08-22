@@ -2,6 +2,8 @@
 @(require scribble/manual
           scribble/eval
           scriblib/render-cond
+          scribble/core
+          scribble/html-properties
           (for-syntax scheme/base)
           (for-label scheme/base
                      racket/stream))
@@ -22,7 +24,7 @@
                  [url (λ (b) (format "~a/srfi-std/~asrfi-~a.html" b sub num))])
             (cond-element
               [(or latex text) @link[(url "http://docs.racket-lang.org") label]]
-              [else @link[(url "..") label]]))))]
+              [else @link[(url ".") label]]))))]
    [(_ num . title) #'(srfi num #:subdir #f . title)]))
 
 @;{ The `lst' argument is a list of
@@ -52,11 +54,13 @@
       (define mz-if (racket if))))
   (def-mz mz-if))
 
+@(define srfi-std (style #f (list (install-resource "srfi-std"))))
+
 @; ----------------------------------------------------------------------
 
 @title{SRFIs: Libraries}
 
-The @link["http://srfi.schemers.org/"]{Scheme Requests for
+The @link[#:style srfi-std "http://srfi.schemers.org/"]{Scheme Requests for
 Implementation} (a.k.a. @deftech{SRFI}) process allows individual
 members of the Scheme community to propose libraries and extensions to
 be supported by multiple Scheme implementations.
