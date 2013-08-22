@@ -576,17 +576,24 @@
          [((Instance: (Class: _ _ field-map method-map augment-map))
            (Instance: (Class: _ _ field-map* method-map* augment-map*)))
           (define (subtype-clause? map map*)
-            (match-define (list (and s (list names types)) ...) map)
-            (match-define (list (and s* (list names* types*)) ...) map*)
-            (for/fold ([A A0])
-                      ([n names*] [m types*] #:break (not A))
-              (and A (cond [(assq n s) =>
-                            (lambda (spec) (subtype* A (cadr spec) m))]
-                           [else #f]))))
-          (and ;; Note that augment/public doesn't matter for object
-               ;; subtyping, so these mappings can be merged
-               (subtype-clause? (append method-map augment-map)
-                                (append method-map* augment-map*))
+            ;; invariant: map and map* are sorted by key
+            (let loop ([A A0] [map map] [map* map*])
+              (cond [(or (empty? map) (empty? map*)) #t]
+                    [else
+                     (match-define (list name type) (car map))
+                     (match-define (list name* type*) (car map*))
+                     (cond [;; quit if 2nd obj lacks a name in 1st obj
+                            (symbol<? name* name)
+                            #f]
+                           [;; if 1st obj lacks a name in 2nd obj, try
+                            ;; the next one
+                            (symbol<? name name*)
+                            (loop A (cdr map) map*)]
+                           [else
+                            (define A* (subtype* A type type*))
+                            (and A* (loop A* (cdr map) (cdr map*)))])])))
+          (and ;; Note that init & augment clauses don't matter for objects
+               (subtype-clause? method-map method-map*)
                (subtype-clause? field-map field-map*))]
          [((Class: row inits fields methods augments)
            (Class: row* inits* fields* methods* augments*))
@@ -595,26 +602,22 @@
           ;; check that each of inits, fields, methods, etc. are
           ;; equal by sorting and checking type equality
           (define (equal-clause? clause clause* [inits? #f])
-            (define (sort-clause lst)
-              (sort lst string<? #:key (compose symbol->string car)))
-            (let ([clause (sort-clause clause)]
-                  [clause* (sort-clause clause*)])
-              (cond
-               [(not inits?)
-                (match-define (list (list names types) ...) clause)
-                (match-define (list (list names* types*) ...) clause*)
-                (and (= (length names) (length names*))
-                     (andmap equal? names names*)
-                     (andmap sub types types*))]
-               [else
-                (match-define (list (list names types opt?) ...)
-                              clause)
-                (match-define (list (list names* types* opt?*) ...)
-                              clause*)
-                (and (= (length names) (length names*))
-                     (andmap equal? names names*)
-                     (andmap sub types types*)
-                     (andmap equal? opt? opt?*))])))
+            (cond
+             [(not inits?)
+              (match-define (list (list names types) ...) clause)
+              (match-define (list (list names* types*) ...) clause*)
+              (and (= (length names) (length names*))
+                   (andmap equal? names names*)
+                   (andmap sub types types*))]
+             [else
+              (match-define (list (list names types opt?) ...)
+                            clause)
+              (match-define (list (list names* types* opt?*) ...)
+                            clause*)
+              (and (= (length names) (length names*))
+                   (andmap equal? names names*)
+                   (andmap sub types types*)
+                   (andmap equal? opt? opt?*))]))
           ;; There is no non-trivial width subtyping on class types, but it's
           ;; possible for two "equal" class types to look different
           ;; in the representation. We deal with that here.
@@ -623,7 +626,6 @@
                    (equal? row row*))
                (equal-clause? inits inits* #t)
                (equal-clause? fields fields*)
-               ;; augment/public distinction is important here
                (equal-clause? methods methods*)
                (equal-clause? augments augments*))]
          ;; otherwise, not a subtype

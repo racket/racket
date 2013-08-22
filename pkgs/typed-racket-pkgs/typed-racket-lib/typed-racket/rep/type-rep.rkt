@@ -26,13 +26,14 @@
          Values/c SomeValues/c
          Poly-n
          PolyDots-n
-         Class?
+         Class? Row? Row:
          free-vars*
          type-compare type<?
          remove-dups
          sub-f sub-o sub-pe
          (rename-out [Class:* Class:]
                      [Class* make-Class]
+                     [Row* make-Row]
                      [Mu:* Mu:]
                      [Poly:* Poly:]
                      [PolyDots:* PolyDots:]
@@ -457,11 +458,15 @@
 
 ;; A Row used in type instantiation
 ;; For now, this should not appear in user code. It's used
-;; internally to perform row instantiations
+;; internally to perform row instantiations and to represent
+;; class types.
+;;
+;; invariant: all clauses are sorted by the key name
 (def-type Row ([inits (listof (list/c symbol? Type/c boolean?))]
                [fields (listof (list/c symbol? Type/c))]
                [methods (listof (list/c symbol? Function?))]
                [augments (listof (list/c symbol? Function?))])
+  #:no-provide
   [#:frees (λ (f) (combine-frees
                    (map f (append (map cadr inits)
                                   (map cadr fields)
@@ -904,6 +909,15 @@
                          (PolyRow-body* fresh-syms t)))
                  (list nps freshp constrp bp)))])))
 
+;; Row*
+;; This is a custom constructor for Row types
+;; Sorts all clauses by the key (the clause name)
+(define (Row* inits fields methods augments)
+  (*Row (sort-row-clauses inits)
+        (sort-row-clauses fields)
+        (sort-row-clauses methods)
+        (sort-row-clauses augments)))
+
 ;; Class*
 ;; This is a custom constructor for Class types that
 ;; doesn't require writing make-Row everywhere
@@ -914,7 +928,7 @@
       (listof (list/c symbol? Function?))
       (listof (list/c symbol? Function?))
       Class?)
-  (*Class row-var (*Row inits fields methods augments)))
+  (*Class row-var (Row* inits fields methods augments)))
 
 ;; Class:*
 ;; This match expander replaces the built-in matching with
@@ -936,11 +950,18 @@
          (define row-methods (Row-methods row))
          (define row-augments (Row-augments row))
          (list row
-               (append inits row-inits)
-               (append fields row-fields)
-               (append methods row-methods)
-               (append augments row-augments))]
+               ;; FIXME: instead of sorting here every time
+               ;;        the match expander is called, the row
+               ;;        fields should be merged on substitution
+               (sort-row-clauses (append inits row-inits))
+               (sort-row-clauses (append fields row-fields))
+               (sort-row-clauses (append methods row-methods))
+               (sort-row-clauses (append augments row-augments)))]
         [else (list row inits fields methods augments)]))
+
+;; sorts the given field of a Row by the member name
+(define (sort-row-clauses clauses)
+  (sort clauses symbol<? #:key car))
 
 (define-match-expander Class:*
   (λ (stx)
