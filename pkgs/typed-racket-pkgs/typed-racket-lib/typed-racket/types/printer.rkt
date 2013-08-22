@@ -299,7 +299,7 @@
     [(? tuple? t)
      (fp "~a" (cons 'List (tuple-elems t)))]
     [(Base: n cnt _ _ _) (fp "~s" n)]
-    [(Opaque: pred _) (fp "(Opaque ~a)" (syntax->datum pred))]
+    [(Opaque: pred) (fp "(Opaque ~a)" (syntax->datum pred))]
     [(Struct: nm       par (list (fld: t _ _) ...)       proc _ _)
      (fp "#(struct:~a ~a" nm t)
      (when proc
@@ -381,7 +381,7 @@
     [(Result: t fs (Empty:)) (fp "(~a : ~a)" t fs)]
     [(Result: t fs lo) (fp "(~a : ~a : ~a)" t fs lo)]
     [(MPair: s t) (fp "(MPairof ~a ~a)" s t)]
-    [(Refinement: parent p? _)
+    [(Refinement: parent p?)
      (fp "(Refinement ~a ~a)" parent (syntax-e p?))]
     [(Sequence: ts)
      (fp "(Sequenceof")

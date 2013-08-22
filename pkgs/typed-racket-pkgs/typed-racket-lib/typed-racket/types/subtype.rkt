@@ -392,7 +392,7 @@
                  (hash-set (make-simple-substitution ns (map make-F (take ms (length ns))))
                            n-dotted (i-subst (map make-F (drop ms (length ns))))))
                (subtype* A0 (subst-all subst b1) b2)]
-              [((Refinement: par _ _) t)
+              [((Refinement: par _) t)
                (subtype* A0 par t)]
               ;; use unification to see if we can use the polytype here
               [((Poly: vs b) s)

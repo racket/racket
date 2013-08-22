@@ -33,8 +33,8 @@
          [(list _ (Univ:)) #t]
          [(list (F: _) _) #t]
          [(list _ (F: _)) #t]
-         [(list (Opaque: _ _) _) #t]
-         [(list _ (Opaque: _ _)) #t]
+         [(list (Opaque: _) _) #t]
+         [(list _ (Opaque: _)) #t]
          [(list (Name: n) (Name: n*))
           (or (free-identifier=? n n*)
               (overlap (resolve-once t1) (resolve-once t2)))]
@@ -45,8 +45,8 @@
          [(list (? Mu?) _) (overlap (unfold t1) t2)]
          [(list _ (? Mu?)) (overlap t1 (unfold t2))]
 
-         [(list (Refinement: t _ _) t2) (overlap t t2)]
-         [(list t1 (Refinement: t _ _)) (overlap t1 t)]
+         [(list (Refinement: t _) t2) (overlap t t2)]
+         [(list t1 (Refinement: t _)) (overlap t1 t)]
 
          [(list (Union: e) t)
           (ormap (lambda (t*) (overlap t* t)) e)]

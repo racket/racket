@@ -415,7 +415,7 @@
                (nevermind))]
 
           ;; refinements are erased to their bound
-          [((Refinement: S _ _) T)
+          [((Refinement: S _) T)
            (cg S T)]
 
           ;; variables that are in X and should be constrained

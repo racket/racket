@@ -182,7 +182,7 @@
        (add-disappeared-use #'kw)
        (match (lookup-type/lexical #'p?)
          [(and t (Function: (list (arr: (list dom) _ #f #f '()))))
-          (make-Refinement dom #'p? (syntax-local-certifier))]
+          (make-Refinement dom #'p?)]
          [t (tc-error "cannot declare refinement for non-predicate ~a" t)])]
       [((~and kw t:Struct) t)
        (add-disappeared-use #'kw)
@@ -264,7 +264,7 @@
        (parse-all-type stx)]
       [((~and kw t:Opaque) p?)
        (add-disappeared-use #'kw)
-       (make-Opaque #'p? (syntax-local-certifier))]
+       (make-Opaque #'p?)]
       [((~and kw t:Parameter) t)
        (let ([ty (parse-type #'t)])
          (add-disappeared-use #'kw)

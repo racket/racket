@@ -118,7 +118,7 @@
               [(and t (Function: (list (arr: (list dom) (Values: (list (Result: rng _ _))) #f #f '()))))
                (let ([new-t (make-pred-ty (list dom)
                                           rng
-                                          (make-Refinement dom #'pred (syntax-local-certifier)))])
+                                          (make-Refinement dom #'pred))])
                  (register-type #'pred new-t))
                (list)]
               [t (tc-error "cannot declare refinement for non-predicate ~a" t)])]
