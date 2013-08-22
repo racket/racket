@@ -123,6 +123,7 @@ static Scheme_Object *hash_table_get(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_remove_bang(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_remove(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_clear_bang(int argc, Scheme_Object *argv[]);
+static Scheme_Object *hash_table_clear(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_map(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_for_each(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_hash_table_iterate_start(int argc, Scheme_Object *argv[]);
@@ -171,6 +172,7 @@ static Scheme_Object *unsafe_set_box_star (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *chaperone_hash_key(const char *name, Scheme_Object *table, Scheme_Object *key);
 static Scheme_Object *chaperone_hash_tree_set(Scheme_Object *table, Scheme_Object *key, Scheme_Object *val);
+static Scheme_Object *chaperone_hash_clear(const char *name, Scheme_Object *table);
 
 #define BOX "box"
 #define BOXP "box?"
@@ -585,6 +587,11 @@ scheme_init_list (Scheme_Env *env)
   scheme_add_global_constant("hash-clear!",
 			     scheme_make_noncm_prim(hash_table_clear_bang,
 						    "hash-clear!",
+						    1, 1),
+			     env);
+  scheme_add_global_constant("hash-clear",
+			     scheme_make_noncm_prim(hash_table_clear,
+						    "hash-clear",
 						    1, 1),
 			     env);
   scheme_add_global_constant("hash-map",
@@ -2433,30 +2440,75 @@ static Scheme_Object *hash_table_clear_bang(int argc, Scheme_Object *argv[])
   if (!(SCHEME_HASHTP(v2) && SCHEME_MUTABLEP(v2)) && !SCHEME_BUCKTP(v2))
     scheme_wrong_contract("hash-clear!", "(and/c hash? (not/c immutable?))", 0, argc, argv);
 
-  if (SCHEME_NP_CHAPERONEP(v) && (SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(v))
-                                  || SCHEME_BUCKTP(SCHEME_CHAPERONE_VAL(v)))) {
-    /* Implement `(hash-clear! ht)' as `(hash-for-each ht (lambda (k) (hash-remove! ht k)))'
-       to allow chaperones to interpose. */
-    Scheme_Object *i, *a[2], *key;
-    a[0] = v;
-    while (1) {
-      i = scheme_hash_table_iterate_start(1, a);
-      if (SCHEME_FALSEP(i))
-        break;
+  if (SCHEME_NP_CHAPERONEP(v)) {
+    if (chaperone_hash_clear("hash-clear!", v)) {
+      /* A non-NULL result means that there were `hash-clear' implementations
+         in the chaperone and all checking passed. */
+      v = v2; /* and perform clear below */
+    } else {
+      /* Implement `(hash-clear! ht)' as `(hash-for-each ht (lambda (k) (hash-remove! ht k)))'
+         to allow chaperones to interpose. */
+      Scheme_Object *i, *a[2], *key;
+      a[0] = v;
+      while (1) {
+        i = scheme_hash_table_iterate_start(1, a);
+        if (SCHEME_FALSEP(i))
+          break;
+        
+        a[1] = i;
+        key = scheme_hash_table_iterate_key(2, a);
+        a[1] = key;
+        
+        hash_table_remove_bang(2, a);
+      }
 
-      a[1] = i;
-      key = scheme_hash_table_iterate_key(2, a);
-      a[1] = key;
-      
-      hash_table_remove_bang(2, a);
+      return scheme_void;
     }
-  } else if (SCHEME_BUCKTP(v)) {
+  }
+
+  if (SCHEME_BUCKTP(v)) {
     scheme_clear_bucket_table((Scheme_Bucket_Table *)v);
   } else{
     scheme_clear_hash_table((Scheme_Hash_Table *)v);
   }
 
   return scheme_void;
+}
+
+static Scheme_Object *hash_table_clear(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v, *v2;
+
+  v = argv[0];
+
+  v2 = (SCHEME_NP_CHAPERONEP(v) ? SCHEME_CHAPERONE_VAL(v) : v);
+
+  if (!SCHEME_HASHTRP(v2))
+    scheme_wrong_contract("hash-clear", "(and/c hash? immutable?)", 0, argc, argv);
+
+  if (SCHEME_NP_CHAPERONEP(v)) {
+    v2 = chaperone_hash_clear("hash-clear", v);
+    if (v2)
+      return v2;
+    else {
+      /* NULL result means that a `hash-clear' implementation was not
+         available, so we need to fold a remove over all keys: */
+      Scheme_Object *i, *a[2], *key;
+      while (1) {
+        a[0] = v;
+        i = scheme_hash_table_iterate_start(1, a);
+        if (SCHEME_FALSEP(i))
+          return v;
+        
+        a[1] = i;
+        key = scheme_hash_table_iterate_key(2, a);
+        a[1] = key;
+        
+        v = hash_table_remove_bang(2, a);
+      }
+    }
+  } else
+    return (Scheme_Object *)scheme_make_hash_tree(SCHEME_HASHTR_FLAGS((Scheme_Hash_Tree *)v) & 0x3);
 }
 
 static void no_post_key(const char *name, Scheme_Object *key, int chap)
@@ -2832,8 +2884,9 @@ static Scheme_Object *do_chaperone_hash(const char *name, int is_impersonator, i
 {
   Scheme_Chaperone *px;
   Scheme_Object *val = argv[0];
-  Scheme_Object *redirects;
+  Scheme_Object *redirects, *clear;
   Scheme_Hash_Tree *props;
+  int start_props = 5;
 
   if (SCHEME_CHAPERONEP(val))
     val = SCHEME_CHAPERONE_VAL(val);
@@ -2847,14 +2900,22 @@ static Scheme_Object *do_chaperone_hash(const char *name, int is_impersonator, i
   scheme_check_proc_arity(name, 2, 3, argc, argv); /* remove */
   scheme_check_proc_arity(name, 2, 4, argc, argv); /* key */
 
-  redirects = scheme_make_vector(4, NULL);
+  if ((argc > 5) && (SCHEME_FALSEP(argv[5]) || SCHEME_PROCP(argv[5]))) {
+    scheme_check_proc_arity2(name, 1, 5, argc, argv, 1); /* clear */
+    clear = argv[5];
+    start_props++;
+  } else
+    clear = scheme_false;
+
+  redirects = scheme_make_vector(5, NULL);
   SCHEME_VEC_ELS(redirects)[0] = argv[1];
   SCHEME_VEC_ELS(redirects)[1] = argv[2];
   SCHEME_VEC_ELS(redirects)[2] = argv[3];
   SCHEME_VEC_ELS(redirects)[3] = argv[4];
+  SCHEME_VEC_ELS(redirects)[4] = clear;
   redirects = scheme_box(redirects); /* so it doesn't look like a struct chaperone */
 
-  props = scheme_parse_chaperone_props(name, 5, argc, argv);
+  props = scheme_parse_chaperone_props(name, start_props, argc, argv);
   
   px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
   px->iso.so.type = scheme_chaperone_type;
@@ -2973,8 +3034,20 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
         } else
           scheme_add_to_table((Scheme_Bucket_Table *)o, (const char *)k, v, 0);
         return scheme_void;
-      } else
+      } else if (mode == 3)
         return k;
+      else {
+        /* mode == 4, hash-clear */
+        if (SCHEME_HASHTRP(o)) {
+          o = (Scheme_Object *)scheme_make_hash_tree(SCHEME_HASHTR_FLAGS((Scheme_Hash_Tree *)o) & 0x3);
+          while (wraps) {
+            o = transfer_chaperone(SCHEME_CAR(wraps), o);
+            wraps = SCHEME_CDR(wraps);
+          }
+          return o;
+        } else
+          return scheme_void;
+      }
     } else {
       Scheme_Chaperone *px = (Scheme_Chaperone *)o;
       Scheme_Object *a[3], *red, *orig;
@@ -2994,6 +3067,8 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
         k = orig;
       } else if (mode == 2)
         orig = k;
+      else if (mode == 4)
+        orig = scheme_void;
       else
         orig = v;
 
@@ -3003,6 +3078,9 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
       } else {
         red = SCHEME_BOX_VAL(px->redirects);
         red = SCHEME_VEC_ELS(red)[mode];
+
+        if ((mode == 4) && SCHEME_FALSEP(red))
+          return NULL; /* => fall back to a sequence of removes */
 
         a[0] = px->prev;
         a[1] = k;
@@ -3066,8 +3144,13 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
             what = "result";
           } else          
             what = "value";
+        } else if (mode == 4) {
+          /* hash-clear */
+          (void)_scheme_apply_multi(red, 1, a);
+          o = scheme_void;
+          what = "void";
         } else {
-          /* hash-remove! and key extraction */
+          /* hash-remove and key extraction */
           o = _scheme_apply(red, 2, a);
           what = "key";
         }
@@ -3110,6 +3193,11 @@ Scheme_Object *chaperone_hash_tree_set(Scheme_Object *table, Scheme_Object *key,
 static Scheme_Object *chaperone_hash_key(const char *name, Scheme_Object *table, Scheme_Object *key)
 {
   return chaperone_hash_op(name, table, key, NULL, 3);
+}
+
+static Scheme_Object *chaperone_hash_clear(const char *name, Scheme_Object *table)
+{
+  return chaperone_hash_op(name, table, NULL, NULL, 4);
 }
 
 Scheme_Object *scheme_chaperone_hash_traversal_get(Scheme_Object *table, Scheme_Object *key,

@@ -285,15 +285,17 @@ or override impersonator-property values of @racket[box].}
                            [set-proc (hash? any/c any/c . -> . (values any/c any/c))]
                            [remove-proc (hash? any/c . -> . any/c)]
                            [key-proc (hash? any/c . -> . any/c)]
+                           [clear-proc (or/c #f (hash? . -> . any)) #f]
                            [prop impersonator-property?]
                            [prop-val any] ... ...)
           (and/c hash? impersonator?)]{
 
 Returns an impersonator of @racket[hash], which redirects the
 @racket[hash-ref], @racket[hash-set!] or @racket[hash-set] (as
-applicable), and @racket[hash-remove] or @racket[hash-remove!] (as
-applicable) operations. When
-@racket[hash-set] or @racket[hash-remove] is used on an impersonator of a hash
+applicable), @racket[hash-remove] or @racket[hash-remove!] (as
+applicable), @racket[hash-clear] or @racket[hash-clear!] (as
+applicable and if @racket[clear-proc] is not @racket[#f]) operations. When
+@racket[hash-set], @racket[hash-remove] or @racket[hash-clear] is used on an impersonator of a hash
 table, the result is an impersonator with the same redirecting procedures. 
 In addition, operations like
 @racket[hash-iterate-key] or @racket[hash-map], which extract
@@ -328,6 +330,14 @@ been extracted from @racket[hash] (by @racket[hash-iterate-key] or
 other operations that use @racket[hash-iterate-key] internally); it
 must produce a replacement for the key, which is then reported as a
 key extracted from the table.
+
+If @racket[clear-proc] is not @racket[#f], it must accept
+@racket[hash] as an argument, and its result is ignored. The fact that
+@racket[clear-proc] returns (as opposed to raising an exception or
+otherwise escaping) grants the capability to remove all keys from @racket[hash].
+If @racket[clear-proc] is @racket[#f], then @racket[hash-clear] or
+@racket[hash-clear!] on the impersonator is implemented using
+@racket[hash-iterate-key] and @racket[hash-remove] or @racket[hash-remove!].
 
 The @racket[hash-iterate-value], @racket[hash-map], or
 @racket[hash-for-each] functions use a combination of
@@ -565,6 +575,7 @@ the same value or a chaperone of the value that it is given.  The
                          [set-proc (hash? any/c any/c . -> . (values any/c any/c))]
                          [remove-proc (hash? any/c . -> . any/c)]
                          [key-proc (hash? any/c . -> . any/c)]
+                         [clear-proc (or/c #f (hash? . -> . any)) #f]
                          [prop impersonator-property?]
                          [prop-val any] ... ...)
           (and/c hash? chaperone?)]{

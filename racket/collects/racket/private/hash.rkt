@@ -49,7 +49,7 @@
 
   (define (hash-copy-clear table)
     (unless (hash? table)
-      (raise-argument-error 'hash-clear "hash?" table))
+      (raise-argument-error 'hash-copy-clear "hash?" table))
     (cond
      [(immutable? table)
       (cond
@@ -67,20 +67,6 @@
        [(hash-eqv? table) (make-hasheqv)]
        [(hash-eq? table) (make-hasheq)])]))
 
-  (define (hash-clear table)
-    (unless (and (hash? table) (immutable? table))
-      (raise-argument-error 'hash-clear "(and/c hash? immutable?)" table))
-    (if (not (impersonator? table))
-        ;; Can just make a new one:
-        (cond
-         [(hash-equal? table) (hash)]
-         [(hash-eqv? table) (hasheqv)]
-         [(hash-eq? table) (hasheq)])
-        ;; To preserve chaperones, need to remove
-        ;; each individual key:
-        (for/fold ([table table]) ([k (in-hash-keys table)])
-          (hash-remove table k))))
-
   (define (hash-empty? table)
     (unless (hash? table)
       (raise-argument-error 'hash-empty? "hash?" table))
@@ -93,5 +79,4 @@
            hash-set*
            hash-set*!
            hash-empty?
-           hash-clear
            hash-copy-clear))

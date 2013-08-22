@@ -668,6 +668,21 @@
   (lambda () #hash()) (lambda () #hasheq()) (lambda () #hasheqv())
   make-weak-hash make-weak-hasheq make-weak-hasheqv))
 
+(let ([mk (lambda clear-proc+more
+            (apply chaperone-hash (make-hash)
+                   (lambda (h k) (values k (lambda (h k v) v)))
+                   (lambda (h k v) (values k v))
+                   (lambda (h k) k) (lambda (h k) k)
+                   clear-proc+more))])
+  (test #t chaperone? (mk))
+  (test #t chaperone? (mk #f))
+  (test #t chaperone? (mk (lambda (ht) (void))))
+  (err/rt-test (mk (lambda (a b) (void))))
+  (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
+  (test #t chaperone? (mk prop:blue 'ok))
+  (test #t chaperone? (mk #f prop:blue 'ok))
+  (err/rt-test (mk (lambda (a b) (void)) prop:blue 'ok)))
+
 (for-each
  (lambda (make-hash)
    (let ([h (impersonate-hash (make-hash)
@@ -684,10 +699,10 @@
 (for-each 
  (lambda (make-hash)
    (err/rt-test
-    (impersonator-hash (make-hash) 
-                       (lambda (h k) (values k (lambda (h k v) v)))
-                       (lambda (h k v) (values k v))
-                       (lambda (h k) k) (lambda (h k) k))))
+    (impersonate-hash (make-hash) 
+                      (lambda (h k) (values k (lambda (h k v) v)))
+                      (lambda (h k v) (values k v))
+                      (lambda (h k) k) (lambda (h k) k))))
  (list (lambda () #hash()) (lambda () #hasheq()) (lambda () #hasheqv())))
 
 (as-chaperone-or-impersonator
@@ -850,6 +865,41 @@
      (test (void) hash-clear! ht)
      (test 0 hash-count ht))))
 
+(as-chaperone-or-impersonator
+ ([chaperone-hash impersonate-hash]
+  [chaperone-procedure impersonate-procedure]
+  [sub1 add1])
+ (define hit? #f)
+ (define (mk ht)
+   (chaperone-hash ht
+                   (lambda (h k)
+                     (values k
+                             (lambda (h k v) v)))
+                   (lambda (h k v)
+                     (values k v))
+                   (lambda (h k) k)
+                   (lambda (h k) k)
+                   (lambda (h)
+                     (set! hit? #t)
+                     (test #t hash? h))))
+ (let* ([ht (make-hash)]
+        [ht2 (mk ht)])
+   (hash-set! ht2 'a 1)
+   (hash-set! ht2 'b 2)
+   (test #f values hit?)
+   (test (void) hash-clear! ht2)
+   (test #t values hit?)
+   (test 0 hash-count ht)
+   (test 0 hash-count ht2))
+ (when (negative? (sub1 0))
+   (let* ([ht (hash 'a 1)]
+          [ht2 (mk ht)])
+     (define ht3 (hash-set ht2 'b 2))
+     (set! hit? #f)
+     (define ht4 (hash-clear ht2))
+     (test #t values hit?)
+     (test 0 hash-count ht4))))
+ 
 ;; ----------------------------------------
 
 ;; Check broken key impersonator:
