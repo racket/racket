@@ -24,8 +24,9 @@
                      (call-with-input-file* 
                       p
                       (lambda (in) 
-                        (parameterize ([current-readtable (make-readtable #f)]) 
-                          (read in))))
+                        (call-with-default-reading-parameterization
+                         (lambda ()
+                           (read in)))))
                      #hash()))
                #hash()))))
 

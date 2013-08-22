@@ -50,5 +50,12 @@
   (delete-directory/files tmpdir))
 
 ;; ----------------------------------------
+;; Make sure that setting the reader doesn't break reading a configuration file:
+
+(parameterize ([current-namespace (make-base-namespace)]
+               [read-accept-dot #f])
+  ((dynamic-require 'setup/dirs 'get-pkgs-search-dirs)))
+
+;; ----------------------------------------
 
 (report-errs)
