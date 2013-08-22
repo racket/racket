@@ -9,31 +9,43 @@
     (define first-port-no 9001)
     (define server-cust
       (make-custodian))
+    (define wait-sema
+      (make-semaphore))
+    (define my-accept
+      (λ (l)
+        (semaphore-post wait-sema)
+        (tcp-accept l)))
     (parameterize ([current-custodian server-cust])
       (for ([response (in-list (cons response responses))]
             [port-no (in-naturals first-port-no)])
-        (thread 
+        (thread
          (λ ()
-           (run-server port-no 
+           (run-server port-no
                        (lambda (ip op)
                          (let-values ([(ip op) (wrap-ports ip op)])
                            (regexp-match #rx"(\r\n|^)\r\n" ip)
                            (display response op)
                            (close-output-port op)
                            (close-input-port ip)))
-                       +inf.0)))))
-    (sleep 1)
+                       +inf.0
+                       void
+                       tcp-listen
+                       tcp-close
+                       my-accept
+                       my-accept)))))
+    (for ([response (in-list (cons response responses))])
+      (semaphore-wait wait-sema))
     (dynamic-wind
-     void
-     (λ ()
-       (call-with-values
+        void
         (λ ()
-          (url->port
-           (url scheme #f "localhost" first-port-no
-                #t empty empty #f)))
-        (λ vals (apply values (cons (port->string (car vals)) (cdr vals))))))
-     (λ ()
-       (custodian-shutdown-all server-cust))))
+          (call-with-values
+              (λ ()
+                (url->port
+                 (url scheme #f "localhost" first-port-no
+                      #t empty empty #f)))
+            (λ vals (apply values (cons (port->string (car vals)) (cdr vals))))))
+        (λ ()
+          (custodian-shutdown-all server-cust))))
 
   (define get-pure
     (make-tester get-pure-port))
