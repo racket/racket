@@ -57,10 +57,9 @@
                    ,(sub flds) ,(sub proc) ,(sub poly?)
                    (quote-syntax ,pred-id))]
     [(App: rator rands stx) `(make-App ,(sub rator) ,(sub rands) (quote-syntax ,stx))]
-    [(Opaque: pred cert) `(make-Opaque (quote-syntax ,pred) (syntax-local-certifier))]
-    [(Refinement: parent pred cert) `(make-Refinement ,(sub parent)
-                                                      (quote-syntax ,pred)
-                                                      (syntax-local-certifier))]
+    [(Opaque: pred) `(make-Opaque (quote-syntax ,pred))]
+    [(Refinement: parent pred) `(make-Refinement ,(sub parent)
+                                                 (quote-syntax ,pred))]
     [(Mu-name: n b) `(make-Mu ,(sub n) ,(sub b))]
     [(Poly-names: ns b) `(make-Poly (list ,@(map sub ns)) ,(sub b))]
     [(PolyDots-names: ns b) `(make-PolyDots (list ,@(map sub ns)) ,(sub b))]

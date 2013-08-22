@@ -338,8 +338,8 @@
         [(== t:-Number type-equal?) #'(flat-named-contract 'Number number?)]
 
         [(Base: sym cnt _ _ _) #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt))]
-        [(Refinement: par p? cert)
-         #`(and/c #,(t->c par) (flat-contract #,(cert p?)))]
+        [(Refinement: par p?)
+         #`(and/c #,(t->c par) (flat-contract #,p?))]
         [(Union: elems)
          (let-values ([(vars notvars) (partition F? elems)])
            (unless (>= 1 (length vars)) (exit (fail)))
@@ -364,8 +364,8 @@
         [(Promise: t)
          (set-chaperone!)
          #`(promise/c #,(t->c t))]
-        [(Opaque: p? cert)
-         #`(flat-named-contract (quote #,(syntax-e p?)) #,(cert p?))]
+        [(Opaque: p?)
+         #`(flat-named-contract (quote #,(syntax-e p?)) #,p?)]
         [(Continuation-Mark-Keyof: t)
          (set-chaperone!)
          #`(continuation-mark-key/c #,(t->c/both t))]

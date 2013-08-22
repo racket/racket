@@ -237,8 +237,7 @@
                 (*PolyDots n (add-scopes n (type-rec-id body*))))])
 
 ;; pred : identifier
-;; cert : syntax certifier
-(def-type Opaque ([pred identifier?] [cert procedure?])
+(def-type Opaque ([pred identifier?])
   [#:intern (hash-id pred)] [#:frees #f] [#:fold-rhs #:base] [#:key pred])
 
 ;; kw : keyword?
@@ -336,7 +335,6 @@
 ;; poly? : is this type polymorphicly variant
 ;;         If not, then the predicate is enough for higher order checks
 ;; pred-id : identifier for the predicate of the struct
-;; cert : syntax certifier for pred-id
 ;; acc-ids : names of the accessors
 ;; maker-id : name of the constructor
 (def-type Struct ([name identifier?]
@@ -418,10 +416,10 @@
 (def-type Hashtable ([key Type/c] [value Type/c]) [#:key 'hash]
   [#:frees (λ (f) (combine-frees (list (make-invariant (f key)) (make-invariant (f value)))))])
 
-(def-type Refinement ([parent Type/c] [pred identifier?] [cert procedure?])
+(def-type Refinement ([parent Type/c] [pred identifier?])
   [#:key (Type-key parent)]
   [#:intern (list (Rep-seq parent) (hash-id pred))]
-  [#:fold-rhs (*Refinement (type-rec-id parent) pred cert)]
+  [#:fold-rhs (*Refinement (type-rec-id parent) pred)]
   [#:frees (λ (f) (f parent))])
 
 

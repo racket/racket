@@ -322,7 +322,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (pattern #:name-exists))
   (syntax-parse stx
     [(_ ty:id pred:id lib (~optional ne:name-exists-kw) ...)
-     (register-type-name #'ty (make-Opaque #'pred (syntax-local-certifier)))
+     (register-type-name #'ty (make-Opaque #'pred))
      (with-syntax ([hidden (generate-temporary #'pred)])
        (quasisyntax/loc stx
          (begin
