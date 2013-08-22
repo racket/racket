@@ -6,6 +6,7 @@
          racket/port
          racket/match
          racket/format
+         racket/string
          net/url
          json)
 
@@ -51,6 +52,9 @@
 (define github-client_id (make-parameter #f))
 (define github-client_secret (make-parameter #f))
 
+(define (split-github-url pkg-url)
+  (map path/param-path (url-path/no-slash pkg-url)))
+
 (define (package-url->checksum pkg-url-str [query empty]
                                #:download-printf [download-printf void]
                                #:pkg-name [pkg-name "package"])
@@ -59,7 +63,7 @@
   (match (url-scheme pkg-url)
     ["github"
      (match-define (list* user repo branch path)
-                   (map path/param-path (url-path/no-slash pkg-url)))
+                   (split-github-url pkg-url))
      (define api-u
        (url "https" #f "api.github.com" #f #t
             (map (λ (x) (path/param x empty))
@@ -79,7 +83,7 @@
         #:headers (list (format "User-Agent: raco-pkg/~a" (version)))))
      (unless api-bs
        (error 'package-url->checksum
-              "Could not connect to GitHub"
+              "could not connect to GitHub\n URL: ~a"
               (url->string api-u)))
      (define branches
        (read-json (open-input-bytes api-bs)))

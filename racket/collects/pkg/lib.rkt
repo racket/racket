@@ -796,6 +796,13 @@
                                   #:fail (lambda (s) #f)))
            c))]))
 
+(define (complain-about-source s reason)
+  (pkg-error (~a "invalid package source;\n"
+                 " ~a\n"
+                 "  given: ~a")
+             reason
+             s))
+
 ;; Downloads a package (if needed) and unpacks it (if needed) into a  
 ;; temporary directory.
 (define (stage-package/info pkg
@@ -817,8 +824,13 @@
                                            (if link-dirs?
                                                'link
                                                'dir)
-                                           'file)))
-        (package-source->name+type pkg given-type #:link-dirs? link-dirs?)))
+                                           'file))
+                                   #:must-infer-name? (not given-pkg-name)
+                                   #:complain complain-about-source)
+        (package-source->name+type pkg given-type
+                                   #:link-dirs? link-dirs?
+                                   #:must-infer-name? (not given-pkg-name)
+                                   #:complain complain-about-source)))
   (define pkg-name (or given-pkg-name inferred-pkg-name))
   (when (and type (not pkg-name))
     (pkg-error (~a "could not infer package name from source\n"
@@ -851,7 +863,7 @@
                  "  source: ~a")
              pkg))
           (match-define (list* user repo branch path)
-                        (map path/param-path (url-path/no-slash pkg-url)))
+                        (split-github-url pkg-url))
           (define new-url
             (url "https" #f "github.com" #f #t
                  (map (λ (x) (path/param x empty))
@@ -1741,7 +1753,9 @@
     ;; Infer the package-source type and name:
     (define-values (inferred-name type) (package-source->name+type
                                          (pkg-desc-source pkg-name)
-                                         (pkg-desc-type pkg-name)))
+                                         (pkg-desc-type pkg-name)
+                                         #:must-infer-name? (not (pkg-desc-name pkg-name))
+                                         #:complain complain-about-source))
     (define name (or (pkg-desc-name pkg-name)
                      inferred-name))
     ;; Check that the package is installed, and get current checksum:
