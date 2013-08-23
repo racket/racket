@@ -226,10 +226,11 @@ the entire list, yielding the malformed expression
 @racket['(ul ((li "Larry") (li "Curly") (li
 "Moe")))].
 
-Instead, we must splice the list in, like so: @racket[`(ul ,@((li "Larry") (li "Curly") (li
-"Moe")))]. The @racket[unquote-splicing] form, @racket[,@expression],
-allows us conveniently to splice a list of @|xexpr| fragments into a
-larger template list. To generalize the example, here are two helper
+Instead, we must splice the list in, like so: @racket[`(ul
+,@'((li "Larry") (li "Curly") (li "Moe")))]. The
+@racket[unquote-splicing] form, @racket[,@expression], allows us
+conveniently to splice a list of @|xexpr| fragments into a larger
+template list. To generalize the example, here are two helper
 functions that convert any list of @|xexpr|s into one @|xexpr|
 representing an unordered, itemized HTML list:
 
