@@ -330,9 +330,9 @@ then each key is removed one-by-one using @racket[hash-remove!].
 
 Functionally removes all mappings from @racket[hash].
 
-If @racket[hash] is not an @tech{impersonator}, then clearing is
+If @racket[hash] is not a @tech{chaperone}, then clearing is
 equivalent to creating a new @tech{hash table}, and the operation is
-performed in constant time.  If @racket[hash] is an @tech{chaperone},
+performed in constant time.  If @racket[hash] is a @tech{chaperone},
 then each key is removed one-by-one using @racket[hash-remove].}
 
 
