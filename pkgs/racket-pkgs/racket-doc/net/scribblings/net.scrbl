@@ -5,6 +5,7 @@
 
 @table-of-contents[]
 
+@include-section["http-client.scrbl"]
 @include-section["url.scrbl"]
 @include-section["uri-codec.scrbl"]
 @include-section["websocket.scrbl"]
