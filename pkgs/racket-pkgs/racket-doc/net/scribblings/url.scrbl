@@ -1,7 +1,9 @@
 #lang scribble/doc
 @(require "common.rkt" scribble/bnf
           (for-label net/url net/url-unit net/url-sig 
+                     racket/list
                      net/head net/uri-codec net/tcp-sig
+                     net/http-client
                      (only-in net/url-connect current-https-protocol)
                      openssl))
 
@@ -426,6 +428,18 @@ mapping is the empty list (i.e., no proxies).}
 @defproc[(url-exception? [x any/c])
          boolean?]{
  Identifies an error thrown by URL functions.         
+}
+
+@defproc[(http-sendrecv/url [u url?]
+                            [#:method method (or/c bytes? string? symbol?) #"GET"]
+                            [#:headers headers (listof (or/c bytes? string?)) empty]
+                            [#:data data (or/c false/c bytes? string?) #f])
+         (values bytes? (listof bytes?) input-port?)]{
+
+Calls @racket[http-sendrecv] using @racket[u] to populate the host, URI, port, and SSL parameters.
+
+This function does not support proxies.
+                                                      
 }
 
 @section{URL HTTPS mode}
