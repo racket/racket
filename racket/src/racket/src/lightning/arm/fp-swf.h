@@ -38,6 +38,9 @@
 
 #define swf_off(rn)  (-JIT_FRAME_EXTRA_SPACE_OFFSET + ((rn) << 2))
 
+#ifdef USE_DIRECT_AEABI_FP_FUNCTIONS
+/* These functions are normally provided by fplib: */
+# define jit_swf_fp(f) f
 extern float	__addsf3(float, float);
 extern double	__adddf3(double, double);
 extern float	__aeabi_fsub(float, float);
@@ -64,6 +67,36 @@ extern int	__aeabi_fcmpgt(float, float);
 extern int	__aeabi_dcmpgt(double, double);
 extern int	__aeabi_fcmpun(float, float);
 extern int	__aeabi_dcmpun(double, double);
+#else
+/* More portable (to older systems that use trapped instructions, instead): */
+# define jit_swf_fp(f) jit_swf__ ## f
+static float    jit_swf_fp(__addsf3)(float a, float b) { return a + b; }
+static double   jit_swf_fp(__adddf3)(double a, double b) { return a + b; }
+static float	jit_swf_fp(__aeabi_fsub)(float a, float b) { return a - b; }
+static double	jit_swf_fp(__aeabi_dsub)(double a, double b) { return a - b; }
+static float	jit_swf_fp(__aeabi_fmul)(float a, float b) { return  a * b; }
+static double	jit_swf_fp(__aeabi_dmul)(double a, double b) { return a * b; }
+static float	jit_swf_fp(__aeabi_fdiv)(float a, float b) { return a / b; }
+static double	jit_swf_fp(__aeabi_ddiv)(double a, double b) { return a / b; }
+static float	jit_swf_fp(__aeabi_i2f)(int a) { return (float)a; }
+static double	jit_swf_fp(__aeabi_i2d)(int a) { return (double)a; }
+static float	jit_swf_fp(__aeabi_d2f)(double a) { return (float)a; }
+static double	jit_swf_fp(__aeabi_f2d)(float a) { return (double)a; }
+static int	jit_swf_fp(__aeabi_f2iz)(double a) { return (int)a; }
+static int	jit_swf_fp(__aeabi_d2iz)(float a) { return (float)a; }
+static int	jit_swf_fp(__aeabi_fcmplt)(float a, float b) { return a < b; }
+static int	jit_swf_fp(__aeabi_dcmplt)(double a, double b) { return a < b; }
+static int	jit_swf_fp(__aeabi_fcmple)(float a, float b) { return a <= b; }
+static int	jit_swf_fp(__aeabi_dcmple)(double a, double b) { return a <= b; }
+static int	jit_swf_fp(__aeabi_fcmpeq)(float a, float b) { return a == b; }
+static int	jit_swf_fp(__aeabi_dcmpeq)(double a, double b) { return a == b; }
+static int	jit_swf_fp(__aeabi_fcmpge)(float a, float b) { return a >= b; }
+static int	jit_swf_fp(__aeabi_dcmpge)(double a, double b) { return a >= b; }
+static int	jit_swf_fp(__aeabi_fcmpgt)(float a, float b) { return a > b; }
+static int	jit_swf_fp(__aeabi_dcmpgt)(double a, double b) { return a > b; }
+static int	jit_swf_fp(__aeabi_fcmpun)(float a, float b) { return a != b; }
+static int	jit_swf_fp(__aeabi_dcmpun)(double a, double b) { return a != b; }
+#endif
 
 #define swf_call(function, label)					\
     do {								\
@@ -206,7 +239,7 @@ swf_extr_i_f(jit_state_t _jitp, jit_fpr_t r0, jit_gpr_t r1)
     swf_push(0xf);
     if (r1 != _R0)
 	jit_movr_i(_R0, r1);
-    swf_call(__aeabi_i2f, i2f);
+    swf_call(jit_swf_fp(__aeabi_i2f), i2f);
     swf_strin(_R0, JIT_FP, swf_off(r0) + 8);
     swf_pop(0xf);
 }
@@ -217,7 +250,7 @@ swf_extr_i_d(jit_state_t _jitp, jit_fpr_t r0, jit_gpr_t r1)
     swf_push(0xf);
     if (r1 != _R0)
 	jit_movr_i(_R0, r1);
-    swf_call(__aeabi_i2d, i2d);
+    swf_call(jit_swf_fp(__aeabi_i2d), i2d);
     if (!jit_thumb_p() && jit_armv5e_p())
 	_STRDIN(_R0, JIT_FP, swf_off(r0) + 8);
     else {
@@ -237,7 +270,7 @@ swf_extr_d_f(jit_state_t _jitp, jit_fpr_t r0, jit_fpr_t r1)
 	swf_ldrin(_R0, JIT_FP, swf_off(r1) + 8);
 	swf_ldrin(_R1, JIT_FP, swf_off(r1) + 4);
     }
-    swf_call(__aeabi_d2f, d2f);
+    swf_call(jit_swf_fp(__aeabi_d2f), d2f);
     swf_strin(_R0, JIT_FP, swf_off(r0) + 8);
     swf_pop(0xf);
 }
@@ -247,7 +280,7 @@ swf_extr_f_d(jit_state_t _jitp, jit_fpr_t r0, jit_fpr_t r1)
 {
     swf_push(0xf);
     swf_ldrin(_R0, JIT_FP, swf_off(r1) + 8);
-    swf_call(__aeabi_f2d, f2d);
+    swf_call(jit_swf_fp(__aeabi_f2d), f2d);
     if (!jit_thumb_p() && jit_armv5e_p())
 	_STRDIN(_R0, JIT_FP, swf_off(r0) + 8);
     else {
@@ -306,7 +339,7 @@ swf_if(jit_state_t _jitp, float (*i0)(float), jit_gpr_t r0, jit_fpr_t r1)
 #endif
     if (i0)
 	swf_call(i0, fallback);
-    swf_call(__aeabi_f2iz, f2iz);
+    swf_call(jit_swf_fp(__aeabi_f2iz), f2iz);
     jit_movr_i(r0, _R0);
 #if !NAN_TO_INT_IS_ZERO
     jit_patch(is_nan);
@@ -369,7 +402,7 @@ swf_id(jit_state_t _jitp, double (*i0)(double), jit_gpr_t r0, jit_fpr_t r1)
 #endif
     if (i0)
 	swf_call(i0, fallback);
-    swf_call(__aeabi_d2iz, d2iz);
+    swf_call(jit_swf_fp(__aeabi_d2iz), d2iz);
     jit_movr_i(r0, _R0);
 #if !NAN_TO_INT_IS_ZERO
     jit_patch(is_nan);
@@ -507,14 +540,14 @@ swf_ddd(jit_state_t _jitp, double (*i0)(double, double),
     swf_pop(0xf);
 }
 
-#define swf_addr_f(_jitp, r0, r1, r2)	swf_fff(_jitp, __addsf3, r0, r1, r2)
-#define swf_addr_d(_jitp, r0, r1, r2)	swf_ddd(_jitp, __adddf3, r0, r1, r2)
-#define swf_subr_f(_jitp, r0, r1, r2)	swf_fff(_jitp, __aeabi_fsub, r0, r1, r2)
-#define swf_subr_d(_jitp, r0, r1, r2)	swf_ddd(_jitp, __aeabi_dsub, r0, r1, r2)
-#define swf_mulr_f(_jitp, r0, r1, r2)	swf_fff(_jitp, __aeabi_fmul, r0, r1, r2)
-#define swf_mulr_d(_jitp, r0, r1, r2)	swf_ddd(_jitp, __aeabi_dmul, r0, r1, r2)
-#define swf_divr_f(_jitp, r0, r1, r2)	swf_fff(_jitp, __aeabi_fdiv, r0, r1, r2)
-#define swf_divr_d(_jitp, r0, r1, r2)	swf_ddd(_jitp, __aeabi_ddiv, r0, r1, r2)
+#define swf_addr_f(_jitp, r0, r1, r2)	swf_fff(_jitp, jit_swf_fp(__addsf3), r0, r1, r2)
+#define swf_addr_d(_jitp, r0, r1, r2)	swf_ddd(_jitp, jit_swf_fp(__adddf3), r0, r1, r2)
+#define swf_subr_f(_jitp, r0, r1, r2)	swf_fff(_jitp, jit_swf_fp(__aeabi_fsub), r0, r1, r2)
+#define swf_subr_d(_jitp, r0, r1, r2)	swf_ddd(_jitp, jit_swf_fp(__aeabi_dsub), r0, r1, r2)
+#define swf_mulr_f(_jitp, r0, r1, r2)	swf_fff(_jitp, jit_swf_fp(__aeabi_fmul), r0, r1, r2)
+#define swf_mulr_d(_jitp, r0, r1, r2)	swf_ddd(_jitp, jit_swf_fp(__aeabi_dmul), r0, r1, r2)
+#define swf_divr_f(_jitp, r0, r1, r2)	swf_fff(_jitp, jit_swf_fp(__aeabi_fdiv), r0, r1, r2)
+#define swf_divr_d(_jitp, r0, r1, r2)	swf_ddd(_jitp, jit_swf_fp(__aeabi_ddiv), r0, r1, r2)
 
 __jit_inline void
 swf_iff(jit_state_t _jitp, int (*i0)(float, float),
@@ -558,28 +591,28 @@ swf_idd(jit_state_t _jitp, int (*i0)(double, double),
     swf_pop(l);
 }
 
-#define swf_ltr_f(_jitp, r0, r1, r2)	swf_iff(_jitp, __aeabi_fcmplt,r0,r1,r2)
-#define swf_ltr_d(_jitp, r0, r1, r2)	swf_idd(_jitp, __aeabi_dcmplt,r0,r1,r2)
-#define swf_ler_f(_jitp, r0, r1, r2)	swf_iff(_jitp, __aeabi_fcmple,r0,r1,r2)
-#define swf_ler_d(_jitp, r0, r1, r2)	swf_idd(_jitp, __aeabi_dcmple,r0,r1,r2)
-#define swf_eqr_f(_jitp, r0, r1, r2)	swf_iff(_jitp, __aeabi_fcmpeq,r0,r1,r2)
-#define swf_eqr_d(_jitp, r0, r1, r2)	swf_idd(_jitp, __aeabi_dcmpeq,r0,r1,r2)
-#define swf_ger_f(_jitp, r0, r1, r2)	swf_iff(_jitp, __aeabi_fcmpge,r0,r1,r2)
-#define swf_ger_d(_jitp, r0, r1, r2)	swf_idd(_jitp, __aeabi_dcmpge,r0,r1,r2)
-#define swf_gtr_f(_jitp, r0, r1, r2)	swf_iff(_jitp, __aeabi_fcmpgt,r0,r1,r2)
-#define swf_gtr_d(_jitp, r0, r1, r2)	swf_idd(_jitp, __aeabi_dcmpgt,r0,r1,r2)
+#define swf_ltr_f(_jitp, r0, r1, r2)	swf_iff(_jitp, jit_swf_fp(__aeabi_fcmplt),r0,r1,r2)
+#define swf_ltr_d(_jitp, r0, r1, r2)	swf_idd(_jitp, jit_swf_fp(__aeabi_dcmplt),r0,r1,r2)
+#define swf_ler_f(_jitp, r0, r1, r2)	swf_iff(_jitp, jit_swf_fp(__aeabi_fcmple),r0,r1,r2)
+#define swf_ler_d(_jitp, r0, r1, r2)	swf_idd(_jitp, jit_swf_fp(__aeabi_dcmple),r0,r1,r2)
+#define swf_eqr_f(_jitp, r0, r1, r2)	swf_iff(_jitp, jit_swf_fp(__aeabi_fcmpeq),r0,r1,r2)
+#define swf_eqr_d(_jitp, r0, r1, r2)	swf_idd(_jitp, jit_swf_fp(__aeabi_dcmpeq),r0,r1,r2)
+#define swf_ger_f(_jitp, r0, r1, r2)	swf_iff(_jitp, jit_swf_fp(__aeabi_fcmpge),r0,r1,r2)
+#define swf_ger_d(_jitp, r0, r1, r2)	swf_idd(_jitp, jit_swf_fp(__aeabi_dcmpge),r0,r1,r2)
+#define swf_gtr_f(_jitp, r0, r1, r2)	swf_iff(_jitp, jit_swf_fp(__aeabi_fcmpgt),r0,r1,r2)
+#define swf_gtr_d(_jitp, r0, r1, r2)	swf_idd(_jitp, jit_swf_fp(__aeabi_dcmpgt),r0,r1,r2)
 
 __jit_inline void
 swf_ner_f(jit_state_t _jitp, jit_gpr_t r0, jit_fpr_t r1, jit_fpr_t r2)
 {
-    swf_iff(_jitp, __aeabi_fcmpeq, r0, r1, r2);
+    swf_iff(_jitp, jit_swf_fp(__aeabi_fcmpeq), r0, r1, r2);
     jit_xori_i(r0, r0, 1);
 }
 
 __jit_inline void
 swf_ner_d(jit_state_t _jitp, jit_gpr_t r0, jit_fpr_t r1, jit_fpr_t r2)
 {
-    swf_idd(_jitp, __aeabi_dcmpeq, r0, r1, r2);
+    swf_idd(_jitp, jit_swf_fp(__aeabi_dcmpeq), r0, r1, r2);
     jit_xori_i(r0, r0, 1);
 }
 
@@ -596,7 +629,7 @@ swf_iunff(jit_state_t _jitp, int (*i0)(float, float),
     swf_push(l);
     swf_ldrin(_R0, JIT_FP, swf_off(r1) + 8);
     swf_ldrin(_R1, JIT_FP, swf_off(r2) + 8);
-    swf_call(__aeabi_fcmpun, fcmpun);
+    swf_call(jit_swf_fp(__aeabi_fcmpun), fcmpun);
     if (jit_thumb_p()) {
 	T1_CMPI(_R0, 0);
 	_IT(ARM_CC_NE);
@@ -642,7 +675,7 @@ swf_iundd(jit_state_t _jitp, int (*i0)(double, double),
 	swf_ldrin(_R2, JIT_FP, swf_off(r2) + 8);
 	swf_ldrin(_R3, JIT_FP, swf_off(r2) + 4);
     }
-    swf_call(__aeabi_dcmpun, dcmpun);
+    swf_call(jit_swf_fp(__aeabi_dcmpun), dcmpun);
     if (jit_thumb_p()) {
 	T1_CMPI(_R0, 0);
 	_IT(ARM_CC_NE);
@@ -675,47 +708,47 @@ swf_iundd(jit_state_t _jitp, int (*i0)(double, double),
     swf_pop(l);
 }
 
-#define swf_unltr_f(_jitp, r0, r1, r2)	swf_iunff(_jitp,__aeabi_fcmplt,r0,r1,r2)
-#define swf_unltr_d(_jitp, r0, r1, r2)	swf_iundd(_jitp,__aeabi_dcmplt,r0,r1,r2)
-#define swf_unler_f(_jitp, r0, r1, r2)	swf_iunff(_jitp,__aeabi_fcmple,r0,r1,r2)
-#define swf_unler_d(_jitp, r0, r1, r2)	swf_iundd(_jitp,__aeabi_dcmple,r0,r1,r2)
-#define swf_uneqr_f(_jitp, r0, r1, r2)	swf_iunff(_jitp,__aeabi_fcmpeq,r0,r1,r2)
-#define swf_uneqr_d(_jitp, r0, r1, r2)	swf_iundd(_jitp,__aeabi_dcmpeq,r0,r1,r2)
-#define swf_unger_f(_jitp, r0, r1, r2)	swf_iunff(_jitp,__aeabi_fcmpge,r0,r1,r2)
-#define swf_unger_d(_jitp, r0, r1, r2)	swf_iundd(_jitp,__aeabi_dcmpge,r0,r1,r2)
-#define swf_ungtr_f(_jitp, r0, r1, r2)	swf_iunff(_jitp,__aeabi_fcmpgt,r0,r1,r2)
-#define swf_ungtr_d(_jitp, r0, r1, r2)	swf_iundd(_jitp,__aeabi_dcmpgt,r0,r1,r2)
+#define swf_unltr_f(_jitp, r0, r1, r2)	swf_iunff(_jitp,jit_swf_fp(__aeabi_fcmplt),r0,r1,r2)
+#define swf_unltr_d(_jitp, r0, r1, r2)	swf_iundd(_jitp,jit_swf_fp(__aeabi_dcmplt),r0,r1,r2)
+#define swf_unler_f(_jitp, r0, r1, r2)	swf_iunff(_jitp,jit_swf_fp(__aeabi_fcmple),r0,r1,r2)
+#define swf_unler_d(_jitp, r0, r1, r2)	swf_iundd(_jitp,jit_swf_fp(__aeabi_dcmple),r0,r1,r2)
+#define swf_uneqr_f(_jitp, r0, r1, r2)	swf_iunff(_jitp,jit_swf_fp(__aeabi_fcmpeq),r0,r1,r2)
+#define swf_uneqr_d(_jitp, r0, r1, r2)	swf_iundd(_jitp,jit_swf_fp(__aeabi_dcmpeq),r0,r1,r2)
+#define swf_unger_f(_jitp, r0, r1, r2)	swf_iunff(_jitp,jit_swf_fp(__aeabi_fcmpge),r0,r1,r2)
+#define swf_unger_d(_jitp, r0, r1, r2)	swf_iundd(_jitp,jit_swf_fp(__aeabi_dcmpge),r0,r1,r2)
+#define swf_ungtr_f(_jitp, r0, r1, r2)	swf_iunff(_jitp,jit_swf_fp(__aeabi_fcmpgt),r0,r1,r2)
+#define swf_ungtr_d(_jitp, r0, r1, r2)	swf_iundd(_jitp,jit_swf_fp(__aeabi_dcmpgt),r0,r1,r2)
 
 __jit_inline void
 swf_ltgtr_f(jit_state_t _jitp, jit_gpr_t r0, jit_fpr_t r1, jit_fpr_t r2)
 {
-    swf_iunff(_jitp, __aeabi_fcmpeq, r0, r1, r2);
+    swf_iunff(_jitp, jit_swf_fp(__aeabi_fcmpeq), r0, r1, r2);
     jit_xori_i(r0, r0, 1);
 }
 
 __jit_inline void
 swf_ltgtr_d(jit_state_t _jitp, jit_gpr_t r0, jit_fpr_t r1, jit_fpr_t r2)
 {
-    swf_iundd(_jitp, __aeabi_dcmpeq, r0, r1, r2);
+    swf_iundd(_jitp, jit_swf_fp(__aeabi_dcmpeq), r0, r1, r2);
     jit_xori_i(r0, r0, 1);
 }
 
 __jit_inline void
 swf_ordr_f(jit_state_t _jitp, jit_gpr_t r0, jit_fpr_t r1, jit_fpr_t r2)
 {
-    swf_iff(_jitp, __aeabi_fcmpun, r0, r1, r2);
+    swf_iff(_jitp, jit_swf_fp(__aeabi_fcmpun), r0, r1, r2);
     jit_xori_i(r0, r0, 1);
 }
 
 __jit_inline void
 swf_ordr_d(jit_state_t _jitp, jit_gpr_t r0, jit_fpr_t r1, jit_fpr_t r2)
 {
-    swf_idd(_jitp, __aeabi_dcmpun, r0, r1, r2);
+    swf_idd(_jitp, jit_swf_fp(__aeabi_dcmpun), r0, r1, r2);
     jit_xori_i(r0, r0, 1);
 }
 
-#define swf_unordr_f(_jitp, r0, r1, r2)	swf_iunff(_jitp,__aeabi_fcmpun,r0,r1,r2)
-#define swf_unordr_d(_jitp, r0, r1, r2)	swf_iundd(_jitp,__aeabi_dcmpun,r0,r1,r2)
+#define swf_unordr_f(_jitp, r0, r1, r2)	swf_iunff(_jitp,jit_swf_fp(__aeabi_fcmpun),r0,r1,r2)
+#define swf_unordr_d(_jitp, r0, r1, r2)	swf_iundd(_jitp,jit_swf_fp(__aeabi_dcmpun),r0,r1,r2)
 
 __jit_inline jit_insn *
 swf_bff(jit_state_t _jitp, int (*i0)(float, float), int cc,
@@ -772,22 +805,22 @@ swf_bdd(jit_state_t _jitp, int (*i0)(double, double), int cc,
     return (l);
 }
 
-#define swf_bltr_f(_jitp,i0,r0,r1)	swf_bff(_jitp,__aeabi_fcmplt,ARM_CC_NE,i0,r0,r1)
-#define swf_bltr_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,__aeabi_dcmplt,ARM_CC_NE,i0,r0,r1)
-#define swf_bler_f(_jitp,i0,r0,r1)	swf_bff(_jitp,__aeabi_fcmple,ARM_CC_NE,i0,r0,r1)
-#define swf_bler_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,__aeabi_dcmple,ARM_CC_NE,i0,r0,r1)
-#define swf_beqr_f(_jitp,i0,r0,r1)	swf_bff(_jitp,__aeabi_fcmpeq,ARM_CC_NE,i0,r0,r1)
-#define swf_beqr_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,__aeabi_dcmpeq,ARM_CC_NE,i0,r0,r1)
-#define swf_bger_f(_jitp,i0,r0,r1)	swf_bff(_jitp,__aeabi_fcmpge,ARM_CC_NE,i0,r0,r1)
-#define swf_bger_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,__aeabi_dcmpge,ARM_CC_NE,i0,r0,r1)
-#define swf_bgtr_f(_jitp,i0,r0,r1)	swf_bff(_jitp,__aeabi_fcmpgt,ARM_CC_NE,i0,r0,r1)
-#define swf_bgtr_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,__aeabi_dcmpgt,ARM_CC_NE,i0,r0,r1)
-#define swf_bner_f(_jitp,i0,r0,r1)	swf_bff(_jitp,__aeabi_fcmpeq,ARM_CC_EQ,i0,r0,r1)
-#define swf_bner_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,__aeabi_dcmpeq,ARM_CC_EQ,i0,r0,r1)
-#define swf_bunltr_f(_jitp,i0,r0,r1)	swf_bff(_jitp,__aeabi_fcmpge,ARM_CC_EQ,i0,r0,r1)
-#define swf_bunltr_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,__aeabi_dcmpge,ARM_CC_EQ,i0,r0,r1)
-#define swf_bunler_f(_jitp,i0,r0,r1)	swf_bff(_jitp,__aeabi_fcmpgt,ARM_CC_EQ,i0,r0,r1)
-#define swf_bunler_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,__aeabi_dcmpgt,ARM_CC_EQ,i0,r0,r1)
+#define swf_bltr_f(_jitp,i0,r0,r1)	swf_bff(_jitp,jit_swf_fp(__aeabi_fcmplt),ARM_CC_NE,i0,r0,r1)
+#define swf_bltr_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,jit_swf_fp(__aeabi_dcmplt),ARM_CC_NE,i0,r0,r1)
+#define swf_bler_f(_jitp,i0,r0,r1)	swf_bff(_jitp,jit_swf_fp(__aeabi_fcmple),ARM_CC_NE,i0,r0,r1)
+#define swf_bler_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,jit_swf_fp(__aeabi_dcmple),ARM_CC_NE,i0,r0,r1)
+#define swf_beqr_f(_jitp,i0,r0,r1)	swf_bff(_jitp,jit_swf_fp(__aeabi_fcmpeq),ARM_CC_NE,i0,r0,r1)
+#define swf_beqr_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,jit_swf_fp(__aeabi_dcmpeq),ARM_CC_NE,i0,r0,r1)
+#define swf_bger_f(_jitp,i0,r0,r1)	swf_bff(_jitp,jit_swf_fp(__aeabi_fcmpge),ARM_CC_NE,i0,r0,r1)
+#define swf_bger_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,jit_swf_fp(__aeabi_dcmpge),ARM_CC_NE,i0,r0,r1)
+#define swf_bgtr_f(_jitp,i0,r0,r1)	swf_bff(_jitp,jit_swf_fp(__aeabi_fcmpgt),ARM_CC_NE,i0,r0,r1)
+#define swf_bgtr_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,jit_swf_fp(__aeabi_dcmpgt),ARM_CC_NE,i0,r0,r1)
+#define swf_bner_f(_jitp,i0,r0,r1)	swf_bff(_jitp,jit_swf_fp(__aeabi_fcmpeq),ARM_CC_EQ,i0,r0,r1)
+#define swf_bner_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,jit_swf_fp(__aeabi_dcmpeq),ARM_CC_EQ,i0,r0,r1)
+#define swf_bunltr_f(_jitp,i0,r0,r1)	swf_bff(_jitp,jit_swf_fp(__aeabi_fcmpge),ARM_CC_EQ,i0,r0,r1)
+#define swf_bunltr_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,jit_swf_fp(__aeabi_dcmpge),ARM_CC_EQ,i0,r0,r1)
+#define swf_bunler_f(_jitp,i0,r0,r1)	swf_bff(_jitp,jit_swf_fp(__aeabi_fcmpgt),ARM_CC_EQ,i0,r0,r1)
+#define swf_bunler_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,jit_swf_fp(__aeabi_dcmpgt),ARM_CC_EQ,i0,r0,r1)
 
 __jit_inline jit_insn *
 swf_bunff(jit_state_t _jitp, int eq, void *i1, jit_fpr_t r1, jit_fpr_t r2)
@@ -799,7 +832,7 @@ swf_bunff(jit_state_t _jitp, int eq, void *i1, jit_fpr_t r1, jit_fpr_t r2)
     swf_push(0xf);
     swf_ldrin(_R0, JIT_FP, swf_off(r1) + 8);
     swf_ldrin(_R1, JIT_FP, swf_off(r2) + 8);
-    swf_call(__aeabi_fcmpun, fcmpun);
+    swf_call(jit_swf_fp(__aeabi_fcmpun), fcmpun);
     /* if unordered */
     if (jit_thumb_p()) {
 	T1_CMPI(_R0, 0);
@@ -813,7 +846,7 @@ swf_bunff(jit_state_t _jitp, int eq, void *i1, jit_fpr_t r1, jit_fpr_t r2)
     }
     swf_ldrin(_R0, JIT_FP, swf_off(r1) + 8);
     swf_ldrin(_R1, JIT_FP, swf_off(r2) + 8);
-    swf_call(__aeabi_fcmpeq, fcmpeq);
+    swf_call(jit_swf_fp(__aeabi_fcmpeq), fcmpeq);
     if (jit_thumb_p()) {
 	T1_CMPI(_R0, 0);
 	j1 = _jitp->x.pc;
@@ -863,7 +896,7 @@ swf_bundd(jit_state_t _jitp, int eq, void *i1, jit_fpr_t r1, jit_fpr_t r2)
 	swf_ldrin(_R2, JIT_FP, swf_off(r2) + 8);
 	swf_ldrin(_R3, JIT_FP, swf_off(r2) + 4);
     }
-    swf_call(__aeabi_dcmpun, dcmpun);
+    swf_call(jit_swf_fp(__aeabi_dcmpun), dcmpun);
     /* if unordered */
     if (jit_thumb_p()) {
 	T1_CMPI(_R0, 0);
@@ -885,7 +918,7 @@ swf_bundd(jit_state_t _jitp, int eq, void *i1, jit_fpr_t r1, jit_fpr_t r2)
 	swf_ldrin(_R2, JIT_FP, swf_off(r2) + 8);
 	swf_ldrin(_R3, JIT_FP, swf_off(r2) + 4);
     }
-    swf_call(__aeabi_dcmpeq, dcmpeq);
+    swf_call(jit_swf_fp(__aeabi_dcmpeq), dcmpeq);
     if (jit_thumb_p()) {
 	T1_CMPI(_R0, 0);
 	j1 = _jitp->x.pc;
@@ -919,16 +952,16 @@ swf_bundd(jit_state_t _jitp, int eq, void *i1, jit_fpr_t r1, jit_fpr_t r2)
 
 #define swf_buneqr_f(_jitp,i0,r0,r1)	swf_bunff(_jitp,1,i0,r0,r1)
 #define swf_buneqr_d(_jitp,i0,r0,r1)	swf_bundd(_jitp,1,i0,r0,r1)
-#define swf_bunger_f(_jitp,i0,r0,r1)	swf_bff(_jitp,__aeabi_fcmplt,ARM_CC_EQ,i0,r0,r1)
-#define swf_bunger_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,__aeabi_dcmplt,ARM_CC_EQ,i0,r0,r1)
-#define swf_bungtr_f(_jitp,i0,r0,r1)	swf_bff(_jitp,__aeabi_fcmple,ARM_CC_EQ,i0,r0,r1)
-#define swf_bungtr_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,__aeabi_dcmple,ARM_CC_EQ,i0,r0,r1)
+#define swf_bunger_f(_jitp,i0,r0,r1)	swf_bff(_jitp,jit_swf_fp(__aeabi_fcmplt),ARM_CC_EQ,i0,r0,r1)
+#define swf_bunger_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,jit_swf_fp(__aeabi_dcmplt),ARM_CC_EQ,i0,r0,r1)
+#define swf_bungtr_f(_jitp,i0,r0,r1)	swf_bff(_jitp,jit_swf_fp(__aeabi_fcmple),ARM_CC_EQ,i0,r0,r1)
+#define swf_bungtr_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,jit_swf_fp(__aeabi_dcmple),ARM_CC_EQ,i0,r0,r1)
 #define swf_bltgtr_f(_jitp,i0,r0,r1)	swf_bunff(_jitp,0,i0,r0,r1)
 #define swf_bltgtr_d(_jitp,i0,r0,r1)	swf_bundd(_jitp,0,i0,r0,r1)
-#define swf_bordr_f(_jitp,i0,r0,r1)	swf_bff(_jitp,__aeabi_fcmpun,ARM_CC_EQ,i0,r0,r1)
-#define swf_bordr_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,__aeabi_dcmpun,ARM_CC_EQ,i0,r0,r1)
-#define swf_bunordr_f(_jitp,i0,r0,r1)	swf_bff(_jitp,__aeabi_fcmpun,ARM_CC_NE,i0,r0,r1)
-#define swf_bunordr_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,__aeabi_dcmpun,ARM_CC_NE,i0,r0,r1)
+#define swf_bordr_f(_jitp,i0,r0,r1)	swf_bff(_jitp,jit_swf_fp(__aeabi_fcmpun),ARM_CC_EQ,i0,r0,r1)
+#define swf_bordr_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,jit_swf_fp(__aeabi_dcmpun),ARM_CC_EQ,i0,r0,r1)
+#define swf_bunordr_f(_jitp,i0,r0,r1)	swf_bff(_jitp,jit_swf_fp(__aeabi_fcmpun),ARM_CC_NE,i0,r0,r1)
+#define swf_bunordr_d(_jitp,i0,r0,r1)	swf_bdd(_jitp,jit_swf_fp(__aeabi_dcmpun),ARM_CC_NE,i0,r0,r1)
 
 __jit_inline void
 swf_ldr_f(jit_state_t _jitp, jit_fpr_t r0, jit_gpr_t r1)
