@@ -10,6 +10,8 @@
 	 mzlib/unit
 	 mzlib/class
 	 mzlib/list
+	 racket/match
+	 racket/path
 	 mzlib/struct
 	 mzlib/compile
 	 drscheme/tool
@@ -20,6 +22,8 @@
 	 compiler/embed
 	 wxme/wxme
 	 setup/dirs
+	 setup/getinfo
+	 setup/collects
 
 	 lang/stepper-language-interface
 	 lang/debugger-language-interface
@@ -639,27 +643,36 @@
               (cond
                 [(= 1 (length tps))
                  (go ": " welcome)
-                 (go (cadr (car tps)) (drscheme:rep:get-dark-green-delta))]
+                 (go (tp-require->str (car tps)) (drscheme:rep:get-dark-green-delta))]
                 [(= 2 (length tps))
                  (go "s: " welcome)
-                 (go (cadr (car tps)) (drscheme:rep:get-dark-green-delta))
+                 (go (tp-require->str (car tps)) (drscheme:rep:get-dark-green-delta))
                  (go " und " welcome)
-                 (go (cadr (cadr tps)) (drscheme:rep:get-dark-green-delta))]
+                 (go (tp-require->str (cadr tps)) (drscheme:rep:get-dark-green-delta))]
                 [else
                  (go "s: " welcome)
-                 (go (cadr (car tps)) (drscheme:rep:get-dark-green-delta))
+                 (go (tp-require->str (car tps)) (drscheme:rep:get-dark-green-delta))
                  (let loop ([these-tps (cdr tps)])
                    (cond
                      [(null? (cdr these-tps))
                       (go " und " welcome)
-                      (go (cadr (car these-tps)) (drscheme:rep:get-dark-green-delta))]
+                      (go (tp-require->str (car these-tps)) (drscheme:rep:get-dark-green-delta))]
                      [else
                       (go ", " welcome)
-                      (go (cadr (car these-tps)) (drscheme:rep:get-dark-green-delta))
+                      (go (tp-require->str (car these-tps)) (drscheme:rep:get-dark-green-delta))
                       (loop (cdr these-tps))]))])
               (go "." welcome)
               (newline port)))
-          
+
+	  (define/private (tp-require->str tp)
+            (match tp
+              [`(lib ,x) 
+               (define m (regexp-match #rx"teachpack/deinprogramm/(.*)$" x))
+               (if m
+                   (list-ref m 1)
+                   (format "~s" tp))]
+              [_ (format "~s" tp)]))
+
           (inherit get-module get-transformer-module get-init-code
                    use-namespace-require/copy?)
           (define/override (create-executable setting parent program-filename)
@@ -797,7 +810,7 @@
           (define deinprogramm-teachpack-callbacks
             (drscheme:unit:make-teachpack-callbacks
              (lambda (settings) 
-               (map cadr (deinprogramm-lang-settings-teachpacks settings)))
+               (map (lambda (x) (tp-require->str x)) (deinprogramm-lang-settings-teachpacks settings)))
              (lambda (settings parent) 
                (let ([teachpack (get-teachpack-from-user parent)])
                  (if teachpack
@@ -907,13 +920,24 @@
                                 data-class-names)))))))))
       
       (define (get-teachpack-from-user parent)
-        (define tp-dir (collection-path "teachpack" "deinprogramm"))
+        (define tp-dir "deinprogramm")
         (define columns 2)
-        (define tps (filter
-                     (lambda (x) (file-exists? (build-path tp-dir x)))
-                     (directory-list tp-dir)))
-        (define sort-order (lambda (x y) (string<=? (path->string x) (path->string y))))
-        (define pre-installed-tps (sort tps sort-order))
+        (define tps (tp-dir->tps 'deinprogramm-teachpacks))
+
+	(define label+mps
+	  (let ([all-filenames (map (lambda (tp) (list-ref tp 0)) tps)])
+	    (for/list ([tp (in-list tps)])
+	      (define filename (list-ref tp 0))
+	      (define mp (list-ref tp 1))
+	      (list (path->string 
+		     (or (shrink-path-wrt filename all-filenames)
+			 (let-values ([(base name dir?) (split-path filename)])
+			   name)))
+		    mp))))
+        
+        (define pre-installed-tps
+	  (sort label+mps string<? #:key car))
+
         (define dlg (new dialog% [parent parent] [label (string-constant drscheme)]))
         (define hp (new horizontal-panel% [parent dlg]))
         (define answer #f)
@@ -927,21 +951,30 @@
                                        [parent hp]))
         
         (define pre-installed-lb
-          (new list-box%
-               [label #f]
-               [choices (map path->string pre-installed-tps)]
-               [stretchable-height #t]
-               [min-height 300]
-               [min-width 200]
-               [callback
-                (lambda (x evt)
-                  (case (send evt get-event-type)
-                    [(list-box-dclick) (selected pre-installed-lb)]
-                    [else
-                     (clear-selection user-installed-lb)
-                     (update-button)]))]
-               [parent pre-installed-gb]))
-        
+	  (let ([lb 
+		 (new list-box%
+		      [label #f]
+		      [choices (map (lambda (x) (gui-utils:trim-string (list-ref x 0) 200))
+				    pre-installed-tps)]
+		      [stretchable-height #t]
+		      [min-height 300]
+		      [min-width 200]
+		      [callback
+		       (lambda (this evt)
+			 (case (send evt get-event-type)
+			   [(list-box-dclick) (selected this)]
+			   [else
+			    (for ([x (in-list (list user-installed-lb
+						    pre-installed-lb))]
+				  #:unless (eq? x this))
+				 (clear-selection x))
+			    (update-button)]))]
+		      [parent pre-installed-gb])])
+	    (for ([i (in-naturals)]
+		  [tp (in-list pre-installed-tps)])
+              (send lb set-data i (list-ref tp 1)))
+	    lb))
+
         (define user-installed-lb
           (new list-box%
                [label #f]
@@ -1079,18 +1112,17 @@
                                          (send dlg show #f))
                                        (string-constant ok) (string-constant cancel)))
         
-        (define (figure-out-answer)
+        
+	(define (figure-out-answer)
           (cond
-            [(send pre-installed-lb get-selection)
-             =>
-             (lambda (i) `(lib ,(send pre-installed-lb get-string i) 
-                               "teachpack"
-                               "deinprogramm"))]
-            [(send user-installed-lb get-selection)
-             =>
-             (lambda (i) `(lib ,(send user-installed-lb get-string i)
-                               ,user-installed-teachpacks-collection))]
-            [else (error 'figure-out-answer "no selection!")]))
+	   [(and (send pre-installed-lb get-selection)
+		 (send pre-installed-lb get-data
+		       (send pre-installed-lb get-selection)))]
+	   [(send user-installed-lb get-selection)
+	    =>
+	    (lambda (i) `(lib ,(send user-installed-lb get-string i)
+			      ,user-installed-teachpacks-collection))]
+	   [else (error 'figure-out-answer "no selection!")]))
         
         
         (send ok-button enable #f)
@@ -1099,6 +1131,33 @@
         (send dlg show #t)
         answer)
       
+      (define (tp-dir->tps tp-sym)
+        (filter
+         values
+         (for*/list ([dir (in-list (find-relevant-directories (list tp-sym)))]
+                     #:when (let ([inf (get-info/full dir)])
+                              (and inf (inf tp-sym (lambda () #f))))
+                     [file-or-dir (in-list
+                                   (let ([files ((get-info/full dir) tp-sym)])
+                                     (cond
+                                       [(eq? files 'all)
+                                        (for/list ([x (in-list (directory-list dir))]
+                                                   #:when
+                                                   (regexp-match #rx"[.](ss|scm|rkt)$"
+                                                                 (path->string x))
+                                                   #:unless
+                                                   (member (path->string x) '("info.rkt" "info.ss")))
+                                          x)]
+                                       [(list? files) files]
+                                       [else '()])))])
+           (let/ec k
+             (unless (path? file-or-dir) (k #f))
+             (define candidate (build-path dir file-or-dir))
+             (unless (file-exists? candidate) (k #f))
+             (define mp (path->module-path candidate))
+             (when (path-string? mp) (k #f))
+             (list candidate mp)))))
+
       (define (stepper-settings-language %)
         (if (implementation? % stepper-language<%>)
             (class* % (stepper-language<%>)
@@ -1178,7 +1237,7 @@
       (define mf-note
         (let ([bitmap
                (make-object bitmap%
-                 (build-path (collection-path "icons") "mf.gif"))])
+                 (collection-file-path "mf.gif" "icons"))])
           (and (send bitmap ok?)
                (make-object image-snip% bitmap))))
       
