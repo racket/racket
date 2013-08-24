@@ -35,15 +35,25 @@
 (define-judgment-form STLC
   #:mode (typeof I I O)
   #:contract (typeof Γ e τ)
-  [(typeof Γ (λ (x τ_1) e) (τ_1 → τ_2))
-   (typeof (extend Γ x τ_1) e τ_2)]
-  [(typeof Γ (e_1 e_2) τ)
-   (typeof Γ e_1 (τ_2 → τ))
-   (typeof Γ e_2 τ_2)]
-  [(typeof Γ x τ)
-   (where τ (lookup Γ x))]
-  [(typeof Γ i int)]
-  [(typeof Γ add1 (int → int))])
+  
+  [(typeof (extend Γ x τ_1) e τ_2)
+   ------------------------------------
+   (typeof Γ (λ (x τ_1) e) (τ_1 → τ_2))]
+  
+  [(typeof Γ e_1 (τ_2 → τ))
+   (typeof Γ e_2 τ_2)
+   ------------------------
+   (typeof Γ (e_1 e_2) τ)]
+  
+  [(where τ (lookup Γ x))
+   --------------
+   (typeof Γ x τ)]
+  
+  [----------------
+   (typeof Γ i int)]
+  
+  [----------------------------
+   (typeof Γ add1 (int → int))])
 
 (define-metafunction STLC
   extend : Γ x τ -> Γ
