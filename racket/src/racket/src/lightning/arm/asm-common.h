@@ -45,8 +45,6 @@
 #define __jit_constructor /* empty */
 #define __jit_inline XFORM_NONGCING MZ_INLINE static
 
-typedef unsigned int _ui;
-
 typedef signed char		_sc;
 typedef unsigned char		_uc, jit_insn;
 typedef unsigned short		_us;

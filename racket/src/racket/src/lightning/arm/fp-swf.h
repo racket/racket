@@ -377,10 +377,19 @@ swf_id(jit_state_t _jitp, double (*i0)(double), jit_gpr_t r0, jit_fpr_t r1)
     swf_pop(l);
 }
 
+XFORM_NONGCING static float SCH_ROUNDF(float f)
+{
+  /* JIT does not generate single-precision arithmetic */
+  return f;
+}
+
+/* SCH_ROUND: */
+#include "../../schround.inc"
+
 #define swf_rintr_f_i(_jitp, r0, r1)	swf_if(_jitp, rintf, r0, r1)
 #define swf_rintr_d_i(_jitp, r0, r1)	swf_id(_jitp, rint, r0, r1)
-#define swf_roundr_f_i(_jitp, r0, r1)	swf_if(_jitp, roundf, r0, r1)
-#define swf_roundr_d_i(_jitp, r0, r1)	swf_id(_jitp, round, r0, r1)
+#define swf_roundr_f_i(_jitp, r0, r1)	swf_if(_jitp, SCH_ROUNDF, r0, r1)
+#define swf_roundr_d_i(_jitp, r0, r1)	swf_id(_jitp, SCH_ROUND, r0, r1)
 #define swf_truncr_f_i(_jitp, r0, r1)	swf_if(_jitp, (void *)0, r0, r1)
 #define swf_truncr_d_i(_jitp, r0, r1)	swf_id(_jitp, (void *)0, r0, r1)
 #define swf_ceilr_f_i(_jitp, r0, r1)	swf_if(_jitp, ceilf, r0, r1)
