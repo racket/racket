@@ -57,6 +57,10 @@
     (make-tester get-pure-port/headers))
   (define get-pure/headers/redirect
     (make-tester (λ (x) (get-pure-port/headers x #:redirections 1))))
+  (define put-pure
+    (make-tester (lambda (url) (put-pure-port url #"data"))))
+  (define put-impure
+    (make-tester (lambda (url) (put-impure-port url #"data"))))
 
   (test
    (get-pure
@@ -131,7 +135,17 @@
       "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\nAnother-Header: ta-daa\r\n\r\n20\r\nThis is the data in the first ch\r\n21\r\nand this is the second oneXXXXXXX\r\n0\r\n")
      =>
      (values "This is the data in the first chand this is the second oneXXXXXXX"
-             "Content-Type: text/plain\r\nTransfer-Encoding: chunked\r\nAnother-Header: ta-daa\r\n"))))
+             "Content-Type: text/plain\r\nTransfer-Encoding: chunked\r\nAnother-Header: ta-daa\r\n")))
+
+  (test
+   (put-pure
+    "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n24\r\nThis is the data in the first chunk \r\n1A\r\nand this is the second one\r\n0\r\n")
+   =>
+   "This is the data in the first chunk and this is the second one"
+   (put-impure
+    "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nThis is the data in the first chunk and this is the second one\r\n")
+   =>
+   "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nThis is the data in the first chunk and this is the second one\r\n"))
 
 (provide tests)
 (module+ main (tests))

@@ -419,66 +419,9 @@
     (if m (read-string (cdar m) port) "")))
 
 ;; purify-http-port : in-port -> in-port
-;; returns a new port, closes the old one when done pumping
 (define (purify-http-port in-port)
-  (define-values (in-pipe out-pipe) (make-pipe))
-  (thread
-   (λ ()
-     (define status (http-read-status in-port))
-     (define chunked? (http-read-headers in-port))
-     (http-pipe-data chunked? in-port out-pipe)
-     (close-input-port in-port)))
-  in-pipe)
-
-(define (http-read-status ip)
-  (read-line ip 'return-linefeed))
-
-(define (http-read-headers ip)
-  (define l (read-line ip 'return-linefeed))
-  (when (eof-object? l)
-    (error 'purify-http-port "Connection ended before headers ended"))
-  (if (string=? l "")
-    #f
-    (if (string=? l chunked-header-line)
-      (begin (http-read-headers ip)
-             #t)
-      (http-read-headers ip))))
-
-(define chunked-header-line "Transfer-Encoding: chunked")
-(define close-header-line "Connection: close")
-
-(define (http-pipe-data chunked? ip op)
-  (with-handlers ([exn:fail? (lambda (exn)
-                               (log-net/url-error (exn-message exn)))])
-    (if chunked?
-      (http-pipe-chunk ip op)
-      (begin
-        (copy-port ip op)
-        (flush-output op)
-        (close-output-port op)))))
-
-(define (http-pipe-chunk ip op)
-  (define crlf-bytes (make-bytes 2))
-  (let loop ([last-bytes #f])
-    (define size-str (read-line ip 'return-linefeed))
-    (define chunk-size (string->number size-str 16))
-    (unless chunk-size
-      (error 'http-pipe-chunk "Could not parse ~S as hexadecimal number" size-str))
-    (define use-last-bytes?
-      (and last-bytes (<= chunk-size (bytes-length last-bytes))))
-    (if (zero? chunk-size)
-      (begin (flush-output op)
-             (close-output-port op))
-      (let* ([bs (if use-last-bytes?
-                   (begin
-                     (read-bytes! last-bytes ip 0 chunk-size)
-                     last-bytes)
-                   (read-bytes chunk-size ip))]
-             [crlf (read-bytes! crlf-bytes ip 0 2)])
-        (write-bytes bs op 0 chunk-size)
-        (loop bs)))))
-
-(define character-set-size 256)
+  (purify-port in-port)
+  in-port)
 
 ;; netscape/string->url : str -> url
 (define (netscape/string->url string)
@@ -718,7 +661,7 @@
                         #:method method
                         #:headers strings
                         #:data data)
-    hc))
+    (http-conn-impure-port hc)))
 
 (define current-url-encode-mode (make-parameter 'recommended))
 
