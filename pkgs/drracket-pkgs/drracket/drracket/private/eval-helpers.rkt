@@ -84,9 +84,11 @@
       (log-info "DrRacket: enabling bytecode-file compilation for package ~s" pkg))
     (define skip-path?
       (let* ([cd (find-collects-dir)]
-             [no-dirs (if cd 
-                          (list (CACHE-DIR) cd)
-                          (list (CACHE-DIR)))])
+             [sd (find-share-dir)]
+             [no-dirs (append
+                       (list (CACHE-DIR))
+                       (if cd (list cd) null)
+                       (if sd (list sd) null))])
         (λ (p) (or (file-stamp-in-paths p no-dirs)
                    (let ([pkg (path->pkg p)])
                      (and pkg
