@@ -130,7 +130,7 @@ typedef enum {
 # define JIT_ARM_VERSION 4
 #endif
 
-#if defined(__ARM_PCS_VFP) || defined(__VFP_FP__)
+#if defined(__ARM_PCS_VFP) || (defined(__VFP_FP__) && !defined(__SOFTFP__))
 # define JIT_ARM_VFP 1
 #endif
 
