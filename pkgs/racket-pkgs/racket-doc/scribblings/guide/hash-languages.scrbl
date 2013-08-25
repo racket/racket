@@ -201,56 +201,14 @@ access languages like @filepath{literal.rkt} and
 @filepath{dollar-racket.rkt}. If you want to use something like
 @racket[@#,hash-lang[] literal] directly, then you must move
 @filepath{literal.rkt} into a Racket @tech{collection} named
-@filepath{literal}.
+@filepath{literal} (see also @secref["link-collection"]).
+Specifically, move @filepath{literal.rkt} to
+@filepath{literal/lang/reader.rkt} for any directory name
+@filepath{literal}. Then, install the @filepath{literal}
+directory as a package.
 
-There are two ways to create the @filepath{literal} collection (see
-also @secref["link-collection"]):
-
-@itemlist[
-
- @item{You can create a directory either in the main Racket
-       installation or in a user-specific directory. Use
-       @racket[find-collects-dir] or @racket[find-user-collects-dir]
-       from @racketmodname[setup/dirs] to find the directory:
-
-       @interaction[
-       (require setup/dirs)
-       (eval:alts (find-user-collects-dir)
-                  (build-path "/home/racketeer/.racket/"
-                              (version)
-                              "collects"))
-       ]
-
-       Move @filepath{literal.rkt} to
-       @filepath{literal/lang/reader.rkt} within the directory reported
-       by @racket[find-collects-dir] or
-       @racket[find-user-collects-dir]. That is, the file
-       @filepath{literal.rkt} must be renamed to @filepath{reader.rkt}
-       and placed in a @filepath{lang} sub-directory of the
-       @filepath{literal} collection.
-
-       @racketblock[
-       .... @#,elem{(the main installation or the user's space)}
-        !- @#,filepath{collects}  
-             !- @#,filepath{literal}
-                  !- @#,filepath{lang}
-                       !- @#,filepath{reader.rkt}
-       ]}
-
- @item{Alternatively, move @filepath{literal.rkt} to
-      @filepath{literal/lang/reader.rkt} for any directory name
-      @filepath{literal}. Then, in the directory that contains
-      @filepath{literal}, use the command line
-
-      @commandline{raco link literal} 
-
-      to register the @filepath{literal} directory as the
-      @filepath{literal} collection.}
-
-]
-
-After moving the file, you can use @racket[literal] directly after
-@hash-lang[]:
+After moving the file and installing the package, you can use
+@racket[literal] directly after @hash-lang[]:
 
 @racketmod[
 @#,racket[literal]
