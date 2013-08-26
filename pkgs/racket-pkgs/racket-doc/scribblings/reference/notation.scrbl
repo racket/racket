@@ -234,6 +234,47 @@ before. The contract section of the header shows the default values
 that are provided for these keyword arguments.
 
 @; ----------------------------------------
+@section{Notation for Structure Type Documentation}
+
+A @tech{structure type} is also documented using contract notation:
+
+@nested[#:style 'inset
+@defstruct*[#:link-target? #f
+            color ([red (and/c natural-number/c (<=/c 255))]
+                   [green (and/c natural-number/c (<=/c 255))]
+                   [blue (and/c natural-number/c (<=/c 255))]
+                   [alpha (and/c natural-number/c (<=/c 255))])]
+]
+
+The structure type is typeset as it were declared in
+the source code of a program using the @racket[struct] form.
+Each field of the structure is documented with a corresponding
+contract that specifies the values that are accepted for that field.
+
+In the example above, the structure type @racket[_color] has
+four fields: @racket[_red], @racket[_green], @racket[_blue],
+and @racket[_alpha]. The constructor for the structure type
+accepts field values that satisfy
+@racket[(and/c natural-number/c (<=/c 255))], i.e., non-negative
+exact integers up to 255.
+
+Additional keywords may appear after the field names in the
+documentation for a structure type:
+
+@nested[#:style 'inset
+@defstruct*[#:link-target? #f
+            data-source
+              ([connector (or/c 'postgresql 'mysql 'sqlite3 'odbc)]
+               [args list?]
+               [extensions (listof (list/c symbol? any/c))])
+            #:mutable]
+]
+
+Here, the @racket[#:mutable] keyword indicates that the fields of
+instances of the @racket[_data-source] structure type can be
+mutated with their respective setter functions.
+
+@; ----------------------------------------
 @section{Notation for Parameter Documentation}
 
 A @tech{parameter} is documented the same way as a function:
