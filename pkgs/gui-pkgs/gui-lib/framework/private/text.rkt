@@ -953,7 +953,7 @@
                    (equal? new-draw-the-line? old-draw-the-line?))
         (set! old-draw-the-line? new-draw-the-line?)
         (set! left-padding left)
-        (invalidate-bitmap-cache)))
+        (invalidate-bitmap-cache 0.0 0.0 'display-end 'display-end)))
     
     ;; pre: aw initialized to current value
     (define/private (draw-the-line?)
