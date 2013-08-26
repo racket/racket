@@ -33,6 +33,12 @@ language of a whole module---that is, by a module that starts
 documented with @hash-lang[] can also be used with @racket[require] to
 obtain the language's bindings.
 
+The module annotation also shows the
+@tech[#:doc '(lib "pkg/scribblings/pkg.scrbl")]{package}
+that the module belongs to on the right-hand side. For more details
+about packages, see
+@(other-manual '(lib "pkg/scribblings/pkg.scrbl")).
+
 Sometimes, a module specification appears at the beginning of a
 document or at the start of a section that contains many subsections.
 The document's section or section's subsections are meant to
