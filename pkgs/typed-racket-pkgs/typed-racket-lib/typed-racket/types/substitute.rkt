@@ -170,8 +170,7 @@
        target))
 
 ;; substitute many variables
-;; substitution = Listof[U List[Name,Type] List[Name,Listof[Type]]]
-;; subst-all : substitution Type -> Type
+;; subst-all : substitution/c Type -> Type
 (define/cond-contract (subst-all s ty)
   (substitution/c (or/c arr? Values/c) . -> . (or/c Values/c arr?))
 
