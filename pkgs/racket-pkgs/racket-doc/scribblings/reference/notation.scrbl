@@ -10,7 +10,7 @@ used throughout Racket documentation.
 @section{Notation for Module Documentation}
 
 Since Racket programs are organized into @tech{module}s, documentation
-reflects that organization with an annotation that the beginning of a
+reflects that organization with an annotation at the beginning of a
 section or subsection that describes the bindings that a particular
 module provides.
 
@@ -67,7 +67,7 @@ places square brackets are normally used by convention in a program's
 source.
 
 Italic @tech{identifiers} in the grammar are @deftech{metavariables}
-that in correspond to other grammar productions. Certain metavariable
+that correspond to other grammar productions. Certain metavariable
 names have implicit grammar productions:
 
 @itemize[
@@ -113,8 +113,8 @@ alongside the syntactic form's overall grammar. For example, in
                              (id ...+ . rest-id)])]
 ]
 
-the @racket[_formals] metavariable starts for either an
-@tech{identifier}, a zero or more @tech{identifiers} in a
+the @racket[_formals] metavariable stands for either an
+@tech{identifier}, zero or more @tech{identifiers} in a
 @tech{syntax-object} list, or a @tech{syntax object} corresponding to
 a chain of one or more pairs where the chain ends in an
 @tech{identifier} instead of an empty list.
@@ -134,7 +134,7 @@ indicates that @racket[init-rest] can either be alone in its
 
 Finally, a grammar specification that includes @racket[_expr]
 metavariables may be augmented with run-time @tech{contract}s on some
-of the metavariables, which indicate a predicates that the result of
+of the metavariables, which indicate a predicate that the result of
 the expression must satisfy at run time. For example,
 
 @nested[#:style 'inset
