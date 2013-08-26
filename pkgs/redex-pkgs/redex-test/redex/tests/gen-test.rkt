@@ -31,7 +31,8 @@
               #t)
   (test (check-dq (dq '() (list `(list a) `(list number))) (make-hash) L0 (hash))
               #t)
-  (test (check-dq (dq '() (list `(list 2) `(list variable-not-otherwise-mentioned))) (make-hash) L0 (hash))
+  (test (check-dq (dq '() (list `(list 2) `(list variable-not-otherwise-mentioned)))
+                  (make-hash) L0 (hash))
               #t)
   (test (check-dq (dq '() (list `(list a b) `(list a number))) (make-hash) L0 (hash))
               #t)
@@ -550,6 +551,21 @@
               #f)
   (test (generate-term l #:satisfying (t 6 7) = 1 +inf.0)
               #f))
+
+(let ()
+  (define-judgment-form L0
+    #:mode (J I I)
+    [(J any_1 any_1)])
+  
+  (define f (generate-term L0 #:satisfying (J any_2 any_3)))
+  
+  (let/ec k
+    (for ([i (in-range 100)])
+      (define t (f 10))
+      (unless (equal? (list-ref t 1) (list-ref t 2))
+        (test (list-ref t 1) (list-ref t 2))
+        ;; after a single test failure, stop running the loop
+        (k (void))))))
 
 
 (let ()
