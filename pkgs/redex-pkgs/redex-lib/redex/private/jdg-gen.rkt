@@ -56,7 +56,7 @@
          (call/ec (λ (fail)
                     (hash-ref term-e rep-lvar
                               (λ () (let ([t (recur pat)])
-                                      (unless t (fail #f))
+                                      (unless (not-failed? t) (fail (unif-fail)))
                                       (hash-set! term-e rep-lvar t)
                                       t)))))]
         [`(cstr (,nts ...) ,pat)
