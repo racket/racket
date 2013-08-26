@@ -67,13 +67,13 @@
                                      (map sb kws))])]
                  [#:ValuesDots types dty dbound
                                (cond
-                                 [(ormap (lambda (x) (and (equal? dbound x) (not bound-tvar? x))) names) =>
+                                 [(ormap (lambda (x) (and (equal? dbound x) (not (bound-tvar? x)))) names) =>
                                   (lambda (name)
                                     (int-err "substitute used on ... variable ~a in type ~a" name target))]
                                  [else (make-ValuesDots (map sb types) (sb dty) dbound)])]
                  [#:ListDots dty dbound
                              (cond
-                               [(ormap (lambda (x) (and (equal? dbound x) (not bound-tvar? x))) names) =>
+                               [(ormap (lambda (x) (and (equal? dbound x) (not (bound-tvar? x)))) names) =>
                                 (lambda (name)
                                   (int-err "substitute used on ... variable ~a in type ~a" name target))]
                                [else (make-ListDots (sb dty) dbound)])])
