@@ -639,11 +639,11 @@
             (dict-ref internal-external-mapping f)))
       (define maybe-type (dict-ref type-map external #f))
       (values
-       (->* (list (make-Univ)) (or (and maybe-type (car maybe-type))
-                                   (make-Univ)))
-       (->* (list (make-Univ) (or (and maybe-type (car maybe-type))
-                                  -Bottom))
-            -Void))))
+       (-> (make-Univ) (or (and maybe-type (car maybe-type))
+                           (make-Univ)))
+       (-> (make-Univ) (or (and maybe-type (car maybe-type))
+                           -Bottom)
+           -Void))))
 
   (define-values (field-get-types field-set-types)
     (make-field-types (hash-ref parse-info 'field-internals) fields))
