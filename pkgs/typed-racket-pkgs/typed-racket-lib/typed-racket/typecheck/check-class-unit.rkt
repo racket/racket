@@ -791,18 +791,6 @@
        (define init-name (syntax-e #'init-external))
        (define init-type (car (dict-ref inits init-name '(#f))))
        (cond [init-type
-              ;; This is a type for the internal `extract-args` function
-              ;; that extracts init arguments from the object. We just
-              ;; want to make sure that init argument default value
-              ;; (the last argument) matches the type for the init.
-              ;;
-              ;; The rest is plumbing to make the type system happy.
-              (define extract-arg-type
-                (cl->* (->* (list (Un (-val #f) -Symbol) (-val init-name)
-                                  (make-Univ) (-val #f)) init-type)
-                       (->* (list (Un (-val #f) -Symbol) (-val init-name)
-                                  (make-Univ) (->* '() init-type))
-                            init-type)))
               ;; Catch the exception because the error that is produced
               ;; in the case of a type error is incomprehensible for a
               ;; programmer looking at surface syntax. Raise a custom
@@ -811,10 +799,8 @@
                   ([exn:fail:syntax?
                     (λ (e) (tc-error/expr "Default init value has wrong type"))])
                 (parameterize ([delay-errors? #f])
-                  (with-lexical-env/extend
-                   (list #'extract-arg)
-                   (list extract-arg-type)
-                   (tc-expr form))))]
+                  (unless (equal? (syntax->datum #'init-val) '(quote #f))
+                    (tc-expr/check #'init-val (ret (Un init-type (->* null init-type)))))))]
              ;; If the type can't be found, it means that there was no
              ;; expected type or no annotation was provided via (: ...).
              ;;
@@ -838,21 +824,13 @@
        (define init-name (syntax-e #'name))
        (define init-type (car (dict-ref inits init-name '(#f))))
        (cond [init-type
-              (define extract-arg-type
-                (cl->* (->* (list (Un (-val #f) -Symbol) (-val init-name)
-                                  (make-Univ) (-val #f)) init-type)
-                       (->* (list (Un (-val #f) -Symbol) (-val init-name)
-                                  (make-Univ) (->* '() init-type))
-                            init-type)))
               (with-handlers
                   ([exn:fail:syntax?
                     ;; FIXME: produce a better error message
                     (λ (e) (tc-error/expr "Default init value has wrong type"))])
                 (parameterize ([delay-errors? #f])
-                  (with-lexical-env/extend
-                   (list #'extract-arg)
-                   (list extract-arg-type)
-                   (tc-expr form))))]
+                  (unless (equal? (syntax->datum #'init-val) '(quote #f))
+                    (tc-expr/check #'init-val (ret (Un init-type (->* null init-type)))))))]
              [else
               (tc-error/expr "Init argument ~a has no type annotation"
                              init-name)])]
