@@ -795,3 +795,13 @@
     (test (gen-ith 0) 0)
     (test (gen-ith 1) 1)))
 
+(let ()
+  (define-language L
+    (e ::= (name aha! any)))
+
+  (define-judgment-form L
+    #:mode (J I I)
+    [(J e e)])
+  
+  (is-not-false
+   (generate-term L #:satisfying (J e_1 e_2) 10)))

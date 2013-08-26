@@ -587,8 +587,12 @@
                 (p*e 'variable (hash)))
   (check-equal? (unify/format `(nt y) 'any (hash) ntl)
                 (p*e 'variable (hash)))
+  ;; asymmetry ok here - if the nt doesn't get unified against,
+  ;; it doesn't get collapsed
   (check-equal? (unify/format `(nt y) '(nt Q) (hash) ntl)
-                (p*e '(cstr (Q) variable) (hash)))
+                `(different-orders=>different-results 
+                 ,(p*e '(cstr (Q) variable) (env (hash) '()))
+                 ,(p*e '(cstr (Q) (nt y)) (env (hash) '()))))
   )
 
 
@@ -820,7 +824,7 @@
         (p*e `(list λ y (name e_2 ,(bound))) (m-hash (lvar 'e_2) `(cstr (e) 3))))
 (u-test λn (λ x 3) (λ x e_2) (hash) 
         (p*e `(list λ (name x ,(bound)) (name e_2 ,(bound)))
-             (m-hash (lvar 'e_2) `(cstr (e) 3) (lvar 'x) `variable-not-otherwise-mentioned)))
+             (m-hash (lvar 'e_2) `(cstr (e) 3) (lvar 'x) `(nt x))))
 (u-fails λn (λ x 3) (e_1 e_2) (hash))
 (u-test λn (e_1 e_2) ((λ x x) 3) (hash) 
         (p*e `(list (name e_1 ,(bound)) (name e_2 ,(bound)))
@@ -829,7 +833,7 @@
                      (lvar 'e_1)
                      `(cstr (e) (list λ (name x ,(bound)) (name x ,(bound))))
                      (lvar 'x)
-                     `variable-not-otherwise-mentioned)))
+                     `(nt x))))
 
 (define-language p-types
   (t (t -> t)

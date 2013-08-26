@@ -215,29 +215,6 @@
              (and (not-failed? u-res)
                   (loop (p*e-e u-res) rest))]))]
        [else #f])]))
-           
-         
-
-;; TODO: compare with free-identifier=? so renaming is safe
-;; w/r/t macro expansion
-;; (use free-id-table)
-(define (fresh-pat-vars pre-pat instantiations)
-  (match pre-pat
-    [`(name ,id ,pat)
-     (define new-id (hash-ref instantiations id
-                              (λ ()
-                                (define unique-id (make-uid id))
-                                (hash-set! instantiations id unique-id)
-                                unique-id)))
-     `(name ,new-id ,(fresh-pat-vars pat instantiations))]
-    [`(list ,pats ...)
-     `(list ,@(for/list ([p pats]) (fresh-pat-vars p instantiations)))]
-    [_ pre-pat]))
-
-(define (make-uid id)
-  (let ([uid-num (unique-name-nums)])
-    (unique-name-nums (add1 uid-num))
-    (string->symbol (string-append (symbol->string id) "_" (number->string uid-num)))))
 
 (define (fresh-clause-vars clause-raw)
   (define instantiations (make-hash))
@@ -276,7 +253,6 @@
     (define str (format "depth bound exceeded at depth: ~s" (length tr-loc)))
     (raise (make-exn:fail:redex:search-failure str (current-continuation-marks) fails))))
 
-(define unique-name-nums (make-parameter 0))
 
 (define generation-logger (make-logger 'generation-log (current-logger)))
 

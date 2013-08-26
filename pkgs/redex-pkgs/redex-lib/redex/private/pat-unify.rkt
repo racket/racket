@@ -30,7 +30,10 @@
          (struct-out unif-fail)
          not-failed?
          dq
-         predef-pat?)
+         predef-pat?
+         unique-name-nums
+         fresh-pat-vars
+         make-uid)
 
 
 ;;
@@ -338,7 +341,7 @@
 ;; which match both pat and pat*...
 ;; (those are the ones bind-names does nothing with)
 
-;; bind-names : pat env lang -> pat* or #f
+;; bind-names : pat env lang -> pat* or unif-fail
 (define (bind-names pat e L)
   (match pat
     [`(name ,name ,(bound))
@@ -383,7 +386,7 @@
     [_ pat]))
 
 
-;; unify* : pat* pat* env lang -> pat* or #f
+;; unify* : pat* pat* env lang -> pat* or unif-fail
 (define (unify* t0 u0 e L)
   (define t (resolve t0 e))
   (define u (resolve u0 e))
@@ -463,18 +466,18 @@
                              `(cstr ,nts ,res))]))))
   
 (define (u*-2nts n-t n-u e L)
-    (if (equal? n-t n-u)
-        (let ([n n-t])
-          (if (hash-has-key? (compiled-lang-collapsible-nts L) n)
-              (hash-ref (compiled-lang-collapsible-nts L) n)
-              `(nt ,n)))
-        (u*-1nt n-t `(nt ,n-u) e L)))
+  (if (equal? n-t n-u)
+      `(nt ,n-t)
+      (u*-1nt n-t `(nt ,n-u) e L)))
 
 (define (u*-1nt p u e L)
   (and/fail
    (check-nt p L u)
    (if (hash-has-key? (compiled-lang-collapsible-nts L) p)
-       (unify* (hash-ref (compiled-lang-collapsible-nts L) p) u e L)
+       (let ([p-bn (bind-names (fresh-pat-vars (hash-ref (compiled-lang-collapsible-nts L) p) (make-hash)) e L)])
+         (and/fail
+          (not-failed? p-bn)
+          (unify* p-bn u e L)))
        (let ([res (unify* u u e L)]) ;; look at structure of nt here?
          (and/fail (not-failed? res)
                    (when (lvar? res)
@@ -763,3 +766,26 @@
   (compiled-lang
    #f #f #f #f #f #f #f #f #f #f '() #f (hash)
    (lang-enumerators '())))
+
+(define unique-name-nums (make-parameter 0))
+
+;; TODO: compare with free-identifier=? so renaming is safe
+;; w/r/t macro expansion
+;; (use free-id-table)
+(define (fresh-pat-vars pre-pat instantiations)
+  (match pre-pat
+    [`(name ,id ,pat)
+     (define new-id (hash-ref instantiations id
+                              (λ ()
+                                (define unique-id (make-uid id))
+                                (hash-set! instantiations id unique-id)
+                                unique-id)))
+     `(name ,new-id ,(fresh-pat-vars pat instantiations))]
+    [`(list ,pats ...)
+     `(list ,@(for/list ([p pats]) (fresh-pat-vars p instantiations)))]
+    [_ pre-pat]))
+
+(define (make-uid id)
+  (let ([uid-num (unique-name-nums)])
+    (unique-name-nums (add1 uid-num))
+    (string->symbol (string-append (symbol->string id) "_" (number->string uid-num)))))
