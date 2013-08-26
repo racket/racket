@@ -400,10 +400,12 @@
   (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
     (check-super-new provided-super-inits super-inits))
   (do-timestamp "checked super-new")
-  (do-timestamp top-level-exprs)
   (with-lexical-env/extend lexical-names/top-level lexical-types/top-level
     (for ([stx top-level-exprs]
-          #:unless (syntax-property stx 'tr:class:super-new))
+          ;; avoid checking these to avoid duplication and to avoid checking
+          ;; ignored expressions
+          #:unless (syntax-property stx 'tr:class:super-new)
+          #:unless (syntax-property stx 'tr:class:type-annotation))
       (tc-expr stx)))
   (do-timestamp "checked other top-level exprs")
   (with-lexical-env/extend lexical-names/top-level lexical-types/top-level

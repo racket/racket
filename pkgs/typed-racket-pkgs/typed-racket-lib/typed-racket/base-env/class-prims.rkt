@@ -375,9 +375,11 @@
                             (for/list ([id ids] [type types]
                                        #:when type)
                               (syntax-property
-                               #`(: #,(if (stx-pair? id) (stx-car id) id)
-                                    #,type)
-                               'tr:class:top-level #t))))
+                               (syntax-property
+                                #`(: #,(if (stx-pair? id) (stx-car id) id)
+                                     #,type)
+                                'tr:class:top-level #t)
+                               'tr:class:type-annotation #t))))
                 #,@(map non-clause-stx annotated-methods)
                 #,(syntax-property
                    #`(begin #,@(map non-clause-stx other-top-level))
@@ -422,11 +424,21 @@
         ;; special : annotation for augment interface
         [(: name:id type:expr #:augment augment-type:expr)
          (define new-clause
-           (non-clause #'(quote-syntax (:-augment name augment-type))))
+           (non-clause (syntax-property #'(quote-syntax (:-augment name augment-type))
+                                        'tr:class:type-annotation #t)))
          (define plain-annotation
-           (non-clause (syntax/loc stx (: name type))))
+           (non-clause (syntax-property (syntax/loc stx (: name type))
+                                        'tr:class:type-annotation #t)))
          (values methods
                  (append rest-top (list plain-annotation new-clause))
+                 private-fields)]
+        ;; Just process this to add the property
+        [(: name:id type:expr)
+         (define plain-annotation
+           (non-clause (syntax-property (syntax/loc stx (: name type))
+                                        'tr:class:type-annotation #t)))
+         (values methods
+                 (append rest-top (list plain-annotation))
                  private-fields)]
         ;; Identify super-new for the benefit of the type checker
         [(super-new [init-id init-expr] ...)
