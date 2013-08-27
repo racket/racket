@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 
-(define deps '("base"
+(define deps '("scheme-lib"
+               "base"
                "errortrace-lib"))
 
 (define pkg-desc "Library for sandboxing Racket programs")
