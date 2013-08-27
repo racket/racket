@@ -1479,7 +1479,7 @@ path/s is either such a string or a list of them.
 "pkgs/swindle" responsible (eli)
 "pkgs/syntax-color-pkgs" responsible (mflatt)
 "pkgs/trace" responsible (mflatt robby)
-"pkgs/typed-racket-pkgs" responsible (samth stamourv)
+"pkgs/typed-racket-pkgs" responsible (samth stamourv asumu)
 "pkgs/typed-racket-pkgs/typed-racket-lib/typed-racket/base-env/base-special-env.rkt" drdr:command-line (raco "make" *)
 "pkgs/typed-racket-pkgs/typed-racket-lib/typed-racket/optimizer" responsible (stamourv)
 "pkgs/typed-racket-pkgs/typed-racket-lib/unstable/logging.rkt" responsible (stamourv)
