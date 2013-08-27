@@ -73,6 +73,9 @@ HTTP version @racket[version] the method @racket[method] and the
 additional headers given in @racket[headers] and the additional data
 @racket[data].
 
+This function does not support requests that expect
+@litchar{100 (Continue)} responses.
+
 }
 
 @defproc[(http-conn-recv! [hc http-conn-live?]
