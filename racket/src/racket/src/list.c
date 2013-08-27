@@ -910,7 +910,7 @@ Scheme_Object *scheme_build_list(int size, Scheme_Object **argv)
 }
 
 Scheme_Object *scheme_build_list_offset(int size, Scheme_Object **argv, int delta)
-/* clears originals in argv for space safety! */
+/* if size < 0, clears originals in argv for space safety */
 {
   Scheme_Object *pair = scheme_null;
   int i;

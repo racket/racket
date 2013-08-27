@@ -2146,6 +2146,64 @@ static int common4c(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
+#ifdef CAN_INLINE_ALLOC
+static int generate_make_list(mz_jit_state *jitter, int star, int clear, 
+                              int offset_pos, int base_pos)
+/* R2 has length; args are on runstack; if offset_pos, offset is on runstack
+   result is in R0; uses R1, R2, and V1 */
+{
+  GC_CAN_IGNORE jit_insn *ref, *refnext;
+
+  jit_lshi_l(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);
+  if (!star)
+    (void)jit_movi_p(JIT_R0, &scheme_null);
+  else {
+    jit_subi_l(JIT_R2, JIT_R2, JIT_WORD_SIZE);
+    jit_ldxr_p(JIT_R0, JIT_RUNSTACK, JIT_R2);
+  }
+
+  __START_SHORT_JUMPS__(1);
+  ref = jit_beqi_l(jit_forward(), JIT_R2, 0);
+  refnext = jit_get_ip();
+  __END_SHORT_JUMPS__(1);
+  CHECK_LIMIT();
+
+  jit_subi_l(JIT_R2, JIT_R2, JIT_WORD_SIZE);
+
+  if (offset_pos >= 0) {
+    jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(offset_pos));
+    jit_rshi_l(JIT_V1, JIT_V1, 1);
+    jit_addr_l(JIT_V1, JIT_V1, JIT_R2);
+    if (base_pos >= 0) {
+      jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(base_pos));
+      jit_ldxr_p(JIT_R1, JIT_R1, JIT_V1);
+    } else {
+      jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_V1);
+      if (clear)
+        jit_stxr_p(JIT_V1, JIT_RUNSTACK, JIT_RUNSTACK);
+    }
+  } else {
+    jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R2);
+    if (clear)
+      jit_stxr_p(JIT_R2, JIT_RUNSTACK, JIT_RUNSTACK);
+  }
+
+  mz_set_local_p(JIT_R2, JIT_LOCAL3);
+
+  scheme_generate_cons_alloc(jitter, 1, 1, !star, JIT_R0);
+  CHECK_LIMIT();
+
+  mz_get_local_p(JIT_R2, JIT_LOCAL3);
+
+  __START_SHORT_JUMPS__(1);
+  (void)jit_bnei_l(refnext, JIT_R2, 0);
+  mz_patch_branch(ref);
+  __END_SHORT_JUMPS__(1);
+
+  return 1;
+}
+#endif
+
 static int common5(mz_jit_state *jitter, void *_data)
 {
   int i, ii, iii;
@@ -2182,44 +2240,129 @@ static int common5(mz_jit_state *jitter, void *_data)
   /* *** make_list_code *** */
   /* R2 has length, args are on runstack */
   for (i = 0; i < 2; i++) {
-    GC_CAN_IGNORE jit_insn *ref, *refnext;
-
     if (i == 0)
       sjc.make_list_code = jit_get_ip();  
     else
       sjc.make_list_star_code = jit_get_ip();  
     mz_prolog(JIT_R1);
-    jit_lshi_l(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);
-    if (i == 0)
-      (void)jit_movi_p(JIT_R0, &scheme_null);
-    else {
-      jit_subi_l(JIT_R2, JIT_R2, JIT_WORD_SIZE);
-      jit_ldxr_p(JIT_R0, JIT_RUNSTACK, JIT_R2);
-    }
-
-    __START_SHORT_JUMPS__(1);
-    ref = jit_beqi_l(jit_forward(), JIT_R2, 0);
-    refnext = jit_get_ip();
-    __END_SHORT_JUMPS__(1);
+    
+    generate_make_list(jitter, i, 0, -1, -1);
     CHECK_LIMIT();
-
-    jit_subi_l(JIT_R2, JIT_R2, JIT_WORD_SIZE);
-    jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R2);
-    mz_set_local_p(JIT_R2, JIT_LOCAL3);
-
-    scheme_generate_cons_alloc(jitter, 1, 1, !i, JIT_R0);
-    CHECK_LIMIT();
-
-    mz_get_local_p(JIT_R2, JIT_LOCAL3);
-
-    __START_SHORT_JUMPS__(1);
-    (void)jit_bnei_l(refnext, JIT_R2, 0);
-    mz_patch_branch(ref);
-    __END_SHORT_JUMPS__(1);
 
     mz_epilog(JIT_R1);
   }
 #endif
+
+  /* *** make_rest_list[_clear]_code *** */
+  /* R1 (int) has count, local3 has offset, R2 has argv, R0 should be preserved */
+  for (i = 0; i < 2; i++) {
+    /* Save R0 on runstack. If argv is the runstack, we need to
+       pretend that the saved R0 is an argument, so that things
+       work out right with futures (where argv must match runstack
+       if argv is in the runstack). */
+    GC_CAN_IGNORE jit_insn *ref;
+
+    if (i == 0)
+      sjc.make_rest_list_code = jit_get_ip();  
+    else
+      sjc.make_rest_list_clear_code = jit_get_ip();  
+
+    mz_prolog(JIT_V1);
+
+    mz_get_local_p(JIT_V1, JIT_LOCAL3);
+
+#ifdef CAN_INLINE_ALLOC
+    {
+      GC_CAN_IGNORE jit_insn *ref2;
+
+      jit_subr_i(JIT_R1, JIT_R1, JIT_V1);
+      jit_lshi_l(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE);
+
+      __START_SHORT_JUMPS__(1);
+      ref = jit_bner_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
+      __END_SHORT_JUMPS__(1);
+
+      /* runstack mode */
+      mz_pushr_p(JIT_R0);
+      jit_extr_i_l(JIT_R2, JIT_R1);
+      jit_addi_l(JIT_V1, JIT_V1, WORDS_TO_BYTES(2)); /* skip r0 and v1 */
+      jit_fixnum_l(JIT_V1, JIT_V1);
+      mz_pushr_p(JIT_V1);
+      mz_rs_sync();
+      generate_make_list(jitter, 0, i, 0, -1);
+      CHECK_LIMIT();
+      jit_movr_p(JIT_V1, JIT_R0);
+      mz_popr_p(JIT_R0);
+      mz_popr_p(JIT_R0);
+      mz_rs_sync();
+
+      __START_SHORT_JUMPS__(1);
+      ref2 = jit_jmpi(jit_forward());
+      mz_patch_branch(ref);
+      __END_SHORT_JUMPS__(1);
+      CHECK_LIMIT();
+    
+      /* V2 (not on runstack) mode */
+      mz_pushr_p(JIT_R0);
+      jit_fixnum_l(JIT_V1, JIT_V1);
+      mz_pushr_p(JIT_V1);
+      mz_pushr_p(JIT_R2);
+      mz_rs_sync();
+      jit_extr_i_l(JIT_R2, JIT_R1);
+      generate_make_list(jitter, 0, 0, 1, 0);
+      CHECK_LIMIT();
+      jit_movr_p(JIT_V1, JIT_R0);
+      mz_popr_p(JIT_R0);
+      mz_popr_p(JIT_R0);
+      mz_popr_p(JIT_R0);
+      mz_rs_sync();
+    
+      __START_SHORT_JUMPS__(1);
+      mz_patch_branch(ref2);
+      __END_SHORT_JUMPS__(1);
+      CHECK_LIMIT();
+    }
+#else
+    {
+      GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
+
+      /* Save R0 on runstack. If argv is the runstack, we need to
+         pretend that the saved R0 is an argument, so that things
+         work out right with futures (where argv must match runstack
+         if argv is in the runstack). */
+      __START_TINY_JUMPS__(1);
+      ref = jit_bner_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
+# ifdef MZ_USE_FUTURES
+      jit_addi_i(JIT_R1, JIT_R1, 1);
+      jit_addi_i(JIT_V1, JIT_V1, 1);
+      jit_subi_p(JIT_R2, JIT_R2, WORDS_TO_BYTES(1));
+# endif
+      if (i) {
+        /* negative count tells build_list_offset to clear argv */
+        jit_negr_i(JIT_R1, JIT_R1);
+      }
+      mz_patch_branch(ref);
+      __END_TINY_JUMPS__(1);
+
+      mz_pushr_p(JIT_R0);
+      mz_rs_sync();
+    
+      JIT_UPDATE_THREAD_RSPTR();
+      CHECK_LIMIT();
+      mz_prepare(3);
+      jit_pusharg_i(JIT_V1);
+      jit_pusharg_p(JIT_R2); /* for futures, must match JIT_RUNSTACK if argv is on runstack */
+      jit_pusharg_i(JIT_R1);
+      CHECK_LIMIT();
+      (void)mz_finish_lwe(ts_scheme_build_list_offset, refrts);
+      jit_retval(JIT_V1);
+      mz_popr_p(JIT_R0);
+      mz_rs_sync();
+    }
+#endif
+
+    mz_epilog(JIT_R2);
+  }
 
   /* *** box_flonum_from_stack_code *** */
   /* R0 has offset from frame pointer to double on stack */

@@ -3321,7 +3321,6 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     /* If runstack == argv and argc == cnt, then we didn't
        copy args down, and we need to make room for scheme_null. */
     GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3;
-    GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
 	  
     CHECK_LIMIT();
     
@@ -3331,14 +3330,12 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     ref = jit_bner_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
     /* check whether we have at least one rest arg: */
     ref3 = jit_bgti_p(jit_forward(), JIT_R1, cnt);
-    /* yes and yes: make room for the copy */
-    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(cnt+1));
+    /* yes and no: make room for the scheme_null */
+    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
     CHECK_RUNSTACK_OVERFLOW();
-    for (i = cnt; i--; ) {
-      jit_ldxi_p(JIT_V1, JIT_R2, WORDS_TO_BYTES(i));
+    for (i = 0; i < cnt; i++) {
+      jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(i+1));
       jit_stxi_p(WORDS_TO_BYTES(i), JIT_RUNSTACK, JIT_V1);
-      /* space safety: */
-      jit_stxi_p(WORDS_TO_BYTES(i), JIT_R2, JIT_RUNSTACK);
       CHECK_LIMIT();
     }
     (void)jit_movi_p(JIT_V1, scheme_null);
@@ -3350,40 +3347,16 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     mz_patch_branch(ref);
     mz_patch_branch(ref3);
     CHECK_LIMIT();
-#ifndef JIT_PRECISE_GC
-    if (data->closure_size)
-#endif
-      {
-        mz_pushr_p(JIT_R0);
-        mz_rs_sync();
-      }
-    JIT_UPDATE_THREAD_RSPTR();
-    CHECK_LIMIT();
+
     jit_movi_i(JIT_V1, cnt);
-    if ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_NEED_REST_CLEAR)) {
-      /* negative count => clear argv */
-      GC_CAN_IGNORE jit_insn *ref;
-      __START_INNER_TINY__(cnt < 100);
-      ref = jit_bner_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
-      jit_negr_i(JIT_R1, JIT_R1);
-      mz_patch_branch(ref);
-      __END_INNER_TINY__(cnt < 100);
-    }
-    mz_prepare(3);
-    jit_pusharg_i(JIT_V1);
-    jit_pusharg_p(JIT_R2);
-    jit_pusharg_i(JIT_R1);
-    CHECK_LIMIT();
-    (void)mz_finish_lwe(ts_scheme_build_list_offset, refrts);
-    jit_retval(JIT_V1);
-#ifndef JIT_PRECISE_GC
-    if (data->closure_size)
-#endif
-      {
-        mz_popr_p(JIT_R0);
-        mz_rs_sync();
-      }
+    mz_set_local_p(JIT_V1, JIT_LOCAL3);
+    mz_rs_sync();
+    if ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_NEED_REST_CLEAR))
+      (void)jit_calli(sjc.make_rest_list_clear_code);
+    else
+      (void)jit_calli(sjc.make_rest_list_code);
     jit_stxi_p(WORDS_TO_BYTES(cnt), JIT_RUNSTACK, JIT_V1);
+
     mz_patch_ucbranch(ref2); /* jump here if we copied and produced null */
 
     __END_SHORT_JUMPS__(cnt < 100);

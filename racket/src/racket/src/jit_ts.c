@@ -29,7 +29,6 @@ define_ts_n_s(scheme_make_native_case_closure, FSRC_OTHER)
 # ifndef CAN_INLINE_ALLOC
 define_ts_s_s(scheme_make_envunbox, FSRC_OTHER)
 # endif
-define_ts_iSi_s(scheme_build_list_offset, FSRC_OTHER)
 #endif
 
 #ifdef JITARITH_TS_PROCS
@@ -104,6 +103,9 @@ define_ts_iS_s(scheme_box_cas, FSRC_MARKS)
 define_ts__v(chaperone_set_mark, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_char_to_integer, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_integer_to_char, FSRC_MARKS)
+# ifndef CAN_INLINE_ALLOC
+define_ts_iSi_s(scheme_build_list_offset, FSRC_OTHER)
+# endif
 #endif
 
 #ifdef JITCALL_TS_PROCS

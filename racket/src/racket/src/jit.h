@@ -359,6 +359,7 @@ struct scheme_jit_common_record {
   void *retry_alloc_code_keep_extfpr1;
 # endif
 #endif
+  void *make_rest_list_code, *make_rest_list_clear_code;
 
   Continuation_Apply_Indirect continuation_apply_indirect_code;
 #ifdef MZ_USE_LWC

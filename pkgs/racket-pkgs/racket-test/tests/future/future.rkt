@@ -889,6 +889,15 @@ We should also test deep continuations.
     (check-exn exn:fail:contract? (λ () (touch fb)))
     (check-exn exn:fail:contract? (λ () (touch fc)))
     (check-exn exn:fail:contract? (λ () (touch fd))))
+
+  ;; Check rest args
+  (let ([g #f])
+    (set! g (lambda x x))
+    
+    (define f (for/list ([i 10])
+                (future (lambda () (g 1 2 3)))))
+    (check-true (andmap (lambda (v) (equal? '(1 2 3) v))
+                        (for/list ([f (in-list f)]) (touch f)))))
     
   )
 
