@@ -78,6 +78,18 @@
     '(#"Content-Type: text/plain")
     #"This is the data in the first chunk and this is the second one"]
 
+   ["HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 62\r\n\r\nThis is the data in the first chunk and this is the second one"
+    #"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"
+    #"HTTP/1.0 200 OK"
+    '(#"Content-Type: text/plain" #"Content-Length: 62")
+    #"This is the data in the first chunk and this is the second one"]
+
+   ["HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\ncontent-length: 62\r\n\r\nThis is the data in the first chunk and this is the second one"
+    #"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"
+    #"HTTP/1.0 200 OK"
+    '(#"Content-Type: text/plain" #"content-length: 62")
+    #"This is the data in the first chunk and this is the second one"]
+
    ["HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n20\r\nThis is the data in the first ch\r\n21\r\nand this is the second oneXXXXXXX\r\n0\r\n"
 
     #"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"

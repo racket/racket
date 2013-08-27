@@ -22,6 +22,9 @@
     (error 'http-client "Connection ended early"))
   bs)
 
+(define (regexp-member rx l)
+  (ormap (λ (h) (regexp-match rx h)) l))
+
 ;; Core
 
 (struct http-conn (host to from abandon-p) #:mutable)
@@ -160,13 +163,13 @@
   (define headers (http-conn-headers! hc))
   (define close?
     (or iclose?
-        (member #"Connection: close" headers)))
+        (regexp-member #rx#"^(?i:Connection: +close)$" headers)))
   (define response-port
     (cond
-      [(member #"Transfer-Encoding: chunked" headers)
+      [(regexp-member #rx#"^(?i:Transfer-Encoding: +chunked)$" headers)
        (http-conn-response-port/chunked! hc #:close? #t)]
       [(ormap (λ (h)
-                (match (regexp-match #rx#"^Content-Length: (.+)$" h)
+                (match (regexp-match #rx#"^(?i:Content-Length:) +(.+)$" h)
                   [#f #f]
                   [(list _ cl-bs)
                    (string->number
