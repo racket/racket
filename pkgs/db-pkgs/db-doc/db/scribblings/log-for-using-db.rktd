@@ -22,7 +22,7 @@
  ((3) 0 () 0 () () (c values c (void)))
  #""
  #"")
-((query-exec pgc "insert into the_numbers values (2, 'company')")
+((query-exec pgc "insert into the_numbers values ($1, $2)" (+ 1 1) "company")
  ((3) 0 () 0 () () (c values c (void)))
  #""
  #"")

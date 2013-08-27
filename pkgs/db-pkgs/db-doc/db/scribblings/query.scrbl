@@ -73,7 +73,7 @@ future operations to block indefinitely. See also
 @secref["kill-safe"].
 
 
-@section{Statements}
+@section[#:tag "query-statements"]{Statements}
 
 All query functions require both a connection and a
 @deftech{statement}, which is one of the following:
@@ -93,7 +93,7 @@ queries}. The parameter values must be supplied when the statement is
 executed; the parameterized statement and parameter values are sent to
 the database back end, which combines them correctly and safely.
 
-Use parameters instead of Racket string interpolation (eg,
+Use parameters instead of Racket string operations (eg,
 @racket[format] or @racket[string-append]) to avoid
 @secref["dbsec-sql-injection"].
 

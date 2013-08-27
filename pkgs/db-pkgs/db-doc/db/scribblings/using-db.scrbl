@@ -52,9 +52,25 @@ Use @racket[query-exec] method to execute a SQL statement for effect.
   "insert into the_numbers values (0, 'nothing')")
 (query-exec pgc 
   "insert into the_numbers values (1, 'the loneliest number')")
-(query-exec pgc
-  "insert into the_numbers values (2, 'company')")
 ]
+
+When a query contains a SQL value that isn't constant, refer to it
+through a ``query parameter'' rather than by dynamically computing the
+SQL query string (see also @secref["dbsec-sql-injection"]). Just
+provide the parameter values after the SQL statement in the query
+function call:
+
+@interaction[#:eval the-eval
+(query-exec pgc
+  "insert into the_numbers values ($1, $2)"
+  (+ 1 1)
+  "company")
+]
+
+Every standard query function accepts query parameters. The SQL syntax
+for query parameters depends on the database system (see
+@secref["query-statements"]). Other options for running parameterized
+queries are discussed below.
 
 The @racket[query] function is a more general way to execute a
 statement. It returns a structure encapsulating information about the
