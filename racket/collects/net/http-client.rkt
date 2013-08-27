@@ -76,13 +76,15 @@
                          #:data [data-bsf #f])
   (match-define (http-conn host to from _) hc)
   (fprintf to "~a ~a HTTP/~a\r\n" method-bss url-bs version-bs)
-  (fprintf to "Host: ~a\r\n" host)
+  (unless (regexp-member #rx"^(?i:Host:) +.+$" headers-bs)
+    (fprintf to "Host: ~a\r\n" host))
   (define data
     (if (string? data-bsf)
       (string->bytes/utf-8 data-bsf)
       data-bsf))
   (when data
-    (fprintf to "Content-Length: ~a\r\n" (bytes-length data)))
+    (unless (regexp-member #rx"^(?i:Content-Length:) +.+$" headers-bs)
+      (fprintf to "Content-Length: ~a\r\n" (bytes-length data))))
   (for ([h (in-list headers-bs)])
     (fprintf to "~a\r\n" h))
   (fprintf to "\r\n")
