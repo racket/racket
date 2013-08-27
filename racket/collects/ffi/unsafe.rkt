@@ -1315,10 +1315,11 @@
 
 ;; Simple structs: call this with a list of types, and get a type that marshals
 ;; C structs to/from Scheme lists.
-(define* (_list-struct #:alignment [alignment #f] . types)
+(define* (_list-struct #:alignment [alignment #f] type . types)
   (let ([stype   (make-cstruct-type types #f alignment)]
         [offsets (compute-offsets types alignment)]
-        [len     (length types)])
+        [len     (add1 (length types))]
+        [types   (cons type types)])
     (make-ctype stype
       (lambda (vals)
         (unless (list? vals)
@@ -1588,6 +1589,8 @@
            stx xs))
   (syntax-case stx ()
     [(_ type ([slot slot-type] ...) . more)
+     (or (stx-pair? #'type)
+         (stx-pair? #'(slot ...)))
      (let-values ([(_TYPE _SUPER)
                    (syntax-case #'type ()
                      [(t s) (values #'t #'s)]
@@ -1629,13 +1632,13 @@
                                      #'x)]
                        [else (err "bad syntax")]))])
        (unless (identifier? _TYPE)
-         (err "bad type, expecting a _name identifier or (_name super-ctype)"
+         (err "expecting a `_name' identifier or `(_name _super-name)'"
               _TYPE))
        (unless (regexp-match? #rx"^_." (symbol->string (syntax-e _TYPE)))
          (err "cstruct name must begin with a `_'" _TYPE))
        (for ([s (in-list (syntax->list #'(slot ...)))])
          (unless (identifier? s)
-           (err "bad field name, expecting an identifier identifier" s)))
+           (err "bad field name, expecting an identifier" s)))
        (if _SUPER
          (make-syntax _TYPE #t
                       #`(#,(datum->syntax _TYPE 'super _TYPE) slot ...)
@@ -1646,13 +1649,16 @@
                       no-equal?)
          (make-syntax _TYPE #f #'(slot ...) #`(slot-type ...) 
                       alignment properties property-bindings no-equal?)))]
+    [(_ type () . more)
+     (identifier? #'type)
+     (err "must have either a supertype or at least one field")]
     ;; specific errors for bad slot specs, leave the rest for a generic error
     [(_ type (bad ...) . more)
-     (err "bad slot specification, expecting [name ctype]"
+     (err "bad field specification, expecting `[name ctype]'"
           (ormap (lambda (s) (syntax-case s () [[n ct] #t] [_ s]))
                  (syntax->list #'(bad ...))))]
     [(_ type bad . more)
-     (err "bad slot specification, expecting a sequence of [name ctype]"
+     (err "bad field specification, expecting a sequence of `[name ctype]'"
           #'bad)]))
 
 ;; Add `prop:equal+hash' to use pointer equality

@@ -1281,7 +1281,7 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
   int i, nargs, with_alignment;
   ffi_abi abi;
   nargs = scheme_proper_list_length(argv[0]);
-  if (nargs < 0) scheme_wrong_contract(MYNAME, "list?", 0, argc, argv);
+  if (nargs <= 0) scheme_wrong_contract(MYNAME, "(non-empty-listof ctype?)", 0, argc, argv);
   abi = GET_ABI(MYNAME,1);
   if (argc > 2) {
     if (!SCHEME_FALSEP(argv[2])) {
@@ -1301,7 +1301,7 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
   elements[nargs] = NULL;
   for (i=0, p=argv[0]; i<nargs; i++, p=SCHEME_CDR(p)) {
     if (NULL == (base = get_ctype_base(SCHEME_CAR(p))))
-      scheme_wrong_contract(MYNAME, "(listof ctype?)", 0, argc, argv);
+      scheme_wrong_contract(MYNAME, "(non-empty-listof ctype?)", 0, argc, argv);
     if (CTYPE_PRIMLABEL(base) == FOREIGN_void)
       wrong_void(MYNAME, SCHEME_CAR(p), 1, 0, argc, argv);
     elements[i] = CTYPE_PRIMTYPE(base);

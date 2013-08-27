@@ -946,7 +946,7 @@ string carries its size information.}
 
 @section{C Struct Types}
 
-@defproc[(make-cstruct-type [types (listof ctype?)]
+@defproc[(make-cstruct-type [types (non-empty-listof ctype?)]
                             [abi (or/c #f 'default 'stdcall 'sysv) #f]
                             [alignment (or/c #f 1 2 4 8 16) #f]) 
          ctype?]{
@@ -980,7 +980,7 @@ below for a more efficient approach.}
 
 @defform/subs[(define-cstruct id/sup ([field-id type-expr] ...) property ...)
               [(id/sup _id
-                       (_id super-id))
+                       (_id _super-id))
                (property (code:line #:alignment alignment-expr)
                          (code:line #:property prop-expr val-expr)
                          #:no-equal)]]{
@@ -991,7 +991,8 @@ marshaling them to Racket values.  The syntax is similar to
 @racket[define-struct], providing accessor functions for raw struct
 values (which are pointer objects); the @racket[_id]
 must start with @litchar{_}, and at most one @racket[#:alignment]
-can be supplied.
+can be supplied. If no @racket[_super-id] is provided, then at least one
+field must be specified.
 
 The resulting bindings are as follows:
 
