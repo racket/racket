@@ -55,6 +55,7 @@
                "sandbox-lib"
                "schemeunit"
                "scribble"
+               "serialize-cstruct-lib"
                "sgl"
                "shell-completion"
                "slatex"

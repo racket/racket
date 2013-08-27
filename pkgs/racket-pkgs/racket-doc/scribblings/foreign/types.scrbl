@@ -1215,7 +1215,6 @@ expects arguments for both the super fields and the new ones:
  (define b (make-B 1 2 3))
 ]}
 
-
 @; ------------------------------------------------------------
 
 @section{C Array Types}

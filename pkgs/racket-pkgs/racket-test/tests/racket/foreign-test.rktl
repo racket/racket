@@ -544,6 +544,343 @@
 
   (err/rt-test (in-array '(1 2 3)) exn:fail:contract?))
 
+
+;; check cstruct serialization (define-serialize-cstruct must be at module level, can't use (let () ...))
+(module mod-cstruct-serialize racket/base
+  (require (for-syntax racket/base rackunit)
+           rackunit
+           racket/serialize
+           racket/list
+           ffi/unsafe
+           ffi/serialize-cstruct)
+
+  ;; malloc helper
+  (define current-raw (make-parameter (make-hash)))
+  (define-syntax-rule (with-free . body)
+    (parameterize ([current-raw (make-hash)])
+      (register-finalizer (current-raw) (lambda (h) (for ([(k v) h]) (free k))))
+      (begin . body)))
+
+  (define (malloc/register size/type)
+    (define m (malloc (if (ctype? size/type)
+                          (ctype-sizeof size/type)
+                          size/type)
+                      'raw))
+    (hash-set! (current-raw) m #t)
+    m)
+
+  ;; run multiple times to better catching gc related errors
+  (define num-runs 5)
+
+  ;; --- syntax errors
+  (begin-for-syntax
+   (define-syntax-rule (check-exn+rx exn rx thunk)
+     (begin
+       (check-exn exn thunk)
+       (check-exn rx thunk)))
+
+   (check-exn+rx exn:fail:syntax? #rx"id must start with"
+                 (lambda () (local-expand #'(define-serializable-cstruct F1a ([a _int])) 'module #f)))
+   (check-exn+rx exn:fail:syntax? #rx"only allowed in module context"
+                 (lambda () (local-expand #'(define-serializable-cstruct _F1b ([a _int])) 'expression #f)))
+   (check-exn+rx exn:fail:syntax? #rx"#:property prop:serializable not allowed"
+                 (lambda () (local-expand #'(define-serializable-cstruct _F1c ([a _int]) #:property prop:serializable #f)
+                                          'module #f)))
+   (check-exn+rx exn:fail:syntax? #rx"expected \\[field-id ctype\\]"
+                 (lambda () (local-expand #'(define-serializable-cstruct _F1d ()) 'module #f))))
+
+
+  ;; --- misc creation tests
+  (define-values (prop:tmp prop:tmp? prop:tmp-ref)
+    (make-struct-type-property 'testprop))
+
+  (define-serializable-cstruct _M1 ([a _int]) #:alignment 8)
+  (define-serializable-cstruct _M2 ([a _int]) #:property prop:tmp 'abc)
+  (define-serializable-cstruct _M3 ([a _int]) #:malloc-mode 'atomic)
+  (define-serializable-cstruct _M4 ([a _int]) #:malloc-mode 'raw)
+
+  (let ()
+    (check-not-exn (lambda () (make-M1 123)))
+    (check-not-exn (lambda () (make-M2 123)))
+    (check-not-exn (lambda () (make-M3/mode 123)))
+    (check-not-exn (lambda ()
+                     (define s (make-M4/mode 123))
+                     (free s))))
+
+  ;; --- test different types
+  (define-serializable-cstruct _MISC ([d _double] [ad (_array _double 10)]
+                                      [i _int] [ai (_array _int 10)])
+    #:malloc-mode malloc/register)
+  (define-serializable-cstruct _MISCPTR ([s _string] [as (_array _string 4)]
+                                         [b _bytes] [ab (_array _bytes 4)])
+    #:malloc-mode 'nonatomic)
+
+  (for ([i num-runs])
+    (with-free
+     (define m (ptr-ref (malloc/register _MISC) _MISC))
+     (set-MISC-d! m 1.234)
+     (set-MISC-i! m 456)
+     (for ([i 10])
+       (array-set! (MISC-ad m) i (exact->inexact (+ i (* i .1))))
+       (array-set! (MISC-ai m) i (+ i 5)))
+
+     (check-not-exn (lambda () (deserialize (serialize m))))
+
+     (define d  (deserialize (serialize m)))
+     (collect-garbage)
+
+     (check-equal? (MISC-d d) 1.234)
+     (check-equal? (MISC-i d) 456)
+     (for ([i 10])
+       (check-equal? (array-ref (MISC-ad d) i) (exact->inexact (+ i (* i .1))))
+       (check-equal? (array-ref (MISC-ai d) i) (+ i 5)))))
+
+  (for ([i num-runs])
+    (define m (ptr-ref (malloc _MISCPTR 'nonatomic) _MISCPTR))
+    (set-MISCPTR-s! m "str")
+    (set-MISCPTR-b! m #"bstr")
+    (define s-list (list "abc" "def" "ghi" "jkl"))
+    (define b-list (list #"mno" #"pqr" #"stu"))
+    (for ([s s-list] [b b-list] [i (in-naturals)])
+      (array-set! (MISCPTR-as m) i s)
+      (array-set! (MISCPTR-ab m) i b))
+
+    (check-not-exn (lambda () (deserialize (serialize m))))
+    (define d  (deserialize (serialize m)))
+    (collect-garbage)
+
+    (check-equal? (MISCPTR-s d) "str")
+    (check-equal? (MISCPTR-b d) #"bstr")
+
+    (for ([s s-list] [b b-list] [i (in-naturals)])
+      (check-equal? (array-ref (MISCPTR-as d) i) s)
+      (check-equal? (array-ref (MISCPTR-ab d) i) b)))
+
+
+  ;; --- simple failing tests
+  (define-serializable-cstruct _F4 ([a _int]) #:malloc-mode 'abc)
+  (define-serializable-cstruct _F40 ([a _fpointer]))
+  (define-cstruct _F4E ([a _int]))
+  (define-serializable-cstruct _F41 ([a _F4E]))
+  (define-serializable-cstruct _F42 ([a _F4E-pointer]))
+  (define-serializable-cstruct _F43 ([a (_array _F4E 3)]))
+  (define-serializable-cstruct _F44 ([a (_array _F4E-pointer 3)]))
+  (define-serializable-cstruct _F45 ([a _pointer]))
+  (define-serializable-cstruct _F46 ([a (_array _pointer 3)]))
+  (define-serializable-cstruct _F47 ([a _fpointer]))
+  (define-serializable-cstruct _F48 ([a (_array _fpointer 3)]))
+
+  (with-free
+   (check-exn exn:fail? (lambda () (make-F4/mode 1)))
+   (check-exn exn:fail? (lambda () (deserialize (serialize (make-F4 1)))))
+
+   (define msg #rx"is not serializable")
+   (check-exn msg (lambda () (serialize (ptr-ref (malloc _F40) _F40))))
+   (check-exn msg (lambda () (serialize (ptr-ref (malloc _F40) _F40)))) ; same: test promise
+   (check-exn msg (lambda () (serialize (ptr-ref (malloc _F41) _F41))))
+   (check-exn msg (lambda () (serialize (ptr-ref (malloc _F42) _F42))))
+   (check-exn msg (lambda () (serialize (ptr-ref (malloc _F43) _F43))))
+   (check-exn msg (lambda () (serialize (ptr-ref (malloc _F44) _F44))))
+   (check-exn msg (lambda () (serialize (ptr-ref (malloc _F45) _F45))))
+   (check-exn msg (lambda () (serialize (ptr-ref (malloc _F46) _F46))))
+   (check-exn msg (lambda () (serialize (ptr-ref (malloc _F47) _F47))))
+   (check-exn msg (lambda () (serialize (ptr-ref (malloc _F48) _F48)))))
+
+  ;; --- test shared pointers
+  (define-serializable-cstruct _B ([a _int]) #:malloc-mode malloc/register)
+  (define-serializable-cstruct _C ([b _B-pointer]) #:malloc-mode malloc/register)
+  (define-serializable-cstruct _D ([b _B-pointer]) #:malloc-mode malloc/register)
+  (define-serializable-cstruct _A ([c _C-pointer] [d _D-pointer]) #:malloc-mode malloc/register)
+
+  (for ([i num-runs])
+    (with-free
+     (define b (make-B/mode 123))
+     (define c (make-C/mode b))
+     (define d (make-D/mode b))
+     (define a (make-A/mode c d))
+
+     (define s1 (serialize a))
+     (define ds1 (deserialize s1))
+     (check-true (ptr-equal? (C-b (A-c ds1)) (D-b (A-d ds1))))
+
+     (collect-garbage)
+     (check-equal? (C-b (A-c a)) (D-b (A-d a)))
+     (check-equal? (C-b (A-c ds1)) (D-b (A-d ds1)))
+     (check-equal? (B-a (C-b (A-c ds1))) 123)))
+
+
+  ;; --- test cyclic pointers
+  (define _CY1/fwd (_cpointer/null 'CY1 _pointer
+                                   values
+                                   (lambda (e) (cast e _pointer _CY1-pointer))))
+
+  (define-serializable-cstruct _CY0 ([a _CY1/fwd]) #:malloc-mode malloc/register)
+  (define-serializable-cstruct _CY1 ([a _CY0-pointer]) #:malloc-mode malloc/register)
+
+  (for ([i num-runs])
+    (with-free
+     (define cy0 (make-CY0/mode #f))
+     (define cy1 (make-CY1/mode cy0))
+     (set-CY0-a! cy0 cy1)
+
+     (define s2 (serialize cy1))
+     (define ds2 (deserialize s2))
+
+     (collect-garbage)
+     (check-equal? cy1 (CY0-a cy0))
+     (check-equal? cy0 (CY1-a (CY0-a cy0)))
+
+     (check-equal? ds2 (CY0-a (CY1-a ds2)))))
+
+
+  ;; --- self referencing struct
+  (define-serializable-cstruct _SELF ([a _SELF-pointer/null]) #:malloc-mode malloc/register)
+
+  (for ([i num-runs])
+    (with-free
+     (define self (make-SELF/mode #f))
+     (set-SELF-a! self self)
+
+     (cast self _pointer _uintptr)
+     (cast (SELF-a self) _pointer _uintptr)
+
+     (define s3 (serialize self))
+     s3
+     (define ds3 (deserialize s3))
+     ds3
+
+     (collect-garbage)
+     (cast ds3 _pointer _uintptr)
+     (cast (SELF-a ds3) _pointer _uintptr)
+     (check-equal? ds3 (SELF-a ds3))
+
+     ;; ---
+
+     (define self2 (make-SELF/mode #f))
+     (define ds4 (deserialize (serialize self2)))
+     (collect-garbage)
+     (check-equal? (SELF-a ds4) #f)))
+
+
+  ;; --- struct pointer array and embedded struct array
+  (define-serializable-cstruct _SINT ([a _int]) #:malloc-mode malloc/register)
+  (define-serializable-cstruct _PTRAR ([a (_array _SINT-pointer/null 2 5)]) #:malloc-mode malloc/register)
+  (define-serializable-cstruct _EMBAR ([a (_array _SINT 2 5)]) #:malloc-mode malloc/register)
+
+  (for ([i num-runs])
+    (with-free
+     (define par (ptr-ref (malloc/register _PTRAR) _PTRAR))
+     (for* ([i 2] [j 5])
+       (array-set! (PTRAR-a par) i j (make-SINT/mode (+ 10 j (* i 5)))))
+
+     (define ds (deserialize (serialize par)))
+     (collect-garbage)
+
+     (check-true
+      (for*/and ([i 2] [j 5])
+        (= (SINT-a (array-ref (PTRAR-a ds) i j)) (+ 10 j (* i 5)))))
+
+     ;; --
+     (define ear (ptr-ref (malloc/register _EMBAR) _EMBAR))
+     (for* ([i 2] [j 5])
+       (array-set! (EMBAR-a ear) i j (make-SINT/mode (+ 10 j (* i 5)))))
+
+     (define ds2 (deserialize (serialize ear)))
+     (collect-garbage)
+
+     (check-true
+      (for*/and ([i 2] [j 5])
+        (= (SINT-a (array-ref (EMBAR-a ds2) i j)) (+ 10 j (* i 5)))))))
+
+  ;; --- array with embedded struct with pointer
+  (define-serializable-cstruct _TP ([a _int]) #:malloc-mode malloc/register)
+  (define-serializable-cstruct _TB ([a _TP-pointer]) #:malloc-mode malloc/register)
+  (define-serializable-cstruct _TS ([a (_array _TB 2)]) #:malloc-mode malloc/register)
+
+  (with-free
+   (define p (make-TP/mode 65))
+   (define s (ptr-ref (malloc/register _TS) _TS))
+
+   (set-TB-a! (array-ref (TS-a s) 0) p)
+   (set-TB-a! (array-ref (TS-a s) 1) p)
+
+   (define ds (deserialize (serialize s)))
+   (memset p 0 1 _TP)
+
+   (check-equal? (TB-a (array-ref (TS-a ds) 0))
+                 (TB-a (array-ref (TS-a ds) 1)))
+   (check-equal? 65 (TP-a (TB-a (array-ref (TS-a ds) 0)))))
+
+
+  ;; --- inplace tests
+  (define-serializable-cstruct _NOIN ([a _int]))
+
+  (define-serializable-cstruct _INS ([a _int]) #:serialize-inplace)
+
+  (define-serializable-cstruct _IND ([a _int]) #:deserialize-inplace)
+
+  (define-serializable-cstruct _INSD ([a _int])
+    #:serialize-inplace #:deserialize-inplace
+    #:malloc-mode (lambda (_) (error "should not get here")))
+
+  ;; non-inplace + modification
+  (let ()
+    (define noin (make-NOIN/mode 123))
+    (define s (serialize noin))
+    (set-NOIN-a! noin 0)
+
+    (define ds (deserialize s))
+    (check-equal? (NOIN-a ds) 123)
+
+    (for ([e (flatten s)])
+      (when (bytes? e)
+        (memset e 0 (bytes-length e)  _byte)))
+    (check-equal? (NOIN-a ds) 123))
+
+  ;; inplace serialize and test modification
+  (let ()
+    (define ins (make-INS/mode 123))
+
+    (check-not-exn (lambda () (serialize ins)))
+    (define s (serialize ins))
+    (check-not-exn (lambda () (deserialize s)))
+
+    ;; unmodified
+    (define ds1 (deserialize s))
+    (check-equal? 123 (INS-a ds1))
+
+    ;; modified
+    (set-INS-a! ins 456)
+    (define ds2 (deserialize s))
+    (check-equal? 456 (INS-a ds2)))
+
+  ;; inplace deser
+  (let ()
+    (define ind (ptr-ref (malloc _IND) _IND))
+    (set-IND-a! ind 123)
+
+    (check-not-exn (lambda () (serialize ind)))
+    (define s (serialize ind))
+    (check-not-exn (lambda () (deserialize s)))
+
+    (define ds (deserialize s))
+    (check-equal? 123 (IND-a ds)))
+
+  ;; both inplace, should never malloc
+  (let ()
+    (define insd (ptr-ref (malloc _INSD) _INSD))
+    (set-INSD-a! insd 123)
+
+    (check-not-exn (lambda () (serialize insd)))
+    (define s (serialize insd))
+    (check-not-exn (lambda () (deserialize s)))
+    (define ds (deserialize s))
+
+    (check-equal? 123 (INSD-a ds))))
+
+(require (only-in 'mod-cstruct-serialize))
+
+
 ;; ----------------------------------------
 
 (report-errs)

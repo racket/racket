@@ -8,6 +8,7 @@
 @include-section["vector.scrbl"]
 @include-section["cvector.scrbl"]
 @include-section["cpointer.scrbl"]
+@include-section["serialize-cstruct.scrbl"]
 @include-section["define.scrbl"]
 @include-section["alloc.scrbl"]
 @include-section["custodian.scrbl"]

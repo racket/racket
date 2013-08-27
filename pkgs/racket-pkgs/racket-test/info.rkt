@@ -21,6 +21,7 @@
                "scribble-lib"
                "syntax-color-lib"
                "typed-racket-lib"
+               "serialize-cstruct-lib"
 
                ;; for random testing:
                "redex-lib"))
