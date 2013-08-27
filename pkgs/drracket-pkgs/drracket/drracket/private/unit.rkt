@@ -3161,7 +3161,7 @@
           (set-visible-regions interactions-text vi)))
       
       (define/private (pathname-equal? p1 p2)
-        (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
+        (with-handlers ([exn:fail? (λ (x) #f)])
           (string=? (path->string (normal-case-path (normalize-path p1)))
                     (path->string (normal-case-path (normalize-path p2))))))
       
