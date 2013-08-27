@@ -1588,6 +1588,7 @@
            stx xs))
   (syntax-case stx ()
     [(_ type ([slot slot-type] ...) . more)
+     (stx-pair? #'(slot ...))
      (let-values ([(_TYPE _SUPER)
                    (syntax-case #'type ()
                      [(t s) (values #'t #'s)]
