@@ -1086,7 +1086,7 @@ a black outline.
                                      (rectangle 32 32 "outline" "black")))]
 }
 
-@defproc[(scene+line [image image?]
+@defproc[(scene+line [scene image?]
                      [x1 real?] [y1 real?]
                      [x2 real?] [y2 real?]
                      [pen-or-color (or/c pen? image-color?)])
