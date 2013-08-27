@@ -1491,8 +1491,12 @@
 	   (tcp-close l)))])
   (do-once #f "localhost")
   (do-once #t "localhost")
-  (do-once #f "::1")
-  (do-once #t "::1"))
+  (with-handlers ([exn:fail:network:errno? (lambda (e)
+                                             ;; catch EAFNOSUPPORT Address family not supported by protocol
+                                             (unless (regexp-match? #rx"Address family not supported by protocol" (exn-message e))
+                                               (raise e)))])
+    (do-once #f "::1")
+    (do-once #t "::1")))
 
 (test #f tcp-port? (current-input-port))
 (test #f tcp-port? (current-output-port))
