@@ -62,14 +62,16 @@ Closes @racket[hc] if it is live.
 }
 
 @defproc[(http-conn-send! [hc http-conn-live?] [uri (or/c bytes? string?)]
+                          [#:version version (or/c bytes? string?) #"1.1"]
                           [#:method method (or/c bytes? string? symbol?) #"GET"]
                           [#:headers headers (listof (or/c bytes? string?)) empty]
                           [#:data data (or/c false/c bytes? string?) #f])
          void?]{
 
-Sends an HTTP request to @racket[hc] to the URI @racket[uri] using the
-method @racket[method] and the additional headers given in
-@racket[headers] and the additional data @racket[data].
+Sends an HTTP request to @racket[hc] to the URI @racket[uri] using
+HTTP version @racket[version] the method @racket[method] and the
+additional headers given in @racket[headers] and the additional data
+@racket[data].
 
 }
 
@@ -90,6 +92,7 @@ to do so.
 }
 
 @defproc[(http-conn-sendrecv! [hc http-conn-live?] [uri (or/c bytes? string?)]
+                              [#:version version (or/c bytes? string?) #"1.1"]
                               [#:method method (or/c bytes? string? symbol?) #"GET"]
                               [#:headers headers (listof (or/c bytes? string?)) empty]
                               [#:data data (or/c false/c bytes? string?) #f]
@@ -103,6 +106,7 @@ Calls @racket[http-conn-send!] and @racket[http-conn-recv!] in sequence.
 @defproc[(http-sendrecv [host (or/c bytes? string?)] [uri (or/c bytes? string?)]
                         [#:ssl? ssl? (or/c boolean? ssl-client-context? symbol?) #f]
                         [#:port port (between/c 1 65535) (if ssl? 443 80)]
+                        [#:version version (or/c bytes? string?) #"1.1"]                          
                         [#:method method (or/c bytes? string? symbol?) #"GET"]
                         [#:headers headers (listof (or/c bytes? string?)) empty]
                         [#:data data (or/c false/c bytes? string?) #f])

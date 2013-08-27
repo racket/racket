@@ -70,11 +70,12 @@
   (set-http-conn-abandon-p! hc #f))
 
 (define (http-conn-send! hc url-bs
+                         #:version [version-bs #"1.1"]
                          #:method [method-bss #"GET"]
                          #:headers [headers-bs empty]
                          #:data [data-bsf #f])
   (match-define (http-conn host to from _) hc)
-  (fprintf to "~a ~a HTTP/1.1\r\n" method-bss url-bs)
+  (fprintf to "~a ~a HTTP/~a\r\n" method-bss url-bs version-bs)
   (fprintf to "Host: ~a\r\n" host)
   (define data
     (if (string? data-bsf)
@@ -183,11 +184,13 @@
   (values status headers response-port))
 
 (define (http-conn-sendrecv! hc url-bs
+                             #:version [version-bs #"1.1"]
                              #:method [method-bss #"GET"]
                              #:headers [headers-bs empty]
                              #:data [data-bsf #f]
                              #:close? [close? #f])
   (http-conn-send! hc url-bs
+                   #:version version-bs
                    #:method method-bss
                    #:headers headers-bs
                    #:data data-bsf)
@@ -196,11 +199,13 @@
 (define (http-sendrecv host-bs url-bs
                        #:ssl? [ssl? #f]
                        #:port [port (if ssl? 443 80)]
+                       #:version [version-bs #"1.1"]
                        #:method [method-bss #"GET"]
                        #:headers [headers-bs empty]
                        #:data [data-bsf #f])
   (define hc (http-conn-open host-bs #:ssl? ssl? #:port port))
   (http-conn-sendrecv! hc url-bs
+                       #:version version-bs
                        #:method method-bss
                        #:headers headers-bs
                        #:data data-bsf
@@ -227,9 +232,10 @@
   [http-conn-send!
    (->*
     (http-conn-live? (or/c bytes? string?))
-    (#:method (or/c bytes? string? symbol?)
-              #:headers (listof (or/c bytes? string?))
-              #:data (or/c false/c bytes? string?))
+    (#:version (or/c bytes? string?)
+               #:method (or/c bytes? string? symbol?)
+               #:headers (listof (or/c bytes? string?))
+               #:data (or/c false/c bytes? string?))
     void)]
   ;; Derived
   [http-conn-open
@@ -243,15 +249,17 @@
         (values bytes? (listof bytes?) input-port?))]
   [http-conn-sendrecv!
    (->* (http-conn-live? (or/c bytes? string?))
-        (#:method (or/c bytes? string? symbol?)
-                  #:headers (listof (or/c bytes? string?))
-                  #:data (or/c false/c bytes? string?)
-                  #:close? boolean?)
+        (#:version (or/c bytes? string?)
+                   #:method (or/c bytes? string? symbol?)
+                   #:headers (listof (or/c bytes? string?))
+                   #:data (or/c false/c bytes? string?)
+                   #:close? boolean?)
         (values bytes? (listof bytes?) input-port?))]
   [http-sendrecv
    (->* ((or/c bytes? string?) (or/c bytes? string?))
         (#:ssl? (or/c boolean? ssl-client-context? symbol?)
                 #:port (between/c 1 65535)
+                #:version (or/c bytes? string?)
                 #:method (or/c bytes? string? symbol?)
                 #:headers (listof (or/c bytes? string?))
                 #:data (or/c false/c bytes? string?))
