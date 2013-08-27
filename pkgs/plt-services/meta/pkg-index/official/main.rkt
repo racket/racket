@@ -765,7 +765,7 @@
        (if i
          (package-ref i id)
          def))
-     (define authors (package-ref* i 'author ""))
+     (define authors (package-ref* i 'author (or (current-user req #f) "")))
      (define the-table
        `(table
          (tr
