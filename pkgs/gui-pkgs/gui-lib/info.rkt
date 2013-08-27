@@ -10,6 +10,7 @@
                "snip-lib"
                "wxme-lib"
                "pict-lib"
+               "scheme-lib"
                "scribble-lib"
                "string-constants-lib"
                "unstable-list-lib" ; for class-iop

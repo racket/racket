@@ -85,10 +85,7 @@
 ;; Readers:
 (map (lambda (r) (go r #f #f))
      '(s-exp/lang/reader
-       scheme/base/lang/reader
-       scheme/private/provider/lang/reader
        racket/base/lang/reader
-       scheme/runtime-config
        racket/runtime-config))
 
 (current-library-collection-paths 

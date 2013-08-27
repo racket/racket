@@ -732,7 +732,7 @@
   (test a-special cadr v)
   (test b-special caddr v))
 
-(require (only-in mzlib/port [relocate-input-port relocate-input-port]))
+(require (only-in racket/port [relocate-input-port relocate-input-port]))
 (define (shift-port p count-lines? deltas)
   (let ([p (relocate-input-port p 
 				(add1 (car deltas))
@@ -958,18 +958,18 @@
 ;; Test #reader
 
 (err/rt-test (parameterize ([read-accept-reader #f])
-	       (read (open-input-string "#reader mzscheme 10")))
+	       (read (open-input-string "#reader racket/base 10")))
 	     exn:fail:read?)
 (test 10 'ten (parameterize ([read-accept-reader #t])
-	       (read (open-input-string "#reader mzscheme 10"))))
+	       (read (open-input-string "#reader racket/base 10"))))
 
-(module reader-test-module mzscheme
+(module reader-test-module racket/base
   (define (my-read port)
     `(READ ,(read port)))
   (define (my-read-syntax name port)
     `(READ-SYNTAX ,(read-syntax name port)))
-  (provide (rename my-read read)
-	   (rename my-read-syntax read-syntax)))
+  (provide (rename-out [my-read read]
+                       [my-read-syntax read-syntax])))
 
 (test `(READ 10) 'ten 
       (parameterize ([read-accept-reader #t])

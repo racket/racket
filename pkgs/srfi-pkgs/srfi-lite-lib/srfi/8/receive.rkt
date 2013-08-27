@@ -10,7 +10,7 @@
 ;;;
 ;;; oh well, there is no such comment.
 
-#lang scheme/base
+#lang racket/base
 (provide receive)
 
 ;; (receive vars producer . body)

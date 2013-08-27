@@ -1,4 +1,4 @@
-(module compile-unit scheme/base
+(module compile-unit racket/base
   (require racket/unit
            racket/system
            "private/dirs.rkt"

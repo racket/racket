@@ -1,7 +1,7 @@
 ;; This is a wrapper around "winvers-change.rkt" to patch binary files with the
 ;; current version number.
 
-#lang scheme/base
+#lang racket/base
 
 (require racket/file "main-collects.rkt" "dirs.rkt")
 

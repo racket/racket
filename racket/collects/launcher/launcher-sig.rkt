@@ -1,4 +1,4 @@
-#lang scheme/signature
+#lang racket/signature
 
 make-gracket-launcher
 make-racket-launcher

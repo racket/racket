@@ -1,4 +1,4 @@
-(module reader scheme/base
+(module reader racket/base
   (require syntax/module-reader)
 
   (provide (rename-out [-read read]

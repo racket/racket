@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/class
-         scheme/contract)
+#lang racket/base
+(require racket/class
+         racket/contract)
 
 ;; This is an implementation of the Octree Quantization algorithm.  This implementation 
 ;; follows the sketch in:

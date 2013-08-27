@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (provide md5)
 
@@ -72,7 +72,7 @@
 ;; - moved from mzlib/md5 to file/md5
 ;; - made it work on strings again
 
-(require (for-syntax scheme/base))
+(require (for-syntax racket/base))
 
 ;;; Word arithmetic (32 bit)
 ;; Terminology

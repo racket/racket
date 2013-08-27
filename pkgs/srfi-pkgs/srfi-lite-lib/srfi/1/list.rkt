@@ -215,7 +215,7 @@
 ;; with an s: to avoid colliding with racket.  The wrapper 1.rkt
 ;; changes their names back to the non-prefixed form.
 
-#lang scheme/base
+#lang racket/base
 
 (require "cons.rkt"
          "selector.rkt"

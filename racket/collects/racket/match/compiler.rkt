@@ -7,7 +7,6 @@
          "split-rows.rkt"
          "reorder.rkt"
          racket/stxparam
-         scheme/nest
          racket/syntax)
 
 (provide compile*)
@@ -79,37 +78,34 @@
     ;; vectors are handled specially
     ;; because each arity is like a different constructor
     [(eq? 'vector k)
-     (nest
-       ([let ()]
-        [let ([ht (hash-on (lambda (r) 
-                             (length (Vector-ps (Row-first-pat r)))) rows)])]
-        [with-syntax
-            ([(clauses ...)
-              (hash-map
-               ht
-               (lambda (arity rows)
-                 (define ns (build-list arity values))
-                 (with-syntax ([(tmps ...) (generate-temporaries ns)])
-                   (with-syntax ([body
-                                  (compile*
-                                   (append (syntax->list #'(tmps ...)) xs)
-                                   (map (lambda (row)
-                                          (define-values (p1 ps)
-                                            (Row-split-pats row))
-                                          (make-Row (append (Vector-ps p1) ps)
-                                                    (Row-rhs row)
-                                                    (Row-unmatch row)
-                                                    (Row-vars-seen row)))
-                                        rows)
-                                   esc)]
-                                 [(n ...) ns])
-                     #`[(#,arity)
-                        (let ([tmps (unsafe-vector-ref #,x n)] ...)
-                          body)]))))])])
-       #`[(vector? #,x)
-          (case (unsafe-vector-length #,x)
-            clauses ...
-            [else (#,esc)])])]
+     (let ([ht (hash-on (lambda (r) 
+                          (length (Vector-ps (Row-first-pat r)))) rows)])
+       (with-syntax ([(clauses ...)
+                      (hash-map
+                       ht
+                       (lambda (arity rows)
+                         (define ns (build-list arity values))
+                         (with-syntax ([(tmps ...) (generate-temporaries ns)])
+                           (with-syntax ([body
+                                          (compile*
+                                           (append (syntax->list #'(tmps ...)) xs)
+                                           (map (lambda (row)
+                                                  (define-values (p1 ps)
+                                                    (Row-split-pats row))
+                                                  (make-Row (append (Vector-ps p1) ps)
+                                                            (Row-rhs row)
+                                                            (Row-unmatch row)
+                                                            (Row-vars-seen row)))
+                                                rows)
+                                           esc)]
+                                         [(n ...) ns])
+                             #`[(#,arity)
+                                (let ([tmps (unsafe-vector-ref #,x n)] ...)
+                                  body)]))))])
+         #`[(vector? #,x)
+            (case (unsafe-vector-length #,x)
+              clauses ...
+              [else (#,esc)])]))]
     ;; it's a structure
     [(box? k)
      ;; all the rows are structures with the same predicate
@@ -308,105 +304,103 @@
        #`(cond [(pred? #,x) body] [else (#,esc)]))]
      ;; Generalized sequences... slightly tested
     [(GSeq? first)
-     (nest
-       ([let* ([headss (GSeq-headss first)]
-               [mins (GSeq-mins first)]
-               [maxs (GSeq-maxs first)]
-               [onces? (GSeq-onces? first)]
-               [tail (GSeq-tail first)]
-               [mutable? (GSeq-mutable? first)]
-               [make-Pair (if mutable? make-MPair make-Pair)]
-               [k (Row-rhs (car block))]
-               [xvar (car (generate-temporaries (list #'x)))]
-               [complete-heads-pattern
-                (lambda (ps)
-                  (define (loop ps pat)
-                    (if (pair? ps)
-                        (make-Pair (car ps) (loop (cdr ps) pat))
-                        pat))
-                  (loop ps (make-Var xvar)))]
-               [heads
-                (for/list ([ps headss])
-                  (complete-heads-pattern ps))]
-               [head-idss
-                (for/list ([heads headss])
-                  (apply append (map bound-vars heads)))]
-               [hid-argss (map generate-temporaries head-idss)]
-               [head-idss* (map generate-temporaries head-idss)]
-               [hid-args (apply append hid-argss)]
-               [reps (generate-temporaries (for/list ([head heads]) 'rep))])]
-        [with-syntax
-            ([x xvar]
-             [var0 (car vars)]
-             [((hid ...) ...) head-idss]
-             [((hid* ...) ...) head-idss*]
-             [((hid-arg ...) ...) hid-argss]
-             [(rep ...) reps]
-             [(maxrepconstraint ...)
-              ;; FIXME: move to side condition to appropriate pattern
-              (for/list ([repvar reps] [maxrep maxs])
-                (if maxrep #`(< #,repvar #,maxrep) #`#t))]
-             [(minrepclause ...)
-              (for/list ([repvar reps] [minrep mins] #:when minrep)
-                #`[(< #,repvar #,minrep) (fail)])]
-             [((hid-rhs ...) ...)
-              (for/list ([hid-args hid-argss] [once? onces?])
-                (for/list ([hid-arg hid-args])
-                  (if once?
-                      #`(car (reverse #,hid-arg))
-                      #`(reverse #,hid-arg))))]
-             [(parse-loop failkv fail-tail)
-              (generate-temporaries #'(parse-loop failkv fail-tail))])]
-        [with-syntax ([(rhs ...)
-                       #`[(let ([hid-arg (cons hid* hid-arg)] ...)
-                            (if maxrepconstraint
-                                (let ([rep (add1 rep)])
-                                  (parse-loop x #,@hid-args #,@reps fail))
-                                (begin (fail))))
-                          ...]]
-                      [tail-rhs
-                       #`(cond minrepclause ...
-                               [else
-                                (let ([hid hid-rhs] ... ...
-                                                    [fail-tail fail])
-                                  #,(compile*
-                                     (cdr vars)
-                                     (list (make-Row rest-pats k
-                                                     (Row-unmatch (car block))
-                                                     (Row-vars-seen
-                                                      (car block))))
-                                     #'fail-tail))])])]
-        [parameterize ([current-renaming
-                        (for/fold ([ht (copy-mapping (current-renaming))])
-                                  ([id (apply append head-idss)]
-                                   [id* (apply append head-idss*)])
-                          (free-identifier-mapping-put! ht id id*)
-                          (free-identifier-mapping-for-each
-                           ht
-                           (lambda (k v)
-                             (when (free-identifier=? v id)
-                               (free-identifier-mapping-put! ht k id*))))
-                          ht)])])
-        #`(let parse-loop ([x var0]
-                           [hid-arg null] ... ...
-                           [rep 0] ...
-                           [failkv #,esc])
-            #,(compile* (list #'x)
-                        (append
-                         (map (lambda (pats rhs)
-                                (make-Row pats
-                                          rhs
-                                          (Row-unmatch (car block))
-                                          (Row-vars-seen
-                                           (car block))))
-                              (map list heads)
-                              (syntax->list #'(rhs ...)))
-                         (list (make-Row (list tail)
-                                         #`tail-rhs
-                                         (Row-unmatch (car block))
-                                         (Row-vars-seen
-                                          (car block)))))
-                        #'failkv)))]
+     (let* ([headss (GSeq-headss first)]
+            [mins (GSeq-mins first)]
+            [maxs (GSeq-maxs first)]
+            [onces? (GSeq-onces? first)]
+            [tail (GSeq-tail first)]
+            [mutable? (GSeq-mutable? first)]
+            [make-Pair (if mutable? make-MPair make-Pair)]
+            [k (Row-rhs (car block))]
+            [xvar (car (generate-temporaries (list #'x)))]
+            [complete-heads-pattern
+             (lambda (ps)
+               (define (loop ps pat)
+                 (if (pair? ps)
+                     (make-Pair (car ps) (loop (cdr ps) pat))
+                     pat))
+               (loop ps (make-Var xvar)))]
+            [heads
+             (for/list ([ps headss])
+               (complete-heads-pattern ps))]
+            [head-idss
+             (for/list ([heads headss])
+               (apply append (map bound-vars heads)))]
+            [hid-argss (map generate-temporaries head-idss)]
+            [head-idss* (map generate-temporaries head-idss)]
+            [hid-args (apply append hid-argss)]
+            [reps (generate-temporaries (for/list ([head heads]) 'rep))])
+       (with-syntax ([x xvar]
+                     [var0 (car vars)]
+                     [((hid ...) ...) head-idss]
+                     [((hid* ...) ...) head-idss*]
+                     [((hid-arg ...) ...) hid-argss]
+                     [(rep ...) reps]
+                     [(maxrepconstraint ...)
+                      ;; FIXME: move to side condition to appropriate pattern
+                      (for/list ([repvar reps] [maxrep maxs])
+                        (if maxrep #`(< #,repvar #,maxrep) #`#t))]
+                     [(minrepclause ...)
+                      (for/list ([repvar reps] [minrep mins] #:when minrep)
+                        #`[(< #,repvar #,minrep) (fail)])]
+                     [((hid-rhs ...) ...)
+                      (for/list ([hid-args hid-argss] [once? onces?])
+                        (for/list ([hid-arg hid-args])
+                          (if once?
+                              #`(car (reverse #,hid-arg))
+                              #`(reverse #,hid-arg))))]
+                     [(parse-loop failkv fail-tail)
+                      (generate-temporaries #'(parse-loop failkv fail-tail))])
+         (with-syntax ([(rhs ...)
+                        #`[(let ([hid-arg (cons hid* hid-arg)] ...)
+                             (if maxrepconstraint
+                                 (let ([rep (add1 rep)])
+                                   (parse-loop x #,@hid-args #,@reps fail))
+                                 (begin (fail))))
+                           ...]]
+                       [tail-rhs
+                        #`(cond minrepclause ...
+                                [else
+                                 (let ([hid hid-rhs] ... ...
+                                       [fail-tail fail])
+                                   #,(compile*
+                                      (cdr vars)
+                                      (list (make-Row rest-pats k
+                                                      (Row-unmatch (car block))
+                                                      (Row-vars-seen
+                                                       (car block))))
+                                      #'fail-tail))])])
+           (parameterize ([current-renaming
+                           (for/fold ([ht (copy-mapping (current-renaming))])
+                               ([id (apply append head-idss)]
+                                [id* (apply append head-idss*)])
+                             (free-identifier-mapping-put! ht id id*)
+                             (free-identifier-mapping-for-each
+                              ht
+                              (lambda (k v)
+                                (when (free-identifier=? v id)
+                                  (free-identifier-mapping-put! ht k id*))))
+                             ht)])
+             #`(let parse-loop ([x var0]
+                                [hid-arg null] ... ...
+                                [rep 0] ...
+                                [failkv #,esc])
+                 #,(compile* (list #'x)
+                             (append
+                              (map (lambda (pats rhs)
+                                     (make-Row pats
+                                               rhs
+                                               (Row-unmatch (car block))
+                                               (Row-vars-seen
+                                                (car block))))
+                                   (map list heads)
+                                   (syntax->list #'(rhs ...)))
+                              (list (make-Row (list tail)
+                                              #`tail-rhs
+                                              (Row-unmatch (car block))
+                                              (Row-vars-seen
+                                               (car block)))))
+                             #'failkv))))))]
     [else (error 'compile "unsupported pattern: ~a\n" first)]))
 
 (define (compile* vars rows esc [reorder? #t])

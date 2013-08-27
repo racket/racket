@@ -45,9 +45,9 @@
 ;; macros. :-)
 ;;
 
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base))
+(require (for-syntax racket/base))
 
 (provide :optional let-optionals* check-arg)
 

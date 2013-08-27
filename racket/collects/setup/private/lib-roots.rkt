@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require (prefix-in planet: planet/config) scheme/path scheme/list)
+(require (prefix-in planet: planet/config) racket/path racket/list)
 
 ;; `library-roots' is an alist of root-path, and the number of levels
 ;; below that which indicates a "library".  This is hard-wired now to

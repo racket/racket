@@ -1,6 +1,6 @@
-(module distribute scheme/base
-  (require scheme/file
-           scheme/path
+(module distribute racket/base
+  (require racket/file
+           racket/path
            setup/dirs
            racket/list
            setup/variant

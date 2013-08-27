@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/unit
+(require racket/unit
          "launcher-sig.rkt"
          "launcher-unit.rkt")
 

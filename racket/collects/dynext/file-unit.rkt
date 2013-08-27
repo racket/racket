@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/unit "file-sig.rkt")
+(require racket/unit "file-sig.rkt")
 
 (provide dynext:file@)
 

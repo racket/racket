@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base scheme/provide-transform))
+(require (for-syntax racket/base racket/provide-transform))
 
 ;; This is a utility for many srfi/N.rkt files that simply reprovide stuff from
 ;; some other file.  It is used as a module, for example, the "srfi/1.rkt"
@@ -8,7 +8,7 @@
 ;;   #lang s-exp srfi/provider srfi/1/list #:unprefix s:
 ;; which makes it require `srfi/1/list', then reprovide everything from there,
 ;; removing any `s:' prefixes that it uses (since `srfi/1/list' does not
-;; collide with `scheme/base').  It is used in most files here, and the
+;; collide with `racket/base').  It is used in most files here, and the
 ;; unprefix facility is used in a few similar situations.  You can add a
 ;; `#:debug' flag to have the unprefixer print its renamings, to check that you
 ;; get the right bindings.

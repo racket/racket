@@ -1,4 +1,4 @@
-(module moddep scheme/base
+(module moddep racket/base
   (require "modread.rkt"
            "modcode.rkt"
            "modcollapse.rkt"

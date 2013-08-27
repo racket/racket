@@ -3,7 +3,7 @@
 
 (Section 'readtable)
 
-(require (only-in mzlib/port 
+(require (only-in racket/port 
                   [relocate-input-port relocate-input-port]))
 (define (shift-rt-port p deltas)
   (let ([p (relocate-input-port p 

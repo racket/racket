@@ -23,7 +23,7 @@
 ;; Olin Shivers verified that he is fine with redistributing this code
 ;; under the LGPL.  (Verified personally by Eli Barzilay.)
 
-#lang scheme/base
+#lang racket/base
 
 (require srfi/optional
          "predicate.rkt"
@@ -31,7 +31,7 @@
          "util.rkt"
          (only-in "fold.rkt" reduce-right)
          (rename-in "fold.rkt" [map s:map] [for-each s:for-each])
-         (only-in scheme/list count append*))
+         (only-in racket/list count append*))
 
 (provide length+
          (rename-out [append* concatenate] [append* concatenate!])

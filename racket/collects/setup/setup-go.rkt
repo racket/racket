@@ -1,4 +1,4 @@
-(module setup-go scheme/base
+(module setup-go racket/base
   (require "setup-cmdline.rkt"
            racket/unit
 

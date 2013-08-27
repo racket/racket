@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;; This module provides the string that should replace xxxxxxx's in
 ;; file names.  The version number is combined into a single integer,

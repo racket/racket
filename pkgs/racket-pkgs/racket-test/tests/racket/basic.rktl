@@ -3,7 +3,7 @@
 
 (Section 'basic)
 
-(require scheme/flonum
+(require racket/flonum
          racket/function)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require racket/cmdline
          raco/command-name
          setup/dirs

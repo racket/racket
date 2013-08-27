@@ -23,7 +23,7 @@
 ;; Olin Shivers verified that he is fine with redistributing this code
 ;; under the LGPL.  (Verified personally by Eli Barzilay.)
 
-#lang scheme/base
+#lang racket/base
 
 (require (only-in "search.rkt" find))
 

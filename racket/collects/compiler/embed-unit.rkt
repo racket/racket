@@ -1,9 +1,9 @@
-(module embed-unit scheme/base
-  (require scheme/unit
-           scheme/path
-           scheme/file
-           scheme/port
-           scheme/promise
+(module embed-unit racket/base
+  (require racket/unit
+           racket/path
+           racket/file
+           racket/port
+           racket/promise
            racket/list
            syntax/moddep
            syntax/modcollapse

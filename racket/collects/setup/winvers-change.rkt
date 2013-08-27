@@ -8,7 +8,7 @@
 ;; running Racket.exe on Windows -- "winvers.rkt" uses a trick of making a copy
 ;; of the binary and restarting that copy for the actual change.
 
-#lang scheme/base
+#lang racket/base
 
 (define verbose? #t)
 (define binary-extensions '("exe" "dll" "lib" "so" "def" "exp" #|"obj" "o"|#))

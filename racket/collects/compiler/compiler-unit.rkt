@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 ;; Main compilation procedures
 ;; (c) 1997-2013 PLT Design Inc.
 
@@ -7,7 +7,7 @@
 ;;  compiler collections.
 
 
-(require scheme/unit
+(require racket/unit
 
          "sig.rkt"
          dynext/file-sig
@@ -17,7 +17,7 @@
          syntax/toplevel
          syntax/moddep
 
-         scheme/file
+         racket/file
          compiler/compile-file
          compiler/cm
          setup/getinfo

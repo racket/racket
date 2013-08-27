@@ -272,7 +272,7 @@
 
 ;; ----------------------------------------
 
-(require (for-syntax scheme/struct-info))
+(require (for-syntax racket/struct-info))
 
 (define-syntax (et-struct-info stx)
   (syntax-case stx ()
@@ -375,7 +375,7 @@
 
 ;; ----------------------------------------
 
-(require (only-in mzlib/etc begin-with-definitions))
+(require racket/block)
 
 (define-syntax (def stx)
   (syntax-case stx ()
@@ -394,13 +394,13 @@
         (look foo)))
 
 (test 50 'look
-      (begin-with-definitions
+      (block
        (def foo)
        (look foo)))
 
 (test #t 'bwd-struct
       (let ()
-        (begin-with-definitions
+        (block
          (define-struct a (x y))
          (define-struct (b a) (z))
          (b? (make-b 1 2 3)))))
@@ -425,7 +425,7 @@
         (x)))
 
 (test 75 'bwd
-      (begin-with-definitions
+      (block
        (define-syntax foo
          (syntax-rules ()
            [(_ id) (begin
@@ -505,8 +505,8 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(module rename-transformer-tests scheme/base
-  (require (for-syntax scheme/base))
+(module rename-transformer-tests racket/base
+  (require (for-syntax racket/base))
 
   (define x 12)
   (define-syntax bar (let ([x 10])
@@ -563,8 +563,8 @@
           (12 (mpi x mpi x 0 0 0) #t))
         values accum))
 
-(module rename-transformer-tests:m scheme/base
-  (require (for-syntax scheme/base))
+(module rename-transformer-tests:m racket/base
+  (require (for-syntax racket/base))
   (define-syntax x 1)
   (define-syntax x* (make-rename-transformer #'x))
   (define-syntax x** (make-rename-transformer (syntax-property #'x 'not-free-identifier=? #t)))
@@ -574,7 +574,7 @@
        #`#,(free-identifier=? #'i #'x)]))
   (provide get x* x**))
 
-(module rename-transformer-tests:n scheme
+(module rename-transformer-tests:n racket
   (require 'rename-transformer-tests:m)
   (provide go)
   (define (go)

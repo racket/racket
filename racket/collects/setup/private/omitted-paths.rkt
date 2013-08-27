@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;; `omitted-paths' returns a list of omitted file and subdirectory names for a
 ;; given directory, or 'all if the directory is completely omitted.  Considers
@@ -9,7 +9,7 @@
 
 (provide omitted-paths)
 
-(require scheme/path scheme/list scheme/promise "../dirs.rkt" "lib-roots.rkt")
+(require racket/path racket/list racket/promise "../dirs.rkt" "lib-roots.rkt")
 
 ;; An entry for each collections root that holds a hash table.  The hash table
 ;; maps a reversed list of subpath elements to the exploded omitted-paths

@@ -3,9 +3,12 @@
 (define collection 'multi)
 
 (define deps '("base"
+               "srfi-lite-lib"
                "r5rs-lib"
                "r6rs-lib"
                "compatibility-lib"))
+
+(define implies '("srfi-lite-lib"))
 
 (define pkg-desc "implementation (no documentation) part of \"srfi\"")
 

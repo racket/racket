@@ -24,7 +24,7 @@
 ;; under the LGPL.  (Verified personally by Eli Barzilay.)
 
 
-#lang scheme/base
+#lang racket/base
 
 (provide pair?
          null?

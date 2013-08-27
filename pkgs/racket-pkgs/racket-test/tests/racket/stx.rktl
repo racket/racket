@@ -345,19 +345,19 @@
 ;; Test free-identifier=? on different phases via syntax-case*
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(module mta scheme/base
+(module mta racket/base
   (define mtax 10)
   (provide mtax))
 
-(module mtb scheme/base
+(module mtb racket/base
   (define mtby 10)
   (provide mtby))
 
-(module mt1 scheme/base
+(module mt1 racket/base
   (require (prefix-in a: 'mta))
   (require (for-syntax (prefix-in b: 'mtb)
-                       scheme/base))
-  (require (prefix-in mz: scheme/base))
+                       racket/base))
+  (require (prefix-in mz: racket/base))
 
   (define-syntax ck
     (lambda (stx)
@@ -489,13 +489,13 @@
       identifier-binding* #'delay)
 (test '('#%kernel #%module-begin (lib "racket/init") #%plain-module-begin 0 0 0)
       identifier-binding* #'#%plain-module-begin)
-(require (only-in scheme/base [#%plain-module-begin #%pmb]))
-(test '('#%kernel #%module-begin scheme/base #%plain-module-begin 0 0 0)
+(require (only-in racket/base [#%plain-module-begin #%pmb]))
+(test '('#%kernel #%module-begin racket/base #%plain-module-begin 0 0 0)
       identifier-binding* #'#%pmb)
 
 (let ([b (identifier-binding
           (syntax-case (expand #'(module m racket/base
-                                   (require (only-in scheme/base [make-base-namespace s-mbn]))
+                                   (require (only-in racket/base [make-base-namespace s-mbn]))
                                    s-mbn)) ()
             [(mod m mz (#%mod-beg run-conf req (app call-with-values (lambda () make-base-namespace) print)))
              (let ([s (syntax make-base-namespace)])
@@ -503,13 +503,13 @@
                s)]))])
   (let-values ([(real real-base) (module-path-index-split (car b))]
                [(nominal nominal-base) (module-path-index-split (caddr b))])
-    (test '"private/namespace.rkt" values real)
+    (test '"namespace.rkt" values real)
     (test 'make-base-namespace cadr b)
-    (test 'scheme/base values nominal)
+    (test 'racket/base values nominal)
     (test 'make-base-namespace cadddr b)))
 
 (let ([b (identifier-binding
-          (syntax-case (expand #'(module m scheme/base
+          (syntax-case (expand #'(module m racket/base
                                    make-base-namespace)) ()
             [(mod m beg (#%mod-beg run-conf (app call-w-vals (lam () make-base-namespace) prnt)))
              (let ([s (syntax make-base-namespace)])
@@ -517,9 +517,9 @@
                s)]))])
   (let-values ([(real real-base) (module-path-index-split (car b))]
                [(nominal nominal-base) (module-path-index-split (caddr b))])
-    (test '"private/namespace.rkt" values real)
+    (test '"namespace.rkt" values real)
     (test 'make-base-namespace cadr b)
-    (test 'scheme/base values nominal)
+    (test 'racket/base values nominal)
     (test 'make-base-namespace cadddr b)))
 
 (let ()
@@ -699,20 +699,20 @@
 
 ;; The define-struct macro expands to begin,
 (test #t has-stx-property? (expand #'(define-struct x (a))) 'begin 'define-struct 'origin)
-(test #t has-stx-property? (expand #'(module m scheme/base (define-struct x (a)))) 'define-values 'define-struct 'origin)
-(test #t has-stx-property? (expand #'(module m scheme/base (define-struct x (a)))) 'define-syntaxes 'define-struct 'origin)
+(test #t has-stx-property? (expand #'(module m racket/base (define-struct x (a)))) 'define-values 'define-struct 'origin)
+(test #t has-stx-property? (expand #'(module m racket/base (define-struct x (a)))) 'define-syntaxes 'define-struct 'origin)
 
 ;; The s macro also expands to begin:
-(test #t has-stx-property? (expand #'(module m scheme/base
-                                       (require (for-syntax scheme/base))
+(test #t has-stx-property? (expand #'(module m racket/base
+                                       (require (for-syntax racket/base))
                                        (define-syntax (s stx)
                                          #'(begin
                                              (+ 1 10)
                                              14))
                                        s))
       '#%app 's 'origin)
-(test #t has-stx-property? (expand #'(module m scheme/base
-                                       (require (for-syntax scheme/base))
+(test #t has-stx-property? (expand #'(module m racket/base
+                                       (require (for-syntax racket/base))
                                        (define-syntax (s stx)
                                          #'(begin
                                              (+ 1 10)
@@ -895,13 +895,13 @@
 
 ;; ----------------------------------------
 
-(module ++m scheme/base
-  (require (for-syntax scheme/base))
+(module ++m racket/base
+  (require (for-syntax racket/base))
   (define ++x 10)
   (define-syntax (++xm stx) (syntax-protect #'100))
   (provide (protect-out ++x ++xm)))
-(module ++n scheme/base
-  (require (for-syntax scheme/base)
+(module ++n racket/base
+  (require (for-syntax racket/base)
            '++m)
   (define ++y ++x)
   (define-syntax (++y-macro stx) (syntax-protect #'++x))
@@ -934,7 +934,7 @@
 
   (parameterize ([current-code-inspector i]
                  [current-namespace n2])
-    (namespace-require 'scheme/base)
+    (namespace-require 'racket/base)
     (teval '(require '++n))
 
     (test 10 teval '++y)
@@ -951,15 +951,15 @@
     (err/rt-test (teval '++xm) exn:fail:syntax?)
     (err/rt-test (teval '++y-macro2) exn:fail:syntax?)
 
-    (teval '(module zrt scheme/base
+    (teval '(module zrt racket/base
               (require '++n)
               (define (vy) ++y)
               (define (vy2) ++y-macro)
               (define (vu) ++u-macro)
               (define (vu2) ++u2)
               (provide vy vy2 vu vu2)))
-    (teval '(module zct scheme/base
-              (require (for-syntax scheme/base
+    (teval '(module zct racket/base
+              (require (for-syntax racket/base
                                    '++n))
               (define-syntax (wy stx) (datum->syntax #'here ++y))
               (let-syntax ([goo ++y-macro]) 10)
@@ -991,8 +991,8 @@
     (test 10 teval '++y-macro2)))
 
 
-(module ++/n scheme/base
-  (require (for-syntax scheme/base))
+(module ++/n racket/base
+  (require (for-syntax racket/base))
   (provide ++/get-foo)
   (define-syntax foo #'10)
   (define-syntax (++/get-foo stx)
@@ -1000,8 +1000,8 @@
 (require '++/n)
 (test 10 values ++/get-foo)
 
-(module ++//n scheme/base
-  (require (for-syntax scheme/base))
+(module ++//n racket/base
+  (require (for-syntax racket/base))
   (provide ++//def)
   (define-syntax foo #'17)
   (define-syntax ++//def
@@ -1049,8 +1049,8 @@
 (test (list "lifted!" (void)) eval (expand #'(@@goo)))
 (test (list "lifted!" (void)) eval (expand-to-top-form #'(@@goo)))
 
-(module @@n scheme/base
-  (require (for-syntax scheme/base))
+(module @@n racket/base
+  (require (for-syntax racket/base))
   (define-syntax (@@foo stx)
     (syntax-case stx ()
       [(_ n)
@@ -1092,8 +1092,8 @@
 (begin-for-syntax (@@foo 1))
 (test (void) eval (expand #'(begin-for-syntax (@@foo 1))))
 
-(module @@p scheme/base
-  (require (for-syntax scheme/base
+(module @@p racket/base
+  (require (for-syntax racket/base
                        '@@n))
   (provide @@goo)
   (define-syntax (@@goo stx) #`#,(@@foo 10)))
@@ -1101,8 +1101,8 @@
 (require '@@p)
 (test 10 '@@goo (@@goo))
 
-(module @@m scheme/base
-  (require (for-syntax scheme/base))
+(module @@m racket/base
+  (require (for-syntax racket/base))
   (define-for-syntax prev-ctx #f)
   (define-syntax (@@foo stx)
     (syntax-case stx ()
@@ -1193,8 +1193,8 @@
 (let ([go-once
        (lambda (eval)
          (parameterize ([current-namespace (make-base-namespace)])
-           (eval '(module mm scheme/base
-                    (require (for-syntax scheme/base))
+           (eval '(module mm racket/base
+                    (require (for-syntax racket/base))
                     (define-syntax (define$ stx)
                       (syntax-case stx ()
                         [(_ id val)
@@ -1214,8 +1214,8 @@
            (test '(1 2 7 8) eval '(list a b c d)))
 
          (parameterize ([current-namespace (make-base-namespace)])
-           (eval '(module mm scheme/base
-                    (require (for-syntax scheme/base))
+           (eval '(module mm racket/base
+                    (require (for-syntax racket/base))
                     (define-syntax (define$ stx)
                       (syntax-case stx ()
                         [(_ id val)
@@ -1248,8 +1248,8 @@
                 (list x1 x2))))
         (m)))
 
-(module @!$m scheme/base
-  (require (for-syntax scheme/base))
+(module @!$m racket/base
+  (require (for-syntax racket/base))
   (define-syntax (d stx)
     (syntax-case stx ()
       [(_ id)
@@ -1297,14 +1297,14 @@
                             (test #f 'load-ok load?))
                           (make-resolved-module-path 'a))
                         (old name base stx load?))])])
-    (let ([a-code '(module a scheme/base
+    (let ([a-code '(module a racket/base
                      (provide x y)
                      (define x 1)
                      (define y #'x))])
       (eval a-code)
       (let ([b-code (let ([p (open-output-bytes)])
                       (write (compile
-                              '(module b scheme/base
+                              '(module b racket/base
                                  (require "a")
                                  (provide f)
                                  (define (f) #'x)))
@@ -1326,7 +1326,7 @@
         (test #t eval '(free-identifier=? (f) #'x))
         (test #t eval `(free-identifier=? (f) (quote-syntax ,x-id)))
         (parameterize ([current-namespace (make-base-namespace)])
-          (eval '(module a scheme/base
+          (eval '(module a racket/base
                    (provide y)
                    (define y 3)))
           (set! load-ok? #t)
@@ -1344,8 +1344,8 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  certification example from the manual
 
-(module @-m scheme/base
-  (require (for-syntax scheme/base))
+(module @-m racket/base
+  (require (for-syntax racket/base))
   (provide def-go)
   (define (unchecked-go n x)
     (+ n 17))
@@ -1357,7 +1357,7 @@
            [(_ x)
             #'(unchecked-go 8 x)]))])))
 
-(module @-n scheme/base
+(module @-n racket/base
   (require '@-m)
   (def-go go)
   (go 10)) ; access to unchecked-go is allowed
@@ -1368,8 +1368,8 @@
 ;; Propagating inactive certificates through a transparent macro-expansion
 ;; result:
 
-(module @!m scheme/base
-  (require (for-syntax scheme/base))
+(module @!m racket/base
+  (require (for-syntax racket/base))
   (provide define-x)
 
   (define-syntax (define-x stx)
@@ -1384,7 +1384,7 @@
       [(_ id v)
        (define id v)])))
 
-(module @!n scheme/base
+(module @!n racket/base
   (require '@!m)
   (define-x def-y)
   (def-y))
@@ -1394,13 +1394,13 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that the free-identifier=? cache doesn't kick in too eagerly.
 
-(module @w@ scheme/base
+(module @w@ racket/base
   (define add '+)
 
   (provide (rename-out [add plus])))
 
-(module @q@ scheme/base
-  (require (for-syntax scheme/base))
+(module @q@ racket/base
+  (require (for-syntax racket/base))
   (provide result)
 
   (define-for-syntax a #'plus)
@@ -1432,13 +1432,13 @@
 ;;  Test namespace-attach with phase-levels -2 and 2
 
 
-(module tn scheme/base
-  (require scheme/file)
+(module tn racket/base
+  (require racket/file)
   (define tmp10 (make-temporary-file))
   (provide tmp10)
 )
 
-(module @!a scheme/base
+(module @!a racket/base
   (require 'tn)
   (provide x)
   (with-output-to-file tmp10
@@ -1447,16 +1447,16 @@
       (printf "a\n")))
   (define x 5))
 
-(module @!b scheme/base
+(module @!b racket/base
   (provide get-x)
   (require (for-meta -2 '@!a))
   (define (get-x) #'x))
 
-(module @!c scheme/base
+(module @!c racket/base
   (require 'tn)
   (require (for-meta 2 '@!b)
-           (for-syntax scheme/base
-                       (for-syntax scheme/base)))
+           (for-syntax racket/base
+                       (for-syntax racket/base)))
   (define-syntax (foo stx)
     (let-syntax ([ref-x (lambda (stx)
                           #`(quote-syntax #,(get-x)))])
@@ -1493,9 +1493,9 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure post-ex renames aren't simplied away too soon:
 
-(module @simp@ scheme/base
+(module @simp@ racket/base
 
-  (require (for-syntax scheme/base))
+  (require (for-syntax racket/base))
 
   (define-syntax-rule (foo)
     (begin

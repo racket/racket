@@ -8,8 +8,8 @@ Various common pieces of code that both the client and server need to access
   (require (only-in racket/path path-only)
            racket/port
            racket/file
+           racket/list
            setup/getinfo
-           (prefix-in srfi1: srfi/1)
            "../config.rkt"
            "data.rkt")
   
@@ -317,7 +317,7 @@ Various common pieces of code that both the client and server need to access
     (define out-links
       (with-hard-link-lock
        (λ ()
-         (let-values ([(in-links out-links) (srfi1:partition f (get-hard-link-table/internal))])
+         (let-values ([(in-links out-links) (partition f (get-hard-link-table/internal))])
            (save-hard-link-table in-links)
            out-links))))
       (for-each on-delete out-links))

@@ -1317,9 +1317,10 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check #%top-interaction
 
-(module quoting-top-interaction mzscheme
-  (provide (all-from-except mzscheme #%top-interaction)
-           (rename top-interaction #%top-interaction))
+(module quoting-top-interaction racket/base
+  (require (for-syntax racket/base))
+  (provide (except-out (all-from-out racket/base) #%top-interaction)
+           (rename-out [top-interaction #%top-interaction]))
   (define-syntax top-interaction 
     (syntax-rules ()
       [(_ . e) (quote e)])))
@@ -1347,7 +1348,7 @@
     (test '(+ 1 2) 'repl-top
           (parameterize ([current-namespace ns])
             (load tmp-file)))
-    (with-output-to-file tmp-file (lambda () (display `(module ,tmp1 mzscheme (provide x) (define x 12))))
+    (with-output-to-file tmp-file (lambda () (display `(module ,tmp1 racket/base (provide x) (define x 12))))
                          #:exists 'truncate/replace)
     (test 12 'module
           (parameterize ([current-namespace ns])
@@ -1389,7 +1390,7 @@
          ((cadr procs) 'x10 'z10))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require scheme/splicing)
+(require racket/splicing)
 
 (define abcdefg 10)
 (test 12 'splicing-letrec-syntax (splicing-letrec-syntax ([abcdefg (syntax-rules ()

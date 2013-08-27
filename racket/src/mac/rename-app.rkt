@@ -1,5 +1,4 @@
-
-#lang scheme/base
+#lang racket/base
 
 (current-directory (build-path 'up))
 

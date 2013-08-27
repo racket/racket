@@ -1,24 +1,26 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/unit
-         scheme/contract
-         (for-syntax scheme/base
+(require (except-in racket/unit struct/ctc)
+         racket/contract
+         (submod racket/unit compat)
+         (for-syntax racket/base
                      racket/private/unit-compiletime
                      racket/private/unit-syntax))
 
-(provide (rename-out [module-begin #%module-begin])
-         (except-out (all-from-out scheme/base) #%module-begin)
-         (all-from-out scheme/unit)
-         (all-from-out scheme/contract)
-         (for-syntax (all-from-out scheme/base)))
+(provide (rename-out [module-begin #%module-begin]
+                     [struct~s struct])
+         (except-out (all-from-out racket/base) #%module-begin)
+         (all-from-out racket/unit)
+         (all-from-out racket/contract)
+         (for-syntax (all-from-out racket/base)))
 
 (define-for-syntax (make-name s)
   (string->symbol
    (string-append (regexp-replace "-sig$" (symbol->string s) "")
                   "^")))
 
-;; Recognizes scheme require forms.
-(define-for-syntax split-scheme-requires
+;; Recognizes racket require forms.
+(define-for-syntax split-racket-requires
   (split-requires* (list #'require #'#%require)))
 
 (define-syntax (module-begin stx)
@@ -27,7 +29,7 @@
       (syntax-case stx ()
         ((_ . x)
          (with-syntax ((((reqs ...) . (body ...))
-                        (split-scheme-requires (checked-syntax->list #'x))))
+                        (split-racket-requires (checked-syntax->list #'x))))
            (datum->syntax
             stx
             (syntax-e #'(#%module-begin

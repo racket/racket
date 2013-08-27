@@ -1,4 +1,5 @@
 #lang racket/base
+(require racket/tcp)
 
 (define version-url "http://download.racket-lang.org/version.txt")
 (define timeout 30)
@@ -11,7 +12,6 @@
 ;; (require net/url)
 ;; (define (url->port url) (get-pure-port (string->url url)))
 
-(require scheme/tcp)
 (define (url->port url)
   (define-values [host path]
     (apply values (cdr (regexp-match #rx"^http://([^/:@]+)(/.*)$" url))))

@@ -1,5 +1,5 @@
-#lang scheme/base
-(require file/gzip scheme/file)
+#lang racket/base
+(require file/gzip racket/file)
 
 (define tar-block-size 512)
 (define tar-name-length 100)

@@ -23,10 +23,10 @@
 ;; Olin Shivers verified that he is fine with redistributing this code
 ;; under the LGPL.  (Verified personally by Eli Barzilay.)
 
-#lang scheme/base
+#lang racket/base
 
 (require srfi/optional
-         (only-in scheme/list take drop take-right drop-right split-at))
+         (only-in racket/list take drop take-right drop-right split-at))
 
 (provide first second
          third fourth

@@ -1,4 +1,4 @@
-(module cmdargs scheme/base
+(module cmdargs racket/base
 
   (provide split-command-line-args)
 

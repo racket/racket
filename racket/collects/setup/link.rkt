@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require racket/file
          racket/path
          setup/dirs)

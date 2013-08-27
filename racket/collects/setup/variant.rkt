@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require setup/dirs scheme/promise)
+(require setup/dirs racket/promise)
 
 (provide variant-suffix)
 

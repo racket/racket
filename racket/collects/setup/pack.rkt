@@ -1,10 +1,10 @@
 ;; Utilities for creating a .plt package
-(module pack scheme/base
+(module pack racket/base
   (require file/gzip
            net/base64
-           scheme/system
-           scheme/port
-           scheme/file
+           racket/system
+           racket/port
+           racket/file
            setup/getinfo)
 
   (provide pack
