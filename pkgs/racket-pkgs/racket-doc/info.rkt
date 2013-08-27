@@ -37,7 +37,8 @@
                      "scribble"
                      "compatibility-lib"
                      "future-visualizer"
-                     "distributed-places-doc"))
+                     "distributed-places-doc"
+                     "serialize-cstruct-lib"))
 
 (define pkg-desc "Base Racket documentation")
 

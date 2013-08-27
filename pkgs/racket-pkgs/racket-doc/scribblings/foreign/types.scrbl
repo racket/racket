@@ -1215,6 +1215,61 @@ expects arguments for both the super fields and the new ones:
 ]}
 
 
+
+@subsection{Serializable C Struct}
+
+@defmodule[ffi/serialize-cstruct]
+@(require (for-label racket/serialize))
+
+@defform/subs[(define-serializable-cstruct _id ([field-id type-expr] ...)
+                                           property ...)
+              [(property (code:line #:alignment alignment-expr)
+                         (code:line #:malloc-mode malloc-mode-expr)
+                         (code:line #:serialize-inplace)
+                         (code:line #:deserialize-inplace)
+                         (code:line #:property prop-expr val-expr))]]{
+
+Defines a new serializable C struct type similar to @racket[define-cstruct].
+Refer there for the requirements on @racket[_id], the field specification and
+the created bindings.
+
+Instances of this type fulfill the @racket[serializable?] predicate and can
+be used with @racket[serialize] and @racket[deserialize]. Serialization may
+fail if one of the fields contains an arbitrary pointer, an embedded
+ non-serializable C struct or a pointer to a non-serializable C struct.
+Array-types are supported as long as they don't contain one of these types.
+
+@racket[malloc-mode-expr] allows to control the memory allocation for
+this type during deserialization and @racket[make-id/mode]. It can
+ be one of the mode arguments to @racket[malloc], or a procedure
+@racketblock[(-> exact-positive-integer? cpointer?)] that allocates
+memory of the given size. The default is @racket[malloc] with
+@racket['atomic].
+
+When @racket[#:serialize-inplace] is specified, the serialized
+representation shares memory with the C struct object. While being more
+efficient, especially for large objects, changes to the object after
+serialization may lead to changes in the serialized representation.
+
+@racket[#:deserialize-inplace] reuses the memory of the serialized
+representation, if possible. This is more efficient for large objects,
+but may fall back to allocation via @racket[malloc-mode-expr] for cyclic
+structures. As the allocation mode of the serialized representation
+will be @racket['atomic] by default or may be arbitrary if
+@racket[#:serialize-inplace] is specified, inplace deserialisation
+should be used with caution whenever the object contains pointers.
+
+Additionally to the @racket[define-cstruct] bindings @racket[make-id/mode]
+is created. It behaves like @racket[make-id] but uses the mode or allocator
+specified via @racket[malloc-mode-expr].
+
+When the C struct contains pointers, it is advisable to use a custom
+allocator. It should be based on a non-moving-memory allocation like
+@racket['raw], potentially with manual freeing to avoid dangling pointers
+after garbage collection.
+}
+
+
 @; ------------------------------------------------------------
 
 @section{C Array Types}
