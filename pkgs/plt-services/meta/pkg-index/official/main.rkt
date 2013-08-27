@@ -620,8 +620,8 @@
 
   (define (delete! pkg-req)
     (when (and (package-exists? pkg)
-               (not (member (package-ref (package-info pkg) 'author)
-                            (current-user pkg-req #t))))
+               (not (member (current-user pkg-req #t)
+                            (author->list (package-ref (package-info pkg) 'author)))))
       (error 'pnr
              "Packages may only be modified by their authors: ~e"
              pkg))
