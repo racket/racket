@@ -38,7 +38,9 @@
                                                 #:redirections 25
                                                 #:status? #t))
   (and (string=? "200" (substring hs 9 12))
-       (fun ip)))
+       (begin0
+        (fun ip)
+        (close-input-port ip))))
 
 (define (url-path/no-slash url)
   (define p (url-path url))
