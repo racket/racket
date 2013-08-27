@@ -8,7 +8,8 @@
                "scribble-lib"
                "pconvert-lib"
                "compatibility-lib"))
-(define build-deps '("draw-lib"
+(define build-deps '("scheme-lib"
+                     "draw-lib"
                      "racket-test"
                      "sgl"
                      "snip-lib"

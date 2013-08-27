@@ -3,7 +3,9 @@
 (define collection 'multi)
 
 (define deps
-  '("base"
+  '("scheme-lib"
+    "srfi-lite-lib"
+    "base"
     "compatibility-lib"
     "draw-lib"
     "errortrace-lib"

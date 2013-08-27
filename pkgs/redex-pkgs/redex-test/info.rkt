@@ -12,7 +12,8 @@
                "redex-lib"
                "scribble-lib"
 	       "redex-examples"))
-(define build-deps '())
+(define build-deps '("scheme-lib"
+                     ))
 
 (define pkg-desc "tests for \"redex\"")
 

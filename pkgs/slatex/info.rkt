@@ -10,7 +10,8 @@
 (define mzscheme-launcher-names '("SLaTeX" "PDF SLaTeX"))
 (define mzscheme-launcher-libraries '("slatex-launcher.rkt"
                                       "pdf-slatex-launcher.rkt"))
-(define deps '("base"
+(define deps '("scheme-lib"
+               "base"
                "compatibility-lib"))
 (define build-deps '("eli-tester"
                      "racket-doc"

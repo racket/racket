@@ -2,7 +2,9 @@
 
 (define collection 'multi)
 
-(define deps '("base"
+(define deps '("scheme-lib"
+               "srfi-lite-lib"
+               "base"
                "pconvert-lib"
                "unstable-contract-lib"
                "unstable-list-lib"

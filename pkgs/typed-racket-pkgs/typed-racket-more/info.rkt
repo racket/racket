@@ -2,7 +2,9 @@
 
 (define collection 'multi)
 
-(define deps '("base"
+(define deps '("scheme-lib"
+               "srfi-lite-lib"
+               "base"
 	       "net-lib"
                "draw-lib"
                "rackunit-lib"

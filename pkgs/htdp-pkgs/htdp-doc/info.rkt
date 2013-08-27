@@ -11,7 +11,8 @@
     "htdp-lib"
     "sandbox-lib"
     "pict-lib"))
-(define build-deps '("compatibility-doc"
+(define build-deps '("scheme-lib"
+                     "compatibility-doc"
                      "draw-doc"
                      "drracket"
                      "gui-doc"

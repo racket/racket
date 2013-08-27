@@ -6,3 +6,4 @@
 (define pkg-desc "Testing framework")
 
 (define pkg-authors '(eli))
+(define build-deps '("scheme-lib"))

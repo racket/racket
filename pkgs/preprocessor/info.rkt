@@ -6,7 +6,8 @@
 (define mzscheme-launcher-libraries '("mzpp-run.rkt" "mztext-run.rkt"))
 
 (define scribblings '(("scribblings/preprocessor.scrbl" (multi-page) (legacy))))
-(define deps '("base"
+(define deps '("scheme-lib"
+               "base"
                "compatibility-lib"))
 (define build-deps '("racket-doc"
                      "scribble-lib"))

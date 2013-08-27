@@ -4,7 +4,8 @@
 
 (define deps '("base"))
 
-(define build-deps '("srfi-doc"
+(define build-deps '("srfi-lite-lib"
+                     "srfi-doc"
                      "web-server-doc"
                      "base"
                      "scribble-lib"

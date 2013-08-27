@@ -2,7 +2,9 @@
 
 (define collection 'multi)
 
-(define build-deps '("compatibility-doc"
+(define build-deps '("scheme-lib"
+                     "srfi-lite-lib"
+                     "compatibility-doc"
                      "r6rs-doc"
                      "srfi-doc"
                      "compatibility-lib"

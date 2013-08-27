@@ -21,6 +21,7 @@
                "gui-lib"
 	       "net-lib"
                "sandbox-lib"
+               "scheme-lib"
                "scribble-lib"
                "compatibility-lib"))
 

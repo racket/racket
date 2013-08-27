@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 (define deps '("typed-racket" "typed-racket-more" "unstable"))
-(define build-deps '("base"
+(define build-deps '("scheme-lib"
+                     "base"
                      "compatibility-lib"
                      "rackunit-lib"
                      "compiler-lib"

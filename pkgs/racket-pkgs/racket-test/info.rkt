@@ -25,7 +25,9 @@
                ;; for random testing:
                "redex-lib"))
 
-(define build-deps '("base"
+(define build-deps '("scheme-lib"
+                     "srfi-lite-lib"
+                     "base"
                      "data-lib"))
 
 (define pkg-desc "Base Racket test suites")

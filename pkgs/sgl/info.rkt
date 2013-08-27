@@ -5,7 +5,8 @@
 (define compile-omit-paths '("examples"))
 
 (define scribblings '(("scribblings/sgl.scrbl" (multi-page) (gui-library))))
-(define deps '("base"
+(define deps '("scheme-lib"
+               "base"
                "compatibility-lib"
                "gui-lib"))
 (define build-deps '("draw-doc"

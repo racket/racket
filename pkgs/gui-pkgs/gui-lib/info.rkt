@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 
-(define deps '("data-lib"
+(define deps '("srfi-lite-lib"
+               "data-lib"
                "base"
                "rackunit-lib"
                "syntax-color-lib"

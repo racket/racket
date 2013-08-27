@@ -1,7 +1,8 @@
 #lang info
 
 (define collection "honu")
-(define deps '("macro-debugger"
+(define deps '("scheme-lib"
+               "macro-debugger"
                "base"
                "parser-tools-lib"
                "rackunit-lib"))

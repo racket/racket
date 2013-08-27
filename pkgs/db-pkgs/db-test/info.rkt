@@ -10,3 +10,4 @@
 (define pkg-desc "tests for \"db\"")
 
 (define pkg-authors '(ryanc))
+(define build-deps '("srfi-lite-lib"))

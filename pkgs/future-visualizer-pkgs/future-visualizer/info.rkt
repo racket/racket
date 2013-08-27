@@ -7,7 +7,8 @@
                "draw-lib"
                "pict-lib"
                "gui-lib"))
-(define build-deps '("scribble-lib"
+(define build-deps '("scheme-lib"
+                     "scribble-lib"
                      "racket-doc"
                      "rackunit-lib"))
 

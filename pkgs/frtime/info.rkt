@@ -7,7 +7,8 @@
 (define compile-omit-paths '("demos" "tests"))
 
 (define scribblings '(("scribblings/frtime.scrbl" () (experimental 50))))
-(define deps '("base"
+(define deps '("srfi-lite-lib"
+               "base"
                "compatibility-lib"
                "drracket"
                "gui-lib"

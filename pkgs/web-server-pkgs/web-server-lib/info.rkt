@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 
-(define deps '("base"
+(define deps '("srfi-lite-lib"
+               "base"
 	       "net-lib"
                "compatibility-lib"
                "scribble-text-lib"

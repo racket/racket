@@ -4,7 +4,8 @@
 
 (define name "Calltrace")
 
-(define deps '("base"
+(define deps '("scheme-lib"
+               "base"
                "compatibility-lib"
                ))
 (define build-deps '("scribble-lib"

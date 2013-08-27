@@ -5,7 +5,8 @@
 (define deps '("base"
                "htdp"
                "drracket"))
-(define build-deps '("at-exp-lib"
+(define build-deps '("scheme-lib"
+                     "at-exp-lib"
                      "rackunit-lib"
                      "compatibility-lib"
                      "gui-lib"

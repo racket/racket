@@ -32,7 +32,8 @@
 (define tool-names '("Swindle"))
 (define tool-icons '(("swindle-icon.png" "swindle")))
 (define tool-urls  '("http://www.barzilay.org/Swindle/"))
-(define deps '("base"
+(define deps '("scheme-lib"
+               "base"
                "compatibility-lib"
                "drracket-plugin-lib"
                "gui-lib"

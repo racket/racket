@@ -1,6 +1,7 @@
 #lang info
 (define collection 'multi)
-(define build-deps '("racket-doc"
+(define build-deps '("scheme-lib"
+                     "racket-doc"
                      "base"
                      "errortrace-lib"
                      "scribble-lib"))

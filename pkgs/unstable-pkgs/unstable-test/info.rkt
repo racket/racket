@@ -3,7 +3,8 @@
 (define collection 'multi)
 
 (define deps '("base"))
-(define build-deps '("at-exp-lib"
+(define build-deps '("scheme-lib"
+                     "at-exp-lib"
                      "compatibility-lib"
                      "eli-tester"
                      "gui-lib"

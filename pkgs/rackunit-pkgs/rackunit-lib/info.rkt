@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 
-(define deps '("base"
+(define deps '("srfi-lite-lib"
+               "base"
                "data-lib"))
 
 (define pkg-desc "RackUnit testing framework")

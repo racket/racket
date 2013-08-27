@@ -1,6 +1,7 @@
 #lang info
 (define collection 'multi)
-(define deps '("base" 
+(define deps '("scheme-lib"
+               "base" 
                "net-lib"
                "sandbox-lib"))
 

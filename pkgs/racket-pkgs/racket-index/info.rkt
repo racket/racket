@@ -4,7 +4,8 @@
 
 (define deps '("base"
                "scribble-lib"))
-(define build-deps '("at-exp-lib"))
+(define build-deps '("scheme-lib"
+                     "at-exp-lib"))
 
 (define pkg-desc "Racket Documentation driver")
 

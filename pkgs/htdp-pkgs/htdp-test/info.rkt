@@ -3,7 +3,9 @@
 (define collection 'multi)
 (define deps '("base"
                "htdp-lib"))
-(define build-deps '("compatibility-lib"
+(define build-deps '("scheme-lib"
+                     "srfi-lite-lib"
+                     "compatibility-lib"
                      "gui-lib"
                      "racket-test"
                      "rackunit-lib"

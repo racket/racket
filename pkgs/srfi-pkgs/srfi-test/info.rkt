@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 (define deps '())
-(define build-deps '("base"
+(define build-deps '("scheme-lib"
+                     "base"
                      "compatibility-lib"
                      "rackunit-lib"
                      "srfi-lib"))

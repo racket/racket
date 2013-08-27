@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 
-(define deps '("base"
+(define deps '("scheme-lib"
+               "base"
                "srfi-lite-lib"
                "r5rs-lib"
                "r6rs-lib"

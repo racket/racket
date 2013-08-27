@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 
-(define build-deps '("base"
+(define build-deps '("scheme-lib"
+                     "base"
                      "scribble-lib"
                      "srfi-lib"
                      "racket-doc"

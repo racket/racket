@@ -2,7 +2,8 @@
 
 (define collection "deinprogramm")
 
-(define deps '("base"
+(define deps '("scheme-lib"
+               "base"
                "compatibility-lib"
                "errortrace-lib"
                "gui-lib"

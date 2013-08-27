@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 
-(define build-deps '("gui-doc"
+(define build-deps '("scheme-lib"
+                     "gui-doc"
                      "pict-doc"
                      "at-exp-lib"
                      "base"

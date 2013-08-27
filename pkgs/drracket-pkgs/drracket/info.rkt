@@ -2,7 +2,8 @@
 
 (define collection 'multi)
 
-(define deps '("data-lib"
+(define deps '("scheme-lib"
+               "data-lib"
                "compiler-lib"
                "base"
                "planet-lib"
