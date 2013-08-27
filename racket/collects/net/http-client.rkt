@@ -73,6 +73,7 @@
                          #:version [version-bs #"1.1"]
                          #:method [method-bss #"GET"]
                          #:headers [headers-bs empty]
+                         ;; xxx maybe support other kinds of data (ports and writing functions)
                          #:data [data-bsf #f])
   (match-define (http-conn host to from _) hc)
   (fprintf to "~a ~a HTTP/~a\r\n" method-bss url-bs version-bs)
