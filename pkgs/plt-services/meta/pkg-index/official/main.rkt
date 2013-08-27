@@ -133,8 +133,8 @@
     [else
      (for ([(p more-pi) (in-hash pis)])
        (define pi (if (package-exists? p)
-                      (package-info p)
-                      #hash()))
+                    (package-info p)
+                    #hash()))
        (define new-pi (hash-deep-merge pi more-pi))
        (define updated-pi (let ([now (current-seconds)])
                             (for/fold ([pi new-pi]) ([k (in-list '(last-edit last-checked last-updated))])
@@ -146,10 +146,10 @@
 (define (hash-deep-merge ht more-ht)
   (for/fold ([ht ht])
       ([(k new-v) (in-hash more-ht)])
-    (hash-update ht k 
+    (hash-update ht k
                  (λ (old-v)
                    (cond
-                     [(not old-v) 
+                     [(not old-v)
                       new-v]
                      [(hash? old-v)
                       (hash-deep-merge old-v new-v)]
@@ -208,8 +208,9 @@
 
 (define (format-time s)
   (if s
-    (parameterize ([date-display-format 'iso-8601])
-      (date->string (seconds->date s #f) #t))
+    (with-handlers ([exn:fail? (λ (x) "")])
+      (parameterize ([date-display-format 'iso-8601])
+        (date->string (seconds->date s #f) #t)))
     ""))
 
 (define (package-url->useful-url pkg-url-str)
