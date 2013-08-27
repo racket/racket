@@ -170,7 +170,10 @@ static int mz_inotify_add(char *filename)
     s->wds = new_wds;
     s->size = new_size;
     for (i = s->count; i < s->size; i++)
+    {
       s->wds[i].wd = -1;
+      s->wds[i].refcount = 0;
+    }
   }
 
   wd = inotify_add_watch(s->fd, filename, 
