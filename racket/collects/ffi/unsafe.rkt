@@ -1316,10 +1316,10 @@
 ;; Simple structs: call this with a list of types, and get a type that marshals
 ;; C structs to/from Scheme lists.
 (define* (_list-struct #:alignment [alignment #f] type . types)
-  (let ([stype   (make-cstruct-type types #f alignment)]
-        [offsets (compute-offsets types alignment)]
-        [len     (add1 (length types))]
-        [types   (cons type types)])
+  (let* ([types   (cons type types)]
+         [stype   (make-cstruct-type types #f alignment)]
+         [offsets (compute-offsets types alignment)]
+         [len     (length types)])
     (make-ctype stype
       (lambda (vals)
         (unless (list? vals)
