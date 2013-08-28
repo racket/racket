@@ -669,12 +669,12 @@ path/s is either such a string or a list of them.
 "pkgs/db-pkgs/db-lib/db/private/odbc/main.rkt" drdr:command-line #f
 "pkgs/db-pkgs/db-test/tests/db/programs/web-test.rkt" drdr:command-line #f
 "pkgs/deinprogramm" responsible (sperber)
-"pkgs/deinprogramm/convert-explicit.scm" drdr:command-line #f
-"pkgs/deinprogramm/define-record-procedures.scm" drdr:command-line #f
-"pkgs/deinprogramm/line3d.scm" drdr:command-line #f
-"pkgs/deinprogramm/quickcheck/quickcheck.scm" drdr:command-line #f
-"pkgs/deinprogramm/quickcheck/random.scm" drdr:command-line #f
-"pkgs/deinprogramm/run-dmda-code.rkt" drdr:command-line (mzc *)
+"pkgs/deinprogramm/deinprogramm/convert-explicit.scm" drdr:command-line #f
+"pkgs/deinprogramm/deinprogramm/define-record-procedures.scm" drdr:command-line #f
+"pkgs/deinprogramm/deinprogramm/line3d.scm" drdr:command-line #f
+"pkgs/deinprogramm/deinprogramm/quickcheck/quickcheck.scm" drdr:command-line #f
+"pkgs/deinprogramm/deinprogramm/quickcheck/random.scm" drdr:command-line #f
+"pkgs/deinprogramm/deinprogramm/run-dmda-code.rkt" drdr:command-line (mzc *)
 "pkgs/distributed-places-pkgs" responsible (tewk)
 "pkgs/distributed-places-pkgs/distributed-places-lib/racket/place/distributed/examples/hello-world.rkt" drdr:command-line #f
 "pkgs/distro-build" responsible (mflatt)
@@ -869,7 +869,6 @@ path/s is either such a string or a list of them.
 "pkgs/htdp-pkgs/htdp-lib/stepper" responsible (clements)
 "pkgs/htdp-pkgs/htdp-lib/teachpack" responsible (matthias)
 "pkgs/htdp-pkgs/htdp-lib/teachpack/balls.ss" drdr:command-line (mzc *)
-"pkgs/htdp-pkgs/htdp-lib/teachpack/deinprogramm" responsible (sperber)
 "pkgs/htdp-pkgs/htdp-lib/teachpack/htdp/graphing.rkt" drdr:command-line (mzc *)
 "pkgs/htdp-pkgs/htdp-lib/test-engine" responsible (kathyg)
 "pkgs/htdp-pkgs/htdp-test/2htdp/tests/batch-io-xexpr.rkt" drdr:command-line (raco "make" *)
