@@ -157,13 +157,10 @@ name, as do the various procedures that are bound by @racket[struct].
 
 If @racket[#:methods gen:name method-defs] is provided, then
 @racket[gen:name] must be a transformer binding for the static
-information about a generic group produced by @racket[define-generics].
-The @racket[method-defs] define the methods of @racket[gen:name].
-If any method of @racket[gen:name] is not defined, then @racket[#f] is used
-to signify that the structure type does not implement the particular
-method. At least one method definition must be provided if this keyword
-is used. A @racket[define/generic] form may appear in @racket[method-defs].
-Auxiliary definitions and expressions may also appear in @racket[method-defs].
+information about a generic interface produced by @racket[define-generics].
+The @racket[method-defs] define the methods of the @racket[gen:name]
+interface. A @racket[define/generic] form or auxiliary definitions
+and expressions may also appear in @racket[method-defs].
 
 If the @racket[#:omit-define-syntaxes] option is supplied, then
 @racket[id] is not bound as a transformer. If the
