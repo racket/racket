@@ -617,7 +617,7 @@
                            (begin
                              (message-box (string-constant drscheme)
                                           (format (string-constant already-added-teachpack)
-                                                  (cadr teachpack))
+                                                  (tp-require->str teachpack))
                                           #:dialog-mixin frame:focus-table-mixin)
                              settings)
                            
@@ -634,7 +634,7 @@
                               new-tps))))
                      settings)))
              (λ (settings name) 
-               (let ([new-tps (filter (λ (x) (not (equal? (cadr x) name)))
+               (let ([new-tps (filter (λ (x) (not (equal? (tp-require->str x) name)))
                                       (htdp-lang-settings-teachpacks settings))])
                  (preferences:set 'drracket:htdp:last-set-teachpacks new-tps)
                  (make-htdp-lang-settings
