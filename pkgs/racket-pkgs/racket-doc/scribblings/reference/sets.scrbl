@@ -78,7 +78,7 @@ returns @racket[#f] otherwise.
 }
 
 @deftogether[(
-@defproc[(set-immutable? [x any/c]) boolean?]
+@defproc[(set? [x any/c]) boolean?]
 @defproc[(set-mutable? [x any/c]) boolean?]
 @defproc[(set-weak? [x any/c]) boolean?]
 )]{
@@ -90,9 +90,9 @@ returns @racket[#f] otherwise.
 }
 
 @deftogether[(
-@defproc[(set [v any/c] ...) (and/c generic-set? set-equal? set-immutable?)]
-@defproc[(seteqv [v any/c] ...) (and/c generic-set? set-eqv? set-immutable?)]
-@defproc[(seteq [v any/c] ...) (and/c generic-set? set-eq? set-immutable?)]
+@defproc[(set [v any/c] ...) (and/c generic-set? set-equal? set?)]
+@defproc[(seteqv [v any/c] ...) (and/c generic-set? set-eqv? set?)]
+@defproc[(seteq [v any/c] ...) (and/c generic-set? set-eq? set?)]
 @defproc[(mutable-set [v any/c] ...) (and/c generic-set? set-equal? set-mutable?)]
 @defproc[(mutable-seteqv [v any/c] ...) (and/c generic-set? set-eqv? set-mutable?)]
 @defproc[(mutable-seteq [v any/c] ...) (and/c generic-set? set-eq? set-mutable?)]
@@ -110,9 +110,9 @@ replaced by a later element that is @racket[equal?] or @racket[eqv?] but not
 }
 
 @deftogether[(
-@defproc[(list->set [lst list?]) (and/c generic-set? set-equal? set-immutable?)]
-@defproc[(list->seteqv [lst list?]) (and/c generic-set? set-eqv? set-immutable?)]
-@defproc[(list->seteq [lst list?]) (and/c generic-set? set-eq? set-immutable?)]
+@defproc[(list->set [lst list?]) (and/c generic-set? set-equal? set?)]
+@defproc[(list->seteqv [lst list?]) (and/c generic-set? set-eqv? set?)]
+@defproc[(list->seteq [lst list?]) (and/c generic-set? set-eq? set?)]
 @defproc[(list->mutable-set [lst list?]) (and/c generic-set? set-equal? set-mutable?)]
 @defproc[(list->mutable-seteqv [lst list?]) (and/c generic-set? set-eqv? set-mutable?)]
 @defproc[(list->mutable-seteq [lst list?]) (and/c generic-set? set-eq? set-mutable?)]

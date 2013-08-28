@@ -28,7 +28,7 @@
       [(mutable-or-weak) (or/c set-weak? set-mutable?)]
       [(mutable) set-mutable?]
       [(weak) set-weak?]
-      [(immutable) set-immutable?]
+      [(immutable) set?]
       [else (raise-arguments-error 'set/c
                                    "invalid #:kind argument"
                                    "#:kind argument" kind)]))
@@ -81,7 +81,7 @@
       [(mutable-or-weak) (lambda (x) (or (set-mutable? x) (set-weak? x)))]
       [(mutable) set-mutable?]
       [(weak) set-weak?]
-      [(immutable) set-immutable?]))
+      [(immutable) set?]))
   (lambda (x)
     (and (generic-set? x) (cmp? x) (kind? x))))
 
@@ -109,7 +109,7 @@
      (unless (set-weak? x)
        (raise-blame-error b x "expected a weak set"))]
     [(immutable)
-     (unless (set-immutable? x)
+     (unless (set? x)
        (raise-blame-error b x "expected an immutable set"))]))
 
 (define (set-contract-projection mode)

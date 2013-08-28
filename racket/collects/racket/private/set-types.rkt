@@ -14,7 +14,7 @@
          list->weak-set list->weak-seteq list->weak-seteqv
          list->mutable-set list->mutable-seteq list->mutable-seteqv
          set-eq? set-eqv? set-equal?
-         set-weak? set-mutable? set-immutable?
+         set-weak? set-mutable? set?
          for/set for/seteq for/seteqv
          for*/set for*/seteq for*/seteqv
          for/weak-set for/weak-seteq for/weak-seteqv
@@ -776,8 +776,8 @@
   (dprintf "set-equal?\n")
   (and (custom-set? x) (hash-equal? (custom-set-table x))))
 
-(define (set-immutable? x)
-  (dprintf "set-immutable?\n")
+(define (set? x)
+  (dprintf "set?\n")
   (immutable-custom-set? x))
 (define (set-mutable? x)
   (dprintf "set-mutable?\n")
