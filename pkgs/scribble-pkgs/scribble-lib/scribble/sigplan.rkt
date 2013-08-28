@@ -27,6 +27,9 @@
  [copyrightdata
   (->* () () #:rest (listof pre-content?)
        block?)]
+ [doi
+  (->* () () #:rest (listof pre-content?)
+       block?)]
  [category
   (->* (pre-content? pre-content? pre-content?)
        ((or/c false/c pre-content?))
@@ -124,6 +127,13 @@
    (make-style 'pretitle null)
    (make-element
     (make-style "SCopyrightData" sigplan-extras)
+    (decode-content what))))
+
+(define (doi . what)
+  (make-paragraph
+   (make-style 'pretitle null)
+   (make-element
+    (make-style "Sdoi" sigplan-extras)
     (decode-content what))))
 
 ;; ----------------------------------------
