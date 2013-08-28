@@ -381,6 +381,8 @@ TODO
   
   (define after-expression (make-parameter #f))
   
+  (define do-dance (make-parameter #f))
+  
   (define text-mixin
     (mixin ((class->interface text%)
             text:ports<%>
@@ -1087,31 +1089,8 @@ TODO
                              (define results
                                (call-with-values
                                 (λ ()
-                                  ;; we duplicate the 'expand-syntax-to-top-form' dance that eval-syntax
-                                  ;; does here, so that we can put 'with-stack-checkpoint's in to limit
-                                  ;; the amount of DrRacket code we see in stacktraces
-                                  (let loop ([stx sexp/syntax/eof])
-                                    (define top-expanded (with-stack-checkpoint (expand-syntax-to-top-form stx)))
-                                    (syntax-case top-expanded (begin)
-                                      [(begin a1 . args)
-                                       (let lloop ([args (syntax->list #'(a1 . args))])
-                                         (cond
-                                           [(null? (cdr args))
-                                            (loop (car args))]
-                                           [else
-                                            (loop (car args))
-                                            (lloop (cdr args))]))]
-                                      [_ 
-                                       (let ([expanded (with-stack-checkpoint (expand-syntax top-expanded))])
-                                         (call-with-continuation-prompt
-                                          (λ ()
-                                            (with-stack-checkpoint (eval-syntax expanded)))
-                                          (default-continuation-prompt-tag)
-                                          (λ args
-                                            (apply
-                                             abort-current-continuation 
-                                             (default-continuation-prompt-tag)
-                                             args))))])))
+                                  (parameterize ([do-dance #t])
+                                    (eval-syntax sexp/syntax/eof)))
                                 list))
                              (parameterize ([pretty-print-columns pretty-print-width])
                                (for ([x (in-list results)])
@@ -1249,6 +1228,41 @@ TODO
           (set! user-exit-code #f)
           
           (reset-logger-messages)
+          
+          (current-eval
+           (let ([oe (current-eval)])
+             (define (drracket-eval-handler sexp/syntax)
+               (cond
+                 [(do-dance)
+                  ;; we duplicate the 'expand-syntax-to-top-form' dance that eval-syntax
+                  ;; does here, so that we can put 'with-stack-checkpoint's in to limit
+                  ;; the amount of DrRacket code we see in stacktraces
+                  (parameterize ([do-dance #f])
+                    (let loop ([stx sexp/syntax])
+                      (define top-expanded (with-stack-checkpoint (expand-syntax-to-top-form stx)))
+                      (syntax-case top-expanded (begin)
+                        [(begin a1 . args)
+                         (let lloop ([args (syntax->list #'(a1 . args))])
+                           (cond
+                             [(null? (cdr args))
+                              (loop (car args))]
+                             [else
+                              (loop (car args))
+                              (lloop (cdr args))]))]
+                        [_ 
+                         (let ([expanded (with-stack-checkpoint (expand-syntax top-expanded))])
+                           (call-with-continuation-prompt
+                            (λ ()
+                              (with-stack-checkpoint (oe expanded)))
+                            (default-continuation-prompt-tag)
+                            (λ args
+                              (apply
+                               abort-current-continuation 
+                               (default-continuation-prompt-tag)
+                               args))))])))]
+                 [else
+                  (oe sexp/syntax)]))
+             drracket-eval-handler))
           
           (let* ([init-thread-complete (make-semaphore 0)]
                  [goahead (make-semaphore)])
