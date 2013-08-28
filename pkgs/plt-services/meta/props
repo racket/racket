@@ -1027,6 +1027,21 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-doc/compatibility" responsible (asumu stamourv)
 "pkgs/racket-pkgs/racket-doc/data" responsible (ryanc samth)
 "pkgs/racket-pkgs/racket-doc/dynext" responsible (mflatt)
+"pkgs/racket-pkgs/racket-doc/ffi/examples" responsible (eli)
+"pkgs/racket-pkgs/racket-doc/ffi/examples/c-printf.rkt" drdr:command-line (mzc "-k" *)
+"pkgs/racket-pkgs/racket-doc/ffi/examples/esd.rkt" drdr:command-line (mzc *)
+"pkgs/racket-pkgs/racket-doc/ffi/examples/magick.rkt" drdr:command-line (mzc *)
+"pkgs/racket-pkgs/racket-doc/ffi/examples/sndfile.rkt" responsible (clements) drdr:command-line (mzc *)
+"pkgs/racket-pkgs/racket-doc/ffi/examples/tcl.rkt" drdr:command-line (mzc *)
+"pkgs/racket-pkgs/racket-doc/ffi/examples/use-c-printf.rkt" drdr:command-line (mzc "-k" *)
+"pkgs/racket-pkgs/racket-doc/ffi/examples/use-esd.rkt" drdr:command-line (mzc *)
+"pkgs/racket-pkgs/racket-doc/ffi/examples/use-magick.rkt" drdr:command-line (mzc *)
+"pkgs/racket-pkgs/racket-doc/ffi/examples/use-sndfile.rkt" drdr:command-line (mzc *)
+"pkgs/racket-pkgs/racket-doc/ffi/examples/use-tcl.rkt" drdr:command-line (mzc *)
+"pkgs/racket-pkgs/racket-doc/ffi/examples/use-xmmsctrl.rkt" drdr:command-line #f
+"pkgs/racket-pkgs/racket-doc/ffi/examples/use-xosd.rkt" drdr:command-line (mzc *)
+"pkgs/racket-pkgs/racket-doc/ffi/examples/xmmsctrl.rkt" drdr:command-line #f
+"pkgs/racket-pkgs/racket-doc/ffi/examples/xosd.rkt" drdr:command-line (mzc *)
 "pkgs/racket-pkgs/racket-doc/file" responsible (mflatt)
 "pkgs/racket-pkgs/racket-doc/help" responsible (robby)
 "pkgs/racket-pkgs/racket-doc/json" responsible (eli)
@@ -1441,6 +1456,8 @@ path/s is either such a string or a list of them.
 "pkgs/redex-pkgs/redex-test/redex/tests/test-docs-complete.rkt" drdr:command-line (raco "make" *)
 "pkgs/redex-pkgs/redex-test/redex/tests/tl-test.rkt" drdr:command-line (mzc *)
 "pkgs/sandbox-lib" responsible (eli)
+"pkgs/scheme-lib" responsible (mflatt)
+"pkgs/scheme-lib/scheme/match.rkt" responsible (samth)
 "pkgs/schemeunit" responsible (jay)
 "pkgs/scribble-pkgs" responsible (mflatt eli)
 "pkgs/scribble-pkgs/scribble-lib/help/help.rkt" drdr:command-line (mzc *)
@@ -1571,21 +1588,6 @@ path/s is either such a string or a list of them.
 "racket" responsible (mflatt)
 "racket/collects/dynext/private/stdio.rkt" drdr:command-line #f
 "racket/collects/ffi" responsible (eli mflatt)
-"racket/collects/ffi/examples" responsible (eli)
-"racket/collects/ffi/examples/c-printf.rkt" drdr:command-line (mzc "-k" *)
-"racket/collects/ffi/examples/esd.rkt" drdr:command-line (mzc *)
-"racket/collects/ffi/examples/magick.rkt" drdr:command-line (mzc *)
-"racket/collects/ffi/examples/sndfile.rkt" responsible (clements) drdr:command-line (mzc *)
-"racket/collects/ffi/examples/tcl.rkt" drdr:command-line (mzc *)
-"racket/collects/ffi/examples/use-c-printf.rkt" drdr:command-line (mzc "-k" *)
-"racket/collects/ffi/examples/use-esd.rkt" drdr:command-line (mzc *)
-"racket/collects/ffi/examples/use-magick.rkt" drdr:command-line (mzc *)
-"racket/collects/ffi/examples/use-sndfile.rkt" drdr:command-line (mzc *)
-"racket/collects/ffi/examples/use-tcl.rkt" drdr:command-line (mzc *)
-"racket/collects/ffi/examples/use-xmmsctrl.rkt" drdr:command-line #f
-"racket/collects/ffi/examples/use-xosd.rkt" drdr:command-line (mzc *)
-"racket/collects/ffi/examples/xmmsctrl.rkt" drdr:command-line #f
-"racket/collects/ffi/examples/xosd.rkt" drdr:command-line (mzc *)
 "racket/collects/ffi/objc.rkt" drdr:command-line (mzc *)
 "racket/collects/ffi/unsafe/objc.rkt" drdr:command-line (mzc *)
 "racket/collects/racket/contract" responsible (robby)
@@ -1598,7 +1600,6 @@ path/s is either such a string or a list of them.
 "racket/collects/raco/main.rkt" drdr:command-line #f
 "racket/collects/raco/raco.rkt" drdr:command-line #f
 "racket/collects/s-exp" responsible (eli mflatt)
-"racket/collects/scheme/match.rkt" responsible (samth)
 "racket/collects/setup/main.rkt" drdr:command-line #f
 "racket/collects/setup/setup-go.rkt" drdr:command-line #f
 "racket/collects/setup/unixstyle-install.rkt" drdr:command-line (mzc *)
