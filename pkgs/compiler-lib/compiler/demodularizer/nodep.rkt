@@ -210,6 +210,6 @@
          ([modidx module-path-index?]
           [provide->toplevel (symbol? exact-nonnegative-integer? . -> . exact-nonnegative-integer?)])]
  [get-modvar-rewrite/c contract?]
- [current-excluded-modules (parameter/c set?)]
+ [current-excluded-modules (parameter/c generic-set?)]
  [nodep-file (-> path-string?
                  (values compilation-top? lang-info/c module-path-index? get-modvar-rewrite/c))])

@@ -4,7 +4,7 @@
          racket/stream
          (for-syntax racket/base))
 
-(provide gen:set set? set-implements?
+(provide gen:set generic-set? set-implements?
 
          set-empty? set-member? set-count
          set=? subset? proper-subset?
@@ -56,7 +56,7 @@
 
 (define (list-union s . sets)
   (for/fold ([s1 s]) ([s2 (in-list sets)] [i (in-naturals 1)])
-    (unless (set? s2)
+    (unless (generic-set? s2)
       (apply raise-argument-error 'set-union "list?" i s sets))
     (for/fold ([s1 s1]) ([x (in-list s2)])
       (list-add s1 x))))
@@ -195,8 +195,8 @@
   (for/sum ([x (*in-set s)]) 1))
 
 (define (fallback-set=? s1 s2)
-  (unless (set? s2)
-    (raise-argument-error 'set=? "set?" 1 s1 s2))
+  (unless (generic-set? s2)
+    (raise-argument-error 'set=? "generic-set?" 1 s1 s2))
   (or (eq? s1 s2)
       (cond
         [(set-implements? s2 'set=?) (set=? s1 s2)]
@@ -204,14 +204,14 @@
                    (subset? s2 s1))])))
 
 (define (fallback-proper-subset? s1 s2)
-  (unless (set? s2)
-    (raise-argument-error 'proper-subset? "set?" 1 s1 s2))
+  (unless (generic-set? s2)
+    (raise-argument-error 'proper-subset? "generic-set?" 1 s1 s2))
   (and (subset? s1 s2)
        (not (subset? s2 s1))))
 
 (define (fallback-subset? s1 s2)
-  (unless (set? s2)
-    (raise-argument-error 'subset? "set?" 1 s1 s2))
+  (unless (generic-set? s2)
+    (raise-argument-error 'subset? "generic-set?" 1 s1 s2))
   (for/and ([x (*in-set s1)])
     (set-member? s2 x)))
 
@@ -247,16 +247,16 @@
   (cond
     [(set-implements? s 'set-add)
      (for/fold ([s1 s]) ([s2 (in-list sets)] [i (in-naturals 1)])
-       (unless (set? s2)
-         (apply raise-argument-error 'set-union "set?" i s sets))
+       (unless (generic-set? s2)
+         (apply raise-argument-error 'set-union "generic-set?" i s sets))
        (for/fold ([s1 s1]) ([x (*in-set s2)])
          (set-add s1 x)))]
     [else (raise-support-error 'set-union s)]))
 
 (define (fallback-intersect s . sets)
   (for ([s2 (in-list sets)] [i (in-naturals 1)])
-    (unless (set? s2)
-      (apply raise-argument-error 'set-intersect "set?" i s sets)))
+    (unless (generic-set? s2)
+      (apply raise-argument-error 'set-intersect "generic-set?" i s sets)))
   (define (keep? x)
     (for/and ([s2 (in-list sets)])
       (set-member? s2 x)))
@@ -271,8 +271,8 @@
 
 (define (fallback-subtract s . sets)
   (for ([s2 (in-list sets)] [i (in-naturals 1)])
-    (unless (set? s2)
-      (apply raise-argument-error 'set-subtract "set?" i s sets)))
+    (unless (generic-set? s2)
+      (apply raise-argument-error 'set-subtract "generic-set?" i s sets)))
   (define (remove? x)
     (for/or ([s2 (in-list sets)])
       (set-member? s2 x)))
@@ -287,8 +287,13 @@
 
 (define (fallback-symmetric-difference s . sets)
   (for ([s2 (in-list sets)] [i (in-naturals 1)])
-    (unless (set? s2)
-      (apply raise-argument-error 'set-symmetric-difference "set?" i s sets)))
+    (unless (generic-set? s2)
+      (apply raise-argument-error
+             'set-symmetric-difference
+             "generic-set?"
+             i
+             s
+             sets)))
   (define (keep? x)
     (even?
      (for/sum ([s2 (in-list sets)]
@@ -330,8 +335,8 @@
   (cond
     [(set-implements? s 'set-add!)
      (for ([s2 (in-list sets)] [i (in-naturals 1)])
-       (unless (set? s2)
-         (apply raise-argument-error 'set-union! "set?" i s sets))
+       (unless (generic-set? s2)
+         (apply raise-argument-error 'set-union! "generic-set?" i s sets))
        (for ([x (*in-set s2)])
          (set-add! s x)))]
     [else (raise-support-error 'set-union! s)]))
@@ -340,8 +345,8 @@
   (cond
     [(set-implements? s 'set-remove!)
      (for ([s2 (in-list sets)] [i (in-naturals 1)])
-       (unless (set? s2)
-         (apply raise-argument-error 'set-intersect! "set?" i s sets)))
+       (unless (generic-set? s2)
+         (apply raise-argument-error 'set-intersect! "generic-set?" i s sets)))
      (define (keep? x)
        (for/and ([s2 (in-list sets)])
          (set-member? s2 x)))
@@ -356,8 +361,8 @@
   (cond
     [(set-implements? s 'set-remove!)
      (for ([s2 (in-list sets)] [i (in-naturals 1)])
-       (unless (set? s2)
-         (apply raise-argument-error 'set-subtract! "set?" i s sets)))
+       (unless (generic-set? s2)
+         (apply raise-argument-error 'set-subtract! "generic-set?" i s sets)))
      (define (remove? x)
        (for/or ([s2 (in-list sets)])
          (set-member? s2 x)))
@@ -372,9 +377,9 @@
   (cond
     [(set-implements? s 'set-remove!)
      (for ([s2 (in-list sets)] [i (in-naturals 1)])
-       (unless (set? s2)
+       (unless (generic-set? s2)
          (define name 'set-symmetric-difference!)
-         (apply raise-argument-error name "set?" i s sets)))
+         (apply raise-argument-error name "generic-set?" i s sets)))
      (define (keep? x)
        (even?
          (for/sum ([s2 (in-list sets)]
@@ -397,11 +402,11 @@
 
 (define (set-implements/c . syms)
   (if (null? syms)
-      set?
+      generic-set?
       (flat-named-contract
         `(set-implements/c . ,syms)
         (lambda (x)
-          (and (set? x)
+          (and (generic-set? x)
                (for/and ([sym (in-list syms)])
                  (set-implements? x sym)))))))
 
@@ -488,3 +493,5 @@
    (define set-intersect! fallback-intersect!)
    (define set-subtract! fallback-subtract!)
    (define set-symmetric-difference! fallback-symmetric-difference!)])
+
+(define (generic-set? x) (set? x))

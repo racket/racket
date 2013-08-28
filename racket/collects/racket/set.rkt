@@ -83,10 +83,10 @@
       [(weak) set-weak?]
       [(immutable) set-immutable?]))
   (lambda (x)
-    (and (set? x) (cmp? x) (kind? x))))
+    (and (generic-set? x) (cmp? x) (kind? x))))
 
 (define (set-contract-check cmp kind b x)
-  (unless (set? x)
+  (unless (generic-set? x)
     (raise-blame-error b x "expected a set"))
   (case cmp
     [(equal)
@@ -136,43 +136,43 @@
            (define-syntax-rule (redirect [id expr] ...)
              (redirect-generics mode gen:set x [id (method 'id expr)] ...))
            (redirect
-             [set-member? (-> set? elem/c boolean?)]
-             [set-empty? (or/c (-> set? boolean?) #f)]
-             [set-count (or/c (-> set? exact-nonnegative-integer?) #f)]
-             [set=? (or/c (-> set? ctc boolean?) #f)]
-             [subset? (or/c (-> set? ctc boolean?) #f)]
-             [proper-subset? (or/c (-> set? ctc boolean?) #f)]
-             [set-map (or/c (-> set? (-> elem/c any/c) list?) #f)]
-             [set-for-each (or/c (-> set? (-> elem/c any) void?) #f)]
-             [set-copy (or/c (-> set? set?) #f)]
-             [in-set (or/c (-> set? sequence?) #f)]
-             [set->list (or/c (-> set? (listof elem/c)) #f)]
-             [set->stream (or/c (-> set? stream?) #f)]
-             [set-first (or/c (-> set? elem/c) #f)]
-             [set-rest (or/c (-> set? ctc) #f)]
-             [set-add (or/c (-> set? elem/c ctc) #f)]
-             [set-remove (or/c (-> set? elem/c ctc) #f)]
-             [set-clear (or/c (-> set? ctc) #f)]
-             [set-copy-clear (or/c (-> set? set?) #f)]
+             [set-member? (-> generic-set? elem/c boolean?)]
+             [set-empty? (or/c (-> generic-set? boolean?) #f)]
+             [set-count (or/c (-> generic-set? exact-nonnegative-integer?) #f)]
+             [set=? (or/c (-> generic-set? ctc boolean?) #f)]
+             [subset? (or/c (-> generic-set? ctc boolean?) #f)]
+             [proper-subset? (or/c (-> generic-set? ctc boolean?) #f)]
+             [set-map (or/c (-> generic-set? (-> elem/c any/c) list?) #f)]
+             [set-for-each (or/c (-> generic-set? (-> elem/c any) void?) #f)]
+             [set-copy (or/c (-> generic-set? generic-set?) #f)]
+             [in-set (or/c (-> generic-set? sequence?) #f)]
+             [set->list (or/c (-> generic-set? (listof elem/c)) #f)]
+             [set->stream (or/c (-> generic-set? stream?) #f)]
+             [set-first (or/c (-> generic-set? elem/c) #f)]
+             [set-rest (or/c (-> generic-set? ctc) #f)]
+             [set-add (or/c (-> generic-set? elem/c ctc) #f)]
+             [set-remove (or/c (-> generic-set? elem/c ctc) #f)]
+             [set-clear (or/c (-> generic-set? ctc) #f)]
+             [set-copy-clear (or/c (-> generic-set? generic-set?) #f)]
              [set-union
-              (or/c (->* [set?] [] #:rest (listof ctc) ctc) #f)]
+              (or/c (->* [generic-set?] [] #:rest (listof ctc) ctc) #f)]
              [set-intersect
-              (or/c (->* [set?] [] #:rest (listof ctc) ctc) #f)]
+              (or/c (->* [generic-set?] [] #:rest (listof ctc) ctc) #f)]
              [set-subtract
-              (or/c (->* [set?] [] #:rest (listof ctc) ctc) #f)]
+              (or/c (->* [generic-set?] [] #:rest (listof ctc) ctc) #f)]
              [set-symmetric-difference
-              (or/c (->* [set?] [] #:rest (listof ctc) ctc) #f)]
-             [set-add! (or/c (-> set? elem/c void?) #f)]
-             [set-remove! (or/c (-> set? elem/c void?) #f)]
-             [set-clear! (or/c (-> set? void?) #f)]
+              (or/c (->* [generic-set?] [] #:rest (listof ctc) ctc) #f)]
+             [set-add! (or/c (-> generic-set? elem/c void?) #f)]
+             [set-remove! (or/c (-> generic-set? elem/c void?) #f)]
+             [set-clear! (or/c (-> generic-set? void?) #f)]
              [set-union!
-              (or/c (->* [set?] [] #:rest (listof ctc) void?) #f)]
+              (or/c (->* [generic-set?] [] #:rest (listof ctc) void?) #f)]
              [set-intersect!
-              (or/c (->* [set?] [] #:rest (listof ctc) void?) #f)]
+              (or/c (->* [generic-set?] [] #:rest (listof ctc) void?) #f)]
              [set-subtract!
-              (or/c (->* [set?] [] #:rest (listof ctc) void?) #f)]
+              (or/c (->* [generic-set?] [] #:rest (listof ctc) void?) #f)]
              [set-symmetric-difference!
-              (or/c (->* [set?] [] #:rest (listof ctc) void?) #f)])])))))
+              (or/c (->* [generic-set?] [] #:rest (listof ctc) void?) #f)])])))))
 
 (define (flat-set-contract-first-order ctc)
   (define set-passes? (set-contract-first-order ctc))

@@ -45,8 +45,8 @@
 
 (define (custom-set=? s1 s2)
   (dprintf "custom-set=?\n")
-  (unless (set? s2)
-    (raise-argument-error 'set=? "set?" 1 s1 s2))
+  (unless (generic-set? s2)
+    (raise-argument-error 'set=? "generic-set?" 1 s1 s2))
   (set-check-compatible 'set=? s1 s2)
   (define table1 (custom-set-table s1))
   (define table2 (custom-set-table s2))
@@ -57,8 +57,8 @@
 
 (define (custom-subset? s1 s2)
   (dprintf "custom-subset?\n")
-  (unless (set? s2)
-    (raise-argument-error 'subset? "set?" 1 s1 s2))
+  (unless (generic-set? s2)
+    (raise-argument-error 'subset? "generic-set?" 1 s1 s2))
   (set-check-compatible 'subset? s1 s2)
   (define table1 (custom-set-table s1))
   (define table2 (custom-set-table s2))
@@ -67,8 +67,8 @@
 
 (define (custom-proper-subset? s1 s2)
   (dprintf "custom-proper-subset?\n")
-  (unless (set? s2)
-    (raise-argument-error 'proper-subset? "set?" 1 s1 s2))
+  (unless (generic-set? s2)
+    (raise-argument-error 'proper-subset? "generic-set?" 1 s1 s2))
   (set-check-compatible 'proper-subset? s1 s2)
   (define table1 (custom-set-table s1))
   (define table2 (custom-set-table s2))
@@ -105,7 +105,7 @@
   (define table (custom-set-table s))
   (define i (hash-iterate-first table))
   (unless i
-    (raise-argument-error 'set-first "(and/c set? (not/c set-empty?))" s))
+    (raise-argument-error 'set-first "(and/c generic-set? (not/c set-empty?))" s))
   (set-unwrap-key s (hash-iterate-key table i)))
 
 (define (custom-set-rest s)
@@ -113,7 +113,7 @@
   (define table (custom-set-table s))
   (define i (hash-iterate-first table))
   (unless i
-    (raise-argument-error 'set-rest "(and/c set? (not/c set-empty?))" s))
+    (raise-argument-error 'set-rest "(and/c generic-set? (not/c set-empty?))" s))
   (update-custom-set-table s (hash-remove table (hash-iterate-key table i))))
 
 (define (custom-set-add s x)
@@ -140,8 +140,8 @@
 
 (define (choose-immutable who better? set0 sets)
   (for/fold ([largest set0]) ([s (in-list sets)] [i (in-naturals 1)])
-    (unless (set? s)
-      (apply raise-argument-error who "set?" i set0 sets))
+    (unless (generic-set? s)
+      (apply raise-argument-error who "generic-set?" i set0 sets))
     (set-check-compatible who set0 s)
     (if (and (immutable? (custom-set-table s))
              (better? (hash-count (custom-set-table s))
@@ -204,8 +204,8 @@
 (define (custom-set-subtract s . sets)
   (dprintf "custom-set-subtract\n")
   (for ([s2 (in-list sets)] [i (in-naturals 1)])
-    (unless (set? s2)
-      (apply raise-argument-error 'set-subtract "set?" i s sets))
+    (unless (generic-set? s2)
+      (apply raise-argument-error 'set-subtract "generic-set?" i s sets))
     (set-check-compatible 'set-subtract s s2))
   (define (remove? k)
     (for/or ([s2 (in-list sets)])
@@ -238,8 +238,8 @@
   (define table (custom-set-table s))
   (for ([s2 (in-list sets)]
         [i (in-naturals 1)])
-    (unless (set? s2)
-      (apply raise-argument-error 'set-union! "set?" i s sets))
+    (unless (generic-set? s2)
+      (apply raise-argument-error 'set-union! "generic-set?" i s sets))
     (set-check-compatible 'set-union! s s2)
     (for ([x (in-hash-keys (custom-set-table s2))])
       (hash-set! table x #t))))
@@ -249,8 +249,8 @@
   (define table (custom-set-table s))
   (for ([s2 (in-list sets)]
         [i (in-naturals 1)])
-    (unless (set? s2)
-      (apply raise-argument-error 'set-symmetric-difference! "set?" i s sets))
+    (unless (generic-set? s2)
+      (apply raise-argument-error 'set-symmetric-difference! "generic-set?" i s sets))
     (set-check-compatible 'set-symmetric-difference! s s2)
     (for ([x (in-hash-keys (custom-set-table s2))])
       (if (hash-ref table x #f)
@@ -261,8 +261,8 @@
   (dprintf "custom-set-intersect!\n")
   (define tables
     (for/list ([s2 (in-list sets)] [i (in-naturals 1)])
-      (unless (set? s2)
-        (apply raise-argument-error 'set-intersect! "set?" i s sets))
+      (unless (generic-set? s2)
+        (apply raise-argument-error 'set-intersect! "generic-set?" i s sets))
       (set-check-compatible 'set-intersect! s s2)
       (custom-set-table s2)))
   (define (keep? k)
@@ -280,8 +280,8 @@
   (dprintf "custom-set-subtract!\n")
   (define tables
     (for/list ([s2 (in-list sets)] [i (in-naturals 1)])
-      (unless (set? s2)
-        (apply raise-argument-error 'set-subtract! "set?" i s sets))
+      (unless (generic-set? s2)
+        (apply raise-argument-error 'set-subtract! "generic-set?" i s sets))
       (set-check-compatible 'set-subtract! s s2)
       (custom-set-table s2)))
   (define (remove? k)

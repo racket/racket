@@ -516,7 +516,7 @@
 (define (atom? x)
   (or* x boolean? number? string? bytes? char? symbol?
        regexp? pregexp? byte-regexp? byte-pregexp?
-       keyword? null? procedure? void? set?
+       keyword? null? procedure? void? generic-set?
        atomic-struct?))
 (define (compound? x)
   (or* x pair? vector? mpair? box? hash? compound-struct?))

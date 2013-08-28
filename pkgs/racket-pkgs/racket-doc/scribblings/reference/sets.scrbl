@@ -90,15 +90,15 @@ returns @racket[#f] otherwise.
 }
 
 @deftogether[(
-@defproc[(set [v any/c] ...) (and/c set? set-equal? set-immutable?)]
-@defproc[(seteqv [v any/c] ...) (and/c set? set-eqv? set-immutable?)]
-@defproc[(seteq [v any/c] ...) (and/c set? set-eq? set-immutable?)]
-@defproc[(mutable-set [v any/c] ...) (and/c set? set-equal? set-mutable?)]
-@defproc[(mutable-seteqv [v any/c] ...) (and/c set? set-eqv? set-mutable?)]
-@defproc[(mutable-seteq [v any/c] ...) (and/c set? set-eq? set-mutable?)]
-@defproc[(weak-set [v any/c] ...) (and/c set? set-equal? set-weak?)]
-@defproc[(weak-seteqv [v any/c] ...) (and/c set? set-eqv? set-weak?)]
-@defproc[(weak-seteq [v any/c] ...) (and/c set? set-eq? set-weak?)]
+@defproc[(set [v any/c] ...) (and/c generic-set? set-equal? set-immutable?)]
+@defproc[(seteqv [v any/c] ...) (and/c generic-set? set-eqv? set-immutable?)]
+@defproc[(seteq [v any/c] ...) (and/c generic-set? set-eq? set-immutable?)]
+@defproc[(mutable-set [v any/c] ...) (and/c generic-set? set-equal? set-mutable?)]
+@defproc[(mutable-seteqv [v any/c] ...) (and/c generic-set? set-eqv? set-mutable?)]
+@defproc[(mutable-seteq [v any/c] ...) (and/c generic-set? set-eq? set-mutable?)]
+@defproc[(weak-set [v any/c] ...) (and/c generic-set? set-equal? set-weak?)]
+@defproc[(weak-seteqv [v any/c] ...) (and/c generic-set? set-eqv? set-weak?)]
+@defproc[(weak-seteq [v any/c] ...) (and/c generic-set? set-eq? set-weak?)]
 )]{
 
 Creates a @tech{hash set} with the given @racket[v]s as elements.  The
@@ -110,15 +110,15 @@ replaced by a later element that is @racket[equal?] or @racket[eqv?] but not
 }
 
 @deftogether[(
-@defproc[(list->set [lst list?]) (and/c set? set-equal? set-immutable?)]
-@defproc[(list->seteqv [lst list?]) (and/c set? set-eqv? set-immutable?)]
-@defproc[(list->seteq [lst list?]) (and/c set? set-eq? set-immutable?)]
-@defproc[(list->mutable-set [lst list?]) (and/c set? set-equal? set-mutable?)]
-@defproc[(list->mutable-seteqv [lst list?]) (and/c set? set-eqv? set-mutable?)]
-@defproc[(list->mutable-seteq [lst list?]) (and/c set? set-eq? set-mutable?)]
-@defproc[(list->weak-set [lst list?]) (and/c set? set-equal? set-weak?)]
-@defproc[(list->weak-seteqv [lst list?]) (and/c set? set-eqv? set-weak?)]
-@defproc[(list->weak-seteq [lst list?]) (and/c set? set-eq? set-weak?)]
+@defproc[(list->set [lst list?]) (and/c generic-set? set-equal? set-immutable?)]
+@defproc[(list->seteqv [lst list?]) (and/c generic-set? set-eqv? set-immutable?)]
+@defproc[(list->seteq [lst list?]) (and/c generic-set? set-eq? set-immutable?)]
+@defproc[(list->mutable-set [lst list?]) (and/c generic-set? set-equal? set-mutable?)]
+@defproc[(list->mutable-seteqv [lst list?]) (and/c generic-set? set-eqv? set-mutable?)]
+@defproc[(list->mutable-seteq [lst list?]) (and/c generic-set? set-eq? set-mutable?)]
+@defproc[(list->weak-set [lst list?]) (and/c generic-set? set-equal? set-weak?)]
+@defproc[(list->weak-seteqv [lst list?]) (and/c generic-set? set-eqv? set-weak?)]
+@defproc[(list->weak-seteq [lst list?]) (and/c generic-set? set-eq? set-weak?)]
 )]{
 
 Creates a @tech{hash set} with the elements of the given @racket[lst] as
@@ -155,22 +155,22 @@ construct a @tech{hash set} instead of a list.
 
 @section{Set Predicates and Contracts}
 
-@defproc[(set? [v any/c]) boolean?]{
+@defproc[(generic-set? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a @tech{set}; returns @racket[#f]
 otherwise.
 
 @examples[
 #:eval set-eval
-(set? (list 1 2 3))
-(set? (set 1 2 3))
-(set? (mutable-seteq 1 2 3))
-(set? (vector 1 2 3))
+(generic-set? (list 1 2 3))
+(generic-set? (set 1 2 3))
+(generic-set? (mutable-seteq 1 2 3))
+(generic-set? (vector 1 2 3))
 ]
 
 }
 
-@defproc[(set-implements? [st set?] [sym symbol?] ...) boolean?]{
+@defproc[(set-implements? [st generic-set?] [sym symbol?] ...) boolean?]{
 
 Returns @racket[#t] if @racket[st] implements all of the methods from
 @racket[gen:set] named by the @racket[sym]s; returns @racket[#f] otherwise.
@@ -255,7 +255,7 @@ be used to implement any of the methods documented as
                               (bitwise-not (arithmetic-shift 1 i)))))])
 (define bset (binary-set 5))
 bset
-(set? bset)
+(generic-set? bset)
 (set-member? bset 0)
 (set-member? bset 1)
 (set-member? bset 2)
@@ -289,42 +289,42 @@ As an example, implementing the following methods would guarantee that all the m
 
 There may be other such subsets of methods that would guarantee at least a fallback for every method.
 
-@defproc[(set-member? [st set?] [v any/c]) boolean?]{
+@defproc[(set-member? [st generic-set?] [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is in @racket[st], @racket[#f]
 otherwise. Has no fallback.
 
 }
 
-@defproc[(set-add [st set?] [v any/c]) set?]{
+@defproc[(set-add [st generic-set?] [v any/c]) generic-set?]{
 
 Produces a set that includes @racket[v] plus all elements of
 @racket[st]. This operation runs in constant time for @tech{hash sets}. Has no fallback.
 
 }
 
-@defproc[(set-add! [st set?] [v any/c]) void?]{
+@defproc[(set-add! [st generic-set?] [v any/c]) void?]{
 
 Adds the element @racket[v] to @racket[st].  This operation runs in constant
 time for @tech{hash sets}. Has no fallback.
 
 }
 
-@defproc[(set-remove [st set?] [v any/c]) set?]{
+@defproc[(set-remove [st generic-set?] [v any/c]) generic-set?]{
 
 Produces a set that includes all elements of @racket[st] except
 @racket[v]. This operation runs in constant time for @tech{hash sets}. Has no fallback.
 
 }
 
-@defproc[(set-remove! [st set?] [v any/c]) void?]{
+@defproc[(set-remove! [st generic-set?] [v any/c]) void?]{
 
 Adds the element @racket[v] to @racket[st].  This operation runs in constant
 time for @tech{hash sets}. Has no fallback.
 
 }
 
-@defproc[(set-empty? [st set?]) boolean?]{
+@defproc[(set-empty? [st generic-set?]) boolean?]{
 
 Returns @racket[#t] if @racket[st] has no members; returns @racket[#f]
 otherwise.
@@ -334,7 +334,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set->stream] or
 
 }
 
-@defproc[(set-count [st set?]) exact-nonnegative-integer?]{
+@defproc[(set-count [st generic-set?]) exact-nonnegative-integer?]{
 
 Returns the number of elements in @racket[st].
 
@@ -342,7 +342,7 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
 }
 
-@defproc[(set-first [st (and/c set? (not/c set-empty?))]) any/c]{
+@defproc[(set-first [st (and/c generic-set? (not/c set-empty?))]) any/c]{
 
 Produces an unspecified element of @racket[st]. Multiple uses of
 @racket[set-first] on @racket[st] produce the same result.
@@ -352,7 +352,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set->stream].
 }
 
 
-@defproc[(set-rest [st (and/c set? (not/c set-empty?))]) set?]{
+@defproc[(set-rest [st (and/c generic-set? (not/c set-empty?))]) generic-set?]{
 
 Produces a set that includes all elements of @racket[st] except
 @racket[(set-first st)].
@@ -362,7 +362,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set-remove] and eit
 
 }
 
-@defproc[(set->stream [st set?]) stream?]{
+@defproc[(set->stream [st generic-set?]) stream?]{
 
 Produces a stream containing the elements of @racket[st].
 
@@ -375,7 +375,7 @@ Supported for any @racket[st] that @impl{implements}:
           @item{@racket[set-count], @racket[set-first], @racket[set-remove]}]
 }
 
-@defproc[(set-copy [st set?]) set?]{
+@defproc[(set-copy [st generic-set?]) generic-set?]{
 
 Produces a new, mutable set of the same type and with the same elements as
 @racket[st].
@@ -385,7 +385,7 @@ either @impl{implements} @racket[set-copy-clear] and @racket[set-add!].
 
 }
 
-@defproc[(set-copy-clear [st set?]) (and/c set? set-empty?)]{
+@defproc[(set-copy-clear [st generic-set?]) (and/c generic-set? set-empty?)]{
 
 Produces a new, empty set of the same type, mutability, and key strength as
 @racket[st].
@@ -401,7 +401,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set-remove] and @su
 
 }
 
-@defproc[(set-clear [st set?]) (and/c set? set-empty?)]{
+@defproc[(set-clear [st generic-set?]) (and/c generic-set? set-empty?)]{
 
 Produces set by removing all elements of @racket[st].
 
@@ -410,7 +410,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set-remove] and @su
 
 }
 
-@defproc[(set-clear! [st set?]) void?]{
+@defproc[(set-clear! [st generic-set?]) void?]{
 
 Removes all elements from @racket[st].
 
@@ -419,7 +419,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set-remove!] and ei
 
 }
 
-@defproc[(set-union [st0 set?] [st set?] ...) set?]{
+@defproc[(set-union [st0 generic-set?] [st generic-set?] ...) generic-set?]{
 
 Produces a set of the same type as @racket[st0] that includes the elements from
 @racket[st0] and all of the @racket[st]s.
@@ -449,7 +449,7 @@ Supported for any @racket[st] that @impl{implements}  @racket[set-add] and @supp
 (set-union (set 1 2) (seteq 2 3)) (code:comment "Sets of different types cannot be unioned.")
 ]}
 
-@defproc[(set-union! [st0 set?] [st set?] ...) set?]{
+@defproc[(set-union! [st0 generic-set?] [st generic-set?] ...) generic-set?]{
 
 Adds the elements from all of the @racket[st]s to @racket[st0].
 
@@ -463,7 +463,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set-add!] and @supp
 
 }
 
-@defproc[(set-intersect [st0 set?] [st set?] ...) set?]{
+@defproc[(set-intersect [st0 generic-set?] [st generic-set?] ...) generic-set?]{
 
 Produces a set of the same type as @racket[st0] that includes the elements from
 @racket[st0] that are also contained by all of the @racket[st]s.
@@ -483,7 +483,7 @@ both @racket[set-clear] and @racket[set-add], and @supp{supports} @racket[set->s
 
 }
 
-@defproc[(set-intersect! [st0 set?] [st set?] ...) set?]{
+@defproc[(set-intersect! [st0 generic-set?] [st generic-set?] ...) generic-set?]{
 
 Removes every element from @racket[st0] that is not contained by all of the
 @racket[st]s.
@@ -498,7 +498,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set-remove!] and @s
 
 }
 
-@defproc[(set-subtract [st0 set?] [st set?] ...) set?]{
+@defproc[(set-subtract [st0 generic-set?] [st generic-set?] ...) generic-set?]{
 
 Produces a set of the same type as @racket[st0] that includes the elements from
 @racket[st0] that not contained by any of the @racket[st]s.
@@ -518,7 +518,7 @@ both @racket[set-clear] and @racket[set-add], and @supp{supports} @racket[set->s
 
 }
 
-@defproc[(set-subtract! [st0 set?] [st set?] ...) set?]{
+@defproc[(set-subtract! [st0 generic-set?] [st generic-set?] ...) generic-set?]{
 
 Removes every element from @racket[st0] that is contained by any of the
 @racket[st]s.
@@ -533,7 +533,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set-remove!] and @s
 
 }
 
-@defproc[(set-symmetric-difference [st0 set?] [st set?] ...) set?]{
+@defproc[(set-symmetric-difference [st0 generic-set?] [st generic-set?] ...) generic-set?]{
 
 Produces a set of the same type as @racket[st0] that includes all of the
 elements contained an even number of times in @racket[st0] and the
@@ -557,7 +557,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set-remove] or both
 
 }
 
-@defproc[(set-symmetric-difference! [st0 set?] [st set?] ...) set?]{
+@defproc[(set-symmetric-difference! [st0 generic-set?] [st generic-set?] ...) generic-set?]{
 
 Adds and removes elements of @racket[st0] so that it includes all of the
 elements contained an even number of times in the @racket[st]s and the
@@ -573,7 +573,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set-remove!] and @s
 
 }
 
-@defproc[(set=? [st set?] [st2 set?]) boolean?]{
+@defproc[(set=? [st generic-set?] [st2 generic-set?]) boolean?]{
 
 Returns @racket[#t] if @racket[st] and @racket[st2] contain the same
 members; returns @racket[#f] otherwise.
@@ -604,7 +604,7 @@ be compared.")
 
 }
 
-@defproc[(subset? [st set?] [st2 set?]) boolean?]{
+@defproc[(subset? [st generic-set?] [st2 generic-set?]) boolean?]{
 
 Returns @racket[#t] if @racket[st2] contains every member of @racket[st];
 returns @racket[#f] otherwise.
@@ -629,7 +629,7 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
 }
 
-@defproc[(proper-subset? [st set?] [st2 set?]) boolean?]{
+@defproc[(proper-subset? [st generic-set?] [st2 generic-set?]) boolean?]{
 
 Returns @racket[#t] if @racket[st2] contains every member of @racket[st] and at
 least one additional element; returns @racket[#f] otherwise.
@@ -655,7 +655,7 @@ Supported for any @racket[st] and @racket[st2] that both @supp{support}
 
 }
 
-@defproc[(set->list [st set?]) list?]{
+@defproc[(set->list [st generic-set?]) list?]{
 
 Produces a list containing the elements of @racket[st].
 
@@ -663,7 +663,7 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
 }
 
-@defproc[(set-map [st set?]
+@defproc[(set-map [st generic-set?]
                   [proc (any/c . -> . any/c)])
          (listof any/c)]{
 
@@ -676,7 +676,7 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 }
 
 
-@defproc[(set-for-each [st set?]
+@defproc[(set-for-each [st generic-set?]
                        [proc (any/c . -> . any)])
          void?]{
 
@@ -687,7 +687,7 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
 }
 
-@defproc[(in-set [st set?]) sequence?]{
+@defproc[(in-set [st generic-set?]) sequence?]{
 
 Explicitly converts a set to a sequence for use with @racket[for] and
 other forms.
@@ -748,8 +748,8 @@ initial elements.
   (make-immutable-string-set '("apple" "banana")))
 (define mut
   (make-mutable-string-set '("apple" "banana")))
-(set? imm)
-(set? mut)
+(generic-set? imm)
+(generic-set? mut)
 (string-set? imm)
 (string-set? mut)
 (immutable-string-set? imm)
@@ -785,9 +785,9 @@ initial elements.
                  (any/c . -> . boolean?)
                  (any/c . -> . boolean?)
                  (any/c . -> . boolean?)
-                 (->* [] [stream?] set?)
-                 (->* [] [stream?] set?)
-                 (->* [] [stream?] set?))]{
+                 (->* [] [stream?] generic-set?)
+                 (->* [] [stream?] generic-set?)
+                 (->* [] [stream?] generic-set?))]{
 
 Creates a new set type based on the given comparison function @racket[eql?],
 hash functions @racket[hash1] and @racket[hash2], and predicate @racket[elem?].
