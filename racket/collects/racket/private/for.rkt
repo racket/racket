@@ -1051,7 +1051,7 @@
     (case-lambda
       [(producer)
        ;; simple stop-less version
-       (make-do-sequence (lambda () (values producer void (void) #f #f #f)))]
+       (make-do-sequence (lambda () (values (λ _ (producer)) void (void) #f #f #f)))]
       [(producer stop . more)
        (define produce!
          (if (null? more)

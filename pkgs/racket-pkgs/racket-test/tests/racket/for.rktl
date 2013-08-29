@@ -105,7 +105,9 @@
   (test-sequence [(1 2 3 4)] (for/list ([x (in-producer (counter))] #:break (= x 5)) x))
   (test-sequence [(1 2 3 4)] (for/list ([x (in-producer (counter) 5)]) x))
   (test-sequence [(1/2 1 3/2 2 5/2 3 7/2 4 9/2)]
-    (for/list ([x (in-producer (counter) 5 1/2)]) x)))
+    (for/list ([x (in-producer (counter) 5 1/2)]) x))
+  ;; test in-producer outside of for loops
+  (test 6 sequence-ref (in-producer (counter)) 5))
 
 (test-sequence [(1 2 3 4 5)]
   (parameterize ([current-input-port (open-input-string "1 2 3\n4 5")])
