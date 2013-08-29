@@ -69,7 +69,7 @@ so the test can be named.
            [(test-true [name string?] [v any/c]) void?]
            [(test-false [name string?] [v any/c]) void?]
            [(test-not-false [name string?] [v any/c]) void?]
-           [(test-exn [name string?] [pred (-> exn? any/c)] [thunk (-> any)]) void?]
+           [(test-exn [name string?] [pred (or/c (-> any any/c) regexp?)] [thunk (-> any)]) void?]
            [(test-not-exn [name string?] [thunk (-> any)]) void?])]{
 
 Creates a test case with the given @racket[name] that performs the
