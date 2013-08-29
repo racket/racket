@@ -19,3 +19,7 @@
     "racket-doc"
     "rackunit-lib"
     "scribble-lib"))
+
+(define pkg-desc "Teaching languages for _Die Macht der Abstraktion_")
+
+(define pkg-authors '(sperber))

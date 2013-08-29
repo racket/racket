@@ -15,11 +15,3 @@
 
 (define get-textbook-pls
   '("textbook-pls-spec.rkt" textbook-pls))
-(define build-deps '("rackunit-lib"
-                     "racket-doc"
-                     "at-exp-lib"
-                     "scribble-lib"))
-
-(define pkg-desc "Teaching languages for _Die Macht der Abstraktion_")
-
-(define pkg-authors '(sperber))
