@@ -633,6 +633,10 @@
                    (*ListDots (sb dty)
                               (if (eq? dbound name) (+ count outer) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
+       [#:PolyRow constraints body*
+                  (let ([body (remove-scopes 1 body*)])
+                    (*PolyRow constraints
+                              (add-scopes 1 (loop (+ 1 outer) body))))]
        [#:PolyDots n body*
                    (let ([body (remove-scopes n body*)])
                      (*PolyDots n (add-scopes n (loop (+ n outer) body))))]
@@ -681,6 +685,9 @@
                    (*ListDots (sb dty)
                               (if (eqv? dbound (+ count outer)) (F-n image) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
+       [#:PolyRow constraints body*
+                  (let ([body (remove-scopes 1 body*)])
+                    (*PolyRow constraints (add-scopes 1 (loop (+ 1 outer) body))))]
        [#:PolyDots n body*
                    (let ([body (remove-scopes n body*)])
                      (*PolyDots n (add-scopes n (loop (+ n outer) body))))]
