@@ -104,7 +104,7 @@ For example, the following checks all fail:
 ]
 }
 
-@defproc[(check-exn (exn-predicate (or/c (-> any boolean?) regexp?))
+@defproc[(check-exn (exn-predicate (or/c (-> any any/c) regexp?))
                     (thunk (-> any)) (message string? ""))
          void?]{
 
