@@ -34,15 +34,17 @@
         (display rest)))))
 
 ;; proc returns the list of tests to be run on each file
-(define (transform-dir dir)
-  (for ([name (directory-list dir)]
-        #:when (test-file? name))
-    (transform name dir)))
+(define (transform-dirs dirs)
+  (define results
+    (for*/list ([dir (in-list dirs)]
+                [name (directory-list dir)]
+                #:when (test-file? name))
+      (delay/thread (transform name dir))))
+  (for-each force results))
 
 (start-workers)
 (cond [(= (vector-length (current-command-line-arguments)) 0)
-       (transform-dir tests-dir)
-       (transform-dir missed-optimizations-dir)]
+       (transform-dirs (list tests-dir missed-optimizations-dir))]
       [else ; set of paths to transform
        (define l (vector->list (current-command-line-arguments)))
        (for-each (lambda (f)
