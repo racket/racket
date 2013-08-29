@@ -291,4 +291,25 @@
    [FAIL
     (->key -String #:x -Symbol #f #:y -Symbol #f Univ)
     (->optkey -String [-Void] #:x -Symbol #t Univ)]
+
+   ;; classes and objects
+   [(make-Class #f null null `((m ,(-> -Nat))) `((m ,(-> -Nat))))
+    (make-Class #f null null `((m ,(-> -Nat))) `((m ,(-> -Nat))))]
+   [(make-Instance (make-Class #f null null `((m ,(-> -Nat))) `((m ,(-> -Nat)))))
+    (make-Instance (make-Class #f null null `((m ,(-> -Nat))) `((m ,(-> -Nat)))))]
+   [(make-Instance (make-Class #f null null `((m ,(-> -Nat)) (n ,(-> -Nat))) null))
+    (make-Instance (make-Class #f null null `((m ,(-> -Nat))) null))]
+   [(make-Instance (make-Class #f null `((f ,-Nat)) `((m ,(-> -Nat)) (n ,(-> -Nat))) null))
+    (make-Instance (make-Class #f null null `((m ,(-> -Nat))) null))]
+   [(make-Instance (make-Class #f `((a ,-Nat)) null `((m ,(-> -Nat)) (n ,(-> -Nat))) null))
+    (make-Instance (make-Class #f null null `((m ,(-> -Nat))) null))]
+   [FAIL
+    (make-Instance (make-Class #f null null `((m ,(-> -Nat)) (n ,(-> -Nat))) null))
+    (make-Instance (make-Class #f null null `((l ,(-> -Nat)) (m ,(-> -Nat))) null))]
+   [FAIL
+    (make-Class #f null null `((m ,(-> -Nat))) null)
+    (make-Class #f null null `((m ,(-> -Nat))) `((m ,(-> -Nat))))]
+   [FAIL
+    (make-Class #f null null `((m ,(-> -Nat))) `((m ,(-> -Nat))))
+    (make-Class #f null null `((m ,(-> -Nat))) null)]
    ))
