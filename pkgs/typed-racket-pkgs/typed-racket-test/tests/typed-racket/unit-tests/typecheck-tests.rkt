@@ -275,7 +275,7 @@
         [tc-e (let: ([x : Number 5]) x) N]
         [tc-e (let-values ([(x) 4]) (+ x 1)) -PosIndex]
         [tc-e (let-values ([(#{x : Number} #{y : Boolean}) (values 3 #t)]) (and (= x 1) (not y)))
-              #:proc (syntax-parser [(_ ([(_ y) . _]) . _) (ret -Boolean (-FS -top -top))])]
+              -Boolean]
         [tc-e/t (values 3) -PosByte]
         [tc-e (values) #:ret (ret null)]
         [tc-e (values 3 #f) #:ret (ret (list -PosByte (-val #f)) (list (-FS -top -bot) (-FS -bot -top)))]
@@ -296,7 +296,7 @@
               N]
         [tc-e (let: ([v : (Un Number Boolean) #f])
                     (if (boolean? v) 5 (+ v 1)))
-              #:proc (get-let-name v 0 (ret N (-FS -top -top)))]
+              N]
         [tc-e (let: ([f : (Number Number -> Number) +]) (f 3 4)) N]
         [tc-e (let: ([+ : (Boolean -> Number) (lambda: ([x : Boolean]) 3)]) (+ #f)) N]
         [tc-e (when #f #t) -Void]
@@ -452,10 +452,10 @@
         ;; eq? as predicate
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (eq? x 'foo) 3 x))
-              #:proc (get-let-name x 0 (ret N (-FS -top -top)))]
+              N]
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (eq? 'foo x) 3 x))
-              #:proc (get-let-name x 0 (ret N (-FS -top -top)))]
+              N]
 
         [tc-err (let: ([x : (U String 'foo) 'foo])
                       (if (string=? x 'foo)
@@ -471,31 +471,27 @@
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (eq? x sym) 3 x))
-              #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                     (ret -PosByte (-FS -top -top))])]
+              -PosByte]
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (eq? sym x) 3 x))
-               #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                      (ret -PosByte (-FS -top -top))])]
+              -PosByte]
         ;; equal? as predicate for symbols
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (equal? x 'foo) 3 x))
-                #:proc (get-let-name x 0 (ret N (-FS -top -top)))]
+              N]
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (equal? 'foo x) 3 x))
-                #:proc (get-let-name x 0 (ret N (-FS -top -top)))]
+              N]
 
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (equal? x sym) 3 x))
-               #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                      (ret -PosByte (-FS -top -top))])]
+              -PosByte]
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (equal? sym x) 3 x))
-              #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                     (ret -PosByte (-FS -top -top))])]
+              -PosByte]
 
         [tc-e (let: ([x : (Listof Symbol)'(a b c)])
                     (cond [(memq 'a x) => car]
@@ -532,9 +528,9 @@
         [tc-e (let: ([x : Any 1]) (and (number? x) (boolean? x)))
               #:ret (ret B (-FS -bot -top))]
         [tc-e (let: ([x : Any 1]) (and (number? x) x))
-              #:proc (get-let-name x 0 (ret (t:Un N (-val #f)) (-FS -top -top)))]
+              (t:Un N (-val #f))]
         [tc-e (let: ([x : Any 1]) (and x (boolean? x)))
-              #:proc (get-let-name x 0 (ret -Boolean (-FS -top -top)))]
+              -Boolean]
 
         [tc-e/t (let: ([x : Any 3])
                       (if (and (list? x) (not (null? x)))
