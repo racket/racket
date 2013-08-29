@@ -18,6 +18,7 @@
          left-figure-style
          center-figure-style
          right-figure-style
+         suppress-floats
          (rename-out [left-figure-style left]))
 
 (define figure-style-extras
@@ -123,3 +124,6 @@
 
 (define Figure-ref (ref-proc "F"))
 (define figure-ref (ref-proc "f"))
+
+(define (suppress-floats)
+  (make-element "suppressfloats" null))

@@ -85,6 +85,13 @@ Generates a new figure label. This function is normally not used
 directly, since it is used by @racket[figure].}
 
 
+@defproc[(suppress-floats) element?]{
+
+Produces an empty element that renders in Latex as
+@tt{\suppressfloats}, which discourages the placement of figures in
+the column or page of the surrounding text.}
+
+
 @section{Configuring Output}
 
 Output uses the following style names, which can be adjusted in an
