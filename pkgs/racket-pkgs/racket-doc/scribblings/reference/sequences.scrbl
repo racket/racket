@@ -1049,6 +1049,18 @@ values from the generator.
   values for each element, its arity should be declared with an
   @racket[#:arity arity-k] clause; the @racket[arity-k] must be a
   literal, exact, non-negative integer.
+  
+  @examples[#:eval generator-eval
+    (let ([g (in-generator
+              (let loop ([n 3])
+                (unless (zero? n) (yield n (add1 n)) (loop (sub1 n)))))])
+      (let-values ([(not-empty? next) (sequence-generate g)])
+        (let loop () (when (not-empty?) (next) (loop))) 'done))
+    (let ([g (in-generator #:arity 2
+              (let loop ([n 3])
+                (unless (zero? n) (yield n (add1 n)) (loop (sub1 n)))))])
+      (let-values ([(not-empty? next) (sequence-generate g)])
+        (let loop () (when (not-empty?) (next) (loop))) 'done))]
 
   To use an existing generator as a sequence, use @racket[in-producer]
   with a stop-value known for the generator:
