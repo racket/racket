@@ -12,7 +12,7 @@
 ;; in the "Unicode" directory. The file schuchar.inc will be
 ;; overwritten.
 
-(require scheme/list)
+(require racket/list)
 
 (define mark-cats '("Mn" "Mc" "Me"))
 (define letter-cats '("Lu" "Ll" "Lt" "Lm" "Lo"))

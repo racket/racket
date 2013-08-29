@@ -1,5 +1,5 @@
 
-#lang scheme/base
+#lang racket/base
 
 (define to-zo? (member "--zo" (vector->list (current-command-line-arguments))))
 

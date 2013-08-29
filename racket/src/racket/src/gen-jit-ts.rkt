@@ -1,5 +1,5 @@
-#lang at-exp scheme/base
-(require scheme/string)
+#lang at-exp racket/base
+(require racket/string)
 
 (define (char->type c)
   (case c

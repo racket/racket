@@ -1,8 +1,8 @@
 ;; Preprocessor utilities for the .rktc file.
 
-#lang at-exp scheme/base
+#lang at-exp racket/base
 
-(require (for-syntax scheme/base) scheme/list scribble/text/output)
+(require (for-syntax racket/base) racket/list scribble/text/output)
 
 (provide maplines)
 (define (maplines #:semicolons? [semi? #t] fun . ls)

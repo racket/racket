@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (define filename "stypes.h")
 

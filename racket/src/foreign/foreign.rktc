@@ -564,7 +564,7 @@ static Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 
 (define types null)
 
-(require (for-syntax scheme/base))
+(require (for-syntax racket/base))
 
 (define (get-prop type prop)
   (cadr (assq prop (cdr (assq type types)))))
