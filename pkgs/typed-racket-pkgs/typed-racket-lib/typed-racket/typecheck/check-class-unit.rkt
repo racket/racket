@@ -43,9 +43,14 @@
                e ...))
          #'(begin e ...))]))
 
-(define (do-timestamp [str ""])
-  (log-info (format "TR class time @ ~a: ~a"
-                    str (- (current-inexact-milliseconds) (start-time)))))
+(define-syntax (do-timestamp stx)
+  (syntax-case stx ()
+    [(_ str)
+     (if (syntax-local-value #'do-timing)
+         #'(log-info
+            (format "TR class time @ ~a: ~a"
+                    str (- (current-inexact-milliseconds) (start-time))))
+         #'(void))]))
 
 ;; Syntax classes for use in functions below
 (define-syntax-class name-pair
