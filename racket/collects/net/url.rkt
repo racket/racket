@@ -126,7 +126,7 @@
                                 #f))))
 
 ;; http://getpost-impure-port : bool x url x union (str, #f) x list (str)
-                                        ;                               -> hc
+;;                               -> hc
 (define (http://getpost-impure-port get? url post-data strings
                                     make-ports 1.1?)
   (define proxy (assoc (url-scheme url) (current-proxy-servers)))
@@ -202,8 +202,9 @@
           [else (url-error "Scheme ~a unsupported" scheme)])))
 
 (define (http-conn-impure-port hc)
-  (define-values (in out) (make-pipe))
-  (define-values (status headers response-port) (hc:http-conn-recv! hc))
+  (define-values (in out) (make-pipe 4096))
+  (define-values (status headers response-port)
+    (hc:http-conn-recv! hc #:close? #t))
   (fprintf out "~a\r\n" status)
   (for ([h (in-list headers)])
     (fprintf out "~a\r\n" h))
@@ -237,7 +238,8 @@
                 (hc:http-conn-recv!
                  (http://getpost-impure-port
                   get? url post-data strings
-                  make-ports #f)))
+                  make-ports #f)
+                 #:close? #t))
               response-port]
              [else
               (define-values (port header)
@@ -268,7 +270,7 @@
                                     make-ports)
                                   (and conn #t)))
     (define-values (status headers response-port)
-      (hc:http-conn-recv! hc))
+      (hc:http-conn-recv! hc #:close? (not conn)))
 
     (define new-url
       (ormap (λ (h)

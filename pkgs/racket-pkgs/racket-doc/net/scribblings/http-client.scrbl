@@ -61,6 +61,13 @@ Closes @racket[hc] if it is live.
 
 }
 
+@defproc[(http-conn-abandon! [hc http-conn?])
+         void?]{
+
+Closes the output side of @racket[hc], if it is live.
+
+}
+
 @defproc[(http-conn-send! [hc http-conn-live?] [uri (or/c bytes? string?)]
                           [#:version version (or/c bytes? string?) #"1.1"]
                           [#:method method (or/c bytes? string? symbol?) #"GET"]

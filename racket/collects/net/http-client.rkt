@@ -25,6 +25,8 @@
 (define (regexp-member rx l)
   (ormap (λ (h) (regexp-match rx h)) l))
 
+(define PIPE-SIZE 4096)
+
 ;; Core
 
 (struct http-conn (host to from abandon-p) #:mutable)
@@ -65,9 +67,15 @@
     (abandon to)
     (set-http-conn-to! hc #f))
   (when from
-    ;; (abandon from)
+    (abandon from)
     (set-http-conn-from! hc #f))
   (set-http-conn-abandon-p! hc #f))
+
+(define (http-conn-abandon! hc)
+  (match-define (http-conn host to from abandon) hc)
+  (when to
+    (abandon to)
+    (set-http-conn-to! hc #f)))
 
 (define (http-conn-send! hc url-bs
                          #:version [version-bs #"1.1"]
@@ -90,7 +98,8 @@
     (fprintf to "~a\r\n" h))
   (fprintf to "\r\n")
   (when data
-    (display data to))
+    (display data to)
+    (fprintf to "\r\n"))
   (flush-output to))
 
 (define (http-conn-status! hc)
@@ -114,7 +123,7 @@
   (http-conn-response-port/length! hc +inf.0 #:close? #t))
 
 (define (http-conn-response-port/length! hc count #:close? [close? #f])
-  (define-values (in out) (make-pipe))
+  (define-values (in out) (make-pipe PIPE-SIZE))
   (thread
    (λ ()
      (copy-bytes (http-conn-from hc) out count)
@@ -145,7 +154,7 @@
           (write-bytes bs op 0 chunk-size)
           (loop bs)))))
 
-  (define-values (in out) (make-pipe))
+  (define-values (in out) (make-pipe PIPE-SIZE))
   (thread
    (λ ()
      (http-pipe-chunk (http-conn-from hc) out)
@@ -168,6 +177,8 @@
   (define close?
     (or iclose?
         (regexp-member #rx#"^(?i:Connection: +close)$" headers)))
+  (when close?
+    (http-conn-abandon! hc))
   (define response-port
     (cond
       [(regexp-member #rx#"^(?i:Transfer-Encoding: +chunked)$" headers)
@@ -231,6 +242,8 @@
                 #:port (between/c 1 65535))
         void?)]
   [http-conn-close!
+   (-> http-conn? void?)]
+  [http-conn-abandon!
    (-> http-conn? void?)]
   [http-conn-send!
    (->*
