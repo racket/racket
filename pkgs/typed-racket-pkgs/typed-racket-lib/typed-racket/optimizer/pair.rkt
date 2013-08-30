@@ -3,6 +3,7 @@
 (require syntax/parse syntax/stx
          racket/match
          (for-template racket/base racket/unsafe/ops racket/list)
+         (for-syntax racket/base syntax/parse racket/syntax)
          "../utils/utils.rkt"
          (utils tc-utils)
          (rep type-rep)
@@ -12,17 +13,16 @@
 
 (provide pair-opt-expr)
 
+(define-unsafe-syntax-class car)
+(define-unsafe-syntax-class cdr)
+(define-unsafe-syntax-class mcar)
+(define-unsafe-syntax-class mcdr)
+(define-unsafe-syntax-class set-mcar!)
+(define-unsafe-syntax-class set-mcdr!)
 
-(define-syntax-class pair-op
-  #:commit
-  (pattern (~literal car) #:with unsafe #'unsafe-car)
-  (pattern (~literal cdr) #:with unsafe #'unsafe-cdr))
-(define-syntax-class mpair-op
-  #:commit
-  (pattern (~literal mcar) #:with unsafe #'unsafe-mcar)
-  (pattern (~literal mcdr) #:with unsafe #'unsafe-mcdr)
-  (pattern (~literal set-mcar!) #:with unsafe #'unsafe-set-mcar!)
-  (pattern (~literal set-mcdr!) #:with unsafe #'unsafe-set-mcdr!))
+
+(define-merged-syntax-class pair-op (car^ cdr^))
+(define-merged-syntax-class mpair-op (mcar^ mcdr^ set-mcar!^ set-mcdr!^))
 
 
 (define (has-pair-type? e)
@@ -40,33 +40,28 @@
    "According to its type, the highlighted list could be empty. Access to it cannot be safely optimized. To fix this, restrict the type to non-empty lists, maybe by wrapping this expression in a check for non-emptiness."
    stx irritant))
 
-(define pair-opt-msg "Pair check elimination.")
-
-(define (log-pair-opt stx)
-  (log-optimization "pair" pair-opt-msg stx))
+(define-syntax-rule (log-pair-opt)
+  (log-opt "pair" "Pair check elimination."))
 
 (define-syntax-class pair-opt-expr
   #:commit
-  (pattern e:pair-derived-opt-expr
-           ;; no logging here, redundant with actual pair opt
-           #:with opt #'e.opt)
-  (pattern (#%plain-app op:pair-op p:expr)
-           #:when (or (has-pair-type? #'p)
-                      ;; in this case, we have a potentially empty list, but
-                      ;; it has to be a list, otherwise, there would have been
-                      ;; a type error
-                      (begin (log-pair-missed-opt this-syntax #'p) #f))
-           #:with opt
-           (begin (log-pair-opt this-syntax)
-                  (add-disappeared-use #'op)
-                  #`(op.unsafe #,((optimize) #'p))))
-  (pattern (#%plain-app op:mpair-op p:expr e:expr ...)
-           #:when (or (has-mpair-type? #'p)
-                      (begin (log-pair-missed-opt this-syntax #'p) #f))
-           #:with opt
-           (begin (log-pair-opt this-syntax)
-                  (add-disappeared-use #'op)
-                  #`(op.unsafe #,@(stx-map (optimize) #'(p e ...))))))
+  #:attributes (opt)
+
+  ;; no logging here, redundant with actual pair opt
+  (pattern :pair-derived-opt-expr)
+  (pattern (#%plain-app op:pair-op p:opt-expr)
+    #:when (or (has-pair-type? #'p)
+               ;; in this case, we have a potentially empty list, but
+               ;; it has to be a list, otherwise, there would have been
+               ;; a type error
+               (begin (log-pair-missed-opt this-syntax #'p) #f))
+    #:do [(log-pair-opt)]
+    #:with opt #'(op.unsafe p.opt))
+  (pattern (#%plain-app op:mpair-op p:opt-expr e:opt-expr ...)
+    #:when (or (has-mpair-type? #'p)
+               (begin (log-pair-missed-opt this-syntax #'p) #f))
+    #:do [(log-pair-opt)]
+    #:with opt #'(op.unsafe p.opt e.opt ...)))
 
 
 ;; change the source location of a given syntax object
@@ -77,29 +72,32 @@
 ;; we can optimize
 
 ;; accessors is a list of syntax objects, all #'car or #'cdr
-(define (gen-alt accessors stx)
-  (syntax-parse stx
-    [(#%plain-app op arg)
-     (define (gen-alt-helper accessors)
-       (if (null? accessors)
-           #'arg
-           (quasisyntax/loc stx
-             (#%plain-app #,(relocate (car accessors) stx)
-                          #,(gen-alt-helper (cdr accessors))))))
-     (let ((ty  (type-of stx))
-           (obj (gen-alt-helper accessors)))
-       ;; we're calling the typechecker, but this is just a shortcut, we're
-       ;; still conceptually single pass (we're not iterating). we could get
-       ;; the same result by statically destructing the types.
-       (tc-expr/check obj ty)
-       obj)]))
+(define (gen-alt accessors op arg stx)
+  (define (gen-alt-helper accessors)
+    (for/fold [(accum arg)] [(acc (reverse accessors))]
+      (quasisyntax/loc stx (#%plain-app #,(relocate acc op) #,accum))))
+  (let ((ty  (type-of stx))
+        (obj (gen-alt-helper accessors)))
+    ;; we're calling the typechecker, but this is just a shortcut, we're
+    ;; still conceptually single pass (we're not iterating). we could get
+    ;; the same result by statically destructing the types.
+    (tc-expr/check obj ty)
+    obj))
 
-(define-syntax-rule (gen-pair-derived-expr name (orig seq ...) ...)
-  (define-syntax-class name
-    #:commit
-    (pattern (#%plain-app (~literal orig) x)
-             #:with alt (gen-alt (list seq ...) this-syntax))
-    ...))
+(define-syntax gen-pair-derived-expr
+  (syntax-parser
+    [(_ name:id (orig:id seq ...) ...)
+     (define/with-syntax (syntax-class-name ...) (generate-temporaries #'(orig ...)))
+     (define/with-syntax (lit-class-name ...) (generate-temporaries #'(orig ...)))
+     #'(begin
+         (begin
+           (define-literal-syntax-class lit-class-name (orig))
+           (define-syntax-class syntax-class-name
+             #:commit
+             (pattern (#%plain-app (~var op lit-class-name) arg)
+               #:with alt (gen-alt (list seq ...) #'op #'arg this-syntax)))) ...
+         (define-merged-syntax-class name (syntax-class-name ...)))]))
+
 (gen-pair-derived-expr pair-derived-expr
  (caar #'car #'car)
  (cadr #'car #'cdr)
