@@ -118,14 +118,14 @@
 (define-syntax (include-section stx)
   (syntax-case stx ()
     [(_ mod)
-     (with-syntax ([mod (syntax-local-introduce #'mod)])
+     (with-syntax ([doc-from-mod (datum->syntax #'mod 'doc)])
        (unless (module-path? (syntax->datum #'mod))
          (raise-syntax-error #f
                              "not a module path"
                              stx
                              #'mod))
        #'(begin
-           (require (only-in mod doc))
+           (require (only-in mod [doc-from-mod doc]))
            doc))]))
 
 ;; ----------------------------------------
