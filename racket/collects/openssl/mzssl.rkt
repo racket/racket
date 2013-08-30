@@ -154,7 +154,7 @@ TO DO:
         [any/c]
         any)]
   [ssl-abandon-port
-   (c-> (and/c ssl-port? output-port?) void?)]
+   (c-> ssl-port? void?)]
   [ssl-port?
    (c-> any/c boolean?)]))
 
@@ -1262,9 +1262,13 @@ TO DO:
 
 (define (ssl-abandon-port p)
   (let-values ([(mzssl input?) (lookup 'ssl-abandon-port p)])
-    (set-mzssl-shutdown-on-close?! mzssl #f)
-    ;; Call close-output-port to flush, shutdown, and decrement mzssl refcount.
-    (close-output-port p)))
+    (cond
+     [(output-port? p)
+      (set-mzssl-shutdown-on-close?! mzssl #f)
+      ;; Call close-output-port to flush, shutdown, and decrement mzssl refcount.
+      (close-output-port p)]
+     [else
+      (close-input-port p)])))
 
 (define (ssl-peer-verified? p)
   (let-values ([(mzssl input?) (lookup 'ssl-peer-verified? p)])
