@@ -16,7 +16,9 @@
          mk-unsafe-tbl
          n-ary->binary n-ary-comp->binary
          opt-expr optimize
+         define-unsafe-syntax-class
          define-literal-syntax-class
+         define-merged-syntax-class
          syntax/loc/origin quasisyntax/loc/origin)
 
 ;; for tracking both origin and source location information
@@ -79,6 +81,22 @@
   #:attributes (opt)
   (pattern e:expr #:attr opt (delay ((optimize) #'e))))
 
+
+(define-syntax (define-unsafe-syntax-class stx)
+  (define-splicing-syntax-class spec
+    #:attributes (class-name (literals 1) unsafe-id)
+    (pattern (~seq class-name:id (literals:id ...) unsafe-id:id))
+    (pattern literal:id
+      #:with (literals ...) #'(literal)
+      #:with class-name (format-id #'literal "~a^" #'literal)
+      #:with unsafe-id (format-id #'literal "unsafe-~a" #'literal)))
+  (syntax-parse stx
+    [(_ :spec)
+     #'(begin
+         (define-literal-syntax-class literal (literals ...))
+         (define-syntax-class class-name
+           (pattern :literal #:with unsafe #'unsafe-id)))]))
+
 (define-syntax (define-literal-syntax-class stx)
   (define-splicing-syntax-class spec
     #:attributes (name (literals 1))
@@ -94,3 +112,8 @@
            #:literals (literals ...)
            (pattern (~and op (~or literals ...))
                     #:do [(add-disappeared-use (syntax-local-introduce #'op))]))))))
+
+(define-syntax-rule (define-merged-syntax-class name (syntax-classes ...))
+  (define-syntax-class name
+    #:auto-nested-attributes
+    (pattern (~var || syntax-classes)) ...))
