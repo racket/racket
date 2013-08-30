@@ -425,17 +425,17 @@
                             #:pkg-name pkg-name)]))
 
 (define (checksum-for-pkg-source pkg-source type pkg-name given-checksum download-printf)
-  (cond
-   [(or (eq? type 'file-url) (eq? type 'dir-url) (eq? type 'github))
-    (or (remote-package-checksum `(url ,pkg-source) download-printf pkg-name)
-        given-checksum)]
-   [(eq? type 'file)
-    (define checksum-pth (format "~a.CHECKSUM" pkg-source))
-    (or (and (file-exists? checksum-pth)
-             (file->string checksum-pth))
-        (and (file-exists? pkg-source)
-             (call-with-input-file* pkg-source sha1)))]
-   [else given-checksum]))
+  (case type
+    [(file-url dir-url github)
+     (or (remote-package-checksum `(url ,pkg-source) download-printf pkg-name)
+	 given-checksum)]
+    [(file)
+     (define checksum-pth (format "~a.CHECKSUM" pkg-source))
+     (or (and (file-exists? checksum-pth)
+	      (file->string checksum-pth))
+	 (and (file-exists? pkg-source)
+	      (call-with-input-file* pkg-source sha1)))]
+    [else given-checksum]))
 
 (define (write-file-hash! file new-db)
   (unless (eq? (pkg-lock-held) 'exclusive)
