@@ -1,11 +1,12 @@
 #lang racket/base
 
 (require racket/set racket/string racket/match racket/list
-         unstable/syntax unstable/logging
+         unstable/syntax unstable/logging syntax/parse
          data/queue
          "../utils/tc-utils.rkt")
 
 (provide log-optimization log-missed-optimization log-optimization-info
+         log-opt log-opt-info
          with-tr-logging-to-queue
          (struct-out log-entry)
          (struct-out opt-log-entry)
@@ -34,6 +35,9 @@
   (when (anyone-listening?)
     (emit-log-message
      (opt-log-entry kind msg stx (locate-stx stx) (syntax-position stx)))))
+
+(define-syntax-rule (log-opt kind msg)
+  (log-optimization kind msg this-syntax))
 
 ;;--------------------------------------------------------------------
 
@@ -78,6 +82,10 @@
     (emit-log-message
      ;; no actual message, since it's not meant for user consumption
      (info-log-entry kind "" stx (locate-stx stx) (syntax-position stx)))))
+
+
+(define-syntax-rule (log-opt-info kind)
+  (log-optimization-info kind this-syntax))
 
 ;;--------------------------------------------------------------------
 
