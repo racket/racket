@@ -1047,7 +1047,7 @@
 [proper-subset? (-poly (e) (-> (-set e) (-set e) B))]
 [set-map (-poly (e b) (-> (-set e) (-> e b) (-lst b)))]
 [set-for-each (-poly (e b) (-> (-set e) (-> e b) -Void))]
-[generic-set? (-> Univ B)]
+[generic-set? (asym-pred Univ B (-FS (-filter (-set Univ) 0) -top))]
 [set? (make-pred-ty (-set Univ))]
 [set-equal? (-poly (e) (-> (-set e) B))]
 [set-eqv? (-poly (e) (-> (-set e) B))]
