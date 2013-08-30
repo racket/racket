@@ -730,6 +730,13 @@ that follows.  Another useful function for this is
 other resources intact.}
 
 
+@defparam[sandbox-run-submodules submod-syms (list/c symbol?)]{
+
+A @tech{parameter} that determines submodules to run when a sandbox is
+created by @racket[make-module-evaluator]. The parameter's default
+value is the empty list.}
+
+
 @defparam[sandbox-make-inspector make (-> inspector?)]{
 
 A @tech{parameter} that determines the (nullary) procedure that is used to

@@ -296,6 +296,24 @@
    x => 1
    (define x 2) =err> "cannot re-define a constant"
 
+   ;; submodules
+   --top--
+   (parameterize ([sandbox-run-submodules '(go)])
+     (make-module-evaluator! '(module foo racket/base
+                                (define x 1)
+                                (define (set-x! v) (set! x v))
+                                (module+ go (set-x! 2)))))
+   --eval--
+   x => 2
+   --top--
+   (parameterize ([sandbox-run-submodules '(not-there)])
+     (make-module-evaluator! '(module foo racket/base
+                                (define x 1)
+                                (define (set-x! v) (set! x v))
+                                (module+ go (set-x! 2)))))
+   --eval--
+   x => 1
+
    ;; `for-syntax' is allowed in #:requires:
    --top--
    (make-evaluator! 'scheme/base #:requires '((for-syntax racket/base)))

@@ -34,6 +34,7 @@
          sandbox-eval-limits
          sandbox-eval-handlers
          sandbox-propagate-exceptions
+         sandbox-run-submodules
          call-with-trusted-sandbox-configuration
          evaluator-alive?
          kill-evaluator
@@ -81,6 +82,7 @@
 (define sandbox-propagate-breaks (make-parameter #t))
 (define sandbox-coverage-enabled (make-parameter #f))
 (define sandbox-propagate-exceptions (make-parameter #t))
+(define sandbox-run-submodules (make-parameter null))
 
 (define (call-with-trusted-sandbox-configuration thunk)
   (parameterize ([sandbox-propagate-breaks    #t]
@@ -615,7 +617,7 @@
 (define orig-code-inspector (variable-reference->module-declaration-inspector
                              (#%variable-reference)))
 
-(define (evaluate-program program limit-thunk uncovered!)
+(define (evaluate-program program limit-thunk submod-names uncovered!)
   (when uncovered!
     (parameterize ([current-code-inspector orig-code-inspector])
       (eval `(,#'#%require racket/private/sandbox-coverage))))
@@ -626,6 +628,9 @@
        (let ([mod #'mod])
          (lambda ()
            (eval `(,#'require (quote ,mod)))
+           (for ([submod-name (in-list submod-names)])
+             (eval `(when (module-declared? '(submod (quote ,mod) ,submod-name) #f)
+                      (dynamic-require '(submod (quote ,mod) ,submod-name) #f))))
            (module->namespace `(quote ,(syntax-e mod)))))]
       [_else #f]))
   ;; the actual evaluation happens under the specified limits
@@ -711,6 +716,7 @@
   (define user-done-evt #t) ; set in the same place
   (define terminated?   #f) ; set to an exception value when the sandbox dies
   (define breaks-originally-enabled? (break-enabled))
+  (define submod-names (sandbox-run-submodules))
   (define (limit-thunk thunk)
     (define sec (and limits (car limits)))
     (define mb  (and limits (cadr limits)))
@@ -767,6 +773,7 @@
              (when coverage? (set! default-coverage-source-filter src))
              prog)
            limit-thunk
+           submod-names
            (and coverage? (lambda (es+get) (set! uncovered es+get))))))
        (channel-put result-ch 'ok))
      (set! eval-handler (cadr (sandbox-eval-handlers))) ; interactions handler
