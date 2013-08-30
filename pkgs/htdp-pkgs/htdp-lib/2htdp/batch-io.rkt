@@ -329,8 +329,8 @@
 ;; Symbol String [XML -> XML] -> Xexpr
 ;; read an Xexpr from a file that contains one XML element 
 (define (read-xexpr-aux tag f fix-up)
-  (define raw (read-from-file-or-device f read-xml/element))
-  (check-result 'read-plain-xexpr xexpr? 'xexpr (xml->xexpr (fix-up raw))))
+  (define raw (read-from-file-or-device f read-html-as-xml #;read-xml/element))
+  (check-result 'read-plain-xexpr xexpr? 'xexpr (xml->xexpr (fix-up (first raw)))))
 
 ;; Symbol String [XML -> XML] -> Xexpr
 (define (read-xexpr/web-aux tag url:string fix-up)
