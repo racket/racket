@@ -1,7 +1,7 @@
 #lang scribble/manual
 @(require scribble/struct scribble/decode scribble/eval "utils.rkt"
           (for-label racket/base racket/contract syntax/kerncase
-                     unstable/syntax))
+                     racket/syntax unstable/syntax))
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require unstable/syntax (for-syntax racket/base unstable/syntax)))
