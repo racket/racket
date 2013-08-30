@@ -144,7 +144,7 @@ elements.
 @item{@reading[read-xexpr xexpr?]{an X-expression, including whitespace such as tabs and newlines}
 
 Assumption: the file @racket[f] or the selected input device contains an
-XML element. 
+XML element. It assumes the file contains HTML-like text and reads it as XML. 
 
 @examples[#:eval (examples-batch-io)
 (read-xexpr "data.xml")
