@@ -151,12 +151,14 @@
 (module+ main (tests))
 (define (tests)
   (test
-   (run-tests "http" values #f)
-   (run-tests "https" (let ([ctx (ssl-make-server-context)])
-                        (ssl-load-certificate-chain! ctx (collection-file-path "test.pem" "openssl"))
-                        (ssl-load-private-key! ctx (collection-file-path "test.pem" "openssl"))
-                        (lambda (in out)
-                          (ports->ssl-ports in out #:mode 'accept #:context ctx)))
-              #t)))
+   (for ([i 100]) ; repeat to catch port leaks
+     (run-tests "http" values #f))
+   (for ([i 100])
+     (run-tests "https" (let ([ctx (ssl-make-server-context)])
+                          (ssl-load-certificate-chain! ctx (collection-file-path "test.pem" "openssl"))
+                          (ssl-load-private-key! ctx (collection-file-path "test.pem" "openssl"))
+                          (lambda (in out)
+                            (ports->ssl-ports in out #:mode 'accept #:context ctx)))
+                #t))))
 
 (module+ test (require (submod ".." main))) ; for raco test & drdr
