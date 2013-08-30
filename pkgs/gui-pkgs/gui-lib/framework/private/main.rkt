@@ -494,8 +494,6 @@
 (preferences:set-default 'framework:file-dialogs 'std
                          (λ (x) (and (memq x '(common std)) #t)))
 
-;; scheme prefs
-
 (for-each (λ (line white-on-black-line)
             (let ([sym (car line)]
                   [color (cadr line)]
@@ -510,16 +508,18 @@
 (preferences:set-default 'framework:coloring-active #t boolean?)
 
 (color-prefs:set-default/color-scheme 'framework:default-text-color "black" "white")
-(define (invert-a-color color)
-  (make-object color%
-    (- 255 (send color red))
-    (- 255 (send color green))
-    (- 255 (send color blue))))
+(preferences:add-callback 'framework:basic-canvas-background
+                          (λ (p v)
+                            (editor:set-default-font-color
+                             (preferences:get 'framework:default-text-color)
+                             v)))
 (preferences:add-callback 'framework:default-text-color
                           (λ (p v)
-                            (editor:set-default-font-color v (invert-a-color v))))
+                            (editor:set-default-font-color 
+                             v 
+                             (preferences:get 'framework:basic-canvas-background))))
 (editor:set-default-font-color (preferences:get 'framework:default-text-color)
-                               (invert-a-color (preferences:get 'framework:default-text-color)))
+                               (preferences:get 'framework:basic-canvas-background))
 
 (color-prefs:set-default/color-scheme 'framework:misspelled-text-color "black" "white")
 
