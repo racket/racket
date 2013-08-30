@@ -38,3 +38,4 @@
 (set-eqv? v)
 (set-eq? q)
 (set? s0)
+(generic-set? s0)
