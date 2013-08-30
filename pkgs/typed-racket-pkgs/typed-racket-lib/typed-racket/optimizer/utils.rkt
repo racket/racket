@@ -11,7 +11,6 @@
          subtypeof? isoftype?
          mk-unsafe-tbl
          n-ary->binary n-ary-comp->binary
-         unboxed-gensym reset-unboxed-gensym
          optimize
          syntax/loc/origin quasisyntax/loc/origin)
 
@@ -49,7 +48,7 @@
 (define (n-ary-comp->binary op arg1 arg2 rest)
   ;; First, generate temps to bind the result of each arg2 args ...
   ;; to avoid computing them multiple times.
-  (define lifted (stx-map (lambda (x) (unboxed-gensym)) #`(#,arg2 #,@rest)))
+  (define lifted (stx-map (lambda (x) (generate-temporary)) #`(#,arg2 #,@rest)))
   ;; Second, build the list ((op arg1 tmp2) (op tmp2 tmp3) ...)
   (define tests
     (let loop ([res  (list #`(#,op #,arg1 #,(car lifted)))]
@@ -64,15 +63,6 @@
                       [rhs (in-syntax #`(#,arg2 #,@rest))])
              #`(#,lhs #,rhs))
       (and #,@tests)))
-
-;; to generate temporary symbols in a predictable manner
-;; these identifiers are unique within a sequence of unboxed operations
-(define *unboxed-gensym-counter* 0)
-(define (unboxed-gensym [name 'unboxed-gensym-])
-  (set! *unboxed-gensym-counter* (add1 *unboxed-gensym-counter*))
-  (format-unique-id #'here "~a~a" name *unboxed-gensym-counter*))
-(define (reset-unboxed-gensym)
-  (set! *unboxed-gensym-counter* 0))
 
 ;; to avoid mutually recursive syntax classes
 ;; will be set to the actual optimization function at the entry point
