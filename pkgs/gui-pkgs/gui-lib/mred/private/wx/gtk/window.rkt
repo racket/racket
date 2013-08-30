@@ -132,16 +132,15 @@
                      (gtk_selection_data_get_data data)
                      (gtk_selection_data_get_length data)
                      1)])
-          (cond
-           [(regexp-match #rx#"^file://(.*)\r\n$" bstr)
-            => (lambda (m)
-                 (queue-window-event wx
-                                     (lambda ()
-                                       (let ([path 
-                                              (string->path
-                                               (uri-decode
-                                                (bytes->string/utf-8 (cadr m))))])
-                                         (send wx on-drop-file path)))))]))))))
+          (for ([m (regexp-match* #rx#"file://([^\r]*)\r\n" bstr
+                       #:match-select cadr)])
+            (queue-window-event wx
+                                (lambda ()
+                                  (let ([path
+                                         (string->path
+                                          (uri-decode
+                                           (bytes->string/utf-8 m)))])
+                                    (send wx on-drop-file path))))))))))
 
 ;; ----------------------------------------
 
