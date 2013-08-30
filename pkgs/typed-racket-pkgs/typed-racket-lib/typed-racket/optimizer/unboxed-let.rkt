@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require syntax/parse syntax/stx unstable/syntax unstable/sequence
-         racket/list racket/dict racket/match
+         racket/list racket/dict racket/match racket/syntax
          "../utils/utils.rkt"
          "../utils/tc-utils.rkt"
          (for-template racket/base)
@@ -301,9 +301,9 @@
            ;; partition of the arguments
            #:with ((to-unbox ...) (boxed ...)) #'unboxed-info
            #:with (real-params ...)
-           (stx-map (lambda (x) (unboxed-gensym "unboxed-real-")) #'(to-unbox ...))
+           (stx-map (lambda (x) (generate-temporary "unboxed-real-")) #'(to-unbox ...))
            #:with (imag-params ...)
-           (stx-map (lambda (x) (unboxed-gensym "unboxed-imag-")) #'(to-unbox ...))
+           (stx-map (lambda (x) (generate-temporary "unboxed-imag-")) #'(to-unbox ...))
            #:with res
            (begin
              (log-optimization "fun -> unboxed fun" arity-raising-opt-msg #'v)
