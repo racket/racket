@@ -192,6 +192,11 @@
 (htdp-test #t 'equal~? (equal~? (make-a1 #i2.0) (make-a1 2) #i0.2))
 (htdp-test #f 'equal~? (equal~? (make-a1 #i2.3) (make-a1 2) #i0.2))
 
+(htdp-test #t 'string-contains (string-contains? "x" "abxy"))
+(htdp-test #f 'string-contains (string-contains? "x" "abc"))
+(htdp-test #f 'string-contains (string-contains? "(" "abc"))
+(htdp-test #t 'string-contains (string-contains? "(" "ab(c"))
+
 (htdp-top-pop 1)
 (htdp-top-pop 1)
 (htdp-top-pop 1)

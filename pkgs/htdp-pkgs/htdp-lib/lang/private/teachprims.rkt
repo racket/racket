@@ -586,7 +586,7 @@ namespace.
   (lambda (s t)
     (cerr 'string-contains? (string? s) "string" s)
     (cerr 'string-contains? (string? t) "string" t)
-    (cons? (regexp-match s t))))
+    (regexp-match? (regexp-quote s) t)))
 
 (provide
  beginner-string-ith
