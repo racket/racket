@@ -10,6 +10,7 @@
          setup/pack
          setup/unpack
          setup/dirs
+         setup/collection-name
          racket/port
          racket/list
          racket/function
@@ -1604,16 +1605,17 @@
   (if (not i)
       pkg-name
       (let ([s (i 'collection (lambda () 'use-pkg-name))])
-        (unless (or (string? s)
+        (unless (or (collection-name-element? s)
                     (eq? s 'multi)
                     (eq? s 'use-pkg-name))
-          (log-error (format (~a "bad `collection' definition in \"info.rkt\n"
+          (log-error (format (~a "bad `collection' definition in \"info.rkt\";\n"
+                                 " definition will be ignored\n"
                                  "  path: ~a\n"
                                  "  found: ~e\n"
-                                 "  expected: (or/c string? 'multi 'use-pkg-name)")
+                                 "  expected: (or/c collection-name-element? 'multi 'use-pkg-name)")
                              (build-path dir "info.rkt")
                              s)))
-        (or (and (string? s)
+        (or (and (collection-name-element? s)
                  s)
             (and (eq? s 'use-pkg-name)
                  pkg-name)))))

@@ -1,7 +1,8 @@
 #lang racket/base
 (require racket/file
          racket/path
-         setup/dirs)
+         setup/dirs
+         setup/collection-name)
 
 (provide links)
 
@@ -20,8 +21,7 @@
                #:with-path? [with-path? #f]
                . dirs)
   (define (check-name name)
-    (unless (and (regexp-match #rx"^[a-zA-z0-9+_%-]+$" name)
-                 (module-path? name))
+    (unless (collection-name-element? name)
       (error 'links "name is not valid as a top-level collection name: ~e"
              name)))
 

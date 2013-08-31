@@ -11,6 +11,7 @@
                     setup/dirs
                     setup/getinfo
                     setup/main-collects
+                    setup/collection-name
                     setup/path-to-relative
                     setup/xref scribble/xref
                     ;; info -- no bindings from this are used
@@ -1405,6 +1406,32 @@ compatibility.}
   (which can always be overridden by an additional argument to this
   function).
 }
+
+@; ------------------------------------------------------------------------
+
+@section[#:tag "collection-names"]{API for Collection Names}
+
+@defmodule[setup/collection-name]
+
+@defproc[(collection-name? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a string that is syntactically
+valid as a collection name, which means that it is one or more
+@litchar{/}-separated strings for which
+@racket[collection-name-element?] returns true.}
+
+
+@defproc[(collection-name-element? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a string that is syntactically
+valid as a top-level collection name or as a part of a collection
+name, which means that it is non-empty and contains only ASCII
+letters, ASCII digits, @litchar{-}, @litchar{+}, @litchar{_}, and
+@litchar{%}, where a @litchar{%} is allowed only when followed by two
+lowercase hexadecimal digits, and the digits must form a number that
+is not the ASCII value of a letter, digit, @litchar{-}, @litchar{+},
+or @litchar{_}.}
+
 
 @; ------------------------------------------------------------------------
 
