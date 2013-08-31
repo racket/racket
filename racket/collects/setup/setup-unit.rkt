@@ -1731,6 +1731,8 @@
   (when (and (not (null? (archives))) no-specific-collections?)
     (done))
 
+  (when (make-info-domain) (make-info-domain-step))
+
   (when (clean) (clean-step))
   (when (make-zo)
     (compiler:option:verbose (compiler-verbose))
@@ -1741,7 +1743,6 @@
   (when (make-foreign-libs) (make-foreign-libs-step))
 
   (when (make-zo) (make-zo-step))
-  (when (make-info-domain) (make-info-domain-step))
 
   (when (make-launchers) (make-launchers-step))
   (when (make-launchers) 
