@@ -938,16 +938,24 @@ The @racket[#:pre-cond] and @racket[#:post-cond] keywords are aliases for
 }
 
 @defform*/subs[#:literals (any values ->)
-[(case-> (-> dom-expr ... rest range) ...)]
-([rest (code:line) (code:line #:rest rest-expr)]
- [range range-expr (values range-expr ...) any])]{
-This contract form is designed to match
-@racket[case-lambda]. Each argument to @racket[case->] is a
-contract that governs a clause in the
-@racket[case-lambda]. If the @racket[#:rest] keyword is
-present, the corresponding clause must accept an arbitrary
-number of arguments. The @racket[range] specification is
-just like that for @racket[->] and @racket[->*].
+                          [(case-> (-> dom-expr ... rest range) ...)]
+                          ([rest (code:line) (code:line #:rest rest-expr)]
+                           [range range-expr (values range-expr ...) any])]{
+  This contract form is designed to match
+  @racket[case-lambda]. Each argument to @racket[case->] is a
+  contract that governs a clause in the
+  @racket[case-lambda]. If the @racket[#:rest] keyword is
+  present, the corresponding clause must accept an arbitrary
+  number of arguments. The @racket[range] specification is
+  just like that for @racket[->] and @racket[->*].
+  
+  For example, this contract matches a function with two
+  cases, one that accepts an integer, returning void, and one
+  that accepts no arguments and returns an integer.
+  @racketblock[(case-> (-> integer? void?)
+                       (-> integer?))]
+  Such a contract could be used to guard a function that controls
+  access to a single shared integer.
 }
 
 
