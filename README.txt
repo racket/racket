@@ -13,4 +13,4 @@ applications, provided you follow the rules stated in the LGPL.  You can
 also modify Racket; if you distribute a modified version, you must
 distribute it under the terms of the LGPL, which in particular means
 that you must release the source code for the modified software.  See
-doc/release-notes/COPYING_LESSER.txt for more information.
+racket/src/COPYING_LESSER.txt for more information.
