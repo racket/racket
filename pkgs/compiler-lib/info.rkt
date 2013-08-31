@@ -2,8 +2,9 @@
 
 (define collection 'multi)
 
-(define deps '("scheme-lib"
-               "base"))
+(define deps '("base"
+               "scheme-lib"
+               "rackunit-lib"))
 
 (define pkg-desc "Racket compilation tools, such as `raco exe'")
 

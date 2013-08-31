@@ -1,9 +1,10 @@
 #lang info
 
 (define collection 'multi)
-(define deps '("base"))
+(define deps '("base"
+               "scheme-lib"
+               "rackunit-lib"))
 
 (define pkg-desc "Testing framework")
 
 (define pkg-authors '(eli))
-(define build-deps '("scheme-lib"))
