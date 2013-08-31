@@ -4,6 +4,19 @@
 
 (define-context "stubs/pre")
 
+(define temporary-outdated-warning
+  @div[style: "border: 1px dotted red; padding: 0ex 1ex"]{
+    @p*{
+      This page is not currently updating with new nightly builds, but it will
+      resume soon.
+    @~
+      Meanwhile, recent builds for various platforms are available from the
+      following sites:
+      @ul*{@~ @a[href: "http://www.cs.utah.edu/plt/snapshots/"]{
+                University of Utah}
+           @~ @a[href: "http://plt.eecs.northwestern.edu/snapshots/"]{
+                Northwestern University}}}})
+
 (define (hole tag)
   @list{@||
         {{{@tag}}}
@@ -18,6 +31,7 @@
 (define template
   ;; generic skeleton for all files that don't have a specific template below.
   @page[#:window-title title-hole]{
+    @temporary-outdated-warning
     @content-hole
     @hr
     @version-hole})
@@ -25,6 +39,7 @@
 (provide index)
 (define index
   @page[#:file "" #:window-title "Prebuilt materials"]{
+    @temporary-outdated-warning
     @p{This directory contains Racket materials that are built daily from the
        development repository.  See below for instructions.}
     @hr
@@ -64,6 +79,7 @@
 
 (define pre-installers
   @page[#:file "pre-installers/" #:title "Nightly build pre-installers"]{
+    @temporary-outdated-warning
     @p{This directory contains distribution packages in tgz format.  They are
        later converted to the actual platform-specific
        @a[href: "../installers/"]{installers}.}
@@ -75,6 +91,7 @@
 (provide installers)
 (define installers
   @page[#:file "installers/" #:title "Nightly build installers"]{
+    @temporary-outdated-warning
     @p{Pre-release software is built using actively developed sources.
        Binaries are built nightly, and minute-by-minute changes are available
        through @|git|.}
@@ -118,6 +135,7 @@
     (apply docs text)))
 (define docs
   @page[#:file "docs/" #:title "Prebuilt documentation"]{
+    @temporary-outdated-warning
     @p{This directory contains documentation files in all forms, compiled from
        the current sources.}
     @hr
@@ -127,6 +145,7 @@
 
 (define binaries
   @page[#:file "binaries/" #:title "Prebuilt binaries"]{
+    @temporary-outdated-warning
     @p{This directory contains a subdirectory for each supported platform.}
     @hr
     @content-hole
@@ -135,6 +154,7 @@
 
 (define script
   @page[#:file "script.html" #:title "Using the nightly Racket builds"]{
+    @temporary-outdated-warning
     @(define (url . s) @list{http://pre.racket-lang.org/@s})
     @(define (pre* . text) (apply pre style: "margin-left: 2em;" text))
     @p*{
