@@ -6,7 +6,8 @@
   
   (import mred^
           [prefix frame: framework:frame^]
-          [prefix text: framework:text^])
+          [prefix text: framework:text^]
+          [prefix color-prefs: framework:color-prefs^])
   
   (export (rename framework:canvas^
                   (-color% color%)))
@@ -20,11 +21,12 @@
   
   (define color-mixin
     (mixin (basic<%>) (color<%>)
-      (define callback (λ (p v) (set-canvas-background v)))
+      (define callback (λ (v) (set-canvas-background v)))
       (super-new)
       (inherit set-canvas-background)
-      (set-canvas-background (preferences:get 'framework:basic-canvas-background))
-      (preferences:add-callback 'framework:basic-canvas-background callback #t)))
+      (set-canvas-background (color-prefs:lookup-in-color-scheme 'framework:basic-canvas-background))
+      (color-prefs:register-color-scheme-entry-change-callback
+       'framework:basic-canvas-background callback #t)))
   
   (define delegate<%> (interface (basic<%>)))
   

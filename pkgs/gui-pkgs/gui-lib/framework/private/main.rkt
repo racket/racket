@@ -25,6 +25,8 @@
 
 (application-preferences-handler (λ () (preferences:show-dialog)))
 
+(preferences:set-default 'framework:color-scheme 'classic symbol?)
+
 (preferences:set-default 'framework:column-guide-width
                          '(#f 102)
                          (list/c boolean? (and/c exact-integer? (>=/c 2))))
@@ -193,7 +195,7 @@
 (preferences:set-default 'framework:case-sensitive-search?
                          #f
                          boolean?)
-(color-prefs:set-default/color-scheme 'framework:basic-canvas-background "white" "black")
+(color-prefs:add-color-scheme-entry 'framework:basic-canvas-background "white" "black")
 
 (preferences:set-default 'framework:special-meta-key #f boolean?)
 (preferences:add-callback 'framework:special-meta-key (λ (p v) (map-command-as-meta-key v)))
@@ -250,26 +252,26 @@
            (- (* 7/8 256) 1))])
   (define default-color (make-object color% 0 0 0 (- 1. (/ gray-level 255))))
   (define w-o-b-default-color (make-object color% 255 255 255 (/ 50 255)))
-  (color-prefs:set-default/color-scheme 'framework:paren-match-color
-                                        default-color
-                                        w-o-b-default-color)
+  (color-prefs:add-color-scheme-entry 'framework:paren-match-color
+                                      default-color
+                                      w-o-b-default-color)
   
   ;; when the preference is currently set to the old color,
   ;; then just update it to the new one (if someone really
   ;; wants the old default, they can still have a color that is
   ;; off by one from the old default which should be ok)
-  (define current-color (preferences:get 'framework:paren-match-color))
+  (define current-color (color-prefs:lookup-in-color-scheme 'framework:paren-match-color))
   (cond
     [(and (= (send current-color red) gray-level)
           (= (send current-color green) gray-level)
           (= (send current-color blue) gray-level)
           (= (send current-color alpha) 1.0))
-     (preferences:set 'framework:paren-match-color default-color)]
+     (color-prefs:set-in-color-scheme 'framework:paren-match-color default-color)]
     [(and (= (send current-color red) 50)
           (= (send current-color green) 50)
           (= (send current-color blue) 50)
           (= (send current-color alpha) 1.0))
-     (preferences:set 'framework:paren-match-color w-o-b-default-color)]))
+     (color-prefs:set-in-color-scheme 'framework:paren-match-color w-o-b-default-color)]))
 
 (preferences:set-default 'framework:recently-opened-files/pos 
                          null 
@@ -494,34 +496,36 @@
 (preferences:set-default 'framework:file-dialogs 'std
                          (λ (x) (and (memq x '(common std)) #t)))
 
-(for-each (λ (line white-on-black-line)
-            (let ([sym (car line)]
-                  [color (cadr line)]
-                  [white-on-black-color (cadr white-on-black-line)])
-              (color-prefs:register-color-preference
-               (racket:short-sym->pref-name sym)
-               (racket:short-sym->style-name sym)
-               color
-               white-on-black-color)))
-          (racket:get-color-prefs-table)
-          (racket:get-white-on-black-color-prefs-table))
+(for ([line (in-list (racket:get-color-prefs-table))]
+      [white-on-black-line (in-list (racket:get-white-on-black-color-prefs-table))])
+  (define sym (car line))
+  (define color (cadr line))
+  (define white-on-black-color (cadr white-on-black-line))
+  (color-prefs:add-color-scheme-entry (racket:short-sym->pref-name sym)
+                                      #:style (racket:short-sym->style-name sym)
+                                      color
+                                      white-on-black-color))
+  
 (preferences:set-default 'framework:coloring-active #t boolean?)
 
-(color-prefs:set-default/color-scheme 'framework:default-text-color "black" "white")
-(preferences:add-callback 'framework:basic-canvas-background
-                          (λ (p v)
-                            (editor:set-default-font-color
-                             (preferences:get 'framework:default-text-color)
-                             v)))
-(preferences:add-callback 'framework:default-text-color
-                          (λ (p v)
-                            (editor:set-default-font-color 
-                             v 
-                             (preferences:get 'framework:basic-canvas-background))))
-(editor:set-default-font-color (preferences:get 'framework:default-text-color)
-                               (preferences:get 'framework:basic-canvas-background))
+(color-prefs:add-color-scheme-entry 'framework:default-text-color "black" "white")
+(color-prefs:register-color-scheme-entry-change-callback
+ 'framework:basic-canvas-background
+ (λ (v)
+   (editor:set-default-font-color
+    (color-prefs:lookup-in-color-scheme 'framework:default-text-color)
+    v)))
+(color-prefs:register-color-scheme-entry-change-callback
+ 'framework:default-text-color
+ (λ (v)
+   (editor:set-default-font-color 
+    v 
+    (color-prefs:lookup-in-color-scheme 'framework:basic-canvas-background))))
+(editor:set-default-font-color 
+ (color-prefs:lookup-in-color-scheme 'framework:default-text-color)
+ (color-prefs:lookup-in-color-scheme 'framework:basic-canvas-background))
 
-(color-prefs:set-default/color-scheme 'framework:misspelled-text-color "black" "white")
+(color-prefs:add-color-scheme-entry 'framework:misspelled-text-color "black" "white")
 
 (color-prefs:set-default/color-scheme 'framework:delegatee-overview-color
                                       "light blue"
@@ -545,11 +549,11 @@
          (send style get-delta delta)
          (send delta set-delta-foreground v)
          (send style set-delta delta))])
-  (preferences:add-callback
+  (color-prefs:register-color-scheme-entry-change-callback
    'framework:misspelled-text-color
-   (λ (p v) (update-style-list v)))
+   (λ (v) (update-style-list v)))
   (update-style-list 
-   (preferences:get 'framework:misspelled-text-color)))
+   (color-prefs:lookup-in-color-scheme 'framework:misspelled-text-color)))
 
 ;; groups
 

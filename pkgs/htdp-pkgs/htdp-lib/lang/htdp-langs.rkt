@@ -1332,9 +1332,9 @@
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
            (reader-module '(lib "htdp-beginner-abbr-reader.ss" "lang"))
-	   (stepper:supported #t)
+           (stepper:supported #t)
            (stepper:enable-let-lifting #t)
-	   (stepper:show-lambdas-as-lambdas #f)))
+           (stepper:show-lambdas-as-lambdas #f)))
         
         (add-htdp-language
          (instantiate htdp-language% ()
@@ -1352,25 +1352,24 @@
            (allow-sharing? #f)
            (accept-quasiquote? #f)
            (reader-module '(lib "htdp-beginner-reader.ss" "lang"))
-	   (stepper:supported #t)
+           (stepper:supported #t)
            (stepper:enable-let-lifting #t)
-	   (stepper:show-lambdas-as-lambdas #f))))
+           (stepper:show-lambdas-as-lambdas #f))))
       
       (define test-coverage-on-style-name "plt:htdp:test-coverage-on")
       (define test-coverage-off-style-name "plt:htdp:test-coverage-off")
       (define test-coverage-on-style-pref (string->symbol test-coverage-on-style-name))
       (define test-coverage-off-style-pref (string->symbol test-coverage-off-style-name))
       
-      (color-prefs:register-color-preference test-coverage-on-style-pref
-                                             test-coverage-on-style-name
-                                             (send the-color-database find-color "black")
-                                             (send the-color-database find-color "white"))
-      (color-prefs:register-color-preference test-coverage-off-style-pref
-                                             test-coverage-off-style-name
-                                             (send the-color-database find-color "orange")
-                                             (send the-color-database find-color "indianred")
-                                             #:background 
-                                             (send the-color-database find-color "black"))
+      (color-prefs:add-color-scheme-entry test-coverage-on-style-pref
+                                          #:style test-coverage-on-style-name
+                                          "black"
+                                          "white")
+      (color-prefs:add-color-scheme-entry test-coverage-off-style-pref
+                                          #:style test-coverage-off-style-name
+                                          "orange"
+                                          "indianred"
+                                          #:background "black")
       (color-prefs:add-to-preferences-panel 
        "HtDP Languages"
        (λ (parent)
@@ -1382,27 +1381,4 @@
                                                   test-coverage-off-style-pref
                                                   test-coverage-off-style-name
                                                   (string-constant test-coverage-off)
-                                                  #:background? #t)))
-      
-      (define (update-sds white-on-black?)
-        (define sl (editor:get-standard-style-list))
-        (define on-s (send sl find-named-style test-coverage-on-style-name))
-        (define off-s (send sl find-named-style test-coverage-off-style-name))
-        (define on-sd (make-object style-delta%))
-        (define off-sd (make-object style-delta%))
-        (send on-s get-delta on-sd)
-        (send off-s get-delta off-sd)
-        (cond
-          [white-on-black?
-           (send on-sd set-delta-foreground "white")
-           (send off-sd set-delta-foreground "indianred")
-           (send off-sd set-delta-background "black")]
-          [else
-           (send on-sd set-delta-foreground "black")
-           (send off-sd set-delta-foreground "orange")
-           (send off-sd set-delta-background "black")])
-        (preferences:set test-coverage-on-style-pref on-sd)
-        (preferences:set test-coverage-off-style-pref off-sd))
-      
-      (preferences:add-callback 'framework:white-on-black?
-                                (λ (p v) (update-sds v)))))
+                                                  #:background? #t)))))

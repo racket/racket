@@ -429,7 +429,18 @@
      unmarshall-style-delta
      set-default/color-scheme
      white-on-black
-     black-on-white))
+     black-on-white
+     
+     add-color-scheme-preferences-panel
+     set-current-color-scheme
+     get-current-color-scheme
+     known-color-scheme-name?
+     color-scheme-style-name?
+     lookup-in-color-scheme
+     set-in-color-scheme
+     register-color-scheme-entry-change-callback
+     add-color-scheme-entry
+     register-info-based-color-schemes))
   
   (define-signature racket-class^
     (text<%>

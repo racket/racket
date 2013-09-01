@@ -28,7 +28,8 @@
                        framework/decorated-editor-snip
                        framework/private/decorated-editor-snip))
 
-(require (for-doc scheme/base scribble/manual framework/private/mapdesc))
+(require (for-doc racket/base scribble/manual framework/private/mapdesc
+                  setup/getinfo racket/pretty))
 
 (provide-signature-elements
  (prefix application: framework:application-class^)
@@ -711,7 +712,7 @@
 
  (proc-doc/names
   frame:reorder-menus
-  ((is-a?/c frame%) . -> . void?)
+  (-> (is-a?/c frame%) void?)
   (frame)
   @{Re-orders the menus in a frame.  It moves the ``File'' and ``Edit'' menus
     to the front of the menubar and moves the ``Windows'' and ``Help'' menus to
@@ -1621,7 +1622,7 @@
 
  (proc-doc/names
   editor:set-standard-style-list-delta
-  (string? (is-a?/c style-delta%) . -> . void?)
+  (-> string? (is-a?/c style-delta%) void?)
   (name delta)
   @{Finds (or creates) the style named by @racket[name] in the result of
     @racket[editor:get-standard-style-list] and sets its delta to
@@ -1756,7 +1757,7 @@
     @racket[preferences:set-un/marshall] with appropriate arguments to register
     the preference.})
 
- (proc-doc/names
+ (proc-doc/names 
   color-prefs:register-color-preference
   (->* (symbol? string? (or/c (is-a?/c color%) (is-a?/c style-delta%)))
        ((or/c string? (is-a?/c color%) #f)
@@ -1787,10 +1788,8 @@
     @racket[white-on-black-color] to register this preference with
     @racket[color-prefs:set-default/color-scheme].
     
-    If either @racket[background] is
-    not @racket[#f], then it is used to construct the default background color
-    for the style delta.
-    
+    If @racket[background] is not @racket[#f], then it is used to construct the
+    default background color for the style delta.
     })
 
  (proc-doc/names
@@ -1849,7 +1848,157 @@
   (-> any)
   ()
   @{Sets the colors registered by @racket[color-prefs:register-color-preference]
-    to their black-on-white variety.}))
+    to their black-on-white variety.})
+ 
+ (proc-doc
+  color-prefs:add-color-scheme-entry
+  (->i ([name symbol?]
+        [black-on-white-color (or/c string? (is-a?/c color%))]
+        [white-on-black-color (or/c string? (is-a?/c color%))])
+       (#:style 
+        [style (or/c #f string?)]
+        #:bold? [bold? (style) (if style boolean? #f)]
+        #:underline? [underline? (style) (if style boolean? #f)]
+        #:italic? [italic? (style) (if style boolean? #f)]
+        #:background
+        [background (style)
+                    (if style
+                        (or/c #f string? (is-a?/c color%))
+                        #f)])
+       [result void?])
+  (#f #f #f #f #f)
+  @{Registers a new color or style named @racket[name] for use in the color schemes. 
+    If @racket[style] is provided, a new style is registered; if not a color is
+    registered.})
+ 
+ (proc-doc
+  color-prefs:add-color-scheme-preferences-panel
+  (-> void?)
+  @{Adds a panel for choosing a color-scheme to the preferences dialog.})
+ 
+ (proc-doc
+  color-prefs:register-info-based-color-schemes
+  (-> void?)
+  @{Reads 
+    the @filepath{info.rkt} file in each collection, looking for the key
+    @index{framework:color-schemes}
+    @racket['framework:color-schemes]. Each definition must bind
+    a list of hash tables, each of which introduces a new
+    color scheme. Each hash table should have keys that specify
+    details of the color scheme, as follows:
+    @itemlist[@item{@racket['name]: must be either a string or a symbol;
+                     if it is a symbol, it is passed to @racket[dynamic-string-constant]
+                     to get the name; otherwise it is used as the name directly.
+                     If absent, the name of the directory containing the @filepath{info.rkt}
+                     file is used as the name.}
+               @item{@racket['white-on-black-base?]: must be a boolean indicating if this
+                      color-scheme is based on an inverted color scheme. If absent, it
+                      is @racket[#f].}
+               @item{@racket['example]: must be a string and is used in the preferences dialog
+                      to show an example of the color scheme. If absent, the string used in
+                      the ``Classic'' color scheme is used.}
+               @item{@racket['colors]: must be a non-empty list whose first position
+                      is a symbol, naming a color or style. The rest of the elements describe
+                      the style or color. In either case, an element may be a vector of three
+                      bytes: this describes a color (in r/g/b order) with an alpha value of
+                      @racket[1.0]. The vector may also have three bytes followed by a real
+                      number between @racket[0] and @racket[1], which is used as the alpha
+                      value. If the name corresponds to a style, then the list may also contain
+                      the symbols @racket['bold], @racket['italic], or @racket['underline].}]
+    
+    The names of the colors and styles are extensible; new ones can be added by calling
+    @racket[color-prefs:add-color-scheme-entry]. When
+    @racket[color-prefs:register-info-based-color-schemes]
+    is called, it logs the active set of color names and style names to the @tt{color-scheme}
+    logger at the info level. So, for example, starting up DrRacket like this:
+    @tt{racket -W info@"@"color-scheme -l drracket} will print out the styles used in your
+    version of DrRacket.
+    
+    As an example, this is the specification of the @racket["Modern"] style:
+    @(let ()
+       (define pth (collection-file-path "info.rkt" "drracket"))
+       (define-values (base name dir?) (split-path pth))
+       (define info (get-info/full base))
+       (unless info (error 'framework/main.rkt "could not find example for modern color scheme"))
+       (parameterize ([pretty-print-columns 60])
+         (codeblock (pretty-format (info 'framework:color-schemes)))))})
+ 
+ (proc-doc/names
+  color-prefs:set-current-color-scheme
+  (-> symbol? void?)
+  (name)
+  @{Sets
+    the current color scheme to @racket[name], if @racket[name] is
+    @racket[color-prefs:known-color-scheme-name?]. Otherwise, does nothing.})
+ 
+ (proc-doc
+  color-prefs:get-current-color-scheme
+  (-> color-prefs:color-scheme-style-name?)
+  @{Returns the current color scheme's name.})
+ 
+ (proc-doc/names
+  color-prefs:known-color-scheme-name?
+  (-> any/c boolean?)
+  (name)
+  @{Returns @racket[#t] if the input is a @racket[symbol?] that names
+            a color or style that is part of the current color scheme.
+            
+            In order to return @racket[#t], @racket[name] must have been
+            passed as the first argument to @racket[color-prefs:add-color-scheme-entry].})
+ 
+ (proc-doc/names
+  color-prefs:color-scheme-style-name?
+  (-> any/c boolean?)
+  (name)
+  @{Returns @racket[#t] if @racket[name] is a known color scheme name,
+            and is connected to a style. 
+            
+            In order to return @racket[#t], @racket[name] must have been
+            passed as the first argument to @racket[color-prefs:add-color-scheme-entry]
+            and the @racket[#:style] argument must have also been passed.})
+ 
+ (proc-doc 
+  color-prefs:lookup-in-color-scheme
+  (->i ([name color-prefs:known-color-scheme-name?])
+       ()
+       [result (name)
+               (if (color-prefs:color-scheme-style-name? name)
+                   (is-a?/c style-delta%)
+                   (is-a?/c color%))])
+  @{Returns the current style delta or color associated with @racket[name].})
+ 
+ (proc-doc
+  color-prefs:set-in-color-scheme
+  (->i ([name color-prefs:known-color-scheme-name?]
+        [new-val (name)
+                 (if (color-prefs:color-scheme-style-name? name)
+                     (is-a?/c style-delta%)
+                     (is-a?/c color%))])
+       ()
+       [result void?])
+  @{Updates the current color or style delta associated with 
+    @racket[name] in the current color scheme.})
+ 
+ (proc-doc
+  color-prefs:register-color-scheme-entry-change-callback
+  (->i ([name color-prefs:known-color-scheme-name?]
+        [fn (name)
+            (-> (if (color-prefs:color-scheme-style-name? name)
+                    (is-a?/c style-delta%)
+                    (is-a?/c color%))
+                any)])
+       ([weak? boolean?])
+       [result void?])
+  (#f)
+  @{Registers a callback that is invoked whenever the color mapped by
+    @racket[name] changes. Changes may happen due to calls to
+    @racket[color-prefs:set-in-color-scheme] or due to calls to 
+    @racket[color-prefs:set-current-color-scheme].
+    
+    If @racket[weak?] is @racket[#t], the @racket[fn] argument is held
+    onto weakly; otherwise it is held onto strongly.})
+ )
+
 
 (define-syntax (racket:-reprovides stx)
   #`(provide

@@ -135,43 +135,43 @@ If the namespace does not, they are colored the unbound color.
                                            both-obligation-style-name
                                            cs-both-obligation-color))
 
-(color-prefs:register-color-preference lexically-bound-variable-style-pref
-                                       lexically-bound-variable-style-name
-                                       (make-object color% 81 112 203)
-                                       (make-object color% 50 163 255))
-(color-prefs:register-color-preference set!d-variable-style-pref
-                                       set!d-variable-style-name
-                                       (send the-color-database find-color "firebrick")
-                                       (send the-color-database find-color "pink"))
-(color-prefs:register-color-preference unused-require-style-pref
-                                       unused-require-style-name
-                                       (send the-color-database find-color "red")
-                                       (send the-color-database find-color "pink"))
-(color-prefs:register-color-preference free-variable-style-pref
-                                       free-variable-style-name
-                                       (send the-color-database find-color "red")
-                                       (send the-color-database find-color "pink"))
+(color-prefs:add-color-scheme-entry lexically-bound-variable-style-pref
+                                    #:style lexically-bound-variable-style-name
+                                    (make-object color% 81 112 203)
+                                    (make-object color% 50 163 255))
+(color-prefs:add-color-scheme-entry set!d-variable-style-pref
+                                    #:style set!d-variable-style-name
+                                    (send the-color-database find-color "firebrick")
+                                    (send the-color-database find-color "pink"))
+(color-prefs:add-color-scheme-entry unused-require-style-pref
+                                    #:style unused-require-style-name
+                                    (send the-color-database find-color "red")
+                                    (send the-color-database find-color "pink"))
+(color-prefs:add-color-scheme-entry free-variable-style-pref
+                                    #:style free-variable-style-name
+                                    (send the-color-database find-color "red")
+                                    (send the-color-database find-color "pink"))
 
-(color-prefs:register-color-preference imported-variable-style-pref
-                                       imported-variable-style-name
-                                       (make-object color% 68 0 203)
-                                       (make-object color% 166 0 255))
-(color-prefs:register-color-preference my-obligation-style-pref
-                                       my-obligation-style-name
-                                       (send the-color-database find-color "firebrick")
-                                       (send the-color-database find-color "pink"))
-(color-prefs:register-color-preference their-obligation-style-pref
-                                       their-obligation-style-name
-                                       (make-object color% 0 116 0)
-                                       (send the-color-database find-color "limegreen"))
-(color-prefs:register-color-preference unk-obligation-style-pref
-                                       unk-obligation-style-name
-                                       (send the-color-database find-color "black")
-                                       (send the-color-database find-color "white"))
-(color-prefs:register-color-preference both-obligation-style-pref
-                                       both-obligation-style-name
-                                       (make-object color% 139 142 28)
-                                       (send the-color-database find-color "khaki"))
+(color-prefs:add-color-scheme-entry imported-variable-style-pref
+                                    #:style imported-variable-style-name
+                                    (make-object color% 68 0 203)
+                                    (make-object color% 166 0 255))
+(color-prefs:add-color-scheme-entry my-obligation-style-pref
+                                    #:style my-obligation-style-name
+                                    (send the-color-database find-color "firebrick")
+                                    (send the-color-database find-color "pink"))
+(color-prefs:add-color-scheme-entry their-obligation-style-pref
+                                    #:style their-obligation-style-name
+                                    (make-object color% 0 116 0)
+                                    (send the-color-database find-color "limegreen"))
+(color-prefs:add-color-scheme-entry unk-obligation-style-pref
+                                    #:style unk-obligation-style-name
+                                    (send the-color-database find-color "black")
+                                    (send the-color-database find-color "white"))
+(color-prefs:add-color-scheme-entry both-obligation-style-pref
+                                    #:style both-obligation-style-name
+                                    (make-object color% 139 142 28)
+                                    (send the-color-database find-color "khaki"))
 
 (define tool@ 
   (unit 

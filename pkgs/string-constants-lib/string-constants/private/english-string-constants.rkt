@@ -548,13 +548,15 @@ please adhere to these guidelines:
  (hide-column-width-guide "Hide Column Width Guide for Files with ~a Columns")
  (show-column-width-guide "Show Column Width Guide at ~a Columns") ;; filled with a number > 2
  (limit-interactions-size "Limit interactions size")
- (background-color "Background Color")
+ (background-color "Background") ;; this is in the color section already, so shorten the name a little
  (default-text-color "Default text") ;; used for configuring colors, but doesn't need the word "color"
  (choose-a-background-color "Please choose a background color")
  (revert-to-defaults "Revert to Defaults")
  (undo-changes "Undo Changes and Close") ;; used in the preferences dialog to undo preference changes
   
-  (black-on-white-color-scheme "Black on White") ;; these two appear in the color preferences dialog on butttons
+  (color-schemes "Color Schemes") ;; the label in the preferences dialog for the color scheme panel
+  (classic-color-scheme "Classic") ;; formerly called 'black on white'
+  (modern-color-scheme "Modern")   ;; an attempt to be more color-blind friendly
   (white-on-black-color-scheme "White on Black") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
   
   (add-spacing-between-lines "Add one pixel of extra space between lines")

@@ -263,6 +263,7 @@
   
 
 (drracket:font:setup-preferences)
+(color-prefs:add-color-scheme-preferences-panel)
 (color-prefs:add-background-preferences-panel)
 (racket:add-preferences-panel)
 (racket:add-coloring-preferences-panel)
@@ -588,19 +589,19 @@
 (define repl-error-pref 'drracket:read-eval-print-loop:error-color)
 (define repl-out-pref 'drracket:read-eval-print-loop:out-color)
 (define repl-value-pref 'drracket:read-eval-print-loop:value-color)
-(color-prefs:register-color-preference repl-value-pref
-                                       "text:ports value"
-                                       (make-object color% 0 0 175)
-                                       (make-object color% 57 89 216))
-(color-prefs:register-color-preference repl-error-pref
-                                       "text:ports err"
-                                       (let ([sd (make-object style-delta% 'change-italic)])
-                                         (send sd set-delta-foreground (make-object color% 255 0 0))
-                                         sd))
-(color-prefs:register-color-preference repl-out-pref
-                                       "text:ports out"
-                                       (make-object color% 150 0 150)
-                                       (make-object color% 192 46 214))
+(color-prefs:add-color-scheme-entry repl-value-pref
+                                    #:style "text:ports value"
+                                    (make-object color% 0 0 175)
+                                    (make-object color% 57 89 216))
+(color-prefs:add-color-scheme-entry repl-error-pref
+                                    #:style "text:ports err"
+                                    (make-object color% 255 0 0)
+                                    (make-object color% 255 0 0)
+                                    #:italic? #t)
+(color-prefs:add-color-scheme-entry repl-out-pref
+                                    #:style "text:ports out"
+                                    (make-object color% 150 0 150)
+                                    (make-object color% 192 46 214))
 (color-prefs:add-to-preferences-panel 
  (string-constant repl-colors)
  (λ (parent)
@@ -621,15 +622,15 @@
 (define test-coverage-on-style-pref (string->symbol drracket:debug:test-coverage-on-style-name))
 (define test-coverage-off-style-pref (string->symbol drracket:debug:test-coverage-off-style-name))
 
-(color-prefs:register-color-preference test-coverage-on-style-pref
-                                       drracket:debug:test-coverage-on-style-name
-                                       (send the-color-database find-color "black")
-                                       (send the-color-database find-color "white"))
-(color-prefs:register-color-preference test-coverage-off-style-pref
-                                       drracket:debug:test-coverage-off-style-name
-                                       (send the-color-database find-color "orange")
-                                       (send the-color-database find-color "indianred")
-                                       #:background (send the-color-database find-color "black"))
+(color-prefs:add-color-scheme-entry test-coverage-on-style-pref
+                                    #:style drracket:debug:test-coverage-on-style-name
+                                    "black"
+                                    "white")
+(color-prefs:add-color-scheme-entry test-coverage-off-style-pref
+                                    #:style drracket:debug:test-coverage-off-style-name
+                                    "orange"
+                                    "indianred"
+                                    #:background "black")
 (color-prefs:add-to-preferences-panel 
  "Module Language"
  (λ (parent)
@@ -640,7 +641,8 @@
    (color-prefs:build-color-selection-panel parent
                                             test-coverage-off-style-pref
                                             drracket:debug:test-coverage-off-style-name
-                                            (string-constant test-coverage-off))))
+                                            (string-constant test-coverage-off)
+                                            #:background? #t)))
 
 (drracket:module-language:initialize-prefs-panel)
 
@@ -706,6 +708,10 @@
      
      (when (eq? (system-type) 'macosx)
        (new separator-menu-item% [parent windows-menu])))))
+
+;; this needs to happen after all of the earlier preferences setup
+;; so that the color-prefs knowns about all the new colors names
+(color-prefs:register-info-based-color-schemes)
 
 ;; Check for any files lost last time.
 ;; Ignore the framework's empty frames test, since

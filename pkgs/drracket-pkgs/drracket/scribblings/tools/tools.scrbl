@@ -570,8 +570,18 @@ has.
 @index{modes}
 @index{scheme mode}
 @index{racket mode}
-@index{definitions-text-surrogate}
 
+@subsection{Color Schemes}
+
+DrRacket uses the framework's color schemes to colorize
+source text and other aspects of itself. See 
+@racket[color-prefs:register-info-based-color-schemes] for
+details on how to add new color schemes via @filepath{info.rkt}
+files.
+
+@subsection{General-purpose Modes}
+
+@index{definitions-text-surrogate}
 DrRacket provides support for multiple editor modes based on the
 @tt{#lang} line at the beginning of the editor. If the 
 @onscreen{Modes} submenu of the @onscreen{Edit} menu has

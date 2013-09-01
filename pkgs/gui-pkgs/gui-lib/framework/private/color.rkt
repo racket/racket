@@ -678,7 +678,8 @@ added get-regions
     (define clear-old-locations void)
     
     (define mismatch-color (make-object color% "PINK"))
-    (define/private (get-match-color) (preferences:get 'framework:paren-match-color))
+    (define/private (get-match-color) 
+      (color-prefs:lookup-in-color-scheme 'framework:paren-match-color))
     
     
     ;; higlight : number number number (or/c color any)
@@ -1232,7 +1233,7 @@ added get-regions
                  'low))))
   (cons (list 'basic-grey
               (string-constant paren-color-basic-grey)
-              (vector (preferences:get 'framework:paren-match-color))
+              (vector (color-prefs:lookup-in-color-scheme 'framework:paren-match-color))
               'high)
         parenthesis-color-table))
 
