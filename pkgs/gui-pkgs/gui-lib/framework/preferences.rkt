@@ -276,10 +276,15 @@ the state transitions / contracts are:
   (cond
     [(and (not (pref-default-set? p))
           (pref-can-init? p))
-     (let ([default-okay? (checker default-value)])
-       (unless default-okay?
-         (error 'set-default "~s: checker (~s) returns ~s for ~s, expected #t\n"
-                p checker default-okay? default-value)))
+     (define default-okay? (checker default-value))
+     (unless default-okay?
+       (error 'set-default 
+              (string-append
+               "checker doesn't match default\n"
+               "  default: ~e\n"
+               "  pref sym: ~e\n"
+               "  checker: ~e")
+              p default-value checker))
 
      (unless (= (length aliases) (length rewrite-aliases))
        (error 'preferences:set-default 
