@@ -61,7 +61,7 @@ Each @tech{package} has associated @deftech{package metadata}:
  @item{a @deftech{package name} --- a string made of the characters @|package-name-chars|.}
  @item{a @deftech{checksum} --- a string that identifies different releases of a package. A
                                 package can be updated when its @tech{checksum} changes,
-                                whether or not its @tech{version} changes. The checksum
+                                whether or not its @tech{version} changes. The checksum normally
                                 can be computed as the SHA1 (see @racketmodname[openssl/sha1])
                                 of the package's content.}
  @item{a @deftech{version} --- a string of the form @nonterm{maj}@litchar{.}@nonterm{min},
@@ -334,6 +334,13 @@ sub-commands.
        which makes sense only when a single @nonterm{pkg-source} is provided. The name is normally
        inferred for each @nonterm{pkg-source}.}
 
+ @item{@DFlag{checksum} @nonterm{checksum} --- specifies a checksum for the package,
+       which normally makes sense only when a single @nonterm{pkg-source} is provided. The use of
+       @nonterm{checksum} depends on @nonterm{pkg-source}: for a GitHub source, @nonterm{checksum} selects a checksum;
+       for a @tech{package name}, file path, or remote URL as a source, @nonterm{checksum} specifies an expected checksum;
+       for a directory path (including a remote directory URL without a @filepath{.CHECKSUM} file) as a source,
+       @nonterm{checksum} assigns a checksum.}
+
  @item{@DFlag{deps} @nonterm{behavior} --- Selects the behavior for dependencies, where @nonterm{behavior} is one of
   @itemlist[
    @item{@exec{fail} --- Cancels the installation if dependencies are uninstalled or version requirements are unmet. 
@@ -433,6 +440,7 @@ the given @nonterm{pkg-source}s.
 
  @item{@DFlag{type} @nonterm{type} or @Flag{t} @nonterm{type} --- Same as for @command-ref{install}.}
  @item{@DFlag{name} @nonterm{pkg} or @Flag{n} @nonterm{pkg} --- Same as for @command-ref{install}.}
+ @item{@DFlag{checksum} @nonterm{checksum} --- Same as for @command-ref{install}.}
  @item{@DFlag{deps} @nonterm{behavior} --- Same as for @command-ref{install}.}
  @item{@DFlag{auto} --- Shorthand for @exec{@DFlag{deps} search-auto} plus @DFlag{update-deps}.}
  @item{@DFlag{update-deps} --- Same as for @command-ref{install}, but

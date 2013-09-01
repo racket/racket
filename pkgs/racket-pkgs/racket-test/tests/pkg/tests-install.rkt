@@ -61,6 +61,11 @@
    (shelly-case
     "local directory name fails because called a URL"
     $ "raco pkg install --type file-url test-pkgs/pkg-a-first/" =exit> 1)
+   (shelly-case
+    "local file fails due to mismatch with specified checksum"
+    $ "raco pkg install --checksum zzz test-pkgs/pkg-a-first.plt"
+    =exit> 1
+    =stderr> #rx"unexpected checksum")
 
    (shelly-case
     "remote/URL/http directory, non-existant file"
@@ -74,6 +79,11 @@
     "remote/URL/http directory, bad manifest"
     ;; XXX why does this error now?
     $ "raco pkg install http://localhost:9999/pkg-test1-manifest-error/" =exit> 1)
+   (shelly-case
+    "remote/URL/file, bad checksum"
+    $ "raco pkg install --checksum zzz http://localhost:9999/pkg-test1.tgz"
+    =exit> 1
+    =stderr> #rx"unexpected checksum")
 
    (shelly-case
     "local directory fails when not there"

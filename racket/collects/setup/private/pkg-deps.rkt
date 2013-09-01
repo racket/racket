@@ -77,7 +77,7 @@
       (error 'check-dependencies "package not installed: ~s" pkg))
     ;; Get package information:
     (define-values (checksum mods deps+build-deps)
-      (get-pkg-content (pkg-desc (if (path? dir) (path->string dir) dir) 'dir pkg #f)
+      (get-pkg-content (pkg-desc (if (path? dir) (path->string dir) dir) 'dir pkg #f #f)
                        #:namespace metadata-ns
                        #:extract-info (lambda (i)
                                         (if (and i

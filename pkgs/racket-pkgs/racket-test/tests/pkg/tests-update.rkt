@@ -49,6 +49,13 @@
    (shelly-install "replacement checksum can be checked"
                    "test-pkgs/pkg-test1.zip"
                    $ "raco pkg update test-pkgs/pkg-test1.zip" =stdout> "No updates available\n")
+   (shelly-install "checksum can be supplied for local directory"
+                   "test-pkgs/pkg-test1.zip"
+                   $ "racket -e '(require pkg-test1/update)'" =exit> 42
+                   $ "raco pkg update --name pkg-test1 --checksum abcdef test-pkgs/pkg-test1-v2"
+                   $ "racket -e '(require pkg-test1/update)'" =exit> 43
+                   $ "raco pkg show" =stdout> #rx"abcdef"
+                   $ "raco pkg update --name pkg-test1 --checksum abcdef test-pkgs/pkg-test1-v2" =stdout> "No updates available\n")
 
    (shelly-wind
     $ "mkdir -p test-pkgs/update-test"

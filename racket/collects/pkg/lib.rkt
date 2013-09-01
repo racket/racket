@@ -68,12 +68,13 @@
   (apply printf fmt args)
   (flush-output))
 
-(struct pkg-desc (source type name auto?))
+(struct pkg-desc (source type name checksum auto?))
 (define (pkg-desc=? a b)
   (define (->list a)
     (list (pkg-desc-source a)
           (pkg-desc-type a)
           (pkg-desc-name a)
+          (pkg-desc-checksum a)
           (pkg-desc-auto? a)))
   (equal? (->list a) (->list b)))
 
@@ -423,17 +424,18 @@
                             #:download-printf download-printf
                             #:pkg-name pkg-name)]))
 
-(define (checksum-for-pkg-source pkg-source type pkg-name download-printf)
+(define (checksum-for-pkg-source pkg-source type pkg-name given-checksum download-printf)
   (cond
    [(or (eq? type 'file-url) (eq? type 'dir-url) (eq? type 'github))
-    (remote-package-checksum `(url ,pkg-source) download-printf pkg-name)]
+    (or (remote-package-checksum `(url ,pkg-source) download-printf pkg-name)
+        given-checksum)]
    [(eq? type 'file)
     (define checksum-pth (format "~a.CHECKSUM" pkg-source))
     (or (and (file-exists? checksum-pth)
              (file->string checksum-pth))
         (and (file-exists? pkg-source)
              (call-with-input-file* pkg-source sha1)))]
-   [else #f]))
+   [else given-checksum]))
 
 (define (write-file-hash! file new-db)
   (unless (eq? (pkg-lock-held) 'exclusive)
@@ -804,6 +806,19 @@
              reason
              s))
 
+(define (check-checksum given-checksum checksum what pkg-src)
+  (when (and given-checksum
+             checksum
+             (not (equal? given-checksum checksum)))
+    (pkg-error (~a "~a checksum on package\n"
+                   "  package source: ~a\n"
+                   "  expected: ~e\n"
+                   "  got: ~e")
+               what
+               pkg-src
+               given-checksum
+               checksum)))
+
 ;; Downloads a package (if needed) and unpacks it (if needed) into a  
 ;; temporary directory.
 (define (stage-package/info pkg
@@ -852,8 +867,17 @@
     (define scheme (url-scheme pkg-url))
 
     (define orig-pkg `(url ,pkg))
-    (define checksum (or given-checksum
-                         (remote-package-checksum orig-pkg download-printf pkg-name)))
+    (define found-checksum
+      (case type
+        [(github)
+         ;; For a github source, we want to use any given checksum to get a tarball.
+         (or given-checksum
+             (remote-package-checksum orig-pkg download-printf pkg-name))]
+        [else
+         (remote-package-checksum orig-pkg download-printf pkg-name)]))
+    (when check-sums?
+      (check-checksum given-checksum found-checksum "unexpected" pkg))
+    (define checksum (or found-checksum given-checksum))
     (define info
       (update-install-info-orig-pkg
        (match type
@@ -998,16 +1022,10 @@
       (pkg-error (~a "remote package had no checksum\n"
                      "  package: ~a")
                  pkg))
-    (when (and checksum
-               (install-info-checksum info)
-               check-sums?
-               (not (equal? (install-info-checksum info) checksum)))
-      (pkg-error (~a "incorrect checksum on package\n"
-                     "  package: ~a\n"
-                     "  expected ~e\n"
-                     "  got ~e")
-                 pkg
-                 (install-info-checksum info) checksum))
+    (when check-sums?
+      (check-checksum checksum (install-info-checksum info)
+                      "mismatched"
+                      pkg))
     (update-install-info-checksum
      info
      checksum)]
@@ -1019,16 +1037,12 @@
       (and (file-exists? checksum-pth)
            check-sums?
            (file->string checksum-pth)))
+    (check-checksum given-checksum expected-checksum "unexpected" pkg)
     (define actual-checksum
       (with-input-from-file pkg
         (λ ()
            (sha1 (current-input-port)))))
-    (unless (or (not expected-checksum)
-                (string=? expected-checksum actual-checksum))
-      (pkg-error (~a "incorrect checksum on package\n"
-                     "  expected: ~e\n"
-                     "  got: ~e")
-                 expected-checksum actual-checksum))
+    (check-checksum expected-checksum actual-checksum "mismatched" pkg)
     (define checksum
       actual-checksum)
     (define pkg-format (filename-extension pkg))
@@ -1095,7 +1109,8 @@
                                                     (simple-form-path pkg)
                                                     #:more-than-root? #t)))
                       pkg
-                      #f #f
+                      #f
+                      given-checksum ; if a checksum is provided, just use it
                       (directory->module-paths pkg pkg-name metadata-ns))]
        [else
         (define pkg-dir
@@ -1117,7 +1132,7 @@
                       `(dir ,(simple-form-path* pkg))
                       pkg-dir
                       (or (not in-place?) in-place-clean?) 
-                      #f
+                      given-checksum ; if a checksum is provided, just use it
                       (directory->module-paths pkg-dir pkg-name metadata-ns))]))]
    [(eq? type 'name)
     (define catalog-info (package-catalog-lookup pkg #f download-printf))
@@ -1131,10 +1146,9 @@
                                      download-printf
                                      metadata-ns
                                      #:strip strip-mode))
-    (when (and (install-info-checksum info)
-               check-sums?
-               (not (equal? (install-info-checksum info) checksum)))
-      (pkg-error "incorrect checksum on package\n  package: ~a" pkg))
+    (when check-sums?
+      (check-checksum given-checksum checksum "unexpected" pkg)
+      (check-checksum checksum (install-info-checksum info) "incorrect" pkg))
     (update-install-info-orig-pkg
      (update-install-info-checksum
       info
@@ -1145,13 +1159,12 @@
 
 (define (pkg-stage desc
                    #:namespace [metadata-ns (make-metadata-namespace)] 
-                   #:checksum [checksum #f]
                    #:in-place? [in-place? #f]
                    #:strip [strip-mode #f])
   (define i (stage-package/info (pkg-desc-source desc)
                                 (pkg-desc-type desc)
                                 (pkg-desc-name desc)
-                                #:given-checksum checksum 
+                                #:given-checksum (pkg-desc-checksum desc)
                                 #t
                                 void
                                 metadata-ns
@@ -1203,7 +1216,7 @@
   (define all-db (merge-pkg-dbs))
   (define path-pkg-cache (make-hash))
   (define (install-package/outer infos desc info)
-    (match-define (pkg-desc pkg type orig-name auto?) desc)
+    (match-define (pkg-desc pkg type orig-name given-checksum auto?) desc)
     (match-define
      (install-info pkg-name orig-pkg pkg-dir clean? checksum module-paths)
      info)
@@ -1384,7 +1397,8 @@
                                     ((packages-to-update download-printf current-scope-db 
                                                          #:must-update? #f #:deps? #t
                                                          #:update-cache update-cache
-                                                         #:namespace metadata-ns)
+                                                         #:namespace metadata-ns
+                                                         #:ignore-checksums? ignore-checksums?)
                                      name))
                                null))
                         deps))
@@ -1478,7 +1492,8 @@
               (let ([to-update (append-map (packages-to-update download-printf db
                                                                #:deps? update-deps? 
                                                                #:update-cache update-cache
-                                                               #:namespace metadata-ns)
+                                                               #:namespace metadata-ns
+                                                               #:ignore-checksums? ignore-checksums?)
                                            update-pkgs)])
                 (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))))
             (match this-dep-behavior
@@ -1538,7 +1553,8 @@
   (define metadata-ns (make-metadata-namespace))
   (define infos
     (for/list ([v (in-list descs)])
-      (stage-package/info (pkg-desc-source v) (pkg-desc-type v) (pkg-desc-name v) 
+      (stage-package/info (pkg-desc-source v) (pkg-desc-type v) (pkg-desc-name v)
+                          #:given-checksum (pkg-desc-checksum v)
                           check-sums? download-printf
                           metadata-ns
                           #:strip strip-mode
@@ -1714,7 +1730,7 @@
                        (for/list ([dep (in-list deps)])
                          (if (pkg-desc? dep)
                              dep
-                             (pkg-desc dep #f #f #t))))])])
+                             (pkg-desc dep #f #f #f #t))))])])
     (install-packages
      #:old-infos old-infos
      #:old-descs old-descs
@@ -1748,7 +1764,8 @@
                              #:must-update? [must-update? #t]
                              #:deps? [deps? #f]
                              #:namespace metadata-ns 
-                             #:update-cache update-cache)
+                             #:update-cache update-cache
+                             #:ignore-checksums? ignore-checksums?)
          pkg-name)
   (cond
    [(pkg-desc? pkg-name)
@@ -1762,17 +1779,31 @@
                      inferred-name))
     ;; Check that the package is installed, and get current checksum:
     (define info (package-info name #:db db))
-    (if (or (not (pkg-info-checksum info))
-            (not (equal? (pkg-info-checksum info)
-                         (checksum-for-pkg-source (pkg-desc-source pkg-name)
-                                                  type 
-                                                  name download-printf))))
+    (define new-checksum (checksum-for-pkg-source (pkg-desc-source pkg-name)
+                                                  type
+                                                  name
+                                                  (pkg-desc-checksum pkg-name)
+                                                  download-printf))
+    (unless (or ignore-checksums? (not (pkg-desc-checksum pkg-name)))
+      (unless (equal? (pkg-desc-checksum pkg-name) new-checksum)
+        (pkg-error (~a "incorrect checksum on package\n"
+                       "  package source: ~a\n"
+                       "  expected: ~e\n"
+                       "  got: ~e")
+                   (pkg-desc-source pkg-name)
+                   (pkg-desc-checksum pkg-name) 
+                   new-checksum)))
+    (if (or (not (equal? (pkg-info-checksum info)
+                         new-checksum))
+            ;; No checksum available => always update
+            (not new-checksum))
         ;; Update:
         (begin
           (hash-set! update-cache (pkg-desc-source pkg-name) #t)
           (list (pkg-desc (pkg-desc-source pkg-name)
                           (pkg-desc-type pkg-name)
                           name
+                          (pkg-desc-checksum pkg-name)
                           (pkg-desc-auto? pkg-name))))
         ;; No update needed, but maybe check dependencies:
         (if deps?
@@ -1780,7 +1811,8 @@
                                  #:must-update? #f
                                  #:deps? #t
                                  #:update-cache update-cache
-                                 #:namespace metadata-ns)
+                                 #:namespace metadata-ns
+                                 #:ignore-checksums? ignore-checksums?)
              pkg-name)
             null))]
    [(eq? #t (hash-ref update-cache pkg-name #f))
@@ -1833,7 +1865,7 @@
                     (clear-checksums-in-cache! update-cache)
                     ;; FIXME: the type shouldn't be #f here; it should be
                     ;; preseved from install time:
-                    (list (pkg-desc orig-pkg-source #f pkg-name auto?))))
+                    (list (pkg-desc orig-pkg-source #f pkg-name #f auto?))))
              (if deps?
                  ;; Check dependencies
                  (append-map
@@ -1841,7 +1873,8 @@
                                       #:must-update? #f
                                       #:deps? #t
                                       #:update-cache update-cache
-                                      #:namespace metadata-ns)
+                                      #:namespace metadata-ns
+                                      #:ignore-checksums? ignore-checksums?)
                   ((package-dependencies metadata-ns db) pkg-name))
                  null))]))]
    [else null]))
@@ -1880,7 +1913,8 @@
                                                     #:deps? (or update-deps? 
                                                                 all-mode?) ; avoid races
                                                     #:update-cache update-cache
-                                                    #:namespace metadata-ns)
+                                                    #:namespace metadata-ns
+                                                    #:ignore-checksums? ignore-checksums?)
                                 pkgs))
   (cond
     [(empty? to-update)
@@ -1979,7 +2013,7 @@
            [(list 'url url) (values url #f)]
            [(list 'link path) (values path 'link)]
            [(list 'static-link path) (values path 'static-link)]))
-       (pkg-desc source type name #f))
+       (pkg-desc source type name #f #f))
      string<?
      #:key pkg-desc-name))
   (unless quiet?
@@ -2608,8 +2642,9 @@
               (printf/flush "Downloading ~s\n" source))
             (define-values (checksum modules deps)
               (get-pkg-content (pkg-desc source
-                                         #f 
-                                         (hash-ref ht 'checksum #f) 
+                                         #f
+                                         name
+                                         (hash-ref ht 'checksum #f)
                                          #f)))
             (db:set-pkg-modules! name catalog checksum modules)
             (db:set-pkg-dependencies! name catalog checksum deps)))))))
@@ -2669,7 +2704,8 @@
   [pkg-desc 
    (-> string? 
        (or/c #f 'file 'dir 'link 'static-link 'file-url 'dir-url 'github 'name) 
-       (or/c string? #f) 
+       (or/c string? #f)
+       (or/c string? #f)
        boolean?
        pkg-desc?)]
   [pkg-config
@@ -2750,7 +2786,6 @@
         (hash/c string? pkg-info?))]
   [pkg-stage (->* (pkg-desc?)
                   (#:namespace namespace?
-                               #:checksum (or/c #f string?)
                                #:in-place? boolean?
                                #:strip (or/c #f 'source 'binary))
                   (values string?

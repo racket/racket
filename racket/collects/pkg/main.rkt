@@ -127,7 +127,7 @@
             ;; ----------------------------------------
             [install
              "Install packages"
-             #:once-any
+             #:once-each
              install-type-flags ...
              #:once-any
              [install-dep-flags ...
@@ -165,7 +165,7 @@
                                   #:strip (or (and source 'source) (and binary 'binary))
                                   #:link-dirs? link-dirs?
                                   (for/list ([p (in-list pkg-source)])
-                                    (pkg-desc p a-type name #f))))))
+                                    (pkg-desc p a-type name checksum #f))))))
                 (setup no-setup setup-collects jobs)))]
             ;; ----------------------------------------
             [update
@@ -173,7 +173,7 @@
              #:once-each
              [#:bool all ("-a") ("Update all packages if no <pkg-source> is given")]
              [#:bool lookup () "For each name <pkg-source>, look up in catalog"]
-             #:once-any
+             #:once-each
              install-type-flags ...
              #:once-any
              [install-dep-flags ...
@@ -203,13 +203,13 @@
                      (pkg-update (for/list ([pkg-source (in-list pkg-source)])
                                    (cond
                                     [lookup
-                                     (pkg-desc pkg-source a-type name #f)]
+                                     (pkg-desc pkg-source a-type name checksum #f)]
                                     [else
                                      (define-values (pkg-name pkg-type) 
                                        (package-source->name+type pkg-source a-type))
                                      (if (eq? pkg-type 'name)
                                          pkg-name
-                                         (pkg-desc pkg-source a-type name #f))]))
+                                         (pkg-desc pkg-source a-type name checksum #f))]))
                                  #:all? all
                                  #:dep-behavior (if auto 'search-auto deps)
                                  #:force? force
@@ -427,7 +427,9 @@
       "valid <types>s are: file, dir, file-url, dir-url, github, or name;"
       "if not specified, the type is inferred syntactically")]
     [(#:str name #f) name ("-n") ("Name of package, instead of inferred"
-                                  "(makes sense only when a single <pkg-source> is given)")])
+                                  "(makes sense only when a single <pkg-source> is given)")]
+    [(#:str checksum #f) checksum () ("Checksum of package, either expected or selected"
+                                      "(makes sense only when a single <pkg-source> is given)")])
    #:install-dep-flags
    ([(#:sym mode [fail force search-ask search-auto] #f) deps ()
      ("Specify the behavior for uninstalled dependencies, with"

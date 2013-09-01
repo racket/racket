@@ -102,9 +102,10 @@ scope}.}
 
 @deftogether[(
 @defproc[(pkg-desc? [v any/c]) boolean?]
-@defproc[(pkg-desc [name string?]
+@defproc[(pkg-desc [source string?]
                    [type (or/c #f 'file 'dir 'link 'static-link 
                                'file-url 'dir-url 'github 'name)]
+                   [name (or/c string? #f)]
                    [checksum (or/c string? #f)]
                    [auto? boolean?])
          pkg-desc?]

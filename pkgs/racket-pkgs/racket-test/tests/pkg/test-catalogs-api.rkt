@@ -28,9 +28,9 @@
                 (hash-ref details "pkg-test1"))
 
   (define-values (cksum mods deps) 
-    (get-pkg-content (pkg-desc "pkg-test1" #f #f #f)))
+    (get-pkg-content (pkg-desc "pkg-test1" #f #f #f #f)))
   (define-values (cksum1 mods1 deps1)
-    (get-pkg-content (pkg-desc "http://localhost:9999/pkg-test1.zip" #f #f #f)))
+    (get-pkg-content (pkg-desc "http://localhost:9999/pkg-test1.zip" #f #f #f #f)))
 
   (check-equal? cksum cksum1)
   (check-equal? (sort mods string<? #:key cadr)
@@ -42,5 +42,5 @@
   (check-equal? deps '())
 
   (define-values (cksum2 mods2 deps2) 
-    (get-pkg-content (pkg-desc "pkg-test2" 'name #f #f)))
+    (get-pkg-content (pkg-desc "pkg-test2" 'name #f #f #f)))
   (check-equal? deps2 '("pkg-test1")))

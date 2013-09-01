@@ -183,6 +183,7 @@
                    (pkg-desc (path->string dir)
                              'static-link
                              #f
+                             #f
                              auto?))))))
 
 ;; link configuration
