@@ -76,40 +76,45 @@
     [(or "github" "git")
      (match-define (list* user repo branch path)
                    (split-github-url pkg-url))
-     (for/or ([kind '("branches" "tags")])
-       (define api-u
-         (url "https" #f "api.github.com" #f #t
-              (map (λ (x) (path/param x empty))
-                   (list "repos" user repo kind))
-              (append query
-                      (if (and (github-client_id)
-                               (github-client_secret))
-                          (list (cons 'client_id (github-client_id))
-                                (cons 'client_secret (github-client_secret)))
-                          empty))
-              #f))
-       (download-printf "Querying GitHub ~a\n" kind)
-       (log-pkg-debug "Querying GitHub at ~a" (url->string api-u))
-       (define api-bs
-         (call/input-url+200
-          api-u port->bytes
-          #:headers (list (format "User-Agent: raco-pkg/~a" (version)))))
-       (unless api-bs
-         (error 'package-url->checksum
-                "could not connect to GitHub\n URL: ~a"
-                (url->string api-u)))
-       (define branches
-         (read-json (open-input-bytes api-bs)))
-       (unless (and (list? branches)
-                    (andmap hash? branches)
-                    (andmap (λ (b) (hash-has-key? b 'name)) branches)
-                    (andmap (λ (b) (hash-has-key? b 'commit)) branches))
-         (error 'package-url->checksum
-                "Invalid response from Github: ~e"
-                api-bs))
-       (for/or ([b (in-list branches)])
-         (and (equal? (hash-ref b 'name) branch)
-              (hash-ref (hash-ref b 'commit) 'sha))))]
+     (or
+      (for/or ([kind '("branches" "tags")])
+        (define api-u
+          (url "https" #f "api.github.com" #f #t
+               (map (λ (x) (path/param x empty))
+                    (list "repos" user repo kind))
+               (append query
+                       (if (and (github-client_id)
+                                (github-client_secret))
+                           (list (cons 'client_id (github-client_id))
+                                 (cons 'client_secret (github-client_secret)))
+                           empty))
+               #f))
+        (download-printf "Querying GitHub ~a\n" kind)
+        (log-pkg-debug "Querying GitHub at ~a" (url->string api-u))
+        (define api-bs
+          (call/input-url+200
+           api-u port->bytes
+           #:headers (list (format "User-Agent: raco-pkg/~a" (version)))))
+        (unless api-bs
+          (error 'package-url->checksum
+                 "could not connect to GitHub\n URL: ~a"
+                 (url->string api-u)))
+        (define branches
+          (read-json (open-input-bytes api-bs)))
+        (unless (and (list? branches)
+                     (andmap hash? branches)
+                     (andmap (λ (b) (hash-has-key? b 'name)) branches)
+                     (andmap (λ (b) (hash-has-key? b 'commit)) branches))
+          (error 'package-url->checksum
+                 "Invalid response from Github: ~e"
+                 api-bs))
+        (for/or ([b (in-list branches)])
+          (and (equal? (hash-ref b 'name) branch)
+               (hash-ref (hash-ref b 'commit) 'sha))))
+      ;; no matching branch/tag found, so if `branch' matches the
+      ;; syntax of a commit id, then assume that it refers to a commit
+      (and (regexp-match? #rx"[a-f0-9]+" branch)
+           branch))]
     [_
      (define u (string-append pkg-url-str ".CHECKSUM"))
      (download-printf "Downloading checksum for ~a\n" pkg-name)
