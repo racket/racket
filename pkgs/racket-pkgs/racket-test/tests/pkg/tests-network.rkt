@@ -27,6 +27,10 @@
    "--type github mflatt/pkg-test?path=pkg-test1/#alt"
    $ "racket -l racket/base -l pkg-test1/number -e '(number)'" =stdout> "10\n")
   (shelly-install 
+   "remote/github with tag"
+   "git://github.com/mflatt/pkg-test?path=pkg-test1/#hundred"
+   $ "racket -l racket/base -l pkg-test1/number -e '(number)'" =stdout> "100\n")
+  (shelly-install 
    "remote/github with checksum"
    "--checksum f9b4eef22cdd9ab88b254cb027fc1ebe7fb596fd git://github.com/mflatt/pkg-test?path=pkg-test1"
    $ "racket -l racket/base -l pkg-test1/number -e '(number)'" =stdout> "100\n"
