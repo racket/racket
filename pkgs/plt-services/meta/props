@@ -636,7 +636,6 @@ path/s is either such a string or a list of them.
 "Makefile" responsible (mflatt)
 "README.txt" responsible (mflatt)
 "build" responsible (mflatt)
-"collects" responsible (mflatt jay)
 "native-pkgs" responsible (mflatt)
 "pkgs/algol60" responsible (mflatt robby)
 "pkgs/base" responsible (mflatt)
