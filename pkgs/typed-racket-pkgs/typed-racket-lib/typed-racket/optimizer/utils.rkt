@@ -2,7 +2,11 @@
 
 (require racket/match unstable/sequence unstable/syntax
          racket/dict syntax/id-table racket/syntax syntax/stx
+         syntax/parse
+         racket/promise
+         (for-syntax racket/base syntax/parse racket/syntax)
          "../utils/utils.rkt"
+         (utils tc-utils)
          (for-template racket/base)
          (types type-table utils subtype)
          (rep type-rep))
@@ -11,7 +15,8 @@
          subtypeof? isoftype?
          mk-unsafe-tbl
          n-ary->binary n-ary-comp->binary
-         optimize
+         opt-expr optimize
+         define-literal-syntax-class
          syntax/loc/origin quasisyntax/loc/origin)
 
 ;; for tracking both origin and source location information
@@ -68,3 +73,24 @@
 ;; will be set to the actual optimization function at the entry point
 ;; of the optimizer
 (define optimize (make-parameter #f))
+
+(define-syntax-class opt-expr
+  #:commit
+  #:attributes (opt)
+  (pattern e:expr #:attr opt (delay ((optimize) #'e))))
+
+(define-syntax (define-literal-syntax-class stx)
+  (define-splicing-syntax-class spec
+    #:attributes (name (literals 1))
+    (pattern (~seq name:id (literals:id ...)))
+    (pattern literal:id
+             #:with (literals ...) #'(literal)
+             #:with name (format-id #'literal "~a^" #'literal)))
+  (syntax-parse stx
+    ((_ :spec)
+     #'(begin
+         (define-syntax-class name
+           #:commit
+           #:literals (literals ...)
+           (pattern (~and op (~or literals ...))
+                    #:do [(add-disappeared-use (syntax-local-introduce #'op))]))))))

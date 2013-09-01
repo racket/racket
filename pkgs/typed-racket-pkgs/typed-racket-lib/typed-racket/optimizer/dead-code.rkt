@@ -1,7 +1,7 @@
 #lang racket/base
 
-(require syntax/parse syntax/stx
-         (for-template racket/base racket/flonum racket/fixnum)
+(require syntax/parse racket/promise syntax/stx unstable/sequence
+         (for-template racket/base)
          "../utils/utils.rkt"
          (types type-table)
          (utils tc-utils)
@@ -9,65 +9,53 @@
 
 (provide dead-code-opt-expr)
 
-(define-syntax-class predicate
-  #:literals (flvector? fxvector? exact-integer? fixnum? flonum? vector? string? bytes?)
-  [pattern (~and x:id (~or flvector? fxvector? exact-integer? fixnum? flonum? vector? string? bytes?))])
+;; The type based 'dead code elimination' done by this file just makes the dead code obvious.
+;; The actual elimination step is left to the compiler.
 
-(define (pure? stx)
-  (syntax-parse stx
-    #:literals (#%plain-app)
-    [(#%plain-app f:predicate x:id)
-     #:when (eq? 'lexical (identifier-binding #'x))
-     (add-disappeared-use #'f)
-     (add-disappeared-use #'x)
-     #true]
-    [else #false]))
 
-(define (optimize/drop-pure stx) 
-  (cond [(pure? stx)
-         (log-optimization "useless pure code"
-                           "Unreachable pure code elimination."
-                           stx)
-         (syntax/loc stx (void))]
-        [else ((optimize) stx)]))
+;; if the conditional has a known truth value, we can reveal this
+;; we have to keep the test, in case it has side effects
+(define-syntax-class tautology
+  #:attributes (opt)
+  (pattern e:opt-expr
+    #:when (tautology? #'e)
+    #:attr opt (delay #'(begin e.opt #t))))
+
+(define-syntax-class contradiction
+  #:attributes (opt)
+  (pattern e:opt-expr
+    #:when (contradiction? #'e)
+    #:attr opt (delay #'(begin e.opt #f))))
+
 
 (define-syntax-class dead-code-opt-expr
   #:commit
-  ;; if one of the brances of an if is unreachable, we can eliminate it
-  ;; we have to keep the test, in case it has side effects
-  (pattern ((~and kw (~literal if)) tst:expr thn:expr els:expr)
-           #:when (tautology? #'tst)
-           #:with opt
-           (begin (log-optimization "dead else branch"
-                                    "Unreachable else branch elimination."
-                                    #'els)
-                  (quasisyntax/loc/origin 
-                   this-syntax #'kw
-                   (#%expression (begin #,(optimize/drop-pure #'tst)
-                                        #,((optimize) #'thn))))))
-  (pattern ((~and kw (~literal if)) tst:expr thn:expr els:expr)
-           #:when (contradiction? #'tst)
-           #:with opt
-           (begin (log-optimization "dead then branch"
-                                    "Unreachable then branch elimination."
-                                    #'thn)
-                  (quasisyntax/loc/origin 
-                   this-syntax #'kw
-                   (#%expression (begin #,(optimize/drop-pure #'tst)
-                                        #,((optimize) #'els))))))
-  (pattern ((~and kw (~literal case-lambda)) (formals . bodies) ...)
-           #:when (for/or ((formals (syntax->list #'(formals ...))))
-                    (dead-case-lambda-branch? formals))
-           #:with opt
-           (quasisyntax/loc/origin
-             this-syntax #'kw
-             (case-lambda
-               #,@(for/list ((formals (syntax->list #'(formals ...)))
-                             (bodies  (syntax->list #'(bodies ...)))
-                             #:unless (and (dead-case-lambda-branch? formals)
-                                           (log-optimization
-                                             "dead case-lambda branch"
-                                             "Unreachable case-lambda branch elimination."
-                                             formals)))
-                     (cons formals (stx-map (optimize) bodies)))))))
-
+  #:literal-sets (kernel-literals)
+  (pattern ((~and kw if) tst:tautology thn:opt-expr els:expr)
+    #:do [(log-optimization "dead else branch" "Unreachable else branch elimination." #'els)]
+    #:with opt (syntax/loc/origin this-syntax #'kw (if tst.opt thn.opt els)))
+  (pattern ((~and kw if) tst:contradiction thn:expr els:opt-expr)
+    #:do [(log-optimization "dead then branch" "Unreachable then branch elimination." #'thn)]
+    #:with opt (syntax/loc/origin this-syntax #'kw (if tst.opt thn els.opt)))
+  (pattern ((~and kw case-lambda) (formals . bodies) ...)
+    #:when (for/or ((formals (in-syntax #'(formals ...))))
+             (dead-case-lambda-branch? formals))
+    #:with opt
+      (quasisyntax/loc/origin
+        this-syntax #'kw
+        (begin0
+          (case-lambda
+            #,@(for/list ((formals (in-syntax #'(formals ...)))
+                          (bodies  (in-syntax #'(bodies ...)))
+                          #:unless (dead-case-lambda-branch? formals))
+                  (cons formals (stx-map (optimize) bodies))))
+          ;; We need to keep the syntax objects around in the generated code with the correct bindings
+          ;; so that CheckSyntax displays the arrows correctly
+          #,@(for/list ((formals (in-syntax #'(formals ...)))
+                        (bodies  (in-syntax #'(bodies ...)))
+                        #:when (dead-case-lambda-branch? formals))
+                (log-optimization
+                  "dead case-lambda branch"
+                  "Unreachable case-lambda branch elimination."
+                  formals)
+                #`(λ #,formals . #,bodies))))))
