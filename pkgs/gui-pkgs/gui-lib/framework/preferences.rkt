@@ -138,16 +138,25 @@ the state transitions / contracts are:
       (λ (p value)
         (cond
           [(pref-default-set? p)
-           (let ([default (hash-ref defaults p)])
-             (unless ((default-checker default) value)
-               (error 'preferences:set
-                      "tried to set preference ~e to ~e but it does not meet test from `preferences:set-default'"
-                      p value))
+           (define default (hash-ref defaults p))
+           (define checker? (default-checker default))
+           (unless (checker? value)
+             (error 'preferences:set
+                    (string-append
+                     "new value doesn't satisfy preferences:set-default predicate\n"
+                     "  pref sym: ~e\n"
+                     "  given: ~e\n"
+                     "  predicate: ~e")
+                     p value checker?))
              (check-callbacks p value)
-             (hash-set! preferences p value))]
+             (hash-set! preferences p value)]
           [(not (pref-default-set? p))
            (raise-unknown-preference-error
-            'preferences:set "tried to set the preference ~e to ~e, but no default is set"
+            'preferences:set
+            (string-append
+             "cannot set preference before setting default"
+             "  pref sym: ~e\n"
+             "  given: ~e")
             p
             value)]))
       ps values)
