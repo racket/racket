@@ -38,6 +38,7 @@
                (raise-syntax-error #f "malformed object-contract clause" stx (car args))])])))
 
 (define-struct object-contract (methods method-ctcs fields field-ctcs)
+  #:property prop:custom-write custom-write-property-proc
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property

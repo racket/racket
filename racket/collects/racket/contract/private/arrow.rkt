@@ -619,6 +619,7 @@
        (andmap gen-if-fun (base->-doms/c ctc) args))))
 
 (define-struct (chaperone-> base->) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (parameterize ([skip-projection-wrapper? #t])
     (build-chaperone-contract-property
@@ -630,6 +631,7 @@
      #:exercise ->-exercise)))
 
 (define-struct (impersonator-> base->) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:projection (->-proj impersonate-procedure)
@@ -1522,6 +1524,7 @@
 ;; it first.  At the very least, the projection function would
 ;; need to add checks in the appropriate places.
 (define-struct (impersonator-->d base-->d) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:projection (->d-proj impersonate-procedure)
@@ -1763,6 +1766,7 @@
 (define (case->-stronger? this that) #f)
 
 (define-struct (chaperone-case-> base-case->) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:projection (case->-proj chaperone-procedure)
@@ -1771,6 +1775,7 @@
    #:stronger case->-stronger?))
 
 (define-struct (impersonator-case-> base-case->) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:projection (case->-proj impersonate-procedure)
@@ -2076,6 +2081,7 @@
       predicate/c)))
 
 (struct predicate/c ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:projection (let ([pc (contract-struct-projection predicate/c-private->ctc)])

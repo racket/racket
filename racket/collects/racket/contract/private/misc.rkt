@@ -55,7 +55,18 @@
          blame-add-or-context
          blame-add-car-context
          blame-add-cdr-context
-         raise-not-cons-blame-error)
+         raise-not-cons-blame-error
+         
+         custom-write-property-proc)
+
+(define (custom-write-property-proc stct port display?)
+  (write-string "#<" port)
+  (cond
+    [(flat-contract? stct) (write-string "flat-" port)]
+    [(chaperone-contract? stct) (write-string "chaperone-" port)])
+  (write-string "contract: " port)
+  (write-string (format "~.s" (contract-name stct)) port)
+  (write-string ">" port))
 
 (define-syntax (flat-rec-contract stx)
   (syntax-case stx  ()
@@ -185,6 +196,7 @@
 (define-struct single-or/c (name pred flat-ctcs ho-ctc))
 
 (define-struct (chaperone-single-or/c single-or/c) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (parameterize ([skip-projection-wrapper? #t])
     (build-chaperone-contract-property
@@ -194,6 +206,7 @@
      #:stronger single-or/c-stronger?)))
 
 (define-struct (impersonator-single-or/c single-or/c) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:projection single-or/c-projection
@@ -268,6 +281,7 @@
 (define-struct multi-or/c (name flat-ctcs ho-ctcs))
 
 (define-struct (chaperone-multi-or/c multi-or/c) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (parameterize ([skip-projection-wrapper? #t])
     (build-chaperone-contract-property
@@ -277,6 +291,7 @@
      #:stronger multi-or/c-stronger?)))
 
 (define-struct (impersonator-multi-or/c multi-or/c) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:projection multi-or/c-proj
@@ -285,6 +300,7 @@
    #:stronger multi-or/c-stronger?))
 
 (define-struct flat-or/c (pred flat-ctcs)
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:name
@@ -376,6 +392,7 @@
 
 (define-struct base-and/c (ctcs))
 (define-struct (first-order-and/c base-and/c) (predicates)
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:projection first-order-and-proj
@@ -383,6 +400,7 @@
    #:first-order and-first-order
    #:stronger and-stronger?))
 (define-struct (chaperone-and/c base-and/c) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (parameterize ([skip-projection-wrapper? #t])
     (build-chaperone-contract-property
@@ -391,6 +409,7 @@
      #:first-order and-first-order
      #:stronger and-stronger?)))
 (define-struct (impersonator-and/c base-and/c) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:projection and-proj
@@ -459,6 +478,7 @@
   (apply or/c or/c-args))
 
 (define-struct between/c (low high)
+  #:property prop:custom-write custom-write-property-proc
   #:omit-define-syntaxes
   #:property prop:flat-contract
   (build-flat-contract-property
@@ -707,6 +727,7 @@
 (struct generic-list/c (args))
 
 (struct flat-list/c generic-list/c ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:name list/c-name-proc
@@ -767,6 +788,7 @@
                                      [else "th"]))))
 
 (struct chaperone-list/c generic-list/c ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (parameterize ([skip-projection-wrapper? #t])
     (build-chaperone-contract-property
@@ -775,6 +797,7 @@
      #:projection list/c-chaperone/other-projection)))
 
 (struct higher-order-list/c generic-list/c ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:name list/c-name-proc
@@ -834,6 +857,7 @@
 ;; out - positive contract
 ;; both-supplied? - for backwards compat printing
 (define-struct parameter/c (in out both-supplied?)
+  #:property prop:custom-write custom-write-property-proc
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property
@@ -877,6 +901,7 @@
                                     (parameter/c-in this)))))))
 
 (define-struct procedure-arity-includes/c (n)
+  #:property prop:custom-write custom-write-property-proc
   #:omit-define-syntaxes
   #:property prop:flat-contract
   (build-flat-contract-property
@@ -905,6 +930,7 @@
 (define (any? x) #t)
 
 (define-struct any/c ()
+  #:property prop:custom-write custom-write-property-proc
   #:omit-define-syntaxes
   #:property prop:flat-contract
   (build-flat-contract-property
@@ -929,6 +955,7 @@
        val))))
 
 (define-struct none/c (name)
+  #:property prop:custom-write custom-write-property-proc
   #:omit-define-syntaxes
   #:property prop:flat-contract
   (build-flat-contract-property
@@ -1016,6 +1043,7 @@
 (define-struct base-prompt-tag/c (ctcs call/ccs))
 
 (define-struct (chaperone-prompt-tag/c base-prompt-tag/c) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:projection (prompt-tag/c-proj #t)
@@ -1024,6 +1052,7 @@
    #:name prompt-tag/c-name))
 
 (define-struct (impersonator-prompt-tag/c base-prompt-tag/c) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:projection (prompt-tag/c-proj #f)
@@ -1075,6 +1104,7 @@
 (define-struct (chaperone-continuation-mark-key/c
                 base-continuation-mark-key/c)
   ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:projection (continuation-mark-key/c-proj chaperone-continuation-mark-key)
@@ -1085,6 +1115,7 @@
 (define-struct (impersonator-continuation-mark-key/c
                 base-continuation-mark-key/c)
   ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:projection (continuation-mark-key/c-proj impersonate-continuation-mark-key)
@@ -1185,4 +1216,3 @@
      [(2) "nd"]
      [(3) "rd"]
      [else "th"])))
-

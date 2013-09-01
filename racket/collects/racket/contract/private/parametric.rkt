@@ -21,6 +21,7 @@
 
 
 (define-struct polymorphic-contract [barrier vars body]
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:name
@@ -66,6 +67,7 @@
   (make-barrier-contract name positive? make pred get))
 
 (define-struct barrier-contract [name positive? make pred get]
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:name (lambda (c) (barrier-contract-name c))

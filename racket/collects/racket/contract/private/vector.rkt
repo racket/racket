@@ -75,6 +75,7 @@
         (check val (λ _ (return #f)) #t)))))
 
 (define-struct (flat-vectorof base-vectorof) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:name vectorof-name
@@ -124,6 +125,7 @@
                   impersonator-prop:contracted ctc))))))))
 
 (define-struct (chaperone-vectorof base-vectorof) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:name vectorof-name
@@ -131,6 +133,7 @@
    #:projection (vectorof-ho-projection chaperone-vector)))
 
 (define-struct (impersonator-vectorof base-vectorof) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:name vectorof-name

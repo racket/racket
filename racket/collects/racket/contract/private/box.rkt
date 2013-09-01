@@ -57,6 +57,7 @@
                     null))))))
 
 (define-struct (flat-box/c base-box/c) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:name box/c-name
@@ -86,6 +87,7 @@
                              impersonator-prop:contracted ctc))))))))
 
 (define-struct (chaperone-box/c base-box/c) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:name box/c-name
@@ -93,6 +95,7 @@
    #:projection (ho-projection chaperone-box)))
 
 (define-struct (impersonator-box/c base-box/c) ()
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:name box/c-name
