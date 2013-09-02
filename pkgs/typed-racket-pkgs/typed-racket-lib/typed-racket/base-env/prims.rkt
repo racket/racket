@@ -701,7 +701,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                      (define (extract-struct-info* id)
                        (syntax-parse id #:context stx
                         [(~var id (static struct-info? "identifier bound to a structure type"))
-                         (extract-struct-info (syntax-local-value #'parent))]))
+                         (extract-struct-info (syntax-local-value #'id))]))
 
                      (define (maybe-add-quote-syntax stx)
                        (if (and stx (syntax-e stx)) #`(quote-syntax #,stx) stx))
@@ -712,8 +712,15 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
                          (define-for-syntax si
                            (let ()
+
+
                              (define-values (orig-type-des orig-maker orig-pred orig-sels orig-muts orig-parent)
-                               (apply values (extract-struct-info (syntax-local-value (quote-syntax orig-struct-info)))))
+                               (let ()
+                                 (define (extract-struct-info* id)
+                                   (syntax-parse id
+                                    [(~var id (static struct-info? "identifier bound to a structure type"))
+                                     (extract-struct-info (syntax-local-value #'id))]))
+                                 (apply values (extract-struct-info* (quote-syntax orig-struct-info)))))
 
                              (define (id-drop sels muts num)
                                (cond
