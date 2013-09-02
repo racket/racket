@@ -37,5 +37,5 @@
 (set-equal? s)
 (set-eqv? v)
 (set-eq? q)
-(cast (and (generic-set? s0) s0) (Setof Any))
+(cast (and (set? s0) s0) (Setof Any))
 (generic-set? s0)
