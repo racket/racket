@@ -79,6 +79,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (define-for-syntax (ignore stx) (ignore-property stx #t))
 
+(begin-for-syntax
+  (define-syntax-class opt-parent
+    #:attributes (nm parent)
+    (pattern nm:id #:with parent #'#f)
+    (pattern (nm:id parent:id))))
+
+
 (define-syntaxes (require/typed-legacy require/typed)
  (let ()
   (define-syntax-class opt-rename
@@ -88,12 +95,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (pattern (orig-nm:id internal-nm:id)
              #:with spec #'(orig-nm internal-nm)
              #:with nm #'internal-nm))
-
-  (define-syntax-class opt-parent
-    #:attributes (nm parent)
-    (pattern nm:id
-             #:with parent #'#f)
-    (pattern (nm:id parent:id)))
 
   (define-syntax-class simple-clause
     #:attributes (nm ty)
@@ -670,9 +671,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntaxes (require-typed-struct-legacy
                   require-typed-struct)
  (let ()
-  (define-syntax-class opt-parent
-    (pattern nm:id #:attr parent #'#f)
-    (pattern (nm:id parent:id)))
 
   (define-splicing-syntax-class (constructor-term legacy struct-name)
    (pattern (~seq) #:fail-when legacy #f #:attr name struct-name #:attr extra #f)
