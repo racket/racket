@@ -38,6 +38,14 @@ This file defines two sorts of primitives. All of them are provided into any mod
                      [for/annotation for]
                      [for*/annotation for*]))
 
+(module struct-extraction racket/base
+  (provide extract-struct-info/checked)
+  (require syntax/parse racket/struct-info)
+  (define (extract-struct-info/checked id)
+    (syntax-parse id
+     [(~var id (static struct-info? "identifier bound to a structure type"))
+      (extract-struct-info (syntax-local-value #'id))])))
+
 (require "../utils/require-contract.rkt"
          "colon.rkt"
          "../typecheck/internal-forms.rkt"
@@ -46,6 +54,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (except-in "base-contracted.rkt" initialize-contracted)
          "base-types.rkt"
          "base-types-extra.rkt"
+         'struct-extraction
          racket/flonum ; for for/flvector and for*/flvector
          (for-syntax
           racket/lazy-require
@@ -62,7 +71,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
           "../utils/tc-utils.rkt"
           "../private/syntax-properties.rkt"
           "../types/utils.rkt"
-          "for-clauses.rkt")
+          "for-clauses.rkt"
+          'struct-extraction)
          "../types/numeric-predicates.rkt"
          racket/unsafe/ops
          racket/vector)
@@ -698,11 +708,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
                       [extra-maker (and (attribute input-maker.extra)
                                         (not (bound-identifier=? #'make-name #'nm))
                                         #'maker-name)])
-                     (define (extract-struct-info* id)
-                       (syntax-parse id #:context stx
-                        [(~var id (static struct-info? "identifier bound to a structure type"))
-                         (extract-struct-info (syntax-local-value #'parent))]))
-
                      (define (maybe-add-quote-syntax stx)
                        (if (and stx (syntax-e stx)) #`(quote-syntax #,stx) stx))
 
@@ -713,7 +718,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                          (define-for-syntax si
                            (let ()
                              (define-values (orig-type-des orig-maker orig-pred orig-sels orig-muts orig-parent)
-                               (apply values (extract-struct-info (syntax-local-value (quote-syntax orig-struct-info)))))
+                               (apply values (extract-struct-info/checked (quote-syntax orig-struct-info))))
 
                              (define (id-drop sels muts num)
                                (cond
@@ -740,7 +745,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                  #,(if (syntax-e #'parent)
                                        (let-values (((parent-type-des parent-maker parent-pred
                                                       parent-sel  parent-mut grand-parent)
-                                                     (apply values (extract-struct-info* #'parent))))
+                                                     (apply values (extract-struct-info/checked #'parent))))
                                          #`(struct-info-list
                                              (list #,@(map maybe-add-quote-syntax parent-sel))
                                              (list #,@(map maybe-add-quote-syntax parent-mut))))
