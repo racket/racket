@@ -449,7 +449,7 @@ The result is @racket[#f] if the user cancels the dialog, the
 @defproc[(get-color-from-user [message (or/c label-string? #f) #f]
                               [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f) #f]
                               [init-color (or/c (is-a?/c color%) #f) #f]
-                              [style null? null])
+                              [style (listof 'alpha) null])
          (or/c (is-a?/c color%) #f)]{
 
 Lets the user select a color though the platform-specific
@@ -458,13 +458,13 @@ Lets the user select a color though the platform-specific
  dialog if possible. If @racket[init-color] is provided, the dialog is
  initialized to the given color.
 
-@italicptyStyleNote[@racket[style]]
-
 The result is @racket[#f] if the user cancels the dialog, the selected
  color otherwise.
 
-
-
+If @racket[style] contains @racket['alpha], then the user is present with
+a field for filling in the alpha field of the resulting @racket[color%] object.
+If it does not, then the alpha component of @racket[init-color] is ignored,
+and the result always has alpha of @racket[1.0].
 }
 
 @defproc[(get-font-from-user [message (or/c label-string? #f) #f]

@@ -292,76 +292,105 @@
 
   (define get-color-from-user 
     (case-lambda
-     [() (get-color-from-user #f #f #f null)]
-     [(message) (get-color-from-user message #f #f null)]
-     [(message parent) (get-color-from-user message parent #f null)]
-     [(message parent color) (get-color-from-user message parent color null)]
-     [(message parent color style)
-      (check-label-string/false 'get-color-from-user message)
-      (check-top-level-parent/false 'get-color-from-user parent)
-      (check-instance 'get-color-from-user wx:color% 'color% #t color)
-      (check-style 'get-color-from-user #f null style)
-      (if (eq? (wx:color-from-user-platform-mode) 'dialog)
-	  (wx:get-color-from-user message (and parent (mred->wx parent)) color)
-	  (letrec ([ok? #f]
-		   [f (make-object dialog% "Choose Color" parent)]
-		   [done (lambda (ok) (lambda (b e) (set! ok? ok) (send f show #f)))]
-		   [canvas (make-object (class canvas%
-                                          (define/override (on-paint)
-                                            (repaint void))
-					  (super-new [parent f])))]
-                   [platform-p (and (string? (wx:color-from-user-platform-mode))
-                                    (new horizontal-panel%
-                                         [parent f]
-                                         [alignment '(right center)]))]
-		   [p (make-object vertical-pane% f)]
-		   [repaint (lambda (ext)
-			      (let ([c (get-current-color)])
-                                (ext c)
-                                (wx:fill-private-color (send canvas get-dc) c)))]
-                   [update-and-repaint (lambda (s e)
-                                         (repaint
-                                          (lambda (c)
-                                            (when platform-p
-                                              (wx:get-color-from-user c)))))]
-		   [make-color-slider (lambda (l) (make-object slider% l 0 255 p update-and-repaint))]
-		   [red (make-color-slider "Red:")]
-		   [green (make-color-slider "Green:")]
-		   [blue (make-color-slider "Blue:")]
-		   [bp (make-object horizontal-pane% f)]
-                   [get-current-color
-                    (lambda ()
-                      (make-object wx:color% 
-                                   (send red get-value)
-                                   (send green get-value)
-                                   (send blue get-value)))]
-                   [install-color
-                    (lambda (color)
-                      (send red set-value (send color red))
-                      (send green set-value (send color green))
-                      (send blue set-value (send color blue))
-                      (send canvas refresh))])
-            (when platform-p
-              (new button%
-                   [parent platform-p]
-                   [label (wx:color-from-user-platform-mode)]
-                   [callback (lambda (b e) (wx:get-color-from-user 'show))])
-              (wx:get-color-from-user (or color
-                                          (make-object wx:color% 0 0 0)))
-              (send (mred->wx f) set-color-callback (lambda ()
-                                                      (install-color
-                                                       (wx:get-color-from-user 'get)))))
-            (when color (install-color color))
-	    (ok-cancel
+      [() (get-color-from-user #f #f #f null)]
+      [(message) (get-color-from-user message #f #f null)]
+      [(message parent) (get-color-from-user message parent #f null)]
+      [(message parent color) (get-color-from-user message parent color null)]
+      [(message parent in-color style)
+       (check-label-string/false 'get-color-from-user message)
+       (check-top-level-parent/false 'get-color-from-user parent)
+       (check-instance 'get-color-from-user wx:color% 'color% #t in-color)
+       (check-style 'get-color-from-user #f '(alpha) style)
+       (cond
+         [(eq? (wx:color-from-user-platform-mode) 'dialog)
+          (wx:get-color-from-user message (and parent (mred->wx parent)) in-color)]
+         [else
+          (define color (if (member 'alpha style)
+                            in-color
+                            (make-object wx:color%
+                              (send in-color red)
+                              (send in-color green)
+                              (send in-color blue)
+                              1.0)))
+          (define ok? #f)
+          (define f (make-object dialog% "Choose Color" parent))
+          (define (done ok) (lambda (b e) (set! ok? ok) (send f show #f)))
+          (define canvas (make-object (class canvas%
+                                        (define/override (on-paint)
+                                          (repaint void))
+                                        (super-new [parent f]))))
+          (define platform-p (and (string? (wx:color-from-user-platform-mode))
+                                  (new horizontal-panel%
+                                       [parent f]
+                                       [alignment '(right center)])))
+          (define p (make-object vertical-pane% f))
+          (define (repaint ext)
+            (let ([c (get-current-color)])
+              (ext c)
+              (wx:fill-private-color (send canvas get-dc) c)))
+          (define (update-and-repaint s e)
+            (repaint
+             (lambda (c)
+               (when platform-p
+                 (wx:get-color-from-user c)))))
+          (define (make-color-slider l) (make-object slider% l 0 255 p update-and-repaint))
+          (define red (make-color-slider "Red:"))
+          (define green (make-color-slider "Green:"))
+          (define blue (make-color-slider "Blue:"))
+          (define alpha (and (member 'alpha style)
+                             (new text-field% 
+                                  [parent p]
+                                  [label "Alpha:"]
+                                  [callback
+                                   (λ (_1 _2) 
+                                     (update-ok-button-and-background))])))
+          (define (update-ok-button-and-background)
+            (when alpha
+              (define n (string->number (send alpha get-value)))
+              (define ok? (and n (real? n) (<= 0 n 1)))
+              (send ok-button enable ok?)
+              (send alpha set-field-background
+                    (send wx:the-color-database find-color
+                          (if ok? "white" "pink")))))
+          (define bp (make-object horizontal-pane% f))
+          (define (get-current-color)
+            (make-object wx:color% 
+              (send red get-value)
+              (send green get-value)
+              (send blue get-value)
+              (if alpha
+                  (string->number (send alpha get-value))
+                  1.0)))
+          (define (install-color color)
+            (send red set-value (send color red))
+            (send green set-value (send color green))
+            (send blue set-value (send color blue))
+            (when alpha (send alpha set-value (format "~a" (send color alpha))))
+            (send canvas refresh))
+          (when platform-p
+            (new button%
+                 [parent platform-p]
+                 [label (wx:color-from-user-platform-mode)]
+                 [callback (lambda (b e) (wx:get-color-from-user 'show))])
+            (wx:get-color-from-user (or color
+                                        (make-object wx:color% 0 0 0)))
+            (send (mred->wx f) set-color-callback (lambda ()
+                                                    (install-color
+                                                     (wx:get-color-from-user 'get)))))
+          (when color (install-color color))
+          (define-values (ok-button cancel-button)
+            (ok-cancel
              (lambda ()
-               (make-object button% "Cancel" bp (done #f)))
+               (make-object button% "OK" bp (done #t) '(border)))
              (lambda ()
-               (send (make-object button% "OK" bp (done #t) '(border)) focus)))
-	    (send bp set-alignment 'right 'center)
-	    (send p set-alignment 'right 'center)
-	    (send p stretchable-height #f)
-	    (send canvas min-height 50)
-	    (send f center)
-	    (send f show #t)
-	    (and ok?
-                 (get-current-color))))]))
+               (make-object button% "Cancel" bp (done #f)))))
+          (send ok-button focus)
+          (update-ok-button-and-background)
+          (send bp set-alignment 'right 'center)
+          (send p set-alignment 'right 'center)
+          (send p stretchable-height #f)
+          (send canvas min-height 50)
+          (send f center)
+          (send f show #t)
+          (and ok?
+               (get-current-color))])]))
