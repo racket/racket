@@ -107,8 +107,8 @@ form.}
                          (->i (arg ...) (opt ...) maybe-pre (values [id res] ...))
                          (->i (arg ...) (opt ...) #:rest rest [id result-expr])
 
-                         (->d (arg ...) () maybe-precond (values [id result] ...))
-                         (->d (arg ...) () maybe-precond [id result])
+                         (->d (arg ...) () maybe-pre (values [id result] ...))
+                         (->d (arg ...) () maybe-pre [id result])
                          (->d (arg ...) () #:rest id rest [id result])]
                [maybe-pre (code:line)
                           (code:line #:pre (pre-id ...) condition)]
