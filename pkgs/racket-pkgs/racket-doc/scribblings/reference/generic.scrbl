@@ -2,10 +2,6 @@
 @(require (for-label racket/base racket/generic))
 
 @title[#:tag "struct-generics"]{Generic Interfaces}
-@; @author[@author+email["Eli Barzilay" "eli@racket-lang.org"]
-@;         @author+email["Jay McCarthy" "jay@racket-lang.org"]
-@;         @author+email["Vincent St-Amour" "stamourv@racket-lang.org"]
-@;         @author+email["Asumu Takikawa" "asumu@racket-lang.org"]]
 
 @defmodule[racket/generic]
 
@@ -21,8 +17,8 @@ a structure type are defined using the @racket[#:methods] keyword
                 [method-id . kw-formals*] ...
                 generics-opt ...)
               ([generics-opt
-                (code:line #:fast-defaults ([fast-pred? fast-impl ...] ...))
                 (code:line #:defaults ([default-pred? default-impl ...] ...))
+                (code:line #:fast-defaults ([fast-pred? fast-impl ...] ...))
                 (code:line #:fallbacks [fallback-impl ...])
                 (code:line #:defined-predicate defined-pred-id)
                 (code:line #:defined-table defined-table-id)
@@ -177,7 +173,16 @@ syntax error.}
 (define-generics printable
   (gen-print printable [port])
   (gen-port-print port printable)
-  (gen-print* printable [port] #:width width #:height [height]))
+  (gen-print* printable [port] #:width width #:height [height])
+  #:defaults ([string?
+               (define/generic super-print gen-print)
+               (define (gen-print s [port (current-output-port)])
+                 (fprintf port "String: ~a" s))
+               (define (gen-port-print port s)
+                 (super-print s port))
+               (define (gen-print* s [port (current-output-port)]
+                                   #:width w #:height [h 0])
+                 (fprintf port "String (~ax~a): ~a" w h s))]))
 
 (define-struct num (v)
   #:methods gen:printable
@@ -207,6 +212,8 @@ syntax error.}
 (gen-print x)
 (gen-port-print (current-output-port) x)
 (gen-print* x #:width 100 #:height 90)
+
+(gen-print "Strings are printable too!")
 
 (define y (make-bool #t))
 (gen-print y)
