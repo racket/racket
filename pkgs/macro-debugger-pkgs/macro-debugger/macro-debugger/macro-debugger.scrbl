@@ -347,7 +347,7 @@ as a command-line script. For example (from racket root directory):
 
 @verbatim{
 racket -lm macro-debugger/analysis/check-requires \
-  collects/syntax/*.rkt
+  racket/collects/syntax/*.rkt
 
 racket -lm macro-debugger/analysis/check-requires -- -kbu \
   openssl
@@ -508,7 +508,7 @@ directory):
 
 @verbatim{
 racket -lm macro-debugger/analysis/show-dependencies -- -bc \
-  collects/openssl/main.rkt
+  racket/collects/openssl/main.rkt
 
 racket -lm macro-debugger/analysis/show-dependencies -- -c \
   --exclude racket \
