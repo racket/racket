@@ -79,6 +79,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (define-for-syntax (ignore stx) (ignore-property stx #t))
 
+(begin-for-syntax
+  (define-syntax-class opt-parent
+    #:attributes (nm parent)
+    (pattern nm:id #:with parent #'#f)
+    (pattern (nm:id parent:id))))
+
+
 (define-syntaxes (require/typed-legacy require/typed)
  (let ()
   (define-syntax-class opt-rename
@@ -88,12 +95,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (pattern (orig-nm:id internal-nm:id)
              #:with spec #'(orig-nm internal-nm)
              #:with nm #'internal-nm))
-
-  (define-syntax-class opt-parent
-    #:attributes (nm parent)
-    (pattern nm:id
-             #:with parent #'#f)
-    (pattern (nm:id parent:id)))
 
   (define-syntax-class simple-clause
     #:attributes (nm ty)
@@ -670,9 +671,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntaxes (require-typed-struct-legacy
                   require-typed-struct)
  (let ()
-  (define-syntax-class opt-parent
-    (pattern nm:id #:attr parent #'#f)
-    (pattern (nm:id parent:id)))
 
   (define-splicing-syntax-class (constructor-term legacy struct-name)
    (pattern (~seq) #:fail-when legacy #f #:attr name struct-name #:attr extra #f)
@@ -703,7 +701,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                      (define (extract-struct-info* id)
                        (syntax-parse id #:context stx
                         [(~var id (static struct-info? "identifier bound to a structure type"))
-                         (extract-struct-info (syntax-local-value #'parent))]))
+                         (extract-struct-info (syntax-local-value #'id))]))
 
                      (define (maybe-add-quote-syntax stx)
                        (if (and stx (syntax-e stx)) #`(quote-syntax #,stx) stx))
@@ -714,8 +712,15 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
                          (define-for-syntax si
                            (let ()
+
+
                              (define-values (orig-type-des orig-maker orig-pred orig-sels orig-muts orig-parent)
-                               (apply values (extract-struct-info (syntax-local-value (quote-syntax orig-struct-info)))))
+                               (let ()
+                                 (define (extract-struct-info* id)
+                                   (syntax-parse id
+                                    [(~var id (static struct-info? "identifier bound to a structure type"))
+                                     (extract-struct-info (syntax-local-value #'id))]))
+                                 (apply values (extract-struct-info* (quote-syntax orig-struct-info)))))
 
                              (define (id-drop sels muts num)
                                (cond
