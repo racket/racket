@@ -188,9 +188,7 @@
   (match arr
     [(Function: (list (arr: dom rng rest drest kws)))
      (match rng
-       [(Values: (list (Result: tp (FilterSet: true-filter
-                                               false-filter)
-                                op)))
+       [(Values: (list (Result: tp (FilterSet: -true-filter -false-filter) op)))
         (let ([new-filters (apply -and (build-list (length dom)
                                                    (lambda (i)
                                                      (-filter type i))))])
@@ -199,8 +197,8 @@
                   dom
                   (make-Values
                    (list (-result tp
-                                  (-FS (-and true-filter new-filters)
-                                       (-and false-filter new-filters))
+                                  (-FS (-and -true-filter new-filters)
+                                       (-and -false-filter new-filters))
                                   op)))
                   rest drest kws))))])]))
 

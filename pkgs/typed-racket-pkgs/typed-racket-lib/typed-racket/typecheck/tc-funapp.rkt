@@ -120,9 +120,9 @@
     [((tc-result1: (Param: in out)) (list)) (ret out)]
     [((tc-result1: (Param: in out)) (list (tc-result1: t)))
      (if (subtype t in)
-         (ret -Void true-filter)
+         (ret -Void -true-filter)
          (tc-error/expr
-          #:return (ret -Void true-filter)
+          #:return (ret -Void -true-filter)
           "Wrong argument to parameter - expected ~a and got ~a"
           in t))]
     [((tc-result1: (Param: _ _)) _)

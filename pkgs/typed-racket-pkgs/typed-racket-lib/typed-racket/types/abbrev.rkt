@@ -300,10 +300,8 @@
     [(t)
      (make-pred-ty (list Univ) -Boolean t 0 null)]))
 
-(define true-filter (-FS -top -bot))
-(define false-filter (-FS -bot -top))
-(define true-lfilter (-FS -top -bot))
-(define false-lfilter (-FS -bot -top))
+(define -true-filter (-FS -top -bot))
+(define -false-filter (-FS -bot -top))
 
 (define (opt-fn args opt-args result)
   (apply cl->* (for/list ([i (in-range (add1 (length opt-args)))])
