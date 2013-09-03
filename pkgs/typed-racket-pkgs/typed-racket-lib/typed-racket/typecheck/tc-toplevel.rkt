@@ -9,7 +9,7 @@
          (private parse-type type-annotation type-contract syntax-properties)
          (env global-env init-envs type-name-env type-alias-env
               lexical-env env-req mvar-env scoped-tvar-env)
-         (utils tc-utils mutated-vars)
+         (utils tc-utils)
          (typecheck provide-handling def-binding tc-structs typechecker)
 
          ;; to appease syntax-parse in the tests

@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "abbrev.rkt" "../rep/type-rep.rkt"
-         "union.rkt" "../utils/tc-utils.rkt"
+         "../utils/tc-utils.rkt"
          racket/list racket/set racket/dict racket/match)
 
 ;; convert : [Listof Keyword] [Listof Type] [Listof Type] [Option Type]

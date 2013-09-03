@@ -6,7 +6,6 @@
          (for-syntax syntax/parse racket/base)
          (types utils union subtype resolve abbrev substitute)
          (typecheck tc-metafunctions tc-app-helper)
-         (utils tc-utils)
          (rep type-rep)
          (r:infer infer))
 

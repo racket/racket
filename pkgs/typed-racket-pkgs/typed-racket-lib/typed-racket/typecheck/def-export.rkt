@@ -2,7 +2,7 @@
 
 (require racket/require (for-template "renamer.rkt") "renamer.rkt"
          (for-syntax syntax/parse racket/base "renamer.rkt"
-                     (path-up "utils/tc-utils.rkt" "env/type-name-env.rkt")))
+                     (path-up "utils/tc-utils.rkt")))
 (provide def-export)
 
 (define-syntax (def-export stx)

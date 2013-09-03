@@ -4,12 +4,9 @@
 
 (require "../utils/utils.rkt"
          (for-template racket/base)
-         (rep type-rep)
          syntax/parse
          syntax/id-table
-         racket/contract
          racket/match
-         racket/list
          racket/dict)
 
 (provide register-scoped-tvars lookup-scoped-tvars

@@ -8,7 +8,7 @@
          (types resolve)
          (contract-req)
          racket/set
-         (for-syntax racket/base syntax/parse racket/list))
+         (for-syntax racket/base syntax/parse))
 
 (provide Listof: List: MListof:)
 (provide/cond-contract

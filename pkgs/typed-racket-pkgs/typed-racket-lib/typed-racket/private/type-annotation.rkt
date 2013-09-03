@@ -4,7 +4,7 @@
          (rep type-rep)
          (utils tc-utils)
          (env global-env mvar-env scoped-tvar-env)
-         (except-in (types subtype union resolve utils generalize))
+         (except-in (types subtype union utils generalize))
          (private parse-type syntax-properties)
          (contract-req)
          racket/match)

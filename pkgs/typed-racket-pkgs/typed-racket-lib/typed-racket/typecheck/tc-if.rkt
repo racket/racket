@@ -1,14 +1,12 @@
 #lang racket/unit
-(require (rename-in "../utils/utils.rkt" [infer r:infer])
+(require "../utils/utils.rkt"
          "signatures.rkt"
          (rep type-rep filter-rep object-rep)
-         (types abbrev subtype union utils filter-ops)
+         (types abbrev union utils filter-ops)
          (env lexical-env type-env-structs)
-         (r:infer infer)
          (utils tc-utils)
-         "tc-envops.rkt" "tc-metafunctions.rkt"
+         "tc-envops.rkt"
          (types type-table)
-         syntax/kerncase
          racket/match)
 
 ;; if typechecking

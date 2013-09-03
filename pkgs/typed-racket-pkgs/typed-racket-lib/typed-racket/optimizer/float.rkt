@@ -4,7 +4,7 @@
          (for-template racket/base racket/flonum racket/unsafe/ops racket/math)
          "../utils/utils.rkt"
          (utils tc-utils)
-         (types numeric-tower type-table union)
+         (types numeric-tower union)
          (optimizer utils numeric-utils logging fixnum))
 
 (provide float-opt-expr float-arg-expr int-expr)

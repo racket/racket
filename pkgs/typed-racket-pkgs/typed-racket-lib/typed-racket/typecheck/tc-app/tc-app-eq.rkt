@@ -4,7 +4,6 @@
          "signatures.rkt"
          "utils.rkt"
          syntax/parse syntax/stx racket/match
-         syntax/parse/experimental/reflect
          (typecheck signatures tc-funapp)
          (types abbrev union utils)
          (rep type-rep)

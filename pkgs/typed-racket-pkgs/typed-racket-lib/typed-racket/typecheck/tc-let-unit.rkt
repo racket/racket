@@ -6,9 +6,9 @@
          (only-in (types abbrev) (-> t:->))
          (private type-annotation parse-type syntax-properties)
          (env lexical-env type-alias-env global-env type-env-structs scoped-tvar-env)
-         (rep type-rep filter-rep object-rep)
+         (rep type-rep filter-rep)
          syntax/free-vars
-         (typecheck signatures tc-metafunctions tc-subst check-below)
+         (typecheck signatures tc-metafunctions tc-subst)
          racket/match (contract-req)
          syntax/kerncase syntax/parse syntax/stx
          (for-template racket/base (typecheck internal-forms)))

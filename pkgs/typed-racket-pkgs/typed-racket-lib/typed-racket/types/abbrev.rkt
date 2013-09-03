@@ -9,19 +9,16 @@
          (prefix-in c: (contract-req))
          (rename-in (rep type-rep object-rep rep-utils)
                     [make-Base make-Base*])
-         (utils tc-utils)
          (types union numeric-tower)
          ;; Using this form so all-from-out works
          "base-abbrev.rkt" "match-expanders.rkt"
 
-         (for-syntax racket/base syntax/parse racket/list)
-
          ;; for base type contracts
-         (for-template racket/base racket/contract/base racket/promise
+         (for-template racket/base racket/contract/base
                        racket/tcp racket/flonum racket/udp '#%place)
          ;; for base type predicates
          racket/pretty racket/udp
-         racket/promise racket/tcp racket/flonum
+         racket/tcp racket/flonum
          '#%place) ;; avoid the other dependencies of `racket/place`
 
 

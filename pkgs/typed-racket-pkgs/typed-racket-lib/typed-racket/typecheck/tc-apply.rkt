@@ -6,11 +6,8 @@
          (types utils union subtype abbrev substitute)
          (utils tc-utils)
          (env tvar-env index-env)
-         (rep type-rep filter-rep object-rep)
-         (r:infer infer)
-         (for-template
-          (only-in '#%kernel [apply k:apply])
-          racket/base))
+         (rep type-rep filter-rep)
+         (r:infer infer))
 
 (import tc-expr^ tc-lambda^ tc-let^ tc-app^)
 (export tc-apply^)

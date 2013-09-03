@@ -4,10 +4,8 @@
          "signatures.rkt"
          "utils.rkt"
          syntax/parse racket/match unstable/sequence unstable/syntax
-         syntax/parse/experimental/reflect
          (typecheck signatures tc-funapp)
-         (types abbrev utils)
-         (rep type-rep)
+         (types utils)
 
          (for-template racket/base))
 

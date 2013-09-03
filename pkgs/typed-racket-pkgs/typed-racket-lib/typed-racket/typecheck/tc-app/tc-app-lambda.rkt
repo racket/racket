@@ -4,12 +4,10 @@
          "signatures.rkt"
          "utils.rkt"
          syntax/parse racket/match racket/list
-         syntax/parse/experimental/reflect
          unstable/sequence unstable/syntax
-         (typecheck signatures tc-funapp find-annotation)
+         (typecheck signatures find-annotation)
          (types abbrev utils generalize type-table)
          (private type-annotation)
-         (rep type-rep)
 
          (for-template racket/base))
 

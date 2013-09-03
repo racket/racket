@@ -1,7 +1,6 @@
 #lang racket/base
 
-(require "../utils/utils.rkt"
-         racket/require racket/promise
+(require racket/require racket/promise
          (for-template
           (except-in racket/base for for* with-handlers lambda λ define
                      default-continuation-prompt-tag)

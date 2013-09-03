@@ -1,9 +1,7 @@
 #lang racket/unit
 
 (require "../../utils/utils.rkt"
-         (prefix-in c: (contract-req))
          syntax/parse syntax/stx racket/match unstable/sequence unstable/syntax
-         syntax/parse/experimental/reflect
          "signatures.rkt"
          "utils.rkt"
          ;; fixme - don't need to be bound in this phase - only to make tests work
@@ -11,7 +9,6 @@
          ;; end fixme
          (types utils abbrev numeric-tower union resolve type-table generalize)
          (typecheck signatures check-below)
-         (utils tc-utils)
          (rep type-rep rep-utils)
          (for-template racket/unsafe/ops racket/base))
 

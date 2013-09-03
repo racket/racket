@@ -6,10 +6,9 @@
          syntax/parse racket/match 
          syntax/parse/experimental/reflect
          (typecheck signatures tc-funapp)
-         (types utils abbrev)
+         (types utils)
          (private syntax-properties)
-         (rep type-rep filter-rep object-rep rep-utils)
-         (for-template racket/base))
+         (rep type-rep filter-rep object-rep))
 
 (import tc-expr^ tc-app-keywords^
         tc-app-hetero^ tc-app-list^ tc-app-apply^ tc-app-values^

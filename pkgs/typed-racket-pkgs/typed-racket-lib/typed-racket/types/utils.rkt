@@ -1,11 +1,10 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-         (rep type-rep filter-rep object-rep rep-utils)
+         (rep type-rep rep-utils)
          (utils tc-utils)
          "substitute.rkt" "tc-result.rkt" "tc-error.rkt"
          (rep free-variance) 
-         (env index-env tvar-env)
          racket/match
          racket/set
          racket/list

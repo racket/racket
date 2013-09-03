@@ -3,13 +3,10 @@
 (require "../utils/utils.rkt"
          unstable/list unstable/sequence syntax/id-table racket/dict racket/syntax
          racket/struct-info racket/match syntax/parse syntax/location
-         (only-in srfi/1/list s:member)
          (only-in (private type-contract) type->contract)
-         (env type-name-env type-alias-env)
          (typecheck renamer def-binding)
-         (rep type-rep)
          (utils tc-utils)
-         (for-syntax syntax/parse racket/base)
+         (for-syntax racket/base)
          (for-template racket/base "def-export.rkt" racket/contract))
 
 (provide remove-provides provide? generate-prov get-alternate)

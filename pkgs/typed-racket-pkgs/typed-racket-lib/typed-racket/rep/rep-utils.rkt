@@ -4,7 +4,7 @@
          racket/match
          (contract-req)
          "free-variance.rkt"
-         "interning.rkt" unstable/struct
+         "interning.rkt"
          racket/lazy-require
          racket/stxparam
          (for-syntax

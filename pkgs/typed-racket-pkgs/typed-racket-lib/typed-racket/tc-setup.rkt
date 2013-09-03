@@ -3,12 +3,8 @@
 (require "utils/utils.rkt"
          (except-in syntax/parse id) syntax/stx
          racket/pretty racket/promise racket/lazy-require
-         (private type-contract)
-         (types utils)
-         (typecheck typechecker provide-handling tc-toplevel)
-         (env tvar-env type-name-env type-alias-env env-req mvar-env)
+         (env type-name-env type-alias-env mvar-env)
          (utils tc-utils disarm mutated-vars)
-         (rep type-rep)
          (for-syntax racket/base)
          (for-template racket/base))
 (lazy-require [typed-racket/optimizer/optimizer (optimize-top)])

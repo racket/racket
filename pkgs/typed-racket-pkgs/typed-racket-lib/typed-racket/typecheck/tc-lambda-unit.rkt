@@ -9,10 +9,10 @@
                     [make-arr* make-arr])
          (private type-annotation syntax-properties)
          (types type-table)
-         (typecheck signatures tc-metafunctions tc-subst check-below)
-         (env type-env-structs lexical-env tvar-env index-env scoped-tvar-env)
+         (typecheck signatures tc-metafunctions tc-subst)
+         (env lexical-env tvar-env index-env scoped-tvar-env)
          (utils tc-utils)
-         (for-template racket/base "internal-forms.rkt"))
+         (for-template racket/base))
 
 (import tc-expr^)
 (export tc-lambda^)

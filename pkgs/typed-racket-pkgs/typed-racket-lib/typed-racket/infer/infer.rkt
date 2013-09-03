@@ -1,6 +1,5 @@
 #lang racket/base
 
-(require (except-in "../utils/utils.rkt" infer))
 (require "infer-unit.rkt" "constraints.rkt" "dmap.rkt" "signatures.rkt"
          "restrict.rkt" "promote-demote.rkt"
          (only-in racket/unit provide-signature-elements

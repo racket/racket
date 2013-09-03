@@ -1,13 +1,10 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-         (rep type-rep filter-rep object-rep rep-utils)
-         (utils tc-utils)
+         (rep type-rep)
          "abbrev.rkt" "subtype.rkt" "substitute.rkt" "union.rkt"
          "numeric-tower.rkt"
-         racket/match
-         (for-syntax syntax/parse racket/base)
-         syntax/id-table racket/dict)
+         racket/match)
 
 (provide generalize)
 

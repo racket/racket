@@ -1,14 +1,14 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-         racket/match racket/set racket/function unstable/function
+         racket/match racket/set
          racket/lazy-require
          (contract-req)
          (only-in (types base-abbrev) -lst* -result -no-filter -no-obj)
-         (rep type-rep filter-rep object-rep rep-utils)
+         (rep type-rep rep-utils)
          (utils tc-utils)
          (rep free-variance)
-         (env index-env tvar-env))
+         (env tvar-env))
 (lazy-require ("union.rkt" (Un)))
 
 (provide subst-all substitute substitute-dots substitute-dotted subst

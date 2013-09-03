@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require syntax/parse syntax/stx unstable/syntax
+(require syntax/parse syntax/stx
          (for-template racket/base racket/unsafe/ops)
          "../utils/utils.rkt"
          (utils tc-utils)

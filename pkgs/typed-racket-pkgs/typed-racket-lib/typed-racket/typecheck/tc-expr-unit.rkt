@@ -3,17 +3,16 @@
 
 (require (rename-in "../utils/utils.rkt" [private private-in])
          racket/match (prefix-in - (contract-req))
-         "signatures.rkt" "tc-envops.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
-         "check-below.rkt" "tc-funapp.rkt" "tc-app-helper.rkt" "../types/kw-types.rkt"
-         (types utils abbrev numeric-tower union subtype
-                type-table filter-ops generalize)
+         "signatures.rkt"
+         "check-below.rkt" "tc-app-helper.rkt" "../types/kw-types.rkt"
+         (types utils abbrev union subtype type-table)
          (private-in parse-type type-annotation syntax-properties)
          (rep type-rep filter-rep object-rep)
-         (utils tc-utils stxclass-util)
-         (env lexical-env type-env-structs tvar-env index-env)
+         (utils tc-utils)
+         (env lexical-env tvar-env index-env)
          racket/private/class-internal
          syntax/parse syntax/stx
-         unstable/function unstable/syntax
+         unstable/syntax
          (only-in srfi/1 split-at)
          (for-template "internal-forms.rkt" (only-in '#%paramz [parameterization-key pz:pk])))
 

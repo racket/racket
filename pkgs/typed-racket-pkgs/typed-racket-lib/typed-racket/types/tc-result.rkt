@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-         (rep free-variance type-rep filter-rep object-rep rep-utils)
+         (rep type-rep filter-rep rep-utils)
          (utils tc-utils)
          (types base-abbrev)
          racket/match

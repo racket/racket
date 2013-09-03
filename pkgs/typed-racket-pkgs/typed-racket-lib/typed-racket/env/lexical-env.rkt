@@ -14,7 +14,6 @@
          (env type-env-structs global-env mvar-env)
          (utils tc-utils)
          (only-in (rep type-rep) Type/c)
-         (typecheck tc-metafunctions)
          (except-in (types utils abbrev kw-types) -> ->* one-of/c))
 
 (provide lexical-env with-lexical-env with-lexical-env/extend

@@ -3,7 +3,6 @@
 (require syntax/parse syntax/stx unstable/syntax unstable/sequence
          racket/list racket/dict racket/match racket/syntax
          "../utils/utils.rkt"
-         "../utils/tc-utils.rkt"
          (for-template racket/base)
          (types numeric-tower utils type-table)
          (rep type-rep) (env mvar-env)

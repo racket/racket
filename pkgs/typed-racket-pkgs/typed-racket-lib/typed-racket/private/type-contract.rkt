@@ -8,13 +8,12 @@
  "../utils/utils.rkt"
  syntax/parse
  (rep type-rep filter-rep object-rep)
- (typecheck internal-forms)
- (utils tc-utils require-contract)
+ (utils tc-utils)
  (env type-name-env)
- (types resolve utils)
+ (types resolve)
  (prefix-in t: (types abbrev numeric-tower))
  (private parse-type syntax-properties)
- racket/match syntax/struct syntax/stx racket/syntax racket/list
+ racket/match syntax/stx racket/syntax racket/list
  unstable/sequence
  (contract-req)
  (for-template racket/base racket/contract racket/set (utils any-wrap)

@@ -5,7 +5,7 @@
 
 (require "../utils/utils.rkt"
          (env init-envs)
-         (types abbrev union)
+         (types abbrev)
          (utils any-wrap)
          (only-in (rep type-rep)
                   make-Prompt-Tagof))

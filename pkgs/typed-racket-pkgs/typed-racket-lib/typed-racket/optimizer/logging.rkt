@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/set racket/string racket/match racket/list
+(require racket/string 
          unstable/syntax unstable/logging
          data/queue
          "../utils/tc-utils.rkt")

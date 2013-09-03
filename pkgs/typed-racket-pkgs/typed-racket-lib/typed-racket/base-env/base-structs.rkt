@@ -2,9 +2,7 @@
 
 (require
  "../utils/utils.rkt"
- (utils tc-utils)
- (env init-envs)
- (rep filter-rep object-rep type-rep)
+ (rep type-rep)
  (types abbrev numeric-tower union)
  (typecheck tc-structs)
  ;;For tests

@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require syntax/parse syntax/stx syntax/id-table racket/dict
-         unstable/syntax racket/match racket/syntax
+         racket/match racket/syntax
          "../utils/utils.rkt" racket/unsafe/ops unstable/sequence
          (for-template racket/base racket/math racket/flonum racket/unsafe/ops)
          (utils tc-utils)

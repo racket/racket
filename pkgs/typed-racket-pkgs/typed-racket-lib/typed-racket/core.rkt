@@ -7,12 +7,10 @@
          (except-in syntax/parse id)
          racket/match racket/syntax racket/list syntax/stx
          racket/format
-         racket/promise
          (only-in racket/string string-join)
          (types utils abbrev generalize printer)
          (typecheck provide-handling tc-toplevel tc-app-helper)
          (rep type-rep)
-         (env env-req)
          (for-template (only-in (base-env prims) :type :print-type :query-type/result))
          (utils utils tc-utils arm)
          "tc-setup.rkt")

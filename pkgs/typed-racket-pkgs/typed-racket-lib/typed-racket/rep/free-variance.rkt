@@ -2,9 +2,7 @@
 (require "../utils/utils.rkt" 
          racket/match
          racket/set
-         (for-syntax racket/base)
-         racket/lazy-require
-         (contract-req)) 
+         racket/lazy-require) 
 
 ;; Ugly hack - should use units
 (lazy-require

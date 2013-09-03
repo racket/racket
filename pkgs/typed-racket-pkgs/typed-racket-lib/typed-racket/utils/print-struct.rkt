@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/generic (for-syntax racket/base syntax/parse))
+(require (for-syntax racket/base syntax/parse))
 (provide define-struct/printer)
 
 (define-syntax (define-struct/printer stx)

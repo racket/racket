@@ -3,10 +3,10 @@
 (require "../utils/utils.rkt"
          racket/match
          (typecheck signatures check-below)
-         (types abbrev numeric-tower utils resolve subtype union generalize)
+         (types abbrev numeric-tower resolve subtype union generalize)
          (rep type-rep)
          (only-in (infer infer) restrict)
-         (utils tc-utils stxclass-util)
+         (utils stxclass-util)
          syntax/parse
          unstable/function)
 

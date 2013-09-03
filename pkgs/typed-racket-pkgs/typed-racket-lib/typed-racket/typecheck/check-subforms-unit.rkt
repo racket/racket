@@ -5,8 +5,8 @@
          syntax/parse
          racket/match
          "signatures.rkt" "tc-metafunctions.rkt"
-         "tc-funapp.rkt" "tc-subst.rkt"
-         (types utils abbrev union subtype resolve)
+         "tc-funapp.rkt"
+         (types utils abbrev union resolve)
          (private syntax-properties)
          (utils tc-utils)
          (rep type-rep))

@@ -1,7 +1,7 @@
 #lang racket/base
 (require "../utils/utils.rkt")
 
-(require (rep type-rep rep-utils free-variance)
+(require (rep type-rep rep-utils)
          (env type-name-env)
          (utils tc-utils)
          (types utils current-seen)

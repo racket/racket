@@ -1,13 +1,13 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-         racket/match unstable/list unstable/sequence racket/set syntax/parse
+         racket/match unstable/list unstable/sequence racket/set
          syntax/stx
          (only-in srfi/1 unzip4) (only-in racket/list make-list)
          (contract-req)
          (typecheck check-below tc-subst)
          (utils tc-utils)
-         (rep type-rep object-rep)
+         (rep type-rep)
          (except-in (types utils union abbrev subtype)
                     -> ->* one-of/c))
 

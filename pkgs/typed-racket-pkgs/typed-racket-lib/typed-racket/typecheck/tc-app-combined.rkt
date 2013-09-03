@@ -1,8 +1,6 @@
 #lang racket/base
 
-(require "../utils/utils.rkt"
-
-         "tc-app/tc-app-apply.rkt"
+(require "tc-app/tc-app-apply.rkt"
          "tc-app/tc-app-eq.rkt"
          "tc-app/tc-app-hetero.rkt"
          "tc-app/tc-app-keywords.rkt"
@@ -12,7 +10,6 @@
          "tc-app/tc-app-special.rkt"
          "tc-app/tc-app-values.rkt"
          "tc-app/tc-app-main.rkt"
-         "tc-app/signatures.rkt"
          "signatures.rkt")
 
 (require racket/unit)

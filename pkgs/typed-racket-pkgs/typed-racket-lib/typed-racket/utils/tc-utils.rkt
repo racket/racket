@@ -6,7 +6,7 @@ don't depend on any other portion of the system
 |#
 
 (provide (all-defined-out) (all-from-out "disappeared-use.rkt"))
-(require "syntax-traversal.rkt" racket/dict "disappeared-use.rkt" racket/promise
+(require "syntax-traversal.rkt" "disappeared-use.rkt" racket/promise
 	 syntax/parse (for-syntax racket/base syntax/parse) racket/match)
 
 ;; a parameter representing the original location of the syntax being

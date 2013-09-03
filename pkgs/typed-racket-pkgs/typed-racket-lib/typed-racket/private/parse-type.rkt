@@ -8,9 +8,8 @@
                     [make-arr* make-arr])
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: (contract-req))
-         syntax/parse racket/dict unstable/sequence
-         (env type-env-structs tvar-env type-name-env type-alias-env
-              lexical-env index-env)
+         syntax/parse unstable/sequence
+         (env tvar-env type-name-env type-alias-env lexical-env index-env)
          racket/match
          "parse-classes.rkt"
          (for-template racket/base "../base-env/colon.rkt")

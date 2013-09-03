@@ -5,8 +5,7 @@
 (require (for-syntax racket/base syntax/parse)
          (utils tc-utils)
          (env init-envs)
-         (types abbrev numeric-tower union filter-ops)
-         (rep object-rep filter-rep type-rep))
+         (types abbrev numeric-tower union filter-ops))
 
 (define-syntax (-#%module-begin stx)
   (define-syntax-class clause

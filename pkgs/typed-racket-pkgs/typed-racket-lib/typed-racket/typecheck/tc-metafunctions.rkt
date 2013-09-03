@@ -2,7 +2,7 @@
 
 (require "../utils/utils.rkt"
          racket/match racket/list
-         (except-in (types subtype abbrev union utils filter-ops)
+         (except-in (types abbrev union utils filter-ops)
                     -> ->* one-of/c)
          (rep type-rep filter-rep object-rep rep-utils)
          (contract-req))

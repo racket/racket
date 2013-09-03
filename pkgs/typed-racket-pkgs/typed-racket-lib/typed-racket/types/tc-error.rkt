@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "../utils/utils.rkt"
-         (rep type-rep filter-rep object-rep rep-utils)
+         (rep type-rep)
          (utils tc-utils)
          "base-abbrev.rkt"
          (prefix-in c: (contract-req))

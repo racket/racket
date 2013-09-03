@@ -1,8 +1,6 @@
 #lang racket/base
 
-(require "../utils/utils.rkt"
-         racket/trace
-         (only-in racket/unit
+(require (only-in racket/unit
                   provide-signature-elements
                   define-values/invoke-unit/infer link)
          "signatures.rkt"

@@ -9,9 +9,7 @@
  racket/private/kw racket/file racket/port syntax/parse racket/path
  (for-template (only-in racket/private/kw kw-expander-proc kw-expander-impl)
                racket/base racket/file racket/port racket/path racket/list)
- (utils tc-utils)
  (env init-envs)
- (except-in (rep filter-rep object-rep type-rep) make-arr)
  (rename-in (types abbrev numeric-tower union) [make-arr* make-arr])
  (for-syntax racket/base syntax/parse
              (only-in racket/syntax syntax-local-eval)))

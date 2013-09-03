@@ -1,5 +1,4 @@
 #lang racket/base
-(require syntax/modcollapse)
 (define to-require null)
 (define (add-mod! m)
   (set! to-require (cons m to-require)))

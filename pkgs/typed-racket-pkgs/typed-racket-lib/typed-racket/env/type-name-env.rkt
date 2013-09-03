@@ -5,7 +5,6 @@
 (require "../utils/utils.rkt")
 
 (require syntax/id-table
-         racket/dict
          (env type-alias-env)
          (utils tc-utils)
          (rep type-rep)
