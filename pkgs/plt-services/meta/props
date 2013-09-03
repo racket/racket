@@ -1052,7 +1052,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-doc/rackunit/scribblings/file-test.rkt" drdr:command-line #f
 "pkgs/racket-pkgs/racket-doc/scribblings" responsible (mflatt eli robby matthias)
 "pkgs/racket-pkgs/racket-doc/scribblings/raco" responsible (jay mflatt)
-"pkgs/racket-pkgs/racket-doc/scribblings/reference/generic.scrbl" responsible (asumu stamourv)
+"pkgs/racket-pkgs/racket-doc/scribblings/reference/generic.scrbl" responsible (asumu stamourv carleastlund)
 "pkgs/racket-pkgs/racket-doc/scribblings/style" responsible (matthias)
 "pkgs/racket-pkgs/racket-doc/syntax" responsible (mflatt)
 "pkgs/racket-pkgs/racket-doc/syntax/scribblings/parse" responsible (ryanc)
@@ -1072,7 +1072,7 @@ path/s is either such a string or a list of them.
 "pkgs/racket-pkgs/racket-test/tests/future/future.rkt" drdr:timeout 200 drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/future/random-future.rkt" drdr:timeout 480 drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/future/timing-test.rkt" drdr:random #t
-"pkgs/racket-pkgs/racket-test/tests/generic" responsible (asumu stamourv)
+"pkgs/racket-pkgs/racket-test/tests/generic" responsible (asumu stamourv carleastlund)
 "pkgs/racket-pkgs/racket-test/tests/generic/benchmark.rkt" drdr:timeout 300 drdr:random #t
 "pkgs/racket-pkgs/racket-test/tests/info.rkt" responsible (eli)
 "pkgs/racket-pkgs/racket-test/tests/match" responsible (samth)
@@ -1589,12 +1589,14 @@ path/s is either such a string or a list of them.
 "racket/collects/ffi/objc.rkt" drdr:command-line (mzc *)
 "racket/collects/ffi/unsafe/objc.rkt" drdr:command-line (mzc *)
 "racket/collects/racket/contract" responsible (robby)
-"racket/collects/racket/generic.rkt" responsible (asumu stamourv)
+"racket/collects/racket/generic.rkt" responsible (asumu stamourv carleastlund)
 "racket/collects/racket/match" responsible (samth)
 "racket/collects/racket/match.rkt" responsible (samth)
 "racket/collects/racket/performance-hint.rkt" responsible (stamourv) drdr:command-line (raco "test" *)
 "racket/collects/racket/place" responsible (tewk)
-"racket/collects/racket/private/generic.rkt" responsible (asumu stamourv)
+"racket/collects/racket/private/generic-interfaces.rkt" responsible (asumu stamourv carleastlund)
+"racket/collects/racket/private/generic-methods.rkt" responsible (asumu stamourv carleastlund)
+"racket/collects/racket/private/generic.rkt" responsible (asumu stamourv carleastlund)
 "racket/collects/raco/main.rkt" drdr:command-line #f
 "racket/collects/raco/raco.rkt" drdr:command-line #f
 "racket/collects/s-exp" responsible (eli mflatt)
