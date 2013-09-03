@@ -342,15 +342,15 @@ complete.
 
 @defmodule[macro-debugger/analysis/check-requires]
 
-The @racketmodname[macro-debugger/analysis/check-requires] can be run
-as a command-line script. For example (from racket root directory):
+The ``Check Requires'' utility can be run as a raco subcommand. For
+example (from racket root directory):
 
-@verbatim{
-racket -lm macro-debugger/analysis/check-requires \
-  racket/collects/syntax/*.rkt
+@commandline{
+raco check-requires racket/collects/syntax/*.rkt
+}
 
-racket -lm macro-debugger/analysis/check-requires -- -kbu \
-  openssl
+@commandline{
+raco check-requires -kbu openssl
 }
 
 Each argument is interpreted as a file path if it exists; otherwise,
@@ -502,17 +502,15 @@ returns one element per (non-label) require in the following format:
 
 @defmodule[macro-debugger/analysis/show-dependencies]
 
-The @racketmodname[macro-debugger/analysis/show-dependencies] module
-can be run as a command-line script. For example (from racket root
-directory):
+The ``Show Dependencies'' utility can be run as a raco subcommand. For
+example (from racket root directory):
 
-@verbatim{
-racket -lm macro-debugger/analysis/show-dependencies -- -bc \
-  racket/collects/openssl/main.rkt
+@commandline{
+raco show-dependencies -bc racket/collects/openssl/main.rkt
+}
 
-racket -lm macro-debugger/analysis/show-dependencies -- -c \
-  --exclude racket \
-  openssl
+@commandline{
+raco show-dependencies -c --exclude racket openssl
 }
 
 Each argument is interpreted as a file path if it exists; otherwise it
