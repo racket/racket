@@ -215,17 +215,24 @@
              others))
 
     ;; currently does not take advantage of multi-valued or arbitrary-valued expected types,
-    (define expected-ty (and expected (match expected [(tc-result1: t) t] [_ #f])))
+    (define expected-ty
+      (and expected
+           (match expected
+             [(tc-result1: t) t]
+             [(tc-any-results:) #t] ; anything is a subtype of expected
+             [_ #f]))) ; don't know what it is, don't do any pruning
     (define (returns-subtype-of-expected? fun-ty)
-      (or (not expected)
-          (match fun-ty
-            [(Function: (list (arr: _ rng _ _ _)))
-             (let ([rng (match rng
-                          [(Values: (list (Result: t _ _)))
-                           t]
-                          [(ValuesDots: (list (Result: t _ _)) _ _)
-                           t])])
-               (subtype rng expected-ty))])))
+      (or (not expected) ; no expected type, anything is fine
+          (eq? expected-ty #t) ; expected is tc-anyresults, anything is fine
+          (and expected-ty ; not some unknown expected tc-result
+               (match fun-ty
+                 [(Function: (list (arr: _ rng _ _ _)))
+                  (let ([rng (match rng
+                               [(Values: (list (Result: t _ _)))
+                                t]
+                               [(ValuesDots: (list (Result: t _ _)) _ _)
+                                t])])
+                    (subtype rng expected-ty))]))))
 
     (define orig (map list doms rngs rests drests))
 
