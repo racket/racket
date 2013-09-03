@@ -205,9 +205,6 @@
 ;;     is not necessary to get the expected type
 (define (possible-domains doms rests drests rngs expected)
 
-  ;; If we fail, no big deal. We just don't prune the type.
-  (with-handlers ([exn:fail? (lambda (e) (list doms rngs rests drests))])
-
     ;; is fun-ty subsumed by a function type in others?
     (define (is-subsumed-in? fun-ty others)
       ;; a case subsumes another if the first one is a subtype of the other
@@ -309,7 +306,7 @@
 
                       (call-with-values
                           (lambda () (unzip4 (reverse parts-acc)))
-                        list)))))))))
+                        list))))))))
 
 ;; Wrapper over possible-domains that works on types.
 (provide/cond-contract
