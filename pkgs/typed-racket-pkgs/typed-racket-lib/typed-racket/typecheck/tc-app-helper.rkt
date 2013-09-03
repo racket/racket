@@ -143,45 +143,46 @@
                     (car rngs) (make-printable expected))
             ""))))]
     [else
-     (let ([label  (if expected   "Types: "   "Domains: ")]
-           [nl+spc (if expected "\n       " "\n         ")])
-       ;; we restrict the domains shown in the error messages to those that
-       ;; are useful
-       (match-let ([(list pdoms prngs prests pdrests) (possible-domains doms rests drests rngs expected)])
-         ;; if we somehow eliminate all the cases (bogus expected type) fall back to showing the
-         ;; extra cases
-         (let-values ([(pdoms rngs rests drests)
-                       (if (null? pdoms)
-                           (values doms rngs rests drests)
-                           (values pdoms prngs prests pdrests))])
-           (if ;; only use `tc/funapp1` if `tail-ty` was *not* provided
-               ;; since it either won't error correctly or produces a poor error
-               (and (not tail-ty) (= (length pdoms) 1))
-               ;; if we narrowed down the possible cases to a single one, have
-               ;; tc/funapp1 generate a better error message
-               (begin (tc/funapp1 f-stx args-stx
-                                  (make-arr (car pdoms) (car rngs)
-                                            (car rests) (car drests) null)
-                                  arg-tys expected)
-                      return)
-               ;; if not, print the message as usual
-               (let* ([pdoms (map make-printable pdoms)]
-                      [err-doms
-                       (string-append
-                        label
-                        (stringify (if expected
-                                       (map stringify-domain pdoms rests drests rngs)
-                                       (map stringify-domain pdoms rests drests))
-                                   nl+spc)
-                        "\nArguments: "
-                        arguments-str
-                        "\n"
-                        (if expected
-                            (format "Expected result: ~a\n" (make-printable expected))
-                            ""))])
-                 (tc-error/expr
-                  #:return return
-                  (msg-thunk err-doms)))))))])) ; generate message
+     (define label  (if expected   "Types: "   "Domains: "))
+     (define nl+spc (if expected "\n       " "\n         "))
+     ;; we restrict the domains shown in the error messages to those that
+     ;; are useful
+     (match-let ([(list pdoms prngs prests pdrests) (possible-domains doms rests drests rngs expected)])
+       ;; if we somehow eliminate all the cases (bogus expected type) fall back to showing the
+       ;; extra cases
+       (let-values ([(pdoms rngs rests drests)
+                     (if (null? pdoms)
+                         (values doms rngs rests drests)
+                         (values pdoms prngs prests pdrests))])
+         ;; only use `tc/funapp1` if `tail-ty` was *not* provided
+         ;; since it either won't error correctly or produces a poor error
+         (cond [(and (not tail-ty) (= (length pdoms) 1))
+                ;; if we narrowed down the possible cases to a single one, have
+                ;; tc/funapp1 generate a better error message
+                (tc/funapp1 f-stx args-stx
+                            (make-arr (car pdoms) (car rngs)
+                                      (car rests) (car drests) null)
+                            arg-tys expected)
+                return]
+               [else
+                ;; if not, print the message as usual
+                (define pdoms* (map make-printable pdoms))
+                (define err-doms
+                  (string-append
+                   label
+                   (stringify (if expected
+                                  (map stringify-domain pdoms* rests drests rngs)
+                                  (map stringify-domain pdoms* rests drests))
+                              nl+spc)
+                   "\nArguments: "
+                   arguments-str
+                   "\n"
+                   (if expected
+                       (format "Expected result: ~a\n" (make-printable expected))
+                       "")))
+                (tc-error/expr
+                 #:return return
+                 (msg-thunk err-doms))])))])) ; generate message
 
 
 ;; to avoid long and confusing error messages, in the case of functions with
