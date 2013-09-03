@@ -171,7 +171,7 @@
         Version 5.2
 ------------------------------
 
-  . changed three menu keybidings:
+  . changed three menu keybindings:
       "New Tab" is now <menukey>-t
       "Run" is now <menukey>-r
       "Replace" is now <menukey>-shift-f

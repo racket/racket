@@ -34,7 +34,7 @@ the expression. For example, a representation of the expression
 content, a syntax object associates source-location and
 lexical-binding information with each part of the form. The
 source-location information is used when reporting syntax errors (for
-example), and the lexical-biding information allows the macro system
+example), and the lexical-binding information allows the macro system
 to maintain lexical scope. To accommodate this extra information, the
 represention of the expression @racket[(+ 1 2)] is not merely
 @racket['(+ 1 2)], but a packaging of @racket['(+ 1 2)] into a syntax

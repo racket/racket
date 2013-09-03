@@ -32,7 +32,7 @@
     ;; because no one uses the same name for different-phase exported
     ;; bindings.
     ;;
-    ;; Formerly, we assumed that bidings are defined as originating from some
+    ;; Formerly, we assumed that bindings are defined as originating from some
     ;; module at phase 0. [Maybe it's defined at phase 1 and re-exported
     ;; later for phase 0 (after a require-for-template), in which case the
     ;; re-exporting module is the one we find.] That assumption has been

@@ -1,6 +1,6 @@
 #lang typed/racket
 
-;; make sure letrec takes into account that some bidings may be undefined
+;; make sure letrec takes into account that some bindings may be undefined
 
 (letrec: ([x : Number 3])
   x)
