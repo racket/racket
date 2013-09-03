@@ -3,8 +3,7 @@
 (require typed/mred/mred
          typed/framework/framework
          racket/class
-         string-constants/string-constant)
-
+         string-constants)
 
 (define-type-alias Bitmap-Message% (Class () 
                                           ([parent (Instance Horizontal-Panel%)])

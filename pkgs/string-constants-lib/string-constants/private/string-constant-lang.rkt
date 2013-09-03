@@ -2,7 +2,8 @@
 (require (for-syntax racket/base))
 
 (provide (rename-out [-#%module-begin #%module-begin])
-         #%datum)
+         #%datum
+         #%top-interaction)
 
 (define-syntax (-#%module-begin stx)
   (syntax-case stx ()
@@ -38,7 +39,7 @@
           (#%plain-module-begin
            (provide string-constants)
            (define string-constants
-             (list (list 'name (string-append strs ...)) ...))))))]
+             (make-hash (list (cons 'name (string-append strs ...)) ...)))))))]
     [(_ prs ...)
      (for ([pr-stx (in-list (syntax->list (syntax (prs ...))))])
        (let ([pr (syntax->datum pr-stx)])
