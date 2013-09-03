@@ -62,7 +62,8 @@
            #%app #%datum #%top
            define quote
            list cons car cdr quasiquote unquote unquote-splicing
-           list* append reverse
+           list* append reverse 
+           make-immutable-hash hash hash-set hash-set* hash-remove hash-clear hash-update
            string-append
            path->string build-path collection-path
            system-library-subpath

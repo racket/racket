@@ -29,6 +29,7 @@ grammar of @racket[_info-module]:
 #:literals (info lib setup/infotab module define quote quasiquote
                  cons car cdr list list* reverse append
                  string-append path->string build-path
+                 make-immutable-hash hash hash-set hash-set* hash-remove hash-clear hash-update
                  collection-path
                  system-library-subpath)
 [info-module (module info info-mod-path
@@ -53,6 +54,7 @@ grammar of @racket[_info-module]:
 [info-primitive cons car cdr list
                 list* reverse append
                 string-append
+                make-immutable-hash hash hash-set hash-set* hash-remove hash-clear hash-update
                 path->string build-path collection-path
                 system-library-subpath]
 ]
