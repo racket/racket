@@ -9,7 +9,6 @@
                 type-table filter-ops generalize)
          (private-in parse-type type-annotation syntax-properties)
          (rep type-rep filter-rep object-rep)
-         (only-in (infer infer) restrict)
          (utils tc-utils stxclass-util)
          (env lexical-env type-env-structs tvar-env index-env)
          racket/private/class-internal
