@@ -112,7 +112,7 @@
       (when (null? originals)
         (raise-syntax-error
          #f
-         (format "~.s is not a method of generic interfaces ~.s"
+         (format "~.s is not a method of generic interface ~.s"
                  (syntax-e method-id)
                  (syntax-e gen-id))
          ctx
