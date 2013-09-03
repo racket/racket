@@ -38,29 +38,40 @@
   (initialize-indexing)
   (initialize-type-names)
   
+  ;; tr-expand: syntax? -> syntax?
+  ;; Expands out a form and annotates it with necesarry TR machinery.
   (define (tr-expand stx)
     (define expanded-stx (local-expand stx 'expression '()))
     (find-mutated-vars expanded-stx mvar-env)
     expanded-stx)
 
 
-  (define (tc stx expected)
+  ;; tc: syntax? (option/c tc-results?) -> tc-results?
+  ;; Typechecks the expression using the expected information if provided.
+  (define (tc expr expected)
     (if expected
-        (tc-expr/check stx expected)
-        (tc-expr stx)))
+        (tc-expr/check expr expected)
+        (tc-expr expr)))
 
-  (define (test stx golden (expected #f))
-    (test/proc stx (lambda (_) golden) expected))
+  ;; test: syntax? tc-results? [(option/c tc-results?)] -> void?
+  ;; Checks that the expression typechecks to golden result.
+  (define (test expr golden (expected #f))
+    (test/proc expr (lambda (_) golden) expected))
 
-  (define (test/proc stx golden-fun (expected #f))
-    (define ex-stx (tr-expand stx))
-    (define result (tc ex-stx expected))
-    (define golden (golden-fun ex-stx))
+  ;; test/proc: syntax? (syntax? -> tc-results?) [(option/c tc-results?)] -> void?
+  ;; Checks that the expression typechecks to golden result. The golden result is computed by applying
+  ;; the golden function to the expanded syntax of the expression.
+  (define (test/proc expr golden-fun (expected #f))
+    (define expanded-expr (tr-expand expr))
+    (define result (tc expanded-expr expected))
+    (define golden (golden-fun expanded-expr))
     (unless (equal? golden result)
       (error 'test "failed: ~a != ~a" golden result)))
 
-  (define (test-literal stx golden expected)
-    (define result (tc-literal stx expected))
+  ;; test/literal syntax? tc-results? [(option/c tc-results?)] -> void?
+  ;; Checks that the literal typechecks to golden result.
+  (define (test-literal literal golden expected)
+    (define result (tc-literal literal expected))
     (unless (equal? golden result)
       (error 'test "failed: ~a != ~a" golden result))))
 
@@ -93,7 +104,7 @@
       (check-not-exn
         (lambda () #,body))))
 
-  (define (check-error stx body)
+  (define (check-syntax-error stx body)
     (quasisyntax/loc stx
       (check-exn
         exn:fail:syntax?
@@ -126,13 +137,13 @@
 (define-syntax (tc-err stx)
   (syntax-parse stx
     [(_ code:expr ex:expected)
-     (check-error stx
+     (check-syntax-error stx
        #'(phase1-eval (tc (tr-expand (quote-syntax code)) ex.v)))]))
 
 (define-syntax (tc-l/err stx)
   (syntax-parse stx
     [(_ lit:expr ex:expected)
-     (check-error stx
+     (check-syntax-error stx
        #'(phase1-eval (tc-literal #'lit ex.v)))]))
 
 
