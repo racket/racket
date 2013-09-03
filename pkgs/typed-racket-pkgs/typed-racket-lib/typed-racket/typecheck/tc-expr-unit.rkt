@@ -191,16 +191,16 @@
       [(quote-syntax ((~literal typecheck-fail-internal) stx msg:str var))
        (explicit-fail #'stx #'msg #'var)]
       ;; data
-      [(quote #f) (ret (-val #f) false-filter)]
-      [(quote #t) (ret (-val #t) true-filter)]
+      [(quote #f) (ret (-val #f) -false-filter)]
+      [(quote #t) (ret (-val #t) -true-filter)]
       [(quote val)
        (match expected
          [(tc-result1: t)
-          (ret (tc-literal #'val t) true-filter)]
+          (ret (tc-literal #'val t) -true-filter)]
          [_
           (ret (tc-literal #'val #f))])]
       ;; syntax
-      [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) true-filter)]
+      [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) -true-filter)]
       ;; mutation!
       [(set! id val)
        (match-let* ([(tc-result1: id-t) (single-value #'id)]
@@ -331,12 +331,12 @@
       [(quote-syntax ((~literal typecheck-fail-internal) stx msg var))
        (explicit-fail #'stx #'msg #'var)]
       ;; data
-      [(quote #f) (ret (-val #f) false-filter)]
-      [(quote #t) (ret (-val #t) true-filter)]
+      [(quote #f) (ret (-val #f) -false-filter)]
+      [(quote #t) (ret (-val #t) -true-filter)]
 
-      [(quote val)  (ret (tc-literal #'val) true-filter)]
+      [(quote val)  (ret (tc-literal #'val) -true-filter)]
       ;; syntax
-      [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) true-filter)]
+      [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) -true-filter)]
       ;; w-c-m
       [(with-continuation-mark e1 e2 e3)
        (define key-t (single-value #'e1))

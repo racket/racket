@@ -6,8 +6,6 @@
          (rep type-rep filter-rep object-rep)
          (for-syntax (rename-in (types utils union numeric-tower abbrev filter-ops)
                                 [Un t:Un]
-                                [true-lfilter -true-lfilter]
-                                [true-filter -true-filter]
                                 [-> t:->]))
          (utils tc-utils utils)
          (utils mutated-vars)

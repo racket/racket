@@ -17,8 +17,6 @@
          (rep type-rep filter-rep object-rep)
          (rename-in (types utils union numeric-tower abbrev filter-ops)
                     [Un t:Un]
-                    [true-lfilter -true-lfilter]
-                    [true-filter -true-filter]
                     [-> t:->])
          (utils tc-utils utils)
          (utils mutated-vars)
@@ -240,10 +238,10 @@
         (tc-err (let: ([z : 4611686018427387903 4611686018427387903]) z)) ; unsafe
         (tc-e (let: ([z : 4611686018427387904 4611686018427387904]) z) (-val 4611686018427387904))
 
-        [tc-e/t (lambda: () 3) (t:-> -PosByte : -true-lfilter)]
-        [tc-e/t (lambda: ([x : Number]) 3) (t:-> N -PosByte : -true-lfilter)]
-        [tc-e/t (lambda: ([x : Number] [y : Boolean]) 3) (t:-> N B -PosByte : -true-lfilter)]
-        [tc-e/t (lambda () 3) (t:-> -PosByte : -true-lfilter)]
+        [tc-e/t (lambda: () 3) (t:-> -PosByte : -true-filter)]
+        [tc-e/t (lambda: ([x : Number]) 3) (t:-> N -PosByte : -true-filter)]
+        [tc-e/t (lambda: ([x : Number] [y : Boolean]) 3) (t:-> N B -PosByte : -true-filter)]
+        [tc-e/t (lambda () 3) (t:-> -PosByte : -true-filter)]
         [tc-e (values 3 4) #:ret (ret (list -PosByte -PosByte) (list -true-filter -true-filter))]
         [tc-e (cons 3 4) (-pair -PosByte -PosByte)]
         [tc-e (cons 3 (ann '() : (Listof Integer))) (make-Listof -Integer)]
@@ -593,7 +591,7 @@
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (number? z))])
                   (lambda: ([x : Any]) (if (p? x) 11 12)))
-                (t:-> Univ -PosByte : -true-lfilter)]
+                (t:-> Univ -PosByte : -true-filter)]
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (number? z))])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
@@ -605,7 +603,7 @@
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (not (number? z)))])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
-                (t:-> Univ -PosByte : -true-lfilter)]
+                (t:-> Univ -PosByte : -true-filter)]
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) z)])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
@@ -788,7 +786,7 @@
 
         ;; instantiating dotted terms
         [tc-e/t (inst (plambda: (a ...) [xs : a ... a] 3) Integer Boolean Integer)
-                (-Integer B -Integer . t:-> . -PosByte : -true-lfilter)]
+                (-Integer B -Integer . t:-> . -PosByte : -true-filter)]
         [tc-e/t (inst (plambda: (a ...) [xs : (a ... a -> Integer) ... a] 3) Integer Boolean Integer)
                 ((-Integer B -Integer . t:-> . -Integer)
                  (-Integer B -Integer . t:-> . -Integer)
@@ -873,13 +871,13 @@
                    (lambda: ([y : (a ... a -> Number)])
                      (apply y zs))
                    ys)))
-              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N)) : -true-lfilter))]
+              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N)) : -true-filter))]
         [tc-e/t (plambda: (a ...) [ys : (a ... a -> Number) *]
                 (lambda: [zs : a ... a]
                   (map (lambda: ([y : (a ... a -> Number)])
                          (apply y zs))
                        ys)))
-              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N)) : -true-lfilter))]
+              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N)) : -true-filter))]
 
         [tc-e/t (lambda: ((x : (All (t) t)))
                        ((inst (inst x (All (t) (t -> t)))
@@ -1685,7 +1683,7 @@
           (case-lambda
             [w 'result]
             [(x) (add1 "hello")])
-          (->* (list) Univ (-val 'result) : -true-lfilter)]
+          (->* (list) Univ (-val 'result) : -true-filter)]
 
         [tc-e
            (opt-lambda: ((x : Symbol 'a)) x)
