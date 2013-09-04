@@ -1233,7 +1233,9 @@ TODO
            (let ([oe (current-eval)])
              (define (drracket-eval-handler sexp/syntax)
                (cond
-                 [(and (do-dance) (syntax? sexp/syntax))
+                 [(and (do-dance) 
+                       (syntax? sexp/syntax)
+                       (not (compiled-expression? (syntax-e sexp/syntax))))
                   ;; we duplicate the 'expand-syntax-to-top-form' dance that eval-syntax
                   ;; does here, so that we can put 'with-stack-checkpoint's in to limit
                   ;; the amount of DrRacket code we see in stacktraces
