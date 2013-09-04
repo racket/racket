@@ -819,7 +819,7 @@
                            (begin
                              (message-box (string-constant drscheme)
                                           (format (string-constant already-added-teachpack)
-                                                  (cadr teachpack)))
+                                                  (tp-require->str teachpack)))
                              settings)
                            
                            (let ([new-tps (append old-tps (list teachpack))])
@@ -836,7 +836,7 @@
                               new-tps))))
                      settings)))
              (lambda (settings name) 
-               (let ([new-tps (filter (lambda (x) (not (equal? (cadr x) name)))
+               (let ([new-tps (filter (lambda (x) (not (equal? (tp-require->str x) name)))
                                       (deinprogramm-lang-settings-teachpacks settings))])
                  (preferences:set 'drscheme:deinprogramm:last-set-teachpacks new-tps)
                  (make-deinprogramm-lang-settings
