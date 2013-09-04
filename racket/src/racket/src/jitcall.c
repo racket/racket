@@ -1326,7 +1326,7 @@ static void jit_register_sub_func(mz_jit_state *jitter, void *code, Scheme_Objec
 
 void scheme_jit_register_sub_func(mz_jit_state *jitter, void *code, Scheme_Object *protocol)
 {
-  return jit_register_sub_func(jitter, code, protocol, 0);
+  jit_register_sub_func(jitter, code, protocol, 0);
 }
 
 void scheme_jit_register_helper_func(mz_jit_state *jitter, void *code, int gcable)
