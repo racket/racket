@@ -3,8 +3,8 @@
           scribble/manual
           "utils.rkt"
           scribble/core
-          (for-label ;unstable/2d/cond
-                     ;unstable/2d/match
+          (for-label unstable/2d/cond
+                     unstable/2d/match
                      racket/file
                      racket/contract
                      racket/base))

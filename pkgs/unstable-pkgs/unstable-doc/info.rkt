@@ -25,6 +25,7 @@
                      "unstable-options-lib"
                      "unstable-parameter-group-lib"
                      "unstable-pretty-lib"
+                     "unstable-2d"
                      "draw-doc"
                      "gui-doc"
                      "pict-doc"
