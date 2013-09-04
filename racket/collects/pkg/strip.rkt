@@ -1,6 +1,7 @@
 #lang racket/base
 (require compiler/cm
          setup/getinfo
+         setup/dirs
          syntax/modread
          racket/match
          racket/file
@@ -122,7 +123,10 @@
   (define-values (drops keeps)
     (add-drop+keeps dir 'same #hash() #hash()))
   
-  (explore 'same (directory-list dir) drops keeps))
+  (explore 'same (directory-list dir) drops keeps)
+  (case mode
+    [(binary built) (unmove-files dir dest-dir drop-keep-ns)]
+    [else (void)]))
 
 (define (fixup-html new-p)
   ;; strip full path to "local-redirect.js"
@@ -231,3 +235,29 @@
     [`(define copy-man-pages . ,v)
      `(define move-man-pages . ,v)]
     [_ defn]))
+
+(define (unmove-files dir dest-dir metadata-ns)
+  ;; Determine whether any files slated for movement by
+  ;; `move-foreign-libs', etc., have been installed
+  ;; and need to be uninstalled, and copies moved files
+  ;; to `dest-dir'.
+  (define (unmove-in dir dest-dir)
+    (for ([f (in-list (directory-list dir))])
+      (define d (build-path dir f))
+      (when (directory-exists? d)
+        (unmove d (build-path dest-dir f)))))
+  (define (unmove dir dest-dir)
+    (define info (get-info/full dir #:namespace metadata-ns))
+    (define (unmove-tag tag find-dir)
+      (when info
+        (define l (info tag (lambda () null)))
+        (for ([f (in-list l)])
+          (when (and (not (file-exists? (build-path dir f)))
+                     (file-exists? (build-path (find-dir) f)))
+            (copy-file (build-path (find-dir) f) 
+                       (build-path dest-dir f))))))
+    (unmove-tag 'move-foreign-libs find-user-lib-dir)
+    (unmove-tag 'move-shared-files find-user-share-dir)
+    (unmove-tag 'move-man-pages find-user-man-dir)
+    (unmove-in dir dest-dir))
+  (unmove dir dest-dir))

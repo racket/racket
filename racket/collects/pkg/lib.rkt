@@ -2214,9 +2214,10 @@
                        dir-or-name))
           dir)))
   (case mode
-    [(as-is) (create-as-is create:format pkg-name dir dir
-                           #:dest dest-dir
-                           #:quiet? quiet?)]
+    [(as-is)
+     (create-as-is create:format pkg-name dir dir
+                   #:dest dest-dir
+                   #:quiet? quiet?)]
     [else (stripped-create mode pkg-name dir
                            #:dest dest-dir
                            #:format create:format

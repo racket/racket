@@ -1,6 +1,7 @@
 #lang scribble/manual
 @(require "common.rkt"
-          (for-label pkg/strip))
+          (for-label pkg/strip
+                     setup/dirs))
 
 @title[#:tag "strip"]{Source, Binary, and Built Packages}
 
@@ -125,16 +126,27 @@ Creating a @tech{binary package} further adjusts the following files:
  @item{each @filepath{info.rkt} is adjusted as follows: an
        @racket[assume-virtual-sources] definition is added, any
        @racket[copy-foreign-libs] definition is changed to
-       @racket[move-foreign-libs], any @racket[copy-man-pages]
-       definition is changed to @racket[move-man-pages] entry, and any
+       @racket[move-foreign-libs], any
+       @racket[copy-shared-files] definition is changed to
+       @racket[move-shared-files], any @racket[copy-man-pages]
+       definition is changed to @racket[move-man-pages], and any
        @racket[build-deps] definition is removed.}
 
 ]
 
-Finally, creating a @tech{built package} removes any file or directory
-that would be removed for a @tech{source package} and @tech{binary
+Creating a @tech{built package} removes any file or directory that
+would be removed for a @tech{source package} and @tech{binary
 package}, and it performs the @filepath{.html} file updating of a
 @tech{binary package}.
+
+Finally, creating @tech{built package} or @tech{source package}
+``unmoves'' files that were installed via @racket[move-foreign-libs],
+@racket[move-shared-files], or @racket[move-man-pages] definitions in
+an @filepath{info.rkt} file, retrieving them if they are not present
+at referenced location but are present in a user-specific target
+directory (i.e., the directory reported by @racket[find-user-lib-dir],
+@racket[find-user-share-dir], or @racket[find-user-man-dir],
+respectively).
 
 @defmodule[pkg/strip]{The @racketmodname[pkg/strip] module provides
 support for copying a package-style directory to a given destination
