@@ -94,14 +94,14 @@
       first-string-constant-set))
 
 (define (dynamic-string-constant key) 
-  (dynamic-string-constant/who key 'dynamic-string-constant))
+  (dynamic-string-constant/who the-sc key 'dynamic-string-constant))
 
 (define (dynamic-string-constants key)
   (for/list ([sc (in-list available-string-constant-sets)])
-    (dynamic-string-constant sc 'dynamic-string-constants)))
+    (dynamic-string-constant/who sc key 'dynamic-string-constants)))
 
-(define (dynamic-string-constant/who key who)
-  (hash-ref (sc-constants the-sc) key
+(define (dynamic-string-constant/who an-sc key who)
+  (hash-ref (sc-constants an-sc) key
             (λ ()
               (hash-ref (sc-constants first-string-constant-set)
                         key
