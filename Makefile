@@ -320,9 +320,9 @@ packages-from-local:
 # `SRC_CATALOG':
 build-from-catalog:
 	$(MAKE) fresh-user
-	$(RACO) pkg install $(SOURCE_USER_AUTO_q) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
+	$(RACO) pkg install --all-platforms $(SOURCE_USER_AUTO_q) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
 	$(MAKE) set-config
-	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(SOURCE_USER_AUTO_q)
+	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(SOURCE_USER_AUTO_q) --all-platforms
 	$(RACO) setup --avoid-main $(JOB_OPTIONS)
 
 # Although a client will build its own "collects", pack up the
