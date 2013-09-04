@@ -360,7 +360,6 @@
      #'(unify-all/results lhs eqs
                           ([rhs res eqs] ...))]))
 
-
 (unify-all/results/no-bindings
  'any (hash)
  (['any 'any]
@@ -497,6 +496,47 @@
   ['(nt e) '(cstr (e) any)]
   ['variable 'variable]
   ['variable-not-otherwise-mentioned 'variable-not-otherwise-mentioned]))
+
+(unify-all/results/no-bindings
+ '(variable-except a) (hash)
+ ([5 #f]
+  ['any '(variable-except a)]
+  ['number #f]
+  ['integer #f]
+  ['natural #f]
+  ['real #f]
+  ['string #f]
+  ['boolean #f]
+  ['(list 1 2 3) #f]
+  ['b 'b]
+  ['a #f]
+  ['(mismatch-name y b) 'b]
+  ['(nt e) '(cstr (e) (variable-except a))]
+  ['variable '(variable-except a)]
+  ['variable-not-otherwise-mentioned '(variable-except a)]
+  ['(variable-except b) '(variable-except a b)]
+  ['(variable-prefix a) '(variable-prefix a)]))
+
+(unify-all/results/no-bindings
+ '(variable-prefix a) (hash)
+ ([5 #f]
+  ['any '(variable-prefix a)]
+  ['number #f]
+  ['integer #f]
+  ['natural #f]
+  ['real #f]
+  ['string #f]
+  ['boolean #f]
+  ['(list 1 2 3) #f]
+  ['b #f]
+  ['a 'a]
+  ['aa 'aa]
+  ['(mismatch-name y b) #f]
+  ['(nt e) '(cstr (e) (variable-prefix a))]
+  ['variable '(variable-prefix a)]
+  ['variable-not-otherwise-mentioned '(variable-prefix a)]
+  ['(variable-prefix a) '(variable-prefix a)]
+  ['(variable-prefix b) #f]))
                   
 
 
@@ -537,6 +577,10 @@
   ['variable `(cstr (e q) variable) (make-hash)]
   ['variable-not-otherwise-mentioned 
    `(cstr (e q) variable-not-otherwise-mentioned) (make-hash)]
+  ['(variable-except a)
+   `(cstr (e q) (variable-except a)) (make-hash)]
+  ['(variable-prefix a) 
+   `(cstr (e q) (variable-prefix a)) (make-hash)]
   ['(list 1 2 3)
    '(cstr (e q) (list 1 2 3)) (make-hash)]
   [5 '(cstr (e q) 5) (make-hash)]
@@ -555,6 +599,8 @@
   ['boolean `(name x ,(bound)) (make-hash `((,(lvar 'x) . boolean)))]
   ['variable `(name x ,(bound)) (make-hash `((,(lvar 'x) . variable)))]
   ['variable-not-otherwise-mentioned `(name x ,(bound)) (make-hash `((,(lvar 'x) . variable-not-otherwise-mentioned)))]
+  ['(variable-except a) `(name x ,(bound)) (make-hash `((,(lvar 'x) . (variable-except a))))]
+  ['(variable-prefix a) `(name x ,(bound)) (make-hash `((,(lvar 'x) . (variable-prefix a))))]
   ['(cstr (n) any) `(name x ,(bound)) (make-hash `((,(lvar 'x) . (cstr (n) any))))]
   ['(list 1 2) `(name x ,(bound)) (make-hash `((,(lvar 'x) . (list 1 2))))]
   ['(mismatch-name z any) `(name x ,(bound)) (make-hash `((,(lvar 'x) . any)))]
