@@ -7,7 +7,8 @@
                     [tcp-connect plain-tcp-connect]
                     [tcp-abandon-port plain-tcp-abandon-port])
          openssl
-         "win32-ssl.rkt")
+         "win32-ssl.rkt"
+         file/gunzip)
 
 ;; Lib
 
@@ -87,6 +88,8 @@
   (fprintf to "~a ~a HTTP/~a\r\n" method-bss url-bs version-bs)
   (unless (regexp-member #rx"^(?i:Host:) +.+$" headers-bs)
     (fprintf to "Host: ~a\r\n" host))
+  (unless (regexp-member #rx"^(?i:Accept-Encoding:) +.+$" headers-bs)
+    (fprintf to "Accept-Encoding: gzip\r\n"))
   (define data
     (if (string? data-bsf)
       (string->bytes/utf-8 data-bsf)
@@ -179,7 +182,7 @@
         (regexp-member #rx#"^(?i:Connection: +close)$" headers)))
   (when close?
     (http-conn-abandon! hc))
-  (define response-port
+  (define raw-response-port
     (cond
       [(regexp-member #rx#"^(?i:Transfer-Encoding: +chunked)$" headers)
        (http-conn-response-port/chunked! hc #:close? #t)]
@@ -195,7 +198,18 @@
          (http-conn-response-port/length! hc count #:close? close?))]
       [else
        (http-conn-response-port/rest! hc)]))
-  (values status headers response-port))
+  (define decoded-response-port
+    (cond
+      [(regexp-member #rx#"^(?i:Content-Encoding: +gzip)$" headers)
+       (define-values (in out) (make-pipe PIPE-SIZE))
+       (thread
+        (λ ()
+          (gunzip-through-ports raw-response-port out)
+          (close-output-port out)))
+       in]
+      [else 
+       raw-response-port]))
+  (values status headers decoded-response-port))
 
 (define (http-conn-sendrecv! hc url-bs
                              #:version [version-bs #"1.1"]
