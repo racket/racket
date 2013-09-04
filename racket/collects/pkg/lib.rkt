@@ -731,7 +731,7 @@
                             init-drop)])
             (define deps
               (list->set
-               (append-map (package-dependencies metadata-ns db)
+               (append-map (package-dependencies metadata-ns db #t)
                            (set->list keep))))
             (define still-drop (set-subtract drop deps))
             (define delta (set-subtract drop still-drop))
@@ -759,7 +759,7 @@
       (set-intersect
        pkgs-set
        (list->set
-        (append-map (package-dependencies metadata-ns db)
+        (append-map (package-dependencies metadata-ns db #t)
                     (set->list
                      remaining-pkg-db-set)))))    
     (unless (set-empty? deps-to-be-removed)
@@ -770,7 +770,7 @@
                    (λ (p)
                      (define ds
                        (filter (λ (dp)
-                                 (member p ((package-dependencies metadata-ns db) dp)))
+                                 (member p ((package-dependencies metadata-ns db #t) dp)))
                                (set->list
                                 remaining-pkg-db-set)))
                      (~a p " (required by: " ds ")"))
@@ -1205,6 +1205,7 @@
          #:ignore-checksums? ignore-checksums?
          #:skip-installed? skip-installed?
          #:force? force?
+         #:all-platforms? all-platforms?
          #:quiet? quiet?
          #:conversation conversation
          #:strip strip-mode
@@ -1352,7 +1353,8 @@
                  (filter-not (λ (dep)
                                 (define name (dependency->name dep))
                                 (or (equal? name "racket")
-                                    (not (dependency-this-platform? dep))
+                                    (not (or all-platforms?
+                                             (dependency-this-platform? dep)))
                                     (hash-ref simultaneous-installs name #f)
                                     (hash-has-key? all-db name)))
                              deps)))
@@ -1391,13 +1393,15 @@
           (define update-pkgs
             (append-map (λ (dep)
                            (define name (dependency->name dep))
-                           (define this-platform? (dependency-this-platform? dep))
+                           (define this-platform? (or all-platforms?
+                                                      (dependency-this-platform? dep)))
                            (or (and this-platform?
                                     (not (hash-ref simultaneous-installs name #f))
                                     ((packages-to-update download-printf current-scope-db 
                                                          #:must-update? #f #:deps? #t
                                                          #:update-cache update-cache
                                                          #:namespace metadata-ns
+                                                         #:all-platforms? all-platforms?
                                                          #:ignore-checksums? ignore-checksums?)
                                      name))
                                null))
@@ -1434,7 +1438,8 @@
             (filter-map (λ (dep)
                           (define name (dependency->name dep))
                           (define req-vers (dependency->version dep))
-                          (define this-platform? (dependency-this-platform? dep))
+                          (define this-platform? (or all-platforms?
+                                                     (dependency-this-platform? dep)))
                           (define-values (inst-vers* can-try-update?)
                             (cond
                              [(not this-platform?)
@@ -1493,6 +1498,7 @@
                                                                #:deps? update-deps? 
                                                                #:update-cache update-cache
                                                                #:namespace metadata-ns
+                                                               #:all-platforms? all-platforms?
                                                                #:ignore-checksums? ignore-checksums?)
                                            update-pkgs)])
                 (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) to-update))))
@@ -1596,7 +1602,8 @@
     (let ([db (read-pkg-db)])
       (get-setup-collects ((if updating?
                                (make-close-over-depending (read-pkg-db)
-                                                          post-metadata-ns)
+                                                          post-metadata-ns
+                                                          all-platforms?)
                                values)
                            (map install-info-name
                                 (if updating?
@@ -1660,12 +1667,13 @@
                                      (pkg-error "bad 'setup-collects value\n  value: ~e"
                                                 v))))))))
 
-(define ((make-close-over-depending db metadata-ns) l)
+(define ((make-close-over-depending db metadata-ns all-platforms?) l)
   (define setup-pkgs (list->set l))
   (define empty-set (set))
   (define rev-pkg-deps
     (for/fold ([rev (hash)]) ([pkg-name (in-hash-keys db)])
-      (for/fold ([rev rev]) ([dep (in-list ((package-dependencies metadata-ns db) pkg-name))])
+      (for/fold ([rev rev]) ([dep (in-list ((package-dependencies metadata-ns db all-platforms?)
+                                            pkg-name))])
         (hash-update rev dep (lambda (v) (set-add v pkg-name)) empty-set))))
   (let loop ([check setup-pkgs] [setup-pkgs setup-pkgs])
     ;; Find all packages that depend on a package in `check':
@@ -1686,6 +1694,7 @@
 (define (pkg-install descs
                      #:old-infos [old-infos empty]
                      #:old-auto+pkgs [old-descs empty]
+                     #:all-platforms? [all-platforms? #f]
                      #:force? [force #f]
                      #:ignore-checksums? [ignore-checksums? #f]
                      #:skip-installed? [skip-installed? #f]
@@ -1718,6 +1727,7 @@
                       (pkg-install
                        #:old-infos new-infos
                        #:old-auto+pkgs (append old-descs new-descs)
+                       #:all-platforms? all-platforms?
                        #:force? force
                        #:ignore-checksums? ignore-checksums?
                        #:dep-behavior dep-behavior
@@ -1734,6 +1744,7 @@
     (install-packages
      #:old-infos old-infos
      #:old-descs old-descs
+     #:all-platforms? all-platforms?
      #:force? force
      #:ignore-checksums? ignore-checksums?
      #:skip-installed? skip-installed?
@@ -1765,6 +1776,7 @@
                              #:deps? [deps? #f]
                              #:namespace metadata-ns 
                              #:update-cache update-cache
+                             #:all-platforms? all-platforms?
                              #:ignore-checksums? ignore-checksums?)
          pkg-name)
   (cond
@@ -1812,6 +1824,7 @@
                                  #:deps? #t
                                  #:update-cache update-cache
                                  #:namespace metadata-ns
+                                 #:all-platforms? all-platforms?
                                  #:ignore-checksums? ignore-checksums?)
              pkg-name)
             null))]
@@ -1874,8 +1887,9 @@
                                       #:deps? #t
                                       #:update-cache update-cache
                                       #:namespace metadata-ns
+                                      #:all-platforms? all-platforms?
                                       #:ignore-checksums? ignore-checksums?)
-                  ((package-dependencies metadata-ns db) pkg-name))
+                  ((package-dependencies metadata-ns db all-platforms?) pkg-name))
                  null))]))]
    [else null]))
 
@@ -1886,14 +1900,17 @@
   (for ([k (in-list l)]) (hash-remove! update-cache k)))
                   
 
-(define ((package-dependencies metadata-ns db) pkg-name)
+(define ((package-dependencies metadata-ns db all-platforms?) pkg-name)
   (map dependency->name 
-       (filter dependency-this-platform?
-               (get-all-deps metadata-ns (pkg-directory* pkg-name #:db db)))))
+       (let ([l (get-all-deps metadata-ns (pkg-directory* pkg-name #:db db))])
+         (if all-platforms?
+             l
+             (filter dependency-this-platform? l)))))
 
 (define (pkg-update in-pkgs
                     #:all? [all? #f]
                     #:dep-behavior [dep-behavior #f]
+                    #:all-platforms? [all-platforms? #f]
                     #:force? [force? #f]
                     #:ignore-checksums? [ignore-checksums? #f]
                     #:update-deps? [update-deps? #f]
@@ -1914,6 +1931,7 @@
                                                                 all-mode?) ; avoid races
                                                     #:update-cache update-cache
                                                     #:namespace metadata-ns
+                                                    #:all-platforms? all-platforms?
                                                     #:ignore-checksums? ignore-checksums?)
                                 pkgs))
   (cond
@@ -1935,6 +1953,7 @@
       #:update-cache update-cache
       #:quiet? quiet?
       #:strip strip-mode
+      #:all-platforms? all-platforms?
       #:force? force?
       #:ignore-checksums? ignore-checksums?
       #:link-dirs? link-dirs?
@@ -1995,6 +2014,7 @@
         string-ci<=?))
   
 (define (pkg-migrate from-version
+                     #:all-platforms? [all-platforms? #f]
                      #:force? [force? #f]
                      #:quiet? [quiet? #f]
                      #:ignore-checksums? [ignore-checksums? #f]
@@ -2035,6 +2055,7 @@
       'skip
       (begin0
        (pkg-install to-install
+                    #:all-platforms? all-platforms?
                     #:force? force?
                     #:ignore-checksums? ignore-checksums?
                     #:skip-installed? #t
@@ -2726,6 +2747,7 @@
                         #:all? boolean?
                         #:update-deps? boolean?
                         #:quiet? boolean?
+                        #:all-platforms? boolean?
                         #:force? boolean?
                         #:ignore-checksums? boolean?
                         #:strip (or/c #f 'source 'binary)
@@ -2747,6 +2769,7 @@
    (->* ((listof pkg-desc?))
         (#:dep-behavior dep-behavior/c
                         #:update-deps? boolean?
+                        #:all-platforms? boolean?
                         #:force? boolean?
                         #:ignore-checksums? boolean?
                         #:skip-installed? boolean?
@@ -2757,6 +2780,7 @@
   [pkg-migrate
    (->* (string?)
         (#:dep-behavior dep-behavior/c
+                        #:all-platforms? boolean?
                         #:force? boolean?
                         #:ignore-checksums? boolean?
                         #:quiet? boolean?

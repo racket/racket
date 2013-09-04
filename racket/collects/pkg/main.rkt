@@ -158,6 +158,7 @@
                    (parameterize ([current-pkg-catalogs (and catalog
                                                              (list (catalog->url catalog)))])
                      (pkg-install #:dep-behavior (if auto 'search-auto deps)
+                                  #:all-platforms? all-platforms
                                   #:force? force
                                   #:ignore-checksums? ignore-checksums
                                   #:skip-installed? skip-installed
@@ -212,6 +213,7 @@
                                          (pkg-desc pkg-source a-type name checksum #f))]))
                                  #:all? all
                                  #:dep-behavior (if auto 'search-auto deps)
+                                 #:all-platforms? all-platforms
                                  #:force? force
                                  #:ignore-checksums? ignore-checksums
                                  #:update-deps? (or update-deps auto)
@@ -310,6 +312,7 @@
                      (pkg-migrate from-version
                                   #:dep-behavior deps
                                   #:force? force
+                                  #:all-platforms? all-platforms
                                   #:ignore-checksums? ignore-checksums
                                   #:strip (or (and source 'source) (and binary 'binary))))))
                 (setup no-setup setup-collects jobs)))]
@@ -389,7 +392,7 @@
              #:once-each
              [#:bool from-config () "Include currently configured catalogs last"]
              #:once-any
-             [#:bool force () "Force replacement fo existing file/directory"]
+             [#:bool force () "Force replacement of existing file/directory"]
              [#:bool merge () "Merge to existing database"]
              #:once-each
              [#:bool override () "While merging, override existing with new"]
@@ -443,7 +446,8 @@
    ("where the default is `search-ask' if <pkg-source> is a package name"
     "or `fail' otherwise")
    #:install-force-flags
-   ([#:bool force () "Ignores conflicts"]
+   ([#:bool all-platforms () "Follow package dependencies for all platforms"]
+    [#:bool force () "Ignores conflicts"]
     [#:bool ignore-checksums () "Ignores checksums"])
    #:update-deps-flags
    ([#:bool update-deps () "For `search-ask' or `search-auto', also update dependencies"])

@@ -404,6 +404,9 @@ sub-commands.
         whose name corresponds to an already-installed package, except for promoting auto-installed
         packages to explicitly installed.}
 
+  @item{@DFlag{all-platforms} --- Considers package dependencies independent of the current platform
+        (instead of filtering dependencies to platforms other than the current one).}
+
   @item{@DFlag{force} --- Ignores module conflicts, including conflicts due to installing a single
         package in multiple scopes. Forcing an installation may leave package content in an
         inconsistent state.}
@@ -456,6 +459,7 @@ the given @nonterm{pkg-source}s.
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Selects @nonterm{dir} as the @tech{package scope}, the same as for @command-ref{install}.}
  @item{@DFlag{catalog} @nonterm{catalog} --- Same as for @command-ref{install}.}
+ @item{@DFlag{all-platforms} --- Same as for @command-ref{install}.}
  @item{@DFlag{force} --- Same as for @command-ref{install}.}
  @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
@@ -532,11 +536,12 @@ the given @nonterm{pkg}s.
        the default.}
   @item{@DFlag{binary} --- Same as for @command-ref{install}.}
   @item{@DFlag{source} --- Same as for @command-ref{install}.}
- @item{@DFlag{scope} @nonterm{scope} --- Same as for @command-ref{install}.}
- @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
- @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
- @item{@DFlag{scope-dir} @nonterm{dir} --- Select @nonterm{dir} as the @tech{package scope}.}
- @item{@DFlag{catalog} @nonterm{catalog} --- Same as for @command-ref{install}.}
+  @item{@DFlag{scope} @nonterm{scope} --- Same as for @command-ref{install}.}
+  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
+  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
+  @item{@DFlag{scope-dir} @nonterm{dir} --- Select @nonterm{dir} as the @tech{package scope}.}
+  @item{@DFlag{catalog} @nonterm{catalog} --- Same as for @command-ref{install}.}
+  @item{@DFlag{all-platforms} --- Same as for @command-ref{install}.}
   @item{@DFlag{force} --- Same as for @command-ref{install}.}
   @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
   @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
