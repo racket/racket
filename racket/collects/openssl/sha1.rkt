@@ -7,7 +7,8 @@
 
 (provide sha1
          sha1-bytes
-         (rename-out [r:bytes->hex-string bytes->hex-string]))
+         (rename-out [r:bytes->hex-string bytes->hex-string])
+         (rename-out [r:hex-string->bytes hex-string->bytes]))
 
 (define _SHA_CTX-pointer _pointer)
 

@@ -31,7 +31,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (provide sha1
          sha1-bytes
-         bytes->hex-string)
+         bytes->hex-string
+         hex-string->bytes)
 
 (define 32-mask #xFFFFFFFF)
 
@@ -308,3 +309,24 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         (bytes-set! bstr2 (* 2 i) (digit (arithmetic-shift c -4)))
         (bytes-set! bstr2 (+ (* 2 i) 1) (digit (bitwise-and c #xF)))))
     (bytes->string/latin-1 bstr2)))
+
+(define (hex-string->bytes s)
+  (unless (and (string? s) (regexp-match? #px"^([[:xdigit:]]{2})*$" s))
+    (raise-argument-error 'hex-string->bytes
+                          "string containing an even number of hexadecimal digits" s))
+  
+  (define (hex-char->int c)
+    (cond ((char<=? #\0 c #\9) (- (char->integer c) (char->integer #\0)))
+          ((char<=? #\a c #\f) (+ 10 (- (char->integer c) (char->integer #\a))))
+          ((char<=? #\A c #\F) (+ 10 (- (char->integer c) (char->integer #\A))))))
+  
+  (define bsize (/ (string-length s) 2))
+  (define b (make-bytes bsize))
+  
+  (for ((i (in-range bsize)))
+    (define high (hex-char->int (string-ref s (+ i i))))
+    (define low  (hex-char->int (string-ref s (+ i i 1))))
+    (bytes-set! b i (+ (arithmetic-shift high 4) low)))
+  
+  b)
+

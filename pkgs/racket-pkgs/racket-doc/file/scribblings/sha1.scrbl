@@ -46,4 +46,15 @@ representation in the resulting string.
 (bytes->hex-string #"turtles")
 ]}
 
+@defproc[(hex-string->bytes [str string?]) bytes?]{
+
+Converts the given string to a byte string, where each pair of characters in
+@racket[str] is converted to a single byte in the result.
+
+@examples[
+#:eval sha1-eval
+(hex-string->bytes "70")
+(hex-string->bytes "Af")
+]}
+
 @close-eval[sha1-eval]
