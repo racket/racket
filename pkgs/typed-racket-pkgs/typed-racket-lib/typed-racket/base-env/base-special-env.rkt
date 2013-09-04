@@ -30,9 +30,11 @@
   ;; make-promise
   [(make-template-identifier 'delay 'racket/private/promise)
    (-poly (a) (-> (-> a) (-Promise a)))]
-  ;; next three for string constants
+  ;; next four for string constants
   [(make-template-identifier 'dynamic-string-constant 'string-constants/string-constant)
    (-> -Symbol -String)]
+  [(make-template-identifier 'dynamic-string-constants 'string-constants/string-constant)
+   (-> -Symbol (-lst -String))]
   [(make-template-identifier 'this-language 'string-constants/string-constant)
    (-> -Symbol)]
   [(make-template-identifier 'all-languages 'string-constants/string-constant)
