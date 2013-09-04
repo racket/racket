@@ -817,6 +817,21 @@
              [else
               (installer dir)]))))))
 
+  (define (this-platform? info)
+    (define sys
+      (call-info info
+                 'install-platform
+                 (lambda () #rx"")
+                 (lambda (v)
+                   (unless (or (regexp? v)
+                               (string? v)
+                               (symbol? v))
+                     (error "entry is not regexp, string, or symbol:" v)))))
+    (cond
+     [(regexp? sys) (regexp-match? sys (system-library-subpath #f))]
+     [(symbol? sys) (eq? sys (system-type))]
+     [else (equal? sys (path->string (system-library-subpath #f)))]))
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                  Make zo                      ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1477,7 +1492,8 @@
                                receipt-file
                                receipt-at-dest?
                                check-entry
-                               build-dest-path)
+                               build-dest-path
+                               this-platform?)
     (define (make-libs-step)
       (setup-printf #f (format "--- installing ~a ---" whats))
       (define installed-libs (make-hash))
@@ -1489,8 +1505,9 @@
                             (define move-libs
                               (call-info info move-tag (lambda () null) check-entry))
 
-                            (unless (and (null? copy-libs)
-                                         (null? move-libs))
+                            (unless (or (and (null? copy-libs)
+                                             (null? move-libs))
+                                        (not (this-platform? info)))
                               (define dir (if (cc-main? cc)
                                               (find-target-dir)
                                               (find-user-target-dir)))
@@ -1642,7 +1659,8 @@
                          (lambda (l)
                            (unless (list-of relative-path-string? l)
                              (error "entry is not a list of relative path strings:" l)))
-                         build-path))
+                         build-path
+                         this-platform?))
 
   (define make-shares-step
     (make-copy/move-step "shared file"
@@ -1657,7 +1675,8 @@
                          (lambda (l)
                            (unless (list-of relative-path-string? l)
                              (error "entry is not a list of relative path strings:" l)))
-                         build-path))
+                         build-path
+                         this-platform?))
 
   (define make-mans-step
     (make-copy/move-step "man page"
@@ -1680,7 +1699,8 @@
                          (lambda (d n)
                            (build-path d 
                                        (bytes->path-element (bytes-append #"man" (filename-extension n)))
-                                       n))))
+                                       n))
+                         (lambda (info) #t)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;       Package-dependency checking         ;;
@@ -1740,7 +1760,9 @@
 
   (do-install-part 'pre)
 
-  (when (make-foreign-libs) (make-foreign-libs-step))
+  (when (make-foreign-libs)
+    (make-foreign-libs-step)
+    (make-shares-step))
 
   (when (make-zo) (make-zo-step))
 

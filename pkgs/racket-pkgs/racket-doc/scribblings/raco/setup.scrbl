@@ -530,7 +530,9 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 
  @item{@indexed-racket[copy-foreign-libs] : @racket[(listof (and/c
    path-string? relative-path?))] --- Files to copy into a
-   directory where foreign libraries are found by @racket[ffi-lib].}
+   directory where foreign libraries are found by @racket[ffi-lib].
+   If @racket[install-platform] is defined, then the files are copied
+   only if the current platform matches the definition.}
 
  @item{@indexed-racket[move-foreign-libs] : @racket[(listof (and/c
    path-string? relative-path?))] --- Like @racket[copy-foreign-libs],
@@ -539,7 +541,9 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 
  @item{@indexed-racket[copy-shared-files] : @racket[(listof (and/c
    path-string? relative-path?))] --- Files to copy into a
-   directory where shared files are found.}
+   directory where shared files are found.
+   If @racket[install-platform] is defined, then the files are copied
+   only if the current platform matches the definition.}
 
  @item{@indexed-racket[move-shared-files] : @racket[(listof (and/c
    path-string? relative-path?))] --- Like @racket[copy-shared-files],
@@ -556,6 +560,19 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    path-string? relative-path? filename-extension))] --- Like
    @racket[copy-man-pages], but the original file is removed after it
    is copied (which makes sense for precompiled packages).}
+
+ @item{@indexed-racket[install-platform] : @racket[(or/c regexp?
+   string? symbol?)] --- Determines whether files are copied or moved
+   for @racket[copy-foreign-libs], @racket[move-foreign-libs],
+   @racket[copy-shared-files], or @racket[move-shared-files]. If
+   @racket[install-platform] is defined as a regexp, then files are
+   copied/moved only if the regexp matches the result of
+   @racket[(system-library-subpath #f)]. If @racket[install-platform]
+   is defined as a string, then files are copied/moved only if the
+   @racket[(path->string (system-library-subpath #f))] produces the
+   same string. If @racket[install-platform] is defined as a symbol,
+   then files are copied/moved only if the @racket[(system-type)]
+   produces the same symbol.}
 
  @item{@indexed-racket[install-collection] : @racket[path-string?]  --- A
    library module relative to the collection that provides
