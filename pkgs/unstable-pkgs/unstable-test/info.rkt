@@ -20,8 +20,9 @@
                      "unstable-lib"
                      "unstable-list-lib"
                      "unstable-options-lib"
-                     "unstable-parameter-group-lib"))
+                     "unstable-parameter-group-lib"
+                     "unstable-2d"))
 
 (define pkg-desc "tests for \"unstable\"")
 
-(define pkg-authors '(jay samth cce ryanc))
+(define pkg-authors '(jay samth cce ryanc robby))

@@ -8,6 +8,7 @@
                "gui-lib"
                "data-lib"
                "profile-lib"
+               "unstable-2d"
                "pict-lib"))
 (define build-deps '("rackunit-lib"))
 
