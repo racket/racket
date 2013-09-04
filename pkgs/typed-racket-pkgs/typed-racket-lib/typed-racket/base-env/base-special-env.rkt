@@ -38,11 +38,11 @@
   [(make-template-identifier 'all-languages 'string-constants/string-constant)
    (-> (-lst -Symbol))]
   ;; qq-append
- [(make-template-identifier 'qq-append 'racket/private/qq-and-or)
-  (-poly (a b)
-        (cl->*
-         (-> (-lst a) (-val '()) (-lst a))
-         (-> (-lst a) (-lst b) (-lst (Un a b)))))]
+  [(make-template-identifier 'qq-append 'racket/private/qq-and-or)
+   (-poly (a b)
+         (cl->*
+          (-> (-lst a) (-val '()) (-lst a))
+          (-> (-lst a) (-lst b) (-lst (Un a b)))))]
   ;; make-sequence
   [(make-template-identifier 'make-sequence 'racket/private/for)
    (-poly (a b)
