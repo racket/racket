@@ -291,16 +291,16 @@
 
 
 (define color-prefs-table
-  (let ([constant-green (make-object color% 211 72 255)]
+  (let ([constant-green (make-object color% 41 128 38)]
         [symbol-blue (make-object color% 38 38 128)])
     `((symbol ,symbol-blue ,(string-constant scheme-mode-color-symbol))
       (keyword ,symbol-blue ,(string-constant scheme-mode-color-keyword))
-      (comment ,(make-object color% 194 158 31) ,(string-constant scheme-mode-color-comment))
+      (comment ,(make-object color% 194 116 31) ,(string-constant scheme-mode-color-comment))
       (string ,constant-green ,(string-constant scheme-mode-color-string))
       (constant ,constant-green ,(string-constant scheme-mode-color-constant))
       (hash-colon-keyword ,(make-object color% "brown")
                           ,(string-constant scheme-mode-color-hash-colon-keyword))
-      (parenthesis ,(make-object color% 0 150 255) ,(string-constant scheme-mode-color-parenthesis))
+      (parenthesis ,(make-object color% "brown") ,(string-constant scheme-mode-color-parenthesis))
       (error ,(make-object color% "red") ,(string-constant scheme-mode-color-error))
       (other ,(make-object color% "black") ,(string-constant scheme-mode-color-other)))))
 
