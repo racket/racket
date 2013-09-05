@@ -18,6 +18,7 @@
          n-ary->binary n-ary-comp->binary
          opt-expr optimize
          value-expr typed-expr subtyped-expr
+         kernel-expression
          define-unsafe-syntax-class
          define-literal-syntax-class
          define-merged-syntax-class
@@ -143,3 +144,25 @@
     #:attr val (match (type-of #'e)
                  [(tc-result1: (Value: v)) v]
                  [_ #f])))
+
+(define-syntax-class kernel-expression
+  #:commit
+  #:literal-sets (kernel-literals)
+  #:attributes [(sub-exprs 1)]
+  [pattern (begin sub-exprs:expr ...)]
+  [pattern ((~or begin0 #%plain-app) sub-exprs:expr ...+)]
+  [pattern (#%plain-lambda formals sub-exprs:expr ...)]
+  [pattern ((~or if with-continuation-mark) e1:expr e2:expr e3:expr)
+    #:with (sub-exprs ...) #'(e1 e2 e3)]
+  [pattern (~or (#%top . _) (#%variable-reference . _) (quote _) (quote-syntax _) :id)
+    #:with (sub-exprs ...) #'()]
+  [pattern (case-lambda [formals e*:expr ...] ...)
+    #:with (sub-exprs ...) #'(e* ... ...)]
+  [pattern ((~or let-values letrec-values) ([ids e-rhs:expr] ...) e-body:expr ...)
+    #:with (sub-exprs ...) #'(e-rhs ... e-body ...)]
+  [pattern (letrec-syntaxes+values stx-bindings ([(ids ...) e-rhs:expr] ...) e-body:expr ...)
+    #:with (sub-exprs ...) #'(e-rhs ... e-body ...)]
+  [pattern (#%expression e:expr)
+    #:with (sub-exprs ...) #'(e)]
+  [pattern (set! _ e:expr)
+    #:with (sub-exprs ...) #'(e)])

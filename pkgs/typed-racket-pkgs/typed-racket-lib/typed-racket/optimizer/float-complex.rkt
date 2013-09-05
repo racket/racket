@@ -647,6 +647,7 @@
 ;; to benefit from local information
 (define-syntax-class (float-complex-call-site-opt-expr unboxed-info opt-operator)
   #:commit
+  #:attributes (opt)
   ;; call site of a function with unboxed parameters
   ;; the calling convention is: real parts of unboxed, imag parts, boxed
   (pattern (#%plain-app op:expr args:expr ...)
