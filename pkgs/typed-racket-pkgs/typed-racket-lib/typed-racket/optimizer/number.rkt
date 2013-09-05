@@ -8,14 +8,11 @@
 
 (provide number-opt-expr)
 
+(define-literal-syntax-class unary-op (+ * min max))
+
 (define-syntax-class number-opt-expr
   #:commit
   ;; these cases are all identity
-  (pattern (#%plain-app (~and op (~or (~literal +) (~literal *)
-                                      (~literal min) (~literal max)))
-                        f:expr)
-           #:with opt
-           (begin (log-optimization "unary number" "Identity elimination."
-                                    this-syntax)
-                  (add-disappeared-use #'op)
-                  ((optimize) #'f))))
+  (pattern (#%plain-app op:unary-op f:opt-expr)
+    #:do [(log-opt "unary number" "Identity elimination.")]
+    #:with opt #'f.opt))
