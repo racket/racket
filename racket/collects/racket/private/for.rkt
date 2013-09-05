@@ -1942,46 +1942,58 @@
                     (lambda () (read-char p*)))
                   eof)]])))
 
-  (define in-directory-tag (make-continuation-prompt-tag 'in-directory))
+  (define (dir-list full-d d acc)
+    (for/fold ([acc acc]) ([f (in-list (directory-list full-d))])
+	      (cons (build-path d f) acc)))
 
-  (define in-directory
-    (case-lambda
-      [(dir)
-       (when dir
-         (unless (path-string? dir)
-           (raise-argument-error 'in-directory "(or/c #f path-string?)" dir)))
-       (let ([make-gen (lambda ()
-                         (call-with-continuation-prompt
-                          (lambda ()
-                            (define (reply v)
-                              (call/cc 
-                               (lambda (k)
-                                (abort-current-continuation
-                                 in-directory-tag
-                                 (lambda () (cons (lambda () v) k))))
-                               in-directory-tag))
-                            (let loop ([dir (path->complete-path (or dir (current-directory)))]
-                                       [prefix dir])
-                              (for ([i (in-list (directory-list dir))])
-                                (let ([p (if prefix (build-path prefix i) i)]
-                                      [fp (build-path dir i)])
-                                  (reply p)
-                                  (when (directory-exists? fp)
-                                    (loop fp p)))))
-                            (reply eof))
-                          in-directory-tag))])
-         (make-do-sequence
-          (lambda ()
-            (values
-             (lambda (gen) ((car gen)))
-             (lambda (gen) (call-with-continuation-prompt
-                            (lambda ()
-                              ((cdr gen)))
-                            in-directory-tag))
-             (make-gen)
-             (lambda (gen) (not (eof-object? ((car gen)))))
-             (lambda (val) #t)
-             (lambda (gen val) #t)))))]
-      [() (in-directory #f)]))
+  (define (next-body l d init-dir)
+    (let ([full-d (path->complete-path d init-dir)])
+      (if (directory-exists? full-d)
+	  (dir-list full-d d (cdr l))
+	  (cdr l))))
+
+  (define (initial-state orig-dir init-dir)
+    (if orig-dir
+	(dir-list (path->complete-path orig-dir init-dir)
+		  orig-dir null)
+	(directory-list init-dir)))
+
+  (define *in-directory
+    (case-lambda 
+     [() (*in-directory #f)]
+     [(orig-dir)
+      (define init-dir (current-directory))
+      ;; current state of the sequence is a list of paths to produce; when
+      ;; incrementing past a directory, add the directory's immediate
+      ;; content to the front of the list:
+      (define (next l)
+	(define d (car l))
+	(next-body l d init-dir))
+      (make-do-sequence
+       (lambda ()
+	 (values
+	  car
+	  next
+	  (initial-state orig-dir init-dir)
+	  pair?
+	  #f
+	  #f)))]))
+     
+  (define-sequence-syntax in-directory
+    (λ () #'*in-directory)
+    (λ (stx)
+       (syntax-case stx ()
+	 [((d) (_)) #'[(d) (*in-directory #f)]]
+	 [((d) (_ dir))
+	  #'[(d) 
+	     (:do-in
+	      ([(orig-dir) (or dir #f)] [(init-dir) (current-directory)])
+	      #true
+	      ([l (initial-state orig-dir init-dir)])
+	      (pair? l)
+	      ([(d) (car l)])
+	      #true
+	      #true
+	      [(next-body l d init-dir)])]])))
 
   )
