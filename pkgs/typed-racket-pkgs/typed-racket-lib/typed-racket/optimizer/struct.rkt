@@ -11,18 +11,24 @@
 
 (define struct-opt-msg "Struct access specialization.")
 
+(define-syntax-class struct-op
+  #:attributes (message opt idx)
+  (pattern op:id
+    #:when (struct-accessor? #'op)
+    #:attr message "struct ref"
+    #:with idx #`'#,(struct-fn-idx #'op)
+    #:with opt #'unsafe-struct-ref)
+  (pattern op:id
+    #:when (struct-mutator? #'op)
+    #:attr message "struct set"
+    #:with idx #`'#,(struct-fn-idx #'op)
+    #:with opt #'unsafe-struct-set!))
+
 (define-syntax-class struct-opt-expr
   #:commit
   ;; we can always optimize struct accessors and mutators
   ;; if they typecheck, they're safe
-  (pattern (#%plain-app op:id s:expr v:expr ...)
-           #:when (or (struct-accessor? #'op) (struct-mutator? #'op))
-           #:with opt
-           (let ([idx (struct-fn-idx #'op)])
-             (add-disappeared-use #'op)
-             (if (struct-accessor? #'op)
-                 (begin (log-optimization "struct ref" struct-opt-msg this-syntax)
-                        #`(unsafe-struct-ref  #,((optimize) #'s) #,idx))
-                 (begin (log-optimization "struct set" struct-opt-msg this-syntax)
-                        #`(unsafe-struct-set! #,((optimize) #'s) #,idx
-                                              #,@(stx-map (optimize) #'(v ...))))))))
+  (pattern (#%plain-app op:struct-op s:opt-expr v:opt-expr ...)
+    #:do [(add-disappeared-use #'op)
+          (log-opt (attribute op.message) struct-opt-msg)]
+    #:with opt #'(op.opt s.opt op.idx v.opt ...)))
