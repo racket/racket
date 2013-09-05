@@ -48,8 +48,9 @@ in @racket[label] is converted to @litchar{&} (with no mnemonic
 underlining). On Mac OS X, a parenthesized mnemonic character is
 removed (along with any surrounding space) before the label is
 displayed, since a parenthesized mnemonic is often used for non-Roman
-languages. Finally, any text after a tab character is removed on all
-platforms. Mnemonic keyboard events are handled by
+languages. Finally, for historical reasons, any text after a tab character is removed on all
+platforms. All of these rules are consistent with label handling in
+menu items (see @method[labelled-menu-item<%> set-label]). Mnemonic keyboard events are handled by
 @method[top-level-window<%> on-traverse-char] (but not on Mac OS
 X).
 

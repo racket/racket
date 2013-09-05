@@ -47,10 +47,8 @@ See also @method[labelled-menu-item<%> set-label] and
            label-string?]{
 
 Like @method[labelled-menu-item<%> get-label], except that
-@litchar{&}s in the label are removed as described in
-@method[labelled-menu-item<%> set-label].
-
-
+@litchar{&}s and tab characters in the label are stripped in
+the same way as for @method[window<%> set-label].
 }
 
 @defmethod[(is-enabled?)
@@ -110,14 +108,17 @@ If the label contains @litchar{&} and the window is a control, the
  @litchar{&&} in the label is replaced by a literal (non-navigation)
  @litchar{&}. On Mac OS X, @litchar{&}s in the label are parsed in
  the same way as for Unix and Windows, but no mnemonic underline is
- displayed.
+ displayed. On Mac OS X, a parenthesized mnemonic character is
+ removed (along with any surrounding space) before the label is
+ displayed, since a parenthesized mnemonic is often used for non-Roman
+ languages. Finally, for historical reasons, if a label contains a tab character, then the
+ tab and all remaining characters are hidden in the displayed menu.
+ All of these rules are consistent with label handling in @racket[button%]
+ and other windows.
 
 A @litchar{&} is always preserved in the label returned by
-@method[labelled-menu-item<%> get-label], but never preserved in the
-label returned by @method[labelled-menu-item<%> get-plain-label].
-
-For historical reasons, if a label contains a tab character, then the
- tab and all remaining characters are hidden in the displayed menu.
+ @method[labelled-menu-item<%> get-label], but never preserved in the
+ label returned by @method[labelled-menu-item<%> get-plain-label].
 
 }}
 

@@ -170,14 +170,18 @@
 (define (label-test b l)
   (let ([&-l (format "&~a" l)]
 	[my-l (format "My ~a" l)]
-	[&-my-l (format "&My ~a" l)])
+	[&-my-l (format "&My ~a" l)]
+	[my-l-& (format "My ~a (&X) " l)])
     (st &-l b get-label)
     (st l b get-plain-label)
     (stv b set-label &-my-l)
     (st &-my-l b get-label)
     (st my-l b get-plain-label)
+    (stv b set-label my-l-&)
+    (st my-l-& b get-label)
+    (st my-l b get-plain-label)
     (stv b set-label &-l)))
-			      
+
 (let ([f (make-object frame% "Yes & No" #f 150 151 70 21)])
   (let ([init-tests
 	 (lambda (hidden?)
@@ -491,7 +495,7 @@
 			     (set! side-effect 'button)
 			     'oops)
 			   '(border))])
-    (label-test b "Button")    
+    (label-test b "Button")
     (stv b command (make-object control-event% 'button))
     (test 'button 'button-callback side-effect)
     

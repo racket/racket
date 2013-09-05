@@ -195,7 +195,25 @@ If the window does not have a label, @racket[#f] is returned.
            (or/c string? #f)]{
 
 Like
-@method[window<%> get-label], except that ampersands in the label are removed. If the window has
+@method[window<%> get-label], except that:
+
+@itemlist[
+
+ @item{If the label includes @litchar{(&}@racket[_c]@litchar{)} for
+       any character @racket[_c], then the sequenece and any surrounding
+       whitespace is removed.}
+
+ @item{If the label contains @litchar{&}@racket[_c] for any character @racket[_c],
+       the @litchar{&} is removed.}
+
+ @item{If the label contains a tab character, then the tab character and all following
+       characters are removed.}
+
+]
+
+See also @racket[button%]'s handling of labels.
+
+If the window has
  no label or the window's
  label is not a string, @racket[#f] is returned.
 
