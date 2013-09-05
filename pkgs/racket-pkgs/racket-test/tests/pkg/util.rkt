@@ -37,6 +37,12 @@
             'share-dir
             (->s (build-path tmp-dir))
 
+            'installation-name
+            "test"
+
+            'default-scope
+            "installation"
+
             ;; Find existing links and packages from the
             ;; old configuration:
             'links-search-files 
@@ -80,7 +86,7 @@
       (λ ()
         (delete-directory/files tmp-dir))))
 (define-syntax-rule (with-fake-root e ...)
-  (with-fake-root* (λ ()  e ...)))
+  (with-fake-installation* (λ ()  e ...)))
 
 (define (with-thread start-thread thunk)
   (define thread-id (thread start-thread))

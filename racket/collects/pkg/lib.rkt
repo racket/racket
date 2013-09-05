@@ -1194,6 +1194,15 @@
        (eprintf " `a' or `A' for \"yes for all\".\n")
        (loop)])))
 
+(define (format-deps update-deps)
+  (format-list (for/list ([ud (in-list update-deps)])
+                 (if (pkg-desc? ud)
+                   (pkg-desc-name ud)
+                   (format "~a (have ~a, need ~a)"
+                           (car ud)
+                           (caddr ud)
+                           (cadddr ud))))))
+
 (define (install-packages
          #:old-infos old-infos
          #:old-descs old-descs
@@ -1229,14 +1238,6 @@
     (define (clean!)
       (when clean?
         (delete-directory/files pkg-dir)))
-    (define (format-deps update-deps)
-      (format-list (for/list ([ud (in-list update-deps)])
-                     (if (pkg-desc? ud)
-                         (pkg-desc-name ud)
-                         (format "~a (have ~a, need ~a)"
-                                 (car ud)
-                                 (caddr ud)
-                                 (cadddr ud))))))
     (define (show-dependencies deps update? auto?)
       (unless quiet?
         (printf/flush "The following~a packages are listed as dependencies of ~a~a:~a\n"
@@ -1371,17 +1372,17 @@
                        pkg
                        (format-list unsatisfied-deps))]
            ['search-auto
-            (show-dependencies unsatisfied-deps #f #t)
-            (raise (vector updating? infos unsatisfied-deps void 'always-yes))]
+            ;; (show-dependencies unsatisfied-deps #f #t)
+            (raise (vector updating? infos pkg-name unsatisfied-deps void 'always-yes))]
            ['search-ask
             (show-dependencies unsatisfied-deps #f #f)
             (case (if (eq? conversation 'always-yes)
                       'always-yes
                       (ask "Would you like to install these dependencies?"))
               [(yes)
-               (raise (vector updating? infos unsatisfied-deps void 'again))]
+               (raise (vector updating? infos pkg-name unsatisfied-deps void 'again))]
               [(always-yes)
-               (raise (vector updating? infos unsatisfied-deps void 'always-yes))]
+               (raise (vector updating? infos pkg-name unsatisfied-deps void 'always-yes))]
               [(no)
                (clean!)
                (pkg-error "missing dependencies\n  missing packages:~a" (format-list unsatisfied-deps))])]))]
@@ -1410,7 +1411,7 @@
                update-pkgs
                (let ()
                  (define (continue conversation)
-                   (raise (vector #t infos update-pkgs
+                   (raise (vector #t infos pkg-name update-pkgs
                                   (λ () (for-each (compose (remove-package quiet?) pkg-desc-name) update-pkgs))
                                   conversation)))
                  (match this-dep-behavior
@@ -1508,16 +1509,16 @@
                (report-mismatch update-deps)]
               ['search-auto
                (show-dependencies update-deps #t #t)
-               (raise (vector #t infos update-pkgs (make-pre-succeed) 'always-yes))]
+               (raise (vector #t infos pkg-name update-pkgs (make-pre-succeed) 'always-yes))]
               ['search-ask
                (show-dependencies update-deps #t #f)
                (case (if (eq? conversation 'always-yes)
                          'always-yes
                          (ask "Would you like to update these dependencies?"))
                  [(yes)
-                  (raise (vector #t infos update-pkgs (make-pre-succeed) 'again))]
+                  (raise (vector #t infos pkg-name update-pkgs (make-pre-succeed) 'again))]
                  [(always-yes)
-                  (raise (vector #t infos update-pkgs (make-pre-succeed) 'always-yes))]
+                  (raise (vector #t infos pkg-name update-pkgs (make-pre-succeed) 'always-yes))]
                  [(no)
                   (clean!)
                   (report-mismatch update-deps)])]))]
@@ -1691,6 +1692,9 @@
       (loop new-check
             (set-union setup-pkgs new-check))])))
 
+(define (snoc l x)
+  (append l (list x)))
+
 (define (pkg-install descs
                      #:old-infos [old-infos empty]
                      #:old-auto+pkgs [old-descs empty]
@@ -1706,7 +1710,8 @@
                      #:quiet? [quiet? #f]
                      #:conversation [conversation #f]
                      #:strip [strip-mode #f]
-                     #:link-dirs? [link-dirs? #f])
+                     #:link-dirs? [link-dirs? #f]
+                     #:summary-deps [summary-deps empty])
   (define new-descs
     (remove-duplicates
      (if (not skip-installed?)
@@ -1723,8 +1728,9 @@
      pkg-desc=?))
   (with-handlers* ([vector?
                     (match-lambda
-                     [(vector updating? new-infos deps more-pre-succeed conv)
+                     [(vector updating? new-infos dep-pkg deps more-pre-succeed conv)
                       (pkg-install
+                       #:summary-deps (snoc summary-deps  (vector dep-pkg deps))
                        #:old-infos new-infos
                        #:old-auto+pkgs (append old-descs new-descs)
                        #:all-platforms? all-platforms?
@@ -1741,23 +1747,39 @@
                          (if (pkg-desc? dep)
                              dep
                              (pkg-desc dep #f #f #f #t))))])])
-    (install-packages
-     #:old-infos old-infos
-     #:old-descs old-descs
-     #:all-platforms? all-platforms?
-     #:force? force
-     #:ignore-checksums? ignore-checksums?
-     #:skip-installed? skip-installed?
-     #:dep-behavior dep-behavior
-     #:update-deps? update-deps?
-     #:update-cache update-cache
-     #:pre-succeed pre-succeed
-     #:updating? updating?
-     #:quiet? quiet?
-     #:conversation conversation
-     #:strip strip-mode
-     #:link-dirs? link-dirs?
-     new-descs)))
+    (begin0
+      (install-packages
+       #:old-infos old-infos
+       #:old-descs old-descs
+       #:all-platforms? all-platforms?
+       #:force? force
+       #:ignore-checksums? ignore-checksums?
+       #:skip-installed? skip-installed?
+       #:dep-behavior dep-behavior
+       #:update-deps? update-deps?
+       #:update-cache update-cache
+       #:pre-succeed pre-succeed
+       #:updating? updating?
+       #:quiet? quiet?
+       #:conversation conversation
+       #:strip strip-mode
+       #:link-dirs? link-dirs?
+       new-descs)
+      (unless (empty? summary-deps)
+        (unless quiet?
+          (printf/flush "The following~a packages were listed as dependencies~a:~a\n"
+                        (if updating? " out-of-date" " uninstalled")
+                        (format "\nand they were ~a~a"
+                                (if (eq? dep-behavior 'search-auto) "automatically " "")
+                                (if updating? "updated" "installed"))
+                        (string-append*
+                         (for/list ([p*ds (in-list summary-deps)])
+                           (match-define (vector n ds) p*ds)
+                           (format "\ndependencies of ~a:~a"
+                                   n
+                                   (if updating?
+                                     (format-deps ds)
+                                     (format-list ds)))))))))))
 
 ;; Determine packages to update, starting with `pkg-name'. If `pkg-name'
 ;; needs to be updated, return it in a list. Otherwise, if `deps?',
