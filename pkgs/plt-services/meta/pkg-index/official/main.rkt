@@ -245,6 +245,8 @@
      (equal? ring (package-ref info 'ring))]
     [(regexp #rx"^author:(.*?)$" (list _ author))
      (member author (author->list (package-ref info 'author)))]
+    [":no-tag:"
+     (empty? (package-ref info 'tags))]
     [_
      (define term-rx (regexp-quote term))
      (for/or ([tag (list* pkg-name (package-ref info 'tags))])
@@ -340,7 +342,9 @@
   `(p ,@(for/list ([t (in-list tags)])
           `(span (a ([href ,(main-url page/search (snoc terms t))])
                     ,t)
-                 " "))))
+                 " "))
+      (a ([href ,(main-url page/search (snoc terms ":no-tag:"))])
+         ":no-tag:")))
 
 (define (page/search req terms)
   (define pkgs (package-list/search terms))
