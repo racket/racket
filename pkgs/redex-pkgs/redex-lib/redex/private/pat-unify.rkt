@@ -452,9 +452,9 @@
   ║ v2                     ║                          ║                                ║                               ║                ║
   ╠════════════════════════╬══════════════════════════╬════════════════════════════════╬═══════════════════════════════╬════════════════╣
   ║                        ║ (cond                    ║ (and/fail                      ║(u*-2pvars                     ║                ║
-  ║ `(variable-prefix ,p2) ║  [(sym-pref? p1 p2)      ║  (andmap                       ║ v2                            ║                ║
-  ║                        ║   `(variable-prefix ,p2)]║   (curry sym-pref? p2)         ║ `(variable-except             ║                ║
-  ║                        ║  [(sym-pref? p2 p1)      ║   e1)                          ║ ,@(compiled-lang-literals L)) ║                ║
+  ║ `(variable-prefix ,p2) ║  [(sym-pref? p1 p2)      ║  (not (ormap                   ║ v2                            ║                ║
+  ║                        ║   `(variable-prefix ,p2)]║        (curry sym-pref? p2)    ║ `(variable-except             ║                ║
+  ║                        ║  [(sym-pref? p2 p1)      ║        e1))                    ║ ,@(compiled-lang-literals L)) ║                ║
   ║                        ║   `(variable-prefix ,p1)]║  v2)                           ║ L)                            ║                ║
   ║                        ║  [else (unif-fail)])     ║                                ║                               ║                ║
   ╠════════════════════════╬══════════════════════════╬════════════════════════════════╣                               ║                ║

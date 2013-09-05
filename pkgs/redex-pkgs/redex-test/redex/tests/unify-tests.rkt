@@ -515,7 +515,8 @@
   ['variable '(variable-except a)]
   ['variable-not-otherwise-mentioned '(variable-except a)]
   ['(variable-except b) '(variable-except a b)]
-  ['(variable-prefix a) '(variable-prefix a)]))
+  ['(variable-prefix a) #f]
+  ['(variable-prefix b) '(variable-prefix b)]))
 
 (unify-all/results/no-bindings
  '(variable-prefix a) (hash)
@@ -535,6 +536,8 @@
   ['(nt e) '(cstr (e) (variable-prefix a))]
   ['variable '(variable-prefix a)]
   ['variable-not-otherwise-mentioned '(variable-prefix a)]
+  ['(variable-except b bb c) '(variable-prefix a)]
+  ['(variable-except b ab c) #f]
   ['(variable-prefix a) '(variable-prefix a)]
   ['(variable-prefix b) #f]))
                   
