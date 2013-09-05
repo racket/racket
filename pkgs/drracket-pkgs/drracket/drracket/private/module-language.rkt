@@ -74,7 +74,8 @@
 (define-runtime-path expanding-place.rkt "expanding-place.rkt")
 
 (define sc-online-expansion-running (string-constant online-expansion-running))
-(define sc-only-raw-text-files-supported (string-constant online-expansion-only-raw-text-files-supported))
+(define sc-only-raw-text-files-supported 
+  (string-constant online-expansion-only-raw-text-files-supported))
 (define sc-abnormal-termination (string-constant online-expansion-abnormal-termination))
 (define sc-jump-to-error (string-constant jump-to-error))
 (define sc-finished-successfully (string-constant online-expansion-finished-successfully))
@@ -157,20 +158,23 @@
             ;; creating a sanbox can fail in strange ways so we just
             ;; swallow the failures so as to not wreck DrRacket
             (with-handlers ((exn:fail? (λ (x) 
-                                         (log-error (format "DrRacket:module-language:sandbox exn: ~a" (exn-message x)))
+                                         (log-error "DrRacket:module-language:sandbox exn: ~a" 
+                                                    (exn-message x))
                                          (for ([x (in-list (continuation-mark-set->context
                                                             (exn-continuation-marks x)))])
                                            (log-error (format "  ~s" x))))))
               (set! sandbox (make-evaluator 'racket/base))))))
       
       (define/override (first-opened settings)
-        (define ns (with-handlers ((exn:fail? (lambda (x) 
-                                                (log-error (format "DrRacket:module-language.rkt:first-opened exn: ~a" 
-                                                                   (exn-message x)))
-                                                (for ([x (in-list (continuation-mark-set->context
-                                                                   (exn-continuation-marks x)))])
-                                                  (log-error (format "  ~s" x)))
-                                                #f)))
+        (define ns (with-handlers ([exn:fail? 
+                                    (λ (x) 
+                                      (log-error 
+                                       "DrRacket:module-language.rkt:first-opened exn: ~a" 
+                                       (exn-message x))
+                                      (for ([x (in-list (continuation-mark-set->context
+                                                         (exn-continuation-marks x)))])
+                                        (log-error (format "  ~s" x)))
+                                      #f)])
                      ;; get-ns can fail in all kinds of strange ways;
                      ;; just give up if it does, since an error here
                      ;; means drracket won't start up.
@@ -327,23 +331,26 @@
                                                              (cddr (vector->list p))))
                                                      p)))])
                              (and super
-                                  (apply make-module-language-settings
-                                         (append
-                                          (vector->list (drracket:language:simple-settings->vector super))
-                                          (list collection-paths
-                                                command-line-args
-                                                auto-text
-                                                
-                                                ;; current versions of drracket do not allow this combination
-                                                ;; in the first place (compilation is only allowed in 'none
-                                                ;; and 'debug mode), but older versions might.
-                                                (and (memq (drracket:language:simple-settings-annotations super) 
-                                                           '(none debug))
-                                                     compilation-on?)
-                                                
-                                                full-trace?
-                                                submodules-to-run
-                                                enforce-module-constants)))))))))))
+                                  (apply 
+                                   make-module-language-settings
+                                   (append
+                                    (vector->list (drracket:language:simple-settings->vector super))
+                                    (list collection-paths
+                                          command-line-args
+                                          auto-text
+                                          
+                                          ;; current versions of drracket do not allow this 
+                                          ;; combination in the first place (compilation is only
+                                          ;; allowed in 'none and 'debug mode), but older
+                                          ;; versions might.
+                                          (and (memq 
+                                                (drracket:language:simple-settings-annotations super) 
+                                                '(none debug))
+                                               compilation-on?)
+                                          
+                                          full-trace?
+                                          submodules-to-run
+                                          enforce-module-constants)))))))))))
       
       (define/override (on-execute settings run-in-user-thread)
         (super on-execute settings run-in-user-thread)
@@ -356,9 +363,10 @@
         (let ([currently-open-files (get-currently-open-files)])
           (run-in-user-thread
            (λ ()
-              (set-module-language-parameters (module-language-settings->prefab-module-settings settings)
-                                              module-language-parallel-lock-client
-                                              currently-open-files)))))
+             (set-module-language-parameters 
+              (module-language-settings->prefab-module-settings settings)
+              module-language-parallel-lock-client
+              currently-open-files)))))
       
       (define/override (get-one-line-summary)
         (string-constant module-language-one-line-summary))
@@ -540,7 +548,8 @@
                             (parameterize ([current-namespace (make-base-empty-namespace)])
                               (namespace-require 'racket/base)
                               (compile
-                               `(namespace-require '',(string->symbol (path->string short-program-name)))))
+                               `(namespace-require
+                                 '',(string->symbol (path->string short-program-name)))))
                             #:cmdline '("-U" "--"))))])
                   
                   (case executable-type
@@ -555,8 +564,12 @@
                       call-create-embedding-executable)]
                     [(stand-alone)
                      (define c (make-custodian))
-                     (define d (new dialog% [parent parent] [label (string-constant create-executable-title)]))
-                     (new message% [parent d] [label (string-constant creating-executable-progress-status)])
+                     (define d (new dialog% 
+                                    [parent parent] 
+                                    [label (string-constant create-executable-title)]))
+                     (new message% 
+                          [parent d]
+                          [label (string-constant creating-executable-progress-status)])
                      (new button%
                           [parent d]
                           [label (string-constant abort)]
@@ -662,9 +675,10 @@
                     [parent dynamic-panel]
                     [callback
                      (λ (_1 _2) (set! compilation-on? (send compilation-on-check-box get-value)))]))
-         (set! save-stacktrace-on-check-box (new check-box%
-                                                 [label (string-constant preserve-stacktrace-information)]
-                                                 [parent dynamic-panel]))
+         (set! save-stacktrace-on-check-box 
+               (new check-box%
+                    [label (string-constant preserve-stacktrace-information)]
+                    [parent dynamic-panel]))
          (set! enforce-module-constants-checkbox
                (new check-box%
                     [label (string-constant enforce-module-constants-checkbox-label)]
@@ -675,7 +689,8 @@
                         (for ([item (in-list (preferences:get 'drracket:submodules-to-choose-from))]
                               [x (in-naturals)])
                           (new checkable-menu-item%
-                               [label (apply string-append (add-between (map symbol->string item) " "))]
+                               [label 
+                                (apply string-append (add-between (map symbol->string item) " "))]
                                [checked (member item submodules-to-run)]
                                [callback 
                                 (λ (a b)
@@ -688,11 +703,12 @@
                         (new separator-menu-item% [parent menu])
                         (new menu-item% 
                              [parent menu]
-                             [callback (λ (a b)
-                                         (define new-submod (add-another-possible-submodule parent))
-                                         (when new-submod
-                                           (set! submodules-to-run (cons new-submod submodules-to-run))
-                                           (sort-submodules-to-run!)))]
+                             [callback 
+                              (λ (a b)
+                                (define new-submod (add-another-possible-submodule parent))
+                                (when new-submod
+                                  (set! submodules-to-run (cons new-submod submodules-to-run))
+                                  (sort-submodules-to-run!)))]
                              [label (string-constant add-submodule)]))
                       (super-new
                        [font normal-control-font]
@@ -794,7 +810,8 @@
       (let ([to-delete (send collection-paths-lb get-selection)])
         (send collection-paths-lb delete to-delete)
         (unless (zero? (send collection-paths-lb get-number))
-          (send collection-paths-lb set-selection (min to-delete (- (send collection-paths-lb get-number) 1))))
+          (send collection-paths-lb set-selection
+                (min to-delete (- (send collection-paths-lb get-number) 1))))
         (update-buttons)))
     
     (define (move-callback d)
@@ -884,7 +901,8 @@
        (update-compilation-checkbox left-debugging-radio-box right-debugging-radio-box)
        (send save-stacktrace-on-check-box set-value (module-language-settings-full-trace? settings))
        (set! submodules-to-run (module-language-settings-submodules-to-run settings))
-       (send enforce-module-constants-checkbox set-value (module-language-settings-enforce-module-constants settings))
+       (send enforce-module-constants-checkbox set-value
+             (module-language-settings-enforce-module-constants settings))
        (update-buttons)]))
   
   (define (add-another-possible-submodule parent)
@@ -1178,12 +1196,16 @@
         (set! bottom-bar-most-recent-jumped-to-loc loc)
         (update-frame-expand-error))
       
-      (define/public (set-bottom-bar-status new-error/status-message-strs+srclocs message-err? force-visible?)
-        (define new-error/status-message-str (exn-info-str (car new-error/status-message-strs+srclocs)))
+      (define/public (set-bottom-bar-status new-error/status-message-strs+srclocs
+                                            message-err?
+                                            force-visible?)
+        (define new-error/status-message-str 
+          (exn-info-str (car new-error/status-message-strs+srclocs)))
         (define srclocs (exn-info-src-vecs (car new-error/status-message-strs+srclocs)))
         (unless (string? new-error/status-message-str)
           (error 'set-bottom-bar-status "expected a string, got ~s" new-error/status-message-str))
-        (when (or (not (and (equal? error/status-message-strs+srclocs new-error/status-message-strs+srclocs)
+        (when (or (not (and (equal? error/status-message-strs+srclocs 
+                                    new-error/status-message-strs+srclocs)
                             (equal? error/status-message-err? message-err?)))
                   (and force-visible?
                        error/status-message-hidden?))
@@ -1212,11 +1234,13 @@
           (define msgs
             (cond
               [bottom-bar-most-recent-jumped-to-loc
-               (for/list ([error/status-message-str+srcloc (in-list error/status-message-strs+srclocs)]
+               (for/list ([error/status-message-str+srcloc
+                           (in-list error/status-message-strs+srclocs)]
                           #:when (matching-srcloc error/status-message-str+srcloc))
                  (exn-info-str error/status-message-str+srcloc))]
               [else
-               (list (exn-info-str (list-ref error/status-message-strs+srclocs error/status-index)))]))
+               (list (exn-info-str (list-ref error/status-message-strs+srclocs
+                                             error/status-index)))]))
           (define install-suggestions
             (apply 
              append
@@ -1236,7 +1260,8 @@
           (define copy-msg
             (cond
               [bottom-bar-most-recent-jumped-to-loc
-               (for/list ([error/status-message-str+srcloc (in-list error/status-message-strs+srclocs)]
+               (for/list ([error/status-message-str+srcloc 
+                           (in-list error/status-message-strs+srclocs)]
                           #:when (matching-srcloc error/status-message-str+srcloc))
                  (combine-msg error/status-message-str+srcloc))]
               [else
@@ -1251,7 +1276,8 @@
                   [(null? (cdr error/status-message-strs+srclocs))
                    (length (exn-info-src-vecs (car error/status-message-strs+srclocs)))]
                   [else
-                   (for/sum ([error/status-message-str+srcloc (in-list error/status-message-strs+srclocs)])
+                   (for/sum ([error/status-message-str+srcloc
+                              (in-list error/status-message-strs+srclocs)])
                      (max 1 (length (exn-info-src-vecs error/status-message-str+srcloc))))])
                 install-suggestions)))
       (define/public (hide-module-language-error-panel)
@@ -1259,7 +1285,8 @@
         (update-frame-expand-error))
 
       (define/public (expand-error-next) 
-        (define current-srclocs (exn-info-src-vecs (list-ref error/status-message-strs+srclocs error/status-index)))
+        (define current-srclocs 
+          (exn-info-src-vecs (list-ref error/status-message-strs+srclocs error/status-index)))
         (define candidates (filter (λ (error-message-srcloc) 
                                      (> (- (vector-ref error-message-srcloc 0) 1) 
                                         (get-end-position)))
@@ -1273,7 +1300,8 @@
            (jump-to (car candidates))]))
       
       (define/public (expand-error-prev) 
-        (define current-srclocs (exn-info-src-vecs (list-ref error/status-message-strs+srclocs error/status-index)))
+        (define current-srclocs 
+          (exn-info-src-vecs (list-ref error/status-message-strs+srclocs error/status-index)))
         (define candidates (filter (λ (error-message-srcloc) 
                                      (< (+ (vector-ref error-message-srcloc 0)
                                            (vector-ref error-message-srcloc 1)
@@ -1290,7 +1318,8 @@
       
       (define/private (jump-to-new-index new-error/status-index which)
         (set! error/status-index new-error/status-index)
-        (define current-srclocs (exn-info-src-vecs (list-ref error/status-message-strs+srclocs error/status-index)))
+        (define current-srclocs 
+          (exn-info-src-vecs (list-ref error/status-message-strs+srclocs error/status-index)))
         (unless (null? current-srclocs) (jump-to (which current-srclocs)))
         (update-frame-expand-error))
       
@@ -1567,7 +1596,8 @@
              [parent expand-error-multiple-child])
         (new close-icon% 
              [parent expand-error-panel]
-             [callback (λ () (send (send (get-current-tab) get-defs) hide-module-language-error-panel))])
+             [callback (λ () (send (send (get-current-tab) get-defs)
+                                   hide-module-language-error-panel))])
         
         ;; this canvas makes sure that the expand-error-panel always has the same height,
         ;; even when the contents of expand-error-button-parent-panel change. At this
@@ -1593,7 +1623,8 @@
       (define expand-error-hidden? #f)
       (define expand-error-install-suggestions '())
       
-      (define/public (set-expand-error/status hidden? msgs msgs+stacks err? srcloc-count install-suggestions)
+      (define/public (set-expand-error/status hidden? msgs msgs+stacks err?
+                                              srcloc-count install-suggestions)
         (unless (and (equal? expand-error-hidden? hidden?)
                      (equal? expand-error-msgs msgs)
                      (equal? expand-error-msgs+stack msgs+stacks)
@@ -1614,7 +1645,8 @@
                              (if (memq expand-error-panel l)
                                  l
                                  (append l (list expand-error-panel))))))
-            (send expand-error-message set-msgs expand-error-msgs expand-error-msg-is-err? expand-error-msgs+stack)
+            (send expand-error-message set-msgs 
+                  expand-error-msgs expand-error-msg-is-err? expand-error-msgs+stack)
             (send expand-error-install-suggestions-panel change-children (λ (l) '()))
             (for ([suggestion-pkg (in-list expand-error-install-suggestions)])
               (new button% 
@@ -1624,7 +1656,8 @@
                       (install-pkg
                        (send expand-error-install-suggestions-panel get-top-level-window)
                        (lambda (thunk)
-                         (parameterize ([error-display-handler drracket:init:original-error-display-handler])
+                         (parameterize ([error-display-handler 
+                                         drracket:init:original-error-display-handler])
                            (thunk)))
                        #:package-to-offer suggestion-pkg))]
                    [font small-control-font]
@@ -1896,7 +1929,8 @@
               [(dirty? ts)
                (cond
                  [(dirty-timer-pending? ts)
-                  (when dirty/pending-tab (error 'get-current-oc-state "found multiple dirty/pending tabs"))
+                  (when dirty/pending-tab 
+                    (error 'get-current-oc-state "found multiple dirty/pending tabs"))
                   (set! dirty/pending-tab tab)]
                  [else
                   (set! dirty-tabs (cons tab dirty-tabs))])]
@@ -1935,9 +1969,10 @@
             [(and (dirty? ts)
                   (dirty-timer-pending? ts))
              (unless (eq? dirty/pending-tab tab)
-               (die (format "dirty/pending-tab (~a) not the same as a tab with timer-pending status (~a)"
-                            (tab->fn running-tab)
-                            (tab->fn tab))))])))))
+               (die
+                (format "dirty/pending-tab (~a) not the same as a tab with timer-pending status (~a)"
+                        (tab->fn running-tab)
+                        (tab->fn tab))))])))))
           
 
   
@@ -2079,7 +2114,8 @@
   (define/oc-log (oc-timer-expired)
     (define-values (running-tab dirty/pending-tab dirty-tabs clean-tabs) (get-current-oc-state))
     (when dirty/pending-tab
-      (define-values (editor-contents filename/loc) (send (send dirty/pending-tab get-defs) fetch-data-to-send))
+      (define-values (editor-contents filename/loc) 
+        (send (send dirty/pending-tab get-defs) fetch-data-to-send))
       (cond
         [editor-contents
          (line-of-interest)
@@ -2116,8 +2152,9 @@
            (define that-key (list-ref key-val 0))
            (define val (list-ref key-val 1))
            (for ([o-e-h (in-list (drracket:module-language-tools:get-online-expansion-handlers))])
-             (define this-key (list (drracket:module-language-tools:online-expansion-handler-mod-path o-e-h)
-                                    (drracket:module-language-tools:online-expansion-handler-id o-e-h)))
+             (define this-key 
+               (list (drracket:module-language-tools:online-expansion-handler-mod-path o-e-h)
+                     (drracket:module-language-tools:online-expansion-handler-id o-e-h)))
              (when (equal? this-key that-key)
                ((drracket:module-language-tools:online-expansion-handler-local-handler o-e-h) 
                 (send running-tab get-defs)
