@@ -93,7 +93,7 @@
                 [(ex-id ...) exids]
                 [(ex-cnt ...) ex-cnts]
                 [(region-cnt ...) region-cnts]
-                [body (maybe-optimize expanded-body)]
+                [(body) (maybe-optimize #`(#,expanded-body))]
                 [check-syntax-help (syntax-property
                                     (syntax-property
                                      #'(void)
