@@ -247,6 +247,8 @@
      (member author (author->list (package-ref info 'author)))]
     [":no-tag:"
      (empty? (package-ref info 'tags))]
+    [(regexp #rx"^!(.*?)$" (list _ sub))
+     (not (search-term-eval pkg-name info sub))]
     [_
      (define term-rx (regexp-quote term))
      (for/or ([tag (list* pkg-name (package-ref info 'tags))])
