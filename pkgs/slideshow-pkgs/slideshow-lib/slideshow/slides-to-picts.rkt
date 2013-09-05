@@ -60,6 +60,9 @@
                                           (define set-page-numbers-visible! void)
                                           (define add-click-region! void)
                                           (define add-interactive! void)
+                                          (define (set-spotlight-style! #:size [size #f] 
+                                                                        #:color [color #f])
+                                            (void))
                                           (define done-making-slides void))
                    CORE]))))
 	(parameterize ([current-namespace ns])

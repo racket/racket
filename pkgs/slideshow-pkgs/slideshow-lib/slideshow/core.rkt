@@ -165,6 +165,9 @@
       (define (set-page-numbers-visible! on?)
 	(viewer:set-page-numbers-visible! (and on? #t)))
 
+      (define (set-spotlight-style! #:size [size #f] #:color [color #f])
+        (viewer:set-spotlight-style! #:size size #:color color))
+
       (define current-page-number-font 
 	(make-parameter
 	 (make-object font% 10 'default 'normal 'normal)

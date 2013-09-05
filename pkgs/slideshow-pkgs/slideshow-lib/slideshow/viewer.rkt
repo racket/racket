@@ -28,6 +28,7 @@
                       (viewer:set-use-background-frame! set-use-background-frame!)
                       (viewer:enable-click-advance! enable-click-advance!)
                       (viewer:set-page-numbers-visible! set-page-numbers-visible!)
+                      (viewer:set-spotlight-style! set-spotlight-style!)
                       (viewer:done-making-slides done-making-slides)))
               
       (define-accessor margin get-margin)
@@ -40,6 +41,10 @@
       (define show-page-numbers? #t)
       (define click-to-advance? #t)
       (define blank-cursor-allowed? #t)
+      (define spotlight-on? #f)
+      (define spotlight-shown? #f)
+      (define spotlight-size 36)
+      (define spotlight-color (make-color 230 230 0 0.5))
       (define click-regions null)
       (define interactives #hash())
       (define talk-slide-list null)
@@ -128,6 +133,11 @@
       (define (viewer:set-page-numbers-visible! on?)
 	(set! show-page-numbers? (and on? #t)))
       (viewer:set-page-numbers-visible! config:show-page-numbers?)
+
+      (define (viewer:set-spotlight-style! #:size [size #f]
+                                           #:color [color #f])
+        (when size (set! spotlight-size size))
+        (when color (set! spotlight-color color)))
       
       (define adjust-cursor (lambda () (send f set-blank-cursor #f)))
 
@@ -302,6 +312,13 @@
 			     (send e get-alt-down))
 		     (set! blank-cursor-allowed? (not blank-cursor-allowed?))
 		     (send f set-blank-cursor blank-cursor-allowed?))]
+		  [(#\l)
+		   (when (or (send e get-meta-down)
+			     (send e get-alt-down))
+		     (set! spotlight-on? (not spotlight-on?))
+                     (when spotlight-on?
+                       (set! spotlight-shown? #t))
+                     (send c refresh))]
 		  [else
 		   #f]))))
 
@@ -659,10 +676,13 @@
       (define c%
 	(class canvas%
 	  (inherit get-dc get-client-size make-bitmap
-                   client->screen)
-	  
+                   client->screen refresh)
+
 	  (define clicking #f)
 	  (define clicking-hit? #f)
+
+          (define mouse-x 0)
+          (define mouse-y 0)
 	  
 	  (define/override (on-paint)
 	    (let ([dc (get-dc)])
@@ -674,7 +694,22 @@
 	       [else
 		(send dc clear)
 		(paint-slide this dc)])
+              (show-spotlight dc)
               (show-time dc)))
+
+          (define/private (show-spotlight dc)
+            (when (and spotlight-on? spotlight-shown?)
+              (define old-p (send dc get-pen))
+              (define old-b (send dc get-brush))
+              (send dc set-pen "black" 0 'transparent)
+              (send dc set-brush spotlight-color 'solid)
+              (send dc draw-ellipse 
+                    (- mouse-x (/ spotlight-size 2))
+                    (- mouse-y (/ spotlight-size 2))
+                    spotlight-size
+                    spotlight-size)
+              (send dc set-pen old-p)
+              (send dc set-brush old-b)))
 
           (define/private (show-time dc)
             (when config:show-time?
@@ -700,6 +735,13 @@
 	  
 	  (inherit get-top-level-window)
 	  (define/override (on-event e)
+            (unless (and (= mouse-x (send e get-x))
+                         (= mouse-y (send e get-y)))
+              (set! mouse-x (send e get-x))
+              (set! mouse-y (send e get-y))
+              (when spotlight-on?
+                (set! spotlight-shown? #t)
+                (refresh)))
 	    (cond
 	     [(send e button-down?)
 	      (let ([c (ormap
@@ -873,6 +915,7 @@
 		(let ([dc (get-dc)])
 		  (send dc clear)
 		  (paint-slide this dc))])
+              (show-spotlight (get-dc))
               (show-time (get-dc))
               (swap-interactives! old-interactives interactives)))
 
@@ -1160,6 +1203,7 @@
       (define refresh-page
 	(lambda ([immediate-prefetch? #f])
 	  (hide-cursor-until-moved)
+          (set! spotlight-shown? #f)
 	  (send f set-blank-cursor #t)
 	  (when (= current-page 0)
 	    (set! start-time #f)

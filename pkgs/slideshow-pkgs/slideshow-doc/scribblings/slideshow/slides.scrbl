@@ -325,7 +325,17 @@ input to the function is the default string and the slide
 number, and the result is what is drawn in the bottom right
 corner. The default parameter value just returns its first
 argument.
-} 
+}
+
+@defproc[(set-spotlight-style! [#:size size (or/c #f (>=/c 0)) #f]
+                               [#:color color (or/c #f string? (is-a?/c color%)) #f])
+         void?]{
+
+Adjusts the size and color of the ``spotlight,'' which can be enabled
+in Slideshow as an alternative to the mouse. Note that the color
+normally should have alpha value less than 1 (to make it partially
+transparent). If @racket[size] or @racket[color] is @racket[#f], the
+corresponding setting is unchanged.}
 
 @; ------------------------------------------------------------------------
 

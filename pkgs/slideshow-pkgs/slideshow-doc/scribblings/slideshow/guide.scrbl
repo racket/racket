@@ -1,5 +1,7 @@
 #lang scribble/doc
-@(require "ss.rkt" scribble/struct)
+@(require "ss.rkt"
+          scribble/struct
+          scribble/decode)
 
 @(define (control-table . l)
    (make-table
@@ -8,7 +10,7 @@
            (list (make-flow (list (make-paragraph (list (hspace 2)))))
                  (make-flow (list (make-paragraph (list (car p)))))
                  (make-flow (list (make-paragraph (list (hspace 1) ":" (hspace 1)))))
-                 (make-flow (list (make-paragraph (list (cadr p)))))))
+                 (make-flow (list (decode-paragraph (list (cadr p)))))))
          l)))
 
 
@@ -70,6 +72,7 @@ Alt-q (or Meta-q) to end the slides. Here are more controls:
   (list "Alt-c, Cmd-c, or Meta-c"             "show/hide commentary")
   (list "Alt-d, Cmd-d, or Meta-d"             "show/hide preview")
   (list "Alt-m, Cmd-m, or Meta-m"             "show/hide mouse cursor")
+  (list "Alt-l, Cmd-l, or Meta-l"             "show/hide ``spotlight''")
   (list "Shift with arrow"                    "move window 1 pixel")
   (list "Alt, Meta, or Cmd with arrow"        "move window 10 pixels")
 ]

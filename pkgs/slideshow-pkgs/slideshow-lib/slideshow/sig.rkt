@@ -27,6 +27,7 @@
      enable-click-advance!
      set-page-numbers-visible!
      done-making-slides
+     set-spotlight-style!
      ;; Called when a clickback-containing slide is rendered:
      add-click-region!
      ;; Called when a interactive-containing slide is rendered:
@@ -80,6 +81,7 @@
      current-page-number-font current-page-number-color current-page-number-adjust
      current-titlet current-para-width
      set-page-numbers-visible! done-making-slides
+     set-spotlight-style!
      clickback
      interactive
      make-slide-inset
