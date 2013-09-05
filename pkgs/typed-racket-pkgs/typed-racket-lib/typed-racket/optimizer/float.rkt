@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require syntax/parse unstable/sequence racket/dict racket/flonum
+(require syntax/parse unstable/sequence racket/dict racket/flonum racket/promise
+         syntax/parse/experimental/specialize
          (for-template racket/base racket/flonum racket/unsafe/ops racket/math)
          "../utils/utils.rkt"
          (utils tc-utils)
@@ -27,6 +28,15 @@
   (mk-float-tbl (list #'abs #'sin #'cos #'tan #'asin #'acos #'atan #'log #'exp
                       #'sqrt #'round #'floor #'ceiling #'truncate)))
 
+(define-literal-syntax-class -)
+(define-literal-syntax-class /)
+(define-literal-syntax-class sqr)
+(define-literal-syntax-class zero?)
+(define-literal-syntax-class add1)
+(define-literal-syntax-class sub1)
+(define-literal-syntax-class ->float^ (exact->inexact real->double-flonum))
+(define-literal-syntax-class ->single-float^ (exact->inexact real->single-flonum))
+
 (define-syntax-class (float-op tbl)
   #:commit
   (pattern i:id
@@ -34,27 +44,13 @@
            #:with unsafe (begin (add-disappeared-use #'i)
                                 (dict-ref tbl #'i))))
 
-(define-syntax-class float-expr
-  #:commit
-  (pattern e:expr
-           #:when (subtypeof? #'e -Flonum)
-           #:with opt ((optimize) #'e)))
-(define-syntax-class single-float-expr
-  #:commit
-  (pattern e:expr
-           #:when (subtypeof? #'e -SingleFlonum)
-           #:with opt ((optimize) #'e)))
-(define-syntax-class int-expr
-  #:commit
-  (pattern e:expr
-           #:when (subtypeof? #'e -Integer)
-           #:with opt ((optimize) #'e)))
-(define-syntax-class real-expr
-  #:commit
-  (pattern e:expr
-           #:when (subtypeof? #'e -Real)
-           #:with opt ((optimize) #'e)))
-
+(define-syntax-class/specialize float-expr (subtyped-expr -Flonum))
+(define-syntax-class/specialize single-float-expr (subtyped-expr -SingleFlonum))
+(define-syntax-class/specialize int-expr (subtyped-expr -Integer))
+(define-syntax-class/specialize real-expr (subtyped-expr -Real))
+(define-syntax-class/specialize unary-float-op (float-op unary-float-ops))
+(define-syntax-class/specialize binary-float-op (float-op binary-float-ops))
+(define-syntax-class/specialize binary-float-comp (float-op binary-float-comps))
 
 ;; if the result of an operation is of type float, its non float arguments
 ;; can be promoted, and we can use unsafe float operations
@@ -62,23 +58,22 @@
 ;;  can result in float (as opposed to real) results
 (define-syntax-class float-arg-expr
   #:commit
+  #:attributes (opt)
   ;; we can convert literals right away
   (pattern (quote n)
-           #:when (and (real?  (syntax->datum #'n))
-                       (exact? (syntax->datum #'n)))
-           #:with opt
-           (datum->syntax #'here (exact->inexact (syntax->datum #'n))))
+    #:when (and (real?  (syntax->datum #'n))
+                (exact? (syntax->datum #'n)))
+    #:with opt #`'#,(exact->inexact (syntax->datum #'n)))
   (pattern e:fixnum-expr
-           #:with opt #'(unsafe-fx->fl e.opt))
+    #:attr opt (delay #'(unsafe-fx->fl e.opt)))
   (pattern e:int-expr
-           #:with opt #'(->fl e.opt))
-  (pattern e:float-expr
-           #:with opt #'e.opt)
+    #:attr opt (delay #'(->fl e.opt)))
+  (pattern :float-expr)
   ;; reals within float expressions are not always valid to optimize because
   ;; of the exact 0 problem, but since float-opt-expr checks whether the
   ;; surrounding expressing is of type Float and not just Real, this is safe
   (pattern e:real-expr
-           #:with opt #'(real->double-flonum e)))
+     #:attr opt (delay #'(real->double-flonum e.opt))))
 
 (define (log-float-real-missed-opt stx irritants)
   (log-missed-optimization
@@ -90,21 +85,28 @@
         " To fix, change the highlighted expression(s) to have Float type(s)."))
    stx irritants))
 
-(define float-opt-msg "Float arithmetic specialization.")
+(define-syntax-rule (log-fl-opt opt-label)
+  (log-opt opt-label "Float arithmetic specialization."))
+
+(define (maybe-exact-rational? stx)
+  (and (subtypeof? stx -Real)
+       (not (subtypeof? stx -Flonum))
+       (not (subtypeof? stx -Int))))
+
 
 (define-syntax-class float-opt-expr
   #:commit
-  (pattern (#%plain-app (~var op (float-op unary-float-ops)) f:float-arg-expr)
+  #:literal-sets (kernel-literals)
+  (pattern (#%plain-app op:unary-float-op f:float-arg-expr)
            #:when (let* ([safe-to-opt? (subtypeof? this-syntax -Flonum)]
                          [missed-optimization? (and (not safe-to-opt?)
                                                     (in-real-layer? this-syntax))])
                     (when missed-optimization?
                       (log-float-real-missed-opt this-syntax (list #'f)))
                     safe-to-opt?)
-           #:with opt
-           (begin (log-optimization "unary float" float-opt-msg this-syntax)
-                  #'(op.unsafe f.opt)))
-  (pattern (#%plain-app (~var op (float-op binary-float-ops))
+           #:do [(log-fl-opt "unary float")]
+           #:with opt #'(op.unsafe f.opt))
+  (pattern (#%plain-app op:binary-float-op
                         ;; for now, accept anything that can be coerced to float
                         ;; finer-grained checking is done below
                         f1:float-arg-expr
@@ -183,110 +185,67 @@
                          "This expression has a Float type, but the highlighted subexpression(s) use exact arithmetic. The extra precision of the exact arithmetic will be lost. Using Float types in these subexpression(s) may result in performance gains without significant precision loss."
                          this-syntax extra-precision-subexprs)))
                     safe-to-opt?)
-           #:with opt
-           (begin (log-optimization "binary float" float-opt-msg this-syntax)
-                  (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
-  (pattern (#%plain-app (~var op (float-op binary-float-comps))
-                        f1:float-expr
-                        f2:float-expr)
-           #:with opt
-           (begin (log-optimization "binary float comp" float-opt-msg this-syntax)
-                  #'(op.unsafe f1.opt f2.opt)))
-  (pattern (#%plain-app (~var op (float-op binary-float-comps))
+           #:do [(log-fl-opt "binary float")]
+           #:with opt (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...)))
+  (pattern (#%plain-app op:binary-float-comp f1:float-expr f2:float-expr)
+    #:do [(log-fl-opt "binary float comp")]
+    #:with opt #'(op.unsafe f1.opt f2.opt))
+  (pattern (#%plain-app op:binary-float-comp
                         f1:float-expr
                         f2:float-expr
                         fs:float-expr ...)
-           #:with opt
-           (begin (log-optimization "multi float comp" float-opt-msg this-syntax)
-                  (n-ary-comp->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
+    #:do [(log-fl-opt "multi float comp")]
+    #:with opt (n-ary-comp->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...)))
 
-  (pattern (#%plain-app (~and op (~literal -)) f:float-expr)
-           #:with opt
-           (begin (log-optimization "unary float" float-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(unsafe-fl* -1.0 f.opt)))
-  (pattern (#%plain-app (~and op (~literal /)) f:float-expr)
-           #:with opt
-           (begin (log-optimization "unary float" float-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(unsafe-fl/ 1.0 f.opt)))
-  (pattern (#%plain-app (~and op (~literal sqr)) f:float-expr)
-           #:with opt
-           (begin (log-optimization "unary float" float-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(let ([tmp f.opt]) (unsafe-fl* tmp tmp))))
+  (pattern (#%plain-app op:-^ f:float-expr)
+    #:do [(log-fl-opt "unary float")]
+    #:with opt #'(unsafe-fl* -1.0 f.opt))
+  (pattern (#%plain-app op:/^ f:float-expr)
+    #:do [(log-fl-opt "unary float")]
+    #:with opt #'(unsafe-fl/ 1.0 f.opt))
+  (pattern (#%plain-app op:sqr^ f:float-expr)
+    #:do [(log-fl-opt "unary float")]
+    #:with opt #'(let ([tmp f.opt]) (unsafe-fl* tmp tmp)))
 
   ;; we can optimize exact->inexact if we know we're giving it an Integer
-  (pattern (#%plain-app (~and op (~or (~literal exact->inexact)
-                                      (~literal real->double-flonum)))
-                        n:int-expr)
-           #:with opt
-           (begin (log-optimization "int to float" float-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(->fl n.opt)))
+  (pattern (#%plain-app op:->float^ n:int-expr)
+    #:do [(log-fl-opt "int to float")]
+    #:with opt #'(->fl n.opt))
   ;; we can get rid of it altogether if we're giving it a float
-  (pattern (#%plain-app (~and op (~or (~literal exact->inexact)
-                                      (~literal real->double-flonum)))
-                        f:float-expr)
-           #:with opt
-           (begin (log-optimization "float to float" float-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'f.opt))
+  (pattern (#%plain-app op:->float^ f:float-expr)
+    #:do [(log-fl-opt "float to float")]
+    #:with opt #'f.opt)
   ;; same for single-flonums
-  (pattern (#%plain-app (~and op (~or (~literal exact->inexact)
-                                      (~literal real->single-flonum)))
-                        f:single-float-expr)
-           #:with opt
-           (begin (log-optimization "single-float to single-float"
-                                    float-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'f.opt))
+  (pattern (#%plain-app op:->single-float^ f:single-float-expr)
+    #:do [(log-fl-opt "single-float to single-float")]
+    #:with opt #'f.opt)
 
-  (pattern (#%plain-app (~and op (~literal zero?)) f:float-expr)
-           #:with opt
-           (begin (log-optimization "float zero?" float-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(unsafe-fl= f.opt 0.0)))
+  (pattern (#%plain-app op:zero?^ f:float-expr)
+    #:do [(log-fl-opt "float zero?")]
+    #:with opt #'(unsafe-fl= f.opt 0.0))
 
-  (pattern (#%plain-app (~and op (~literal add1)) n:float-expr)
-           #:with opt
-           (begin (log-optimization "float add1" float-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(unsafe-fl+ n.opt 1.0)))
-  (pattern (#%plain-app (~and op (~literal sub1)) n:float-expr)
-           #:with opt
-           (begin (log-optimization "float sub1" float-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(unsafe-fl- n.opt 1.0)))
+  (pattern (#%plain-app op:add1^ n:float-expr)
+    #:do [(log-fl-opt "float add1")]
+    #:with opt #'(unsafe-fl+ n.opt 1.0))
+  (pattern (#%plain-app op:sub1^ n:float-expr)
+    #:do [(log-fl-opt "float sub1")]
+    #:with opt #'(unsafe-fl- n.opt 1.0))
 
   ;; warn about (potentially) exact real arithmetic, in general
   ;; Note: These patterns don't perform optimization. They only produce logging
   ;;  for consumption by Optimization Coach.
-  (pattern (#%plain-app (~var op (float-op binary-float-ops))
-                        n ...)
-           #:when (maybe-exact-rational? this-syntax)
-           #:with opt
-           (begin (log-optimization-info "exact real arith"
-                                         this-syntax)
-                  this-syntax))
-  (pattern (#%plain-app (~var op (float-op binary-float-comps))
-                        n ...)
-           ;; can't look at return type, since it's always bool
-           #:when (andmap maybe-exact-rational? (syntax->list #'(n ...)))
-           #:with opt
-           (begin (log-optimization-info "exact real arith"
-                                         this-syntax)
-                  this-syntax))
-  (pattern (#%plain-app (~var op (float-op unary-float-ops))
-                        n ...)
-           #:when (maybe-exact-rational? this-syntax)
-           #:with opt
-           (begin (log-optimization-info "exact real arith"
-                                         this-syntax)
-                  this-syntax))
+  (pattern (#%plain-app op:binary-float-op n:opt-expr ...)
+    #:when (maybe-exact-rational? this-syntax)
+    #:do [(log-opt-info "exact real arith")]
+    #:with opt #'(op n.opt ...))
+  (pattern (#%plain-app op:binary-float-comp n:opt-expr ...)
+     ;; can't look at return type, since it's always bool
+     #:when (andmap maybe-exact-rational? (syntax->list #'(n ...)))
+     #:do [(log-opt-info "exact real arith")]
+     #:with opt #'(op n.opt ...))
+  (pattern (#%plain-app op:unary-float-op n:opt-expr ...)
+     #:when (maybe-exact-rational? this-syntax)
+     #:do [(log-opt-info "exact real arith")]
+     #:with opt #'(op n.opt ...))
   )
 
-(define (maybe-exact-rational? stx)
-  (and (subtypeof? stx -Real)
-       (not (subtypeof? stx -Flonum))
-       (not (subtypeof? stx -Int))))
