@@ -1,85 +1,110 @@
 #lang racket/base
 
 (require syntax/parse racket/dict
+         syntax/parse/experimental/specialize
          "../utils/utils.rkt"
          (for-template racket/base racket/fixnum racket/unsafe/ops)
+         (for-syntax racket/base syntax/parse racket/syntax)
          (utils tc-utils)
-         (types numeric-tower)
+         (types numeric-tower union)
          (optimizer utils logging))
 
 (provide fixnum-expr fixnum-opt-expr)
 
+(begin-for-syntax
+  (define (format-ids id . args)
+    (for/list ((arg (in-list args)))
+      (format-id id arg id))))
 
-(define (mk-fixnum-tbl generic [fx-specific-too? #t])
-  (mk-unsafe-tbl generic (if fx-specific-too? "fx~a" "~a") "unsafe-fx~a"))
+(define-syntax (define-fx-syntax-classes stx)
+  (define-syntax-class spec
+    [pattern name:id
+       #:with v
+         (with-syntax ([(class-name safe-fx unsafe-fx)
+                        (format-ids #'name "~a^" "fx~a" "unsafe-fx~a")])
+           #'(define-unsafe-syntax-class class-name (name safe-fx) unsafe-fx))])
 
-;; due to undefined behavior when results are out of the fixnum range, only some
+  (syntax-parse stx
+    ((_ (name:spec ...))
+     #'(begin name.v ...))))
+
+(define-syntax (define-bitwise-syntax-class stx)
+  (define-syntax-class spec
+    [pattern name:id
+       #:with v
+         (with-syntax ([(class-name safe-reg safe-fx unsafe-fx)
+                        (format-ids #'name "~a^" "bitwise-~a" "fx~a" "unsafe-fx~a")])
+           #'(define-unsafe-syntax-class class-name (safe-reg safe-fx) unsafe-fx))])
+
+  (syntax-parse stx
+    [(_ (name:spec ...))
+     #'(begin name.v ...)]))
+
+(define-syntax (define-split-fx-syntax-class stx)
+  (define-syntax-class spec
+    [pattern name:id
+       #:with v
+         (with-syntax ([(class-name safe-fx unsafe-fx)
+                        (format-ids #'name "~a^" "fx~a" "unsafe-fx~a")])
+           #'(begin
+               (define-unsafe-syntax-class safe-fx)
+               (define-unsafe-syntax-class class-name (name) unsafe-fx)))])
+
+  (syntax-parse stx
+    [(_ (name:spec ...))
+     #'(begin name.v ...)]))
+
+
+
+(define-fx-syntax-classes (= < > >= <= min max abs))
+;; Seperated out because of potentially-bounded-*-op
+(define-split-fx-syntax-class (+ - * quotient modulo remainder))
+(define-bitwise-syntax-class (and ior xor not))
+
+(define-unsafe-syntax-class exact->inexact^ (exact->inexact) unsafe-fx->fl)
+(define-literal-syntax-class add1)
+(define-literal-syntax-class sub1)
+(define-literal-syntax-class zero?)
+
+;; Due to undefined behavior when results are out of the fixnum range, only some
 ;; fixnum operations can be optimized
-;; the following must be closed on fixnums
-(define binary-fixnum-ops
-  (dict-set
-   (dict-set
-    (dict-set
-     (dict-set
-      (dict-set
-       (dict-set
-        (mk-fixnum-tbl (list #'min #'max))
-        #'bitwise-and #'unsafe-fxand)
-       #'fxand #'unsafe-fxand)
-      #'bitwise-ior #'unsafe-fxior)
-     #'fxior #'unsafe-fxior)
-    #'bitwise-xor #'unsafe-fxxor)
-   #'fxxor #'unsafe-fxxor))
 
-(define binary-fixnum-comps (mk-fixnum-tbl (list #'= #'<= #'< #'> #'>=)))
+(define-merged-syntax-class fixnum-unary-op (not^))
 
-(define-syntax-class fixnum-unary-op
-  #:commit
-  (pattern (~or (~literal bitwise-not) (~literal fxnot))
-           #:with unsafe (begin (add-disappeared-use this-syntax)
-                                #'unsafe-fxnot)))
+;; closed on fixnums
+(define-merged-syntax-class fixnum-binary-op (min^ max^ and^ ior^ xor^))
 
 ;; closed on fixnums, but 2nd argument must not be 0
-(define-syntax-class nonzero-fixnum-binary-op
-  #:commit
-  ;; quotient is not closed. (quotient most-negative-fixnum -1) is not a fixnum
-  (pattern (~or (~literal modulo)    (~literal fxmodulo))
-           #:with unsafe (begin (add-disappeared-use this-syntax)
-                                #'unsafe-fxmodulo))
-  (pattern (~or (~literal remainder) (~literal fxremainder))
-           #:with unsafe (begin (add-disappeared-use this-syntax)
-                                #'unsafe-fxremainder)))
+;; quotient is not closed. (quotient most-negative-fixnum -1) is not a fixnum
+(define-merged-syntax-class nonzero-fixnum-binary-op
+  (modulo^ remainder^ fxmodulo^ fxremainder^))
+
+(define-merged-syntax-class fixnum-binary-comp (=^ <^ >^ <=^ >=^))
 
 ;; these operations are not closed on fixnums, but we can sometimes guarantee
 ;; that results will be within fixnum range
 ;; if their return type is a subtype of Fixnum, we can optimize
 ;; obviously, we can't include fx-specific ops here, since their return type is
 ;; always Fixnum, and we rely on the error behavior if that would be violated
-(define potentially-bounded-fixnum-ops
-  (mk-fixnum-tbl (list #'+ #'- #'*) #f))
-(define potentially-bounded-nonzero-fixnum-ops
-  (mk-fixnum-tbl (list #'quotient #'remainder) #f))
-
-(define-syntax-class (fixnum-op tbl)
-  #:commit
-  (pattern i:id
-           #:when (dict-ref tbl #'i #f)
-           #:with unsafe (begin (add-disappeared-use #'i)
-                                (dict-ref tbl #'i))))
+(define-merged-syntax-class potentially-bounded-fixnum-op (+^ -^ *^))
+(define-merged-syntax-class potentially-bounded-nonzero-fixnum-op (quotient^ remainder^))
 
 
-(define-syntax-class fixnum-expr
-  #:commit
-  (pattern e:expr
-           #:when (subtypeof? #'e -Fixnum)
-           #:with opt ((optimize) #'e)))
-(define-syntax-class nonzero-fixnum-expr
-  #:commit
-  (pattern e:expr
-           #:when (or (subtypeof? #'e -PosFixnum) (subtypeof? #'e -NegFixnum))
-           #:with opt ((optimize) #'e)))
+(define-syntax-class/specialize byte-expr
+  (subtyped-expr -Byte))
+(define-syntax-class/specialize index-expr
+  (subtyped-expr -Index))
+(define-syntax-class/specialize fixnum-expr
+  (subtyped-expr -Fixnum))
+(define-syntax-class/specialize nonneg-fixnum-expr
+  (subtyped-expr -NonNegFixnum))
+(define-syntax-class/specialize nonpos-fixnum-expr
+  (subtyped-expr -NonPosFixnum))
+(define-syntax-class/specialize nonzero-fixnum-expr
+  (subtyped-expr (Un -PosFixnum -NegFixnum)))
 
-(define fixnum-opt-msg "Fixnum arithmetic specialization.")
+(define-syntax-rule (log-fx-opt opt-label)
+  (log-opt opt-label "Fixnum arithmetic specialization."))
 
 (define (log-fixnum-missed-opt stx)
   (log-missed-optimization
@@ -98,124 +123,87 @@
     safe-to-opt?))
 
 (define-syntax-class fixnum-opt-expr
+  #:literal-sets (kernel-literals)
+  #:attributes (opt)
+  (pattern (#%plain-app . :inner-fixnum-opt-expr))
+  (pattern (#%plain-app . (~var || (inner-checked-fixnum-opt-expr this-syntax)))))
+
+
+(define-syntax-class inner-fixnum-opt-expr
   #:commit
-  (pattern (#%plain-app op:fixnum-unary-op n:fixnum-expr)
-           #:with opt
-           (begin (log-optimization "unary fixnum" fixnum-opt-msg this-syntax)
-                  #'(op.unsafe n.opt)))
-  (pattern (#%plain-app (~var op (fixnum-op binary-fixnum-ops))
-                        n1:fixnum-expr
-                        n2:fixnum-expr
-                        ns:fixnum-expr ...)
-           #:with opt
-           (begin (log-optimization "binary fixnum" fixnum-opt-msg this-syntax)
-                  (n-ary->binary #'op.unsafe #'n1.opt #'n2.opt #'(ns.opt ...))))
-  (pattern (#%plain-app (~var op (fixnum-op binary-fixnum-comps))
-                        n1:fixnum-expr n2:fixnum-expr)
-           #:with opt
-           (begin (log-optimization "binary fixnum comp" fixnum-opt-msg this-syntax)
-                  #'(op.unsafe n1.opt n2.opt)))
-  (pattern (#%plain-app (~var op (fixnum-op binary-fixnum-comps))
-                        n1:fixnum-expr
-                        n2:fixnum-expr
-                        ns:fixnum-expr ...)
-           #:with opt
-           (begin (log-optimization "multi fixnum comp" fixnum-opt-msg this-syntax)
-                  (n-ary-comp->binary #'op.unsafe #'n1.opt #'n2.opt #'(ns.opt ...))))
+  #:attributes (opt)
+  (pattern (op:fixnum-unary-op n:fixnum-expr)
+    #:do [(log-fx-opt "unary fixnum")]
+    #:with opt #'(op.unsafe n.opt))
+  (pattern (op:fixnum-binary-op n1:fixnum-expr n2:fixnum-expr ns:fixnum-expr ...)
+    #:do [(log-fx-opt "binary fixnum")]
+    #:with opt (n-ary->binary #'op.unsafe #'n1.opt #'n2.opt #'(ns.opt ...)))
+  (pattern (op:fixnum-binary-comp n1:fixnum-expr n2:fixnum-expr)
+    #:do [(log-fx-opt "binary fixnum comp")]
+    #:with opt #'(op.unsafe n1.opt n2.opt))
+  (pattern (op:fixnum-binary-comp n1:fixnum-expr n2:fixnum-expr ns:fixnum-expr ...)
+    #:do [(log-fx-opt "multi fixnum comp")]
+    #:with opt (n-ary-comp->binary #'op.unsafe #'n1.opt #'n2.opt #'(ns.opt ...)))
 
-  (pattern (#%plain-app op:nonzero-fixnum-binary-op
-                        n1:fixnum-expr
-                        n2:nonzero-fixnum-expr)
-           #:with opt
-           (begin (log-optimization "binary nonzero fixnum" fixnum-opt-msg this-syntax)
-                  #'(op.unsafe n1.opt n2.opt)))
+  (pattern (op:nonzero-fixnum-binary-op n1:fixnum-expr n2:nonzero-fixnum-expr)
+    #:do [(log-fx-opt "binary nonzero fixnum")]
+    #:with opt #'(op.unsafe n1.opt n2.opt))
 
-  (pattern (#%plain-app (~and op (~literal -)) f:fixnum-expr)
-           ;; Invalid for `(- <most-negative-fixnum>)'.
-           #:when (subtypeof? #'f -NonNegFixnum)
-           #:with opt
-           (begin (log-optimization "unary fixnum" fixnum-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(unsafe-fx- 0 f.opt)))
+  (pattern (op:-^ f:nonneg-fixnum-expr)
+    ;; Invalid for `(- <most-negative-fixnum>)'.
+    #:do [(log-fx-opt "unary fixnum")]
+    #:with opt #'(op.unsafe 0 f.opt))
 
-  (pattern (#%plain-app (~and op (~literal exact->inexact)) n:fixnum-expr)
-           #:with opt
-           (begin (log-optimization "fixnum to float" fixnum-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(unsafe-fx->fl n.opt)))
+  (pattern (op:exact->inexact^ n:fixnum-expr)
+    #:do [(log-fx-opt "fixnum to float")]
+    #:with opt #'(op.unsafe n.opt))
 
-  (pattern (#%plain-app (~and op (~literal zero?)) n:fixnum-expr)
-           #:with opt
-           (begin (log-optimization "fixnum zero?" fixnum-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(unsafe-fx= n.opt 0)))
+  (pattern (op:zero?^ n:fixnum-expr)
+    #:do [(log-fx-opt "fixnum zero?")]
+    #:with opt #'(unsafe-fx= n.opt 0))
 
-  ;; The following are not closed on fixnums, but we can guarantee that results
-  ;; won't exceed fixnum range in some cases.
-  ;; (if they typecheck with return type Fixnum)
-  (pattern (#%plain-app (~var op (fixnum-op potentially-bounded-fixnum-ops))
-                        n1:fixnum-expr n2:fixnum-expr ns:fixnum-expr ...)
-           #:when (check-if-safe this-syntax)
-           #:with opt
-           (begin (log-optimization "fixnum bounded expr" fixnum-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  (n-ary->binary #'op.unsafe #'n1.opt #'n2.opt (syntax->list #'(ns.opt ...)))))
-  (pattern (#%plain-app (~var op (fixnum-op potentially-bounded-nonzero-fixnum-ops))
-                        n1:fixnum-expr n2:nonzero-fixnum-expr)
-           #:when (check-if-safe this-syntax)
-           #:with opt
-           (begin (log-optimization "nonzero fixnum bounded expr" fixnum-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(op.unsafe n1.opt n2.opt)))
   ;; for fx-specific ops, we need to mimic the typing rules of their generic
   ;; counterparts, since fx-specific ops rely on error behavior for typechecking
   ;; and thus their return type cannot be used directly for optimization
   ;; Note: We don't log near misses for those, too many false positives.
   ;;  If someone is using `fx+' in the first place, they should know about `unsafe-fx+'.
-  (pattern (#%plain-app (~and op (~literal fx+)) n1:fixnum-expr n2:fixnum-expr)
-           #:when (or (and (subtypeof? #'n1 -Index) (subtypeof? #'n2 -Index))
-                      (and (subtypeof? #'n1 -NonNegFixnum) (subtypeof? #'n2 -NonPosFixnum))
-                      (and (subtypeof? #'n1 -NonPosFixnum) (subtypeof? #'n2 -NonNegFixnum)))
-           #:with opt
-           (begin (log-optimization "fixnum fx+" fixnum-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(unsafe-fx+ n1.opt n2.opt)))
-  (pattern (#%plain-app (~and op (~literal fx-)) n1:fixnum-expr n2:fixnum-expr)
-           #:when (and (subtypeof? #'n1 -NonNegFixnum)
-                       (subtypeof? #'n2 -NonNegFixnum))
-           #:with opt
-           (begin (log-optimization "fixnum fx-" fixnum-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(unsafe-fx- n1.opt n2.opt)))
-  (pattern (#%plain-app (~and op (~literal fx*)) n1:fixnum-expr n2:fixnum-expr)
-           #:when (and (subtypeof? #'n1 -Byte)
-                       (subtypeof? #'n2 -Byte))
-           #:with opt
-           (begin (log-optimization "fixnum fx*" fixnum-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(unsafe-fx* n1.opt n2.opt)))
-  (pattern (#%plain-app (~and op (~literal fxquotient)) n1:fixnum-expr n2:nonzero-fixnum-expr)
-           #:when (subtypeof? #'n1 -NonNegFixnum)
-           #:with opt
-           (begin (log-optimization "fixnum fxquotient" fixnum-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(unsafe-fxquotient n1.opt n2.opt)))
-  (pattern (#%plain-app (~and op (~or (~literal fxabs) (~literal abs))) n:fixnum-expr)
-           #:when (subtypeof? #'n -NonNegFixnum)
-           #:with opt
-           (begin (log-optimization "fixnum fxabs" fixnum-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(unsafe-fxabs n.opt)))
+  (pattern (op:fx+^
+             (~or (~seq n1:index-expr n2:index-expr)
+                  (~seq n1:nonneg-fixnum-expr n2:nonpos-fixnum-expr)
+                  (~seq n1:nonpos-fixnum-expr n2:nonneg-fixnum-expr)))
+    #:do [(log-fx-opt "fixnum fx+")]
+    #:with opt #'(op.unsafe n1.opt n2.opt))
+  (pattern (op:fx-^ n1:nonneg-fixnum-expr n2:nonneg-fixnum-expr)
+    #:do [(log-fx-opt "fixnum fx-")]
+    #:with opt #'(op.unsafe n1.opt n2.opt))
+  (pattern (op:fx*^ n1:byte-expr n2:byte-expr)
+    #:do [(log-fx-opt "fixnum fx*")]
+    #:with opt #'(op.unsafe n1.opt n2.opt))
+  (pattern (op:fxquotient^ n1:nonneg-fixnum-expr n2:nonzero-fixnum-expr)
+    #:do [(log-fx-opt "fixnum fxquotient")]
+    #:with opt #'(op.unsafe n1.opt n2.opt))
+  (pattern (op:abs^ n:nonneg-fixnum-expr)
+    #:do [(log-fx-opt "fixnum fxabs")]
+    #:with opt #'(op.unsafe n.opt)))
 
-  (pattern (#%plain-app (~and op (~literal add1)) n:fixnum-expr)
-           #:when (check-if-safe this-syntax)
-           #:with opt
-           (begin (log-optimization "fixnum add1" fixnum-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(unsafe-fx+ n.opt 1)))
-  (pattern (#%plain-app (~and op (~literal sub1)) n:fixnum-expr)
-           #:when (check-if-safe this-syntax)
-           #:with opt
-           (begin (log-optimization "fixnum sub1" fixnum-opt-msg this-syntax)
-                  (add-disappeared-use #'op)
-                  #'(unsafe-fx- n.opt 1))))
+;; The following are not closed on fixnums, but we can guarantee that results
+;; won't exceed fixnum range in some cases.
+;; (if they typecheck with return type Fixnum)
+(define-syntax-class (inner-checked-fixnum-opt-expr stx)
+  #:attributes (opt)
+  (pattern (op:potentially-bounded-fixnum-op n1:fixnum-expr n2:fixnum-expr ns:fixnum-expr ...)
+    #:when (check-if-safe stx)
+    #:do [(log-fx-opt "fixnum bounded expr")]
+    #:with opt (n-ary->binary #'op.unsafe #'n1.opt #'n2.opt (syntax->list #'(ns.opt ...))))
+  (pattern (op:potentially-bounded-nonzero-fixnum-op n1:fixnum-expr n2:nonzero-fixnum-expr)
+    #:when (check-if-safe stx)
+    #:do [(log-fx-opt "nonzero fixnum bounded expr")]
+    #:with opt #'(op.unsafe n1.opt n2.opt))
+  (pattern (op:add1^ n:fixnum-expr)
+    #:when (check-if-safe stx)
+    #:do [(log-fx-opt "fixnum add1")]
+    #:with opt #'(unsafe-fx+ n.opt 1))
+  (pattern (op:sub1^ n:fixnum-expr)
+    #:when (check-if-safe stx)
+    #:do [(log-fx-opt "fixnum sub1")]
+    #:with opt #'(unsafe-fx- n.opt 1)))
