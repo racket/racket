@@ -11,24 +11,16 @@
 
 (provide box-opt-expr)
 
-(define-syntax-class box-expr
-  #:commit
-  (pattern e:expr
-           #:when (match (type-of #'e)
-                    [(tc-result1: (Box: _)) #t]
-                    [_ #f])
-           #:with opt ((optimize) #'e)))
+(define-unsafe-syntax-class unbox)
+(define-unsafe-syntax-class set-box!)
 
 (define-syntax-class box-op
-  #:commit
-  ;; we need the * versions of these unsafe operations to be chaperone-safe
-  (pattern (~literal unbox)    #:with unsafe #'unsafe-unbox)
-  (pattern (~literal set-box!) #:with unsafe #'unsafe-set-box!))
+  #:attributes (unsafe)
+  (pattern :unbox^)
+  (pattern :set-box!^))
 
 (define-syntax-class box-opt-expr
   #:commit
-  (pattern (#%plain-app op:box-op b:box-expr new:expr ...)
-           #:with opt
-           (begin (log-optimization "box" "Box check elimination." this-syntax)
-                  (add-disappeared-use #'op)
-                  #`(op.unsafe b.opt #,@(stx-map (optimize) #'(new ...))))))
+  (pattern (#%plain-app op:box-op b:opt-expr new:opt-expr ...)
+    #:do [(log-opt "box" "Box check elimination.")]
+    #:with opt #`(op.unsafe b.opt new.opt ...)))
