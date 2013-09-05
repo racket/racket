@@ -3,6 +3,7 @@
 (require racket/match unstable/sequence
          racket/dict syntax/id-table racket/syntax syntax/stx
          syntax/parse
+         syntax/parse/experimental/specialize
          racket/promise
          (for-syntax racket/base syntax/parse racket/syntax)
          "../utils/utils.rkt"
@@ -16,7 +17,7 @@
          mk-unsafe-tbl
          n-ary->binary n-ary-comp->binary
          opt-expr optimize
-         value-expr
+         value-expr typed-expr subtyped-expr
          define-unsafe-syntax-class
          define-literal-syntax-class
          define-merged-syntax-class
@@ -118,6 +119,16 @@
   (define-syntax-class name
     #:auto-nested-attributes
     (pattern (~var || syntax-classes)) ...))
+
+(define-syntax-class (typed-expr predicate)
+  #:attributes (opt)
+  (pattern (~and e :opt-expr)
+           #:when (match (type-of #'e)
+                    [(tc-result1: (? predicate)) #t]
+                    [_ #f])))
+
+(define-syntax-class/specialize (subtyped-expr type)
+  (typed-expr (λ (t) (subtype t type))))
 
 (define-syntax-class value-expr
   #:attributes (val opt)
