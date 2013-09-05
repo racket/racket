@@ -293,9 +293,11 @@
                             " | "
                             (a ([href ,(main-url page/rss)]) "rss")
 
-                            ;;" | "
-                            ;;(a ([href ,(main-url page/logout)]) "logout")
-                            ))]
+                            " | "
+                            (a ([href ,(main-url page/login)]) "re-login")
+
+                            " | "
+                            (a ([href ,(main-url page/logout)]) "logout")))]
                [else
                 ""]))
        ,@xexpr-forest
