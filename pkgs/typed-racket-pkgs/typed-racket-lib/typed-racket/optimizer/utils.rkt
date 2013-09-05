@@ -16,6 +16,7 @@
          mk-unsafe-tbl
          n-ary->binary n-ary-comp->binary
          opt-expr optimize
+         value-expr
          define-unsafe-syntax-class
          define-literal-syntax-class
          define-merged-syntax-class
@@ -117,3 +118,17 @@
   (define-syntax-class name
     #:auto-nested-attributes
     (pattern (~var || syntax-classes)) ...))
+
+(define-syntax-class value-expr
+  #:attributes (val opt)
+  #:literal-sets (kernel-literals)
+  (pattern (quote v)
+    #:attr val (syntax-e #'v)
+    #:with opt this-syntax)
+  (pattern (~and e :opt-expr)
+    #:when (match (type-of #'e)
+             [(tc-result1: (Value: _)) #t]
+             [_ #f])
+    #:attr val (match (type-of #'e)
+                 [(tc-result1: (Value: v)) v]
+                 [_ #f])))
