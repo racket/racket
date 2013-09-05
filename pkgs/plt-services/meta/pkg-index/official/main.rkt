@@ -964,6 +964,16 @@
   (for/or ([r (in-list right)])
     (hash-ref seen? r #f)))
 
+(define (string-min x y)
+  (if (string<=? x y)
+    x
+    y))
+
+(define (string-max x y)
+  (if (string<? x y)
+    y
+    x))
+
 (define (page/curate req)
   (define u (current-user req #t))
   (define (packages-conflict? left right)
@@ -975,12 +985,26 @@
       (module-lists-conflict? left-m right-m)
       ;; We have to say #t here because otherwise things with no
       ;; information won't be conflicting.
-      #t))
-  (define (package-conflicts? pkg)
-    (define other-pkgs (remove pkg (append (ring 0) (ring 1))))
-    (filter (curry packages-conflict? pkg) other-pkgs))
+      #t))  
+  (define conflict-cache
+    (make-hash))
+  (define (packages-conflict?/cache left right)
+    (define smin (string-min left right))
+    (define smax (string-max left right))
+    (hash-ref! conflict-cache
+               (cons smin smax)
+               (λ ()
+                 (packages-conflict? smin smax))))
   (define (ring i)
     (package-list/search (list (format "ring:~a" i))))
+  (define ring-01
+    (append (ring 0) (ring 1)))
+  (define (package-conflicts? pkg)
+    (filter (λ (other-pkg) 
+              (if (equal? pkg other-pkg)
+                #f
+                (packages-conflict?/cache pkg other-pkg)))
+            ring-01))
   (cond
     [(curation-administrator? u)
      (template
