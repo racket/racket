@@ -4,10 +4,12 @@
 (define-syntax assert
   (syntax-rules ()
     ((assert v)
-     (or v (error "Assertion failed")))
+     (or v (error (format "Assertion failed on ~v" v))))
     ((assert v pred)
      (let ((val v))
-       (if (pred val) val (error "Assertion failed"))))))
+       (if (pred val)
+           val
+           (error (format "Assertion ~a failed on ~v" pred val)))))))
 
 (define (defined? v)
   (not (equal? v (letrec ([x x]) x))))
