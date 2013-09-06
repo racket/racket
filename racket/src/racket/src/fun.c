@@ -7923,8 +7923,6 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
         bottom = 0;
       } else {
         startpos = (intptr_t)MZ_CONT_MARK_STACK;
-        if (!p->cont_mark_stack_segments)
-          findpos = 0;
         bottom = p->cont_mark_stack_bottom;
       }
 
@@ -8093,11 +8091,9 @@ extract_one_cc_mark_fast(Scheme_Object *key)
   Scheme_Thread *p = scheme_current_thread;
 
   startpos = (intptr_t)MZ_CONT_MARK_STACK;
-  if (!p->cont_mark_stack_segments)
-    findpos = 0;
-
+ 
   bottom = p->cont_mark_stack_bottom;
-  minbottom = findpos - 32;
+  minbottom = startpos - 32;
   if (bottom < minbottom) 
     bottom = minbottom;
   

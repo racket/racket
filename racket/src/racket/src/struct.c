@@ -5447,9 +5447,10 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
                               "operation procedure", 1, a[0],
                               NULL);
 
-      if (!scheme_struct_type_property_ref(prop, argv[0]))
+      if (!scheme_struct_type_property_ref(prop, argv[0])) {
         non_applicable_op = 1;
-      else {
+        arity = 0;
+      } else {
         if (!red_props)
           red_props = scheme_make_hash_tree(0);
         

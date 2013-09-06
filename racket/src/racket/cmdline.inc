@@ -661,8 +661,10 @@ static Scheme_Object *get_log_level(char *prog, char *real_switch, const char *e
     } else if (!strncmp(str, "debug", 5)) {
       k  = SCHEME_LOG_DEBUG;
       len = 5;
-    } else 
+    } else {
       k = -1;
+      len = 0;
+    }
 
     str += len;
 

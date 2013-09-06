@@ -667,7 +667,7 @@ static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok
   
   /* Slow path; restore R0 to SCHEME_TAIL_CALL_WAITING */
   mz_patch_branch(ref);
-  jit_movi_p(JIT_R0, SCHEME_TAIL_CALL_WAITING);
+  (void)jit_movi_p(JIT_R0, SCHEME_TAIL_CALL_WAITING);
 
   return 1;
 }
