@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require syntax/parse syntax/stx syntax/id-table racket/dict
+(require syntax/parse syntax/stx syntax/id-table racket/dict racket/promise
          racket/syntax racket/match syntax/parse/experimental/specialize
          "../utils/utils.rkt" racket/unsafe/ops unstable/sequence
          (for-template racket/base racket/math racket/flonum racket/unsafe/ops)
@@ -9,7 +9,7 @@
          (optimizer utils numeric-utils logging float))
 
 (provide float-complex-opt-expr
-         float-complex-arith-opt-expr
+         float-complex-arith-expr
          unboxed-float-complex-opt-expr
          float-complex-call-site-opt-expr arity-raising-opt-msg
          unboxed-vars-table unboxed-funs-table)
@@ -415,20 +415,28 @@
 
   (pattern :float-complex-arith-opt-expr))
 
-(define-syntax-class float-complex-arith-opt-expr
+;; Supports not optimizing in order to support using it to check for optimizable expressions.
+;; Thus side effects are hidden behind the optimizing argument and referencing the opt attribute.
+(define-syntax-class (float-complex-arith-expr* optimizing)
   #:commit
   #:attributes (opt)
 
   (pattern (#%plain-app op:float-complex->float-op e:expr ...)
     #:when (subtypeof? this-syntax -Flonum)
-    #:with exp:unboxed-float-complex-opt-expr this-syntax
-    #:with opt #`(let*-values (exp.bindings ...) exp.real-binding))
+    #:attr opt
+      (delay
+        (syntax-parse this-syntax
+          (exp:unboxed-float-complex-opt-expr
+           #'(let*-values (exp.bindings ...) exp.real-binding)))))
 
   (pattern (#%plain-app op:float-complex-op e:expr ...)
     #:when (subtypeof? this-syntax -FloatComplex)
-    #:with exp:unboxed-float-complex-opt-expr this-syntax
-    #:with opt #`(let*-values (exp.bindings ...)
-                   (unsafe-make-flrectangular exp.real-binding exp.imag-binding)))
+    #:attr opt
+      (delay
+        (syntax-parse this-syntax
+          (exp:unboxed-float-complex-opt-expr
+           #'(let*-values (exp.bindings ...)
+               (unsafe-make-flrectangular exp.real-binding exp.imag-binding))))))
 
   ;; division is special. can only optimize if none of the arguments can be exact 0.
   ;; otherwise, optimization is unsound (we'd give a result where we're supposed to throw an error)
@@ -443,7 +451,7 @@
                     c)])
              (define safe-to-opt? (null? irritants))
              ;; result is Float-Complex, but unsafe to optimize, missed optimization
-             (unless safe-to-opt?
+             (when (and optimizing (not safe-to-opt?))
                (log-missed-optimization
                 "Float-Complex division, potential exact 0s on the rhss"
                 (string-append
@@ -454,9 +462,12 @@
                      "\nTo fix, change the highlighted expression(s) to have Float (or Float-Complex) type(s)."))
                 this-syntax irritants))
              safe-to-opt?)
-    #:with exp:unboxed-float-complex-opt-expr this-syntax
-    #:with opt #`(let*-values (exp.bindings ...)
-                   (unsafe-make-flrectangular exp.real-binding exp.imag-binding)))
+    #:attr opt
+      (delay
+        (syntax-parse this-syntax
+          (exp:unboxed-float-complex-opt-expr
+           #'(let*-values (exp.bindings ...)
+               (unsafe-make-flrectangular exp.real-binding exp.imag-binding))))))
 
   (pattern v:id
     #:do [(define unboxed-info (dict-ref unboxed-vars-table #'v #f))]
@@ -464,11 +475,14 @@
     #:when (subtypeof? #'v -FloatComplex)
     #:with (real-binding imag-binding orig-binding) unboxed-info
     ;; we need to introduce both the binding and the use at the same time
-    #:do [(log-unboxing-opt "unboxed complex variable")
-          (add-disappeared-use (syntax-local-introduce #'v))
-          (add-disappeared-binding (syntax-local-introduce #'orig-binding))]
     ;; unboxed variable used in a boxed fashion, we have to box
-    #:with opt #'(unsafe-make-flrectangular real-binding imag-binding)))
+    #:attr opt
+      (delay
+       (log-unboxing-opt "unboxed complex variable")
+       (add-disappeared-use (syntax-local-introduce #'v))
+       (add-disappeared-binding (syntax-local-introduce #'orig-binding))
+       #'(unsafe-make-flrectangular real-binding imag-binding))))
+
 
 ;; takes as argument a structure describing which arguments will be unboxed
 ;; and the optimized version of the operator. operators are optimized elsewhere
@@ -494,3 +508,6 @@
                           e.imag-binding ...
                           #,@(map (lambda (i) ((optimize) (get-arg i)))
                                   boxed)))])))) ; boxed params
+
+(define-syntax-class/specialize float-complex-arith-opt-expr (float-complex-arith-expr* #t))
+(define-syntax-class/specialize float-complex-arith-expr (float-complex-arith-expr* #f))

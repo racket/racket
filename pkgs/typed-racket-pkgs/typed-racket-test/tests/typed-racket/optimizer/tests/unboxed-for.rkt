@@ -13,27 +13,13 @@ TR opt: unboxed-for.rkt 46:31 sum -- leave var unboxed
 TR opt: unboxed-for.rkt 46:31 sum -- unbox float-complex
 TR opt: unboxed-for.rkt 46:31 sum -- unboxed complex variable
 TR opt: unboxed-for.rkt 46:31 sum -- unboxed complex variable
-TR opt: unboxed-for.rkt 46:31 sum -- unboxed complex variable
 TR opt: unboxed-for.rkt 46:31 sum -- unboxed var -> table
 TR opt: unboxed-for.rkt 46:53 0.0+0.0i -- unboxed literal
 TR opt: unboxed-for.rkt 47:13 i -- unboxed complex variable
 TR opt: unboxed-for.rkt 47:13 i -- unboxed complex variable
-TR opt: unboxed-for.rkt 47:13 i -- unboxed complex variable
 TR opt: unboxed-for.rkt 48:11 sum -- leave var unboxed
-TR opt: unboxed-for.rkt 48:11 sum -- unbox float-complex
-TR opt: unboxed-for.rkt 48:11 sum -- unbox float-complex
-TR opt: unboxed-for.rkt 48:11 sum -- unbox float-complex
-TR opt: unboxed-for.rkt 48:11 sum -- unbox float-complex
-TR opt: unboxed-for.rkt 48:6 (+ i sum) -- unboxed binary float complex
-TR opt: unboxed-for.rkt 48:6 (+ i sum) -- unboxed binary float complex
-TR opt: unboxed-for.rkt 48:6 (+ i sum) -- unboxed binary float complex
-TR opt: unboxed-for.rkt 48:6 (+ i sum) -- unboxed binary float complex
 TR opt: unboxed-for.rkt 48:6 (+ i sum) -- unboxed binary float complex
 TR opt: unboxed-for.rkt 48:9 i -- leave var unboxed
-TR opt: unboxed-for.rkt 48:9 i -- leave var unboxed
-TR opt: unboxed-for.rkt 48:9 i -- unbox float-complex
-TR opt: unboxed-for.rkt 48:9 i -- unbox float-complex
-TR opt: unboxed-for.rkt 48:9 i -- unbox float-complex
 END
 #<<END
 3.0+6.0i

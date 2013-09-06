@@ -6,11 +6,8 @@ TR opt: unboxed-let3.rkt 30:21 2.0+4.0i -- unboxed literal
 TR opt: unboxed-let3.rkt 30:9 (+ 1.0+2.0i 2.0+4.0i) -- unboxed binary float complex
 TR opt: unboxed-let3.rkt 32:6 x -- unboxed complex variable
 TR opt: unboxed-let3.rkt 33:11 2.0+4.0i -- unboxed literal
-TR opt: unboxed-let3.rkt 33:11 2.0+4.0i -- unboxed literal
-TR opt: unboxed-let3.rkt 33:6 (+ x 2.0+4.0i) -- unboxed binary float complex
 TR opt: unboxed-let3.rkt 33:6 (+ x 2.0+4.0i) -- unboxed binary float complex
 TR opt: unboxed-let3.rkt 33:9 x -- leave var unboxed
-TR opt: unboxed-let3.rkt 33:9 x -- unbox float-complex
 END
 #<<END
 3.0+6.0i

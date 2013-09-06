@@ -3,10 +3,7 @@
 TR opt: unboxed-let-functions4.rkt 26:32 x -- unboxed var -> table
 TR opt: unboxed-let-functions4.rkt 26:7 f -- fun -> unboxed fun
 TR opt: unboxed-let-functions4.rkt 27:18 (+ x y) -- unboxed binary float complex
-TR opt: unboxed-let-functions4.rkt 27:18 (+ x y) -- unboxed binary float complex
 TR opt: unboxed-let-functions4.rkt 27:21 x -- leave var unboxed
-TR opt: unboxed-let-functions4.rkt 27:21 x -- unbox float-complex
-TR opt: unboxed-let-functions4.rkt 27:23 y -- float-arg-expr in complex ops
 TR opt: unboxed-let-functions4.rkt 27:23 y -- float-arg-expr in complex ops
 TR opt: unboxed-let-functions4.rkt 28:2 (f 3.0 (+ 1.0+2.0i 2.0+4.0i)) -- call to fun with unboxed args
 TR opt: unboxed-let-functions4.rkt 28:2 (f 3.0 (+ 1.0+2.0i 2.0+4.0i)) -- unboxed call site

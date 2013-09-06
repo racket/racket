@@ -6,10 +6,7 @@ TR opt: unboxed-let-functions6.rkt 30:51 0.0+0.0i -- unboxed literal
 TR opt: unboxed-let-functions6.rkt 30:6 loop -- fun -> unboxed fun
 TR opt: unboxed-let-functions6.rkt 30:6 loop -- unboxed let loop
 TR opt: unboxed-let-functions6.rkt 33:10 (+ z 0.0+1.0i) -- unboxed binary float complex
-TR opt: unboxed-let-functions6.rkt 33:10 (+ z 0.0+1.0i) -- unboxed binary float complex
 TR opt: unboxed-let-functions6.rkt 33:13 z -- leave var unboxed
-TR opt: unboxed-let-functions6.rkt 33:13 z -- unbox float-complex
-TR opt: unboxed-let-functions6.rkt 33:15 0.0+1.0i -- unboxed literal
 TR opt: unboxed-let-functions6.rkt 33:15 0.0+1.0i -- unboxed literal
 TR opt: unboxed-let-functions6.rkt 34:10 (loop (+ z (car l)) (cdr l)) -- call to fun with unboxed args
 TR opt: unboxed-let-functions6.rkt 34:10 (loop (+ z (car l)) (cdr l)) -- unboxed call site

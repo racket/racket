@@ -173,8 +173,7 @@
   (define (rec exp)
     (syntax-parse exp
       ;; can be used in a complex arithmetic expr, can be a direct child
-      [exp:float-complex-arith-opt-expr
-       #:when (not (identifier? #'exp))
+      [(~and (~not :id) exp:float-complex-arith-expr)
        (or (direct-child-of? v #'exp)
            (ormap rec (syntax->list #'exp)))]
       ;; if the variable gets rebound to something else, we look for unboxing

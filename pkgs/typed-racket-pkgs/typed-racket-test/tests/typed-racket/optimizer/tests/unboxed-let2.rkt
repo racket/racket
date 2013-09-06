@@ -8,14 +8,8 @@ TR opt: unboxed-let2.rkt 29:10 (+ 3.0+6.0i 4.0+8.0i) -- unboxed binary float com
 TR opt: unboxed-let2.rkt 29:13 3.0+6.0i -- unboxed literal
 TR opt: unboxed-let2.rkt 29:22 4.0+8.0i -- unboxed literal
 TR opt: unboxed-let2.rkt 30:2 (+ t1 t2) -- unboxed binary float complex
-TR opt: unboxed-let2.rkt 30:2 (+ t1 t2) -- unboxed binary float complex
-TR opt: unboxed-let2.rkt 30:2 (+ t1 t2) -- unboxed binary float complex
 TR opt: unboxed-let2.rkt 30:5 t1 -- leave var unboxed
-TR opt: unboxed-let2.rkt 30:5 t1 -- unbox float-complex
-TR opt: unboxed-let2.rkt 30:5 t1 -- unbox float-complex
 TR opt: unboxed-let2.rkt 30:8 t2 -- leave var unboxed
-TR opt: unboxed-let2.rkt 30:8 t2 -- unbox float-complex
-TR opt: unboxed-let2.rkt 30:8 t2 -- unbox float-complex
 END
 #<<END
 10.0+20.0i

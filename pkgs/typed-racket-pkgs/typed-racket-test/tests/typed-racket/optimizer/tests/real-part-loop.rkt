@@ -6,10 +6,8 @@ TR opt: real-part-loop.rkt 31:15 0.0+1.0i -- unboxed literal
 TR opt: real-part-loop.rkt 31:6 loop -- fun -> unboxed fun
 TR opt: real-part-loop.rkt 31:6 loop -- unboxed let loop
 TR opt: real-part-loop.rkt 32:20 v -- leave var unboxed
-TR opt: real-part-loop.rkt 32:20 v -- unbox float-complex
 TR opt: real-part-loop.rkt 32:6 (> (real-part v) 70000.2) -- binary float comp
 TR opt: real-part-loop.rkt 32:9 (real-part v) -- complex accessor elimination
-TR opt: real-part-loop.rkt 32:9 (real-part v) -- unboxed unary float complex
 TR opt: real-part-loop.rkt 34:12 (+ v 3.6) -- unboxed binary float complex
 TR opt: real-part-loop.rkt 34:15 v -- leave var unboxed
 TR opt: real-part-loop.rkt 34:17 3.6 -- float-arg-expr in complex ops
