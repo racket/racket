@@ -1,5 +1,8 @@
 #lang racket/base
 
+;; Functions in this file implement the substitution function in
+;; figure 8, pg 8 of "Logical Types for Untyped Languages"
+
 (require "../utils/utils.rkt"
          racket/match
          (contract-req)
@@ -11,17 +14,21 @@
 
 (provide (all-defined-out))
 
+;; Substitutes the given objects into the type, filters, and object
+;; of a Result for function application. This matches up to the substitutions
+;; in the T-App rule from the ICFP paper.
 (define/cond-contract (open-Result r objs [ts #f])
   (->* (Result? (listof Object?)) ((listof Type/c)) (values Type/c FilterSet? Object?))
-  (match r
-    [(Result: t fs old-obj)
-     (for/fold ([t t] [fs fs] [old-obj old-obj])
-               ([(o k) (in-indexed (in-list objs))]
-                [arg-ty (if ts (in-list ts) (in-cycle (in-value #f)))])
-       (values (subst-type t k o #t)
-               (subst-filter-set fs k o #t arg-ty)
-               (subst-object old-obj k o #t)))]))
+  (match-define (Result: t fs old-obj) r)
+  (for/fold ([t t] [fs fs] [old-obj old-obj])
+            ([(o k) (in-indexed (in-list objs))]
+             [arg-ty (if ts (in-list ts) (in-cycle (in-value #f)))])
+    (values (subst-type t k o #t)
+            (subst-filter-set fs k o #t arg-ty)
+            (subst-object old-obj k o #t))))
 
+;; Substitution of objects into a filter set
+;; This is essentially ψ+|ψ- [o/x] from the paper
 (define/cond-contract (subst-filter-set fs k o polarity [t #f])
   (->* ((or/c FilterSet? NoFilter?) name-ref/c Object? boolean?) ((or/c #f Type/c)) FilterSet?)
   (define extra-filter (if t (make-TypeFilter t null k) -top))
@@ -36,6 +43,8 @@
           (subst-filter (add-extra-filter f-) k o polarity))]
     [_ -no-filter]))
 
+;; Substitution of objects into a type
+;; This is essentially t [o/x] from the paper
 (define/cond-contract (subst-type t k o polarity)
   (-> Type/c name-ref/c Object? boolean? Type/c)
   (define (st t) (subst-type t k o polarity))
@@ -56,6 +65,8 @@
                                  (and drest (cons (st (car drest)) (cdr drest)))
                                  (map st kws)))]))
 
+;; Substitution of objects into objects
+;; This is o [o'/x] from the paper
 (define/cond-contract (subst-object t k o polarity)
   (-> Object? name-ref/c Object? boolean? Object?)
   (match t
@@ -70,7 +81,8 @@
            [(Path: p* i*) (make-Path (append p p*) i*)])
          t)]))
 
-;; this is the substitution metafunction
+;; Substitution of objects into a filter in a filter set
+;; This is ψ+ [o/x] and ψ- [o/x]
 (define/cond-contract (subst-filter f k o polarity)
   (-> Filter/c name-ref/c Object? boolean? Filter/c)
   (define (ap f) (subst-filter f k o polarity))
@@ -101,6 +113,7 @@
     [(NotTypeFilter: t p i)
      (tf-matcher t p i k o polarity -not-filter)]))
 
+;; Determine if the object k occurs free in the given type
 (define (index-free-in? k type)
   (let/ec
    return
@@ -142,9 +155,7 @@
    (for-type type)
     #f))
 
-
-
-;; SomeValues/c (or/c #f listof[identifier]) -> tc-results/c
+;; Convert a Values to a corresponding tc-results
 (define/cond-contract (values->tc-results tc formals)
   (SomeValues/c (or/c #f (listof identifier?)) . -> . tc-results/c)
   (match tc
@@ -153,7 +164,8 @@
      (if formals
          (let-values ([(ts fs os)
                        (for/lists (ts fs os) ([r (in-list rs)])
-                         (open-Result r (map (lambda (i) (make-Path null i)) formals)))])
+                         (open-Result r (map (lambda (i) (make-Path null i))
+                                             formals)))])
            (ret ts fs os
                 (for/fold ([dty dty]) ([(o k) (in-indexed (in-list formals))])
                   (subst-type dty k (make-Path null o) #t))
@@ -161,6 +173,10 @@
          (ret ts fs os dty dbound))]
     [(Values: (list (and rs (Result: ts fs os)) ...))
      (if formals
-         (let-values ([(ts fs os) (for/lists (ts fs os) ([r (in-list rs)]) (open-Result r (map (lambda (i) (make-Path null i)) formals)))])
+         (let-values ([(ts fs os)
+                       (for/lists (ts fs os) ([r (in-list rs)])
+                         (open-Result r (map (lambda (i) (make-Path null i))
+                                             formals)))])
            (ret ts fs os))
          (ret ts fs os))]))
+
