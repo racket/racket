@@ -8,9 +8,13 @@
 (define (get-translating-acks)
   (string-append
    "Thanks to "
+   "Sung Gyeong Bae, "
    "Ian Barland, "
+   "Yujeong Cho, "
+   "Jae sung Chung, "
    "Biep Durieux, "
    "Tim Hanson, "
+   "Jieung Kim, "
    "Chihiro Kuraya, "
    "Philippe Meunier, "
    "Irina Mintiy, "
