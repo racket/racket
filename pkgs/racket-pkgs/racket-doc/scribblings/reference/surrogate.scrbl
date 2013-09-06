@@ -55,6 +55,19 @@ object. The second is a procedure that calls the super or inner method
 extension, or the method in an overriding class), with the arguments
 that the procedure receives.
 
+For example, the host-mixin for this surrogate:
+@racketblock[(surrogate (override m (x y z)))]
+will override the @racket[m] method and call the surrogate like this:
+@racketblock[(define/override (m x y z)
+               (if _surrogate
+                   (send _surrogate m 
+                         this 
+                         (λ (x y z) (super m x y z))
+                         x y z)
+                   (super m x y z)))]
+where @racket[_surrogate] is bound to the value most recently passed
+to the host mixin's @racket[_set-surrogate] method.
+
 The host interface has the names @racket[set-surrogate],
 @racket[get-surrogate], and each of the @racket[method-id]s in the
 original form.
@@ -65,6 +78,10 @@ invoked by classes constructed by the mixin. Each has a corresponding
 method signature, as described in the above paragraph. Each method
 just passes its argument along to the super procedure it receives.
 
+In the example above, this is the @racket[_m] method in the surrogate class:
+@racketblock[(define/public (m original-object original-super x y z)
+               (original-super x y z))]
+
 Note: if you derive a class from the surrogate class, do not both call
 the @racket[super] argument and the super method of the surrogate
 class itself. Only call one or the other, since the default methods
@@ -73,4 +90,5 @@ call the @racket[super] argument.
 Finally, the interface contains all of the names specified in
 surrogate's argument, plus @racket[on-enable-surrogate] and
 @racket[on-disable-surrogate]. The class returned by
-@racket[surrogate] implements this interface.}
+@racket[surrogate] implements this interface.
+}
