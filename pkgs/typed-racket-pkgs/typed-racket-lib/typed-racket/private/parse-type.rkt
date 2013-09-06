@@ -113,23 +113,30 @@
            #:attr type (parse-type #'t)
            #:attr path '()))
 
-(define-syntax-class prop
+(define-syntax-class (prop doms)
+  #:description "filter proposition"
   #:attributes (prop)
   (pattern (~literal Top) #:attr prop -top)
   (pattern (~literal Bot) #:attr prop -bot)
   (pattern (t:expr (~describe "@" (~datum @)) pe:path-elem ... i:nat)
+           #:fail-unless (< (syntax-e #'i) (length doms))
+           (format "Filter proposition's object index ~a is larger than argument length ~a"
+                   (syntax-e #'i) (length doms))
            #:attr prop (-filter (parse-type #'t) (syntax-e #'i) (attribute pe.pe)))
   (pattern (t:expr (~describe "@" (~datum @)) pe:path-elem ... i:id)
            #:attr prop (-filter (parse-type #'t) #'i (attribute pe.pe)))
   (pattern ((~datum !) t:expr (~describe "@" (~datum @)) pe:path-elem ... i:nat)
+           #:fail-unless (< (syntax-e #'i) (length doms))
+           (format "Filter proposition's object index ~a is larger than argument length ~a"
+                   (syntax-e #'i) (length doms))
            #:attr prop (-not-filter (parse-type #'t) (syntax-e #'i) (attribute pe.pe)))
   (pattern ((~datum !) t:expr (~describe "@" (~datum @)) pe:path-elem ... i:id)
            #:attr prop (-not-filter (parse-type #'t) #'i (attribute pe.pe)))
-  (pattern ((~literal and) p:prop ...)
+  (pattern ((~literal and) (~var p (prop doms)) ...)
            #:attr prop (apply -and (attribute p.prop)))
-  (pattern ((~literal or) p:prop ...)
+  (pattern ((~literal or) (~var p (prop doms)) ...)
            #:attr prop (apply -or (attribute p.prop)))
-  (pattern ((~literal implies) p1:prop p2:prop)
+  (pattern ((~literal implies) (~var p1 (prop doms)) (~var p2 (prop doms)))
            #:attr prop (-imp (attribute p1.prop) (attribute p2.prop))))
 
 (define-syntax-class object
@@ -137,10 +144,10 @@
   (pattern e:expr
            #:attr object -no-obj))
 
-(define-splicing-syntax-class full-latent
+(define-splicing-syntax-class (full-latent doms)
   #:description "latent propositions and object"
-  (pattern (~seq (~optional (~seq #:+ p+:prop ...))
-                 (~optional (~seq #:- p-:prop ...))
+  (pattern (~seq (~optional (~seq #:+ (~var p+ (prop doms)) ...+))
+                 (~optional (~seq #:- (~var p- (prop doms)) ...+))
                  (~optional (~seq #:object o:object)))
            #:attr positive (if (attribute p+.prop)
                                (apply -and (attribute p+.prop))
@@ -286,17 +293,18 @@
           (list (make-arr
                  doms
                  (parse-type (syntax/loc stx (rest-dom ...)))))))]
-      [(dom ... (~and kw t:->) rng : latent:full-latent)
+      [(dom (~and kw t:->) rng : latent:simple-latent-filter)
+       (add-disappeared-use #'kw)
+       ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
+       (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (attribute latent.type) 0 (attribute latent.path))]
+      [(dom ... (~and kw t:->) rng
+        : ~! (~var latent (full-latent (syntax->list #'(dom ...)))))
        (add-disappeared-use #'kw)
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
        (->* (parse-types #'(dom ...))
             (parse-type #'rng)
             : (-FS (attribute latent.positive) (attribute latent.negative))
             : (attribute latent.object))]
-      [(dom (~and kw t:->) rng : ~! latent:simple-latent-filter)
-       (add-disappeared-use #'kw)
-       ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
-       (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (attribute latent.type) 0 (attribute latent.path))]
       [(dom:non-keyword-ty ... rest:non-keyword-ty ddd:star kws:keyword-tys ... (~and kw t:->) rng)
        (add-disappeared-use #'kw)
        (make-Function
