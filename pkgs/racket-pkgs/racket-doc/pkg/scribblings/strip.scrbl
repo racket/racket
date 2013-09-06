@@ -91,7 +91,7 @@ and directories:
 Any of the above removals can be suppressed through
 @racketidfont{source-keep-files}.
 
-Creating a @tech{binary package} prunes the following addition files
+Creating a @tech{binary package} prunes the following additional files
 and directories:
 
 @itemlist[
@@ -102,6 +102,9 @@ and directories:
 
  @item{directories/files with names ending in @filepath{.scrbl},
        @filepath{_scrbl.zo}, or @filepath{.dep};}
+
+ @item{directories/files ending with @filepath{.css} or @filepath{.js}
+       immediately within a directory named @filepath{doc};}
 
  @item{directories/files named in an @filepath{info.rkt} file's
        @racket[source-omit-files] definition.}

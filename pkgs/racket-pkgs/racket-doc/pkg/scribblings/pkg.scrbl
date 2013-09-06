@@ -25,7 +25,7 @@
 @author[@author+email["Jay McCarthy" "jay@racket-lang.org"]]
 
 The Racket package manager lets you install new libraries and
-collections, and the Racket package sever helps other Racket
+collections, and the Racket package catalog  helps other Racket
 programmers find libraries that you make available.
 
 @table-of-contents[]

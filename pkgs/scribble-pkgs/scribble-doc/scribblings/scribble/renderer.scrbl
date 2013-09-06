@@ -70,7 +70,7 @@ is created using @racket[make-directory*] if it is non-@racket[#f] and
 does not exist already.
 
 The @racket[helper-file-prefix], @racket[prefix-file],
-@racket[style-file], @racket[extra-style-files], and
+@racket[style-file], @racket[style-extra-files], and
 @racket[extra-files] arguments are passed on to the @racket[render%]
 constructor.
 

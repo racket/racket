@@ -242,6 +242,18 @@
            (path->relative-string/setup p))
           (delete-directory/files p)))))
 
+  (unless latex-dest
+    ;; Make sure "scribble.css", etc., is in place:
+    (let ([ht (make-hash)])
+      (for ([doc (in-list docs)])
+        (when (can-build? only-dirs doc)
+          (check-shared-files (doc-dest-dir doc)
+                              (or (memq 'main-doc-root (doc-flags doc))
+                                  (memq 'user-doc-root (doc-flags doc)))
+                              (doc-under-main? doc)
+                              ht
+                              setup-printf)))))
+
   (define (can-build*? docs) (can-build? only-dirs docs))
   (define auto-main? (and auto-start-doc? (ormap can-build*? main-docs)))
   (define auto-user? (and auto-start-doc? (ormap can-build*? user-docs)))
@@ -653,6 +665,16 @@
     ;; cache info to disk
     (for ([i infos] #:when (info-need-in-write? i)) (write-in/info latex-dest i no-lock))))
 
+(define shared-style-files
+  (list "scribble.css"
+        "scribble-style.css"
+        "racket.css"
+        "scribble-common.js"))
+(define shared-empty-style-files
+  (list "doc-site.css"))
+(define shared-empty-script-files
+  (list "doc-site.js"))
+
 (define (make-renderer latex-dest doc)
   (if latex-dest
       (new (latex:render-mixin render%)
@@ -690,18 +712,19 @@
                [dest-dir (if multi?
                              (let-values ([(base name dir?) (split-path ddir)]) base)
                              ddir)]
-               [alt-paths   (if main?
-                                (let ([std-path (lambda (s)
-                                                  (cons (collection-file-path s "scribble")
-                                                        (format "../~a" s)))])
-                                  (list (std-path "scribble.css")
-                                        (std-path "scribble-style.css")
-                                        (std-path "racket.css")
-                                        (std-path "scribble-common.js")
-                                        (cons local-redirect-file "../local-redirect/local-redirect.js")))
-                                (list (cons local-redirect-file 
-                                            (u:url->string (u:path->url local-redirect-file)))))]
-
+               [alt-paths   (let ([std-path (lambda (s)
+                                              (cons (collection-file-path s "scribble")
+                                                    (if root?
+                                                        s
+                                                        (format "../~a" s))))])
+                              (cons (cons local-redirect-file 
+                                          (if main?
+                                              "../local-redirect/local-redirect.js"
+                                              (u:url->string (u:path->url local-redirect-file))))
+                                    (map std-path (append
+                                                   shared-style-files
+                                                   shared-empty-style-files
+                                                   shared-empty-script-files))))]
                [up-path (cond
                          [root? #f] ; no up from root
                          [main?
@@ -721,7 +744,13 @@
                ;; be moved into a binary package:
                [root-path (and allow-indirect? ddir)]
 
+               [style-extra-files (map (lambda (s)
+                                         (collection-file-path s "scribble"))
+                                       shared-empty-style-files)]
+
                [search-box? #t]))
+        (for ([s (in-list shared-empty-script-files)])
+          (send r add-extra-script-file (collection-file-path s "scribble")))
         (when allow-indirect?
           ;; For documentation that might be moved into a binary package
           ;; or that can contain an indirect reference, use a server indirection
@@ -852,7 +881,7 @@
     (display (get-file-sha1 info-out-file) o))
   (close-output-port o)
   (sha1 i))
-         
+
 (define ((get-doc-info only-dirs latex-dest auto-main? auto-user?
                        with-record-error setup-printf workerid 
                        only-fast? force-out-of-date? lock)
@@ -1077,6 +1106,30 @@
                      info))))
              (lambda () #f))
             #f))))
+
+(define (check-shared-files dir root? main? done setup-printf)
+  (define dest-dir (simplify-path (if root?
+                                      dir
+                                      (build-path dir 'up))))
+  (unless (hash-ref done dir #f)
+    (for ([f (in-list shared-style-files)])
+      (define src (collection-file-path f "scribble"))
+      (define dest (build-path dest-dir f))
+      (unless (and (file-exists? dest)
+                   (equal? (file->bytes src)
+                           (file->bytes dest)))
+        (when (or (verbose) main?)
+          (setup-printf "installing" "~a" dest))
+        (make-directory* dest-dir)
+        (copy-file src dest #t)))
+    (for ([f (in-list (append shared-empty-style-files
+                              shared-empty-script-files))])
+      (define dest (build-path dest-dir f))
+      (unless (file-exists? dest)
+        (setup-printf "installing" "~a" dest)
+        (make-directory* dest-dir)
+        (call-with-output-file* dest void)))
+    (hash-set! done dir #t)))
 
 (define (move-documentation-into-place doc src-dir setup-printf workerid lock)
   (with-handlers ([exn:fail? (lambda (exn)

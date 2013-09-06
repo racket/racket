@@ -58,6 +58,14 @@
   
   (define (drop-by-default? path get-p)
     (define bstr (path->bytes path))
+    (define (immediate-doc/css-or-doc/js?)
+      ;; Drop ".css" and ".js" immediately in a "doc" directory:
+      (and (regexp-match? #rx#"(?:[.]css|[.]js)$" bstr)
+           (let-values ([(base name dir?) (split-path (get-p))])
+             (and (path? base)
+                  (let-values ([(base name dir?) (split-path base)])
+                    (and (path? name)
+                         (equal? #"doc" (path-element->bytes name))))))))
     (or (regexp-match? #rx#"^(?:[.]git.*|[.]svn|.*~|#.*#)$"
                        bstr)
         ;; can appear as a marker in rendered documentation:
@@ -72,11 +80,12 @@
                     (not (equal? #"info.rkt" bstr))
                     (file-exists? (let-values ([(base name dir?) (split-path (get-p))])
                                     (build-path base "compiled" (path-add-suffix name #".zo")))))
+               (immediate-doc/css-or-doc/js?)
                ;; drop these, because they're recreated on fixup:
                (equal? #"info_rkt.zo" bstr)
                (equal? #"info_rkt.dep" bstr))]
           [(built)
-           #f])))
+           (immediate-doc/css-or-doc/js?)])))
   
   (define (fixup new-p path src-base)
     (unless (eq? mode 'source)
@@ -253,9 +262,11 @@
         (define l (info tag (lambda () null)))
         (for ([f (in-list l)])
           (when (and (not (file-exists? (build-path dir f)))
-                     (file-exists? (build-path (find-dir) f)))
-            (copy-file (build-path (find-dir) f) 
-                       (build-path dest-dir f))))))
+                     (not (directory-exists? (build-path dir f)))
+                     (or (file-exists? (build-path (find-dir) f))
+                         (directory-exists? (build-path (find-dir) f))))
+            (copy-directory/files (build-path (find-dir) f) 
+                                  (build-path dest-dir f))))))
     (unmove-tag 'move-foreign-libs find-user-lib-dir)
     (unmove-tag 'move-shared-files find-user-share-dir)
     (unmove-tag 'move-man-pages find-user-man-dir)
