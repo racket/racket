@@ -819,6 +819,21 @@
                given-checksum
                checksum)))
 
+(define (drop-redundant-files pkg-dir)
+  ;; Ad hoc space-saving rule: for an installation-wide package, remove
+  ;; any redundant "COPYING.txt" or "COPYING_LESSER.txt" files.
+  (when (and (eq? 'installation (current-pkg-scope))
+             (find-share-dir))
+    (for ([i (in-list '("COPYING.txt" "COPYING_LESSER.txt"))])
+      (define pkg-file (build-path pkg-dir i))
+      (define share-file (build-path (find-share-dir) i))
+      (when (and (file-exists? pkg-file)
+                 (file-exists? share-file)
+                 (equal? (file->bytes pkg-file)
+                         (file->bytes share-file)))
+        ;; This file would be redundant, so drop it
+        (delete-file pkg-file)))))
+
 ;; Downloads a package (if needed) and unpacks it (if needed) into a  
 ;; temporary directory.
 (define (stage-package/info pkg
@@ -1128,6 +1143,9 @@
                       (make-parent-directory* pkg-dir)
                       (copy-directory/files pkg pkg-dir #:keep-modify-seconds? #t)))
                 pkg-dir)))
+        (when (or (not in-place?)
+                  in-place-clean?)
+          (drop-redundant-files pkg-dir))
         (install-info pkg-name
                       `(dir ,(simple-form-path* pkg))
                       pkg-dir
