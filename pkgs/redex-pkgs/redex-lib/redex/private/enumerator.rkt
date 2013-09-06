@@ -9,30 +9,30 @@
          size
          encode
          decode
-         empty/enum
-         const/enum
-         from-list/enum
-         sum/enum
-         prod/enum
-         dep/enum
-         dep2/enum ;; doesn't require size
-         map/enum
-         filter/enum ;; very bad, only use for small enums
-         except/enum 
-         thunk/enum
-         listof/enum
-         list/enum
-         fail/enum
+         empty/e
+         const/e
+         from-list/e
+         sum/e
+         prod/e
+         dep/e
+         dep2/e ;; doesn't require size
+         map/e
+         filter/e ;; very bad, only use for small enums
+         except/e 
+         thunk/e
+         listof/e
+         list/e
+         fail/e
          
          to-list
-         take/enum
-         drop/enum
+         take/e
+         drop/e
          fold-enum
          display-enum
 
          nats
-         range/enum
-         nats+/enum
+         range/e
+         nats+/e
          )
 
 ;; an enum a is a struct of < Nat or +Inf, Nat -> a, a -> Nat >
@@ -56,16 +56,16 @@
   ((enum-to e) a))
 
 ;; Helper functions
-;; map/enum : (a -> b), (b -> a), enum a -> enum b
-(define (map/enum f inv-f e)
+;; map/e : (a -> b), (b -> a), enum a -> enum b
+(define (map/e f inv-f e)
   (enum (size e)
         (compose f (enum-from e))
         (compose (enum-to e) inv-f)))
 
-;; filter/enum : enum a, (a -> bool) -> enum a
+;; filter/e : enum a, (a -> bool) -> enum a
 ;; size won't be accurate!
 ;; encode is not accurate right now!
-(define (filter/enum e p)
+(define (filter/e e p)
   (enum (size e)
         (λ (n)
            (let loop ([i 0]
@@ -78,11 +78,11 @@
                    (loop (+ i 1) seen)))))
         (λ (x) (encode e x))))
 
-;; except/enum : enum a, a -> enum a
-(define (except/enum e excepts)
+;; except/e : enum a, a -> enum a
+(define (except/e e excepts)
   (cond [(empty? excepts) e]
         [else
-         (except/enum
+         (except/e
           (begin
             (with-handlers ([exn:fail? (λ (_) e)])
               (let ([m (encode e (car excepts))])
@@ -107,10 +107,10 @@
        (build-list (size e)
                    identity)))
 
-;; take/enum : enum a, Nat -> enum a
+;; take/e : enum a, Nat -> enum a
 ;; returns an enum of the first n parts of e
 ;; n must be less than or equal to size e
-(define (take/enum e n)
+(define (take/e e n)
   (unless (or (infinite? (size e))
               (<= n (size e)))
     (error 'too-big))
@@ -125,8 +125,8 @@
                (error 'out-of-range))
              k))))
 
-;; drop/enum : enum a, Nat -> enum a
-(define (drop/enum e n)
+;; drop/e : enum a, Nat -> enum a
+(define (drop/e e n)
   (unless (or (infinite? (size e))
               (<= n (size e)))
     (error 'too-big))
@@ -142,14 +142,14 @@
     (display (decode e i))
     (newline) (newline)))
 
-(define empty/enum
+(define empty/e
   (enum 0
         (λ (n)
            (error 'empty))
         (λ (x)
            (error 'empty))))
 
-(define (const/enum c)
+(define (const/e c)
   (enum 1
         (λ (n)
            c)
@@ -158,11 +158,11 @@
                0
                (error 'bad-val)))))
 
-;; from-list/enum :: Listof a -> Gen a
+;; from-list/e :: Listof a -> Gen a
 ;; input list should not contain duplicates
-(define (from-list/enum l)
+(define (from-list/e l)
   (if (empty? l)
-      empty/enum
+      empty/e
       (enum (length l)
             (λ (n)
                (list-ref l n))
@@ -179,7 +179,7 @@
                (take-while (cdr l) pred))]))
 
 (define bools
-  (from-list/enum (list #t #f)))
+  (from-list/e (list #t #f)))
 (define nats
   (enum +inf.f
         identity
@@ -199,7 +199,7 @@
                (* 2 (abs n))))))
 
 ;; sum :: enum a, enum b -> enum (a or b)
-(define sum/enum
+(define sum/e
   (case-lambda
     [(e) e]
     [(e1 e2)
@@ -219,7 +219,7 @@
                                                  ((enum-to e2) x)))])
                   ((enum-to e1) x))))]
       [(not (infinite? (enum-size e2)))
-       (sum/enum e2 e1)]
+       (sum/e e2 e1)]
       [else ;; both infinite, interleave them
        (enum +inf.f
              (λ (n)
@@ -233,7 +233,7 @@
                                         1))])
                   (* ((enum-to e1) x) 2))))])]
     [(a b c . rest)
-     (sum/enum a (apply sum/enum b c rest))]))
+     (sum/e a (apply sum/e b c rest))]))
 
 (define odds
   (enum +inf.f
@@ -275,13 +275,13 @@
                 l))) ;; (n,m) -> (n+m)(n+m+1)/2 + n
         ))
 
-;; prod/enum : enum a, enum b -> enum (a,b)
-(define prod/enum
+;; prod/e : enum a, enum b -> enum (a,b)
+(define prod/e
   (case-lambda
     [(e) e]
     [(e1 e2)
      (cond [(or (= 0 (size e1))
-                (= 0 (size e2))) empty/enum]
+                (= 0 (size e2))) empty/e]
            [(not (infinite? (enum-size e1)))
             (cond [(not (infinite? (enum-size e2)))
                    (let ([size (* (enum-size e1)
@@ -352,7 +352,12 @@
                              2)
                           l))))])]
     [(a b c . rest)
-     (prod/enum a (apply prod/enum b c rest))]))
+     (prod/e a (apply prod/e b c rest))]))
+
+;; Traversal (maybe come up with a better name
+;; traverse/e : (a -> enum b), (listof a) -> enum (listof b)
+(define (traverse/e f xs)
+  (list/e (map f xs)))
 
 ;; the nth triangle number
 (define (tri n)
@@ -370,8 +375,8 @@
               1))
        2)))
 
-;; dep/enum : enum a (a -> enum b) -> enum (a, b)
-(define (dep/enum e f)
+;; dep/e : enum a (a -> enum b) -> enum (a, b)
+(define (dep/e e f)
   (define (search-size sizes n)
     (define (loop cur)
       (let* ([lastSize (gvector-ref sizes (- cur 1))]
@@ -394,7 +399,7 @@
             s
             (loop (+ cur 1))))))
   (if (= 0 (size e))
-      empty/enum
+      empty/e
       (let ([first (size (f (decode e 0)))])
         (cond
          [(not (infinite? first))
@@ -451,7 +456,7 @@
                 (λ (ab)
                    (+ (* (size e) (encode (f (car ab)) (cdr ab)))
                       (encode e (car ab)))))]
-         [else ;; both infinite, same as prod/enum
+         [else ;; both infinite, same as prod/e
           (enum +inf.f               
                 (λ (n)
                    (let* ([k (floor-untri n)]
@@ -496,11 +501,11 @@
           [else (bin-search 0 (- size 1))])))
 
 ;; dep2 : enum a (a -> enum b) -> enum (a,b)
-(define (dep2/enum e f)
-  (cond [(= 0 (size e)) empty/enum]
+(define (dep2/e e f)
+  (cond [(= 0 (size e)) empty/e]
         [(not (infinite? (size (f (decode e 0)))))
          ;; memoize tab : boxof (hash nat -o> (nat . nat))
-         ;; maps an index into the dep/enum to the 2 indices that we need
+         ;; maps an index into the dep/e to the 2 indices that we need
          (let ([tab (box (hash))])
            (enum (if (infinite? (size e))
                      +inf.f
@@ -560,94 +565,94 @@
                                         (size (f (decode e i)))))))
                          (encode (f (car ab))
                                  (cdr ab)))))))]
-        [else ;; both infinite, same as prod/enum
-         (dep/enum e f)]))
+        [else ;; both infinite, same as prod/e
+         (dep/e e f)]))
 
 ;; fold-enum : ((listof a), b -> enum a), (listof b) -> enum (listof a)
 (define (fold-enum f l)
-  (map/enum
+  (map/e
    reverse
    reverse
    (let loop ([l l]
-              [acc (const/enum '())])
+              [acc (const/e '())])
      (cond [(empty? l) acc]
            [else
             (loop
              (cdr l)
-             (flip-dep/enum
+             (flip-dep/e
               acc
               (λ (xs)
                  (f xs (car l)))))]))))
 
-;; flip-dep/enum : enum a (a -> enum b) -> enum (b,a)
-(define (flip-dep/enum e f)
-  (map/enum
+;; flip-dep/e : enum a (a -> enum b) -> enum (b,a)
+(define (flip-dep/e e f)
+  (map/e
    (λ (ab)
       (cons (cdr ab)
             (car ab)))
    (λ (ba)
       (cons (cdr ba)
             (car ba)))
-   (dep/enum e f)))
+   (dep/e e f)))
 
 ;; more utility enums
 ;; nats of course
-(define (range/enum low high)
+(define (range/e low high)
   (cond [(> low high) (error 'bad-range)]
         [(infinite? high)
          (if (infinite? low)
              ints
-             (map/enum
+             (map/e
               (λ (n)
                  (+ n low))
               (λ (n)
                  (- n low))
               nats))]
         [(infinite? low)
-         (map/enum
+         (map/e
           (λ (n)
              (- high n))
           (λ (n)
              (+ high n))
           nats)]
         [else
-         (map/enum (λ (n) (+ n low))
+         (map/e (λ (n) (+ n low))
                    (λ (n) (- n low))
-                   (take/enum nats (+ 1 (- high low))))]))
+                   (take/e nats (+ 1 (- high low))))]))
 
-;; thunk/enum : Nat or +-Inf, ( -> enum a) -> enum a
-(define (thunk/enum s thunk)
+;; thunk/e : Nat or +-Inf, ( -> enum a) -> enum a
+(define (thunk/e s thunk)
   (enum s
         (λ (n)
            (decode (thunk) n))
         (λ (x)
            (encode (thunk) x))))
 
-;; listof/enum : enum a -> enum (listof a)
-(define (listof/enum e)
-  (thunk/enum
+;; listof/e : enum a -> enum (listof a)
+(define (listof/e e)
+  (thunk/e
    (if (= 0 (size e))
        0
        +inf.f)
    (λ ()
-      (sum/enum
-       (const/enum '())
-       (prod/enum e (listof/enum e))))))
+      (sum/e
+       (const/e '())
+       (prod/e e (listof/e e))))))
 
-;; list/enum : listof (enum any) -> enum (listof any)
-(define (list/enum es)
-  (apply prod/enum (append es `(,(const/enum '())))))
+;; list/e : listof (enum any) -> enum (listof any)
+(define (list/e es)
+  (apply prod/e (append es `(,(const/e '())))))
 
-(define (nats+/enum n)
-  (map/enum (λ (k)
+(define (nats+/e n)
+  (map/e (λ (k)
                (+ k n))
             (λ (k)
                (- k n))
             nats))
 
-;; fail/enum : exn -> enum ()
+;; fail/e : exn -> enum ()
 ;; returns an enum that calls a thunk
-(define (fail/enum e)
+(define (fail/e e)
   (let ([t
          (λ (_)
             (raise e))])
@@ -672,8 +677,8 @@
                      (encode e (decode e n)))
                   nums))))
 
- ;; const/enum tests
- (let ([e (const/enum 17)])
+ ;; const/e tests
+ (let ([e (const/e 17)])
    (test-begin
     (check-eq? (decode e 0) 17)
     (check-exn exn:fail? 
@@ -685,8 +690,8 @@
                   (encode e 0)))
     (check-bijection? e)))
 
- ;; from-list/enum tests
- (let ([e (from-list/enum '(5 4 1 8))])
+ ;; from-list/e tests
+ (let ([e (from-list/e '(5 4 1 8))])
    (test-begin
     (check-eq? (decode e 0) 5)
     (check-eq? (decode e 3) 8)
@@ -700,7 +705,7 @@
     (check-bijection? e)))
 
  ;; map test
- (define nats+1 (nats+/enum 1))
+ (define nats+1 (nats+/e 1))
 
  (test-begin
   (check-equal? (size nats+1) +inf.f)
@@ -725,13 +730,13 @@
 
  ;; sum tests
  (test-begin
-  (let ([bool-or-num (sum/enum bools
-                               (from-list/enum '(0 1 2)))]
-        [bool-or-nat (sum/enum bools
+  (let ([bool-or-num (sum/e bools
+                               (from-list/e '(0 1 2)))]
+        [bool-or-nat (sum/e bools
                                nats)]
-        [nat-or-bool (sum/enum nats
+        [nat-or-bool (sum/e nats
                                bools)]
-        [odd-or-even (sum/enum evens
+        [odd-or-even (sum/e evens
                                odds)])
     (check-equal? (enum-size bool-or-num)
                   5)
@@ -768,12 +773,12 @@
     (check-equal? (encode odd-or-even 3) 3)
     (check-bijection? odd-or-even)))
 
- ;; prod/enum tests
- (define bool*bool (prod/enum bools bools))
- (define 1*b (prod/enum (const/enum 1) bools))
- (define bool*nats (prod/enum bools nats))
- (define nats*bool (prod/enum nats bools))
- (define nats*nats (prod/enum nats nats))
+ ;; prod/e tests
+ (define bool*bool (prod/e bools bools))
+ (define 1*b (prod/e (const/e 1) bools))
+ (define bool*nats (prod/e bools nats))
+ (define nats*bool (prod/e nats bools))
+ (define nats*nats (prod/e nats nats))
  (define ns-equal? (λ (ns ms)
                       (and (= (car ns)
                               (car ms))
@@ -839,25 +844,25 @@
   (check-bijection? nats*nats))
 
 
- ;; dep/enum tests
+ ;; dep/e tests
  (define (up-to n)
-   (take/enum nats (+ n 1)))
+   (take/e nats (+ n 1)))
 
  (define 3-up
-   (dep/enum
-    (from-list/enum '(0 1 2))
+   (dep/e
+    (from-list/e '(0 1 2))
     up-to))
 
  (define from-3
-   (dep/enum
-    (from-list/enum '(0 1 2))
-    nats+/enum))
+   (dep/e
+    (from-list/e '(0 1 2))
+    nats+/e))
 
  (define nats-to
-   (dep/enum nats up-to))
+   (dep/e nats up-to))
 
  (define nats-up
-   (dep/enum nats nats+/enum))
+   (dep/e nats nats+/e))
 
  (test-begin
   (check-equal? (size 3-up) 6)
@@ -911,15 +916,15 @@
  (check-equal? (find-size (gvector 1 5 7) 6) 2)
  (check-equal? (find-size (gvector 1 5 7) 7) #f) 
  
- ;; depend/enum tests
+ ;; depend/e tests
  ;; same as dep unless the right side is finite
  (define 3-up-2
-   (dep/enum
-    (from-list/enum '(0 1 2))
+   (dep/e
+    (from-list/e '(0 1 2))
     up-to))
 
  (define nats-to-2
-   (dep/enum nats up-to))
+   (dep/e nats up-to))
 
 
  (test-begin
@@ -953,7 +958,7 @@
   (check-equal? (decode nats-to-2 5) (cons 2 2))
   (check-equal? (decode nats-to-2 6) (cons 3 0)))
 
- ;; take/enum test
+ ;; take/e test
  (define to-2 (up-to 2))
  (test-begin
   (check-equal? (size to-2) 3)
@@ -967,13 +972,13 @@
   (check-equal? (to-list (up-to 3))
                 '(0 1 2 3)))
 
- ;; except/enum test
- (define not-3 (except/enum nats '(3)))
+ ;; except/e test
+ (define not-3 (except/e nats '(3)))
  (test-begin
   (check-equal? (decode not-3 0) 0)
   (check-equal? (decode not-3 3) 4)
   (check-bijection? not-3))
- (define not-a (except/enum nats '(a)))
+ (define not-a (except/e nats '(a)))
  (test-begin
   (check-equal? (decode not-a 0) 0)
   (check-bijection? not-a))
@@ -982,6 +987,6 @@
  (define complicated
    (fold-enum
     (λ (excepts n)
-       (except/enum (up-to n) excepts))
+       (except/e (up-to n) excepts))
     '(2 4 6)))
  (check-bijection? complicated))
