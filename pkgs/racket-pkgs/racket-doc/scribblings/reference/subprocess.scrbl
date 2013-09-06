@@ -29,6 +29,13 @@ environment variables @racket[current-environment-variables]. See also
 @racket[system] and @racket[process] from
 @racketmodname[racket/system].
 
+@margin-note{On Unix and Mac OS X, subprocess creation is separate
+from starting the program indicated by @racket[command]. In
+particular, if @racket[command] refers to a non-existent or
+non-executable file, an error will be reported (via standard error and
+a non-0 exit code) in the subprocess, not in the creating
+process.}
+
 The @racket[command] argument is a path to a program executable, and
 the @racket[arg]s are command-line arguments for the program. See
 @racket[find-executable-path] for locating an executable based on
@@ -83,6 +90,15 @@ The @racket[subprocess] procedure returns four values:
 @bold{Important:} All ports returned from @racket[subprocess] must be
 explicitly closed, usually with @racket[close-input-port] or
 @racket[close-output-port].
+
+@margin-note{A @tech{file-stream port} for communicating with a
+subprocess is normally a pipe with a limited capacity. Beware of
+creating deadlock by serializing a write to a subprocess followed by a
+read, while the subprocess does the same, so that both processes end
+up blocking on a write because the other end must first read to make
+room in the pipe. Beware also of waiting for a subprocess to finish
+without reading its output, because the subprocess may be blocked attempting
+to write output into a full pipe.}
 
 The returned ports are @tech{file-stream ports} (see
 @secref["file-ports"]), and they are placed into the management of
@@ -334,6 +350,9 @@ subprocess has ended). The @racket[command] argument is a string or
 byte string containing no nul characters. If the command succeeds, the
 return value is @racket[#t], @racket[#f] otherwise.
 
+@margin-note{See also @racket[subprocess] for notes about error
+handling and the limited buffer capacity of subprocess pipes.}
+
 If @racket[set-pwd?] is true, then the @envvar{PWD} environment
 variable is set to the value of @racket[(current-directory)] when
 starting the shell process.
@@ -407,6 +426,9 @@ Like @racket[system*], but returns the exit code like
 Executes a shell command asynchronously (using @exec{sh} on Unix
 and Mac OS X, @exec{cmd} on Windows). The result is a list of five
 values:
+
+@margin-note{See also @racket[subprocess] for notes about error
+handling and the limited buffer capacity of subprocess pipes.}
 
 @itemize[
 
