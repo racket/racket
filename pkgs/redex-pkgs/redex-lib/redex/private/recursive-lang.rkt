@@ -242,7 +242,9 @@
                      [else (loop sub-pat)]))
                 sub-pats)]
               [(? (compose not pair?))
-               (set pat)])))
+               (if (symbol? pat)
+                   (set pat)
+                   (set))])))
         (nt-rhs the-nt)))
     lang)))
 

@@ -80,7 +80,7 @@
 
 ;; test variable-not-otherwise-mentioned
 (define-language VarMentioned
-  (mention a b c x y z)
+  (mention a b c x y z 2 #f #\c (vec 1 2))
   (var variable-not-otherwise-mentioned))
 
 (try-it 20 VarMentioned var)
