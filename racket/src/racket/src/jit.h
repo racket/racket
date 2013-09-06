@@ -869,12 +869,13 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 # define mz_patch_branch_at(a, v) jit_patch_at(a, v)
 # define mz_patch_ucbranch_at(a, v) jit_patch_at(a, v)
 # define mz_prolog(x) (mz_set_local_p(JIT_LR, JIT_LOCAL2))
-# define mz_epilog(x) (mz_get_local_p(x, JIT_LOCAL2), jit_jmpr(x))
+# define mz_epilog(x) (mz_get_local_p(JIT_LR, JIT_LOCAL2), jit_jmpr(JIT_LR))
 # define mz_epilog_without_jmp() /* empty */
 # define jit_shuffle_saved_regs() /* empty */
 # define jit_unshuffle_saved_regs() /* empty */
 # define mz_push_locals() /* empty */
 # define mz_pop_locals() /* empty */
+# define jit_base_prolog() jit_prolog(0)
 # ifdef SUPPRESS_LIGHTNING_FUNCS
 void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg);
 # else

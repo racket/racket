@@ -2399,6 +2399,27 @@ arm_calli(jit_state_t _jitp, void *i0)
   return (l);
 }
 
+#define jit_short_calli(i0)			arm_short_calli(_jitp, i0)
+__jit_inline jit_insn *
+arm_short_calli(jit_state_t _jitp, void *i0)
+{
+  jit_insn	*l;
+  long	 d;
+
+  if (jit_thumb_p()) {
+    jit_assert((long)i0 & 0x1);
+    l = _jitp->x.pc+1;
+    d = (((long)i0 - (long)l) >> 1) - 2;
+    T2_BLI(encode_thumb_jump(d));
+  } else {
+    l = _jitp->x.pc;
+    d = (((long)i0 - (long)l) >> 2) - 2;
+    _BLI(d & 0x00ffffff);
+  }
+
+  return (l);
+}
+
 #define jit_prepare_i(i0)		arm_prepare_i(_jitp, i0)
 __jit_inline void
 arm_prepare_i(jit_state_t _jitp, int i0)

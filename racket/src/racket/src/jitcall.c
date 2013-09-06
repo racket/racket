@@ -785,7 +785,10 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   /* Fast inlined-native jump ok (proc will check argc, if necessary) */
   {
     GC_CAN_IGNORE jit_insn *refr;
-#ifdef MZ_USE_JIT_I386
+#if defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_ARM)
+# define KEEP_CALL_AND_RETURN_PAIRED
+#endif
+#ifdef KEEP_CALL_AND_RETURN_PAIRED
     GC_CAN_IGNORE jit_insn *refxr;
 #endif
     if (num_rands < 0) {
@@ -798,9 +801,9 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
       jit_movr_p(JIT_R2, JIT_FP); /* save old FP */
     }
     jit_shuffle_saved_regs(); /* maybe copies V registers to be restored */
-#ifdef MZ_USE_JIT_I386
-    /* keep call & ret paired by jumping to where we really 
-       want to return,then back here: */
+#ifdef KEEP_CALL_AND_RETURN_PAIRED
+    /* keep call & ret paired (for branch prediction) by jumping to where
+       we really want to return, then back here: */
     refr = jit_jmpi(jit_forward());
     refxr = jit_get_ip();
     jit_base_prolog();
@@ -858,7 +861,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
       /* self-call function pointer is in R1 */
       jit_jmpr(JIT_R1);
     }
-#ifdef MZ_USE_JIT_I386
+#ifdef KEEP_CALL_AND_RETURN_PAIRED
     mz_patch_ucbranch(refr);
     (void)jit_short_calli(refxr);
 #else
