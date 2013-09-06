@@ -1283,8 +1283,11 @@
 (define text-mode-mixin
   (mixin (color:text-mode<%> mode:surrogate-text<%>) (-text-mode<%>)
     
+    (define saved-wordbreak-map #f)
+    
     (define/override (on-disable-surrogate text)
       (keymap:remove-chained-keymap text keymap)
+      (send text set-wordbreak-map saved-wordbreak-map)
       (super on-disable-surrogate text))
     
     (define/override (on-enable-surrogate text)
@@ -1292,8 +1295,8 @@
       (super on-enable-surrogate text)
       (send (send text get-private-racket-container-keymap) chain-to-keymap keymap #f)
       
-      ;; I don't know about these editor flag settings.
-      ;; maybe they belong in drracket?
+      (set! saved-wordbreak-map (send text get-wordbreak-map))
+      
       (send text set-load-overwrites-styles #f)
       (send text set-wordbreak-map wordbreak-map)
       (let ([bw (box 0)]

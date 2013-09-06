@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base)
-         scheme/unit
+(require (for-syntax racket/base)
+         racket/unit
          racket/class
          racket/surrogate
          "sig.rkt")
