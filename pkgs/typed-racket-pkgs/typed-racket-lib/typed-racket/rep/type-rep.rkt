@@ -182,7 +182,7 @@
 (def-type Set ([elem Type/c])
   [#:key 'set])
 
-;; elem is a Type
+;; result is a Type
 (def-type Evt ([result Type/c])
   [#:key #f])
 
@@ -191,10 +191,8 @@
 ;; predicate is used to check (at compile-time) whether a value belongs
 ;; to that base type. This is used to check for subtyping between value
 ;; types and base types.
-;; marshaled has to be a syntax object that refers to the base type
-;; being created. this allows us to avoid reconstructing the base type
-;; when using it from its marshaled representation
-(def-type Base ([name symbol?] [contract syntax?] [predicate procedure?] [marshaled syntax?] [numeric? boolean?])
+;; numeric determines if the type is a numeric type
+(def-type Base ([name symbol?] [contract syntax?] [predicate procedure?] [numeric? boolean?])
   [#:frees #f] [#:fold-rhs #:base] [#:intern name]
   [#:key (if numeric?
              'number

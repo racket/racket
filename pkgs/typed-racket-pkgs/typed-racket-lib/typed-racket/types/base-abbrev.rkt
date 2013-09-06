@@ -13,6 +13,13 @@
          (rename-out [make-Listof -lst]
                      [make-MListof -mlst]))
 
+;; This table maps types (or really, the sequence number of the type)
+;; to identifiers that are those types. This allows us to avoid
+;; reconstructing the type when using it from its marshaled
+;; representation.  The table is referenced in env/init-env.rkt
+;;
+;; For example, instead of marshalling a big union for `Integer`, we
+;; simply emit `-Integer`, which evaluates to the right type.
 (define predefined-type-table (make-hasheq))
 (define-syntax-rule (declare-predefined-type! id)
   (hash-set! predefined-type-table (Rep-seq id) #'id))
@@ -24,26 +31,26 @@
 ;Top and error types
 (define/decl Univ (make-Univ))
 (define/decl -Bottom (make-Union null))
-(define Err (make-Error))
+(define/decl Err (make-Error))
 
 ;A Type that corresponds to the any contract for the
 ;return type of functions
-(define ManyUniv (make-AnyValues))
+(define/decl ManyUniv (make-AnyValues))
 
 ;;Convinient constructors
 (define -val make-Value)
 
 ;; Char type and List type (needed because of how sequences are checked in subtype)
-(define -Char (make-Base 'Char #'char? char? #'-Char #f))
+(define/decl -Char (make-Base 'Char #'char? char? #f))
 (define (make-Listof elem) (-mu list-rec (simple-Un (-val null) (make-Pair elem list-rec))))
 (define (make-MListof elem) (-mu list-rec (simple-Un (-val null) (make-MPair elem list-rec))))
 
 ;; Needed for evt checking in subtype.rkt
-(define -Symbol (make-Base 'Symbol #'symbol? symbol? #'-Symbol #f))
-(define -String (make-Base 'String #'string? string? #'-String #f))
+(define/decl -Symbol (make-Base 'Symbol #'symbol? symbol? #f))
+(define/decl -String (make-Base 'String #'string? string? #f))
 
 ;; Void is needed for Params
-(define -Void (make-Base 'Void #'void? void? #'-Void #f))
+(define/decl -Void (make-Base 'Void #'void? void? #f))
 
 ;; -lst* Type is needed by substitute for ListDots
 (define -pair make-Pair)
@@ -97,10 +104,10 @@
   (make-Result t f o))
 
 ;;Filters
-(define -top (make-Top))
-(define -bot (make-Bot))
-(define -no-filter (make-FilterSet -top -top))
-(define -no-obj (make-Empty))
+(define/decl -top (make-Top))
+(define/decl -bot (make-Bot))
+(define/decl -no-filter (make-FilterSet -top -top))
+(define/decl -no-obj (make-Empty))
 
 
 (define/cond-contract (-FS + -)

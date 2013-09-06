@@ -50,7 +50,7 @@
   (match v
     [(? Rep? (app (lambda (v) (hash-ref predefined-type-table (Rep-seq v) #f)) (? values id))) id]
     [(Union: elems) `(make-Union (sort (list ,@(map sub elems)) < #:key Type-seq))]
-    [(Base: n cnt pred marshaled _) marshaled]
+    [(Base: n cnt pred _) (int-err "Base type not in predefined-type-table" n)]
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
     [(fld: t acc mut) `(make-fld ,(sub t) (quote-syntax ,acc) ,mut)]
     [(Struct: name parent flds proc poly? pred-id)

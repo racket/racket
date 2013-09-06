@@ -336,7 +336,7 @@
                                               (inexact-real? (real-part x))))))]
         [(== t:-Number type-equal?) #'(flat-named-contract 'Number number?)]
 
-        [(Base: sym cnt _ _ _) #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt))]
+        [(Base: sym cnt _ _) #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt))]
         [(Refinement: par p?)
          #`(and/c #,(t->c par) (flat-contract #,p?))]
         [(Union: elems)
@@ -450,7 +450,7 @@
                             #,fld-ctc))))))
               #`(letrec ((struct-ctc (struct/c #,nm #,@field-contracts))) struct-ctc))]
            [else #`(flat-named-contract '#,(syntax-e pred?) #,pred?)])]
-        [(Syntax: (Base: 'Symbol _ _ _ _)) #'identifier?]
+        [(Syntax: (Base: 'Symbol _ _ _)) #'identifier?]
         [(Syntax: t)
          #`(syntax/c #,(t->c t #:kind flat-sym))]
         [(Value: v) #`(flat-named-contract '#,v (lambda (x) (equal? x '#,v)))]

@@ -497,11 +497,11 @@
                          (cg t t*)))]
           [((Vector: t) (Sequence: (list t*)))
            (cg t t*)]
-          [((Base: 'String _ _ _ _) (Sequence: (list t*)))
+          [((Base: 'String _ _ _) (Sequence: (list t*)))
            (cg -Char t*)]
-          [((Base: 'Bytes _ _ _ _) (Sequence: (list t*)))
+          [((Base: 'Bytes _ _ _) (Sequence: (list t*)))
            (cg -Nat t*)]
-          [((Base: 'Input-Port _ _ _ _) (Sequence: (list t*)))
+          [((Base: 'Input-Port _ _ _) (Sequence: (list t*)))
            (cg -Nat t*)]
           [((Value: (? exact-nonnegative-integer? n)) (Sequence: (list t*)))
            (define possibilities
@@ -516,7 +516,7 @@
                  ((list pred? type)
                   (and (pred? n) type)))))
            (cg type t*)]
-          [((Base: _ _ _ _ #t) (Sequence: (list t*)))
+          [((Base: _ _ _ #t) (Sequence: (list t*)))
            (define type
              (for/or ([t (in-list (list -Byte -Index -NonNegFixnum -Nat))])
                (and (subtype S t) t)))
@@ -609,21 +609,21 @@
            (cg a a*)]
           [((Evt: a) (Evt: a*))
            (cg a a*)]
-          [((Base: 'Semaphore _ _ _ _) (Evt: t))
+          [((Base: 'Semaphore _ _ _) (Evt: t))
            (cg S t)]
-          [((Base: 'Output-Port _ _ _ _) (Evt: t))
+          [((Base: 'Output-Port _ _ _) (Evt: t))
            (cg S t)]
-          [((Base: 'Input-Port _ _ _ _) (Evt: t))
+          [((Base: 'Input-Port _ _ _) (Evt: t))
            (cg S t)]
-          [((Base: 'TCP-Listener _ _ _ _) (Evt: t))
+          [((Base: 'TCP-Listener _ _ _) (Evt: t))
            (cg S t)]
-          [((Base: 'Thread _ _ _ _) (Evt: t))
+          [((Base: 'Thread _ _ _) (Evt: t))
            (cg S t)]
-          [((Base: 'Subprocess _ _ _ _) (Evt: t))
+          [((Base: 'Subprocess _ _ _) (Evt: t))
            (cg S t)]
-          [((Base: 'Will-Executor _ _ _ _) (Evt: t))
+          [((Base: 'Will-Executor _ _ _) (Evt: t))
            (cg S t)]
-          [((Base: 'LogReceiver _ _ _ _) (Evt: t ))
+          [((Base: 'LogReceiver _ _ _) (Evt: t ))
            (cg (make-HeterogeneousVector
                    (list -Symbol -String Univ
                          (Un (-val #f) -Symbol)))

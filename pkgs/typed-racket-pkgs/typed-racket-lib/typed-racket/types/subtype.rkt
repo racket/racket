@@ -253,7 +253,7 @@
               ;; value types
               [((Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
               ;; values are subtypes of their "type"
-              [((Value: v) (Base: _ _ pred _ _)) (if (pred v) A0 #f)]
+              [((Value: v) (Base: _ _ pred _)) (if (pred v) A0 #f)]
               ;; tvars are equal if they are the same variable
               [((F: t) (F: t*)) (if (eq? t t*) A0 #f)]
               ;; Avoid needing to resolve things that refer to different structs.
@@ -266,9 +266,9 @@
                       #f]
                      [else (unmatch)])]
               ;; similar case for structs and base types, which are obviously unrelated
-              [((Base: _ _ _ _ _) (or (? Struct? s1) (NameStruct: s1)))
+              [((Base: _ _ _ _) (or (? Struct? s1) (NameStruct: s1)))
                #f]
-              [((or (? Struct? s1) (NameStruct: s1)) (Base: _ _ _ _ _))
+              [((or (? Struct? s1) (NameStruct: s1)) (Base: _ _ _ _))
                #f]
               ;; same for all values.
               [((Value: (? (negate struct?) _)) (or (? Struct? s1) (NameStruct: s1)))
@@ -276,8 +276,8 @@
               [((or (? Struct? s1) (NameStruct: s1)) (Value: (? (negate struct?) _)))
                #f]
               ;; just checking if s/t is a struct misses recursive/union/etc cases
-              [((? (lambda (_) (eq? ks 'struct))) (Base: _ _ _ _ _)) #f]
-              [((Base: _ _ _ _ _) (? (lambda (_) (eq? kt 'struct)))) #f]
+              [((? (lambda (_) (eq? ks 'struct))) (Base: _ _ _ _)) #f]
+              [((Base: _ _ _ _) (? (lambda (_) (eq? kt 'struct)))) #f]
               ;; sequences are covariant
               [((Sequence: ts) (Sequence: ts*))
                (subtypes* A0 ts ts*)]
@@ -300,11 +300,11 @@
                (subtypes* A0 ts (map (λ (_) t*) ts))]
               [((Vector: t) (Sequence: (list t*)))
                (subtype* A0 t t*)]
-              [((Base: 'String _ _ _ _) (Sequence: (list t*)))
+              [((Base: 'String _ _ _) (Sequence: (list t*)))
                (subtype* A0 -Char t*)]
-              [((Base: 'Bytes _ _ _ _) (Sequence: (list t*)))
+              [((Base: 'Bytes _ _ _) (Sequence: (list t*)))
                (subtype* A0 -Byte t*)]
-              [((Base: 'Input-Port _ _ _ _) (Sequence: (list t*)))
+              [((Base: 'Input-Port _ _ _) (Sequence: (list t*)))
                (subtype* A0 -Nat t*)]
               [((Value: (? exact-nonnegative-integer? n)) (Sequence: (list t*)))
                (define possibilities
@@ -319,7 +319,7 @@
                      ((list pred? type)
                       (and (pred? n) type)))))
                (subtype* A0 type t*)]
-              [((Base: _ _ _ _ #t) (Sequence: (list t*)))
+              [((Base: _ _ _ #t) (Sequence: (list t*)))
                (define type
                  ;; FIXME: thread the store through here
                  (for/or ((t (in-list (list -Byte -Index -NonNegFixnum -Nat))))
@@ -421,7 +421,7 @@
               ;; some special cases for better performance
               ;; first, if both types are numeric, they will be built from the same base types
               ;; so we can check for simple set inclusion of the union components
-              [((Base: _ _ _ _ _) (Union: l2))
+              [((Base: _ _ _ _) (Union: l2))
                (=> unmatch)
                (if (and (eq? ks 'number) (eq? kt 'number))
                    (if (memq s l2) A0 #f)
@@ -478,21 +478,21 @@
               [((Set: t) (Set: t*)) (subtype* A0 t t*)]
               ;; Evts are covariant
               [((Evt: t) (Evt: t*)) (subtype* A0 t t*)]
-              [((Base: 'Semaphore _ _ _ _) (Evt: t))
+              [((Base: 'Semaphore _ _ _) (Evt: t))
                (subtype* A0 s t)]
-              [((Base: 'Output-Port _ _ _ _) (Evt: t))
+              [((Base: 'Output-Port _ _ _) (Evt: t))
                (subtype* A0 s t)]
-              [((Base: 'Input-Port _ _ _ _) (Evt: t))
+              [((Base: 'Input-Port _ _ _) (Evt: t))
                (subtype* A0 s t)]
-              [((Base: 'TCP-Listener _ _ _ _) (Evt: t))
+              [((Base: 'TCP-Listener _ _ _) (Evt: t))
                (subtype* A0 s t)]
-              [((Base: 'Thread _ _ _ _) (Evt: t))
+              [((Base: 'Thread _ _ _) (Evt: t))
                (subtype* A0 s t)]
-              [((Base: 'Subprocess _ _ _ _) (Evt: t))
+              [((Base: 'Subprocess _ _ _) (Evt: t))
                (subtype* A0 s t)]
-              [((Base: 'Will-Executor _ _ _ _) (Evt: t))
+              [((Base: 'Will-Executor _ _ _) (Evt: t))
                (subtype* A0 s t)]
-              [((Base: 'LogReceiver _ _ _ _) (Evt: t))
+              [((Base: 'LogReceiver _ _ _) (Evt: t))
                (subtype* A0
                          (make-HeterogeneousVector
                           (list -Symbol -String Univ
@@ -605,4 +605,4 @@
 ;(subtype (make-poly '(a) (make-tvar 'a)) (make-lst N))
 
 ;;problem:
-;; (subtype (make-Mu 'x (make-Syntax (make-Union (list (make-Base 'Number #'number? number? #'-Number) (make-F 'x))))) (make-Syntax (make-Univ)))
+;; (subtype (make-Mu 'x (make-Syntax (make-Union (list (make-Base 'Number #'number? number?) (make-F 'x))))) (make-Syntax (make-Univ)))
