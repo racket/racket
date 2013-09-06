@@ -12,24 +12,24 @@
 (provide (all-defined-out))
 
 (define/cond-contract (open-Result r objs [ts #f])
-     (->* (Result? (listof Object?)) ((listof Type/c)) (values Type/c FilterSet? Object?))
-       (match r
-         [(Result: t fs old-obj)
-          (for/fold ([t t] [fs fs] [old-obj old-obj])
-            ([(o k) (in-indexed (in-list objs))]
-             [arg-ty (if ts (in-list ts) (in-cycle (in-value #f)))])
-            (values (subst-type t k o #t)
-                    (subst-filter-set fs k o #t arg-ty)
-                    (subst-object old-obj k o #t)))]))
+  (->* (Result? (listof Object?)) ((listof Type/c)) (values Type/c FilterSet? Object?))
+  (match r
+    [(Result: t fs old-obj)
+     (for/fold ([t t] [fs fs] [old-obj old-obj])
+               ([(o k) (in-indexed (in-list objs))]
+                [arg-ty (if ts (in-list ts) (in-cycle (in-value #f)))])
+       (values (subst-type t k o #t)
+               (subst-filter-set fs k o #t arg-ty)
+               (subst-object old-obj k o #t)))]))
 
 (define/cond-contract (subst-filter-set fs k o polarity [t #f])
-       (->* ((or/c FilterSet? NoFilter?) name-ref/c Object? boolean?) ((or/c #f Type/c)) FilterSet?)
-       (define extra-filter (if t (make-TypeFilter t null k) -top))
-       (define (add-extra-filter f)
-         (define f* (-and extra-filter f))
-         (match f*
-           [(Bot:) f*]
-           [_ f]))
+  (->* ((or/c FilterSet? NoFilter?) name-ref/c Object? boolean?) ((or/c #f Type/c)) FilterSet?)
+  (define extra-filter (if t (make-TypeFilter t null k) -top))
+  (define (add-extra-filter f)
+    (define f* (-and extra-filter f))
+    (match f*
+      [(Bot:) f*]
+      [_ f]))
   (match fs
     [(FilterSet: f+ f-)
      (-FS (subst-filter (add-extra-filter f+) k o polarity)
@@ -37,7 +37,7 @@
     [_ -no-filter]))
 
 (define/cond-contract (subst-type t k o polarity)
-     (-> Type/c name-ref/c Object? boolean? Type/c)
+  (-> Type/c name-ref/c Object? boolean? Type/c)
   (define (st t) (subst-type t k o polarity))
   (define/cond-contract (sf fs) (FilterSet? . -> . FilterSet?) (subst-filter-set fs k o polarity))
   (type-case (#:Type st
@@ -57,7 +57,7 @@
                                  (map st kws)))]))
 
 (define/cond-contract (subst-object t k o polarity)
-     (-> Object? name-ref/c Object? boolean? Object?)
+  (-> Object? name-ref/c Object? boolean? Object?)
   (match t
     [(NoObject:) t]
     [(Empty:) t]
