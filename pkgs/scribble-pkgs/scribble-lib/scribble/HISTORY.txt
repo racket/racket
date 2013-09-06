@@ -1,0 +1,6 @@
+Version 1.1
+Change `verbatim' to support non-string arguments
+
+Older versions
+See the "Racket core" release notes for a history of changes before
+ the "scribble-lib" package was created.

@@ -9,3 +9,7 @@
   '(("scribble" scribble/run "render a Scribble document" #f)))
 
 (define purpose "This collect contains the implementation of scribble.")
+
+(define release-note-files '(("Scribble" "HISTORY.txt")))
+
+(define version "1.1")

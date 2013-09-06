@@ -272,17 +272,18 @@ Examples:
                (list "makizushi"     'cont))]
 }|
 
-@defproc[(verbatim [#:indent indent exact-nonnegative-integer? 0] [str string?] ...+)
+@defproc[(verbatim [#:indent indent exact-nonnegative-integer? 0] [elem content?] ...+)
          block?]{
 
-Typesets @racket[str]s in typewriter font with the linebreaks
-specified by newline characters in @racket[str]. Consecutive spaces in
-the @racket[str]s are converted to @racket[hspace] to ensure that they
+Typesets string @racket[elem]s in typewriter font with linebreaks
+specified by newline characters in string @racket[elem]s. Consecutive spaces in
+the string @racket[elem]s are converted to @racket[hspace] to ensure that they
 are all preserved in the output. Additional space (via
 @racket[hspace]) as specified by @racket[indent] is added to the
-beginning of each line.
+beginning of each line. A non-string @racket[elem] is treated as
+content within a single line.
 
-The @racket[str]s are @emph{not} decoded with @racket[decode-content],
+The string @racket[elem]s are @emph{not} decoded with @racket[decode-content],
 so @racket[(verbatim "---")] renders with three hyphens instead of an
 em dash. Beware, however, that @emph{reading}
 @litchar["@"]@racket[verbatim] converts @litchar["@"] syntax
@@ -304,7 +305,21 @@ which renders as
    Use @bold{---} like this...
 }|
 
-Even with @litchar["|{"]...@litchar["}|"], beware that consistent
+while
+
+@verbatim[#:indent 2]||{
+ @verbatim|{
+   Use |@bold{---} like this...
+ }|
+}||
+
+renders as
+
+@verbatim[#:indent 2]|{
+   Use |@bold{---} like this...
+}|
+
+Even with brackets like @litchar["|{"]...@litchar["}|"], beware that consistent
 leading whitespace is removed by the parser; see
 @secref["alt-body-syntax"] for more information.
 
