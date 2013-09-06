@@ -2552,4 +2552,74 @@
                 [tab (in-list (send frame get-tabs))]
                 [v (in-value (send (send tab get-defs) get-filename))]
                 #:when v)
-      v)))
+      v))
+  
+  
+  
+  (define-local-member-name maybe-change-language)
+
+  (define change-lang-host<%> (interface () maybe-change-language))
+  
+  (define change-lang-host-mixin
+    (mixin ((class->interface text%) mode:host-text<%>) (change-lang-host<%>)
+      (inherit set-surrogate)
+      
+      (define current-surrogate-mod #f)
+      (define current-language-end #f)
+      
+      ;; called by the surrogate-mixin to see if the surrogate needs changing if
+      ;; the mode is not the racket language mode, then this doesn't get called.
+      (define/public (maybe-change-language start)
+        (when (or (not current-language-end)
+                  (< start current-language-end))
+          (update-surrogate)))
+      
+      (define/private (update-surrogate)
+        (define defs-port (open-input-text-editor this))
+        ;; need this to count chars, not bytes (in case of non-ASCII
+        ;; in defs before #lang line)
+        (port-count-lines! defs-port)
+        (define get-info
+          (with-handlers ([exn:fail? (λ (x) #f)])
+            (read-language defs-port (λ () #f))))
+        (define-values (line col pos) (port-next-location defs-port))
+        (define new-surrogate-mod
+          (and get-info
+               (get-info 'definitions-text-surrogate #f)))
+        (set! current-language-end pos)
+        (unless (equal? current-surrogate-mod new-surrogate-mod)
+          (set! current-surrogate-mod new-surrogate-mod)
+          (define new-surrogate
+            (and new-surrogate-mod
+                 (with-handlers ([exn:fail? 
+                                  (λ (x)
+                                    (log-error
+                                     (format "Error while loading surrogate; expected to be in ~s\n~a"
+                                             new-surrogate-mod
+                                             (exn-message x)))
+                                    #f)])
+                   (dynamic-require new-surrogate-mod 'surrogate%))))
+          (set-surrogate (new (if new-surrogate
+                                  (change-lang-surrogate-mixin
+                                   new-surrogate)
+                                  default-surrogate%)))))
+      
+      (super-new)))
+  
+  (define change-lang-surrogate-mixin
+    (mixin (mode:surrogate-text<%>) ()
+      (define/override (after-insert ths supr start len)
+        (super after-insert ths supr start len)
+        (when (is-a? ths change-lang-host<%>)
+          (send ths maybe-change-language start)))
+      
+      (define/override (after-delete ths supr start len)
+        (super after-delete ths supr start len)
+        (when (is-a? ths change-lang-host<%>)
+          (send ths maybe-change-language start)))
+      
+      (super-new)))
+  
+  (define default-surrogate%
+    (change-lang-surrogate-mixin
+     racket:text-mode%)))

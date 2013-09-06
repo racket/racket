@@ -101,7 +101,11 @@
    module-language-big-defs/ints-interactions-text-mixin
    module-language-big-defs/ints-definitions-text-mixin
    initialize-prefs-panel
-   big-defs/ints-label<%>))
+   big-defs/ints-label<%>
+   
+   change-lang-surrogate-mixin
+   default-surrogate%
+   change-lang-host-mixin))
 
 (define-signature drracket:module-language-tools-cm^
   (frame-mixin

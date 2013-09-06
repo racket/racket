@@ -570,16 +570,32 @@ has.
 @index{modes}
 @index{scheme mode}
 @index{racket mode}
+@index{definitions-text-surrogate}
 
-DrRacket provides support for multiple editor modes. Tools
-register modes via
+DrRacket provides support for multiple editor modes based on the
+@tt{#lang} line at the beginning of the editor. If the 
+@onscreen{Modes} submenu of the @onscreen{Edit} menu has
+the @onscreen{Racket} mode chosen (which is the default if the
+Language dialog's ``The Racket Language'' is chosen), then 
+DrRacket calls the language's @racket[get-info] procedure
+(see @racket[read-language] for more about how to set up
+a language's @racket[get-info] procedure) with
+@racket['definitions-text-surrogate]. This is expected to return
+a quoted module path (in the sense of @racket[module-path?]) that
+names a module that exports @racket[surrogate%]. It is expected
+to be bound to a class implementing the @racket[mode:surrogate-text<%>]
+interface. Assuming so, it is used as the surrogate for the definitions
+text.
+
+Additionally, plugins can register modes via
 @racket[drracket:modes:add-mode]. Each mode is
 visible in the @onscreen{Modes} submenu of the @onscreen{Edit}
 menu. Initially, DrRacket only supports two modes: Racket
 mode and text mode.
 
 DrRacket automatically selects a mode for each open
-file based on the file's extension. If the file ends with
+file based on the file's extension (and the language chosen
+as described above). If the file ends with
 @File{.txt}, DrRacket uses text mode. Otherwise, DrRacket
 uses Racket mode.
 
