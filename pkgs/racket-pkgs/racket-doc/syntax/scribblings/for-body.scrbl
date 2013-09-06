@@ -18,4 +18,10 @@ The @racket[body-stxes] argument must have the form
 @racket[(_post-body ...)] is as large as possible without containing a
 @racket[#:break] or @racket[#:final] clause.
 
-The @racket[stx] argument is used only for reporting syntax errors.}
+The @racket[stx] argument is used only for reporting syntax errors.
+
+Use @racket[split-for-body] instead of assuming that the last form in
+a @racket[for]-like form's body can be wrapped separately. In
+particular, the last form might contain definitions that need to be
+spliced in the same definition context as earlier forms to create
+mutually-recursive definitions.}
