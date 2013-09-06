@@ -43,9 +43,17 @@
               (port-count-lines! port)
               (define first-line (read-line port))
               (define pos (file-position port))
-              (list x
-                    (+ (string->number first-line) pos)
-                    (deserialize (read port)))))))))
+              (define desed 
+                (with-handlers ([exn:fail? (λ (x) 
+                                             (log-warning "Failed to deserialize ~a: ~a"
+                                                          x
+                                                          (exn-message x))
+                                             #f)])
+                  (deserialize (read port))))
+              (and desed
+                   (list x
+                         (+ (string->number first-line) pos)
+                         desed))))))))
 
 (define files->tag->offset #f)
 
