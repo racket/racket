@@ -77,3 +77,10 @@
 (try-it 100 M m)
 (try-it 100 M n)
 (try-it 100 M p)
+
+;; test variable-not-otherwise-mentioned
+(define-language VarMentioned
+  (mention a b c x y z)
+  (var variable-not-otherwise-mentioned))
+
+(try-it 20 VarMentioned var)

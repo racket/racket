@@ -1,11 +1,13 @@
 #lang racket/base
 (require racket/contract
+         racket/function
          racket/list
          racket/match
-         racket/function
+         racket/set
+
+         "enumerator.rkt"
          "lang-struct.rkt"
          "match-a-pattern.rkt"
-         "enumerator.rkt"
          "recursive-lang.rkt")
 
 (provide 
@@ -18,7 +20,7 @@
   [lang-enum? (-> any/c boolean?)]
   [enum? (-> any/c boolean?)]))
 
-(struct lang-enum (enums))
+(struct lang-enum (enums unused-var/e))
 (struct repeat (n terms) #:transparent)
 (struct decomposition (ctx term) #:transparent)
 (struct named (name val) #:transparent)
@@ -36,6 +38,9 @@
 
 (define (lang-enumerators lang)
   (define l-enums (make-hash))
+  (define unused-var/e
+    (except/e var/e
+              (used-vars lang)))
   (define (enumerate-lang cur-lang enum-f)
     (for-each
      (λ (nt)
@@ -50,14 +55,15 @@
                  (map ((curry map-nt-rhs-pat) name-all-repeats)
                       lang))])
     (enumerate-lang fin-lang
-                    enumerate-rhss)
+                    (λ (rhs enums)
+                       (enumerate-rhss rhs enums unused-var/e)))
     (enumerate-lang rec-lang
                     (λ (rhs enums)
                        (thunk/e +inf.f
-                                   (λ ()
-                                      (enumerate-rhss rhs enums)))))
+                                (λ ()
+                                   (enumerate-rhss rhs enums unused-var/e)))))
 
-    (lang-enum l-enums)))
+    (lang-enum l-enums unused-var/e)))
 
 (define (pat-enumerator l-enum pat)
   (map/e
@@ -65,20 +71,23 @@
    (λ (_)
       (error 'pat-enum "Enumerator is not a  bijection"))
    (pat/e pat
-             (lang-enum-enums l-enum))))
+          (lang-enum-enums l-enum)
+          (lang-enum-unused-var/e l-enum))))
 
-(define (enumerate-rhss rhss l-enums)
+(define (enumerate-rhss rhss l-enums unused/e)
   (apply sum/e
          (map
           (λ (rhs)
              (pat/e (rhs-pattern rhs)
-                       l-enums))
+                    l-enums
+                    unused/e))
           rhss)))
 
-(define (pat/e pat l-enums)
+(define (pat/e pat l-enums unused/e)
   (enum-names pat
               (sep-names pat)
-              l-enums))
+              l-enums
+              unused/e))
 
 (define (map-nt-rhs-pat f nonterminal)
   (nt (nt-name nonterminal)
@@ -278,11 +287,11 @@
                             n)))
              (assoc-named n (cdr l)))]))
 
-(define (enum-names pat nps nt-enums)
+(define (enum-names pat nps nt-enums unused-var/e)
   (let rec ([nps nps]
             [env (hash)])
     (cond [(empty-named-pats? nps)
-           (pat/e-with-names pat nt-enums env)]
+           (pat/e-with-names pat nt-enums env unused-var/e)]
           [else
            (let ([cur (next-named-pats nps)])
              (cond [(named? cur)
@@ -304,7 +313,7 @@
                                      name
                                      (named-name n))))
                        (dep/e
-                        (pat/e-with-names pat nt-enums env)
+                        (pat/e-with-names pat nt-enums env unused-var/e)
                         (λ (term)
                            (rec (rest-named-pats nps)
                                 (hash-set env
@@ -332,10 +341,11 @@
                          (λ (excepts pat)
                             (except/e
                              (pat/e-with-names pat
-                                                  nt-enums
-                                                  (hash-set env
-                                                            (mismatch-name cur)
-                                                            excepts))
+                                               nt-enums
+                                               (hash-set env
+                                                         (mismatch-name cur)
+                                                         excepts)
+                                               unused-var/e)
                              excepts))
                          (mismatch-val cur))
                         (λ (terms)
@@ -345,7 +355,7 @@
                                           terms))))))]
                    [else (error 'unexpected "expected name, mismatch or unimplemented, got: ~a in ~a" cur nps)]))])))
 
-(define (pat/e-with-names pat nt-enums named-terms)
+(define (pat/e-with-names pat nt-enums named-terms unused-var/e)
   (let loop ([pat pat])
     (match-a-pattern
      pat
@@ -366,7 +376,7 @@
       ;; todo
       (error 'unimplemented "var-prefix")]
      [`variable-not-otherwise-mentioned
-      (error 'unimplemented "var-not-mentioned")] ;; error
+      unused-var/e]
      [`hole
       (const/e the-hole)]
      [`(nt ,id)
@@ -452,20 +462,25 @@
    (listof/e char/e)))
 
 (define integer/e
+  #; ;; Simple "turn down the volume" list
+  (from-list/e '(0 1 -1))
   (sum/e nats
-            (map/e (λ (n) (- (+ n 1)))
-                      (λ (n) (- (- n) 1))
-                      nats)))
+         (map/e (λ (n) (- (+ n 1)))
+                (λ (n) (- (- n) 1))
+                nats)))
 
-(define real/e (from-list/e '(0.5 1.5 123.112354)))
+;; This is really annoying so I turned it off
+(define real/e empty/e)
 (define num/e
   (sum/e integer/e
-            real/e))
+         real/e))
 
 (define bool/e
   (from-list/e '(#t #f)))
 
 (define var/e
+  #; ;; "turn down the volume" variables
+  (from-list/e '(x y z))
   (map/e
    (compose string->symbol list->string list)
    (compose car string->list symbol->string)
@@ -473,9 +488,9 @@
 
 (define any/e
   (sum/e num/e
-            string/e
-            bool/e
-            var/e))
+         string/e
+         bool/e
+         var/e))
 
 (define (to-term aug)
   (cond [(named? aug)
